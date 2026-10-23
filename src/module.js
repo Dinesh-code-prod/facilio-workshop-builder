@@ -1,0 +1,357 @@
+/* System Modules & Form Builder — modelled on facilio-setup: ModuleList.vue (System/Custom tabs), ModuleSummaryHomepage.vue
+   (Templates/Fields/... tabs), FieldsList.vue + NewCustomField.vue, FormsList.vue, and the form builder data model (FormField/FormSection). */
+(function (root) {
+  'use strict';
+  // Form field width on a 12-column grid. Source forms use Facilio's own span (facilio-forms LiveForm.vue: span 1 =
+  // full width, otherwise half); fields edited here store twelfths (12, 6, 4). Both are normalised here.
+  function gridSpan(ff, meta) { const n = Number(ff && ff.span); if (n >= 4 && n <= 12) return n; if (n === 1) return 12; if (n === 2) return 6; if (n === 3) return 4; return /Multi Line|Rich|Line Items|Address/.test((meta && meta.type) || '') ? 12 : 6; }
+
+  const F = root.FWB; const { S, esc, humanize } = F; const V = root.FWBViews; const T = root.FWBText; const ACT = V.ACT;
+  const { tag, statusTag, sel, inp, ta, sw, drawer, closeDrawer, toast, ico, confirmDialog } = V;
+  // Form builder palette — order from bmsconsole GetSupportedFieldTypesCommand (Facilio form builder).
+  const PALETTE = [['Single Line', 'Single Line Text', 'TEXTBOX'], ['Multi Line', 'Multi Line Text', 'TEXTAREA'], ['Pick List', 'Picklist', 'SELECTBOX'], ['Multi Select', 'Multi Picklist', 'MULTI_SELECTBOX'], ['Boolean', 'Boolean', 'DECISION_BOX'], ['Date', 'Date', 'DATE'], ['Datetime', 'Date Time', 'DATETIME'], ['Time', 'Time', 'TIME'], ['Number', 'Number', 'NUMBER'], ['Decimal', 'Decimal', 'DECIMAL'], ['Lookup', 'Lookup', 'LOOKUP_SIMPLE'], ['Duration', 'Duration', 'DURATION'], ['File Upload', 'File', 'FILE'], ['Signature', 'Signature', 'SIGNATURE'], ['Url Field', 'URL', 'URL_FIELD'], ['Rich Text', 'Rich Text', 'RICH_TEXT'], ['Currency', 'Currency', 'CURRENCY'], ['Email', 'Email', 'EMAIL'], ['Location', 'Geo Location', 'GEO_LOCATION']];
+  const QUICK_TYPES = [['Single Line Text', 'Capture small text.'], ['Multi Line Text', 'Capture large text.'], ['Number', 'Capture numbers.'], ['Decimal', 'Capture decimal values.'], ['Date', 'Capture a date.'], ['Date Time', 'Capture date and time.'], ['Picklist', 'Choose one value from a list.'], ['Multi Picklist', 'Choose several values.'], ['Lookup', 'Link to a record of another module.'], ['Boolean', 'Yes or no.'], ['Currency', 'Capture an amount.'], ['File', 'Attach a file.'], ['Email', 'Capture an email address.'], ['URL', 'Capture a web link.']];
+  const REVIEW = [['not_started', 'Not started'], ['scheduled', 'Scheduled'], ['in_progress', 'In progress'], ['reviewed_no_change', 'Reviewed — no changes'], ['reviewed_changes', 'Reviewed — changes proposed'], ['pending_customer', 'Pending customer confirmation'], ['pending_internal', 'Pending internal review'], ['completed', 'Completed']];
+  V.REVIEW = REVIEW;
+  const reviewCls = s => ({ completed: 'green', reviewed_no_change: 'green', reviewed_changes: 'blue', pending_customer: 'tbc', pending_internal: 'tbc', in_progress: 'orange', scheduled: 'low', not_started: 'low' }[s] || 'low');
+  V.reviewCls = reviewCls;
+  function rv(m, area) { const R = F.doc('reviews'); R.modules[m] = R.modules[m] || {}; return R.modules[m][area] || {}; }
+  V.rv = rv;
+  // Review widget shared by Form Builder, State Flow Builder and Roles (area = form | flow | roles | overall)
+  V.reviewWidget = (m, area, label) => { const r = rv(m, area); return `<div class="row small"><span class="muted">${esc(label || 'Review')}:</span>${tag(reviewCls(r.status), (REVIEW.find(x => x[0] === r.status) || [0, 'Not started'])[1])}${r.reviewer ? `<span class="xs muted">${esc(r.reviewer)} · ${esc(V.fmtDate(r.date))}</span>` : ''}<button class="btn link" data-act="editReview" data-module="${esc(m)}" data-area="${area}">${r.status ? 'Update' : 'Record review'}</button></div>`; };
+  ACT.editReview = a => {
+    const m = a.getAttribute('data-module'), area = a.getAttribute('data-area'); const r = rv(m, area); const mv = F.moduleView(m) || { label: m === '_roles' ? 'Roles & permissions (project)' : m };
+    drawer('Review — ' + mv.label + ' · ' + ({ form: 'Forms', flow: 'State flows', roles: 'Roles & permissions', overall: 'Module' }[area] || area), `<div class="notice" style="margin-bottom:14px">A module is only treated as reviewed when a reviewer records a decision here. Confirming that the default configuration is sufficient counts as a completed review.</div>
+      <div class="fgrid"><div class="full"><label class="f">Review status</label>${sel('', REVIEW.map(([v, l]) => ({ v, l })), r.status || 'not_started', 'id="rv_status"')}</div>
+      <div><label class="f">Reviewer</label><input type="text" id="rv_by" value="${esc(r.reviewer || S.user.name)}"></div><div><label class="f">Review date</label><input type="date" id="rv_date" value="${esc(r.date || new Date().toISOString().slice(0, 10))}"></div>
+      <div class="full"><label class="f">Decision</label><input type="text" id="rv_dec" value="${esc(r.decision || '')}" placeholder="e.g. Default flow is sufficient; no changes required"></div>
+      <div class="full"><label class="f">Notes</label><textarea id="rv_notes" rows="3">${esc(r.notes || '')}</textarea></div>
+      <div class="full"><label class="f">Outstanding questions</label><textarea id="rv_out" rows="2">${esc(r.outstanding || '')}</textarea></div></div>`,
+      `<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="saveReview" data-module="${esc(m)}" data-area="${area}">Save review</button>`);
+  };
+  ACT.saveReview = a => { const m = a.getAttribute('data-module'), area = a.getAttribute('data-area'); const R = F.doc('reviews'); R.modules[m] = R.modules[m] || {};
+    R.modules[m][area] = { status: document.getElementById('rv_status').value, reviewer: document.getElementById('rv_by').value.trim(), date: document.getElementById('rv_date').value, decision: document.getElementById('rv_dec').value.trim(), notes: document.getElementById('rv_notes').value.trim(), outstanding: document.getElementById('rv_out').value.trim(), at: new Date().toISOString() };
+    closeDrawer(); F.changed('Review recorded', (F.moduleView(m) || {}).label + ' · ' + area + ' — ' + R.modules[m][area].status, { section: 'reviews' }); };
+
+  // ================= MODULES LIST =================
+  V.modules = { html() {
+    if (!S.baseline) return '<div class="page-body"><div class="empty">Configuration not loaded.</div></div>';
+    const fl = S.ui.filters; const q = (fl.q || '').toLowerCase(); const tab = S.ui.modTab || 'system';
+    let list = F.allModules().filter(m => tab === 'system' ? m.system : !m.system);
+    if (fl.scope === 'inuse') list = list.filter(m => m.inUse); else if (fl.scope === 'brd') list = list.filter(m => m.inScope);
+    if (fl.priority !== 'all') list = list.filter(m => m.priority === fl.priority);
+    if (q) list = list.filter(m => (m.label + ' ' + m.name).toLowerCase().includes(q));
+    const rank = { high: 0, medium: 1, low: 2 }; list.sort((a, b) => (b.inScope - a.inScope) || rank[a.priority] - rank[b.priority] || b.score - a.score || a.label.localeCompare(b.label));
+    const per = 50; const page = Math.min(S.ui.modPage || 0, Math.max(0, Math.ceil(list.length / per) - 1)); const shown = list.slice(page * per, page * per + per);
+    const all = F.allModules(); const nSys = all.filter(m => m.system).length, nCus = all.filter(m => !m.system).length;
+    return `<div class="page-header"><div class="t"><h1>Modules</h1><p>List of all modules. Priority and scope are set from configuration evidence and can be changed with the customer. Open a module to review its fields, form templates, buttons and relationships.</p></div></div>
+      <div class="tabs"><button class="tab${tab === 'system' ? ' active' : ''}" data-act="modListTab" data-v="system">System<span class="cnt">${nSys}</span></button><button class="tab${tab === 'custom' ? ' active' : ''}" data-act="modListTab" data-v="custom">Custom<span class="cnt">${nCus}</span></button></div>
+      <div class="page-body"><div class="row" style="margin-bottom:12px"><div class="search" style="width:250px">${ico('search')}<input type="search" placeholder="Search" id="modq" value="${esc(fl.q)}"></div>
+      <div class="seg">${[['inuse', 'In use'], ['brd', 'In scope'], ['all', 'All']].map(([v, l]) => `<button class="${fl.scope === v ? 'on' : ''}" data-act="setFilter" data-k="scope" data-v="${v}">${l}</button>`).join('')}</div>
+      <div class="seg">${[['all', 'Any priority'], ['high', 'High'], ['medium', 'Medium'], ['low', 'Low']].map(([v, l]) => `<button class="${fl.priority === v ? 'on' : ''}" data-act="setFilter" data-k="priority" data-v="${v}">${l}</button>`).join('')}</div>
+      <span class="spacer"></span><span class="small muted">${list.length ? `${page * per + 1}–${Math.min(list.length, page * per + per)} of ${list.length}` : '0'}</span><button class="btn sm" ${page ? '' : 'disabled'} data-act="modPage" data-d="-1" aria-label="Previous page">${ico('left')}</button><button class="btn sm" ${(page + 1) * per < list.length ? '' : 'disabled'} data-act="modPage" data-d="1" aria-label="Next page">${ico('right')}</button>
+      ${tab === 'custom' && !S.readonly ? `<button class="btn primary" data-act="newModule">Add module</button>` : ''}</div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Name</th><th>Description</th><th>Priority</th><th>In scope</th><th>Review</th><th class="num">Fields</th><th class="num">Templates</th><th>Why</th></tr></thead><tbody>
+      ${shown.map(m => { const r = rv(m.name, 'overall'); return `<tr><td><a href="#" data-act="openModule" data-module="${esc(m.name)}"><b>${esc(m.label)}</b></a> ${m.origin === 'proposed' ? tag('proposed', 'Proposed') : ''}<div class="mono xs muted">${esc(m.name)}</div></td>
+        <td class="small" style="max-width:280px">${esc(m.description || (S.ws.modules[m.name] || {}).purpose || '') || '<span class="dash">---</span>'}</td>
+        <td>${sel('modules.' + m.name + '.priority', [{ v: 'high', l: 'High' }, { v: 'medium', l: 'Medium' }, { v: 'low', l: 'Low' }], m.priority, `style="width:96px;height:30px" aria-label="Priority" ${S.readonly ? 'disabled' : ''}`)}</td>
+        <td>${sw('modules.' + m.name + '.inScope', m.inScope, 'aria-label="In scope"')}</td><td>${tag(reviewCls(r.status), (REVIEW.find(x => x[0] === r.status) || [0, 'Not started'])[1])}</td>
+        <td class="num">${F.effFields(m.name).length}</td><td class="num">${F.formCatalog(m.name).templates.length}</td><td class="xs muted" style="max-width:300px">${esc(m.priorityReasons.slice(0, 2).join('; '))}</td></tr>`; }).join('') || `<tr><td colspan="8" class="empty">No modules available</td></tr>`}
+      </tbody></table></div></div>`;
+  }, mount() { const q = document.getElementById('modq'); if (q) q.addEventListener('input', () => { S.ui.filters.q = q.value; S.ui.modPage = 0; clearTimeout(V._mq); V._mq = setTimeout(() => { V.render(); const n = document.getElementById('modq'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 250); }); } };
+  ACT.modListTab = a => { S.ui.modTab = a.getAttribute('data-v'); S.ui.modPage = 0; V.render(); };
+  ACT.modPage = a => { S.ui.modPage = Math.max(0, (S.ui.modPage || 0) + Number(a.getAttribute('data-d'))); V.render(); };
+  ACT.setFilter = a => { S.ui.filters[a.getAttribute('data-k')] = a.getAttribute('data-v'); S.ui.modPage = 0; V.render(); };
+  ACT.newModule = () => drawer('New module', `<div class="notice" style="margin-bottom:14px">Custom modules are workshop proposals. They become available to the Form Builder, State Flow Builder, roles, user guide, requirements and the BRD.</div><div class="fgrid"><div class="full"><label class="f">Name <span class="req">*</span></label><input type="text" id="nm_label" placeholder="e.g. Incident Report"></div><div class="full"><label class="f">Description <span class="req">*</span></label><textarea id="nm_desc" rows="3" placeholder="What the module is for"></textarea></div><div class="full"><label class="chk"><input type="checkbox" id="nm_flow" checked> Create a starter stateflow</label></div></div>`, `<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="createModule">Confirm</button>`);
+  ACT.createModule = () => {
+    const label = document.getElementById('nm_label').value.trim(), desc = document.getElementById('nm_desc').value.trim();
+    if (!label) { toast('Please input module name'); return; } if (!desc) { toast('Please input module description'); return; }
+    const name = 'custom_' + F.slug(label).replace(/_/g, ''); if (F.moduleView(name)) { toast('A module with this name already exists'); return; }
+    S.ws.customModules.push({ name, label, description: desc }); Object.assign(F.wsMod(name), { inScope: true, priority: 'medium', purpose: desc });
+    F.fops(name).add.push({ name: 'name', label: 'Name', type: 'Single Line Text', required: true, mainField: true, options: [], lookup: '', status: 'proposed' });
+    const key = name + '::standard'; S.ws.formOps[key] = { key, name: 'standard', module: name, label: 'Standard', app: 'maintenance', description: '', sections: [{ name: 'Details', link: 'details', seq: 1, fields: [{ field: 'name', label: 'Name', required: true, hidden: false, default: '', span: 12 }] }] };
+    if (document.getElementById('nm_flow').checked) { const id = name + '::proposed_default'; S.ws.flows[id] = { id, module: name, name: label + ' Stateflow', origin: 'proposed', initial: 's_open', enabled: true, workshopCopy: true, criteria: '', states: [{ id: 's_open', name: 'open', label: 'Open', x: 80, y: 100, origin: 'proposed' }, { id: 's_closed', name: 'closed', label: 'Closed', x: 380, y: 100, origin: 'proposed' }], transitions: [{ id: F.uid('t'), name: 'Close', from: 's_open', to: 's_closed', type: 'user', enabled: true, buttonType: 1, actors: [{ actor: 'tbc:any', status: 'tbc', note: '' }], condition: '', conditionFields: [], commentRequired: false, approval: { required: false, approvers: [] }, actions: [], notifications: [], portals: [], notes: '', origin: 'proposed', removed: false }] }; }
+    closeDrawer(); F.changed('Custom module created', label); V.go('module', { module: name, moduleTab: 'templates' });
+  };
+
+  // ================= MODULE SUMMARY =================
+  V.module = { html() {
+    const m = F.moduleView(S.ui.module); if (!m) return '<div class="page-body"><div class="empty">Module not found.</div></div>';
+    if (S.ui.formEdit && S.ui.formEdit.module === m.name) return formBuilder(m);
+    const t = S.ui.moduleTab || 'templates';
+    const B = S.baseline; const nBtn = B ? B.buttons.filter(b => b.module === m.name).length : 0;
+    const tabs = [['templates', 'Templates', F.formCatalog(m.name).templates.length]].concat(m.origin === 'proposed' ? [['registry', 'Registry']] : []).concat([ ['fields', 'Fields', F.effFields(m.name).length], ['buttons', 'Buttons', nBtn + ((S.ws.crossLinks[m.name] || []).length)], ['related', 'Related'], ['automation', 'Automation'], ['requirements', 'Requirements', S.ws.requirements.filter(r => (r.modules || []).includes(m.name)).length], ['review', 'Review']]).concat(V.modTabsExtra ? V.modTabsExtra(m) : []);
+    return `<div class="page-header"><button class="back-btn" data-act="nav" data-view="modules" aria-label="Back to modules">${ico('left')}</button><div class="t"><h1 style="text-transform:capitalize">${esc(m.label)} <span class="mono muted small" style="font-weight:400;text-transform:none">${esc(m.name)}</span></h1><div class="row" style="margin-top:6px">${m.origin === 'proposed' ? tag('proposed', 'Proposed custom module') : m.custom ? tag('custom', 'Custom') : tag('system', 'System')} ${tag(m.priority, humanize(m.priority) + ' priority')} ${m.inScope ? tag('green', 'In scope') : tag('low', 'Not in scope')}</div></div>
+      <div class="row"><span class="small muted">In scope</span>${sw('modules.' + m.name + '.inScope', m.inScope)}<button class="btn" data-act="newReq" data-module="${esc(m.name)}" ${S.readonly ? 'disabled' : ''}>${ico('plus')}Requirement</button><button class="btn" data-act="navTo" data-nav="${esc(JSON.stringify({ view: 'guide', guideModule: m.name }))}">User guide</button></div></div>
+      <div class="tabs">${tabs.map(([k, l, c]) => `<button class="tab${t === k ? ' active' : ''}" data-act="modTab" data-tab="${k}">${esc(l)}${c !== undefined ? `<span class="cnt">${c}</span>` : ''}</button>`).join('')}</div><div class="page-body">${(TABS[t] || (V.modTabBody && V.modTabBody[t]) || TABS.templates)(m)}</div>`;
+  }, mount() { mountFields(); mountBuilder(); } };
+  ACT.modTab = a => { S.ui.moduleTab = a.getAttribute('data-tab'); V.render(); };
+  const TABS = {};
+
+  // ---------- Templates (forms) ----------
+  const appName = l => { const a = S.baseline && S.baseline.apps.find(x => x.link === l); return a ? a.name : (l ? humanize(l) : 'Main app'); };
+  const ROLE_TAG = { standard: ['system', 'Default'], additional: ['blue', 'Additional'], proposed: ['proposed', 'Proposed'], action: ['tbc', 'Transition form'] };
+  TABS.templates = m => {
+    const cat = F.formCatalog(m.name);
+    const app = (S.ui.formApp && (S.ui.formApp === 'all' || cat.apps.includes(S.ui.formApp))) ? S.ui.formApp : cat.primary || 'all';
+    const list = cat.templates.filter(x => app === 'all' || (x.form.app || '') === app);
+    const row = ({ form: f, role }) => { const n = (f.sections || []).reduce((s, x) => s + x.fields.length, 0); const edited = !!S.ws.formOps[f.key]; const rt = ROLE_TAG[role] || ROLE_TAG.additional;
+      return `<tr class="click" data-act="openForm" data-key="${esc(f.key)}"><td><b>${esc(f.label || f.name)}</b><div class="mono xs muted">${esc(f.name)}</div></td><td>${tag(rt[0], rt[1])}</td><td class="small">${esc(f.description || '') || '<span class="dash">---</span>'}</td><td>${esc(appName(f.app))} ${S.baseline && S.baseline.apps.find(a => a.link === f.app && a.category !== 'internal') ? tag('blue', 'Portal') : ''}</td><td class="num">${n}</td><td>${edited ? (S.baseline && S.baseline.forms[f.key] ? tag('modified', 'Changes proposed') : tag('proposed', 'Proposed form')) : tag('system', 'Existing')}</td><td class="acts"><button class="btn sm">${ico('edit')}Open</button></td></tr>`; };
+    const nStd = list.filter(x => x.role === 'standard').length;
+    const warn = cat.ambiguous.length && (app === 'all' || cat.ambiguous.includes(app)) ? `<div class="notice warn" style="margin-bottom:10px"><span>The package has more than one default form for ${esc(cat.ambiguous.map(appName).join(', '))}. Both are shown as Default; which one Facilio opens first needs checking in the live org.</span></div>` : '';
+    const acts = cat.actions.filter(x => app === 'all' || (x.form.app || '') === app || !(x.form.app));
+    return `<div class="row" style="margin-bottom:12px"><span class="small muted">App</span>${sel('', [{ v: 'all', l: 'All apps' }].concat(cat.apps.map(a => ({ v: a, l: appName(a) }))), app, 'data-change="formApp" style="width:220px"')}<span class="small muted">${list.length} template${list.length === 1 ? '' : 's'}${app === 'all' ? '' : ' · ' + nStd + ' default'}</span><span class="spacer"></span>${V.reviewWidget(m.name, 'form', 'Form review')}${S.readonly ? '' : `<button class="btn primary" data-act="newForm" data-module="${esc(m.name)}">New form</button>`}</div>${warn}
+      <div class="tbl-wrap" id="tplList"><table class="tbl"><thead><tr><th>Name</th><th>Type</th><th>Description</th><th>App</th><th class="num">Fields</th><th>Status</th><th></th></tr></thead><tbody>${list.map(row).join('') || '<tr><td colspan="7" class="empty">No templates for this module. Create a form to design its layout.</td></tr>'}</tbody></table></div>
+      ${acts.length ? `<details id="tplActions" style="margin-top:16px"><summary class="small"><b>Transition, approval and pause forms (${acts.length})</b> <span class="muted">— opened by a state transition or approval, not templates a user picks</span></summary><div class="tbl-wrap" style="margin-top:8px"><table class="tbl"><thead><tr><th>Name</th><th>Type</th><th>Description</th><th>App</th><th class="num">Fields</th><th>Status</th><th></th></tr></thead><tbody>${acts.map(x => row({ form: x.form, role: 'action' })).join('')}</tbody></table></div></details>` : ''}`;
+  };
+
+  // ---------- custom module registry (proposed modules only) ----------
+  const REG_CAT = ['Standard Facilio module', 'Customer-specific configuration', 'Custom workflow or extension', 'Proposed enhancement', 'Out-of-scope functionality'];
+  TABS.registry = m => {
+    const p = 'modules.' + m.name + '.reg.'; const g = (S.ws.modules[m.name] || {}).reg || {}; const ro = S.readonly;
+    const I = (k, l, ph) => `<div><label class="f">${l}</label>${V.inp(p + k, ph || '')}</div>`; const T = (k, l, rows) => `<div class="full"><label class="f">${l}</label>${V.ta(p + k, '', rows || 2)}</div>`;
+    return `<div class="notice" style="margin-bottom:14px"><span>This module is a workshop proposal. It is documented here and in the BRD; it is not created in the live Facilio organisation until the implementation work is done. Do not classify a customer-specific module as standard Facilio functionality without evidence.</span></div>
+      <div class="card"><div class="card-b"><div class="fgrid">${I('terminology', 'Customer terminology')}${I('owner', 'Business owner')}<div><label class="f">Category</label>${V.sel(p + 'category', [{ v: '', l: '—' }].concat(REG_CAT.map(x => ({ v: x, l: x }))), g.category || '', ro ? 'disabled' : '')}</div><div><label class="f">Scope status</label>${V.sel(p + 'scopeStatus', ['', 'In scope', 'Pending decision', 'Out of scope'].map(x => ({ v: x, l: x || '—' })), g.scopeStatus || '', ro ? 'disabled' : '')}</div>
+      ${T('process', 'Business process description', 3)}${I('relatedStd', 'Related standard modules')}${I('relatedCustom', 'Related custom modules')}${T('dependencies', 'Dependencies')}${T('evidence', 'Supporting evidence (session, transcript, document)')}
+      <div><label class="f">Customer confirmation</label>${V.sel(p + 'confirmation', ['', 'Unconfirmed', 'Customer confirmed'].map(x => ({ v: x, l: x || '—' })), g.confirmation || '', ro ? 'disabled' : '')}</div>${I('confirmedBy', 'Confirmed by')}</div></div></div>
+      <div class="small muted" style="margin-top:10px">Field specifications are on the Fields tab; use cases that touch this module are in Use Cases.</div>`;
+  };
+  ACT.formApp = el => { S.ui.formApp = el.value; V.render(); };
+  ACT.openForm = a => { const key = a.getAttribute('data-key'); const f = F.effForm(key) || F.formsForModule(S.ui.module).find(x => x.key === key); if (!f) return; S.ui.formEdit = { key, module: f.module, draft: F.clone(f), dirty: false, sel: null, mode: 'design' }; V.render(); };
+  ACT.newForm = a => { const m = a.getAttribute('data-module'); const name = 'proposed_' + F.slug((F.moduleView(m) || {}).label || m) + '_' + Math.random().toString(36).slice(2, 6); const key = m + '::' + name;
+    S.ui.formEdit = { key, module: m, isNew: true, draft: { key, name, module: m, label: 'New form', description: '', app: 'maintenance', sections: [{ name: 'Details', link: 'details', seq: 1, fields: [] }], proposed: true }, dirty: true, sel: { kind: 'form' }, mode: 'design' }; V.render(); };
+
+  // ---------- Form builder (three panes) ----------
+  function fieldMeta(m, name, draft) { return F.effFields(m).find(x => x.name === name) || (draft.newFields || []).find(x => x.name === name); }
+  function formBuilder(m) {
+    const E = S.ui.formEdit; const d = E.draft; const base = S.baseline && S.baseline.forms[E.key]; const savedOps = !!S.ws.formOps[E.key];
+    const used = new Set(d.sections.flatMap(s => s.fields.map(f => f.field)));
+    const avail = F.effFields(m.name).filter(f => f.status !== 'removed' && !used.has(f.name)); const pq = (S.ui.palq || '').toLowerCase();
+    const state = E.dirty ? tag('orange', 'Unsaved edits') : savedOps ? tag('blue', 'Saved workshop changes') : tag('system', 'Existing source configuration');
+    const head = `<div class="page-header"><button class="back-btn" data-act="closeForm" aria-label="Back">${ico('left')}</button><div class="t"><div class="crumbs">${esc(m.label)} › Templates</div><h1>${esc(d.label || d.name)}</h1><div class="row" style="margin-top:6px">${state}${base ? tag('system', 'Source: ' + esc(base.ref.file || 'FORM.xml')) : tag('proposed', 'Proposed form')}<span class="small muted">${esc(appName(d.app))}</span></div></div>
+      <div class="row"><div class="seg"><button class="${E.mode === 'design' ? 'on' : ''}" data-act="fbMode" data-v="design">Design</button><button class="${E.mode === 'preview' ? 'on' : ''}" data-act="fbMode" data-v="preview">Preview</button></div>
+      ${S.readonly ? '' : `${savedOps && base ? `<button class="btn danger" data-act="fbRevert">Revert to source</button>` : ''}${!base && savedOps ? `<button class="btn danger" data-act="fbDeleteForm">Delete form</button>` : ''}<button class="btn" data-act="fbDiscard" ${E.dirty ? '' : 'disabled'}>Discard</button><button class="btn primary" data-act="fbSave" ${E.dirty ? '' : 'disabled'}>Save</button>`}</div></div>`;
+    if (E.mode === 'preview') return head + `<div class="page-body">${formPreview(m, d)}</div>`;
+    const palette = `<div class="pane"><div class="pane-h">Fields</div><div class="pane-b"><div class="seg" style="width:100%;margin-bottom:10px"><button style="flex:1" class="${(S.ui.palTab || 'existing') === 'existing' ? 'on' : ''}" data-act="palTab" data-v="existing">Existing fields</button><button style="flex:1" class="${S.ui.palTab === 'new' ? 'on' : ''}" data-act="palTab" data-v="new">New field</button></div>
+      ${S.ui.palTab === 'new' ? `<div class="xs muted" style="margin-bottom:8px">Drag a field type onto a section, or click it to add to the selected section. New fields are proposed custom fields.</div>${PALETTE.map(([l, t, w]) => `<div class="palette-item" draggable="${!S.readonly}" data-pal-new="${esc(t)}" data-act="fbAddNew" data-type="${esc(t)}">${esc(l)}<span class="ty">+</span></div>`).join('')}`
+        : `<div class="search" style="margin-bottom:8px">${ico('search')}<input type="search" id="palq" placeholder="Search" value="${esc(S.ui.palq || '')}"></div>${avail.filter(f => !pq || (f.label + ' ' + f.name).toLowerCase().includes(pq)).slice(0, 300).map(f => `<div class="palette-item" draggable="${!S.readonly}" data-pal-field="${esc(f.name)}" data-act="fbAddExisting" data-field="${esc(f.name)}" title="${esc(f.name)}">${esc(f.label)}<span class="ty">${esc(f.type)}</span></div>`).join('') || '<div class="xs muted">All fields are on this form.</div>'}`}</div></div>`;
+    const canvas = `<div class="canvas-form" id="fbCanvas">${d.sections.map((s, si) => `<div class="fsec" data-sec="${si}"><div class="fsec-h" data-act="fbSelect" data-kind="section" data-si="${si}">${S.readonly ? esc(s.name) : `<input type="text" value="${esc(s.name)}" data-change="fbSecName" data-si="${si}" aria-label="Section name">`}<span class="xs muted">${s.fields.length} fields</span><span class="spacer"></span>${S.readonly ? '' : `<button class="btn ghost sm" data-act="fbSecMove" data-si="${si}" data-d="-1" aria-label="Move section up">${ico('up')}</button><button class="btn ghost sm" data-act="fbSecMove" data-si="${si}" data-d="1" aria-label="Move section down">${ico('down')}</button><button class="btn ghost sm" data-act="fbSecDel" data-si="${si}" aria-label="Remove section">${ico('x')}</button>`}</div>
+      <div class="fsec-b" data-drop-sec="${si}">${s.fields.map((ff, fi) => { const meta = fieldMeta(m.name, ff.field, d) || {}; const span = gridSpan(ff, meta); const isSel = E.sel && E.sel.kind === 'field' && E.sel.si === si && E.sel.fi === fi;
+        return `<div class="ff${isSel ? ' sel' : ''}${ff.hidden ? ' hiddenf' : ''}${meta.status === 'proposed' ? ' newf' : ''}" style="grid-column:span ${span}" draggable="${!S.readonly}" data-act="fbSelect" data-kind="field" data-si="${si}" data-fi="${fi}"><div class="lbl">${esc(ff.label || meta.label || ff.field)}${ff.required ? ' <span class="req">*</span>' : ''}${ff.hidden ? ' (hidden)' : ''}${ff.disabled ? ' (read only)' : ''}</div><div class="ctl${/Multi Line|Rich/.test(meta.type || '') ? ' area' : ''}">${esc(meta.type || humanize(ff.widget || ''))}${ff.default ? ' · ' + esc(ff.default) : ''}</div></div>`; }).join('') || '<div class="xs muted" style="grid-column:span 12">Drop fields here</div>'}</div></div>`).join('')}
+      ${S.readonly ? '' : `<button class="btn" data-act="fbAddSection">${ico('plus')}Add section</button>`}</div>`;
+    return head + `<div class="page-body"><div class="fb3">${palette}${canvas}<div class="pane"><div class="pane-h">${E.sel && E.sel.kind === 'field' ? 'Field properties' : E.sel && E.sel.kind === 'section' ? 'Section properties' : 'Form settings'}</div><div class="pane-b">${props(m, E)}</div></div></div></div>`;
+  }
+  function props(m, E) {
+    const d = E.draft; const dis = S.readonly ? 'disabled' : '';
+    if (E.sel && E.sel.kind === 'field') {
+      const ff = d.sections[E.sel.si] && d.sections[E.sel.si].fields[E.sel.fi]; if (!ff) return '';
+      const meta = fieldMeta(m.name, ff.field, d) || {}; const isNew = (d.newFields || []).some(x => x.name === ff.field);
+      const rules = (T.fieldRules(m.name)[ff.field]) || {};
+      return `<div class="small muted mono" style="margin-bottom:8px">${esc(ff.field)} · ${esc(meta.type || '')} · ${meta.status === 'proposed' || isNew ? 'Proposed field' : meta.origin === 'System' ? 'System field' : 'Custom field'}</div>
+        <label class="f">Label</label><input type="text" value="${esc(ff.label || meta.label || '')}" data-change="fbProp" data-p="label" ${dis}>
+        <div class="cfg-line"><span class="t">Required</span>${sw('', ff.required, `data-change="fbPropB" data-p="required"`)}</div>
+        <div class="cfg-line"><span class="t">Hide field</span>${sw('', ff.hidden, `data-change="fbPropB" data-p="hidden"`)}</div>
+        <div class="cfg-line"><span class="t">Read only</span>${sw('', ff.disabled, `data-change="fbPropB" data-p="disabled"`)}</div>
+        <label class="f" style="margin-top:8px">Default value</label><input type="text" value="${esc(ff.default || '')}" data-change="fbProp" data-p="default" ${dis}>
+        <label class="f" style="margin-top:8px">Width</label>${sel('', [{ v: 12, l: 'Full width' }, { v: 6, l: 'Half width' }, { v: 4, l: 'One third' }], gridSpan(ff, meta), `data-change="fbProp" data-p="span" ${dis}`)}
+        ${isNew ? `<div class="pink-label">Field definition (proposed)</div><label class="f">Field type</label>${sel('', F.FIELD_TYPES_EDIT, meta.type, `data-change="fbNewProp" data-p="type" ${dis}`)}
+          ${/Picklist/.test(meta.type) ? `<label class="f" style="margin-top:8px">Options (one per line)</label><textarea rows="4" data-change="fbNewProp" data-p="options" ${dis}>${esc((meta.options || []).map(o => o.value || o).join('\n'))}</textarea>` : ''}
+          ${/Lookup/.test(meta.type) ? `<label class="f" style="margin-top:8px">Lookup module</label>${sel('', [{ v: '', l: '— select —' }].concat(F.allModules().filter(x => x.inUse).sort((a, b) => a.label.localeCompare(b.label)).map(x => ({ v: x.name, l: x.label }))), meta.lookup, `data-change="fbNewProp" data-p="lookup" ${dis}`)}` : ''}
+          <label class="f" style="margin-top:8px">Validation</label><input type="text" value="${esc(meta.validation || '')}" data-change="fbNewProp" data-p="validation" ${dis} placeholder="e.g. must be a future date">` : ''}
+        <label class="f" style="margin-top:8px">Business description</label><textarea rows="3" data-change="fbNewProp" data-p="description" ${dis}>${esc(meta.description || (isNew ? '' : (F.fops(m.name).desc[ff.field] || '')))}</textarea>
+        <label class="f" style="margin-top:8px">Customer requirement for this field</label><textarea rows="2" data-change="fbNewProp" data-p="requirement" ${dis}>${esc(meta.requirement || (isNew ? '' : (F.fops(m.name).req[ff.field] || '')))}</textarea>
+        ${[].concat(rules.visibility || [], rules.mandatory || [], rules.editability || []).length ? `<div class="pink-label">Configured form rules</div><div class="xs">${[].concat(rules.visibility || [], rules.mandatory || [], rules.editability || []).map(esc).join('<br>')}</div>` : ''}
+        ${S.readonly ? '' : `<button class="btn danger sm" style="margin-top:14px" data-act="fbRemoveField">Remove from form</button>`}`;
+    }
+    if (E.sel && E.sel.kind === 'section') { const s = d.sections[E.sel.si]; if (!s) return ''; return `<label class="f">Section name</label><input type="text" value="${esc(s.name)}" data-change="fbSecName" data-si="${E.sel.si}" ${dis}><div class="cfg-line"><span class="t">Show section label</span>${sw('', s.showLabel !== false, 'data-change="fbSecLabel"')}</div><div class="small muted">${s.fields.length} fields</div>`; }
+    const apps = S.baseline ? S.baseline.apps.filter(a => a.enabled) : [];
+    return `<label class="f">Form name</label><input type="text" value="${esc(d.label || '')}" data-change="fbForm" data-p="label" ${dis}><label class="f" style="margin-top:8px">Description</label><textarea rows="2" data-change="fbForm" data-p="description" ${dis}>${esc(d.description || '')}</textarea>
+      <label class="f" style="margin-top:8px">App</label>${sel('', apps.map(a => ({ v: a.link, l: a.name })).concat(apps.find(a => a.link === d.app) ? [] : [{ v: d.app || '', l: appName(d.app) }]), d.app, `data-change="fbForm" data-p="app" ${dis}`)}
+      ${(d.rules || []).length ? `<div class="pink-label">Form rules (${d.rules.length})</div>${d.rules.map(r => `<div class="xs" style="margin-bottom:8px"><b>${esc(r.name)}</b> ${r.enabled ? '' : tag('low', 'Off')}<br>${esc(humanize(r.trigger))}${r.criteria && r.criteria.text ? ' · when ' + esc(r.criteria.text) : ''}<br>${r.actions.map(a => esc(a.type + ': ' + a.fields.join(', '))).join('<br>')}</div>`).join('')}` : ''}
+      <div class="notice" style="margin-top:14px">Select a field or section on the canvas to edit it. Changes stay as unsaved edits until you click Save.</div>`;
+  }
+  function formPreview(m, d) {
+    const ctl = (meta, ff) => { const t = (meta && meta.type) || ''; const ph = ff.default ? esc(ff.default) : ''; if (/Multi Line|Rich/.test(t)) return `<textarea rows="3" disabled>${ph}</textarea>`; if (/Picklist|Lookup/.test(t)) return `<select disabled><option>${ph || (/Lookup/.test(t) ? 'Select ' + esc(((F.moduleView(meta.lookup) || {}).label) || 'record') : 'Select')}</option></select>`; if (t === 'Boolean') return `<label class="switch"><input type="checkbox" disabled ${/true|yes/i.test(ff.default || '') ? 'checked' : ''}><span></span></label>`; const ty = /Date Time/.test(t) ? 'datetime-local' : /Date/.test(t) ? 'date' : /Number|Decimal|Currency/.test(t) ? 'number' : 'text'; return `<input type="${ty}" disabled value="${ph}" placeholder="${/File|Signature|Image/.test(t) ? 'Attach file' : ''}">`; };
+    return `<div class="notice" style="max-width:900px;margin:0 auto 12px">Preview of the ${S.ws.formOps[S.ui.formEdit.key] || S.ui.formEdit.dirty ? 'proposed' : 'existing'} form as a user would see it. ${S.ui.formEdit.dirty ? '<b>Includes unsaved edits.</b>' : ''} This is a representation for the workshop, not a deployed Facilio configuration. Hidden fields are not shown.</div>
+      <div class="preview-form"><div class="pf-h">${esc(d.label || 'Form')}<span class="spacer"></span>${tag('blue', appName(d.app))}</div>
+      ${d.sections.map(s => { const vis = s.fields.filter(f => !f.hidden); if (!vis.length) return ''; return `<div class="pf-sec">${s.showLabel !== false ? `<h4>${esc(s.name)}</h4>` : ''}<div class="pf-grid">${vis.map(ff => { const meta = fieldMeta(m.name, ff.field, d) || {}; const span = gridSpan(ff, meta); return `<div class="pf-f" style="grid-column:span ${span}"><label>${esc(ff.label || meta.label || ff.field)}${ff.required ? ' <span class="req">*</span>' : ''}${meta.status === 'proposed' ? ' ' + tag('proposed', 'Proposed') : ''}</label>${ctl(meta, ff)}</div>`; }).join('')}</div></div>`; }).join('')}
+      <div class="pf-foot"><button class="btn" disabled>Cancel</button><button class="btn primary" disabled>Save</button></div></div>`;
+  }
+  const E = () => S.ui.formEdit; const dirty = () => { E().dirty = true; };
+  function rerender() { const c = document.getElementById('fbCanvas'); const st = c ? c.scrollTop : 0; V.render(); const n = document.getElementById('fbCanvas'); if (n) n.scrollTop = st; }
+  ACT.fbMode = a => { E().mode = a.getAttribute('data-v'); V.render(); };
+  ACT.palTab = a => { S.ui.palTab = a.getAttribute('data-v'); V.render(); };
+  ACT.fbSelect = (a, e) => { if (e && e.target.closest('input,button,select,textarea')) return; const k = a.getAttribute('data-kind'); E().sel = k === 'field' ? { kind: k, si: +a.getAttribute('data-si'), fi: +a.getAttribute('data-fi') } : { kind: k, si: +a.getAttribute('data-si') }; rerender(); };
+  ACT.fbProp = el => { const ff = E().draft.sections[E().sel.si].fields[E().sel.fi]; const p = el.getAttribute('data-p'); ff[p] = p === 'span' ? Number(el.value) : el.value; dirty(); rerender(); };
+  ACT.fbPropB = el => { const ff = E().draft.sections[E().sel.si].fields[E().sel.fi]; ff[el.getAttribute('data-p')] = el.checked; dirty(); rerender(); };
+  ACT.fbNewProp = el => { const d = E().draft; const ff = d.sections[E().sel.si].fields[E().sel.fi]; const p = el.getAttribute('data-p'); const nf = (d.newFields || []).find(x => x.name === ff.field);
+    const v = p === 'options' ? el.value.split('\n').map(x => x.trim()).filter(Boolean).map(x => ({ value: x, stored: x })) : el.value;
+    if (nf) nf[p] = v; else { d.fieldNotes = d.fieldNotes || {}; d.fieldNotes[ff.field] = d.fieldNotes[ff.field] || {}; d.fieldNotes[ff.field][p] = v; }
+    dirty(); if (p === 'type') rerender(); else { const st = document.querySelector('.fb3 .pane-h'); V._noop = st; } };
+  ACT.fbForm = el => { E().draft[el.getAttribute('data-p')] = el.value; dirty(); rerender(); };
+  ACT.fbSecName = el => { E().draft.sections[+el.getAttribute('data-si')].name = el.value; dirty(); rerender(); };
+  ACT.fbSecLabel = el => { E().draft.sections[E().sel.si].showLabel = el.checked; dirty(); rerender(); };
+  ACT.fbAddSection = () => { const d = E().draft; d.sections.push({ name: 'New section', link: 'sec_' + d.sections.length, seq: d.sections.length + 1, fields: [] }); E().sel = { kind: 'section', si: d.sections.length - 1 }; dirty(); rerender(); };
+  ACT.fbSecMove = a => { const d = E().draft; const i = +a.getAttribute('data-si'), j = i + +a.getAttribute('data-d'); if (j < 0 || j >= d.sections.length) return; const s = d.sections.splice(i, 1)[0]; d.sections.splice(j, 0, s); E().sel = null; dirty(); rerender(); };
+  ACT.fbSecDel = async a => { const d = E().draft; const i = +a.getAttribute('data-si'); if (d.sections[i].fields.length && !(await confirmDialog('Remove section', `Remove "${d.sections[i].name}" and its ${d.sections[i].fields.length} fields from this form? The fields stay in the module.`, 'Remove', true))) return; d.sections.splice(i, 1); E().sel = null; dirty(); rerender(); };
+  function targetSection() { const s = E().sel; return s && (s.kind === 'section' || s.kind === 'field') ? s.si : E().draft.sections.length - 1; }
+  function addField(si, fi, field) { const d = E().draft; if (!d.sections.length) d.sections.push({ name: 'Details', link: 'details', seq: 1, fields: [] }); si = Math.min(Math.max(0, si), d.sections.length - 1); const arr = d.sections[si].fields; const at = fi == null ? arr.length : fi; arr.splice(at, 0, field); E().sel = { kind: 'field', si, fi: at }; dirty(); rerender(); }
+  ACT.fbAddExisting = (a, e, si, fi) => { if (S.readonly) return; const f = F.effFields(S.ui.module).find(x => x.name === a.getAttribute('data-field')); if (!f) return; addField(si == null ? targetSection() : si, fi, { field: f.name, label: f.label, required: !!f.required, hidden: false, default: f.default || '' }); };
+  ACT.fbAddNew = (a, e, si, fi) => { if (S.readonly) return; const type = a.getAttribute('data-type'); const d = E().draft; d.newFields = d.newFields || []; let n = 1; let name; do { name = F.slug(type) + '_' + n++; } while (F.effFields(S.ui.module).some(x => x.name === name) || d.newFields.some(x => x.name === name));
+    const label = 'New ' + type; d.newFields.push({ name, label, type, required: false, options: /Picklist/.test(type) ? [{ value: 'Choice 1', stored: 'Choice 1' }, { value: 'Choice 2', stored: 'Choice 2' }] : [], lookup: '', status: 'proposed', origin: 'Custom (proposed)' });
+    addField(si == null ? targetSection() : si, fi, { field: name, label, required: false, hidden: false, default: '' }); };
+  ACT.fbRemoveField = () => { const d = E().draft; const s = E().sel; const ff = d.sections[s.si].fields.splice(s.fi, 1)[0]; d.newFields = (d.newFields || []).filter(x => x.name !== ff.field); E().sel = null; dirty(); rerender(); };
+  ACT.fbDiscard = async () => { if (!(await confirmDialog('Discard edits', 'Discard the unsaved edits to this form?', 'Discard', true))) return; const ed = E(); if (ed.isNew) { S.ui.formEdit = null; } else { const f = F.effForm(ed.key); S.ui.formEdit = { key: ed.key, module: ed.module, draft: F.clone(f), dirty: false, sel: null, mode: 'design' }; } V.render(); };
+  ACT.fbSave = () => {
+    const ed = E(); const d = ed.draft; const m = ed.module; const o = F.fops(m);
+    (d.newFields || []).forEach(nf => { if (!o.add.find(x => x.name === nf.name)) o.add.push({ name: nf.name, label: nf.label, type: nf.type, required: false, options: nf.options || [], lookup: nf.lookup || '', validation: nf.validation || '', status: 'proposed', origin: 'Custom (proposed)' }); else Object.assign(o.add.find(x => x.name === nf.name), { type: nf.type, options: nf.options, lookup: nf.lookup, validation: nf.validation }); if (nf.description) o.desc[nf.name] = nf.description; if (nf.requirement) o.req[nf.name] = nf.requirement; });
+    Object.entries(d.fieldNotes || {}).forEach(([f, n]) => { if (n.description !== undefined) o.desc[f] = n.description; if (n.requirement !== undefined) o.req[f] = n.requirement; });
+    d.sections.forEach(s => s.fields.forEach(ff => { const nf = (d.newFields || []).find(x => x.name === ff.field); if (nf) nf.label = ff.label || nf.label; const add = o.add.find(x => x.name === ff.field); if (add && ff.label) add.label = ff.label; }));
+    const out = { key: ed.key, name: d.name, module: m, label: d.label, description: d.description || '', app: d.app, sections: F.clone(d.sections) };
+    S.ws.formOps[ed.key] = out; ed.dirty = false; ed.isNew = false; d.newFields = []; d.fieldNotes = {};
+    F.changed('Form layout saved', (F.moduleView(m) || {}).label + ' › ' + (d.label || d.name)); toast('Form saved as a workshop proposal');
+  };
+  ACT.fbRevert = async () => { if (!(await confirmDialog('Revert to source', 'Remove the proposed layout changes and show the form as configured in the source?', 'Revert', true))) return; const ed = E(); delete S.ws.formOps[ed.key]; S.ui.formEdit = { key: ed.key, module: ed.module, draft: F.clone(F.effForm(ed.key)), dirty: false, sel: null, mode: 'design' }; F.changed('Form reverted to source', ed.key); };
+  ACT.fbDeleteForm = async () => { if (!(await confirmDialog('Delete form', 'Delete this proposed form?', 'Delete', true))) return; const ed = E(); delete S.ws.formOps[ed.key]; S.ui.formEdit = null; F.changed('Proposed form deleted', ed.key); };
+  ACT.closeForm = async () => { if (E() && E().dirty && !(await confirmDialog('Unsaved edits', 'Leave the form builder? Unsaved edits will be lost.', 'Leave', true))) return; S.ui.formEdit = null; V.render(); };
+  V.beforeLeaveForm = () => !(S.ui.formEdit && S.ui.formEdit.dirty) || confirm('You have unsaved form edits. Leave anyway?');
+  function mountBuilder() {
+    const c = document.getElementById('fbCanvas'); if (!c || S.readonly) return;
+    V.beforeLeave = () => { if (S.ui.formEdit && S.ui.formEdit.dirty && !confirm('You have unsaved form edits. Leave anyway?')) return false; S.ui.formEdit = null; return true; };
+    const pq = document.getElementById('palq'); if (pq) pq.addEventListener('input', () => { S.ui.palq = pq.value; clearTimeout(V._pq); V._pq = setTimeout(() => { V.render(); const n = document.getElementById('palq'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 200); });
+    let drag = null;
+    document.querySelectorAll('[data-pal-field],[data-pal-new]').forEach(el => el.addEventListener('dragstart', e => { drag = { pal: el }; e.dataTransfer.effectAllowed = 'copy'; try { e.dataTransfer.setData('text/plain', 'x'); } catch (er) { } }));
+    c.addEventListener('dragstart', e => { const el = e.target.closest('.ff'); if (!el) return; drag = { si: +el.dataset.si, fi: +el.dataset.fi }; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', 'x'); } catch (er) { } });
+    c.addEventListener('dragover', e => { if (!drag) return; e.preventDefault(); c.querySelectorAll('.drag-over').forEach(x => x.classList.remove('drag-over')); const el = e.target.closest('.ff') || e.target.closest('[data-drop-sec]'); if (el) el.classList.add('drag-over'); });
+    c.addEventListener('drop', e => { if (!drag) return; e.preventDefault(); const tgt = e.target.closest('.ff'); const secEl = e.target.closest('[data-drop-sec]'); if (!secEl) { drag = null; return; } const ts = +secEl.getAttribute('data-drop-sec'); let ti = tgt ? +tgt.dataset.fi : null;
+      if (drag.pal) { const p = drag.pal; drag = null; if (p.hasAttribute('data-pal-field')) ACT.fbAddExisting(p, null, ts, ti); else ACT.fbAddNew(p, null, ts, ti); return; }
+      const d = E().draft; const item = d.sections[drag.si].fields.splice(drag.fi, 1)[0]; if (ti == null) ti = d.sections[ts].fields.length; else if (ts === drag.si && drag.fi < ti) ti--; d.sections[ts].fields.splice(ti, 0, item); E().sel = { kind: 'field', si: ts, fi: ti }; drag = null; dirty(); rerender(); });
+  }
+
+  // ---------- Fields (FieldsList.vue) ----------
+  TABS.fields = m => {
+    const rules = T.fieldRules(m.name); const fq = (S.ui.fq || '').toLowerCase(); const ff = S.ui.ff || 'all';
+    let fields = F.effFields(m.name);
+    if (ff === 'form') fields = fields.filter(f => (f.onForms || []).length); else if (ff === 'model') fields = fields.filter(f => !(f.onForms || []).length); else if (ff === 'changes') fields = fields.filter(f => f.status !== 'existing'); else if (ff === 'mand') fields = fields.filter(f => f.required); else if (ff === 'custom') fields = fields.filter(f => !/^System/.test(f.origin));
+    if (fq) fields = fields.filter(f => (f.label + ' ' + f.name + ' ' + f.type).toLowerCase().includes(fq));
+    const rankF = f => f.status === 'proposed' ? 0 : (f.onForms || []).length ? 1 : 2; fields = fields.slice().sort((a, b) => rankF(a) - rankF(b));
+    const opt = f => f.options && f.options.length ? f.options.map(o => typeof o === 'string' ? o : o.value).slice(0, 6).join(', ') + (f.options.length > 6 ? ` (+${f.options.length - 6})` : '') : f.lookup ? '→ ' + ((F.moduleView(f.lookup) || {}).label || f.lookup) : f.enumName ? 'System list: ' + humanize(f.enumName) : '';
+    const typeTag = f => f.status === 'proposed' ? tag('proposed', 'Proposed') : /^System/.test(f.origin) ? tag('system', 'System') : tag('custom', 'Custom');
+    return `<div class="row" style="margin-bottom:12px"><div class="search" style="width:240px">${ico('search')}<input type="search" id="fq" placeholder="Search" value="${esc(S.ui.fq || '')}"></div>
+      <div class="seg">${[['all', 'All'], ['form', 'On a template'], ['model', 'Data model only'], ['mand', 'Mandatory'], ['custom', 'Custom'], ['changes', 'Workshop changes']].map(([v, l]) => `<button class="${ff === v ? 'on' : ''}" data-act="fieldFilter" data-v="${v}">${l}</button>`).join('')}</div><span class="small muted">${fields.length} fields</span><span class="spacer"></span>
+      ${S.readonly ? '' : `<button class="btn primary" data-act="editField" data-module="${esc(m.name)}" data-field="">New custom field</button>`}</div>
+      <div class="tbl-wrap" style="max-height:calc(100vh - 300px)"><table class="tbl"><thead><tr><th>Label</th><th>Field Type</th><th>Type</th><th>Link Name</th><th>Mandatory</th><th>Options / Lookup</th><th>Rules</th><th>Used in</th><th>Status</th></tr></thead><tbody>
+      ${fields.map(f => { const r = rules[f.name] || {}; const forms = f.onForms || []; const rl = [f.visibility, f.editability, f.validation, ...(r.visibility || []), ...(r.mandatory || []), ...(r.editability || [])].filter(Boolean);
+        return `<tr class="click ${f.status === 'removed' ? 'removed' : ''}" data-act="editField" data-module="${esc(m.name)}" data-field="${esc(f.name)}"><td style="width:200px"><b>${esc(f.label)}</b>${f.description ? `<div class="xs muted">${esc(f.description.slice(0, 80))}</div>` : ''}</td><td>${esc(f.type)}</td><td>${typeTag(f)}</td><td class="mono xs">${esc(f.name)}</td>
+        <td>${f.required ? tag('mand', 'Yes') : (r.mandatory && r.mandatory.length ? tag('tbc', 'Conditional') : '<span class="dash">No</span>')}</td><td class="small" style="max-width:220px">${esc(opt(f)) || '<span class="dash">---</span>'}</td><td class="xs" style="max-width:240px">${esc(rl.slice(0, 3).join('; ')) || '<span class="dash">---</span>'}</td>
+        <td class="xs">${forms.length ? forms.length + ' template' + (forms.length > 1 ? 's' : '') : '<span class="muted">Data model only</span>'}${f.formOnly ? '<div>' + tag('tbc', 'Platform field') + '</div>' : ''}</td><td>${statusTag(f.status)}</td></tr>`; }).join('') || '<tr><td colspan="9" class="empty">No Fields available</td></tr>'}
+      </tbody></table></div>`;
+  };
+  function mountFields() { const q = document.getElementById('fq'); if (q) q.addEventListener('input', () => { S.ui.fq = q.value; clearTimeout(V._fq); V._fq = setTimeout(() => { V.render(); const n = document.getElementById('fq'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 250); }); }
+  ACT.fieldFilter = a => { S.ui.ff = a.getAttribute('data-v'); V.render(); };
+  ACT.editField = a => {
+    const mName = a.getAttribute('data-module'); const fName = a.getAttribute('data-field');
+    const f = fName ? F.effFields(mName).find(x => x.name === fName) : { label: '', name: '', type: 'Single Line Text', required: false, options: [], lookup: '', status: 'proposed', origin: 'Custom (proposed)' };
+    if (!f) return; const isNew = !fName; const isProposed = f.status === 'proposed'; const r = T.fieldRules(mName)[f.name] || {};
+    const modOpts = [{ v: '', l: '— none —' }].concat(F.allModules().filter(x => x.inUse).sort((x, y) => x.label.localeCompare(y.label)).map(x => ({ v: x.name, l: x.label + ' (' + x.name + ')' })));
+    const opts = (f.options || []).map(o => typeof o === 'string' ? o : (o.stored && o.stored !== o.value ? o.value + ' = ' + o.stored : o.value)).join('\n');
+    const base = f.baseline; const dis = S.readonly ? 'disabled' : '';
+    const usage = (f.onForms || []).map(k => { const fm = F.effForm(k); return fm ? (fm.label || fm.name) + ' (' + appName(fm.app) + ')' : k; });
+    const typeChooser = isNew ? `<label class="f">Field Type</label><div class="type-grid" id="fe_types">${QUICK_TYPES.map(([t, h], i) => `<button type="button" class="type-opt${i === 0 ? ' on' : ''}" data-act="pickType" data-t="${esc(t)}"><b>${esc(t)}</b><span>${esc(h)}</span></button>`).join('')}</div><input type="hidden" id="fe_type" value="Single Line Text">` : `<label class="f">Field Type</label>${sel('', F.FIELD_TYPES_EDIT.indexOf(f.type) >= 0 ? F.FIELD_TYPES_EDIT : [f.type].concat(F.FIELD_TYPES_EDIT), f.type, `id="fe_type" ${dis}`)}`;
+    const body = `${base ? `<div class="notice" style="margin-bottom:14px"><div><b>Source configuration:</b> ${esc(base.label)} · ${esc(base.type)} · ${base.required ? 'mandatory' : 'optional'}${base.lookup ? ' · lookup to ' + esc(base.lookup) : ''}<div class="xs muted">${esc(base.ref.file)}${base.ref.uid ? ' #' + esc(base.ref.uid) : ''}${base.note ? ' — ' + esc(base.note) : ''}</div></div></div>` : `<div class="notice" style="margin-bottom:14px">New fields are workshop proposals, kept separate from the source configuration.</div>`}
+      <div class="fgrid"><div class="full"><label class="f">Field name <span class="req">*</span></label><input type="text" id="fe_label" value="${esc(f.label)}" placeholder="Enter Field Name" ${dis}></div>
+      <div class="full">${typeChooser}</div>
+      <div><label class="f">Link name</label><input type="text" id="fe_name" value="${esc(f.name)}" ${isNew || isProposed ? dis : 'disabled'} placeholder="generated from name"></div><div><label class="f">Lookup module</label>${sel('', modOpts, f.lookup, `id="fe_lookup" ${dis}`)}</div>
+      <div><label class="chk"><input type="checkbox" id="fe_req" ${f.required ? 'checked' : ''} ${dis}> Mandatory</label></div><div><label class="f">Default value</label><input type="text" id="fe_def" value="${esc(f.default || '')}" ${dis}></div>
+      <div class="full"><label class="f">Dropdown options (one per line; "Label = stored value" if they differ)</label><textarea id="fe_opts" rows="4" ${dis}>${esc(opts)}</textarea></div>
+      <div class="full"><label class="f">Visibility conditions</label><input type="text" id="fe_vis" value="${esc(f.visibility || '')}" placeholder="e.g. Shown only when Category is Electrical" ${dis}>${(r.visibility || []).length ? `<div class="xs muted" style="margin-top:3px">Configured: ${esc(r.visibility.concat(r.mandatory || []).join('; '))}</div>` : ''}</div>
+      <div class="full"><label class="f">Editability restrictions</label><input type="text" id="fe_edit" value="${esc(f.editability || '')}" placeholder="e.g. Read-only after approval" ${dis}>${(r.editability || []).length ? `<div class="xs muted" style="margin-top:3px">Configured: ${esc(r.editability.join('; '))}</div>` : ''}</div>
+      <div class="full"><label class="f">Validation rules</label><input type="text" id="fe_val" value="${esc(f.validation || '')}" ${dis}></div>
+      <div class="full"><label class="f">Business description</label><textarea id="fe_desc" rows="3" ${dis}>${esc(f.description || '')}</textarea></div>
+      <div class="full"><label class="f">Customer requirement for this field</label><textarea id="fe_reqtxt" rows="2" ${dis}>${esc(f.requirement || '')}</textarea></div>
+      ${usage.length ? `<div class="full"><label class="f">Field usage</label><div class="small">${usage.map(esc).join('<br>')}</div></div>` : ''}</div>`;
+    const foot = S.readonly ? `<button class="btn" data-act="closeDrawer">Close</button>` : `${!isNew && !isProposed ? `<button class="btn danger" data-act="toggleRemoveField" data-module="${esc(mName)}" data-field="${esc(f.name)}">${f.status === 'removed' ? 'Undo removal' : 'Propose removal'}</button>` : ''}${isProposed && !isNew ? `<button class="btn danger" data-act="deleteField" data-module="${esc(mName)}" data-field="${esc(f.name)}">Delete</button>` : ''}${!isNew && !isProposed && f.status === 'modified' ? `<button class="btn" data-act="revertField" data-module="${esc(mName)}" data-field="${esc(f.name)}">Revert</button>` : ''}<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="saveField" data-module="${esc(mName)}" data-field="${esc(fName || '')}">Save</button>`;
+    drawer(isNew ? 'New custom field' : 'Edit custom field', body, foot);
+  };
+  ACT.pickType = a => { document.querySelectorAll('#fe_types .type-opt').forEach(b => b.classList.toggle('on', b === a)); document.getElementById('fe_type').value = a.getAttribute('data-t'); };
+  ACT.saveField = a => {
+    const mName = a.getAttribute('data-module'); const fName = a.getAttribute('data-field'); const o = F.fops(mName); const v = id => document.getElementById(id).value.trim();
+    const label = v('fe_label'); if (!label) { toast('Please enter a field name'); return; }
+    const parseOpts = s => s.split('\n').map(x => x.trim()).filter(Boolean).map(x => { const [l, sv] = x.split('='); return { value: l.trim(), stored: (sv || l).trim() }; });
+    const data = { label, type: v('fe_type'), lookup: v('fe_lookup'), required: document.getElementById('fe_req').checked, default: v('fe_def'), options: parseOpts(document.getElementById('fe_opts').value), visibility: v('fe_vis'), editability: v('fe_edit'), validation: v('fe_val') };
+    if (/Lookup/.test(data.type) && !data.lookup) { toast('Choose the lookup module'); return; }
+    const desc = document.getElementById('fe_desc').value.trim(); const reqtxt = document.getElementById('fe_reqtxt').value.trim();
+    const existing = fName && o.add.find(x => x.name === fName);
+    if (!fName || existing) {
+      const name = v('fe_name') || F.slug(label); if (!/^[a-z][a-z0-9_]*$/i.test(name)) { toast('Link name may contain letters, numbers and underscores only'); return; }
+      if (F.effFields(mName).some(x => x.name === name && x.name !== fName)) { toast('A field with this link name already exists'); return; }
+      if (existing) { Object.assign(existing, data, { name }); if (name !== fName) { delete o.desc[fName]; delete o.req[fName]; } } else o.add.push(Object.assign({ name, origin: 'Custom (proposed)', status: 'proposed' }, data));
+      o.desc[name] = desc; o.req[name] = reqtxt; F.changed(existing ? 'Proposed field updated' : 'Proposed field added', (F.moduleView(mName) || {}).label + ' › ' + label);
+    } else {
+      const base = F.effFields(mName).find(x => x.name === fName).baseline; const mod = {};
+      const cmp = { label: base.label, type: base.type, lookup: base.lookup || '', required: !!base.required, default: base.default || '', options: (base.options || []).map(x => ({ value: x.value, stored: x.value })), visibility: '', editability: '', validation: '' };
+      Object.keys(data).forEach(k => { if (JSON.stringify(data[k]) !== JSON.stringify(cmp[k])) mod[k] = data[k]; });
+      if (Object.keys(mod).length) o.modify[fName] = mod; else delete o.modify[fName];
+      o.desc[fName] = desc; o.req[fName] = reqtxt; F.changed(Object.keys(mod).length ? 'Field modification proposed' : 'Field description captured', (F.moduleView(mName) || {}).label + ' › ' + label);
+    }
+    closeDrawer();
+  };
+  ACT.toggleRemoveField = async a => { const mod = a.getAttribute('data-module'); const o = F.fops(mod); const n = a.getAttribute('data-field'); const i = o.remove.indexOf(n);
+    if (i < 0) { const key = mod + '.' + n; const refs = S.ws.requirements.filter(r => r.status !== 'Rejected' && (r.fields || []).includes(key)).map(r => r.id).concat(((V.items && V.items.ready(['usecase'])) ? V.items.list('usecase') : []).filter(u => (u.modules || []).includes(mod) && new RegExp('\\b' + n + '\\b', 'i').test((u.fieldsReq || '') + ' ' + (u.rules || ''))).map(u => V.useCaseId(u)));
+      if (refs.length && !(await confirmDialog('Field is in use', `This field is used by ${refs.join(', ')}. Removing it from use will leave those records pointing at a field that is no longer used.`, 'Remove anyway', true))) return; }
+    if (i >= 0) o.remove.splice(i, 1); else o.remove.push(n); closeDrawer(); F.changed(i >= 0 ? 'Field removal undone' : 'Field removal proposed', n); };
+  ACT.deleteField = a => { const o = F.fops(a.getAttribute('data-module')); const n = a.getAttribute('data-field'); o.add = o.add.filter(x => x.name !== n); delete o.desc[n]; delete o.req[n]; closeDrawer(); F.changed('Proposed field deleted', n); };
+  ACT.revertField = a => { const o = F.fops(a.getAttribute('data-module')); delete o.modify[a.getAttribute('data-field')]; closeDrawer(); F.changed('Field reverted to source', a.getAttribute('data-field')); };
+
+  // ---------- Buttons (custom buttons + cross-module links) ----------
+  TABS.buttons = m => {
+    const B = S.baseline; const btns = B ? B.buttons.filter(b => b.module === m.name) : []; const links = V.crossLinks ? V.crossLinks(m.name) : [];
+    return `<div class="pink-label" style="margin-top:0">Cross-module links &amp; custom actions</div><div class="small muted" style="margin-bottom:8px">Actions that start a record in another module or run a process without a normal status change. Verified from the configuration where possible; disabled actions are shown as disabled.</div>${V.crossLinkTable ? V.crossLinkTable(m.name) : ''}
+      <div class="pink-label">Custom buttons (configuration)</div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Name</th><th>Button Type</th><th>Position</th><th>Action</th><th>Who</th><th>Status</th></tr></thead><tbody>${btns.map(b => `<tr><td><b>${esc(b.name)}</b><div class="xs muted mono">${esc(b.ref.file)} #${esc(b.ref.uid)}</div></td><td>${esc(humanize(b.buttonType))}</td><td>${esc(humanize(b.position))}</td><td class="small">${esc(b.actionType || '')}${b.connectedApp ? ' · connected app ' + esc(b.connectedApp) : ''}${b.targetModule ? ' · creates ' + esc((F.moduleView(b.targetModule) || {}).label || b.targetModule) : ''}</td><td class="small">${esc(b.performers.map(p => p.name).join(', ') || 'User / Role to Be Confirmed')}</td><td>${b.enabled ? tag('green', 'Enabled') : tag('low', 'Disabled')}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">No custom buttons configured.</td></tr>'}</tbody></table></div>`;
+  };
+
+  // ---------- Related ----------
+  TABS.related = m => {
+    const fields = F.effFields(m.name).filter(f => f.lookup && f.status !== 'removed'); const B = S.baseline; const inbound = [];
+    if (B) Object.values(B.modules).forEach(o => o.fields.forEach(f => { if (f.lookup === m.name && o.name !== m.name) inbound.push({ module: o.name, label: o.label, field: f.label, inUse: o.inUse }); }));
+    S.ws.customModules.forEach(c => F.effFields(c.name).forEach(f => { if (f.lookup === m.name) inbound.push({ module: c.name, label: c.label, field: f.label, inUse: true, proposed: true }); }));
+    const rels = B ? B.relationships.filter(r => r.fromModule === m.name || r.toModule === m.name) : [];
+    return `<div class="grid g2"><div class="card"><div class="card-h"><h3>Lookups from this module</h3><span class="muted small">${fields.length}</span></div><div class="tbl-wrap" style="border:0;max-height:520px"><table class="tbl"><thead><tr><th>Field</th><th>Related module</th><th>Status</th></tr></thead><tbody>${fields.map(f => `<tr><td>${esc(f.label)}<div class="mono xs muted">${esc(f.name)}</div></td><td><a href="#" data-act="openModule" data-module="${esc(f.lookup)}">${esc((F.moduleView(f.lookup) || {}).label || f.lookup)}</a></td><td>${statusTag(f.status)}${f.formOnly ? ' ' + tag('inferred', 'from template') : ''}</td></tr>`).join('') || '<tr><td colspan="3" class="empty">None</td></tr>'}</tbody></table></div></div>
+      <div class="card"><div class="card-h"><h3>Modules referencing this module</h3><span class="muted small">${inbound.length}</span></div><div class="tbl-wrap" style="border:0;max-height:520px"><table class="tbl"><thead><tr><th>Module</th><th>Through field</th></tr></thead><tbody>${inbound.sort((a, b) => b.inUse - a.inUse).map(i => `<tr><td><a href="#" data-act="openModule" data-module="${esc(i.module)}">${esc(i.label)}</a> ${i.inUse ? '' : tag('low', 'not in use')} ${i.proposed ? tag('proposed', 'Proposed') : ''}</td><td>${esc(i.field)}</td></tr>`).join('') || '<tr><td colspan="2" class="empty">None</td></tr>'}</tbody></table></div></div></div>
+      ${rels.length ? `<div class="card" style="margin-top:16px"><div class="card-h"><h3>Relationships</h3></div><div class="card-b small">${rels.map(r => `<div><b>${esc(r.name)}</b>: ${esc(r.forward)} / ${esc(r.reverse)} — ${esc(r.description)}</div>`).join('')}</div></div>` : ''}`;
+  };
+
+  // ---------- Automation ----------
+  TABS.automation = m => {
+    const B = S.baseline; if (!B) return ''; const n = m.name; const en = x => x.enabled ? tag('green', 'Enabled') : tag('low', 'Disabled');
+    const sec = (title, rows, head) => rows.length ? `<div class="pink-label">${esc(title)} (${rows.length})</div><div class="tbl-wrap"><table class="tbl"><thead><tr>${head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>` : '';
+    const ref = r => `<div class="xs muted mono">${esc(r.file)}${r.uid ? ' #' + esc(r.uid) : ''}</div>`;
+    return (sec('Approval rules', B.approvals.filter(a => a.module === n).map(a => `<tr><td><b>${esc(a.name)}</b>${ref(a.ref)}</td><td class="small">${esc(a.criteria ? a.criteria.text : '')}</td><td class="small">${esc(a.approvers.map(x => x.type === 'ROLE' ? x.name : 'User in ' + humanize(x.name) + ' field').join(', ') || 'User / Role to Be Confirmed')}<div class="xs muted">${a.allRequired ? 'All approvers' : 'Any one approver'}</div></td><td class="small">${esc(F.actionsText(a.onApprove).join('; '))}</td><td class="small">${esc(F.actionsText(a.onReject).join('; '))}</td><td>${en(a)}</td></tr>`), ['Approval', 'Criteria', 'Approvers', 'On approve', 'On reject', 'Status']) +
+      sec('Workflows', B.workflowRules.filter(r => r.module === n).map(r => `<tr><td><b>${esc(r.name)}</b>${ref(r.ref)}</td><td class="small">${esc(r.eventLabel)}${r.fieldsWatched.length ? ' (' + esc(r.fieldsWatched.join(', ')) + ')' : ''}</td><td class="small">${esc(r.criteria ? r.criteria.text : '')}</td><td class="small">${esc(F.actionsText(r.actions).join('; '))}</td><td>${en(r)}</td></tr>`), ['Workflow', 'Trigger', 'Condition', 'What it does', 'Status']) +
+      sec('Notifications', B.notifications.filter(r => r.module === n).map(r => `<tr><td><b>${esc(r.name)}</b>${ref(r.ref)}</td><td class="small">${esc(r.eventLabel)}</td><td class="small">${esc(r.criteria ? r.criteria.text : '')}</td><td class="small">${esc(r.actions.types.map(humanize).join(', '))}</td><td class="small">${esc(r.actions.recipients.join(', ') || 'To be confirmed')}</td><td>${en(r)}</td></tr>`), ['Notification', 'Trigger', 'Condition', 'Channels', 'Recipients', 'Status']) +
+      sec('SLA policies', B.sla.filter(r => r.module === n).map(r => `<tr><td><b>${esc(r.name)}</b>${ref(r.ref)}</td><td class="small">${esc(r.criteria ? r.criteria.text : '')}</td><td class="small">${esc(r.commitments.map(c => c.name + ': ' + c.entities.map(e => e.entity + ' ' + F.secs(e.seconds)).join(', ')).join('; '))}</td><td>${en(r)}</td></tr>`), ['Policy', 'Applies when', 'Commitments', 'Status']) +
+      sec('Form rules', B.formRules.filter(r => r.module === n).map(r => `<tr><td><b>${esc(r.name)}</b>${ref(r.ref)}</td><td class="small mono">${esc(r.form)}</td><td class="small">${esc(humanize(r.trigger))}${r.criteria && r.criteria.text ? ' · ' + esc(r.criteria.text) : ''}</td><td class="small">${r.actions.map(x => esc(x.type + ': ' + x.fields.join(', '))).join('<br>')}</td><td>${en(r)}</td></tr>`), ['Rule', 'Template', 'When', 'Actions', 'Status'])) || '<div class="empty">No automation configured for this module.</div>';
+  };
+
+  // ---------- Requirements / intent ----------
+  TABS.requirements = m => {
+    const p = 'modules.' + m.name + '.';
+    return `<div class="grid g2" style="margin-bottom:16px"><div class="card"><div class="card-h"><h3>Business intent (captured in workshop)</h3></div><div class="card-b fgrid">
+      <div class="full"><label class="f">Business purpose — why the customer needs this module</label>${ta(p + 'purpose', '', 3)}</div><div class="full"><label class="f">Business objective</label>${ta(p + 'objective', '', 2)}</div>
+      <div><label class="f">Current process</label>${ta(p + 'current', '', 3)}</div><div><label class="f">Desired future process</label>${ta(p + 'future', '', 3)}</div>
+      <div><label class="f">Business problem</label>${ta(p + 'problem', '', 2)}</div><div><label class="f">Expected outcome</label>${ta(p + 'outcome', '', 2)}</div>
+      <div class="full"><label class="f">Participating users and departments</label>${inp(p + 'users')}</div><div class="full"><label class="f">Exceptions, assumptions, exclusions</label>${ta(p + 'exceptions', '', 2)}</div>
+      <div class="full"><label class="f">Open questions (one per line)</label>${ta(p + 'questions', '', 2)}</div></div></div>
+      <div class="card"><div class="card-h"><h3>Generated module description</h3><span class="muted xs">Used in the user guide and BRD</span></div><div class="card-b prose small">${esc(T.modulePurpose(m.name))}</div><div class="card-b small" style="border-top:1px solid var(--fc-border)"><b>Configuration evidence</b><ul style="margin:6px 0 0;padding-left:18px">${m.priorityReasons.map(r => `<li>${esc(r)}</li>`).join('') || '<li class="muted">None</li>'}</ul></div></div></div>
+      <div class="row" style="margin-bottom:10px"><h3 style="flex:1">Linked requirements</h3>${S.readonly ? '' : `<button class="btn primary" data-act="newReq" data-module="${esc(m.name)}">${ico('plus')}Requirement</button>`}</div>${V.reqTable(S.ws.requirements.filter(r => (r.modules || []).includes(m.name)))}`;
+  };
+
+  // ---------- Review ----------
+  TABS.review = m => {
+    const areas = [['overall', 'Module'], ['form', 'Forms & fields'], ['flow', 'State flows'], ['roles', 'Roles & permissions']];
+    const sessions = (F.doc('planner').sessions || []).filter(s => (s.modules || []).includes(m.name));
+    return `<div class="notice" style="margin-bottom:14px">Record review decisions here. Checks & Validations uses these records, so a module confirmed as "Reviewed — no changes" is not flagged again just because it keeps the default configuration.</div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Area</th><th>Status</th><th>Reviewer</th><th>Date</th><th>Decision</th><th>Outstanding</th><th></th></tr></thead><tbody>${areas.map(([k, l]) => { const r = rv(m.name, k); return `<tr><td><b>${esc(l)}</b></td><td>${tag(reviewCls(r.status), (REVIEW.find(x => x[0] === r.status) || [0, 'Not started'])[1])}</td><td>${esc(r.reviewer || '')}</td><td>${esc(V.fmtDate(r.date))}</td><td class="small">${esc(r.decision || '')}</td><td class="small">${esc(r.outstanding || '')}</td><td>${S.readonly ? '' : `<button class="btn sm" data-act="editReview" data-module="${esc(m.name)}" data-area="${k}">Update</button>`}</td></tr>`; }).join('')}</tbody></table></div>
+      <div class="pink-label">Requirement sessions covering this module</div>${sessions.length ? sessions.map(s => `<div class="small">${esc(s.title || 'Session ' + s.no)} — ${esc(V.fmtDate(s.date))} ${tag(s.status === 'completed' ? 'green' : 'low', humanize(s.status || 'planned'))}</div>`).join('') : '<div class="small muted">Not assigned to any session in the Requirement Session Planner.</div>'}`;
+  };
+})(window);

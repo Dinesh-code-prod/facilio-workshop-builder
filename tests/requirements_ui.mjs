@@ -1,0 +1,23 @@
+// Requirements area: review queue cards, grouped Checks findings, BRD banner names the blocking findings.
+import { chromium } from '/home/claude/.npm-global/lib/node_modules/playwright/index.mjs'; import fs from 'node:fs';
+const BASE = process.argv[2] || 'http://127.0.0.1:8899/'; const OUT = 'tests/out/';
+let pass = 0, fail = 0; const ok = (c, m) => { if (c) pass++; else { fail++; console.log('FAIL', m); } };
+const browser = await chromium.launch(); const page = await (await browser.newContext({ viewport: { width: 1500, height: 1000 } })).newPage(); const errors = [];
+page.on('pageerror', e => errors.push(e.message));
+await page.goto(BASE); await page.waitForSelector('.auth-box'); await page.click('[data-act=authTab][data-v=signup]');
+await page.fill('#a_name', 'D'); await page.fill('#a_email', 'rq' + Date.now() + '@facilio.com'); await page.fill('#a_pw', 'correct-horse-9'); await page.fill('#a_inv', 'dev-invite'); await page.click('[data-act=doSignup]'); await page.waitForSelector('.projects-page');
+await page.click('.projects-page [data-act=newProject]'); await page.fill('#np_name', 'Req'); await page.fill('#np_cust', 'Acme'); await page.fill('#np_start', '2026-11-01'); await page.fill('#np_team [data-p=name]', 'D'); await page.click('[data-act=createProject]'); await page.waitForSelector('.sidebar', { timeout: 60000 });
+const raw = fs.readFileSync('tests/fixtures/session3.vtt', 'utf8');
+await page.evaluate(async raw => { const V = window.FWBViews; const text = await V.extractTranscriptText(new File([raw], 's.vtt')); const item = { id: 'tr_t', name: 'session3.vtt', modules: [], sessionId: '' }; const d = window.FWB.doc('transcripts'); d.items = [item]; d.candidates = []; V.analyseTranscriptText(item, text); }, raw);
+await page.click('.sidebar [data-view=checks]'); await page.waitForTimeout(600); await page.screenshot({ path: OUT + 'rq_readiness.png' });
+const rows = await page.$$eval('.chk-g tbody tr', r => r.length); const raw2 = await page.evaluate(() => window.FWBViews.validation().filter(x => x.sev !== 'info').length);
+ok(rows > 0 && rows <= 10, `readiness shows grouped findings (${rows} rows for ${raw2} checks)`);
+await page.click('[data-act=chkTab][data-v=validation]'); await page.waitForTimeout(400);
+const grouped = await page.$$eval('.chk-g tbody tr', r => r.length); const total = await page.evaluate(() => window.FWBViews.validation().length);
+ok(grouped < total / 2, `validation grouped: ${grouped} groups for ${total} findings`); await page.screenshot({ path: OUT + 'rq_validation.png' });
+await page.click('.chk-items summary'); await page.waitForTimeout(200); ok(await page.$('.chk-list [data-act=goNav]'), 'group expands to items with links');
+await page.click('input[data-ui=vFlat]'); await page.waitForTimeout(300); ok((await page.$$eval('.tbl tbody tr', r => r.length)) >= total - 1, 'flat view still available');
+await page.click('.sidebar [data-view=brd]'); await page.waitForSelector('.paper', { timeout: 60000 }); const ban = await page.textContent('.notice.err').catch(() => '');
+ok(/Not ready for sign-off/.test(ban) && /Contradiction|blocking/.test(ban), 'BRD banner names blocking findings: ' + ban.slice(0, 160)); await page.screenshot({ path: OUT + 'rq_brd.png' });
+ok(!errors.length, 'no page errors ' + errors.join('; '));
+console.log(`requirements ui: ${pass} passed, ${fail} failed`); await browser.close(); process.exit(fail ? 1 : 0);

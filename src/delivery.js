@@ -1,0 +1,78 @@
+/* Delivery: Build & Test progress per module, UAT sessions and readiness, go-live readiness checklist with a rule-based read.
+   Records live in project_items (build, uat, checklist). The implementation team edits; customers read what is published. */
+(function (root) {
+  'use strict';
+  const F = root.FWB; const { S, esc } = F; const V = root.FWBViews; const ACT = V.ACT; const I = () => V.items;
+  const { tag, drawer, closeDrawer, toast, ico, confirmDialog } = V;
+  const cust = () => V.isCustomer(); const canEdit = () => !cust() && !S.readonly;
+  const BUILD = ['Not started', 'Configuring', 'Internal testing', 'Completed']; const BCLS = { 'Not started': 'low', Configuring: 'blue', 'Internal testing': 'tbc', Completed: 'green' };
+  const SUGGEST = { uat: ['UAT users identified and trained on how to test', 'UAT environment ready with test data loaded', 'Test scripts or scenarios shared with UAT users', 'Roles and permissions checked for each UAT user', 'Defects and feedback process agreed'], golive: ['UAT sign-off received', 'BRD signed off and any change requests closed', 'Master data loaded and checked by the customer', 'Users created and roles assigned', 'Integrations tested end to end', 'Training completed for all user groups', 'Support and escalation contacts shared', 'Cut-over plan and go-live date confirmed', 'Hypercare owners named'] };
+  const tab = () => S.ui.dlTab || 'build';
+  const kinds = ['build', 'uat', 'checklist', 'signoff', 'raid', 'action', 'decision'];
+
+  function checklist(group) { return I().list('checklist').filter(c => c.group === group).sort((a, b) => (a.order || 0) - (b.order || 0) || (a._created || '').localeCompare(b._created || '')); }
+  function checkBlock(group) {
+    const l = checklist(group); const done = l.filter(c => c.done).length; const can = canEdit();
+    return `<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>${group === 'uat' ? 'UAT readiness checklist' : 'Go-live readiness checklist'}</h3><span class="small muted">${done} of ${l.length} done</span>${can ? `<button class="btn sm" data-act="dlSuggest" data-g="${group}">Add suggested items</button><button class="btn sm" data-act="dlCheckAdd" data-g="${group}">${ico('plus')}Add item</button>` : ''}</div>
+      <div class="card-b">${l.length ? `<div class="bar"><i style="width:${Math.round(100 * done / l.length)}%"></i></div>` : ''}${l.map(c => `<div class="chk-row"><label><input type="checkbox" ${c.done ? 'checked' : ''} ${can ? `data-change="dlCheck" data-id="${esc(c.id)}"` : 'disabled'}> <span class="${c.done ? 'dn' : ''}">${esc(c.text)}</span></label>${c.done && c.doneAt ? `<span class="xs muted">${esc(c.doneBy || '')} · ${V.fmtDate(c.doneAt)}</span>` : ''}${can ? `<button class="btn sm ghost" data-act="dlCheckDel" data-id="${esc(c.id)}" aria-label="Remove">${ico('x')}</button>` : ''}</div>`).join('') || '<div class="muted small">No items yet.</div>'}</div></div>`;
+  }
+  ACT.dlTab = a => { S.ui.dlTab = a.getAttribute('data-v'); V.render(); };
+  ACT.dlSuggest = a => V.busy(a, async () => { const g = a.getAttribute('data-g'); const have = new Set(checklist(g).map(c => c.text)); let n = 0; for (const t of SUGGEST[g]) if (!have.has(t)) { await I().put('checklist', I().uid('ck'), { group: g, text: t, done: false, order: n++ }, { silent: true }); } V.render(); });
+  ACT.dlCheckAdd = a => { const g = a.getAttribute('data-g'); drawer('Add checklist item', `<label class="f">Item</label><input type="text" id="ck_t" maxlength="200">`, `<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="dlCheckSave" data-g="${g}">Add</button>`); };
+  ACT.dlCheckSave = a => V.busy(a, async () => { const t = document.getElementById('ck_t').value.trim(); if (!t) { toast('Enter the item'); return; } await I().put('checklist', I().uid('ck'), { group: a.getAttribute('data-g'), text: t, done: false, order: 99 }); closeDrawer(); });
+  ACT.dlCheck = el => V.busy(null, async () => { const c = I().get('checklist', el.getAttribute('data-id')); if (!c) return; await I().put('checklist', c.id, Object.assign({}, c, { done: el.checked, doneAt: el.checked ? V.today() : null, doneBy: el.checked ? S.user.name : null })); });
+  ACT.dlCheckDel = a => V.busy(a, async () => { await I().del('checklist', a.getAttribute('data-id')); });
+
+  // ---------- Build & Test ----------
+  function buildTab() {
+    const mods = F.allModules().filter(m => m.inScope && !(V.controls().hiddenModules || []).includes(m.name)).sort((a, b) => a.label.localeCompare(b.label)); const st = m => (I().get('build', F.slug(m.name)) || {}).status || 'Not started'; const done = mods.filter(m => st(m) === 'Completed').length;
+    const tasks = (V.planRows ? V.planRows() : []).filter(r => !r.top && /build|configur|test|setup|set-up|implementation/i.test(r.t) && !/uat|sign/i.test(r.t)); const today = V.today();
+    return `<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Modules built and tested</h3><span class="small muted">Module ${done} of ${mods.length} completed</span></div><div class="card-b"><div class="bar"><i style="width:${mods.length ? Math.round(100 * done / mods.length) : 0}%"></i></div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Module</th><th>Owner</th><th>Status</th></tr></thead><tbody>${mods.map(m => { const o = V.moduleOwner ? V.moduleOwner(m.name) : null; return `<tr><td><b>${esc(m.label)}</b></td><td class="small">${esc(o ? (o.facilio || o.name || '') : '')}</td><td>${canEdit() ? `<select data-change="dlBuild" data-m="${esc(m.name)}" style="width:150px">${BUILD.map(b => `<option ${st(m) === b ? 'selected' : ''}>${b}</option>`).join('')}</select>` : tag(BCLS[st(m)], st(m))}</td></tr>`; }).join('') || '<tr><td colspan="3" class="muted">No modules are in scope yet.</td></tr>'}</tbody></table></div></div></div>
+      ${tasks.length ? `<div class="card"><div class="card-h"><h3>Build tasks from the plan</h3></div><div class="card-b small">${tasks.map(t => `<div class="ev-row"><span class="ev-d">${V.fmtDate(t.s)}</span><span class="ev-t">${esc(t.t)}</span><span class="muted">to ${V.fmtDate(t.e)}</span>${t.e < today ? tag('tbc', 'Past end date') : ''}</div>`).join('')}</div></div>` : ''}`;
+  }
+  ACT.dlBuild = el => V.busy(null, async () => { const m = el.getAttribute('data-m'); await I().put('build', F.slug(m), { mod: m, status: el.value }); });
+
+  // ---------- UAT ----------
+  const sessions = () => I().list('uat').filter(u => cust() ? u.published : true).sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
+  function uatTab() {
+    const ss = sessions(); const can = canEdit(); const mods = F.allModules().filter(m => m.inScope).sort((a, b) => a.label.localeCompare(b.label)); const open = V.actionsFor ? V.actionsFor : () => [];
+    const demo = m => ss.find(s => s.type === 'demo' && s.mod === m.name);
+    return `<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>UAT demos and training</h3>${can ? `<button class="btn sm" data-act="dlUat">${ico('plus')}Add session</button>` : ''}</div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Date</th><th>Type</th><th>Session</th><th>Module</th><th>Audience / topics</th><th>${cust() ? '' : 'Shown to customer'}</th><th></th></tr></thead><tbody>${ss.map(u => `<tr><td class="small">${V.fmtDate(u.date)}${u.time ? ' ' + esc(u.time) : ''}</td><td>${tag(u.type === 'training' ? 'violet' : 'blue', u.type === 'training' ? 'Training' : 'UAT demo')}</td><td>${esc(u.title)}</td><td class="small">${esc(u.mod ? V.modLabel(u.mod) : '')}</td><td class="small">${esc(u.audience || '')}${u.topics ? '<div class="xs muted">' + esc(u.topics) + '</div>' : ''}</td><td>${cust() ? '' : u.published ? tag('green', 'Published') : tag('low', 'Draft')}</td><td class="acts">${can ? `<button class="btn sm" data-act="dlUat" data-id="${esc(u.id)}">${ico('edit')}</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="7" class="muted">No sessions yet.</td></tr>'}</tbody></table></div></div>
+      <div class="card" style="margin-bottom:14px"><div class="card-h"><h3>What UAT will test, from the workshops</h3></div><div class="card-b small muted" style="padding-bottom:0">Agreed decisions and open actions per module, so UAT users know what to check.</div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Module</th><th>Demo</th><th>Agreed decisions to check</th><th>Open actions</th></tr></thead><tbody>${mods.map(m => { const dec = V.decisionsFor ? V.decisionsFor(m.name) : []; const act = V.actionsFor ? V.actionsFor(m.name).filter(a => a.status !== 'Done') : []; const d = demo(m); return `<tr><td><b>${esc(m.label)}</b></td><td class="small">${d ? V.fmtDate(d.date) : '<span class="muted">Not scheduled</span>'}</td><td class="small">${dec.slice(0, 4).map(x => '• ' + esc(x.text || x.title || '')).join('<br>') || '<span class="muted">None recorded</span>'}</td><td class="small">${act.length}</td></tr>`; }).join('')}</tbody></table></div></div>
+      ${checkBlock('uat')}<div class="card"><div class="card-h"><h3>UAT actions</h3></div><div class="card-b">${V.actionsBlock ? V.actionsBlock('uat') : ''}</div></div>`;
+  }
+  ACT.dlUat = a => { const id = a.getAttribute('data-id'); const u = id ? I().get('uat', id) : { type: 'demo', title: '', date: V.today(), time: '', mod: '', audience: '', topics: '', published: false };
+    drawer(id ? 'Edit session' : 'Add session', `<div class="fgrid"><div><label class="f">Type</label><select id="ua_ty"><option value="demo" ${u.type === 'demo' ? 'selected' : ''}>UAT demo</option><option value="training" ${u.type === 'training' ? 'selected' : ''}>Training</option></select></div><div><label class="f">Module (optional)</label><select id="ua_m">${V.moduleOptions(u.mod, [{ v: '', l: 'None' }])}</select></div><div class="full"><label class="f">Title</label><input type="text" id="ua_t" value="${esc(u.title)}"></div><div><label class="f">Date</label><input type="date" id="ua_d" value="${esc(u.date || '')}"></div><div><label class="f">Time</label><input type="text" id="ua_tm" value="${esc(u.time || '')}" placeholder="10:00–11:30"></div><div class="full"><label class="f">Audience</label><input type="text" id="ua_a" value="${esc(u.audience || '')}"></div><div class="full"><label class="f">Topics</label><textarea id="ua_tp" rows="3">${esc(u.topics || '')}</textarea></div><div class="full"><label><input type="checkbox" id="ua_p" ${u.published ? 'checked' : ''}> Show to the customer</label></div></div>`,
+      `${id ? `<button class="btn danger" data-act="dlUatDel" data-id="${esc(id)}">Delete</button>` : ''}<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="dlUatSave" data-id="${esc(id || '')}">Save</button>`); };
+  ACT.dlUatSave = a => V.busy(a, async () => { const t = document.getElementById('ua_t').value.trim(); if (!t) { toast('Enter a title'); return; } const id = a.getAttribute('data-id') || I().uid('ua'); await I().put('uat', id, { type: document.getElementById('ua_ty').value, mod: document.getElementById('ua_m').value, title: t, date: document.getElementById('ua_d').value, time: document.getElementById('ua_tm').value.trim(), audience: document.getElementById('ua_a').value.trim(), topics: document.getElementById('ua_tp').value.trim(), published: document.getElementById('ua_p').checked }); closeDrawer(); });
+  ACT.dlUatDel = a => V.busy(a, async () => { if (!(await confirmDialog('Delete session', 'Remove this session?', 'Delete', true))) return; await I().del('uat', a.getAttribute('data-id')); closeDrawer(); });
+
+  // ---------- Go-live ----------
+  // Rule-based read, no AI: counts what is still open and says so.
+  function readiness() {
+    const cl = checklist('golive'); const done = cl.filter(c => c.done).length; const pct = cl.length ? Math.round(100 * done / cl.length) : 0; const blockers = [];
+    const so = k => (V.signoffStatus ? V.signoffStatus(k).status : 'notdue');
+    if (so('brd') !== 'signed') blockers.push('The BRD is not signed off'); if (so('uat') !== 'signed') blockers.push('UAT sign-off has not been received');
+    const mods = F.allModules().filter(m => m.inScope); const notBuilt = mods.filter(m => ((I().get('build', F.slug(m.name)) || {}).status || 'Not started') !== 'Completed').length; if (mods.length && notBuilt) blockers.push(notBuilt + ' module(s) are not marked Completed in Build & Test');
+    const risks = (V.openRisks ? V.openRisks() : []).filter(r => /high/i.test(r.impact || '')); if (risks.length) blockers.push(risks.length + ' open high-impact risk(s) or issue(s)');
+    const late = I().list('action').filter(a => a.status !== 'Done' && a.due && a.due < V.today() && (a.mod === 'golive' || a.mod === 'uat')).length; if (late) blockers.push(late + ' overdue go-live or UAT action(s)');
+    if (!cl.length) blockers.push('The go-live checklist has no items yet'); else if (pct < 100) blockers.push((cl.length - done) + ' checklist item(s) still open');
+    const n = blockers.length; const verdict = n === 0 ? 'Ready' : n <= 2 && pct >= 70 ? 'On track' : n <= 4 ? 'At risk' : 'Not ready';
+    return { verdict, blockers, pct };
+  }
+  V.goLiveReadiness = readiness;
+  function goliveTab() {
+    const r = readiness(); const rows = V.planRows ? V.planRows().filter(x => !x.top && /go.?live|hyper|training|cut.?over|data clean/i.test(x.t)) : []; const cls = { Ready: 'green', 'On track': 'blue', 'At risk': 'tbc', 'Not ready': 'red' }[r.verdict];
+    return `<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Go-live readiness</h3>${tag(cls, r.verdict)}</div><div class="card-b small">${r.blockers.length ? `<ul style="margin:0;padding-left:18px">${r.blockers.map(b => `<li>${esc(b)}</li>`).join('')}</ul>` : 'Nothing is blocking go-live.'}<div class="xs muted" style="margin-top:8px">Rule: Ready when nothing is open. On track with up to 2 open points and 70% of the checklist done. At risk with up to 4. Otherwise Not ready. This is a count of recorded items, not a prediction.</div></div></div>
+      ${rows.length ? `<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Dates from the plan</h3></div><div class="card-b small">${rows.map(t => `<div class="ev-row"><span class="ev-d">${V.fmtDate(t.s)}</span><span class="ev-t">${esc(t.t)}</span></div>`).join('')}</div></div>` : ''}${checkBlock('golive')}<div class="card"><div class="card-h"><h3>Go-live actions</h3></div><div class="card-b">${V.actionsBlock ? V.actionsBlock('golive') : ''}</div></div>`;
+  }
+
+  V.delivery = { html() {
+    I().load(kinds); const t = tab();
+    const head = `<div class="page-header"><div class="t"><h1>Delivery</h1><p>Build and test progress, UAT and go-live readiness.</p></div></div>`;
+    const tabs = `<div class="ob-tabs">${[['build', 'Build & Test'], ['uat', 'UAT'], ['golive', 'Go-live']].map(([k, l]) => `<button class="${t === k ? 'on' : ''}" data-act="dlTab" data-v="${k}">${l}</button>`).join('')}</div>`;
+    if (!I().ready(['build', 'uat', 'checklist'])) return head + `<div class="page-body">${tabs}<div class="empty">Loading…</div></div>`;
+    return head + `<div class="page-body">${tabs}${t === 'uat' ? uatTab() : t === 'golive' ? goliveTab() : buildTab()}</div>`;
+  }, mount() { I().load(kinds); } };
+})(typeof window !== 'undefined' ? window : globalThis);
