@@ -11,7 +11,7 @@
   const o = doc.createElement('div'); o.className = 'intro'; o.setAttribute('role', 'presentation');
   const MODS = ['Work Orders', 'Assets', 'Spaces', 'Energy', 'Sustainability', 'Visitors', 'Inventory', 'Workplace', 'Preventive Maintenance', 'Sensors', 'Dashboards', 'AI Insights'];
   const chips = n => MODS.concat(MODS).map((m, i) => '<span><i></i>' + m + '</span>').join('');
-  const STEPS = [['Contract', 'Scope'], ['Workshops', 'Walkthrough'], ['Requirements', 'Capture'], ['BRD', 'Document'], ['UAT', 'Sign-off'], ['Go-live', 'Launch']];
+  const STEPS = [['Kick-off', 'Discover'], ['Workshops', 'Walkthrough'], ['Requirements', 'Capture'], ['BRD', 'Sign-off'], ['Build & UAT', 'Configure, test'], ['Go-live', 'Hypercare, handover']];
   const CITY = [['Work Orders', 46, 0], ['Assets', 62, 1], ['Spaces', 78, 2], ['Energy', 56, 3], ['Visitors', 88, 4], ['Inventory', 52, 5], ['Workplace', 70, 6]];
   const win = n => Array.from({ length: n }, (_, i) => '<i style="--w:' + i + '"></i>').join('');
   const city = CITY.map((c, i) => i === 2

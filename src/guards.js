@@ -9,4 +9,6 @@
     ['dashCatDel', 'Delete category', 'Delete this category?'], ['brdLogoDel', 'Remove logo', 'Remove this logo from the BRD?'], ['brdDelInsert', 'Delete inserted text', 'Delete this inserted block?']
   ];
   G.forEach(([k, t, m]) => { const f = ACT[k]; if (typeof f !== 'function') return; ACT[k] = async function (a, e) { if (!(await V.confirmDialog(t, m, 'Delete', true))) return; return f.call(this, a, e); }; });
+  // publishing to customers is never silent
+  [['onbPublish', 'Publish data onboarding', 'Publish the data onboarding plan to customer stakeholders? They will see the current plan and templates.']].forEach(([k, t, m]) => { const f = ACT[k]; if (typeof f !== 'function') return; ACT[k] = async function (a, e) { if (!(await V.confirmDialog(t, m, 'Publish'))) return; return f.call(this, a, e); }; });
 })(typeof window !== 'undefined' ? window : globalThis);

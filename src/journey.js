@@ -72,7 +72,7 @@
     const lines = s.label.length > 15 && s.label.indexOf(' ') > 0 ? (() => { const parts = s.label.split(' '); const mid = Math.ceil(parts.length / 2); return [parts.slice(0, mid).join(' '), parts.slice(mid).join(' ')]; })() : [s.label];
     const label = `<text class="iso-t" x="${x}" y="${y + h + 17}" text-anchor="middle">${lines.map((t, k) => `<tspan x="${x}" dy="${k ? 13 : 0}">${esc(t)}</tspan>`).join('')}</text><text class="iso-n" x="${x}" y="${y + h + 17 + lines.length * 13 + 1}" text-anchor="middle">STEP ${s.i + 1}</text>`;
     const attrs = `class="iso-m${s.allowed ? '' : ' off'}" style="--c:${s.color};--d:${d}s" data-i="${s.i}" ${s.allowed ? `tabindex="0" role="link"` : `role="img"`} aria-label="Step ${s.i + 1}: ${esc(s.name)}${s.status ? '. ' + STATE[s.status.state][0] + '. ' + esc(s.status.detail) : ''}${s.allowed ? '' : ''}"`;
-    return `<g ${attrs}${s.allowed ? ` data-view="${s.view}"` : ''}><g class="iso-lift"><ellipse cx="${x}" cy="${y + h}" rx="${w + 8}" ry="${h * .7}" class="iso-sh"/>
+    return `<g ${attrs}${s.allowed ? ` data-view="${s.view}"` : ''}><rect class="iso-hit" x="${x - 46}" y="${y - ht - h - 36}" width="92" height="${ht + h + 36 + h + 52}" fill="transparent"/><g class="iso-lift"><ellipse cx="${x}" cy="${y + h}" rx="${w + 8}" ry="${h * .7}" class="iso-sh"/>
       <path d="M${x - w} ${y - ht}L${x} ${y - ht + h}L${x} ${y + h}L${x - w} ${y}Z" class="fl"/><path d="M${x + w} ${y - ht}L${x} ${y - ht + h}L${x} ${y + h}L${x + w} ${y}Z" class="fr"/><path d="${rh(x, y - ht, w, h)}" class="ft"/>
       <g class="iso-badge"><circle cx="${x}" cy="${y - ht - h - 19}" r="13" fill="#fff" stroke="${s.color}" stroke-width="1.6"/><g transform="translate(${x - 8},${y - ht - h - 27}) scale(.67)" fill="none" stroke="${s.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ico}</g></g>${ring}${mark}</g>${label}</g>`;
   }
@@ -102,8 +102,10 @@
       <div class="iso-detail" aria-live="polite"><b>Delivery lifecycle</b><span>Hover or focus a stage to see what happens there${mode === 'home' ? '; select one to open it in your latest project' : ''}.</span></div>${tiles(stages, mode)}</div>`;
   };
   V._isoStages = stagesFor;
+  V._isoPlatform = () => `<svg class="eco-plat iso-svg" viewBox="250 215 500 280" aria-hidden="true">${platform()}</svg>`;
+  V._isoLifecycle = () => L.map(s => ({ name: s[0], label: s[1], color: s[3] }));
   // login page: the same scene, decorative, always animated once per page view
-  V.isoLogin = () => `<div class="av-iso iso iso-dark go" data-mode="intro" aria-hidden="true"><div class="iso-stage">${scene(stagesFor('home').map(s => Object.assign(s, { allowed: false })), 'intro')}</div></div>`;
+  V.isoLogin = aud => V.ecoStage ? `<div class="av-iso">${V.ecoStage({ audience: aud || 'public', compact: true, dark: true })}</div>` : `<div class="av-iso iso iso-dark go" data-mode="intro" aria-hidden="true"><div class="iso-stage">${scene(stagesFor('home').map(s => Object.assign(s, { allowed: false })), 'intro')}</div></div>`;
 
   // hover / focus feedback: fills the description panel; click opens the stage when allowed
   function detail(el) {
@@ -124,9 +126,10 @@
   // ---------- animated introduction: platform assembles -> modules connect -> roadmap unfolds -> into the application ----------
   V.isoIntro = function () {
     return new Promise(resolve => {
+      if (doc.querySelector('.iso-intro')) return resolve(); // never stack a second introduction
       const cust = !!(S.user && S.user.kind === 'customer'); const o = doc.createElement('div'); o.className = 'iso-intro'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-modal', 'true'); o.setAttribute('aria-label', 'Delivery journey introduction');
-      const caps = cust ? ['This is your project workspace.', 'Twelve connected stages, from kick-off to closure.', 'Follow every step of the journey with us.'] : ['Delivery Studio is the platform.', 'Twelve connected stages, from kick-off to closure.', 'One journey, every project, one place.'];
-      o.innerHTML = `<div class="iso-top"><img src="brand/logo-navy.png" alt="Facilio" height="20"><button type="button" class="btn ghost" data-r="skip">Skip</button></div><div class="iso-intro-body"><div class="iso go" data-mode="intro"><div class="iso-stage">${scene(stagesFor('home').map(s => Object.assign(s, { allowed: false })), 'intro')}</div></div><h2 class="iso-cap" aria-live="polite"></h2><button type="button" class="btn primary lg" data-r="go">${cust ? 'Continue to your project' : 'Enter Delivery Studio'}</button></div>`;
+      const caps = cust ? ['This is your project workspace.', 'Twelve stages from kick-off to closure, with Facilio and AI assistance along the way.', 'Follow every step of the journey with us.'] : ['Delivery Studio is the platform.', 'Twelve stages from kick-off to closure, with Facilio and AI assistance along the way.', 'One journey, every project, one place.'];
+      o.innerHTML = `<div class="iso-top"><img src="brand/logo-navy.png" alt="Facilio" height="20"><button type="button" class="btn ghost" data-r="skip">Skip</button></div><div class="iso-intro-body">${V.ecoStage ? `<ol class="eco-life" aria-label="Delivery lifecycle">${L.map((l, k) => `<li style="--d:${(k * .07).toFixed(2)}s"><i>${k + 1}</i><span>${esc(l[1])}</span></li>`).join('')}</ol>${V.ecoStage({ audience: cust ? 'customer' : 'team' })}` : `<div class="iso go" data-mode="intro"><div class="iso-stage">${scene(stagesFor('home').map(s => Object.assign(s, { allowed: false })), 'intro')}</div></div>`}<h2 class="iso-cap" aria-live="polite"></h2><button type="button" class="btn primary lg" data-r="go">${cust ? 'Continue to your project' : 'Enter Delivery Studio'}</button></div>`;
       doc.body.appendChild(o); const cap = o.querySelector('.iso-cap'); let i = 0, timer = null, closed = false;
       const say = k => { cap.classList.remove('in'); void cap.offsetWidth; cap.textContent = caps[k]; cap.classList.add('in'); };
       const close = () => { if (closed) return; closed = true; clearTimeout(timer); o.classList.add('out'); setTimeout(() => { o.remove(); resolve(); }, reduce() ? 0 : 450); };

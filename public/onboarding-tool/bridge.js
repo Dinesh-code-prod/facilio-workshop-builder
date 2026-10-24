@@ -1,6 +1,6 @@
-/* Workshop Builder bridge for the Excel Data Onboarding tool.
+/* Delivery Studio bridge for the Excel Data Onboarding tool.
    - Keeps each project's work separate: the tool's browser-storage keys get the project id appended.
-   - Sends the saved work to the Workshop Builder (same origin), which stores it on the project on the server.
+   - Sends the saved work to the Delivery Studio (same origin), which stores it on the project on the server.
    The tool's own code is unchanged. */
 (function () {
   "use strict";

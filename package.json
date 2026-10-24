@@ -1,8 +1,8 @@
 {
-  "name": "facilio-requirement-workshop-builder",
+  "name": "facilio-delivery-studio",
   "version": "1.0.0",
   "private": true,
-  "description": "Facilio Requirement Workshop Builder \u2014 multi-project workshop workspace (Form Builder, State Flow Builder, roles, sessions, user guide, transcripts, validation, BRD), hosted on facilio.work.",
+  "description": "Facilio Delivery Studio \u2014 multi-project delivery workspace (Form Builder, State Flow Builder, roles, sessions, user guide, transcripts, validation, BRD), hosted on facilio.work.",
   "scripts": {
     "build": "node build.mjs",
     "test": "node tests/work_adapter.mjs",

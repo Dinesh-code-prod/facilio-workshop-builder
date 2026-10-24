@@ -16,8 +16,15 @@
 | modal | `V.confirmDialog` | grow + fade |
 All have the kit's `prefers-reduced-motion` fallback.
 
+## Applied later (end of styles.css)
+| Kit id | Where | Notes |
+|---|---|---|
+| popover | `.menu`, account popover | morph from a dot at the top-right corner, kit easing and duration |
+| tabs | active tab underline | draws in on the newly active tab. A sliding underline between tabs needs a persistent element and the shell re-renders, so this is the nearest fit |
+| micro | custom checkbox, `.switch` knob | kit easing; values are the kit's literals, not FDS alias tokens |
+
 ## Mapped, not yet applied
-tabs / slidenav (tabs are re-rendered with the whole shell, so a sliding underline needs a persistent element), sidebar collapse, accordion, micro (toggle/checkbox), bulk bar, sticky header, popover (menus). These use FDS alias tokens in their CSS, so they wait for verified token values. No ECharts is used in the app and pivots are plain tables, so no chart animations apply.
+slidenav, sidebar collapse, accordion, bulk bar, sticky header, reorder, movein: the app has no matching component yet (no collapsible sidebar, bulk selection bar, drag reorder), so nothing was added for them. These use FDS alias tokens in their CSS, so they wait for verified token values. No ECharts is used in the app and pivots are plain tables, so no chart animations apply.
 
 ## Verified live
 Drawer opens, slides and closes; entrance animation plays and ends at full opacity (the browser pane only advances animations once it has been painted, e.g. after a screenshot).

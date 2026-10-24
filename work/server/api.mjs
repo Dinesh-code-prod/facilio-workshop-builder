@@ -36,7 +36,7 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
 
   // ---------- storage (ctx.db) ----------
   async function dbGet(col, key) { return (await CTX.db.get(col, key)) || null; }
-  async function dbPut(col, key, value) { try { await CTX.db.put(col, key, value); } catch (e) { throw new HttpError(e && e.status === 413 ? 413 : 502, e && e.status === 413 ? 'Record too large' : 'Could not save: ' + (e && e.message)); } }
+  async function dbPut(col, key, value) { try { await CTX.db.put(col, key, value); } catch (e) { throw new HttpError(e && e.status === 413 ? 413 : 502, e && e.status === 413 ? 'Record too large' : 'Could not save the record. Try again.'); } }
   async function dbDel(col, key) { await CTX.db.delete(col, key); }
   async function dbList(col) {
     const out = []; let cursor = '', seen = new Set();
@@ -221,7 +221,7 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
   async function aiContext(pid, task, small) {
     const T = AI_TASKS[task]; const src = []; let text = ''; let n = 0;
     for (const d of T.docs) { const r = await docRead(pid, d).catch(() => null); if (r && r.data && Object.keys(r.data).length) { n++; src.push({ ref: 'S' + n, label: 'Document: ' + d }); text += `\n[S${n}] Document "${d}":\n${clip(r.data, d === 'config_digest' ? (small ? (task === 'pkg' ? 9000 : 4000) : 12000) : (small ? 2000 : 5000))}\n`; } }
-    for (const k of T.kinds) { const rows = await itemsOf(pid, k).catch(() => []); if (rows.length) { n++; src.push({ ref: 'S' + n, label: 'Records: ' + k + ' (' + rows.length + ')' }); text += `\n[S${n}] Records "${k}" (${rows.length}):\n${clip(rows.slice(0, small ? 25 : 40).map(r => Object.assign({ id: r.id }, r.data, { hist: undefined })), small ? 2000 : 3500)}\n`; } }
+    for (const k of T.kinds) { const rows = await itemsOf(pid, k).catch(() => []); const live = rows.filter(r => !(r.data && (r.data.superseded === true || r.data.status === 'superseded'))); rows.length = 0; rows.push(...live); if (rows.length) { n++; src.push({ ref: 'S' + n, label: 'Records: ' + k + ' (' + rows.length + ')' }); text += `\n[S${n}] Records "${k}" (${rows.length}):\n${clip(rows.slice(0, small ? 25 : 40).map(r => Object.assign({ id: r.id }, r.data, { hist: undefined })), small ? 2000 : 3500)}\n`; } }
     return { src, text: text.slice(0, small ? 13000 : 26000) };
   }
   const haveClaude = async () => { try { return !!(await CTX.secrets.get('anthropic_api_key')); } catch (e) { return false; } };
@@ -238,7 +238,7 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
       const r = await CTX.llm({ messages, max_tokens: Math.min(maxTokens, 1800), temperature: 0.2 });
       const text = r && r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content; if (!text) throw new HttpError(502, 'The AI returned no text');
       return { text, provider: 'Facilio-hosted model', model: r.model || 'default' };
-    } catch (e) { if (e instanceof HttpError) throw e; throw new HttpError(e && e.name === 'AbortError' ? 504 : 502, e && e.name === 'AbortError' ? 'The AI took too long. Try a narrower request.' : 'The AI service could not be reached' + (e && e.message ? ' (' + String(e.message).replace(/\s+/g, ' ').slice(0, 140) + ')' : '')); }
+    } catch (e) { if (e instanceof HttpError) throw e; throw new HttpError(e && e.name === 'AbortError' ? 504 : 502, e && e.name === 'AbortError' ? 'The AI took too long. Try a narrower request.' : 'The AI service could not be reached. Try again.'); }
     finally { clearTimeout(to); }
   }
   route('GET', '/api/ai/status', async () => { await me(); let key = false; try { key = !!(await CTX.secrets.get('anthropic_api_key')); } catch (e) { } return ok({ provider: key ? 'Claude' : 'Facilio-hosted model', claude: key, tasks: Object.keys(AI_TASKS) }); });
@@ -412,14 +412,14 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
   // bytes never pass through this function: the page asks for a one-time upload link, PUTs the part straight to storage, then tells us it is done
   const chunkOf = async (s, P, need) => { await projectAccess(s, P.id, need); const r = await dbGet('fl.' + P.id, P.fid); if (!r || r.value.status !== 'uploading') throw new HttpError(404, 'Upload not found'); const n = Number(P.n); if (!Number.isInteger(n) || n < 0 || n >= r.value.chunks) throw new HttpError(400, 'Invalid chunk'); return { f: r.value, n }; };
   route('POST', '/api/projects/:id/files/:fid/chunks/:n/url', async (b, P) => {
-    const s = await me(); const { n } = await chunkOf(s, P, 'edit'); const u = await CTX.files.uploadUrl(P.fid + '-' + n + '.bin', { private: true }); return ok({ url: u.url, fileId: u.file_id });
+    const s = await me(); const { n } = await chunkOf(s, P, 'edit'); const u = await CTX.files.uploadUrl(P.fid + '-' + n + '.bin', { private: true }); const cur = (await dbGet('fl.' + P.id, P.fid)).value; cur.mint = Object.assign({}, cur.mint, { [n]: u.file_id }); await dbPut('fl.' + P.id, P.fid, cur); return ok({ url: u.url, fileId: u.file_id });
   });
   route('PUT', '/api/projects/:id/files/:fid/chunks/:n', async (b, P) => {
     const s = await me(); const { n } = await chunkOf(s, P, 'edit'); if (!b || typeof b.fileId !== 'string') throw new HttpError(400, 'fileId missing');
-    const fresh = (await dbGet('fl.' + P.id, P.fid)).value; fresh.urls[n] = b.fileId; await dbPut('fl.' + P.id, P.fid, fresh); return ok({ ok: true });
+    const fresh = (await dbGet('fl.' + P.id, P.fid)).value; if (!fresh.mint || fresh.mint[n] !== b.fileId) throw new HttpError(400, 'That upload was not issued for this file part'); fresh.urls[n] = b.fileId; await dbPut('fl.' + P.id, P.fid, fresh); return ok({ ok: true });
   });
   route('POST', '/api/projects/:id/files/:fid/complete', async (b, P) => {
-    const s = await me(); await projectAccess(s, P.id, 'edit'); const r = await dbGet('fl.' + P.id, P.fid); if (!r) throw new HttpError(404, 'Upload not found'); const f = r.value;
+    const s = await me(); await projectAccess(s, P.id, 'edit'); const r = await dbGet('fl.' + P.id, P.fid); if (!r) throw new HttpError(404, 'Upload not found'); const f = r.value; if (f.status === 'ready') return ok({ file: fileOut(f) });
     for (let i = 0; i < f.chunks; i++) if (!f.urls[i]) throw new HttpError(400, 'Chunk ' + i + ' missing');
     f.status = 'ready'; await dbPut('fl.' + P.id, P.fid, f);
     if (f.replaces) { const o = await dbGet('fl.' + P.id, f.replaces); if (o) { o.value.supersededBy = f.id; await dbPut('fl.' + P.id, f.replaces, o.value); } }
@@ -605,7 +605,7 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
     for (const r of routes) {
       if (r.method !== method) continue; const m = r.re.exec(u.pathname); if (!m) continue;
       try { const G = {}; for (const k of Object.keys(m.groups || {})) { try { G[k] = decodeURIComponent(m.groups[k]); } catch (e) { G[k] = m.groups[k]; } } return await r.fn(body, G, u.searchParams); }
-      catch (e) { if (e instanceof HttpError) return { status: e.status || 500, data: Object.assign({ error: e.message }, e.extra || {}) }; console.error('API error', method, path, e && e.stack || e); return { status: 500, data: { error: 'Unexpected error: ' + (e && e.message) } }; }
+      catch (e) { if (e instanceof HttpError) return { status: e.status || 500, data: Object.assign({ error: e.message }, e.extra || {}) }; console.error('API error', method, path, e && e.stack || e); return { status: 500, data: { error: 'Something went wrong on the server. Try again; if it keeps happening, tell the Delivery Studio owner.' } }; }
     }
     return { status: 404, data: { error: 'Not found' } };
   }
