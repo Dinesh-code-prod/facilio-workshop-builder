@@ -81,7 +81,7 @@
     if (!r.ok) throw new HttpError(401, 'Sign in required');
     const j = await r.json(); const email = String(j.email || '').toLowerCase(); if (!email) throw new HttpError(401, 'Sign in required');
     ME = { id: ekey(email), email, name: nameFromEmail(email), kind: 'consultant', projectId: null, guest: false };
-    try { const u = await dbGet('usr', ME.id); const stale = !u || !u.value || !u.value.seen || Date.now() - Date.parse(u.value.seen) > 6 * 3600e3; if (u && u.value && u.value.name) ME.name = u.value.name; if (stale) await dbPut('usr', ME.id, { email, name: ME.name, seen: now() }); } catch (e) { }
+    try { const u = await dbGet('usr', ME.id); const stale = !u || !u.value || !u.value.seen || Date.now() - Date.parse(u.value.seen) > 6 * 3600e3; if (u && u.value && u.value.disabled) throw new HttpError(403, 'Your access has been switched off. Ask an admin.'); if (u && u.value && u.value.name) ME.name = u.value.name; if (stale) await dbPut('usr', ME.id, Object.assign({}, u && u.value, { email, name: ME.name, seen: now(), created: (u && u.value && u.value.created) || now() })); } catch (e) { if (e instanceof HttpError && e.status === 403) { ME = null; throw e; } }
     return ME;
   }
   async function adminRole(s) {
@@ -301,9 +301,163 @@
     await audit(P.id, s.id, 'file-removed', f.category + ': ' + f.name); return ok({ ok: true });
   });
 
-  // admin screens and customer sign-in come in the next versions
-  const later = () => { throw new HttpError(403, 'This screen is not available in this version yet'); };
-  ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'].forEach(m => { route(m, '/api/admin/:a', later); route(m, '/api/admin/:a/:b', later); route(m, '/api/admin/:a/:b/:c', later); route(m, '/api/admin/:a/:b/:c/:d', later); });
+  // ---------- admin console (platform owner, Admin, Sub admin) ----------
+  // Roles: platform owner = SUPER_ADMINS, Admin / Sub admin come from the `grant` collection. Access rules are enforced here in the page (Facilio Run has no server code).
+  const SYS = 'au.sys';
+  const isEmail = e => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
+  async function requireAdmin(level) {
+    const s = await me(); const ar = await adminRole(s); const rank = { sub: 1, admin: 2, super: 3 };
+    if (!ar || rank[ar] < rank[level]) throw new HttpError(403, level === 'super' ? 'Only the platform owner can do this' : 'Admin access required');
+    return Object.assign({}, s, { adminRole: ar });
+  }
+  async function pmap(list, n, fn) { const out = new Array(list.length); let i = 0; await Promise.all(Array.from({ length: Math.min(n, list.length) }, async () => { for (;;) { const k = i++; if (k >= list.length) return; out[k] = await fn(list[k], k); } })); return out; }
+  const dayKey = d => new Date(d).toISOString().slice(0, 10);
+  const weekStart = d => { const x = new Date(d); x.setUTCDate(x.getUTCDate() - ((x.getUTCDay() + 6) % 7)); return x.toISOString().slice(0, 10); };
+  const stageOf = x => x.signed.golive ? 6 : (x.signed.uat || x.uat > 0) ? 5 : (x.signed.brd || x.brdStatus === 'approved' || x.brdExports > 0) ? 4 : x.reqs > 0 ? 3 : x.sessions.total > 0 ? 2 : x.scope > 0 ? 1 : 0;
+  const daysAgo = d => Math.floor((Date.now() - new Date(d).getTime()) / 864e5);
+  let ADM = null;   // short cache so the admin screens open fast; cleared after any admin change
+  async function loadAll() {
+    if (ADM && Date.now() - ADM.at < 45000) return ADM;
+    const [projs, usrs, grants] = await Promise.all([dbList('projects'), dbList('usr'), dbList('grant')]);
+    const users = usrs.map(r => Object.assign({ id: r.key }, r.value)); const gm = {}; grants.forEach(g => { gm[String(g.value.email || '').toLowerCase()] = g.value; });
+    const list = projs.map(r => r.value).filter(Boolean);
+    const today = now().slice(0, 10);
+    const rows = await pmap(list, 5, async p => {
+      const id = p.id; const sg = async f => { try { return await f(); } catch (e) { return null; } };
+      const [planner, workshop, brd, items, files, fb, au] = await Promise.all([
+        sg(() => docRead(id, 'planner')), sg(() => docRead(id, 'workshop')), sg(() => docRead(id, 'brddoc')),
+        sg(() => itemsFor(id, ['action', 'raid', 'uat', 'signoff'])), sg(() => dbList('fl.' + id)), sg(() => dbList('fb.' + id)), sg(() => dbList('au.' + id))]);
+      return { p, planner: planner && planner.data || {}, workshop: workshop && workshop.data || {}, brd: brd && brd.data || {}, items: items || [], files: (files || []).map(r => r.value).filter(f => f && !f.deletedAt), fb: (fb || []).map(r => r.value), au: (au || []).map(r => Object.assign({ id: r.key, projectId: id }, r.value)) };
+    });
+    ADM = { at: Date.now(), rows, users, gm, grants };
+    return ADM;
+  }
+  const who = (A, id) => { const u = A.users.find(x => x.id === id); return u ? u.email : (/^[^_]+:[^_]+$/.test(String(id || '')) ? String(id).replace(':', '@') : String(id || '')); };
+  async function adminAuditAll(A) {
+    const sys = (await dbList(SYS)).map(r => Object.assign({ id: r.key, projectId: null }, r.value));
+    const all = A.rows.reduce((a, r) => a.concat(r.au.map(e => Object.assign({}, e, { project: r.p.name }))), sys.map(e => Object.assign({}, e, { project: '' })));
+    return all.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  }
+  route('GET', '/api/admin/overview', async () => {
+    const s = await requireAdmin('sub'); const A = await loadAll(); const today = now().slice(0, 10);
+    const projects = A.rows.map(({ p, planner, workshop, brd, items, files, fb, au }) => {
+      const sess = Array.isArray(planner.sessions) ? planner.sessions.filter(x => x && x.status !== 'cancelled') : [];
+      const od = items.filter(i => i.kind === 'action' && i.data && i.data.due && i.data.due < today && i.data.status !== 'Done').length;
+      const st = i => (i.data && i.data.status) || '';
+      const openActions = items.filter(i => i.kind === 'action' && st(i) !== 'Done').length, blocked = items.filter(i => i.kind === 'action' && st(i) === 'Blocked').length;
+      const raidOpen = items.filter(i => i.kind === 'raid' && !/closed|resolved|done|mitigated/i.test(st(i))).length;
+      const signed = {}; items.filter(i => i.kind === 'signoff' && st(i) === 'signed').forEach(i => { signed[i.id] = true; });
+      const last = [p.updatedAt].concat(items.map(i => i.updatedAt), au.map(e => e.at)).filter(Boolean).sort().pop();
+      const openFb = fb.filter(f => f && f.status === 'open').length;
+      const x = { scope: Array.isArray(planner.scope) ? planner.scope.length : 0, reqs: Array.isArray(workshop.requirements) ? workshop.requirements.length : 0, brdStatus: brd.status || '', brdExports: Array.isArray(brd.exports) ? brd.exports.length : 0, uat: items.filter(i => i.kind === 'uat').length, signed, sessions: { total: sess.length, upcoming: sess.filter(y => (y.date || '') >= today).length, done: sess.filter(y => y.date && y.date < today).length } };
+      const stage = stageOf(x); const idle = daysAgo(last || p.createdAt); const reasons = [];
+      if (od) reasons.push(od + ' overdue action' + (od > 1 ? 's' : '')); if (blocked) reasons.push(blocked + ' blocked'); if (openFb >= 3) reasons.push(openFb + ' open customer questions'); if (idle > 14) reasons.push('No activity for ' + idle + ' days');
+      const health = p.archived ? 'archived' : stage === 6 ? 'live' : idle > 14 ? 'stale' : (od || blocked || openFb >= 3) ? 'attention' : 'healthy';
+      return { id: p.id, name: p.name, customer: p.customer, description: p.description, archived: !!p.archived, customerAccessEnabled: !!p.customerAccessEnabled, startDate: p.startDate, endDate: p.endDate, createdAt: p.createdAt, updatedAt: p.updatedAt, lastActivity: last || p.updatedAt,
+        members: (p.members || []).length, owners: (p.members || []).filter(m => m.role === 'owner').map(m => m.email).join(', '), files: files.length, bytes: files.reduce((a, f) => a + (f.size || 0), 0), openFeedback: openFb,
+        modulesInScope: x.scope, sessions: x.sessions, requirements: x.reqs, flows: workshop.flows && typeof workshop.flows === 'object' ? Object.keys(workshop.flows).length : 0, brdStatus: x.brdStatus || 'draft', brdExports: x.brdExports,
+        stage, health, reasons, openActions, overdue: od, blocked, raidOpen, uat: x.uat, signed };
+    }).sort((a, b) => (a.archived - b.archived) || String(b.updatedAt).localeCompare(String(a.updatedAt)));
+    const act = projects.filter(p => !p.archived); const sum = f => act.reduce((a, p) => a + f(p), 0);
+    const auAll = A.rows.reduce((a, r) => a.concat(r.au), []);
+    const weekly = []; for (let k = 7; k >= 0; k--) { const key = weekStart(Date.now() - k * 7 * 864e5); weekly.push({ week: key, n: auAll.filter(e => weekStart(e.at) === key).length }); }
+    const monthly = []; for (let k = 5; k >= 0; k--) { const d = new Date(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() - k); const key = d.toISOString().slice(0, 7); monthly.push({ month: key, n: projects.filter(p => String(p.createdAt).slice(0, 7) === key).length }); }
+    const cat = {}; A.rows.forEach(r => r.files.forEach(f => { const c = cat[f.category] = cat[f.category] || { category: f.category, n: 0, bytes: 0 }; c.n++; c.bytes += f.size || 0; }));
+    const health = { healthy: 0, attention: 0, stale: 0, live: 0 }; act.forEach(p => { health[p.health] = (health[p.health] || 0) + 1; });
+    const active7 = A.users.filter(u => u.seen && Date.now() - Date.parse(u.seen) < 7 * 864e5).length;
+    return ok({ me: { role: s.adminRole, email: s.email, name: s.name }, superAdmins: SUPER_ADMINS, projects,
+      kpis: { active: act.length, archived: projects.length - act.length, customers: new Set(act.map(p => String(p.customer).trim().toLowerCase())).size, people: A.users.length, guests: 0, activePeople7d: active7, files: sum(p => p.files), bytes: sum(p => p.bytes), sessions: sum(p => p.sessions.total), upcoming: sum(p => p.sessions.upcoming), requirements: sum(p => p.requirements), flows: sum(p => p.flows), openActions: sum(p => p.openActions), overdue: sum(p => p.overdue), openQuestions: sum(p => p.openFeedback), raidOpen: sum(p => p.raidOpen), customerAccess: 0, brdApproved: act.filter(p => p.brdStatus === 'approved').length, live: act.filter(p => p.stage === 6).length },
+      stages: [0, 1, 2, 3, 4, 5, 6].map(n => act.filter(p => p.stage === n).length), health, weekly, monthly, files: Object.values(cat).sort((a, b) => b.bytes - a.bytes),
+      attention: act.filter(p => p.reasons.length).sort((a, b) => b.reasons.length - a.reasons.length || b.overdue - a.overdue).slice(0, 8).map(p => ({ id: p.id, name: p.name, customer: p.customer, reasons: p.reasons })),
+      recent: act.slice().sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity)).slice(0, 6).map(p => ({ id: p.id, name: p.name, customer: p.customer, lastActivity: p.lastActivity, stage: p.stage })) });
+  });
+  route('GET', '/api/admin/insights', async () => {
+    await requireAdmin('sub'); const A = await loadAll(); const auAll = await adminAuditAll(A);
+    const weeks = n => Array.from({ length: n }, (_, i) => weekStart(Date.now() - (n - 1 - i) * 7 * 864e5)), days = n => Array.from({ length: n }, (_, i) => dayKey(Date.now() - (n - 1 - i) * 864e5));
+    const months = n => Array.from({ length: n }, (_, i) => { const d = new Date(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() - (n - 1 - i)); return d.toISOString().slice(0, 7); });
+    const heatM = {}; auAll.filter(e => Date.now() - Date.parse(e.at) < 60 * 864e5).forEach(e => { const d = new Date(e.at); const k = d.getUTCDay() + ':' + d.getUTCHours(); heatM[k] = (heatM[k] || 0) + 1; });
+    const cnt = (list, f) => { const m = {}; list.forEach(e => { const k = f(e); m[k] = (m[k] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1]); };
+    const r30 = auAll.filter(e => Date.now() - Date.parse(e.at) < 30 * 864e5);
+    const fbs = A.rows.reduce((a, r) => a.concat(r.fb), []); const fbk = {}; fbs.forEach(f => { const k = [f.kind, f.priority, f.status].join('|'); fbk[k] = (fbk[k] || 0) + 1; });
+    const itemKinds = {}; A.rows.forEach(r => r.items.forEach(i => { const k = i.kind + '|' + ((i.data && i.data.status) || ''); itemKinds[k] = (itemKinds[k] || 0) + 1; }));
+    const fl = A.rows.reduce((a, r) => a.concat(r.files), []);
+    return ok({
+      signups: weeks(12).map(w => ({ week: w, staff: A.users.filter(u => u.seen && weekStart(u.seen) === w).length, guests: 0 })),
+      daily: days(14).map(d => ({ day: d, staff: A.users.filter(u => u.seen && dayKey(u.seen) === d).length, customers: 0 })),
+      heat: Object.entries(heatM).map(([k, n]) => { const [d, h] = k.split(':'); return { d: +d, h: +h, n }; }),
+      actions: cnt(r30, e => e.action).slice(0, 10).map(([action, n]) => ({ action, n })),
+      actors: cnt(r30, e => { const u = A.users.find(x => x.id === e.actor); return (u && u.name) || nameFromEmail(who(A, e.actor)); }).slice(0, 8).map(([w, n]) => ({ who: w, n })),
+      feedback: { byKind: Object.entries(fbk).map(([k, n]) => { const [kind, priority, status] = k.split('|'); return { kind, priority, status, n }; }), weekly: weeks(8).map(w => ({ week: w, n: fbs.filter(f => f.createdAt && weekStart(f.createdAt) === w).length })), avgHours: 0, answered: fbs.filter(f => f.status && f.status !== 'open').length },
+      items: Object.entries(itemKinds).map(([k, n]) => { const [kind, st] = k.split('|'); return { kind, st, n }; }),
+      storage: months(6).map(m => { const f = fl.filter(x => x.createdAt && String(x.createdAt).slice(0, 7) === m); return { month: m, n: f.length, bytes: f.reduce((a, x) => a + (x.size || 0), 0) }; })
+    });
+  });
+  route('GET', '/api/admin/projects/:id/detail', async (b, P) => {
+    await requireAdmin('sub'); const A = await loadAll(); const r = A.rows.find(x => x.p.id === P.id); if (!r) throw new HttpError(404, 'Project not found');
+    const cat = {}; r.files.forEach(f => { const c = cat[f.category] = cat[f.category] || { category: f.category, n: 0, bytes: 0 }; c.n++; c.bytes += f.size || 0; });
+    const k = {}; r.items.forEach(i => { k[i.kind] = (k[i.kind] || 0) + 1; });
+    return ok({ members: (r.p.members || []).map(m => Object.assign(memberOut(m), { addedAt: null })), files: Object.values(cat), kinds: Object.entries(k).map(([kind, n]) => ({ kind, n })),
+      log: r.au.slice().sort((a, c) => String(c.at).localeCompare(String(a.at))).slice(0, 12).map(l => ({ action: l.action, detail: l.detail || '', at: l.at, who: who(A, l.actor) })) });
+  });
+  route('GET', '/api/admin/users', async () => {
+    await requireAdmin('sub'); const A = await loadAll();
+    return ok({ users: A.users.map(u => { const em = String(u.email || '').toLowerCase(); const g = A.gm[em]; return { id: u.id, email: u.email, name: u.name || nameFromEmail(em), guest: false, disabled: !!u.disabled, createdAt: u.created || u.seen, projects: A.rows.filter(r => (r.p.members || []).some(m => m.id === u.id)).length, lastSeen: u.seen, role: SUPER_ADMINS.includes(em) ? 'super' : g ? (g.role === 'admin' ? 'admin' : 'sub') : null }; }).sort((a, b) => String(b.lastSeen || '').localeCompare(String(a.lastSeen || ''))) });
+  });
+  const guardUser = async (s, id) => {
+    const r = await dbGet('usr', id); if (!r) throw new HttpError(404, 'User not found'); const u = r.value; const em = String(u.email).toLowerCase(); const g = await dbGet('grant', id);
+    if (id === s.id || SUPER_ADMINS.includes(em)) throw new HttpError(400, 'This account cannot be changed here'); if (g && s.adminRole !== 'super') throw new HttpError(403, 'Only the platform owner can change another admin');
+    return { u, em, g };
+  };
+  route('PATCH', '/api/admin/users/:id', async (b, P) => {
+    const s = await requireAdmin('admin'); const { u } = await guardUser(s, P.id); u.disabled = !!b.disabled; await dbPut('usr', P.id, u); ADM = null;
+    await audit('sys', s.id, b.disabled ? 'admin_disable_user' : 'admin_enable_user', u.email); return ok({ ok: true });
+  });
+  route('DELETE', '/api/admin/users/:id', async (b, P) => {
+    const s = await requireAdmin('admin'); const { u, g } = await guardUser(s, P.id);
+    const A = await loadAll(); for (const r of A.rows) { if ((r.p.members || []).some(m => m.id === P.id)) { r.p.members = r.p.members.filter(m => m.id !== P.id); await dbPut('projects', r.p.id, r.p); } }
+    if (g) await dbDel('grant', P.id); await dbDel('usr', P.id); ADM = null; ROLE = null; await audit('sys', s.id, 'admin_remove_user', u.email); return ok({ ok: true });
+  });
+  route('PATCH', '/api/admin/projects/:id', async (b, P) => {
+    const s = await requireAdmin('admin'); const r = await dbGet('projects', P.id); if (!r) throw new HttpError(404, 'Project not found'); const p = r.value;
+    if (b.archived !== undefined) { p.archived = !!b.archived; await saveProject(p); await audit(p.id, s.id, b.archived ? 'admin_archive_project' : 'admin_restore_project', p.name); }
+    ADM = null; return ok({ ok: true });
+  });
+  route('GET', '/api/admin/projects/:id/members', async (b, P) => { await requireAdmin('sub'); const r = await dbGet('projects', P.id); if (!r) throw new HttpError(404, 'Project not found'); return ok({ members: (r.value.members || []).map(m => Object.assign(memberOut(m), { addedAt: null })) }); });
+  route('POST', '/api/admin/projects/:id/members', async (b, P) => {
+    const s = await requireAdmin('admin'); const r = await dbGet('projects', P.id); if (!r) throw new HttpError(404, 'Project not found'); const p = r.value;
+    const email = str(b.email, 200, 'Email', true).toLowerCase(); const role = ['owner', 'editor', 'viewer'].includes(b.role) ? b.role : 'editor';
+    if (!isEmail(email) || !email.endsWith('@' + ALLOWED_DOMAIN)) throw new HttpError(400, 'Use a Facilio office email (name@' + ALLOWED_DOMAIN + ')');
+    const id = ekey(email); const u = await dbGet('usr', id); const name = (u && u.value && u.value.name) || nameFromEmail(email); if (!u) await dbPut('usr', id, { email, name, seen: null, created: now() });
+    p.members = (p.members || []).filter(x => x.id !== id).concat([{ id, email, name, role }]); await saveProject(p); ADM = null; await audit(p.id, s.id, 'admin_set_member', email + ' as ' + role); return ok({ ok: true });
+  });
+  route('DELETE', '/api/admin/projects/:id/members/:uid', async (b, P) => {
+    const s = await requireAdmin('admin'); const r = await dbGet('projects', P.id); if (!r) throw new HttpError(404, 'Project not found'); const p = r.value; const m = (p.members || []).find(x => x.id === P.uid); if (!m) throw new HttpError(404, 'Member not found');
+    if (m.role === 'owner' && p.members.filter(x => x.role === 'owner').length <= 1) throw new HttpError(400, 'A project needs at least one owner. Add another owner first.');
+    p.members = p.members.filter(x => x.id !== P.uid); await saveProject(p); ADM = null; await audit(p.id, s.id, 'admin_remove_member', P.uid); return ok({ ok: true });
+  });
+  route('GET', '/api/admin/audit', async () => {
+    await requireAdmin('sub'); const A = await loadAll(); const all = (await adminAuditAll(A)).slice(0, 200);
+    return ok({ entries: all.map(e => ({ id: e.id, projectId: e.projectId, project: e.project || '', actor: who(A, e.actor), action: e.action, detail: e.detail || '', at: e.at })) });
+  });
+  route('GET', '/api/admin/access', async () => {
+    await requireAdmin('super'); const A = await loadAll();
+    return ok({ owners: SUPER_ADMINS.map(e => { const u = A.users.find(x => String(x.email).toLowerCase() === e); return { email: e, name: u ? u.name : '', hasAccount: !!u, lastSeen: u ? u.seen : null }; }),
+      grants: A.grants.map(g => { const v = g.value; const u = A.users.find(x => x.id === g.key); return { email: v.email, role: v.role === 'admin' ? 'admin' : 'sub', name: u ? u.name : '', hasAccount: !!u, disabled: !!(u && u.disabled), grantedBy: v.by || '', createdAt: v.at, lastSeen: u ? u.seen : null }; }).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))) });
+  });
+  route('POST', '/api/admin/access', async (b) => {
+    const s = await requireAdmin('super'); const email = str(b.email, 200, 'Email', true).toLowerCase(); if (!isEmail(email)) throw new HttpError(400, 'Enter a valid email address');
+    const role = b.role === 'admin' ? 'admin' : b.role === 'sub' ? 'sub' : null; if (!role) throw new HttpError(400, 'Choose Admin or Sub admin'); if (SUPER_ADMINS.includes(email)) throw new HttpError(400, 'That email is already a platform owner');
+    if (!email.endsWith('@' + ALLOWED_DOMAIN)) throw new HttpError(403, 'Use a Facilio office email (name@' + ALLOWED_DOMAIN + ')');
+    const id = ekey(email); const old = await dbGet('grant', id); const u = await dbGet('usr', id); if (!u) await dbPut('usr', id, { email, name: str(b.name, 120, 'Name') || nameFromEmail(email), seen: null, created: now() });
+    await dbPut('grant', id, { email, role, by: s.email, at: (old && old.value.at) || now() }); ADM = null; ROLE = null; await audit('sys', s.id, 'admin_grant_' + role, email);
+    return ok({ ok: true, created: false, tempPassword: null });
+  });
+  route('POST', '/api/admin/access/reset', async () => { throw new HttpError(400, 'Nobody has a separate password here. Everyone signs in with their Facilio Microsoft account.'); });
+  route('POST', '/api/admin/access/revoke', async (b) => {
+    const s = await requireAdmin('super'); const email = str(b.email, 200, 'Email', true).toLowerCase(); await dbDel('grant', ekey(email)); ADM = null; ROLE = null; await audit('sys', s.id, 'admin_revoke', email); return ok({ ok: true });
+  });
+
+  // customer and password sign-in do not exist in this version
   ['login', 'signup', 'guest', 'guest-login', 'upgrade', 'customer', 'password'].forEach(n => route('POST', '/api/auth/' + n, async () => { throw new HttpError(403, 'Sign-in is handled by your Facilio Microsoft account'); }));
 
   async function handle(method, path, body) {

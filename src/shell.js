@@ -146,12 +146,12 @@
     d.innerHTML = `<div class="row" style="margin-bottom:10px"><div class="avatar">${esc(initials(u.name))}</div><div><b>${esc(u.name)}</b><div class="xs muted">${esc(u.kind === 'customer' ? 'Customer stakeholder' : u.guest ? 'Guest workspace' : u.email)}</div></div></div>${u.guest ? '<button class="btn sm primary" style="width:100%;margin-bottom:6px" data-act="upgradeGuest">Save as a full account</button>' : ''}${u.kind === 'consultant' ? '<button class="btn sm" style="width:100%;margin-bottom:6px" data-act="toProjects">All projects</button>' : ''}<button class="btn sm" style="width:100%;margin-bottom:6px" data-act="replayRoadmap">Product introduction</button><button class="btn sm" style="width:100%" data-act="logout">Log out</button>`; document.body.appendChild(d); };
   ACT.toProjects = async () => { if (F.hasUnsaved()) await F.flush(); S.project = null; S.baseline = null; mode = 'projects'; await loadProjects(); history.replaceState(null, '', '#/projects'); render(); if (S.user.kind === 'consultant' && !refCache) setTimeout(() => { if (!refCache) API.reference().then(r => { refCache = refCache || r; }).catch(() => { }); }, 700); };
   ACT.officeContinue = () => { location.reload(); };
-  ACT.logout = async () => { if (S.user && S.user.guest && !V.office() && !(await confirmDialog('Sign out of guest workspace', 'You will need your guest key to come back. If you have lost it, save the workspace as a full account first (menu under your initials).', 'Sign out', true))) return; if (F.hasUnsaved()) await F.flush(); try { await API.post('/api/auth/logout'); } catch (e) { } S.user = null; S.project = null; mode = 'auth'; history.replaceState(null, '', '#/'); render(); };
+  ACT.logout = async () => { if (S.user && S.user.guest && !V.office() && !(await confirmDialog('Sign out of guest workspace', 'You will need your guest key to come back. If you have lost it, save the workspace as a full account first (menu under your initials).', 'Sign out', true))) return; if (F.hasUnsaved()) await F.flush(); try { await API.post('/api/auth/logout'); } catch (e) { } if (root.FWBRun) { S.project = null; mode = 'auth'; authMsg = 'You have left the workspace. Close this tab, or open it again whenever you like.'; history.replaceState(null, '', '#/'); render(); return; } S.user = null; S.project = null; mode = 'auth'; history.replaceState(null, '', '#/'); render(); };
 
   // ---------- auth screens ----------
   let authTab = 'signup'; let authMsg = ''; let health = { signupEnabled: false };
   let authAnimated = false;
-  function authHtml() {
+  function authHtmlBase() {
     const custM = location.hash.match(/#\/c\/([A-Za-z0-9_-]+)(?:~([A-Za-z0-9_-]+))?/) || []; const custId = custM[1] || ''; const custCode = custM[2] || '';
     if (custId && authTab !== 'customer') authTab = 'customer';
     const tabs = [['signup', 'Create account'], ['login', 'Sign in'], ['customer', 'Guest / Customer']].filter(t => t[0] !== 'signup' || health.signupEnabled);
@@ -165,8 +165,14 @@
       <div class="seg" style="margin-bottom:18px;width:100%">${tabs.map(([k, l]) => `<button class="${authTab === k ? 'on' : ''}" style="flex:1" data-act="authTab" data-v="${k}">${esc(l)}</button>`).join('')}</div>
       ${authMsg ? `<div class="notice err" style="margin-bottom:14px" role="alert">${esc(authMsg)}</div>` : ''}<div class="auth-fields">${f[authTab]}</div>${(authAnimated = true) && ''}${V.office() && authTab !== 'customer' ? '<div class="auth-or"><span>or</span></div><button class="btn lg" data-act="officeContinue">Continue without signing in</button>' : ''}${authTab !== 'customer' ? '<div class="xs" style="margin-top:16px;text-align:center"><a href="#" data-act="adminSetup">Administrator sign-in</a></div>' : ''}</div></div></div>`;
   }
+  // Facilio Run build: sign-in is the Facilio Microsoft login the platform already did, so this screen is a welcome with one button
+  function authHtml() {
+    const h = authHtmlBase(); if (!root.FWBRun || !S.user) return h; const i = h.indexOf('<div class="auth-form">'); const first = String(S.user.name || '').split(' ')[0] || 'there';
+    return h.slice(0, i) + `<div class="auth-form"><div class="auth-box"><div class="auth-hello">${authMsg ? 'See you soon' : 'Welcome'}, ${esc(first)}</div><h2>Requirement Workshop Builder</h2><div class="sub">${authMsg ? esc(authMsg) : 'You are signed in with your Facilio account (' + esc(S.user.email) + ').'}</div><div class="auth-fields"><button class="btn primary lg" style="width:100%" data-act="runEnter">Open workspace</button></div></div></div></div>`;
+  }
   function mountAuth() { document.querySelectorAll('.auth-box input').forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') { const g = e.target.closest('.auth-key'); const b = g ? g.querySelector('.btn') : document.querySelector('.auth-box .btn.primary'); if (b) b.click(); } })); const f = document.querySelector('.auth-box input:not([value]):not([type=hidden])') || document.querySelector('.auth-box input'); if (f) f.focus(); }
   const val = id => (document.getElementById(id) || {}).value || '';
+  ACT.runEnter = async () => { try { loading(true, 'Opening your workspace…'); authMsg = ''; await gate(afterLogin); } catch (e) { toast(e.message, 5000, true); } finally { loading(false); } };
   ACT.authTab = a => { authTab = a.getAttribute('data-v'); authMsg = ''; render(); };
   // roadmap introduction between sign-in and the home page (see roadmap.js); skipped when switched off, automated, or already refreshed into a session
   async function gate(next) { if (V.roadmap && V.roadmapDue && V.roadmapDue()) { loading(false); await V.roadmap(); loading(true, 'Opening your workspace…'); } return next(); }
@@ -272,6 +278,7 @@
     try { const me = await API.get('/api/auth/me', { noAuthRedirect: true }); health.signupEnabled = !!me.signupEnabled; health.signupNeedsCode = me.signupNeedsCode !== false; health.openMode = !!me.openMode; if (!health.signupEnabled && authTab === 'signup') authTab = 'login'; S.user = me.user; }
     catch (e) { app.innerHTML = `<div style="padding:60px;text-align:center"><h2>Service unavailable</h2><p class="muted">${esc(e.message)}. The application's API (Netlify Functions and Database) must be deployed and configured.</p></div>`; return; }
     if (!S.user) { mode = 'auth'; render(); return; }
+    if (root.FWBRun && !/#\/p\//.test(location.hash)) { mode = 'auth'; render(); return; }
     if ((health.openMode || S.user.kind === 'customer') && V.roadmap && V.roadmapDue && V.roadmapDue({ once: true })) { try { await V.roadmap(); } catch (e) { } }
     try { if (S.user.kind === 'customer') await openProject(S.user.projectId); else await afterLogin(); } catch (e) { toast(e.message, 5000, true); mode = S.user.kind === 'customer' ? 'auth' : 'projects'; render(); }
   }

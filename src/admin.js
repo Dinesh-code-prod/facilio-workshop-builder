@@ -346,7 +346,7 @@
   ACT.admGrant = async () => {
     const email = val('gr_email').trim(); if (!email) { toast('Enter an email address', 3000, true); return; }
     try { const r = await API.post('/api/admin/access', { email, name: val('gr_name'), role: val('gr_role') }); A.access = await API.get('/api/admin/access'); show();
-      if (r.tempPassword) creds('Access granted', email.toLowerCase(), r.tempPassword, 'A new account was created for this person.'); else toast('Access granted. They sign in with their existing password.'); } catch (e) { toast(e.message, 5000, true); }
+      if (r.tempPassword) creds('Access granted', email.toLowerCase(), r.tempPassword, 'A new account was created for this person.'); else toast('Access granted. They sign in with their Facilio account as usual.'); } catch (e) { toast(e.message, 5000, true); }
   };
   ACT.admRole = async el => { try { await API.post('/api/admin/access', { email: el.getAttribute('data-email'), role: el.value }); A.access = await API.get('/api/admin/access'); show(); toast('Role updated'); } catch (e) { toast(e.message, 5000, true); } };
   ACT.admReset = async a => {

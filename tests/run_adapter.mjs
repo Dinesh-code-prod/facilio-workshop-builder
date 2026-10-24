@@ -106,6 +106,29 @@ await t('access rules: other people only see projects they belong to; admins see
   r = await boss.handle('PUT', `/api/projects/${pid}/docs/brd`, { data: { by: 'admin' }, baseVersion: -1 }); assert.equal(r.status, 200);
   store.set('grant', new Map([['sub.admin:facilio.com', { value: { role: 'sub' }, updated_at: '' }]])); const sub = await mk('sub.admin@facilio.com'); r = await sub.handle('GET', '/api/projects'); assert.equal(r.data.projects[0].role, 'viewer'); r = await sub.handle('PUT', `/api/projects/${pid}/docs/brd`, { data: {}, baseVersion: -1 }); assert.equal(r.status, 403);
 });
+await t('admin console: overview, users, access grants, project management, audit', async () => {
+  const mk = async email => { const code = fs.readFileSync(new URL('../src/runapi.js', import.meta.url), 'utf8'); const ctx = { fetch: async (u, i) => { const x = new URL(String(u), 'https://fwb-test.facilio.run'); if (x.pathname === '/api/me') return json({ email }); return mockFetch(u, i); }, location: globalThis.location, TextEncoder, TextDecoder, Blob, Response, CompressionStream, DecompressionStream, crypto: globalThis.crypto, btoa, atob, URL, console }; ctx.window = ctx; vm.createContext(ctx); vm.runInContext(code, ctx); return ctx.FWBRun; };
+  store.delete('grant');
+  const boss = await mk('dinesh.r@facilio.com'); const plain = await mk('plain.user@facilio.com');
+  let r = await plain.handle('GET', '/api/admin/overview'); assert.equal(r.status, 403);
+  r = await boss.handle('GET', '/api/admin/overview'); assert.equal(r.status, 200); assert.ok(r.data.projects.find(p => p.id === pid), 'super admin sees every project'); assert.equal(r.data.me.role, 'super'); assert.ok(r.data.kpis.active >= 1);
+  r = await boss.handle('GET', '/api/admin/insights'); assert.equal(r.status, 200); assert.equal(r.data.signups.length, 12);
+  r = await boss.handle('GET', `/api/admin/projects/${pid}/detail`); assert.equal(r.status, 200); assert.ok(r.data.members.length >= 1);
+  r = await boss.handle('GET', '/api/admin/users'); assert.equal(r.status, 200); assert.ok(r.data.users.length >= 1);
+  r = await boss.handle('POST', '/api/admin/access', { email: 'lead.one@facilio.com', role: 'admin' }); assert.equal(r.status, 200); r = await boss.handle('POST', '/api/admin/access', { email: 'x@gmail.com', role: 'admin' }); assert.equal(r.status, 403);
+  r = await boss.handle('GET', '/api/admin/access'); assert.equal(r.data.grants.length, 1); assert.equal(r.data.grants[0].role, 'admin');
+  const lead = await mk('lead.one@facilio.com'); r = await lead.handle('GET', '/api/admin/overview'); assert.equal(r.status, 200); r = await lead.handle('GET', '/api/admin/access'); assert.equal(r.status, 403);
+  r = await lead.handle('POST', '/api/admin/projects/' + pid + '/members', { email: 'new.member@facilio.com', role: 'editor' }); assert.equal(r.status, 200);
+  const nm = await mk('new.member@facilio.com'); r = await nm.handle('GET', '/api/projects'); assert.equal(r.data.projects.length, 1);
+  r = await lead.handle('DELETE', '/api/admin/projects/' + pid + '/members/new.member:facilio.com'); assert.equal(r.status, 200);
+  r = await boss.handle('GET', '/api/admin/users'); const u = r.data.users.find(x => x.email === 'plain.user@facilio.com'); assert.ok(u);
+  r = await lead.handle('PATCH', '/api/admin/users/' + encodeURIComponent(u.id), { disabled: true }); assert.equal(r.status, 200);
+  const plain2 = await mk('plain.user@facilio.com'); r = await plain2.handle('GET', '/api/projects'); assert.equal(r.status, 403);
+  r = await boss.handle('PATCH', '/api/admin/users/' + encodeURIComponent('dinesh.r:facilio.com'), { disabled: true }); assert.equal(r.status, 400);
+  r = await boss.handle('GET', '/api/admin/audit'); assert.equal(r.status, 200); assert.ok(r.data.entries.some(e => e.action === 'admin_grant_admin'));
+  r = await boss.handle('POST', '/api/admin/access/revoke', { email: 'lead.one@facilio.com' }); assert.equal(r.status, 200); r = await lead.handle('GET', '/api/admin/overview'); assert.equal(r.status, 200, 'role cache (20 s) still applies in the same page'); 
+  r = await boss.handle('PATCH', '/api/admin/projects/' + pid, { archived: true }); assert.equal(r.status, 200); r = await boss.handle('PATCH', '/api/admin/projects/' + pid, { archived: false }); assert.equal(r.status, 200);
+});
 await t('archive a project: it disappears; sign-in routes explain Microsoft login', async () => {
   let r = await call('DELETE', `/api/projects/${pid}`); assert.equal(r.status, 200); r = await call('GET', '/api/projects'); assert.equal(r.data.projects.length, 0); r = await call('POST', '/api/auth/login', {}); assert.equal(r.status, 403); assert.match(r.data.error, /Microsoft/);
 });
