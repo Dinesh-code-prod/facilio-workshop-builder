@@ -21,13 +21,20 @@
     team: [['scene-workshop', 'Workshops that stay on track'], ['scene-brd', 'BRDs drafted with AI assistance'], ['scene-dash', 'Delivery dashboards']],
     customer: [['scene-workshop', 'Workshops where your voice counts'], ['scene-dash', 'Progress you can follow'], ['scene-guide', 'Guides for your team']]
   };
+  // AI assistance moments: only capabilities that exist in the product (AI drafts that a person reviews and approves)
+  const AIART = {
+    public: [['scene-ai-notes', 'Workshop notes into draft requirements'], ['scene-ai-config', 'Configuration organised into a clear summary'], ['scene-ai-train', 'Training turned into step-by-step guidance']],
+    team: [['scene-ai-notes', 'AI-assisted documentation'], ['scene-ai-uat', 'UAT results into actionable findings'], ['scene-ai-progress', 'Delivery progress, summarised']],
+    customer: [['scene-ai-req', 'Requirements organised for review'], ['scene-ai-train', 'Guided user enablement'], ['scene-ai-progress', 'Clearer delivery visibility']]
+  };
   const DESC = ['Goals, team and plan agreed', 'Process walked through together', 'Needs captured and prioritised', 'Scope written down and signed', 'The solution is set up', 'Tested with your scenarios', 'Results checked against KPIs', 'Guides and learning for users', 'Ready to switch over', 'Close support after launch', 'Day-to-day support in place', 'Outcomes reviewed and closed'];
-  const FLOW = { public: ['brand', 'journey', 'platform', 'cta'], team: ['brand', 'people', 'platform', 'cta'], customer: ['brand', 'journey', 'people', 'cta'] };
-  const MS = { brand: 3300, journey: 7600, platform: 4800, people: 8000, cta: 0 };
+  const FLOW = { public: ['brand', 'journey', 'platform', 'ai', 'cta'], team: ['brand', 'people', 'ai', 'platform', 'cta'], customer: ['brand', 'journey', 'people', 'ai', 'cta'] };
+  const MS = { brand: 3300, journey: 7600, platform: 4800, people: 8000, ai: 8200, cta: 0 };
   const HEAD = {
     journey: { public: 'Twelve stages. One connected journey.', team: 'Twelve stages. One connected journey.', customer: 'Twelve stages. One shared journey.' },
     platform: { public: 'One platform, every module connected.', team: 'One platform, every module connected.', customer: 'One platform, every module connected.' },
     people: { team: 'Built for the people who deliver.', customer: 'Built around your project.', public: 'Built for every project.' },
+    ai: { public: 'AI that helps. People who decide.', team: 'AI drafts. You review and decide.', customer: 'Clearer answers, guided by AI.' },
     cta: { public: 'Facilio Delivery Studio', team: 'Your workspace is ready.', customer: 'Your project is ready.' }
   };
   const SUB = {
@@ -48,6 +55,7 @@
         journey: () => `<div class="cn-sc cn-journey" data-k="journey"><h2 class="cn-h">${esc(HEAD.journey[aud])}</h2><ol class="cn-blocks" aria-label="Delivery lifecycle">${STAGES().map((l, k) => `<li style="--k:${k};--c:var(--cn-c${k % 4})"><span class="cn-chip"></span><i>${k + 1}</i><b>${esc(l)}</b><em>${esc(DESC[k] || '')}</em><u data-lt="check"></u><s></s></li>`).join('')}</ol></div>`,
         platform: () => `<div class="cn-sc cn-platform" data-k="platform"><h2 class="cn-h">${esc(HEAD.platform[aud])}</h2><div class="cn-eco" data-eco></div><p class="cn-ai"><span class="cn-spark" data-lt="orbit"></span><span>Facilio AI assists with drafts. People review and decide.</span></p></div>`,
         people: () => { const L = ART[aud === 'customer' ? 'customer' : 'team']; return `<div class="cn-sc cn-people" data-k="people"><h2 class="cn-h">${esc(HEAD.people[aud])}</h2><div class="cn-cards">${L.map(([f, t], i) => `<figure style="--i:${i}"><div class="cn-art" data-lt="${f}"></div><figcaption>${esc(t)}</figcaption></figure>`).join('')}</div></div>`; },
+        ai: () => `<div class="cn-sc cn-people cn-aiscene" data-k="ai"><h2 class="cn-h">${esc(HEAD.ai[aud])}</h2><div class="cn-cards">${AIART[aud].map(([f, t], i) => `<figure style="--i:${i}"><div class="cn-art" data-lt="${f}"></div><figcaption>${esc(t)}</figcaption></figure>`).join('')}</div><p class="cn-ai cn-ai-foot"><span class="cn-spark" data-lt="orbit"></span><span>Facilio AI prepares drafts from your project records. A person always reviews and approves.</span></p></div>`,
         cta: () => `<div class="cn-sc cn-cta" data-k="cta"><div class="cn-mark sm"><img class="cn-wm" src="brand/logo-white.png" alt="" width="640" height="176"><i class="cn-sq p"></i><i class="cn-sq t"></i></div><h1 class="cn-h big">${esc(HEAD.cta[aud])}</h1><p class="cn-sub">${esc(SUB.cta[aud])}</p>
           <div class="cn-go-wrap"><div class="cn-pulse" data-lt="pulse" aria-hidden="true"></div><button type="button" class="cn-go" data-r="go">${esc(opts.cta || 'Get started')}</button></div>${opts.off ? `<label class="cn-off"><input type="checkbox" id="cnOff"> Do not show this introduction again</label>` : ''}</div>`
       };

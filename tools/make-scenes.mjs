@@ -104,3 +104,38 @@ scene('launch', add => {
   rk(path_([[-10, 28], [0, 58], [10, 28]], true, { fill: K.pink }), 'flame', 0, 0, 40); rk(path_([[-5, 28], [0, 44], [5, 28]], true, { fill: '#FFD166' }), 'flame2', 0, 0, 40);
   [[150, 250], [250, 252], [200, 256]].forEach(([x, y], i) => add(el(34, 18, { fill: K.white, stroke: K.line, sw: 2 }), { x, y, t: 56 + i * 6, a: 'none', move: [[56 + i * 6, x, y], [OP - 4, x + (i - 1) * 16, y + 40]] }, 'cloud' + i));
 });
+
+// ---- AI assistance moments: an input becomes structured output, with a person reviewing at the end ----
+// Shared frame: input card (left), AI spark (centre), output card (right), a "review" tick that appears last.
+const aiScene = (name, inFn, outFn, accent = K.blue) => scene(name, add => {
+  PANEL(add);
+  add(rr(118, 196, 14, { fill: K.white, stroke: K.line, sw: 2 }), { x: 76, y: 150, t: 2, d: 14 }, 'in-card');
+  add(rr(126, 196, 14, { fill: K.white, stroke: accent, sw: 2.5 }), { x: 322, y: 150, t: 36, d: 14 }, 'out-card');
+  inFn(add);
+  add(path_([[0, 0], [38, 0]], false, { stroke: K.sky, sw: 3, draw: 14, t: 24 }), { x: 140, y: 150, a: 'none', t: 24 }, 'in-link');
+  add(el(56, 56, { fill: K.navy }), { x: 200, y: 150, t: 20, d: 16 }, 'orb'); add(star(17, { fill: K.white }), { x: 200, y: 150, t: 26, d: 14, spin: 180 }, 'spark');
+  add(el(78, 78, { stroke: accent, sw: 2.5 }), { x: 200, y: 150, a: 'pop', t: 30, d: 20 }, 'halo');
+  add(path_([[0, 0], [38, 0]], false, { stroke: accent, sw: 3, draw: 14, t: 44 }), { x: 230, y: 150, a: 'none', t: 44 }, 'out-link');
+  outFn(add);
+  add(el(40, 40, { fill: K.teal }), { x: 322, y: 262, t: 112, d: 14 }, 'review'); ticker(add, 322, 262, 120, K.white);
+});
+const note = (add, x, y, c, r, t) => add(rr(30, 30, 5, { fill: c }), { x, y, t, d: 12, rot: r }, 'note');
+const rows = (add, x, y, widths, t, c = K.line, step = 18, h = 7) => widths.forEach((w, i) => add(rr(w, h, h / 2, { cx: w / 2, fill: i === 0 ? K.blue : c }), { x, y: y + i * step, a: 'gx', t: t + i * 8, d: 10 }, 'row'));
+// 7. workshop notes become draft requirements
+aiScene('ai-notes', add => { [[48, 98, K.pink, -12], [90, 112, K.sky, 8], [60, 148, K.teal, 6], [98, 170, K.blue, -9], [52, 200, K.sky, 12], [92, 214, K.pink, -6]].forEach(([x, y, c, r], i) => note(add, x, y, c, r, 8 + i * 3)); },
+  add => { add(rr(70, 10, 5, { cx: 35, fill: K.blue }), { x: 276, y: 82, a: 'gx', t: 50, d: 10 }, 'h'); rows(add, 276, 106, [96, 84, 98, 70], 58); rows(add, 276, 186, [90, 76, 88], 92); }, K.blue);
+// 8. requirements organised into structured information
+aiScene('ai-req', add => { [[40, 96, 34], [86, 106, 26], [52, 140, 40], [100, 152, 28], [44, 186, 30], [92, 200, 36], [60, 226, 28]].forEach(([x, y, w], i) => add(rr(w, 14, 7, { fill: [K.sky, K.pink, K.teal, K.blue][i % 4], fo: 85 }), { x, y, t: 8 + i * 3, d: 12, rot: (i % 2 ? 8 : -8) }, 'chip')); },
+  add => { [0, 1, 2, 3].forEach(i => { add(rr(104, 28, 7, { fill: K.ice }), { x: 322, y: 92 + i * 38, a: 'gx', t: 52 + i * 9, d: 10 }, 'cell'); add(rr(14, 14, 4, { fill: [K.blue, K.pink, K.teal, K.sky][i] }), { x: 288, y: 92 + i * 38, t: 58 + i * 9, d: 10 }, 'dot'); add(rr(52, 6, 3, { cx: 26, fill: K.line }), { x: 302, y: 92 + i * 38, a: 'gx', t: 60 + i * 9, d: 10 }, 'ln'); }); }, K.pink);
+// 9. configuration information becomes a clear summary
+aiScene('ai-config', add => { [[50, 100], [98, 124], [52, 156], [100, 182], [58, 214]].forEach(([x, y], i) => add(gear(i % 2 ? 11 : 14, { fill: [K.sky, K.blue, K.teal][i % 3], fo: 90 }), { x, y, t: 8 + i * 4, d: 12, spin: i % 2 ? 90 : -90 }, 'gear')); },
+  add => { add(rr(76, 10, 5, { cx: 38, fill: K.navy }), { x: 276, y: 84, a: 'gx', t: 50, d: 10 }, 'h'); [[88, K.blue], [64, K.teal], [96, K.pink], [52, K.sky]].forEach(([w, c], i) => { add(rr(96, 8, 4, { cx: 48, fill: K.ice }), { x: 276, y: 114 + i * 26, a: 'none', t: 54 + i * 8 }, 'track'); add(rr(w, 8, 4, { cx: w / 2, fill: c }), { x: 276, y: 114 + i * 26, a: 'gx', t: 58 + i * 8, d: 14 }, 'fill'); }); }, K.teal);
+// 10. UAT results grouped into actionable findings
+aiScene('ai-uat', add => { [[44, 98], [76, 104], [108, 98], [50, 134], [86, 140], [112, 130], [42, 172], [74, 178], [106, 170], [58, 210], [92, 214]].forEach(([x, y], i) => add(el(14, 14, { fill: i % 4 === 1 ? K.pink : i % 7 === 5 ? '#F5A524' : K.teal }), { x, y, t: 6 + i * 2, d: 10 }, 'res')); },
+  add => { [[K.pink, 'High', 60], [K.blue, 'Medium', 84], [K.teal, 'Pass', 102]].forEach(([c, _, w], i) => { add(rr(104, 44, 9, { fill: K.ice }), { x: 322, y: 100 + i * 52, a: 'gx', t: 54 + i * 10, d: 10 }, 'bucket'); add(rr(8, 44, 4, { fill: c }), { x: 273, y: 100 + i * 52, a: 'gy', t: 56 + i * 10, d: 10 }, 'bar'); add(rr(w * .6, 6, 3, { cx: w * .3, fill: K.line }), { x: 288, y: 94 + i * 52, a: 'gx', t: 62 + i * 10, d: 10 }, 'l1'); add(rr(w * .4, 6, 3, { cx: w * .2, fill: K.line }), { x: 288, y: 108 + i * 52, a: 'gx', t: 66 + i * 10, d: 10 }, 'l2'); }); }, K.pink);
+// 11. training content becomes step-by-step guidance
+aiScene('ai-train', add => { add(rr(86, 62, 8, { fill: K.sky, fo: 55 }), { x: 76, y: 112, t: 8, d: 12 }, 'screen'); add(path_([[-9, -12], [11, 0], [-9, 12]], true, { fill: K.white }), { x: 78, y: 112, t: 14, d: 10 }, 'play'); rows(add, 40, 172, [72, 60, 80, 48], 18, K.line, 16, 6); },
+  add => { [0, 1, 2].forEach(i => { add(el(24, 24, { fill: [K.blue, K.pink, K.teal][i] }), { x: 288, y: 96 + i * 48, t: 52 + i * 12, d: 12 }, 'step'); add(rr(8, 8, 2, { fill: K.white }), { x: 288, y: 96 + i * 48, t: 58 + i * 12, d: 8 }, 'n'); add(rr(64, 7, 3.5, { cx: 32, fill: K.navy }), { x: 304, y: 90 + i * 48, a: 'gx', t: 58 + i * 12, d: 10 }, 't1'); add(rr(52, 6, 3, { cx: 26, fill: K.line }), { x: 304, y: 104 + i * 48, a: 'gx', t: 62 + i * 12, d: 10 }, 't2'); }); }, K.blue);
+// 12. delivery progress summarised into a clear project view
+aiScene('ai-progress', add => { [[44, 190, 30], [70, 170, 50], [96, 200, 20], [50, 130, 36], [90, 118, 28], [60, 224, 18]].forEach(([x, y, h], i) => add(rr(14, h, 4, { fill: [K.sky, K.pink, K.blue][i % 3], fo: 80 }), { x, y, t: 8 + i * 3, d: 12, rot: i % 2 ? 5 : -5 }, 'frag')); },
+  add => { add(el(54, 54, { stroke: K.ice, sw: 10 }), { x: 296, y: 106, a: 'none', t: 50 }, 'ring0'); add(el(54, 54, { stroke: K.blue, sw: 10, draw: 24, t: 54, to: 72 }), { x: 296, y: 106, a: 'none', t: 54, rot: -90 }, 'ring'); [0, 1, 2, 3].forEach(i => add(rr(16, [30, 44, 36, 56][i], 4, { cy: -[15, 22, 18, 28][i], fill: [K.sky, K.blue, K.teal, K.pink][i] }), { x: 272 + i * 24, y: 218, a: 'gy', t: 70 + i * 8, d: 12 }, 'b')); }, K.teal);

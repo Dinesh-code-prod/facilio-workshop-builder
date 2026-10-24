@@ -1983,10 +1983,10 @@ body.login-in .auth-box > *:nth-child(1) { animation-delay: .85s; } body.login-i
 @media (prefers-reduced-motion: reduce) { .cn-wipe { display: none; } body.login-in .auth-art, body.login-in .auth-box, body.login-in .auth-box > * { animation: none !important; } }
 
 /* journey cards v2: tilt in along a snaking path, a spotlight walks card to card, linked by a filling connector */
-.cn-blocks { gap: 16px 18px; perspective: 900px; }
+.cn-blocks { gap: 16px 18px; margin-top: clamp(14px, 3vh, 34px); }
 .cn-blocks li { min-height: 112px; overflow: visible; transform-origin: 50% 100%; transition: transform .45s cubic-bezier(.2,.8,.2,1), box-shadow .45s, border-color .45s, background .45s; }
-.cn-sc.on .cn-blocks li { animation: cnTilt .9s calc(var(--k) * .06s + .2s) cubic-bezier(.2,.9,.25,1.05) backwards; opacity: 1; }
-@keyframes cnTilt { 0% { opacity: 0; transform: translateY(60px) rotateX(-55deg) scale(.9); } 100% { opacity: 1; transform: none; } }
+.cn-sc.on .cn-blocks li { animation: cnTilt .9s calc(var(--k) * .06s + .2s) cubic-bezier(.2,.9,.25,1.05) backwards; opacity: 1; transform: none; }
+@keyframes cnTilt { 0% { opacity: 0; transform: translateY(46px) rotate(calc((var(--k) - 5.5) * 1.2deg)) scale(.82); } 100% { opacity: 1; transform: none; } }
 .cn-blocks li::after { content: ''; position: absolute; top: 50%; left: 100%; width: 18px; height: 2px; margin-top: -1px; background: linear-gradient(90deg, var(--c), rgba(255,255,255,.25)); transform: scaleX(0); transform-origin: left; transition: transform .35s ease .25s; border-radius: 2px; }
 .cn-blocks li.lit:not(:nth-child(6n))::after { transform: scaleX(1); }
 .cn-blocks li em { display: block; max-height: 0; overflow: hidden; opacity: 0; margin-top: 0; font-style: normal; font-size: 11.5px; line-height: 1.3; color: rgba(255,255,255,.78); transition: max-height .45s ease, opacity .35s ease .08s, margin .45s; padding-right: 8px; }
@@ -2091,3 +2091,9 @@ h1, h2, h3 { font-weight: 750; }
 .rag-c.r { border-top: 4px solid #D92D6A; } .rag-c.a { border-top: 4px solid #F59E0B; } .rag-c.g { border-top: 4px solid #12A594; }
 @media (max-width: 1100px) { .adm-row.two { grid-template-columns: 1fr; } .rag { grid-template-columns: 1fr; } .trk-r { grid-template-columns: 1fr; gap: 8px; } }
 @media (max-width: 560px) { .sb-r { grid-template-columns: 90px minmax(0, 1fr) 28px; gap: 8px; } .dn-svg { width: 150px; height: 150px; } .adm-sec { font-size: 19px; } }
+
+/* wide or zoomed-out screens: scale the whole introduction up so nothing looks tiny or spread apart */
+@media (min-width: 1900px) { .cn { zoom: 1.45; } }
+@media (min-width: 2500px) { .cn { zoom: 1.9; } }
+.cn-ai-foot { margin: 22px auto 0; justify-content: center; font-size: 14px; max-width: 640px; text-align: left; }
+.cn-blocks li em { padding-right: 34px; }
