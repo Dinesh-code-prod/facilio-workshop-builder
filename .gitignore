@@ -2,3 +2,5 @@ node_modules
 dist/
 tests/out/
 *.log
+dist-run/
+dist-work/
