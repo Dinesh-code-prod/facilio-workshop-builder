@@ -565,7 +565,6 @@ a:hover .gl-thumb .t-play { transform: translate(-50%, -50%) scale(1.08); }
 .chk-list { margin-top: 6px; max-height: 260px; overflow: auto; border-left: 2px solid var(--fc-border); padding-left: 10px; }
 .chk-list > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 3px 0; }
 .card-h .btn { margin-left: auto; }
-.built-by { content: "Built by Dinesh Ravikumar"; position: fixed; right: 12px; bottom: 6px; font-size: 13px; font-weight: 700; color: var(--fc-primary); opacity: .85; pointer-events: none; user-select: none; z-index: 50; padding: 5px 10px; border: 1px solid var(--fc-primary); border-radius: 6px; background: var(--fc-surface, #fff); box-shadow: 0 2px 8px rgba(0,0,0,.08); letter-spacing: .2px; }
 
 /* ---------- spreadsheet editor (xlseditor.js) ---------- */
 .xe-host { background: #fff; border: 1px solid var(--fc-border); border-radius: 4px; }
