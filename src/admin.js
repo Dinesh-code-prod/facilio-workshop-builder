@@ -23,7 +23,21 @@
   const TONE = ['#1570EF', '#e91e84', '#14a8a8', '#6b4ee6', '#e08a00'];
   const tone = s => TONE[Math.abs([...String(s)].reduce((a, c) => a * 31 + c.charCodeAt(0), 7)) % TONE.length];
 
-  async function load() { A.data = await API.get('/api/admin/overview', { noAuthRedirect: true }); }
+  async function load() { A.raw = A.data = await API.get('/api/admin/overview', { noAuthRedirect: true }); }
+  // timeline filter: projects with activity, or created, inside the period; every figure is recomputed from those projects (no estimates)
+  A.rg = { period: 'all' };
+  function applyRange(raw) {
+    const R = V.range, sp = R.span(A.rg); if (!raw || (!sp[0] && !sp[1])) return raw;
+    const ps = raw.projects.filter(p => R.inRange(p.lastActivity, sp) || R.inRange(p.createdAt, sp)), act = ps.filter(p => !p.archived); const sum = f => act.reduce((a, p) => a + (f(p) || 0), 0);
+    const kpis = Object.assign({}, raw.kpis, { active: act.length, archived: ps.length - act.length, customers: new Set(act.map(p => String(p.customer).trim().toLowerCase())).size, files: sum(p => p.files), bytes: sum(p => p.bytes), sessions: sum(p => p.sessions.total), upcoming: sum(p => p.sessions.upcoming), requirements: sum(p => p.requirements), flows: sum(p => p.flows), openActions: sum(p => p.openActions), overdue: sum(p => p.overdue), openQuestions: sum(p => p.openFeedback), raidOpen: sum(p => p.raidOpen), brdApproved: act.filter(p => p.brdStatus === 'approved').length, live: act.filter(p => p.stage === 6).length });
+    const health = { healthy: 0, attention: 0, stale: 0, live: 0 }; act.forEach(p => { health[p.health] = (health[p.health] || 0) + 1; });
+    const weekly = (raw.weekly || []).filter(w => (!sp[1] || w.week <= sp[1]) && (!sp[0] || add7(w.week) >= sp[0])); const monthly = (raw.monthly || []).filter(m => (!sp[0] || m.month >= sp[0].slice(0, 7)) && (!sp[1] || m.month <= sp[1].slice(0, 7)));
+    return Object.assign({}, raw, { projects: ps, kpis, health, weekly, monthly, stages: [0, 1, 2, 3, 4, 5, 6].map(n => act.filter(p => p.stage === n).length),
+      attention: act.filter(p => p.reasons.length).sort((a, b) => b.reasons.length - a.reasons.length || b.overdue - a.overdue).slice(0, 8).map(p => ({ id: p.id, name: p.name, customer: p.customer, reasons: p.reasons })),
+      recent: act.slice().sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity)).slice(0, 6).map(p => ({ id: p.id, name: p.name, customer: p.customer, lastActivity: p.lastActivity, stage: p.stage })) });
+  }
+  const add7 = w => { const d = new Date(w + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + 6); return d.toISOString().slice(0, 10); };
+  V.range.hooks.adm = { state: () => A.rg, change: () => { show(); }, pdf: () => { const body = dashBody(); V.range.pdf({ title: 'Delivery Studio · Admin dashboard', sub: (DTABS.find(t => t[0] === A.dash) || [, ''])[1] + ' · Timeline: ' + V.range.label(A.rg) + ' · ' + applyRange(A.raw || A.data).kpis.active + ' active project(s)', html: body }); } };
   const show = () => V.setMode('admin');
   const stageDots = n => `<span class="adm-dots" title="${esc(STAGES[n])}">${[1, 2, 3, 4, 5, 6].map(i => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</span>`;
 
@@ -77,10 +91,14 @@
   const daysLeft = p => p.endDate ? Math.ceil((new Date(p.endDate).getTime() - Date.now()) / 864e5) : null;
   const projGo = p => ['admDetail', p.id];
 
+  function dashBody() {
+    const keep = A.data; A.data = applyRange(A.raw || keep);
+    try { return (A.dash === 'delivery' ? deliveryDash() : A.dash === 'customers' ? customersDash() : A.dash === 'usage' ? usageDash() : A.dash === 'quality' ? qualityDash() : overviewDash()) + (V.admViz ? V.admViz.extra(A.dash, { A, STAGES, ownerName }) : ''); } finally { A.data = keep; }
+  }
   function dashboard() {
+    const bar = V.range.bar('adm', A.rg, { note: A.rg.period === 'all' ? '' : 'Projects with activity or created in this period' });
     const tabs = `<div class="dtabs" role="tablist" aria-label="Dashboard views">${DTABS.map(([k, l]) => `<button role="tab" aria-selected="${A.dash === k}" class="dtab${A.dash === k ? ' on' : ''}" data-act="admTab" data-t="${k}">${l}</button>`).join('')}</div>`;
-    const body = A.dash === 'delivery' ? deliveryDash() : A.dash === 'customers' ? customersDash() : A.dash === 'usage' ? usageDash() : A.dash === 'quality' ? qualityDash() : overviewDash();
-    return tabs + body + (V.admViz ? V.admViz.extra(A.dash, { A, STAGES, ownerName }) : '');
+    return bar + tabs + dashBody();
   }
 
   function deliveryDash() {

@@ -12,11 +12,12 @@
   // ---------- Lottie (loaded on demand; the page works without it) ----------
   let lp = null;
   const lottie = () => lp || (lp = new Promise(res => { if (root.lottie) return res(root.lottie); const s = doc.createElement('script'); s.src = 'vendor/lottie_light.min.js'; s.onload = () => res(root.lottie || null); s.onerror = () => res(null); doc.head.appendChild(s); }));
-  const play = (el, name, o) => lottie().then(L => { if (!L || !el || !el.isConnected) return null; try { return L.loadAnimation(Object.assign({ container: el, renderer: 'svg', loop: false, autoplay: true, path: 'brand/lottie/' + name + '.json', rendererSettings: { preserveAspectRatio: 'xMidYMid meet' } }, o || {})); } catch (e) { return null; } });
+  const play = (el, name, o) => lottie().then(L => { if (!L || !el || !el.isConnected) return null; try { return L.loadAnimation(Object.assign({ container: el, renderer: 'svg', loop: false, autoplay: true, path: 'brand/lottie/' + name + '.json?v=49', rendererSettings: { preserveAspectRatio: 'xMidYMid meet' } }, o || {})); } catch (e) { return null; } });
 
   // ---------- copy ----------
   const STAGES = () => (V._isoLifecycle ? V._isoLifecycle().map(l => l.label) : ['Kick-off', 'Workshops', 'Requirements', 'BRD', 'Configuration', 'UAT', 'FTR', 'Training', 'Go-live', 'Hypercare', 'Handover', 'Closure']);
   // original Lottie illustrations (tools/make-scenes.mjs), three per audience
+  const wd = t => String(t).split(' ').map((w, i) => `<span class="w" style="--w:${i}"><span>${esc(w)}</span></span>`).join(' ');
   const ART = {
     team: [['scene-dk-workshop', 'Workshops that stay on track'], ['scene-dk-brd', 'BRDs drafted with AI assistance'], ['scene-dk-dash', 'Delivery dashboards']],
     customer: [['scene-dk-workshop', 'Workshops where your voice counts'], ['scene-dk-dash', 'Progress you can follow'], ['scene-dk-guide', 'Guides for your team']]
@@ -52,10 +53,10 @@
       const sceneHtml = {
         brand: () => `<div class="cn-sc cn-brand" data-k="brand"><div class="cn-logo"><div class="cn-burst" data-lt="burst"></div><div class="cn-mark"><img class="cn-wm" src="brand/logo-white.png" alt="Facilio" width="640" height="176"><i class="cn-sq p"></i><i class="cn-sq t"></i></div></div>
           <p class="cn-tag">${name ? `<b>Welcome, ${esc(name)}</b>` : ''}<span>${esc(SUB.brand[aud])}</span></p></div>`,
-        journey: () => `<div class="cn-sc cn-journey" data-k="journey"><h2 class="cn-h">${esc(HEAD.journey[aud])}</h2><ol class="cn-blocks" aria-label="Delivery lifecycle">${STAGES().map((l, k) => `<li style="--k:${k};--c:var(--cn-c${k % 4})"><span class="cn-chip"></span><i>${k + 1}</i><b>${esc(l)}</b><em>${esc(DESC[k] || '')}</em><u data-lt="check"></u><s></s></li>`).join('')}</ol></div>`,
-        platform: () => `<div class="cn-sc cn-platform" data-k="platform"><h2 class="cn-h">${esc(HEAD.platform[aud])}</h2><div class="cn-eco" data-eco></div><p class="cn-ai"><span class="cn-spark" data-lt="orbit"></span><span>Facilio AI assists with drafts. People review and decide.</span></p></div>`,
-        people: () => { const L = ART[aud === 'customer' ? 'customer' : 'team']; return `<div class="cn-sc cn-people" data-k="people"><h2 class="cn-h">${esc(HEAD.people[aud])}</h2><div class="cn-cards">${L.map(([f, t], i) => `<figure style="--i:${i}"><div class="cn-art" data-lt="${f}"></div><figcaption>${esc(t)}</figcaption></figure>`).join('')}</div></div>`; },
-        ai: () => `<div class="cn-sc cn-people cn-aiscene" data-k="ai"><h2 class="cn-h">${esc(HEAD.ai[aud])}</h2><div class="cn-cards">${AIART[aud].map(([f, t], i) => `<figure style="--i:${i}"><div class="cn-art" data-lt="${f}"></div><figcaption>${esc(t)}</figcaption></figure>`).join('')}</div><p class="cn-ai cn-ai-foot"><span class="cn-spark" data-lt="orbit"></span><span>Facilio AI prepares drafts from your project records. A person always reviews and approves.</span></p></div>`,
+        journey: () => `<div class="cn-sc cn-journey" data-k="journey"><h2 class="cn-h">${wd(HEAD.journey[aud])}</h2><ol class="cn-blocks" aria-label="Delivery lifecycle">${STAGES().map((l, k) => `<li style="--k:${k};--c:var(--cn-c${k % 4})"><span class="cn-chip"></span><i>${k + 1}</i><b>${esc(l)}</b><em>${esc(DESC[k] || '')}</em><u data-lt="check"></u><s></s></li>`).join('')}</ol></div>`,
+        platform: () => `<div class="cn-sc cn-platform" data-k="platform"><h2 class="cn-h">${wd(HEAD.platform[aud])}</h2><div class="cn-eco" data-eco></div><p class="cn-ai"><span class="cn-spark" data-lt="orbit"></span><span>Facilio AI assists with drafts. People review and decide.</span></p></div>`,
+        people: () => { const L = ART[aud === 'customer' ? 'customer' : 'team']; return `<div class="cn-sc cn-people" data-k="people"><h2 class="cn-h">${wd(HEAD.people[aud])}</h2><div class="cn-cards">${L.map(([f, t], i) => `<figure style="--i:${i}"><div class="cn-art" data-lt="${f}"></div><figcaption>${esc(t)}</figcaption></figure>`).join('')}</div></div>`; },
+        ai: () => `<div class="cn-sc cn-people cn-aiscene" data-k="ai"><h2 class="cn-h">${wd(HEAD.ai[aud])}</h2><div class="cn-cards">${AIART[aud].map(([f, t], i) => `<figure style="--i:${i}"><div class="cn-art" data-lt="${f}"></div><figcaption>${esc(t)}</figcaption></figure>`).join('')}</div><p class="cn-ai cn-ai-foot"><span class="cn-spark" data-lt="orbit"></span><span>Facilio AI prepares drafts from your project records. A person always reviews and approves.</span></p></div>`,
         cta: () => `<div class="cn-sc cn-cta" data-k="cta"><div class="cn-mark sm"><img class="cn-wm" src="brand/logo-white.png" alt="" width="640" height="176"><i class="cn-sq p"></i><i class="cn-sq t"></i></div><h1 class="cn-h big">${esc(HEAD.cta[aud])}</h1><p class="cn-sub">${esc(SUB.cta[aud])}</p>
           <div class="cn-go-wrap"><div class="cn-pulse" data-lt="pulse" aria-hidden="true"></div><button type="button" class="cn-go" data-r="go">${esc(opts.cta || 'Get started')}</button></div>${opts.off ? `<label class="cn-off"><input type="checkbox" id="cnOff"> Do not show this introduction again</label>` : ''}</div>`
       };
@@ -88,7 +89,7 @@
         anims.forEach(a => { try { a.destroy(); } catch (e) { } }); anims = [];
         const s = scenes[i], k = list[i];
         if (!still) {
-          s.querySelectorAll('[data-lt]:not(.cn-blocks u)').forEach(el => { const nm = el.getAttribute('data-lt'); play(el, nm, { loop: nm === 'orbit' || nm === 'pulse' || nm.indexOf('scene-') === 0 }).then(a => a && anims.push(a)); });
+          s.querySelectorAll('[data-lt]:not(.cn-blocks u)').forEach(el => { const nm = el.getAttribute('data-lt'); const fig = el.closest('figure'); const dl = fig ? (parseFloat(fig.style.getPropertyValue('--i')) || 0) * 420 + 300 : 0; setTimeout(() => { if (closed || n !== i) return; play(el, nm, { loop: nm === 'orbit' || nm === 'pulse' || nm.indexOf('scene-') === 0 }).then(a => a && anims.push(a)); }, dl); });
           if (k === 'journey') s.querySelectorAll('.cn-blocks li').forEach((li, j) => { setTimeout(() => { if (closed || n !== i) return; const pv = s.querySelector('.cn-blocks li.act'); if (pv) pv.classList.remove('act'); li.classList.add('lit', 'act'); const u = li.querySelector('u'); play(u, 'check').then(a => a && anims.push(a)); }, 900 + j * 540); });
           if (k === 'platform') { const host = s.querySelector('[data-eco]'); if (host && V.ecoStage) { host.innerHTML = V.ecoStage({ audience: aud, dark: true }); fit(s); } }
         }
