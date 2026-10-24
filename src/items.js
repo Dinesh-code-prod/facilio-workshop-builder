@@ -54,5 +54,5 @@
   V.moduleOptions = (selected, extra) => { const mods = F.allModules().filter(m => m.inScope).sort((a, b) => a.label.localeCompare(b.label)); return (extra || []).concat(mods.map(m => ({ v: m.name, l: m.label }))).map(o => `<option value="${F.esc(o.v)}" ${o.v === selected ? 'selected' : ''}>${F.esc(o.l)}</option>`).join(''); };
   V.modLabel = m => ({ kickoff: 'Kick-off', uat: 'UAT', golive: 'Go-live', project: 'Project', '': 'General' }[m || ''] || ((F.moduleView && F.moduleView(m)) || {}).label || m || 'General');
   // stage an item that is waiting for the server: guard against double clicks
-  V.busy = async (el, fn) => { if (el && el.disabled) return; if (el) el.disabled = true; try { return await fn(); } catch (e) { V.toast(e.message || 'Something went wrong', 5000, true); } finally { if (el) el.disabled = false; } };
+  V.busy = async (el, fn) => { if (el && el.disabled) return; if (el) { el.disabled = true; el.classList.add('loading'); } try { return await fn(); } catch (e) { V.toast(e.message || 'Something went wrong', 5000, true); } finally { if (el) { el.disabled = false; el.classList.remove('loading'); } } };
 })(typeof window !== 'undefined' ? window : globalThis);

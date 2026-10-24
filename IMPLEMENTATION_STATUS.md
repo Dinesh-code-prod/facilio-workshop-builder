@@ -217,3 +217,11 @@ User Guide Builder: created a guide, added a section, exported Word (10.8 KB) an
 
 ## 50. Template version comparison (24 Oct)
 Templates drawer: "compare with v(n-1)" shows a line diff of two versions (added/removed lines). Verified live with a temporary template (removed).
+
+## 51. Final phase, part 1 (fonts, buttons, sidebar, isometric journey, colour restraint)
+- Fonts: Roboto (vendored, latin variable) + token scale (`--fs-*`); 21 duplicate `.btn` rules removed; one canonical button block (primary/secondary/tertiary/destructive/icon; compact/standard/large; hover/focus/pressed/disabled/loading/success/error). FDS publishes no button dimensions, so `--btn-*` tokens are the app's own and configurable.
+- Destructive actions: `src/guards.js` wraps seven delete handlers in a confirmation dialog. Static audit: 649 `data-act` actions, none without a handler. Per-button live exercising of every action was NOT done.
+- Sidebar: NAV regrouped in lifecycle order (Kick-off, Workshops, Requirements, BRD, Configuration, UAT + Go-Live, FTR/KPI, Training, Hypercare, Handover + Closure). All items and routes kept; saved workspace layouts keyed by the old group names may need re-ordering in Workspace & Layout.
+- Isometric journey (`src/journey.js`, original SVG+CSS, no library): platform assembles in layers, 12 modules appear, connectors draw, hover/focus detail, click opens authorised pages. Used on the login panel, the homepage, project overview (team: progress from project records) and customer home (progress only from the published plan). Mobile/tablet use a connected tile list. Reduced-motion supported. Intro overlay plays after the existing introduction (`V.isoIntro`).
+- Colour: flat surfaces, neutral borders/shadows, brand blue/navy only; coloured glows and blur blobs removed via a final CSS layer. Provisional values are centralised in `:root` (`--brand`, `--brand-navy`, `--line`, `--shadow-*`).
+- Not done: performance and security review, AI-context "superseded" rule, FTR import mapping/templates, remaining Motion Kit animations, six-step strip in the opening animation (`intro.js`), customer-account live test (no customer account available).
