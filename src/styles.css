@@ -2944,3 +2944,15 @@ body table tbody tr:hover td { background: #F5F8FF !important; }
 body .crumb { color: #52618A; }
 body .page-header .t > :not(h1):not(h2):not(.btn) { color: #C7D0F4 !important; } body .page-header .t h1, body .page-header .t h2 { color: #fff !important; }
 body .page-header .t a { color: #8DB8FF !important; }
+.cn.ti .lbl:not(.act) .t::before { content: attr(data-no) ". "; color: #8DB8FF; font-weight: 700; }
+/* projects page: a light touch of Facilio colour on stat cards and project cards (tints, not fills) */
+body .pp-stat { background: linear-gradient(135deg, rgba(21, 112, 239, .08), #fff 60%) !important; } body .pp-stat:nth-child(2) { background: linear-gradient(135deg, rgba(23, 179, 174, .1), #fff 60%) !important; } body .pp-stat:nth-child(3) { background: linear-gradient(135deg, rgba(229, 25, 127, .08), #fff 60%) !important; } body .pp-stat:nth-child(4) { background: linear-gradient(135deg, rgba(107, 78, 230, .09), #fff 60%) !important; }
+body .proj-card { background: linear-gradient(180deg, color-mix(in srgb, var(--tone, #1570EF) 9%, #fff) 0, #fff 52%) !important; box-shadow: inset 0 3px 0 var(--tone, #1570EF), 0 1px 2px rgba(29, 26, 94, .06), 0 10px 26px rgba(29, 26, 94, .06) !important; }
+body .proj-card:hover { box-shadow: inset 0 3px 0 var(--tone, #1570EF), 0 14px 32px rgba(29, 26, 94, .14) !important; }
+body .pp-journey { background: linear-gradient(180deg, #F3F7FF, #fff 70%) !important; }
+.projects-page.hm .hm-stats .pp-stat:nth-child(1) { background-image: linear-gradient(135deg, rgba(21, 112, 239, .09), #fff 62%) !important; }
+.projects-page.hm .hm-stats .pp-stat:nth-child(2) { background-image: linear-gradient(135deg, rgba(23, 179, 174, .11), #fff 62%) !important; }
+.projects-page.hm .hm-stats .pp-stat:nth-child(3) { background-image: linear-gradient(135deg, rgba(229, 25, 127, .08), #fff 62%) !important; }
+.projects-page.hm .hm-stats .pp-stat:nth-child(4) { background-image: linear-gradient(135deg, rgba(107, 78, 230, .1), #fff 62%) !important; }
+.projects-page.hm .proj-card:nth-child(n) { background-image: linear-gradient(180deg, color-mix(in srgb, var(--tone, #1570EF) 10%, #fff) 0, #fff 55%) !important; box-shadow: inset 0 3px 0 var(--tone, #1570EF), 0 1px 2px rgba(29, 26, 94, .06), 0 10px 24px rgba(29, 26, 94, .06) !important; }
+.projects-page.hm .proj-card:nth-child(n):hover { box-shadow: inset 0 3px 0 var(--tone, #1570EF), 0 14px 30px rgba(29, 26, 94, .14) !important; }

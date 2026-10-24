@@ -50,7 +50,7 @@
       ];
       const END = AUTO ? 38 : 44, REVEAL = AUTO ? 1e9 : 38.2;
       // real seconds -> timeline seconds. The whole intro is about 6.8s: growth 5s, then (opening page) the leaves open into the sign-in page in about 1.8s.
-      const TK = AUTO ? 3.1 : 2.5, TR = 4.6 * TK, WPTS = (AUTO ? [[0, 0], [1.1, 5], [2.2, 14.4], [3.4, 26.6], [4.6, 38]] : [[0, 0], [1.2, 5], [2.4, 14.4], [3.7, 26.6], [5.0, 38.2], [6.8, 44]]).map(([c, t]) => [c * TK, t]);
+      const TK = AUTO ? 3.4 : 2.7, TR = 4.6 * TK, WPTS = (AUTO ? [[0, 0], [1.1, 5], [2.2, 14.4], [3.4, 26.6], [4.6, 38]] : [[0, 0], [1.2, 5], [2.4, 14.4], [3.7, 26.6], [5.0, 38.2], [6.8, 44]]).map(([c, t]) => [c * TK, t]);
       const warp = c => { if (c <= 0) return 0; for (let i = 1; i < WPTS.length; i++) if (c <= WPTS[i][0]) { const a = WPTS[i - 1], b = WPTS[i]; return lerp(a[1], b[1], (c - a[0]) / (b[0] - a[0])); } return WPTS[WPTS.length - 1][1]; };
       const unwarp = t => { for (let i = 1; i < WPTS.length; i++) if (t <= WPTS[i][1]) { const a = WPTS[i - 1], b = WPTS[i]; return lerp(a[0], b[0], (t - a[1]) / (b[1] - a[1])); } return WPTS[WPTS.length - 1][0]; };
       let CLK = 0, LO = -1, HOLES = [], LCX = 0, LCY = 0, LSC = 1, HOLD = false;   // CLK real clock, LO leaf-opening clock (-1 until it starts)
@@ -186,7 +186,7 @@
       const labels = STAGES.map(([t, d], i) => {
         const el = document.createElement('div'); el.className = 'lbl'; el.tabIndex = -1; el.setAttribute('role', 'button');
         el.setAttribute('aria-label', 'Stage ' + (i + 1) + ': ' + t);
-        el.innerHTML = `<div class="in"><span class="n">${i + 1}</span><div><div class="t">${SHORT[i]}</div><div class="d">${d}</div></div></div>`;
+        el.innerHTML = `<div class="in"><span class="n">${i + 1}</span><div><div class="t" data-no="${i + 1}">${SHORT[i]}</div><div class="d">${d}</div></div></div>`;
         el.addEventListener('click', () => seek(S[i] + .05));
         el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); seek(S[i] + .05); } });
         labelsEl.appendChild(el);
@@ -624,7 +624,7 @@
           }
           // side: outward from the trunk; the trunk-stage nodes alternate
           const side = Math.abs(n.x) < 30 ? (n.i % 2 ? -1 : 1) : Math.sign(n.x);
-          let x = side > 0 ? ax + 22 : ax - 22 - L.w, y = ay - L.h / 2;
+          let x = side > 0 ? ax + 18 : ax - 18 - L.w, y = ay - L.h / 2;
           if (L.rel && L.relSt === st && L.relSide === side) { x = ax + L.rel.dx; y = ay + L.rel.dy; }   // start from where it settled last frame: no flip-flopping between equivalent spots
           items.push({ L, ax, ay, side, x, y, w: L.w, h: L.h, pri: act ? 100 : n.i });
         }
@@ -657,7 +657,7 @@
           if (clashes(it)) {
             // search nearby spots: both sides of the node, stepping up and down
             const x0 = it.x, y0 = it.y; let found = false;
-            const xs = [it.ax + 22, it.ax - 22 - it.w, it.ax - it.w / 2].map(x => Math.max(left, Math.min(right - it.w, x)));
+            const xs = [it.ax + 18, it.ax - 18 - it.w, it.ax - it.w / 2].map(x => Math.max(left, Math.min(right - it.w, x)));
             for (let k = 0; k <= 40 && !found; k++) {
               const dy = (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 14;
               for (const x of xs) { it.x = x; it.y = it.ay - it.h / 2 + dy; if (!clashes(it)) { found = true; break; } }
@@ -669,6 +669,10 @@
         lastNodes = obst.filter(o => o.node !== undefined);
         // draw leader lines and move the DOM labels (eased so they glide rather than jump)
         g.setTransform(DPR, 0, 0, DPR, 0, 0);
+        // the route: a faint dotted thread joins the stages in order, root to crown, so the sequence reads along the tree itself
+        if (LO < 0) { let px = 0, py = 0, has = false; g.save(); g.setLineDash([2, 6]); g.lineCap = 'round'; g.strokeStyle = 'rgba(141,184,255,.5)'; g.lineWidth = 1.5; g.beginPath();
+          for (const n of nodes) { if (t < n.t + .15) break; const qx = ox + sc * (n.x + SK * n.y), qy = oy + sc * n.y; if (!has) g.moveTo(qx, qy); else g.quadraticCurveTo(px + (qx - px) * .1 + (qy - py) * .12, (py + qy) / 2, qx, qy); px = qx; py = qy; has = true; }
+          g.stroke(); g.restore(); }
         lastBoxes = [];
         for (const it of ok) {
           const L = it.L;
@@ -676,7 +680,7 @@
           else if (Math.hypot(it.x - L.x, it.y - L.y) > 36) { L.x = it.x; L.y = it.y; L.el.classList.remove('swap'); void L.el.offsetWidth; L.el.classList.add('swap'); }   // a different spot (another label took its place): re-appear there, never slide across the tree
           else { L.x += (it.x - L.x) * .22; L.y += (it.y - L.y) * .22; }
           const ex = Math.max(L.x, Math.min(L.x + it.w, it.ax)), ey = Math.max(L.y, Math.min(L.y + it.h, it.ay));
-          g.strokeStyle = it.pri === 100 ? 'rgba(190,215,255,.75)' : 'rgba(141,184,255,.42)'; g.lineWidth = 1.2;
+          g.strokeStyle = it.pri === 100 ? 'rgba(190,215,255,.85)' : 'rgba(141,184,255,.7)'; g.lineWidth = 1.5;
           g.beginPath(); g.moveTo(it.ax, it.ay); g.lineTo(ex, ey); g.stroke();
           g.fillStyle = g.strokeStyle; g.beginPath(); g.arc(ex, ey, 2, 0, TAU); g.fill();
           L.el.style.transform = `translate(${L.x.toFixed(1)}px,${L.y.toFixed(1)}px)`;
