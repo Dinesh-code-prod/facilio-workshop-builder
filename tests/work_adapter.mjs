@@ -83,6 +83,15 @@ await t('templates: versions, publish needs admin, retire, project scope, AI use
   r = await call(dinesh, 'POST', `/api/templates/${id}/status`, { action: 'retire' }); assert.equal(r.data.item.status, 'retired');
   r = await call(sam, 'DELETE', `/api/templates/${pt}`); assert.equal(r.status, 200);
 });
+await t('configuration inputs: three record kinds, evidence file category, used as AI sources', async () => {
+  let r = await call(sam, 'PUT', `/api/projects/${pid}/items/cmodx/m_custom_fleet`, { data: { name: 'custom_fleet', purpose: 'Track vehicles', usage: 'Open Fleet tab' } }); assert.ok(r.status === 200 || r.status === 201, 'cmodx ' + r.status);
+  r = await call(sam, 'PUT', `/api/projects/${pid}/items/cfgrel/cr_1`, { data: { from: 'Fleet', to: 'Work Order', type: 'Creates a record', outcome: 'WO created on failed inspection' } }); assert.ok(r.status === 200 || r.status === 201, 'cfgrel ' + r.status);
+  r = await call(sam, 'PUT', `/api/projects/${pid}/items/capp/ap_1`, { data: { name: 'Driver app', tabs: [{ name: 'Trips', roles: 'Driver' }] } }); assert.ok(r.status === 200 || r.status === 201, 'capp ' + r.status);
+  r = await call(sam, 'POST', `/api/projects/${pid}/files`, { category: 'config_evidence', name: 'screen.png', mime: 'image/png', size: 1000, meta: {} }); assert.equal(r.status, 201, 'evidence upload allowed');
+  r = await call(sam, 'POST', `/api/projects/${pid}/files`, { category: 'config_evidence', name: 'x.exe', mime: 'application/octet-stream', size: 10, meta: {} }); assert.ok(r.status >= 400, 'executables refused');
+  for (const task of ['gaps', 'guide', 'uat', 'training', 'handover']) { r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task }); assert.equal(r.status, 201, task); const lab = r.data.item.data.sources.map(x => x.label).join('|'); assert.match(lab, /cmodx/, task + ' uses module descriptions'); assert.match(lab, /cfgrel/); assert.match(lab, /capp/); }
+  r = await call(out, 'PUT', `/api/projects/${pid}/items/cfgrel/cr_2`, { data: { from: 'a', to: 'b' } }); assert.ok(r.status === 403 || r.status === 404, 'viewer cannot write');
+});
 await t('admin: only granted people, enforced on the server', async () => {
   let r = await call(sam, 'GET', '/api/admin/overview'); assert.equal(r.status, 403);
   r = await call(dinesh, 'GET', '/api/admin/overview'); assert.equal(r.status, 200); assert.ok(r.data.projects.find(p => p.id === pid));

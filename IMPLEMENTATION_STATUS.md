@@ -190,3 +190,8 @@ brddoc.list registers BRDs (main plus typed BRDs: core, service desk, ERP, agent
 - A compact digest (about 10 KB) is saved in the `config_digest` document (on package load or with "Update AI context") and added as the first source of the existing AI tasks (gaps, uat, ftrrows, guide, config, handover) plus a new `pkg` task ("Analyse with AI"). No new AI workflow.
 - AI reliability: the open model times out on large prompts, so the server uses a smaller prompt for it (and retries once with a shorter one); Claude via `anthropic_api_key` keeps the full size. Error text now shows the cause.
 - Next: phase 5b registers (relationships, apps and tabs, custom module descriptions) as in docs/IMPLEMENTATION_ROADMAP.md.
+
+## 43. Configuration Inputs (phase 5b, 24 Oct 2026)
+- `src/cfginputs.js`: Configuration Inputs page (Configuration group) with Custom modules, Module relationships, Connected apps and tabs, and Checks. Custom modules come from the package, workshop proposals or manual entry and get a description block (purpose, usage, tabs, actions, statuses, workflow, roles, notes, files). Relationships and apps (with tabs) are structured records with free text and files. Import from the loaded package or a CSV / Excel table, always through a tick-to-import preview that skips duplicates and never overwrites.
+- Server: record kinds `cmodx`, `cfgrel`, `capp`; file category `config_evidence`; the three kinds are the first sources of the existing AI tasks (gaps, guide, uat, ftr, ftrrows, config, handover, pkg) and of a new `training` outline task. No separate AI workflow.
+- Tests: 10 server checks pass; verified live (describe a module, add a relationship, package previews 12 relationships and 17 apps, 38 checks); test records removed.

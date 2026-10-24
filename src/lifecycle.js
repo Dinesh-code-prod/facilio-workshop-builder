@@ -9,7 +9,7 @@
   const KINDS = ['ai', 'hc', 'hcrep', 'ho', 'close', 'signoff', 'rep'];
   const DELIV = [
     ['brd', 'Business Requirements Document (BRD)', 'Requirements'], ['uat', 'UAT plan and test cases', 'UAT'], ['ftr', 'FTR report', 'Testing'],
-    ['config', 'Configuration documentation', 'Configuration'], ['guide', 'Customer user guide', 'Training'], ['golive', 'Go-live readiness review', 'Go-live'],
+    ['config', 'Configuration documentation', 'Configuration'], ['guide', 'Customer user guide', 'Training'], ['training', 'Training material outline', 'Training'], ['golive', 'Go-live readiness review', 'Go-live'],
     ['hypercare', 'Hypercare status report', 'Hypercare'], ['handover', 'Support handover pack', 'Handover'], ['closure', 'Project closure report', 'Closure']];
   const EXTRA = [['gaps', 'Missing requirements check'], ['workshop', 'Workshop intelligence'], ['pkg', 'Org package analysis']];
   const label = t => (DELIV.concat(EXTRA.map(x => [x[0], x[1]])).find(d => d[0] === t) || [0, t])[1];
