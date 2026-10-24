@@ -1765,3 +1765,17 @@ input[type=checkbox]:not([role=switch]):not(.sr):focus-visible { outline: 0; box
 @media (prefers-reduced-motion: reduce) { .eco-life li { animation: none; opacity: 1; } }
 .iso-intro { overflow-x: hidden; } .iso-intro .eco-core { max-width: min(320px, 38vh); margin-inline: auto; } .iso-intro .eco-core .eco-plat { max-height: 38vh; }
 [aria-busy="true"][data-act] { cursor: progress; opacity: .7; pointer-events: none; }
+
+/* opening page (src/intro.js): branding, one-line introduction, lifecycle strip, animated platform and ecosystem, Get started. Grid/flow layout, nothing absolutely positioned. */
+.intro.v6 { position: fixed; inset: 0; z-index: 9999; background: var(--surface-2, #F9FAFB); display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; transition: opacity .5s ease; }
+.intro.v6.out { opacity: 0; pointer-events: none; }
+.iv6-top { display: flex; align-items: center; gap: 10px; padding: 14px 24px; border-bottom: 1px solid var(--ws-line, #D8E1EE); background: #fff; flex: none; }
+.iv6-top .iv-sep { width: 1px; height: 20px; background: #D0D5DD; } .iv6-top .iv-crumb { font-weight: 600; color: var(--brand-navy, #1D1A5E); }
+.iv6-body { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 28px 20px 32px; text-align: center; }
+.iv6-body h1 { font-size: clamp(24px, 4vw, 36px); letter-spacing: -.02em; color: var(--brand-navy, #1D1A5E); }
+.iv6-body > p { margin: 0; max-width: 620px; color: #475467; font-size: clamp(14px, 1.8vw, 16px); line-height: 1.5; }
+.iv6-fill { width: 100%; max-width: 980px; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.iv6-body .iv-go { margin-top: 8px; min-width: 180px; }
+.intro.v6 .eco-core { max-width: min(340px, 34vh); margin-inline: auto; }
+.ribbon .grp { flex-wrap: wrap; max-width: 100%; }
+.intro.v6 { align-items: stretch; justify-content: flex-start; cursor: auto; z-index: 10000; }

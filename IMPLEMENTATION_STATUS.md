@@ -235,3 +235,11 @@ Templates drawer: "compare with v(n-1)" shows a line diff of two versions (added
 - **Customer preview** (`src/custpreview.js`): owners can "Preview as customer". Customers and guests cannot sign in on facilio.work (server refuses), so this is a client-side simulation: customer menu, customer-released sections only, all writes blocked, exit returns to the staff view. Server-side authorization is unchanged and still treats the caller as staff.
 - **Intro:** stacking guard (a second intro cannot open on top of the first); six-step strip relabelled to the lifecycle.
 - **Not done / open:** live per-button exercise of every action; performance work beyond the loading states; a real customer sign-in (platform limit); invitation links cannot be validated before sign-in on this platform, so the invitation screen stays generic; section 7 of the latest brief (website URL / facilio.work rebranding) was cut off in the attachment and the slug has since been renamed.
+
+## 53. Opening page, ecosystem animation, rename, write lock (build 39)
+- App renamed to facilio-delivery-studio (https://facilio-delivery-studio.facilio.work).
+- New opening page (src/intro.js, `.intro.v6`): branding, one-line intro, 12-stage lifecycle strip, isometric book + 8-module SaaS ecosystem + AI strip, Get started. Checked live at phone width: 8 panels, 0 overlaps, Get started closes it and reaches the welcome screen.
+- Same ecosystem stage on login / invitation / roadmap intro (src/ecosystem.js).
+- Per-record write lock on the server (withLock) plus concurrency test; rapid-click guard in the dispatcher.
+- Customer preview (read-only) for consultants (src/custpreview.js).
+- Not verified: real guest/customer sign-in (impossible on facilio.work), cross-instance write races, reduced-motion in a browser.
