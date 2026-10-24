@@ -2544,3 +2544,18 @@ label.f, .lbl { font-weight: 600; color: var(--fx); }
 @media (max-width: 640px){.cn.ti .top .prod, .cn.ti .top .sep{display:none;}
 }
 @media (max-width: 899px), (max-aspect-ratio: 23/20){}
+
+/* Night card for the welcome / signed-out screen (Run build). Scoped to .auth-form.night, so the other sign-in screens keep the light card. */
+.auth-form.night { background: linear-gradient(180deg, #0A0930 0%, #14125A 55%, #1D1A5E 100%); }
+.auth-form.night .night-sky { display: block; max-width: 300px; margin: 0 auto 6px; }
+.auth-form.night .night-sky svg { display: block; }
+.auth-form.night .ns-star { fill: #fff; opacity: .7; animation: nsTw 3.6s ease-in-out infinite; } .auth-form.night .ns-star.s1 { animation-delay: -1.2s; } .auth-form.night .ns-star.s2 { animation-delay: -2.4s; }
+@keyframes nsTw { 0%, 100% { opacity: .35; } 50% { opacity: .95; } }
+.auth-form.night .auth-hello { color: #fff; }
+.auth-form.night .auth-box h2 { color: #8DB8FF; }
+.auth-form.night .auth-box .sub { color: #B9C6E8; }
+.auth-form.night .auth-feats { border-top-color: rgba(255,255,255,.16); }
+.auth-form.night .auth-feats li { color: #AEBBE0; }
+.auth-form.night .auth-feats b { color: #fff; }
+.auth-form.night .auth-box .btn.primary { box-shadow: 0 12px 28px -12px rgba(21,112,239,.9); }
+@media (prefers-reduced-motion: reduce) { .auth-form.night .ns-star { animation: none; } }
