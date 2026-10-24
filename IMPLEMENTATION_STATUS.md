@@ -208,3 +208,6 @@ brddoc.list registers BRDs (main plus typed BRDs: core, service desk, ERP, agent
 
 ## 47. Knowledge library (24 Oct)
 Server `GET /api/knowledge` returns only lessons marked reusable from projects the signed-in person can already open; new tab "Knowledge library" in Traceability & Quality with search. Tested (server) and verified live; test lesson removed.
+
+## 48. Phase 6 verified live (24 Oct)
+User Guide Builder: created a guide, added a section, exported Word (10.8 KB) and PDF (19 KB), approval flow not exercised. Video to Guide: generated 3-second test video, loaded it, captured 2 frames, saved 2 screenshots + 2 transcript lines, AI draft returned grounded steps with the frame tags and listed missing information. All test records and uploaded frames were deleted.
