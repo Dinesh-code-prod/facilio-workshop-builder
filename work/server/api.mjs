@@ -138,6 +138,13 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
     mine.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
     return ok({ projects: mine.map(p => projectOut(p, ar ? (ar === 'sub' ? 'viewer' : 'owner') : (p.members.find(m => m.id === s.id) || {}).role)) });
   });
+  // knowledge library: lessons marked reusable, from the projects this person can already open (nothing else is exposed)
+  route('GET', '/api/knowledge', async () => {
+    const s = await me(); const ar = await adminRole(s); const rows = (await dbList('projects')).map(r => r.value).filter(p => p && !p.archived);
+    const mine = ar ? rows : rows.filter(p => (p.members || []).some(m => m.id === s.id)); const out = [];
+    for (const p of mine.slice(0, 200)) { for (const it of await itemsOf(p.id, 'lesson')) { const d = it.data || {}; if (!d.reusable) continue; out.push({ id: it.id, projectId: p.id, project: p.name, title: String(d.title || '').slice(0, 200), area: d.area || '', impact: d.impact || '', what: String(d.what || '').slice(0, 2000), reco: String(d.reco || '').slice(0, 2000), at: it.updatedAt }); } }
+    out.sort((a, b) => String(b.at).localeCompare(String(a.at))); return ok({ items: out.slice(0, 1000) });
+  });
   route('POST', '/api/projects', async (b) => {
     const s = await me(); const id = rid('p'); const t = now(); const d = v => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
     const p = { id, name: str(b.name, 160, 'Project name', true), customer: str(b.customer, 160, 'Customer name', true), description: str(b.description, 4000, 'Description'), startDate: d(b.startDate), endDate: d(b.endDate), customerAccessEnabled: false, archived: false, createdBy: s.id, createdAt: t, updatedAt: t, members: [{ id: s.id, email: s.email, name: s.name, role: 'owner' }] };

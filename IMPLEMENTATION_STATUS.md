@@ -205,3 +205,6 @@ brddoc.list registers BRDs (main plus typed BRDs: core, service desk, ERP, agent
 
 ## 46. Project Roadmap (24 Oct)
 `src/projroadmap.js`: Project Roadmap view with the 12 delivery stages as original isometric-style SVG tiles; each stage's status is derived only from recorded data (sessions, requirements, BRD review, build status, UAT, FTR workbook, guides, go-live checklist, hypercare, handover, closure) and the tile opens that stage's screen (keyboard accessible). Verified live; the animated introduction (roadmap.js) is unchanged and remains conceptual only.
+
+## 47. Knowledge library (24 Oct)
+Server `GET /api/knowledge` returns only lessons marked reusable from projects the signed-in person can already open; new tab "Knowledge library" in Traceability & Quality with search. Tested (server) and verified live; test lesson removed.
