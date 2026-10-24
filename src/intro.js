@@ -17,11 +17,11 @@
   const city = CITY.map((c, i) => i === 2
     ? '<div class="iv-b hi" style="--h:' + c[1] + ';--i:' + i + '"><span class="iv-bt">FACILIO WORKSPACE</span><div class="iv-bx"><small>Requirements captured</small><b>Workshop to BRD</b></div><span class="iv-bn">' + c[0].toUpperCase() + '</span></div>'
     : '<div class="iv-b" style="--h:' + c[1] + ';--i:' + i + '"><div class="iv-w">' + win(6) + '</div><span class="iv-bn">' + c[0].toUpperCase() + '</span></div>').join('');
-  o.innerHTML = '<div class="iv-top"><img class="iv-mini" src="brand/logo-navy.png" alt="" aria-hidden="true"><span class="iv-sep"></span><span class="iv-crumb">Requirement Workshop Builder</span><span class="iv-pill"><i></i>Your workshop, ready to run</span></div>' +
+  o.innerHTML = '<div class="iv-top"><img class="iv-mini" src="brand/logo-navy.png" alt="" aria-hidden="true"><span class="iv-sep"></span><span class="iv-crumb">Delivery Studio</span><span class="iv-pill"><i></i>Your workshop, ready to run</span></div>' +
     '<div class="iv-rail r1"><div class="iv-track">' + chips() + '</div></div><div class="iv-rail r2"><div class="iv-track">' + chips() + '</div></div>' +
     '<i class="iv-glow"></i><i class="iv-cloud k1"></i><i class="iv-cloud k2"></i><i class="iv-cloud k3"></i>' +
     '<div class="iv-hero"><div class="iv-logo"><img class="in-logo" src="brand/logo-navy.png" alt="" aria-hidden="true"></div>' +
-    '<div class="iv-title">Requirement Workshop Builder</div><div class="iv-sub">Prepare. Align. Deliver.</div>' +
+    '<div class="iv-title">Delivery Studio</div><div class="iv-sub">Discover. Design. Deliver.</div>' +
     '<div class="iv-steps"><i class="iv-sl"><b></b></i>' + STEPS.map((t, i) => '<div class="iv-st" style="--i:' + i + '"><u></u><strong>' + t[0] + '</strong><small>' + t[1] + '</small><em>Active stage</em></div>').join('') + '</div>' +
     '<div class="iv-note"><span class="iv-pill sm"><i></i>Guided from contract to go-live</span><p>Walk through the Facilio configuration, capture requirements and produce the BRD, together with your customer in one shared session.</p></div></div>' +
     '<div class="iv-card l"><div class="iv-ch"><i class="dot"></i><b>Workshop alignment</b><span class="iv-tag">Sample</span></div>' +

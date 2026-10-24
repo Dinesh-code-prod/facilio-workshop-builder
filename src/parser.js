@@ -1,4 +1,4 @@
-/* Facilio Requirement Workshop Builder — Org package parser
+/* Facilio Delivery Studio — Org package parser
  * Turns a Facilio standalone package (ZIP of components/*.xml) into the immutable baseline model.
  * Decoding tables follow facilio-solution-document-builder/references/decoding-tables.md (verified enums).
  * Works in the browser (DOMParser) and in Node (pass a DOMParser implementation, e.g. @xmldom/xmldom).

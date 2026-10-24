@@ -7,7 +7,7 @@
   const SCHEMA_VERSION = '2.0';
 
   // ---------- JSON exports (A–E), all derived from the same configuration + workshop data ----------
-  function envelope(kind, data) { const B = S.baseline; const meta = S.baselineMeta || {}; return Object.assign({ schema: 'fwb.export.' + kind, schemaVersion: SCHEMA_VERSION, generatedAt: new Date().toISOString(), generator: 'Facilio Requirement Workshop Builder', generatedBy: S.user && S.user.name,
+  function envelope(kind, data) { const B = S.baseline; const meta = S.baselineMeta || {}; return Object.assign({ schema: 'fwb.export.' + kind, schemaVersion: SCHEMA_VERSION, generatedAt: new Date().toISOString(), generator: 'Facilio Delivery Studio', generatedBy: S.user && S.user.name,
     project: { id: S.project && S.project.id, name: S.project && S.project.name, customer: S.project && S.project.customer, version: S.ws.project.version }, configurationSource: { kind: (F.doc('config').source || 'reference'), label: meta.label || (B && B.meta && B.meta.packageName) || null, orgId: B && B.meta ? B.meta.orgId : null, exportedAt: B && B.meta && B.meta.exportTimestamp ? new Date(+B.meta.exportTimestamp).toISOString() : null },
     baselineImmutable: true, note: 'Workshop proposals are not applied to any Facilio configuration. No Facilio import schema has been verified for this file.' }, data); }
   const scopeMods = all => F.allModules().filter(m => all ? m.inUse || m.origin === 'proposed' : m.inScope);
