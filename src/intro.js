@@ -5,7 +5,7 @@
   const doc = root.document; if (!doc) return;
   let seen = false; try { seen = sessionStorage.getItem('fwb_intro') === '1'; } catch (e) { }
   const forced = /[?&]intro=1\b/.test(root.location.search); const automated = !!(root.navigator && root.navigator.webdriver);
-  if (!forced && (seen || automated || /[?&]nointro\b/.test(root.location.search + root.location.hash))) return;
+  if (!forced && (seen || automated || /[?&]nointro\b|#\/welcome/.test(root.location.search + root.location.hash))) return;
   try { sessionStorage.setItem('fwb_intro', '1'); } catch (e) { }
   // the rest of the app is bundled after this file, so start on the next tick
   setTimeout(() => { try { const V = root.FWBViews; if (!V || !V.cinema) return; V.cinema({ aud: 'public', cta: 'Get started', wipe: true }).then(() => { }); } catch (e) { } }, 0);

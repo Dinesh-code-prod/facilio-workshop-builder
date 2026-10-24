@@ -50,7 +50,7 @@
       ];
       const END = AUTO ? 38 : 44, REVEAL = AUTO ? 1e9 : 38.2;
       // real seconds -> timeline seconds. The whole intro is about 6.8s: growth 5s, then (opening page) the leaves open into the sign-in page in about 1.8s.
-      const TK = AUTO ? 2.25 : 1.76, TR = 4.6 * TK, WPTS = (AUTO ? [[0, 0], [1.1, 5], [2.2, 14.4], [3.4, 26.6], [4.6, 38]] : [[0, 0], [1.2, 5], [2.4, 14.4], [3.7, 26.6], [5.0, 38.2], [6.8, 44]]).map(([c, t]) => [c * TK, t]);
+      const TK = AUTO ? 2.8 : 2.2, TR = 4.6 * TK, WPTS = (AUTO ? [[0, 0], [1.1, 5], [2.2, 14.4], [3.4, 26.6], [4.6, 38]] : [[0, 0], [1.2, 5], [2.4, 14.4], [3.7, 26.6], [5.0, 38.2], [6.8, 44]]).map(([c, t]) => [c * TK, t]);
       const warp = c => { if (c <= 0) return 0; for (let i = 1; i < WPTS.length; i++) if (c <= WPTS[i][0]) { const a = WPTS[i - 1], b = WPTS[i]; return lerp(a[1], b[1], (c - a[0]) / (b[0] - a[0])); } return WPTS[WPTS.length - 1][1]; };
       const unwarp = t => { for (let i = 1; i < WPTS.length; i++) if (t <= WPTS[i][1]) { const a = WPTS[i - 1], b = WPTS[i]; return lerp(a[0], b[0], (t - a[1]) / (b[1] - a[1])); } return WPTS[WPTS.length - 1][0]; };
       let CLK = 0, LO = -1, HOLES = [], LCX = 0, LCY = 0, LSC = 1, HOLD = false;   // CLK real clock, LO leaf-opening clock (-1 until it starts)
@@ -197,9 +197,11 @@
       /* ---------- canvas + layout + camera ---------- */
       const cv = o.querySelector('canvas'), g = cv.getContext('2d');
       const brand = $('brand'), head = $('head');
-      let W = 0, H = 0, DPR = 1, FIT = 1, QCAP = 1.5, slow = 0, WIDE = true, LR = 0, RT = 58, RB = 0, BL = 0, IDLE = 0;
+      const QT = [1.5, 1, .75, .55], LSTEP = [1, 2, 3, 4], LGK = [1, 1.3, 1.5, 1.7];   // quality tiers: canvas scale, draw every n-th leaf, leaf size to compensate
+      leaves.forEach((L, i) => { L.ix = i; });
+      let W = 0, H = 0, DPR = 1, FIT = 1, QCAP = 1.5, QTIER = 0, slow = 0, WIDE = true, LR = 0, RT = 58, RB = 0, BL = 0, IDLE = 0;
       function resize() {
-        DPR = Math.min(QCAP, window.devicePixelRatio || 1); W = o.clientWidth; H = o.clientHeight; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+        DPR = Math.min(QCAP, window.devicePixelRatio || 1) * (QCAP < 1 ? 1 : 1); W = o.clientWidth; H = o.clientHeight; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
         WIDE = W >= 900 && W / H > 1.15; o.classList.toggle('narrow', !WIDE);
         RT = 58;
         RT = WIDE ? 112 : 150; LR = 0;
@@ -486,7 +488,7 @@
         for (const b of roots) tipGlow(b, t, TIP_T);
         // leaves unfold
         for (const L of leaves) {
-          if (t < L.t) continue; const u = (t - L.t) / 1.5; const k = backOut(u); if (k <= .01) continue;
+          if (LO >= 0) break; if (L.ix % LSTEP[QTIER]) continue; if (t < L.t) continue; const u = (t - L.t) / 1.5; const k = backOut(u) * LGK[QTIER]; if (k <= .01) continue;
           const th = L.ang + Math.sin(ta * 1.3 + L.ph) * .05 * sm(u) + (1 - clamp(u)) * 1.1 * L.flip; const zs = L.size / 56; const kx = k * zs, ky = k * zs * (.55 + .45 * clamp(u)); const cs = Math.cos(th), sn = Math.sin(th);
           let lx = L.x + SK * L.y, ly = L.y, al = .9 * clamp(u * 2.2), th2 = th;
           if (EXL) { const q = L.q, dk = EXT - q.d; if (dk > 0) { lx += q.vx * dk; ly += q.vy * dk + 520 * dk * dk; th2 += q.sp * dk; al *= clamp(1 - (dk - .5) / .9); if (al <= 0) continue; } }
@@ -547,34 +549,49 @@
       }
       /* The leaves open the page: every leaf swells (rim in its own colour) and erases the night scene inside itself, so the sign-in page shows through the leaves
          and the merged leaves become the whole screen. Subset of leaves + a final widening ring guarantee full coverage. */
-      const LEAFP = new Path2D(); LEAFP.moveTo(0, 0); LEAFP.bezierCurveTo(56 * .45, -56 * .32, 56 * .95, -56 * .22, 56, 0); LEAFP.bezierCurveTo(56 * .95, 56 * .22, 56 * .45, 56 * .32, 0, 0);
-      const LDUR = .9, LEND = 1.6;
+      const LDUR = 1.4, LEND = 2.4;
+      let cv2 = null, g2 = null;
+      function ensureCv2() {
+        if (!cv2) { cv2 = doc.createElement('canvas'); cv2.className = 'ti-sh'; cv2.setAttribute('aria-hidden', 'true'); cv.after(cv2); g2 = cv2.getContext('2d'); }
+        if (cv2.width !== cv.width || cv2.height !== cv.height) { cv2.width = cv.width; cv2.height = cv.height; }
+      }
+      /* Leaf shatter: the canopy's own leaves detach one by one, from the middle outwards. Each drifts away, turns and fades as a small single leaf, while the night scene
+         (sky, trunk, branches) is cleared behind them by a soft widening dissolve, so the sign-in page is uncovered as the leaves disperse. Particles start exactly where the
+         tree's leaves are, so nothing jumps. Leaves are drawn on their own overlay canvas so the clearing never erases them. */
       function leafHoles(ox, oy, sc, SK, ta) {
-        const S0 = DPR * sc, EX = DPR * ox, EY = DPR * oy, diag = Math.hypot(cv.width, cv.height);
-        if (LO >= LEND) { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height); return; }
-        const act = []; for (const L of HOLES) { const u = clamp((LO - L.hd) / LDUR); if (u > 0) act.push([L, u]); }
-        const ringK = clamp((LO - .85) / .95), cx = DPR * (ox + LCX * sc), cy = DPR * (oy + LCY * sc);
-        g.save();
-        g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
-        for (const [L, u] of act) {   // rims
-          const zs = L.size / 56, m = 1 + L.mx * u * u * u, kx = m * zs, th = L.ang + Math.sin(ta * 1.3 + L.ph) * .05, cs = Math.cos(th), sn = Math.sin(th);
-          g.setTransform(S0 * cs * kx, S0 * sn * kx, -S0 * sn * kx, S0 * cs * kx, EX + S0 * (L.x + SK * L.y), EY + S0 * L.y);
-          g.lineWidth = Math.max(1, 10 * DPR) / (S0 * kx); g.lineJoin = 'round'; g.strokeStyle = L.col; g.stroke(LEAFP);
+        const S0 = DPR * sc, EX = DPR * ox, EY = DPR * oy, W2 = cv.width, H2 = cv.height, diag = Math.hypot(W2, H2);
+        ensureCv2(); g2.setTransform(1, 0, 0, 1, 0, 0); g2.clearRect(0, 0, W2, H2);
+        if (LO >= LEND) { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W2, H2); return; }
+        const cx = DPR * (ox + LCX * sc), cy = DPR * (oy + LCY * sc);
+        const rv = easeIO(clamp(LO / (LEND - .25))), R = rv * diag * 2.4;
+        if (R > 1) {
+          g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'destination-out';
+          const gr = g.createRadialGradient(cx, cy, R * .42, cx, cy, R); gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+          g.fillStyle = gr; g.fillRect(0, 0, W2, H2); g.restore();
         }
-        if (ringK > 0) { g.setTransform(1, 0, 0, 1, 0, 0); g.strokeStyle = '#8DB8FF'; g.lineWidth = 12 * DPR; g.beginPath(); g.arc(cx, cy, ringK * ringK * diag * 1.05, 0, TAU); g.stroke(); }
-        g.globalCompositeOperation = 'destination-out'; g.fillStyle = '#000';
-        for (const [L, u] of act) {   // holes
-          const zs = L.size / 56, m = 1 + L.mx * u * u * u, kx = m * zs, th = L.ang + Math.sin(ta * 1.3 + L.ph) * .05, cs = Math.cos(th), sn = Math.sin(th);
-          g.setTransform(S0 * cs * kx, S0 * sn * kx, -S0 * sn * kx, S0 * cs * kx, EX + S0 * (L.x + SK * L.y), EY + S0 * L.y); g.fill(LEAFP);
+        for (const L of leaves) {
+          const q = L.sh; if (!q || L.ix % LSTEP[QTIER]) continue; const dk = LO - q.d, p = clamp(dk / LDUR);
+          const zs = L.size / 56 * LGK[QTIER]; let th = L.ang + Math.sin(ta * 1.3 + L.ph) * .05, lx = L.x + SK * L.y, ly = L.y, al = .9, kx = zs, ky = zs;
+          if (dk > 0) {
+            const e = 1 - Math.pow(1 - p, 2.2);   // fast start, soft landing
+            lx += q.vx * e * 1.1 + Math.sin(dk * 2.6 + q.ph) * 16 * p; ly += q.vy * e * 1.1 + 110 * p * p + Math.cos(dk * 2.1 + q.ph) * 10 * p;
+            th += q.sp * dk; const gk = 1 + q.gr * Math.sin(p * Math.PI * .5); kx *= gk; ky *= gk * (.55 + .45 * Math.abs(Math.cos(dk * q.fl + q.ph)));
+            al *= 1 - clamp((p - .5) / .5); if (al <= .01) continue;
+          }
+          const cs = Math.cos(th), sn = Math.sin(th);
+          g2.setTransform(S0 * cs * kx, S0 * sn * kx, -S0 * sn * ky, S0 * cs * ky, EX + S0 * lx, EY + S0 * ly);
+          g2.globalAlpha = al; g2.drawImage(leafSpr(L.col), -2, -20);
         }
-        if (ringK > 0) { g.setTransform(1, 0, 0, 1, 0, 0); g.beginPath(); g.arc(cx, cy, Math.max(0, ringK * ringK * diag * 1.05 - 6 * DPR), 0, TAU); g.fill(); }
-        g.restore();
+        g2.globalAlpha = 1;
       }
       function prepLeaf() {
-        if (HOLES.length) return; const vis = leaves.filter((_, i) => i % Math.max(1, Math.round(leaves.length / 190)) === 0); let sx = 0, sy = 0; for (const L of vis) { sx += L.x; sy += L.y; } LCX = sx / vis.length; LCY = sy / vis.length;
-        let dm = 1; for (const L of vis) dm = Math.max(dm, Math.hypot(L.x - LCX, (L.y - LCY) * .9));
-        const need = Math.hypot(W, H) * 1.0;
-        HOLES = vis.map(L => Object.assign(L, { hd: Math.hypot(L.x - LCX, (L.y - LCY) * .9) / dm * .55 + Math.random() * .08, mx: Math.max(6, need / (L.size * Math.max(.5, (LSC || 1) * .9))) }));
+        if (HOLES.length) return; let sx = 0, sy = 0; for (const L of leaves) { sx += L.x; sy += L.y; } LCX = sx / leaves.length; LCY = sy / leaves.length;
+        let dm = 1; for (const L of leaves) dm = Math.max(dm, Math.hypot(L.x - LCX, (L.y - LCY) * .9));
+        for (const L of leaves) {
+          const dx = L.x - LCX, dy = L.y - LCY, d = Math.hypot(dx, dy * .9) / dm, a = Math.atan2(dy, dx) + (Math.random() - .5) * .9, v = 260 + Math.random() * 640 * (.35 + d);
+          L.sh = { d: d * (LEND - LDUR - .15) + Math.random() * .25, vx: Math.cos(a) * v + 80, vy: Math.sin(a) * v * .8 - 60, sp: (Math.random() - .5) * 7, ph: Math.random() * TAU, gr: .5 + Math.random() * 1.1, fl: 2 + Math.random() * 3 };
+        }
+        HOLES = [1];
       }
 
       /* ---------- label placement: next to its node, pushed apart until nothing overlaps ---------- */
@@ -696,18 +713,18 @@
         if (closed) return; raf = root.requestAnimationFrame(frame);
         if (doc.hidden) { last = 0; return; }
         if (rm || HOLD) return;
-        if (!last) last = ts; const dt = Math.min(.1, (ts - last) / 1000); last = ts;
+        if (!last) last = ts; const dt = Math.min(.2, (ts - last) / 1000); last = ts;
         if (LO >= 0) { LO += dt; IDLE += dt; }
         else if (CLK < WPTS[WPTS.length - 1][0]) { CLK += dt; T = warp(CLK); if (AUTO && CLK >= TR) startLeaf(); }
         else { IDLE += dt; if (fno++ & 1) return; }   // after the intro: 30fps is plenty for the sway
         const c0 = performance.now(); draw(T); ui(T); const cost = performance.now() - c0;
-        if (T > 4 && QCAP > 1) { slow = cost > 24 ? slow + 1 : Math.max(0, slow - 1); if (slow > 25) { QCAP = 1; slow = 0; resize(); } }
+        if (T > 1.5 && QTIER < QT.length - 1) { slow = cost > 20 ? slow + 1 : Math.max(0, slow - 1); if (slow > 8) { QTIER++; QCAP = QT[QTIER]; slow = 0; resize(); } }   // slow device: step the canvas resolution down (1.5 > 1 > .75 > .55x) until frames fit
       }
       let leafTimers = false;
       function startLeaf() {
         if (LO >= 0) return; T = END; CLK = TR; prepLeaf(); LO = 0; IDLE = 0; o.classList.add('leafout'); o.style.background = 'transparent'; leafTimers = true;
         setTimeout(() => { const au = doc.querySelector('.auth'); if (au) { au.classList.remove('auth-in'); void au.offsetWidth; au.classList.add('auth-in'); } resolve({ how: 'go', off: false }); }, 220);   // the page behind plays its entrance as the first leaves open
-        setTimeout(() => cleanup(), (LEND + .25) * 1000);
+        setTimeout(() => cleanup(), (LEND + .2) * 1000);
       }
       function cleanup() { if (closed) return; closed = true; root.cancelAnimationFrame(raf); doc.body.classList.remove('cn-on'); root.removeEventListener('keydown', key); root.removeEventListener('resize', resize); delete root.__ti; cv.width = 1; cv.height = 1; o.remove(); }
       function seek(t) { T = clamp(t, 0, END); CLK = unwarp(T); IDLE = 0; lastPhase = -2; lastStage = -3; draw(T); ui(T); }
@@ -735,7 +752,7 @@
       o.addEventListener('click', e => { const bt = e.target.closest('[data-r]'); if (bt) finish(bt.getAttribute('data-r')); });
       root.addEventListener('keydown', key);
       if (rm) { T = END; if (AUTO) setTimeout(() => finish('go'), 1600); }
-      root.__ti = { seek, nodes, S, END, REVEAL, warp, unwarp, TR, scrub: (c, lo) => { HOLD = true; CLK = c; T = warp(c); if (lo >= 0) { prepLeaf(); LO = lo; o.classList.add('leafout'); o.style.background = 'transparent'; } else LO = -1; lastPhase = -2; lastStage = -3; draw(T); ui(T); }, get LO() { return LO; }, holes: () => HOLES.length };
+      root.__ti = { seek, nodes, S, END, REVEAL, warp, unwarp, TR, scrub: (c, lo) => { HOLD = true; CLK = c; T = warp(c); if (lo >= 0) { prepLeaf(); LO = lo; o.classList.add('leafout'); o.style.background = 'transparent'; } else LO = -1; lastPhase = -2; lastStage = -3; draw(T); ui(T); }, get LO() { return LO; }, holes: () => HOLES.length, nl: () => leaves.length };
       doc.body.appendChild(o); doc.body.classList.add('cn-on');
       resize(); ui(T); if (!logoImg.complete) logoImg.addEventListener('load', () => draw(T));
       raf = root.requestAnimationFrame(frame);
