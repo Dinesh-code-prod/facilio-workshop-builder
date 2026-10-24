@@ -1283,3 +1283,59 @@ body.reveal > div:not(.intro):not(.loading) { animation: revealIn .9s cubic-bezi
 .ctr-prov { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--bg-soft, #f1f3f8); font-weight: 600; }
 .ctr-prov.team { background: #e8f6ee; color: #14633a; }
 .brd-flag { margin: 10px 14px 0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* ---- Projects page: modern dashboard layout (hero, stats, journey, empty state) ---- */
+.projects-page.pp { max-width: 1480px; width: min(1480px, calc(100% - 64px)); margin: 0 auto; padding: 24px 0 44px; background: none; }
+.pp *, .pp *::before, .pp *::after { box-sizing: border-box; }
+.pp-hero { min-height: 184px; position: relative; overflow: hidden; isolation: isolate; border-radius: 23px; padding: 30px 34px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, .8fr) auto; align-items: center; gap: 20px; color: #17165b; background: linear-gradient(112deg, #e8edff, #dceaff 48%, #d3d8ff); box-shadow: 0 14px 34px #3346961c; }
+.pp-hero::before, .pp-hero::after { content: ""; position: absolute; z-index: -1; border-radius: 50%; pointer-events: none; display: block; }
+.pp-hero::before { width: 520px; height: 280px; left: 35%; top: -190px; background: #ffffff75; transform: rotate(-12deg); }
+.pp-hero::after { width: 570px; height: 220px; right: 4%; bottom: -205px; background: #ffffff61; left: auto; top: auto; }
+.pp-eyebrow { font-size: 14px; font-weight: 750; margin: 0 0 8px; }
+.pp-hero h1 { margin: 0; font-size: clamp(28px, 3vw, 39px); letter-spacing: -1.2px; line-height: 1.1; color: #17165b; }
+.pp-copy { margin: 11px 0 0; max-width: 590px; color: #35467f; font-size: 15px; line-height: 1.5; }
+.pp-art { position: relative; height: 130px; min-width: 220px; display: grid; place-items: center; }
+.pp-glow { position: absolute; width: 200px; height: 100px; border-radius: 50%; background: #9ea7ff; opacity: .28; filter: blur(25px); }
+.pp-panel { position: absolute; width: 145px; height: 98px; border: 1px solid #ffffffdf; border-radius: 15px; background: linear-gradient(145deg, #fffffff2, #e7ebffcc); box-shadow: 0 15px 28px #494fb52b; transform: rotate(-8deg) translate(-18px, 3px); animation: ppFloat 5s ease-in-out infinite; }
+.pp-panel.back { width: 130px; height: 84px; transform: rotate(9deg) translate(36px, 10px); background: linear-gradient(145deg, #fdfdff, #d9e2ff); animation: ppFloat2 5.5s ease-in-out infinite; }
+.pp-plabel { position: absolute; left: 14px; top: 12px; color: #4d5fc8; font-size: 9px; font-weight: 800; }
+.pp-line { position: absolute; left: 14px; height: 6px; border-radius: 8px; background: #d7e0ff; }
+.pp-line.l1 { top: 34px; width: 70px; } .pp-line.l2 { top: 47px; width: 95px; } .pp-line.l3 { top: 60px; width: 48px; }
+.pp-chart { position: absolute; right: 13px; bottom: 13px; display: flex; align-items: flex-end; gap: 4px; height: 34px; }
+.pp-chart i { display: block; width: 9px; border-radius: 4px 4px 1px 1px; background: linear-gradient(#a7b3ff, #6655f3); }
+.pp-chart i:nth-child(1) { height: 16px; opacity: .6; } .pp-chart i:nth-child(2) { height: 30px; } .pp-chart i:nth-child(3) { height: 23px; background: linear-gradient(#71dadd, #12a8b2); }
+.pp-orb { position: absolute; right: calc(50% - 104px); top: 0; width: 49px; height: 49px; display: grid; place-items: center; border-radius: 50%; color: #fff; font-weight: 850; font-size: 14px; background: linear-gradient(145deg, #a69aff, #5745ed); box-shadow: 0 8px 22px #634eeb57; border: 3px solid #ffffffb3; animation: ppPulse 3.5s infinite; }
+.pp-spark { position: absolute; color: #8c79ff; font-size: 19px; animation: ppSparkle 2.8s infinite; } .pp-spark.s1 { top: 8px; left: 16%; } .pp-spark.s2 { right: 12%; bottom: 20px; animation-delay: .8s; }
+.pp-primary { border: 0; border-radius: 10px; color: #fff; font: inherit; font-weight: 750; font-size: 14px; padding: 15px 22px; white-space: nowrap; cursor: pointer; background: linear-gradient(115deg, #7568ff, #3028c8); box-shadow: 0 8px 17px #4341da3b; transition: transform .18s; }
+.pp-primary:hover { transform: translateY(-2px); }
+.pp-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; margin: 22px 0; }
+.pp-stat { display: flex; align-items: center; gap: 15px; min-height: 96px; padding: 18px 23px; border: 1px solid #dee6fadd; border-radius: 21px; background: #ffffffd4; box-shadow: 0 12px 30px #24398214; }
+.pp-icon { flex: 0 0 49px; width: 49px; height: 49px; display: grid; place-items: center; border-radius: 50%; background: #edf0ff; color: #4e5df0; }
+.pp-icon.teal { background: #e3f8f8; color: #16aab7; } .pp-icon.pink { background: #fce9fb; color: #d946d8; } .pp-icon.navy { background: #e9ecff; color: #3028a7; }
+.pp-icon svg { width: 23px; height: 23px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.pp-value { font-size: 29px; line-height: 1.05; font-weight: 800; color: #17165b; letter-spacing: -.6px; } .pp-label { color: #66789e; font-size: 14px; margin-top: 5px; }
+.pp-journey { border: 1px solid #e7ecfb; border-radius: 22px; background: #ffffffd6; box-shadow: 0 8px 25px #27387d0b; padding: 20px 28px 25px; margin-bottom: 22px; }
+.pp-head { display: flex; align-items: center; justify-content: space-between; gap: 15px; } .pp-head h2 { margin: 0; font-size: 18px; letter-spacing: -.3px; color: #20275e; }
+.pp-watch { background: #fff; border: 1px solid #d1dcf4; color: #283767; border-radius: 9px; padding: 9px 14px; font: inherit; font-size: 12px; font-weight: 750; box-shadow: 0 2px 4px #2030660d; cursor: pointer; } .pp-watch span { margin-right: 6px; color: #6355ec; } .pp-watch:hover { border-color: #8aa8f5; }
+.pp-timeline { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); padding: 23px 16px 0; }
+.pp-stage { position: relative; text-align: center; min-width: 0; animation: pjIn .6s cubic-bezier(.2, .7, .2, 1) both; animation-delay: var(--d, 0ms); }
+.pp-stage:not(:last-child)::after { content: ""; position: absolute; height: 3px; top: 19px; left: calc(50% + 23px); right: calc(-50% + 23px); background: linear-gradient(90deg, var(--c), var(--n)); opacity: .38; }
+.pp-node { position: relative; z-index: 1; display: grid; place-items: center; width: 39px; height: 39px; border-radius: 50%; margin: 0 auto 9px; color: #fff; font-size: 14px; font-weight: 800; background: var(--c); box-shadow: 0 3px 8px color-mix(in srgb, var(--c) 22%, transparent); }
+.pp-stage-label { font-size: 13px; font-weight: 700; color: #20265e; }
+.pp-search-row { margin: 0 0 14px; } .pp-search-row .proj-search { width: 280px; max-width: 100%; }
+.projects-page.pp .pj-sec { margin-top: 4px; }
+.pp-empty { position: relative; isolation: isolate; overflow: hidden; min-height: 285px; border: 1px solid #e2e9fbee; border-radius: 23px; background: #ffffffcc; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 30px 22px; }
+.pp-empty::before, .pp-empty::after { content: ""; position: absolute; z-index: -1; pointer-events: none; border-radius: 50%; }
+.pp-empty::before { width: 120%; height: 170px; left: -10%; bottom: -135px; background: linear-gradient(90deg, #ccd6ff8c, #e6e1ff33); transform: rotate(-3deg); } .pp-empty::after { width: 80%; height: 120px; right: -25%; bottom: -90px; background: #d2dbff57; }
+.pp-folders { position: relative; width: 72px; height: 66px; margin-bottom: 10px; }
+.pp-folder { position: absolute; width: 47px; height: 38px; border-radius: 7px; background: linear-gradient(145deg, #dce5ff, #8c9cff); border: 1px solid #ffffffd9; box-shadow: 0 7px 12px #515cc521; }
+.pp-folder::before { content: ""; position: absolute; top: -6px; left: 4px; width: 20px; height: 8px; border-radius: 5px 5px 0 0; background: #b6c4ff; }
+.pp-folder.f1 { left: 7px; bottom: 4px; transform: rotate(-12deg); } .pp-folder.f2 { left: 17px; bottom: 10px; transform: rotate(5deg); background: linear-gradient(145deg, #d9e2ff, #7467ff); } .pp-folder.f3 { left: 23px; bottom: 0; transform: rotate(11deg); background: linear-gradient(145deg, #cfdcff, #9b9eff); }
+.pp-fspark { position: absolute; right: 0; top: 0; color: #8575ff; font-size: 17px; animation: ppSparkle 2.8s infinite; }
+.pp-empty h2 { font-size: 20px; margin: 0 0 7px; letter-spacing: -.4px; color: #20275e; } .pp-empty p { margin: 0; max-width: 560px; color: #62749c; font-size: 14px; line-height: 1.5; }
+.pp-empty .pp-primary { margin-top: 20px; min-width: 200px; background: linear-gradient(110deg, #0877f5, #0754d6); box-shadow: 0 7px 14px #055edc3b; }
+@keyframes ppFloat { 0%, 100% { translate: 0 0; } 50% { translate: 0 -6px; } } @keyframes ppFloat2 { 0%, 100% { translate: 0 0; } 50% { translate: 0 5px; } }
+@keyframes ppPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } } @keyframes ppSparkle { 0%, 100% { opacity: .45; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.12) rotate(10deg); } }
+@media (max-width: 1000px) { .projects-page.pp { width: min(calc(100% - 36px), 900px); } .pp-hero { grid-template-columns: minmax(0, 1fr) minmax(170px, .65fr); } .pp-hero .pp-primary { grid-column: 1 / -1; justify-self: start; } .pp-art { grid-column: 2; grid-row: 1 / span 2; } .pp-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .projects-page.pp { width: calc(100% - 28px); padding-top: 14px; } .pp-hero { display: flex; flex-direction: column; align-items: flex-start; padding: 24px 22px 20px; gap: 10px; } .pp-art { align-self: center; width: 100%; height: 105px; min-width: 0; order: 2; } .pp-hero .pp-primary { order: 3; width: 100%; } .pp-copy { font-size: 14px; } .pp-stats { gap: 10px; margin: 14px 0; } .pp-stat { min-height: 82px; padding: 13px 12px; gap: 10px; border-radius: 16px; } .pp-icon { width: 38px; height: 38px; flex-basis: 38px; } .pp-icon svg { width: 19px; height: 19px; } .pp-value { font-size: 23px; } .pp-label { font-size: 12px; } .pp-journey { padding: 17px 15px 18px; } .pp-head { align-items: flex-start; flex-direction: column; } .pp-timeline { grid-template-columns: 1fr; padding: 20px 0 0; } .pp-stage { display: flex; align-items: center; gap: 13px; text-align: left; min-height: 50px; } .pp-stage:not(:last-child)::after { top: 38px; bottom: -1px; left: 18px; right: auto; height: auto; width: 3px; background: linear-gradient(var(--c), var(--n)); } .pp-node { width: 37px; height: 37px; flex: 0 0 37px; margin: 0; } .pp-stage-label { font-size: 14px; } .pp-empty { min-height: 275px; padding: 24px 18px; } .pp-empty p { font-size: 13px; } }
+@media (prefers-reduced-motion: reduce) { .pp-panel, .pp-orb, .pp-spark, .pp-fspark, .pp-stage { animation: none !important; } .pp-primary { transition: none; } }
