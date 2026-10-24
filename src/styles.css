@@ -2559,3 +2559,18 @@ label.f, .lbl { font-weight: 600; color: var(--fx); }
 .auth-form.night .auth-feats b { color: #fff; }
 .auth-form.night .auth-box .btn.primary { box-shadow: 0 12px 28px -12px rgba(21,112,239,.9); }
 @media (prefers-reduced-motion: reduce) { .auth-form.night .ns-star { animation: none; } }
+
+/* Night banner for the projects home. Scoped to .hm-hero.night (higher specificity than the earlier white overrides), nothing else changes. */
+.projects-page .hm-hero.night { position: relative; overflow: hidden; background: radial-gradient(60% 120% at 88% 10%, rgba(141,184,255,.22), transparent 60%), radial-gradient(45% 90% at 0% 100%, rgba(229,25,127,.22), transparent 65%), linear-gradient(135deg, #0A0930 0%, #14125A 55%, #1D1A5E 100%) !important; border: 1px solid rgba(141,184,255,.25) !important; border-radius: 16px !important; box-shadow: 0 24px 50px -28px rgba(10,9,48,.9) !important; min-height: 220px !important; padding: 32px clamp(24px, 3vw, 44px) !important; }
+.projects-page .hm-hero.night::before { display: block !important; content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image: radial-gradient(1.4px 1.4px at 12% 22%, #fff, transparent), radial-gradient(1px 1px at 28% 60%, #cfe0ff, transparent), radial-gradient(1.4px 1.4px at 44% 18%, #fff, transparent), radial-gradient(1px 1px at 58% 72%, #cfe0ff, transparent), radial-gradient(1.2px 1.2px at 66% 30%, #fff, transparent), radial-gradient(1px 1px at 8% 80%, #cfe0ff, transparent), radial-gradient(1.2px 1.2px at 36% 86%, #fff, transparent), radial-gradient(1px 1px at 52% 44%, #cfe0ff, transparent); opacity: .8; animation: nsTw 5s ease-in-out infinite; }
+.projects-page .hm-hero.night::after { display: none !important; }
+.projects-page .hm-hero.night h1 { color: #fff !important; font-size: clamp(28px, 3vw, 40px) !important; font-weight: 750 !important; letter-spacing: -.02em; }
+.projects-page .hm-hero.night .hm-hi { color: #8DB8FF !important; font-size: 14.5px !important; font-weight: 600; }
+.projects-page .hm-hero.night .hm-sub { color: #C9D5F2 !important; font-size: 15px !important; }
+.projects-page .hm-hero.night .hm-btn.primary { background: #1570EF; color: #fff; border-color: #1570EF; box-shadow: 0 12px 26px -10px rgba(21,112,239,.95); }
+.projects-page .hm-hero.night .hm-btn.ghost { background: rgba(255,255,255,.08); color: #fff; border-color: rgba(255,255,255,.34); }
+.projects-page .hm-hero.night .hm-btn.ghost:hover { background: rgba(255,255,255,.18); border-color: #fff; }
+.projects-page .hm-hero.night .hm-art { align-self: end; margin-bottom: -32px; width: 100% !important; aspect-ratio: auto !important; }
+.projects-page .hm-hero.night .hm-art svg { display: block; width: 100%; height: auto; max-height: 230px; }
+.projects-page .hm-hero.night .ns-star { fill: #fff; opacity: .7; animation: nsTw 3.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .projects-page .hm-hero.night::before, .projects-page .hm-hero.night .ns-star { animation: none; } }
