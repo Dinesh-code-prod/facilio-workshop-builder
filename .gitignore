@@ -1,7 +1,4 @@
 node_modules
 dist/
 tests/out/
-.netlify/
 *.log
-dist-run/
-dist-work/

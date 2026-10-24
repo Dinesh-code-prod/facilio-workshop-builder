@@ -1,7 +1,0 @@
-# Facilio Requirement Workshop Builder — static, client-side only.
-[build]
-  publish = "dist"
-  command = "node build.mjs"
-
-[build.environment]
-  NODE_VERSION = "20"

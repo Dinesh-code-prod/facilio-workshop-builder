@@ -2,16 +2,13 @@
   "name": "facilio-requirement-workshop-builder",
   "version": "1.0.0",
   "private": true,
-  "description": "Facilio Requirement Workshop Builder — multi-project workshop workspace (Form Builder, State Flow Builder, roles, sessions, user guide, transcripts, validation, BRD) on Netlify Functions, Database and Blobs.",
+  "description": "Facilio Requirement Workshop Builder \u2014 multi-project workshop workspace (Form Builder, State Flow Builder, roles, sessions, user guide, transcripts, validation, BRD), hosted on facilio.work.",
   "scripts": {
     "build": "node build.mjs",
-    "dev": "node build.mjs && node scripts/devserver.mjs 8899",
-    "test:api": "node tests/api_smoke.mjs",
-    "test:e2e": "node tests/e2e_full.mjs",
+    "test": "node tests/work_adapter.mjs",
     "build:reference": "node scripts/build-reference.mjs"
   },
   "devDependencies": {
-    "@netlify/database-dev": "^1.0.1",
     "@xmldom/xmldom": "0.8.10",
     "esbuild": "^0.24.2",
     "exceljs": "^4.4.0",
@@ -19,11 +16,5 @@
     "mammoth": "^1.9.0",
     "pdfjs-dist": "^4.10.38",
     "pdfmake": "^0.2.15"
-  },
-  "dependencies": {
-    "@netlify/blobs": "^11.1.4",
-    "@netlify/database": "^2.0.1",
-    "@netlify/functions": "^6.0.2",
-    "pg": "^8.23.1"
   }
 }
