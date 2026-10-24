@@ -1473,3 +1473,13 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #0a7aff
 .ws-name { flex: 1 1 120px; font-weight: 600; color: #24216f; min-width: 0; }
 .ws-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .ws-tools select { padding: 4px 6px; font-size: 12px; max-width: 130px; }
+
+/* ---- Facilio Motion Kit (docs/motionkit/animations.json): intro, list, modal, drawer. All reduced-motion safe. ---- */
+@keyframes introUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+.si-item { opacity: 0; } .si-play .si-item { animation: introUp .5s cubic-bezier(.22, 1, .36, 1) both; }
+@keyframes llRowIn { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
+.ll-row { opacity: 0; will-change: transform, opacity; } .ll-play .ll-row { animation: llRowIn .55s cubic-bezier(.16, 1, .3, 1) both; }
+.scrim.mk { opacity: 0; transition: opacity .3s ease; } .scrim.mk.is-open { opacity: 1; }
+.scrim.mk .drawer { animation: none; transform: translateX(100%); transition: transform .32s cubic-bezier(.16, 1, .3, 1); } .scrim.mk.is-open .drawer { transform: none; }
+.scrim.center.mk .dialog { transform: scale(.8); opacity: 0; transition: transform .3s cubic-bezier(.34, 1.56, .64, 1), opacity .2s ease; } .scrim.center.mk.is-open .dialog { transform: none; opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .si-item, .ll-row { opacity: 1 !important; } .si-play .si-item, .ll-play .ll-row { animation: none; } .scrim.mk, .scrim.mk .drawer, .scrim.mk .dialog { transition: none; } .scrim.mk { opacity: 1; } .scrim.mk .drawer, .scrim.center.mk .dialog { transform: none; opacity: 1; } }

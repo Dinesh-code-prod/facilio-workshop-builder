@@ -1,0 +1,954 @@
+{
+  "kit": "Facilio Motion Kit",
+  "description": "FDS-styled, framework-free UI animations. Each entry has a description, where-to-apply hint, keywords and copy-paste code for HTML/CSS/JS, React and Vue 2 (charts use ECharts). Fetch this to pick and apply an animation.",
+  "url": "https://fds-motion-kit.facilio.run",
+  "count": 26,
+  "usage": {
+    "summary": "Machine-readable map of the Facilio Motion Kit. Use it to add motion to a component: match the component to an animation, then paste its code.",
+    "steps": [
+      "Identify the UI component the developer is building or editing (modal, list, tabs, chart, accordion, ...).",
+      "Look it up in componentMap to get the animation id(s).",
+      "Read animations[id].code[framework] where framework is vanilla | react | vue.",
+      "Paste the code and wire it per the inline comments and animations[id].whereToApply.",
+      "For charts, merge the animation* keys into the developer’s existing ECharts option (pivot is a plain HTML table)."
+    ],
+    "frameworks": [
+      "vanilla",
+      "react",
+      "vue"
+    ],
+    "readCodeFrom": "animations.json ONLY. Do not scrape the rendered HTML pages or hand-write animation code — this file is the single source of truth."
+  },
+  "componentMap": {
+    "modal / dialog / confirm": [
+      "modal"
+    ],
+    "drawer / side panel / slide-over": [
+      "drawer"
+    ],
+    "dropdown / menu / popover / context menu": [
+      "popover"
+    ],
+    "tabs / tab bar": [
+      "tabs"
+    ],
+    "segmented control / view switcher / button group": [
+      "slidenav"
+    ],
+    "sidebar / left nav (collapse)": [
+      "sidebar"
+    ],
+    "app shell / first page load": [
+      "movein",
+      "intro"
+    ],
+    "list / table rows": [
+      "list"
+    ],
+    "card grid / stat cards / summary": [
+      "intro"
+    ],
+    "accordion / collapsible / disclosure / FAQ": [
+      "accordion"
+    ],
+    "toggle / switch": [
+      "micro"
+    ],
+    "checkbox": [
+      "micro"
+    ],
+    "like / favorite / heart": [
+      "micro"
+    ],
+    "drag reorder / sortable list / kanban": [
+      "reorder"
+    ],
+    "bulk selection toolbar": [
+      "bulk"
+    ],
+    "sticky / scroll header": [
+      "sticky"
+    ],
+    "bar chart": [
+      "chartBar"
+    ],
+    "stacked bar chart": [
+      "chartStack"
+    ],
+    "area chart": [
+      "chartArea"
+    ],
+    "spline / smooth line chart": [
+      "chartSpline"
+    ],
+    "line chart": [
+      "chartSpline",
+      "chartLine"
+    ],
+    "area + spline chart": [
+      "chartLine"
+    ],
+    "pie chart": [
+      "chartPie"
+    ],
+    "donut chart": [
+      "chartDonut"
+    ],
+    "gauge / kpi dial": [
+      "chartGauge"
+    ],
+    "heatmap / matrix": [
+      "chartHeat"
+    ],
+    "pivot table / cross-tab": [
+      "pivot"
+    ],
+    "rich text / notes / contentEditable editor": [
+      "fluidCaret",
+      "fluidSelect"
+    ]
+  },
+  "combinations": [
+    {
+      "name": "Sidebar opens a menu",
+      "when": "A collapsible rail expands to reveal menu items",
+      "use": [
+        "sidebar",
+        "list"
+      ],
+      "how": "Collapse/expand the rail with sidebar, then stagger the revealed menu items in with list."
+    },
+    {
+      "name": "Open a record drawer",
+      "when": "A row opens a detail drawer",
+      "use": [
+        "drawer",
+        "intro"
+      ],
+      "how": "Slide the panel in with drawer; stagger its fields/cards in with intro."
+    },
+    {
+      "name": "Dashboard first load",
+      "when": "A dashboard mounts",
+      "use": [
+        "movein",
+        "intro",
+        "chartBar"
+      ],
+      "how": "Slide the shell in with movein, stagger the KPI cards with intro, let each chart animate on load."
+    },
+    {
+      "name": "Tab reveals a list",
+      "when": "A tab switch shows a table/list",
+      "use": [
+        "tabs",
+        "list"
+      ],
+      "how": "Slide the tab underline with tabs; stagger the new panel rows with list."
+    },
+    {
+      "name": "Expand a card to rows",
+      "when": "An accordion opens to show rows",
+      "use": [
+        "accordion",
+        "list"
+      ],
+      "how": "Expand height + chevron with accordion; inner rows use the same staggered reveal."
+    },
+    {
+      "name": "Filter then re-render",
+      "when": "A segmented filter changes a list",
+      "use": [
+        "slidenav",
+        "list"
+      ],
+      "how": "Slide the segmented selection with slidenav; replay list after the data re-renders."
+    },
+    {
+      "name": "Select rows then act",
+      "when": "Selecting rows reveals a toolbar",
+      "use": [
+        "bulk",
+        "micro"
+      ],
+      "how": "Reveal the bulk bar with bulk; animate the row checkboxes with micro."
+    }
+  ],
+  "categories": {
+    "entrance": "Entrance",
+    "overlays": "Overlays",
+    "nav": "Navigation & layout",
+    "selection": "Selection",
+    "objects": "Objects",
+    "charts": "Dashboard elements"
+  },
+  "animations": [
+    {
+      "id": "intro",
+      "name": "Staggered \"text + cards\" intro",
+      "category": "entrance",
+      "categoryLabel": "Entrance",
+      "description": "Each element fades in while sliding up 16px, one after another — text first, then each card.",
+      "whereToApply": "Entrance — run on mount / route load. Put the marker class on each element to reveal, then call the play function.",
+      "keywords": [
+        "staggered",
+        "text",
+        "cards",
+        "intro",
+        "entrance",
+        "stagger",
+        "fade",
+        "rise"
+      ],
+      "timing": "0.5s · 16px · 60ms stagger",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "/* ---------- CSS (stylesheet) ---------- */\n@keyframes introUp {\n  from { opacity: 0; transform: translateY(16px); }\n  to   { opacity: 1; transform: none; }\n}\n.si-item          { opacity: 0; }\n.si-play .si-item { animation: introUp .5s cubic-bezier(.22, 1, .36, 1) both; }\n\n@media (prefers-reduced-motion: reduce) {\n  .si-play .si-item { animation: none; }\n  .si-item          { opacity: 1; }\n}\n\n/* ---------- JS ---------- */\nfunction playStagger(root, opt = {}) {\n  const step  = opt.step  ?? 0.06;   // seconds between items\n  const start = opt.start ?? 0.06;   // delay before the first item\n  root.querySelectorAll('.si-item').forEach((el, i) => {\n    el.style.animationDelay = (start + i * step) + 's';\n  });\n  root.classList.remove('si-play');\n  void root.offsetWidth;             // force reflow so it can retrigger\n  root.classList.add('si-play');\n}\n\n<!-- ---------- HTML ---------- -->\n<div id=\"stage\">\n  <h1 class=\"si-item\">Title</h1>\n  <p  class=\"si-item\">Subtitle</p>\n  <div class=\"si-item\">Card 1</div>\n  <div class=\"si-item\">Card 2</div>\n</div>\n\n<script>\n  addEventListener('load', () => playStagger(document.getElementById('stage')));\n</script>",
+        "react": "// CSS (introUp keyframes + .si-item/.si-play) lives in your global stylesheet.\nimport { useEffect, useRef } from \"react\";\n\nfunction playStagger(root, { step = 0.06, start = 0.06 } = {}) {\n  root.querySelectorAll(\".si-item\").forEach((el, i) => {\n    el.style.animationDelay = start + i * step + \"s\";\n  });\n  root.classList.remove(\"si-play\");\n  void root.offsetWidth;              // force reflow so it can retrigger\n  root.classList.add(\"si-play\");\n}\n\nexport default function IntroStage() {\n  const stage = useRef(null);\n  useEffect(() => { playStagger(stage.current); }, []);\n\n  return (\n    <div ref={stage}>\n      <h1 className=\"si-item\">Title</h1>\n      <p className=\"si-item\">Subtitle</p>\n      <div className=\"si-item\">Card 1</div>\n      <div className=\"si-item\">Card 2</div>\n    </div>\n  );\n}",
+        "vue": "<!-- CSS (introUp keyframes + .si-item/.si-play) lives in a global, non-scoped stylesheet. -->\n<template>\n  <div ref=\"stage\">\n    <h1 class=\"si-item\">Title</h1>\n    <p class=\"si-item\">Subtitle</p>\n    <div class=\"si-item\">Card 1</div>\n    <div class=\"si-item\">Card 2</div>\n  </div>\n</template>\n\n<script>\nexport default {\n  mounted() {\n    this.playStagger(this.$refs.stage);\n  },\n  methods: {\n    playStagger(root, { step = 0.06, start = 0.06 } = {}) {\n      root.querySelectorAll('.si-item').forEach((el, i) => {\n        el.style.animationDelay = (start + i * step) + 's';\n      });\n      root.classList.remove('si-play');\n      void root.offsetWidth;          // force reflow so it can retrigger\n      root.classList.add('si-play');\n    }\n  }\n};\n</script>"
+      }
+    },
+    {
+      "id": "list",
+      "name": "Smooth staggered list load-in",
+      "category": "entrance",
+      "categoryLabel": "Entrance",
+      "description": "Rows fade in while rising 14px and settling from 98.5% scale — GPU-composited, so long lists stay smooth.",
+      "whereToApply": "Entrance — run on mount / route load. Put the marker class on each element to reveal, then call the play function.",
+      "keywords": [
+        "list",
+        "load-in",
+        "rows",
+        "table",
+        "stagger",
+        "cascade"
+      ],
+      "timing": "0.55s · 14px + scale · 65ms",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "/* ---------- CSS (stylesheet) ---------- */\n@keyframes llRowIn {\n  from { opacity: 0; transform: translateY(14px) scale(.985); }\n  to   { opacity: 1; transform: none; }\n}\n.ll-row          { opacity: 0; will-change: transform, opacity; }\n.ll-play .ll-row { animation: llRowIn .55s cubic-bezier(.16, 1, .3, 1) both; }\n\n@media (prefers-reduced-motion: reduce) {\n  .ll-play .ll-row { animation: none; }\n  .ll-row          { opacity: 1; will-change: auto; }\n}\n\n/* ---------- JS ---------- */\nfunction playListStagger(list, opt = {}) {\n  const step  = opt.step  ?? 65;   // ms between rows\n  const start = opt.start ?? 60;   // ms before the first row\n  list.querySelectorAll('.ll-row').forEach((el, i) => {\n    // cap the delay so very long lists don't drag\n    el.style.animationDelay = (start + Math.min(i, 12) * step) + 'ms';\n  });\n  list.classList.remove('ll-play');\n  void list.offsetWidth;           // force reflow so it can retrigger\n  list.classList.add('ll-play');\n}\n\n<!-- ---------- HTML ---------- -->\n<ul id=\"list\">\n  <li class=\"ll-row\">Row 1</li>\n  <li class=\"ll-row\">Row 2</li>\n  <li class=\"ll-row\">Row 3</li>\n</ul>\n\n<script>\n  addEventListener('load', () => playListStagger(document.getElementById('list')));\n</script>",
+        "react": "// CSS (llRowIn keyframes + .ll-row/.ll-play) lives in your global stylesheet.\nimport { useEffect, useRef } from \"react\";\n\nfunction playListStagger(list, { step = 65, start = 60 } = {}) {\n  list.querySelectorAll(\".ll-row\").forEach((el, i) => {\n    // cap the delay so very long lists don't drag\n    el.style.animationDelay = start + Math.min(i, 12) * step + \"ms\";\n  });\n  list.classList.remove(\"ll-play\");\n  void list.offsetWidth;\n  list.classList.add(\"ll-play\");\n}\n\nexport default function List({ rows = [] }) {\n  const list = useRef(null);\n  // replay after the rows change (e.g. after a fetch)\n  useEffect(() => { playListStagger(list.current); }, [rows]);\n\n  return (\n    <ul ref={list}>\n      {rows.map((row, i) => (\n        <li className=\"ll-row\" key={i}>{row}</li>\n      ))}\n    </ul>\n  );\n}",
+        "vue": "<!-- CSS (llRowIn keyframes + .ll-row/.ll-play) lives in a global, non-scoped stylesheet. -->\n<template>\n  <ul ref=\"list\">\n    <li class=\"ll-row\" v-for=\"(row, i) in rows\" :key=\"i\">{{ row }}</li>\n  </ul>\n</template>\n\n<script>\nexport default {\n  props: { rows: { type: Array, default: () => [] } },\n  mounted() { this.play(); },\n  watch: {\n    rows() { this.$nextTick(this.play); }   // replay after re-render\n  },\n  methods: {\n    play(opt = {}) {\n      const step  = opt.step  ?? 65;\n      const start = opt.start ?? 60;\n      const list = this.$refs.list;\n      list.querySelectorAll('.ll-row').forEach((el, i) => {\n        el.style.animationDelay = (start + Math.min(i, 12) * step) + 'ms';\n      });\n      list.classList.remove('ll-play');\n      void list.offsetWidth;\n      list.classList.add('ll-play');\n    }\n  }\n};\n</script>"
+      }
+    },
+    {
+      "id": "popover",
+      "name": "Popover \"materialize\" open / close",
+      "category": "overlays",
+      "categoryLabel": "Overlays",
+      "description": "Grows from a tiny circular dot in the corner nearest the trigger, morphing into a rounded rectangle — and collapses back on close.",
+      "whereToApply": "Overlay — modal / drawer / popover / menu. Toggle the open class or state from the trigger; keep it hidden until opened.",
+      "keywords": [
+        "popover",
+        "menu",
+        "materialize",
+        "dropdown",
+        "overlay",
+        "morph"
+      ],
+      "timing": "0.28s morph · 0.2s fade",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "/* ---------- CSS (stylesheet) ---------- */\n.pop {\n  /* closed = a tiny circular dot, invisible, not clickable */\n  transform: scale(.05);\n  border-radius: 50%;\n  opacity: 0;\n  pointer-events: none;\n  transform-origin: top left;              /* JS overrides per placement */\n  box-shadow: 0 6px 16px -4px rgba(16, 24, 40, .12), 0 0 0 .5px rgba(16, 24, 40, .08);\n  will-change: transform, border-radius, opacity;\n  transition:\n    transform     .28s cubic-bezier(.16, 1, .3, 1),\n    border-radius .28s cubic-bezier(.16, 1, .3, 1),\n    opacity       .2s  ease;\n}\n.pop.is-open {                             /* open = full-size rounded rect */\n  transform: none;\n  border-radius: 8px;\n  opacity: 1;\n  pointer-events: auto;\n}\n@media (prefers-reduced-motion: reduce) {\n  .pop { transition: none; transform: none; border-radius: 8px; }\n}\n\n/* ---------- JS ---------- */\nconst POP_MS = 280;   // must match the transform/radius duration above\n\nfunction popOrigin(placement = 'bottom') {\n  if (placement.startsWith('bottom')) return placement.endsWith('-end') ? 'top right'    : 'top left';\n  if (placement.startsWith('top'))    return placement.endsWith('-end') ? 'bottom right' : 'bottom left';\n  if (placement.startsWith('left'))   return placement.endsWith('-end') ? 'bottom right' : 'top right';\n  if (placement.startsWith('right'))  return placement.endsWith('-end') ? 'bottom left'  : 'top left';\n  return 'top left';\n}\n\nfunction openPopover(el, opt = {}) {\n  el.style.transformOrigin = popOrigin(opt.placement);\n  el.style.display = 'block';              // must paint before it can transition\n  el.classList.remove('is-open');\n  // double rAF: give the browser a painted \"dot\" frame to animate FROM\n  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('is-open')));\n}\n\nfunction closePopover(el) {\n  el.classList.remove('is-open');                          // reverse the morph\n  setTimeout(() => { el.style.display = 'none'; }, POP_MS); // hide after it finishes\n}\n\n<!-- ---------- HTML ---------- -->\n<div class=\"pop-anchor\">\n  <button id=\"trigger\">Options</button>\n  <div id=\"menu\" class=\"pop\" style=\"display:none;\">menu items</div>\n</div>\n\n<script>\n  const t = document.getElementById('trigger');\n  const p = document.getElementById('menu');\n  t.addEventListener('click', () =>\n    p.classList.contains('is-open') ? closePopover(p)\n                                    : openPopover(p, { placement: 'bottom-start' }));\n</script>",
+        "react": "// CSS (.pop / .pop.is-open) lives in your global stylesheet.\nimport { useEffect, useRef, useState } from \"react\";\n\nconst POP_MS = 280;\n\nfunction popOrigin(placement = \"bottom\") {\n  if (placement.startsWith(\"bottom\")) return placement.endsWith(\"-end\") ? \"top right\"    : \"top left\";\n  if (placement.startsWith(\"top\"))    return placement.endsWith(\"-end\") ? \"bottom right\" : \"bottom left\";\n  if (placement.startsWith(\"left\"))   return placement.endsWith(\"-end\") ? \"bottom right\" : \"top right\";\n  if (placement.startsWith(\"right\"))  return placement.endsWith(\"-end\") ? \"bottom left\"  : \"top left\";\n  return \"top left\";\n}\n\nexport default function Popover({ placement = \"bottom-start\" }) {\n  const panel = useRef(null);\n  const [open, setOpen] = useState(false);\n\n  useEffect(() => {\n    const el = panel.current;\n    if (open) {\n      el.style.transformOrigin = popOrigin(placement);\n      el.style.display = \"block\";\n      el.classList.remove(\"is-open\");\n      // double rAF: paint the \"dot\" frame before morphing open\n      requestAnimationFrame(() =>\n        requestAnimationFrame(() => el.classList.add(\"is-open\"))\n      );\n    } else {\n      el.classList.remove(\"is-open\");\n      const id = setTimeout(() => { el.style.display = \"none\"; }, POP_MS);\n      return () => clearTimeout(id);\n    }\n  }, [open, placement]);\n\n  return (\n    <div className=\"pop-anchor\">\n      <button onClick={() => setOpen((o) => !o)}>Options</button>\n      <div ref={panel} className=\"pop\" style={{ display: \"none\" }}>\n        menu items\n      </div>\n    </div>\n  );\n}",
+        "vue": "<!-- CSS (.pop / .pop.is-open) lives in a global, non-scoped stylesheet. -->\n<template>\n  <div class=\"pop-anchor\">\n    <button @click=\"toggle\">Options</button>\n    <div ref=\"panel\" class=\"pop\" style=\"display:none\">menu items</div>\n  </div>\n</template>\n\n<script>\nconst POP_MS = 280;\n\nfunction popOrigin(placement = 'bottom') {\n  if (placement.startsWith('bottom')) return placement.endsWith('-end') ? 'top right'    : 'top left';\n  if (placement.startsWith('top'))    return placement.endsWith('-end') ? 'bottom right' : 'bottom left';\n  if (placement.startsWith('left'))   return placement.endsWith('-end') ? 'bottom right' : 'top right';\n  if (placement.startsWith('right'))  return placement.endsWith('-end') ? 'bottom left'  : 'top left';\n  return 'top left';\n}\n\nexport default {\n  props: { placement: { type: String, default: 'bottom-start' } },\n  data: () => ({ open: false }),\n  methods: {\n    toggle() { this.open ? this.close() : this.openPop(); },\n    openPop() {\n      this.open = true;\n      const el = this.$refs.panel;\n      el.style.transformOrigin = popOrigin(this.placement);\n      el.style.display = 'block';\n      el.classList.remove('is-open');\n      requestAnimationFrame(() =>\n        requestAnimationFrame(() => el.classList.add('is-open'))\n      );\n    },\n    close() {\n      this.open = false;\n      const el = this.$refs.panel;\n      el.classList.remove('is-open');\n      setTimeout(() => { el.style.display = 'none'; }, POP_MS);\n    }\n  }\n};\n</script>"
+      }
+    },
+    {
+      "id": "movein",
+      "name": "Slide-in shell (side nav + header)",
+      "category": "entrance",
+      "categoryLabel": "Entrance",
+      "description": "The side navigation slides in from the left and the global header drops in from the top, while the content eases up — a polished app-shell entrance.",
+      "whereToApply": "Entrance — run on mount / route load. Put the marker class on each element to reveal, then call the play function.",
+      "keywords": [
+        "slide-in",
+        "shell",
+        "side",
+        "nav",
+        "header",
+        "move-in",
+        "app",
+        "entrance"
+      ],
+      "timing": "1s · move-in · ease-out",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "/* ---------- CSS (stylesheet) ---------- */\n@keyframes moveInLeft { from { opacity: 0; transform: translateX(-100%); } to { opacity: 1; transform: none; } }\n@keyframes moveInDown { from { opacity: 0; transform: translateY(-100%); } to { opacity: 1; transform: none; } }\n@keyframes moveInUp   { from { opacity: 0; transform: translateY(12px);   } to { opacity: 1; transform: none; } }\n\n.mi-item          { opacity: 0; }\n.mi-play .mi-left { animation: moveInLeft 1s cubic-bezier(.16, 1, .3, 1) both; }  /* side nav */\n.mi-play .mi-top  { animation: moveInDown 1s cubic-bezier(.16, 1, .3, 1) both; animation-delay: .1s; }  /* header */\n.mi-play .mi-up   { animation: moveInUp 1.05s cubic-bezier(.16, 1, .3, 1) both; animation-delay: .22s; }  /* content */\n\n@media (prefers-reduced-motion: reduce) {\n  .mi-play .mi-item { animation: none; }\n  .mi-item          { opacity: 1; }\n}\n\n/* ---------- JS ---------- */\nfunction playMoveIn(root) {\n  root.classList.remove('mi-play');\n  void root.offsetWidth;      // force reflow so it can retrigger\n  root.classList.add('mi-play');\n}\n\n<!-- ---------- HTML ---------- -->\n<!-- the shell must clip its edges so nav/header start off-screen: overflow:hidden -->\n<div id=\"app\" style=\"overflow:hidden\">\n  <aside  class=\"mi-item mi-left\">Side navigation</aside>\n  <header class=\"mi-item mi-top\">Global header</header>\n  <main   class=\"mi-item mi-up\">Content</main>\n</div>\n\n<script>\n  addEventListener('load', () => playMoveIn(document.getElementById('app')));\n</script>",
+        "react": "// CSS (moveIn* keyframes + .mi-* classes) lives in your global stylesheet.\nimport { useEffect, useRef } from \"react\";\n\nfunction playMoveIn(root) {\n  root.classList.remove(\"mi-play\");\n  void root.offsetWidth;      // force reflow so it can retrigger\n  root.classList.add(\"mi-play\");\n}\n\nexport default function AppShell() {\n  const shell = useRef(null);\n  useEffect(() => { playMoveIn(shell.current); }, []);\n\n  return (\n    <div ref={shell} style={{ overflow: \"hidden\" }}>\n      <aside className=\"mi-item mi-left\">Side navigation</aside>\n      <header className=\"mi-item mi-top\">Global header</header>\n      <main className=\"mi-item mi-up\">Content</main>\n    </div>\n  );\n}",
+        "vue": "<!-- CSS (moveIn* keyframes + .mi-* classes) lives in a global, non-scoped stylesheet. -->\n<template>\n  <div ref=\"shell\" style=\"overflow:hidden\">\n    <aside class=\"mi-item mi-left\">Side navigation</aside>\n    <header class=\"mi-item mi-top\">Global header</header>\n    <main class=\"mi-item mi-up\">Content</main>\n  </div>\n</template>\n\n<script>\nexport default {\n  mounted() { this.playMoveIn(this.$refs.shell); },\n  methods: {\n    playMoveIn(root) {\n      root.classList.remove('mi-play');\n      void root.offsetWidth;      // force reflow so it can retrigger\n      root.classList.add('mi-play');\n    }\n  }\n};\n</script>"
+      }
+    },
+    {
+      "id": "sticky",
+      "name": "Scroll-to-sticky header",
+      "category": "nav",
+      "categoryLabel": "Navigation & layout",
+      "description": "As you scroll the panel, the header smoothly condenses — shrinking its title, hiding the subtitle, and lifting with a shadow. Scroll back up and it expands again.",
+      "whereToApply": "Navigation / layout chrome — tabs, sidebar, sticky header or a segmented control.",
+      "keywords": [
+        "scroll",
+        "sticky",
+        "header",
+        "condense",
+        "minimise",
+        "minimize",
+        "navigation",
+        "shrink"
+      ],
+      "timing": "0.25s · condense on scroll",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "/* ---------- CSS (stylesheet) ---------- */\n/* The header stays sticky; every property that changes is transitioned, so the\n   shrink / grow stays smooth as you scroll. */\n.sticky-head {\n  position: sticky; top: 0; z-index: 5;\n  background: #fff; border-bottom: 1px solid #E4E7EC;\n  padding: 20px 16px;\n  transition: padding .25s cubic-bezier(.16, 1, .3, 1);\n}\n.sticky-head .sh-title { font-size: 20px; font-weight: 600;\n  transition: font-size .25s cubic-bezier(.16, 1, .3, 1); }\n.sticky-head .sh-sub   { font-size: 13px; color: #667085; overflow: hidden;\n  max-height: 22px; opacity: 1;\n  transition: opacity .2s ease, max-height .25s ease, margin .25s ease; }\n\n/* condensed state — toggled once the user scrolls past the threshold */\n.sticky-head.is-stuck           { padding: 10px 16px; }\n.sticky-head.is-stuck .sh-title { font-size: 15px; }\n.sticky-head.is-stuck .sh-sub   { opacity: 0; max-height: 0; margin: 0; }\n\n@media (prefers-reduced-motion: reduce) {\n  .sticky-head, .sticky-head * { transition: none; }\n}\n\n/* ---------- JS ---------- */\nfunction attachStickyShrink(scroller, head, opt = {}) {\n  const threshold = opt.threshold ?? 8;   // px scrolled before it condenses\n  let ticking = false;\n  scroller.addEventListener('scroll', () => {\n    if (ticking) return;\n    ticking = true;\n    requestAnimationFrame(() => {\n      head.classList.toggle('is-stuck', scroller.scrollTop > threshold);\n      ticking = false;\n    });\n  });\n}\n// For a whole-page header, listen on window and read\n// document.scrollingElement.scrollTop instead of scroller.scrollTop.\n\n<!-- ---------- HTML ---------- -->\n<div id=\"scroller\" style=\"height:300px; overflow-y:auto;\">\n  <header id=\"head\" class=\"sticky-head\">\n    <div class=\"sh-title\">Work orders</div>\n    <div class=\"sh-sub\">128 open across Tower A-C</div>\n  </header>\n  <!-- long content that makes the area scroll -->\n</div>\n\n<script>\n  attachStickyShrink(document.getElementById('scroller'),\n                     document.getElementById('head'));\n</script>",
+        "react": "// CSS (.sticky-head / .is-stuck) lives in your global stylesheet.\nimport { useEffect, useRef, useState } from \"react\";\n\nexport default function StickyHeader({ threshold = 8 }) {\n  const scroller = useRef(null);\n  const [stuck, setStuck] = useState(false);\n\n  useEffect(() => {\n    const el = scroller.current;\n    let ticking = false;\n    const onScroll = () => {\n      if (ticking) return;\n      ticking = true;\n      requestAnimationFrame(() => {\n        setStuck(el.scrollTop > threshold);\n        ticking = false;\n      });\n    };\n    el.addEventListener(\"scroll\", onScroll);\n    return () => el.removeEventListener(\"scroll\", onScroll);\n  }, [threshold]);\n\n  return (\n    <div ref={scroller} style={{ height: 300, overflowY: \"auto\" }}>\n      <header className={\"sticky-head\" + (stuck ? \" is-stuck\" : \"\")}>\n        <div className=\"sh-title\">Work orders</div>\n        <div className=\"sh-sub\">128 open across Tower A-C</div>\n      </header>\n      {/* long content that makes the area scroll */}\n    </div>\n  );\n}",
+        "vue": "<!-- CSS (.sticky-head / .is-stuck) lives in a global, non-scoped stylesheet. -->\n<template>\n  <div ref=\"scroller\" style=\"height:300px; overflow-y:auto\" @scroll=\"onScroll\">\n    <header class=\"sticky-head\" :class=\"{ 'is-stuck': stuck }\">\n      <div class=\"sh-title\">Work orders</div>\n      <div class=\"sh-sub\">128 open across Tower A-C</div>\n    </header>\n    <!-- long content that makes the area scroll -->\n  </div>\n</template>\n\n<script>\nexport default {\n  props: { threshold: { type: Number, default: 8 } },\n  data: () => ({ stuck: false, ticking: false }),\n  methods: {\n    onScroll(e) {\n      if (this.ticking) return;\n      this.ticking = true;\n      const el = e.target;\n      requestAnimationFrame(() => {\n        this.stuck = el.scrollTop > this.threshold;\n        this.ticking = false;\n      });\n    }\n  }\n};\n</script>"
+      }
+    },
+    {
+      "id": "drawer",
+      "name": "Slide-over drawer",
+      "category": "overlays",
+      "categoryLabel": "Overlays",
+      "description": "A right-hand panel slides in over a dimmed backdrop — open a record's detail or a create form without leaving the list. Click the scrim or ✕ to close.",
+      "whereToApply": "Overlay — modal / drawer / popover / menu. Toggle the open class or state from the trigger; keep it hidden until opened.",
+      "keywords": [
+        "slide-over",
+        "drawer",
+        "panel",
+        "overlay",
+        "record",
+        "detail",
+        "slide",
+        "right"
+      ],
+      "timing": "0.32s · slide · ease-out",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "/* ---------- CSS ---------- */\n.scrim { position: fixed; inset: 0; background: rgba(16,24,40,.45);\n  opacity: 0; pointer-events: none; transition: opacity .3s ease; }\n.scrim.is-open { opacity: 1; pointer-events: auto; }\n.drawer { position: fixed; top: 0; right: 0; height: 100%; width: 380px; max-width: 90%;\n  background: #fff; box-shadow: -8px 0 24px -8px rgba(16,24,40,.2);\n  transform: translateX(100%); transition: transform .32s cubic-bezier(.16, 1, .3, 1); }\n.drawer.is-open { transform: none; }\n@media (prefers-reduced-motion: reduce) { .scrim, .drawer { transition: none; } }\n\n/* ---------- JS ---------- */\nfunction openDrawer(drawer, scrim)  { drawer.classList.add('is-open');    scrim.classList.add('is-open'); }\nfunction closeDrawer(drawer, scrim) { drawer.classList.remove('is-open'); scrim.classList.remove('is-open'); }\n\n<!-- ---------- HTML ---------- -->\n<button id=\"open\">Open drawer</button>\n<div id=\"scrim\" class=\"scrim\"></div>\n<aside id=\"drawer\" class=\"drawer\">record detail</aside>\n\n<script>\n  const d = document.getElementById('drawer'), s = document.getElementById('scrim');\n  document.getElementById('open').addEventListener('click', () => openDrawer(d, s));\n  s.addEventListener('click', () => closeDrawer(d, s));\n</script>",
+        "react": "// CSS (.scrim / .drawer) lives in your global stylesheet.\nimport { useState } from \"react\";\n\nexport default function Drawer() {\n  const [open, setOpen] = useState(false);\n  return (\n    <>\n      <button onClick={() => setOpen(true)}>Open drawer</button>\n      <div className={\"scrim\" + (open ? \" is-open\" : \"\")} onClick={() => setOpen(false)} />\n      <aside className={\"drawer\" + (open ? \" is-open\" : \"\")}>record detail</aside>\n    </>\n  );\n}",
+        "vue": "<!-- CSS (.scrim / .drawer) lives in a global, non-scoped stylesheet. -->\n<template>\n  <div>\n    <button @click=\"open = true\">Open drawer</button>\n    <div class=\"scrim\" :class=\"{ 'is-open': open }\" @click=\"open = false\"></div>\n    <aside class=\"drawer\" :class=\"{ 'is-open': open }\">record detail</aside>\n  </div>\n</template>\n\n<script>\nexport default { data: () => ({ open: false }) };\n</script>"
+      }
+    },
+    {
+      "id": "modal",
+      "name": "Modal + backdrop",
+      "category": "overlays",
+      "categoryLabel": "Overlays",
+      "description": "The dialog scales and fades in over a dimmed, blurred backdrop; the backdrop fades independently. Click outside or Cancel to dismiss.",
+      "whereToApply": "Overlay — modal / drawer / popover / menu. Toggle the open class or state from the trigger; keep it hidden until opened.",
+      "keywords": [
+        "modal",
+        "dialog",
+        "confirm",
+        "backdrop",
+        "overlay",
+        "scale",
+        "fade"
+      ],
+      "timing": "0.3s · grow + fade",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "/* ---------- CSS ---------- */\n.scrim { position: fixed; inset: 0; background: rgba(16,24,40,.5);\n  display: flex; align-items: center; justify-content: center;\n  opacity: 0; pointer-events: none; transition: opacity .25s ease; }\n.scrim.is-open { opacity: 1; pointer-events: auto; }\n.modal { width: 400px; max-width: 90%; background: #fff; border-radius: 12px;\n  transform: scale(.8); opacity: 0;\n  transition: transform .3s cubic-bezier(.34, 1.56, .64, 1), opacity .2s ease; }\n.scrim.is-open .modal { transform: none; opacity: 1; }\n@media (prefers-reduced-motion: reduce) { .scrim, .modal { transition: none; } }\n\n/* ---------- JS ---------- */\nfunction openModal(scrim)  { scrim.classList.add('is-open'); }\nfunction closeModal(scrim) { scrim.classList.remove('is-open'); }\n\n<!-- ---------- HTML ---------- -->\n<button id=\"open\">Delete</button>\n<div id=\"scrim\" class=\"scrim\">\n  <div class=\"modal\" role=\"dialog\" aria-modal=\"true\">dialog</div>\n</div>\n\n<script>\n  const s = document.getElementById('scrim');\n  document.getElementById('open').addEventListener('click', () => openModal(s));\n  // click the backdrop (but not the dialog) to dismiss\n  s.addEventListener('click', (e) => { if (e.target === s) closeModal(s); });\n</script>",
+        "react": "// CSS (.scrim / .modal) lives in your global stylesheet.\nimport { useState } from \"react\";\n\nexport default function Modal() {\n  const [open, setOpen] = useState(false);\n  return (\n    <>\n      <button onClick={() => setOpen(true)}>Delete</button>\n      <div className={\"scrim\" + (open ? \" is-open\" : \"\")}\n           onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>\n        <div className=\"modal\" role=\"dialog\" aria-modal=\"true\">dialog</div>\n      </div>\n    </>\n  );\n}",
+        "vue": "<!-- CSS (.scrim / .modal) lives in a global, non-scoped stylesheet. -->\n<template>\n  <div>\n    <button @click=\"open = true\">Delete</button>\n    <div class=\"scrim\" :class=\"{ 'is-open': open }\" @click.self=\"open = false\">\n      <div class=\"modal\" role=\"dialog\" aria-modal=\"true\">dialog</div>\n    </div>\n  </div>\n</template>\n\n<script>\nexport default { data: () => ({ open: false }) };\n</script>"
+      }
+    },
+    {
+      "id": "tabs",
+      "name": "Animated tabs (hover + active)",
+      "category": "nav",
+      "categoryLabel": "Navigation & layout",
+      "description": "The underline follows your cursor on hover and settles back on the active tab when you leave; clicking slides the selection to the new tab while its panel crossfades up.",
+      "whereToApply": "Navigation / layout chrome — tabs, sidebar, sticky header or a segmented control.",
+      "keywords": [
+        "animated",
+        "tabs",
+        "underline",
+        "indicator",
+        "slide",
+        "navigation",
+        "crossfade",
+        "hover",
+        "follow",
+        "magic",
+        "line"
+      ],
+      "timing": "0.28s indicator · 0.3s fade",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "/* ---------- CSS ---------- */\n.tabbar { position: relative; display: flex; gap: 4px; border-bottom: 1px solid #E4E7EC; }\n.tab-btn { padding: 12px 16px; border: 0; background: none; cursor: pointer;\n  font: inherit; color: #667085; }\n.tab-btn.is-active { color: #1570EF; }\n.tab-underline { position: absolute; bottom: -1px; height: 2px; background: #1570EF;\n  transition: left .28s cubic-bezier(.16, 1, .3, 1), width .28s cubic-bezier(.16, 1, .3, 1); }\n.tab-panel { display: none; }\n.tab-panel.is-active { display: block; animation: tabFade .3s ease both; }\n@keyframes tabFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }\n\n/* ---------- JS ---------- */\nfunction initTabs(root) {\n  const bar = root.querySelector('.tabbar');\n  const line = root.querySelector('.tab-underline');\n  const btns = [].slice.call(root.querySelectorAll('.tab-btn'));\n  const panels = [].slice.call(root.querySelectorAll('.tab-panel'));\n  let cur = 0;\n  const moveTo = (el) => { line.style.left = el.offsetLeft + 'px'; line.style.width = el.offsetWidth + 'px'; };\n  function select(i) {\n    cur = i;\n    btns.forEach((b, j) => b.classList.toggle('is-active', j === i));\n    panels.forEach((p, j) => p.classList.toggle('is-active', j === i));\n    moveTo(btns[i]);\n  }\n  btns.forEach((b, i) => {\n    b.addEventListener('click', () => select(i));\n    b.addEventListener('mouseenter', () => moveTo(b));   // hover slides the underline\n  });\n  bar.addEventListener('mouseleave', () => moveTo(btns[cur])); // settle back on active\n  addEventListener('resize', () => moveTo(btns[cur]));\n  select(0);\n}\n\n<!-- ---------- HTML ---------- -->\n<div id=\"tabs\">\n  <div class=\"tabbar\">\n    <button class=\"tab-btn\">Details</button>\n    <button class=\"tab-btn\">Activity</button>\n    <button class=\"tab-btn\">Files</button>\n    <span class=\"tab-underline\"></span>\n  </div>\n  <div class=\"tab-panel\">Details</div>\n  <div class=\"tab-panel\">Activity</div>\n  <div class=\"tab-panel\">Files</div>\n</div>\n\n<script> initTabs(document.getElementById('tabs')); </script>",
+        "react": "// CSS (.tabbar / .tab-* / tabFade) lives in your global stylesheet.\nimport { useLayoutEffect, useRef, useState } from \"react\";\n\nconst TABS = [\"Details\", \"Activity\", \"Files\"];\n\nexport default function Tabs() {\n  const [i, setI] = useState(0);\n  const [hover, setHover] = useState(null);   // hovered tab, or null\n  const barRef = useRef(null);\n  const [line, setLine] = useState({ left: 0, width: 0 });\n  useLayoutEffect(() => {\n    const idx = hover == null ? i : hover;\n    const b = barRef.current.querySelectorAll(\".tab-btn\")[idx];\n    setLine({ left: b.offsetLeft, width: b.offsetWidth });\n  }, [i, hover]);\n  return (\n    <div>\n      <div className=\"tabbar\" ref={barRef} onMouseLeave={() => setHover(null)}>\n        {TABS.map((t, j) => (\n          <button key={t} className={\"tab-btn\" + (i === j ? \" is-active\" : \"\")}\n                  onMouseEnter={() => setHover(j)} onClick={() => setI(j)}>{t}</button>\n        ))}\n        <span className=\"tab-underline\" style={{ left: line.left, width: line.width }} />\n      </div>\n      <div className=\"tab-panel is-active\" key={i}>{TABS[i]}</div>\n    </div>\n  );\n}",
+        "vue": "<!-- CSS (.tabbar / .tab-* / tabFade) lives in a global, non-scoped stylesheet. -->\n<template>\n  <div>\n    <div class=\"tabbar\" ref=\"bar\" @mouseleave=\"hover = null\">\n      <button v-for=\"(t, j) in tabs\" :key=\"t\" class=\"tab-btn\"\n              :class=\"{ 'is-active': i === j }\"\n              @mouseenter=\"hover = j\" @click=\"i = j\">{{ t }}</button>\n      <span class=\"tab-underline\" :style=\"line\"></span>\n    </div>\n    <div class=\"tab-panel is-active\" :key=\"i\">{{ tabs[i] }}</div>\n  </div>\n</template>\n\n<script>\nexport default {\n  data: () => ({ tabs: ['Details', 'Activity', 'Files'], i: 0, hover: null, line: {} }),\n  watch: { i: 'place', hover: 'place' },\n  mounted() { this.place(); addEventListener('resize', this.place); },\n  methods: {\n    place() {\n      this.$nextTick(() => {\n        const idx = this.hover == null ? this.i : this.hover;\n        const b = this.$refs.bar.querySelectorAll('.tab-btn')[idx];\n        this.line = { left: b.offsetLeft + 'px', width: b.offsetWidth + 'px' };\n      });\n    }\n  }\n};\n</script>"
+      }
+    },
+    {
+      "id": "sidebar",
+      "name": "Sidebar collapse",
+      "category": "nav",
+      "categoryLabel": "Navigation & layout",
+      "description": "The left nav animates between full width and an icon rail; labels fade as it narrows. Toggle with the menu button.",
+      "whereToApply": "Navigation / layout chrome — tabs, sidebar, sticky header or a segmented control.",
+      "keywords": [
+        "sidebar",
+        "collapse",
+        "rail",
+        "expand",
+        "nav",
+        "navigation",
+        "width"
+      ],
+      "timing": "0.3s width · 0.2s labels",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "/* ---------- CSS ---------- */\n.sidebar { width: 220px; background: #1D2939; overflow: hidden;\n  transition: width .3s cubic-bezier(.16, 1, .3, 1); }\n.sidebar.is-collapsed { width: 60px; }\n.sidebar .label { white-space: nowrap; opacity: 1; transition: opacity .2s ease; }\n.sidebar.is-collapsed .label { opacity: 0; }\n@media (prefers-reduced-motion: reduce) { .sidebar, .sidebar .label { transition: none; } }\n\n/* ---------- JS ---------- */\nfunction toggleSidebar(nav) { nav.classList.toggle('is-collapsed'); }\n\n<!-- ---------- HTML ---------- -->\n<button id=\"toggle\">Menu</button>\n<nav id=\"nav\" class=\"sidebar\">\n  <a class=\"item\"><span class=\"label\">Dashboard</span></a>\n  <a class=\"item\"><span class=\"label\">Work orders</span></a>\n  <a class=\"item\"><span class=\"label\">Assets</span></a>\n</nav>\n\n<script>\n  document.getElementById('toggle')\n    .addEventListener('click', () => toggleSidebar(document.getElementById('nav')));\n</script>",
+        "react": "// CSS (.sidebar / .is-collapsed) lives in your global stylesheet.\nimport { useState } from \"react\";\n\nexport default function Sidebar() {\n  const [collapsed, setCollapsed] = useState(false);\n  return (\n    <>\n      <button onClick={() => setCollapsed((c) => !c)}>Menu</button>\n      <nav className={\"sidebar\" + (collapsed ? \" is-collapsed\" : \"\")}>\n        <a className=\"item\"><span className=\"label\">Dashboard</span></a>\n        <a className=\"item\"><span className=\"label\">Work orders</span></a>\n        <a className=\"item\"><span className=\"label\">Assets</span></a>\n      </nav>\n    </>\n  );\n}",
+        "vue": "<!-- CSS (.sidebar / .is-collapsed) lives in a global, non-scoped stylesheet. -->\n<template>\n  <div>\n    <button @click=\"collapsed = !collapsed\">Menu</button>\n    <nav class=\"sidebar\" :class=\"{ 'is-collapsed': collapsed }\">\n      <a class=\"item\"><span class=\"label\">Dashboard</span></a>\n      <a class=\"item\"><span class=\"label\">Work orders</span></a>\n      <a class=\"item\"><span class=\"label\">Assets</span></a>\n    </nav>\n  </div>\n</template>\n\n<script>\nexport default { data: () => ({ collapsed: false }) };\n</script>"
+      }
+    },
+    {
+      "id": "bulk",
+      "name": "Bulk-action bar",
+      "category": "selection",
+      "categoryLabel": "Selection",
+      "description": "Select one or more rows and the action bar slides up from the bottom; deselect everything and it slides away. The count stays live.",
+      "whereToApply": "Selection UI — reveal when one or more items are selected.",
+      "keywords": [
+        "bulk",
+        "action",
+        "bar",
+        "reveal",
+        "selection",
+        "rows",
+        "toolbar",
+        "slide",
+        "up"
+      ],
+      "timing": "0.3s · slide up",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "/* ---------- CSS ---------- */\n.wrap { position: relative; }\n.bulk-bar { position: absolute; left: 0; right: 0; bottom: 0;\n  display: flex; align-items: center; gap: 12px; padding: 12px 16px;\n  background: #EEF4FF; border-top: 1px solid #E4E7EC;\n  transform: translateY(110%); transition: transform .3s cubic-bezier(.16, 1, .3, 1); }\n.bulk-bar.is-visible { transform: none; }\n@media (prefers-reduced-motion: reduce) { .bulk-bar { transition: none; } }\n\n/* ---------- JS ---------- */\nfunction refreshBulkBar(list, bar) {\n  const n = list.querySelectorAll('input[type=checkbox]:checked').length;\n  bar.classList.toggle('is-visible', n > 0);\n  bar.querySelector('.count').textContent = n + ' selected';\n}\n\n<!-- ---------- HTML ---------- -->\n<div class=\"wrap\">\n  <ul id=\"list\">\n    <li><input type=\"checkbox\"> Row 1</li>\n    <li><input type=\"checkbox\"> Row 2</li>\n  </ul>\n  <div id=\"bar\" class=\"bulk-bar\"><span class=\"count\">0 selected</span><button>Delete</button></div>\n</div>\n\n<script>\n  const list = document.getElementById('list'), bar = document.getElementById('bar');\n  list.addEventListener('change', () => refreshBulkBar(list, bar));\n</script>",
+        "react": "// CSS (.bulk-bar / .is-visible) lives in your global stylesheet.\nimport { useState } from \"react\";\n\nconst ROWS = [\"Row 1\", \"Row 2\", \"Row 3\"];\n\nexport default function BulkList() {\n  const [sel, setSel] = useState(() => new Set());\n  const toggle = (i) => setSel((s) => {\n    const n = new Set(s);\n    n.has(i) ? n.delete(i) : n.add(i);\n    return n;\n  });\n  return (\n    <div style={{ position: \"relative\" }}>\n      <ul>\n        {ROWS.map((r, i) => (\n          <li key={i}>\n            <input type=\"checkbox\" checked={sel.has(i)} onChange={() => toggle(i)} /> {r}\n          </li>\n        ))}\n      </ul>\n      <div className={\"bulk-bar\" + (sel.size ? \" is-visible\" : \"\")}>\n        <span>{sel.size} selected</span><button>Delete</button>\n      </div>\n    </div>\n  );\n}",
+        "vue": "<!-- CSS (.bulk-bar / .is-visible) lives in a global, non-scoped stylesheet. -->\n<template>\n  <div style=\"position:relative\">\n    <ul>\n      <li v-for=\"(r, i) in rows\" :key=\"i\">\n        <input type=\"checkbox\" v-model=\"sel\" :value=\"i\" /> {{ r }}\n      </li>\n    </ul>\n    <div class=\"bulk-bar\" :class=\"{ 'is-visible': sel.length }\">\n      <span>{{ sel.length }} selected</span><button>Delete</button>\n    </div>\n  </div>\n</template>\n\n<script>\nexport default {\n  data: () => ({ rows: ['Row 1', 'Row 2', 'Row 3'], sel: [] })\n};\n</script>"
+      }
+    },
+    {
+      "id": "fluidCaret",
+      "name": "Glide caret",
+      "category": "selection",
+      "categoryLabel": "Selection",
+      "description": "A GPU-eased caret that chases the real cursor as you type, giving a fluid typing feel. A pure visual overlay — it never mutates content, so saved text is unaffected.",
+      "whereToApply": "Text entry — a contentEditable field, title/inline-edit cell or single-line input surface. Enable the caret only (selection off).",
+      "keywords": [
+        "caret",
+        "cursor",
+        "typing",
+        "glide",
+        "contenteditable",
+        "field",
+        "inline edit",
+        "text",
+        "selection"
+      ],
+      "timing": "GPU-eased · per-frame caret glide",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "<!-- Ship the library (one file, zero dependencies). -->\n<script src=\"fluid-fx.js\"></script>\n\n<!-- A focusable field. The glide caret is a visual overlay; content is untouched. -->\n<div id=\"title\" class=\"ffx-editor\" contenteditable=\"true\" role=\"textbox\" aria-label=\"Title\" spellcheck=\"false\">Chiller inspection — Tower A</div>\n\n<style>\n.ffx-editor{font:14px/1.6 var(--font,'Roboto',sans-serif);color:var(--colors-textMain,#0E1424);\n  border:1px solid var(--colors-borderNeutralBaseLight,#D5D9E0);border-radius:var(--border-high,8px);\n  padding:10px 12px;outline:none;white-space:nowrap;overflow:hidden}\n.ffx-editor:focus{border-color:var(--colors-borderPrimaryDefault,#0024D6)}\n</style>\n\n<script>\n  // Caret only — no selection overlay.\n  var fx = initFluidFX(document.getElementById('title'), {\n    caret: true, selection: false, lineSelect: false,\n    color: '#0024D6',        // FDS primary\n    caretGlide: 0.28         // 0..1 per-frame ease (higher = snappier)\n  });\n  // later:  fx.setCaretGlide(0.4);  fx.destroy();\n</script>",
+        "react": "import { useEffect, useRef } from \"react\";\nimport { initFluidFX } from \"./fluid-fx.js\";\n\nexport function GlideCaretField() {\n  const ref = useRef(null);\n  useEffect(() => {\n    const fx = initFluidFX(ref.current, {\n      caret: true, selection: false, lineSelect: false,\n      color: \"#0024D6\", caretGlide: 0.28,\n    });\n    return () => fx.destroy();\n  }, []);\n  return (\n    <div ref={ref} className=\"ffx-editor\" contentEditable suppressContentEditableWarning\n         role=\"textbox\" aria-label=\"Title\" spellCheck={false}>\n      Chiller inspection — Tower A\n    </div>\n  );\n}\n\n/* .ffx-editor CSS lives in your global stylesheet. */",
+        "vue": "<template>\n  <div ref=\"field\" class=\"ffx-editor\" contenteditable=\"true\"\n       role=\"textbox\" aria-label=\"Title\" spellcheck=\"false\">Chiller inspection — Tower A</div>\n</template>\n\n<script>\nimport { initFluidFX } from './fluid-fx.js';\nexport default {\n  mounted() {\n    this.fx = initFluidFX(this.$refs.field, {\n      caret: true, selection: false, lineSelect: false,\n      color: '#0024D6', caretGlide: 0.28,\n    });\n  },\n  beforeDestroy() { this.fx && this.fx.destroy(); },\n};\n</script>"
+      }
+    },
+    {
+      "id": "fluidSelect",
+      "name": "Animated selection",
+      "category": "selection",
+      "categoryLabel": "Selection",
+      "description": "The selection highlight eases into place instead of snapping, and ⌘⇧↑/↓ (Ctrl+Shift on Windows/Linux) extends the selection one visual line at a time. Native selection is suppressed so only the eased highlight shows — no double highlight.",
+      "whereToApply": "Text entry — a contentEditable notes / description editor or comment box. Enable selection (and lineSelect). Give the editor a transparent background so the eased highlight, painted behind the text, shows through.",
+      "keywords": [
+        "selection",
+        "highlight",
+        "contenteditable",
+        "notes",
+        "comment",
+        "line select",
+        "ease",
+        "text",
+        "selection"
+      ],
+      "timing": "GPU-eased · selection glide",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "<!-- Ship the library (one file, zero dependencies). -->\n<script src=\"fluid-fx.js\"></script>\n\n<!-- The eased highlight paints BEHIND the text, so the editor needs a\n     transparent background for it to show through. -->\n<div id=\"notes\" class=\"ffx-editor\" contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"Notes\" spellcheck=\"false\"><div>Compressor noise on the 6th-floor riser.</div><div>Replace the AHU filter and log the readings.</div></div>\n\n<style>\n.ffx-editor{font:14px/1.7 var(--font,'Roboto',sans-serif);color:var(--colors-textMain,#0E1424);\n  background:transparent;                 /* required: the highlight shows through */\n  border:1px solid var(--colors-borderNeutralBaseLight,#D5D9E0);border-radius:var(--border-high,8px);\n  padding:10px 12px;min-height:96px;outline:none}\n.ffx-editor:focus{border-color:var(--colors-borderPrimaryDefault,#0024D6)}\n</style>\n\n<script>\n  // Selection only — the eased highlight + line-by-line select.\n  var fx = initFluidFX(document.getElementById('notes'), {\n    caret: false, selection: true, lineSelect: true,\n    selectionColor: 'rgba(0,36,214,.16)',   // FDS primary @ 16%\n    selectionGlide: 0.24\n  });\n  // ⌘⇧↑ / ⌘⇧↓ extends the selection one visual line at a time.\n</script>",
+        "react": "import { useEffect, useRef } from \"react\";\nimport { initFluidFX } from \"./fluid-fx.js\";\n\nexport function AnimatedSelectionEditor() {\n  const ref = useRef(null);\n  useEffect(() => {\n    const fx = initFluidFX(ref.current, {\n      caret: false, selection: true, lineSelect: true,\n      selectionColor: \"rgba(0,36,214,.16)\", selectionGlide: 0.24,\n    });\n    return () => fx.destroy();\n  }, []);\n  return (\n    <div ref={ref} className=\"ffx-editor\" contentEditable suppressContentEditableWarning\n         role=\"textbox\" aria-multiline=\"true\" aria-label=\"Notes\" spellCheck={false}>\n      Select a few words to watch the highlight ease into place.\n    </div>\n  );\n}\n\n/* .ffx-editor needs a transparent background (see the CSS in the HTML tab). */",
+        "vue": "<template>\n  <div ref=\"editor\" class=\"ffx-editor\" contenteditable=\"true\"\n       role=\"textbox\" aria-multiline=\"true\" aria-label=\"Notes\" spellcheck=\"false\">Select a few words to watch the highlight ease into place.</div>\n</template>\n\n<script>\nimport { initFluidFX } from './fluid-fx.js';\nexport default {\n  mounted() {\n    this.fx = initFluidFX(this.$refs.editor, {\n      caret: false, selection: true, lineSelect: true,\n      selectionColor: 'rgba(0,36,214,.16)', selectionGlide: 0.24,\n    });\n  },\n  beforeDestroy() { this.fx && this.fx.destroy(); },\n};\n</script>\n\n<!-- .ffx-editor needs a transparent background (see the HTML tab). -->"
+      }
+    },
+    {
+      "id": "slidenav",
+      "name": "Sliding segmented control",
+      "category": "nav",
+      "categoryLabel": "Navigation & layout",
+      "description": "A subtle midground highlight slides to follow your cursor on hover, and the selected pill slides from the current segment to the one you click. Two layered indicators — hover never disturbs the selection.",
+      "whereToApply": "Navigation / layout chrome — tabs, sidebar, sticky header or a segmented control.",
+      "keywords": [
+        "sliding",
+        "segmented",
+        "control",
+        "button",
+        "group",
+        "hover",
+        "follow",
+        "pill",
+        "magic",
+        "line",
+        "view",
+        "switcher",
+        "tabs"
+      ],
+      "timing": "0.25s · hover + active",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "/* ---------- CSS ---------- */\n.snav { position: relative; display: inline-flex; padding: var(--spacing-containerSmall);\n  border: 1px solid var(--colors-borderNeutralBaseSubtle); border-radius: var(--border-full); }\n/* two layered indicators, both behind the labels */\n.snav__sel, .snav__hover { position: absolute; top: var(--spacing-containerSmall); bottom: var(--spacing-containerSmall);\n  left: 0; width: 0; border-radius: var(--border-full); z-index: 0;\n  transition: left .25s cubic-bezier(.16, 1, .3, 1), width .25s cubic-bezier(.16, 1, .3, 1); }\n.snav__sel   { background: var(--colors-backgroundSelection); }                 /* selected — slides on click */\n.snav__hover { background: var(--colors-backgroundMidgroundSubtle); opacity: 0;  /* hover — slides with the cursor */\n  transition: left .2s cubic-bezier(.16, 1, .3, 1), width .2s cubic-bezier(.16, 1, .3, 1), opacity .15s ease; }\n.snav__item { position: relative; z-index: 1; padding: var(--spacing-containerLarge) var(--spacing-containerXLarge);\n  border: 0; background: none; border-radius: var(--border-full); font: inherit; cursor: pointer;\n  color: var(--colors-textDescription); transition: color .15s ease; }\n.snav__item:hover { color: var(--colors-textMain); }\n.snav__item.is-active { color: var(--colors-textPrimaryDefault); font-weight: 600; }\n@media (prefers-reduced-motion: reduce) { .snav__sel, .snav__hover { transition: none; } }\n\n/* ---------- JS ---------- */\nfunction initSlideNav(nav, onSelect) {\n  const sel = nav.querySelector('.snav__sel');\n  const hov = nav.querySelector('.snav__hover');\n  const items = [].slice.call(nav.querySelectorAll('.snav__item'));\n  const place = (g, el) => { g.style.left = el.offsetLeft + 'px'; g.style.width = el.offsetWidth + 'px'; };\n  const active = () => nav.querySelector('.snav__item.is-active') || items[0];\n  items.forEach((it, i) => {\n    it.addEventListener('mouseenter', () => {         // hover indicator slides with the cursor\n      if (it.classList.contains('is-active')) { hov.style.opacity = 0; return; }\n      place(hov, it); hov.style.opacity = 1;\n    });\n    it.addEventListener('click', () => {              // selected slides from current to clicked\n      items.forEach((x) => x.classList.remove('is-active'));\n      it.classList.add('is-active');\n      place(sel, it); hov.style.opacity = 0;\n      onSelect && onSelect(i, it);\n    });\n  });\n  nav.addEventListener('mouseleave', () => { hov.style.opacity = 0; });\n  place(sel, active());\n  addEventListener('resize', () => place(sel, active()));\n}\n\n<!-- ---------- HTML ---------- -->\n<div class=\"snav\" id=\"view-switch\">\n  <span class=\"snav__sel\"></span>\n  <span class=\"snav__hover\"></span>\n  <button class=\"snav__item is-active\">List</button>\n  <button class=\"snav__item\">Kanban</button>\n  <button class=\"snav__item\">Calendar</button>\n</div>\n\n<script> initSlideNav(document.getElementById('view-switch')); </script>",
+        "react": "// CSS (.snav / .snav__sel / .snav__hover / .snav__item) lives in your global stylesheet.\nimport { useLayoutEffect, useRef, useState } from \"react\";\n\nconst ITEMS = [\"List\", \"Kanban\", \"Calendar\"];\n\nexport default function SlideNav() {\n  const [active, setActive] = useState(0);\n  const [hover, setHover] = useState(null);\n  const navRef = useRef(null);\n  const [sel, setSel] = useState({ left: 0, width: 0 });\n  const [hov, setHov] = useState({ left: 0, width: 0, opacity: 0 });\n  const boxOf = (i) => {\n    const el = navRef.current.querySelectorAll(\".snav__item\")[i];\n    return { left: el.offsetLeft, width: el.offsetWidth };\n  };\n  useLayoutEffect(() => { setSel(boxOf(active)); }, [active]);            // selected slides on click\n  useLayoutEffect(() => {                                                // hover slides with the cursor\n    if (hover == null || hover === active) { setHov((h) => ({ ...h, opacity: 0 })); return; }\n    setHov({ ...boxOf(hover), opacity: 1 });\n  }, [hover, active]);\n  return (\n    <div className=\"snav\" ref={navRef} onMouseLeave={() => setHover(null)}>\n      <span className=\"snav__sel\" style={{ left: sel.left, width: sel.width }} />\n      <span className=\"snav__hover\" style={{ left: hov.left, width: hov.width, opacity: hov.opacity }} />\n      {ITEMS.map((t, i) => (\n        <button key={t} className={\"snav__item\" + (active === i ? \" is-active\" : \"\")}\n                onMouseEnter={() => setHover(i)} onClick={() => setActive(i)}>{t}</button>\n      ))}\n    </div>\n  );\n}",
+        "vue": "<!-- CSS (.snav / .snav__sel / .snav__hover / .snav__item) lives in a global, non-scoped stylesheet. -->\n<template>\n  <div class=\"snav\" ref=\"nav\" @mouseleave=\"hover = null\">\n    <span class=\"snav__sel\" :style=\"sel\"></span>\n    <span class=\"snav__hover\" :style=\"hov\"></span>\n    <button v-for=\"(t, i) in items\" :key=\"t\" class=\"snav__item\"\n            :class=\"{ 'is-active': active === i }\"\n            @mouseenter=\"hover = i\" @click=\"active = i\">{{ t }}</button>\n  </div>\n</template>\n\n<script>\nexport default {\n  data: () => ({ items: ['List', 'Kanban', 'Calendar'], active: 0, hover: null, sel: {}, hov: {} }),\n  watch: { active: 'placeSel', hover: 'placeHov' },\n  mounted() { this.placeSel(); addEventListener('resize', this.placeSel); },\n  methods: {\n    box(i) {\n      const el = this.$refs.nav.querySelectorAll('.snav__item')[i];\n      return { left: el.offsetLeft + 'px', width: el.offsetWidth + 'px' };\n    },\n    placeSel() { this.$nextTick(() => { this.sel = this.box(this.active); }); },       // selected slides on click\n    placeHov() {                                                                       // hover slides with the cursor\n      this.$nextTick(() => {\n        if (this.hover == null || this.hover === this.active) { this.hov = { ...this.hov, opacity: 0 }; return; }\n        this.hov = { ...this.box(this.hover), opacity: 1 };\n      });\n    }\n  }\n};\n</script>"
+      }
+    },
+    {
+      "id": "accordion",
+      "name": "Accordion (expand + chevron + stagger)",
+      "category": "objects",
+      "categoryLabel": "Objects",
+      "description": "Panels expand with an animated height and a rotating chevron; the rows inside stagger in as the panel opens — kept quick and capped so repeated toggles still feel snappy.",
+      "whereToApply": "Content object — apply to a card, row, list item, accordion or table cell.",
+      "keywords": [
+        "accordion",
+        "expand",
+        "collapse",
+        "disclosure",
+        "chevron",
+        "rotate",
+        "stagger",
+        "objects",
+        "panel"
+      ],
+      "timing": "0.3s height · 0.25s chevron",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "/* ---------- CSS (uses FDS alias tokens) ---------- */\n.acc-item { border: 1px solid var(--colors-borderNeutralBaseSubtle); border-radius: var(--border-large); overflow: hidden; }\n.acc-head { width: 100%; display: flex; align-items: center; justify-content: space-between;\n  gap: var(--spacing-containerLarge); padding: var(--spacing-containerXLarge);\n  border: 0; background: none; cursor: pointer; font: inherit; color: var(--colors-textMain); text-align: left; }\n.acc-chev { transition: transform .25s cubic-bezier(.16, 1, .3, 1); }\n.acc-item.is-open .acc-chev { transform: rotate(180deg); }\n/* height auto via grid-template-rows 0fr -> 1fr (no magic numbers) */\n.acc-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .3s cubic-bezier(.16, 1, .3, 1); }\n.acc-item.is-open .acc-panel { grid-template-rows: 1fr; }\n.acc-panel > div { overflow: hidden; min-height: 0; }\n/* subtle, capped row stagger as the panel opens (optional — delete to disable) */\n@keyframes accRowIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }\n.acc-item.is-open .acc-row { animation: accRowIn .35s cubic-bezier(.16, 1, .3, 1) both; }\n.acc-item.is-open .acc-row:nth-child(1) { animation-delay: .05s; }\n.acc-item.is-open .acc-row:nth-child(2) { animation-delay: .10s; }\n.acc-item.is-open .acc-row:nth-child(3) { animation-delay: .15s; }\n.acc-item.is-open .acc-row:nth-child(4) { animation-delay: .20s; }\n@media (prefers-reduced-motion: reduce) { .acc-panel, .acc-chev { transition: none; } .acc-item.is-open .acc-row { animation: none; } }\n\n/* ---------- JS ---------- */\nfunction initAccordion(root, opt) {\n  opt = opt || {};\n  var single = opt.single !== false;                 // single-open by default\n  root.querySelectorAll('.acc-head').forEach(function (head) {\n    head.addEventListener('click', function () {\n      var item = head.closest('.acc-item');\n      var open = item.classList.contains('is-open');\n      if (single) root.querySelectorAll('.acc-item').forEach(function (x) { x.classList.remove('is-open'); });\n      item.classList.toggle('is-open', !open);\n    });\n  });\n}\n\n<!-- ---------- HTML ---------- -->\n<div id=\"faq\">\n  <div class=\"acc-item is-open\">\n    <button class=\"acc-head\">Panel one\n      <svg class=\"acc-chev\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"m6 9 6 6 6-6\"/></svg>\n    </button>\n    <div class=\"acc-panel\"><div>\n      <div class=\"acc-row\">Row A</div>\n      <div class=\"acc-row\">Row B</div>\n    </div></div>\n  </div>\n</div>\n\n<script> initAccordion(document.getElementById('faq')); </script>",
+        "react": "// CSS (.acc-item / .acc-head / .acc-panel / .acc-row + accRowIn) lives in your global stylesheet.\nimport { useState } from \"react\";\n\nconst PANELS = [\n  { title: \"Panel one\", rows: [\"Row A\", \"Row B\"] },\n  { title: \"Panel two\", rows: [\"Row C\", \"Row D\"] }\n];\n\nexport default function Accordion() {\n  const [open, setOpen] = useState(0);   // index open, or null for single-open\n  return (\n    <div>\n      {PANELS.map((p, i) => (\n        <div key={i} className={\"acc-item\" + (open === i ? \" is-open\" : \"\")}>\n          <button className=\"acc-head\" onClick={() => setOpen(open === i ? null : i)}>\n            {p.title}\n            <svg className=\"acc-chev\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"2\"><path d=\"m6 9 6 6 6-6\" /></svg>\n          </button>\n          <div className=\"acc-panel\"><div>\n            {p.rows.map((r, j) => <div className=\"acc-row\" key={j}>{r}</div>)}\n          </div></div>\n        </div>\n      ))}\n    </div>\n  );\n}",
+        "vue": "<!-- CSS (.acc-item / .acc-head / .acc-panel / .acc-row + accRowIn) lives in a global, non-scoped stylesheet. -->\n<template>\n  <div>\n    <div v-for=\"(p, i) in panels\" :key=\"i\" class=\"acc-item\" :class=\"{ 'is-open': open === i }\">\n      <button class=\"acc-head\" @click=\"open = open === i ? null : i\">\n        {{ p.title }}\n        <svg class=\"acc-chev\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"m6 9 6 6 6-6\" /></svg>\n      </button>\n      <div class=\"acc-panel\"><div>\n        <div v-for=\"(r, j) in p.rows\" :key=\"j\" class=\"acc-row\">{{ r }}</div>\n      </div></div>\n    </div>\n  </div>\n</template>\n\n<script>\nexport default {\n  data: () => ({\n    open: 0,\n    panels: [\n      { title: 'Panel one', rows: ['Row A', 'Row B'] },\n      { title: 'Panel two', rows: ['Row C', 'Row D'] }\n    ]\n  })\n};\n</script>"
+      }
+    },
+    {
+      "id": "micro",
+      "name": "Toggle, checkbox & like",
+      "category": "objects",
+      "categoryLabel": "Objects",
+      "description": "Small object-state morphs: the toggle knob slides, the checkbox fills as its tick draws in, and the like button pops and fills. Kept tiny and fast.",
+      "whereToApply": "Content object — apply to a card, row, list item, accordion or table cell.",
+      "keywords": [
+        "toggle",
+        "switch",
+        "checkbox",
+        "tick",
+        "like",
+        "heart",
+        "micro",
+        "interaction",
+        "state",
+        "objects"
+      ],
+      "timing": "0.2s · state morph",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "/* ---------- CSS (FDS tokens) ---------- */\n/* Toggle */\n.tgl input { position: absolute; opacity: 0; }\n.tgl__track { display: inline-block; width: 40px; height: 24px; border-radius: var(--border-full);\n  background: var(--colors-backgroundMidgroundDark); position: relative; cursor: pointer; transition: background .2s ease; }\n.tgl__knob { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%;\n  background: var(--colors-backgroundContainer); transition: transform .22s cubic-bezier(.16, 1, .3, 1); }\n.tgl input:checked + .tgl__track { background: var(--colors-backgroundPrimaryDefault); }\n.tgl input:checked + .tgl__track .tgl__knob { transform: translateX(16px); }\n\n/* Checkbox — box fills as the tick draws in */\n.cbx input { position: absolute; opacity: 0; }\n.cbx__box { width: 20px; height: 20px; border-radius: var(--border-high); border: 1.5px solid var(--colors-borderNeutralBaseLight);\n  display: inline-flex; align-items: center; justify-content: center;\n  transition: background .18s ease, border-color .18s ease, transform .18s cubic-bezier(.34, 1.56, .64, 1); }\n.cbx__box svg { width: 14px; height: 14px; }\n.cbx__box svg path { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round;\n  stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset .2s ease .05s; }\n.cbx input:checked + .cbx__box { background: var(--colors-backgroundPrimaryDefault); border-color: var(--colors-backgroundPrimaryDefault); transform: scale(1.05); }\n.cbx input:checked + .cbx__box svg path { stroke-dashoffset: 0; }\n\n/* Like — pop + fill */\n.like__heart { transition: transform .2s cubic-bezier(.34, 1.56, .64, 1); }\n.like.is-liked .like__heart { color: var(--colors-iconSemanticRed); fill: currentColor; animation: likePop .35s cubic-bezier(.34, 1.56, .64, 1); }\n@keyframes likePop { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }\n@media (prefers-reduced-motion: reduce) { .tgl__knob, .cbx__box, .cbx__box svg path, .like__heart { transition: none; } .like.is-liked .like__heart { animation: none; } }\n\n/* ---------- JS (toggle + checkbox are pure CSS; only Like needs JS) ---------- */\nfunction initLike(btn) {\n  btn.addEventListener('click', () => btn.classList.toggle('is-liked'));\n}\n\n<!-- ---------- HTML ---------- -->\n<label class=\"tgl\"><input type=\"checkbox\"><span class=\"tgl__track\"><span class=\"tgl__knob\"></span></span></label>\n\n<label class=\"cbx\"><input type=\"checkbox\">\n  <span class=\"cbx__box\"><svg viewBox=\"0 0 24 24\"><path d=\"M20 6 9 17l-5-5\"/></svg></span> Task\n</label>\n\n<button class=\"like\"><svg class=\"like__heart\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z\"/></svg></button>\n\n<script> initLike(document.querySelector('.like')); </script>",
+        "react": "// CSS (.tgl / .cbx / .like + likePop) lives in your global stylesheet.\nimport { useState } from \"react\";\n\nexport function Toggle() {\n  return (\n    <label className=\"tgl\"><input type=\"checkbox\" /><span className=\"tgl__track\"><span className=\"tgl__knob\" /></span></label>\n  );\n}\n\nexport function Checkbox({ label }) {\n  return (\n    <label className=\"cbx\"><input type=\"checkbox\" />\n      <span className=\"cbx__box\"><svg viewBox=\"0 0 24 24\"><path d=\"M20 6 9 17l-5-5\" /></svg></span> {label}\n    </label>\n  );\n}\n\nexport function Like() {\n  const [liked, setLiked] = useState(false);\n  return (\n    <button className={\"like\" + (liked ? \" is-liked\" : \"\")} onClick={() => setLiked((v) => !v)}>\n      <svg className=\"like__heart\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"2\"><path d=\"M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z\" /></svg>\n    </button>\n  );\n}",
+        "vue": "<!-- CSS (.tgl / .cbx / .like + likePop) lives in a global, non-scoped stylesheet. -->\n<template>\n  <div>\n    <label class=\"tgl\"><input type=\"checkbox\"><span class=\"tgl__track\"><span class=\"tgl__knob\"></span></span></label>\n    <label class=\"cbx\"><input type=\"checkbox\">\n      <span class=\"cbx__box\"><svg viewBox=\"0 0 24 24\"><path d=\"M20 6 9 17l-5-5\"/></svg></span> Task\n    </label>\n    <button class=\"like\" :class=\"{ 'is-liked': liked }\" @click=\"liked = !liked\">\n      <svg class=\"like__heart\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z\"/></svg>\n    </button>\n  </div>\n</template>\n\n<script>\nexport default { data: () => ({ liked: false }) };\n</script>"
+      }
+    },
+    {
+      "id": "reorder",
+      "name": "Drag to reorder",
+      "category": "objects",
+      "categoryLabel": "Objects",
+      "description": "Drag a card by its handle and the others slide out of the way with a FLIP reflow — no layout jump, zero dependencies.",
+      "whereToApply": "Content object — apply to a card, row, list item, accordion or table cell.",
+      "keywords": [
+        "drag",
+        "to",
+        "reorder",
+        "flip",
+        "list",
+        "cards",
+        "move",
+        "sort",
+        "objects",
+        "reflow",
+        "handle"
+      ],
+      "timing": "0.3s · FLIP reflow",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "/* ---------- CSS (FDS tokens) ---------- */\n.reorder-item { display: flex; align-items: center; gap: var(--spacing-containerLarge);\n  padding: var(--spacing-containerLarge) var(--spacing-containerXLarge);\n  border: 1px solid var(--colors-borderNeutralBaseSubtle); border-radius: var(--border-large);\n  background: var(--colors-backgroundContainer); cursor: grab; }\n.reorder-item.dragging { opacity: .4; }\n/* the FLIP transition is applied inline by the JS below */\n\n/* ---------- JS — FLIP: First, Last, Invert, Play ---------- */\nfunction initReorder(list) {\n  let dragEl = null;\n  const items = () => [].slice.call(list.querySelectorAll('[draggable]'));\n  function flip(reorder) {\n    const els = items();\n    const first = els.map((el) => el.getBoundingClientRect());   // First\n    reorder();                                                    // (DOM changes)\n    els.forEach((el, i) => {\n      if (el === dragEl) return;\n      const last = el.getBoundingClientRect();                    // Last\n      const dx = first[i].left - last.left, dy = first[i].top - last.top;\n      if (!dx && !dy) return;\n      el.style.transition = 'none';\n      el.style.transform = 'translate(' + dx + 'px,' + dy + 'px)'; // Invert\n      requestAnimationFrame(() => {\n        el.style.transition = 'transform .3s cubic-bezier(.16, 1, .3, 1)';\n        el.style.transform = '';                                   // Play\n      });\n    });\n  }\n  list.addEventListener('dragstart', (e) => { dragEl = e.target.closest('[draggable]'); setTimeout(() => dragEl.classList.add('dragging'), 0); });\n  list.addEventListener('dragend', () => { if (dragEl) dragEl.classList.remove('dragging'); dragEl = null; });\n  list.addEventListener('dragover', (e) => {\n    e.preventDefault();\n    if (!dragEl) return;\n    const over = e.target.closest('[draggable]');\n    if (!over || over === dragEl) return;\n    const r = over.getBoundingClientRect();\n    const ref = (e.clientY - r.top) > r.height / 2 ? over.nextElementSibling : over;\n    if (ref === dragEl || dragEl.nextElementSibling === ref) return;\n    flip(() => list.insertBefore(dragEl, ref));\n  });\n}\n\n<!-- ---------- HTML ---------- -->\n<div id=\"list\">\n  <div draggable=\"true\">Item one</div>\n  <div draggable=\"true\">Item two</div>\n  <div draggable=\"true\">Item three</div>\n</div>\n\n<script> initReorder(document.getElementById('list')); </script>",
+        "react": "// initReorder() (from the HTML/CSS/JS tab) is framework-agnostic — call it on a ref.\n// It reorders the DOM directly; for a re-render-safe list, reach for dnd-kit.\nimport { useEffect, useRef } from \"react\";\n\nexport default function Reorder({ items = [] }) {\n  const ref = useRef(null);\n  useEffect(() => { initReorder(ref.current); }, []);\n  return (\n    <div ref={ref}>\n      {items.map((t, i) => <div draggable=\"true\" key={i}>{t}</div>)}\n    </div>\n  );\n}",
+        "vue": "<!-- initReorder() (from the HTML/CSS/JS tab) is framework-agnostic — call it on a ref. -->\n<!-- It reorders the DOM directly; for a re-render-safe list, reach for vuedraggable. -->\n<template>\n  <div ref=\"list\">\n    <div v-for=\"(t, i) in items\" :key=\"i\" draggable=\"true\">{{ t }}</div>\n  </div>\n</template>\n\n<script>\nexport default {\n  props: { items: { type: Array, default: () => [] } },\n  mounted() { initReorder(this.$refs.list); }\n};\n</script>"
+      }
+    },
+    {
+      "id": "chartBar",
+      "name": "Bar — grow",
+      "category": "charts",
+      "categoryLabel": "Dashboard elements",
+      "description": "Bars grow up from the baseline, staggered left-to-right — a per-bar animationDelay in ECharts.",
+      "whereToApply": "Dashboard chart — merge the animation* keys into your ECharts option (pivot is a plain HTML table).",
+      "keywords": [
+        "bar",
+        "chart",
+        "stacked",
+        "bar",
+        "grow",
+        "baseline",
+        "echarts",
+        "dashboard",
+        "column"
+      ],
+      "timing": "0.6s · cubicOut · 60ms/bar",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "// ECharts option — bars grow from the baseline, staggered left -> right.\nconst option = {\n  grid: { left: 8, right: 8, top: 16, bottom: 24, containLabel: true },\n  xAxis: { type: 'category', data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },\n  yAxis: { type: 'value' },\n  series: [{\n    type: 'bar',\n    data: [45, 65, 35, 70, 55],\n    itemStyle: { borderRadius: [4, 4, 0, 0] },\n    // ── the animation ──\n    animationDuration: 600,\n    animationEasing: 'cubicOut',\n    animationDelay: (i) => i * 60            // per-bar stagger\n  }]\n};\n\n// Stacked bar = same series with a shared `stack` name, keep the delay:\n//   series: [\n//     { type: 'bar', stack: 't', data: [...], animationDelay: (i) => i * 60 },\n//     { type: 'bar', stack: 't', data: [...], animationDelay: (i) => i * 60 + 120 }\n//   ]",
+        "react": "// echarts-for-react — `option` is exactly the ECharts-option tab.\nimport ReactECharts from \"echarts-for-react\";\n\nexport default function BarChart() {\n  return <ReactECharts option={option} style={{ height: 280 }} notMerge lazyUpdate />;\n}",
+        "vue": "<!-- vue-echarts — `option` is exactly the ECharts-option tab. -->\n<template>\n  <v-chart :option=\"option\" autoresize style=\"height:280px\" />\n</template>\n\n<script>\nimport VChart from \"vue-echarts\";           // v6: register modules via echarts/core use([...])\nexport default { components: { 'v-chart': VChart }, data: () => ({ option }) };\n</script>"
+      }
+    },
+    {
+      "id": "chartStack",
+      "name": "Stacked bar — grow",
+      "category": "charts",
+      "categoryLabel": "Dashboard elements",
+      "description": "Stacked series grow together from the baseline, the top layer a beat behind. Same per-bar animationDelay plus a shared stack.",
+      "whereToApply": "Dashboard chart — merge the animation* keys into your ECharts option (pivot is a plain HTML table).",
+      "keywords": [
+        "stacked",
+        "bar",
+        "chart",
+        "grow",
+        "baseline",
+        "echarts",
+        "dashboard",
+        "column",
+        "series"
+      ],
+      "timing": "0.6s · staggered",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "// ECharts option — stacked bars grow together from the baseline.\nconst option = {\n  grid: { left: 8, right: 8, top: 16, bottom: 24, containLabel: true },\n  xAxis: { type: 'category', data: ['Mon','Tue','Wed','Thu','Fri'] },\n  yAxis: { type: 'value' },\n  series: [\n    { type: 'bar', stack: 'total', data: [30,45,25,50,38], animationDelay: (i) => i * 70 },\n    { type: 'bar', stack: 'total', data: [15,20,12,22,17], itemStyle: { borderRadius: [4,4,0,0] }, animationDelay: (i) => i * 70 + 130 }\n  ],\n  animationDuration: 600,\n  animationEasing: 'cubicOut'\n};",
+        "react": "// echarts-for-react — `option` is the ECharts-option tab.\nimport ReactECharts from \"echarts-for-react\";\n\nexport default function StackedBar() {\n  return <ReactECharts option={option} style={{ height: 280 }} notMerge lazyUpdate />;\n}",
+        "vue": "<!-- vue-echarts — `option` is the ECharts-option tab. -->\n<template>\n  <v-chart :option=\"option\" autoresize style=\"height:280px\" />\n</template>\n\n<script>\nimport VChart from \"vue-echarts\";\nexport default { components: { 'v-chart': VChart }, data: () => ({ option }) };\n</script>"
+      }
+    },
+    {
+      "id": "chartArea",
+      "name": "Area — draw-in",
+      "category": "charts",
+      "categoryLabel": "Dashboard elements",
+      "description": "A straight-segment line with a soft fill, drawn in left-to-right. Just a line series with an areaStyle.",
+      "whereToApply": "Dashboard chart — merge the animation* keys into your ECharts option (pivot is a plain HTML table).",
+      "keywords": [
+        "area",
+        "chart",
+        "fill",
+        "draw",
+        "echarts",
+        "dashboard",
+        "time",
+        "series"
+      ],
+      "timing": "1s · draw",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "// ECharts option — area chart: a straight line with a soft fill, draws in.\nconst option = {\n  grid: { left: 8, right: 8, top: 16, bottom: 24, containLabel: true },\n  xAxis: { type: 'category', boundaryGap: false, data: ['W1','W2','W3','W4','W5','W6'] },\n  yAxis: { type: 'value' },\n  series: [{\n    type: 'line',\n    data: [12, 40, 28, 62, 48, 76],\n    showSymbol: false,\n    areaStyle: { opacity: 0.18 },     // ← the fill makes it an \"area\" chart\n    animationDuration: 1000,\n    animationEasing: 'cubicOut'\n  }]\n};",
+        "react": "// echarts-for-react — `option` is the ECharts-option tab.\nimport ReactECharts from \"echarts-for-react\";\n\nexport default function AreaChart() {\n  return <ReactECharts option={option} style={{ height: 280 }} notMerge lazyUpdate />;\n}",
+        "vue": "<!-- vue-echarts — `option` is the ECharts-option tab. -->\n<template>\n  <v-chart :option=\"option\" autoresize style=\"height:280px\" />\n</template>\n\n<script>\nimport VChart from \"vue-echarts\";\nexport default { components: { 'v-chart': VChart }, data: () => ({ option }) };\n</script>"
+      }
+    },
+    {
+      "id": "chartSpline",
+      "name": "Spline — draw-in",
+      "category": "charts",
+      "categoryLabel": "Dashboard elements",
+      "description": "A smoothed, curved line with no fill — the same draw-in with smooth: true and no areaStyle.",
+      "whereToApply": "Dashboard chart — merge the animation* keys into your ECharts option (pivot is a plain HTML table).",
+      "keywords": [
+        "spline",
+        "chart",
+        "smooth",
+        "curve",
+        "line",
+        "draw",
+        "echarts",
+        "dashboard"
+      ],
+      "timing": "1s · draw",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "// ECharts option — spline: a smoothed, curved line (no fill).\nconst option = {\n  grid: { left: 8, right: 8, top: 16, bottom: 24, containLabel: true },\n  xAxis: { type: 'category', boundaryGap: false, data: ['W1','W2','W3','W4','W5','W6'] },\n  yAxis: { type: 'value' },\n  series: [{\n    type: 'line',\n    data: [12, 40, 28, 62, 48, 76],\n    smooth: true,                     // ← the curve; add areaStyle for area+spline\n    showSymbol: false,\n    animationDuration: 1000,\n    animationEasing: 'cubicOut'\n  }]\n};",
+        "react": "// echarts-for-react — `option` is the ECharts-option tab.\nimport ReactECharts from \"echarts-for-react\";\n\nexport default function SplineChart() {\n  return <ReactECharts option={option} style={{ height: 280 }} notMerge lazyUpdate />;\n}",
+        "vue": "<!-- vue-echarts — `option` is the ECharts-option tab. -->\n<template>\n  <v-chart :option=\"option\" autoresize style=\"height:280px\" />\n</template>\n\n<script>\nimport VChart from \"vue-echarts\";\nexport default { components: { 'v-chart': VChart }, data: () => ({ option }) };\n</script>"
+      }
+    },
+    {
+      "id": "chartLine",
+      "name": "Area + spline — draw-in",
+      "category": "charts",
+      "categoryLabel": "Dashboard elements",
+      "description": "A smoothed line draws in left-to-right with a soft fill beneath — smooth: true plus areaStyle.",
+      "whereToApply": "Dashboard chart — merge the animation* keys into your ECharts option (pivot is a plain HTML table).",
+      "keywords": [
+        "line",
+        "spline",
+        "area",
+        "chart",
+        "draw",
+        "echarts",
+        "dashboard",
+        "time",
+        "series",
+        "smooth"
+      ],
+      "timing": "1s draw · 0.6s area",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "// ECharts option — the line draws in; area fades up beneath it.\nconst option = {\n  grid: { left: 8, right: 8, top: 16, bottom: 24, containLabel: true },\n  xAxis: { type: 'category', boundaryGap: false, data: ['W1','W2','W3','W4','W5','W6'] },\n  yAxis: { type: 'value' },\n  series: [{\n    type: 'line',\n    data: [12, 40, 28, 62, 48, 76],\n    smooth: true,                  // ← spline; drop for a straight line\n    areaStyle: { opacity: 0.16 },  // ← area chart; drop for a plain line\n    showSymbol: false,\n    // ── the animation: progressive left -> right draw ──\n    animationDuration: 1000,\n    animationEasing: 'cubicOut'\n  }]\n};\n// area + spline = smooth: true AND areaStyle (both, as above).",
+        "react": "// echarts-for-react — `option` is the ECharts-option tab.\nimport ReactECharts from \"echarts-for-react\";\n\nexport default function LineChart() {\n  return <ReactECharts option={option} style={{ height: 280 }} notMerge lazyUpdate />;\n}",
+        "vue": "<!-- vue-echarts — `option` is the ECharts-option tab. -->\n<template>\n  <v-chart :option=\"option\" autoresize style=\"height:280px\" />\n</template>\n\n<script>\nimport VChart from \"vue-echarts\";\nexport default { components: { 'v-chart': VChart }, data: () => ({ option }) };\n</script>"
+      }
+    },
+    {
+      "id": "chartPie",
+      "name": "Pie — sweep",
+      "category": "charts",
+      "categoryLabel": "Dashboard elements",
+      "description": "A full pie sweeps in clockwise as the slices expand — animationType: 'expansion'.",
+      "whereToApply": "Dashboard chart — merge the animation* keys into your ECharts option (pivot is a plain HTML table).",
+      "keywords": [
+        "pie",
+        "chart",
+        "sweep",
+        "echarts",
+        "dashboard",
+        "expansion",
+        "slices"
+      ],
+      "timing": "0.9s · sweep",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "// ECharts option — a full pie sweeps in clockwise.\nconst option = {\n  series: [{\n    type: 'pie',\n    radius: '72%',                    // full pie; use ['55%','80%'] for a donut\n    data: [\n      { value: 48, name: 'Open' },\n      { value: 32, name: 'In progress' },\n      { value: 20, name: 'Done' }\n    ],\n    label: { show: false },\n    animationType: 'expansion',       // sweep ('scale' grows from center)\n    animationDuration: 900,\n    animationEasing: 'cubicOut'\n  }]\n};",
+        "react": "// echarts-for-react — `option` is the ECharts-option tab.\nimport ReactECharts from \"echarts-for-react\";\n\nexport default function PieChart() {\n  return <ReactECharts option={option} style={{ height: 280 }} notMerge lazyUpdate />;\n}",
+        "vue": "<!-- vue-echarts — `option` is the ECharts-option tab. -->\n<template>\n  <v-chart :option=\"option\" autoresize style=\"height:280px\" />\n</template>\n\n<script>\nimport VChart from \"vue-echarts\";\nexport default { components: { 'v-chart': VChart }, data: () => ({ option }) };\n</script>"
+      }
+    },
+    {
+      "id": "chartDonut",
+      "name": "Donut — sweep",
+      "category": "charts",
+      "categoryLabel": "Dashboard elements",
+      "description": "The ring sweeps in clockwise — animationType: 'expansion' on a pie with an inner radius.",
+      "whereToApply": "Dashboard chart — merge the animation* keys into your ECharts option (pivot is a plain HTML table).",
+      "keywords": [
+        "pie",
+        "donut",
+        "chart",
+        "sweep",
+        "echarts",
+        "dashboard",
+        "ring",
+        "expansion"
+      ],
+      "timing": "1s · cubic sweep",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "// ECharts option — the ring sweeps in clockwise.\nconst option = {\n  series: [{\n    type: 'pie',\n    radius: ['60%', '85%'],        // ← donut; use '70%' (single value) for a full pie\n    data: [\n      { value: 48, name: 'Open' },\n      { value: 32, name: 'In progress' },\n      { value: 20, name: 'Done' }\n    ],\n    label: { show: false },\n    // ── the animation ──\n    animationType: 'expansion',    // sweep ('scale' = grow from center instead)\n    animationDuration: 900,\n    animationEasing: 'cubicOut'\n  }]\n};",
+        "react": "// echarts-for-react — `option` is the ECharts-option tab.\nimport ReactECharts from \"echarts-for-react\";\n\nexport default function PieChart() {\n  return <ReactECharts option={option} style={{ height: 280 }} notMerge lazyUpdate />;\n}",
+        "vue": "<!-- vue-echarts — `option` is the ECharts-option tab. -->\n<template>\n  <v-chart :option=\"option\" autoresize style=\"height:280px\" />\n</template>\n\n<script>\nimport VChart from \"vue-echarts\";\nexport default { components: { 'v-chart': VChart }, data: () => ({ option }) };\n</script>"
+      }
+    },
+    {
+      "id": "chartGauge",
+      "name": "Gauge — sweep",
+      "category": "charts",
+      "categoryLabel": "Dashboard elements",
+      "description": "The arc sweeps from zero to its value. ECharts gauges animate the progress + pointer natively via animationDurationUpdate.",
+      "whereToApply": "Dashboard chart — merge the animation* keys into your ECharts option (pivot is a plain HTML table).",
+      "keywords": [
+        "gauge",
+        "chart",
+        "sweep",
+        "needle",
+        "echarts",
+        "dashboard",
+        "kpi"
+      ],
+      "timing": "1.1s · cubic sweep",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "// ECharts option — the arc + pointer sweep from zero to the value.\nconst option = {\n  series: [{\n    type: 'gauge',\n    startAngle: 200, endAngle: -20,\n    min: 0, max: 100,\n    progress: { show: true, width: 12 },\n    axisLine: { lineStyle: { width: 12 } },\n    pointer: { show: true },\n    detail: { valueAnimation: true, formatter: '{value}%' },\n    data: [{ value: 66 }],\n    // ── the animation: initial sweep + smooth value updates ──\n    animationDuration: 1100,\n    animationDurationUpdate: 700,\n    animationEasing: 'cubicOut'\n  }]\n};",
+        "react": "// echarts-for-react — `option` is the ECharts-option tab.\nimport ReactECharts from \"echarts-for-react\";\n\nexport default function GaugeChart() {\n  return <ReactECharts option={option} style={{ height: 280 }} notMerge lazyUpdate />;\n}",
+        "vue": "<!-- vue-echarts — `option` is the ECharts-option tab. -->\n<template>\n  <v-chart :option=\"option\" autoresize style=\"height:280px\" />\n</template>\n\n<script>\nimport VChart from \"vue-echarts\";\nexport default { components: { 'v-chart': VChart }, data: () => ({ option }) };\n</script>"
+      }
+    },
+    {
+      "id": "chartHeat",
+      "name": "Heatmap — cell stagger",
+      "category": "charts",
+      "categoryLabel": "Dashboard elements",
+      "description": "Cells reveal on a diagonal ripple. ECharts' built-in heatmap doesn't animate its entrance, so this uses a custom series that honours animationDelay.",
+      "whereToApply": "Dashboard chart — merge the animation* keys into your ECharts option (pivot is a plain HTML table).",
+      "keywords": [
+        "heatmap",
+        "grid",
+        "cells",
+        "stagger",
+        "echarts",
+        "dashboard",
+        "matrix"
+      ],
+      "timing": "0.4s · 30ms/cell",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "// The built-in 'heatmap' series does NOT animate its entrance, so we draw the\n// grid as a 'custom' series — which honours animationDelay for a staggered reveal.\nconst data = [ /* [xIndex, yIndex, value] triples, value 0-100 */ ];\nconst option = {\n  grid: { left: 8, right: 8, top: 8, bottom: 24, containLabel: true },\n  xAxis: { type: 'category', data: ['Mon','Tue','Wed','Thu','Fri','Sat'] },\n  yAxis: { type: 'category', data: ['00', '06', '12', '18'] },\n  series: [{\n    type: 'custom',\n    coordinateSystem: 'cartesian2d',\n    data,\n    renderItem: (params, api) => {\n      const c = api.coord([api.value(0), api.value(1)]);   // cell center\n      const s = api.size([1, 1]);                          // cell size\n      const t = Math.max(0, Math.min(1, api.value(2) / 100));\n      const mix = (a, b) => Math.round(a + (b - a) * t);   // light -> primary\n      return {\n        type: 'rect',\n        shape: { x: c[0] - s[0] / 2 + 2, y: c[1] - s[1] / 2 + 2, width: s[0] - 4, height: s[1] - 4, r: 3 },\n        style: { fill: 'rgb(' + mix(238, 21) + ',' + mix(244, 112) + ',' + mix(255, 239) + ')' }\n      };\n    },\n    animationDuration: 500,\n    animationEasing: 'cubicOut',\n    animationDelay: (i) => i * 22     // diagonal ripple\n  }]\n};",
+        "react": "// echarts-for-react — `option` is the ECharts-option tab.\nimport ReactECharts from \"echarts-for-react\";\n\nexport default function Heatmap() {\n  return <ReactECharts option={option} style={{ height: 280 }} notMerge lazyUpdate />;\n}",
+        "vue": "<!-- vue-echarts — `option` is the ECharts-option tab. -->\n<template>\n  <v-chart :option=\"option\" autoresize style=\"height:280px\" />\n</template>\n\n<script>\nimport VChart from \"vue-echarts\";\nexport default { components: { 'v-chart': VChart }, data: () => ({ option }) };\n</script>"
+      }
+    },
+    {
+      "id": "pivot",
+      "name": "Pivot table — cell stagger",
+      "category": "charts",
+      "categoryLabel": "Dashboard elements",
+      "description": "ECharts has no pivot series, so this is a plain table: cells fade and rise in on a diagonal stagger as it loads — the same idea as the heatmap, applied to real cells.",
+      "whereToApply": "Dashboard chart — merge the animation* keys into your ECharts option (pivot is a plain HTML table).",
+      "keywords": [
+        "pivot",
+        "table",
+        "matrix",
+        "cross",
+        "tab",
+        "cells",
+        "stagger",
+        "dashboard",
+        "custom"
+      ],
+      "timing": "0.4s · 35ms/cell",
+      "frameworks": [
+        "vanilla",
+        "react",
+        "vue"
+      ],
+      "code": {
+        "vanilla": "/* ---------- CSS ---------- */\n.pvt-cell { display: inline-block; opacity: 0; }\n.pvt.play .pvt-cell { animation: pvtIn .4s cubic-bezier(.16, 1, .3, 1) both; animation-delay: calc(var(--i, 0) * .035s); }\n@keyframes pvtIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }\n@media (prefers-reduced-motion: reduce) { .pvt.play .pvt-cell { animation: none; } .pvt-cell { opacity: 1; } }\n\n/* ---------- JS — index every cell, then toggle .play ---------- */\nfunction playPivot(table) {\n  [].slice.call(table.querySelectorAll('.pvt-cell')).forEach((c, i) => c.style.setProperty('--i', i));\n  table.classList.remove('play');\n  void table.offsetWidth;              // reflow so it can replay\n  table.classList.add('play');\n}\n\n<!-- ---------- HTML — wrap each cell's value in a .pvt-cell span ---------- -->\n<table id=\"pivot\" class=\"pvt\">\n  <thead><tr><th>Building</th><th>Jan</th><th>Feb</th><th>Q1</th></tr></thead>\n  <tbody>\n    <tr>\n      <td><span class=\"pvt-cell\">Tower A</span></td>\n      <td><span class=\"pvt-cell\">128</span></td>\n      <td><span class=\"pvt-cell\">142</span></td>\n      <td><span class=\"pvt-cell\">270</span></td>\n    </tr>\n  </tbody>\n</table>\n\n<script> playPivot(document.getElementById('pivot')); </script>",
+        "react": "// CSS (.pvt-cell + pvtIn) lives in your global stylesheet.\nimport { useLayoutEffect, useRef } from \"react\";\n\nconst ROWS = [\n  { name: \"Tower A\", vals: [128, 142, 270] },\n  { name: \"Tower B\", vals: [96, 88, 184] }\n];\n\nexport default function Pivot() {\n  const ref = useRef(null);\n  useLayoutEffect(() => {\n    const cells = ref.current.querySelectorAll(\".pvt-cell\");\n    cells.forEach((c, i) => c.style.setProperty(\"--i\", i));\n    ref.current.classList.add(\"play\");\n  }, []);\n  return (\n    <table ref={ref} className=\"pvt\">\n      <thead><tr><th>Building</th><th>Jan</th><th>Feb</th><th>Q1</th></tr></thead>\n      <tbody>\n        {ROWS.map((r, i) => (\n          <tr key={i}>\n            <td><span className=\"pvt-cell\">{r.name}</span></td>\n            {r.vals.map((v, j) => <td key={j}><span className=\"pvt-cell\">{v}</span></td>)}\n          </tr>\n        ))}\n      </tbody>\n    </table>\n  );\n}",
+        "vue": "<!-- CSS (.pvt-cell + pvtIn) lives in a global, non-scoped stylesheet. -->\n<template>\n  <table ref=\"pvt\" class=\"pvt\">\n    <thead><tr><th>Building</th><th>Jan</th><th>Feb</th><th>Q1</th></tr></thead>\n    <tbody>\n      <tr v-for=\"(r, i) in rows\" :key=\"i\">\n        <td><span class=\"pvt-cell\">{{ r.name }}</span></td>\n        <td v-for=\"(v, j) in r.vals\" :key=\"j\"><span class=\"pvt-cell\">{{ v }}</span></td>\n      </tr>\n    </tbody>\n  </table>\n</template>\n\n<script>\nexport default {\n  data: () => ({ rows: [\n    { name: 'Tower A', vals: [128, 142, 270] },\n    { name: 'Tower B', vals: [96, 88, 184] }\n  ] }),\n  mounted() {\n    this.$nextTick(() => {\n      const cells = this.$refs.pvt.querySelectorAll('.pvt-cell');\n      cells.forEach((c, i) => c.style.setProperty('--i', i));\n      this.$refs.pvt.classList.add('play');\n    });\n  }\n};\n</script>"
+      }
+    }
+  ]
+}
