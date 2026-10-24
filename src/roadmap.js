@@ -30,8 +30,8 @@
     { t: 'Review and confirm your requirements with confidence.', ms: 5000 },
     { t: 'Welcome to your project.', ms: 0 }
   ];
-  const CARDS_T = [['Contract', '#0a5fe8'], ['Requirements', '#e91e84'], ['Notes', '#14a8a8'], ['Project plan', '#0a5fe8'], ['Schedule', '#14a8a8'], ['User guide', '#e91e84']];
-  const CARDS_C = [['Your contract', '#0a5fe8'], ['Scope', '#e91e84'], ['Workshops', '#14a8a8'], ['Requirements', '#0a5fe8'], ['Project plan', '#14a8a8'], ['Your guide', '#e91e84']];
+  const CARDS_T = [['Contract', '#0a7aff'], ['Requirements', '#ed168b'], ['Notes', '#24216f'], ['Project plan', '#0a7aff'], ['Schedule', '#24216f'], ['User guide', '#ed168b']];
+  const CARDS_C = [['Your contract', '#0a7aff'], ['Scope', '#ed168b'], ['Workshops', '#24216f'], ['Requirements', '#0a7aff'], ['Project plan', '#24216f'], ['Your guide', '#ed168b']];
   const NODES_T = ['Plan', 'Collaborate', 'Deliver'], NODES_C = ['Understand', 'Review', 'Confirm'];
   const WIDE = { scatter: [[14, 18, -9], [60, 8, 6], [86, 30, -4], [22, 68, 8], [55, 74, -7], [84, 64, 5]], grid: [[17, 12], [50, 9], [83, 12], [17, 60], [50, 63], [83, 60]], hub: [50, 36], ms: [20, 50, 80], msY: 85 };
   const NARROW = { scatter: [[20, 12, -9], [76, 9, 7], [78, 30, -5], [18, 45, 8], [62, 60, -6], [28, 70, 5]], grid: [[27, 9], [73, 9], [27, 24], [73, 24], [27, 58], [73, 58]], hub: [50, 41], ms: [20, 50, 80], msY: 86 };
@@ -49,7 +49,7 @@
       o.innerHTML = `<div class="rm-bg" aria-hidden="true"><i class="b1"></i><i class="b2"></i><i class="b3"></i></div><div class="rm-top"><img src="brand/logo-navy.png" alt="Facilio" height="20"><div class="rm-prog" aria-hidden="true">${SCENES.map(() => '<i><b></b></i>').join('')}</div><button type="button" class="rm-skip" data-r="skip">Skip introduction</button></div>
         <div class="rm-body"><div class="rm-stage" aria-hidden="true"><svg class="rm-lines" viewBox="0 0 100 100" preserveAspectRatio="none"></svg><div class="rm-frame"></div>
           <div class="rm-focus"><img src="brand/logo-navy.png" alt=""><b class="rm-under"></b><span class="rm-shine"></span><u></u><u></u><u></u><u></u><u></u></div>
-          <div class="rm-burst">${Array.from({ length: 16 }, (_, i) => `<u style="--a:${i * 22.5}deg;--d:${(i % 4) * .08}s;--c:${['#0a5fe8', '#14a8a8', '#e91e84', '#f59e0b'][i % 4]}"></u>`).join('')}</div><div class="rm-hub"><img src="brand/logo-navy.png" alt=""><span>${cl ? 'Your project' : 'Workspace'}</span></div>
+          <div class="rm-burst">${Array.from({ length: 16 }, (_, i) => `<u style="--a:${i * 22.5}deg;--d:${(i % 4) * .08}s;--c:${['#0a7aff', '#24216f', '#ed168b', '#0057d9'][i % 4]}"></u>`).join('')}</div><div class="rm-hub"><img src="brand/logo-navy.png" alt=""><span>${cl ? 'Your project' : 'Workspace'}</span></div>
           ${CARDS.map(([t, c], i) => `<div class="rm-card" data-i="${i}" style="--c:${c}"><div class="rm-in"><b><i></i>${esc(t)}</b><u></u><u class="s"></u></div></div>`).join('')}
           <div class="rm-ms">${NODES.map((t, i) => `<div class="rm-node" data-k="${i}"><i></i><span>${t}</span></div>`).join('')}</div></div>
           <div class="rm-art" aria-hidden="true">${ART.map(([f, a, b, fr], i) => `<figure data-i="${i}" class="${fr || ''}"><i class="halo"></i><img src="brand/art/${f}.webp" alt="" width="460" decoding="async"><span class="chip c1">${esc(a)}</span><span class="chip c2">${esc(b)}</span></figure>`).join('')}</div></div>

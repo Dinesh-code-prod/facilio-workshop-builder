@@ -52,7 +52,7 @@
     { g: 'Dashboard Report', icon: 'dash', items: [['dashreport', 'Dashboard Report']] },
     { g: 'Project', icon: 'home', items: [['overview', 'Project Overview'], ['msaflow', 'Contract'], ['contracts', 'Contracts & Integrations'], ['kickoff', 'Kick-off Deck'], ['plan', 'Project Plan'], ['timeline', 'Plan Timeline'], ['guide', 'Customer User Guide'], ['onboarding', 'Data Onboarding'], ['dashboards', 'Dashboard Gallery']] },
     { g: 'Delivery', icon: 'flag', items: [['governance', 'Governance & RAID'], ['changes', 'Change Requests'], ['delivery', 'Build, UAT & Go-Live']] },
-    { g: 'AI Delivery', icon: 'flag', items: [['aiwork', 'Deliverables & AI'], ['hypercare', 'Hypercare'], ['reports', 'Status Reports (WSR / Monthly)'], ['handover', 'Handover & Closure']] },
+    { g: 'AI Delivery', icon: 'flag', items: [['aiwork', 'Deliverables & AI'], ['hypercare', 'Hypercare'], ['ftr', 'FTR Report (Excel)'], ['kpi', 'KPI Workbooks'], ['reports', 'Status Reports (WSR / Monthly)'], ['handover', 'Handover & Closure']] },
     { g: 'Configuration', icon: 'modules', items: [['modules', 'System Modules & Form Builder'], ['flow', 'State Flow Builder'], ['roles', 'Roles & Access Permissions']] },
     { g: 'Requirements', icon: 'check', items: [['transcripts', 'Transcripts & Requirement Confirmation'], ['usecases', 'Use Cases'], ['checks', 'Checks & Validations'], ['brd', 'BRD Draft']] },
     { g: 'Administration', icon: 'gear', items: [['portal', 'Customer Portal'], ['settings', 'Project Settings & Exports']] }
@@ -207,7 +207,7 @@ function projectsHtml() {
     const wk = Date.now() - 7 * 864e5; const recent = projects.filter(p => p.updatedAt && new Date(p.updatedAt).getTime() > wk).length; const custs = new Set(projects.map(p => p.customer).filter(Boolean)).size;
     const SV = { f: '<path d="M3 7.5h7l2 2h9v10.5H3z"/><path d="M3 7.5V5h7l2 2"/>', u: '<path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/><path d="M16 3.8a3.5 3.5 0 0 1 0 6.8M18 14.5a4 4 0 0 1 4 4V20"/>', r: '<path d="M20 7v5h-5"/><path d="M4.8 9A7.5 7.5 0 0 1 18 6l2 6"/><path d="M4 17v-5h5"/><path d="M19.2 15A7.5 7.5 0 0 1 6 18l-2-6"/>', c: '<rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M7.5 3v4M16.5 3v4M3.5 10h17"/><path d="M8 14h3"/>' };
     const stat = (n, l, tone, k) => `<article class="pp-stat"><div class="pp-icon ${tone}"><svg viewBox="0 0 24 24" aria-hidden="true">${SV[k]}</svg></div><div><div class="pp-value">${n}</div><div class="pp-label">${l}</div></div></article>`;
-    const steps = [['Contract', '#0866e8', '#16b6bd'], ['Workshops', '#13b1b4', '#ed168b'], ['Requirements', '#ed168b', '#24216f'], ['BRD', '#24216f', '#ff9e00'], ['UAT', '#ff9e00', '#16a34a'], ['Go-live', '#16a34a', '#16a34a']];
+    const steps = [['Contract', '#0a7aff', '#0a7aff'], ['Workshops', '#0a7aff', '#0057d9'], ['Requirements', '#0057d9', '#24216f'], ['BRD', '#24216f', '#24216f'], ['UAT', '#24216f', '#ed168b'], ['Go-live', '#ed168b', '#ed168b']];
     const newBtn = `<button class="pp-primary" type="button" data-act="newProject">＋ New Project</button>`;
     return `<div class="projects-page pp"><section class="pp-hero"><div><p class="pp-eyebrow">${hello}${esc(nm)} <span aria-hidden="true">👋</span></p><h1>Customer projects</h1><p class="pp-copy">Plan, organize, and deliver customer implementations with the help of AI.</p></div>
         <div class="pp-art" aria-hidden="true"><span class="pp-glow"></span><div class="pp-panel back"><span class="pp-plabel">WORKSPACE</span><span class="pp-line l1"></span><span class="pp-line l2"></span><span class="pp-line l3"></span></div><div class="pp-panel"><span class="pp-plabel">facilio</span><span class="pp-line l1"></span><span class="pp-line l2"></span><div class="pp-chart"><i></i><i></i><i></i></div></div><span class="pp-orb">AI</span><span class="pp-spark s1">✦</span><span class="pp-spark s2">✧</span></div>${newBtn}</section>
@@ -251,7 +251,7 @@ function projectsHtml() {
     loading(true, 'Opening project…');
     try {
       const refP = (S.user.kind === 'consultant' && !refCache) ? API.reference().catch(() => null) : null; // start the reference download now, in parallel with the project data
-      const consultantSections = ['workshop', 'people', 'planner', 'reviews', 'transcripts', 'dashboards', 'brddoc', 'plan', 'config', 'guide_published', 'schedule_published', 'portal_controls', 'portal_published', 'onboarding_published', 'plan_struct'].concat(V.extraSections || []);
+      const consultantSections = ['workshop', 'people', 'planner', 'reviews', 'transcripts', 'dashboards', 'brddoc', 'plan', 'config', 'guide_published', 'schedule_published', 'portal_controls', 'portal_published', 'onboarding_published', 'plan_struct', 'ftr_wb', 'kpi_wb'].concat(V.extraSections || []);
       const wanted = S.user.kind === 'customer' ? ['guide_published', 'schedule_published', 'dashboards', 'portal_controls', 'portal_published', 'onboarding_published', 'plan_struct'] : consultantSections;
       // one request for project + members + documents + records (was ~18); falls back to the separate requests if it fails
       let bundle = null; try { bundle = await API.get('/api/projects/' + id + '/open?sections=' + wanted.join(',') + '&kinds=all'); } catch (e) { if (e.status === 404 || e.status === 403 || e.status === 401) throw e; }

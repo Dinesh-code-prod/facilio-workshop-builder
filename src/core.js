@@ -43,7 +43,7 @@
     plan: () => ({ notes: {}, view: {} }),
     config: () => ({ source: 'reference', importedFileId: null, importedMeta: null }),
     guide_published: () => null, schedule_published: () => null,
-    portal_controls: () => ({}), portal_published: () => null, onboarding_published: () => null, plan_struct: () => ({ rows: [], versions: [] })
+    portal_controls: () => ({}), portal_published: () => null, onboarding_published: () => null, plan_struct: () => ({ rows: [], versions: [] }), ftr_wb: () => ({ versions: [] }), kpi_wb: () => ({ versions: [] })
   };
   S.ws = newWorkshop();
   function doc(section) { if (!S.docs[section]) S.docs[section] = { data: SECTION_DEFAULTS[section] ? SECTION_DEFAULTS[section]() : {}, version: 0, dirty: false }; return S.docs[section].data; }
