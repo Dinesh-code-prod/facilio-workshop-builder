@@ -2463,3 +2463,26 @@ label.f, .lbl { font-weight: 600; color: var(--fx); }
 .auth-feats li:nth-child(2) { border-left-color: #17B3AE; } .auth-feats li:nth-child(3) { border-left-color: #6B4EE6; } .auth-feats li:nth-child(4) { border-left-color: #E5197F; }
 .auth-feats b { color: #1F2430; font-size: 13.5px; font-weight: 600; }
 .auth-box { justify-items: center; }
+
+/* ===== sidebar: labelled sections, aligned items, a clear "you are here" ===== */
+.sb-sec { display: flex; align-items: center; gap: 10px; margin: 18px 6px 6px; color: #7A8496; font-size: 12px; font-weight: 600; letter-spacing: .02em; }
+.sb-sec::after { content: ""; flex: 1; height: 1px; background: #E4E7EC; }
+.sidebar > .sb-sec:first-of-type, .sidebar .search + .sb-sec { margin-top: 12px; }
+.sb-group { margin: 0 0 2px !important; }
+.sb-group.open > .sb-item:first-of-type { margin-top: 2px; }
+.sb-item { display: flex !important; align-items: center; gap: 10px; margin: 1px 0 1px 18px !important; width: calc(100% - 18px) !important; padding: 8px 10px 8px 12px !important; border-left: 1px solid #E4E7EC !important; border-radius: 0 8px 8px 0 !important; text-align: left; }
+.sb-item::before, .sb-item::after { content: none !important; display: none !important; }
+.sb-item svg { width: 17px !important; height: 17px !important; flex: none; }
+.sb-item.noic { padding-left: 12px !important; } .sb-item.noic > span:first-child::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #C5CCD8; margin: 0 14px 1px 5.5px; }
+.sb-item:hover { background: #F2F4F7 !important; }
+.sb-item.active { background: #EEF2FF !important; color: #0A36D8 !important; font-weight: 600 !important; border-left: 3px solid #0A36D8 !important; padding-left: 10px !important; box-shadow: none !important; }
+.sb-item.active.noic > span:first-child::before { background: #0A36D8; }
+.sb-item.active svg { color: #0A36D8 !important; }
+.sb-group.has-active > .sb-title { background: #F5F7FF !important; border-radius: 8px !important; }
+.sb-title { margin-top: 2px; }
+.sb-foot { position: sticky; bottom: 0; background: linear-gradient(180deg, rgba(255,255,255,0), #fff 28%); padding: 16px 0 4px !important; margin: 0 !important; }
+.sb-out { width: 100%; }
+/* breadcrumb: where am I */
+.crumb { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0; padding: 12px clamp(16px, 2vw, 32px) 0; font-size: 13px; color: #7A8496; }
+.crumb i { font-style: normal; color: #C5CCD8; } .crumb b { color: #0A36D8; font-weight: 600; } .crumb-p { color: #4B5565; font-weight: 500; }
+.crumb + .page .page-header { margin-top: 10px !important; }
