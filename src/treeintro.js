@@ -125,26 +125,28 @@
       leaves.sort((a, b) => a.t - b.t);
       let GROW_END = 0; for (const b of branches) GROW_END = Math.max(GROW_END, b.t0 + b.dur);
 
+      let YMIN = 0; for (const b of branches) for (const q of b.pts) YMIN = Math.min(YMIN, q[1]);
       // milestone nodes — one per stage, placed where that stage's growth happens
       const nodes = [];
       const pushNode = (x, y, t, i) => nodes[i] = { x, y, t, i };
-      pushNode(0, -44, 3.9, 0);                                   // 1 the seed marker, just above the ground
-      { const b = roots[1], s = at(b, .5); pushNode(s[0], s[1], Math.max(S[1] + .5, tAt(b, .5)), 1); }   // 2 a spreading root
+      pushNode(0, 34, 3.9, 0);                                    // 1 the seed marker, where the seed lies in the soil (lowest of all, so the stages climb the tree in order)
+      pushNode(-44, 0, S[1] + .6, 1);                              // 2 the root crown at the ground line, where the roots spread from the trunk base
       { const s = at(trunk, .4); pushNode(s[0], s[1], Math.max(S[2] + .5, tAt(trunk, .4)), 2); }          // 3 the trunk
       { const s = at(trunk, .85); pushNode(s[0], s[1], Math.max(S[3] + .4, tAt(trunk, .85)), 3); }        // 4 the established structure
       for (let i = 4; i < 12; i++) {
         const side = i % 2 ? 1 : -1; let best = null, bs = 1e9;
         const dmin = i === 4 ? 1 : i === 5 ? 2 : i === 6 ? 2 : 3, dmax = i === 4 ? 1 : i === 5 ? 2 : i === 6 ? 3 : 4;
-        const nt = S[i] + .5, target = -390 - (i - 4) * 66;
+        const nt = S[i] + .5, target = lerp(-380, YMIN + 56, (i - 4) / 7), prevY = nodes[i - 1].y;
         for (const b of branches) {
           if (b.depth < dmin || b.depth > dmax) continue;
           for (const f of [.3, .5, .8, 1]) {
-            const s = at(b, f), tn = tAt(b, f); if (Math.sign(s[0]) !== side) continue;
+            const s = at(b, f), tn = tAt(b, f); if (Math.sign(s[0]) !== side || s[1] > prevY - 40) continue;   // each stage sits clearly higher than the one before
             let pen = Math.abs(s[1] - target) / 80 + Math.max(0, tn - (nt + .8)) * 6 + Math.max(0, tn - (S[i] + 2.6)) * 3;
             for (const n of nodes) if (n) { const d = Math.hypot(n.x - s[0], n.y - s[1]); if (d < 130) pen += (130 - d) / 10; }
             if (pen < bs) { bs = pen; best = { x: s[0], y: s[1], t: Math.max(nt, tn) }; }
           }
         }
+        if (!best) { const yy = lerp(-380, YMIN + 56, (i - 4) / 7); best = { x: side * 70, y: yy, t: nt }; }
         pushNode(best.x, best.y, best.t, i);
       }
       nodes.forEach((n, i) => { n.t = Math.max(n.t, i ? nodes[i - 1].t + .5 : 0); });
