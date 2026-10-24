@@ -49,6 +49,7 @@
       ];
       const END = 44, REVEAL = 38.2;
       const TAU = Math.PI * 2;
+      let EXX = 0, EXT = 0, EXL = null;   // exit: EXX slides the whole scene left, EXT is the exit clock that frees the leaves one by one
       const rm = reduce;
 
       /* ---------- helpers ---------- */
@@ -396,7 +397,7 @@
         if (WIDE) {
           const free = BL - LR, k = Math.min(1, free * .8 / (2 * 440 * sc)); sc *= lerp(1, k, reveal); fx = lerp(fx, LR + free / 2, reveal);
         } else { sc *= 1 - .2 * reveal; fy -= RH * .17 * reveal; }
-        const ox = fx, oy = fy - cy * sc;
+        const ox = fx - EXX, oy = fy - cy * sc;
         drawScenery(t, ta, ox, oy, zm, mature);
         const toS = (x, y) => [ox + x * sc, oy + y * sc];
         const gl = toS(0, -640), gr = 560 * sc;
@@ -481,8 +482,11 @@
         for (const L of leaves) {
           if (t < L.t) continue; const u = (t - L.t) / 1.5; const k = backOut(u); if (k <= .01) continue;
           const th = L.ang + Math.sin(ta * 1.3 + L.ph) * .05 * sm(u) + (1 - clamp(u)) * 1.1 * L.flip; const zs = L.size / 56; const kx = k * zs, ky = k * zs * (.55 + .45 * clamp(u)); const cs = Math.cos(th), sn = Math.sin(th);
-          g.setTransform(S0 * cs * kx, S0 * sn * kx, -S0 * sn * ky, S0 * cs * ky, EX + S0 * (L.x + SK * L.y), EY + S0 * L.y);
-          g.globalAlpha = .9 * clamp(u * 2.2); g.drawImage(leafSpr(L.col), -2, -20);
+          let lx = L.x + SK * L.y, ly = L.y, al = .9 * clamp(u * 2.2), th2 = th;
+          if (EXL) { const q = L.q, dk = EXT - q.d; if (dk > 0) { lx += q.vx * dk; ly += q.vy * dk + 520 * dk * dk; th2 += q.sp * dk; al *= clamp(1 - (dk - .5) / .9); if (al <= 0) continue; } }
+          const cs2 = Math.cos(th2), sn2 = Math.sin(th2);
+          g.setTransform(S0 * cs2 * kx, S0 * sn2 * kx, -S0 * sn2 * ky, S0 * cs2 * ky, EX + S0 * lx, EY + S0 * ly);
+          g.globalAlpha = al; g.drawImage(leafSpr(L.col), -2, -20);
         }
         setW(); g.globalAlpha = 1;
         const cs = stageAt(t);
@@ -665,21 +669,16 @@
         const off = o.querySelector('#tiOff'), flag = !!(off && off.checked);
         doc.body.classList.remove('cn-on'); root.removeEventListener('keydown', key); root.removeEventListener('resize', resize); delete root.__ti;
         const free = () => { cv.width = 1; cv.height = 1; o.remove(); };
-        if (!rm) { // leave through the tree theme: the night sky opens like an iris from the middle while a burst of leaves and light drifts out
-          const lv = doc.createElement('canvas'); lv.className = 'ti-leaves'; lv.setAttribute('aria-hidden', 'true'); const LWd = root.innerWidth, LHt = root.innerHeight, dpr = Math.min(1.5, root.devicePixelRatio || 1);
-          lv.width = Math.round(LWd * dpr); lv.height = Math.round(LHt * dpr); doc.body.appendChild(lv); const x = lv.getContext('2d'); x.scale(dpr, dpr);
-          const cols = ['#1570EF', '#8DB8FF', '#E5197F', '#2EC9C4', '#6B4EE6', '#4D80F4']; const cx = LWd * .5, cy = LHt * .52;
-          const P = Array.from({ length: 84 }, (_, i) => { const a = i / 84 * TAU + Math.random() * .5, v = 260 + Math.random() * 760; return { x: cx + Math.cos(a) * 20, y: cy + Math.sin(a) * 14, vx: Math.cos(a) * v, vy: Math.sin(a) * v * .8 - 120, r: Math.random() * TAU, vr: (Math.random() - .5) * 9, s: 9 + Math.random() * 15, c: cols[i % cols.length], d: Math.random() * .25 }; });
-          const t0 = performance.now(); o.classList.add('iris');
-          const step = now => {
-            const e = (now - t0) / 1000; x.clearRect(0, 0, LWd, LHt);
-            const rk = clamp(e / .9); if (rk < 1) { const g2 = x.createRadialGradient(cx, cy, 0, cx, cy, 40 + 520 * easeOut(rk)); g2.addColorStop(0, `rgba(190,215,255,${.5 * (1 - rk)})`); g2.addColorStop(1, 'rgba(21,112,239,0)'); x.fillStyle = g2; x.beginPath(); x.arc(cx, cy, 40 + 520 * easeOut(rk), 0, TAU); x.fill(); }
-            for (const q of P) { const k = e - q.d; if (k <= 0) continue; const px = q.x + q.vx * k * (1 - k * .22), py = q.y + q.vy * k * (1 - k * .22) + 380 * k * k; const al = clamp(1 - (k - .35) / .9) * clamp(k / .08);
-              if (al <= 0) continue; x.save(); x.translate(px, py); x.rotate(q.r + q.vr * k); x.globalAlpha = al; x.fillStyle = q.c; x.beginPath(); x.moveTo(0, 0); x.bezierCurveTo(q.s * .45, -q.s * .4, q.s * .9, -q.s * .1, q.s, 0); x.bezierCurveTo(q.s * .9, q.s * .15, q.s * .45, q.s * .42, 0, 0); x.fill(); x.restore(); }
-            if (e < 1.6) root.requestAnimationFrame(step); else lv.remove();
+        if (!rm) { // leave through the tree: the scene pans left, the leaves are cut loose and blow away, and the page behind opens in their wake
+          EXL = true; for (const L of leaves) L.q = { d: Math.random() * .85, vx: 90 + Math.random() * 480, vy: -170 + Math.random() * 190, sp: (Math.random() - .5) * 9 };
+          const t0 = performance.now(); o.classList.add('exit');
+          const D = 1.5; const run = now => {
+            const e = (now - t0) / 1000; EXT = e; EXX = easeIO(clamp((e - .1) / 1.4)) * (W * .95 + 420);
+            draw(T); if (e < D + .1) root.requestAnimationFrame(run);
           };
-          root.requestAnimationFrame(step);
-          setTimeout(() => resolve({ how, off: flag }), 420); setTimeout(free, 1500); return;
+          root.requestAnimationFrame(run);
+          setTimeout(() => { const au = doc.querySelector('.auth'); if (au) { au.classList.remove('auth-in'); void au.offsetWidth; au.classList.add('auth-in'); } resolve({ how, off: flag }); }, 380);   // the page behind plays its own entrance as the scene clears
+          setTimeout(free, 1800); return;
         }
         o.classList.add('out'); setTimeout(free, rm ? 0 : 600); resolve({ how, off: flag });
       }
