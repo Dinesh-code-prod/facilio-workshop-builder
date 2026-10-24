@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import handler from '../work/server/api.mjs';
 const store = new Map(), files = new Map(); let maxVal = 0, calls = 0;
 const KEY = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
-const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' }, secrets: { async get() { throw new Error('no secret'); } }, llm: async ({ messages }) => ({ model: 'mock', choices: [{ message: { content: '## Draft\nBased on [S1]. ' + messages[1].content.slice(0, 20) } }] }),
+const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' }, secrets: { async get(k) { if (k === 'anthropic_api_key' && globalThis.__KEY) return globalThis.__KEY; throw new Error('no secret'); } }, llm: async ({ messages }) => ({ model: 'mock', choices: [{ message: { content: '## Draft\nBased on [S1]. ' + messages[1].content.slice(0, 20) } }] }),
   db: {
     async get(c, k) { calls++; const r = (store.get(c) || new Map()).get(k); return r ? { key: k, value: JSON.parse(r), updated_at: '', updated_by: '' } : null; },
     async put(c, k, v) { calls++; assert.ok(KEY.test(k), 'bad key ' + k); assert.ok(/^[A-Za-z0-9._-]{1,64}$/.test(c), 'bad collection ' + c); const t = JSON.stringify(v); maxVal = Math.max(maxVal, t.length); if (t.length > 128 * 1024) { const e = new Error('too large'); e.status = 413; throw e; } if (!store.has(c)) store.set(c, new Map()); store.get(c).set(k, t); },
@@ -63,6 +63,29 @@ await t('AI: draft is server-made, unapproved, editor cannot self-approve, owner
   r = await call(sam, 'POST', `/api/projects/${pid}/ai/${id}/decision`, { decision: 'approve' }); assert.equal(r.data.item.data.status, 'approved');
   r = await call(sam, 'PUT', `/api/projects/${pid}/items/ai/${id}`, { data: { content: 'changed' } }); assert.equal(r.data.item.data.status, 'draft', 'edit reopens approved text');
   r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'bogus' }); assert.equal(r.status, 400);
+});
+await t('AI providers: DeepSeek default, Claude explicit, key never exposed, honest fallback', async () => {
+  let r = await call(sam, 'GET', '/api/ai/status'); assert.equal(r.data.defaultProvider, 'deepseek'); assert.equal(r.data.claude, false);
+  r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat' }); assert.equal(r.status, 201); assert.equal(r.data.item.data.provider, 'DeepSeek');
+  r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat', provider: 'claude' }); assert.equal(r.status, 409, 'explicit Claude without a key is refused, never silently switched'); assert.match(r.data.error || r.data.message || JSON.stringify(r.data), /not configured/i);
+  r = await call(sam, 'POST', '/api/admin/ai/config', { defaultProvider: 'claude' }); assert.equal(r.status, 403, 'only admins change the provider settings');
+  r = await call(dinesh, 'POST', '/api/admin/ai/config', { defaultProvider: 'claude' }); assert.equal(r.status, 409, 'cannot default to an unconfigured provider');
+  r = await call(dinesh, 'POST', '/api/admin/ai/test', {}); assert.equal(r.data.ok, false); assert.equal(r.data.configured, false);
+  const SECRET = 'sk-ant-test-SECRET-123'; globalThis.__KEY = SECRET; const real = globalThis.fetch; let seen = null;
+  globalThis.fetch = async (url, o) => { seen = { url, key: o.headers['x-api-key'] }; return { ok: true, status: 200, json: async () => ({ content: [{ text: 'Claude draft [S1]' }], usage: { input_tokens: 11, output_tokens: 7 } }) }; };
+  try {
+    r = await call(sam, 'GET', '/api/ai/status'); assert.equal(r.data.claude, true); assert.ok(!JSON.stringify(r.data).includes(SECRET));
+    r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat' }); assert.equal(r.data.item.data.provider, 'DeepSeek', 'configuring a key does not change the default');
+    r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat', provider: 'claude' }); assert.equal(r.status, 201); assert.equal(r.data.item.data.provider, 'Claude'); assert.equal(seen.key, SECRET); assert.ok(!JSON.stringify(r.data).includes(SECRET));
+    r = await call(dinesh, 'POST', '/api/admin/ai/test', {}); assert.equal(r.data.ok, true); assert.ok(!JSON.stringify(r.data).includes(SECRET));
+    r = await call(dinesh, 'GET', '/api/admin/ai/usage'); assert.equal(r.data.usage.claude.inTok, 22); assert.equal(r.data.usage.claude.outTok, 14); assert.ok(!JSON.stringify(r.data).includes(SECRET)); assert.equal(r.data.usage.claude.errors, 0);
+    r = await call(sam, 'GET', '/api/admin/ai/usage'); assert.equal(r.status, 403);
+    globalThis.fetch = async () => ({ ok: false, status: 500, json: async () => ({}) });
+    r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat', provider: 'claude' }); assert.equal(r.status, 502, 'an explicit Claude failure is reported, not hidden');
+    r = await call(dinesh, 'POST', '/api/admin/ai/config', { defaultProvider: 'deepseek', fallback: 'deepseek' }); assert.equal(r.status, 200);
+    r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat', provider: 'claude' }); assert.equal(r.status, 201); assert.equal(r.data.item.data.provider, 'DeepSeek'); assert.match(r.data.item.data.notice, /Claude was not available/);
+    r = await call(dinesh, 'GET', '/api/admin/ai/usage'); assert.ok(r.data.usage.claude.errors >= 2); assert.ok(!JSON.stringify(r.data).includes(SECRET));
+  } finally { globalThis.fetch = real; globalThis.__KEY = ''; }
 });
 await t('templates: versions, publish needs admin, retire, project scope, AI uses template', async () => {
   let r = await call(sam, 'POST', '/api/templates', { name: 'BRD layout', kind: 'brd', scope: 'org', data: { body: '# Purpose\n# Scope' } }); assert.equal(r.status, 201); const id = r.data.item.id;

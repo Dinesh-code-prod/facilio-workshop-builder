@@ -21,8 +21,9 @@
     team: [['scene-workshop', 'Workshops that stay on track'], ['scene-brd', 'BRDs drafted with AI assistance'], ['scene-dash', 'Delivery dashboards']],
     customer: [['scene-workshop', 'Workshops where your voice counts'], ['scene-dash', 'Progress you can follow'], ['scene-guide', 'Guides for your team']]
   };
+  const DESC = ['Goals, team and plan agreed', 'Process walked through together', 'Needs captured and prioritised', 'Scope written down and signed', 'The solution is set up', 'Tested with your scenarios', 'Results checked against KPIs', 'Guides and learning for users', 'Ready to switch over', 'Close support after launch', 'Day-to-day support in place', 'Outcomes reviewed and closed'];
   const FLOW = { public: ['brand', 'journey', 'platform', 'cta'], team: ['brand', 'people', 'platform', 'cta'], customer: ['brand', 'journey', 'people', 'cta'] };
-  const MS = { brand: 3300, journey: 5800, platform: 4800, people: 8000, cta: 0 };
+  const MS = { brand: 3300, journey: 7600, platform: 4800, people: 8000, cta: 0 };
   const HEAD = {
     journey: { public: 'Twelve stages. One connected journey.', team: 'Twelve stages. One connected journey.', customer: 'Twelve stages. One shared journey.' },
     platform: { public: 'One platform, every module connected.', team: 'One platform, every module connected.', customer: 'One platform, every module connected.' },
@@ -44,7 +45,7 @@
       const sceneHtml = {
         brand: () => `<div class="cn-sc cn-brand" data-k="brand"><div class="cn-logo"><div class="cn-burst" data-lt="burst"></div><div class="cn-mark"><img class="cn-wm" src="brand/logo-white.png" alt="Facilio" width="640" height="176"><i class="cn-sq p"></i><i class="cn-sq t"></i></div></div>
           <p class="cn-tag">${name ? `<b>Welcome, ${esc(name)}</b>` : ''}<span>${esc(SUB.brand[aud])}</span></p></div>`,
-        journey: () => `<div class="cn-sc cn-journey" data-k="journey"><h2 class="cn-h">${esc(HEAD.journey[aud])}</h2><ol class="cn-blocks" aria-label="Delivery lifecycle">${STAGES().map((l, k) => `<li style="--k:${k};--c:var(--cn-c${k % 4})"><span class="cn-chip"></span><i>${k + 1}</i><b>${esc(l)}</b><u data-lt="check"></u></li>`).join('')}</ol></div>`,
+        journey: () => `<div class="cn-sc cn-journey" data-k="journey"><h2 class="cn-h">${esc(HEAD.journey[aud])}</h2><ol class="cn-blocks" aria-label="Delivery lifecycle">${STAGES().map((l, k) => `<li style="--k:${k};--c:var(--cn-c${k % 4})"><span class="cn-chip"></span><i>${k + 1}</i><b>${esc(l)}</b><em>${esc(DESC[k] || '')}</em><u data-lt="check"></u><s></s></li>`).join('')}</ol></div>`,
         platform: () => `<div class="cn-sc cn-platform" data-k="platform"><h2 class="cn-h">${esc(HEAD.platform[aud])}</h2><div class="cn-eco" data-eco></div><p class="cn-ai"><span class="cn-spark" data-lt="orbit"></span><span>Facilio AI assists with drafts. People review and decide.</span></p></div>`,
         people: () => { const L = ART[aud === 'customer' ? 'customer' : 'team']; return `<div class="cn-sc cn-people" data-k="people"><h2 class="cn-h">${esc(HEAD.people[aud])}</h2><div class="cn-cards">${L.map(([f, t], i) => `<figure style="--i:${i}"><div class="cn-art" data-lt="${f}"></div><figcaption>${esc(t)}</figcaption></figure>`).join('')}</div></div>`; },
         cta: () => `<div class="cn-sc cn-cta" data-k="cta"><div class="cn-mark sm"><img class="cn-wm" src="brand/logo-white.png" alt="" width="640" height="176"><i class="cn-sq p"></i><i class="cn-sq t"></i></div><h1 class="cn-h big">${esc(HEAD.cta[aud])}</h1><p class="cn-sub">${esc(SUB.cta[aud])}</p>
@@ -80,7 +81,7 @@
         const s = scenes[i], k = list[i];
         if (!still) {
           s.querySelectorAll('[data-lt]:not(.cn-blocks u)').forEach(el => { const nm = el.getAttribute('data-lt'); play(el, nm, { loop: nm === 'orbit' || nm === 'pulse' || nm.indexOf('scene-') === 0 }).then(a => a && anims.push(a)); });
-          if (k === 'journey') s.querySelectorAll('.cn-blocks li').forEach((li, j) => { setTimeout(() => { if (closed || n !== i) return; li.classList.add('lit'); const u = li.querySelector('u'); play(u, 'check').then(a => a && anims.push(a)); }, 700 + j * 300); });
+          if (k === 'journey') s.querySelectorAll('.cn-blocks li').forEach((li, j) => { setTimeout(() => { if (closed || n !== i) return; const pv = s.querySelector('.cn-blocks li.act'); if (pv) pv.classList.remove('act'); li.classList.add('lit', 'act'); const u = li.querySelector('u'); play(u, 'check').then(a => a && anims.push(a)); }, 900 + j * 540); });
           if (k === 'platform') { const host = s.querySelector('[data-eco]'); if (host && V.ecoStage) { host.innerHTML = V.ecoStage({ audience: aud, dark: true }); fit(s); } }
         }
         if (k === 'cta') { const g = s.querySelector('.cn-go'); setTimeout(() => { try { g.focus({ preventScroll: true }); } catch (e) { } }, 500); }

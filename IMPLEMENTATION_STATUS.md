@@ -243,3 +243,11 @@ Templates drawer: "compare with v(n-1)" shows a line diff of two versions (added
 - Per-record write lock on the server (withLock) plus concurrency test; rapid-click guard in the dispatcher.
 - Customer preview (read-only) for consultants (src/custpreview.js).
 - Not verified: real guest/customer sign-in (impossible on facilio.work), cross-instance write races, reduced-motion in a browser.
+
+## 54. Builds 40-44 (cinema, Lottie, home, admin theme, Outlook, AI providers)
+- Cinematic opening and post-login roadmap (src/cinema.js), original Lottie illustrations (tools/make-lottie.mjs, tools/make-scenes.mjs), isometric journey moved to the Project Roadmap page.
+- Home redesigned (wider layout, projects first, Facilio-styled search); Admin themed in every tab; control consistency (fonts, backgrounds, heights).
+- Get started now sweeps three brand panels, then the sign-in page assembles. Journey scene rebuilt: tilt-in cards, a spotlight walks card to card with a one-line description, connectors fill.
+- Outlook (docs/OUTLOOK_FEASIBILITY.md): a native inbox is NOT available (no per-user Graph token on facilio.work). Built Compose in Outlook and Open Outlook (src/outlook.js) on the weekly digest and reports; existing mailto/.eml/copy kept; never sends.
+- AI providers: DeepSeek stays default. Claude is optional, chosen per task in the Generate drawer or as the org default (Admin > AI & Outlook). Key is the owner-managed secret anthropic_api_key (apps cannot write secrets), never returned or logged; masked status, connection test, explicit fallback policy with a notice on the draft, usage from provider-reported tokens only (no cost estimate). 14/14 server checks pass, including key-leak and fallback cases.
+- Not tested with real credentials: Claude calls (no key set), any Outlook inbox. Compose links were unit-tested for encoding, long bodies and bad addresses but not opened in a signed-in Outlook.

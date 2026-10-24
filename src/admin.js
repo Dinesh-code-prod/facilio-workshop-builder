@@ -236,15 +236,35 @@
 
   V.adminHtml = function () {
     const d = A.data; if (!d) return '<div class="adm-wrap"><div class="muted" style="padding:40px">Loading…</div></div>';
-    const nav = [['dashboard', 'Dashboard', 'M3 13h8V3H3zm0 8h8v-6H3zm10 0h8V11h-8zm0-18v6h8V3z'], ['projects', 'Projects', 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'], ['users', 'Users', 'M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0zM4 21a8 8 0 0 1 16 0z'], ['access', 'Access', 'M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z', 'super'], ['activity', 'Activity', 'M3 12h4l3-8 4 16 3-8h4']].filter(n => !n[3] || can(n[3]));
-    const title = { dashboard: 'Dashboard', projects: 'Projects', users: 'Users', access: 'Access', activity: 'Activity' }[A.sec];
-    const sub = { dashboard: 'Portfolio insights across every project', projects: `${d.kpis.active} active · ${d.kpis.archived} archived. Click a project for its insights.`, users: 'Accounts on this platform', access: 'Who can use this admin console', activity: 'Latest recorded actions across all projects' }[A.sec];
-    const body = A.sec === 'dashboard' ? dashboard() : A.sec === 'projects' ? projects() : A.sec === 'users' ? users() : A.sec === 'access' ? access() : activity();
+    const nav = [['dashboard', 'Dashboard', 'M3 13h8V3H3zm0 8h8v-6H3zm10 0h8V11h-8zm0-18v6h8V3z'], ['projects', 'Projects', 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'], ['users', 'Users', 'M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0zM4 21a8 8 0 0 1 16 0z'], ['access', 'Access', 'M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z', 'super'], ['ai', 'AI & Outlook', 'M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z', 'admin'], ['activity', 'Activity', 'M3 12h4l3-8 4 16 3-8h4']].filter(n => !n[3] || can(n[3]));
+    const title = { dashboard: 'Dashboard', projects: 'Projects', users: 'Users', access: 'Access', ai: 'AI & Outlook', activity: 'Activity' }[A.sec];
+    const sub = { dashboard: 'Portfolio insights across every project', projects: `${d.kpis.active} active · ${d.kpis.archived} archived. Click a project for its insights.`, users: 'Accounts on this platform', access: 'Who can use this admin console', ai: 'Choose the AI provider and see how Outlook works here', activity: 'Latest recorded actions across all projects' }[A.sec];
+    const body = A.sec === 'dashboard' ? dashboard() : A.sec === 'projects' ? projects() : A.sec === 'users' ? users() : A.sec === 'access' ? access() : A.sec === 'ai' ? aiPanel() : activity();
     return `<div class="adm-wrap"><aside class="adm-nav" aria-label="Admin sections"><div class="adm-me"><div class="pav lg" style="background:${tone(d.me.email || 'x')}">${esc(initials(d.me.name || d.me.email))}</div><div><b>${esc(d.me.name || 'Admin')}</b><div class="xs muted">${esc(d.me.email || '')}</div>${rchip(d.me.role)}</div></div>
       ${nav.map(([k, l, p]) => `<button class="adm-ni${A.sec === k ? ' on' : ''}" data-act="admSec" data-s="${k}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${p}"/></svg><span>${l}</span>${k === 'projects' ? `<em>${d.kpis.active}</em>` : ''}</button>`).join('')}
       <div class="adm-nav-foot"><button class="btn sm" data-act="admPw">Change my password</button><button class="btn sm" data-act="toProjects">Back to projects</button></div></aside>
-      <main class="adm-main"><div class="adm-hero"><div class="adm-hero-t"><p class="adm-crumb">Admin console</p><h1>${title}</h1><p class="adm-sub">${esc(sub)}</p><div class="adm-hero-a">${d.me.role === 'sub' ? chip('r-sub', 'Read-only access') : ''}<button class="hm-btn ghost" type="button" data-act="admRefresh"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>Refresh</button></div></div><div class="adm-hero-art" aria-hidden="true"><div class="hm-lt" data-lottie="${{ dashboard: 'scene-dash', projects: 'scene-building', users: 'scene-workshop', access: 'scene-connect', activity: 'scene-guide' }[A.sec] || 'scene-dash'}"></div></div></div>${body}</main></div>`;
+      <main class="adm-main"><div class="adm-hero"><div class="adm-hero-t"><p class="adm-crumb">Admin console</p><h1>${title}</h1><p class="adm-sub">${esc(sub)}</p><div class="adm-hero-a">${d.me.role === 'sub' ? chip('r-sub', 'Read-only access') : ''}<button class="hm-btn ghost" type="button" data-act="admRefresh"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>Refresh</button></div></div><div class="adm-hero-art" aria-hidden="true"><div class="hm-lt" data-lottie="${{ dashboard: 'scene-dash', projects: 'scene-building', users: 'scene-workshop', access: 'scene-connect', ai: 'scene-dash', activity: 'scene-guide' }[A.sec] || 'scene-dash'}"></div></div></div>${body}</main></div>`;
   };
+
+  // ---------- AI providers and Outlook ----------
+  function aiPanel() {
+    const x = A.ai; if (!x) return '<div class="muted" style="padding:30px">Loading…</div>'; const cl = x.st.claude, u = x.us.usage, cfg = x.us.cfg; const n = v => (v || 0).toLocaleString();
+    const row = (id, name, note) => { const q = u[id]; const has = q.inTok || q.outTok; return `<tr><td><b>${name}</b>${x.st.defaultProvider === id ? ' <span class="chip">Default</span>' : ''}<div class="xs muted">${note}</div></td><td>${n(q.calls)}</td><td>${n(q.errors)}${q.lastError ? `<div class="xs muted">Last: ${esc(q.lastError.code)}</div>` : ''}</td><td>${has ? n(q.inTok) + ' in / ' + n(q.outTok) + ' out' : '<span class="muted">Not reported</span>'}</td></tr>`; };
+    return `<div class="adm-card"><div class="adm-h"><h3>AI provider</h3><span class="muted xs">Applies to every project</span></div>
+      <p class="small muted" style="margin:0 0 12px">DeepSeek stays the default. Claude is optional and is used only when someone picks it for a task, or when you make it the default.</p>
+      <div class="fgrid"><label class="afld">Default provider<select id="ai_def"><option value="deepseek"${x.st.defaultProvider === 'deepseek' ? ' selected' : ''}>DeepSeek (default)</option><option value="claude"${x.st.defaultProvider === 'claude' ? ' selected' : ''}${cl ? '' : ' disabled'}>Claude${cl ? '' : ' (not configured)'}</option></select></label>
+      <label class="afld">If Claude is not available<select id="ai_fb"><option value="none"${cfg.fallback === 'none' ? ' selected' : ''}>Show an error (do not switch)</option><option value="deepseek"${cfg.fallback === 'deepseek' ? ' selected' : ''}>Use DeepSeek and say so on the draft</option></select></label></div>
+      <div class="row" style="gap:8px;margin-top:12px"><button class="btn primary" data-act="aiCfgSave">Save</button><button class="btn" data-act="aiTest">Test Claude connection</button><span id="ai_res" class="small muted"></span></div></div>
+    <div class="adm-card"><div class="adm-h"><h3>Claude API key</h3>${cl ? '<span class="chip">Configured</span>' : '<span class="chip">Not configured</span>'}</div>
+      <p class="small" style="margin:0 0 8px">${cl ? 'A key is stored. For safety it is never shown here, sent to the browser or written to logs.' : 'No key is stored yet.'}</p>
+      <p class="small muted" style="margin:0">The key is a secret named <code>anthropic_api_key</code>. On facilio.work only the app owner can add, replace or remove secrets, at <b>secrets.facilio.work</b>, so this screen cannot save a key. It shows whether one is set and lets you test it. A Claude API key gives access to Claude only: it does not give Claude Code skills, local files or MCP tools.</p></div>
+    <div class="adm-card"><div class="adm-h"><h3>Usage since tracking began</h3><span class="muted xs">Only what the providers report</span></div>
+      <div class="tbl-wrap adm-tbl"><table class="tbl"><thead><tr><th>Provider</th><th>Requests</th><th>Errors</th><th>Tokens</th></tr></thead><tbody>${row('deepseek', 'DeepSeek', 'Facilio-hosted model')}${row('claude', 'Claude', 'Anthropic API')}</tbody></table></div>
+      <p class="xs muted" style="margin:8px 0 0">Costs are not estimated because no price list is configured. Prompts and responses are never stored here.</p></div>
+    <div class="adm-card"><div class="adm-h"><h3>Outlook</h3><span class="chip">Open and compose only</span></div>
+      <p class="small" style="margin:0 0 8px">Compose in Outlook and Open Outlook are available on the weekly digest and on reports. They open a draft in Outlook on the web for the person to review and send. Nothing is sent from Delivery Studio.</p>
+      <p class="small muted" style="margin:0">An inbox inside Delivery Studio is not available yet. It needs a Microsoft Entra app registration with the delegated <code>Mail.Read</code> permission, tenant admin consent, and a platform sign-in flow that hands the app each person's own Microsoft token. Today the platform gives the app only the signed-in email address. Details are in docs/OUTLOOK_FEASIBILITY.md.</p></div>`;
+  }
 
   // ---------- project detail ----------
   async function detail(id) {
@@ -293,16 +313,19 @@
   };
 
   // ---------- actions ----------
+  ACT.aiCfgSave = async () => { try { await API.post('/api/admin/ai/config', { defaultProvider: document.getElementById('ai_def').value, fallback: document.getElementById('ai_fb').value }); A.ai = null; toast('AI settings saved'); await lazy(); } catch (e) { toast(e.message, 5000, true); } };
+  ACT.aiTest = async a => V.busy(a, async () => { const el = document.getElementById('ai_res'); try { const r = await API.post('/api/admin/ai/test', {}); if (el) el.textContent = r.message; toast(r.message, 5000, !r.ok); A.ai = null; } catch (e) { toast(e.message, 5000, true); } });
   ACT.admSec = async a => { A.sec = a.getAttribute('data-s'); show(); await lazy(); };
   async function lazy() {
     try {
       if (A.sec === 'dashboard' && (A.dash === 'usage' || A.dash === 'quality') && !A.ins) { A.ins = await API.get('/api/admin/insights', { noAuthRedirect: true }); show(); }
       if (A.sec === 'users' && !A.users) { A.users = (await API.get('/api/admin/users', { noAuthRedirect: true })).users; show(); }
       if (A.sec === 'activity' && !A.audit) { A.audit = (await API.get('/api/admin/audit', { noAuthRedirect: true })).entries; show(); }
+      if (A.sec === 'ai' && !A.ai) { const [st, us] = await Promise.all([API.get('/api/ai/status', { noAuthRedirect: true }), API.get('/api/admin/ai/usage', { noAuthRedirect: true })]); A.ai = { st, us }; show(); }
       if (A.sec === 'access' && !A.access) { A.access = await API.get('/api/admin/access', { noAuthRedirect: true }); show(); }
     } catch (e) { toast(e.message, 4000, true); }
   }
-  ACT.admRefresh = async () => { try { await load(); A.users = A.audit = A.access = A.ins = null; show(); await lazy(); toast('Refreshed'); } catch (e) { toast(e.message, 4000, true); } };
+  ACT.admRefresh = async () => { try { await load(); A.users = A.audit = A.access = A.ins = A.ai = null; show(); await lazy(); toast('Refreshed'); } catch (e) { toast(e.message, 4000, true); } };
   ACT.admGo = async a => { const g = a.getAttribute('data-go'); if (g === 'attention') { A.sec = 'projects'; A.filter = 'attention'; A.stage = 'all'; } else if (g === 'projects') { A.sec = 'projects'; A.filter = 'all'; A.stage = 'all'; } else A.sec = g; show(); await lazy(); };
   ACT.admStage = a => { A.sec = 'projects'; A.stage = a.getAttribute('data-s'); A.filter = 'all'; show(); };
   ACT.admFilter = a => { A.sec = 'projects'; A.filter = a.getAttribute('data-f'); A.stage = 'all'; show(); };

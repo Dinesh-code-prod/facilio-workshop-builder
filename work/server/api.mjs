@@ -229,38 +229,78 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
     for (const k of T.kinds) { const rows = await itemsOf(pid, k).catch(() => []); const live = rows.filter(r => !(r.data && (r.data.superseded === true || r.data.status === 'superseded'))); rows.length = 0; rows.push(...live); if (rows.length) { n++; src.push({ ref: 'S' + n, label: 'Records: ' + k + ' (' + rows.length + ')' }); text += `\n[S${n}] Records "${k}" (${rows.length}):\n${clip(rows.slice(0, small ? 25 : 40).map(r => Object.assign({ id: r.id }, r.data, { hist: undefined })), small ? 2000 : 3500)}\n`; } }
     return { src, text: text.slice(0, small ? 13000 : 26000) };
   }
-  const haveClaude = async () => { try { return !!(await CTX.secrets.get('anthropic_api_key')); } catch (e) { return false; } };
-  async function callModel(messages, maxTokens) {
-    let key = ''; try { key = (await CTX.secrets.get('anthropic_api_key')) || ''; } catch (e) { key = ''; }
-    const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 22000);
+  // ---------- AI providers: DeepSeek (default, Facilio-hosted) and Claude (optional, explicit) ----------
+  // The Claude key is a PLAIN secret named anthropic_api_key, managed by the app owner at secrets.facilio.work (apps cannot write secrets).
+  // It is read only here, on the server, and is never returned, logged or stored in the database.
+  const PROVIDERS = ['deepseek', 'claude'];
+  const PNAME = { deepseek: 'DeepSeek', claude: 'Claude' };
+  const claudeKey = async () => { try { return (await CTX.secrets.get('anthropic_api_key')) || ''; } catch (e) { return ''; } };
+  const haveClaude = async () => !!(await claudeKey());
+  async function aiCfg() { const r = await dbGet('ai', 'cfg').catch(() => null); const v = (r && r.value) || {}; return { defaultProvider: v.defaultProvider === 'claude' ? 'claude' : 'deepseek', fallback: v.fallback === 'deepseek' ? 'deepseek' : 'none', by: v.by || null, at: v.at || null }; }
+  const emptyUse = () => ({ calls: 0, errors: 0, inTok: 0, outTok: 0, last: null, lastError: null });
+  async function aiUse() { const r = await dbGet('ai', 'use').catch(() => null); const v = (r && r.value) || {}; const o = {}; for (const p of PROVIDERS) o[p] = Object.assign(emptyUse(), v[p] || {}); return o; }
+  // usage is recorded only from what the provider reports; no prompts, keys or response text are stored
+  async function aiNote(provider, okay, usage, errCode) {
+    try { const u = await aiUse(); const x = u[provider]; x.calls += 1; x.last = now(); if (okay) { if (usage) { x.inTok += Number(usage.in) || 0; x.outTok += Number(usage.out) || 0; } } else { x.errors += 1; x.lastError = { at: now(), code: String(errCode || 'error').slice(0, 60) }; } await dbPut('ai', 'use', u); } catch (e) { /* visibility only; never block the task */ }
+  }
+  async function callClaude(messages, maxTokens) {
+    const key = await claudeKey(); if (!key) throw new HttpError(409, 'Claude is not configured. The app owner needs to add the Claude API key in the secrets portal.');
+    const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 40000);
     try {
-      if (key) {
-        const model = 'claude-sonnet-5-5'; const sys = messages.filter(m => m.role === 'system').map(m => m.content).join('\n'); const rest = messages.filter(m => m.role !== 'system');
-        const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', signal: ac.signal, headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' }, body: JSON.stringify({ model, max_tokens: maxTokens, system: sys, messages: rest }) });
-        const j = await r.json().catch(() => ({})); if (!r.ok) throw new HttpError(r.status === 429 ? 429 : 502, 'The AI service returned an error (' + r.status + ')');
-        return { text: (j.content || []).map(c => c.text || '').join(''), provider: 'Claude', model };
-      }
-      const r = await CTX.llm({ messages, max_tokens: Math.min(maxTokens, 1800), temperature: 0.2 });
-      const text = r && r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content; if (!text) throw new HttpError(502, 'The AI returned no text');
-      return { text, provider: 'Facilio-hosted model', model: r.model || 'default' };
-    } catch (e) { if (e instanceof HttpError) throw e; throw new HttpError(e && e.name === 'AbortError' ? 504 : 502, e && e.name === 'AbortError' ? 'The AI took too long. Try a narrower request.' : 'The AI service could not be reached. Try again.'); }
+      const model = 'claude-sonnet-5-5'; const sys = messages.filter(m => m.role === 'system').map(m => m.content).join('\n'); const rest = messages.filter(m => m.role !== 'system');
+      const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', signal: ac.signal, headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' }, body: JSON.stringify({ model, max_tokens: maxTokens, system: sys, messages: rest }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { const code = 'http_' + r.status; await aiNote('claude', false, null, code); throw new HttpError(r.status === 429 ? 429 : r.status === 401 || r.status === 403 ? 409 : 502, r.status === 429 ? 'Claude is rate limited right now. Try again shortly.' : r.status === 401 || r.status === 403 ? 'Claude rejected the configured API key. The app owner needs to check it.' : 'Claude returned an error (' + r.status + ').'); }
+      const text = (j.content || []).map(c => c.text || '').join(''); if (!text) { await aiNote('claude', false, null, 'empty'); throw new HttpError(502, 'Claude returned no text'); }
+      await aiNote('claude', true, j.usage ? { in: j.usage.input_tokens, out: j.usage.output_tokens } : null);
+      return { text, provider: 'Claude', model };
+    } catch (e) { if (e instanceof HttpError) throw e; await aiNote('claude', false, null, e && e.name === 'AbortError' ? 'timeout' : 'network'); throw new HttpError(e && e.name === 'AbortError' ? 504 : 502, e && e.name === 'AbortError' ? 'Claude took too long. Try a narrower request.' : 'Claude could not be reached. Try again.'); }
     finally { clearTimeout(to); }
   }
-  route('GET', '/api/ai/status', async () => { await me(); let key = false; try { key = !!(await CTX.secrets.get('anthropic_api_key')); } catch (e) { } return ok({ provider: key ? 'Claude' : 'Facilio-hosted model', claude: key, tasks: Object.keys(AI_TASKS) }); });
+  async function callDeepseek(messages, maxTokens) {
+    const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 22000);
+    try {
+      const r = await CTX.llm({ messages, max_tokens: Math.min(maxTokens, 1800), temperature: 0.2 });
+      const text = r && r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content; if (!text) { await aiNote('deepseek', false, null, 'empty'); throw new HttpError(502, 'The AI returned no text'); }
+      const us = r.usage ? { in: r.usage.prompt_tokens || r.usage.input_tokens, out: r.usage.completion_tokens || r.usage.output_tokens } : null;
+      await aiNote('deepseek', true, us);
+      return { text, provider: 'DeepSeek', model: r.model || 'default' };
+    } catch (e) { if (e instanceof HttpError) throw e; await aiNote('deepseek', false, null, e && e.name === 'AbortError' ? 'timeout' : 'error'); throw new HttpError(e && e.name === 'AbortError' ? 504 : 502, e && e.name === 'AbortError' ? 'The AI took too long. Try a narrower request.' : 'The AI service could not be reached. Try again.'); }
+    finally { clearTimeout(to); }
+  }
+  // provider: 'deepseek' | 'claude'. An explicit choice is never changed silently: a fallback happens only when the organisation policy allows it, and the notice says so.
+  async function callModel(messages, maxTokens, provider, fallback) {
+    if (provider !== 'claude') return callDeepseek(messages, maxTokens);
+    try { return await callClaude(messages, maxTokens); }
+    catch (e) { if (fallback === 'deepseek' && e instanceof HttpError) { const out = await callDeepseek(messages, maxTokens); out.notice = 'Claude was not available (' + e.message + ') so DeepSeek produced this draft, as the organisation fallback setting allows.'; return out; } throw e; }
+  }
+  const pickProvider = async (asked) => { const cfg = await aiCfg(); const p = asked === 'claude' || asked === 'deepseek' ? asked : cfg.defaultProvider; return { provider: p, explicit: asked === 'claude' || asked === 'deepseek', cfg }; };
+  route('GET', '/api/ai/status', async () => { await me(); const cfg = await aiCfg(); const have = await haveClaude(); const defaultProvider = cfg.defaultProvider === 'claude' && !have ? 'deepseek' : cfg.defaultProvider; return ok({ providers: [{ id: 'deepseek', name: 'DeepSeek', configured: true, isDefault: defaultProvider === 'deepseek' }, { id: 'claude', name: 'Claude', configured: have, isDefault: defaultProvider === 'claude' }], defaultProvider, fallback: cfg.fallback, claude: have, tasks: Object.keys(AI_TASKS) }); });
+  route('POST', '/api/admin/ai/config', async (b) => {
+    const s = await requireAdmin('admin'); const dp = String(b && b.defaultProvider || 'deepseek'); const fb = String(b && b.fallback || 'none'); if (!PROVIDERS.includes(dp)) throw new HttpError(400, 'Choose DeepSeek or Claude'); if (!['none', 'deepseek'].includes(fb)) throw new HttpError(400, 'Choose a fallback option');
+    if (dp === 'claude' && !(await haveClaude())) throw new HttpError(409, 'Claude is not configured yet, so it cannot be the default. Add the key in the secrets portal first.');
+    await dbPut('ai', 'cfg', { defaultProvider: dp, fallback: fb, by: s.email, at: now() }); return ok({ defaultProvider: dp, fallback: fb });
+  });
+  route('POST', '/api/admin/ai/test', async () => {
+    const s = await requireAdmin('admin'); if (!(await haveClaude())) return ok({ ok: false, configured: false, message: 'No Claude key is configured. The app owner adds it as anthropic_api_key in the secrets portal.' });
+    try { const r = await callClaude([{ role: 'user', content: 'Reply with the single word: ok' }], 8); return ok({ ok: true, configured: true, model: r.model, message: 'Claude answered. The key works.' }); }
+    catch (e) { return ok({ ok: false, configured: true, message: e instanceof HttpError ? e.message : 'The test failed' }); }
+  });
+  route('GET', '/api/admin/ai/usage', async () => { await requireAdmin('admin'); const u = await aiUse(); const cfg = await aiCfg(); return ok({ usage: u, cfg, claudeConfigured: await haveClaude() }); });
   route('POST', '/api/projects/:id/ai/run', async (b, P) => {
     const s = await me(); await projectAccess(s, P.id, 'edit'); const task = String(b && b.task || ''); const T = AI_TASKS[task]; if (!T) throw new HttpError(400, 'Unknown AI task');
-    const instruction = str(b.instruction, 1500, 'Instruction'); const small = !(await haveClaude()); let { src, text } = await aiContext(P.id, task, small); let vidId = '';
+    const instruction = str(b.instruction, 1500, 'Instruction'); const pv = await pickProvider(String(b.provider || '')); const small = pv.provider !== 'claude'; let { src, text } = await aiContext(P.id, task, small); let vidId = '';
     if (task === 'vidguide') { vidId = String(b.vid || ''); if (!ITEM_ID_RE.test(vidId)) throw new HttpError(400, 'Choose a walkthrough'); const vr = await dbGet('it.' + P.id + '.vid', vidId); if (!vr || !vr.value) throw new HttpError(404, 'Walkthrough not found'); const vd = await unpack('ip.' + P.id + '.vid', vidId, vr.value); const mm = t => (t == null ? '' : '[' + String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(Math.floor(t % 60)).padStart(2, '0') + '] ');
       const tr = (vd.transcript || []).map(x => mm(x.t) + x.text).join('\n').slice(0, small ? 8000 : 18000); const fr = (vd.frames || []).map((f, i) => 'F' + (i + 1) + ' at ' + mm(f.t).trim() + ': ' + (f.caption || '(no caption)')).join('\n').slice(0, 2500);
       src = [{ ref: 'S1', label: 'Walkthrough transcript: ' + (vd.title || 'untitled') }, { ref: 'S2', label: 'Screenshots (' + (vd.frames || []).length + ')' }]; text = `\n[S1] Walkthrough "${vd.title || ''}" transcript:\n${tr}\n\n[S2] Screenshots (place the marker after the step it shows):\n${fr}\n`; }
     let tplText = ''; if (b.templateId) { const h = await tplHead(String(b.templateId)); if (!(await tplCanRead(s, h)) || h.status === 'retired') throw new HttpError(404, 'Template not available'); const td = await tplData(h, h.pub || h.latest); tplText = String(td && td.body || '').slice(0, 6000); }
     const user = `TASK: ${T.ask}\n${instruction ? 'EXTRA INSTRUCTION FROM THE CONSULTANT: ' + instruction + '\n' : ''}${tplText ? 'FOLLOW THIS TEMPLATE STRUCTURE (headings and order; fill only from the sources, leave a heading with "Missing" when no source supports it):\n' + tplText + '\n' : ''}\nSOURCES (the only project information you may use):${text || '\n(No project records were found for this task. Say what is missing.)'}`;
-    let out; try { out = await callModel([{ role: 'system', content: AI_SYSTEM }, { role: 'user', content: user }], 2600); }
+    let out; try { out = await callModel([{ role: 'system', content: AI_SYSTEM }, { role: 'user', content: user }], 2600, pv.provider, pv.cfg.fallback); }
     catch (e) { if (!small || !(e instanceof HttpError) || e.status === 429 || e.status === 403) throw e; // the open model timed out: retry once with a shorter prompt
-      const short = `TASK: ${T.ask}\n${instruction ? 'EXTRA INSTRUCTION FROM THE CONSULTANT: ' + instruction + '\n' : ''}\nSOURCES (the only project information you may use; shortened):${text.slice(0, 6500)}`; out = await callModel([{ role: 'system', content: AI_SYSTEM }, { role: 'user', content: short }], 1200); }
-    const id = rid('ai'); const t = now(); const data = { task, title: T.title, status: 'draft', content: out.text, sources: src, vid: vidId || undefined, provider: out.provider, model: out.model, instruction, by: s.name || s.email, version: 1, hist: [{ at: t, who: s.name || s.email, side: 'facilio', event: 'AI draft generated' }] };
+      const short = `TASK: ${T.ask}\n${instruction ? 'EXTRA INSTRUCTION FROM THE CONSULTANT: ' + instruction + '\n' : ''}\nSOURCES (the only project information you may use; shortened):${text.slice(0, 6500)}`; out = await callModel([{ role: 'system', content: AI_SYSTEM }, { role: 'user', content: short }], 1200, 'deepseek', 'none'); }
+    const id = rid('ai'); const t = now(); const data = { task, title: T.title, status: 'draft', content: out.text, sources: src, vid: vidId || undefined, provider: out.provider, model: out.model, notice: out.notice || undefined, instruction, by: s.name || s.email, version: 1, hist: [{ at: t, who: s.name || s.email, side: 'facilio', event: 'AI draft generated' }] };
     await save('it.' + P.id + '.ai', 'ip.' + P.id + '.ai', id, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: t, ua: t }, data, undefined);
-    await audit(P.id, s.id, 'ai-draft', task + ' via ' + out.provider); return ok({ item: itemOut('ai', id, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: t, ua: t }, data) }, 201);
+    await audit(P.id, s.id, 'ai-draft', task + ' via ' + out.provider + (out.notice ? ' (fallback)' : '')); return ok({ item: itemOut('ai', id, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: t, ua: t }, data) }, 201);
   });
   route('POST', '/api/projects/:id/ai/:item/decision', async (b, P) => {
     const s = await me(); const { role } = await projectAccess(s, P.id, 'owner'); const d = String(b && b.decision || ''); if (!['approve', 'reject', 'reopen'].includes(d)) throw new HttpError(400, 'Choose approve, reject or reopen');

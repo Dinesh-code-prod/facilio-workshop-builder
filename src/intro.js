@@ -8,5 +8,5 @@
   if (!forced && (seen || automated || /[?&]nointro\b/.test(root.location.search + root.location.hash))) return;
   try { sessionStorage.setItem('fwb_intro', '1'); } catch (e) { }
   // the rest of the app is bundled after this file, so start on the next tick
-  setTimeout(() => { try { const V = root.FWBViews; if (!V || !V.cinema) return; V.cinema({ aud: 'public', cta: 'Get started' }).then(() => { doc.body.classList.add('reveal'); setTimeout(() => doc.body.classList.remove('reveal'), 1000); }); } catch (e) { } }, 0);
+  setTimeout(() => { try { const V = root.FWBViews; if (!V || !V.cinema) return; V.cinema({ aud: 'public', cta: 'Get started' }).then(() => { const w = doc.createElement('div'); w.className = 'cn-wipe'; w.setAttribute('aria-hidden', 'true'); w.innerHTML = '<i></i><i></i><i></i><img src="brand/logo-white.png" alt="" width="132" height="36">'; doc.body.appendChild(w); doc.body.classList.add('login-in'); setTimeout(() => { w.remove(); doc.body.classList.remove('login-in'); }, 1900); }); } catch (e) { } }, 0);
 })(typeof window !== 'undefined' ? window : globalThis);
