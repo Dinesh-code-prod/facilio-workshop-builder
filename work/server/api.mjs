@@ -102,7 +102,12 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
   // ---------- documents (versioned JSON sections) ----------
   async function docHead(pid, section) { const r = await dbGet('doc.' + pid, section); return r ? r.value : null; }
   async function docRead(pid, section) { const h = await docHead(pid, section); if (!h) return null; return { head: h, data: await unpack('dp.' + pid, section, h) }; }
-  async function docWrite(s, pid, section, data, baseVersion) {
+  // Serialises read-check-write for one record inside this server instance, so two saves of the same version cannot both win.
+  // The platform database has no conditional write, so two different instances could still race; that limit is documented.
+  const LOCKS = new Map();
+  function withLock(key, fn) { const prev = LOCKS.get(key) || Promise.resolve(); const run = prev.catch(() => { }).then(fn); const tail = run.catch(() => { }); LOCKS.set(key, tail); tail.then(() => { if (LOCKS.get(key) === tail) LOCKS.delete(key); }); return run; }
+  async function docWrite(s, pid, section, data, baseVersion) { return withLock('doc.' + pid + '.' + section, () => docWriteInner(s, pid, section, data, baseVersion)); }
+  async function docWriteInner(s, pid, section, data, baseVersion) {
     const text = JSON.stringify(data); if (text.length > 5000000) throw new HttpError(413, 'Section too large');
     const cur = await docHead(pid, section); const curV = cur ? cur.v : 0;
     if (baseVersion === 0 ? !!cur : (baseVersion >= 0 && curV !== baseVersion)) throw new HttpError(409, 'Conflict: this section was changed by someone else.', { current: cur ? { version: cur.v, updated_by: cur.by, updated_at: cur.at } : null });
@@ -335,7 +340,7 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
     const docs = {}; secs.forEach((k, i) => { docs[k] = docRows[i] ? { data: docRows[i].data, version: docRows[i].head.v } : { data: null, version: 0 }; });
     return ok({ project: projectOut(project, role), members: (project.members || []).map(memberOut), docs, items, kinds });
   });
-  route('PUT', '/api/projects/:id/items/:kind/:item', async (b, P) => {
+  route('PUT', '/api/projects/:id/items/:kind/:item', async (b, P) => withLock('it.' + P.id + '.' + P.kind + '.' + P.item, async () => {
     const s = await me(); if (!KINDS.includes(P.kind) || !ITEM_ID_RE.test(P.item)) throw new HttpError(400, 'Unknown item type'); const { project } = await projectAccess(s, P.id, 'edit');
     if (!b || !b.data || typeof b.data !== 'object' || Array.isArray(b.data)) throw new HttpError(400, 'data is required');
     const col = 'it.' + P.id + '.' + P.kind, pcol = 'ip.' + P.id + '.' + P.kind; const curRow = await dbGet(col, P.item); const head = curRow && curRow.value; const cur = head ? await unpack(pcol, P.item, head) : null;
@@ -360,7 +365,7 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
     await save(col, pcol, P.item, nh, data, head && head.z); await saveProject(project);
     if (['signoff', 'cr', 'raid', 'onb', 'onbsub', 'decision', 'brdrev', 'ai', 'hc', 'ho', 'close', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid'].includes(P.kind)) await audit(P.id, s.id, P.kind + (cur ? '-updated' : '-created'), P.item + (data.status ? ' ' + data.status : ''));
     return ok({ item: itemOut(P.kind, P.item, nh, data) });
-  });
+  }));
   route('DELETE', '/api/projects/:id/items/:kind/:item', async (b, P) => {
     const s = await me(); if (!KINDS.includes(P.kind)) throw new HttpError(400, 'Unknown item type'); await projectAccess(s, P.id, 'edit');
     const r = await dbGet('it.' + P.id + '.' + P.kind, P.item); if (!r) throw new HttpError(404, 'Not found');

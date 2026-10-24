@@ -1764,3 +1764,4 @@ input[type=checkbox]:not([role=switch]):not(.sr):focus-visible { outline: 0; box
 .av-iso .eco { max-width: 640px; }
 @media (prefers-reduced-motion: reduce) { .eco-life li { animation: none; opacity: 1; } }
 .iso-intro { overflow-x: hidden; } .iso-intro .eco-core { max-width: min(320px, 38vh); margin-inline: auto; } .iso-intro .eco-core .eco-plat { max-height: 38vh; }
+[aria-busy="true"][data-act] { cursor: progress; opacity: .7; pointer-events: none; }

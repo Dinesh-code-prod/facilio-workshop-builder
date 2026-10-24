@@ -2,7 +2,7 @@
 
 Multi-project workshop workspace for Facilio implementation consultants: Form Builder, State Flow Builder, roles, sessions, user guide, transcripts, validation and BRD, from contract to go-live.
 
-Hosted on **facilio.work** (Facilio's reviewed internal-app platform): https://requirement-workshop-builder.facilio.work
+Hosted on **facilio.work** (Facilio's reviewed internal-app platform): https://facilio-delivery-studio.facilio.work
 
 ## How it works
 - **Front end:** plain JavaScript in `src/`, bundled by `build.mjs` (esbuild) into `dist/`. No inline scripts.

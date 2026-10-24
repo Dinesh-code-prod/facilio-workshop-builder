@@ -125,6 +125,19 @@ await t('admin: only granted people, enforced on the server', async () => {
   r = await call(dinesh, 'POST', '/api/admin/access/revoke', { email: lead }); r = await call(lead, 'GET', '/api/admin/overview'); assert.equal(r.status, 403, 'revoked admin loses access at once');
   r = await call(dinesh, 'GET', '/api/admin/insights'); assert.equal(r.status, 200); r = await call(dinesh, 'GET', '/api/admin/audit'); assert.ok(r.data.entries.length > 2);
 });
+await t('concurrency: simultaneous saves and submits do not corrupt or duplicate', async () => {
+  let r = await call(dinesh, 'GET', `/api/projects/${pid}/docs/reviews`); const base = r.data.version || 0;
+  const rs = await Promise.all([1, 2, 3, 4, 5].map(i => call(dinesh, 'PUT', `/api/projects/${pid}/docs/reviews`, { data: { v: i }, baseVersion: base })));
+  const okN = rs.filter(x => x.status === 200).length, conflict = rs.filter(x => x.status === 409).length;
+  assert.equal(okN, 1, 'exactly one of five same-version saves wins, got ' + okN + ' (' + rs.map(x => x.status).join(',') + ')'); assert.equal(conflict, 4);
+  r = await call(dinesh, 'GET', `/api/projects/${pid}/docs/reviews`); assert.ok([1, 2, 3, 4, 5].includes(r.data.data.v), 'stored value is one whole save');
+  const its = await Promise.all([1, 2, 3, 4, 5, 6].map(i => call(dinesh, 'PUT', `/api/projects/${pid}/items/action/race1`, { data: { title: 'T' + i, status: 'Open' } })));
+  assert.ok(its.every(x => x.status === 200 || x.status === 201), 'item saves ok'); r = await call(dinesh, 'GET', `/api/projects/${pid}/items?kinds=action`); assert.equal(r.data.items.filter(x => x.id === 'race1').length, 1, 'one record, not six');
+  r = await call(dinesh, 'POST', `/api/projects/${pid}/files`, { category: 'plan', name: 'p2.xlsx', mime: 'x', size: 5 }); const fid = r.data.id;
+  r = await call(dinesh, 'POST', `/api/projects/${pid}/files/${fid}/chunks/0/url`, {}); const part = r.data.fileId; await call(dinesh, 'PUT', `/api/projects/${pid}/files/${fid}/chunks/0`, { fileId: part });
+  const cs = await Promise.all([1, 2, 3].map(() => call(dinesh, 'POST', `/api/projects/${pid}/files/${fid}/complete`, {}))); assert.ok(cs.every(x => x.status === 200), 'double complete is safe: ' + cs.map(x => x.status));
+  r = await call(dinesh, 'GET', `/api/projects/${pid}/files?category=plan`); assert.equal(r.data.files.filter(f => f.name === 'p2.xlsx').length, 1, 'one file record');
+});
 await t('unknown routes and customer sign-in are refused', async () => {
   let r = await call(dinesh, 'GET', '/api/nothing'); assert.equal(r.status, 404); r = await call(dinesh, 'POST', '/api/auth/login', {}); assert.equal(r.status, 403);
 });

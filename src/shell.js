@@ -130,8 +130,14 @@
     const a = e.target.closest('[data-act]'); if (!a) { const pop = document.getElementById('userPop'); if (pop && !e.target.closest('#userPop')) pop.remove(); return; }
     const fn = ACT[a.getAttribute('data-act')]; if (!fn) return;
     if (a.tagName === 'A' || a.tagName === 'BUTTON') e.preventDefault();
-    try { const r = fn(a, e); if (r && r.catch) r.catch(err => { console.error(err); loading(false); toast(err.message || 'Something went wrong', 5000, true); }); } catch (err) { console.error(err); toast(err.message, 5000, true); }
+    // one click at a time per action and record: a second click while the first is still running is ignored (stops duplicate saves, imports, generates)
+    const key = a.getAttribute('data-act') + '|' + (a.getAttribute('data-id') || a.getAttribute('data-k') || a.getAttribute('data-v') || ''); if (inflight.has(key)) { e.preventDefault(); return; }
+    try {
+      const r = fn(a, e);
+      if (r && r.then) { inflight.add(key); a.setAttribute('aria-busy', 'true'); const free = () => { inflight.delete(key); a.removeAttribute('aria-busy'); }; const t = setTimeout(free, 60000); r.then(() => { clearTimeout(t); free(); }, err => { clearTimeout(t); free(); console.error(err); loading(false); toast(err.message || 'Something went wrong', 5000, true); }); }
+    } catch (err) { console.error(err); toast(err.message, 5000, true); }
   });
+  const inflight = new Set();
   document.addEventListener('input', e => {
     const el = e.target;
     if (el.id === 'navq') { S.ui.navq = el.value; const nav = document.querySelector('.sidebar'); if (nav) { nav.innerHTML = sidebarHtml(); const n = document.getElementById('navq'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); } return; }
