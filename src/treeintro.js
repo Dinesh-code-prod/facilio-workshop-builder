@@ -18,7 +18,7 @@
         <div class="head" data-i="head"><div class="h1" data-i="lh1"></div><div class="h2" data-i="lh2"></div></div>
         <div data-i="labels" class="labels"></div>
         <div class="sr" data-i="sr" aria-live="polite"></div>
-        <div class="brand" data-i="brand">${nm ? `<p class="hello">Welcome, ${esc(nm)}</p>` : ''}<img src="brand/logo-white.png" alt="Facilio" width="320" height="88"><div class="ds">Delivery Studio</div><div class="tagl" aria-label="Discover. Design. Deliver."><span>Discover.</span><span>Design.</span><span>Deliver.</span></div><button type="button" class="go" data-i="go" data-r="go">${esc(opts.cta || 'Get started')}</button>${opts.off ? '<label class="ti-off"><input type="checkbox" id="tiOff"> Do not show this introduction again</label>' : ''}</div>
+        <div class="brand" data-i="brand">${nm ? `<p class="hello">Welcome, ${esc(nm)}</p>` : ''}<img src="brand/logo-white.png" alt="Facilio" width="320" height="88"><div class="ds">Delivery Studio</div><div class="tagl" aria-label="Capture. Configure. Go live."><span>Capture.</span><span>Configure.</span><span>Go live.</span></div><button type="button" class="go" data-i="go" data-r="go">${esc(opts.cta || 'Get started')}</button>${opts.off ? '<label class="ti-off"><input type="checkbox" id="tiOff"> Do not show this introduction again</label>' : ''}</div>
         <div class="fade"></div>`;
 
       /* ---------- the 12 delivery stages ---------- */
