@@ -246,7 +246,8 @@
           for (let i = 0; i < Math.min(N, full + 1); i++) {
             const p = b.pts[i]; let q = b.pts[i + 1]; if (!q) break;
             if (i === full) { if (part <= 0) break; q = [lerp(p[0], q[0], part), lerp(p[1], q[1], part)]; }
-            const w = (b.ws[i] * widthMul) + (pass ? 0 : 2.6);
+            const tp = gr < 1 ? .45 * (1 - gr) * clamp((i - (upto - 3.5)) / 3.5) : 0;   // while growing, the last few segments taper to a fine tip instead of a blunt stub
+            const w = (b.ws[i] * widthMul * (1 - tp)) + (pass ? 0 : 2.6);
             g.lineWidth = w; g.globalAlpha = (pass ? 1 : .55) * alphaMul;
             g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(q[0], q[1]); g.stroke();
           }
@@ -462,6 +463,14 @@
             g.strokeStyle = b.depth ? 'rgba(255,255,255,.10)' : 'rgba(255,255,255,.14)'; g.lineWidth = b.depth ? 1.6 : 2.6; g.lineCap = 'round'; g.beginPath();
             const up = easeOut(gr2) * .35 + gr2 * .65; const lim = Math.floor(up * N);
             for (let i = 0; i <= Math.min(N, lim); i++) { const p = b.pts[i]; const w = b.ws[i] * (b.depth ? .2 : .24) * (b.depth ? 1 : thick); const nx = b.depth ? -Math.sin(b.ang) : -1, ny = b.depth ? Math.cos(b.ang) : 0; if (i === 0) g.moveTo(p[0] + nx * w, p[1] + ny * w); else g.lineTo(p[0] + nx * w, p[1] + ny * w); } g.stroke();
+          }
+        }
+        { // root flare: the trunk widens into buttresses at the ground and melts into the roots, so it reads as one growing plant
+          const tk = branches[0], fk = sm(growth(tk, t) * 4) * thick; if (fk > 0) {
+            const fw = 15 + 36 * fk, fh = 72 * Math.min(1, .35 + fk), fg = g.createLinearGradient(0, -fh, 0, 18);
+            fg.addColorStop(0, 'rgba(36,57,154,0)'); fg.addColorStop(.22, '#24399A'); fg.addColorStop(.8, '#24399A'); fg.addColorStop(1, 'rgba(36,57,154,0)');
+            g.fillStyle = fg; g.beginPath(); g.moveTo(-14, -fh); g.bezierCurveTo(-16, -fh * .42, -fw * .55, -fh * .08, -fw, 8); g.quadraticCurveTo(0, 22, fw, 8); g.bezierCurveTo(fw * .55, -fh * .08, 16, -fh * .42, 14, -fh); g.closePath(); g.fill();
+            g.strokeStyle = 'rgba(141,184,255,.30)'; g.lineWidth = 1.6; g.lineCap = 'round'; for (const sd of [-1, 1]) { g.beginPath(); g.moveTo(sd * 14, -fh * .8); g.bezierCurveTo(sd * 16, -fh * .42, sd * fw * .55, -fh * .08, sd * fw * .98, 5); g.stroke(); }
           }
         }
         for (const b of branches) tipGlow(b, t, TIP_B);
