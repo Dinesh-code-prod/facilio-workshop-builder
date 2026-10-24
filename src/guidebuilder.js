@@ -40,7 +40,7 @@
 
   // ---------- working copy ----------
   const guides = () => I().list('ugd').sort((a, b) => String(b._at || '').localeCompare(String(a._at || '')));
-  function open(id) { const g = I().get('ugd', id); if (!g) return false; W = JSON.parse(JSON.stringify(g)); ['id', '_v', '_at', '_by', '_side', '_created', '_cside'].forEach(k => delete W[k]); W.sections = W.sections || []; W.brand = Object.assign({ accent: '#0a7aff', footer: '', cover: true, logo: null }, W.brand || {}); WID = id; return true; }
+  function open(id) { const g = I().get('ugd', id); if (!g) return false; W = JSON.parse(JSON.stringify(g)); ['id', '_v', '_at', '_by', '_side', '_created', '_cside'].forEach(k => delete W[k]); W.sections = W.sections || []; W.brand = Object.assign({ accent: '#1570EF', footer: '', cover: true, logo: null }, W.brand || {}); WID = id; return true; }
   function schedule() { dirtyAt = Date.now(); clearTimeout(timer); timer = setTimeout(save, 900); const el = document.getElementById('ugState'); if (el) el.textContent = 'Unsaved changes…'; }
   async function save() {
     if (!W || saving || !canEdit()) return; clearTimeout(timer); saving = true; const at = dirtyAt;
@@ -110,7 +110,7 @@
   const blkTools = (i, j, n) => `<span class="row" style="gap:4px;margin-top:4px"><button class="btn sm" data-act="ugBlkMove" data-i="${i}" data-j="${j}" data-d="-1" ${j === 0 ? 'disabled' : ''} aria-label="Move up">↑</button><button class="btn sm" data-act="ugBlkMove" data-i="${i}" data-j="${j}" data-d="1" ${j === n - 1 ? 'disabled' : ''} aria-label="Move down">↓</button><button class="btn sm danger" data-act="ugBlkDel" data-i="${i}" data-j="${j}">Remove</button></span>`;
   function brandHtml(can) {
     const b = W.brand; const d = can ? '' : 'disabled';
-    return `<div class="card" style="padding:16px"><div class="fgrid"><div><label class="f">Guide title</label><input type="text" data-ugf="title" value="${esc(W.title)}" maxlength="120" ${d}></div><div><label class="f">Customer name</label><input type="text" data-ugf="customer" value="${esc(W.customer || '')}" maxlength="80" ${d}></div><div><label class="f">Audience / role</label><input type="text" data-ugf="audience" value="${esc(W.audience || '')}" maxlength="80" ${d}></div><div><label class="f">Version</label><input type="text" data-ugf="version" value="${esc(W.version || '')}" maxlength="20" ${d}></div><div><label class="f">Accent colour</label><input type="color" data-ugb="accent" value="${esc(b.accent || '#0a7aff')}" ${d}></div><div><label class="f">Footer text</label><input type="text" data-ugb="footer" value="${esc(b.footer || '')}" maxlength="120" ${d} placeholder="e.g. Customer name · Confidential"></div></div>
+    return `<div class="card" style="padding:16px"><div class="fgrid"><div><label class="f">Guide title</label><input type="text" data-ugf="title" value="${esc(W.title)}" maxlength="120" ${d}></div><div><label class="f">Customer name</label><input type="text" data-ugf="customer" value="${esc(W.customer || '')}" maxlength="80" ${d}></div><div><label class="f">Audience / role</label><input type="text" data-ugf="audience" value="${esc(W.audience || '')}" maxlength="80" ${d}></div><div><label class="f">Version</label><input type="text" data-ugf="version" value="${esc(W.version || '')}" maxlength="20" ${d}></div><div><label class="f">Accent colour</label><input type="color" data-ugb="accent" value="${esc(b.accent || '#1570EF')}" ${d}></div><div><label class="f">Footer text</label><input type="text" data-ugb="footer" value="${esc(b.footer || '')}" maxlength="120" ${d} placeholder="e.g. Customer name · Confidential"></div></div>
       <label class="f" style="margin-top:10px"><input type="checkbox" data-ugb="cover" ${b.cover !== false ? 'checked' : ''} ${d}> Include a cover page</label>
       <label class="f">Customer logo (PNG or JPG, shown on the cover)</label>${b.logo ? `<div class="row" style="gap:8px"><img data-ugimg="${esc(b.logo.fileId)}" alt="" style="max-height:48px"><span class="small">${esc(b.logo.name || '')}</span>${can ? '<button class="btn sm danger" data-act="ugLogoDel">Remove</button>' : ''}</div>` : (can ? '<button class="btn sm" data-act="ugLogo">Upload logo</button>' : '<span class="muted small">None.</span>')}</div>`;
   }
@@ -140,7 +140,7 @@
   ACT.ugCreate = a => V.busy(a, async () => {
     const g = i => ((document.getElementById(i) || {}).value || '').trim(); if (!g('ug_t')) { toast('Enter a title'); return; } const id = I().uid('ug'); let sections = []; const src = g('ug_s');
     if (src === 'cfg') sections = cfgSections(); if (src === 'ai') { const d = I().get('ai', g('ug_ai')); if (d) sections = sectionsFromMd(d.content); }
-    await I().put('ugd', id, { title: g('ug_t'), customer: g('ug_c'), audience: g('ug_a'), version: '0.1', status: 'draft', brand: { accent: '#0a7aff', footer: '', cover: true, logo: null }, sections });
+    await I().put('ugd', id, { title: g('ug_t'), customer: g('ug_c'), audience: g('ug_a'), version: '0.1', status: 'draft', brand: { accent: '#1570EF', footer: '', cover: true, logo: null }, sections });
     closeDrawer(); S.ui.ugOpen = id; S.ui.ugTab = 'content'; W = null; V.render();
   });
   function cfgSections() {
@@ -178,7 +178,7 @@
     const dataUrl = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(new Blob([buf], { type: type === 'png' ? 'image/png' : 'image/jpeg' })); }); return { u8: buf, type, w, h, dataUrl };
   }
   const fit = (w, h, mw, mh) => { const s = Math.min(mw / w, mh / h, 1); return { width: Math.max(1, Math.round(w * s)), height: Math.max(1, Math.round(h * s)) }; };
-  const hex = c => String(c || '#0a7aff').replace('#', '').toUpperCase().padEnd(6, '0').slice(0, 6);
+  const hex = c => String(c || '#1570EF').replace('#', '').toUpperCase().padEnd(6, '0').slice(0, 6);
   const dateStr = () => new Date().toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
   ACT.ugDocx = a => V.busy(a, async () => {
     await flush(); V.loading(true, 'Writing the Word document…');

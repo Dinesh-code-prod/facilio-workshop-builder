@@ -20,7 +20,7 @@
   const rchip = r => { const x = ROLE[r]; return x ? chip(x[1], x[0]) : ''; };
   const ownerName = o => { const x = String(o || '').split(',')[0].trim(); return !x ? '—' : /guest\.local$/.test(x) ? 'Office team' : x; };
   const initials = n => String(n || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase();
-  const TONE = ['#0a5fe8', '#e91e84', '#14a8a8', '#6b4ee6', '#e08a00'];
+  const TONE = ['#1570EF', '#e91e84', '#14a8a8', '#6b4ee6', '#e08a00'];
   const tone = s => TONE[Math.abs([...String(s)].reduce((a, c) => a * 31 + c.charCodeAt(0), 7)) % TONE.length];
 
   async function load() { A.data = await API.get('/api/admin/overview', { noAuthRedirect: true }); }
@@ -32,7 +32,7 @@
   function bars(rows, fmtLabel, cls) { const mx = Math.max(1, ...rows.map(r => r.v)); return `<div class="bchart ${cls || ''}">${rows.map(r => `<div class="bcol" title="${esc(r.tip || '')}"><span class="bval">${r.v}</span><div class="bbar" style="--h:${Math.round(r.v / mx * 100)}%"></div><span class="blab">${esc(r.l)}</span></div>`).join('')}</div>`; }
   function overviewDash() {
     const d = A.data, k = d.kpis; const tot = Math.max(1, k.active);
-    const h = d.health; const seg = [['healthy', '#14a8a8'], ['attention', '#e08a00'], ['stale', '#9aa6bd'], ['live', '#0a5fe8']]; let acc = 0;
+    const h = d.health; const seg = [['healthy', '#14a8a8'], ['attention', '#e08a00'], ['stale', '#9aa6bd'], ['live', '#1570EF']]; let acc = 0;
     const conic = seg.map(([key, c]) => { const a = acc / tot * 360; acc += (h[key] || 0); return `${c} ${a}deg ${acc / tot * 360}deg`; }).join(', ');
     const mx = Math.max(1, ...d.stages.slice(1)); const wk = d.weekly.map(w => ({ v: w.n, l: w.week.slice(5), tip: 'Week of ' + w.week })); const mo = d.monthly.map(m => ({ v: m.n, l: new Date(m.month + '-01T00:00:00Z').toLocaleDateString(undefined, { month: 'short', timeZone: 'UTC' }), tip: m.month }));
     const fmx = Math.max(1, ...d.files.map(f => f.bytes));
@@ -64,11 +64,11 @@
 
   // ---------- dashboard tabs: Overview, Delivery, Customers, Team & usage, Quality & records ----------
   const DTABS = [['overview', 'Overview'], ['delivery', 'Delivery'], ['customers', 'Customers'], ['usage', 'Team & usage'], ['quality', 'Quality & records']];
-  const HC = { healthy: '#14a8a8', attention: '#e08a00', stale: '#9aa6bd', live: '#0a5fe8', archived: '#9aa6bd' };
+  const HC = { healthy: '#14a8a8', attention: '#e08a00', stale: '#9aa6bd', live: '#1570EF', archived: '#9aa6bd' };
   const cap = t => { t = String(t || '').replace(/_/g, ' ').trim(); return t ? t[0].toUpperCase() + t.slice(1) : '—'; };
   const dcard = (t, sub, body, cls) => `<div class="adm-card ${cls || ''}"><div class="adm-h"><h3>${esc(t)}</h3>${sub ? `<span class="muted xs">${sub}</span>` : ''}</div>${body}</div>`;
   const empty = t => `<div class="adm-empty">${esc(t)}</div>`;
-  function hbars(rows, unit) { if (!rows.length) return empty('Nothing to show yet.'); const mx = Math.max(1, ...rows.map(r => r.v)); return `<ul class="hb">${rows.map(r => `<li${r.go ? ` class="click" data-act="${r.go[0]}" data-id="${esc(r.go[1])}" role="button" tabindex="0"` : ''}><span class="hb-l" title="${esc(r.l)}">${esc(r.l)}</span><div class="hb-t"><i style="width:${Math.max(r.v ? 3 : 0, Math.round(r.v / mx * 100))}%;background:${r.c || '#0a5fe8'}"></i></div><em>${r.sub !== undefined ? r.sub : r.v + (unit || '')}</em></li>`).join('')}</ul>`; }
+  function hbars(rows, unit) { if (!rows.length) return empty('Nothing to show yet.'); const mx = Math.max(1, ...rows.map(r => r.v)); return `<ul class="hb">${rows.map(r => `<li${r.go ? ` class="click" data-act="${r.go[0]}" data-id="${esc(r.go[1])}" role="button" tabindex="0"` : ''}><span class="hb-l" title="${esc(r.l)}">${esc(r.l)}</span><div class="hb-t"><i style="width:${Math.max(r.v ? 3 : 0, Math.round(r.v / mx * 100))}%;background:${r.c || '#1570EF'}"></i></div><em>${r.sub !== undefined ? r.sub : r.v + (unit || '')}</em></li>`).join('')}</ul>`; }
   function stackBars(rows, keys, cols, names) { const mx = Math.max(1, ...rows.map(r => keys.reduce((a, k) => a + (r[k] || 0), 0))); return `<div class="stk">${rows.map(r => { const t = keys.reduce((a, k) => a + (r[k] || 0), 0); return `<div class="stk-c" title="${esc(r.l + ': ' + keys.map((k, i) => (r[k] || 0) + ' ' + names[i]).join(', '))}"><span class="bval">${t || ''}</span><div class="stk-b" style="height:${Math.round(t / mx * 100)}%">${keys.map((k, i) => r[k] ? `<i style="flex:${r[k]};background:${cols[i]}"></i>` : '').join('')}</div><span class="blab">${esc(r.l)}</span></div>`; }).join('')}</div><div class="lg2 inl">${names.map((n, i) => `<span><i style="background:${cols[i]}"></i>${esc(n)}</span>`).join('')}</div>`; }
   function donutOf(parts, label) { const tot = parts.reduce((a, x) => a + x.v, 0); if (!tot) return empty('Nothing to show yet.'); let acc = 0; const conic = parts.filter(x => x.v).map(x => { const a = acc / tot * 360; acc += x.v; return `${x.c} ${a}deg ${acc / tot * 360}deg`; }).join(', '); return `<div class="donut-wrap"><div class="donut" style="background:conic-gradient(${conic})"><div><b>${tot}</b><span>${esc(label)}</span></div></div><ul class="lg2">${parts.map(x => `<li><i style="background:${x.c}"></i>${esc(x.l)}<b>${x.v}</b></li>`).join('')}</ul></div>`; }
   function heatmap(cells) { const g = {}; let mx = 1; cells.forEach(c => { g[c.d + '_' + c.h] = c.n; mx = Math.max(mx, c.n); }); const order = [1, 2, 3, 4, 5, 6, 0], nm = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -89,7 +89,7 @@
     const open = act.filter(p => p.stage < 6 && p.endDate); const past = open.filter(p => daysLeft(p) < 0), soon = open.filter(p => daysLeft(p) >= 0 && daysLeft(p) <= 30);
     const idleAvg = Math.round(act.reduce((a, p) => a + idleOf(p), 0) / act.length); const live = act.filter(p => p.stage === 6).length;
     const byStage = [0, 1, 2, 3, 4, 5, 6].map(i => { const g = act.filter(p => p.stage === i); return { v: g.length ? Math.round(g.reduce((a, p) => a + idleOf(p), 0) / g.length) : 0, l: STAGES[i].replace('Not started', 'New'), tip: g.length + ' project' + (g.length === 1 ? '' : 's') }; });
-    const brd = {}; act.forEach(p => { const k = p.brdStatus || 'draft'; brd[k] = (brd[k] || 0) + 1; }); const BC = ['#9aa6bd', '#e08a00', '#14a8a8', '#0a5fe8', '#6b4ee6'];
+    const brd = {}; act.forEach(p => { const k = p.brdStatus || 'draft'; brd[k] = (brd[k] || 0) + 1; }); const BC = ['#9aa6bd', '#e08a00', '#14a8a8', '#1570EF', '#6b4ee6'];
     const sorted = act.slice().sort((a, b) => b.stage - a.stage || a.name.localeCompare(b.name));
     const tl = open.slice().sort((a, b) => daysLeft(a) - daysLeft(b)).slice(0, 8);
     return `<div class="kpi-grid k5">
@@ -100,7 +100,7 @@
       ${kpi('Average days idle', idleAvg, 'Since last activity', idleAvg > 14 ? 'k-warn' : 'k-pink')}
     </div>
     <div class="adm-row two">
-      ${dcard('Progress by project', 'Stage reached, out of 6', hbars(sorted.slice(0, 12).map(p => ({ l: p.name, v: prog(p), sub: STAGES[p.stage], c: HC[p.health] || '#0a5fe8', go: projGo(p) }))))}
+      ${dcard('Progress by project', 'Stage reached, out of 6', hbars(sorted.slice(0, 12).map(p => ({ l: p.name, v: prog(p), sub: STAGES[p.stage], c: HC[p.health] || '#1570EF', go: projGo(p) }))))}
       ${dcard('Planned end dates', 'Soonest first', tl.length ? `<ul class="alist">${tl.map(p => { const dl = daysLeft(p); return `<li class="click" data-act="admDetail" data-id="${esc(p.id)}" role="button" tabindex="0"><div class="pav" style="background:${tone(p.name)}">${esc(initials(p.customer || p.name))}</div><div><b>${esc(p.name)}</b><div class="xs muted">${esc(p.customer)} · ends ${esc(fmt(p.endDate))} · ${esc(STAGES[p.stage])}</div></div><span class="spacer"></span>${chip(dl < 0 ? 'h-attention' : dl <= 14 ? 'h-stale' : 'h-healthy', dl < 0 ? Math.abs(dl) + ' d over' : dl + ' d left')}</li>`; }).join('')}</ul>` : empty('No planned end dates set on active projects.'))}
     </div>
     <div class="adm-row three">
@@ -110,7 +110,7 @@
     </div>
     <div class="adm-row two">
       ${dcard('Workshop sessions', 'Held vs planned, top 8', hbars(act.slice().sort((a, b) => b.sessions.total - a.sessions.total).slice(0, 8).map(p => ({ l: p.name, v: p.sessions.total, sub: p.sessions.done + ' held · ' + p.sessions.upcoming + ' upcoming', c: '#e91e84', go: projGo(p) }))))}
-      ${dcard('Open work by project', 'Open actions, red when overdue', hbars(act.filter(p => p.openActions).sort((a, b) => b.openActions - a.openActions).slice(0, 8).map(p => ({ l: p.name, v: p.openActions, sub: p.openActions + (p.overdue ? ' · ' + p.overdue + ' overdue' : ''), c: p.overdue ? '#d81b60' : '#0a5fe8', go: projGo(p) }))))}
+      ${dcard('Open work by project', 'Open actions, red when overdue', hbars(act.filter(p => p.openActions).sort((a, b) => b.openActions - a.openActions).slice(0, 8).map(p => ({ l: p.name, v: p.openActions, sub: p.openActions + (p.overdue ? ' · ' + p.overdue + ' overdue' : ''), c: p.overdue ? '#d81b60' : '#1570EF', go: projGo(p) }))))}
     </div>`;
   }
 
@@ -127,9 +127,9 @@
     </div>
     ${dcard('Customer roll-up', 'Click a customer to see their projects', `<div class="tbl-wrap adm-tbl"><table class="tbl"><thead><tr><th>Customer</th><th>Projects</th><th>Average progress</th><th>Requirements</th><th>Open actions</th><th>Overdue</th><th>Open questions</th><th>Customer access</th><th>Last activity</th></tr></thead><tbody>${rows.map(c => `<tr class="click" data-act="admCust" data-name="${esc(c.name)}" role="button" tabindex="0"><td><div class="pcell"><div class="pav" style="background:${tone(c.name)}">${esc(initials(c.name))}</div><b>${esc(c.name)}</b></div></td><td>${c.n}</td><td><div class="fn-t" style="min-width:90px"><i style="width:${Math.round(c.prog / c.n)}%"></i></div><span class="xs muted">${Math.round(c.prog / c.n)}%</span></td><td>${c.req}</td><td>${c.act}</td><td>${c.od ? `<b class="bad">${c.od}</b>` : '0'}</td><td>${c.q}</td><td>${c.acc}/${c.n}</td><td class="xs">${ago(c.last)}</td></tr>`).join('')}</tbody></table></div>`)}
     <div class="adm-row three">
-      ${dcard('Projects per customer', 'Top 8', hbars(rows.slice(0, 8).map(c => ({ l: c.name, v: c.n, c: '#0a5fe8' }))))}
+      ${dcard('Projects per customer', 'Top 8', hbars(rows.slice(0, 8).map(c => ({ l: c.name, v: c.n, c: '#1570EF' }))))}
       ${dcard('Requirements per customer', 'Top 8', hbars(rows.slice().sort((a, b) => b.req - a.req).slice(0, 8).map(c => ({ l: c.name, v: c.req, c: '#14a8a8' }))))}
-      ${dcard('Customer access', 'Active projects', donutOf([{ l: 'Open to customer', v: on, c: '#0a5fe8' }, { l: 'Team only', v: act.length - on, c: '#cbd3e6' }], 'projects'))}
+      ${dcard('Customer access', 'Active projects', donutOf([{ l: 'Open to customer', v: on, c: '#1570EF' }, { l: 'Team only', v: act.length - on, c: '#cbd3e6' }], 'projects'))}
     </div>`;
   }
 
@@ -147,12 +147,12 @@
       ${kpi('Busiest day', peak.staff, peak.day ? fmt(peak.day) : 'No data yet', '')}
     </div>
     <div class="adm-row two">
-      ${dcard('Sign-ups per week', 'Staff and guests, 12 weeks', stackBars(i.signups.map(w => ({ l: w.week.slice(5), staff: w.staff, guests: w.guests })), ['staff', 'guests'], ['#0a5fe8', '#e91e84'], ['Staff', 'Guests']))}
+      ${dcard('Sign-ups per week', 'Staff and guests, 12 weeks', stackBars(i.signups.map(w => ({ l: w.week.slice(5), staff: w.staff, guests: w.guests })), ['staff', 'guests'], ['#1570EF', '#e91e84'], ['Staff', 'Guests']))}
       ${dcard('Daily activity', 'People signed in, 14 days', stackBars(i.daily.map(d => ({ l: d.day.slice(8), staff: d.staff, customers: d.customers })), ['staff', 'customers'], ['#14a8a8', '#6b4ee6'], ['Staff', 'Customer visits']))}
     </div>
     ${dcard('When the team works', 'Weekday by hour', heatmap(i.heat))}
     <div class="adm-row two">
-      ${dcard('Most common actions', 'Last 30 days', hbars(i.actions.map(a => ({ l: cap(a.action), v: a.n, c: '#0a5fe8' }))))}
+      ${dcard('Most common actions', 'Last 30 days', hbars(i.actions.map(a => ({ l: cap(a.action), v: a.n, c: '#1570EF' }))))}
       ${dcard('Most active people', 'Last 30 days', hbars(i.actors.map(a => ({ l: a.who, v: a.n, c: '#e91e84' }))))}
     </div>
     ${dcard('Workload by project owner', 'Active projects', ow.length ? `<div class="tbl-wrap adm-tbl"><table class="tbl"><thead><tr><th>Owner</th><th>Projects</th><th>Requirements</th><th>Open actions</th><th>Overdue</th></tr></thead><tbody>${ow.map(o => `<tr><td><b>${esc(o.name)}</b></td><td>${o.n}</td><td>${o.req}</td><td>${o.act}</td><td>${o.od ? `<b class="bad">${o.od}</b>` : '0'}</td></tr>`).join('')}</tbody></table></div>` : empty('No owners yet.'))}`;
@@ -162,8 +162,8 @@
     const i = A.ins; if (!i) return dcard('Quality & records', '', '<div class="adm-empty">Loading…</div>');
     const act = A.data.projects.filter(p => !p.archived); const n = Math.max(1, act.length);
     const st = {}, pr = {}; i.feedback.byKind.forEach(r => { st[r.status] = (st[r.status] || 0) + r.n; pr[r.priority] = (pr[r.priority] || 0) + r.n; });
-    const SC = { open: '#e08a00', answered: '#14a8a8', resolved: '#0a5fe8', closed: '#9aa6bd' }; const PC = { urgent: '#d81b60', high: '#e08a00', normal: '#0a5fe8', low: '#9aa6bd' };
-    const kindRows = k => { const m = {}; i.items.filter(r => r.kind === k).forEach(r => { m[r.st || 'No status'] = (m[r.st || 'No status'] || 0) + r.n; }); return Object.keys(m).map(x => ({ l: cap(x), v: m[x], c: /done|closed|signed|resolved|passed|mitigated/i.test(x) ? '#14a8a8' : /block|fail|open|risk/i.test(x) ? '#e08a00' : '#0a5fe8' })).sort((a, b) => b.v - a.v); };
+    const SC = { open: '#e08a00', answered: '#14a8a8', resolved: '#1570EF', closed: '#9aa6bd' }; const PC = { urgent: '#d81b60', high: '#e08a00', normal: '#1570EF', low: '#9aa6bd' };
+    const kindRows = k => { const m = {}; i.items.filter(r => r.kind === k).forEach(r => { m[r.st || 'No status'] = (m[r.st || 'No status'] || 0) + r.n; }); return Object.keys(m).map(x => ({ l: cap(x), v: m[x], c: /done|closed|signed|resolved|passed|mitigated/i.test(x) ? '#14a8a8' : /block|fail|open|risk/i.test(x) ? '#e08a00' : '#1570EF' })).sort((a, b) => b.v - a.v); };
     const tot = f => act.filter(f).length; const pct = c => Math.round(c / n * 100);
     const comp = [['Modules in scope', tot(p => p.modulesInScope > 0)], ['Workshop sessions planned', tot(p => p.sessions.total > 0)], ['Requirements captured', tot(p => p.requirements > 0)], ['State flows proposed', tot(p => p.flows > 0)], ['BRD exported', tot(p => p.brdExports > 0)], ['Customer access on', tot(p => p.customerAccessEnabled)]].map(([l, c]) => ({ l, v: pct(c), sub: c + ' of ' + act.length, c: '#6b4ee6' }));
     const totQ = Object.values(st).reduce((a, b) => a + b, 0);
@@ -175,7 +175,7 @@
     </div>
     <div class="adm-row three">
       ${dcard('Customer questions by status', '', donutOf(Object.keys(st).map(k => ({ l: cap(k), v: st[k], c: SC[k] || '#6b4ee6' })), 'questions'))}
-      ${dcard('Questions by priority', '', hbars(Object.keys(pr).map(k => ({ l: cap(k), v: pr[k], c: PC[k] || '#0a5fe8' })).sort((a, b) => b.v - a.v)))}
+      ${dcard('Questions by priority', '', hbars(Object.keys(pr).map(k => ({ l: cap(k), v: pr[k], c: PC[k] || '#1570EF' })).sort((a, b) => b.v - a.v)))}
       ${dcard('New questions per week', 'Last 8 weeks', bars(i.feedback.weekly.map(w => ({ v: w.n, l: w.week.slice(5), tip: 'Week of ' + w.week })), null, 'pink'))}
     </div>
     <div class="adm-row three">
