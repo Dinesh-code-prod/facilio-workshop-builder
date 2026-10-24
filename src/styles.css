@@ -2486,3 +2486,62 @@ label.f, .lbl { font-weight: 600; color: var(--fx); }
 .crumb { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0; padding: 12px clamp(16px, 2vw, 32px) 0; font-size: 13px; color: #7A8496; }
 .crumb i { font-style: normal; color: #C5CCD8; } .crumb b { color: #0A36D8; font-weight: 600; } .crumb-p { color: #4B5565; font-weight: 500; }
 .crumb + .page .page-header { margin-top: 10px !important; }
+
+/* ---- Tree-growth introduction (src/treeintro.js). Scoped under .cn.ti so the classic intro styles are untouched. ---- */
+.cn.ti { --navy:#1D1A5E; --deep:#0A0930; --blue:#1570EF; --sky:#8DB8FF; --pink:#E5197F; --teal:#2EC9C4; --lw:220px; background:#0A0930; color:#F4F7FF; font-family:inherit; overflow:hidden; opacity:1; transition:opacity .6s; }
+.cn.ti.out { opacity:0; pointer-events:none; }
+.cn.ti canvas { position:absolute; inset:0; width:100%; height:100%; display:block; }
+.cn.ti .ti-top { position:absolute; left:0; right:0; top:0; display:flex; align-items:center; gap:14px; padding:18px clamp(16px,3vw,44px); z-index:5; }
+.cn.ti .ti-top img { height:26px; width:auto; display:block; }
+.cn.ti .ti-sep { width:1px; height:20px; background:rgba(255,255,255,.28); }
+.cn.ti .ti-prod { font-weight:500; font-size:15px; color:rgba(255,255,255,.86); }
+.cn.ti .ti-bars { margin-left:auto; display:flex; gap:6px; align-items:center; }
+.cn.ti .ti-bars button { width:clamp(26px,4.2vw,54px); height:14px; padding:0; border:0; background:none; cursor:pointer; position:relative; }
+.cn.ti .ti-bars button::before { content:""; position:absolute; left:0; right:0; top:6px; height:3px; border-radius:3px; background:rgba(255,255,255,.2); }
+.cn.ti .ti-bars button i { position:absolute; left:0; top:6px; height:3px; border-radius:3px; background:#fff; width:0; }
+.cn.ti .ti-skip { margin-left:14px; height:38px; padding:0 20px; border-radius:999px; border:1.5px solid rgba(255,255,255,.7); background:rgba(255,255,255,.06); color:#fff; font:inherit; font-weight:600; font-size:14px; cursor:pointer; transition:opacity .5s, background .2s; }
+.cn.ti .ti-skip:hover { background:rgba(255,255,255,.16); }
+.cn.ti .ti-skip.gone { opacity:0; pointer-events:none; }
+.cn.ti button:focus-visible { outline:3px solid rgba(141,184,255,.8); outline-offset:3px; }
+.cn.ti .ti-fade { position:absolute; left:0; right:0; bottom:0; height:clamp(40px,7vh,80px); z-index:3; pointer-events:none; background:linear-gradient(180deg, rgba(8,7,38,0), rgba(8,7,38,.7) 85%); }
+.cn.ti .ti-lbls { position:absolute; inset:0; z-index:4; pointer-events:none; transition:opacity .9s; }
+.cn.ti .ti-lbls.hide { opacity:0; }
+.cn.ti .lb { position:absolute; left:0; top:0; width:var(--lw); opacity:0; transition:opacity .7s; will-change:transform; }
+.cn.ti .lb.on { opacity:.78; } .cn.ti .lb.act { opacity:1; }
+.cn.ti .lb .in { padding:14px 16px; transform:translateX(var(--dx)); transition:transform .9s cubic-bezier(.2,.7,.2,1); }
+.cn.ti .lb.r { --dx:-18px; } .cn.ti .lb.l { --dx:18px; text-align:right; }
+.cn.ti .lb.r .in { background:radial-gradient(ellipse 100% 56% at 0% 50%, rgba(7,6,34,.66), rgba(7,6,34,.3) 45%, rgba(7,6,34,0) 100%); }
+.cn.ti .lb.l .in { background:radial-gradient(ellipse 100% 56% at 100% 50%, rgba(7,6,34,.66), rgba(7,6,34,.3) 45%, rgba(7,6,34,0) 100%); }
+.cn.ti .lb.on .in, .cn.ti .lb.act .in { transform:none; }
+.cn.ti .lt { font-size:14.5px; font-weight:600; line-height:1.25; color:#fff; text-shadow:0 1px 12px rgba(5,4,30,.95), 0 0 2px rgba(5,4,30,.8); }
+.cn.ti .lt i { font-style:normal; font-weight:700; color:var(--sky); font-size:11.5px; letter-spacing:.08em; margin-right:8px; }
+.cn.ti .lb.act .lt { font-size:16.5px; }
+.cn.ti .ld { font-size:12.8px; line-height:1.42; color:rgba(224,234,255,.92); max-height:0; opacity:0; overflow:hidden; text-shadow:0 1px 10px rgba(5,4,30,.95); transition:max-height .7s cubic-bezier(.2,.7,.2,1), opacity .7s; }
+.cn.ti .lb.act .ld { max-height:72px; opacity:1; margin-top:5px; }
+.cn.ti .ti-cap { position:absolute; z-index:5; left:50%; top:clamp(76px,12vh,120px); transform:translateX(-50%); width:min(640px,90vw); text-align:center; pointer-events:none; transition:opacity .5s; }
+.cn.ti .ti-cap.off { opacity:0; }
+.cn.ti .ti-c0 { font-size:12px; letter-spacing:.08em; color:var(--sky); font-weight:600; min-height:16px; }
+.cn.ti .ti-c1 { margin-top:4px; font-size:clamp(22px,3vw,40px); font-weight:700; letter-spacing:-.01em; line-height:1.12; text-shadow:0 2px 20px rgba(5,4,30,.8); }
+.cn.ti .ti-c2 { margin-top:8px; font-size:clamp(13px,1.3vw,16.5px); color:rgba(224,234,255,.88); line-height:1.42; text-shadow:0 1px 12px rgba(5,4,30,.9); }
+.cn.ti .ti-cap .sw { transition:opacity .4s; } .cn.ti .ti-cap.chg .sw { opacity:0; }
+.cn.ti.narrow .ti-cap { top:auto; bottom:clamp(18px,3.2vh,34px); }
+.cn.ti.narrow .ti-cap::before { content:""; position:absolute; inset:-30px -20px -20px; z-index:-1; background:radial-gradient(70% 80% at 50% 60%, rgba(7,6,34,.78), rgba(7,6,34,0) 80%); }
+.cn.ti.narrow .ti-c1 { font-size:clamp(19px,5vw,26px); }
+.cn.ti.narrow .ti-lbls { display:none; }
+.cn.ti .ti-brand { position:absolute; z-index:6; left:0; top:0; display:flex; flex-direction:column; align-items:center; text-align:center; gap:18px; opacity:0; pointer-events:none; transition:opacity .9s; }
+.cn.ti .ti-brand.on { opacity:1; pointer-events:auto; }
+.cn.ti .ti-brand img { width:clamp(190px,24vw,300px); height:auto; display:block; }
+.cn.ti .ti-hello { margin:0; font-size:14px; font-weight:600; color:var(--sky); }
+.cn.ti .ti-ds { font-size:clamp(16px,1.8vw,22px); font-weight:500; letter-spacing:.14em; color:rgba(220,230,255,.9); }
+.cn.ti .ti-tagl { display:flex; gap:.5em; flex-wrap:wrap; justify-content:center; font-size:clamp(22px,2.6vw,40px); font-weight:700; letter-spacing:-.01em; line-height:1.1; white-space:nowrap; }
+.cn.ti .ti-tagl span { opacity:0; transform:translateY(14px); transition:opacity .8s, transform .9s cubic-bezier(.2,.7,.2,1); }
+.cn.ti .ti-brand.on .ti-tagl span:nth-child(1) { opacity:1; transform:none; transition-delay:.25s; }
+.cn.ti .ti-brand.on .ti-tagl span:nth-child(2) { opacity:1; transform:none; transition-delay:.65s; }
+.cn.ti .ti-brand.on .ti-tagl span:nth-child(3) { opacity:1; transform:none; transition-delay:1.05s; color:var(--sky); }
+.cn.ti .ti-go { margin-top:6px; height:52px; padding:0 40px; border-radius:12px; border:0; background:var(--blue); color:#fff; font:inherit; font-size:17px; font-weight:600; cursor:pointer; box-shadow:0 14px 34px -12px rgba(21,112,239,.8); opacity:0; transition:opacity .2s, transform .2s, background .2s; }
+.cn.ti .ti-brand.on .ti-go { opacity:1; transition:opacity .8s 1.5s, transform .2s, background .2s; }
+.cn.ti .ti-go:hover { background:#2B80FF; transform:translateY(-2px); }
+.cn.ti .ti-off { font-size:13px; color:rgba(220,230,255,.8); display:flex; gap:8px; align-items:center; cursor:pointer; }
+.cn.ti .ti-sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+@media (max-width:640px) { .cn.ti .ti-prod, .cn.ti .ti-sep { display:none; } }
+@media (prefers-reduced-motion: reduce) { .cn.ti, .cn.ti * { transition-duration:.01s !important; transition-delay:0s !important; } }
