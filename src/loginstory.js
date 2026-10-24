@@ -17,11 +17,17 @@
     ['User guides drafted from walkthroughs', `<div class="ai-st"><i></i><b>1</b><span>Capture</span></div><div class="ai-st"><i></i><b>2</b><span>Draft steps</span></div><div class="ai-st"><i></i><b>3</b><span>Review</span></div><div class="ai-st"><i></i><b>4</b><span>Publish</span></div>`]
   ];
   const doc = root.document, reduce = () => !!(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  // scene 5: the platform modules (same cards as the earlier static illustration), each linking into the workspace
+  const MODS = ['Work Orders', 'Assets', 'Spaces', 'Inventory', 'Preventive Maintenance', 'Dashboards & Analytics', 'Energy & Sustainability', 'Connected apps'];
+  const ORDER = [0, 5, 1, 2, 3, 4];
+  const TX = [41, 47, 53, 59, 29, 40, 60, 71];   // where each link lands on the platform (top slopes, lower sides; clear of the logo and the handover badge)
+  const curve = i => { const top = i < 4, xc = 2.5 + (i % 4) * 24.5 + 10.75, tx = TX[i]; return top ? `M${xc} 11.2C${xc} 17 ${tx} 13 ${tx} 18` : `M${xc} 47.4C${xc} 41 ${tx} 38 ${tx} 32`; };
+  const modHtml = () => `<div class="ls-mod" aria-hidden="true"><svg viewBox="0 0 100 84" preserveAspectRatio="none">${MODS.map((m, i) => `<path class="mp" style="--i:${i}" d="${curve(i)}" pathLength="1"/><circle class="mq" style="--i:${i}" cx="${2.5 + (i % 4) * 24.5 + 10.75}" cy="${i < 4 ? 11.2 : 47.4}" r="0.9"/>`).join('')}</svg>${MODS.map((m, i) => `<div class="mc" style="--i:${i}"><b></b><span>${m}</span><i><u></u><u></u><u></u><u></u></i></div>`).join('')}</div>`;
   let firstAt = 0, step = -1, timer = 0;
   function tick() {
     const el = doc.querySelector('.ls'); if (!el) { timer = 0; return; }
-    if (!doc.hidden) { step = (step + 1) % 5; el.classList.add('live'); el.setAttribute('data-s', step); }
-    timer = root.setTimeout(tick, step === 0 ? 4200 : 5200);
+    if (!doc.hidden) { step = (step + 1) % ORDER.length; el.classList.add('live'); el.setAttribute('data-s', ORDER[step]); }
+    timer = root.setTimeout(tick, step === 0 ? 4200 : 5600);
   }
   function start(delay) { if (timer || reduce()) return; timer = root.setTimeout(tick, delay); }
   V.isoLogin = () => {
@@ -35,6 +41,6 @@
       <div class="ls-trk"><i></i></div><div class="ls-nodes">${STAGES.map((s, i) => `<div class="ls-n" title="${i + 1}. ${s}"><b>${i + 1}</b></div>`).join('')}<div class="ls-act"></div></div>
       <div class="ls-nls">${STAGES.map((s) => `<div class="ls-nl">${s}</div>`).join('')}</div>
       <div class="ls-caps">${CAPS.map(c => `<span>${c}</span>`).join('')}</div><div class="ls-ai" aria-hidden="true"><span class="ai-t">AI assist</span>${AI.map(a => `<div class="ai-s">${a[1]}</div>`).join('')}</div>
-      <div class="ls-aicap" aria-hidden="true">${AI.map(a => `<span>${a[0]}</span>`).join('')}</div><i class="ls-pulse" aria-hidden="true"></i><b class="ls-aib" aria-hidden="true">AI</b><small class="ls-ill">Illustrative</small></div></div>`;
+      ${modHtml()}<div class="ls-aicap" aria-hidden="true">${AI.map(a => `<span>${a[0]}</span>`).join('')}<span>Every module connected to one workspace</span></div><i class="ls-pulse" aria-hidden="true"></i><b class="ls-aib" aria-hidden="true">AI</b><small class="ls-ill">Illustrative</small></div></div>`;
   };
 })(typeof window !== 'undefined' ? window : globalThis);
