@@ -11,7 +11,7 @@
   V.treeIntro = function (opts) {
     opts = opts || {}; const reduce = reduceMotion();
     return new Promise(resolve => {
-      const o = doc.createElement('div'); o.className = 'cn ti' + (reduce ? ' still' : ''); o.setAttribute('role', 'dialog'); o.setAttribute('aria-modal', 'true'); o.setAttribute('aria-label', 'Facilio Delivery Studio introduction');
+      const o = doc.createElement('div'); o.className = 'cn ti' + (reduce ? ' still' : '') + (opts.wipe ? ' auto' : ''); o.setAttribute('role', 'dialog'); o.setAttribute('aria-modal', 'true'); o.setAttribute('aria-label', 'Facilio Delivery Studio introduction');
       const nm = String(opts.name || '').split(' ')[0];
       o.innerHTML = `<canvas aria-hidden="true"></canvas>
         <div class="top"><img src="brand/logo-white.png" alt="Facilio" height="26"><span class="sep"></span><span class="prod">Delivery Studio</span><div class="bars" data-i="bars" role="group" aria-label="Intro progress"></div><button type="button" class="skip" data-i="skip" data-r="skip">Skip</button></div>
@@ -21,6 +21,7 @@
         <div class="brand" data-i="brand">${nm ? `<p class="hello">Welcome, ${esc(nm)}</p>` : ''}<img src="brand/logo-white.png" alt="Facilio" width="320" height="88"><div class="ds">Delivery Studio</div><div class="tagl" aria-label="Capture. Configure. Go live."><span>Capture.</span><span>Configure.</span><span>Go live.</span></div><button type="button" class="go" data-i="go" data-r="go">${esc(opts.cta || 'Get started')}</button>${opts.off ? '<label class="ti-off"><input type="checkbox" id="tiOff"> Do not show this introduction again</label>' : ''}</div>
         <div class="fade"></div>`;
 
+      const AUTO = !!opts.wipe;   // opening page: the tree's leaves open straight into the sign-in page (no brand screen). Roadmap after sign-in keeps the brand + Get started ending.
       /* ---------- the 12 delivery stages ---------- */
       const STAGES = [
         ['Project Kick-off & Discovery', 'Establish the project vision, scope, stakeholders, and delivery approach.'],
@@ -28,8 +29,8 @@
         ['Requirements', 'Organize business needs into clear, actionable requirements.'],
         ['BRD & Sign-off', 'Review and approve the documented requirements.'],
         ['Configuration & Implementation', 'Configure the solution to match agreed requirements.'],
-        ['UAT & Defect Management', 'Validate the solution and resolve identified issues.'],
         ['FTR & KPI Validation', 'Validate functional readiness and agreed performance measures.'],
+        ['UAT & Defect Management', 'Validate the solution and resolve identified issues.'],
         ['Customer Training & User Guides', 'Prepare users to work confidently with the solution.'],
         ['Go-Live Readiness', 'Confirm readiness for production launch.'],
         ['Hypercare', 'Provide focused support following go-live.'],
@@ -43,11 +44,16 @@
       const PHASES = [ // start, end, headline, sub
         [0, 5.0, 'Every project starts with a seed', 'Kick-off & Discovery'],
         [5.0, 14.4, 'Strong roots, a steady trunk', 'Workshops · Requirements · BRD sign-off'],
-        [14.4, 26.6, 'Branching into the build', 'Configuration · UAT · FTR · Training'],
+        [14.4, 26.6, 'Branching into the build', 'Configuration · FTR · UAT · Training'],
         [26.6, 38.2, 'Fully grown', 'Go-live · Hypercare · Handover · Closure'],
         [38.2, 44, 'Twelve stages, one connected journey', 'From kick-off to closure']
       ];
-      const END = 44, REVEAL = 38.2;
+      const END = AUTO ? 38 : 44, REVEAL = AUTO ? 1e9 : 38.2;
+      // real seconds -> timeline seconds. The whole intro is about 6.8s: growth 5s, then (opening page) the leaves open into the sign-in page in about 1.8s.
+      const TR = 4.6, WPTS = AUTO ? [[0, 0], [1.1, 5], [2.2, 14.4], [3.4, 26.6], [TR, 38]] : [[0, 0], [1.2, 5], [2.4, 14.4], [3.7, 26.6], [5.0, 38.2], [6.8, 44]];
+      const warp = c => { if (c <= 0) return 0; for (let i = 1; i < WPTS.length; i++) if (c <= WPTS[i][0]) { const a = WPTS[i - 1], b = WPTS[i]; return lerp(a[1], b[1], (c - a[0]) / (b[0] - a[0])); } return WPTS[WPTS.length - 1][1]; };
+      const unwarp = t => { for (let i = 1; i < WPTS.length; i++) if (t <= WPTS[i][1]) { const a = WPTS[i - 1], b = WPTS[i]; return lerp(a[0], b[0], (t - a[1]) / (b[1] - a[1])); } return WPTS[WPTS.length - 1][0]; };
+      let CLK = 0, LO = -1, HOLES = [], LCX = 0, LCY = 0, LSC = 1, HOLD = false;   // CLK real clock, LO leaf-opening clock (-1 until it starts)
       const TAU = Math.PI * 2;
       let EXX = 0, EXT = 0, EXL = null;   // exit: EXX slides the whole scene left, EXT is the exit clock that frees the leaves one by one
       const rm = reduce;
@@ -175,7 +181,7 @@
       /* ---------- stage labels: each one is pinned to its milestone node on the tree ---------- */
       const $ = id => o.querySelector('[data-i="' + id + '"]');
       const bars = $('bars'), labelsEl = $('labels');
-      const SHORT = ['Kick-off & discovery', 'Workshops', 'Requirements', 'BRD & sign-off', 'Configuration', 'UAT & defects', 'FTR & KPI validation', 'Training & guides', 'Go-live readiness', 'Hypercare', 'Support handover', 'Project closure'];
+      const SHORT = ['Kick-off & discovery', 'Workshops', 'Requirements', 'BRD & sign-off', 'Configuration', 'FTR & KPI validation', 'UAT & defects', 'Training & guides', 'Go-live readiness', 'Hypercare', 'Support handover', 'Project closure'];
       const TICK = '<svg viewBox="0 0 12 12"><path d="M2.4 6.4l2.5 2.5 4.7-5.2"/></svg>';
       const labels = STAGES.map(([t, d], i) => {
         const el = document.createElement('div'); el.className = 'lbl'; el.tabIndex = -1; el.setAttribute('role', 'button');
@@ -397,7 +403,7 @@
         if (WIDE) {
           const free = BL - LR, k = Math.min(1, free * .8 / (2 * 440 * sc)); sc *= lerp(1, k, reveal); fx = lerp(fx, LR + free / 2, reveal);
         } else { sc *= 1 - .2 * reveal; fy -= RH * .17 * reveal; }
-        const ox = fx - EXX, oy = fy - cy * sc;
+        const ox = fx - EXX, oy = fy - cy * sc; LSC = sc;
         drawScenery(t, ta, ox, oy, zm, mature);
         const toS = (x, y) => [ox + x * sc, oy + y * sc];
         const gl = toS(0, -640), gr = 560 * sc;
@@ -536,7 +542,39 @@
         const vg = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .35, W / 2, H / 2, Math.max(W, H) * .8); vg.addColorStop(0, 'rgba(5,4,24,0)'); vg.addColorStop(1, `rgba(5,4,24,${.62 - .22 * mature})`);
         g.fillStyle = vg; g.fillRect(0, 0, W, H);
         if (reveal > 0 && !WIDE) { g.fillStyle = `rgba(8,7,38,${.32 * reveal})`; g.fillRect(0, 0, W, H); }
+        if (LO >= 0) leafHoles(ox, oy, sc, SK, ta);
         layoutLabels(t, cs, ox, oy, sc, SK, reveal);
+      }
+      /* The leaves open the page: every leaf swells (rim in its own colour) and erases the night scene inside itself, so the sign-in page shows through the leaves
+         and the merged leaves become the whole screen. Subset of leaves + a final widening ring guarantee full coverage. */
+      const LEAFP = new Path2D(); LEAFP.moveTo(0, 0); LEAFP.bezierCurveTo(56 * .45, -56 * .32, 56 * .95, -56 * .22, 56, 0); LEAFP.bezierCurveTo(56 * .95, 56 * .22, 56 * .45, 56 * .32, 0, 0);
+      const LDUR = .9, LEND = 1.6;
+      function leafHoles(ox, oy, sc, SK, ta) {
+        const S0 = DPR * sc, EX = DPR * ox, EY = DPR * oy, diag = Math.hypot(cv.width, cv.height);
+        if (LO >= LEND) { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height); return; }
+        const act = []; for (const L of HOLES) { const u = clamp((LO - L.hd) / LDUR); if (u > 0) act.push([L, u]); }
+        const ringK = clamp((LO - .85) / .95), cx = DPR * (ox + LCX * sc), cy = DPR * (oy + LCY * sc);
+        g.save();
+        g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+        for (const [L, u] of act) {   // rims
+          const zs = L.size / 56, m = 1 + L.mx * u * u * u, kx = m * zs, th = L.ang + Math.sin(ta * 1.3 + L.ph) * .05, cs = Math.cos(th), sn = Math.sin(th);
+          g.setTransform(S0 * cs * kx, S0 * sn * kx, -S0 * sn * kx, S0 * cs * kx, EX + S0 * (L.x + SK * L.y), EY + S0 * L.y);
+          g.lineWidth = Math.max(1, 10 * DPR) / (S0 * kx); g.lineJoin = 'round'; g.strokeStyle = L.col; g.stroke(LEAFP);
+        }
+        if (ringK > 0) { g.setTransform(1, 0, 0, 1, 0, 0); g.strokeStyle = '#8DB8FF'; g.lineWidth = 12 * DPR; g.beginPath(); g.arc(cx, cy, ringK * ringK * diag * 1.05, 0, TAU); g.stroke(); }
+        g.globalCompositeOperation = 'destination-out'; g.fillStyle = '#000';
+        for (const [L, u] of act) {   // holes
+          const zs = L.size / 56, m = 1 + L.mx * u * u * u, kx = m * zs, th = L.ang + Math.sin(ta * 1.3 + L.ph) * .05, cs = Math.cos(th), sn = Math.sin(th);
+          g.setTransform(S0 * cs * kx, S0 * sn * kx, -S0 * sn * kx, S0 * cs * kx, EX + S0 * (L.x + SK * L.y), EY + S0 * L.y); g.fill(LEAFP);
+        }
+        if (ringK > 0) { g.setTransform(1, 0, 0, 1, 0, 0); g.beginPath(); g.arc(cx, cy, Math.max(0, ringK * ringK * diag * 1.05 - 6 * DPR), 0, TAU); g.fill(); }
+        g.restore();
+      }
+      function prepLeaf() {
+        if (HOLES.length) return; const vis = leaves.filter((_, i) => i % Math.max(1, Math.round(leaves.length / 190)) === 0); let sx = 0, sy = 0; for (const L of vis) { sx += L.x; sy += L.y; } LCX = sx / vis.length; LCY = sy / vis.length;
+        let dm = 1; for (const L of vis) dm = Math.max(dm, Math.hypot(L.x - LCX, (L.y - LCY) * .9));
+        const need = Math.hypot(W, H) * 1.0;
+        HOLES = vis.map(L => Object.assign(L, { hd: Math.hypot(L.x - LCX, (L.y - LCY) * .9) / dm * .55 + Math.random() * .08, mx: Math.max(6, need / (L.size * Math.max(.5, (LSC || 1) * .9))) }));
       }
 
       /* ---------- label placement: next to its node, pushed apart until nothing overlaps ---------- */
@@ -643,7 +681,7 @@
           const apply = () => { lh1.textContent = P[2]; lh2.textContent = P[3]; head.classList.remove('sw'); measureChrome(); };
           if (first) apply(); else { head.classList.add('sw'); setTimeout(() => { if (lastPhase === phase) apply(); }, 260); }
         }
-        const final = t >= REVEAL; brand.classList.toggle('on', final); o.classList.toggle('final', final); if (final && !focused) { focused = true; setTimeout(() => { if (!closed) try { goBtn.focus({ preventScroll: true }); } catch (e) { } }, 2200); } skip.classList.toggle('gone', t >= END - .05);
+        const final = t >= REVEAL; brand.classList.toggle('on', final); o.classList.toggle('final', final); if (final && !focused) { focused = true; setTimeout(() => { if (!closed) try { goBtn.focus({ preventScroll: true }); } catch (e) { } }, 2200); } skip.classList.toggle('gone', t >= END - .05 || LO >= 0);
         const cs = stageAt(t);
         if (cs !== lastStage) {
           lastStage = cs;
@@ -657,15 +695,26 @@
       function frame(ts) {
         if (closed) return; raf = root.requestAnimationFrame(frame);
         if (doc.hidden) { last = 0; return; }
-        if (rm) return;
+        if (rm || HOLD) return;
         if (!last) last = ts; const dt = Math.min(.1, (ts - last) / 1000); last = ts;
-        if (T < END) T = Math.min(END, T + dt); else { IDLE += dt; if (fno++ & 1) return; }   // after the intro: 30fps is plenty for the sway
+        if (LO >= 0) { LO += dt; IDLE += dt; }
+        else if (CLK < WPTS[WPTS.length - 1][0]) { CLK += dt; T = warp(CLK); if (AUTO && CLK >= TR) startLeaf(); }
+        else { IDLE += dt; if (fno++ & 1) return; }   // after the intro: 30fps is plenty for the sway
         const c0 = performance.now(); draw(T); ui(T); const cost = performance.now() - c0;
         if (T > 4 && QCAP > 1) { slow = cost > 24 ? slow + 1 : Math.max(0, slow - 1); if (slow > 25) { QCAP = 1; slow = 0; resize(); } }
       }
-      function seek(t) { T = clamp(t, 0, END); IDLE = 0; lastPhase = -2; lastStage = -3; draw(T); ui(T); }
+      let leafTimers = false;
+      function startLeaf() {
+        if (LO >= 0) return; T = END; CLK = TR; prepLeaf(); LO = 0; IDLE = 0; o.classList.add('leafout'); o.style.background = 'transparent'; leafTimers = true;
+        setTimeout(() => { const au = doc.querySelector('.auth'); if (au) { au.classList.remove('auth-in'); void au.offsetWidth; au.classList.add('auth-in'); } resolve({ how: 'go', off: false }); }, 220);   // the page behind plays its entrance as the first leaves open
+        setTimeout(() => cleanup(), (LEND + .25) * 1000);
+      }
+      function cleanup() { if (closed) return; closed = true; root.cancelAnimationFrame(raf); doc.body.classList.remove('cn-on'); root.removeEventListener('keydown', key); root.removeEventListener('resize', resize); delete root.__ti; cv.width = 1; cv.height = 1; o.remove(); }
+      function seek(t) { T = clamp(t, 0, END); CLK = unwarp(T); IDLE = 0; lastPhase = -2; lastStage = -3; draw(T); ui(T); }
       function finish(how) {
-        if (closed) return; closed = true; root.cancelAnimationFrame(raf);
+        if (closed) return;
+        if (AUTO && !rm) { if (LO < 0) startLeaf(); return; }   // opening page: Skip / Esc jump straight to the leaves opening into the sign-in page
+        closed = true; root.cancelAnimationFrame(raf);
         const off = o.querySelector('#tiOff'), flag = !!(off && off.checked);
         doc.body.classList.remove('cn-on'); root.removeEventListener('keydown', key); root.removeEventListener('resize', resize); delete root.__ti;
         const free = () => { cv.width = 1; cv.height = 1; o.remove(); };
@@ -685,8 +734,8 @@
       const key = e => { if (e.key === 'Escape') finish('skip'); };
       o.addEventListener('click', e => { const bt = e.target.closest('[data-r]'); if (bt) finish(bt.getAttribute('data-r')); });
       root.addEventListener('keydown', key);
-      if (rm) T = END;
-      root.__ti = { seek, nodes, S, END, REVEAL };
+      if (rm) { T = END; if (AUTO) setTimeout(() => finish('go'), 1600); }
+      root.__ti = { seek, nodes, S, END, REVEAL, warp, unwarp, TR, scrub: (c, lo) => { HOLD = true; CLK = c; T = warp(c); if (lo >= 0) { prepLeaf(); LO = lo; o.classList.add('leafout'); o.style.background = 'transparent'; } else LO = -1; lastPhase = -2; lastStage = -3; draw(T); ui(T); }, get LO() { return LO; }, holes: () => HOLES.length };
       doc.body.appendChild(o); doc.body.classList.add('cn-on');
       resize(); ui(T); if (!logoImg.complete) logoImg.addEventListener('load', () => draw(T));
       raf = root.requestAnimationFrame(frame);

@@ -2617,3 +2617,15 @@ label.f, .lbl { font-weight: 600; color: var(--fx); }
 .cn.ti.exit { pointer-events: none; -webkit-mask-image: linear-gradient(to left, transparent var(--ti-w), #000 calc(var(--ti-w) + 26%)); mask-image: linear-gradient(to left, transparent var(--ti-w), #000 calc(var(--ti-w) + 26%)); animation: tiSweep 1.25s cubic-bezier(.55,0,.35,1) .35s forwards; }
 .cn.ti.exit .top, .cn.ti.exit .head, .cn.ti.exit .labels { transition: opacity .35s; opacity: 0; }
 .cn.ti.exit .brand { transition: opacity .45s, translate .7s cubic-bezier(.5,0,.8,.4); opacity: 0; translate: 90px 0; }
+
+/* Tree intro refinements: clearer headline text, fast brand ending, and the leaves-open-the-page transition (public opening page). */
+.cn.ti .head { top: 76px; width: min(620px, 92vw); text-shadow: 0 2px 14px rgba(5,4,30,.9), 0 0 2px rgba(5,4,30,.8); }
+.cn.ti .head .h1 { font-size: clamp(18px, 1.7vw, 24px); line-height: 1.2; font-weight: 700; }
+.cn.ti .head .h2 { margin-top: 5px; font-size: clamp(13px, 1.05vw, 15px); line-height: 1.35; color: rgba(214,226,255,.88); }
+.cn.ti.narrow .head { top: 72px; }
+.cn.ti .lbl .t { font-size: 13px; } .cn.ti .lbl.act .t { font-size: 14.5px; } .cn.ti .lbl.act .d { font-size: 12.5px; }
+.cn.ti.auto .brand { display: none; }
+.cn.ti.leafout { pointer-events: none; }
+.cn.ti.leafout .top, .cn.ti.leafout .head, .cn.ti.leafout .labels, .cn.ti.leafout .fade { transition: opacity .3s; opacity: 0; }
+.cn.ti .brand.on .go { transition: opacity .6s .5s, transform .2s, background .2s; }
+.cn.ti .brand.on .tagl span:nth-child(1) { transition-delay: .1s; } .cn.ti .brand.on .tagl span:nth-child(2) { transition-delay: .28s; } .cn.ti .brand.on .tagl span:nth-child(3) { transition-delay: .46s; }
