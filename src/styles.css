@@ -2629,3 +2629,33 @@ label.f, .lbl { font-weight: 600; color: var(--fx); }
 .cn.ti.leafout .top, .cn.ti.leafout .head, .cn.ti.leafout .labels, .cn.ti.leafout .fade { transition: opacity .3s; opacity: 0; }
 .cn.ti .brand.on .go { transition: opacity .6s .5s, transform .2s, background .2s; }
 .cn.ti .brand.on .tagl span:nth-child(1) { transition-delay: .1s; } .cn.ti .brand.on .tagl span:nth-child(2) { transition-delay: .28s; } .cn.ti .brand.on .tagl span:nth-child(3) { transition-delay: .46s; }
+
+/* ===== Sidebar alignment system (final authority) =====
+   Grid: 12px gutter | title icon 28px at x=10 (its centre, x=24, is the connector line) | children start on the line,
+   icon column at line+14, text column at line+14+16+10. Every row uses the same box model, so wrapped text hangs under the text, not the icon. */
+.sidebar { padding: 12px 12px 0 !important; scrollbar-gutter: stable; overscroll-behavior: contain; }
+.sidebar .search { margin: 0 0 4px !important; }
+.sidebar > .sb-sec, .sidebar .sb-sec { margin: 18px 10px 6px !important; font-size: 11.5px; line-height: 16px; letter-spacing: .04em; gap: 10px; }
+.sidebar .search + .sb-sec { margin-top: 12px !important; }
+.sb-sec span { white-space: nowrap; } .sb-sec::after { background: #E4E7EC; }
+.sb-group { margin: 0 0 6px !important; padding: 0 !important; }
+.sidebar .sb-title { display: flex; align-items: flex-start; gap: 10px; width: 100%; min-height: 44px; margin: 0 !important; padding: 8px 10px !important; box-sizing: border-box; font-size: 13.5px !important; font-weight: 700 !important; line-height: 20px !important; text-align: left; }
+.sidebar .sb-title > span { flex: 1; min-width: 0; padding-top: 4px; overflow-wrap: normal; }
+.sidebar .sb-title svg { flex: none; width: 28px !important; height: 28px !important; box-sizing: border-box; }
+.sidebar .sb-item { position: relative; display: flex !important; align-items: flex-start; gap: 10px; width: calc(100% - 24px) !important; margin: 0 0 0 24px !important; padding: 7px 10px 7px 14px !important; min-height: 34px; box-sizing: border-box; border: 0 !important; border-radius: 0 8px 8px 0 !important; font-size: 13.5px !important; font-weight: 500 !important; line-height: 20px !important; text-align: left; white-space: normal; }
+.sidebar .sb-item > span:first-of-type { flex: 1; min-width: 0; overflow-wrap: normal; word-break: normal; hyphens: manual; }
+.sidebar .sb-item svg { flex: none; width: 16px !important; height: 16px !important; margin-top: 2px; }
+.sidebar .sb-item.noic { padding-left: 40px !important; }
+.sidebar .sb-item.noic > span:first-child::before { content: none !important; display: none !important; }
+.sidebar .sb-item.noic::after { content: "" !important; display: block !important; position: absolute; left: 19px; top: 14px; width: 6px; height: 6px; border-radius: 50%; background: #C5CCD8 !important; }
+.sidebar .sb-item.noic.active::after { background: #1570EF !important; }
+/* connector: one continuous 1px line at the title icon's centre; ends at the last child's centre; active child gets a 3px marker on it */
+.sidebar .sb-item::before { content: "" !important; display: block !important; position: absolute; left: 0; top: 0; bottom: 0; width: 1px; background: #DCE4F0 !important; }
+.sidebar .sb-item:last-child::before { bottom: 50%; }
+.sidebar .sb-item.active { background: #EAF2FF !important; color: #0F57BD !important; font-weight: 600 !important; box-shadow: none !important; border-left: 0 !important; }
+.sidebar .sb-item.active::before { width: 3px; left: -1px; background: #1570EF !important; border-radius: 2px; }
+.sidebar .sb-item.active:last-child::before { bottom: 0; }
+.sidebar .sb-badge { margin-left: auto; flex: none; align-self: flex-start; margin-top: 1px; line-height: 18px; }
+/* footer: anchored at the bottom of the independently scrolling nav, opaque so rows never show through */
+.sidebar .sb-foot { position: sticky; bottom: 0; margin: 8px -12px 0 !important; padding: 10px 12px 12px !important; background: #fff !important; border-top: 1px solid #E1E8F4 !important; z-index: 2; }
+.sidebar .sb-out { width: 100%; box-sizing: border-box; min-height: 38px; }
