@@ -64,6 +64,23 @@ await t('AI: draft is server-made, unapproved, editor cannot self-approve, owner
   r = await call(sam, 'PUT', `/api/projects/${pid}/items/ai/${id}`, { data: { content: 'changed' } }); assert.equal(r.data.item.data.status, 'draft', 'edit reopens approved text');
   r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'bogus' }); assert.equal(r.status, 400);
 });
+await t('templates: versions, publish needs admin, retire, project scope, AI uses template', async () => {
+  let r = await call(sam, 'POST', '/api/templates', { name: 'BRD layout', kind: 'brd', scope: 'org', data: { body: '# Purpose\n# Scope' } }); assert.equal(r.status, 201); const id = r.data.item.id;
+  r = await call(out, 'GET', '/api/templates'); assert.equal(r.data.items.length, 0, 'drafts are private to author and admins');
+  r = await call(sam, 'POST', `/api/templates/${id}/status`, { action: 'publish' }); assert.equal(r.status, 403, 'consultant cannot publish org template');
+  r = await call(dinesh, 'POST', `/api/templates/${id}/status`, { action: 'publish' }); assert.equal(r.data.item.status, 'published'); assert.equal(r.data.item.pub, 1);
+  r = await call(sam, 'POST', `/api/templates/${id}/versions`, { data: { body: '# Purpose\n# Scope\n# Risks' }, note: 'added risks' }); assert.equal(r.data.v, 2);
+  r = await call(out, 'GET', `/api/templates/${id}`); assert.equal(r.status, 200); assert.match(r.data.data.body, /Scope/); assert.equal(r.data.v, 1, 'readers get the published version');
+  r = await call(sam, 'GET', `/api/templates/${id}?v=2`); assert.match(r.data.data.body, /Risks/);
+  r = await call(sam, 'DELETE', `/api/templates/${id}`); assert.equal(r.status, 409);
+  r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'brd', templateId: id }); assert.equal(r.status, 201);
+  r = await call(out, 'POST', '/api/templates', { name: 'x', kind: 'ftr', scope: 'project', projectId: pid, data: {} }); assert.ok(r.status === 404 || r.status === 403, 'outsider cannot add to a project');
+  r = await call(sam, 'POST', '/api/templates', { name: 'FTR for Alpha', kind: 'ftr', scope: 'project', projectId: pid, data: { b64: 'AAAA' } }); assert.equal(r.status, 201); const pt = r.data.item.id;
+  r = await call(out, 'GET', `/api/templates?projectId=${pid}`); assert.equal(r.data.items.length, 2, 'outsider is a viewer member here: sees project and published org templates');
+  r = await call(sam, 'GET', `/api/templates?projectId=${pid}`); assert.equal(r.data.items.length, 2);
+  r = await call(dinesh, 'POST', `/api/templates/${id}/status`, { action: 'retire' }); assert.equal(r.data.item.status, 'retired');
+  r = await call(sam, 'DELETE', `/api/templates/${pt}`); assert.equal(r.status, 200);
+});
 await t('admin: only granted people, enforced on the server', async () => {
   let r = await call(sam, 'GET', '/api/admin/overview'); assert.equal(r.status, 403);
   r = await call(dinesh, 'GET', '/api/admin/overview'); assert.equal(r.status, 200); assert.ok(r.data.projects.find(p => p.id === pid));

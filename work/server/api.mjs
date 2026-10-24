@@ -232,7 +232,8 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
   route('POST', '/api/projects/:id/ai/run', async (b, P) => {
     const s = await me(); await projectAccess(s, P.id, 'edit'); const task = String(b && b.task || ''); const T = AI_TASKS[task]; if (!T) throw new HttpError(400, 'Unknown AI task');
     const instruction = str(b.instruction, 1500, 'Instruction'); const { src, text } = await aiContext(P.id, task);
-    const user = `TASK: ${T.ask}\n${instruction ? 'EXTRA INSTRUCTION FROM THE CONSULTANT: ' + instruction + '\n' : ''}\nSOURCES (the only project information you may use):${text || '\n(No project records were found for this task. Say what is missing.)'}`;
+    let tplText = ''; if (b.templateId) { const h = await tplHead(String(b.templateId)); if (!(await tplCanRead(s, h)) || h.status === 'retired') throw new HttpError(404, 'Template not available'); const td = await tplData(h, h.pub || h.latest); tplText = String(td && td.body || '').slice(0, 6000); }
+    const user = `TASK: ${T.ask}\n${instruction ? 'EXTRA INSTRUCTION FROM THE CONSULTANT: ' + instruction + '\n' : ''}${tplText ? 'FOLLOW THIS TEMPLATE STRUCTURE (headings and order; fill only from the sources, leave a heading with "Missing" when no source supports it):\n' + tplText + '\n' : ''}\nSOURCES (the only project information you may use):${text || '\n(No project records were found for this task. Say what is missing.)'}`;
     const out = await callModel([{ role: 'system', content: AI_SYSTEM }, { role: 'user', content: user }], 2600);
     const id = rid('ai'); const t = now(); const data = { task, title: T.title, status: 'draft', content: out.text, sources: src, provider: out.provider, model: out.model, instruction, by: s.name || s.email, version: 1, hist: [{ at: t, who: s.name || s.email, side: 'facilio', event: 'AI draft generated' }] };
     await save('it.' + P.id + '.ai', 'ip.' + P.id + '.ai', id, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: t, ua: t }, data, undefined);
@@ -244,6 +245,59 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
     const status = d === 'approve' ? 'approved' : d === 'reject' ? 'rejected' : 'draft'; const t = now(); const note = str(b.note, 500, 'Note');
     const data = Object.assign({}, cur, { status, approvedBy: d === 'approve' ? (s.name || s.email) : null, approvedAt: d === 'approve' ? t : null, decisionNote: note, hist: (cur.hist || []).concat([{ at: t, who: s.name || s.email, side: 'facilio', event: d === 'approve' ? 'Approved' : d === 'reject' ? 'Rejected' : 'Reopened as draft' + (note ? ': ' + note : '') }]) });
     const nh = Object.assign({}, head, { v: head.v + 1, ub: s.id, us: 'facilio', ua: t }); await save(col, pcol, P.item, nh, data, head.z); await audit(P.id, s.id, 'ai-' + d, cur.task); return ok({ item: itemOut('ai', P.item, nh, data) });
+  });
+
+  // ---------- templates: org-wide and per-project, versioned, publish / retire ----------
+  const TPL_KINDS = ['workspace', 'ftr', 'kpi', 'brd', 'uat', 'guide', 'golive', 'hypercare', 'handover', 'closure', 'wsr', 'monthly', 'other'];
+  const TPL_RE = /^tpl_[a-f0-9]{18}$/;
+  const tplOut = h => ({ id: h.id, name: h.name, kind: h.kind, scope: h.scope, projectId: h.projectId || null, desc: h.desc || '', status: h.status, latest: h.latest, pub: h.pub || 0, versions: h.versions || [], by: h.by, createdBy: h.createdBy, at: h.at, ua: h.ua });
+  async function tplHead(id) { if (!TPL_RE.test(String(id))) throw new HttpError(400, 'Bad template id'); const r = await dbGet('tpl', id); if (!r || !r.value) throw new HttpError(404, 'Template not found'); return r.value; }
+  async function tplCanRead(s, h) {
+    if (h.scope === 'project') { try { await projectAccess(s, h.projectId, 'read'); return true; } catch (e) { return false; } }
+    return h.status === 'published' || h.createdBy === s.id || !!(await adminRole(s));
+  }
+  async function tplCanEdit(s, h) {
+    if (h.scope === 'project') { try { await projectAccess(s, h.projectId, 'edit'); return true; } catch (e) { return false; } }
+    return h.createdBy === s.id || !!(await adminRole(s));
+  }
+  async function tplData(h, v) { const key = h.id + '.' + v; const r = await dbGet('tpv', key); if (!r || !r.value) throw new HttpError(404, 'Version not found'); const d = await unpack('tpp', key, r.value); return d; }
+  async function tplWrite(h, data, note, s) {
+    const text = JSON.stringify(data); if (text.length > 6000000) throw new HttpError(413, 'Template is too large (max about 6 MB)');
+    const v = (h.latest || 0) + 1; const prev = await dbGet('tpv', h.id + '.' + v); await save('tpv', 'tpp', h.id + '.' + v, { v }, data, prev && prev.value && prev.value.z);
+    h.latest = v; h.versions = (h.versions || []).concat([{ v, at: now(), by: s.name || s.email, note: note || '', size: text.length }]); h.ua = now(); await dbPut('tpl', h.id, h); return v;
+  }
+  route('GET', '/api/templates', async (b, P, Q) => {
+    const s = await me(); const kind = Q.get('kind') || ''; const pid = Q.get('projectId') || ''; const rows = (await dbList('tpl')).map(r => r.value).filter(Boolean);
+    const out = []; for (const h of rows) { if (kind && h.kind !== kind) continue; if (h.scope === 'project' && h.projectId !== pid) continue; if (await tplCanRead(s, h)) out.push(tplOut(h)); }
+    out.sort((a, c) => String(c.ua).localeCompare(String(a.ua))); const ar = await adminRole(s); return ok({ items: out.slice(0, 500), isAdmin: !!ar, kinds: TPL_KINDS });
+  });
+  route('POST', '/api/templates', async (b) => {
+    const s = await me(); const kind = String(b.kind || ''); if (!TPL_KINDS.includes(kind)) throw new HttpError(400, 'Choose a template type');
+    const scope = b.scope === 'project' ? 'project' : 'org'; let pid = null; if (scope === 'project') { pid = String(b.projectId || ''); await projectAccess(s, pid, 'edit'); }
+    if (b.data === undefined || b.data === null || typeof b.data !== 'object') throw new HttpError(400, 'Template content is missing');
+    const h = { id: rid('tpl').slice(0, 22), name: str(b.name, 120, 'Name', true), kind, scope, projectId: pid, desc: str(b.desc, 500, 'Description'), status: 'draft', latest: 0, pub: 0, versions: [], by: s.name || s.email, createdBy: s.id, at: now(), ua: now() };
+    await tplWrite(h, b.data, str(b.note, 300, 'Note') || 'First version', s); await audit(pid || 'sys', s.id, 'template-create', h.name); return ok({ item: tplOut(h) }, 201);
+  });
+  route('GET', '/api/templates/:id', async (b, P, Q) => {
+    const s = await me(); const h = await tplHead(P.id); if (!(await tplCanRead(s, h))) throw new HttpError(404, 'Template not found');
+    const v = Number(Q.get('v')) || h.pub || h.latest; if (!(h.versions || []).some(x => x.v === v)) throw new HttpError(404, 'Version not found'); return ok({ item: tplOut(h), v, data: await tplData(h, v) });
+  });
+  route('POST', '/api/templates/:id/versions', async (b, P) => {
+    const s = await me(); const h = await tplHead(P.id); if (!(await tplCanEdit(s, h))) throw new HttpError(403, 'You cannot change this template');
+    if (b.data === undefined || b.data === null || typeof b.data !== 'object') throw new HttpError(400, 'Template content is missing');
+    if (b.name) h.name = str(b.name, 120, 'Name', true); if (b.desc !== undefined) h.desc = str(b.desc, 500, 'Description');
+    const v = await tplWrite(h, b.data, str(b.note, 300, 'Note'), s); await audit(h.projectId || 'sys', s.id, 'template-version', h.name + ' v' + v); return ok({ item: tplOut(h), v });
+  });
+  route('POST', '/api/templates/:id/status', async (b, P) => {
+    const s = await me(); const h = await tplHead(P.id); if (!(await tplCanEdit(s, h))) throw new HttpError(403, 'You cannot change this template'); const a = String(b.action || '');
+    if (a === 'publish') { if (h.scope === 'org' && !(await adminRole(s))) throw new HttpError(403, 'Only an Admin can publish an organisation template'); const v = Number(b.v) || h.latest; if (!(h.versions || []).some(x => x.v === v)) throw new HttpError(400, 'Unknown version'); h.pub = v; h.status = 'published'; }
+    else if (a === 'retire') { h.status = 'retired'; } else if (a === 'reopen') { h.status = h.pub ? 'published' : 'draft'; } else throw new HttpError(400, 'Choose publish, retire or reopen');
+    h.ua = now(); await dbPut('tpl', h.id, h); await audit(h.projectId || 'sys', s.id, 'template-' + a, h.name); return ok({ item: tplOut(h) });
+  });
+  route('DELETE', '/api/templates/:id', async (b, P) => {
+    const s = await me(); const h = await tplHead(P.id); if (!(await tplCanEdit(s, h))) throw new HttpError(403, 'You cannot delete this template'); if (h.pub) throw new HttpError(409, 'A published template cannot be deleted. Retire it instead.');
+    for (const x of h.versions || []) { const r = await dbGet('tpv', h.id + '.' + x.v); if (r && r.value) { for (let i = 0; i < (r.value.z || 0); i++) await dbDel('tpp', h.id + '.' + x.v + '.' + i).catch(() => { }); await dbDel('tpv', h.id + '.' + x.v); } }
+    await dbDel('tpl', h.id); await audit(h.projectId || 'sys', s.id, 'template-delete', h.name); return ok({ ok: true });
   });
 
   // items

@@ -55,7 +55,7 @@
     { g: 'AI Delivery', icon: 'flag', items: [['aiwork', 'Deliverables & AI'], ['hypercare', 'Hypercare'], ['ftr', 'FTR Report (Excel)'], ['kpi', 'KPI Workbooks'], ['reports', 'Status Reports (WSR / Monthly)'], ['handover', 'Handover & Closure']] },
     { g: 'Configuration', icon: 'modules', items: [['modules', 'System Modules & Form Builder'], ['flow', 'State Flow Builder'], ['roles', 'Roles & Access Permissions']] },
     { g: 'Requirements', icon: 'check', items: [['transcripts', 'Transcripts & Requirement Confirmation'], ['usecases', 'Use Cases'], ['checks', 'Checks & Validations'], ['brd', 'BRD Draft']] },
-    { g: 'Administration', icon: 'gear', items: [['portal', 'Customer Portal'], ['settings', 'Project Settings & Exports']] }
+    { g: 'Administration', icon: 'gear', items: [['portal', 'Customer Portal'], ['templates', 'Templates'], ['workspace', 'Workspace & Layout'], ['settings', 'Project Settings & Exports']] }
   ];
   // customer menu: [view, label, portal tab that must be on]
   const CUSTOMER_NAV = [{ g: 'Project', icon: 'home', items: [['cust_home', 'Overview', 'cust_home'], ['contract', 'Know Your Contract', 'contract'], ['scope', 'Scope', 'scope'], ['kickoff', 'Kick-off', 'kickoff'], ['cplan', 'Project Plan', 'plan'], ['timeline', 'Plan Timeline', 'plan'], ['schedule', 'Workshop Schedule', 'schedule'], ['guide', 'Customer User Guide', 'guide'], ['onboarding', 'Data Onboarding', 'onboarding'], ['dashboards', 'Dashboard Gallery', 'dashboards']] },
@@ -63,7 +63,9 @@
   // only menu entries whose view exists, and for customers only the tabs the implementation team has switched on
   // Office open mode (temporary): set by the server (OFFICE_OPEN_MODE=1). Hides sign-in, accounts, project access and the Roles view; nothing is removed.
   V.office = () => !!health.openMode;
-  function navFor() { const cust = S.user.kind === 'customer'; const ctl = V.controls ? V.controls() : { tabs: {} }; return (cust ? CUSTOMER_NAV : NAV).map(g => Object.assign({}, g, { items: g.items.filter(([id, , tab]) => V[id] && !(V.office() && id === 'roles') && (!cust || ctl.tabs[tab] !== false)) })).filter(g => g.items.length); }
+  function navBase() { const cust = S.user.kind === 'customer'; const ctl = V.controls ? V.controls() : { tabs: {} }; return (cust ? CUSTOMER_NAV : NAV).map(g => Object.assign({}, g, { items: g.items.filter(([id, , tab]) => V[id] && !(V.office() && id === 'roles') && (!cust || ctl.tabs[tab] !== false)) })).filter(g => g.items.length); }
+  function navFor() { const base = navBase(); return S.user.kind !== 'customer' && V.wsApply ? V.wsApply(base) : base; }
+  V.navBase = navBase;
   V.navFor = navFor;
   const ALIAS = { module: 'modules', search: 'overview' };
   function go(view, extra) {
@@ -89,7 +91,7 @@
     if (S.ui.view === 'onboarding' && S.ui.onbTab === 'excel' && document.getElementById('onbFrame')) return; // keep the embedded tool alive: re-rendering would reload it
     const main = document.querySelector('.main'); const scroll = main ? main.scrollTop : 0;
     const active = document.activeElement; const activeBind = active && active.getAttribute && active.getAttribute('data-bind'); const caret = active && active.selectionStart;
-    const key = ALIAS[S.ui.view] && !V[S.ui.view] ? ALIAS[S.ui.view] : S.ui.view; const view = V[key] || V.overview;
+    const key = ALIAS[S.ui.view] && !V[S.ui.view] ? ALIAS[S.ui.view] : S.ui.view; const view = V[key] || (/^cx_/.test(key) && V.customPage) || V.overview;
     let body; try { body = view.html(); } catch (e) { console.error(e); body = `<div class="page-body"><div class="notice err">This view could not be displayed: ${esc(e.message)}</div></div>`; }
     const sbOld = document.querySelector('.sidebar'); const sbTop = sbOld ? sbOld.scrollTop : (S.ui.navScroll || 0); // the whole shell is rebuilt on every render: carry the sidebar's scroll position across so a click never moves it
     app.innerHTML = navbarHtml(true) + `<div class="shell"><nav class="sidebar" aria-label="Workspace">${sidebarHtml()}</nav><main class="main" id="main"><div class="page">${V.phaseStrip ? V.phaseStrip() : ''}${body}</div></main></div>`;
@@ -251,7 +253,7 @@ function projectsHtml() {
     loading(true, 'Opening project…');
     try {
       const refP = (S.user.kind === 'consultant' && !refCache) ? API.reference().catch(() => null) : null; // start the reference download now, in parallel with the project data
-      const consultantSections = ['workshop', 'people', 'planner', 'reviews', 'transcripts', 'dashboards', 'brddoc', 'plan', 'config', 'guide_published', 'schedule_published', 'portal_controls', 'portal_published', 'onboarding_published', 'plan_struct', 'ftr_wb', 'kpi_wb'].concat(V.extraSections || []);
+      const consultantSections = ['workshop', 'people', 'planner', 'reviews', 'transcripts', 'dashboards', 'brddoc', 'plan', 'config', 'guide_published', 'schedule_published', 'portal_controls', 'portal_published', 'onboarding_published', 'plan_struct', 'ftr_wb', 'kpi_wb', 'workspace'].concat(V.extraSections || []);
       const wanted = S.user.kind === 'customer' ? ['guide_published', 'schedule_published', 'dashboards', 'portal_controls', 'portal_published', 'onboarding_published', 'plan_struct'] : consultantSections;
       // one request for project + members + documents + records (was ~18); falls back to the separate requests if it fails
       let bundle = null; try { bundle = await API.get('/api/projects/' + id + '/open?sections=' + wanted.join(',') + '&kinds=all'); } catch (e) { if (e.status === 404 || e.status === 403 || e.status === 401) throw e; }
@@ -268,7 +270,7 @@ function projectsHtml() {
         if (isNew) { F.changed('Project created', S.project.name, { render: false }); }
       }
       mode = 'workspace';
-      const h = (location.hash.match(/#\/p\/[^/]+\/([a-z_]+)(?:\/(.+))?/) || []);
+      const h = (location.hash.match(/#\/p\/[^/]+\/([a-z0-9_]+)(?:\/(.+))?/) || []);
       const custViews = navFor().flatMap(g => g.items.map(i => i[0]));
       const startView = S.user.kind === 'customer' ? (h[1] && custViews.includes(h[1]) ? h[1] : (custViews[0] || 'cust_home')) : (h[1] && V[h[1]] ? h[1] : 'overview');
       go(startView, h[2] ? { module: decodeURIComponent(h[2]) } : {});

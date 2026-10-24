@@ -179,3 +179,8 @@ brddoc.list registers BRDs (main plus typed BRDs: core, service desk, ERP, agent
 
 ## 40. Client version of the roadmap introduction
 - `src/roadmap.js` picks client wording when the signed-in user is a customer: scenes ("Your project, all in one place" ... "Welcome to your project"), cards (Your contract, Scope, Workshops, Requirements, Project plan, Your guide), steps (Understand, Review, Confirm), art labels and the button "Continue to your project". Team and guest accounts keep the team story. Same animation and timing. Tests: `roadmap_customer_ui` (10), `roadmap_ui` (28).
+
+## 41. Templates and configurable workspace (24 Oct 2026)
+- Server: `/api/templates` (list, create, versions, publish / retire / reopen, delete drafts). Org templates are published only by an Admin; drafts are visible to the author and admins. AI runs accept a `templateId` and follow its structure.
+- Client `src/templates.js`: Templates page (Administration) and Workspace & Layout page (rename, hide, drag or arrow reorder, move between groups, custom pages, presets, save as template). Layout is stored in the `workspace` document section; customers keep their own menu.
+- Roadmap: `docs/IMPLEMENTATION_ROADMAP.md` now holds phase status and the assessed requirement for customer-specific configuration inputs (custom modules, module relationships, connected apps and tabs) as phase 5b, with reuse, priorities, dependencies and acceptance criteria. Not built yet.

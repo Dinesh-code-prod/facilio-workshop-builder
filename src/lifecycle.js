@@ -35,14 +35,15 @@
   const docHtml = d => `<html><head><meta charset="utf-8"><title>${esc(d.title)}</title><style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#222}h2{color:#24216f}table{border-collapse:collapse}td,th{border:1px solid #999;padding:4px 8px}th{background:#eef}</style></head><body><h1>${esc(d.title)}</h1><p><i>${esc(ST[d.status] ? ST[d.status][1] : 'Draft')}${d.approvedBy ? ' — approved by ' + esc(d.approvedBy) + ' on ' + esc(when(d.approvedAt)) : ' — AI-assisted draft, not approved'}</i></p>${md(d.content)}</body></html>`;
 
   // ---------- run AI ----------
-  ACT.aiRun = a => {
-    if (!canEdit()) { toast('You have read-only access'); return; } const task = a.getAttribute('data-task');
-    drawer('Generate with AI: ' + label(task), `<p class="small muted">The assistant uses only this project's records. The result is a <b>draft</b> that stays unapproved until a project owner approves it. It never records test results, sign-offs or completion.</p><label class="f">Anything specific? (optional)</label><textarea id="ai_ins" rows="4" maxlength="1500" placeholder="e.g. Only the Work Order and Asset modules"></textarea>`,
+  ACT.aiRun = async a => {
+    if (!canEdit()) { toast('You have read-only access'); return; } const task = a.getAttribute('data-task'); const pick = V.aiTplPick || ''; V.aiTplPick = '';
+    let tpls = []; try { tpls = V.tplList ? await V.tplList(task) : []; } catch (e) { }
+    drawer('Generate with AI: ' + label(task), `<p class="small muted">The assistant uses only this project's records. The result is a <b>draft</b> that stays unapproved until a project owner approves it. It never records test results, sign-offs or completion.</p>${tpls.length ? `<label class="f">Template</label><select id="ai_tpl"><option value="">No template (standard structure)</option>${tpls.map(t => `<option value="${esc(t.id)}"${t.id === pick ? ' selected' : ''}>${esc(t.name)} (v${t.pub}${t.scope === 'org' ? ', organisation' : ', project'})</option>`).join('')}</select>` : ''}<label class="f">Anything specific? (optional)</label><textarea id="ai_ins" rows="4" maxlength="1500" placeholder="e.g. Only the Work Order and Asset modules"></textarea>`,
       `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="aiGo" data-task="${esc(task)}">Generate draft</button>`);
   };
   ACT.aiGo = a => V.busy(a, async () => {
     const task = a.getAttribute('data-task'); const ins = (document.getElementById('ai_ins') || {}).value || '';
-    try { const r = await API.post(`/api/projects/${S.project.id}/ai/run`, { task, instruction: ins }); await I().load(['ai'], true); closeDrawer(); toast('Draft ready for review'); ACT.aiOpen({ getAttribute: () => r.item.id }); }
+    try { const r = await API.post(`/api/projects/${S.project.id}/ai/run`, { task, instruction: ins, templateId: (document.getElementById('ai_tpl') || {}).value || undefined }); await I().load(['ai'], true); closeDrawer(); toast('Draft ready for review'); ACT.aiOpen({ getAttribute: () => r.item.id }); }
     catch (e) { toast(e.message || 'The AI could not complete this', 6000, true); }
   });
   ACT.aiOpen = a => {
@@ -63,7 +64,7 @@
   ACT.aiDel = a => V.busy(a, async () => { if (!(await confirmDialog('Delete draft', 'Remove this draft?', 'Delete', true))) return; await I().del('ai', a.getAttribute('data-id')); closeDrawer(); });
   ACT.aiExport = a => { const d = I().get('ai', a.getAttribute('data-id')); if (d) V.download((d.title || 'draft').replace(/[^\w-]+/g, '_') + '.doc', docHtml(d), 'application/msword'); };
   const aiBtn = (task, text) => canEdit() ? `<button class="btn sm ai-btn" data-act="aiRun" data-task="${task}">✦ ${esc(text || 'Generate with AI')}</button>` : '';
-  V.aiButton = aiBtn;
+  V.aiButton = aiBtn; V.md = md;
 
   // ---------- Deliverables & AI ----------
   function latest(task) { return drafts().find(d => d.task === task); }

@@ -1460,3 +1460,16 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #0a7aff
 @keyframes rmRise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 @keyframes rmBtn { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 @media (prefers-reduced-motion: reduce) { .rm::before, .rm::after, .rm-card .rm-in::after, .rm-in b i, .rm-hub, .rm-node i, .rm-cap h2, .rm-go { animation: none !important; } .rm-cap h2 { -webkit-text-fill-color: #1d1a5e; background: none; } }
+
+/* ---------- Workspace & Layout builder ---------- */
+.ws-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+.ws-list { list-style: none; margin: 0; padding: 6px 10px 12px; display: flex; flex-direction: column; gap: 6px; min-height: 44px; }
+.ws-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 10px; border: 1px solid #dbe6f7; border-radius: 12px; background: #fff; cursor: grab; transition: box-shadow .15s, border-color .15s, background .15s; }
+.ws-row:hover { box-shadow: 0 4px 14px rgba(10,122,255,.12); border-color: #0a7aff; }
+.ws-row.off { opacity: .55; background: #f4f7fc; }
+.ws-row.drag { opacity: .4; }
+.ws-row.ws-over { border-color: #ed168b; box-shadow: 0 0 0 2px rgba(237,22,139,.18); }
+.ws-grip { color: #0a7aff; font-weight: 700; letter-spacing: -2px; user-select: none; }
+.ws-name { flex: 1 1 120px; font-weight: 600; color: #24216f; min-width: 0; }
+.ws-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ws-tools select { padding: 4px 6px; font-size: 12px; max-width: 130px; }
