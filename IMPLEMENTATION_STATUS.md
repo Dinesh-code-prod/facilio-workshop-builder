@@ -202,3 +202,6 @@ brddoc.list registers BRDs (main plus typed BRDs: core, service desk, ERP, agent
 - icons.facilio.run is an icon catalogue (static SVG at icons.facilio.com, 10 animated Lottie), not an animator.
 - Phase 7 (partial): `src/traceability.js` — Traceability & Quality view (requirement → use case → module → build → UAT matrix with CSV export; completeness checks; lessons learned, kind `lesson`, also a source for the handover AI task). Verified live.
 - Still open in phase 7: version comparison, org-level knowledge library (cross-project), AI context retention/superseded rules. Phase 8 (customer-facing read-only pages), isometric intro/roadmap artwork.
+
+## 46. Project Roadmap (24 Oct)
+`src/projroadmap.js`: Project Roadmap view with the 12 delivery stages as original isometric-style SVG tiles; each stage's status is derived only from recorded data (sessions, requirements, BRD review, build status, UAT, FTR workbook, guides, go-live checklist, hypercare, handover, closure) and the tile opens that stage's screen (keyboard accessible). Verified live; the animated introduction (roadmap.js) is unchanged and remains conceptual only.
