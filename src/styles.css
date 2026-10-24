@@ -2610,3 +2610,10 @@ label.f, .lbl { font-weight: 600; color: var(--fx); }
 .auth-form.night .night-sky svg { animation: nsFloat 7s ease-in-out 2s infinite; }
 @media (max-width: 900px) { .auth-form.night .auth-box { width: 100%; } .auth-form.night .night-sky { max-width: 340px; } }
 @media (prefers-reduced-motion: reduce) { .auth:has(.auth-form.night)::before, .auth-form.night .night-sky svg { animation: none; } .auth-in:has(.auth-form.night) .auth-art, .auth-in .auth-form.night *, .auth-in .auth-form.night .night-sky { animation: none !important; opacity: 1 !important; } }
+
+/* Exit from the tree intro: the night sky opens like an iris from the middle (mask), a leaf burst canvas flies over it. */
+@property --ti-r { syntax: '<percentage>'; inherits: false; initial-value: 0%; }
+@keyframes tiIris { 0% { --ti-r: 0%; opacity: 1; } 78% { opacity: 1; } 100% { --ti-r: 150%; opacity: 0; } }
+.cn.ti.iris { pointer-events: none; -webkit-mask-image: radial-gradient(circle at 50% 52%, transparent var(--ti-r), #000 calc(var(--ti-r) + 16%)); mask-image: radial-gradient(circle at 50% 52%, transparent var(--ti-r), #000 calc(var(--ti-r) + 16%)); animation: tiIris 1.25s cubic-bezier(.6,0,.3,1) .1s forwards; }
+.cn.ti.iris .ti-top, .cn.ti.iris .head, .cn.ti.iris .labels { transition: opacity .3s; opacity: 0; }
+.ti-leaves { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 10001; pointer-events: none; }

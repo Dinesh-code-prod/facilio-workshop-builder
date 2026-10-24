@@ -663,10 +663,21 @@
         const off = o.querySelector('#tiOff'), flag = !!(off && off.checked);
         doc.body.classList.remove('cn-on'); root.removeEventListener('keydown', key); root.removeEventListener('resize', resize); delete root.__ti;
         const free = () => { cv.width = 1; cv.height = 1; o.remove(); };
-        if (opts.wipe && !rm) { // same fly-through into the sign-in page as the classic intro
-          const fx = doc.createElement('div'); fx.className = 'cn-warp'; fx.setAttribute('aria-hidden', 'true'); let u = ''; for (let n = 0; n < 26; n++) u += `<u style="--a:${(n * 360 / 26 + (n % 3) * 3).toFixed(1)}deg;--d:${((n % 5) * 0.035).toFixed(3)}s;--l:${(10 + (n * 7) % 9)}vmax"></u>`; fx.innerHTML = u + '<i></i>'; doc.body.appendChild(fx);
-          doc.body.classList.add('login-in'); o.classList.add('fly');
-          setTimeout(() => resolve({ how, off: flag }), 560); setTimeout(free, 1000); setTimeout(() => { fx.remove(); doc.body.classList.remove('login-in'); }, 2100); return;
+        if (!rm) { // leave through the tree theme: the night sky opens like an iris from the middle while a burst of leaves and light drifts out
+          const lv = doc.createElement('canvas'); lv.className = 'ti-leaves'; lv.setAttribute('aria-hidden', 'true'); const LWd = root.innerWidth, LHt = root.innerHeight, dpr = Math.min(1.5, root.devicePixelRatio || 1);
+          lv.width = Math.round(LWd * dpr); lv.height = Math.round(LHt * dpr); doc.body.appendChild(lv); const x = lv.getContext('2d'); x.scale(dpr, dpr);
+          const cols = ['#1570EF', '#8DB8FF', '#E5197F', '#2EC9C4', '#6B4EE6', '#4D80F4']; const cx = LWd * .5, cy = LHt * .52;
+          const P = Array.from({ length: 84 }, (_, i) => { const a = i / 84 * TAU + Math.random() * .5, v = 260 + Math.random() * 760; return { x: cx + Math.cos(a) * 20, y: cy + Math.sin(a) * 14, vx: Math.cos(a) * v, vy: Math.sin(a) * v * .8 - 120, r: Math.random() * TAU, vr: (Math.random() - .5) * 9, s: 9 + Math.random() * 15, c: cols[i % cols.length], d: Math.random() * .25 }; });
+          const t0 = performance.now(); o.classList.add('iris');
+          const step = now => {
+            const e = (now - t0) / 1000; x.clearRect(0, 0, LWd, LHt);
+            const rk = clamp(e / .9); if (rk < 1) { const g2 = x.createRadialGradient(cx, cy, 0, cx, cy, 40 + 520 * easeOut(rk)); g2.addColorStop(0, `rgba(190,215,255,${.5 * (1 - rk)})`); g2.addColorStop(1, 'rgba(21,112,239,0)'); x.fillStyle = g2; x.beginPath(); x.arc(cx, cy, 40 + 520 * easeOut(rk), 0, TAU); x.fill(); }
+            for (const q of P) { const k = e - q.d; if (k <= 0) continue; const px = q.x + q.vx * k * (1 - k * .22), py = q.y + q.vy * k * (1 - k * .22) + 380 * k * k; const al = clamp(1 - (k - .35) / .9) * clamp(k / .08);
+              if (al <= 0) continue; x.save(); x.translate(px, py); x.rotate(q.r + q.vr * k); x.globalAlpha = al; x.fillStyle = q.c; x.beginPath(); x.moveTo(0, 0); x.bezierCurveTo(q.s * .45, -q.s * .4, q.s * .9, -q.s * .1, q.s, 0); x.bezierCurveTo(q.s * .9, q.s * .15, q.s * .45, q.s * .42, 0, 0); x.fill(); x.restore(); }
+            if (e < 1.6) root.requestAnimationFrame(step); else lv.remove();
+          };
+          root.requestAnimationFrame(step);
+          setTimeout(() => resolve({ how, off: flag }), 420); setTimeout(free, 1500); return;
         }
         o.classList.add('out'); setTimeout(free, rm ? 0 : 600); resolve({ how, off: flag });
       }
