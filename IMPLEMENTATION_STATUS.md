@@ -214,3 +214,6 @@ User Guide Builder: created a guide, added a section, exported Word (10.8 KB) an
 
 ## 49. Customer Introduction (24 Oct)
 `src/custintro.js` (Administration): optional customer-safe introduction (welcome, objectives, modules in scope, 12-stage roadmap with recorded status, approved guide titles) with tick-to-include, live preview and export as one standalone HTML file. facilio.work only admits Facilio staff, so customers receive the exported file. Stored as project section `custintro`. Verified live (export 3.4 KB, no internal content).
+
+## 50. Template version comparison (24 Oct)
+Templates drawer: "compare with v(n-1)" shows a line diff of two versions (added/removed lines). Verified live with a temporary template (removed).
