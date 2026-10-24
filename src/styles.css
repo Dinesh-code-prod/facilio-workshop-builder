@@ -1967,20 +1967,8 @@ button { font-family: var(--font, Inter, Roboto, system-ui, sans-serif) !importa
 .adm-main .dtab { background: #F2F6FC; } .adm-main .dtab:hover { background: #E1EAF8; } .adm-main .dtab.on { background: #1D1A5E; }
 
 /* Get started -> sign-in: three brand panels sweep across, then the sign-in page assembles itself */
-.cn-wipe { position: fixed; inset: 0; z-index: 10001; pointer-events: none; display: flex; overflow: hidden; }
-.cn-wipe i { flex: 1; transform: translateX(-101%); animation: cnPanelWipe 1.15s cubic-bezier(.77,0,.18,1) both; }
-.cn-wipe i:nth-child(1) { background: #E5197F; animation-delay: 0s; } .cn-wipe i:nth-child(2) { background: #1570EF; animation-delay: .07s; } .cn-wipe i:nth-child(3) { background: #1D1A5E; animation-delay: .14s; }
-.cn-wipe img { position: absolute; left: 50%; top: 50%; translate: -50% -50%; opacity: 0; animation: cnWipeLogo 1.15s ease both; }
-@keyframes cnPanelWipe { 0% { transform: translateX(-101%); } 38% { transform: translateX(0); } 56% { transform: translateX(0); } 100% { transform: translateX(101%); } }
-@keyframes cnWipeLogo { 0%, 22% { opacity: 0; transform: scale(.9); } 40%, 54% { opacity: 1; transform: none; } 68%, 100% { opacity: 0; } }
-body.login-in .auth-art { animation: lgArt .8s cubic-bezier(.2,.7,.2,1) .42s both; will-change: transform, opacity; }
-body.login-in .auth-box { animation: lgBox .8s cubic-bezier(.2,.7,.2,1) .72s both; }
-body.login-in .auth-box > * { animation: lgKid .6s cubic-bezier(.2,.7,.2,1) both; }
-body.login-in .auth-box > *:nth-child(1) { animation-delay: .85s; } body.login-in .auth-box > *:nth-child(2) { animation-delay: .93s; } body.login-in .auth-box > *:nth-child(3) { animation-delay: 1.01s; } body.login-in .auth-box > *:nth-child(4) { animation-delay: 1.09s; } body.login-in .auth-box > *:nth-child(n+5) { animation-delay: 1.17s; }
-@keyframes lgArt { from { opacity: 0; transform: translateX(-3%); } to { opacity: 1; transform: none; } }
 @keyframes lgBox { from { opacity: 0; transform: translateY(26px) scale(.985); } to { opacity: 1; transform: none; } }
 @keyframes lgKid { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .cn-wipe { display: none; } body.login-in .auth-art, body.login-in .auth-box, body.login-in .auth-box > * { animation: none !important; } }
 
 /* journey cards v2: tilt in along a snaking path, a spotlight walks card to card, linked by a filling connector */
 .cn-blocks { gap: 16px 18px; margin-top: clamp(14px, 3vh, 34px); }
@@ -2129,8 +2117,27 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--d
 @media (prefers-reduced-motion: reduce) { .rm-c { transition: none; } .rm-c:hover { transform: none; } }
 
 .cn.gone { visibility: hidden; } .cn.out, .cn.gone { backdrop-filter: none; } .cn.out *, .cn.gone * { backdrop-filter: none !important; }
-.cn-wipe i, .cn-wipe img { will-change: transform, opacity; }
 
 /* skyline on the sign-in / welcome card */
 .auth-sky{width:100%;max-width:420px;margin:0 auto 14px;pointer-events:none}.auth-sky>div{width:100%;aspect-ratio:480/250}.auth-sky svg{width:100%;height:100%;display:block}
 @media (max-height:640px){.auth-sky{display:none}}
+
+/* drone fly-through after Get started: only transform and opacity animate, so it stays smooth even while the sign-in page is being built */
+.cn.fly { transform-origin: 50% 60%; will-change: transform, opacity; animation: cnFly .98s cubic-bezier(.5,0,.78,.42) both; pointer-events: none; }
+.cn.fly, .cn.fly * { backdrop-filter: none !important; animation-play-state: paused !important; }
+.cn.fly { animation-play-state: running !important; }
+@keyframes cnFly { 0% { transform: none; opacity: 1; } 55% { opacity: 1; } 100% { transform: translate3d(0,-6%,0) scale(2.3) rotate(-2.2deg); opacity: 0; } }
+.cn-warp { position: fixed; inset: 0; z-index: 10001; pointer-events: none; overflow: hidden; }
+.cn-warp u { position: absolute; left: 50%; top: 60%; width: 2px; height: var(--l); background: linear-gradient(#fff0, #8DB8FF, #fff); border-radius: 2px; transform-origin: 50% 0; opacity: 0; will-change: transform, opacity; animation: cnStreak .85s cubic-bezier(.45,0,.9,.5) var(--d) both; }
+@keyframes cnStreak { 0% { opacity: 0; transform: rotate(var(--a)) translateY(5vmax) scaleY(.2); } 35% { opacity: .95; } 100% { opacity: 0; transform: rotate(var(--a)) translateY(78vmax) scaleY(1.7); } }
+.cn-warp i { position: absolute; inset: 0; background: radial-gradient(circle at 50% 60%, rgba(141,184,255,.6), rgba(21,112,239,.2) 40%, transparent 70%); opacity: 0; will-change: opacity; animation: cnFlash 1s ease .3s both; }
+@keyframes cnFlash { 0% { opacity: 0; } 45% { opacity: 1; } 100% { opacity: 0; } }
+body.login-in .auth { transform-origin: 50% 45%; will-change: transform, opacity; animation: lgFly 1.1s cubic-bezier(.16,.8,.24,1) .22s both; }
+@keyframes lgFly { from { opacity: 0; transform: translate3d(0,3.5%,0) scale(1.16); } to { opacity: 1; transform: none; } }
+body.login-in .auth .av-iso *, body.login-in .auth .av-glow { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) { .cn-warp { display: none; } .cn.fly, body.login-in .auth { animation: none !important; } }
+/* platform scene on the dark introduction / sign-in art: glass cards with colour accents instead of flat white */
+.eco-dark .eco-p { background: linear-gradient(160deg, rgba(255,255,255,.14), rgba(255,255,255,.05)); border-color: rgba(255,255,255,.22); box-shadow: 0 10px 28px rgba(5,4,40,.45), inset 0 1px 0 rgba(255,255,255,.18); }
+.eco-dark .eco-ph b { color: #fff; } .eco-dark .eco-pr s { background: rgba(255,255,255,.2); } .eco-dark .eco-pc u { background: rgba(141,184,255,.55); }
+.eco-dark .eco-p:nth-child(4n+1) .eco-ph i { background: #E5197F; } .eco-dark .eco-p:nth-child(4n+2) .eco-ph i { background: #2EC9C4; } .eco-dark .eco-p:nth-child(4n+3) .eco-ph i { background: #8DB8FF; }
+.eco-dark .eco-p:nth-child(4n+1) .eco-pc u:nth-child(3) { background: #E5197F; } .eco-dark .eco-p:nth-child(4n+2) .eco-pc u:nth-child(3) { background: #2EC9C4; } .eco-dark .eco-p:nth-child(4n+3) .eco-pc u:nth-child(3) { background: #1570EF; }

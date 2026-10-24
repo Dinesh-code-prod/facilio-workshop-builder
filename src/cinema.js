@@ -18,8 +18,8 @@
   const STAGES = () => (V._isoLifecycle ? V._isoLifecycle().map(l => l.label) : ['Kick-off', 'Workshops', 'Requirements', 'BRD', 'Configuration', 'UAT', 'FTR', 'Training', 'Go-live', 'Hypercare', 'Handover', 'Closure']);
   // original Lottie illustrations (tools/make-scenes.mjs), three per audience
   const ART = {
-    team: [['scene-workshop', 'Workshops that stay on track'], ['scene-brd', 'BRDs drafted with AI assistance'], ['scene-dash', 'Delivery dashboards']],
-    customer: [['scene-workshop', 'Workshops where your voice counts'], ['scene-dash', 'Progress you can follow'], ['scene-guide', 'Guides for your team']]
+    team: [['scene-dk-workshop', 'Workshops that stay on track'], ['scene-dk-brd', 'BRDs drafted with AI assistance'], ['scene-dk-dash', 'Delivery dashboards']],
+    customer: [['scene-dk-workshop', 'Workshops where your voice counts'], ['scene-dk-dash', 'Progress you can follow'], ['scene-dk-guide', 'Guides for your team']]
   };
   // AI assistance moments: only capabilities that exist in the product (AI drafts that a person reviews and approves)
   const AIART = {
@@ -99,9 +99,11 @@
         if (closed) return; closed = true; clearTimeout(timer); if (car) clearInterval(car); root.cancelAnimationFrame(raf); anims.forEach(a => { try { a.destroy(); } catch (e) { } });
         const off = o.querySelector('#cnOff'); const flag = !!(off && off.checked);
         doc.body.classList.remove('cn-on'); root.removeEventListener('keydown', key); root.removeEventListener('resize', onResize);
-        if (opts.wipe && !still) { // brand panels sweep over the screen; the introduction is removed once they cover it, so nothing heavy animates underneath
-          const w = doc.createElement('div'); w.className = 'cn-wipe'; w.setAttribute('aria-hidden', 'true'); w.innerHTML = '<i></i><i></i><i></i><img src="brand/logo-white.png" alt="" width="132" height="36">'; doc.body.appendChild(w);
-          setTimeout(() => o.classList.add('gone'), 440); setTimeout(() => o.remove(), 560); doc.body.classList.add('login-in'); setTimeout(() => { w.remove(); doc.body.classList.remove('login-in'); }, 1500); resolve({ how, off: flag }); return;
+        if (opts.wipe && !still) { // "drone" fly-through: the camera pushes forward through the scene (GPU transform only), then the sign-in page descends into view
+          const fx = doc.createElement('div'); fx.className = 'cn-warp'; fx.setAttribute('aria-hidden', 'true'); let u = ''; for (let n = 0; n < 26; n++) u += `<u style="--a:${(n * 360 / 26 + (n % 3) * 3).toFixed(1)}deg;--d:${((n % 5) * 0.035).toFixed(3)}s;--l:${(10 + (n * 7) % 9)}vmax"></u>`; fx.innerHTML = u + '<i></i>'; doc.body.appendChild(fx);
+          doc.body.classList.add('login-in'); o.classList.add('fly');
+          setTimeout(() => resolve({ how, off: flag }), 560);       // the sign-in page is built while the fly-through is still covering the screen
+          setTimeout(() => o.remove(), 1000); setTimeout(() => { fx.remove(); doc.body.classList.remove('login-in'); }, 2100); return;
         }
         o.classList.add('out'); setTimeout(() => o.remove(), still ? 0 : 600); resolve({ how, off: flag });
       }
