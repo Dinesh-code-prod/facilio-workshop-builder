@@ -36,7 +36,7 @@
   // ---------- Templates view ----------
   V.templates = {
     html() {
-      if (!T.loaded) { load(); return `<div class="page-header"><div class="t"><h1>Templates</h1></div></div><div class="page-body">${V.loading ? V.loading() : 'Loading…'}</div>`; }
+      if (!T.loaded) { load(); return `<div class="page-header"><div class="t"><h1>Templates</h1></div></div><div class="page-body"><div class="muted" style="padding:20px">Loading…</div></div>`; }
       const can = canEdit(); const list = T.items.filter(t => (!T.filter || t.kind === T.filter) && (!T.scope || t.scope === T.scope));
       const kinds = Object.keys(KIND);
       return `<div class="page-header"><div class="t"><h1>Templates</h1><p>Reusable structures for deliverables, workbooks and the workspace. Organisation templates are published by an Admin for every project; project templates stay in this project. Every change is a new version and the published version is what people get.</p></div><div class="row">${can ? `<button class="btn primary" data-act="tplNew">${ico('plus')}New template</button>` : ''}</div></div>

@@ -92,6 +92,18 @@ await t('configuration inputs: three record kinds, evidence file category, used 
   for (const task of ['gaps', 'guide', 'uat', 'training', 'handover']) { r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task }); assert.equal(r.status, 201, task); const lab = r.data.item.data.sources.map(x => x.label).join('|'); assert.match(lab, /cmodx/, task + ' uses module descriptions'); assert.match(lab, /cfgrel/); assert.match(lab, /capp/); }
   r = await call(out, 'PUT', `/api/projects/${pid}/items/cfgrel/cr_2`, { data: { from: 'a', to: 'b' } }); assert.ok(r.status === 403 || r.status === 404, 'viewer cannot write');
 });
+await t('guides and walkthroughs: approval only by the owner route, edits reopen, AI drafts steps from a walkthrough', async () => {
+  let r = await call(sam, 'PUT', `/api/projects/${pid}/items/ugd/ug_1`, { data: { title: 'Guide', sections: [{ id: 's1', title: 'A', blocks: [{ t: 'md', text: 'x' }] }], status: 'approved', approvedBy: 'me' } }); assert.equal(r.data.item.data.status, 'draft', 'cannot create as approved');
+  assert.equal(r.data.item.data.approvedBy, null);
+  r = await call(sam, 'POST', `/api/projects/${pid}/ugd/ug_1/decision`, { decision: 'approve' }); assert.equal(r.status, 200); assert.equal(r.data.item.data.status, 'approved');
+  r = await call(sam, 'PUT', `/api/projects/${pid}/items/ugd/ug_1`, { data: { title: 'Guide', sections: [{ id: 's1', title: 'A', blocks: [{ t: 'md', text: 'changed' }] }], status: 'approved' } }); assert.equal(r.data.item.data.status, 'draft', 'editing approved content reopens it');
+  r = await call(out, 'POST', `/api/projects/${pid}/ugd/ug_1/decision`, { decision: 'approve' }); assert.ok(r.status === 403 || r.status === 404, 'viewer cannot approve');
+  r = await call(sam, 'PUT', `/api/projects/${pid}/items/vid/vd_1`, { data: { title: 'Raise a WO', transcript: [{ t: 3, text: 'Click New' }, { t: 9, text: 'Type the title' }], frames: [{ t: 3, caption: 'New button', fileId: 'file_0' }] } }); assert.ok(r.status === 200 || r.status === 201);
+  r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'vidguide', vid: 'vd_1' }); assert.equal(r.status, 201, JSON.stringify(r.data)); assert.equal(r.data.item.data.vid, 'vd_1'); assert.match(r.data.item.data.sources.map(x => x.label).join('|'), /transcript/);
+  r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'vidguide', vid: 'nope' }); assert.equal(r.status, 404);
+  r = await call(sam, 'POST', `/api/projects/${pid}/files`, { category: 'guide_media', name: 'f.jpg', mime: 'image/jpeg', size: 1000, meta: {} }); assert.equal(r.status, 201);
+  r = await call(sam, 'POST', `/api/projects/${pid}/files`, { category: 'guide_media', name: 'f.svg', mime: 'image/svg+xml', size: 1000, meta: {} }); assert.ok(r.status >= 400, 'svg refused');
+});
 await t('admin: only granted people, enforced on the server', async () => {
   let r = await call(sam, 'GET', '/api/admin/overview'); assert.equal(r.status, 403);
   r = await call(dinesh, 'GET', '/api/admin/overview'); assert.equal(r.status, 200); assert.ok(r.data.projects.find(p => p.id === pid));

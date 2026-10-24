@@ -46,7 +46,7 @@
   const TABS = [['mods', 'Custom modules'], ['rels', 'Module relationships'], ['apps', 'Connected apps and tabs'], ['checks', 'Checks']];
   V.cfginputs = {
     html() {
-      I().load(['cmodx', 'cfgrel', 'capp']); if (!I().ready(['cmodx', 'cfgrel', 'capp'])) return V.loading ? V.loading() : '<div class="muted">Loading…</div>';
+      I().load(['cmodx', 'cfgrel', 'capp']); if (!I().ready(['cmodx', 'cfgrel', 'capp'])) return '<div class="page-body"><div class="muted" style="padding:20px">Loading…</div></div>';
       const tab = S.ui.cfgTab || 'mods'; const can = canEdit(); const ml = moduleList(); const ck = checks();
       const bar = `<div class="tabs" role="tablist">${TABS.map(([k, l]) => `<button class="tab${tab === k ? ' active' : ''}" role="tab" data-act="ciTab" data-v="${k}">${esc(l)}${k === 'checks' && ck.length ? ` <span class="xs">(${ck.length})</span>` : ''}</button>`).join('')}</div>`;
       let body = '';
