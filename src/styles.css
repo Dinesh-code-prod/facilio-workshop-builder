@@ -2238,3 +2238,26 @@ body { background: linear-gradient(180deg, #E4ECFB 0, #ECF1FB 360px, #F1F5FC 100
 .cn-cards figcaption { opacity: 0; transform: translate3d(0,10px,0); }
 .cn-sc.on .cn-cards figcaption { animation: cnUp .8s calc(var(--i) * .15s + 1.2s) ease forwards; }
 @media (prefers-reduced-motion: reduce) { .cn-h .w > span, .cn-cards figure, .cn-cards figcaption { transform: none !important; opacity: 1 !important; animation: none !important; } .cn-art::after { display: none; } }
+
+/* ===== top bar controls: one height, one type size, even spacing ===== */
+.navbar .right { gap: 10px !important; }
+.navbar .right .btn.sm, .navbar .right .nav-out, .navbar .right .tag, .navbar .right .save-state { height: 34px !important; min-height: 34px !important; box-sizing: border-box; display: inline-flex !important; align-items: center; justify-content: center; font-size: 13.5px !important; font-weight: 650 !important; letter-spacing: .01em !important; line-height: 1; white-space: nowrap; margin: 0 !important; }
+.navbar .right .btn.sm { min-width: 0 !important; padding: 0 18px !important; border-radius: 999px !important; }
+.navbar .right .tag { padding: 0 14px !important; border-radius: 999px !important; text-transform: none !important; background: rgba(255,255,255,.14) !important; color: #fff !important; border: 1px solid rgba(255,255,255,.34) !important; gap: 7px; }
+.navbar .right .tag::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #2EC9C4; box-shadow: 0 0 0 3px rgba(46,201,196,.25); }
+.navbar .right .save-state { background: transparent !important; border: 0 !important; padding: 0 4px !important; color: rgba(255,255,255,.8) !important; font-weight: 550 !important; font-size: 13px !important; }
+.navbar .right .avatar { width: 36px; height: 36px; font-size: 13px; font-weight: 750; background: linear-gradient(135deg, #E5197F, #6B4EE6) !important; border: 2px solid rgba(255,255,255,.85) !important; box-shadow: 0 6px 14px -6px rgba(0,0,0,.6); } .navbar .right .avatar:hover { transform: scale(1.06); }
+.navbar .right svg { width: 18px; height: 18px; } .navbar .right [data-act="bell"], .navbar .right .bell { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.3); color: #fff; display: inline-grid; place-items: center; }
+.navbar .left a.small { height: 30px; display: inline-flex; align-items: center; font-size: 13.5px !important; }
+.navbar .left .title { font-size: 15px; font-weight: 750; }
+
+/* ===== one scrollbar: the browser's. No inner scroll panes for the page itself ===== */
+html { overflow-y: auto; scrollbar-gutter: auto; }
+body { min-height: 100%; height: auto; }
+.shell { height: auto !important; min-height: calc(100vh - 62px); align-items: start; }
+.shell > .sidebar { position: sticky; top: 62px; height: calc(100vh - 62px); align-self: start; }
+.shell > .main { overflow: visible !important; min-height: calc(100vh - 62px); min-width: 0; }
+.adm-wrap { min-height: calc(100vh - 62px); align-items: start; }
+.adm-nav { top: 62px !important; height: calc(100vh - 62px) !important; }
+.adm-wrap > :not(.adm-nav) { overflow: visible !important; min-width: 0; }
+.stage-body { overflow: visible; }
