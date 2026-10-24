@@ -52,6 +52,7 @@
     { g: 'Dashboard Report', icon: 'dash', items: [['dashreport', 'Dashboard Report']] },
     { g: 'Project', icon: 'home', items: [['overview', 'Project Overview'], ['msaflow', 'Contract'], ['contracts', 'Contracts & Integrations'], ['kickoff', 'Kick-off Deck'], ['plan', 'Project Plan'], ['timeline', 'Plan Timeline'], ['guide', 'Customer User Guide'], ['onboarding', 'Data Onboarding'], ['dashboards', 'Dashboard Gallery']] },
     { g: 'Delivery', icon: 'flag', items: [['governance', 'Governance & RAID'], ['changes', 'Change Requests'], ['delivery', 'Build, UAT & Go-Live']] },
+    { g: 'AI Delivery', icon: 'flag', items: [['aiwork', 'Deliverables & AI'], ['hypercare', 'Hypercare'], ['reports', 'Status Reports (WSR / Monthly)'], ['handover', 'Handover & Closure']] },
     { g: 'Configuration', icon: 'modules', items: [['modules', 'System Modules & Form Builder'], ['flow', 'State Flow Builder'], ['roles', 'Roles & Access Permissions']] },
     { g: 'Requirements', icon: 'check', items: [['transcripts', 'Transcripts & Requirement Confirmation'], ['usecases', 'Use Cases'], ['checks', 'Checks & Validations'], ['brd', 'BRD Draft']] },
     { g: 'Administration', icon: 'gear', items: [['portal', 'Customer Portal'], ['settings', 'Project Settings & Exports']] }

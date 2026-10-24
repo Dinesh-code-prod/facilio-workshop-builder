@@ -16,10 +16,11 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
     logo_facilio: { ext: ['png', 'jpg', 'jpeg'], max: 4e6 }, logo_customer: { ext: ['png', 'jpg', 'jpeg'], max: 4e6 }, brd_template: { ext: ['docx'], max: 30e6 },
     config_package: { ext: ['gz', 'json', 'zip'], max: MAX_FILE }, screenshot: { ext: ['png', 'jpg', 'jpeg'], max: 8e6 }, brd_export: { ext: ['docx', 'pdf'], max: MAX_FILE },
     onboarding_workbook: { ext: ['xlsx'], max: 40e6 }, onboarding_files: { ext: ['xlsx', 'xls', 'csv', 'pdf', 'docx', 'zip'], max: 60e6 },
+    report_attachment: { ext: ['pdf', 'xlsx', 'xls', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'csv', 'txt'], max: 20e6 },
     signoff_evidence: { ext: ['pdf', 'png', 'jpg', 'jpeg', 'msg', 'eml', 'docx'], max: 20e6 }, brd_signed: { ext: ['docx', 'pdf', 'json'], max: MAX_FILE }
   };
   // record kinds the team can store (same list as the Netlify server's portal rules; customer-only rules come with the customer page)
-  const KINDS = ['action', 'decision', 'raid', 'signoff', 'cr', 'onb', 'onbsub', 'onbfile', 'onbws', 'owner', 'agreement', 'minutes', 'checklist', 'build', 'uat', 'digest', 'ctrcore', 'ctrfees', 'ctrlegal', 'ctrrates', 'scope', 'modbrief', 'fieldreq', 'note', 'ctrwatch', 'usecase', 'discrepancy', 'brdrev'];
+  const KINDS = ['action', 'decision', 'raid', 'signoff', 'cr', 'onb', 'onbsub', 'onbfile', 'onbws', 'owner', 'agreement', 'minutes', 'checklist', 'build', 'uat', 'digest', 'ctrcore', 'ctrfees', 'ctrlegal', 'ctrrates', 'scope', 'modbrief', 'fieldreq', 'note', 'ctrwatch', 'usecase', 'discrepancy', 'brdrev', 'ai', 'hc', 'hcrep', 'ho', 'close', 'rep'];
   const DOC_SECTIONS = /^[a-z][a-z0-9_]{1,40}$/, ITEM_ID_RE = /^[A-Za-z0-9_-]{1,80}$/, GR_KEY = /^[a-z]{2,8}:[afbxw]:[A-Za-z0-9_-]{1,64}$/;
 
   class HttpError extends Error { constructor(status, msg, extra) { super(msg); this.status = status; this.extra = extra; } }
@@ -185,6 +186,64 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
     const v = await docWrite(s, P.id, P.section, b.data, Number.isInteger(b.baseVersion) ? b.baseVersion : -1); await saveProject(project); return ok({ version: v });
   });
 
+  // ---------- AI assistant (server-side only; keys never reach the browser) ----------
+  const AI_TASKS = {
+    brd: { title: 'BRD draft', kinds: ['decision', 'usecase', 'scope', 'raid', 'action'], docs: ['workshop', 'planner', 'brddoc', 'reviews'], ask: 'Draft the requested section(s) of the Business Requirements Document from the approved project information. Use the standard BRD structure (document info, summary, scope and exclusions, stakeholders, processes, functional and non-functional requirements, business rules and acceptance criteria, integrations and data, reports, roles, dependencies/assumptions/constraints, risks and open questions, traceability).' },
+    gaps: { title: 'Missing requirements check', kinds: ['decision', 'usecase', 'scope', 'raid', 'action', 'discrepancy'], docs: ['workshop', 'planner', 'brddoc', 'reviews'], ask: 'Review the information and list missing requirements, contradictions, unanswered questions and risks before BRD sign-off.' },
+    uat: { title: 'UAT plan and test cases', kinds: ['decision', 'usecase', 'uat', 'checklist', 'build'], docs: ['workshop', 'brddoc'], ask: 'Create a UAT plan (objectives, scope, approach, entry and exit criteria, roles, environment, test data, schedule, defect process, sign-off) and a table of test cases (ID, requirement ref, scenario, preconditions, steps, expected result). Leave Actual result, Status, Defect and Tester blank: only a human tester records them. Mark tests with no source requirement as "Suggested additional test".' },
+    ftr: { title: 'FTR report', kinds: ['decision', 'uat', 'build', 'raid', 'signoff', 'cr'], docs: ['brddoc', 'plan'], ask: 'Prepare an FTR report skeleton. No definition of FTR is recorded in the sources unless one appears in them: if none does, say "FTR definition unconfirmed" at the top and use a neutral structure (summary, scope reviewed, configuration summary, requirements and traceability, test coverage and results, open defects and limitations, deviations, risks, evidence, next actions, approvals). Quote results only if they exist in the sources.' },
+    guide: { title: 'Customer user guide', kinds: ['decision', 'usecase', 'build'], docs: ['guide_published', 'workshop', 'config'], ask: 'Draft a customer-friendly user guide outline with role-based procedures. Only describe UI controls and steps that appear in the sources; for anything else write "[Screenshot or source needed]". Exclude internal notes, fees and contract detail.' },
+    config: { title: 'Configuration documentation', kinds: ['decision', 'build'], docs: ['config', 'workshop'], ask: 'Document the configuration (modules, forms and fields, workflows, notifications, roles, integrations, import mappings, reports, known limitations). Mark each statement as Confirmed (in the sources) or Needs manual verification.' },
+    workshop: { title: 'Workshop intelligence', kinds: ['decision', 'action', 'usecase', 'raid', 'minutes'], docs: ['workshop', 'planner', 'transcripts'], ask: 'From the workshop information: propose agenda items, module-specific discovery questions, decisions, actions, assumptions, risks, candidate requirements, contradictions between sessions and follow-up questions. All findings are proposals for review.' },
+    golive: { title: 'Go-live readiness review', kinds: ['checklist', 'uat', 'build', 'raid', 'signoff', 'cr', 'hc'], docs: ['plan'], ask: 'Review the recorded evidence against go-live criteria (approved scope/BRD, configuration verified, data migration, integrations, UAT sign-off, critical defects, training, documentation, access, rollback plan, support ownership, customer approval). List blockers, risks, missing or contradictory evidence and suggested owners. Do not give a confidence score; the decision belongs to authorised people.' },
+    hypercare: { title: 'Hypercare status report', kinds: ['hc', 'hcrep', 'raid', 'action'], docs: [], ask: 'Write today\'s hypercare status report from the recorded issues: summary, open issues by severity, recurring patterns, workarounds, customer feedback, and recommended follow-ups. Do not close issues or change severity.' },
+    handover: { title: 'Support handover pack', kinds: ['ho', 'hc', 'raid', 'signoff', 'build', 'uat'], docs: ['brddoc', 'config', 'plan'], ask: 'Assemble a support handover pack outline from the recorded artifacts (solution overview, configuration inventory, integrations, known issues and workarounds, outstanding defects, support procedures and contacts, access handover, training, hypercare summary, open actions) and list the missing documents.' },
+    wsr: { title: 'Weekly status report (WSR)', kinds: ['action', 'decision', 'raid', 'cr', 'uat', 'build', 'hc'], docs: ['plan'], ask: 'Write a weekly status report with these sections: Overall status (RAG with reason), Progress this week, Planned next week, Milestones and dates, Risks and issues, Decisions and customer actions needed, Change requests, Attachments to include. Use only recorded facts; leave a section as "No information recorded" when the sources have none.' },
+    monthly: { title: 'Monthly report', kinds: ['action', 'decision', 'raid', 'cr', 'uat', 'build', 'signoff', 'hc'], docs: ['plan'], ask: 'Write a monthly project report with these sections: Executive summary, Progress against plan, Milestones achieved and upcoming, Deliverables status, Risks and issues, Change requests, Customer actions outstanding, Next month focus. Use only recorded facts and say where information is missing.' },
+    closure: { title: 'Project closure report', kinds: ['ho', 'hc', 'signoff', 'cr', 'raid', 'decision'], docs: ['plan', 'brddoc'], ask: 'Draft a project closure report (outcomes against scope, changes, deliveries, issues, lessons learned, open items and owners). State only what the records show.' }
+  };
+  const AI_SYSTEM = 'You are an implementation consultant\'s assistant inside Facilio\'s Delivery Studio. Work only from the SOURCES supplied for this one project. Cite sources inline as [S1], [S2]. Label statements as Confirmed (stated in a source), Assumption, Suggestion or Missing information. Never invent customer decisions, approvals, sign-offs, test results, configuration details or completion status. If a source is absent, say so. Your output is a DRAFT for human review; you cannot approve, publish, close or change records. Write clear Markdown.';
+  const clip = (v, n) => { let t = typeof v === 'string' ? v : JSON.stringify(v); return t.length > n ? t.slice(0, n) + ' …[truncated]' : t; };
+  async function aiContext(pid, task) {
+    const T = AI_TASKS[task]; const src = []; let text = ''; let n = 0;
+    for (const d of T.docs) { const r = await docRead(pid, d).catch(() => null); if (r && r.data && Object.keys(r.data).length) { n++; src.push({ ref: 'S' + n, label: 'Document: ' + d }); text += `\n[S${n}] Document "${d}":\n${clip(r.data, 5000)}\n`; } }
+    for (const k of T.kinds) { const rows = await itemsOf(pid, k).catch(() => []); if (rows.length) { n++; src.push({ ref: 'S' + n, label: 'Records: ' + k + ' (' + rows.length + ')' }); text += `\n[S${n}] Records "${k}" (${rows.length}):\n${clip(rows.slice(0, 40).map(r => Object.assign({ id: r.id }, r.data, { hist: undefined })), 3500)}\n`; } }
+    return { src, text: text.slice(0, 26000) };
+  }
+  async function callModel(messages, maxTokens) {
+    let key = ''; try { key = (await CTX.secrets.get('anthropic_api_key')) || ''; } catch (e) { key = ''; }
+    const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 22000);
+    try {
+      if (key) {
+        const model = 'claude-sonnet-5-5'; const sys = messages.filter(m => m.role === 'system').map(m => m.content).join('\n'); const rest = messages.filter(m => m.role !== 'system');
+        const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', signal: ac.signal, headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' }, body: JSON.stringify({ model, max_tokens: maxTokens, system: sys, messages: rest }) });
+        const j = await r.json().catch(() => ({})); if (!r.ok) throw new HttpError(r.status === 429 ? 429 : 502, 'The AI service returned an error (' + r.status + ')');
+        return { text: (j.content || []).map(c => c.text || '').join(''), provider: 'Claude', model };
+      }
+      const r = await CTX.llm({ messages, max_tokens: maxTokens, temperature: 0.2 });
+      const text = r && r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content; if (!text) throw new HttpError(502, 'The AI returned no text');
+      return { text, provider: 'Facilio-hosted model', model: r.model || 'default' };
+    } catch (e) { if (e instanceof HttpError) throw e; throw new HttpError(e && e.name === 'AbortError' ? 504 : 502, e && e.name === 'AbortError' ? 'The AI took too long. Try a narrower request.' : 'The AI service could not be reached'); }
+    finally { clearTimeout(to); }
+  }
+  route('GET', '/api/ai/status', async () => { await me(); let key = false; try { key = !!(await CTX.secrets.get('anthropic_api_key')); } catch (e) { } return ok({ provider: key ? 'Claude' : 'Facilio-hosted model', claude: key, tasks: Object.keys(AI_TASKS) }); });
+  route('POST', '/api/projects/:id/ai/run', async (b, P) => {
+    const s = await me(); await projectAccess(s, P.id, 'edit'); const task = String(b && b.task || ''); const T = AI_TASKS[task]; if (!T) throw new HttpError(400, 'Unknown AI task');
+    const instruction = str(b.instruction, 1500, 'Instruction'); const { src, text } = await aiContext(P.id, task);
+    const user = `TASK: ${T.ask}\n${instruction ? 'EXTRA INSTRUCTION FROM THE CONSULTANT: ' + instruction + '\n' : ''}\nSOURCES (the only project information you may use):${text || '\n(No project records were found for this task. Say what is missing.)'}`;
+    const out = await callModel([{ role: 'system', content: AI_SYSTEM }, { role: 'user', content: user }], 2600);
+    const id = rid('ai'); const t = now(); const data = { task, title: T.title, status: 'draft', content: out.text, sources: src, provider: out.provider, model: out.model, instruction, by: s.name || s.email, version: 1, hist: [{ at: t, who: s.name || s.email, side: 'facilio', event: 'AI draft generated' }] };
+    await save('it.' + P.id + '.ai', 'ip.' + P.id + '.ai', id, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: t, ua: t }, data, undefined);
+    await audit(P.id, s.id, 'ai-draft', task + ' via ' + out.provider); return ok({ item: itemOut('ai', id, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: t, ua: t }, data) }, 201);
+  });
+  route('POST', '/api/projects/:id/ai/:item/decision', async (b, P) => {
+    const s = await me(); const { role } = await projectAccess(s, P.id, 'owner'); const d = String(b && b.decision || ''); if (!['approve', 'reject', 'reopen'].includes(d)) throw new HttpError(400, 'Choose approve, reject or reopen');
+    if (!ITEM_ID_RE.test(P.item)) throw new HttpError(400, 'Bad id'); const col = 'it.' + P.id + '.ai', pcol = 'ip.' + P.id + '.ai'; const row = await dbGet(col, P.item); const head = row && row.value; if (!head) throw new HttpError(404, 'Draft not found'); const cur = await unpack(pcol, P.item, head);
+    const status = d === 'approve' ? 'approved' : d === 'reject' ? 'rejected' : 'draft'; const t = now(); const note = str(b.note, 500, 'Note');
+    const data = Object.assign({}, cur, { status, approvedBy: d === 'approve' ? (s.name || s.email) : null, approvedAt: d === 'approve' ? t : null, decisionNote: note, hist: (cur.hist || []).concat([{ at: t, who: s.name || s.email, side: 'facilio', event: d === 'approve' ? 'Approved' : d === 'reject' ? 'Rejected' : 'Reopened as draft' + (note ? ': ' + note : '') }]) });
+    const nh = Object.assign({}, head, { v: head.v + 1, ub: s.id, us: 'facilio', ua: t }); await save(col, pcol, P.item, nh, data, head.z); await audit(P.id, s.id, 'ai-' + d, cur.task); return ok({ item: itemOut('ai', P.item, nh, data) });
+  });
+
   // items
   const kindList = q => String(q || '').split(',').filter(k => KINDS.includes(k));
   route('GET', '/api/projects/:id/items', async (b, P, Q) => { const s = await me(); await projectAccess(s, P.id, 'read'); const kinds = kindList(Q.get('kinds')); if (!kinds.length) throw new HttpError(400, 'Name the kinds to load'); return ok({ items: await itemsFor(P.id, kinds) }); });
@@ -201,6 +260,11 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
     const col = 'it.' + P.id + '.' + P.kind, pcol = 'ip.' + P.id + '.' + P.kind; const curRow = await dbGet(col, P.item); const head = curRow && curRow.value; const cur = head ? await unpack(pcol, P.item, head) : null;
     if (Number.isInteger(b.baseVersion) && (head ? head.v : 0) !== b.baseVersion) throw new HttpError(409, 'Conflict: this record was changed by someone else.', { current: head ? itemOut(P.kind, P.item, head, cur) : null });
     let data = b.data;
+    if (P.kind === 'ai') { // AI drafts: status and approval are set only by the decision route; an edit to approved text reopens it as a draft
+      if (!cur) throw new HttpError(403, 'AI drafts are created by the assistant only');
+      const edited = typeof data.content === 'string' && data.content !== cur.content;
+      data = Object.assign({}, cur, { content: typeof data.content === 'string' ? data.content.slice(0, 60000) : cur.content, status: edited && cur.status === 'approved' ? 'draft' : cur.status, approvedBy: edited && cur.status === 'approved' ? null : cur.approvedBy, approvedAt: edited && cur.status === 'approved' ? null : cur.approvedAt, version: edited ? (cur.version || 1) + 1 : cur.version });
+    }
     if (P.kind === 'cr' && !cur) { const all = await itemsOf(P.id, 'cr'); const mx = all.reduce((m, it) => (/^[0-9]+$/.test(String(it.data.n)) ? Math.max(m, Number(it.data.n)) : m), 0); data = Object.assign({}, data, { n: mx + 1 }); }
     else if (P.kind === 'cr' && cur) data = Object.assign({}, data, { n: cur.n });
     const prevHist = cur && Array.isArray(cur.hist) ? cur.hist : [];
@@ -209,7 +273,7 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
     if (JSON.stringify(data).length > (P.kind === 'onbws' ? 2000000 : 60000)) throw new HttpError(413, 'Record too large');
     const t = now(); const nh = { v: head ? head.v + 1 : 1, cb: head ? head.cb : s.id, cs: head ? head.cs : 'facilio', ub: s.id, us: 'facilio', ca: head ? head.ca : t, ua: t };
     await save(col, pcol, P.item, nh, data, head && head.z); await saveProject(project);
-    if (['signoff', 'cr', 'raid', 'onb', 'onbsub', 'decision', 'brdrev'].includes(P.kind)) await audit(P.id, s.id, P.kind + (cur ? '-updated' : '-created'), P.item + (data.status ? ' ' + data.status : ''));
+    if (['signoff', 'cr', 'raid', 'onb', 'onbsub', 'decision', 'brdrev', 'ai', 'hc', 'ho', 'close'].includes(P.kind)) await audit(P.id, s.id, P.kind + (cur ? '-updated' : '-created'), P.item + (data.status ? ' ' + data.status : ''));
     return ok({ item: itemOut(P.kind, P.item, nh, data) });
   });
   route('DELETE', '/api/projects/:id/items/:kind/:item', async (b, P) => {

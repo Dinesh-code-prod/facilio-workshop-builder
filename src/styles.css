@@ -1378,3 +1378,39 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #7568ff
 .pp-stage-sub { font-size: 12px; color: #6f80a6; margin-top: 4px; }
 @media (max-width: 1000px) { .pp-timeline { grid-template-columns: repeat(3, minmax(0, 1fr)); } .pp-timeline::before { display: none; } }
 @media (max-width: 640px) { .pp-timeline { grid-template-columns: 1fr 1fr; } .pp-stage { display: block; } .pp-stage:not(:last-child)::after { display: none; } .pp-node { margin: 0 auto 10px; } .pp-journey { padding: 18px 14px; } }
+.ai-btn { background: linear-gradient(115deg, #7568ff, #3028c8) !important; color: #fff !important; border-color: transparent !important; }
+.ai-ref { color: #5745ed; font-weight: 700; font-size: 10px; }
+.notice { background: #fff7e6; border: 1px solid #ffe0a3; color: #8a5a00; border-radius: 12px; padding: 10px 12px; margin: 6px 0 10px; font-size: 12px; }
+
+/* ---- Inside the project: Facilio dashboard layout (sidebar, page bands, tiles, tables) ---- */
+.shell { grid-template-columns: 276px 1fr; height: calc(100vh - 62px); gap: 0; }
+.sidebar { background: #ffffffd9; border-right: 1px solid #e7ecfb; box-shadow: 6px 0 24px #2a3b8210; padding: 14px 10px 30px; }
+.sidebar .search { margin: 0 4px 12px; } .sidebar .search input { border-radius: 12px; background: #f3f6ff; border: 1px solid #e2e9fa; }
+.sb-title { margin: 8px 0 2px; width: 100%; border-radius: 12px; padding: 10px 12px; border-left: 0; background: transparent; color: #17165b; font-weight: 800; letter-spacing: -.1px; }
+.sb-title svg { color: #4a3fe0; }
+.sb-title:hover { background: #f0f3ff; }
+.sb-group.open > .sb-title { background: transparent; color: #17165b; border-left: 0; }
+.sb-group.has-active > .sb-title { background: linear-gradient(115deg, #7568ff, #3028c8); color: #fff; box-shadow: 0 8px 18px #4341da38; }
+.sb-group.has-active > .sb-title svg, .sb-group.has-active > .sb-title .arr { color: #fff; }
+.sb-item { margin: 1px 0; padding: 9px 12px 9px 38px; border-radius: 10px; border-left: 0; color: #2c3a66; font-weight: 500; }
+.sb-item:hover { background: #eef2ff; color: #3028c8; }
+.sb-item.active { background: #e9ecff; color: #3028a7; font-weight: 700; border-left: 0; box-shadow: inset 3px 0 0 #6355ec; }
+.main { background: transparent; }
+.page-header { margin: 18px 28px 0; padding: 22px 28px; min-height: 0; border: 0; border-radius: 22px; background: linear-gradient(112deg, #e8edff, #dceaff 48%, #d3d8ff); box-shadow: 0 14px 34px #3346961c; position: relative; overflow: hidden; }
+.page-header::after { content: ""; position: absolute; width: 360px; height: 200px; right: 6%; top: -120px; border-radius: 50%; background: #ffffff66; transform: rotate(-12deg); pointer-events: none; }
+.page-header h1 { font-size: clamp(22px, 2.2vw, 28px); font-weight: 800; letter-spacing: -.8px; color: #17165b; }
+.page-header .t p { color: #35467f; font-size: 13px; }
+.page-body { padding: 20px 28px 36px; }
+.stat, .kpi { border-radius: 20px; border: 1px solid #e2e9fa; background: #ffffffe0; box-shadow: 0 10px 28px #24398214; }
+.stat::before, .kpi::before { width: 0; } .stat::after { display: none; }
+.stat .v, .kpi-v { color: #17165b; font-weight: 800; font-size: 28px; letter-spacing: -.6px; } .stat .l, .kpi-l { color: #66789e; font-weight: 500; }
+.stat.click:hover, .kpi.click:hover { transform: translateY(-3px); box-shadow: 0 16px 34px #3346962b; border-color: #c9d2fb; }
+.tbl-wrap { border-radius: 16px; overflow: hidden; border: 1px solid #e7ecfb; }
+.tbl thead th { background: #f3f6ff; color: #3d4c7d; font-weight: 700; font-size: 11.5px; letter-spacing: .5px; text-transform: uppercase; border-bottom: 1px solid #e2e9fa; }
+.tbl tbody tr:hover td { background: #f7f8ff; }
+.tag { border-radius: 999px; padding: 3px 10px; font-weight: 700; font-size: 11px; }
+.ob-tabs button { border-radius: 999px; }
+.ob-tabs button.on { background: linear-gradient(115deg, #7568ff, #3028c8); color: #fff; border-color: transparent; box-shadow: 0 6px 14px #4341da33; }
+.ev-row:hover { background: #f7f8ff; }
+.bar { height: 10px; border-radius: 999px; background: #e9ecff; } .bar i { border-radius: 999px; background: linear-gradient(90deg, #0a7aff, #6355ec); }
+@media (max-width: 900px) { .shell { grid-template-columns: 1fr; } .page-header, .page-body { margin-left: 14px; margin-right: 14px; padding-left: 16px; padding-right: 16px; } .page-body { margin: 0; } }

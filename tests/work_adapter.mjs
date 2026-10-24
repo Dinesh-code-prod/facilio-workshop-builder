@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import handler from '../work/server/api.mjs';
 const store = new Map(), files = new Map(); let maxVal = 0, calls = 0;
 const KEY = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
-const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' },
+const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' }, secrets: { async get() { throw new Error('no secret'); } }, llm: async ({ messages }) => ({ model: 'mock', choices: [{ message: { content: '## Draft\nBased on [S1]. ' + messages[1].content.slice(0, 20) } }] }),
   db: {
     async get(c, k) { calls++; const r = (store.get(c) || new Map()).get(k); return r ? { key: k, value: JSON.parse(r), updated_at: '', updated_by: '' } : null; },
     async put(c, k, v) { calls++; assert.ok(KEY.test(k), 'bad key ' + k); assert.ok(/^[A-Za-z0-9._-]{1,64}$/.test(c), 'bad collection ' + c); const t = JSON.stringify(v); maxVal = Math.max(maxVal, t.length); if (t.length > 128 * 1024) { const e = new Error('too large'); e.status = 413; throw e; } if (!store.has(c)) store.set(c, new Map()); store.get(c).set(k, t); },
@@ -55,6 +55,14 @@ await t('files: upload link, record part, complete, list, download link', async 
   r = await call(sam, 'GET', `/api/projects/${pid}/files/${fid}/chunks/0`); assert.ok(r.data.url.includes('/get/')); r = await call(dinesh, 'GET', `/api/projects/${pid}/files/${fid}/chunks/0`); assert.equal(r.status, 200);
   r = await call('stranger@facilio.com', 'GET', `/api/projects/${pid}/files/${fid}/chunks/0`); assert.equal(r.status, 404);
   r = await call(sam, 'POST', `/api/projects/${pid}/files`, { category: 'plan', name: 'plan.exe', mime: 'x', size }); assert.equal(r.status, 415);
+});
+await t('AI: draft is server-made, unapproved, editor cannot self-approve, owner approves, edit reopens', async () => {
+  let r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat', instruction: 'x' }); assert.equal(r.status, 201, JSON.stringify(r.data)); const id = r.data.item.id; assert.equal(r.data.item.data.status, 'draft');
+  r = await call(sam, 'PUT', `/api/projects/${pid}/items/ai/${id}`, { data: { status: 'approved', content: 'hacked' } }); assert.equal(r.data.item.data.status, 'draft', 'status cannot be set through the generic route');
+  r = await call(out, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat' }); assert.ok(r.status === 403 || r.status === 404, 'no access to other projects');
+  r = await call(sam, 'POST', `/api/projects/${pid}/ai/${id}/decision`, { decision: 'approve' }); assert.equal(r.data.item.data.status, 'approved');
+  r = await call(sam, 'PUT', `/api/projects/${pid}/items/ai/${id}`, { data: { content: 'changed' } }); assert.equal(r.data.item.data.status, 'draft', 'edit reopens approved text');
+  r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'bogus' }); assert.equal(r.status, 400);
 });
 await t('admin: only granted people, enforced on the server', async () => {
   let r = await call(sam, 'GET', '/api/admin/overview'); assert.equal(r.status, 403);
