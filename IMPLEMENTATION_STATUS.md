@@ -184,3 +184,9 @@ brddoc.list registers BRDs (main plus typed BRDs: core, service desk, ERP, agent
 - Server: `/api/templates` (list, create, versions, publish / retire / reopen, delete drafts). Org templates are published only by an Admin; drafts are visible to the author and admins. AI runs accept a `templateId` and follow its structure.
 - Client `src/templates.js`: Templates page (Administration) and Workspace & Layout page (rename, hide, drag or arrow reorder, move between groups, custom pages, presets, save as template). Layout is stored in the `workspace` document section; customers keep their own menu.
 - Roadmap: `docs/IMPLEMENTATION_ROADMAP.md` now holds phase status and the assessed requirement for customer-specific configuration inputs (custom modules, module relationships, connected apps and tabs) as phase 5b, with reuse, priorities, dependencies and acceptance criteria. Not built yet.
+
+## 42. Org-package analysis (phase 5, 24 Oct 2026)
+- `src/pkganalysis.js`: Package Analysis page (Configuration group): counts, checks (custom module without purpose, tab, flow or role access; relationships and lookups to modules not in the package; buttons using unknown connected apps; enabled apps with no tabs), custom module details, relationships, apps and tabs, connected apps, CSV export of findings.
+- A compact digest (about 10 KB) is saved in the `config_digest` document (on package load or with "Update AI context") and added as the first source of the existing AI tasks (gaps, uat, ftrrows, guide, config, handover) plus a new `pkg` task ("Analyse with AI"). No new AI workflow.
+- AI reliability: the open model times out on large prompts, so the server uses a smaller prompt for it (and retries once with a shorter one); Claude via `anthropic_api_key` keeps the full size. Error text now shows the cause.
+- Next: phase 5b registers (relationships, apps and tabs, custom module descriptions) as in docs/IMPLEMENTATION_ROADMAP.md.

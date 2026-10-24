@@ -53,7 +53,7 @@
     { g: 'Project', icon: 'home', items: [['overview', 'Project Overview'], ['msaflow', 'Contract'], ['contracts', 'Contracts & Integrations'], ['kickoff', 'Kick-off Deck'], ['plan', 'Project Plan'], ['timeline', 'Plan Timeline'], ['guide', 'Customer User Guide'], ['onboarding', 'Data Onboarding'], ['dashboards', 'Dashboard Gallery']] },
     { g: 'Delivery', icon: 'flag', items: [['governance', 'Governance & RAID'], ['changes', 'Change Requests'], ['delivery', 'Build, UAT & Go-Live']] },
     { g: 'AI Delivery', icon: 'flag', items: [['aiwork', 'Deliverables & AI'], ['hypercare', 'Hypercare'], ['ftr', 'FTR Report (Excel)'], ['kpi', 'KPI Workbooks'], ['reports', 'Status Reports (WSR / Monthly)'], ['handover', 'Handover & Closure']] },
-    { g: 'Configuration', icon: 'modules', items: [['modules', 'System Modules & Form Builder'], ['flow', 'State Flow Builder'], ['roles', 'Roles & Access Permissions']] },
+    { g: 'Configuration', icon: 'modules', items: [['modules', 'System Modules & Form Builder'], ['flow', 'State Flow Builder'], ['roles', 'Roles & Access Permissions'], ['pkgan', 'Package Analysis']] },
     { g: 'Requirements', icon: 'check', items: [['transcripts', 'Transcripts & Requirement Confirmation'], ['usecases', 'Use Cases'], ['checks', 'Checks & Validations'], ['brd', 'BRD Draft']] },
     { g: 'Administration', icon: 'gear', items: [['portal', 'Customer Portal'], ['templates', 'Templates'], ['workspace', 'Workspace & Layout'], ['settings', 'Project Settings & Exports']] }
   ];
@@ -253,7 +253,7 @@ function projectsHtml() {
     loading(true, 'Opening project…');
     try {
       const refP = (S.user.kind === 'consultant' && !refCache) ? API.reference().catch(() => null) : null; // start the reference download now, in parallel with the project data
-      const consultantSections = ['workshop', 'people', 'planner', 'reviews', 'transcripts', 'dashboards', 'brddoc', 'plan', 'config', 'guide_published', 'schedule_published', 'portal_controls', 'portal_published', 'onboarding_published', 'plan_struct', 'ftr_wb', 'kpi_wb', 'workspace'].concat(V.extraSections || []);
+      const consultantSections = ['workshop', 'people', 'planner', 'reviews', 'transcripts', 'dashboards', 'brddoc', 'plan', 'config', 'guide_published', 'schedule_published', 'portal_controls', 'portal_published', 'onboarding_published', 'plan_struct', 'ftr_wb', 'kpi_wb', 'workspace', 'config_digest'].concat(V.extraSections || []);
       const wanted = S.user.kind === 'customer' ? ['guide_published', 'schedule_published', 'dashboards', 'portal_controls', 'portal_published', 'onboarding_published', 'plan_struct'] : consultantSections;
       // one request for project + members + documents + records (was ~18); falls back to the separate requests if it fails
       let bundle = null; try { bundle = await API.get('/api/projects/' + id + '/open?sections=' + wanted.join(',') + '&kinds=all'); } catch (e) { if (e.status === 404 || e.status === 403 || e.status === 401) throw e; }

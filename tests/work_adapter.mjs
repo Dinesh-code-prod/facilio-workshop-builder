@@ -74,6 +74,8 @@ await t('templates: versions, publish needs admin, retire, project scope, AI use
   r = await call(sam, 'GET', `/api/templates/${id}?v=2`); assert.match(r.data.data.body, /Risks/);
   r = await call(sam, 'DELETE', `/api/templates/${id}`); assert.equal(r.status, 409);
   r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'brd', templateId: id }); assert.equal(r.status, 201);
+  r = await call(sam, 'PUT', `/api/projects/${pid}/docs/config_digest`, { data: { counts: { custom: 2 }, checks: ['medium | Custom module | Fleet | Not shown in any app tab'] } }); assert.ok(r.status === 200 || r.status === 201, 'digest saves: ' + r.status);
+  r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'pkg' }); assert.equal(r.status, 201); assert.ok(r.data.item.data.sources.some(x => /config_digest/.test(x.label)), 'digest is a cited source');
   r = await call(out, 'POST', '/api/templates', { name: 'x', kind: 'ftr', scope: 'project', projectId: pid, data: {} }); assert.ok(r.status === 404 || r.status === 403, 'outsider cannot add to a project');
   r = await call(sam, 'POST', '/api/templates', { name: 'FTR for Alpha', kind: 'ftr', scope: 'project', projectId: pid, data: { b64: 'AAAA' } }); assert.equal(r.status, 201); const pt = r.data.item.id;
   r = await call(out, 'GET', `/api/templates?projectId=${pid}`); assert.equal(r.data.items.length, 2, 'outsider is a viewer member here: sees project and published org templates');
