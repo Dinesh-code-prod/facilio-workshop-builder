@@ -50,7 +50,7 @@
       ];
       const END = AUTO ? 38 : 44, REVEAL = AUTO ? 1e9 : 38.2;
       // real seconds -> timeline seconds. The whole intro is about 6.8s: growth 5s, then (opening page) the leaves open into the sign-in page in about 1.8s.
-      const TK = AUTO ? 2.8 : 2.2, TR = 4.6 * TK, WPTS = (AUTO ? [[0, 0], [1.1, 5], [2.2, 14.4], [3.4, 26.6], [4.6, 38]] : [[0, 0], [1.2, 5], [2.4, 14.4], [3.7, 26.6], [5.0, 38.2], [6.8, 44]]).map(([c, t]) => [c * TK, t]);
+      const TK = AUTO ? 3.1 : 2.5, TR = 4.6 * TK, WPTS = (AUTO ? [[0, 0], [1.1, 5], [2.2, 14.4], [3.4, 26.6], [4.6, 38]] : [[0, 0], [1.2, 5], [2.4, 14.4], [3.7, 26.6], [5.0, 38.2], [6.8, 44]]).map(([c, t]) => [c * TK, t]);
       const warp = c => { if (c <= 0) return 0; for (let i = 1; i < WPTS.length; i++) if (c <= WPTS[i][0]) { const a = WPTS[i - 1], b = WPTS[i]; return lerp(a[1], b[1], (c - a[0]) / (b[0] - a[0])); } return WPTS[WPTS.length - 1][1]; };
       const unwarp = t => { for (let i = 1; i < WPTS.length; i++) if (t <= WPTS[i][1]) { const a = WPTS[i - 1], b = WPTS[i]; return lerp(a[0], b[0], (t - a[1]) / (b[1] - a[1])); } return WPTS[WPTS.length - 1][0]; };
       let CLK = 0, LO = -1, HOLES = [], LCX = 0, LCY = 0, LSC = 1, HOLD = false;   // CLK real clock, LO leaf-opening clock (-1 until it starts)
@@ -197,7 +197,7 @@
       /* ---------- canvas + layout + camera ---------- */
       const cv = o.querySelector('canvas'), g = cv.getContext('2d');
       const brand = $('brand'), head = $('head');
-      const QT = [1.5, 1, .75, .55], LSTEP = [1, 2, 3, 4], LGK = [1, 1.3, 1.5, 1.7];   // quality tiers: canvas scale, draw every n-th leaf, leaf size to compensate
+      const WIND = 120, QT = [1.5, 1, .75, .55], LSTEP = [1, 2, 3, 4], LGK = [1, 1.3, 1.5, 1.7];   // quality tiers: canvas scale, draw every n-th leaf, leaf size to compensate
       leaves.forEach((L, i) => { L.ix = i; });
       let W = 0, H = 0, DPR = 1, FIT = 1, QCAP = 1.5, QTIER = 0, slow = 0, WIDE = true, LR = 0, RT = 58, RB = 0, BL = 0, IDLE = 0;
       function resize() {
@@ -549,7 +549,7 @@
       }
       /* The leaves open the page: every leaf swells (rim in its own colour) and erases the night scene inside itself, so the sign-in page shows through the leaves
          and the merged leaves become the whole screen. Subset of leaves + a final widening ring guarantee full coverage. */
-      const LDUR = 1.4, LEND = 2.4;
+      const LDUR = 1.9, LEND = 3.0;
       let cv2 = null, g2 = null;
       function ensureCv2() {
         if (!cv2) { cv2 = doc.createElement('canvas'); cv2.className = 'ti-sh'; cv2.setAttribute('aria-hidden', 'true'); cv.after(cv2); g2 = cv2.getContext('2d'); }
@@ -563,7 +563,7 @@
         ensureCv2(); g2.setTransform(1, 0, 0, 1, 0, 0); g2.clearRect(0, 0, W2, H2);
         if (LO >= LEND) { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W2, H2); return; }
         const cx = DPR * (ox + LCX * sc), cy = DPR * (oy + LCY * sc);
-        const rv = easeIO(clamp(LO / (LEND - .25))), R = rv * diag * 2.4;
+        const rv = easeIO(clamp((LO - .3) / (LEND - .6))), R = rv * diag * 2.4;
         if (R > 1) {
           g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'destination-out';
           const gr = g.createRadialGradient(cx, cy, R * .42, cx, cy, R); gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
@@ -573,10 +573,10 @@
           const q = L.sh; if (!q || L.ix % LSTEP[QTIER]) continue; const dk = LO - q.d, p = clamp(dk / LDUR);
           const zs = L.size / 56 * LGK[QTIER]; let th = L.ang + Math.sin(ta * 1.3 + L.ph) * .05, lx = L.x + SK * L.y, ly = L.y, al = .9, kx = zs, ky = zs;
           if (dk > 0) {
-            const e = 1 - Math.pow(1 - p, 2.2);   // fast start, soft landing
-            lx += q.vx * e * 1.1 + Math.sin(dk * 2.6 + q.ph) * 16 * p; ly += q.vy * e * 1.1 + 110 * p * p + Math.cos(dk * 2.1 + q.ph) * 10 * p;
-            th += q.sp * dk; const gk = 1 + q.gr * Math.sin(p * Math.PI * .5); kx *= gk; ky *= gk * (.55 + .45 * Math.abs(Math.cos(dk * q.fl + q.ph)));
-            al *= 1 - clamp((p - .5) / .5); if (al <= .01) continue;
+            const e = p * p * (3 - 2 * p), w = WIND * Math.pow(dk, 1.25);   // eased in and out: leaves lift gently, glide, then settle; one shared breeze carries them all the same way
+            lx += q.vx * e * 1.05 + w + Math.sin(dk * 2.2 + q.ph) * 14 * p; ly += q.vy * e * 1.05 + 70 * p * p - w * .18 + Math.cos(dk * 1.7 + q.ph) * 9 * p;
+            th += q.sp * dk * .45 + Math.sin(dk * q.fl + q.ph) * .55 * p; const gk = 1 + q.gr * Math.sin(p * Math.PI * .5); kx *= gk; ky *= gk * (.5 + .5 * Math.abs(Math.cos(dk * q.fl * .7 + q.ph)));
+            al *= 1 - clamp((p - .55) / .45); if (al <= .01) continue;
           }
           const cs = Math.cos(th), sn = Math.sin(th);
           g2.setTransform(S0 * cs * kx, S0 * sn * kx, -S0 * sn * ky, S0 * cs * ky, EX + S0 * lx, EY + S0 * ly);
@@ -588,7 +588,7 @@
         if (HOLES.length) return; let sx = 0, sy = 0; for (const L of leaves) { sx += L.x; sy += L.y; } LCX = sx / leaves.length; LCY = sy / leaves.length;
         let dm = 1; for (const L of leaves) dm = Math.max(dm, Math.hypot(L.x - LCX, (L.y - LCY) * .9));
         for (const L of leaves) {
-          const dx = L.x - LCX, dy = L.y - LCY, d = Math.hypot(dx, dy * .9) / dm, a = Math.atan2(dy, dx) + (Math.random() - .5) * .9, v = 260 + Math.random() * 640 * (.35 + d);
+          const dx = L.x - LCX, dy = L.y - LCY, d = Math.hypot(dx, dy * .9) / dm, a = Math.atan2(dy, dx) + (Math.random() - .5) * .9, v = 200 + Math.random() * 560 * (.35 + d);
           L.sh = { d: d * (LEND - LDUR - .15) + Math.random() * .25, vx: Math.cos(a) * v + 80, vy: Math.sin(a) * v * .8 - 60, sp: (Math.random() - .5) * 7, ph: Math.random() * TAU, gr: .5 + Math.random() * 1.1, fl: 2 + Math.random() * 3 };
         }
         HOLES = [1];
@@ -597,11 +597,9 @@
       /* ---------- label placement: next to its node, pushed apart until nothing overlaps ---------- */
       let OBST = { top: 0, bottom: 0, right: 0 }, lastBoxes = [], lastNodes = [];
       function measureChrome() {
-        const hb = head.getBoundingClientRect(), tb = o.querySelector('.top').getBoundingClientRect();
-        OBST.top = Math.max(tb.bottom, hb.bottom) + 10;
-        OBST.ctl = null;
-        const tr = null;
-        OBST.tag = tr ? { x: tr.left - 6, y: tr.top - 6, w: tr.width + 12, h: tr.height + 12 } : null;
+        // layout offsets, not getBoundingClientRect: the heading fades/slides when its text changes, and a moving rect made the top labels (stages 11-12) jitter
+        const tp = o.querySelector('.top'); OBST.top = Math.max(tp.offsetTop + tp.offsetHeight, head.offsetTop + head.offsetHeight) + 10;
+        OBST.ctl = null; OBST.tag = null;
       }
       const ov = (a, b, m = 0) => a.x < b.x + b.w + m && b.x < a.x + a.w + m && a.y < b.y + b.h + m && b.y < a.y + a.h + m;
       function layoutLabels(t, cs, ox, oy, sc, SK, reveal) {
@@ -620,13 +618,14 @@
           if (!want) { L.vis = false; continue; }
           const st = act ? 'act' : 'done';
           if (L.state !== st) {
-            L.state = st; L.el.className = 'lbl ' + st + (L.el.classList.contains('show') ? ' show' : '');
+            if (L.state) { L.placed = false; L.rel = null; } L.state = st; L.el.className = 'lbl ' + st + (L.el.classList.contains('show') ? ' show' : '') + (L.placed === false && L.el.classList.contains('show') ? ' swap' : '');   // active card -> compact chip: fade the chip in at its own spot instead of sliding it across the tree
             L.el.querySelector('.n').innerHTML = act ? String(n.i + 1) : TICK;
             L.w = L.el.offsetWidth; L.h = L.el.offsetHeight;
           }
           // side: outward from the trunk; the trunk-stage nodes alternate
           const side = Math.abs(n.x) < 30 ? (n.i % 2 ? -1 : 1) : Math.sign(n.x);
           let x = side > 0 ? ax + 22 : ax - 22 - L.w, y = ay - L.h / 2;
+          if (L.rel && L.relSt === st && L.relSide === side) { x = ax + L.rel.dx; y = ay + L.rel.dy; }   // start from where it settled last frame: no flip-flopping between equivalent spots
           items.push({ L, ax, ay, side, x, y, w: L.w, h: L.h, pri: act ? 100 : n.i });
         }
         const clampX = it => { it.x = Math.max(left, Math.min(right - it.w, it.x)); };
@@ -665,7 +664,7 @@
             }
             if (!found) { it.x = x0; it.y = y0; it.L.vis = false; continue; }
           }
-          it.L.vis = true; ok.push(it);
+          it.L.vis = true; it.L.rel = { dx: it.x - it.ax, dy: it.y - it.ay }; it.L.relSt = it.pri === 100 ? 'act' : 'done'; it.L.relSide = it.side; ok.push(it);
         }
         lastNodes = obst.filter(o => o.node !== undefined);
         // draw leader lines and move the DOM labels (eased so they glide rather than jump)
@@ -674,6 +673,7 @@
         for (const it of ok) {
           const L = it.L;
           if (!L.placed || !L.el.classList.contains('show')) { L.x = it.x; L.y = it.y; L.placed = true; }
+          else if (Math.hypot(it.x - L.x, it.y - L.y) > 36) { L.x = it.x; L.y = it.y; L.el.classList.remove('swap'); void L.el.offsetWidth; L.el.classList.add('swap'); }   // a different spot (another label took its place): re-appear there, never slide across the tree
           else { L.x += (it.x - L.x) * .22; L.y += (it.y - L.y) * .22; }
           const ex = Math.max(L.x, Math.min(L.x + it.w, it.ax)), ey = Math.max(L.y, Math.min(L.y + it.h, it.ay));
           g.strokeStyle = it.pri === 100 ? 'rgba(190,215,255,.75)' : 'rgba(141,184,255,.42)'; g.lineWidth = 1.2;

@@ -1,71 +1,79 @@
-/* Customer-facing introduction ("Welcome" page): what Delivery Studio does, the problems it solves, and the 12-stage journey.
-   Static content only: no project data, no API calls, so it can be previewed on its own at  #/welcome  without touching a project or bypassing sign-in.
-   It is one reusable component (V.welcome) - the same page serves every customer, so nothing has to be built per project.
-   The tree-growth animation (V.treeIntro) stays available from it as "Watch the journey". */
+/* Customer introduction ("Welcome") page, reachable on its own at  #/welcome.
+   Written from the customer's point of view: the challenges they may face, how Delivery Studio helps, what to expect in four phases, and how they know they are ready for go-live.
+   Static content only (no project data, no API calls, no sign-in bypass), so the same page serves every customer.
+   Four small Lottie animations (brand/lottie/welcome-*.json, made by tools/make-welcome-lottie.mjs) each explain one benefit and play once when their section scrolls into view.
+   Every animation slot starts as a static SVG of its finished state, so the page reads fully with motion off, with reduced-motion set, or if Lottie fails to load.
+   The tree-growth animation (V.treeIntro) stays available as an optional extra. */
 (function (root) {
   'use strict';
   const doc = root.document; if (!doc) return;
   const V = root.FWBViews = root.FWBViews || {}; const ACT = V.ACT = V.ACT || {};
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
-  // problem -> what Delivery Studio does about it. `bits` are the scattered items that settle into one list.
-  const PROBLEMS = [
-    ['Information is scattered', 'Contracts, decks, plans, notes and decisions live in different places, so nobody has the full picture.',
-      'One workspace per project', 'Everything for your implementation sits in one place, and every number opens the records behind it.', ['Contract', 'Kick-off deck', 'Decisions']],
-    ['Progress is hard to see', 'It is unclear what is done, what is blocked and what is waiting on whom.',
-      'A live view of all 12 stages', 'Progress, dependencies, risks and pending actions are tracked against the delivery plan, with the current stage always clear.', ['Plan', 'Risks', 'Actions']],
-    ['Workshop outcomes get lost', 'Good discussions turn into notes that never become agreed requirements.',
-      'From discussion to agreed requirement', 'Workshop transcripts are turned into requirements and use cases. You confirm each one, and they flow into the BRD for sign-off.', ['Transcript', 'Requirement', 'Use case']],
-    ['Testing is hard to coordinate', 'Configuration, UAT and defect fixing run in parallel and are tracked in spreadsheets.',
-      'Build, UAT and defects in one flow', 'Every test and defect has an owner and a status from raised to resolved, so you can see exactly what stands between you and go-live.', ['Config', 'UAT', 'Defect']],
-    ['Documents are prepared by hand', 'Reports, BRDs and user guides take days to assemble and go out of date.',
-      'Documents built from the project record', 'The BRD, status reports, FTR and KPI workbooks and customer user guides are generated from what has already been captured.', ['BRD', 'Report', 'User guide']],
-    ['Go-live and handover are unclear', 'It is not obvious when you are ready, who supports what afterwards, or when the project is closed.',
-      'Clear readiness, handover and closure', 'Readiness checks, hypercare and handover responsibilities are agreed in the open, and closure is recorded when the work is done.', ['Readiness', 'Hypercare', 'Handover']]
+  // Each benefit: the animation that shows it, a heading, and two customer problems paired with the help they get.
+  const BENEFITS = [
+    { lt: 'welcome-organise', h: 'Keep everything in one place', c: '#1570EF', pairs: [
+      ['Information is spread across emails and documents', 'Project information, decisions and deliverables are kept together, so you always know where to look.'],
+      ['Requirements get lost after workshops', 'What was agreed in a workshop stays connected to the requirements and documents that follow from it.']] },
+    { lt: 'welcome-visibility', h: 'See where you stand', c: '#17B3AE', pairs: [
+      ['It is hard to see what is done and what is not', 'A clear overview shows what has been completed and what still needs attention.'],
+      ['It is unclear who needs to do what next', 'Next steps and the information you are asked to provide are easier to find and understand.']] },
+    { lt: 'welcome-coordinate', h: 'Work through issues together', c: '#E5197F', pairs: [
+      ['Testing and fixing issues is difficult to follow', 'Validation activities and open issues are organised, so you can see what is being checked and what is outstanding.'],
+      ['It is uncertain whether you are ready to go live', 'Readiness, training, remaining tasks and handover expectations are laid out before launch day.']] }
   ];
-  const STAGES = ['Kick-off & Discovery', 'Workshops', 'Requirements', 'BRD & Sign-off', 'Configuration & Implementation', 'FTR & KPI Validation', 'UAT & Defect Management', 'Customer Training & User Guides', 'Go-Live Readiness', 'Hypercare', 'Support Transition & Handover', 'Project Closure'];
-  const ICON = ['M4 5h16M4 12h10M4 19h16', 'M4 19V9m6 10V5m6 14v-7m4 7H2', 'M5 4h14v16H5zM9 9h6M9 13h6', 'M4 12l5 5L20 6', 'M12 3v4m0 10v4M3 12h4m10 0h4M6 6l2.5 2.5m7 7L18 18M18 6l-2.5 2.5m-7 7L6 18', 'M5 4h10l4 4v12H5zM9 13l2 2 4-4'];
+  const PHASES = [
+    ['Get ready', 'Understand the goals, prepare information, identify stakeholders and align on expectations.', '#E8F0FF', '#2455B7', 'M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z'],
+    ['Shape your solution', 'Discuss requirements, confirm how your teams work, and agree on the solution and expected outcomes.', '#E7F7F3', '#168A79', 'M16 11a3 3 0 100-6 3 3 0 000 6zM8 12a3 3 0 100-6 3 3 0 000 6zM2 20c0-3 3-5 6-5s6 2 6 5M14 15c3 0 8 1 8 5'],
+    ['Validate and prepare', 'Review the configured solution, test important workflows, resolve issues and prepare your users.', '#F1EBFF', '#7952C7', 'M4 6h10M18 6h2M4 12h2M10 12h10M4 18h12M20 18h0M14 4v4M8 10v4M16 16v4'],
+    ['Go live with confidence', 'Confirm readiness, launch, receive early support and move into regular operations.', '#FFF0F6', '#C52A78', 'M5 15c-1 3-1 5-1 5s2 0 5-1M14 4c3 0 6 0 6 0s0 3 0 6c-2 4-6 7-9 8l-5-5c1-3 4-7 8-9zM15 9h.01']
+  ];
+  const svg = (d, c, s = 22) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="${c}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+  const slot = (lt, alt) => `<div class="wl-lt" data-lt="${lt}" role="img" aria-label="${esc(alt)}"><img src="brand/lottie/${lt}.svg" alt="" width="400" height="240" decoding="async"></div>`;
 
   function html() {
     return `<header class="wl-top"><img src="brand/logo-white.png" alt="Facilio" height="26"><span class="wl-sep"></span><span class="wl-prod">Delivery Studio</span>
-      <nav class="wl-nav" aria-label="Sections"><a href="#/welcome" data-act="wlGo" data-to="wl-problems">What it solves</a><a href="#/welcome" data-act="wlGo" data-to="wl-journey">The journey</a></nav>
+      <nav class="wl-nav" aria-label="Sections"><a href="#/welcome" data-act="wlGo" data-to="wl-help">How we help</a><a href="#/welcome" data-act="wlGo" data-to="wl-journey">Your journey</a></nav>
       <button class="wl-btn ghost" type="button" data-act="wlClose">Sign in</button></header>
     <main class="wl-main" id="wlMain">
-      <section class="wl-hero"><div class="wl-sky" aria-hidden="true"></div>
-        <div class="wl-hero-in"><p class="wl-kicker">For Facilio customers</p><h1>Your Facilio implementation, <em>in one place</em></h1>
-          <p class="wl-lead">Delivery Studio brings every workshop, decision, document and milestone of your project together, so you always know where things stand and what happens next.</p>
-          <div class="wl-cta"><button class="wl-btn primary" type="button" data-act="wlGo" data-to="wl-problems">See how it helps</button><button class="wl-btn ghost" type="button" data-act="wlTree"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Watch the journey</button></div></div>
-        <ol class="wl-stripe" aria-label="Project journey">${STAGES.map((s, i) => `<li style="--i:${i}"><b>${i + 1}</b><span>${esc(s)}</span></li>`).join('')}</ol>
-      </section>
-      <section class="wl-sec" id="wl-problems"><h2>Common challenges, and how Delivery Studio helps</h2><p class="wl-sub">Six things that slow down implementations, and what changes when your project runs in one workspace.</p>
-        <div class="wl-grid">${PROBLEMS.map((p, i) => `<article class="wl-card" style="--kc:${['#1D1A5E', '#1570EF', '#E5A400', '#E5197F', '#17B3AE', '#6B4EE6'][i]}">
-          <div class="wl-viz" aria-hidden="true">${p[4].map((b, j) => `<i style="--j:${j}">${esc(b)}</i>`).join('')}</div>
-          <h3><span class="wl-ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${ICON[i]}"/></svg></span>${esc(p[0])}</h3>
-          <p class="wl-prob">${esc(p[1])}</p><div class="wl-sol"><b>${esc(p[2])}</b><p>${esc(p[3])}</p></div></article>`).join('')}</div></section>
-      <section class="wl-sec alt" id="wl-journey"><h2>One journey, from kick-off to closure</h2><p class="wl-sub">Every project follows the same twelve stages. This shows how a delivery is structured; it is not the status of any project.</p>
-        <ol class="wl-steps">${STAGES.map((s, i) => `<li><b>${i + 1}</b><span>${esc(s)}</span></li>`).join('')}</ol>
-        <div class="wl-cta c"><button class="wl-btn primary dark" type="button" data-act="wlTree">Watch the tree grow</button><button class="wl-btn line" type="button" data-act="wlClose">Sign in to your workspace</button></div></section>
+      <section class="wl-hero"><div class="wl-sky" aria-hidden="true"></div><div class="wl-hero-in">
+        <h1>Your Facilio journey, from kick-off to go-live, <em>made simpler</em></h1>
+        <p class="wl-lead">Know what to expect, understand what you need to prepare, track your progress, and move confidently toward a successful go-live.</p>
+        <div class="wl-cta"><button class="wl-btn primary" type="button" data-act="wlGo" data-to="wl-journey">Explore your journey</button></div></div></section>
+      <section class="wl-sec" id="wl-help"><h2>Challenges you may face, and how Delivery Studio helps</h2><p class="wl-sub">Implementations are easier when information, progress and next steps are clear to everyone involved.</p>
+        ${BENEFITS.map((b, i) => `<div class="wl-row${i % 2 ? ' flip' : ''}" style="--kc:${b.c}">
+          <div class="wl-viz">${slot(b.lt, b.h)}</div>
+          <div class="wl-txt"><h3>${esc(b.h)}</h3>${b.pairs.map(p => `<div class="wl-pair"><p class="wl-prob">${esc(p[0])}</p><p class="wl-help"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg><span>${esc(p[1])}</span></p></div>`).join('')}</div></div>`).join('')}</section>
+      <section class="wl-sec alt" id="wl-journey"><h2>What to expect along the way</h2><p class="wl-sub">Four phases take you from kick-off to a confident go-live. The activities inside each phase vary by project.</p>
+        <div class="wl-jwrap"><ol class="wl-phases">${PHASES.map((p, i) => `<li><span class="wl-pi" style="background:${p[2]}">${svg(p[4], p[3])}</span><div><h3><i>${i + 1}</i>${esc(p[0])}</h3><p>${esc(p[1])}</p></div></li>`).join('')}</ol>
+          <div class="wl-viz wl-jviz">${slot('welcome-golive', 'A readiness checklist is completed and the project is ready to go live')}<button class="wl-btn line sm" type="button" data-act="wlTree">Watch the tree-growth animation</button></div></div></section>
+      <section class="wl-end"><h2>Ready when you are</h2><p>Sign in to see your own project, your next steps and your progress.</p><button class="wl-btn primary" type="button" data-act="wlClose">Open workspace</button></section>
       <footer class="wl-foot">Customer data is stored privately per project and is only available to project members.</footer>
     </main>`;
   }
-  let el = null, io = null;
+  let el = null, io = null; const live = [];
+  const reduce = () => !!(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  function run(s) {
+    if (s.__r || reduce() || !V.lottiePlay) return; s.__r = 1;
+    V.lottiePlay(s, s.getAttribute('data-lt'), { path: 'brand/lottie/' + s.getAttribute('data-lt') + '.json?v=71' }).then(a => { if (!a) return; live.push(a); a.addEventListener('DOMLoaded', () => s.classList.add('on')); /* the animation stops on its finished frame and stays there; nothing runs after it ends */ });
+  }
   function mount() {
     if (el) return; el = doc.createElement('div'); el.className = 'wl'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Introduction to Facilio Delivery Studio'); el.innerHTML = html();
     doc.body.appendChild(el); doc.body.classList.add('wl-on'); doc.title = 'Facilio Delivery Studio - introduction';
-    const reduce = root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const cards = el.querySelectorAll('.wl-card, .wl-steps, .wl-hero');
-    if (reduce || !root.IntersectionObserver) cards.forEach(c => c.classList.add('in'));
-    else { io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { root: el, threshold: .25 }); cards.forEach(c => io.observe(c)); }
+    const items = el.querySelectorAll('.wl-row, .wl-phases, .wl-end, .wl-hero');
+    if (reduce() || !root.IntersectionObserver) items.forEach(c => c.classList.add('in'));
+    else { io = new IntersectionObserver(es => es.forEach(e => { if (!e.isIntersecting) return; e.target.classList.add('in'); e.target.querySelectorAll('.wl-lt').forEach(run); const jz = e.target.classList.contains('wl-phases') && el.querySelector('.wl-jviz .wl-lt'); if (jz) run(jz); io.unobserve(e.target); }), { root: el, threshold: .3 }); items.forEach(c => io.observe(c)); }
     root.requestAnimationFrame(() => el.classList.add('on'));
   }
   function close() {
-    if (!el) return; if (io) io.disconnect(); io = null; el.remove(); el = null; doc.body.classList.remove('wl-on'); doc.title = 'Facilio Delivery Studio';
+    if (!el) return; if (io) io.disconnect(); io = null; live.splice(0).forEach(a => { try { a.destroy(); } catch (e) { } });
+    el.remove(); el = null; doc.body.classList.remove('wl-on'); doc.title = 'Facilio Delivery Studio';
     try { if (/#\/welcome/.test(root.location.hash)) root.history.replaceState(null, '', root.location.pathname + root.location.search); } catch (e) { }
   }
   V.welcome = { html, open: mount, close };
   ACT.openWelcome = () => { try { root.history.replaceState(null, '', '#/welcome'); } catch (e) { } mount(); };
   ACT.wlClose = close;
-  ACT.wlGo = a => { const t = el && el.querySelector('#' + a.getAttribute('data-to')); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  ACT.wlGo = a => { const t = el && el.querySelector('#' + a.getAttribute('data-to')); if (t) t.scrollIntoView({ behavior: reduce() ? 'auto' : 'smooth', block: 'start' }); };
   ACT.wlTree = () => { if (V.treeIntro) V.treeIntro({ aud: 'public', cta: 'Back to the overview' }).then(() => { }); };
   const check = () => { if (/#\/welcome\b/.test(root.location.hash)) mount(); else if (el) close(); };
   root.addEventListener('hashchange', check);
