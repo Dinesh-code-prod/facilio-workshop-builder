@@ -195,3 +195,10 @@ brddoc.list registers BRDs (main plus typed BRDs: core, service desk, ERP, agent
 - `src/cfginputs.js`: Configuration Inputs page (Configuration group) with Custom modules, Module relationships, Connected apps and tabs, and Checks. Custom modules come from the package, workshop proposals or manual entry and get a description block (purpose, usage, tabs, actions, statuses, workflow, roles, notes, files). Relationships and apps (with tabs) are structured records with free text and files. Import from the loaded package or a CSV / Excel table, always through a tick-to-import preview that skips duplicates and never overwrites.
 - Server: record kinds `cmodx`, `cfgrel`, `capp`; file category `config_evidence`; the three kinds are the first sources of the existing AI tasks (gaps, guide, uat, ftr, ftrrows, config, handover, pkg) and of a new `training` outline task. No separate AI workflow.
 - Tests: 10 server checks pass; verified live (describe a module, add a relationship, package previews 12 relationships and 17 apps, 38 checks); test records removed.
+
+## 45. Motion Kit, FDS tokens and phase 7 (24 Oct)
+- Motion Kit (docs/motionkit/animations.json; llms.txt/map.html/components.html read from fds-motion-kit.facilio.run): `src/motion.js` applies kit ids intro, list, drawer, modal. See docs/MOTION_AND_DESIGN.md.
+- FDS: 13 values verified from the kit gallery (text, border, link/primary #1570EF) now drive the app's variables (end of styles.css); old brand blues #0a7aff / #0a5fe8 replaced by #1570EF. Other FDS aliases (backgrounds, spacing) have no published values yet.
+- icons.facilio.run is an icon catalogue (static SVG at icons.facilio.com, 10 animated Lottie), not an animator.
+- Phase 7 (partial): `src/traceability.js` — Traceability & Quality view (requirement → use case → module → build → UAT matrix with CSV export; completeness checks; lessons learned, kind `lesson`, also a source for the handover AI task). Verified live.
+- Still open in phase 7: version comparison, org-level knowledge library (cross-project), AI context retention/superseded rules. Phase 8 (customer-facing read-only pages), isometric intro/roadmap artwork.
