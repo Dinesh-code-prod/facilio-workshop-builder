@@ -6,12 +6,15 @@
 (function (root) {
   'use strict';
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
-  const PERIODS = [['all', 'All time'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['90', 'Last 90 days'], ['quarter', 'This quarter'], ['year', 'This year'], ['custom', 'Custom']];
+  const PERIODS = [['all', 'All time'], ['today', 'Today'], ['yesterday', 'Yesterday'], ['week', 'This week'], ['month', 'This month'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['90', 'Last 90 days'], ['quarter', 'This quarter'], ['year', 'This year'], ['custom', 'Custom range']];
   const iso = d => d.toISOString().slice(0, 10); const today = () => iso(new Date());
   const add = (s, n) => { const d = new Date(s + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return iso(d); };
   function span(st) {
     const t = today(), d = new Date(), y = d.getUTCFullYear(); st = st || {};
     switch (st.period) {
+      case 'today': return [t, t]; case 'yesterday': return [add(t, -1), add(t, -1)];
+      case 'week': { const wd = (d.getUTCDay() + 6) % 7; return [add(t, -wd), t]; }
+      case 'month': return [iso(new Date(Date.UTC(y, d.getUTCMonth(), 1))), iso(new Date(Date.UTC(y, d.getUTCMonth() + 1, 0)))];
       case '7': return [add(t, -6), t]; case '30': return [add(t, -29), t]; case '90': return [add(t, -89), t];
       case 'quarter': { const q = Math.floor(d.getUTCMonth() / 3) * 3; return [iso(new Date(Date.UTC(y, q, 1))), iso(new Date(Date.UTC(y, q + 3, 0)))]; }
       case 'year': return [y + '-01-01', y + '-12-31'];
@@ -22,11 +25,20 @@
   const inRange = (d, sp) => { if (!sp || (!sp[0] && !sp[1])) return true; const x = String(d || '').slice(0, 10); if (!x) return false; return (!sp[0] || x >= sp[0]) && (!sp[1] || x <= sp[1]); };
   const label = st => { const sp = span(st); const p = PERIODS.find(x => x[0] === ((st || {}).period || 'all')) || PERIODS[0]; return p[0] === 'all' ? 'All time' : p[1] + (sp[0] || sp[1] ? ` (${sp[0] || '…'} to ${sp[1] || '…'})` : ''); };
   const hooks = {}; // key -> {state, change(), pdf()}
+  let openKey = null;
+  const fmt = x => { if (!x) return '…'; const d = new Date(x + 'T00:00:00Z'); return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }); };
+  const short = st => { const cur = (st && st.period) || 'all'; const p = PERIODS.find(x => x[0] === cur) || PERIODS[0]; const sp = span(st); if (cur === 'all') return ['All time', '']; return [cur === 'custom' ? 'Custom range' : p[1], (sp[0] === sp[1] ? fmt(sp[0]) : fmt(sp[0]) + ' – ' + fmt(sp[1]))]; };
   function bar(key, st, o) {
-    o = o || {}; const cur = (st && st.period) || 'all';
-    return `<div class="rgbar" role="group" aria-label="Timeline filter"><span class="rg-l">Timeline</span><div class="rg-p">${PERIODS.map(([p, l]) => `<button type="button" class="rg-b${cur === p ? ' on' : ''}" aria-pressed="${cur === p}" data-act="rgSet" data-k="${key}" data-p="${p}">${l}</button>`).join('')}</div>${cur === 'custom' ? `<span class="rg-c"><label>From <input type="date" value="${esc(st.from || '')}" data-change="rgDate" data-k="${key}" data-w="from" aria-label="From date"></label><label>To <input type="date" value="${esc(st.to || '')}" data-change="rgDate" data-k="${key}" data-w="to" aria-label="To date"></label></span>` : ''}${o.pdf === false ? '' : `<button type="button" class="btn sm rg-pdf" data-act="rgPdf" data-k="${key}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 11v6M9 14l3 3 3-3"/></svg>Export PDF</button>`}${o.note ? `<span class="rg-n">${esc(o.note)}</span>` : ''}</div>`;
+    o = o || {}; const cur = (st && st.period) || 'all'; const [l1, l2] = short(st); const open = openKey === key;
+    const cal = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="3"/><path d="M8 2.5v4M16 2.5v4M3 10h18"/></svg>';
+    const pop = open ? `<div class="rgdd-pop" role="dialog" aria-label="Choose a time range"><ul class="rgdd-list" role="listbox">${PERIODS.map(([p, l]) => `<li><button type="button" role="option" aria-selected="${cur === p}" class="rgdd-i${cur === p ? ' on' : ''}" data-act="rgSet" data-k="${key}" data-p="${p}">${l}</button></li>`).join('')}</ul>${cur === 'custom' ? `<div class="rgdd-c"><label>From<input type="date" value="${esc(st.from || '')}" data-change="rgDate" data-k="${key}" data-w="from" aria-label="From date"></label><label>To<input type="date" value="${esc(st.to || '')}" data-change="rgDate" data-k="${key}" data-w="to" aria-label="To date"></label><button type="button" class="btn sm primary" data-act="rgClose" data-k="${key}">Apply</button></div>` : ''}</div>` : '';
+    return `<div class="rgbar" role="group" aria-label="Timeline filter">${o.note ? `<span class="rg-n">${esc(o.note)}</span>` : ''}<div class="rgdd"><button type="button" class="rgdd-btn${cur !== 'all' ? ' set' : ''}" aria-haspopup="dialog" aria-expanded="${open}" data-act="rgOpen" data-k="${key}">${cal}<span class="rgdd-t"><b>${esc(l1)}</b>${l2 ? `<i>${esc(l2)}</i>` : ''}</span><svg class="rgdd-ch" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>${pop}</div>${cur !== 'all' ? `<button type="button" class="rg-clear" data-act="rgSet" data-k="${key}" data-p="all" aria-label="Clear time range">Clear</button>` : ''}${o.pdf === false ? '' : `<button type="button" class="btn sm rg-pdf" data-act="rgPdf" data-k="${key}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg>Export PDF</button>`}</div>`;
   }
-  ACT.rgSet = a => { const h = hooks[a.getAttribute('data-k')]; if (!h) return; const s = h.state(); s.period = a.getAttribute('data-p'); if (s.period !== 'custom') { delete s.from; delete s.to; } h.change(); };
+  ACT.rgOpen = a => { const h = hooks[a.getAttribute('data-k')]; if (!h) return; const k = a.getAttribute('data-k'); openKey = openKey === k ? null : k; h.change(); };
+  ACT.rgClose = a => { const h = hooks[a.getAttribute('data-k')]; openKey = null; if (h) h.change(); };
+  document.addEventListener('click', e => { if (openKey && !e.target.closest('.rgdd')) { const h = hooks[openKey]; openKey = null; if (h) h.change(); } });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && openKey) { const h = hooks[openKey]; openKey = null; if (h) h.change(); } });
+  ACT.rgSet = a => { const h = hooks[a.getAttribute('data-k')]; if (!h) return; const s = h.state(); s.period = a.getAttribute('data-p'); if (s.period !== 'custom') { delete s.from; delete s.to; openKey = null; } h.change(); };
   ACT.rgDate = el => { const h = hooks[el.getAttribute('data-k')]; if (!h) return; h.state()[el.getAttribute('data-w')] = el.value; h.change(); };
   ACT.rgPdf = a => { const h = hooks[a.getAttribute('data-k')]; if (h && h.pdf) h.pdf(); };
   // print through a hidden frame: the app's own stylesheet, a report header, and print rules; the browser's "Save as PDF" produces the file

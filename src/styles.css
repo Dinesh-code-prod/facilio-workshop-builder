@@ -2187,14 +2187,24 @@ body { background: linear-gradient(180deg, #E4ECFB 0, #ECF1FB 360px, #F1F5FC 100
 .tab:hover { background: #E8F0FF !important; border-color: #1570EF !important; }
 .tab.active { background: linear-gradient(90deg, #1570EF, #6B4EE6) !important; border-color: transparent !important; color: #fff !important; box-shadow: 0 8px 16px -8px rgba(21,112,239,.8); }
 .dtab.on, .dtabs .on { background: linear-gradient(90deg, #1570EF, #6B4EE6) !important; color: #fff !important; box-shadow: 0 8px 16px -8px rgba(21,112,239,.8); }
-/* timeline filter bar */
-.rgbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin: 0 0 14px; padding: 10px 14px; background: #fff; border: 1px solid #C9D6EE; border-left: 4px solid #E5197F; border-radius: 12px; box-shadow: 0 8px 20px -18px rgba(29,26,94,.6); }
-.rg-l { font-weight: 800; font-size: 13px; color: #1D1A5E; } .rg-p { display: flex; flex-wrap: wrap; gap: 6px; }
-.rg-b { border: 1px solid #C9D6EE; background: #F4F7FD; color: #1D1A5E; border-radius: 999px; padding: 6px 13px; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; } .rg-b:hover { border-color: #1570EF; background: #E8F0FF; }
-.rg-b.on { background: #1D1A5E; border-color: #1D1A5E; color: #fff; } .rg-b:focus-visible, .rg-pdf:focus-visible { outline: 3px solid rgba(21,112,239,.45); outline-offset: 2px; }
-.rg-c { display: flex; gap: 10px; flex-wrap: wrap; } .rg-c label { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #1D1A5E; } .rg-c input { min-height: 34px; }
-.rg-pdf { margin-left: auto; display: inline-flex; align-items: center; gap: 7px; background: #E5197F !important; border-color: #E5197F !important; color: #fff !important; font-weight: 700; } .rg-pdf:hover { background: #C4136B !important; }
-.rg-n { flex-basis: 100%; font-size: 12.5px; color: #5B6B88; }
+/* timeline filter: Facilio-dashboard style date-range dropdown, right aligned */
+.rgbar { position: relative; z-index: 60; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px; margin: 0 0 14px; padding: 0; background: none; border: 0; box-shadow: none; }
+.rg-n { margin-right: auto; font-size: 12.5px; color: #5B6B88; }
+.rgdd { position: relative; }
+.rgdd-btn { display: inline-flex; align-items: center; gap: 10px; height: 40px; padding: 0 14px; background: #fff; border: 1px solid #C9D6EE; border-radius: 10px; color: #1D1A5E; font: inherit; cursor: pointer; box-shadow: 0 6px 16px -12px rgba(29,26,94,.5); }
+.rgdd-btn:hover, .rgdd-btn[aria-expanded="true"] { border-color: #1570EF; box-shadow: 0 0 0 3px rgba(21,112,239,.14); }
+.rgdd-btn.set { border-color: #1570EF; background: #F2F7FF; }
+.rgdd-t { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; } .rgdd-t b { font-size: 13.5px; font-weight: 700; } .rgdd-t i { font-style: normal; font-size: 11.5px; color: #5B6B88; }
+.rgdd-ch { color: #5B6B88; }
+.rgdd-pop { position: absolute; right: 0; top: calc(100% + 8px); z-index: 80; display: flex; background: #fff; border: 1px solid #C9D6EE; border-radius: 14px; box-shadow: 0 24px 48px -16px rgba(29,26,94,.45); overflow: hidden; min-width: 200px; }
+.rgdd-list { list-style: none; margin: 0; padding: 8px; min-width: 190px; max-height: 460px; overflow-y: auto; }
+.rgdd-i { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 9px 12px; border-radius: 8px; font: inherit; font-size: 13.5px; font-weight: 550; color: #1D1A5E; cursor: pointer; }
+.rgdd-i:hover { background: #EEF3FB; } .rgdd-i.on { background: #1570EF; color: #fff; font-weight: 700; } .rgdd-i:focus-visible { outline: 3px solid rgba(21,112,239,.45); outline-offset: -2px; }
+.rgdd-c { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-left: 1px solid #E1E8F4; background: #F8FAFE; min-width: 190px; }
+.rgdd-c label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 700; color: #5B6B88; } .rgdd-c input { min-height: 36px; }
+.rg-clear { border: 0; background: none; color: #1570EF; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; padding: 6px; } .rg-clear:hover { text-decoration: underline; }
+.rg-pdf { display: inline-flex; align-items: center; gap: 7px; height: 40px !important; padding: 0 16px !important; border-radius: 10px !important; background: #1D1A5E !important; border-color: #1D1A5E !important; color: #fff !important; font-weight: 700; } .rg-pdf:hover { background: #1570EF !important; border-color: #1570EF !important; }
+.rg-pdf:focus-visible, .rgdd-btn:focus-visible { outline: 3px solid rgba(21,112,239,.45); outline-offset: 2px; }
 @media print { .rgbar { display: none !important; } }
 
 /* ===== home page: full width, colourful stat tiles and project cards (no lifecycle strip) ===== */
