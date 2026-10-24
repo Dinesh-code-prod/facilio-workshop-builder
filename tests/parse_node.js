@@ -15,5 +15,5 @@ console.log(JSON.stringify(b.portalEvidence.map(p=>({n:p.name,tabs:p.tabs.length
 console.log(JSON.stringify(b.roles.find(r=>r.name=='Vendor User').permissions.slice(0,4)));
 console.log(JSON.stringify(b.notifications.slice(0,3).map(n=>({n:n.name,m:n.module,e:n.eventLabel,c:n.criteria&&n.criteria.text,r:n.actions.recipients}))));
 console.log(JSON.stringify(b.portfolio), JSON.stringify(b.assetLinks));
-fs.writeFileSync('/tmp/claude-0/-home-claude/821e0287-8d5b-5e33-8ad9-50e9cc663de3/scratchpad/baseline.json',JSON.stringify(b));
+fs.writeFileSync(process.argv[2] || 'baseline.json',JSON.stringify(b));
 console.log('json size',JSON.stringify(b).length);
