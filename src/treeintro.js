@@ -102,7 +102,7 @@
       const trunk = mk(branches, 0, 0, UP, 330, 34, 0, S[2], DUR[0], 0, .035);
       grow(trunk, 4);
       // roots (stage 2)
-      const tap = mk(roots, 0, 0, Math.PI / 2, 190, 13, 0, S[1], 5.2, 1, 0.02);
+      const tap = mk(roots, 0, 12, Math.PI / 2, 178, 13, 0, S[1], 5.2, 1, 0.02);
       (function growRoots(p, depth) {
         if (depth >= 3) return; const spec = depth === 0 ? [[.2, -1, 64, .66], [.3, 1, 60, .66], [.46, -1, 52, .6], [.6, 1, 50, .56], [.8, -1, 40, .5], [1, 1, 28, .5]] : [[.4, -1, 46, .64], [.8, 1, 40, .6], [1, -1, 22, .6]];
         for (const [f, side, a, lf] of spec) { const s = at(p, f); const ang = s[3] + side * (a + rr(-8, 8)) * Math.PI / 180; const len = p.len * lf * rr(.9, 1.1); const k = mk(roots, s[0], s[1], ang, len, Math.max(1.4, s[2] * .62), depth + 1, p.t0 + f * p.dur, DUR[depth + 2] * 1.1, 1); growRoots(k, depth + 1); }
@@ -416,24 +416,36 @@
         { const k = (t - S[3]) / 2.6; if (k > 0 && k < 1) { g.strokeStyle = `rgba(141,184,255,${.55 * (1 - k)})`; g.lineWidth = 2; g.beginPath(); g.ellipse(0, 0, 40 + 230 * easeOut(k), 8 + 46 * easeOut(k), 0, 0, TAU); g.stroke(); } }
 
         // ---- seed: the Facilio mark's pink and teal squares drop out of the wordmark and into the ground
-        if (t < 6.4) {
+        if (t < 8.8) {
           const lg = logoReady(), la = clamp(t / .8) * (1 - sm((t - 1.9) / 1.2));
           if (lg && la > 0) { g.globalAlpha = la; g.drawImage(lg, LX, LY, LW, LH); g.globalAlpha = 1; }
-          const sink = easeIO((t - SINK0) / 1.4), vis = 1 - sm((t - 4.9) / 1.3), sa = clamp(t / .8) * vis;
+          const sink = easeIO((t - SINK0) / 1.4), vis = 1 - sm((t - 7.3) / 1.3), sa = clamp(t / .8) * vis;
           // soil ripples as each square lands
           for (const key of ['pink', 'teal']) { const k = (t - SEED[key].ts - LAND) / 1.5; if (k > 0 && k < 1) { g.strokeStyle = `rgba(141,184,255,${.5 * (1 - k)})`; g.lineWidth = 1.6; g.beginPath(); g.ellipse(SEED[key].tx * (1 - sink), 0, 12 + 70 * easeOut(k), 3 + 16 * easeOut(k), 0, 0, TAU); g.stroke(); } }
           if (t > SEED.pink.ts + LAND) { // warm glow around the landed seed
-            const pulse = (Math.sin(t * 3.2) + 1) / 2, cyg = -7 + 26 * sink, r0 = (26 + pulse * 8) * (1 - .3 * sink);
+            const pulse = (Math.sin(t * 3.2) + 1) / 2, cyg = -7 + 11 * sink, r0 = (26 + pulse * 8) * (1 - .3 * sink);
             const sg = g.createRadialGradient(0, cyg, 0, 0, cyg, r0 * 2.6); sg.addColorStop(0, `rgba(190,215,255,${.55 * sa})`); sg.addColorStop(.4, `rgba(70,140,255,${.28 * sa})`); sg.addColorStop(1, 'rgba(21,112,239,0)');
             g.fillStyle = sg; g.beginPath(); g.arc(0, cyg, r0 * 2.6, 0, TAU); g.fill();
           }
+          // the two squares touch down, then melt together into one seed that settles into the soil
+          const mg = sm((t - SEED.pink.ts - LAND - .2) / .7);
           for (const key of ['pink', 'teal']) {
             const o = SEED[key], from = sqc(SQ[key]), u = clamp((t - o.ts) / LAND), e = u * u;
             const land = t - o.ts - LAND, bounce = land > 0 ? -Math.abs(Math.sin(land * 7)) * 6 * Math.exp(-land * 4.2) : 0;
             let x = lerp(from[0], o.tx, sm(u)), y = lerp(from[1], o.ty, e) + bounce;
-            x *= 1 - .45 * sink; y += 26 * sink;
-            const rot = (1 - e) * o.rot * 1.6, s = SQS * (1 - .3 * sink);
-            g.save(); g.translate(x, y); g.rotate(rot); g.globalAlpha = sa; g.fillStyle = o.col; g.fillRect(-s / 2, -s / 2, s, s); g.restore(); g.globalAlpha = 1;
+            x *= 1 - mg; y += 11 * sink;
+            const rot = (1 - e) * o.rot * 1.6, s0 = SQS * (1 - .5 * mg);
+            if (mg < 1) { g.save(); g.translate(x, y); g.rotate(rot); g.globalAlpha = sa * (1 - mg); g.fillStyle = o.col; g.fillRect(-s0 / 2, -s0 / 2, s0, s0); g.restore(); g.globalAlpha = 1; }
+          }
+          if (mg > 0) { // the seed: an almond-shaped Facilio seed (pink to teal sheen) that cracks open as the first root pushes out
+            const sy = -7 + 11 * sink + 2 * (1 - mg), crack = sm((t - 4.4) / .8), sw = 9.5 * (1 + .1 * crack), sh = 15, tilt = (1 - sink) * .25;
+            g.save(); g.translate(0, sy); g.rotate(tilt); g.scale(mg, mg); g.globalAlpha = sa;
+            const gr = g.createLinearGradient(-sw, -sh, sw, sh); gr.addColorStop(0, '#F0509D'); gr.addColorStop(.5, '#7A4FD0'); gr.addColorStop(1, '#2EC9C4');
+            g.beginPath(); g.moveTo(0, -sh); g.bezierCurveTo(sw * 1.25, -sh * .45, sw * 1.15, sh * .55, 0, sh); g.bezierCurveTo(-sw * 1.15, sh * .55, -sw * 1.25, -sh * .45, 0, -sh); g.closePath();
+            g.fillStyle = gr; g.fill(); g.lineWidth = 1.2; g.strokeStyle = 'rgba(255,255,255,.45)'; g.stroke();
+            g.fillStyle = 'rgba(255,255,255,.35)'; g.beginPath(); g.ellipse(-sw * .38, -sh * .3, sw * .16, sh * .3, .25, 0, TAU); g.fill();   // highlight
+            if (crack > 0) { g.strokeStyle = `rgba(210,235,255,${.95 * crack})`; g.lineWidth = 1.6; g.lineCap = 'round'; g.beginPath(); g.moveTo(0, sh); g.lineTo(-2, sh * .55); g.lineTo(1.5, sh * .15); g.lineTo(-1, -sh * .25); g.stroke(); }
+            g.restore(); g.globalAlpha = 1;
           }
         }
 
