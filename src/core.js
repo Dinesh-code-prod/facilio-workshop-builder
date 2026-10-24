@@ -43,6 +43,7 @@
     plan: () => ({ notes: {}, view: {} }),
     config: () => ({ source: 'reference', importedFileId: null, importedMeta: null }),
     guide_published: () => null, schedule_published: () => null,
+    custintro: () => ({ include: { objectives: true, modules: true, roadmap: true, guides: false }, objectives: '', welcome: '' }),
     portal_controls: () => ({}), portal_published: () => null, onboarding_published: () => null, plan_struct: () => ({ rows: [], versions: [] }), ftr_wb: () => ({ versions: [] }), kpi_wb: () => ({ versions: [] }), config_digest: () => ({}), workspace: () => ({ hidden: [], labels: {}, move: {}, order: {}, groupOrder: [], custom: [] })
   };
   S.ws = newWorkshop();

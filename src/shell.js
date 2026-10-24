@@ -55,7 +55,7 @@
     { g: 'AI Delivery', icon: 'flag', items: [['aiwork', 'Deliverables & AI'], ['guidebuilder', 'User Guide Builder'], ['vidguide', 'Video to Guide'], ['hypercare', 'Hypercare'], ['ftr', 'FTR Report (Excel)'], ['kpi', 'KPI Workbooks'], ['reports', 'Status Reports (WSR / Monthly)'], ['handover', 'Handover & Closure']] },
     { g: 'Configuration', icon: 'modules', items: [['modules', 'System Modules & Form Builder'], ['flow', 'State Flow Builder'], ['roles', 'Roles & Access Permissions'], ['pkgan', 'Package Analysis'], ['cfginputs', 'Configuration Inputs'], ['trace', 'Traceability & Quality']] },
     { g: 'Requirements', icon: 'check', items: [['transcripts', 'Transcripts & Requirement Confirmation'], ['usecases', 'Use Cases'], ['checks', 'Checks & Validations'], ['brd', 'BRD Draft']] },
-    { g: 'Administration', icon: 'gear', items: [['portal', 'Customer Portal'], ['templates', 'Templates'], ['workspace', 'Workspace & Layout'], ['settings', 'Project Settings & Exports']] }
+    { g: 'Administration', icon: 'gear', items: [['portal', 'Customer Portal'], ['custintro', 'Customer Introduction'], ['templates', 'Templates'], ['workspace', 'Workspace & Layout'], ['settings', 'Project Settings & Exports']] }
   ];
   // customer menu: [view, label, portal tab that must be on]
   const CUSTOMER_NAV = [{ g: 'Project', icon: 'home', items: [['cust_home', 'Overview', 'cust_home'], ['contract', 'Know Your Contract', 'contract'], ['scope', 'Scope', 'scope'], ['kickoff', 'Kick-off', 'kickoff'], ['cplan', 'Project Plan', 'plan'], ['timeline', 'Plan Timeline', 'plan'], ['schedule', 'Workshop Schedule', 'schedule'], ['guide', 'Customer User Guide', 'guide'], ['onboarding', 'Data Onboarding', 'onboarding'], ['dashboards', 'Dashboard Gallery', 'dashboards']] },

@@ -211,3 +211,6 @@ Server `GET /api/knowledge` returns only lessons marked reusable from projects t
 
 ## 48. Phase 6 verified live (24 Oct)
 User Guide Builder: created a guide, added a section, exported Word (10.8 KB) and PDF (19 KB), approval flow not exercised. Video to Guide: generated 3-second test video, loaded it, captured 2 frames, saved 2 screenshots + 2 transcript lines, AI draft returned grounded steps with the frame tags and listed missing information. All test records and uploaded frames were deleted.
+
+## 49. Customer Introduction (24 Oct)
+`src/custintro.js` (Administration): optional customer-safe introduction (welcome, objectives, modules in scope, 12-stage roadmap with recorded status, approved guide titles) with tick-to-include, live preview and export as one standalone HTML file. facilio.work only admits Facilio staff, so customers receive the exported file. Stored as project section `custintro`. Verified live (export 3.4 KB, no internal content).
