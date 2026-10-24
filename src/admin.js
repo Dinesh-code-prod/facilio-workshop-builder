@@ -80,7 +80,7 @@
   function dashboard() {
     const tabs = `<div class="dtabs" role="tablist" aria-label="Dashboard views">${DTABS.map(([k, l]) => `<button role="tab" aria-selected="${A.dash === k}" class="dtab${A.dash === k ? ' on' : ''}" data-act="admTab" data-t="${k}">${l}</button>`).join('')}</div>`;
     const body = A.dash === 'delivery' ? deliveryDash() : A.dash === 'customers' ? customersDash() : A.dash === 'usage' ? usageDash() : A.dash === 'quality' ? qualityDash() : overviewDash();
-    return tabs + body;
+    return tabs + body + (V.admViz ? V.admViz.extra(A.dash, { A, STAGES, ownerName }) : '');
   }
 
   function deliveryDash() {
