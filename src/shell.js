@@ -191,7 +191,15 @@
   async function loadProjects() { projects = (await API.get('/api/projects')).projects; }
   const projInitials = n => String(n || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase();
   const PTONE = ['#0a5fe8', '#e91e84', '#14a8a8', '#6b4ee6', '#e08a00'];
-  function projectsHtml() {
+  const PP_STAGE = [
+  ['<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/>', 'Sign &amp; scope'],
+  ['<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 5a3 3 0 010 6M18 14c2 .7 3 2.6 3 6"/>', 'Discover needs'],
+  ['<path d="M5 4h14v16H5z"/><path d="M9 9l2 2 4-4M9 15h6"/>', 'Capture &amp; confirm'],
+  ['<path d="M6 3h9l3 3v15H6z"/><path d="M9 11h6M9 15h6M9 7h3"/>', 'Write &amp; approve'],
+  ['<path d="M4 12l5 5L20 6"/>', 'Test &amp; sign off'],
+  ['<path d="M12 3c3 2 5 5 5 9l-2 3H9l-2-3c0-4 2-7 5-9z"/><circle cx="12" cy="10" r="1.5"/><path d="M9 18l-2 3 3-1M15 18l2 3-3-1"/>', 'Launch &amp; support']
+];
+function projectsHtml() {
     const q = (S.ui.projQ || '').toLowerCase(); const list = projects.filter(p => !q || (p.name + ' ' + p.customer + ' ' + (p.description || '')).toLowerCase().includes(q));
     const hr = new Date().getHours(); const hello = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening'; const nm = S.user && S.user.name && !S.user.guest && S.user.email && !/guest\.local$/.test(S.user.email) ? ', ' + String(S.user.name).split(' ')[0] : '';
     const last = projects.slice().sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')))[0];
@@ -203,7 +211,7 @@
     return `<div class="projects-page pp"><section class="pp-hero"><div><p class="pp-eyebrow">${hello}${esc(nm)} <span aria-hidden="true">👋</span></p><h1>Customer projects</h1><p class="pp-copy">Plan, organize, and deliver customer implementations with the help of AI.</p></div>
         <div class="pp-art" aria-hidden="true"><span class="pp-glow"></span><div class="pp-panel back"><span class="pp-plabel">WORKSPACE</span><span class="pp-line l1"></span><span class="pp-line l2"></span><span class="pp-line l3"></span></div><div class="pp-panel"><span class="pp-plabel">facilio</span><span class="pp-line l1"></span><span class="pp-line l2"></span><div class="pp-chart"><i></i><i></i><i></i></div></div><span class="pp-orb">AI</span><span class="pp-spark s1">✦</span><span class="pp-spark s2">✧</span></div>${newBtn}</section>
       <section class="pp-stats" aria-label="Project statistics">${stat(projects.length, 'Projects', '', 'f')}${stat(custs, 'Customers', 'teal', 'u')}${stat(recent, 'Updated this week', 'pink', 'r')}${stat(last ? esc(fmtDate(last.updatedAt)) : '—', 'Last activity', 'navy', 'c')}</section>
-      <section class="pp-journey"><div class="pp-head"><h2>Your delivery journey</h2><button class="pp-watch" type="button" data-act="replayRoadmap"><span>▶</span> WATCH THE INTRODUCTION</button></div><div class="pp-timeline">${steps.map((t, i) => `<div class="pp-stage" style="--c:${t[1]};--n:${t[2]};--d:${i * 90}ms"><div class="pp-node">${i + 1}</div><div class="pp-stage-label">${t[0]}</div></div>`).join('')}</div></section>
+      <section class="pp-journey"><div class="pp-head"><h2>Your delivery journey</h2><button class="pp-watch" type="button" data-act="replayRoadmap"><span>▶</span> WATCH THE INTRODUCTION</button></div><div class="pp-timeline">${steps.map((t, i) => { const m = PP_STAGE[i] || PP_STAGE[0]; return `<div class="pp-stage" style="--c:${t[1]};--n:${t[2]};--d:${i * 90}ms"><div class="pp-tile"><span class="pp-step">STEP ${i + 1}</span><div class="pp-node"><svg viewBox="0 0 24 24" aria-hidden="true">${m[0]}</svg></div><div class="pp-stage-label">${t[0]}</div><div class="pp-stage-sub">${m[1]}</div></div></div>`; }).join('')}</div></section>
       ${projects.length > 3 ? `<div class="pp-search-row"><input type="search" id="projQ" class="proj-search" placeholder="Search projects" value="${esc(S.ui.projQ || '')}" aria-label="Search projects"></div>` : ''}
       ${list.length ? '<div class="pj-sec">Your projects</div>' : ''}
       ${list.length ? `<div class="grid g3 proj-grid">${list.map((p, k) => `<div class="card proj-card" style="--tone:${PTONE[k % PTONE.length]};--d:${Math.min(k, 8) * 60}ms" data-act="openProject" data-id="${esc(p.id)}" role="button" tabindex="0"><div class="row" style="align-items:flex-start;gap:12px"><div class="proj-av">${esc(projInitials(p.customer || p.name))}</div><div style="flex:1;min-width:0"><h3>${esc(p.name)}</h3><div class="cust">${esc(p.customer)}</div></div>${tag(p.role === 'owner' ? 'blue' : p.role === 'viewer' ? 'low' : 'green', humanize(p.role))}</div><div class="small muted proj-desc">${esc((p.description || '').slice(0, 140)) || 'No description yet.'}</div><div class="row proj-foot"><span class="xs muted" style="flex:1">Updated ${esc(fmtDate(p.updatedAt))}${p.startDate ? ' · starts ' + esc(fmtDate(p.startDate)) : ''}</span>${p.role !== 'viewer' ? `<button class="btn sm" data-act="editProjectCard" data-id="${esc(p.id)}">${ico('edit')}Edit details</button>` : ''}</div></div>`).join('')}</div>`
