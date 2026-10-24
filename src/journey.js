@@ -138,7 +138,4 @@
       doc.addEventListener('keydown', function esc2(e) { if (closed) { doc.removeEventListener('keydown', esc2); return; } if (e.key === 'Escape') close(); });
     });
   };
-  // the existing introduction ends by entering the application; the isometric story plays right after it and then hands over to the page
-  const base = V.roadmap;
-  if (base) V.roadmap = async function (opts) { await base(opts); try { await V.isoIntro(); } catch (e) { } };
 })(typeof window !== 'undefined' ? window : globalThis);

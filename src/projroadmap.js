@@ -40,7 +40,7 @@
       const path = pos.map(([x, y], i) => (i ? 'L' : 'M') + (x + 44) + ' ' + (y + 22)).join(' ');
       const svg = `<svg class="pr-svg" viewBox="0 0 ${W} ${3 * rowH + 30}" role="img" aria-label="Delivery roadmap"><path d="${path}" fill="none" stroke="#D0D5DD" stroke-width="2" stroke-dasharray="4 5"/>${L.map((s, i) => tile(i, s, pos[i][0], pos[i][1]) + `<text x="${pos[i][0] + 44}" y="${pos[i][1] + 72}" text-anchor="middle" font-size="12" font-weight="600" fill="#101828">${esc(s.name)}</text>`).join('')}</svg>`;
       return `<div class="page-header"><div class="t"><h1>Project Roadmap</h1><p>The twelve delivery stages and where this project stands. Status comes only from what is recorded in the project, so a stage stays "Not started" until something is saved for it. Select a stage to open its screen.</p></div></div>
-      <div class="page-body"><div class="card" style="padding:14px"><div class="small muted" style="margin-bottom:6px">${done} of ${L.length} stages complete</div>${svg}</div>
+      <div class="page-body"><div class="card" style="padding:14px"><div class="small muted" style="margin-bottom:6px">${done} of ${L.length} stages complete</div>${V.isoJourney ? V.isoJourney({ mode: 'team' }) : svg}</div>
       <div class="card" style="margin-top:14px"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Stage</th><th>Status</th><th>Recorded</th><th></th></tr></thead><tbody>${L.map((s, i) => `<tr><td><b>${i + 1}. ${esc(s.name)}</b></td><td><span style="color:${ST[s.state][1]};font-weight:600">${ST[s.state][0]}</span></td><td class="small">${esc(s.detail)}</td><td><button class="btn sm ghost" data-act="nav" data-view="${s.view}">Open</button></td></tr>`).join('')}</tbody></table></div></div></div>`;
     }
   };
