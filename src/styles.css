@@ -2659,3 +2659,19 @@ label.f, .lbl { font-weight: 600; color: var(--fx); }
 /* footer: anchored at the bottom of the independently scrolling nav, opaque so rows never show through */
 .sidebar .sb-foot { position: sticky; bottom: 0; margin: 8px -12px 0 !important; padding: 10px 12px 12px !important; background: #fff !important; border-top: 1px solid #E1E8F4 !important; z-index: 2; }
 .sidebar .sb-out { width: 100%; box-sizing: border-box; min-height: 38px; }
+
+/* ===== KPI cards in the Facilio dashboard style: white card, 4px coloured top bar, small muted label, value, muted caption ===== */
+.card.stat, .kpi, .adm-main .kpi { --kc: #1D1A5E; display: flex !important; flex-direction: column; gap: 6px; position: relative; overflow: hidden; min-height: 92px; padding: 16px 16px 14px !important; background: #fff !important; background-image: none !important; border: 1px solid #E4E7EC !important; border-top: 4px solid var(--kc) !important; border-left: 1px solid #E4E7EC !important; border-radius: 8px !important; box-shadow: none !important; text-align: left; }
+.card.stat::before, .card.stat::after, .kpi::before, .adm-main .kpi::before { content: none !important; display: none !important; }
+.card.stat .l, .kpi-l, .kpi-s { order: 0; margin: 0 !important; font-size: 12.5px !important; font-weight: 500 !important; line-height: 1.35; color: #667085 !important; }
+.card.stat .v, .kpi-v { order: 1; margin: 0 !important; font-size: 24px !important; font-weight: 600 !important; line-height: 1.2; letter-spacing: -.01em !important; color: #101828 !important; }
+.kpi-l { order: 0; } .kpi-s { order: 2; } .card.stat .l { order: 0; }
+.card.stat *, .card.stat .n, .card.stat b { color: inherit; } .card.stat .v { color: #101828 !important; }
+.card.stat:hover, .kpi:hover, .card.stat.click:hover, .kpi.click:hover { box-shadow: 0 4px 14px rgba(16, 24, 40, .08) !important; transform: translateY(-1px); border-color: #D0D5DD !important; border-top-color: var(--kc) !important; }
+.card.stat:nth-child(8n+1), .kpi:nth-child(8n+1) { --kc: #1D1A5E; } .card.stat:nth-child(8n+2), .kpi:nth-child(8n+2) { --kc: #1570EF; }
+.card.stat:nth-child(8n+3), .kpi:nth-child(8n+3) { --kc: #E5A400; } .card.stat:nth-child(8n+4), .kpi:nth-child(8n+4) { --kc: #E5197F; }
+.card.stat:nth-child(8n+5), .kpi:nth-child(8n+5) { --kc: #17B3AE; } .card.stat:nth-child(8n+6), .kpi:nth-child(8n+6) { --kc: #6B4EE6; }
+.card.stat:nth-child(8n+7), .kpi:nth-child(8n+7) { --kc: #8DB8FF; } .card.stat:nth-child(8n+8), .kpi:nth-child(8n+8) { --kc: #3FB950; }
+.kpi.k-blue { --kc: #1570EF !important; } .kpi.k-pink { --kc: #E5197F !important; } .kpi.k-teal { --kc: #17B3AE !important; } .kpi.k-warn { --kc: #E5A400 !important; }
+.kpi-grid { gap: 14px; }
+.card.stat.stat:nth-child(n), .card.stat.stat.click:nth-child(n) { border-left: 1px solid #E4E7EC !important; border-top-color: var(--kc) !important; }
