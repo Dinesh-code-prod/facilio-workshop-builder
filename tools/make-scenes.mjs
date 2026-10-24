@@ -5,10 +5,10 @@ import fs from 'node:fs'; import path from 'node:path';
 const out = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'public', 'brand', 'lottie'); fs.mkdirSync(out, { recursive: true });
 const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
 const K = { navy: '#1D1A5E', blue: '#1570EF', pink: '#E5197F', teal: '#2EC9C4', sky: '#8DB8FF', ice: '#EEF3FB', line: '#CBD6EA', white: '#FFFFFF', ink: '#3A3F63', mid: '#5B6CFF' };
-const EASE = { i: { x: [0.25], y: [1] }, o: { x: [0.75], y: [0] } }, LIN = { i: { x: [1], y: [1] }, o: { x: [0], y: [0] } };
+const EASE = { i: { x: [0.18], y: [1] }, o: { x: [0.42], y: [0] } }, LIN = { i: { x: [1], y: [1] }, o: { x: [0], y: [0] } };
 const kf = (keys, ease = EASE) => ({ a: 1, k: keys.map(([t, v], i) => { const k = { t, s: Array.isArray(v) ? v : [v] }; if (i < keys.length - 1) Object.assign(k, ease); return k; }) });
 const S = v => ({ a: 0, k: v });
-const OP = 168;
+const OP = 168; const SOFT = { i: { x: [0.45], y: [1] }, o: { x: [0.55], y: [0] } };
 // shape builders (return group items without transform)
 const rr = (w, h, r, o = {}) => [{ ty: 'rc', p: S([o.cx || 0, o.cy || 0]), s: S([w, h]), r: S(r), d: 1 }, ...paint(o)];
 const el = (w, h, o = {}) => [{ ty: 'el', p: S([o.cx || 0, o.cy || 0]), s: S([w, h]), d: 1 }, ...paint(o)];
@@ -21,7 +21,7 @@ const gear = (R, o = {}) => { const pts = []; for (let i = 0; i < 16; i++) { con
 function mk(items, ks0, nm = 'l') {
   const { x, y, t = 0, d = 14, a = 'pop', rot, spin, move, hold = true } = ks0; const op = [[t, 0], [t + 5, 100]]; if (hold) op.push([OP - 16, 100], [OP - 3, 0]);
   const ks = { o: kf(op, LIN), r: S(rot || 0), p: S([x, y, 0]), a: S([0, 0, 0]), s: S([100, 100, 100]) };
-  if (a === 'pop') ks.s = kf([[t, [0, 0, 100]], [t + d * .6, [116, 116, 100]], [t + d, [100, 100, 100]], [OP - 3, [100, 100, 100]]]);
+  if (a === 'pop') { ks.s = kf([[t, [0, 0, 100]], [t + d * .55, [122, 122, 100]], [t + d * .8, [94, 94, 100]], [t + d, [100, 100, 100]], [OP - 3, [100, 100, 100]]]); if (nm !== 'bg' && !move) ks.p = kf([[t, [x, y, 0]], [t + d, [x, y, 0]], [t + d + 34, [x, y - 3, 0]], [t + d + 68, [x, y, 0]], [t + d + 102, [x, y - 3, 0]], [OP - 3, [x, y, 0]]], SOFT); }
   if (a === 'rise') ks.p = kf([[t, [x, y + 16, 0]], [t + d, [x, y, 0]], [OP - 3, [x, y, 0]]]);
   if (a === 'gy') ks.s = kf([[t, [100, 0, 100]], [t + d, [100, 100, 100]], [OP - 3, [100, 100, 100]]]);
   if (a === 'gx') ks.s = kf([[t, [0, 100, 100]], [t + d, [100, 100, 100]], [OP - 3, [100, 100, 100]]]);

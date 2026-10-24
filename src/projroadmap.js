@@ -32,16 +32,23 @@
   V.roadmapStages = stages;
   document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target && e.target.classList && e.target.classList.contains('pr-t')) { e.preventDefault(); e.target.dispatchEvent(new MouseEvent('click', { bubbles: true })); } });
   const tile = (i, s, x, y) => { const [lab, col] = ST[s.state]; return `<g class="pr-t" transform="translate(${x},${y})" data-act="nav" data-view="${s.view}" tabindex="0" role="link" aria-label="${esc(s.name)}: ${lab}. ${esc(s.detail)}"><rect x="-4" y="-6" width="96" height="66" fill="transparent"/><g class="pr-in"><path d="M0 22 L44 0 L88 22 L44 44 Z" fill="${col}" opacity=".16"/><path d="M0 22 L44 0 L88 22 L44 44 Z" fill="none" stroke="${col}" stroke-width="1.6"/><path d="M0 22 L0 32 L44 54 L44 44 Z" fill="${col}" opacity=".5"/><path d="M88 22 L88 32 L44 54 L44 44 Z" fill="${col}" opacity=".32"/><text x="44" y="27" text-anchor="middle" font-size="13" font-weight="700" fill="${col}">${i + 1}</text></g></g>`; };
+  const PHASES = [['Discover and define', 0, 4], ['Build and validate', 4, 7], ['Launch', 7, 10], ['Hand over', 10, 12]];
+  const MARK = { none: '○', progress: '◐', done: '✓' };
+  V.roadmapReady = () => { I().load(KINDS); return I().ready(['scope', 'build', 'uat', 'checklist']); };
+  // one-line summary reused by the Project Overview: counts, current stage, and a segmented bar
+  V.roadmapStrip = () => {
+    if (!V.roadmapReady()) return '';
+    const L = stages(); const done = L.filter(s => s.state === 'done').length; const cur = L.findIndex(s => s.state !== 'done');
+    return `<div class="card rm-strip"><div class="rm-strip-h"><div><h3>Delivery progress</h3><p class="small muted">${done} of ${L.length} stages complete${cur >= 0 ? ' · Current stage: <b>' + esc(L[cur].name) + '</b>' : ' · All stages complete'}</p></div><button class="btn sm" data-act="nav" data-view="proadmap">Open roadmap</button></div><div class="rm-seg" role="img" aria-label="${done} of ${L.length} stages complete">${L.map((x, i) => `<i class="${x.state}${i === cur ? ' cur' : ''}" title="${i + 1}. ${esc(x.name)}: ${ST[x.state][0]}"></i>`).join('')}</div></div>`;
+  };
   V.proadmap = {
     html() {
-      I().load(KINDS); if (!I().ready(['scope', 'build', 'uat', 'checklist'])) return '<div class="page-body"><div class="muted" style="padding:20px">Loading…</div></div>';
-      const L = stages(); const done = L.filter(s => s.state === 'done').length; const cols = 4; const W = 4 * 150 + 40, rowH = 120;
-      const pos = L.map((s, i) => { const r = Math.floor(i / cols), c = i % cols; const cc = r % 2 ? cols - 1 - c : c; return [20 + cc * 150, 20 + r * rowH + (cc % 2) * 14]; });
-      const path = pos.map(([x, y], i) => (i ? 'L' : 'M') + (x + 44) + ' ' + (y + 22)).join(' ');
-      const svg = `<svg class="pr-svg" viewBox="0 0 ${W} ${3 * rowH + 30}" role="img" aria-label="Delivery roadmap"><path d="${path}" fill="none" stroke="#D0D5DD" stroke-width="2" stroke-dasharray="4 5"/>${L.map((s, i) => tile(i, s, pos[i][0], pos[i][1]) + `<text x="${pos[i][0] + 44}" y="${pos[i][1] + 72}" text-anchor="middle" font-size="12" font-weight="600" fill="#101828">${esc(s.name)}</text>`).join('')}</svg>`;
-      return `<div class="page-header"><div class="t"><h1>Project Roadmap</h1><p>The twelve delivery stages and where this project stands. Status comes only from what is recorded in the project, so a stage stays "Not started" until something is saved for it. Select a stage to open its screen.</p></div></div>
-      <div class="page-body"><div class="card" style="padding:14px"><div class="small muted" style="margin-bottom:6px">${done} of ${L.length} stages complete</div>${V.isoJourney ? V.isoJourney({ mode: 'team' }) : svg}</div>
-      <div class="card" style="margin-top:14px"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Stage</th><th>Status</th><th>Recorded</th><th></th></tr></thead><tbody>${L.map((s, i) => `<tr><td><b>${i + 1}. ${esc(s.name)}</b></td><td><span style="color:${ST[s.state][1]};font-weight:600">${ST[s.state][0]}</span></td><td class="small">${esc(s.detail)}</td><td><button class="btn sm ghost" data-act="nav" data-view="${s.view}">Open</button></td></tr>`).join('')}</tbody></table></div></div></div>`;
+      if (!V.roadmapReady()) return '<div class="page-body"><div class="muted" style="padding:20px">Loading…</div></div>';
+      const L = stages(); const n = k => L.filter(s => s.state === k).length; const done = n('done'), prog = n('progress'), none = n('none'); const cur = L.findIndex(s => s.state !== 'done');
+      const card = (s, i) => `<li><button type="button" class="rm-c ${s.state}${i === cur ? ' cur' : ''}" data-act="nav" data-view="${s.view}" aria-label="Stage ${i + 1}, ${esc(s.name)}: ${ST[s.state][0]}. ${esc(s.detail)}. Open"><span class="rm-n">${i + 1}</span><span class="rm-b"><b>${esc(s.name)}</b><span class="rm-s">${MARK[s.state]} ${ST[s.state][0]}${i === cur ? ' · Current' : ''}</span><span class="rm-d">${esc(s.detail)}</span></span><span class="rm-go" aria-hidden="true">›</span></button></li>`;
+      return `<div class="page-header"><div class="t"><h1>Project Roadmap</h1><p>The twelve delivery stages in order. Status comes only from what is recorded in the project. Select a stage to open its work.</p></div></div>
+      <div class="page-body"><div class="card rm-sum"><div class="rm-counts"><div><b>${done}</b><span>Complete</span></div><div><b>${prog}</b><span>In progress</span></div><div><b>${none}</b><span>Not started</span></div></div><div class="rm-seg" role="img" aria-label="${done} of ${L.length} stages complete">${L.map((x, i) => `<i class="${x.state}${i === cur ? ' cur' : ''}" title="${i + 1}. ${esc(x.name)}: ${ST[x.state][0]}"></i>`).join('')}</div></div>
+      ${PHASES.map(([t, a, b]) => `<section class="rm-ph"><h2>${esc(t)}<span class="muted">Stages ${a + 1}${b - a > 1 ? ' to ' + b : ''}</span></h2><ol class="rm-grid">${L.slice(a, b).map((s, k) => card(s, a + k)).join('')}</ol></section>`).join('')}</div>`;
     }
   };
 })(typeof window !== 'undefined' ? window : globalThis);

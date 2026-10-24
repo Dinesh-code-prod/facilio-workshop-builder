@@ -98,8 +98,12 @@
       function finish(how) {
         if (closed) return; closed = true; clearTimeout(timer); if (car) clearInterval(car); root.cancelAnimationFrame(raf); anims.forEach(a => { try { a.destroy(); } catch (e) { } });
         const off = o.querySelector('#cnOff'); const flag = !!(off && off.checked);
-        o.classList.add('out'); doc.body.classList.remove('cn-on'); root.removeEventListener('keydown', key); root.removeEventListener('resize', onResize);
-        setTimeout(() => o.remove(), still ? 0 : 600); resolve({ how, off: flag });
+        doc.body.classList.remove('cn-on'); root.removeEventListener('keydown', key); root.removeEventListener('resize', onResize);
+        if (opts.wipe && !still) { // brand panels sweep over the screen; the introduction is removed once they cover it, so nothing heavy animates underneath
+          const w = doc.createElement('div'); w.className = 'cn-wipe'; w.setAttribute('aria-hidden', 'true'); w.innerHTML = '<i></i><i></i><i></i><img src="brand/logo-white.png" alt="" width="132" height="36">'; doc.body.appendChild(w);
+          setTimeout(() => o.classList.add('gone'), 440); setTimeout(() => o.remove(), 560); doc.body.classList.add('login-in'); setTimeout(() => { w.remove(); doc.body.classList.remove('login-in'); }, 1500); resolve({ how, off: flag }); return;
+        }
+        o.classList.add('out'); setTimeout(() => o.remove(), still ? 0 : 600); resolve({ how, off: flag });
       }
       const key = e => { if (e.key === 'Escape') finish('skip'); else if (e.key === 'Enter' && o.getAttribute('data-sc') === 'cta' && doc.activeElement && doc.activeElement.tagName !== 'INPUT') finish('go'); };
       o.addEventListener('click', e => { const b = e.target.closest('[data-r]'); if (b) finish(b.getAttribute('data-r')); });
