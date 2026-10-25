@@ -2490,6 +2490,8 @@ label.f, .lbl { font-weight: 600; color: var(--fx); }
 /* ---- Tree-growth introduction (src/treeintro.js). Scoped under .cn.ti; the classic intro styles are untouched. ---- */
 .cn.ti{--navy:#1D1A5E;--deep:#0A0930;--blue:#1570EF;--sky:#8DB8FF;--pink:#E5197F;--teal:#2EC9C4;--ink:#F4F7FF;background:#0A0930;color:#F4F7FF;overflow:hidden;opacity:1;transition:opacity .6s}
 .cn.ti.out{opacity:0;pointer-events:none}
+.cn.ti .ti-liq{position:absolute;inset:0;width:100%;height:100%;z-index:60;pointer-events:none}
+.cn.ti.liq .labels,.cn.ti.liq .brand.on,.cn.ti.liq .top,.cn.ti.liq .head,.cn.ti.liq .fade{opacity:0;pointer-events:none;transition:opacity .45s .15s}
 .cn.ti .ti-off{font-size:13px;color:rgba(220,230,255,.8);display:flex;gap:8px;align-items:center;cursor:pointer}
 .cn.ti .hello{margin:0;font-size:14px;font-weight:600;color:var(--sky)}
 @media (prefers-reduced-motion: reduce){.cn.ti,.cn.ti *{transition-duration:.01s !important;transition-delay:0s !important}}
@@ -2528,7 +2530,7 @@ label.f, .lbl { font-weight: 600; color: var(--fx); }
 .cn.ti .lbl.act .t{font-size:14px; font-weight:700; line-height:1.25; color:#fff; padding-top:2px;}
 .cn.ti .lbl.act .d{display:block; margin-top:3px; font-size:12px; line-height:1.4; color:rgba(215,226,255,.82); white-space:normal;}
 .cn.ti .lbl:hover .in{border-color:rgba(141,184,255,.6);}
-.cn.ti .brand{position:absolute; z-index:6; display:flex; flex-direction:column; align-items:center; text-align:center; gap:18px; opacity:0; pointer-events:none; transition:opacity .9s;}
+.cn.ti .brand{position:absolute; z-index:6; display:flex; flex-direction:column; align-items:center; text-align:center; gap:18px; opacity:0; pointer-events:none; transition:opacity .9s .5s;}
 .cn.ti .brand.on{opacity:1; pointer-events:auto;}
 .cn.ti .brand img{width:clamp(190px,24vw,300px); display:block;}
 .cn.ti .brand .ds{font-size:clamp(16px,1.8vw,22px); font-weight:500; letter-spacing:.14em; color:rgba(220,230,255,.9);}
