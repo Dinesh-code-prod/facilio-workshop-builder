@@ -28,4 +28,4 @@ Deploy `dist/` to the app with the facilio.work tools: `get_upload_url`, upload 
 `projects` · `usr` (people) · `grant` (admin grants) · `doc.<pid>` and `dp.<pid>` (documents and their parts) · `it.<pid>.<kind>` and `ip.<pid>.<kind>` (records) · `fl.<pid>` (files) · `au.<pid>` and `au.sys` (activity) · `gr.<pid>` (guide answers) · `fb.<pid>` (customer questions). Records over about 100 KB are gzipped and split into parts to stay under the 128 KB limit.
 
 ## History
-The first version ran on Netlify Functions with Postgres and Blobs, then briefly on Facilio Run. Both were retired; the old code remains in the Git history.
+Earlier hosting set-ups have been retired; the app now runs only on facilio.work.
