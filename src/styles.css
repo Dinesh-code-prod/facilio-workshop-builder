@@ -2985,11 +2985,10 @@ body .pp-journey { background: linear-gradient(180deg, #F3F7FF, #fff 70%) !impor
 .ri { --ri-night: #0A0930; --ri-navy: #1D1A5E; --ri-blue: #1570EF; --ri-sky: #8DB8FF; --ri-teal: #2EC9C4; --ri-pink: #E5197F; --ri-ink: #F4F7FF; --ri-soft: rgba(220, 230, 255, .8);
   position: fixed; inset: 0; z-index: 10000; overflow: hidden; background: var(--ri-night); color: var(--ri-ink); font-family: Inter, Roboto, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
   -webkit-font-smoothing: antialiased; transform: translate3d(0, 0, 0); opacity: 1; }
-/* the exit: the whole scene rises as one layer and fades, so the sign-in page underneath shows through while it moves */
-.ri.rise { transform: translate3d(0, -36vh, 0); opacity: 0; pointer-events: none; will-change: transform, opacity;
-  transition: transform 1050ms cubic-bezier(0.22, 1, 0.36, 1), opacity 950ms cubic-bezier(0.4, 0, 0.25, 1); }   /* opacity eases more gently, so the scene and the sign-in page stay visibly blended through the middle of the move */
+/* the exit (drawn in src/roadintro.js): while lifting, the layer's own background is removed so only the rising elements cover the sign-in page beneath */
+.ri.lifting { background: transparent; pointer-events: none; }
+.ri.lifting .ri-cap, .ri.lifting .ri-open { transition: none; opacity: 0; }
 .ri.fade { opacity: 0; pointer-events: none; transition: opacity 320ms linear; }
-.ri.rise *, .ri.fade * { backdrop-filter: none !important; }
 .ri canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .ri-bar { position: absolute; z-index: 5; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 12px; padding: calc(16px + env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) 12px max(20px, env(safe-area-inset-left, 0px)); }
 .ri-bar img { height: 24px; width: auto; display: block; }
@@ -3005,19 +3004,20 @@ body .pp-journey { background: linear-gradient(180deg, #F3F7FF, #fff 70%) !impor
 .ri-open.on { opacity: 1; }
 .ri-open h1 { margin: 0; font-size: clamp(26px, 3.4vw, 44px); font-weight: 700; letter-spacing: -.02em; color: #fff; text-wrap: balance; text-shadow: 0 2px 24px rgba(5, 4, 30, .7); }
 .ri-open p { margin: 10px 0 0; font-size: clamp(14px, 1.3vw, 17px); color: var(--ri-soft); text-shadow: 0 1px 14px rgba(5, 4, 30, .8); }
-/* step caption: stays in one place while it is read; the scene beside the post shows the same three components */
-.ri-cap { position: absolute; z-index: 4; left: 0; top: 0; width: min(360px, calc(100vw - 32px)); opacity: 0; pointer-events: none; transition: opacity .55s; }
+/* step sign: sits on top of its roadside post; the customer's challenge, then how Facilio helps */
+.ri-cap { position: absolute; z-index: 4; left: 0; top: 0; width: min(310px, calc(100vw - 28px)); box-sizing: border-box; padding: 14px 16px 15px; border-radius: 14px;
+  background: rgba(13, 12, 58, .86); border: 1px solid rgba(141, 184, 255, .32); box-shadow: 0 18px 40px -18px rgba(0, 0, 0, .75), 0 0 0 4px rgba(141, 184, 255, .07);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; pointer-events: none; transition: opacity .5s; }
 .ri-cap.on { opacity: 1; }
-.ri-cap::before { content: ""; position: absolute; inset: -30px -40px -28px -36px; z-index: -1; border-radius: 40%; background: radial-gradient(closest-side, rgba(8, 7, 40, .7), rgba(8, 7, 40, 0)); }
-.ri-k { font-size: 12px; font-weight: 600; letter-spacing: .06em; color: var(--ri-sky); font-variant-numeric: tabular-nums; }
-.ri-cap h2 { margin: 6px 0 0; font-size: clamp(21px, 1.9vw, 27px); font-weight: 700; letter-spacing: -.015em; line-height: 1.15; color: #fff; text-wrap: balance; text-shadow: 0 1px 18px rgba(5, 4, 30, .8); }
-.ri-cap p { margin: 8px 0 0; font-size: 15px; line-height: 1.5; color: var(--ri-soft); text-shadow: 0 1px 12px rgba(5, 4, 30, .9); }
-.ri-cap ul { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
-.ri-cap li { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; padding: 5px 11px 5px 8px; border-radius: 999px; background: rgba(14, 13, 62, .66);
-  border: 1px solid rgba(255, 255, 255, .14); color: rgba(235, 241, 255, .55); transition: color .4s, border-color .4s, background .4s, transform .5s cubic-bezier(.2, .8, .2, 1); transform: translateY(4px); }
-.ri-cap li i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, .3); transition: background .4s, box-shadow .4s; }
-.ri-cap li.on { color: #fff; border-color: rgba(141, 184, 255, .55); background: rgba(21, 112, 239, .28); transform: none; }
-.ri-cap li.on i { background: var(--ri-teal); box-shadow: 0 0 8px rgba(46, 201, 196, .8); }
+.ri-k { font-size: 11.5px; font-weight: 600; letter-spacing: .06em; color: var(--ri-sky); font-variant-numeric: tabular-nums; }
+.ri-cap h2 { margin: 4px 0 10px; font-size: 19px; font-weight: 700; letter-spacing: -.01em; line-height: 1.2; color: #fff; text-wrap: balance; }
+.ri-cap dl { margin: 0; display: grid; gap: 8px; }
+.ri-cap dl > div { padding-left: 14px; position: relative; }
+.ri-cap dl > div::before { content: ""; position: absolute; left: 0; top: 5px; width: 7px; height: 7px; border-radius: 50%; }
+.ri-c::before { background: var(--ri-pink); } .ri-f::before { background: var(--ri-teal); box-shadow: 0 0 8px rgba(46, 201, 196, .7); }
+.ri-cap dt { font-size: 11.5px; font-weight: 600; color: rgba(205, 218, 255, .72); }
+.ri-cap dd { margin: 1px 0 0; font-size: 14px; line-height: 1.4; color: #fff; }
+.ri-c dd { color: rgba(225, 232, 255, .86); }
 .ri-chip { position: absolute; z-index: 4; left: 0; top: 0; display: flex; align-items: center; gap: 7px; white-space: nowrap; opacity: 0; pointer-events: none; font-size: 12.5px; font-weight: 600; color: #fff;
   padding: 4px 10px 4px 4px; border-radius: 999px; background: rgba(10, 9, 48, .72); border: 1px solid rgba(255, 255, 255, .16); transition: opacity .6s; }
 .ri-chip.on { opacity: 1; }
@@ -3043,10 +3043,10 @@ body .pp-journey { background: linear-gradient(180deg, #F3F7FF, #fff 70%) !impor
 .ri-still p { margin: 5px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--ri-soft); }
 .ri-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .ri.narrow .ri-sep, .ri.narrow .ri-prod, .ri.narrow .ri-note { display: none; }
-.ri.narrow .ri-cap h2 { font-size: 20px; }
-.ri.narrow .ri-cap p { font-size: 14px; }
+.ri.narrow .ri-cap h2 { font-size: 17px; }
+.ri.narrow .ri-cap dd { font-size: 13.5px; }
 .ri.narrow .ri-still ol { grid-template-columns: 1fr; gap: 8px; }
 .ri.narrow .ri-still p { margin-top: 2px; }
 .ri.narrow .ri-end { top: 11%; }
-@media (prefers-reduced-motion: reduce) { .ri .ri-cap, .ri .ri-chip, .ri .ri-end, .ri .ri-open, .ri .ri-cap li, .ri .ri-route span, .ri .ri-route i { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .ri .ri-cap, .ri .ri-chip, .ri .ri-end, .ri .ri-open, .ri .ri-route span, .ri .ri-route i { transition: none; } }
 /* ---- end road intro ---- */
