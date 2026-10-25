@@ -8,5 +8,5 @@
   if (!forced && (seen || automated || /[?&]nointro\b|#\/welcome/.test(root.location.search + root.location.hash))) return;
   try { sessionStorage.setItem('fwb_intro', '1'); } catch (e) { }
   // the rest of the app is bundled after this file, so start on the next tick
-  setTimeout(() => { try { const V = root.FWBViews; if (!V || !V.cinema) return; V.cinema({ aud: 'public', cta: 'Get started', wipe: true }).then(() => { }); } catch (e) { } }, 0);
+  setTimeout(() => { try { const V = root.FWBViews; if (!V || !V.cinema) return; V.cinema({ aud: 'public', cta: 'Get started', liquid: true }).then(() => { }); } catch (e) { } }, 0);
 })(typeof window !== 'undefined' ? window : globalThis);

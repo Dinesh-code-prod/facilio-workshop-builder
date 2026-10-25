@@ -74,7 +74,7 @@
   ACT.openWelcome = () => { try { root.history.replaceState(null, '', '#/welcome'); } catch (e) { } mount(); };
   ACT.wlClose = close;
   ACT.wlGo = a => { const t = el && el.querySelector('#' + a.getAttribute('data-to')); if (t) t.scrollIntoView({ behavior: reduce() ? 'auto' : 'smooth', block: 'start' }); };
-  ACT.wlTree = () => { if (V.treeIntro) V.treeIntro({ aud: 'public', cta: 'Back to the overview' }).then(() => { }); };
+  ACT.wlTree = () => { if (V.treeIntro) V.treeIntro({ aud: 'public', cta: 'Get started', liquid: true }).then(() => close()); };   // Get started pours the liquid reveal straight into the sign-in page
   const check = () => { if (/#\/welcome\b/.test(root.location.hash)) mount(); else if (el) close(); };
   root.addEventListener('hashchange', check);
   setTimeout(check, 0);

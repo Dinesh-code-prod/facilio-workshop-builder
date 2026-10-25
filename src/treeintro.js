@@ -21,7 +21,7 @@
         <div class="brand" data-i="brand">${nm ? `<p class="hello">Welcome, ${esc(nm)}</p>` : ''}<img src="brand/logo-white.png" alt="Facilio" width="320" height="88"><div class="ds">Delivery Studio</div><div class="tagl" aria-label="Capture. Configure. Go live."><span>Capture.</span><span>Configure.</span><span>Go live.</span></div><button type="button" class="go" data-i="go" data-r="go">${esc(opts.cta || 'Get started')}</button>${opts.off ? '<label class="ti-off"><input type="checkbox" id="tiOff"> Do not show this introduction again</label>' : ''}</div>
         <div class="fade"></div>`;
 
-      const AUTO = !!opts.wipe;   // opening page: the tree's leaves open straight into the sign-in page (no brand screen). Roadmap after sign-in keeps the brand + Get started ending.
+      const AUTO = !!opts.wipe && !opts.liquid;   // liquid: the tree finishes on the brand + Get started screen, and Get started pours the Facilio liquid reveal into the next page   // opening page: the tree's leaves open straight into the sign-in page (no brand screen). Roadmap after sign-in keeps the brand + Get started ending.
       /* ---------- the 12 delivery stages ---------- */
       const STAGES = [
         ['Project Kick-off & Discovery', 'Establish the project vision, scope, stakeholders, and delivery approach.'],
@@ -50,7 +50,7 @@
       ];
       const END = AUTO ? 38 : 44, REVEAL = AUTO ? 1e9 : 38.2;
       // real seconds -> timeline seconds. The whole intro is about 6.8s: growth 5s, then (opening page) the leaves open into the sign-in page in about 1.8s.
-      const TK = AUTO ? 4.05 : 2.7, TR = 4.6 * TK, WPTS = (AUTO ? [[0, 0], [1.1, 5], [2.2, 14.4], [3.4, 26.6], [4.6, 38]] : [[0, 0], [1.2, 5], [2.4, 14.4], [3.7, 26.6], [5.0, 38.2], [6.8, 44]]).map(([c, t]) => [c * TK, t]);
+      const TK = AUTO ? 4.05 : 2.7, TR = 4.6 * TK; let WPTS = (AUTO ? [[0, 0], [1.1, 5], [2.2, 14.4], [3.4, 26.6], [4.6, 38]] : [[0, 0], [1.2, 5], [2.4, 14.4], [3.7, 26.6], [5.0, 38.2], [6.8, 44]]).map(([c, t]) => [c * TK, t]);
       const warp = c => { if (c <= 0) return 0; for (let i = 1; i < WPTS.length; i++) if (c <= WPTS[i][0]) { const a = WPTS[i - 1], b = WPTS[i]; return lerp(a[1], b[1], (c - a[0]) / (b[0] - a[0])); } return WPTS[WPTS.length - 1][1]; };
       const unwarp = t => { for (let i = 1; i < WPTS.length; i++) if (t <= WPTS[i][1]) { const a = WPTS[i - 1], b = WPTS[i]; return lerp(a[0], b[0], (t - a[1]) / (b[1] - a[1])); } return WPTS[WPTS.length - 1][0]; };
       let CLK = 0, LO = -1, HOLES = [], LCX = 0, LCY = 0, LSC = 1, HOLD = false;   // CLK real clock, LO leaf-opening clock (-1 until it starts)
@@ -136,8 +136,8 @@
       // milestone nodes — one per stage, placed where that stage's growth happens
       const nodes = [];
       const pushNode = (x, y, t, i) => nodes[i] = { x, y, t, i };
-      pushNode(0, 34, 3.9, 0);                                    // 1 the seed marker, where the seed lies in the soil (lowest of all, so the stages climb the tree in order)
-      pushNode(-44, 0, S[1] + .6, 1);                              // 2 the root crown at the ground line, where the roots spread from the trunk base
+      pushNode(0, 46, 3.9, 0);                                    // 1 the seed marker, where the seed lies in the soil (lowest of all, so the stages climb the tree in order)
+      pushNode(0, 6, S[1] + .6, 1);                                // 2 Workshops: centred under the trunk, at the root crown just above the roots
       { const s = at(trunk, .4); pushNode(s[0], s[1], Math.max(S[2] + .5, tAt(trunk, .4)), 2); }          // 3 the trunk
       { const s = at(trunk, .85); pushNode(s[0], s[1], Math.max(S[3] + .4, tAt(trunk, .85)), 3); }        // 4 the established structure
       for (let i = 4; i < 12; i++) {
@@ -157,6 +157,10 @@
         pushNode(best.x, best.y, best.t, i);
       }
       nodes.forEach((n, i) => { n.t = Math.max(n.t, i ? nodes[i - 1].t + .5 : 0); });
+      /* Pacing (brand ending): every stage gets the same real-time slot, measured from the moment its node appears on the tree, so each stage's info card
+         is on screen long enough to read (stage 5 and 6 used to be skipped because their nodes appeared after the next stage had begun). */
+      const SEED_S = 2.9, STEP_S = 1.75, LAST_S = 1.9, BRAND_S = 2.6;
+      if (!AUTO) WPTS = [[0, 0]].concat(nodes.map((n, i) => [SEED_S + i * STEP_S, n.t + .15]), [[SEED_S + 11 * STEP_S + LAST_S, REVEAL], [SEED_S + 11 * STEP_S + LAST_S + BRAND_S, END]]);
 
       // extra connection nodes (stage 7) and the links between them
       const links = [], lpts = [];
@@ -187,8 +191,8 @@
         const el = document.createElement('div'); el.className = 'lbl'; el.tabIndex = -1; el.setAttribute('role', 'button');
         el.setAttribute('aria-label', 'Stage ' + (i + 1) + ': ' + t);
         el.innerHTML = `<div class="in"><span class="n">${i + 1}</span><div><div class="t" data-no="${i + 1}">${SHORT[i]}</div><div class="d">${d}</div></div></div>`;
-        el.addEventListener('click', () => seek(S[i] + .05));
-        el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); seek(S[i] + .05); } });
+        el.addEventListener('click', () => seek(nodes[i].t + .2));
+        el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); seek(nodes[i].t + .2); } });
         labelsEl.appendChild(el);
         return { el, i, state: '', w: 0, h: 0, x: 0, y: 0, vis: false, placed: false };
       });
@@ -271,7 +275,7 @@
       function tipGlow(b, t, spr) { const gr = growth(b, t); if (gr <= 0 || gr >= 1) return; const p = tipPoint(b, gr), rad = b.depth === 0 ? 16 : 9; g.drawImage(spr, p[0] - rad, p[1] - rad, rad * 2, rad * 2); }
       const LSPR = {}; function leafSpr(col) { if (LSPR[col]) return LSPR[col]; const c = document.createElement('canvas'); c.width = 64; c.height = 40; const x = c.getContext('2d'); x.translate(2, 20); const z = 56; x.fillStyle = col; x.beginPath(); x.moveTo(0, 0); x.bezierCurveTo(z * .45, -z * .32, z * .95, -z * .22, z, 0); x.bezierCurveTo(z * .95, z * .22, z * .45, z * .32, 0, 0); x.fill(); return LSPR[col] = c; }
       const mixc = (a, b, k) => `rgb(${Math.round(lerp(a[0], b[0], k))},${Math.round(lerp(a[1], b[1], k))},${Math.round(lerp(a[2], b[2], k))})`;
-      function stageAt(t) { if (t >= REVEAL) return 12; let c = -1; for (let i = 0; i < 12; i++) if (t >= S[i]) c = i; return c; }
+      function stageAt(t) { if (t >= REVEAL) return 12; let c = -1; for (let i = 0; i < 12; i++) if (t >= nodes[i].t + .15) c = i; return c; }   // a stage is active from the moment its node is on the tree until the next node appears
       const qb = (a, b, m, u) => { const v = 1 - u; return [v * v * a.x + 2 * v * u * m[0] + u * u * b.x, v * v * a.y + 2 * v * u * m[1] + u * u * b.y]; };
       const lineCtl = (a, b, bow) => [(a.x + b.x) / 2 + (b.y - a.y) * bow, (a.y + b.y) / 2 - (b.x - a.x) * bow];
 
@@ -604,67 +608,49 @@
       const ov = (a, b, m = 0) => a.x < b.x + b.w + m && b.x < a.x + a.w + m && a.y < b.y + b.h + m && b.y < a.y + a.h + m;
       function layoutLabels(t, cs, ox, oy, sc, SK, reveal) {
         const final = t >= REVEAL;
-        const top = final ? 64 : OBST.top, bottom = H - 12;
-        const right = WIDE ? lerp(W - 12, BL - 18, reveal) : W - 12, left = 12;
+        const top = final ? 64 : OBST.top;
+        let bottom = H - 12;
+        const right = WIDE ? lerp(W - 12, BL - 18, reveal) : W - 12, left = 12, GAP = 6;
+        if (!WIDE && final) bottom = Math.min(bottom, brand.getBoundingClientRect().top - 10);
         const items = [], obst = [];
-        if (OBST.ctl) obst.push(OBST.ctl); if (OBST.tag) obst.push(OBST.tag);
-        if (!WIDE && final) { const bb = brand.getBoundingClientRect(); obst.push({ x: 0, y: bb.top - 10, w: W, h: H }); }
         for (const n of nodes) {
           const L = labels[n.i];
           const appeared = t >= n.t + .15, done = n.i < cs, act = n.i === cs;
           const want = appeared && (act || (done && WIDE));
           const ax = ox + sc * (n.x + SK * n.y), ay = oy + sc * n.y;
-          if (appeared) obst.push({ x: ax - 15, y: ay - 15, w: 30, h: 30, node: n.i });
+          if (appeared) obst.push({ x: ax - 13, y: ay - 13, w: 26, h: 26, node: n.i });
           if (!want) { L.vis = false; continue; }
           const st = act ? 'act' : 'done';
           if (L.state !== st) {
-            if (L.state) { L.placed = false; L.rel = null; } L.state = st; L.el.className = 'lbl ' + st + (L.el.classList.contains('show') ? ' show' : '') + (L.placed === false && L.el.classList.contains('show') ? ' swap' : '');   // active card -> compact chip: fade the chip in at its own spot instead of sliding it across the tree
+            if (L.state) L.placed = false; L.state = st; L.el.className = 'lbl ' + st + (L.el.classList.contains('show') ? ' show swap' : '');   // card -> chip: re-appear in place instead of sliding across the tree
             L.el.querySelector('.n').innerHTML = act ? String(n.i + 1) : TICK;
             L.w = L.el.offsetWidth; L.h = L.el.offsetHeight;
           }
-          // side: outward from the trunk; the trunk-stage nodes alternate
-          const side = Math.abs(n.x) < 30 ? (n.i % 2 ? -1 : 1) : Math.sign(n.x);
-          let x = side > 0 ? ax + 18 : ax - 18 - L.w, y = ay - L.h / 2;
-          if (L.rel && L.relSt === st && L.relSide === side) { x = ax + L.rel.dx; y = ay + L.rel.dy; }   // start from where it settled last frame: no flip-flopping between equivalent spots
-          items.push({ L, ax, ay, side, x, y, w: L.w, h: L.h, pri: act ? 100 : n.i });
+          const side = Math.abs(n.x) < 30 ? (n.i % 2 ? -1 : 1) : Math.sign(n.x);   // outward from the trunk; nodes on the trunk alternate sides
+          items.push({ L, ax, ay, side, w: L.w, h: L.h, pri: act ? 100 : n.i, x: 0, y: ay - L.h / 2 });
         }
-        const clampX = it => { it.x = Math.max(left, Math.min(right - it.w, it.x)); };
-        const clampY = it => { it.y = Math.max(top, Math.min(bottom - it.h, it.y)); };
-        items.forEach(it => { clampX(it); clampY(it); });
-        // relax: labels repel each other vertically, nodes and chrome push labels away
-        for (let k = 0; k < 60; k++) {
-          let moved = false;
-          for (let i = 0; i < items.length; i++) for (let j = i + 1; j < items.length; j++) {
-            const a = items[i], b = items[j]; if (!ov(a, b, 6)) continue;
-            const [u, d] = a.y + a.h / 2 <= b.y + b.h / 2 ? [a, b] : [b, a];
-            const need = u.y + u.h + 6 - d.y; const wu = u.pri === 100 ? .15 : .5, wd = d.pri === 100 ? .15 : .5, sum = wu + wd;
-            u.y -= need * wu / sum; d.y += need * wd / sum; clampY(u); clampY(d); moved = true;
-          }
-          for (const it of items) for (const o of obst) {
-            if (!ov(it, o, 4)) continue;
-            const up = it.y + it.h / 2 < o.y + o.h / 2, nu = o.y - 4 - it.h, nd = o.y + o.h + 4;
-            // try sliding sideways past a node first (keeps labels close to their own node)
-            if (o.node !== undefined) { const nx = it.side > 0 ? o.x + o.w + 4 : o.x - 4 - it.w; if (Math.abs(nx - it.x) < 60 && nx >= left && nx + it.w <= right) { it.x = nx; moved = true; continue; } }
-            it.y = (up && nu >= top) || nd + it.h > bottom ? nu : nd; clampY(it); moved = true;
-          }
-          if (!moved) break;
-        }
-        // final guarantee: anything that still collides is hidden (the active stage wins)
-        items.sort((a, b) => b.pri - a.pri);
+        const place = it => { it.x = it.side > 0 ? it.ax + 18 : it.ax - 18 - it.w; it.x = Math.max(left, Math.min(right - it.w, it.x)); };
+        const hov = (a, b) => a.x < b.x + b.w + GAP && b.x < a.x + a.w + GAP;
+        const ov2 = (a, b) => hov(a, b) && a.y < b.y + b.h + GAP && b.y < a.y + a.h + GAP;
+        /* Order-preserving layout: every label stays at its own node's height where it can, and labels never swap places, so the column of stages always reads
+           1 (bottom) to 12 (top) just like the nodes on the tree. Overlapping labels are pushed apart along that order, never past each other. */
+        const seq = items.slice().sort((a, b) => a.ay - b.ay || b.L.i - a.L.i);   // highest node first
+        const solve = () => {
+          seq.forEach(it => { it.y = it.ay - it.h / 2; });
+          for (let k = 0; k < seq.length; k++) { const it = seq[k]; it.y = Math.max(it.y, top); for (let j = 0; j < k; j++) { const p = seq[j]; it.y = Math.max(it.y, hov(p, it) ? p.y + p.h + GAP : p.y + 1); } }
+          for (let k = seq.length - 1; k >= 0; k--) { const it = seq[k]; it.y = Math.min(it.y, bottom - it.h); for (let j = k + 1; j < seq.length; j++) { const q = seq[j]; it.y = Math.min(it.y, hov(q, it) ? q.y - it.h - GAP : q.y - 1); } }
+        };
+        seq.forEach(place); solve();
+        // a label that covers another stage's node tries the other side of its own node
+        let flipped = false;
+        for (const it of seq) { if (!obst.some(o => o.node !== it.L.i && ov(o, it, 2))) continue; const keep = [it.side, it.x]; it.side = -it.side; place(it); if (obst.some(o => o.node !== it.L.i && ov(o, it, 2))) { it.side = keep[0]; it.x = keep[1]; } else flipped = true; }
+        if (flipped) solve();
+        // final guarantee: a finished-stage chip that still collides is hidden; the current stage's card always shows
         const ok = [];
-        const clashes = it => ok.some(o => ov(o, it, 4)) || obst.some(o => ov(o, it, 2)) || it.y < top - .5 || it.y + it.h > bottom + .5 || it.x < left - .5 || it.x + it.w > right + .5;
-        for (const it of items) {
-          if (clashes(it)) {
-            // search nearby spots: both sides of the node, stepping up and down
-            const x0 = it.x, y0 = it.y; let found = false;
-            const xs = [it.ax + 18, it.ax - 18 - it.w, it.ax - it.w / 2].map(x => Math.max(left, Math.min(right - it.w, x)));
-            for (let k = 0; k <= 40 && !found; k++) {
-              const dy = (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 14;
-              for (const x of xs) { it.x = x; it.y = it.ay - it.h / 2 + dy; if (!clashes(it)) { found = true; break; } }
-            }
-            if (!found) { it.x = x0; it.y = y0; it.L.vis = false; continue; }
-          }
-          it.L.vis = true; it.L.rel = { dx: it.x - it.ax, dy: it.y - it.ay }; it.L.relSt = it.pri === 100 ? 'act' : 'done'; it.L.relSide = it.side; ok.push(it);
+        for (const it of seq.slice().sort((a, b) => b.pri - a.pri)) {
+          const clash = ok.some(o => ov2(o, it)) || it.y < top - .5 || it.y + it.h > bottom + .5;
+          if (clash && it.pri !== 100) { it.L.vis = false; continue; }
+          it.L.vis = true; ok.push(it);
         }
         lastNodes = obst.filter(o => o.node !== undefined);
         // draw leader lines and move the DOM labels (eased so they glide rather than jump)
@@ -674,11 +660,17 @@
           for (const n of nodes) { if (t < n.t + .15) break; const qx = ox + sc * (n.x + SK * n.y), qy = oy + sc * n.y; if (!has) g.moveTo(qx, qy); else g.quadraticCurveTo(px + (qx - px) * .1 + (qy - py) * .12, (py + qy) / 2, qx, qy); px = qx; py = qy; has = true; }
           g.stroke(); g.restore(); }
         lastBoxes = [];
-        for (const it of ok) {
-          const L = it.L;
+        // glide each label toward its spot; if any glide would cross another label, leave the order, or run into the logo, every label goes straight to its spot this frame
+        const nx = ok.map(it => { const L = it.L; if (!L.placed || !L.el.classList.contains('show') || Math.hypot(it.x - L.x, it.y - L.y) > 36) return [it.x, it.y]; return [L.x + (it.x - L.x) * .3, L.y + (it.y - L.y) * .3]; });
+        const gb = ok.map((it, k) => ({ x: nx[k][0], y: nx[k][1], w: it.w, h: it.h, i: it.L.i }));
+        let crossed = gb.some(b => b.x + b.w > right + .5 || b.x < left - .5 || b.y < top - .5 || b.y + b.h > bottom + .5);
+        for (let a = 0; a < gb.length && !crossed; a++) for (let b = a + 1; b < gb.length; b++) { const A = gb[a], B = gb[b]; if (ov(A, B, 1) || (A.i < B.i) !== (A.y + A.h / 2 > B.y + B.h / 2)) { crossed = true; break; } }
+        for (let k = 0; k < ok.length; k++) {
+          const it = ok[k], L = it.L;
           if (!L.placed || !L.el.classList.contains('show')) { L.x = it.x; L.y = it.y; L.placed = true; }
           else if (Math.hypot(it.x - L.x, it.y - L.y) > 36) { L.x = it.x; L.y = it.y; L.el.classList.remove('swap'); void L.el.offsetWidth; L.el.classList.add('swap'); }   // a different spot (another label took its place): re-appear there, never slide across the tree
-          else { L.x += (it.x - L.x) * .22; L.y += (it.y - L.y) * .22; }
+          else if (crossed) { L.x = it.x; L.y = it.y; }
+          else { L.x = nx[k][0]; L.y = nx[k][1]; }
           const ex = Math.max(L.x, Math.min(L.x + it.w, it.ax)), ey = Math.max(L.y, Math.min(L.y + it.h, it.ay));
           g.strokeStyle = it.pri === 100 ? 'rgba(190,215,255,.85)' : 'rgba(141,184,255,.7)'; g.lineWidth = 1.5;
           g.beginPath(); g.moveTo(it.ax, it.ay); g.lineTo(ex, ey); g.stroke();
@@ -702,7 +694,7 @@
           const apply = () => { lh1.textContent = P[2]; lh2.textContent = P[3]; head.classList.remove('sw'); measureChrome(); };
           if (first) apply(); else { head.classList.add('sw'); setTimeout(() => { if (lastPhase === phase) apply(); }, 260); }
         }
-        const final = t >= REVEAL; brand.classList.toggle('on', final); o.classList.toggle('final', final); if (final && !focused) { focused = true; setTimeout(() => { if (!closed) try { goBtn.focus({ preventScroll: true }); } catch (e) { } }, 2200); } skip.classList.toggle('gone', t >= END - .05 || LO >= 0);
+        const final = t >= REVEAL; brand.classList.toggle('on', t >= REVEAL + 2.2);   // the logo block appears once the tree has slid aside, so it never sits over the stage labels o.classList.toggle('final', final); if (final && !focused) { focused = true; setTimeout(() => { if (!closed) try { goBtn.focus({ preventScroll: true }); } catch (e) { } }, 2200); } skip.classList.toggle('gone', t >= END - .05 || LO >= 0);
         const cs = stageAt(t);
         if (cs !== lastStage) {
           lastStage = cs;
@@ -711,12 +703,12 @@
       }
 
       /* ---------- clock + lifecycle ---------- */
-      let last = 0, closed = false, raf = 0, focused = false, fno = 0;
+      let last = 0, closed = false, raf = 0, focused = false, fno = 0, LIQ = false;
       const goBtn = $('go');
       function frame(ts) {
         if (closed) return; raf = root.requestAnimationFrame(frame);
         if (doc.hidden) { last = 0; return; }
-        if (rm || HOLD) return;
+        if (rm || HOLD || LIQ) return;
         if (!last) last = ts; const dt = Math.min(.2, (ts - last) / 1000); last = ts;
         if (LO >= 0) { LO += dt; IDLE += dt; }
         else if (CLK < WPTS[WPTS.length - 1][0]) { CLK += dt; T = warp(CLK); if (AUTO && CLK >= TR) startLeaf(); }
@@ -732,8 +724,79 @@
       }
       function cleanup() { if (closed) return; closed = true; root.cancelAnimationFrame(raf); doc.body.classList.remove('cn-on'); root.removeEventListener('keydown', key); root.removeEventListener('resize', resize); delete root.__ti; cv.width = 1; cv.height = 1; o.remove(); }
       function seek(t) { T = clamp(t, 0, END); CLK = unwarp(T); IDLE = 0; lastPhase = -2; lastStage = -3; draw(T); ui(T); }
+      /* ---------- Liquid reveal (Get started, opts.liquid) ----------
+         Three Facilio-coloured liquids (teal, pink, then blue) rise from the bottom and flood the screen; the Facilio wordmark fills up with liquid like a glass,
+         "Delivery Studio" settles under it, then the liquid drains downward, blue first with pink and teal trailing, and uncovers the next page (sign-in).
+         The promise resolves once the screen is fully covered, so the caller can swap the page underneath before the drain starts. Canvas 2D only. */
+      function liquid(how, flag) {
+        LIQ = true; o.classList.add('liq'); root.removeEventListener('keydown', key);
+        const c = doc.createElement('canvas'); c.className = 'ti-liq'; c.setAttribute('aria-hidden', 'true'); o.appendChild(c);
+        const x = c.getContext('2d'), lg = doc.createElement('canvas'), lx = lg.getContext('2d');
+        let cw = 0, ch = 0;
+        const fit = () => { cw = o.clientWidth; ch = o.clientHeight; c.width = Math.round(cw * DPR); c.height = Math.round(ch * DPR); };
+        fit(); root.addEventListener('resize', fit);
+        const LAY = [   // drawn back to front; the teal leads the rise and trails the drain, blue is the main body
+          { c0: '#3FD6CF', c1: '#17A8A3', up: 0, dn: .34, amp: 15, k: .0105, sp: 3.0 },
+          { c0: '#F0388F', c1: '#B8136A', up: .12, dn: .17, amp: 19, k: .0082, sp: 2.4 },
+          { c0: '#2C7DF5', c1: '#1D1A5E', up: .24, dn: 0, amp: 23, k: .0062, sp: 1.9, main: true }
+        ];
+        const RISE = 1.0, FULL = LAY[2].up + RISE + .02, D0 = 2.55, DRAIN = 1.1, TEND = D0 + LAY[0].dn + DRAIN + .1;
+        const bub = Array.from({ length: 26 }, () => ({ x: Math.random(), s: 1.5 + Math.random() * 3.5, v: .25 + Math.random() * .5, p: Math.random() }));
+        const t0 = performance.now(); let covered = false, entered = false, done = false;
+        const edge = (e, L) => e < D0 ? lerp(ch + 70, -90, easeIO((e - L.up) / RISE)) : lerp(-90, ch + 110, easeIO((e - D0 - L.dn) / DRAIN));
+        const surf = (e, L, xx, amp) => amp * Math.sin(xx * L.k + e * L.sp) + amp * .45 * Math.sin(xx * L.k * 2.3 - e * L.sp * 1.4 + 1.3);
+        function waveFill(ctx, e, L, y0, amp, w, fill) {
+          ctx.beginPath(); ctx.moveTo(-10, ch + 20); ctx.lineTo(-10, y0 + surf(e, L, -10, amp));
+          for (let xx = 0; xx <= w + 16; xx += 16) ctx.lineTo(xx, y0 + surf(e, L, xx, amp));
+          ctx.lineTo(w + 20, ch + 20); ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+        }
+        function step(now) {
+          if (done) return;
+          const e = (now - t0) / 1000;
+          x.setTransform(DPR, 0, 0, DPR, 0, 0); x.clearRect(0, 0, cw, ch);
+          for (const L of LAY) {
+            const y0 = edge(e, L); if (y0 > ch + 60) continue;
+            const mv = e < D0 ? Math.sin(Math.PI * clamp((e - L.up) / RISE)) : Math.sin(Math.PI * clamp((e - D0 - L.dn) / DRAIN));
+            const amp = L.amp * (.35 + .65 * mv), gr = x.createLinearGradient(0, Math.max(-90, y0 - 30), 0, Math.max(-90, y0 - 30) + ch * .9);
+            gr.addColorStop(0, L.c0); gr.addColorStop(1, L.c1); waveFill(x, e, L, y0, amp, cw, gr);
+            // a bright meniscus along the surface
+            x.beginPath(); for (let xx = -10; xx <= cw + 16; xx += 16) { const yy = y0 + surf(e, L, xx, amp); xx < 0 ? x.moveTo(xx, yy) : x.lineTo(xx, yy); }
+            x.strokeStyle = 'rgba(255,255,255,.28)'; x.lineWidth = 2; x.stroke();
+            if (L.main) for (const b of bub) {   // bubbles rising inside the main liquid
+              const by = ch - ((e * b.v * ch * .55 + b.p * ch) % (ch + 40)), bx = b.x * cw + Math.sin(e * 2 + b.p * 9) * 8;
+              if (by < y0 + 10) continue; x.fillStyle = 'rgba(255,255,255,.14)'; x.beginPath(); x.arc(bx, by, b.s, 0, TAU); x.fill();
+            }
+          }
+          // the wordmark fills with liquid, like a glass
+          const show = sm((e - .55) / .4) * (1 - sm((e - D0 + .15) / .45));
+          if (show > 0 && logoImg.naturalWidth) {
+            const w = Math.min(cw * .46, 440), h = w * logoImg.naturalHeight / logoImg.naturalWidth, gx = (cw - w) / 2, lift = 14 * sm((e - D0 + .15) / .45), gy = ch / 2 - h / 2 - 26 - lift;
+            const pw = Math.round(w * DPR), ph = Math.round(h * DPR) + 2; if (lg.width !== pw || lg.height !== ph) { lg.width = pw; lg.height = ph; }
+            lx.setTransform(1, 0, 0, 1, 0, 0); lx.clearRect(0, 0, pw, ph); lx.globalCompositeOperation = 'source-over';
+            const fl = easeIO((e - .85) / 1.15), lv = lerp(ph + 6, -8, fl), A = { k: .045 / DPR, sp: 4.2 };
+            lx.beginPath(); lx.moveTo(-4, ph + 4); for (let xx = -4; xx <= pw + 8; xx += 6) lx.lineTo(xx, lv + (6 * DPR * (1 - fl * .6)) * Math.sin(xx * A.k + e * A.sp) + 2.5 * DPR * Math.sin(xx * A.k * 2.7 - e * 5));
+            lx.lineTo(pw + 8, ph + 4); lx.closePath(); lx.fillStyle = '#fff'; lx.fill();
+            lx.globalCompositeOperation = 'source-in'; lx.drawImage(logoImg, 0, 0, pw, ph - 2); lx.globalCompositeOperation = 'source-over';
+            x.globalAlpha = .2 * show; x.drawImage(logoImg, gx, gy, w, h);   // the empty glass
+            x.globalAlpha = show; x.drawImage(lg, gx, gy, w, h);
+            const ds = sm((e - 1.55) / .5) * show;
+            if (ds > 0) { x.globalAlpha = ds * .92; x.fillStyle = '#fff'; x.font = `500 ${Math.round(Math.max(15, w * .07))}px Inter, Roboto, Arial, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'top'; try { x.letterSpacing = '0.14em'; } catch (er) { } x.fillText('Delivery Studio', cw / 2, gy + h + 18 + 8 * (1 - ds)); try { x.letterSpacing = '0px'; } catch (er) { } }
+            x.globalAlpha = 1;
+          }
+          if (!covered && e >= FULL) {   // the screen is fully flooded: drop the tree scene and let the caller put the next page underneath
+            covered = true; cv.style.visibility = 'hidden'; if (cv2) cv2.style.visibility = 'hidden'; o.style.background = 'transparent';
+            resolve({ how, off: flag });
+          }
+          if (!entered && e >= D0 - .05) { entered = true; const au = doc.querySelector('.auth'); if (au) { au.classList.remove('auth-in'); void au.offsetWidth; au.classList.add('auth-in'); } }
+          if (e >= TEND) { done = true; root.removeEventListener('resize', fit); teardown(); return; }
+          root.requestAnimationFrame(step);
+        }
+        root.requestAnimationFrame(step);
+      }
+      function teardown() { if (closed) return; closed = true; root.cancelAnimationFrame(raf); doc.body.classList.remove('cn-on'); root.removeEventListener('keydown', key); root.removeEventListener('resize', resize); delete root.__ti; cv.width = 1; cv.height = 1; o.remove(); }
       function finish(how) {
         if (closed) return;
+        if (opts.liquid && !rm) { if (LIQ) return; const off = o.querySelector('#tiOff'); liquid(how, !!(off && off.checked)); return; }   // Skip, Esc and Get started all pour the liquid reveal
         if (AUTO && !rm) { if (LO < 0) startLeaf(); return; }   // opening page: Skip / Esc jump straight to the leaves opening into the sign-in page
         closed = true; root.cancelAnimationFrame(raf);
         const off = o.querySelector('#tiOff'), flag = !!(off && off.checked);
@@ -753,10 +816,10 @@
         o.classList.add('out'); setTimeout(free, rm ? 0 : 600); resolve({ how, off: flag });
       }
       const key = e => { if (e.key === 'Escape') finish('skip'); };
-      o.addEventListener('click', e => { const bt = e.target.closest('[data-r]'); if (bt) finish(bt.getAttribute('data-r')); });
+      o.addEventListener('click', e => { if (LIQ) return; const bt = e.target.closest('[data-r]'); if (bt) finish(bt.getAttribute('data-r')); });
       root.addEventListener('keydown', key);
       if (rm) { T = END; if (AUTO) setTimeout(() => finish('go'), 1600); }
-      root.__ti = { seek, nodes, S, END, REVEAL, warp, unwarp, TR, scrub: (c, lo) => { HOLD = true; CLK = c; T = warp(c); if (lo >= 0) { prepLeaf(); LO = lo; o.classList.add('leafout'); o.style.background = 'transparent'; } else LO = -1; lastPhase = -2; lastStage = -3; draw(T); ui(T); }, get LO() { return LO; }, holes: () => HOLES.length, nl: () => leaves.length };
+      root.__ti = { seek, nodes, S, END, REVEAL, warp, unwarp, TR, wpts: () => WPTS, get liq() { return LIQ; }, boxes: () => lastBoxes, nodeBoxes: () => lastNodes, scrub: (c, lo) => { HOLD = true; CLK = c; T = warp(c); if (lo >= 0) { prepLeaf(); LO = lo; o.classList.add('leafout'); o.style.background = 'transparent'; } else LO = -1; lastPhase = -2; lastStage = -3; draw(T); ui(T); }, get LO() { return LO; }, holes: () => HOLES.length, nl: () => leaves.length };
       doc.body.appendChild(o); doc.body.classList.add('cn-on');
       resize(); ui(T); if (!logoImg.complete) logoImg.addEventListener('load', () => draw(T));
       raf = root.requestAnimationFrame(frame);
