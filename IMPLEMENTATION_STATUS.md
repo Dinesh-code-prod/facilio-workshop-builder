@@ -1,5 +1,7 @@
 # Implementation status — 20 Oct 2026
 
+> History log. Earlier entries describe the first hosting set-up (password and guest sign-in, browser UI tests, test fixtures). Those parts were retired when the app moved to facilio.work; the files they mention are in the Git history. For the current set-up see README.md.
+
 Everything below was run in this workspace against a local dev server (fresh database per run) unless stated. Nothing is marked tested unless a test ran and passed.
 
 ## Task status
@@ -97,7 +99,7 @@ New sidebar entry **Contract & Workshop Planning** (`src/msaflow.js`), six steps
 
 ## #23 Super admin and admin panel
 - Super admins are real accounts whose email is in `SUPER_ADMIN_EMAILS` (default `dinesh.r@facilio.com`). They see and open every project (owner rights) and use the **Admin** panel: all projects (members, files, storage, customer access, open questions), archive/restore, project members, user accounts (disable/enable) and an activity log.
-- First-time setup and password recovery: set `ADMIN_SETUP_CODE` in the site environment, then use **Administrator sign-in** (login page) or the **Admin** button (office mode). Normal sign-up and guest upgrade refuse the reserved admin emails.
+- Admin access now comes from the Microsoft sign-in on facilio.work and the super-admin list in `work/server/api.mjs`; the earlier setup-code sign-in was retired.
 - Routes: `/api/admin/{setup,overview,users,users/:id,projects/:id,projects/:id/members,audit}`. Tests: `tests/admin_ui.mjs`, `tests/admin_open_ui.mjs`.
 
 ## #24 Facilio-style sign-in page and opening animation
