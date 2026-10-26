@@ -17,9 +17,9 @@
 | OCR of scanned pages | **Done without AI:** bundled tesseract.js, in the browser |
 
 ## Dependencies
-- A server-side route (`POST /api/projects/:id/ai/<task>`), provider API key in Netlify env vars (never in the browser), Facilio-only access, audit logging.
+- A server-side route (`POST /api/projects/:id/ai/<task>`), provider API key stored as a facilio.work platform secret (never in the browser), Facilio-only access, audit logging.
 - Customer / legal approval to send contract text to a provider; a data-handling statement; redaction of money and personal data.
-- CSP `connect-src` stays `'self'` because calls go through our function; function timeout limits (Netlify) for long contracts → chunking.
+- CSP `connect-src` stays `'self'` because calls go through our function; server function time limits for long contracts → chunking.
 - Cost controls: per-project quotas, model tiering (quick / default / complex), caching of results in `project_docs`.
 
 ## Risks

@@ -351,7 +351,7 @@ function projectsHtml() {
   async function boot() {
     const app = document.getElementById('app'); app.innerHTML = '<div class="boot"><img src="brand/logo-navy.png" alt="Facilio" height="30"><div class="boot-bar"><span></span></div></div>';
     try { const me = await API.get('/api/auth/me', { noAuthRedirect: true }); health.signupEnabled = !!me.signupEnabled; health.signupNeedsCode = me.signupNeedsCode !== false; health.openMode = !!me.openMode; if (!health.signupEnabled && authTab === 'signup') authTab = 'login'; S.user = me.user; }
-    catch (e) { app.innerHTML = `<div style="padding:60px;text-align:center"><h2>Service unavailable</h2><p class="muted">${esc(e.message)}. The application's API (Netlify Functions and Database) must be deployed and configured.</p></div>`; return; }
+    catch (e) { app.innerHTML = `<div style="padding:60px;text-align:center"><h2>Service unavailable</h2><p class="muted">${esc(e.message)}. The Delivery Studio server could not be reached. Please try again in a moment.</p></div>`; return; }
     if (!S.user) { mode = 'auth'; render(); return; }
     if (root.FWBRun && !/#\/p\//.test(location.hash)) { mode = 'auth'; render(); return; }
     if ((health.openMode || S.user.kind === 'customer') && V.roadmap && V.roadmapDue && V.roadmapDue({ once: true })) { try { await V.roadmap(); } catch (e) { } }
