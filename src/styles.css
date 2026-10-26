@@ -3050,3 +3050,59 @@ body .pp-journey { background: linear-gradient(180deg, #F3F7FF, #fff 70%) !impor
 .ri.narrow .ri-end { top: 11%; }
 @media (prefers-reduced-motion: reduce) { .ri .ri-cap, .ri .ri-chip, .ri .ri-end, .ri .ri-open, .ri .ri-route span, .ri .ri-route i { transition: none; } }
 /* ---- end road intro ---- */
+
+/* ===== Sign-in stories (src/loginstory.js): canvas behind the left column, Facilio colours. Replaces the earlier .ls CSS story. ===== */
+.auth-art .auth-brand { position: relative; z-index: 2; }
+.lsx-eb { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #8DB8FF; font-weight: 700; }
+.lsx-eb::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #E5197F; }
+.auth-art .av-copy h1 em { background: none !important; color: #8DB8FF !important; -webkit-text-fill-color: #8DB8FF; animation: none !important; }
+.lsx { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 420px; margin-top: 14px; }
+.lsx-cv { position: absolute; left: 0; top: 0; z-index: -1; pointer-events: none; display: block; opacity: 0; transition: opacity .9s cubic-bezier(.22,1,.36,1); }
+.lsx.go .lsx-cv { opacity: 1; }
+.lsx-top { position: relative; z-index: 2; max-width: 520px; }
+.lsx-cap { min-height: 66px; }
+.lsx-cap b { display: block; font-size: 16px; font-weight: 700; color: #fff; }
+.lsx-cap span { display: block; margin-top: 5px; font-size: 14.5px; line-height: 1.55; color: #C9D5F2; max-width: 48ch; }
+.lsx-cap.swap b, .lsx-cap.swap span { animation: lsxRise .6s cubic-bezier(.22,1,.36,1) both; } .lsx-cap.swap span { animation-delay: .08s; }
+@keyframes lsxRise { from { opacity: 0; transform: translateY(10px); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+.lsx-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.lsx-prog { display: flex; gap: 6px; } .lsx-prog i { width: 26px; height: 3px; border-radius: 3px; background: rgba(141,184,255,.22); position: relative; overflow: hidden; }
+.lsx-prog i::after { content: ""; position: absolute; inset: 0; background: #E5197F; transform: scaleX(var(--p, 0)); transform-origin: left; }
+.lsx-rp { all: unset; cursor: pointer; font-size: 12px; font-weight: 600; color: #8DB8FF; } .lsx-rp:hover { color: #fff; } .lsx-rp:focus-visible { outline: 2px solid #8DB8FF; outline-offset: 3px; border-radius: 4px; }
+.lsx-row small { font-size: 11px; color: #8F89C4; }
+.lsx-sr { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0; }
+@media (max-width: 900px) { .lsx { min-height: 460px; } .lsx-cap span { display: none; } .lsx-cap { min-height: 0; } }
+@media (prefers-reduced-motion: reduce) { .lsx-cv { transition: none; opacity: 1; } .lsx-cap.swap b, .lsx-cap.swap span { animation: none; } }
+
+/* Customer sign-in on invite links: same night card as the team welcome, with email, password and "Forgot password?" */
+.auth-form.night.cust .auth-fields { text-align: left; }
+.auth-form.night.cust .fld { margin-bottom: 14px; }
+.auth-form.night.cust label.f { color: #C9D5F2; font-weight: 600; font-size: 13.5px; margin-bottom: 6px; display: block; }
+.auth-form.night.cust input[type=email], .auth-form.night.cust input[type=password], .auth-form.night.cust input[type=text] { background: rgba(255,255,255,.06); border: 1px solid rgba(141,184,255,.3); color: #fff; min-height: 50px; border-radius: 10px; font-size: 15px; }
+.auth-form.night.cust input::placeholder { color: #7F8AB5; }
+.auth-form.night.cust input:focus { border-color: #8DB8FF; background: rgba(255,255,255,.09); box-shadow: 0 0 0 4px rgba(141,184,255,.18); }
+.auth-form.night.cust .pw-eye { color: #B9C6E8; }
+.cs-row { text-align: right; margin: -4px 0 18px; } .cs-row a { color: #8DB8FF; font-size: 13.5px; font-weight: 600; text-decoration: none; } .cs-row a:hover { color: #fff; text-decoration: underline; }
+.cs-msg { text-align: left; margin: 0 0 18px; padding: 12px 14px; border-radius: 10px; background: rgba(255,255,255,.08); border-left: 4px solid #E5197F; color: #F4F6FF; font-size: 14px; line-height: 1.5; }
+.cs-team { margin-top: 16px; text-align: center; font-size: 13.5px; color: #B9C6E8; } .cs-team a { color: #8DB8FF; font-weight: 600; }
+.auth-form.night.cust .auth-feats li { text-align: left; }
+.cust-sky .cs-b { transform-box: fill-box; transform-origin: 50% 100%; animation: csRise .9s cubic-bezier(.22,1,.36,1) both; animation-delay: calc(.45s + var(--i) * .08s); }
+@keyframes csRise { from { opacity: 0; transform: scaleY(.2); } to { opacity: 1; transform: none; } }
+.cust-sky .cs-w { animation: csTw 3.2s ease-in-out infinite; animation-delay: var(--d, 0s); } @keyframes csTw { 0%, 100% { opacity: .85; } 50% { opacity: .2; } }
+.cust-sky .cs-glow { transform-box: fill-box; transform-origin: center; animation: csGlow 4s ease-in-out infinite; } @keyframes csGlow { 50% { transform: scale(1.15); opacity: .7; } }
+.cust-sky .cs-bc { animation: csBlink 1.6s steps(2, end) infinite; } @keyframes csBlink { 50% { opacity: .3; } }
+.cust-sky .cs-ring { transform-box: fill-box; transform-origin: center; animation: csRing 1.6s ease-out infinite; } @keyframes csRing { from { transform: scale(1); opacity: .9; } to { transform: scale(3.4); opacity: 0; } }
+.cust-sky .cs-lane { animation: csDash 1.2s linear infinite; } @keyframes csDash { to { stroke-dashoffset: -14; } }
+.cust-sky .cs-shoot { opacity: 0; animation: csShoot 7s ease-in 2s infinite; } @keyframes csShoot { 0%, 86% { opacity: 0; transform: translate(0, 0); } 89% { opacity: 1; } 100% { opacity: 0; transform: translate(60px, 22px); } }
+.cust-sky .cs-car { animation: csCar 9s linear infinite; } .cust-sky .cs-car.c2 { animation-duration: 12s; animation-direction: reverse; animation-delay: -3s; } @keyframes csCar { from { transform: translateX(0); } to { transform: translateX(266px); } }
+@media (prefers-reduced-motion: reduce) { .cust-sky .cs-b, .cust-sky .cs-w, .cust-sky .cs-glow, .cust-sky .cs-bc, .cust-sky .cs-ring, .cust-sky .cs-lane, .cust-sky .cs-shoot, .cust-sky .cs-car { animation: none !important; } .cust-sky .cs-shoot { opacity: 0; } }
+/* customer form at a normal sign-in size: full-width fields and button, never squeezed */
+.auth-form.night.cust .auth-box { width: min(520px, 100%); }
+.auth-form.night.cust .auth-fields { display: block; width: 100%; max-width: 460px; margin: 0 auto; }
+.auth-form.night.cust .fld, .auth-form.night.cust .pw-wrap { display: block; width: 100%; }
+.auth-form.night.cust .fld input { display: block; width: 100%; min-height: 54px; padding: 0 16px; font-size: 16px; }
+.auth-form.night.cust .auth-fields .btn.primary { width: 100%; min-height: 56px; }
+.auth-form.night.cust .fld { margin-bottom: 18px; }
+/* one background for the whole sign-in page: no lighter or darker half, the left story and the right sign-in share it */
+.auth:has(.auth-form.night) { background: linear-gradient(180deg, #0D0B40 0%, #15125A 55%, #1D1A5E 100%) !important; }
+.auth:has(.auth-form.night) .av-glow { display: none; }
