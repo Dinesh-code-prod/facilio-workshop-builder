@@ -1,7 +1,7 @@
 /* FWB backend on facilio.work: one server function (/api/fn/api/...) that serves every /api/* route of the app.
    Identity comes from the platform (ctx.viewer, verified); data lives in ctx.db; file bytes in private ctx.files.
    Roles and project access are enforced HERE, on the server, so pages cannot bypass them. */
-let CTX = null;   // set at the start of every request (a Lambda handles one request at a time)
+let CTX = null, HDR = {};   // set at the start of every request (a Lambda handles one request at a time)
 {
   'use strict';
   const SUPER_ADMINS = ['dinesh.r@facilio.com'];
@@ -24,7 +24,7 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
     signoff_evidence: { ext: ['pdf', 'png', 'jpg', 'jpeg', 'msg', 'eml', 'docx'], max: 20e6 }, brd_signed: { ext: ['docx', 'pdf', 'json'], max: MAX_FILE }
   };
   // record kinds the team can store (customer-only rules come with the customer page)
-  const KINDS = ['action', 'decision', 'raid', 'signoff', 'cr', 'onb', 'onbsub', 'onbfile', 'onbws', 'owner', 'agreement', 'minutes', 'checklist', 'build', 'uat', 'digest', 'ctrcore', 'ctrfees', 'ctrlegal', 'ctrrates', 'scope', 'modbrief', 'fieldreq', 'note', 'ctrwatch', 'usecase', 'discrepancy', 'brdrev', 'ai', 'hc', 'hcrep', 'ho', 'close', 'rep', 'kpi', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'lesson', 'tkt', 'res', 'ugv', 'ugu'];
+  const KINDS = ['action', 'decision', 'raid', 'signoff', 'cr', 'onb', 'onbsub', 'onbfile', 'onbws', 'owner', 'agreement', 'minutes', 'checklist', 'build', 'uat', 'digest', 'ctrcore', 'ctrfees', 'ctrlegal', 'ctrrates', 'scope', 'modbrief', 'fieldreq', 'note', 'ctrwatch', 'usecase', 'discrepancy', 'brdrev', 'ai', 'hc', 'hcrep', 'ho', 'close', 'rep', 'kpi', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'lesson', 'tkt', 'res', 'ugv', 'ugu', 'pnote'];
   const DOC_SECTIONS = /^[a-z][a-z0-9_]{1,40}$/, ITEM_ID_RE = /^[A-Za-z0-9_-]{1,80}$/, GR_KEY = /^[a-z]{2,8}:[afbxw]:[A-Za-z0-9_-]{1,64}$/;
 
   class HttpError extends Error { constructor(status, msg, extra) { super(msg); this.status = status; this.extra = extra; } }
@@ -274,7 +274,23 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
   // It is read only here, on the server, and is never returned, logged or stored in the database.
   const PROVIDERS = ['deepseek', 'claude'];
   const PNAME = { deepseek: 'DeepSeek', claude: 'Claude' };
-  const claudeKey = async () => { try { return (await CTX.secrets.get('anthropic_api_key')) || ''; } catch (e) { return ''; } };
+  // Key sources, in order: the owner's plain secret anthropic_api_key, or a key an admin saved in the app. A saved key is encrypted (AES-256-GCM) with a master key that lives only in the plain secret ai_master_key; the database never holds it readable, and it is never returned, logged or sent to the browser.
+  const b64 = u8 => Buffer.from(u8).toString('base64'), unb64 = t => new Uint8Array(Buffer.from(t, 'base64'));
+  async function masterKey() { let m = ''; try { m = String(await CTX.secrets.get('ai_master_key') || ''); } catch (e) { } if (m.length < 16) return null; const raw = await crypto.subtle.digest('SHA-256', te.encode(m)); return crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['encrypt', 'decrypt']); }
+  async function sealKey(plain) { const k = await masterKey(); if (!k) return null; const iv = crypto.getRandomValues(new Uint8Array(12)); const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, te.encode(plain)); return { iv: b64(iv), ct: b64(new Uint8Array(ct)) }; }
+  async function openKey(rec) { try { const k = await masterKey(); if (!k || !rec) return ''; return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(rec.iv) }, k, unb64(rec.ct))); } catch (e) { return ''; } }
+  const claudeKey = async () => { let k = ''; try { k = (await CTX.secrets.get('anthropic_api_key')) || ''; } catch (e) { } if (k) return k; const r = await dbGet('ai', 'key').catch(() => null); return r && r.value ? openKey(r.value) : ''; };
+  const keySource = async () => { let k = ''; try { k = (await CTX.secrets.get('anthropic_api_key')) || ''; } catch (e) { } if (k) return 'secret'; const r = await dbGet('ai', 'key').catch(() => null); return r && r.value ? 'app' : ''; };
+  // checks a key against Anthropic without spending tokens: GET /v1/models lists what the key can use
+  async function checkAnthropic(key) {
+    const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 15000);
+    try { const r = await fetch('https://api.anthropic.com/v1/models?limit=20', { headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' }, signal: ac.signal }); const j = await r.json().catch(() => ({}));
+      if (r.status === 401 || r.status === 403) return { ok: false, message: 'Anthropic rejected this key. Check that it was copied in full and has not been revoked.' };
+      if (r.status === 429) return { ok: false, message: 'Anthropic is rate limiting this key right now. The key may be fine; try again shortly.' };
+      if (!r.ok) return { ok: false, message: 'Anthropic returned an error (' + r.status + '). Try again later.' };
+      const models = (j.data || []).map(m => m.id).filter(Boolean); return { ok: true, models, message: models.includes('claude-sonnet-5-5') ? 'The key works and claude-sonnet-5-5 is available.' : 'The key works, but claude-sonnet-5-5 was not in its model list' + (models.length ? ' (it can use ' + models.slice(0, 3).join(', ') + ').' : '.') };
+    } catch (e) { return { ok: false, message: e && e.name === 'AbortError' ? 'Anthropic took too long to answer.' : 'Anthropic could not be reached from the server.' }; } finally { clearTimeout(to); }
+  }
   const haveClaude = async () => !!(await claudeKey());
   async function aiCfg() { const r = await dbGet('ai', 'cfg').catch(() => null); const v = (r && r.value) || {}; return { defaultProvider: v.defaultProvider === 'claude' ? 'claude' : 'deepseek', fallback: v.fallback === 'deepseek' ? 'deepseek' : 'none', by: v.by || null, at: v.at || null }; }
   const emptyUse = () => ({ calls: 0, errors: 0, inTok: 0, outTok: 0, last: null, lastError: null });
@@ -315,15 +331,26 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
     catch (e) { if (fallback === 'deepseek' && e instanceof HttpError) { const out = await callDeepseek(messages, maxTokens); out.notice = 'Claude was not available (' + e.message + ') so DeepSeek produced this draft, as the organisation fallback setting allows.'; return out; } throw e; }
   }
   const pickProvider = async (asked) => { const cfg = await aiCfg(); const p = asked === 'claude' || asked === 'deepseek' ? asked : cfg.defaultProvider; return { provider: p, explicit: asked === 'claude' || asked === 'deepseek', cfg }; };
-  route('GET', '/api/ai/status', async () => { await me(); const cfg = await aiCfg(); const have = await haveClaude(); const defaultProvider = cfg.defaultProvider === 'claude' && !have ? 'deepseek' : cfg.defaultProvider; return ok({ providers: [{ id: 'deepseek', name: 'DeepSeek', configured: true, isDefault: defaultProvider === 'deepseek' }, { id: 'claude', name: 'Claude', configured: have, isDefault: defaultProvider === 'claude' }], defaultProvider, fallback: cfg.fallback, claude: have, tasks: Object.keys(AI_TASKS) }); });
+  route('GET', '/api/ai/status', async () => { await me(); const cfg = await aiCfg(); const have = await haveClaude(); const defaultProvider = cfg.defaultProvider === 'claude' && !have ? 'deepseek' : cfg.defaultProvider; return ok({ providers: [{ id: 'deepseek', name: 'DeepSeek', configured: true, isDefault: defaultProvider === 'deepseek' }, { id: 'claude', name: 'Claude', configured: have, isDefault: defaultProvider === 'claude' }], defaultProvider, fallback: cfg.fallback, claude: have, keySource: await keySource(), canStoreKey: !!(await masterKey()), tasks: Object.keys(AI_TASKS) }); });
   route('POST', '/api/admin/ai/config', async (b) => {
     const s = await requireAdmin('admin'); const dp = String(b && b.defaultProvider || 'deepseek'); const fb = String(b && b.fallback || 'none'); if (!PROVIDERS.includes(dp)) throw new HttpError(400, 'Choose DeepSeek or Claude'); if (!['none', 'deepseek'].includes(fb)) throw new HttpError(400, 'Choose a fallback option');
     if (dp === 'claude' && !(await haveClaude())) throw new HttpError(409, 'Claude is not configured yet, so it cannot be the default. Add the key in the secrets portal first.');
     await dbPut('ai', 'cfg', { defaultProvider: dp, fallback: fb, by: s.email, at: now() }); return ok({ defaultProvider: dp, fallback: fb });
   });
+  route('POST', '/api/admin/ai/key', async (b) => {
+    const s = await requireAdmin('admin'); const key = String(b && b.key || '').trim();
+    if (!/^sk-ant-[A-Za-z0-9_\-]{20,}$/.test(key)) throw new HttpError(400, 'That does not look like an Anthropic API key. Keys start with sk-ant-.');
+    if (!(await masterKey())) throw new HttpError(409, 'Saving a key here needs an encryption secret first. The app owner adds a plain secret named ai_master_key (any long random text) at secrets.facilio.work. Or add the key itself as anthropic_api_key there.');
+    const chk = await checkAnthropic(key); if (!chk.ok) throw new HttpError(422, chk.message);
+    await dbPut('ai', 'key', Object.assign(await sealKey(key), { by: s.email, at: now() })); await audit('ai', s.id, 'ai-key-saved', ''); return ok({ ok: true, message: chk.message, models: chk.models.slice(0, 10) });
+  });
+  route('DELETE', '/api/admin/ai/key', async () => {
+    const s = await requireAdmin('admin'); await dbDel('ai', 'key').catch(() => { }); const cfg = await aiCfg(); if (cfg.defaultProvider === 'claude' && !(await haveClaude())) await dbPut('ai', 'cfg', { defaultProvider: 'deepseek', fallback: cfg.fallback, by: s.email, at: now() });
+    await audit('ai', s.id, 'ai-key-removed', ''); const still = await keySource(); return ok({ ok: true, message: still === 'secret' ? 'The saved key was removed. A key set as the anthropic_api_key secret is still in use; only the app owner can remove that.' : 'The key was removed. DeepSeek stays in use.' });
+  });
   route('POST', '/api/admin/ai/test', async () => {
     const s = await requireAdmin('admin'); if (!(await haveClaude())) return ok({ ok: false, configured: false, message: 'No Claude key is configured. The app owner adds it as anthropic_api_key in the secrets portal.' });
-    try { const r = await callClaude([{ role: 'user', content: 'Reply with the single word: ok' }], 8); return ok({ ok: true, configured: true, model: r.model, message: 'Claude answered. The key works.' }); }
+    try { const k = await claudeKey(); const c = await checkAnthropic(k); if (!c.ok) return ok({ ok: false, configured: true, message: c.message }); return ok({ ok: true, configured: true, model: 'claude-sonnet-5-5', models: c.models.slice(0, 10), message: c.message }); }
     catch (e) { return ok({ ok: false, configured: true, message: e instanceof HttpError ? e.message : 'The test failed' }); }
   });
   route('GET', '/api/admin/ai/usage', async () => { await requireAdmin('admin'); const u = await aiUse(); const cfg = await aiCfg(); return ok({ usage: u, cfg, claudeConfigured: await haveClaude() }); });
@@ -491,6 +518,34 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
     await fin(res.errors.length && !res.tickets && !res.appended && !res.unrouted ? res.errors[0] : ''); return ok({ result: res });
   });
 
+  // ---------- Teams: create a ticket through Otto ----------
+  // Otto (the facilio.work Teams bot) calls these as MCP tools AS the person who asked, so project permissions are the same as in the app. create_ticket is confirm-gated: Otto shows the fields and the person approves, which is the review step.
+  const TEAMS_TYPES = { customer_issue: ['Client request', 'external'], internal_feedback: ['Other', 'internal'], question: ['Question', 'external'], bug: ['Defect', 'internal'], other: ['Other', 'internal'] };
+  const guessType = t => /\b(bug|error|broken|crash|fails?|not working|defect|exception)\b/i.test(t) ? 'bug' : /\?|\b(how|why|can we|clarif|question|confirm)\b/i.test(t) ? 'question' : /\b(feedback|suggest|idea|improve|internal)\b/i.test(t) ? 'internal_feedback' : /\b(customer|client|requested|asked us|wants)\b/i.test(t) ? 'customer_issue' : 'other';
+  const guessPrio = t => /\b(urgent|asap|critical|blocker|production down|go-?live)\b/i.test(t) ? 'High' : 'Medium';
+  async function editableProjects(s) { const ar = await adminRole(s); const rows = (await dbList('projects')).map(r => r.value).filter(p => p && !p.archived); return rows.filter(p => ar ? ar !== 'sub' : ((p.members || []).find(m => m.id === s.id) || {}).role === 'owner' || ((p.members || []).find(m => m.id === s.id) || {}).role === 'member'); }
+  async function resolveProject(s, q) { const ps = await editableProjects(s); const k = String(q || '').trim().toLowerCase(); if (!k) throw new HttpError(400, 'Say which project this ticket belongs to. Projects you can use: ' + ps.slice(0, 15).map(p => p.name).join(', ')); const hit = ps.filter(p => p.id === q || p.name.toLowerCase() === k); const part = hit.length ? hit : ps.filter(p => (p.name + ' ' + (p.customer || '')).toLowerCase().includes(k)); if (part.length === 1) return part[0]; throw new HttpError(part.length ? 409 : 404, part.length ? 'More than one project matches: ' + part.slice(0, 8).map(p => p.name).join(', ') + '. Use the exact name.' : 'No project you can edit matches "' + q + '".'); }
+  route('POST', '/api/', async (b) => {
+    const tool = String(HDR['x-work-mcp-tool'] || ''); const s = await me(); b = b || {};
+    if (tool === 'list_projects') { const ps = await editableProjects(s); return ok({ projects: ps.slice(0, 50).map(p => ({ name: p.name, customer: p.customer || '' })) }); }
+    if (tool === 'suggest_ticket') { const text = String(b.text || ''); const ty = guessType(text); const ps = await editableProjects(s); const k = text.toLowerCase(); const cand = ps.filter(p => k.includes(String(p.customer || '').toLowerCase()) && p.customer || k.includes(p.name.toLowerCase())).slice(0, 5);
+      return ok({ ticketType: ty, category: TEAMS_TYPES[ty][0], priority: guessPrio(text), subject: text.replace(/\s+/g, ' ').trim().slice(0, 100), projectCandidates: cand.map(p => p.name), note: 'Suggestions only. Check type, priority and project before creating the ticket.' }); }
+    if (tool === 'create_ticket') {
+      const project = await resolveProject(s, b.project); await projectAccess(s, project.id, 'edit');
+      const subject = str(b.subject, 200, 'Subject', true); const description = str(b.description || b.subject, 20000, 'Description'); const ty = TEAMS_TYPES[b.ticketType] ? b.ticketType : guessType(subject + ' ' + description); const prio = TKT_PRIO.includes(b.priority) ? b.priority : 'Medium';
+      const link = String(b.teamsMessageLink || '').slice(0, 600); if (link && !/^https:\/\/teams\.(microsoft|live)\.com\//i.test(link)) throw new HttpError(400, 'The Teams message link is not a Teams link');
+      const ref = String(b.teamsMessageId || link || '').slice(0, 280); const ext = ref ? 'teams:' + ref : ''; const all = await itemsOf(project.id, 'tkt');
+      const url = 'https://facilio-delivery-studio.facilio.work/#/p/' + project.id + '/tickets';
+      const dup = ext && all.find(t => t.data.extRef === ext); if (dup) return ok({ duplicate: true, ticket: 'TKT-' + dup.data.n, project: project.name, url, message: 'A ticket for this Teams message already exists: TKT-' + dup.data.n });
+      const key = 'tk_' + rid('').slice(1, 13); const t = now();
+      const data = await ticketSanitize(s, project.id, null, { subject, description, status: 'New', priority: prio, category: TEAMS_TYPES[ty][0], origin: TEAMS_TYPES[ty][1], ticketType: ty, source: 'teams', org: project.customer || '', requester: { name: String(b.requesterName || s.name || s.email).slice(0, 120), email: '' }, reporter: { name: s.name, email: s.email }, extRef: ext, teams: link ? { messageLink: link } : undefined, thread: [] });
+      await withLock('it.' + project.id + '.tkt.' + key, async () => { await save('it.' + project.id + '.tkt', 'ip.' + project.id + '.tkt', key, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: t, ua: t }, Object.assign(data, { hist: [{ at: t, who: s.name || s.email, side: 'facilio', event: 'Created from Microsoft Teams' }] })); });
+      await ticketNotify(project, key, null, data, s); await audit(project.id, s.id, 'tkt-teams', key);
+      return ok({ duplicate: false, ticket: 'TKT-' + data.n, project: project.name, category: data.category, priority: data.priority, url, message: 'Created TKT-' + data.n + ' in ' + project.name }, 201);
+    }
+    throw new HttpError(404, 'Unknown tool');
+  });
+
   // client items -> tickets: feedback, questions and anything raised on the client side, plus questions open in Delivery Studio. Idempotent: every source is keyed once (extRef) and never rewritten.
   route('POST', '/api/projects/:id/tickets/sync-client', async (b, P) => {
     const s = await me(); const { project } = await projectAccess(s, P.id, 'edit');
@@ -538,6 +593,8 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
     }
     if (P.kind === 'tkt') { data = await ticketSanitize(s, P.id, cur, data); }
     if (P.kind === 'res') { const u = String(data.url || '').trim(); if (!/^https?:\/\/[^\s]+$/i.test(u)) throw new HttpError(400, 'Enter a full link starting with http:// or https://'); if (!String(data.name || '').trim()) throw new HttpError(400, 'Name is required'); data = Object.assign({}, data, { url: u, name: String(data.name).trim().slice(0, 200), createdByName: cur ? cur.createdByName : (s.name || s.email) }); }
+    if (P.kind === 'pnote') { str(data.title, 200, 'Title', true); str(data.body || '', 20000, 'Note'); }
+    if (P.kind === 'res' || P.kind === 'pnote') data = Object.assign({}, data, { createdByName: cur ? cur.createdByName : s.name, createdByEmail: cur ? cur.createdByEmail : s.email });
     if (P.kind === 'cr' && !cur) { const all = await itemsOf(P.id, 'cr'); const mx = all.reduce((m, it) => (/^[0-9]+$/.test(String(it.data.n)) ? Math.max(m, Number(it.data.n)) : m), 0); data = Object.assign({}, data, { n: mx + 1 }); }
     else if (P.kind === 'cr' && cur) data = Object.assign({}, data, { n: cur.n });
     const prevHist = cur && Array.isArray(cur.hist) ? cur.hist : [];
@@ -802,7 +859,7 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
 }
 
 export default async function handler(req, ctx) {
-  CTX = ctx; globalThis.__fwb.reset();
+  CTX = ctx; HDR = (req && req.headers) || {}; globalThis.__fwb.reset();
   let query = req.query; if (query && typeof query === 'object') query = new URLSearchParams(query).toString(); query = String(query || '').replace(/^\?/, '');
   let body; if (req.method !== 'GET' && req.method !== 'DELETE') { const t = req.text ? await req.text() : ''; if (t) { try { body = JSON.parse(t); } catch (e) { body = {}; } } else body = {}; }
   const sub = String(req.path || '/').startsWith('/') ? req.path : '/' + req.path;

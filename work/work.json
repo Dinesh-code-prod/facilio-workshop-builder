@@ -1,1 +1,89 @@
-{ "mcp": { "tools": [] } }
+{
+ "mcp": {
+  "tools": [
+   {
+    "name": "list_projects",
+    "description": "List the Delivery Studio projects the caller can create tickets in",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {}
+    }
+   },
+   {
+    "name": "suggest_ticket",
+    "description": "Suggest a ticket type, priority, subject and matching projects for a Teams message. Suggestions only; nothing is created. Use before create_ticket so the person can correct them.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "text": {
+       "type": "string",
+       "description": "The message text"
+      }
+     },
+     "required": [
+      "text"
+     ]
+    }
+   },
+   {
+    "name": "create_ticket",
+    "description": "Create a Delivery Studio ticket from a Teams message. Only after the person has reviewed type, priority and project.",
+    "function": "api",
+    "confirm": true,
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Exact project name"
+      },
+      "subject": {
+       "type": "string"
+      },
+      "description": {
+       "type": "string",
+       "description": "Original message text"
+      },
+      "ticketType": {
+       "type": "string",
+       "enum": [
+        "customer_issue",
+        "internal_feedback",
+        "question",
+        "bug",
+        "other"
+       ]
+      },
+      "priority": {
+       "type": "string",
+       "enum": [
+        "Low",
+        "Medium",
+        "High",
+        "Urgent"
+       ]
+      },
+      "requesterName": {
+       "type": "string",
+       "description": "Who raised it, if not the caller"
+      },
+      "teamsMessageLink": {
+       "type": "string",
+       "description": "Link to the Teams message, if known"
+      },
+      "teamsMessageId": {
+       "type": "string",
+       "description": "Teams message id, used to avoid duplicates"
+      }
+     },
+     "required": [
+      "project",
+      "subject"
+     ]
+    }
+   }
+  ]
+ }
+}

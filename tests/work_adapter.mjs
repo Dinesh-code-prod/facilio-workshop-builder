@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import handler from '../work/server/api.mjs';
 const store = new Map(), files = new Map(); let maxVal = 0, calls = 0;
 const KEY = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
-const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' }, teams: { async send(m) { (globalThis.__SENT = globalThis.__SENT || []).push(m); return { delivered: 1, failed: 0 }; } }, fetch: async (cred, url, o) => { if (!globalThis.__GRAPH) { const e = new Error('credential not granted'); throw e; } return globalThis.__GRAPH(cred, url, o); }, secrets: { async get(k) { if (k === 'support_mailbox') return 'support@facilio.com';  if (k === 'anthropic_api_key' && globalThis.__KEY) return globalThis.__KEY; if (k === 'teams_notify' && globalThis.__TEAMS) return globalThis.__TEAMS; throw new Error('no secret'); } }, llm: async ({ messages }) => ({ model: 'mock', choices: [{ message: { content: '## Draft\nBased on [S1]. ' + messages[1].content.slice(0, 20) } }] }),
+const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' }, teams: { async send(m) { (globalThis.__SENT = globalThis.__SENT || []).push(m); return { delivered: 1, failed: 0 }; } }, fetch: async (cred, url, o) => { if (!globalThis.__GRAPH) { const e = new Error('credential not granted'); throw e; } return globalThis.__GRAPH(cred, url, o); }, secrets: { async get(k) { if (k === 'support_mailbox') return 'support@facilio.com'; if (k === 'ai_master_key') return globalThis.__MASTER || '';  if (k === 'anthropic_api_key' && globalThis.__KEY) return globalThis.__KEY; if (k === 'teams_notify' && globalThis.__TEAMS) return globalThis.__TEAMS; throw new Error('no secret'); } }, llm: async ({ messages }) => ({ model: 'mock', choices: [{ message: { content: '## Draft\nBased on [S1]. ' + messages[1].content.slice(0, 20) } }] }),
   db: {
     async get(c, k) { calls++; const r = (store.get(c) || new Map()).get(k); return r ? { key: k, value: JSON.parse(r), updated_at: '', updated_by: '' } : null; },
     async put(c, k, v) { calls++; assert.ok(KEY.test(k), 'bad key ' + k); assert.ok(/^[A-Za-z0-9._-]{1,64}$/.test(c), 'bad collection ' + c); const t = JSON.stringify(v); maxVal = Math.max(maxVal, t.length); if (t.length > 128 * 1024) { const e = new Error('too large'); e.status = 413; throw e; } if (!store.has(c)) store.set(c, new Map()); store.get(c).set(k, t); },
@@ -11,9 +11,9 @@ const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' 
     async list(c, o = {}) { calls++; const keys = [...(store.get(c) || new Map()).keys()].sort(); const start = o.cursor ? keys.findIndex(k => k > o.cursor) : 0; if (start < 0) return { items: [] }; const page = keys.slice(start, start + (o.limit || 50)); return { items: page.map(k => ({ key: k, value: JSON.parse(store.get(c).get(k)) })), cursor: start + page.length < keys.length ? page[page.length - 1] : undefined }; }
   },
   files: { async uploadUrl(name) { const id = 'file_' + files.size; files.set(id, null); return { url: 'https://storage.example/' + id, file_id: id }; }, async url(id) { return { url: 'https://storage.example/get/' + id }; } } });
-const call = async (email, method, path, body) => {
+const call = async (email, method, path, body, headers) => {
   const [p, q] = path.split('?'); const sub = p.replace(/^\/api/, '');
-  const req = { method, path: sub, query: q || '', headers: {}, text: async () => (body === undefined ? '' : JSON.stringify(body)), json: async () => body };
+  const req = { method, path: sub, query: q || '', headers: headers || {}, text: async () => (body === undefined ? '' : JSON.stringify(body)), json: async () => body };
   const r = await handler(req, mkctx(email)); return { status: r.status, data: await r.json() };
 };
 let n = 0; const t = async (name, fn) => { await fn(); n++; console.log('  ok  ' + name); };
@@ -78,7 +78,7 @@ await t('AI providers: DeepSeek default, Claude explicit, key never exposed, hon
     r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat' }); assert.equal(r.data.item.data.provider, 'DeepSeek', 'configuring a key does not change the default');
     r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat', provider: 'claude' }); assert.equal(r.status, 201); assert.equal(r.data.item.data.provider, 'Claude'); assert.equal(seen.key, SECRET); assert.ok(!JSON.stringify(r.data).includes(SECRET));
     r = await call(dinesh, 'POST', '/api/admin/ai/test', {}); assert.equal(r.data.ok, true); assert.ok(!JSON.stringify(r.data).includes(SECRET));
-    r = await call(dinesh, 'GET', '/api/admin/ai/usage'); assert.equal(r.data.usage.claude.inTok, 22); assert.equal(r.data.usage.claude.outTok, 14); assert.ok(!JSON.stringify(r.data).includes(SECRET)); assert.equal(r.data.usage.claude.errors, 0);
+    r = await call(dinesh, 'GET', '/api/admin/ai/usage'); assert.equal(r.data.usage.claude.inTok, 11); assert.equal(r.data.usage.claude.outTok, 7); assert.ok(!JSON.stringify(r.data).includes(SECRET)); assert.equal(r.data.usage.claude.errors, 0);
     r = await call(sam, 'GET', '/api/admin/ai/usage'); assert.equal(r.status, 403);
     globalThis.fetch = async () => ({ ok: false, status: 500, json: async () => ({}) });
     r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat', provider: 'claude' }); assert.equal(r.status, 502, 'an explicit Claude failure is reported, not hidden');
@@ -221,5 +221,40 @@ await t('support mailbox: sync routes mail by ticket tag and sender rules, parks
   globalThis.__GRAPH = async () => ({ ok: false, status: 429, json: async () => ({}) }); r = await call(dinesh, 'POST', '/api/mail/sync'); assert.equal(r.status, 429);
   globalThis.__GRAPH = async () => ({ ok: false, status: 403, json: async () => ({}) }); r = await call(dinesh, 'POST', '/api/mail/sync'); assert.equal(r.status, 502); r = await call(dinesh, 'GET', '/api/mail/status'); assert.equal(r.data.last.ok, false); assert.match(r.data.last.error, /Mail\.Read/);
   delete globalThis.__GRAPH;
+});
+await t('Teams (Otto tools): suggest, create with permissions, duplicate-safe, bad links refused', async () => {
+  const tool = (who, name, body) => call(who, 'POST', '/api/', body, { 'x-work-mcp': '1', 'x-work-mcp-tool': name });
+  let r = await tool(dinesh, 'suggest_ticket', { text: 'Acme says the approval email is not working before go-live' }); assert.equal(r.data.ticketType, 'bug'); assert.equal(r.data.priority, 'High');
+  r = await tool(out, 'create_ticket', { project: 'Alpha', subject: 'x' }); assert.ok(r.status >= 400, 'a person without access cannot create');
+  r = await tool(dinesh, 'create_ticket', { project: 'Alp', subject: 'Approver gets no email', description: 'From Teams', ticketType: 'bug', priority: 'High', teamsMessageId: 'msg-1', teamsMessageLink: 'https://teams.microsoft.com/l/message/abc' }); assert.equal(r.status, 201); assert.match(r.data.ticket, /^TKT-\d+$/); assert.equal(r.data.category, 'Defect');
+  const first = r.data.ticket; r = await tool(dinesh, 'create_ticket', { project: 'Alpha', subject: 'Approver gets no email', teamsMessageId: 'msg-1' }); assert.equal(r.data.duplicate, true); assert.equal(r.data.ticket, first, 'retry returns the same ticket');
+  r = await tool(dinesh, 'create_ticket', { project: 'Alpha', subject: 's', teamsMessageLink: 'https://evil.example/x' }); assert.equal(r.status, 400);
+  r = await tool(dinesh, 'create_ticket', { project: 'Nope', subject: 's' }); assert.equal(r.status, 404);
+  r = await call(dinesh, 'GET', `/api/projects/${pid}/items?kinds=tkt`); const tk = r.data.items.find(i => i.data.extRef === 'teams:msg-1'); assert.equal(tk.data.source, 'teams'); assert.equal(tk.data.reporter.email, dinesh);
+});
+await t('notes: saved per project, creator recorded and kept on edit, title required, viewers cannot write', async () => {
+  let r = await call(dinesh, 'PUT', `/api/projects/${pid}/items/pnote/pn_1`, { data: { title: 'Kick-off notes', body: 'Agreed scope', category: 'Meeting notes' } }); assert.equal(r.status, 200); assert.equal(r.data.item.data.createdByName, 'Dinesh R');
+  r = await call(dinesh, 'PUT', `/api/projects/${pid}/items/pnote/pn_1`, { data: { title: 'Kick-off notes v2', body: 'Agreed scope', createdByName: 'Forged' }, baseVersion: 1 }); assert.equal(r.status, 200); assert.equal(r.data.item.data.createdByName, 'Dinesh R', 'creator cannot be rewritten');
+  r = await call(dinesh, 'PUT', `/api/projects/${pid}/items/pnote/pn_2`, { data: { title: '  ', body: 'x' } }); assert.equal(r.status, 400);
+  r = await call(out, 'PUT', `/api/projects/${pid}/items/pnote/pn_3`, { data: { title: 'x' } }); assert.ok(r.status >= 400);
+  r = await call(dinesh, 'GET', `/api/projects/${pid}/items?kinds=pnote`); assert.equal(r.data.items.length, 1);
+});
+await t('Claude key in the app: needs the encryption secret, validated first, stored encrypted, removable, never returned', async () => {
+  const KEY = 'sk-ant-api03-ABCDEFGHIJKLMNOPQRSTUVWXYZ'; const real = globalThis.fetch;
+  let r = await call(out, 'POST', '/api/admin/ai/key', { key: KEY }); assert.equal(r.status, 403);
+  r = await call(dinesh, 'POST', '/api/admin/ai/key', { key: 'not-a-key' }); assert.equal(r.status, 400);
+  r = await call(dinesh, 'POST', '/api/admin/ai/key', { key: KEY }); assert.equal(r.status, 409); assert.match(r.data.error, /ai_master_key/);
+  globalThis.__MASTER = 'a-long-random-master-secret-value';
+  try {
+    globalThis.fetch = async () => ({ ok: false, status: 401, json: async () => ({}) }); r = await call(dinesh, 'POST', '/api/admin/ai/key', { key: KEY }); assert.equal(r.status, 422); assert.match(r.data.error, /rejected/);
+    globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => ({ data: [{ id: 'claude-sonnet-5-5' }] }) }); r = await call(dinesh, 'POST', '/api/admin/ai/key', { key: KEY }); assert.equal(r.status, 200); assert.ok(!JSON.stringify(r.data).includes(KEY));
+    const raw = JSON.stringify([...(store.get('ai') || new Map()).values()]); assert.ok(!raw.includes(KEY), 'the key is not stored readable');
+    r = await call(dinesh, 'GET', '/api/ai/status'); assert.equal(r.data.claude, true); assert.equal(r.data.keySource, 'app'); assert.ok(!JSON.stringify(r.data).includes(KEY));
+    let used = ''; globalThis.fetch = async (u, o) => { used = o.headers['x-api-key']; return { ok: true, status: 200, json: async () => ({ content: [{ text: 'hi [S1]' }], usage: { input_tokens: 1, output_tokens: 1 } }) }; };
+    r = await call(dinesh, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat', provider: 'claude' }); assert.equal(r.status, 201); assert.equal(used, KEY, 'the saved key is decrypted on the server for the call');
+    globalThis.__MASTER = 'a-different-master-value-entirely'; r = await call(dinesh, 'GET', '/api/ai/status'); assert.equal(r.data.claude, false, 'a wrong master key cannot read it');
+    globalThis.__MASTER = 'a-long-random-master-secret-value';
+    r = await call(dinesh, 'DELETE', '/api/admin/ai/key'); assert.equal(r.status, 200); r = await call(dinesh, 'GET', '/api/ai/status'); assert.equal(r.data.claude, false);
+  } finally { globalThis.fetch = real; globalThis.__MASTER = ''; }
 });
 console.log(`\n${n} checks passed, ${calls} storage calls, largest record ${(maxVal / 1024).toFixed(1)} KB`);

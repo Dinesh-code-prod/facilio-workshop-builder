@@ -49,17 +49,19 @@
 
   // ---------- routing ----------
   const NAV = [
-    { g: 'Project', icon: 'dash', items: [['dashreport', 'Dashboard Report'], ['overview', 'Project Overview'], ['proadmap', 'Project Roadmap'], ['aiwork', 'Deliverables & AI'], ['tickets', 'Tickets'], ['resources', 'Resources & Links']] },
+    { g: 'Project', icon: 'dash', items: [['dashreport', 'Dashboard Report'], ['overview', 'Project Overview'], ['proadmap', 'Project Roadmap']] },
     { g: '1. Kick-off & Discovery', icon: 'home', items: [['msaflow', 'Contract'], ['contracts', 'Contracts & Integrations'], ['kickoff', 'Kick-off Deck'], ['plan', 'Project Plan'], ['timeline', 'Plan Timeline'], ['onboarding', 'Data Onboarding'], ['governance', 'Governance & RAID'], ['changes', 'Change Requests']] },
     { g: '2. Workshops', icon: 'flag', items: [['transcripts', 'Transcripts & Requirement Confirmation']] },
     { g: '3. Requirements', icon: 'check', items: [['usecases', 'Use Cases'], ['checks', 'Checks & Validations']] },
     { g: '4. BRD & Approvals', icon: 'check', items: [['brd', 'BRD Draft']] },
-    { g: '5. Configuration & Implementation', icon: 'modules', items: [['modules', 'System Modules & Form Builder'], ['flow', 'State Flow Builder'], ['roles', 'Roles & Access Permissions'], ['pkgan', 'Package Analysis'], ['cfginputs', 'Configuration Inputs'], ['dashboards', 'Dashboard Gallery'], ['trace', 'Traceability & Quality']] },
+    { g: '5. Configuration & Implementation', icon: 'modules', items: [['modules', 'System Modules & Form Builder'], ['flow', 'State Flow Builder'], ['roles', 'Roles & Access Permissions'], ['cfginputs', 'Configuration Inputs'], ['dashboards', 'Dashboard Gallery'], ['trace', 'Traceability & Quality']] },
     { g: '6. UAT & Defects · 9. Go-Live', icon: 'flag', items: [['delivery', 'Build, UAT & Go-Live']] },
     { g: '7. FTR & KPI Documentation', icon: 'flag', items: [['ftr', 'FTR Report (Excel)'], ['kpi', 'KPI Workbooks'], ['reports', 'Status Reports (WSR / Monthly)']] },
-    { g: '8. Customer Training & Guides', icon: 'flag', items: [['guide', 'Customer User Guide'], ['guidebuilder', 'User Guide Builder'], ['vidguide', 'Video to Guide']] },
     { g: '10. Hypercare', icon: 'flag', items: [['hypercare', 'Hypercare']] },
     { g: '11. Support Handover & 12. Closure', icon: 'flag', items: [['handover', 'Handover & Closure']] },
+    { g: 'Documentation & Resources', icon: 'doc', items: [['guidebuilder', 'User Guide Builder'], ['pkgan', 'Configuration Analysis'], ['vidguide', 'Video to Guide'], ['guide', 'Customer User Guide'], ['resources', 'Notes & Links']] },
+    { g: 'Support & Tickets', icon: 'flag', items: [['tickets', 'Tickets']] },
+    { g: 'AI & Automation', icon: 'dash', items: [['aiwork', 'Deliverables & AI']] },
     { g: 'Administration', icon: 'gear', items: [['portal', 'Customer Portal'], ['custintro', 'Customer Introduction'], ['templates', 'Templates'], ['workspace', 'Workspace & Layout'], ['settings', 'Project Settings & Exports']] }
   ];
   // customer menu: [view, label, portal tab that must be on]
@@ -117,7 +119,7 @@
       <div class="right">${S.custPreview ? `<span class="tag blue">Customer preview · read-only</span><button class="btn sm primary" data-act="custPreviewExit">Exit preview</button>` : (inProject && V.canPreviewCustomer && V.canPreviewCustomer() ? `<button class="btn sm" data-act="custPreview" title="See this project as the customer sees it">Preview as customer</button>` : '')}${inProject && !S.readonly && u.kind === 'consultant' ? '<span id="saveState" class="save-state"></span>' : ''}${S.readonly && u.kind === 'consultant' ? tag('tbc', 'Read-only') : ''}${V.bellHtml ? V.bellHtml() : ''}${u.kind === 'consultant' && !inProject ? `<button class="btn sm" data-act="tkOpenGlobal">Tickets</button>` : ''}${u.kind === 'consultant' && (u.adminRole || V.office()) && !inProject ? `<button class="btn sm" data-act="openAdmin">Admin</button>` : ''}${V.office() && !inProject ? `<button class="btn sm nav-out" data-act="logout">Log out</button>` : ''}${V.office() ? '' : `${u.guest ? tag('tbc', 'Guest') : ''}<button class="avatar" data-act="userMenu" aria-label="Account">${esc(initials(u.name))}</button>`}</div></header>`;
   }
   const FI = root.FWBIcons || { has: () => false, svg: () => '' }; const GI = { Project: 'g_project', Delivery: 'g_delivery', Configuration: 'g_config', Requirements: 'g_req', Administration: 'g_admin' };
-  const SEC = g => /^Project/.test(g) ? 'Overview' : /^1\./.test(g) ? 'Discover and define' : /^5\./.test(g) ? 'Build and validate' : /^8\./.test(g) ? 'Launch and support' : /^Administration/.test(g) ? 'Admin' : '';
+  const SEC = g => /^Project/.test(g) ? 'Projects & delivery' : /^1\./.test(g) ? 'Discover and define' : /^5\./.test(g) ? 'Build and validate' : /^10\./.test(g) ? 'Launch and support' : /^Administration/.test(g) ? 'Integrations & admin' : '';
   function crumbHtml() {
     const v = S.ui.view; let grp = '', item = ''; for (const g of navFor()) for (const [id, l] of g.items) if (id === v || (id === 'modules' && v === 'module')) { grp = g.g; item = l; }
     if (!item) return ''; const gname = grp.replace(/^\d+\.\s*/, '').replace(/^6\. UAT[^·]*·\s*/, '');
