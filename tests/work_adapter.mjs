@@ -409,4 +409,24 @@ await t('access check fails closed; AI key and mailbox events appear in the admi
   const res = await handler({ method: 'GET', path: '/projects', query: '', headers: {}, text: async () => '' }, ctx); assert.equal(res.status, 503);
   let r = await call(dinesh, 'GET', '/api/admin/audit'); assert.ok(r.data.entries.some(e => e.action === 'ai-key-saved' || e.action === 'ai-key-removed'), 'AI key changes listed'); assert.ok(r.data.entries.some(e => e.action === 'mail-sync'), 'mail syncs listed');
 });
+await t('sign-offs and approvals: recorded, undone or deleted only by owners and admins; editors still draft', async () => {
+  store.delete('rl'); const own = 'signer.owner@facilio.com', ed = 'signer.editor@facilio.com';
+  let r = await call(own, 'POST', '/api/projects', { name: 'Sign Co', customer: 'S' }); const P = r.data.project.id; await call(own, 'POST', `/api/projects/${P}/members`, { email: ed, role: 'editor' });
+  r = await call(ed, 'PUT', `/api/projects/${P}/items/signoff/brd`, { data: { status: 'requested', doc: 'https://example.com/brd' } }); assert.equal(r.status, 200, 'editor can request a sign-off');
+  r = await call(ed, 'PUT', `/api/projects/${P}/items/signoff/brd`, { data: { status: 'signed', signer: 'X' } }); assert.equal(r.status, 403, 'editor cannot record a signature');
+  r = await call(own, 'PUT', `/api/projects/${P}/items/signoff/brd`, { data: { status: 'signed', signer: 'Customer PM' } }); assert.equal(r.status, 200);
+  r = await call(ed, 'PUT', `/api/projects/${P}/items/signoff/brd`, { data: { status: 'requested' } }); assert.equal(r.status, 403, 'editor cannot undo a signature');
+  r = await call(ed, 'DELETE', `/api/projects/${P}/items/signoff/brd`); assert.equal(r.status, 403, 'editor cannot delete a signed record');
+  r = await call(ed, 'PUT', `/api/projects/${P}/items/cr/cr_1`, { data: { title: 'Extra report', status: 'Proposed' } }); assert.equal(r.status, 200, 'editor can raise a change request');
+  r = await call(ed, 'PUT', `/api/projects/${P}/items/cr/cr_1`, { data: { title: 'Extra report', status: 'Approved' } }); assert.equal(r.status, 403);
+  r = await call(own, 'PUT', `/api/projects/${P}/items/cr/cr_1`, { data: { title: 'Extra report', status: 'Approved' } }); assert.equal(r.status, 200);
+  r = await call(ed, 'PUT', `/api/projects/${P}/items/close/transition`, { data: { supportAt: '2026-10-27' } }); assert.equal(r.status, 200, 'editor can fill in closure details');
+  r = await call(ed, 'PUT', `/api/projects/${P}/items/close/transition`, { data: { supportAt: '2026-10-27', closedAt: '2026-10-27', closedBy: 'E' } }); assert.equal(r.status, 403, 'editor cannot close the project');
+  r = await call(ed, 'PUT', `/api/projects/${P}/docs/brddoc`, { data: { status: 'review' }, baseVersion: 0 }); assert.equal(r.status, 200, 'editor can move the BRD to review');
+  r = await call(ed, 'PUT', `/api/projects/${P}/docs/brddoc`, { data: { status: 'approved' }, baseVersion: 1 }); assert.equal(r.status, 403, 'editor cannot approve the BRD');
+  r = await call(ed, 'PUT', `/api/projects/${P}/docs/brddoc`, { data: { status: 'review', docs: { b2: { status: 'approved' } } }, baseVersion: 1 }); assert.equal(r.status, 403, 'nor a secondary BRD');
+  r = await call(own, 'PUT', `/api/projects/${P}/docs/brddoc`, { data: { status: 'approved' }, baseVersion: 1 }); assert.equal(r.status, 200);
+  r = await call(ed, 'PUT', `/api/projects/${P}/docs/brddoc`, { data: { status: 'draft' }, baseVersion: 2 }); assert.equal(r.status, 403, 'editor cannot reopen an approved BRD');
+  r = await call(dinesh, 'PUT', `/api/projects/${P}/docs/brddoc`, { data: { status: 'draft' }, baseVersion: 2 }); assert.equal(r.status, 200, 'admins can');
+});
 console.log(`\n${n} checks passed, ${calls} storage calls, largest record ${(maxVal / 1024).toFixed(1)} KB`);
