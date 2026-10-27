@@ -180,6 +180,20 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
       await CTX.teams.send({ to, channel: true, title, text: tk.subject, facts: [{ title: 'Project', value: project.name }, { title: 'Status', value: tk.status }, { title: 'Priority', value: tk.priority }, { title: 'Client', value: tk.org || (tk.requester && tk.requester.name) || '—' }], actions: [{ title: 'Open ticket', url: 'https://facilio-delivery-studio.facilio.work/#/p/' + pid + '/tickets/' + key }] });
     } catch (e) { console.log('teams notice failed: ' + (e && e.message)); }
   }
+  // Explore Facilio: a new "I'm interested" request is posted to the Teams channel set under Tickets > Support mailbox (same switch as the
+  // client-email notices) and sent as a direct message to the project's owners. Direct messages go to project members only. Email cannot be
+  // sent from the platform (the mailbox credential can only read), so Teams is the only push channel; the request also opens a Governance action.
+  async function interestNotice(project, key, d) {
+    try {
+      const c = Object.assign({}, MAIL_DEFAULTS, await mailCfg()); if (!c.teamsOn || !CTX.teams || !CTX.teams.send) return false;
+      const owners = (project.members || []).filter(m => m.role === 'owner' && m.email).map(m => String(m.email).toLowerCase()).slice(0, 20);
+      await CTX.teams.send({ to: owners.length ? owners : undefined, channel: c.teamsChannel || true, title: 'Interest in ' + d.title + ' · ' + project.name,
+        text: 'Automated Delivery Studio notification: ' + (d.byCustomer ? (project.customer || 'The customer') : (d.byName || 'Someone')) + ' asked to hear more about "' + d.title + '" in Explore Facilio.' + (d.note ? ' Note: ' + d.note : ''),
+        facts: [{ title: 'Project', value: project.name }, { title: 'Customer', value: project.customer || '—' }, { title: 'Asked by', value: (d.byName || d.by) + (d.byCustomer ? '' : ' (recorded by Facilio)') }, { title: 'Entry', value: d.title }, { title: 'Asked', value: String(d.at).replace('T', ' ').slice(0, 16) + ' UTC' }],
+        actions: [{ title: 'Open the request', url: appUrl() + '/#/p/' + project.id + '/showcase' }] });
+      return true;
+    } catch (e) { console.log('teams interest notice failed: ' + (e && (e.status || e.message))); return false; }
+  }
   async function ticketNotify(project, key, cur, data, s) {
     // Direct Teams messages only go to project members, so an editor cannot make the bot message an arbitrary person.
     const id = 'TKT-' + data.n; const ae0 = String(data.assignee && data.assignee.email || '').toLowerCase(); const ae = ae0 && (project.members || []).some(m => String(m.email || '').toLowerCase() === ae0) ? ae0 : undefined; const was = cur || {};
@@ -836,8 +850,9 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     const t = now(); const nh = { v: head ? head.v + 1 : 1, cb: head ? head.cb : s.id, cs: head ? head.cs : 'facilio', ub: s.id, us: 'facilio', ca: head ? head.ca : t, ua: t };
     await save(col, pcol, P.item, nh, data, head && head.z); await touchProject(P.id);
     if (P.kind === 'tkt') await ticketNotify(project, P.item, cur, data, s);
+    let notice; if (P.kind === 'interest' && !cur) { notice = await interestNotice(project, P.item, data) ? 'teams' : 'none'; await audit(P.id, s.id, 'interest-created', P.item + ' ' + data.title); }
     if (['signoff', 'cr', 'raid', 'onb', 'onbsub', 'decision', 'brdrev', 'ai', 'hc', 'ho', 'close', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'tkt', 'res', 'ugv', 'ugu'].includes(P.kind)) await audit(P.id, s.id, P.kind + (cur ? '-updated' : '-created'), P.item + (data.status ? ' ' + data.status : ''));
-    return ok({ item: itemOut(P.kind, P.item, nh, data) });
+    return ok(Object.assign({ item: itemOut(P.kind, P.item, nh, data) }, notice ? { notice } : {}));
   }));
   route('DELETE', '/api/projects/:id/items/:kind/:item', async (b, P) => {
     const s = await me(); if (!KINDS.includes(P.kind)) throw new HttpError(400, 'Unknown item type'); const { role } = await projectAccess(s, P.id, 'edit');

@@ -1,6 +1,6 @@
 // Explore Facilio in a browser against the local preview: start an entry from a module (only configuration facts are filled), save a draft,
 // upload an image, publishing needs a named source and a confirmation, the customer's view lists only published entries, an "I'm interested"
-// request is stored with its author and opens a Facilio action, the team updates the request, and entry text is shown as text.
+// request is stored with its author and opens a Facilio action (and, with FAKE_GRAPH=1, a Teams notice), the team updates the request, and entry text is shown as text.
 // Usage: node tests/ui/showcase-check.mjs [baseUrl] [outDir]   (start the preview first: npm run preview)
 import { chromium } from 'playwright'; import fs from 'node:fs';
 const BASE = process.argv[2] || 'http://localhost:4173'; const OUT = process.argv[3] || 'tests/ui/out'; fs.mkdirSync(OUT, { recursive: true });
@@ -35,6 +35,7 @@ await p.waitForTimeout(800); await p.screenshot({ path: `${OUT}/showcase-team.pn
 await p.evaluate(() => { window.__k = window.FWB.S.user.kind; window.FWB.S.user.kind = 'customer'; window.FWBViews.render(); }); await p.waitForTimeout(400);
 const custCards = await p.$$eval('.sc-card h3', e => e.map(x => x.textContent));
 check('the customer sees only published entries', custCards.length === 1 && /Mobile inspections/.test(custCards[0]), custCards.join(' | '));
+const teamsOn = await fetch(BASE + '/__teams').then(r => r.ok && /json/.test(r.headers.get('content-type') || ''), () => false); if (teamsOn) await p.evaluate(async () => fetch('/api/fn/api/mail/settings', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ teamsOn: true, teamsChannel: 'delivery-sales' }) }));
 await p.click('[data-act="xfOpen"]'); await p.waitForSelector('#drawer .sc-ul'); check('details show the capabilities, not the internal source', /Offline checklists/.test(await p.textContent('#drawer')) && !/product notes/.test(await p.textContent('#drawer')));
 await p.click('#drawer [data-act="xfAsk"]'); await p.waitForSelector('#sc_note'); await p.fill('#sc_note', 'Demo for the maintenance team please'); await p.click('[data-act="xfAskGo"]'); await p.waitForTimeout(800);
 check('after asking, the card says the request was sent', /Request sent/.test(await p.textContent('.sc-card')));
@@ -42,6 +43,8 @@ await p.screenshot({ path: `${OUT}/showcase-customer.png` });
 await p.evaluate(() => { window.FWB.S.user.kind = window.__k; window.FWBViews.render(); }); await p.waitForTimeout(300);
 const st = await p.evaluate(() => ({ i: window.FWBViews.items.list('interest'), a: window.FWBViews.items.list('action') }));
 check('the request is stored with its author from the session', st.i.length === 1 && st.i[0].by === 'dinesh.r@facilio.com' && st.i[0].status === 'new', JSON.stringify(st.i[0] && { by: st.i[0].by, st: st.i[0].status }));
+if (teamsOn) { const tl = await (await fetch(BASE + '/__teams')).json(); const m = tl.find(x => /Interest in Mobile inspections/.test(x.title)); check('a Teams notice is posted to the channel and the project owners', m && m.channel === 'delivery-sales' && Array.isArray(m.to) && m.to.includes('dinesh.r@facilio.com') && /\/showcase$/.test(m.actions[0].url), m ? m.channel + ' · ' + (m.to || []).join(',') : 'none'); }
+else console.log('skip Teams notice check (start the preview with FAKE_GRAPH=1 to include it)');
 check('a Facilio follow-up action is opened', st.a.some(a => a.side === 'facilio' && /asked about/.test(a.text) && a.status === 'Open'));
 await p.click('[data-act="xfTab"][data-v="requests"]'); await p.waitForSelector('[data-change="xfReqSt"]'); await p.selectOption('[data-change="xfReqSt"]', 'demo'); await p.waitForTimeout(600);
 check('the team updates the request status', await p.evaluate(() => window.FWBViews.items.list('interest')[0].status === 'demo'));
