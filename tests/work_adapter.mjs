@@ -548,4 +548,11 @@ await t('AI documents part by part: job, parts, retry, missing section marked, o
   r = await call(sam, 'POST', `/api/projects/${pid}/ai/job/${j3}/finish`, {}); assert.equal(r.status, 502, 'nothing written: a clear error, not an empty draft');
   r = await call(out, 'POST', `/api/projects/${pid}/ai/job`, { task: 'uat' }); assert.ok(r.status === 403 || r.status === 404);
 });
+await t('combined flows: validated snapshot records', async () => {
+  store.delete('rl'); const own = 'cflow.owner@facilio.com'; let r = await call(own, 'POST', '/api/projects', { name: 'CF', customer: 'C' }); const P = r.data.project.id;
+  r = await call(own, 'PUT', `/api/projects/${P}/items/cflow/cf1`, { data: { name: '', nodes: [], edges: [] } }); assert.equal(r.status, 400, 'name and shapes are required');
+  r = await call(own, 'PUT', `/api/projects/${P}/items/cflow/cf1`, { data: { name: 'End to end', nodes: Array.from({ length: 601 }, (x, i) => ({ id: 'n' + i })), edges: [] } }); assert.equal(r.status, 400, 'at most 600 shapes');
+  r = await call(own, 'PUT', `/api/projects/${P}/items/cflow/cf1`, { data: { name: 'End to end', nodes: [{ id: 'n1', t: 'rect', text: 'Step' }], edges: [], inBrd: 'yes' } }); assert.equal(r.status, 200, JSON.stringify(r.data)); assert.equal(r.data.item.data.inBrd, true);
+  r = await call('cflow.stranger@facilio.com', 'GET', `/api/projects/${P}/items?kinds=cflow`); assert.ok(r.status === 403 || r.status === 404, 'other people cannot read them');
+});
 console.log(`\n${n} checks passed, ${calls} storage calls, largest record ${(maxVal / 1024).toFixed(1)} KB`);

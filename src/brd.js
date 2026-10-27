@@ -133,13 +133,20 @@
       }
       else if (sid === 'modules') { inScope.forEach(m => { ctx = 'mod:' + m.name; moduleSection(m); }); }
       else if (sid === 'processes') {
-        H(1, ++secNo + '. End-to-End Business Processes', 'h'); if (!S.ws.processes.length) P('No end-to-end process has been mapped yet. ' + TBC, 'none');
+        const CF = (V.items && V.items.ready(['cflow']) && V.cflowSvg) ? V.items.list('cflow').filter(c => c.inBrd).sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''))) : [];
+        H(1, ++secNo + '. End-to-End Business Processes', 'h'); if (!S.ws.processes.length && !CF.length) P('No end-to-end process has been mapped yet. ' + TBC, 'none');
         S.ws.processes.forEach(p0 => { const p = root.FWBViews.withLabels(p0); ctx = 'proc:' + p.id;
           H(2, p.name, 'h'); L('Business objective:', p.objective || TBC, 'obj'); L('Trigger:', p.trigger || TBC, 'trg'); L('Primary record:', p.module ? ((F.moduleView(p.module) || {}).label || p.module) : TBC, 'rec'); L('Final outcome:', p.outcome || TBC, 'out');
           if (p.steps.length) FIG(D.swimlaneSvg(p, F.actorLabel, x => F.actor(x).category), 'Figure: ' + p.name + ' — swimlane (solid = verified from configuration; dashed = inferred, proposed or to be confirmed)', 'swim');
           TB(['#', 'Actor', 'Interface', 'Action', 'Record', 'Verification'], p.steps.map((s, i) => [String(i + 1), F.actorLabel(s.lane), s.interface || '', s.action + (s.notes ? '\n' + s.notes : ''), s.recordLabel || '', F.VERIFICATION[s.verification] || s.verification]), [0.3, 1.6, 1.3, 3, 1.1, 1.2], 'steps');
           T.processNarrative(p).forEach((l, i) => P(l, 'n' + i));
           p.steps.filter(s => s.verification === 'tbc' || s.verification === 'inferred').forEach(s => addQ(p.name, 'Confirm step: ' + F.actorLabel(s.lane) + ' — ' + s.action)); });
+        // combined flows saved from the Process Whiteboard and marked for the BRD: the drawing, then its steps and connections in reading order
+        CF.forEach(c => { ctx = 'cflow:' + c.id; const nv = V.cflowNarrative(c); const svg = V.cflowSvg(c);
+          H(2, c.name, 'h'); if (c.desc) String(c.desc).split(/\n+/).forEach((t, i) => P(t, 'd' + i)); L('Source:', 'Process Whiteboard' + (c.boardName ? ' — board "' + c.boardName + '"' : '') + (c.savedAt ? ', saved ' + String(c.savedAt).slice(0, 10) : ''), 'src');
+          if (svg) FIG(svg, 'Figure: ' + c.name + ' — combined flow', 'fig');
+          if (nv.steps.length) TB(['#', 'Step', 'Type'], nv.steps.map((x, i) => [String(i + 1), x.text, x.kind]), [0.4, 5, 1.2], 'steps');
+          if (nv.links.length) TB(['From', 'To', 'Condition / label'], nv.links.map(l => [l.from, l.to, l.label || '—']), [2.4, 2.4, 2], 'links'); });
       }
       else if (sid === 'usecases') {
         const UCS = (V.items && V.items.ready(['usecase'])) ? V.items.list('usecase').filter(u => u.scope !== 'Out of scope').sort((a, b) => (a.no || 0) - (b.no || 0)) : [];

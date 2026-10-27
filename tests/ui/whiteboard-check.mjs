@@ -1,6 +1,7 @@
 // Process Whiteboard, end to end in a browser against the local preview (start it with FAKE_CLAUDE=1 to exercise the image import review with the
 // local test double; without it the import must explain that Claude is needed). Usage: node tests/ui/whiteboard-check.mjs [baseUrl] [outDir]
 import { chromium } from 'playwright'; import fs from 'node:fs';
+let __pk = 0; const place = async (p, t) => { if (['rect', 'ellipse', 'diamond', 'tri', 'para', 'hex', 'frame'].includes(t)) { await p.click('#wbShapesB'); await p.click(`#wbShapes [data-wbtool="${t}"]`); } else await p.click(`.wb-rail [data-wbtool="${t}"]`); const bb = await p.locator('#wbSvg').boundingBox(); __pk++; await p.mouse.click(bb.x + bb.width / 2 - 330 + (__pk % 4) * 140, bb.y + bb.height / 2 - 60 + Math.floor(__pk / 4) % 3 * 110); };
 const BASE = process.argv[2] || 'http://localhost:4173'; const OUT = process.argv[3] || 'tests/ui/out'; fs.mkdirSync(OUT, { recursive: true });
 const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }); const p = await ctx.newPage();
 const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
@@ -13,8 +14,8 @@ const W = () => p.evaluate(() => { const s = window.FWBViews.whiteboardState; re
 await p.click('[data-act="wbNew"]'); await p.fill('#wbName', 'Order to cash'); await p.click('#drawer .btn.primary'); await p.waitForSelector('#wbSvg'); await p.waitForTimeout(600);
 check('a new board is created and opened', (await W())?.name === 'Order to cash');
 // notes, shapes, text editing
-await p.click('[data-act="wbAdd"][data-t="note"]'); await p.waitForSelector('.wb-edit'); await p.keyboard.type('Customer raises a request'); await p.click('#wbSvg', { position: { x: 30, y: 30 } }); await p.waitForTimeout(200);
-await p.click('[data-act="wbAdd"][data-t="rect"]'); await p.waitForTimeout(200); await p.click('[data-act="wbAdd"][data-t="diamond"]'); await p.waitForTimeout(200);
+await place(p, 'note'); await p.waitForSelector('.wb-edit'); await p.keyboard.type('Customer raises a request'); await p.click('#wbSvg', { position: { x: 30, y: 30 } }); await p.waitForTimeout(200);
+await place(p, 'rect'); await p.waitForTimeout(200); await place(p, 'diamond'); await p.waitForTimeout(200);
 let s = await W(); check('sticky note, box and decision added', s.nodes === 3, JSON.stringify(s));
 check('note text is saved as plain text', await p.evaluate(() => window.FWBViews.whiteboardState.B.nodes[0].text === 'Customer raises a request'));
 // move the decision apart, then connect note -> decision with the Connect tool by dragging between them
@@ -59,6 +60,7 @@ const rv = await p.evaluate(() => ({ rows: document.querySelectorAll('#wbImgOut 
 if (rv.err) check('image import explains that Claude is needed when no key is set', /needs Claude/.test(rv.err), rv.err.slice(0, 90));
 else {
   check('image import shows a review with unsure parts marked', rv.rows === 5 && rv.uncertain >= 1, JSON.stringify(rv));
+
   check('a connection to a missing step is dropped and reported', /not in the diagram/.test(rv.dropped));
   check('markup in a label is not rendered', !rv.script);
   await p.screenshot({ path: `${OUT}/whiteboard-import-review.png` });
@@ -78,7 +80,7 @@ const img = await p.evaluate(async b64 => { const im = new Image(); im.src = 'da
 check('board PNG export holds the whole board, not just the view', img.w > 1500 && img.ink > 2000, JSON.stringify(img));
 // selection export (one frame = one diagram)
 await p.evaluate(() => { const W = window.FWBViews.whiteboardState; const fr = W.B.nodes.find(n => n.t === 'frame'); W.sel = new Set([fr.id]); window.FWBViews.render(); }); await p.waitForTimeout(400);
-const [dl2] = await Promise.all([p.waitForEvent('download'), p.click('.wb-tb [data-act="wbExport"][data-scope="sel"]')]); check('a single diagram exports on its own', /_selection\.png$/.test(dl2.suggestedFilename()));
+const [dl2] = await Promise.all([p.waitForEvent('download'), p.click('#wbCtxBar [data-act="wbExport"][data-scope="sel"]')]); check('a single diagram exports on its own', /_selection\.png$/.test(dl2.suggestedFilename()));
 // Miro link: only real Miro board links are accepted
 await p.click('[data-act="wbMiro"]'); await p.fill('#wbMiroUrl', 'javascript:alert(1)'); await p.click('[data-act="wbMiroSave"]'); await p.waitForTimeout(200);
 const bad = await p.evaluate(() => window.FWBViews.whiteboardState.B.miro); await p.fill('#wbMiroUrl', 'https://miro.com/app/board/uXjVKExample=/'); await p.click('[data-act="wbMiroSave"]'); await p.waitForTimeout(200);

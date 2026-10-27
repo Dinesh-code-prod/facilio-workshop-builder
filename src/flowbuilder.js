@@ -158,7 +158,12 @@
     const t = selT(f); if (t.removed) return; await ACT.removeT(); toast(t.origin === 'proposed' ? 'Transition deleted' : 'Transition removed — kept as a proposed removal against the source. Undo with ↶'); };
   document.addEventListener('keydown', e => { if (S.ui.view !== 'flow' || !S.ui.flowId || S.readonly) return; const tg = e.target; if (tg && (/^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName) || tg.isContentEditable)) return;
     if ((e.key === 'Delete' || e.key === 'Backspace') && S.ui.selected) { e.preventDefault(); ACT.deleteSel(); }
-    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? ACT.redo() : ACT.undo(); } });
+    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? ACT.redo() : ACT.undo(); }
+    // arrow keys move the selected state or transition button (Shift = 1 px, otherwise 10 px)
+    else if (/^Arrow(Up|Down|Left|Right)$/.test(e.key) && S.ui.selected) { const f = F.flowModel(S.ui.flowId); const st = f.states.find(x => x.id === S.ui.selected); const tr = !st && f.transitions.find(x => x.id === S.ui.selected); if (!st && !tr) return; e.preventDefault();
+      const d = e.shiftKey ? 1 : 10; const dx = e.key === 'ArrowLeft' ? -d : e.key === 'ArrowRight' ? d : 0, dy = e.key === 'ArrowUp' ? -d : e.key === 'ArrowDown' ? d : 0;
+      let base = null; if (tr && !tr.lp) { const ge = D.flowGeometry(f, { showRemoved: !!S.ui.flowRemoved }).edges.find(x => x.t.id === tr.id); if (!ge) return; base = { x: ge.lx, y: ge.ly }; }
+      mut(st ? 'State moved' : 'Transition button moved', S.ui.selected, g => { if (st) { const s = g.states.find(x => x.id === st.id); s.x = Math.max(0, (s.x || 0) + dx); s.y = Math.max(0, (s.y || 0) + dy); } else { const t = g.transitions.find(x => x.id === tr.id); const b = t.lp || base; t.lp = { x: Math.max(0, Math.round(b.x + dx)), y: Math.max(0, Math.round(b.y + dy)) }; } }); } });
   function selS(f) { return f.states.find(s => s.id === S.ui.selected); }
   const stLabel = (f, id) => (f.states.find(x => x.id === id) || {}).label || id;
 
@@ -204,7 +209,7 @@
   });
   ACT.deleteFlow = async () => { if (!(await confirmDialog('Delete stateflow', 'Delete this proposed stateflow?', 'Delete', true))) return; const f = S.ws.flows[S.ui.flowId]; delete S.ws.flows[S.ui.flowId]; S.ui.flowModule = f.module; F.changed('Proposed stateflow deleted', f.name); V.go('flow', { flowId: null }); };
   ACT.resetFlow = async () => { if (!(await confirmDialog('Reset to source', 'Discard all workshop changes to this stateflow and show it as configured?', 'Reset', true))) return; delete S.ws.flows[S.ui.flowId]; delete hist[S.ui.flowId]; S.ui.selected = null; F.changed('Stateflow reset to source', S.ui.flowId); };
-  ACT.relayout = a => { const dir = (a && a.getAttribute('data-dir')) || F.flowModel(S.ui.flowId).layoutDir || 'h'; mut(dir === 'v' ? 'Stateflow aligned top to bottom' : 'Stateflow aligned left to right', S.ui.flowId, f => { f.layoutDir = dir; f.states.forEach(s => { s.x = null; s.y = null; }); F.autoLayout(f.states, f.transitions, f.initial, dir); }); setTimeout(() => ACT.fitFlow(), 0); };
+  ACT.relayout = a => { const dir = (a && a.getAttribute('data-dir')) || F.flowModel(S.ui.flowId).layoutDir || 'h'; mut(dir === 'v' ? 'Stateflow aligned top to bottom' : 'Stateflow aligned left to right', S.ui.flowId, f => { f.layoutDir = dir; f.states.forEach(s => { s.x = null; s.y = null; }); f.transitions.forEach(t => { delete t.lp; }); F.autoLayout(f.states, f.transitions, f.initial, dir); }); setTimeout(() => ACT.fitFlow(), 0); };
 
   // ---------- sidebar ----------
   function panel(f) {
@@ -232,7 +237,7 @@
     const portals = [['occupant', 'Occupant Portal'], ['vendor', 'Vendor Portal'], ['tenant', 'Tenant Portal'], ['client', 'Client Portal']];
     let body = '';
     if (tab === 'before') {
-      body = `<div class="small" style="font-weight:600;margin-bottom:6px">Who can perform this transition?</div><div class="row" style="margin-bottom:10px">${[['user', 'User'], ['time', 'Automated by Time'], ['cond', 'Automated by Condition']].map(([v, l]) => `<label class="chk small"><input type="radio" name="tkind" value="${v}" ${kind === v ? 'checked' : ''} data-change="tKind" ${dis}> ${l}</label>`).join('')}</div>`;
+      body = `<div class="tp-h">Who can perform this transition?</div><div class="tp-seg tp-seg3" role="radiogroup" aria-label="Who performs it">${[['user', 'User'], ['time', 'By time'], ['cond', 'By condition']].map(([v, l]) => `<label class="${kind === v ? 'on' : ''}"><input type="radio" name="tkind" value="${v}" ${kind === v ? 'checked' : ''} data-change="tKind" ${dis}>${l}</label>`).join('')}</div>`;
       if (kind === 'user') body += `<div class="xs muted" style="margin-bottom:6px">Specify users, roles or groups who can perform this transition</div>${(t.actors || []).map((a, i) => { const ac = F.actor(a.actor); return `<div class="actor-row"><div class="nm"><div class="small"><b>${esc(ac.label)}</b></div><div class="xs muted">${esc(F.CATEGORY_LABEL[ac.category] || ac.category)}${a.note ? ' · ' + esc(a.note) : ''}</div></div>${sel('', ASTATUS, a.status, `data-change="actorStatus" data-i="${i}" style="width:140px;height:28px" ${dis}`)}${ro ? '' : `<button class="btn sm ghost" data-act="removeActor" data-i="${i}" aria-label="Remove">${ico('x')}</button>`}</div>`; }).join('') || `<div class="notice warn small" style="margin-bottom:6px">No user or role configured — documented as “User / Role to Be Confirmed”.</div>`}
         ${ro ? '' : `<select data-change="addActor">${actorOptions(true)}</select>`}${(t.actors || []).filter(a => !/^system$/.test(a.actor)).length > 1 ? `<div class="row small" style="margin-top:8px"><span>To be performed by</span><label class="chk"><input type="radio" name="tall" ${t.allRequired ? '' : 'checked'} data-change="tAll" value="0" ${dis}> Any one</label><label class="chk"><input type="radio" name="tall" ${t.allRequired ? 'checked' : ''} data-change="tAll" value="1" ${dis}> All</label></div>` : ''}
         <div class="xs muted" style="margin-top:6px">A role picked here is “Proposed in workshop” until set to “Confirmed in workshop”. Roles are never invented — use the to-be-confirmed entries when the role is unknown.</div>`;
@@ -256,16 +261,17 @@
         <div class="pink-label">Notification recipients</div><textarea rows="2" data-change="tf" data-prop="notifications" placeholder="One per line" ${dis}>${esc((t.notifications || []).join('\n'))}</textarea>
         <div class="pink-label">Workshop notes</div><textarea rows="3" data-change="tf" data-prop="notes" ${dis}>${esc(t.notes || '')}</textarea>`;
     }
-    return `<div class="side-h row"><h3 style="flex:1">${ro ? 'View' : 'Edit'} State Transition</h3>${ro || t.removed ? '' : `<button class="btn sm ghost" data-act="deleteSel" title="${t.origin === 'proposed' ? 'Delete transition' : 'Propose removal'} (Delete key)" aria-label="Delete transition">${ico('trash')}</button>`}${t.origin === 'proposed' ? tag('proposed', 'Proposed') : t.removed ? tag('removed', 'Removal proposed') : tag('system', 'Configured')}<button class="btn sm ghost" data-act="deselect" aria-label="Close">${ico('x')}</button></div>
-      ${bt ? `<div class="side-sec xs"><b>Source:</b> “${esc(bt.name)}” ${esc(bt.fromLabel)} → ${esc(bt.toLabel)} · ${esc(bt.typeLabel)} · ${bt.enabled ? 'enabled' : 'disabled'} <span class="mono muted">${esc(bt.ref.file)} #${esc(bt.ref.uid)}</span></div>` : ''}
-      <div class="side-sec"><label class="f">Name</label><input type="text" value="${esc(t.name)}" data-change="tf" data-prop="name" placeholder="Enter transition name" ${dis}>
-      <div class="fgrid" style="margin-top:8px"><div><label class="f">From State</label>${sel('', stateOpts, t.from, `data-change="tf" data-prop="from" ${dis}`)}</div><div><label class="f">To State</label>${sel('', stateOpts, t.to, `data-change="tf" data-prop="to" ${dis}`)}</div></div>
-      <label class="f" style="margin-top:8px">Button Priority</label><div class="row small">${[[1, 'Primary'], [2, 'Secondary'], [0, 'Not Specified']].map(([v, l]) => `<label class="chk"><input type="radio" name="bprio" value="${v}" ${Number(t.buttonType || 0) === v ? 'checked' : ''} data-change="tf" data-prop="buttonType" ${dis}> ${l}</label>`).join('')}</div>
-      <div class="cfg-line"><span class="t">Display this transition in other apps</span>${sw('', (t.portals || []).length > 0, 'data-change="tPortalsToggle"')}</div>
-      ${(t.portals || []).length || S.ui.portalsOpen ? `<div class="row small" style="flex-wrap:wrap;margin-bottom:4px">${portals.map(([p, l]) => `<label class="chk"><input type="checkbox" ${(t.portals || []).indexOf(p) >= 0 ? 'checked' : ''} data-change="tfPortal" data-p="${p}" ${dis}> ${l}</label>`).join('')}</div>` : ''}
-      <div class="cfg-line"><span class="t">Allow Permalinks</span>${sw('', !!t.emailLink, 'data-change="tf" data-prop="emailLink"')}</div><div class="cfg-line"><span class="t">Enabled</span>${sw('', t.enabled !== false, 'data-change="tf" data-prop="enabled"')}</div></div>
-      <div class="side-tabs">${[['before', 'Before'], ['during', 'During'], ['after', 'After']].map(([k, l]) => `<button class="${tab === k ? 'on' : ''}" data-act="tTab" data-v="${k}">${l}</button>`).join('')}</div><div class="side-sec" style="border-bottom:0">${body}</div>
-      ${ro ? '' : `<div class="side-sec row" style="border-top:1px solid var(--fc-border);margin-top:auto">${t.removed ? `<button class="btn sm" data-act="restoreT">Undo removal</button>` : `<button class="btn sm danger" data-act="removeT">${t.origin === 'proposed' ? 'Delete transition' : 'Delete (propose removal)'}</button>`}<span class="spacer"></span><button class="btn sm" data-act="linkReq">Link requirement</button></div>`}`;
+    const kindLbl = kind === 'cond' ? 'Automated by condition' : kind === 'time' ? 'Automated by time' : 'User action';
+    return `<div class="side-h tp-head"><div class="tp-t"><span class="tp-eyebrow">${ro ? 'View' : 'Edit'} state transition</span><h3 title="${esc(t.name)}">${esc(t.name || 'Untitled transition')}</h3><div class="tp-route"><span>${esc(stLabel(f, t.from))}</span>${ico('right')}<span>${esc(stLabel(f, t.to))}</span></div><div class="tp-badges">${t.origin === 'proposed' ? tag('proposed', 'Proposed') : t.removed ? tag('removed', 'Removal proposed') : tag('system', 'Configured')}<span class="tp-kind k-${kind}">${kindLbl}</span></div></div><div class="tp-acts">${ro || t.removed ? '' : `<button class="btn sm ghost icon" data-act="deleteSel" title="${t.origin === 'proposed' ? 'Delete transition' : 'Propose removal'} (Delete key)" aria-label="Delete transition">${ico('trash')}</button>`}<button class="btn sm ghost icon" data-act="deselect" aria-label="Close">${ico('x')}</button></div></div>
+      ${bt ? `<div class="tp-src xs"><b>Configured as</b> “${esc(bt.name)}” · ${esc(bt.fromLabel)} → ${esc(bt.toLabel)} · ${esc(bt.typeLabel)} · ${bt.enabled ? 'enabled' : 'disabled'}<span class="mono">${esc(bt.ref.file)} #${esc(bt.ref.uid)}</span></div>` : ''}
+      <div class="side-sec tp-sec"><div class="tp-h">Basics</div><label class="f">Name</label><input type="text" value="${esc(t.name)}" data-change="tf" data-prop="name" placeholder="Enter transition name" ${dis}>
+      <div class="tp-ft"><div><label class="f">From state</label>${sel('', stateOpts, t.from, `data-change="tf" data-prop="from" ${dis}`)}</div><span class="tp-arrow" aria-hidden="true">${ico('right')}</span><div><label class="f">To state</label>${sel('', stateOpts, t.to, `data-change="tf" data-prop="to" ${dis}`)}</div></div></div>
+      <div class="side-sec tp-sec"><div class="tp-h">Button</div><div class="tp-seg" role="radiogroup" aria-label="Button priority">${[[1, 'Primary'], [2, 'Secondary'], [0, 'Not specified']].map(([v, l]) => `<label class="${Number(t.buttonType || 0) === v ? 'on' : ''}"><input type="radio" name="bprio" value="${v}" ${Number(t.buttonType || 0) === v ? 'checked' : ''} data-change="tf" data-prop="buttonType" ${dis}>${l}</label>`).join('')}</div>
+      <div class="tp-toggles"><div class="cfg-line"><span class="t">Show in other apps (portals)</span>${sw('', (t.portals || []).length > 0, 'data-change="tPortalsToggle"')}</div>
+      ${(t.portals || []).length || S.ui.portalsOpen ? `<div class="tp-portals">${portals.map(([p, l]) => `<label class="chk small"><input type="checkbox" ${(t.portals || []).indexOf(p) >= 0 ? 'checked' : ''} data-change="tfPortal" data-p="${p}" ${dis}> ${l}</label>`).join('')}</div>` : ''}
+      <div class="cfg-line"><span class="t">Allow permalinks in emails</span>${sw('', !!t.emailLink, 'data-change="tf" data-prop="emailLink"')}</div><div class="cfg-line"><span class="t">Enabled</span>${sw('', t.enabled !== false, 'data-change="tf" data-prop="enabled"')}</div></div></div>
+      <div class="side-tabs tp-tabs" role="tablist">${[['before', 'Before'], ['during', 'During'], ['after', 'After']].map(([k, l]) => `<button role="tab" aria-selected="${tab === k}" class="${tab === k ? 'on' : ''}" data-act="tTab" data-v="${k}">${l}</button>`).join('')}</div><div class="side-sec tp-body" style="border-bottom:0">${body}</div>
+      ${ro ? '' : `<div class="side-sec row tp-foot">${t.removed ? `<button class="btn sm" data-act="restoreT">Undo removal</button>` : `<button class="btn sm danger" data-act="removeT">${t.origin === 'proposed' ? 'Delete transition' : 'Propose removal'}</button>`}<span class="spacer"></span><button class="btn sm" data-act="linkReq">Link requirement</button></div>`}`;
   }
   function statePanel(f, s, ro) {
     const p = stateProps(f, s); const ins = f.transitions.filter(x => x.to === s.id && !x.removed).length, outs = f.transitions.filter(x => x.from === s.id && !x.removed).length; const dis = ro ? 'disabled' : '';
@@ -335,33 +341,40 @@
     const stq = document.getElementById('stq'); if (stq) stq.addEventListener('input', () => { S.ui.stq = stq.value; const p = document.getElementById('panel'); p.innerHTML = panel(F.flowModel(S.ui.flowId)); const n = document.getElementById('stq'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); bindChips(); mountCanvasSearch(); });
     function mountCanvasSearch() { const n = document.getElementById('stq'); if (n && !n._b) { n._b = 1; n.addEventListener('input', () => { S.ui.stq = n.value; const p = document.getElementById('panel'); p.innerHTML = panel(F.flowModel(S.ui.flowId)); const m = document.getElementById('stq'); m.focus(); m.setSelectionRange(m.value.length, m.value.length); bindChips(); mountCanvasSearch(); }); } }
     if (S.readonly) { host.addEventListener('click', e => { const ed = e.target.closest('[data-edge]'), st = e.target.closest('[data-state]'); S.ui.selected = ed ? ed.getAttribute('data-edge') : st ? st.getAttribute('data-state') : null; V.render(); }); return; }
-    const z = () => S.ui.flowZoom || 1; let drag = null, link = null, moved = false, suppress = 0;
+    // Pointer interaction (mouse, pen and touch): a state and a transition button each move on their own; a short press without moving selects it.
+    // Moves are drawn on the next animation frame, so dragging stays smooth on large flows.
+    const z = () => S.ui.flowZoom || 1; let drag = null, link = null, moved = false, suppress = 0, raf = 0;
     const svg = () => host.querySelector('svg');
     const pt = e => { const sv = svg(); const r = sv.getBoundingClientRect(); return { x: (e.clientX - r.left) / z() + Number(sv.getAttribute('data-ox') || 0), y: (e.clientY - r.top) / z() + Number(sv.getAttribute('data-oy') || 0) }; };
     const cur = () => F.flowModel(S.ui.flowId);
-    host.addEventListener('mousedown', e => {
-      if (e.button !== 0) return; const h = e.target.closest('[data-handle]'); const st = e.target.closest('[data-state]');
+    const paint = () => { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; const keep = host.parentElement; const sl = keep ? keep.scrollLeft : 0, stp = keep ? keep.scrollTop : 0; host.innerHTML = svgFor(ef()); if (drag && drag.kind === 'pill') { const g = host.querySelector(`[data-edge="${CSS.escape(drag.id)}"]`); if (g) g.classList.add('dragging'); } if (keep) { keep.scrollLeft = sl; keep.scrollTop = stp; } }); };
+    const snapshot = () => { const f = ef(); const h = hist[f.id] = hist[f.id] || { u: [], r: [] }; h.u.push(JSON.stringify(f)); if (h.u.length > 60) h.u.shift(); h.r = []; };
+    host.addEventListener('pointerdown', e => {
+      if (e.button !== 0) return; const h = e.target.closest('[data-handle]'); const st = e.target.closest('[data-state]'); const pill = e.target.closest('.pill'); const edge = pill && pill.closest('[data-edge]');
       if (h || (st && S.ui.connect)) { e.preventDefault(); const sid = (h || st).getAttribute(h ? 'data-handle' : 'data-state'); const s = cur().states.find(x => x.id === sid); const g = D.boxSize(s.label); const p = pt(e);
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line'); line.setAttribute('x1', h ? p.x : s.x + g.w / 2); line.setAttribute('y1', h ? p.y : s.y + g.h / 2); line.setAttribute('x2', p.x); line.setAttribute('y2', p.y); line.setAttribute('stroke', '#FF6660'); line.setAttribute('stroke-width', '1.6'); line.setAttribute('stroke-dasharray', '5 3'); line.setAttribute('pointer-events', 'none'); svg().appendChild(line);
-        svg().classList.add('connect'); link = { from: sid, line }; listen(); return; }
-      if (st) { e.preventDefault(); const id = st.getAttribute('data-state'); const s = cur().states.find(x => x.id === id); const p = pt(e); drag = { id, dx: p.x - s.x, dy: p.y - s.y, sx: s.x, sy: s.y, snap: null }; moved = false; listen(); }
+        svg().classList.add('connect'); link = { from: sid, line }; listen(e); return; }
+      if (edge) { e.preventDefault(); const id = edge.getAttribute('data-edge'); const G = D.flowGeometry(cur(), { showRemoved: !!S.ui.flowRemoved }); const ge = G.edges.find(x => x.t.id === id); if (!ge || ge.pts.length > 3 && !ge.t.lp) { S.ui.selected = id; V.render(); return; } const p = pt(e); drag = { kind: 'pill', id, dx: p.x - ge.lx, dy: p.y - ge.ly, sx: ge.lx, sy: ge.ly }; moved = false; listen(e); return; }
+      if (st) { e.preventDefault(); const id = st.getAttribute('data-state'); const s = cur().states.find(x => x.id === id); const p = pt(e); drag = { kind: 'state', id, dx: p.x - s.x, dy: p.y - s.y, sx: s.x, sy: s.y }; moved = false; listen(e); }
     });
-    function listen() { document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu); }
-    function cleanup() { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); }
+    function listen(e) { try { host.setPointerCapture(e.pointerId); } catch (er) { } document.addEventListener('pointermove', mm); document.addEventListener('pointerup', mu); document.addEventListener('pointercancel', mu); }
+    function cleanup() { document.removeEventListener('pointermove', mm); document.removeEventListener('pointerup', mu); document.removeEventListener('pointercancel', mu); host.classList.remove('dragging-st'); }
     function mm(e) {
       if (link) { const p = pt(e); link.line.setAttribute('x2', p.x); link.line.setAttribute('y2', p.y); return; }
-      if (!drag) return; const p = pt(e); const nx = Math.max(0, Math.round((p.x - drag.dx) / 10) * 10), ny = Math.max(0, Math.round((p.y - drag.dy) / 10) * 10);
-      if (!moved && Math.abs(nx - drag.sx) + Math.abs(ny - drag.sy) < 6) return;
-      if (!moved) { const f = ef(); const h = hist[f.id] = hist[f.id] || { u: [], r: [] }; h.u.push(JSON.stringify(f)); h.r = []; }
-      moved = true; const f = ef(); const s = f.states.find(x => x.id === drag.id); s.x = nx; s.y = ny; host.innerHTML = svgFor(f);
+      if (!drag) return; const p = pt(e); const nx = Math.max(0, Math.round(p.x - drag.dx)), ny = Math.max(0, Math.round(p.y - drag.dy));
+      if (!moved && Math.abs(nx - drag.sx) + Math.abs(ny - drag.sy) < 5) return;
+      if (!moved) { snapshot(); if (drag.kind === 'state') host.classList.add('dragging-st'); } moved = true; const f = ef();
+      if (drag.kind === 'state') { const s = f.states.find(x => x.id === drag.id); s.x = nx; s.y = ny; } else { const t = f.transitions.find(x => x.id === drag.id); if (t) t.lp = { x: nx, y: ny }; }
+      paint();
     }
     function mu(e) {
       cleanup(); suppress = Date.now();
       if (link) { const tgt = document.elementFromPoint(e.clientX, e.clientY); const st = tgt && tgt.closest && tgt.closest('[data-state]'); const from = link.from; link.line.remove(); link = null; const sv = svg(); if (sv) sv.classList.remove('connect');
         if (st) { S.ui.connect = false; mut('Transition added', S.ui.flowId, f => newTransition(f, from, st.getAttribute('data-state'))); } return; }
-      if (drag) { const d = drag; drag = null; if (moved) F.changed('State moved', null); else { S.ui.selected = d.id; V.render(); } }
+      if (drag) { const d = drag; drag = null; if (raf) { cancelAnimationFrame(raf); raf = 0; } if (moved) { F.changed(d.kind === 'state' ? 'State moved' : 'Transition button moved', null); } else { S.ui.selected = d.id; if (d.kind === 'pill') S.ui.tTab = S.ui.tTab || 'before'; V.render(); const pn = document.getElementById('panel'); if (pn) pn.scrollTop = 0; } }
     }
     host.addEventListener('click', e => { if (Date.now() - suppress < 300) return; if (e.target.closest('[data-state]')) return; const ed = e.target.closest('[data-edge]'); if (ed) { S.ui.selected = ed.getAttribute('data-edge'); S.ui.tTab = S.ui.tTab || 'before'; V.render(); return; } if (S.ui.selected) { S.ui.selected = null; V.render(); } });
+    host.addEventListener('dblclick', e => { const pill = e.target.closest('.pill'); const ed = pill && pill.closest('[data-edge]'); if (!ed) return; const id = ed.getAttribute('data-edge'); if ((cur().transitions.find(x => x.id === id) || {}).lp) mut('Transition button re-centred', id, f => { delete f.transitions.find(x => x.id === id).lp; }); });
     // drag a state chip from the sidebar onto the canvas
     cv.addEventListener('dragover', e => { if (V._chip) { e.preventDefault(); cv.classList.add('dragover'); } });
     cv.addEventListener('dragleave', () => cv.classList.remove('dragover'));
