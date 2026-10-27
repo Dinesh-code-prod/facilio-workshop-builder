@@ -85,7 +85,7 @@
 
   // ---------- routing ----------
   const NAV = [
-    { g: 'Project', icon: 'dash', items: [['dashreport', 'Dashboard Report'], ['overview', 'Project Overview'], ['proadmap', 'Project Roadmap']] },
+    { g: 'Project', icon: 'dash', items: [['dashreport', 'Dashboard Report'], ['overview', 'Project Overview'], ['lifecycle', 'Delivery Lifecycle'], ['proadmap', 'Project Roadmap']] },
     { g: '1. Kick-off & Discovery', icon: 'home', items: [['msaflow', 'Contract'], ['contracts', 'Contracts & Integrations'], ['kickoff', 'Kick-off Deck'], ['plan', 'Project Plan'], ['timeline', 'Plan Timeline'], ['onboarding', 'Data Onboarding'], ['governance', 'Governance & RAID'], ['changes', 'Change Requests']] },
     { g: '2. Workshops', icon: 'flag', items: [['transcripts', 'Transcripts & Requirement Confirmation']] },
     { g: '3. Requirements', icon: 'check', items: [['usecases', 'Use Cases'], ['checks', 'Checks & Validations']] },

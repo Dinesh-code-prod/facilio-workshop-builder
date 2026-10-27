@@ -75,8 +75,8 @@ check('   copy and paste (Ctrl+C, Ctrl+V) add a copy', (await ST()).nodes.length
 await p.keyboard.press('Delete'); await p.waitForTimeout(100); check('   delete removes the pasted copy', (await ST()).nodes.length === n0);
 
 // connector end re-attached to another shape
-const e1 = (await ST()).edges.find(e => e.ref && e.ref.transition); await p.click('[data-act="wbFit"]'); await p.waitForTimeout(150);
-const ep = await p.evaluate(id => { const el = document.querySelector(`#wbSvg [data-e="${id}"] path`); const L = el.getTotalLength(), pt = el.getPointAtLength(L / 3), m = el.getScreenCTM(); return { x: m.a * pt.x + m.e, y: m.d * pt.y + m.f }; }, e1.id);
+const e1 = (await ST()).edges.find(e => e.ref && e.ref.transition); await p.click('[data-act="wbFit"]'); await p.evaluate(() => document.querySelectorAll('.toast').forEach(t => t.remove())); await p.waitForTimeout(150);   // earlier toasts would sit over the canvas
+const ep = await p.evaluate(id => { const el = document.querySelector(`#wbSvg [data-e="${id}"] path`); const L = el.getTotalLength(), m = el.getScreenCTM(); for (const f of [.35, .25, .45, .6, .7, .15, .8]) { const pt = el.getPointAtLength(L * f), x = m.a * pt.x + m.e, y = m.d * pt.y + m.f, hit = document.elementFromPoint(x, y); if (hit && hit.closest && hit.closest('[data-e]') && hit.closest('[data-e]').getAttribute('data-e') === id && !hit.closest('[data-el]')) return { x, y }; } const pt = el.getPointAtLength(L / 3); return { x: m.a * pt.x + m.e, y: m.d * pt.y + m.f }; }, e1.id);   // a point on the line not covered by a shape or the label
 await p.mouse.click(ep.x, ep.y); await p.waitForTimeout(150);
 const h = await p.$('#wbSvg [data-eh="to"]'); let relinked = false;
 if (h) { const hb = await h.boundingBox(); const dest = await screen(rectId); await p.mouse.move(hb.x + hb.width / 2, hb.y + hb.height / 2); await p.mouse.down(); await p.mouse.move(dest.x, dest.y, { steps: 8 }); await p.mouse.up(); await p.waitForTimeout(150);
