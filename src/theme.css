@@ -505,7 +505,7 @@ body .wb-host[data-tool="pen"] svg, body .wb-host[data-tool="pen"] .wb-n { curso
 body .wb-host:is([data-tool="note"], [data-tool="rect"], [data-tool="ellipse"], [data-tool="diamond"], [data-tool="tri"], [data-tool="para"], [data-tool="hex"], [data-tool="frame"]) svg { cursor: copy !important; }
 body .wb-host[data-tool="text"] svg { cursor: text !important; }
 body .wb-host .wb-n.locked { cursor: not-allowed; }
-body .wb-rail { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); z-index: 5; display: flex; flex-direction: column; gap: 2px; padding: 6px; background: #fff; border-radius: 12px; box-shadow: 0 6px 24px rgba(29, 31, 61, .14), 0 0 0 1px rgba(29, 31, 61, .06); }
+body .wb-rail { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); z-index: 7; display: flex; flex-direction: column; gap: 2px; padding: 6px; background: #fff; border-radius: 12px; box-shadow: 0 6px 24px rgba(29, 31, 61, .14), 0 0 0 1px rgba(29, 31, 61, .06); }
 body .wb-rb { width: 40px; height: 40px; display: grid; place-items: center; border: 0; background: none; border-radius: 9px; color: #3b3f5c; cursor: pointer; }
 body .wb-rb:hover { background: #f1f1f8; color: #1d1f3d; }
 body .wb-rb[aria-pressed="true"] { background: color-mix(in srgb, var(--th-violet) 14%, #fff); color: var(--th-violet); }

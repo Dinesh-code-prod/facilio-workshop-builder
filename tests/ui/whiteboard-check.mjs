@@ -81,10 +81,7 @@ check('board PNG export holds the whole board, not just the view', img.w > 1500 
 // selection export (one frame = one diagram)
 await p.evaluate(() => { const W = window.FWBViews.whiteboardState; const fr = W.B.nodes.find(n => n.t === 'frame'); W.sel = new Set([fr.id]); window.FWBViews.render(); }); await p.waitForTimeout(400);
 const [dl2] = await Promise.all([p.waitForEvent('download'), p.click('#wbCtxBar [data-act="wbExport"][data-scope="sel"]')]); check('a single diagram exports on its own', /_selection\.png$/.test(dl2.suggestedFilename()));
-// Miro link: only real Miro board links are accepted
-await p.click('[data-act="wbMiro"]'); await p.fill('#wbMiroUrl', 'javascript:alert(1)'); await p.click('[data-act="wbMiroSave"]'); await p.waitForTimeout(200);
-const bad = await p.evaluate(() => window.FWBViews.whiteboardState.B.miro); await p.fill('#wbMiroUrl', 'https://miro.com/app/board/uXjVKExample=/'); await p.click('[data-act="wbMiroSave"]'); await p.waitForTimeout(200);
-check('Miro link: unsafe links refused, a board link saved', bad !== 'javascript:alert(1)' && await p.evaluate(() => window.FWBViews.whiteboardState.B.miro) === 'https://miro.com/app/board/uXjVKExample=/');
+check('no separate Miro button on the board', !(await p.$('[data-act="wbMiro"]')));
 // phone width: the board stays usable
 await p.setViewportSize({ width: 390, height: 844 }); await p.waitForTimeout(400); check('phone width: no sideways page scrolling', await p.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth));
 await p.screenshot({ path: `${OUT}/whiteboard-phone.png` });
