@@ -84,13 +84,15 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   }
 
   // ---------- identity and roles ----------
+  // Microsoft guest accounts can arrive as name_company.com#EXT#@tenant.onmicrosoft.com; that is turned back into name@company.com
+  const normEmail = v => { let e = String(v || '').trim().toLowerCase(); const g = /^([^#@]+)#ext#@[^@]+$/.exec(e); if (g) { const i = g[1].lastIndexOf('_'); if (i > 0) e = g[1].slice(0, i) + '@' + g[1].slice(i + 1); } return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) ? e : ''; };
   let ME = null, ROLE = null;
   async function me() {
     if (ME) return ME;
-    const email = String((CTX.viewer && CTX.viewer.email) || '').toLowerCase(); if (!email) throw new HttpError(401, 'Sign in required');
-    // Only Facilio accounts use Delivery Studio. The platform already limits sign-in to Facilio employees; this is a second check in the app.
-    if (!email.endsWith('@' + ALLOWED_DOMAIN)) throw new HttpError(403, 'Delivery Studio is for Facilio accounts (name@' + ALLOWED_DOMAIN + ').');
-    const m = { id: ekey(email), email, name: nameFromEmail(email), kind: 'consultant', projectId: null, guest: false };
+    const email = normEmail(CTX.viewer && CTX.viewer.email); if (!email) throw new HttpError(401, 'Sign in required');
+    // Facilio accounts are the delivery team. Anyone else is a customer signed in as a Microsoft guest: they reach only the projects whose
+    // invitation they accepted, through the customer-safe routes (see CUSTOMER_ROUTES); everything else is refused in dispatch.
+    const m = { id: ekey(email), email, name: nameFromEmail(email), kind: email.endsWith('@' + ALLOWED_DOMAIN) ? 'consultant' : 'customer', projectId: null, guest: false };
     // The disabled-user check must not be skipped: if the user record cannot be read, the request stops (503) instead of going ahead.
     let u; try { u = await dbGet('usr', m.id); } catch (e) { throw new HttpError(503, 'Delivery Studio could not check your access just now. Try again in a moment.'); }
     if (u && u.value && u.value.disabled) throw new HttpError(403, 'Your access has been switched off. Ask an admin.'); if (u && u.value && u.value.name) m.name = u.value.name;
@@ -107,6 +109,10 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   const projectOut = (p, role) => ({ id: p.id, name: p.name, customer: p.customer, description: p.description, startDate: p.startDate || null, endDate: p.endDate || null, customerAccessEnabled: !!p.customerAccessEnabled, createdAt: p.createdAt, updatedAt: p.updatedAt, role });
   async function projectAccess(s, id, need) {
     const r = await dbGet('projects', id); const p = r && r.value; if (!p || p.archived) throw new HttpError(404, 'Project not found');
+    if (s.kind === 'customer') {   // customers: only projects whose invitation they accepted, only while customer access is on, only through customer-aware routes
+      const c = (p.customers || []).find(x => x.id === s.id); if (!c || !p.customerAccessEnabled) throw new HttpError(404, 'Project not found');
+      if (need !== 'customer-ok') throw new HttpError(403, 'Not available with customer access'); return { project: p, role: 'customer', perm: c.perm === 'contributor' ? 'contributor' : 'viewer' };
+    }
     const ar = await adminRole(s);
     if (ar === 'super' || ar === 'admin') return { project: p, role: 'owner' };
     if (ar === 'sub') { if (need === 'edit' || need === 'owner') throw new HttpError(403, 'Sub admins have read-only access'); return { project: p, role: 'viewer' }; }
@@ -118,6 +124,65 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   async function saveProject(p) { p.updatedAt = now(); await dbPut('projects', p.id, p); }
   // Project records hold the member list and archive flag, so changes re-read the record under a per-project lock and change only
   // what they mean to. A save elsewhere in the project only bumps updatedAt, and never writes back a copy loaded earlier in the request.
+  // ---------- customer portal rules (ported from the earlier server, which enforced them for customer sessions) ----------
+  // portal_controls (a document the implementation team writes) switches customer tabs, content and permissions on and off.
+  // Each record kind says which tab a customer needs to read it, any extra read filter, and what a customer may change.
+  // A customer with "view only" access gets every allow switched off, whatever the controls say.
+  const CTL_DEFAULT = { tabs: { cust_home: true, kickoff: true, schedule: true, guide: true, dashboards: true, overview: true, scope: false, contract: false, plan: true, onboarding: false, workshops: true, governance: true, changes: true, delivery: true, explore: true },
+    show: { fees: false, rates: false, legal: false, risks: true, trainers: true }, allow: { answers: true, discuss: true, actions: true, signoff: true, raid: true, cr: true, onboarding: true, interest: true }, hiddenModules: [] };
+  async function portalControls(pid, perm) {
+    const r = await docRead(pid, 'portal_controls'); const d = (r && r.data) || {};
+    const ctl = { tabs: Object.assign({}, CTL_DEFAULT.tabs, d.tabs || {}), show: Object.assign({}, CTL_DEFAULT.show, d.show || {}), allow: Object.assign({}, CTL_DEFAULT.allow, d.allow || {}), hiddenModules: Array.isArray(d.hiddenModules) ? d.hiddenModules : [] };
+    if (perm !== 'contributor') Object.keys(ctl.allow).forEach(k => { ctl.allow[k] = false; }); return ctl;
+  }
+  const CUSTOMER_DOC_SECTIONS = { guide_published: 'guide', schedule_published: 'schedule', dashboards: 'dashboards', portal_controls: null, portal_published: null, onboarding_published: 'onboarding', plan_struct: 'plan' };
+  const CUSTOMER_FILE_READ = { kickoff: 'kickoff', dashboard: 'dashboards', onboarding_workbook: 'onboarding', onboarding_files: 'onboarding', signoff_evidence: 'governance', showcase_image: 'explore' };
+  const CUSTOMER_FILE_UPLOAD = { onboarding_workbook: 'onboarding', onboarding_files: 'onboarding' };
+  const customerDocOk = (ctl, sec) => Object.prototype.hasOwnProperty.call(CUSTOMER_DOC_SECTIONS, sec) && (CUSTOMER_DOC_SECTIONS[sec] === null || ctl.tabs[CUSTOMER_DOC_SECTIONS[sec]] !== false);
+  const customerFileOk = (ctl, cat) => Object.prototype.hasOwnProperty.call(CUSTOMER_FILE_READ, cat) && ctl.tabs[CUSTOMER_FILE_READ[cat]] !== false;
+  const pickK = (o, keys) => { const r = {}; keys.forEach(k => { if (o && o[k] !== undefined) r[k] = o[k]; }); return r; };
+  const sameK = (a, b, keys) => keys.every(k => JSON.stringify(a ? a[k] : undefined) === JSON.stringify(b ? b[k] : undefined));
+  const deny = msg => { throw new HttpError(403, msg); };
+  const CKINDS = {
+    action: { tab: 'overview', write({ old, next, ctl, s }) { if (!ctl.allow.actions) deny('Actions are read-only for you');
+      const done = st => (st === 'Done' ? { doneAt: (old && old.doneAt) || now() } : { doneAt: null });
+      if (!old) return Object.assign(pickK(next, ['mod', 'text', 'owner', 'due', 'status']), { side: 'customer', by: s.name }, done(next.status));
+      if (old.side !== 'customer' && !sameK(old, next, ['mod', 'text', 'side', 'due'])) deny('You can only change the status and owner of Facilio actions');
+      return Object.assign({}, old, pickK(next, old.side === 'customer' ? ['mod', 'text', 'owner', 'due', 'status'] : ['owner', 'status']), done(next.status || old.status)); } },
+    decision: { tab: 'overview' },
+    raid: { tab: 'governance', write({ old, next, ctl, s }) { if (!ctl.allow.raid) deny('The RAID log is read-only for you');
+      return Object.assign({}, old || { side: 'customer', by: s.name }, pickK(next, ['type', 'title', 'mod', 'impact', 'owner', 'due', 'mitigation', 'status'])); } },
+    signoff: { tab: 'governance', write({ old, next, ctl, s }) { if (!ctl.allow.signoff) deny('Sign-off is not enabled for you');
+      if (!old || old.status !== 'requested') deny('This sign-off has not been requested');
+      if (next.status === 'signed') { if (!String(next.signer || '').trim() || !next.confirm) deny('Enter your name and tick the confirmation'); return Object.assign({}, old, { status: 'signed', signer: String(next.signer).slice(0, 120), title: String(next.title || '').slice(0, 120), signedAt: now(), signedBy: s.name, signedByEmail: s.email, onBehalf: false }); }
+      if (next.status === 'concern') { if (!String(next.concern || '').trim()) deny('Describe the concern'); return Object.assign({}, old, { status: 'concern', concern: String(next.concern).slice(0, 2000), concernBy: s.name }); }
+      deny('Not permitted'); } },
+    cr: { tab: 'changes', read: it => it.published || it.side === 'customer', write({ old, next, ctl, s }) { if (!ctl.allow.cr) deny('Change requests are read-only for you');
+      if (!old) return Object.assign(pickK(next, ['title', 'mod', 'description', 'why']), { status: 'Requested', side: 'customer', published: true, by: s.name });
+      if (old.status === 'Proposed' && ['CR Converted', 'Rejected'].includes(next.status)) { if (!String(next.decisionBy || '').trim()) deny('Enter your name to record the decision'); return Object.assign({}, old, { status: next.status, decisionBy: String(next.decisionBy).slice(0, 120), decisionNote: String(next.decisionNote || '').slice(0, 2000), decidedAt: now() }); }
+      if (old.side === 'customer' && old.status === 'Requested') return Object.assign({}, old, pickK(next, ['title', 'mod', 'description', 'why']));
+      deny('Not permitted'); } },
+    onb: { tab: 'onboarding', write({ old, next, ctl, s }) { if (!ctl.allow.onboarding) deny('Data onboarding is read-only for you');
+      const CUST = ['todo', 'filling', 'sent']; if ((old && !CUST.includes(old.status)) || !CUST.includes(next.status)) deny('Only Facilio can set this status');
+      return Object.assign({}, old || { sheet: String(next.sheet || '').slice(0, 120) }, { status: next.status, by: s.name, file: next.file !== undefined ? next.file : (old || {}).file }); } },
+    onbsub: { tab: 'onboarding', write({ old, next, ctl, s }) { if (!ctl.allow.onboarding) deny('Data onboarding is read-only for you'); if (old) deny('Submissions cannot be changed');
+      return Object.assign(pickK(next, ['fileId', 'fileName', 'rows', 'issues', 'sheets', 'sent']), { by: s.name }); } },
+    onbfile: { tab: 'onboarding', write({ old, next, ctl, s }) { if (!ctl.allow.onboarding) deny('Data onboarding is read-only for you'); if (old && old.by !== s.name) deny('Not permitted');
+      return Object.assign(pickK(next, ['tpl', 'link', 'fileId', 'name', 'note']), { by: s.name }); } },
+    onbws: { tab: 'onboarding', write({ next, ctl, s }) { if (!ctl.allow.onboarding) deny('Data onboarding is read-only for you');
+      if (typeof next.json !== 'string' || next.json.length > 1800000) deny('The workbook data is too large to save'); let st; try { st = JSON.parse(next.json); } catch (e) { deny('The workbook data is not valid'); } if (!st || typeof st !== 'object' || st.v !== 2) deny('The workbook data is not valid');
+      return { json: next.json, rows: next.rows && typeof next.rows === 'object' ? next.rows : {}, savedAt: now(), stage: 'prepared', by: s.name }; } },
+    owner: { tab: 'overview' }, agreement: { tab: 'overview' }, minutes: { tab: 'governance' }, checklist: { tab: 'delivery' }, build: { tab: 'delivery' }, uat: { tab: 'delivery', read: it => !!it.published },
+    digest: { tab: 'overview', read: it => !!it.posted },
+    ctrcore: { tab: 'contract' }, ctrfees: { tab: 'contract', read: (it, ctl) => !!ctl.show.fees }, ctrlegal: { tab: 'contract', read: (it, ctl) => !!ctl.show.legal }, ctrrates: { tab: 'contract', read: (it, ctl) => !!ctl.show.rates },
+    scope: { tab: 'scope' }, modbrief: { tab: 'guide' }, fieldreq: { tab: 'guide' },
+    // Explore Facilio: customers read published entries and ask for a conversation; they see only their own requests and cannot change them
+    news: { tab: 'explore', read: it => it.status === 'published' },
+    interest: { tab: 'explore', read: (it, ctl, s) => !!s && it.by === s.email, write({ old, ctl }) { if (!ctl.allow.interest) deny('Requests are switched off for you'); if (old) deny('A request cannot be changed once sent'); return null; } }
+  };   // every other kind (notes, tickets, AI drafts, inbox, whiteboards, contract watch, use cases…) is implementation-team only
+  function customerItems(rows, ctl, s) { return rows.filter(it => { const K = CKINDS[it.kind]; if (!K || (K.tab && ctl.tabs[K.tab] === false)) return false; const d = it.data || {}; if (d.mod && ctl.hiddenModules.includes(d.mod)) return false; return !K.read || K.read(d, ctl, s); }); }
+  const cneed = (s, need) => (s.kind === 'customer' ? 'customer-ok' : need);
+
   // ---------- sign-off and approval rules ----------
   // Recording a decision (a sign-off signed, a change request approved or declined, hypercare exit or project closure, the BRD approved),
   // undoing one, or deleting a decided record is for project owners and admins. Editors can still draft and edit everything else.
@@ -125,7 +190,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     if (kind === 'close') return !!(d.closedAt || d.exitAt); return false; };
   const DECISION_MSG = { signoff: 'Only a project owner or an admin can record or undo a sign-off.', cr: 'Only a project owner or an admin can approve or decline a change request.', close: 'Only a project owner or an admin can record hypercare exit or close the project.' };
   function decisionGuard(kind, role, cur, next) {
-    if (role === 'owner' || !DECISION_MSG[kind]) return;
+    if (role === 'owner' || role === 'customer' || !DECISION_MSG[kind]) return;
     const changed = kind === 'close' ? ['closedAt', 'closedBy', 'exitAt', 'exitBy'].some(f => String((cur || {})[f] || '') !== String((next || {})[f] || '')) : decided(kind, cur) !== decided(kind, next) || (decided(kind, cur) && String((cur || {}).status) !== String((next || {}).status));
     if (changed) throw new HttpError(403, DECISION_MSG[kind]);
   }
@@ -216,19 +281,38 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
 
   // ---------- route table ----------
   const routes = [];
-  const route = (method, pattern, fn) => routes.push({ method, re: new RegExp('^' + pattern.replace(/:(\w+)/g, '(?<$1>[^/]+)') + '$'), fn });
+  const route = (method, pattern, fn) => routes.push({ method, pattern, re: new RegExp('^' + pattern.replace(/:(\w+)/g, '(?<$1>[^/]+)') + '$'), fn });
+  // What a customer (a non-Facilio guest account) may call at all. Each of these routes also filters by the portal rules.
+  // INVITE_ROUTES are open to any signed-in guest, so they can accept an invitation; the rest need at least one accepted project.
+  const INVITE_ROUTES = new Set(['GET /api/auth/me', 'POST /api/auth/logout', 'GET /api/invites/:inv', 'POST /api/invites/:inv/accept']);
+  const CUSTOMER_ROUTES = new Set(['GET /api/projects', 'GET /api/projects/:id', 'GET /api/projects/:id/open', 'GET /api/projects/:id/docs', 'GET /api/projects/:id/docs/:section', 'GET /api/projects/:id/items',
+    'PUT /api/projects/:id/items/:kind/:item', 'GET /api/projects/:id/guide-responses', 'PUT /api/projects/:id/guide-responses', 'GET /api/projects/:id/feedback', 'POST /api/projects/:id/feedback',
+    'GET /api/projects/:id/files', 'GET /api/projects/:id/files/:fid', 'GET /api/projects/:id/files/:fid/chunks/:n', 'POST /api/projects/:id/files', 'POST /api/projects/:id/files/:fid/chunks/:n/url',
+    'PUT /api/projects/:id/files/:fid/chunks/:n', 'POST /api/projects/:id/files/:fid/complete']);
+  const isGuest = () => { const e = normEmail(CTX && CTX.viewer && CTX.viewer.email); return !!e && !e.endsWith('@' + ALLOWED_DOMAIN); };
+  async function guestGate(r) {
+    const k = r.method + ' ' + r.pattern; if (INVITE_ROUTES.has(k)) return;
+    const NOPE = 'Delivery Studio is for the Facilio delivery team. Customers open it through the invitation link their project team sends.';
+    if (!CUSTOMER_ROUTES.has(k)) throw new HttpError(403, NOPE);
+    const s = await me(); const ix = await dbGet('cust', s.id); if (!ix || !Array.isArray(ix.value.projects) || !ix.value.projects.length) throw new HttpError(403, NOPE);
+  }
   const ok = (data, status) => ({ status: status || 200, data });
 
   route('GET', '/api/health', async () => ok({ ok: true, openMode: false, runMode: true, time: now() }));
   route('GET', '/api/auth/me', async () => {
-    const s = await me(); const ar = await adminRole(s);
+    const s = await me();
+    if (s.kind === 'customer') { const ix = await dbGet('cust', s.id); const ids = (ix && ix.value.projects) || []; const rows = []; for (const id of ids) { const r = await dbGet('projects', id); const p = r && r.value; if (p && !p.archived && p.customerAccessEnabled && (p.customers || []).some(c => c.id === s.id)) rows.push({ id: p.id, name: p.name, customer: p.customer }); }
+      return ok({ openMode: false, runMode: true, user: { id: s.id, email: s.email, name: s.name, kind: 'customer', projectId: rows[0] ? rows[0].id : null, projects: rows, guest: false, superAdmin: false, adminRole: null }, signupEnabled: false, signupNeedsCode: false, domains: [ALLOWED_DOMAIN] }); }
+    const ar = await adminRole(s);
     return ok({ openMode: false, runMode: true, user: { id: s.id, email: s.email, name: s.name, kind: 'consultant', projectId: null, guest: false, superAdmin: ar === 'super', adminRole: ar }, signupEnabled: false, signupNeedsCode: false, domains: [ALLOWED_DOMAIN] });
   });
   route('POST', '/api/auth/logout', async () => ok({ ok: true }));
 
   // projects
   route('GET', '/api/projects', async () => {
-    const s = await me(); const ar = await adminRole(s); const rows = (await dbList('projects')).map(r => r.value).filter(p => p && !p.archived);
+    const s = await me(); const rows0 = (await dbList('projects')).map(r => r.value).filter(p => p && !p.archived);
+    if (s.kind === 'customer') return ok({ projects: rows0.filter(p => p.customerAccessEnabled && (p.customers || []).some(c => c.id === s.id)).map(p => ({ id: p.id, name: p.name, customer: p.customer, role: 'customer' })) });
+    const ar = await adminRole(s); const rows = rows0;
     const mine = ar ? rows : rows.filter(p => (p.members || []).some(m => m.id === s.id));
     mine.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
     return ok({ projects: mine.map(p => projectOut(p, ar ? (ar === 'sub' ? 'viewer' : 'owner') : (p.members.find(m => m.id === s.id) || {}).role)) });
@@ -248,7 +332,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     await docWrite(s, id, 'people', { team, stakeholders }, 0);
     await audit(id, s.id, 'project-created', p.name); return ok({ project: projectOut(p, 'owner') }, 201);
   });
-  route('GET', '/api/projects/:id', async (b, P) => { const s = await me(); const { project, role } = await projectAccess(s, P.id, 'read'); return ok({ project: projectOut(project, role), members: (project.members || []).map(memberOut) }); });
+  route('GET', '/api/projects/:id', async (b, P) => { const s = await me(); const { project, role } = await projectAccess(s, P.id, cneed(s, 'read')); if (role === 'customer') return ok({ project: { id: project.id, name: project.name, customer: project.customer, role }, members: [] }); return ok({ project: projectOut(project, role), members: (project.members || []).map(memberOut) }); });
   route('PATCH', '/api/projects/:id', async (b, P) => {
     const s = await me(); await projectAccess(s, P.id, 'edit'); const d = v => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
     const project = await patchProject(P.id, project => { if (b.name !== undefined) project.name = str(b.name, 160, 'Project name', true); if (b.customer !== undefined) project.customer = str(b.customer, 160, 'Customer', true);
@@ -278,11 +362,13 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
 
   // documents
   route('GET', '/api/projects/:id/docs', async (b, P) => {
-    const s = await me(); await projectAccess(s, P.id, 'read'); const rows = await dbList('doc.' + P.id);
+    const s = await me(); const { role, perm } = await projectAccess(s, P.id, cneed(s, 'read')); let rows = await dbList('doc.' + P.id);
+    if (role === 'customer') { const ctl = await portalControls(P.id, perm); rows = rows.filter(r => customerDocOk(ctl, r.key)); }
     return ok({ sections: rows.map(r => ({ section: r.key, version: r.value.v, updated_at: r.value.at, updated_by: r.value.by })) });
   });
   route('GET', '/api/projects/:id/docs/:section', async (b, P) => {
-    const s = await me(); await projectAccess(s, P.id, 'read'); if (!DOC_SECTIONS.test(P.section)) throw new HttpError(403, 'Not permitted');
+    const s = await me(); const { role, perm } = await projectAccess(s, P.id, cneed(s, 'read')); if (!DOC_SECTIONS.test(P.section)) throw new HttpError(403, 'Not permitted');
+    if (role === 'customer' && !customerDocOk(await portalControls(P.id, perm), P.section)) throw new HttpError(403, 'Not permitted');
     const r = await docRead(P.id, P.section); return ok(r ? { data: r.data, version: r.head.v, updatedAt: r.head.at, updatedBy: r.head.by } : { data: null, version: 0 });
   });
   route('PUT', '/api/projects/:id/docs/:section', async (b, P) => {
@@ -793,20 +879,27 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     if (created) await audit(P.id, s.id, 'tkt-sync', String(created)); return ok({ created, scanned: cand.length });
   });
 
-  route('GET', '/api/projects/:id/items', async (b, P, Q) => { const s = await me(); await projectAccess(s, P.id, 'read'); const kinds = kindList(Q.get('kinds')); if (!kinds.length) throw new HttpError(400, 'Name the kinds to load'); return ok({ items: await itemsFor(P.id, kinds) }); });
+  route('GET', '/api/projects/:id/items', async (b, P, Q) => { const s = await me(); const { role, perm } = await projectAccess(s, P.id, cneed(s, 'read')); let kinds = kindList(Q.get('kinds')); if (role === 'customer') kinds = kinds.filter(k => CKINDS[k]); if (!kinds.length) throw new HttpError(400, 'Name the kinds to load');
+    const items = await itemsFor(P.id, kinds); return ok({ items: role === 'customer' ? customerItems(items, await portalControls(P.id, perm), s) : items }); });
   route('GET', '/api/projects/:id/open', async (b, P, Q) => {
-    const s = await me(); const { project, role } = await projectAccess(s, P.id, 'read');
-    const secs = String(Q.get('sections') || '').split(',').filter(k => k && DOC_SECTIONS.test(k)).slice(0, 40); const kq = String(Q.get('kinds') || ''); const kinds = kq === 'all' ? KINDS : kindList(kq);
-    const [docRows, items] = await Promise.all([Promise.all(secs.map(k => docRead(P.id, k))), itemsFor(P.id, kinds)]);
+    const s = await me(); const { project, role, perm } = await projectAccess(s, P.id, cneed(s, 'read')); const cust = role === 'customer'; const ctl = cust ? await portalControls(P.id, perm) : null;
+    let secs = String(Q.get('sections') || '').split(',').filter(k => k && DOC_SECTIONS.test(k)).slice(0, 40); const kq = String(Q.get('kinds') || ''); let kinds = kq === 'all' ? KINDS : kindList(kq);
+    if (cust) { secs = secs.filter(k => customerDocOk(ctl, k)); kinds = kinds.filter(k => CKINDS[k]); }
+    const [docRows, items0] = await Promise.all([Promise.all(secs.map(k => docRead(P.id, k))), itemsFor(P.id, kinds)]); const items = cust ? customerItems(items0, ctl, s) : items0;
     const docs = {}; secs.forEach((k, i) => { docs[k] = docRows[i] ? { data: docRows[i].data, version: docRows[i].head.v } : { data: null, version: 0 }; });
+    if (cust) return ok({ project: { id: project.id, name: project.name, customer: project.customer, role, perm }, members: [], docs, items, kinds });
     return ok({ project: projectOut(project, role), members: (project.members || []).map(memberOut), docs, items, kinds });
   });
   route('PUT', '/api/projects/:id/items/:kind/:item', async (b, P) => withLock('it.' + P.id + '.' + P.kind + '.' + P.item, async () => {
-    const s = await me(); if (!KINDS.includes(P.kind) || !ITEM_ID_RE.test(P.item)) throw new HttpError(400, 'Unknown item type'); const { project, role } = await projectAccess(s, P.id, 'edit');
+    const s = await me(); if (!KINDS.includes(P.kind) || !ITEM_ID_RE.test(P.item)) throw new HttpError(400, 'Unknown item type'); const { project, role, perm } = await projectAccess(s, P.id, cneed(s, 'edit'));
     if (!b || !b.data || typeof b.data !== 'object' || Array.isArray(b.data)) throw new HttpError(400, 'data is required');
     const col = 'it.' + P.id + '.' + P.kind, pcol = 'ip.' + P.id + '.' + P.kind; const curRow = await dbGet(col, P.item); const head = curRow && curRow.value; const cur = head ? await unpack(pcol, P.item, head) : null;
     if (Number.isInteger(b.baseVersion) && (head ? head.v : 0) !== b.baseVersion) throw new HttpError(409, 'Conflict: this record was changed by someone else.', { current: head ? itemOut(P.kind, P.item, head, cur) : null });
     let data = b.data; decisionGuard(P.kind, role, cur, data);
+    if (role === 'customer') {   // customers change only what CKINDS allows, field by field; everything else is refused
+      const K = CKINDS[P.kind], ctl = await portalControls(P.id, perm); if (!K || !K.write || (K.tab && ctl.tabs[K.tab] === false)) throw new HttpError(403, 'Not available with customer access');
+      if (cur && K.read && !K.read(cur, ctl, s)) throw new HttpError(404, 'Not found'); const w = K.write({ old: cur, next: data, ctl, s }); if (w) data = w;
+    }
     if (P.kind === 'ai') { // AI drafts: status and approval are set only by the decision route; an edit to approved text reopens it as a draft
       if (!cur) throw new HttpError(403, 'AI drafts are created by the assistant only');
       const edited = typeof data.content === 'string' && data.content !== cur.content;
@@ -845,9 +938,9 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     else if (P.kind === 'cr' && cur) data = Object.assign({}, data, { n: cur.n });
     const prevHist = cur && Array.isArray(cur.hist) ? cur.hist : [];
     const changed = Object.keys(data).filter(k => k !== 'hist' && JSON.stringify(data[k]) !== JSON.stringify(cur ? cur[k] : undefined));
-    data = Object.assign({}, data, { hist: prevHist.concat(changed.length || !cur ? [{ at: now(), who: s.name || 'Implementation team', side: 'facilio', event: cur ? 'Updated ' + changed.slice(0, 6).join(', ') + (data.status && changed.includes('status') ? ' → ' + data.status : '') : 'Created' }] : []).slice(-40) });
+    data = Object.assign({}, data, { hist: prevHist.concat(changed.length || !cur ? [{ at: now(), who: s.name || 'Implementation team', side: role === 'customer' ? 'customer' : 'facilio', event: cur ? 'Updated ' + changed.slice(0, 6).join(', ') + (data.status && changed.includes('status') ? ' → ' + data.status : '') : 'Created' }] : []).slice(-40) });
     if (JSON.stringify(data).length > (P.kind === 'onbws' ? 2000000 : (P.kind === 'ugd' || P.kind === 'ugv' || P.kind === 'ugu') ? 400000 : P.kind === 'vid' ? 200000 : P.kind === 'tkt' ? 150000 : 60000)) throw new HttpError(413, 'Record too large');
-    const t = now(); const nh = { v: head ? head.v + 1 : 1, cb: head ? head.cb : s.id, cs: head ? head.cs : 'facilio', ub: s.id, us: 'facilio', ca: head ? head.ca : t, ua: t };
+    const t = now(); const side = role === 'customer' ? 'customer' : 'facilio'; const nh = { v: head ? head.v + 1 : 1, cb: head ? head.cb : s.id, cs: head ? head.cs : side, ub: s.id, us: side, ca: head ? head.ca : t, ua: t };
     await save(col, pcol, P.item, nh, data, head && head.z); await touchProject(P.id);
     if (P.kind === 'tkt') await ticketNotify(project, P.item, cur, data, s);
     let notice; if (P.kind === 'interest' && !cur) { notice = await interestNotice(project, P.item, data) ? 'teams' : 'none'; await audit(P.id, s.id, 'interest-created', P.item + ' ' + data.title); }
@@ -864,20 +957,21 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
 
   // guide responses and feedback
   route('GET', '/api/projects/:id/guide-responses', async (b, P) => {
-    const s = await me(); await projectAccess(s, P.id, 'read'); const rows = await dbList('gr.' + P.id);
+    const s = await me(); await projectAccess(s, P.id, cneed(s, 'read')); const rows = await dbList('gr.' + P.id);
     return ok({ responses: rows.map(r => ({ key: r.key, value: r.value.value, authorName: r.value.authorName, authorKind: r.value.authorKind, updatedAt: r.value.updatedAt })).sort((a, c) => a.key.localeCompare(c.key)).slice(0, 5000) });
   });
   route('PUT', '/api/projects/:id/guide-responses', async (b, P) => {
-    const s = await me(); await projectAccess(s, P.id, 'edit'); const key = String((b && b.key) || ''); if (!GR_KEY.test(key)) throw new HttpError(400, 'Invalid response key');
+    const s = await me(); const { role, perm } = await projectAccess(s, P.id, cneed(s, 'edit')); if (role === 'customer' && !(await portalControls(P.id, perm)).allow.answers) throw new HttpError(403, 'Answers are locked for you on this project');
+    const key = String((b && b.key) || ''); if (!GR_KEY.test(key)) throw new HttpError(400, 'Invalid response key'); const akind = role === 'customer' ? 'customer' : 'consultant';
     if (b.value === null || b.value === undefined || b.value === '' || (Array.isArray(b.value) && !b.value.length)) { await dbDel('gr.' + P.id, key); return ok({ ok: true, deleted: true }); }
     if (JSON.stringify(b.value).length > 20000) throw new HttpError(413, 'Answer too long'); const t = now();
-    await dbPut('gr.' + P.id, key, { value: JSON.stringify(b.value), authorName: s.name, authorKind: 'consultant', updatedAt: t }); return ok({ ok: true, authorName: s.name, authorKind: 'consultant', updatedAt: t });
+    await dbPut('gr.' + P.id, key, { value: JSON.stringify(b.value), authorName: s.name, authorKind: akind, updatedAt: t }); return ok({ ok: true, authorName: s.name, authorKind: akind, updatedAt: t });
   });
-  route('GET', '/api/projects/:id/feedback', async (b, P) => { const s = await me(); await projectAccess(s, P.id, 'read'); const rows = (await dbList('fb.' + P.id)).map(r => r.value); rows.sort((a, c) => String(c.createdAt).localeCompare(String(a.createdAt))); return ok({ items: rows.slice(0, 1000) }); });
+  route('GET', '/api/projects/:id/feedback', async (b, P) => { const s = await me(); const { role } = await projectAccess(s, P.id, cneed(s, 'read')); const rows = (await dbList('fb.' + P.id)).map(r => r.value).filter(r => role !== 'customer' || r.authorKind === 'customer'); rows.sort((a, c) => String(c.createdAt).localeCompare(String(a.createdAt))); return ok({ items: rows.slice(0, 1000) }); });
   route('POST', '/api/projects/:id/feedback', async (b, P) => {
-    const s = await me(); await projectAccess(s, P.id, 'edit'); await limit('ticket', s.id); const id = rid('fb'); const t = now();
+    const s = await me(); const { role, perm } = await projectAccess(s, P.id, cneed(s, 'edit')); if (role === 'customer' && !(await portalControls(P.id, perm)).allow.discuss) throw new HttpError(403, 'Questions are closed for you on this project'); await limit('ticket', s.id); const id = rid('fb'); const t = now();
     const kind = ['question', 'concern', 'feedback', 'change'].includes(b.kind) ? b.kind : 'question', pr = ['low', 'normal', 'high'].includes(b.priority) ? b.priority : 'normal';
-    await dbPut('fb.' + P.id, id, { id, module: str(b.module, 120, 'Module'), topic: str(b.topic, 200, 'Topic'), kind, priority: pr, body: str(b.body, 5000, 'Question or feedback', true), authorName: str(b.authorName, 120, 'Name') || s.name, authorKind: 'consultant', sessionRef: str(b.sessionRef, 80, 'Session'), status: 'open', response: null, createdAt: t, updatedAt: t });
+    await dbPut('fb.' + P.id, id, { id, module: str(b.module, 120, 'Module'), topic: str(b.topic, 200, 'Topic'), kind, priority: pr, body: str(b.body, 5000, 'Question or feedback', true), authorName: role === 'customer' ? s.name : (str(b.authorName, 120, 'Name') || s.name), authorKind: role === 'customer' ? 'customer' : 'consultant', sessionRef: str(b.sessionRef, 80, 'Session'), status: 'open', response: null, createdAt: t, updatedAt: t });
     await audit(P.id, s.id, 'feedback-added', b.module || ''); return ok({ id }, 201);
   });
   route('PATCH', '/api/projects/:id/feedback/:fid', async (b, P) => {
@@ -889,12 +983,13 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
   // files: bytes go to the app's private file store in parts of 16 MB; the project keeps the part ids
   const fileOut = f => ({ id: f.id, category: f.category, name: f.name, mime: f.mime, size: f.size, chunks: f.chunks, status: f.status, meta: f.meta, replaces: f.replaces, supersededBy: f.supersededBy, createdBy: f.createdBy, createdAt: f.createdAt });
   route('GET', '/api/projects/:id/files', async (b, P, Q) => {
-    const s = await me(); await projectAccess(s, P.id, 'read'); const cat = Q.get('category'), all = Q.get('versions') === '1';
-    const rows = (await dbList('fl.' + P.id)).map(r => r.value).filter(f => !f.deletedAt && f.status === 'ready' && (!cat || f.category === cat) && (all || !f.supersededBy));
+    const s = await me(); const { role, perm } = await projectAccess(s, P.id, cneed(s, 'read')); const cat = Q.get('category'), all = Q.get('versions') === '1'; const ctl = role === 'customer' ? await portalControls(P.id, perm) : null;
+    const rows = (await dbList('fl.' + P.id)).map(r => r.value).filter(f => !f.deletedAt && f.status === 'ready' && (!cat || f.category === cat) && (all || !f.supersededBy) && (!ctl || customerFileOk(ctl, f.category)));
     rows.sort((a, c) => String(c.createdAt).localeCompare(String(a.createdAt))); return ok({ files: rows.map(fileOut) });
   });
   route('POST', '/api/projects/:id/files', async (b, P) => {
-    const s = await me(); await projectAccess(s, P.id, 'edit'); const rule = FILE_RULES[b.category]; if (!rule) throw new HttpError(400, 'Unknown file category'); await limit('upload', s.id);
+    const s = await me(); const { role, perm } = await projectAccess(s, P.id, cneed(s, 'edit')); const rule = FILE_RULES[b.category]; if (!rule) throw new HttpError(400, 'Unknown file category'); await limit('upload', s.id);
+    if (role === 'customer') { const need = CUSTOMER_FILE_UPLOAD[b.category], ctl = await portalControls(P.id, perm); if (!need || ctl.tabs[need] === false || !ctl.allow.onboarding) throw new HttpError(403, 'Not available with customer access'); if (b.replaces) throw new HttpError(403, 'Not available with customer access'); }
     const name = str(b.name, 255, 'File name', true); if (/[\u0000-\u001f\u007f\/\\]/.test(name)) throw new HttpError(400, 'The file name has characters that are not allowed'); const ext = (name.split('.').pop() || '').toLowerCase(); if (!rule.ext.includes(ext)) throw new HttpError(415, 'Unsupported file type .' + ext + ' — allowed: ' + rule.ext.join(', '));
     const size = Number(b.size); if (!(size > 0) || size > rule.max) throw new HttpError(413, 'File is empty or too large (max ' + Math.round(rule.max / 1e6) + ' MB)');
     const meta = b.meta && typeof b.meta === 'object' ? b.meta : {}; if (JSON.stringify(meta).length > 20000) throw new HttpError(400, 'Metadata too large');
@@ -904,7 +999,7 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     return ok({ id, chunkSize: CHUNK, chunks }, 201);
   });
   // bytes never pass through this function: the page asks for a one-time upload link, PUTs the part straight to storage, then tells us it is done
-  const chunkOf = async (s, P, need) => { await projectAccess(s, P.id, need); const r = await dbGet('fl.' + P.id, P.fid); if (!r || r.value.status !== 'uploading') throw new HttpError(404, 'Upload not found'); const n = Number(P.n); if (!Number.isInteger(n) || n < 0 || n >= r.value.chunks) throw new HttpError(400, 'Invalid chunk'); return { f: r.value, n }; };
+  const chunkOf = async (s, P, need) => { const { role } = await projectAccess(s, P.id, cneed(s, need)); const r = await dbGet('fl.' + P.id, P.fid); if (!r || r.value.status !== 'uploading' || (role === 'customer' && r.value.createdBy !== s.id)) throw new HttpError(404, 'Upload not found'); const n = Number(P.n); if (!Number.isInteger(n) || n < 0 || n >= r.value.chunks) throw new HttpError(400, 'Invalid chunk'); return { f: r.value, n }; };
   route('POST', '/api/projects/:id/files/:fid/chunks/:n/url', async (b, P) => {
     const s = await me(); const { n } = await chunkOf(s, P, 'edit'); const u = await CTX.files.uploadUrl(P.fid + '-' + n + '.bin', { private: true }); const cur = (await dbGet('fl.' + P.id, P.fid)).value; cur.mint = Object.assign({}, cur.mint, { [n]: u.file_id }); await dbPut('fl.' + P.id, P.fid, cur); return ok({ url: u.url, fileId: u.file_id });
   });
@@ -913,7 +1008,7 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     const fresh = (await dbGet('fl.' + P.id, P.fid)).value; if (!fresh.mint || fresh.mint[n] !== b.fileId) throw new HttpError(400, 'That upload was not issued for this file part'); fresh.urls[n] = b.fileId; await dbPut('fl.' + P.id, P.fid, fresh); return ok({ ok: true });
   });
   route('POST', '/api/projects/:id/files/:fid/complete', async (b, P) => {
-    const s = await me(); await projectAccess(s, P.id, 'edit'); const r = await dbGet('fl.' + P.id, P.fid); if (!r) throw new HttpError(404, 'Upload not found'); const f = r.value; if (f.status === 'ready') return ok({ file: fileOut(f) });
+    const s = await me(); const { role } = await projectAccess(s, P.id, cneed(s, 'edit')); const r = await dbGet('fl.' + P.id, P.fid); if (!r || (role === 'customer' && r.value.createdBy !== s.id)) throw new HttpError(404, 'Upload not found'); const f = r.value; if (f.status === 'ready') return ok({ file: fileOut(f) });
     for (let i = 0; i < f.chunks; i++) if (!f.urls[i]) throw new HttpError(400, 'Chunk ' + i + ' missing');
     // the file's first bytes must match its extension (a .pdf must be a PDF, an .xlsx a ZIP package, and so on)
     const head = await headBytes(f.urls[0]); const verdict = head ? contentMatches(f.name, head) : null;
@@ -946,7 +1041,8 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     if (['txt', 'csv', 'vtt', 'srt', 'json', 'eml'].includes(ext)) return !b.includes(0) && !starts(b, SIG.zip) && !starts(b, SIG.ole);  // text: no NUL bytes, not a binary package
     return null;
   }
-  const fileForRead = async (s, P) => { await projectAccess(s, P.id, 'read'); const r = await dbGet('fl.' + P.id, P.fid); if (!r || r.value.deletedAt || r.value.status !== 'ready') throw new HttpError(404, 'File not found'); return r.value; };
+  const fileForRead = async (s, P) => { const { role, perm } = await projectAccess(s, P.id, cneed(s, 'read')); const r = await dbGet('fl.' + P.id, P.fid); if (!r || r.value.deletedAt || r.value.status !== 'ready') throw new HttpError(404, 'File not found');
+    if (role === 'customer' && !customerFileOk(await portalControls(P.id, perm), r.value.category) && r.value.createdBy !== s.id) throw new HttpError(404, 'File not found'); return r.value; };
   route('GET', '/api/projects/:id/files/:fid', async (b, P) => { const s = await me(); return ok({ file: fileOut(await fileForRead(s, P)), chunkSize: CHUNK }); });
   route('GET', '/api/projects/:id/files/:fid/chunks/:n', async (b, P) => {
     const s = await me(); const f = await fileForRead(s, P); const n = Number(P.n); if (!Number.isInteger(n) || n < 0 || n >= f.chunks || !f.urls[n]) throw new HttpError(400, 'Invalid chunk');
@@ -1126,7 +1222,7 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     const u = new URL(path, 'https://app.local'); u.search = query || '';
     for (const r of routes) {
       if (r.method !== method) continue; const m = r.re.exec(u.pathname); if (!m) continue;
-      try { if (method !== 'GET') { const s = await me(); await limit('write', s.id); }  // every change, of any kind, counts towards one per-person budget
+      try { if (isGuest()) await guestGate(r); if (method !== 'GET') { const s = await me(); await limit('write', s.id); }  // every change, of any kind, counts towards one per-person budget
         const G = {}; for (const k of Object.keys(m.groups || {})) { try { G[k] = decodeURIComponent(m.groups[k]); } catch (e) { G[k] = m.groups[k]; } } return await r.fn(body, G, u.searchParams); }
       catch (e) { if (e instanceof HttpError) return { status: e.status || 500, data: Object.assign({ error: e.message }, e.extra || {}) }; console.error('API error', method, path, e && e.stack || e); return { status: 500, data: { error: 'Something went wrong on the server. Try again; if it keeps happening, tell the Delivery Studio owner.' } }; }
     }
