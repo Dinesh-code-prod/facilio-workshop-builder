@@ -20,7 +20,7 @@
   const ico = (n, cls) => `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="${cls || ''}" aria-hidden="true">${ICON[n] || ''}</svg>`;
 
   // ---------- UI utilities ----------
-  function toast(msg, ms, err) { const t = document.createElement('div'); t.className = 'toast' + (err ? ' err' : ''); t.setAttribute('role', 'status'); t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), ms || 2800); }
+  function toast(msg, ms, err) { const t = document.createElement('div'); t.className = 'toast' + (err ? ' err' : ''); t.setAttribute('role', 'status'); t.textContent = msg; const prev = [...document.querySelectorAll('.toast')]; if (prev.length) { const last = prev[prev.length - 1].getBoundingClientRect(); t.style.bottom = Math.round(window.innerHeight - last.top + 8) + 'px'; } document.body.appendChild(t); setTimeout(() => t.remove(), ms || 2800); }   // several toasts stack instead of covering each other
   /* Facilio loader: branded veil that fades in, stays at least 500 ms so it never flashes, then fades out. Used when opening the workspace, a project, or switching between Projects and Admin. */
   let loadAt = 0, loadTimer = 0;
   function loading(on, msg) {
@@ -410,6 +410,15 @@ function projectsHtml() {
     } finally { loading(false); }
   }
   V.openProject = openProject;
+  // links pasted or clicked while the app is already open (for example a Teams notice opened in the same tab) only change the hash:
+  // follow them to the project and page they name. replaceState (used by go) does not fire this event, so there is no loop.
+  window.addEventListener('hashchange', () => {
+    if (mode !== 'workspace' && mode !== 'projects') return;
+    const m = location.hash.match(/^#\/p\/([A-Za-z0-9_-]+)(?:\/([a-z0-9_]+)(?:\/(.+))?)?/); if (!m) return;
+    if (!S.project || S.project.id !== m[1] || mode !== 'workspace') { if (S.user.kind !== 'customer' && projects.find(p => p.id === m[1])) openProject(m[1]).catch(e => toast(e.message, 5000, true)); return; }
+    const view = m[2] && V[m[2]] ? m[2] : null; if (!view || (view === S.ui.view && !m[3])) return;
+    go(view, m[3] ? { module: decodeURIComponent(m[3]) } : {});
+  });
   async function afterLogin() { await loadProjects(); mode = 'projects'; const m = location.hash.match(/#\/p\/([A-Za-z0-9_-]+)/); if (m && projects.find(p => p.id === m[1])) return openProject(m[1]); history.replaceState(null, '', '#/projects'); render(); }
   V.refreshProjectMeta = async () => { const r = await API.get('/api/projects/' + S.project.id); S.project = r.project; S.members = r.members || []; render(); };
 

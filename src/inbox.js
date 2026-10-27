@@ -27,7 +27,7 @@
     st.sel = key; st.open = { loading: true }; paint();
     try { const r = await API.get(`/api/projects/${S.project.id}/mail/${key}`); st.open = r; const it = st.items && st.items.find(x => x.key === key); if (it) Object.assign(it, { status: r.mail.status, readBy: r.mail.readBy }); }
     catch (e) { st.open = { error: e.message }; }
-    if (!quiet && history.replaceState) history.replaceState(null, '', `#/p/${S.project.id}/inbox/${key}`);
+    if (history.replaceState && S.ui.view === 'inbox') history.replaceState(null, '', `#/p/${S.project.id}/inbox/${key}`);   // keep the address pointing at the open email, also after a deep link
     paint(); const rd = document.getElementById('ibRead'); if (rd && window.innerWidth < 900) rd.scrollIntoView({ block: 'start' });
   }
   function rows() {
@@ -69,7 +69,7 @@
       <div class="ib-main"><div class="ib-list card" role="list" aria-label="Emails">${listHtml()}</div><div class="ib-read card" id="ibRead" aria-live="polite">${readHtml()}</div></div>`;
   }
   function html() {
-    if (!S.project) return ''; { const w = keyFromHash() || (/^[0-9a-f]{40}$/.test(String(S.ui.module || '')) ? S.ui.module : null); if (w) { st.want = w; S.ui.module = null; } }   // deep link from a Teams notice: #/p/<id>/inbox/<email>
+    if (!S.project) return ''; { const w = keyFromHash() || (/^[0-9a-f]{40}$/.test(String(S.ui.module || '')) ? S.ui.module : null); if (w) { st.want = w; S.ui.module = null; if (st.pid === S.project.id && st.items) { st.want = null; setTimeout(() => openMail(w, true), 0); } } }   // deep link from a Teams notice: #/p/<id>/inbox/<email>
     if (st.pid !== S.project.id || (!st.items && !st.loading && !st.err)) setTimeout(() => load(true), 0);
     const last = st.last ? (st.last.ok ? 'Mailbox last checked ' + when(st.last.at) : st.last.error) : 'The mailbox has not been checked yet';
     return `<div class="page-header"><div class="t"><h1>Inbox</h1><p>Client emails for ${esc(S.project.name)}, kept for the whole project. ${esc(last)}.</p></div><div class="row"><button class="btn primary" data-act="ibCheck"${st.checking ? ' disabled' : ''}>${st.checking ? 'Checking…' : 'Check for new email'}</button></div></div>
