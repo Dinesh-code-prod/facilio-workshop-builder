@@ -474,6 +474,35 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     await audit(P.id, s.id, 'ai-flow-image', graph.nodes.length + ' steps via Claude');
     return ok({ graph, provider: out.provider, model: out.model });
   });
+  // ---------- kick-off deck: read the team and the key facts out of the deck's text ----------
+  // The page extracts the slide text (and table rows) from the uploaded .pptx or PDF and sends it here; the model returns JSON that is rebuilt
+  // field by field (plain text, valid emails and dates only, capped lists). Nothing is saved here: the page shows a review and the team
+  // decides what to keep, which is then saved through the normal document and record routes.
+  const KICK_PROMPT = 'You read the text of a Facilio implementation kick-off presentation and return ONLY a JSON object with these keys: '
+    + '"facilioTeam": [{"name","role","email"}] (people from Facilio, the implementation vendor), "customerTeam": [{"name","role","email"}] (people from the customer organisation), '
+    + '"cadence": one of "weekly","fortnightly","monthly","quarterly" or "" (steering / status meeting rhythm), "meetings": [strings] (governance meetings with their rhythm and attendees), '
+    + '"objectives": [strings], "scope": [strings] (modules, sites or services in scope), "keyDates": [{"label","date"}] (date as YYYY-MM-DD when the deck states it), '
+    + '"risks": [strings], "nextSteps": [{"action","owner","due"}] (due as YYYY-MM-DD or ""), "insights": [strings] (anything else the delivery team should remember). '
+    + 'Use only facts in the text. Leave a field empty rather than guess; never invent names, emails or dates. Keep each string under 200 characters.';
+  function validKickoff(raw) {
+    let j = raw; if (typeof j === 'string') { const m = j.match(/\{[\s\S]*\}/); if (!m) throw new HttpError(502, 'The deck could not be read'); try { j = JSON.parse(m[0]); } catch (e) { throw new HttpError(502, 'The deck could not be read'); } }
+    if (!j || typeof j !== 'object') throw new HttpError(502, 'The deck could not be read');
+    const t = (v, n) => plain(v, n || 200), arr = (v, n) => (Array.isArray(v) ? v : []).slice(0, n);
+    const em = v => { const e = String(v || '').trim().toLowerCase(); return /^[^@\s<>"']+@[^@\s<>"']+\.[a-z]{2,}$/.test(e) ? e : ''; };
+    const dt = v => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : '');
+    const people = v => arr(v, 40).map(x => ({ name: t(x && x.name, 120), role: t(x && x.role, 120), email: em(x && x.email) })).filter(x => x.name);
+    return { facilioTeam: people(j.facilioTeam), customerTeam: people(j.customerTeam), cadence: ['weekly', 'fortnightly', 'monthly', 'quarterly'].includes(j.cadence) ? j.cadence : '',
+      meetings: arr(j.meetings, 12).map(x => t(x)).filter(Boolean), objectives: arr(j.objectives, 12).map(x => t(x)).filter(Boolean), scope: arr(j.scope, 30).map(x => t(x, 120)).filter(Boolean),
+      keyDates: arr(j.keyDates, 20).map(x => ({ label: t(x && x.label, 120), date: dt(x && x.date) })).filter(x => x.label), risks: arr(j.risks, 15).map(x => t(x)).filter(Boolean),
+      nextSteps: arr(j.nextSteps, 20).map(x => ({ action: t(x && x.action), owner: t(x && x.owner, 120), due: dt(x && x.due) })).filter(x => x.action), insights: arr(j.insights, 15).map(x => t(x)).filter(Boolean) };
+  }
+  route('POST', '/api/projects/:id/ai/kickoff', async (b, P) => {
+    const s = await me(); await projectAccess(s, P.id, 'edit'); const text = String(b && b.text || ''); if (text.trim().length < 40) throw new HttpError(400, 'The deck has almost no text to read');
+    await limit('ai', s.id); const pv = await pickProvider(String(b.provider || '')); const cut = pv.provider === 'claude' ? 60000 : 24000;
+    const out = await callModel([{ role: 'system', content: KICK_PROMPT }, { role: 'user', content: 'Deck: ' + plain(b.fileName || 'kick-off deck', 200) + '\n\n' + text.slice(0, cut) }], 1800, pv.provider, pv.cfg.fallback);
+    const data = validKickoff(out.text); await audit(P.id, s.id, 'ai-kickoff', (data.facilioTeam.length + data.customerTeam.length) + ' people via ' + out.provider);
+    return ok({ data, provider: out.provider, model: out.model, truncated: text.length > cut, notice: out.notice || '' });
+  });
   route('POST', '/api/projects/:id/ai/:item/decision', async (b, P) => {
     const s = await me(); const { role } = await projectAccess(s, P.id, 'owner'); const d = String(b && b.decision || ''); if (!['approve', 'reject', 'reopen'].includes(d)) throw new HttpError(400, 'Choose approve, reject or reopen');
     if (!ITEM_ID_RE.test(P.item)) throw new HttpError(400, 'Bad id'); const col = 'it.' + P.id + '.ai', pcol = 'ip.' + P.id + '.ai'; const row = await dbGet(col, P.item); const head = row && row.value; if (!head) throw new HttpError(404, 'Draft not found'); const cur = await unpack(pcol, P.item, head);
