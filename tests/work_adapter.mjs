@@ -235,18 +235,21 @@ await t('support mailbox: sync routes mail by ticket tag and sender rules, parks
   const msg = (id, from, subject, conv) => ({ id, conversationId: conv || id, subject, from: { emailAddress: { name: 'X', address: from } }, body: { contentType: 'text', content: 'Hello ' + id }, receivedDateTime: '2026-10-27T10:00:00Z', hasAttachments: false, isDraft: false });
   let seenUrl = ''; globalThis.__GRAPH = async (cred, url) => { seenUrl = url; return { ok: true, status: 200, json: async () => ({ value: [msg('AAA1', 'pat@acme.com', 'Need a training session'), msg('AAA2', 'who@other.org', 'Pricing?'), msg('AAA3', 'pat@acme.com', 'Re: ticket [TKT-1]'), msg('AAA4', 'support@facilio.com', 'our own')] }) }; };
   r = await call(dinesh, 'POST', '/api/mail/sync'); assert.equal(r.status, 200); assert.match(seenUrl, /users\/support%40facilio\.com\/mailFolders\/inbox/);
-  assert.deepEqual([r.data.result.tickets, r.data.result.appended, r.data.result.unrouted], [1, 1, 1]);
-  r = await call(dinesh, 'POST', '/api/mail/sync'); assert.deepEqual([r.data.result.tickets, r.data.result.appended, r.data.result.unrouted], [0, 0, 0], 'second sync adds nothing');
+  assert.deepEqual([r.data.result.filed, r.data.result.unrouted], [2, 1]);
+  { const it = (await call(dinesh, 'GET', `/api/projects/${pid}/items?kinds=tkt`)).data.items.find(i => i.data.n === 1); assert.ok(it.data.thread.some(m => m.ref === 'AAA3'), 'the reply quoting TKT-1 joined that ticket'); }
+  { const mb = (await call(dinesh, 'GET', `/api/projects/${pid}/mail`)).data; assert.equal(mb.items.length, 2, 'both emails are in the project Inbox'); assert.ok(mb.items.every(m => m.status === 'new')); }
+  r = await call(dinesh, 'POST', '/api/mail/sync'); assert.deepEqual([r.data.result.filed, r.data.result.unrouted], [0, 0], 'second sync adds nothing');
   r = await call(dinesh, 'GET', '/api/mail/inbox'); assert.equal(r.data.items.length, 1); const mid = r.data.items[0].id;
   r = await call(dinesh, 'POST', `/api/mail/inbox/${mid}/route`, { projectId: pid }); assert.equal(r.status, 200); r = await call(dinesh, 'GET', '/api/mail/inbox'); assert.equal(r.data.items.length, 0);
   // a ticket tag only routes for the ticket's own sender (or their company domain / a mailbox rule); shared mail domains need the exact address
   globalThis.__GRAPH = async () => ({ ok: true, status: 200, json: async () => ({ value: [msg('BBB1', 'mallory@evil.org', 'Re: [TKT-1] please add me')] }) });
-  r = await call(dinesh, 'POST', '/api/mail/sync'); assert.deepEqual([r.data.result.appended, r.data.result.unrouted], [0, 1], 'a stranger quoting a ticket number is parked, not appended');
+  r = await call(dinesh, 'POST', '/api/mail/sync'); assert.deepEqual([r.data.result.filed, r.data.result.unrouted], [0, 1], 'a stranger quoting a ticket number is parked, not filed');
   globalThis.__GRAPH = async () => ({ ok: true, status: 200, json: async () => ({ value: [msg('BBB2', 'cust.one@gmail.com', 'Login problem')] }) }); r = await call(dinesh, 'POST', '/api/mail/sync');
   r = await call(dinesh, 'GET', '/api/mail/inbox'); const g = r.data.items.find(i => i.from.email === 'cust.one@gmail.com'); r = await call(dinesh, 'POST', `/api/mail/inbox/${g.id}/route`, { projectId: pid }); assert.equal(r.status, 200);
   r = await call(dinesh, 'GET', `/api/projects/${pid}/items?kinds=tkt`); const gt = r.data.items.find(i => i.data.requester && i.data.requester.email === 'cust.one@gmail.com'); assert.ok(gt, 'ticket created for the gmail sender');
   globalThis.__GRAPH = async () => ({ ok: true, status: 200, json: async () => ({ value: [msg('BBB3', 'someone.else@gmail.com', `Re: [TKT-${gt.data.n}]`), msg('BBB4', 'cust.one@gmail.com', `Re: [TKT-${gt.data.n}] more detail`)] }) });
-  r = await call(dinesh, 'POST', '/api/mail/sync'); assert.deepEqual([r.data.result.appended, r.data.result.unrouted], [1, 1], 'same gmail.com domain is not enough; the exact sender is appended');
+  r = await call(dinesh, 'POST', '/api/mail/sync'); assert.deepEqual([r.data.result.filed, r.data.result.unrouted], [1, 1], 'same gmail.com domain is not enough; the exact sender is filed');
+  { const it = (await call(dinesh, 'GET', `/api/projects/${pid}/items?kinds=tkt`)).data.items.find(i => i.id === gt.id); assert.ok(it.data.thread.some(m => m.ref === 'BBB4'), 'and joins its ticket'); }
   globalThis.__GRAPH = async () => ({ ok: false, status: 429, json: async () => ({}) }); r = await call(dinesh, 'POST', '/api/mail/sync'); assert.equal(r.status, 429);
   globalThis.__GRAPH = async () => ({ ok: false, status: 403, json: async () => ({}) }); r = await call(dinesh, 'POST', '/api/mail/sync'); assert.equal(r.status, 502); r = await call(dinesh, 'GET', '/api/mail/status'); assert.equal(r.data.last.ok, false); assert.match(r.data.last.error, /Mail\.Read/);
   delete globalThis.__GRAPH;
@@ -409,6 +412,22 @@ await t('access check fails closed; AI key and mailbox events appear in the admi
   const res = await handler({ method: 'GET', path: '/projects', query: '', headers: {}, text: async () => '' }, ctx); assert.equal(res.status, 503);
   let r = await call(dinesh, 'GET', '/api/admin/audit'); assert.ok(r.data.entries.some(e => e.action === 'ai-key-saved' || e.action === 'ai-key-removed'), 'AI key changes listed'); assert.ok(r.data.entries.some(e => e.action === 'mail-sync'), 'mail syncs listed');
 });
+await t('Explore Facilio: editors draft, only owners and admins publish; request authors come from the session; text is normalised', async () => {
+  store.delete('rl'); const own = 'show.owner@facilio.com', ed = 'show.editor@facilio.com';
+  let r = await call(own, 'POST', '/api/projects', { name: 'Show Co', customer: 'S' }); const P = r.data.project.id;
+  r = await call(own, 'POST', `/api/projects/${P}/members`, { email: ed, role: 'editor' }); assert.equal(r.status, 201);
+  r = await call(ed, 'PUT', `/api/projects/${P}/items/news/nw1`, { data: { title: '', status: 'draft' } }); assert.equal(r.status, 400, 'a title is required');
+  r = await call(ed, 'PUT', `/api/projects/${P}/items/news/nw1`, { data: { title: 'Inspections on mobile', capabilities: ['Offline checklists', 42] } }); assert.equal(r.status, 400, 'list items must be text');
+  r = await call(ed, 'PUT', `/api/projects/${P}/items/news/nw1`, { data: { title: 'Inspections on mobile', capabilities: ['Offline checklists'], availability: 'free!', imageId: '../x', status: 'draft', extra: 'dropped' } });
+  assert.equal(r.status, 200); let d = r.data.item.data; assert.equal(d.availability, 'discuss', 'unknown availability falls back'); assert.equal(d.imageId, '', 'a bad file id is dropped'); assert.equal(d.extra, undefined, 'unknown fields are not stored');
+  r = await call(ed, 'PUT', `/api/projects/${P}/items/news/nw1`, { data: Object.assign({}, d, { capabilities: ['Offline checklists'], status: 'published' }) }); assert.equal(r.status, 403, 'editors cannot publish');
+  r = await call(own, 'PUT', `/api/projects/${P}/items/news/nw1`, { data: Object.assign({}, d, { capabilities: ['Offline checklists'], status: 'published' }) }); assert.equal(r.status, 200); assert.equal(r.data.item.data.status, 'published'); assert.equal(r.data.item.data.publishedBy, own);
+  r = await call(ed, 'PUT', `/api/projects/${P}/items/news/nw1`, { data: Object.assign({}, r.data.item.data, { summary: 'Edited' }) }); assert.equal(r.status, 200, 'editors can still edit a published entry'); assert.equal(r.data.item.data.publishedBy, own, 'publisher kept');
+  r = await call(ed, 'PUT', `/api/projects/${P}/items/interest/in1`, { data: { newsId: 'nw1', title: 'Inspections on mobile', by: 'ceo@customer.com', byName: 'Fake', at: '2001-01-01', status: 'weird' } });
+  assert.equal(r.status, 200); d = r.data.item.data; assert.equal(d.by, ed, 'author from the session'); assert.notEqual(d.at, '2001-01-01', 'time from the server'); assert.equal(d.status, 'new');
+  r = await call(own, 'PUT', `/api/projects/${P}/items/interest/in1`, { data: Object.assign({}, d, { status: 'demo', by: own }) }); assert.equal(r.data.item.data.by, ed, 'the author cannot be changed later'); assert.equal(r.data.item.data.status, 'demo');
+  r = await call('outsider.x@facilio.com', 'GET', `/api/projects/${P}/items?kinds=news,interest`); assert.equal(r.status, 404, 'others cannot read them');
+});
 await t('sign-offs and approvals: recorded, undone or deleted only by owners and admins; editors still draft', async () => {
   store.delete('rl'); const own = 'signer.owner@facilio.com', ed = 'signer.editor@facilio.com';
   let r = await call(own, 'POST', '/api/projects', { name: 'Sign Co', customer: 'S' }); const P = r.data.project.id; await call(own, 'POST', `/api/projects/${P}/members`, { email: ed, role: 'editor' });
@@ -428,5 +447,62 @@ await t('sign-offs and approvals: recorded, undone or deleted only by owners and
   r = await call(own, 'PUT', `/api/projects/${P}/docs/brddoc`, { data: { status: 'approved' }, baseVersion: 1 }); assert.equal(r.status, 200);
   r = await call(ed, 'PUT', `/api/projects/${P}/docs/brddoc`, { data: { status: 'draft' }, baseVersion: 2 }); assert.equal(r.status, 403, 'editor cannot reopen an approved BRD');
   r = await call(dinesh, 'PUT', `/api/projects/${P}/docs/brddoc`, { data: { status: 'draft' }, baseVersion: 2 }); assert.equal(r.status, 200, 'admins can');
+});
+await t('project Inbox: emails filed by project address, conversation and sender; Teams notices once; status, attachments, refresh, access and outages', async () => {
+  store.delete('rl'); const own = 'inbox.owner@facilio.com', vw = 'inbox.viewer@facilio.com', other = 'inbox.other@facilio.com';
+  let r = await call(own, 'POST', '/api/projects', { name: 'Mail Co', customer: 'Mail' }); const P = r.data.project.id; await call(own, 'POST', `/api/projects/${P}/members`, { email: vw, role: 'viewer' });
+  r = await call(other, 'POST', '/api/projects', { name: 'Other Co', customer: 'O' }); const O = r.data.project.id;
+  r = await call(dinesh, 'PUT', '/api/mail/rules', { rules: [{ match: 'mailco-delivery@facilio.com', projectId: P, on: 'to' }, { match: 'not-an-address', projectId: P, on: 'to' }] }); assert.equal(r.status, 400, 'a "sent to" rule needs a full address');
+  r = await call(dinesh, 'PUT', '/api/mail/rules', { rules: [{ match: 'mailco-delivery@facilio.com', projectId: P, on: 'to' }] }); assert.equal(r.status, 200);
+  r = await call(dinesh, 'PUT', '/api/mail/settings', { teamsOn: true, teamsChannel: 'delivery-mail', autoTicket: false }); assert.equal(r.status, 200); assert.equal(r.data.settings.teamsChannel, 'delivery-mail');
+  r = await call(vw, 'PUT', '/api/mail/settings', { teamsOn: false }); assert.equal(r.status, 403, 'only admins change mailbox settings');
+  const M = (id, from, subject, o = {}) => Object.assign({ id, conversationId: o.conv || id, subject, from: { emailAddress: { name: 'Client ' + id, address: from } }, toRecipients: [{ emailAddress: { name: 'Delivery', address: o.to || 'support@facilio.com' } }], ccRecipients: [], body: { contentType: 'text', content: 'Body of ' + id + ' <script>alert(1)</script>' }, bodyPreview: 'Body of ' + id, receivedDateTime: o.at || '2026-10-27T09:00:00Z', hasAttachments: !!o.att, isDraft: false, webLink: 'https://outlook.office365.com/owa/?ItemID=' + id }, {});
+  let graph = { list: [M('M1', 'ana@client.org', 'Kick-off agenda', { to: 'mailco-delivery@facilio.com', att: true, conv: 'C1' }), M('M2', 'bob@another.org', 'Re: Kick-off agenda', { conv: 'C1', at: '2026-10-27T10:00:00Z' }), M('M3', 'nobody@random.net', 'Hello')], calls: [] };
+  globalThis.__GRAPH = async (cred, url, o) => { graph.calls.push(url); if (/\/attachments\/[^/]+\/\$value/.test(url)) return { ok: true, status: 200, body: Buffer.from('PDF-BYTES').toString('base64') };
+    if (/\/attachments\?/.test(url)) return { ok: true, status: 200, json: async () => ({ value: [{ id: 'A1', name: 'agenda.pdf', size: 1200, contentType: 'application/pdf' }, { id: 'A2', name: 'big.zip', size: 9e6, contentType: 'application/zip' }, { id: 'A3', name: 'logo.png', size: 10, contentType: 'image/png', isInline: true }] }) };
+    if (/\/messages\/M1\?/.test(url)) return { ok: true, status: 200, json: async () => ({ id: 'M1', webLink: 'https://outlook.office365.com/owa/?ItemID=M1&v=2' }) };
+    if (/\/messages\/[^?]+\?/.test(url)) return { ok: false, status: 404, json: async () => ({}) };
+    return { ok: true, status: 200, json: async () => ({ value: graph.list }) }; };
+  globalThis.__SENT = [];
+  r = await call(dinesh, 'POST', '/api/mail/sync'); assert.equal(r.status, 200); assert.deepEqual([r.data.result.filed, r.data.result.unrouted, r.data.result.notices], [2, 1, 3]);
+  assert.ok(graph.calls[0].includes('%24filter') || graph.calls[0].includes('$filter'), 'reads only new mail (received since the last check)');
+  const notes = globalThis.__SENT; const n1 = notes.find(x => /Mail Co/.test(x.title)); assert.ok(n1, 'project notice sent'); assert.equal(n1.channel, 'delivery-mail', 'the configured channel');
+  assert.match(n1.text, /Automated Delivery Studio notification/); assert.deepEqual(n1.facts.map(f => f.title), ['From', 'Subject', 'Received', 'Project']); assert.match(n1.actions[0].url, new RegExp('/#/p/' + P + '/inbox/[0-9a-f]{40}$'));
+  assert.ok(notes.some(x => /waiting to be assigned/.test(x.title)), 'unassigned email noticed for review');
+  r = await call(own, 'GET', `/api/projects/${P}/mail`); assert.equal(r.data.items.length, 2, 'M1 by project address, M2 by conversation'); const m1 = r.data.items.find(x => x.subject === 'Kick-off agenda');
+  assert.equal(m1.routedBy, 'sent to the project address'); assert.equal(r.data.items.find(x => x.subject !== 'Kick-off agenda').routedBy, 'same conversation');
+  assert.deepEqual(m1.attachments.map(a => a.name), ['agenda.pdf', 'big.zip'], 'inline images are not listed as attachments'); assert.equal(m1.ticket, null, 'no ticket when automatic tickets are off');
+  r = await call(dinesh, 'POST', '/api/mail/sync'); assert.equal(r.data.result.filed, 0); assert.equal(globalThis.__SENT.length, 3, 'a second delivery of the same emails sends no new notices');
+  // reading, status, conversation
+  r = await call(vw, 'GET', `/api/projects/${P}/mail/${m1.key}`); assert.equal(r.status, 200); assert.equal(r.data.mail.status, 'new', 'a viewer opening it does not change the shared status');
+  r = await call(own, 'GET', `/api/projects/${P}/mail/${m1.key}`); assert.equal(r.data.mail.status, 'read'); assert.equal(r.data.conversation.length, 2, 'the reply is shown with it'); assert.ok(r.data.mail.body.includes('<script>'), 'body is returned as plain text (the page escapes it)');
+  r = await call(vw, 'POST', `/api/projects/${P}/mail/${m1.key}/status`, { status: 'handled' }); assert.equal(r.status, 403, 'viewers cannot change status');
+  r = await call(own, 'POST', `/api/projects/${P}/mail/${m1.key}/status`, { status: 'handled' }); assert.equal(r.data.mail.status, 'handled'); assert.equal(r.data.mail.handledBy.email, own);
+  r = await call(own, 'POST', `/api/projects/${P}/mail/${m1.key}/status`, { status: 'deleted' }); assert.equal(r.status, 400);
+  // access: other projects, outsiders, made-up keys
+  r = await call(other, 'GET', `/api/projects/${P}/mail`); assert.equal(r.status, 404); r = await call(other, 'GET', `/api/projects/${O}/mail/${m1.key}`); assert.equal(r.status, 404, 'an email key from another project is not found through your own project');
+  r = await call(own, 'GET', `/api/projects/${P}/mail/..%2F..%2Fusr`); assert.equal(r.status, 404);
+  // attachments: only the ones listed on this email, up to 3 MB, fetched from Microsoft 365 on request
+  r = await call(vw, 'GET', `/api/projects/${P}/mail/${m1.key}/attachments/0`); assert.equal(r.status, 200); assert.equal(Buffer.from(r.data.data, 'base64').toString(), 'PDF-BYTES'); assert.equal(r.data.name, 'agenda.pdf');
+  r = await call(vw, 'GET', `/api/projects/${P}/mail/${m1.key}/attachments/1`); assert.equal(r.status, 413); r = await call(vw, 'GET', `/api/projects/${P}/mail/${m1.key}/attachments/7`); assert.equal(r.status, 404);
+  r = await call(other, 'GET', `/api/projects/${P}/mail/${m1.key}/attachments/0`); assert.equal(r.status, 404);
+  // the original in Microsoft 365: still there, or deleted/moved
+  r = await call(vw, 'POST', `/api/projects/${P}/mail/${m1.key}/refresh`); assert.equal(r.data.mail.live.state, 'available');
+  const m2 = (await call(own, 'GET', `/api/projects/${P}/mail`)).data.items.find(x => x.subject !== 'Kick-off agenda'); r = await call(vw, 'POST', `/api/projects/${P}/mail/${m2.key}/refresh`); assert.equal(r.data.mail.live.state, 'missing');
+  // a ticket from an email, on request, once
+  r = await call(own, 'POST', `/api/projects/${P}/mail/${m2.key}/ticket`); assert.ok(r.data.ticket.n > 0); const tn = r.data.ticket.n; r = await call(own, 'POST', `/api/projects/${P}/mail/${m2.key}/ticket`); assert.equal(r.data.ticket.n, tn);
+  // the admin places the unassigned email
+  r = await call(dinesh, 'GET', '/api/mail/inbox'); const un = r.data.items.find(i => i.subject === 'Hello'); r = await call(dinesh, 'POST', `/api/mail/inbox/${un.id}/route`, { projectId: P }); assert.equal(r.status, 200);
+  r = await call(own, 'GET', `/api/projects/${P}/mail`); assert.equal(r.data.items.length, 3); assert.equal(r.data.items.find(x => x.subject === 'Hello').routedBy, 'manual');
+  // Microsoft 365 unavailable: the Inbox still opens with what is stored, and says the check did not complete
+  JSON.parse(store.get('cfg').get('mail')); { const c = JSON.parse(store.get('cfg').get('mail')); c.last.at = '2026-01-01T00:00:00Z'; store.get('cfg').set('mail', JSON.stringify(c)); }
+  globalThis.__GRAPH = async () => ({ ok: false, status: 503, json: async () => ({}) });
+  r = await call(own, 'GET', `/api/projects/${P}/mail?sync=1`); assert.equal(r.status, 200); assert.equal(r.data.items.length, 3); assert.ok(r.data.sync.error, 'the outage is reported, not hidden');
+  r = await call(own, 'GET', `/api/projects/${P}/mail?sync=1`); assert.equal(r.data.sync.skipped, 'recent', 'checks are spaced out (at most every two minutes)');
+  // retention
+  r = await call(dinesh, 'PUT', '/api/mail/settings', { retentionDays: 5 }); assert.equal(r.status, 400); r = await call(dinesh, 'PUT', '/api/mail/settings', { retentionDays: 30, teamsOn: false }); assert.equal(r.status, 200);
+  { const col = store.get('ml.' + P); const k = [...col.keys()][0]; const v = JSON.parse(col.get(k)); v.receivedAt = '2020-01-01T00:00:00Z'; col.set(k, JSON.stringify(v)); }
+  r = await call(own, 'GET', `/api/projects/${P}/mail`); assert.equal(r.data.items.length, 2, 'emails older than the retention period are removed');
+  await call(dinesh, 'PUT', '/api/mail/settings', { retentionDays: 0, autoTicket: true }); delete globalThis.__GRAPH;
 });
 console.log(`\n${n} checks passed, ${calls} storage calls, largest record ${(maxVal / 1024).toFixed(1)} KB`);

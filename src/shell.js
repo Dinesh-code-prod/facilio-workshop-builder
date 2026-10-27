@@ -7,19 +7,20 @@
 
   // ---------- icons ----------
   const ICON = {
+    clip: '<path d="M21.4 11.1 12.2 20.3a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>', mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
     flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>', bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/>', link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>', alert: '<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17v.5"/>', play: '<path d="M8 5v14l11-7z"/>', shield: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/>',
     home: '<path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/>', deck: '<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/>', plan: '<path d="M4 5h16M4 10h10M4 15h13M4 20h7"/>', cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
     book: '<path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h7z"/>', dash: '<rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/>',
     modules: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>', flow: '<rect x="2" y="9" width="7" height="5" rx="1"/><rect x="15" y="3" width="7" height="5" rx="1"/><rect x="15" y="16" width="7" height="5" rx="1"/><path d="M9 11.5h3v-6h3M12 11.5v7h3"/>',
     roles: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.3-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><circle cx="17.5" cy="9" r="2.5"/><path d="M16 14.6c2.8-.4 4.8 1.2 5.5 4.4"/>', mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
     check: '<path d="M4 12.5 9.5 18 20 6"/>', doc: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/>', gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/>',
-    search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>', plus: '<path d="M12 5v14M5 12h14"/>', up: '<path d="M12 19V5M6 11l6-6 6 6"/>', down: '<path d="M12 5v14M6 13l6 6 6-6"/>', x: '<path d="M6 6l12 12M18 6 6 18"/>', dl: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>', upl: '<path d="M12 16V5M7 10l5-5 5 5M5 20h14"/>',
+    search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>', phone: '<rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18h2"/>', plus: '<path d="M12 5v14M5 12h14"/>', up: '<path d="M12 19V5M6 11l6-6 6 6"/>', down: '<path d="M12 5v14M6 13l6 6 6-6"/>', x: '<path d="M6 6l12 12M18 6 6 18"/>', dl: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>', upl: '<path d="M12 16V5M7 10l5-5 5 5M5 20h14"/>',
     edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>', trash: '<path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/>', left: '<path d="M15 6l-6 6 6 6"/>', right: '<path d="M9 6l6 6-6 6"/>', arr: '<path d="M9 6l6 6-6 6"/>', eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', full: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>', lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>', copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>', zoomin: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5M11 8v6M8 11h6"/>', zoomout: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5M8 11h6"/>'
   };
   const ico = (n, cls) => `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="${cls || ''}" aria-hidden="true">${ICON[n] || ''}</svg>`;
 
   // ---------- UI utilities ----------
-  function toast(msg, ms, err) { const t = document.createElement('div'); t.className = 'toast' + (err ? ' err' : ''); t.setAttribute('role', 'status'); t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), ms || 2800); }
+  function toast(msg, ms, err) { const t = document.createElement('div'); t.className = 'toast' + (err ? ' err' : ''); t.setAttribute('role', 'status'); t.textContent = msg; const prev = [...document.querySelectorAll('.toast')]; if (prev.length) { const last = prev[prev.length - 1].getBoundingClientRect(); t.style.bottom = Math.round(window.innerHeight - last.top + 8) + 'px'; } document.body.appendChild(t); setTimeout(() => t.remove(), ms || 2800); }   // several toasts stack instead of covering each other
   /* Facilio loader: branded veil that fades in, stays at least 500 ms so it never flashes, then fades out. Used when opening the workspace, a project, or switching between Projects and Admin. */
   let loadAt = 0, loadTimer = 0;
   function loading(on, msg) {
@@ -84,7 +85,7 @@
 
   // ---------- routing ----------
   const NAV = [
-    { g: 'Project', icon: 'dash', items: [['dashreport', 'Dashboard Report'], ['overview', 'Project Overview'], ['proadmap', 'Project Roadmap']] },
+    { g: 'Project', icon: 'dash', items: [['dashreport', 'Dashboard Report'], ['overview', 'Project Overview'], ['lifecycle', 'Delivery Lifecycle'], ['proadmap', 'Project Roadmap']] },
     { g: '1. Kick-off & Discovery', icon: 'home', items: [['msaflow', 'Contract'], ['contracts', 'Contracts & Integrations'], ['kickoff', 'Kick-off Deck'], ['plan', 'Project Plan'], ['timeline', 'Plan Timeline'], ['onboarding', 'Data Onboarding'], ['governance', 'Governance & RAID'], ['changes', 'Change Requests']] },
     { g: '2. Workshops', icon: 'flag', items: [['transcripts', 'Transcripts & Requirement Confirmation']] },
     { g: '3. Requirements', icon: 'check', items: [['usecases', 'Use Cases'], ['checks', 'Checks & Validations']] },
@@ -96,12 +97,12 @@
     { g: '10. Hypercare', icon: 'flag', items: [['hypercare', 'Hypercare']] },
     { g: '11. Support Handover & 12. Closure', icon: 'flag', items: [['handover', 'Handover & Closure']] },
     { g: 'Documentation & Resources', icon: 'doc', items: [['guidebuilder', 'User Guide Builder'], ['pkgan', 'Configuration Analysis'], ['vidguide', 'Video to Guide'], ['guide', 'Customer User Guide'], ['resources', 'Notes & Links']] },
-    { g: 'Support & Tickets', icon: 'flag', items: [['tickets', 'Tickets']] },
+    { g: 'Support & Tickets', icon: 'flag', items: [['inbox', 'Inbox'], ['tickets', 'Tickets']] },
     { g: 'AI & Automation', icon: 'dash', items: [['aiwork', 'Deliverables & AI']] },
-    { g: 'Administration', icon: 'gear', items: [['portal', 'Customer Portal'], ['custintro', 'Customer Introduction'], ['templates', 'Templates'], ['workspace', 'Workspace & Layout'], ['settings', 'Project Settings & Exports']] }
+    { g: 'Administration', icon: 'gear', items: [['portal', 'Customer Portal'], ['custintro', 'Customer Introduction'], ['showcase', 'Explore Facilio'], ['templates', 'Templates'], ['workspace', 'Tabs & Layouts'], ['settings', 'Project Settings & Exports']] }
   ];
   // customer menu: [view, label, portal tab that must be on]
-  const CUSTOMER_NAV = [{ g: 'Project', icon: 'home', items: [['cust_home', 'Overview', 'cust_home'], ['contract', 'Know Your Contract', 'contract'], ['scope', 'Scope', 'scope'], ['kickoff', 'Kick-off', 'kickoff'], ['cplan', 'Project Plan', 'plan'], ['timeline', 'Plan Timeline', 'plan'], ['schedule', 'Workshop Schedule', 'schedule'], ['guide', 'Customer User Guide', 'guide'], ['onboarding', 'Data Onboarding', 'onboarding'], ['dashboards', 'Dashboard Gallery', 'dashboards']] },
+  const CUSTOMER_NAV = [{ g: 'Project', icon: 'home', items: [['cust_home', 'Overview', 'cust_home'], ['contract', 'Know Your Contract', 'contract'], ['scope', 'Scope', 'scope'], ['kickoff', 'Kick-off', 'kickoff'], ['cplan', 'Project Plan', 'plan'], ['timeline', 'Plan Timeline', 'plan'], ['schedule', 'Workshop Schedule', 'schedule'], ['guide', 'Customer User Guide', 'guide'], ['onboarding', 'Data Onboarding', 'onboarding'], ['dashboards', 'Dashboard Gallery', 'dashboards'], ['showcase', 'Explore Facilio', 'showcase']] },
     { g: 'Delivery', icon: 'flag', items: [['governance', 'Governance', 'governance'], ['changes', 'Change Requests', 'changes'], ['delivery', 'Build, UAT & Go-Live', 'delivery']] }];
   // only menu entries whose view exists, and for customers only the tabs the implementation team has switched on
   // Office open mode (temporary): set by the server (OFFICE_OPEN_MODE=1). Hides sign-in, accounts, project access and the Roles view; nothing is removed.
@@ -409,6 +410,15 @@ function projectsHtml() {
     } finally { loading(false); }
   }
   V.openProject = openProject;
+  // links pasted or clicked while the app is already open (for example a Teams notice opened in the same tab) only change the hash:
+  // follow them to the project and page they name. replaceState (used by go) does not fire this event, so there is no loop.
+  window.addEventListener('hashchange', () => {
+    if (mode !== 'workspace' && mode !== 'projects') return;
+    const m = location.hash.match(/^#\/p\/([A-Za-z0-9_-]+)(?:\/([a-z0-9_]+)(?:\/(.+))?)?/); if (!m) return;
+    if (!S.project || S.project.id !== m[1] || mode !== 'workspace') { if (S.user.kind !== 'customer' && projects.find(p => p.id === m[1])) openProject(m[1]).catch(e => toast(e.message, 5000, true)); return; }
+    const view = m[2] && V[m[2]] ? m[2] : null; if (!view || (view === S.ui.view && !m[3])) return;
+    go(view, m[3] ? { module: decodeURIComponent(m[3]) } : {});
+  });
   async function afterLogin() { await loadProjects(); mode = 'projects'; const m = location.hash.match(/#\/p\/([A-Za-z0-9_-]+)/); if (m && projects.find(p => p.id === m[1])) return openProject(m[1]); history.replaceState(null, '', '#/projects'); render(); }
   V.refreshProjectMeta = async () => { const r = await API.get('/api/projects/' + S.project.id); S.project = r.project; S.members = r.members || []; render(); };
 

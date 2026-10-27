@@ -20,7 +20,7 @@
   const W = { boardId: null, B: null, sel: new Set(), tool: 'select', undo: [], redo: [], dirty: false, saveT: 0, saving: false, lastSaved: null, edit: null, imgUrl: {} };
   const ro = () => !!S.readonly;
   const boards = () => I().list('wb').sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
-  const blank = name => ({ name: name || 'Process board', miro: '', nodes: [], edges: [], grid: true, snap: true, view: { x: 40, y: 40, z: 1 } });
+  const blank = name => ({ name: name || 'Process board', miro: '', nodes: [], edges: [], grid: true, snap: true, route: 'straight', view: { x: 40, y: 40, z: 1 } });
   // Boards are shared project records that any editor (or a direct API call) can write, so everything that reaches the SVG markup is
   // normalised on load: known shape types, finite numbers, hex colours, plain ids and fixed confidence words. Text is escaped when drawn.
   const ID = /^[A-Za-z0-9_-]{1,48}$/, HEXC = /^#[0-9A-Fa-f]{3,8}$/, NT = ['note', 'rect', 'ellipse', 'diamond', 'text', 'state', 'frame', 'image'];
@@ -34,9 +34,18 @@
       fill: HEXC.test(n.fill) ? n.fill : undefined, size: n.size === undefined ? undefined : num(n.size, 18, 8, 96), stype: ['open', 'closed', 'skipped'].includes(n.stype) ? n.stype : 'open',
       conf: ['inferred', 'uncertain'].includes(n.conf) ? n.conf : undefined, g: ID.test(n.g) ? n.g : undefined, fileId: ID.test(n.fileId) ? n.fileId : undefined, hidden: !!n.hidden }));
     B.edges = (Array.isArray(B.edges) ? B.edges : []).filter(e => e && typeof e === 'object' && ID.test(e.id) && seen.has(e.from) && seen.has(e.to)).slice(0, 6000).map(e => Object.assign(e, {
-      label: str(e.label, 200), conf: ['inferred', 'uncertain'].includes(e.conf) ? e.conf : undefined, g: ID.test(e.g) ? e.g : undefined }));
+      label: str(e.label, 200), conf: ['inferred', 'uncertain'].includes(e.conf) ? e.conf : undefined, g: ID.test(e.g) ? e.g : undefined,
+      route: ['straight', 'elbow'].includes(e.route) ? e.route : undefined, fr: ID.test(e.fr) ? e.fr : undefined,
+      lo: e.lo && typeof e.lo === 'object' ? { x: num(e.lo.x, 0, -4000, 4000), y: num(e.lo.y, 0, -4000, 4000) } : undefined,
+      ref: refClean(e.ref) }));
+    B.nodes.forEach(n => { n.fr = ID.test(n.fr) ? n.fr : undefined; n.ref = refClean(n.ref); if (n.src && typeof n.src === 'object') n.src = { kind: n.src.kind === 'image' ? 'image' : 'flow', flowId: str(n.src.flowId, 80), module: str(n.src.module, 80), origin: n.src.origin === 'proposed' ? 'proposed' : 'existing', sig: str(n.src.sig, 64) }; else delete n.src; });
+    B.route = B.route === 'elbow' ? 'elbow' : 'straight';
+    // Boards saved before 27 Oct grouped an imported flow (frame + every state) under one group id, so a click on any state selected and
+    // moved the whole diagram. The frame now carries its contents on its own, so that automatic group is turned into frame membership.
+    B.nodes.filter(n => n.t === 'frame' && n.src && n.g).forEach(fr => { const g = fr.g; B.nodes.forEach(m => { if (m.g === g) { if (m !== fr) m.fr = m.fr || fr.id; delete m.g; } }); B.edges.forEach(e => { if (e.g === g) { e.fr = e.fr || fr.id; delete e.g; } }); });
     return B;
   }
+  function refClean(r) { if (!r || typeof r !== 'object') return undefined; const o = {}; ['flow', 'state', 'transition'].forEach(k => { if (r[k] != null) o[k] = String(r[k]).slice(0, 80); }); return o.flow ? o : undefined; }
   function current() {
     const list = boards(); if (!W.boardId || !list.find(b => b.id === W.boardId)) W.boardId = (list[0] && list[0].id) || null;
     if (!W.boardId) return null;
@@ -53,7 +62,7 @@
   async function save() {
     if (!W.B || !W.dirty || ro()) return; if (W.saving) { W.saveT = setTimeout(save, 400); return; }
     W.saving = true; W.dirty = false; paintState();
-    const data = { name: W.B.name, miro: W.B.miro || '', nodes: W.B.nodes, edges: W.B.edges, grid: W.B.grid, snap: W.B.snap, view: W.B.view };
+    const data = { name: W.B.name, miro: W.B.miro || '', nodes: W.B.nodes, edges: W.B.edges, grid: W.B.grid, snap: W.B.snap, route: W.B.route, view: W.B.view };
     try { await I().put('wb', W.B.id, data, { silent: true }); W.lastSaved = new Date(); } catch (e) { W.dirty = true; V.toast('The board could not be saved: ' + (e.message || 'try again'), 6000, true); }
     finally { W.saving = false; paintState(); }
   }
@@ -75,8 +84,17 @@
   function edgePts(e) {
     const a = node(e.from), b = node(e.to); if (!a || !b || a.hidden || b.hidden) return null;
     if (a === b) { const x = a.x + a.w, y = a.y + a.h / 2; return { self: true, d: `M${x} ${y - 8} C ${x + 46} ${y - 40}, ${x + 46} ${y + 40}, ${x} ${y + 8}`, lx: x + 40, ly: y }; }
-    const p = border(a, b.x + b.w / 2, b.y + b.h / 2), q = border(b, a.x + a.w / 2, a.y + a.h / 2);
-    return { d: `M${p[0].toFixed(1)} ${p[1].toFixed(1)} L${q[0].toFixed(1)} ${q[1].toFixed(1)}`, lx: (p[0] + q[0]) / 2, ly: (p[1] + q[1]) / 2 };
+    const lo = e.lo || { x: 0, y: 0 }; let out;
+    if ((e.route || W.B.route) === 'elbow') {
+      // right-angle route: leave from the side facing the other box, turn once half way
+      const ax = a.x + a.w / 2, ay = a.y + a.h / 2, bx = b.x + b.w / 2, by = b.y + b.h / 2, dx = bx - ax, dy = by - ay; let p0, p1, d;
+      if (Math.abs(dx) >= Math.abs(dy)) { const sx = dx >= 0 ? a.x + a.w : a.x, ex = dx >= 0 ? b.x : b.x + b.w, mx = (sx + ex) / 2; p0 = [sx, ay]; p1 = [ex, by]; d = `M${sx} ${ay} H${mx} V${by} H${ex}`; out = { d, lx: mx, ly: (ay + by) / 2, p0, p1 }; }
+      else { const sy = dy >= 0 ? a.y + a.h : a.y, ey = dy >= 0 ? b.y : b.y + b.h, my = (sy + ey) / 2; p0 = [ax, sy]; p1 = [bx, ey]; d = `M${ax} ${sy} V${my} H${bx} V${ey}`; out = { d, lx: (ax + bx) / 2, ly: my, p0, p1 }; }
+    } else {
+      const p = border(a, b.x + b.w / 2, b.y + b.h / 2), q = border(b, a.x + a.w / 2, a.y + a.h / 2);
+      out = { d: `M${p[0].toFixed(1)} ${p[1].toFixed(1)} L${q[0].toFixed(1)} ${q[1].toFixed(1)}`, lx: (p[0] + q[0]) / 2, ly: (p[1] + q[1]) / 2, p0: p, p1: q };
+    }
+    out.lx += lo.x; out.ly += lo.y; return out;
   }
   function lines(text, w, size) { const per = Math.max(4, Math.floor((w - 16) / (size * .56))); return D && D.wrap ? D.wrap(text, per, 12) : [String(text || '')]; }
 
@@ -88,7 +106,7 @@
     const stroke = sel ? '#1570EF' : conf === 'uncertain' ? '#E5197F' : conf === 'inferred' ? '#F5A524' : n.t === 'note' ? 'rgba(16,24,40,.12)' : '#98A2B3';
     const sw = sel ? 2.5 : 1.3, dash = conf ? ' stroke-dasharray="6 4"' : '';
     let shape = '';
-    if (n.t === 'frame') shape = `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="14" fill="rgba(239,245,255,.55)" stroke="${sel ? '#1570EF' : '#B2CCFF'}" stroke-width="${sel ? 2.5 : 1.5}" stroke-dasharray="8 6"/><text x="${n.x + 16}" y="${n.y + 26}" font-size="15" font-weight="700" fill="#1D1A5E">${esc(n.text || '')}</text>${n.src && n.src.kind === 'flow' ? `<text x="${n.x + 16}" y="${n.y + 44}" font-size="11.5" fill="#667085">Copy of the ${esc(n.src.origin === 'proposed' ? 'proposed' : 'configured')} state flow · changes here stay on this board</text>` : n.src && n.src.kind === 'image' ? `<text x="${n.x + 16}" y="${n.y + 44}" font-size="11.5" fill="#667085">Read from an image by AI · check the dashed parts</text>` : ''}`;
+    if (n.t === 'frame') shape = `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="14" fill="rgba(239,245,255,.55)" stroke="${sel ? '#1570EF' : '#B2CCFF'}" stroke-width="${sel ? 2.5 : 1.5}" stroke-dasharray="8 6"/><text x="${n.x + 16}" y="${n.y + 26}" font-size="15" font-weight="700" fill="#1D1A5E">${esc(n.text || '')}</text>${n.src && n.src.kind === 'flow' ? `<text x="${n.x + 16}" y="${n.y + 44}" font-size="11.5" fill="${stale(n) ? '#B54708' : '#667085'}">${stale(n) ? 'The original flow has changed since this copy was made · right-click the frame to refresh it' : `Copy of the ${esc(n.src.origin === 'proposed' ? 'proposed' : 'configured')} state flow · changes here stay on this board`}</text>` : n.src && n.src.kind === 'image' ? `<text x="${n.x + 16}" y="${n.y + 44}" font-size="11.5" fill="#667085">Read from an image by AI · check the dashed parts</text>` : ''}`;
     else if (n.t === 'image') {
       const href = forExport ? (W.imgData && W.imgData[n.fileId]) : W.imgUrl[n.fileId];
       shape = `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="#F8F9FC" stroke="${sel ? '#1570EF' : '#D0D5DD'}" stroke-width="${sel ? 2.5 : 1}"/>${href ? `<image href="${esc(href)}" x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" preserveAspectRatio="xMidYMid meet" opacity="${n.dim ? .45 : 1}"/>` : `<text x="${n.x + n.w / 2}" y="${n.y + n.h / 2}" text-anchor="middle" font-size="13" fill="#667085">Reference image</text>`}<text x="${n.x}" y="${n.y - 8}" font-size="11.5" fill="#667085">Reference image (original upload)</text>`;
@@ -109,32 +127,72 @@
     }
     return `<g class="wb-n" data-id="${id}">${shape}${label}${!forExport && sel && !ro() ? handle(n) : ''}</g>`;
   }
+  function stale(n) { if (!n.src || n.src.kind !== 'flow' || !n.src.sig) return false; const f = F.flowModel && F.flowModel(n.src.flowId); return !!f && flowSig(f) !== n.src.sig; }
   const handle = n => `<rect class="wb-h" data-h="${esc(n.id)}" x="${n.x + n.w - 6}" y="${n.y + n.h - 6}" width="12" height="12" rx="3" fill="#fff" stroke="#1570EF" stroke-width="2"/>`;
+  // What a connector stands for. Transitions copied from a flow are configuration-backed. A line the person draws between two different
+  // flows is only a drawing unless the project's relationship register (Configuration Inputs) records that link between the two modules.
+  const norm = v => String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  function flowOf(n) { if (!n) return null; if (n.ref && n.ref.flow) return n.ref.flow; const fr = n.fr && node(n.fr); return fr && fr.src && fr.src.kind === 'flow' ? fr.src.flowId : null; }
+  function moduleNames(fid) { const f = F.flowModel && F.flowModel(fid); if (!f) return []; const mv = F.moduleView ? F.moduleView(f.module) : null; return [f.module, mv && mv.label, mv && mv.displayName].filter(Boolean).map(norm); }
+  function edgeKind(e) {
+    if (e.ref && e.ref.transition) return { k: 'config', t: 'Transition copied from the state flow configuration' };
+    const fa = flowOf(node(e.from)), fb = flowOf(node(e.to)); if (!fa || !fb || fa === fb) return { k: 'drawn', t: '' };
+    const ma = moduleNames(fa), mb = moduleNames(fb); let rels = []; try { rels = I().list('cfgrel') || []; } catch (x) { }
+    const hit = rels.filter(r => { const f = norm(r.from), t = norm(r.to); return (ma.includes(f) && mb.includes(t)) || (ma.includes(t) && mb.includes(f)); });
+    const conf = hit.find(r => r.status === 'Confirmed');
+    if (conf) return { k: 'confirmed', t: 'Confirmed in the relationship register: ' + (conf.type || 'link') + (conf.trigger ? ' · ' + conf.trigger : '') };
+    if (hit.length) return { k: 'proposed', t: 'Proposed in the relationship register (not confirmed yet)' };
+    return { k: 'manual', t: 'Drawn by hand: no relationship between these modules is recorded in Configuration Inputs' };
+  }
+  const KCOL = { confirmed: '#079455', proposed: '#DC6803', manual: '#7A5AF8' };
   function edgeSvg(e, forExport) {
-    const p = edgePts(e); if (!p) return ''; const sel = !forExport && W.sel.has(e.id), conf = e.conf && e.conf !== 'detected';
-    const col = sel ? '#1570EF' : conf ? (e.conf === 'uncertain' ? '#E5197F' : '#F5A524') : '#475467';
-    let s = `<g class="wb-e" data-e="${esc(e.id)}"><path d="${p.d}" fill="none" stroke="transparent" stroke-width="14"/><path d="${p.d}" fill="none" stroke="${col}" stroke-width="${sel ? 2.4 : 1.6}"${conf ? ' stroke-dasharray="6 4"' : ''} marker-end="url(#wbArr${sel ? 'S' : ''})"/>`;
-    if (e.label) { const w = Math.min(220, 12 + e.label.length * 6.6); s += `<rect x="${p.lx - w / 2}" y="${p.ly - 10}" width="${w}" height="20" rx="6" fill="#fff" stroke="${sel ? '#1570EF' : '#EAECF0'}"/><text x="${p.lx}" y="${p.ly + 4}" text-anchor="middle" font-size="11.5" fill="#344054">${esc(e.label.length > 32 ? e.label.slice(0, 31) + '…' : e.label)}</text>`; }
+    const p = edgePts(e); if (!p) return ''; const sel = !forExport && W.sel.has(e.id), conf = e.conf && e.conf !== 'detected', K = edgeKind(e), kc = KCOL[K.k];
+    const col = sel ? '#1570EF' : conf ? (e.conf === 'uncertain' ? '#E5197F' : '#F5A524') : kc || '#475467', dashed = conf || K.k === 'manual' || K.k === 'proposed';
+    const mk = sel ? 'S' : kc ? K.k : '';
+    let s = `<g class="wb-e wb-k-${K.k}" data-e="${esc(e.id)}">${K.t && !forExport ? `<title>${esc(K.t)}</title>` : ''}<path d="${p.d}" fill="none" stroke="transparent" stroke-width="14"/><path d="${p.d}" fill="none" stroke="${col}" stroke-width="${sel ? 2.4 : kc ? 2 : 1.6}"${dashed ? ' stroke-dasharray="6 4"' : ''} stroke-linejoin="round" marker-end="url(#wbArr${mk})"/>`;
+    const tagTxt = kc ? (K.k === 'confirmed' ? 'Confirmed link' : K.k === 'proposed' ? 'Proposed link' : 'Not verified') : '';
+    if (e.label || tagTxt) { const txt = e.label ? (e.label.length > 32 ? e.label.slice(0, 31) + '…' : e.label) : ''; const w = Math.min(240, 12 + Math.max(txt.length * 6.6, tagTxt ? tagTxt.length * 6 : 0)); const h = txt && tagTxt ? 32 : 20;
+      s += `<g class="wb-el" data-el="${esc(e.id)}"><rect x="${p.lx - w / 2}" y="${p.ly - h / 2}" width="${w}" height="${h}" rx="6" fill="#fff" stroke="${sel ? '#1570EF' : kc || '#EAECF0'}"/>${txt ? `<text x="${p.lx}" y="${p.ly + (tagTxt ? -2 : 4)}" text-anchor="middle" font-size="11.5" fill="#344054">${esc(txt)}</text>` : ''}${tagTxt ? `<text x="${p.lx}" y="${p.ly + (txt ? 11 : 4)}" text-anchor="middle" font-size="9.5" font-weight="700" fill="${kc}">${tagTxt}</text>` : ''}</g>`; }
     return s + '</g>';
   }
-  const DEFS = `<defs><marker id="wbArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#475467"/></marker><marker id="wbArrS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#1570EF"/></marker>
+  const DEFS = `<defs><marker id="wbArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#475467"/></marker><marker id="wbArrS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#1570EF"/></marker>${Object.keys(KCOL).map(k => `<marker id="wbArr${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="${KCOL[k]}"/></marker>`).join('')}
     <pattern id="wbGrid" width="${GRID}" height="${GRID}" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#D0D5DD"/></pattern></defs>`;
   function worldSvg(forExport) {
     const ns = W.B.nodes, frames = ns.filter(n => n.t === 'frame'), imgs = ns.filter(n => n.t === 'image'), rest = ns.filter(n => n.t !== 'frame' && n.t !== 'image');
-    return imgs.map(n => nodeSvg(n, forExport)).join('') + frames.map(n => nodeSvg(n, forExport)).join('') + W.B.edges.map(e => edgeSvg(e, forExport)).join('') + rest.map(n => nodeSvg(n, forExport)).join('');
+    return imgs.map(n => nodeSvg(n, forExport)).join('') + frames.map(n => nodeSvg(n, forExport)).join('') + W.B.edges.map(e => edgeSvg(e, forExport)).join('') + rest.map(n => nodeSvg(n, forExport)).join('') + (forExport ? '' : endHandles());
+  }
+  // the two ends of a single selected connector, drawn above the shapes so they can always be grabbed
+  function endHandles() {
+    if (ro() || W.sel.size !== 1) return ''; const e = W.B.edges.find(x => W.sel.has(x.id)); if (!e) return ''; const p = edgePts(e); if (!p || !p.p0) return ''; const r = 6 / Math.max(.5, W.B.view.z);
+    return ['from', 'to'].map((end, i) => { const q = i ? p.p1 : p.p0; return `<circle class="wb-eh" data-eh="${end}" data-e="${esc(e.id)}" cx="${q[0]}" cy="${q[1]}" r="${r}" fill="#fff" stroke="#1570EF" stroke-width="2"><title>Drag to attach this end to another shape</title></circle>`; }).join('');
   }
   function draw() {
     const svg = document.getElementById('wbSvg'); if (!svg || !W.B) return;
     const v = W.B.view; const wr = svg.querySelector('#wbWorld'); const gr = svg.querySelector('#wbGridR');
     wr.setAttribute('transform', `translate(${v.x.toFixed(1)} ${v.y.toFixed(1)}) scale(${v.z.toFixed(4)})`);
     gr.setAttribute('visibility', W.B.grid ? 'visible' : 'hidden'); gr.setAttribute('transform', `translate(${v.x % (GRID * v.z)} ${v.y % (GRID * v.z)}) scale(${v.z})`);
-    wr.innerHTML = worldSvg(false) + (W.marquee ? `<rect x="${Math.min(W.marquee.x0, W.marquee.x1)}" y="${Math.min(W.marquee.y0, W.marquee.y1)}" width="${Math.abs(W.marquee.x1 - W.marquee.x0)}" height="${Math.abs(W.marquee.y1 - W.marquee.y0)}" fill="rgba(21,112,239,.08)" stroke="#1570EF" stroke-dasharray="4 3" pointer-events="none"/>` : '') + (W.link ? `<path d="M${W.link.x0} ${W.link.y0} L${W.link.x1} ${W.link.y1}" stroke="#1570EF" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#wbArrS)" pointer-events="none"/>` : '');
+    wr.innerHTML = worldSvg(false) + (W.marquee ? `<rect x="${Math.min(W.marquee.x0, W.marquee.x1)}" y="${Math.min(W.marquee.y0, W.marquee.y1)}" width="${Math.abs(W.marquee.x1 - W.marquee.x0)}" height="${Math.abs(W.marquee.y1 - W.marquee.y0)}" fill="rgba(21,112,239,.08)" stroke="#1570EF" stroke-dasharray="4 3" pointer-events="none"/>` : '') + (W.link ? `<path d="M${W.link.x0} ${W.link.y0} L${W.link.x1} ${W.link.y1}" stroke="#1570EF" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#wbArrS)" pointer-events="none"/>` : '') + (W.guides || []).map(g => g.x != null ? `<line class="wb-guide" x1="${g.x}" x2="${g.x}" y1="${g.a}" y2="${g.b}" stroke="#F04438" stroke-width="${1 / v.z}" stroke-dasharray="${4 / v.z} ${3 / v.z}" pointer-events="none"/>` : `<line class="wb-guide" y1="${g.y}" y2="${g.y}" x1="${g.a}" x2="${g.b}" stroke="#F04438" stroke-width="${1 / v.z}" stroke-dasharray="${4 / v.z} ${3 / v.z}" pointer-events="none"/>`).join('');
     const z = document.getElementById('wbZoom'); if (z) z.textContent = Math.round(v.z * 100) + '%';
     const sc = document.getElementById('wbSelInfo'); if (sc) sc.textContent = W.sel.size ? W.sel.size + ' selected' : '';
     document.querySelectorAll('[data-wbneed]').forEach(b => { const need = +b.getAttribute('data-wbneed'); b.disabled = ro() || W.sel.size < need; });
     const u = document.getElementById('wbUndo'), r = document.getElementById('wbRedo'); if (u) u.disabled = ro() || !W.undo.length; if (r) r.disabled = ro() || !W.redo.length;
     document.querySelectorAll('[data-wbtool]').forEach(b => b.setAttribute('aria-pressed', String(b.getAttribute('data-wbtool') === W.tool)));
     const host = document.getElementById('wbHost'); if (host) host.classList.toggle('connecting', W.tool === 'connect');
+  }
+  // during a drag the board is redrawn at most once per frame, which keeps large boards responsive
+  let raf = 0; function paint() { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; draw(); }); }
+  // alignment guides: while dragging, edges and centres of the moving selection snap to those of other shapes within a few pixels
+  function moveWithGuides(drag, dx, dy) {
+    const tol = 6 / W.B.view.z; const mv = drag.start.map(([n, x, y]) => ({ x: x + dx, y: y + dy, w: n.w, h: n.h })); const b = bbox(mv);
+    let gx = null, gy = null, bx = tol, by = tol;
+    const xs = [b.x, b.x + b.w / 2, b.x + b.w], ys = [b.y, b.y + b.h / 2, b.y + b.h];
+    drag.others.forEach(o => { if (o.t === 'frame' && b.x >= o.x && b.x + b.w <= o.x + o.w && b.y >= o.y && b.y + b.h <= o.y + o.h) return;   // the frame around you is not a guide
+      [o.x, o.x + o.w / 2, o.x + o.w].forEach(t => xs.forEach(m => { const d = Math.abs(t - m); if (d < bx) { bx = d; gx = { off: t - m, x: t, o }; } }));
+      [o.y, o.y + o.h / 2, o.y + o.h].forEach(t => ys.forEach(m => { const d = Math.abs(t - m); if (d < by) { by = d; gy = { off: t - m, y: t, o }; } })); });
+    drag.start.forEach(([n, x, y]) => { n.x = gx ? Math.round((x + dx + gx.off) * 2) / 2 : snapV(x + dx); n.y = gy ? Math.round((y + dy + gy.off) * 2) / 2 : snapV(y + dy); });
+    const nb = bbox(drag.start.map(([n]) => n)); W.guides = [];
+    if (gx) W.guides.push({ x: gx.x, a: Math.min(nb.y, gx.o.y) - 20, b: Math.max(nb.y + nb.h, gx.o.y + gx.o.h) + 20 });
+    if (gy) W.guides.push({ y: gy.y, a: Math.min(nb.x, gy.o.x) - 20, b: Math.max(nb.x + nb.w, gy.o.x + gy.o.w) + 20 });
   }
   // images on the board load through the project's file store
   function loadImages() { W.B.nodes.filter(n => n.t === 'image' && n.fileId && !W.imgUrl[n.fileId]).forEach(n => { W.imgUrl[n.fileId] = ''; V.fileBlob(n.fileId).then(b => { W.imgUrl[n.fileId] = URL.createObjectURL(b); draw(); }).catch(() => { }); }); }
@@ -155,6 +213,7 @@
         <div class="wb-grp" role="group" aria-label="Processes"><button class="btn sm primary" type="button" data-act="wbFlows"${dis}>Add State Flow</button><button class="btn sm" type="button" data-act="wbImg"${dis}>Import from image</button><button class="btn sm" type="button" data-act="wbNewFlow"${dis}>New state flow</button></div>
         <div class="wb-grp" role="group" aria-label="Arrange"><select data-change="wbAlign" aria-label="Align selected" data-wbneed="2"${dis}><option value="">Align…</option><option value="l">Left edges</option><option value="c">Centres (vertical line)</option><option value="r">Right edges</option><option value="t">Top edges</option><option value="m">Middles (horizontal line)</option><option value="b">Bottom edges</option><option value="dh">Distribute horizontally</option><option value="dv">Distribute vertically</option></select>
           <button class="btn sm" type="button" data-act="wbGroup" data-wbneed="2"${dis}>Group</button><button class="btn sm" type="button" data-act="wbUngroup" data-wbneed="1"${dis}>Ungroup</button><button class="btn sm" type="button" data-act="wbDel" data-wbneed="1"${dis}>Delete</button></div>
+        <div class="wb-grp" role="group" aria-label="Connectors"><select data-change="wbRoute" aria-label="Connector style"${dis}><option value="straight"${B.route !== 'elbow' ? ' selected' : ''}>Straight lines</option><option value="elbow"${B.route === 'elbow' ? ' selected' : ''}>Right-angle lines</option></select></div>
         <div class="wb-grp" role="group" aria-label="History">${tb('wbUndo', '', ['left', 'Undo (Ctrl+Z)'], ' id="wbUndo"')}${tb('wbRedo', '', ['right', 'Redo (Ctrl+Shift+Z)'], ' id="wbRedo"')}</div>
         <div class="wb-grp" role="group" aria-label="View"><label class="chk"><input type="checkbox" data-change="wbGridT"${B.grid ? ' checked' : ''}> Grid</label>${B.nodes.some(n => n.t === 'image') ? `<label class="chk"><input type="checkbox" data-change="wbImgT"${B.nodes.some(n => n.t === 'image' && !n.hidden) ? ' checked' : ''}> Reference images</label>` : ''}<label class="chk"><input type="checkbox" data-change="wbSnapT"${B.snap ? ' checked' : ''}> Snap</label>
           <button class="btn sm icon" type="button" data-act="wbZoomBy" data-k="0.8" aria-label="Zoom out" title="Zoom out">−</button><span class="wb-zoom" id="wbZoom">100%</span><button class="btn sm icon" type="button" data-act="wbZoomBy" data-k="1.25" aria-label="Zoom in" title="Zoom in">+</button><button class="btn sm" type="button" data-act="wbFit">Fit</button><button class="btn sm" type="button" data-act="wbReset">100%</button></div>
@@ -162,7 +221,8 @@
       </div>
       <div class="wb-host" id="wbHost" tabindex="0" aria-label="Whiteboard canvas. Drag to pan, Ctrl and scroll to zoom, double-click to add or edit text.">
         <svg id="wbSvg" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Roboto, Arial, sans-serif">${DEFS}<rect id="wbGridR" x="-10000" y="-10000" width="20000" height="20000" fill="url(#wbGrid)" pointer-events="none"/><g id="wbWorld"></g></svg>
-        <div class="wb-hint xs muted">Drag empty space to pan · Ctrl + scroll to zoom · Shift + drag to select an area · double-click to edit · Delete removes the selection</div>
+        <div class="wb-legend xs" aria-label="Connector legend"><span class="wb-mode" title="Moving, grouping or connecting here never changes a state flow. Right-click a flow and choose Edit the original state flow to change it.">Composition mode · originals unchanged</span><span><i class="lg cfg"></i>Copied transition</span><span><i class="lg ok"></i>Confirmed link</span><span><i class="lg pr"></i>Proposed link</span><span><i class="lg mn"></i>Not verified</span></div>
+        <div class="wb-hint xs muted">Right-click for more · drag space to pan · Ctrl + scroll to zoom · Shift + drag to select · double-click to edit</div>
       </div></div>`;
   }
 
@@ -173,24 +233,30 @@
 
   function mount() {
     const svg = document.getElementById('wbSvg'); if (!svg || !current()) { paintState(); return; }
-    loadImages(); draw(); paintState();
+    fitHost(); loadImages(); draw(); paintState();
     let drag = null;
     svg.addEventListener('pointerdown', ev => {
-      if (W.edit) commitEdit();
+      if (W.edit) commitEdit(); ctxClose(); if (ev.button === 2) return;   // right button: the context menu handles it
       const host = document.getElementById('wbHost'); host.focus({ preventScroll: true });
-      const p = toWorld(ev), hEl = ev.target.closest('[data-h]'), nEl = ev.target.closest('[data-id]'), eEl = ev.target.closest('[data-e]');
+      const p = toWorld(ev), hEl = ev.target.closest('[data-h]'), nEl = ev.target.closest('[data-id]'), eEl = ev.target.closest('[data-e]'), ehEl = ev.target.closest('[data-eh]'), elEl = ev.target.closest('[data-el]');
       svg.setPointerCapture(ev.pointerId);
       if (hEl && !ro()) { const n = node(hEl.getAttribute('data-h')); pushUndo(); drag = { kind: 'resize', n, x: p.x, y: p.y, w: n.w, h: n.h }; return; }
+      if (ehEl && !ro()) { const e = W.B.edges.find(x => x.id === ehEl.getAttribute('data-e')); const end = ehEl.getAttribute('data-eh'); const fixed = node(end === 'from' ? e.to : e.from);
+        drag = { kind: 'relink', e, end }; W.link = end === 'to' ? { x0: fixed.x + fixed.w / 2, y0: fixed.y + fixed.h / 2, x1: p.x, y1: p.y } : { x0: p.x, y0: p.y, x1: fixed.x + fixed.w / 2, y1: fixed.y + fixed.h / 2, rev: true }; draw(); return; }
+      if (elEl && !ro() && W.sel.has(elEl.getAttribute('data-el'))) { const e = W.B.edges.find(x => x.id === elEl.getAttribute('data-el')); const lo = e.lo || { x: 0, y: 0 }; drag = { kind: 'label', e, x: p.x, y: p.y, lx: lo.x, ly: lo.y, moved: false }; return; }
       if (nEl) {
         const id = nEl.getAttribute('data-id');
         if (W.tool === 'connect' && !ro()) { const n = node(id); drag = { kind: 'link', from: id }; W.link = { x0: n.x + n.w / 2, y0: n.y + n.h / 2, x1: p.x, y1: p.y }; return; }
-        if (ev.shiftKey) { if (W.sel.has(id)) groupOf(id).forEach(x => W.sel.delete(x)); else selectWithGroups([id]); }
+        // Miro-style groups: the first click selects the group; clicking a member of the already-selected group (without dragging) selects just that member
+        const grp = groupOf(id); let drill = null;
+        if (ev.shiftKey) { if (W.sel.has(id)) grp.forEach(x => W.sel.delete(x)); else selectWithGroups([id]); }
         else if (!W.sel.has(id)) { W.sel.clear(); selectWithGroups([id]); }
+        else if (grp.length > 1 && W.sel.size === grp.length && grp.every(x => W.sel.has(x))) drill = id;
         draw(); if (ro()) return;
         const moving = [...W.sel].map(node).filter(Boolean);
         // a frame carries what sits inside it
         moving.filter(n => n.t === 'frame').forEach(fr => W.B.nodes.forEach(m => { if (m !== fr && !W.sel.has(m.id) && m.x >= fr.x && m.y >= fr.y && m.x + m.w <= fr.x + fr.w && m.y + m.h <= fr.y + fr.h) moving.push(m); }));
-        drag = { kind: 'move', x: p.x, y: p.y, start: moving.map(n => [n, n.x, n.y]), moved: false }; return;
+        const ids = new Set(moving.map(n => n.id)); drag = { kind: 'move', x: p.x, y: p.y, start: moving.map(n => [n, n.x, n.y]), moved: false, drill, others: W.B.nodes.filter(n => !ids.has(n.id) && !n.hidden && n.t !== 'image').slice(0, 1500) }; return;
       }
       if (eEl) { const id = eEl.getAttribute('data-e'); if (!ev.shiftKey) W.sel.clear(); W.sel.add(id); draw(); return; }
       if (ev.shiftKey) { W.marquee = { x0: p.x, y0: p.y, x1: p.x, y1: p.y }; drag = { kind: 'marquee' }; return; }
@@ -199,22 +265,29 @@
     });
     svg.addEventListener('pointermove', ev => {
       if (!drag) return; const p = toWorld(ev);
-      if (drag.kind === 'pan') { W.B.view.x = drag.vx + ev.clientX - drag.sx; W.B.view.y = drag.vy + ev.clientY - drag.sy; draw(); }
+      if (drag.kind === 'pan') { W.B.view.x = drag.vx + ev.clientX - drag.sx; W.B.view.y = drag.vy + ev.clientY - drag.sy; paint(); }
       else if (drag.kind === 'move') { const dx = p.x - drag.x, dy = p.y - drag.y; if (!drag.moved && Math.hypot(dx, dy) < 3) return; if (!drag.moved) { pushUndo(); drag.moved = true; }
-        drag.start.forEach(([n, x, y]) => { n.x = snapV(x + dx); n.y = snapV(y + dy); }); draw(); }
-      else if (drag.kind === 'resize') { drag.n.w = Math.max(40, snapV(drag.w + p.x - drag.x)); drag.n.h = Math.max(24, snapV(drag.h + p.y - drag.y)); draw(); }
-      else if (drag.kind === 'marquee') { W.marquee.x1 = p.x; W.marquee.y1 = p.y; draw(); }
-      else if (drag.kind === 'link') { W.link.x1 = p.x; W.link.y1 = p.y; draw(); }
+        moveWithGuides(drag, dx, dy); paint(); }
+      else if (drag.kind === 'label') { if (!drag.moved) { pushUndo(); drag.moved = true; } drag.e.lo = { x: Math.round(drag.lx + p.x - drag.x), y: Math.round(drag.ly + p.y - drag.y) }; paint(); }
+      else if (drag.kind === 'relink') { if (W.link.rev) { W.link.x0 = p.x; W.link.y0 = p.y; } else { W.link.x1 = p.x; W.link.y1 = p.y; } paint(); }
+      else if (drag.kind === 'resize') { drag.n.w = Math.max(40, snapV(drag.w + p.x - drag.x)); drag.n.h = Math.max(24, snapV(drag.h + p.y - drag.y)); paint(); }
+      else if (drag.kind === 'marquee') { W.marquee.x1 = p.x; W.marquee.y1 = p.y; paint(); }
+      else if (drag.kind === 'link') { W.link.x1 = p.x; W.link.y1 = p.y; paint(); }
     });
     const end = ev => {
       if (!drag) return; const d = drag; drag = null; document.getElementById('wbHost').classList.remove('panning');
       if (d.kind === 'pan') { changedView(); }
-      else if (d.kind === 'move' && d.moved) changed();
+      else if (d.kind === 'move' && d.moved) { W.guides = null; changed(); draw(); }
+      else if (d.kind === 'move' && d.drill) { W.sel = new Set([d.drill]); draw(); }
+      else if (d.kind === 'label') { if (d.moved) changed(); draw(); }
+      else if (d.kind === 'relink') { const hit = document.elementFromPoint(ev.clientX, ev.clientY), t = hit && hit.closest && hit.closest('#wbSvg [data-id]'); W.link = null;
+        if (t && t.getAttribute('data-id') !== d.e[d.end]) { const to = node(t.getAttribute('data-id')); if (to && to.t !== 'frame') { pushUndo(); d.e[d.end] = to.id; if (d.e.ref) { delete d.e.ref; V.toast('This connector was a copied transition; it is now a drawing only. The state flow itself is unchanged.', 5000); } changed(); } }
+        draw(); }
       else if (d.kind === 'resize') changed();
       else if (d.kind === 'marquee') { const m = W.marquee, x0 = Math.min(m.x0, m.x1), x1 = Math.max(m.x0, m.x1), y0 = Math.min(m.y0, m.y1), y1 = Math.max(m.y0, m.y1);
-        selectWithGroups(W.B.nodes.filter(n => !n.hidden && n.x >= x0 && n.y >= y0 && n.x + n.w <= x1 && n.y + n.h <= y1).map(n => n.id)); W.marquee = null; draw(); }
+        selectWithGroups(W.B.nodes.filter(n => !n.hidden && n.t !== 'image' && n.x >= x0 && n.y >= y0 && n.x + n.w <= x1 && n.y + n.h <= y1).map(n => n.id)); W.marquee = null; draw(); }
       else if (d.kind === 'link') { const hit = document.elementFromPoint(ev.clientX, ev.clientY), t = hit && hit.closest && hit.closest('#wbSvg [data-id]'); W.link = null;   // pointer capture makes ev.target the canvas, so look up what is under the pointer
-        if (t) { const to = t.getAttribute('data-id'); if (!W.B.edges.some(e => e.from === d.from && e.to === to)) { pushUndo(); W.B.edges.push({ id: uid('e'), from: d.from, to, label: '' }); changed(); } }
+        if (t) { const to = t.getAttribute('data-id'); if (!W.B.edges.some(e => e.from === d.from && e.to === to)) { pushUndo(); const ne = { id: uid('e'), from: d.from, to, label: '' }; W.B.edges.push(ne); W.sel = new Set([ne.id]); changed(); const k = edgeKind(ne).k; if (k === 'manual') V.toast('Connected. This link between two flows is a drawing only: it is not recorded in Configuration Inputs.', 5000); else if (k === 'confirmed') V.toast('Connected. The relationship register confirms this link.'); } }
         draw(); }
     };
     svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
@@ -230,8 +303,12 @@
       else { v.x -= ev.deltaX; v.y -= ev.deltaY; }
       draw(); changedView();
     }, { passive: false });
+    svg.addEventListener('contextmenu', ev => { ev.preventDefault(); ctxOpen(ev); });
     document.getElementById('wbHost').addEventListener('keydown', key);
   }
+  // the canvas fills the rest of the window, whatever the toolbar wraps to, so the whole board is visible without scrolling the page
+  function fitHost() { const h = document.getElementById('wbHost'); if (!h) return; const top = h.getBoundingClientRect().top + (document.querySelector('.main') || { scrollTop: 0 }).scrollTop; h.style.height = Math.max(420, Math.round(window.innerHeight - top - 16)) + 'px'; }
+  if (typeof window !== 'undefined') window.addEventListener('resize', () => { if (document.getElementById('wbHost')) { fitHost(); draw(); } });
   let viewT = 0; function changedView() { clearTimeout(viewT); viewT = setTimeout(() => { if (!ro()) { W.dirty = true; save(); } }, 1500); }
   function key(ev) {
     if (W.edit || /^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName) && ev.target.id !== 'wbHost') return;
@@ -241,8 +318,12 @@
     if (mod && k === 'a') { ev.preventDefault(); W.B.nodes.forEach(n => { if (!n.hidden) W.sel.add(n.id); }); draw(); return; }
     if (mod && k === 'g') { ev.preventDefault(); ev.shiftKey ? ACT.wbUngroup() : ACT.wbGroup(); return; }
     if (mod && k === 'd') { ev.preventDefault(); duplicate(); return; }
+    if (mod && k === 'c') { ev.preventDefault(); copySel(); return; }
+    if (mod && k === 'x') { ev.preventDefault(); if (copySel()) ACT.wbDel(); return; }
+    if (mod && k === 'v') { ev.preventDefault(); paste(); return; }
+    if (k === 'f' && !mod && ev.shiftKey) { ev.preventDefault(); fit(); return; }
     if ((ev.key === 'Delete' || ev.key === 'Backspace') && W.sel.size) { ev.preventDefault(); ACT.wbDel(); return; }
-    if (ev.key === 'Escape') { W.sel.clear(); W.tool = 'select'; W.link = null; draw(); return; }
+    if (ev.key === 'Escape') { ctxClose(); W.sel.clear(); W.tool = 'select'; W.link = null; draw(); return; }
     const step = ev.shiftKey ? GRID : (W.B.snap ? GRID : 2), dir = { arrowleft: [-step, 0], arrowright: [step, 0], arrowup: [0, -step], arrowdown: [0, step] }[k];
     if (dir && W.sel.size && !ro()) { ev.preventDefault(); pushUndo(); W.sel.forEach(id => { const n = node(id); if (n) { n.x += dir[0]; n.y += dir[1]; } }); changed(); draw(); }
   }
@@ -281,22 +362,101 @@
     const z = clamp(Math.min((r.width - 80) / b.w, (r.height - 80) / b.h), MINZ, 1.5); W.B.view = { z, x: (r.width - b.w * z) / 2 - b.x * z, y: (r.height - b.h * z) / 2 - b.y * z }; draw(); changedView();
   }
 
+  // ---------- clipboard (inside the app; copies between boards of the same session) ----------
+  function withFrameContents(ids) { const out = new Set(ids); [...ids].map(node).filter(n => n && n.t === 'frame').forEach(fr => W.B.nodes.forEach(m => { if (m.x >= fr.x && m.y >= fr.y && m.x + m.w <= fr.x + fr.w && m.y + m.h <= fr.y + fr.h) out.add(m.id); })); return out; }
+  function copySel() { const ids = withFrameContents([...W.sel].filter(id => node(id))); if (!ids.size) return false;
+    W.clip = JSON.stringify({ nodes: W.B.nodes.filter(n => ids.has(n.id)), edges: W.B.edges.filter(e => ids.has(e.from) && ids.has(e.to)) }); W.pasteN = 0; V.toast(ids.size + ' item' + (ids.size === 1 ? '' : 's') + ' copied'); return true; }
+  function paste(at) { if (ro() || !W.clip) return; const c = JSON.parse(W.clip); if (!c.nodes.length) return; pushUndo(); W.pasteN = (W.pasteN || 0) + 1;
+    const b = bbox(c.nodes), off = at ? { x: snapV(at.x - b.x), y: snapV(at.y - b.y) } : { x: GRID * 2 * W.pasteN, y: GRID * 2 * W.pasteN }; const map = {}, gmap = {};
+    c.nodes.forEach(n => { map[n.id] = n.t === 'frame' ? uid('n') : uid('n'); });
+    c.nodes.forEach(n => { const m = Object.assign({}, n, { id: map[n.id], x: n.x + off.x, y: n.y + off.y }); if (m.g) m.g = gmap[m.g] = gmap[m.g] || uid('g'); if (m.fr) m.fr = map[m.fr]; W.B.nodes.push(m); });
+    c.edges.forEach(e => W.B.edges.push(Object.assign({}, e, { id: uid('e'), from: map[e.from], to: map[e.to], fr: e.fr ? map[e.fr] : undefined })));
+    W.sel = new Set(c.nodes.map(n => map[n.id])); changed(); draw(); }
+
+  // ---------- context menu ----------
+  if (typeof document !== 'undefined') document.addEventListener('pointerdown', e => { if (!e.target.closest || !e.target.closest('#wbCtx')) { const m = document.getElementById('wbCtx'); if (m) m.remove(); } }, true);
+  function ctxClose() { const m = document.getElementById('wbCtx'); if (m) m.remove(); }
+  function ctxOpen(ev) {
+    ctxClose(); const host = document.getElementById('wbHost'); if (!host) return; const p = toWorld(ev); W.ctxAt = p;
+    const nEl = ev.target.closest('[data-id]'), eEl = ev.target.closest('[data-e]'); const items = [];
+    if (nEl) { const id = nEl.getAttribute('data-id'); if (!W.sel.has(id)) { W.sel.clear(); selectWithGroups([id]); draw(); } }
+    else if (eEl) { const id = eEl.getAttribute('data-e'); if (!W.sel.has(id)) { W.sel = new Set([id]); draw(); } }
+    const selN = [...W.sel].map(node).filter(Boolean), selE = W.B.edges.filter(e => W.sel.has(e.id)), one = selN.length === 1 ? selN[0] : null, w = !ro();
+    if (selN.length) {
+      if (one && one.t !== 'image' && w) items.push(['edit', 'Edit text', 'Enter']);
+      items.push(['copy', 'Copy', 'Ctrl+C']); if (w) items.push(['dup', 'Duplicate', 'Ctrl+D']);
+      if (w && selN.length > 1) items.push(['group', 'Group', 'Ctrl+G']); if (w && selN.some(n => n.g)) items.push(['ungroup', 'Ungroup', 'Ctrl+Shift+G']);
+      if (w) { items.push(['front', 'Bring to front', '']); items.push(['back', 'Send to back', '']); }
+      const fid = one ? (one.t === 'frame' && one.src && one.src.kind === 'flow' ? one.src.flowId : one.ref && one.ref.flow) : null;
+      if (fid && F.flowModel(fid)) { items.push(['-']); items.push(['orig', 'Edit the original state flow…', '']); if (one.t === 'frame' && w) items.push(['refresh', stale(one) ? 'Refresh this copy (the flow changed)' : 'Refresh this copy from the flow', '']); }
+      if (w) { items.push(['-']); items.push(['del', 'Delete', 'Del']); }
+    } else if (selE.length) {
+      if (w && selE.length === 1) items.push(['label', 'Edit label', '']);
+      if (w) { items.push(['straight', 'Straight line', '']); items.push(['elbow', 'Right-angle line', '']); if (selE.some(e => e.lo)) items.push(['relabel', 'Put the label back in the middle', '']); }
+      const e1 = selE[0], K = e1 ? edgeKind(e1) : null; if (K && K.t) items.push(['info', K.t, '', true]);
+      if (w) { items.push(['-']); items.push(['del', 'Delete', 'Del']); }
+    } else {
+      if (w && W.clip) items.push(['pasteHere', 'Paste here', 'Ctrl+V']);
+      if (w) { items.push(['note', 'Add a sticky note here', '']); items.push(['flows', 'Add State Flow…', '']); }
+      items.push(['fit', 'Fit to screen', 'Shift+F']); items.push(['all', 'Select all', 'Ctrl+A']);
+    }
+    if (!items.length) return;
+    const r = host.getBoundingClientRect(); const m = document.createElement('div'); m.id = 'wbCtx'; m.className = 'wb-ctx'; m.setAttribute('role', 'menu');
+    m.innerHTML = items.map(([k, l, sc, info]) => k === '-' ? '<hr>' : info ? `<div class="wb-ctx-info">${esc(l)}</div>` : `<button type="button" role="menuitem" data-act="wbCtx" data-k="${k}"><span>${esc(l)}</span>${sc ? `<kbd>${esc(sc)}</kbd>` : ''}</button>`).join('');
+    host.appendChild(m); const x = Math.min(ev.clientX - r.left, r.width - m.offsetWidth - 6), y = Math.min(ev.clientY - r.top, r.height - m.offsetHeight - 6); m.style.left = Math.max(4, x) + 'px'; m.style.top = Math.max(4, y) + 'px';
+    const first = m.querySelector('button'); if (first) first.focus();
+    m.addEventListener('keydown', e2 => { const bs = [...m.querySelectorAll('button')], i = bs.indexOf(document.activeElement); if (e2.key === 'ArrowDown') { e2.preventDefault(); (bs[i + 1] || bs[0]).focus(); } else if (e2.key === 'ArrowUp') { e2.preventDefault(); (bs[i - 1] || bs[bs.length - 1]).focus(); } else if (e2.key === 'Escape') { e2.preventDefault(); ctxClose(); host.focus(); } e2.stopPropagation(); });
+  }
+  ACT.wbCtx = a => { const k = a.getAttribute('data-k'); ctxClose(); const selN = [...W.sel].map(node).filter(Boolean), selE = W.B.edges.filter(e => W.sel.has(e.id));
+    if (k === 'edit' && selN[0]) startEdit(selN[0]); else if (k === 'label' && selE[0]) startEdit(selE[0], true);
+    else if (k === 'copy') copySel(); else if (k === 'dup') duplicate(); else if (k === 'group') ACT.wbGroup(); else if (k === 'ungroup') ACT.wbUngroup(); else if (k === 'del') ACT.wbDel();
+    else if (k === 'front' || k === 'back') { pushUndo(); const ids = W.sel; const mv = W.B.nodes.filter(n => ids.has(n.id)), rest = W.B.nodes.filter(n => !ids.has(n.id)); W.B.nodes = k === 'front' ? rest.concat(mv) : mv.concat(rest); changed(); draw(); }
+    else if (k === 'straight' || k === 'elbow') { pushUndo(); selE.forEach(e => { e.route = k; }); W.B.route = k; changed(); draw(); }
+    else if (k === 'relabel') { pushUndo(); selE.forEach(e => { delete e.lo; }); changed(); draw(); }
+    else if (k === 'pasteHere') paste(W.ctxAt); else if (k === 'note') addNode('note', W.ctxAt.x - 80, W.ctxAt.y - 55, true); else if (k === 'flows') ACT.wbFlows();
+    else if (k === 'fit') fit(); else if (k === 'all') { W.B.nodes.forEach(n => { if (!n.hidden) W.sel.add(n.id); }); draw(); }
+    else if (k === 'orig') openOriginal(selN[0]); else if (k === 'refresh') refreshCopy(selN[0]);
+    const h = document.getElementById('wbHost'); if (h) h.focus({ preventScroll: true }); };
+  // Operational editing stays in the State Flow Builder: it is permission-checked, records workshop proposals and keeps their history.
+  async function openOriginal(n) {
+    const fid = n.t === 'frame' ? n.src.flowId : n.ref.flow; const f = F.flowModel(fid); if (!f) return;
+    if (S.readonly) { V.toast('You have read-only access: the original flow can be viewed but not changed.', 5000); }
+    const ok = await V.confirmDialog('Edit the original state flow', `This leaves the whiteboard and opens "${f.name || 'the flow'}" in the State Flow Builder. Changes made there are workshop proposals for this project, saved with its change history; they do not change the live Facilio configuration. Nothing on this board changes the flow.`, 'Open State Flow Builder');
+    if (!ok) return; await save(); S.ui.flowZoom = null; V.go('flow', { flowId: fid, selected: n.ref && (n.ref.state || n.ref.transition) || null });
+  }
+  // Bring a copy up to date with its flow: states that still exist keep the place you gave them; new ones are added; ones that were removed go,
+  // together with their copied transitions. Lines, notes and shapes you drew stay where both ends still exist.
+  function refreshCopy(fr) {
+    if (ro() || !fr || !fr.src || fr.src.kind !== 'flow') return; const f = F.flowModel(fr.src.flowId); if (!f) return; pushUndo();
+    const p = placeFlow(fr.src.flowId, fr.x, fr.y); const old = W.B.nodes.filter(n => n.t === 'state' && n.ref && n.ref.flow === fr.src.flowId && (n.fr === fr.id || (n.x >= fr.x && n.y >= fr.y && n.x + n.w <= fr.x + fr.w && n.y + n.h <= fr.y + fr.h)));
+    const byState = {}; old.forEach(n => { byState[n.ref.state] = n; }); const idMap = {}; let added = 0, kept = 0;
+    p.nodes.filter(n => n.t === 'state').forEach(nn => { const o = byState[nn.ref.state]; if (o) { o.text = nn.text; o.stype = nn.stype; o.fr = fr.id; idMap[nn.id] = o.id; delete byState[nn.ref.state]; kept++; } else { nn.fr = fr.id; W.B.nodes.push(nn); idMap[nn.id] = nn.id; added++; } });
+    const gone = new Set(Object.values(byState).map(n => n.id));
+    W.B.nodes = W.B.nodes.filter(n => !gone.has(n.id));
+    const keptIds = new Set(Object.values(idMap)); W.B.edges = W.B.edges.filter(e => !(e.ref && e.ref.transition && e.ref.flow === fr.src.flowId && keptIds.has(e.from) && keptIds.has(e.to)) && !gone.has(e.from) && !gone.has(e.to));
+    p.edges.forEach(e => W.B.edges.push(Object.assign(e, { from: idMap[e.from], to: idMap[e.to], fr: fr.id })));
+    const inside = W.B.nodes.filter(n => n.fr === fr.id); if (inside.length) { const b = bbox(inside); fr.w = Math.max(fr.w, snapV(b.x + b.w - fr.x + 50)); fr.h = Math.max(fr.h, snapV(b.y + b.h - fr.y + 40)); }
+    fr.src.sig = flowSig(f); changed(); draw(); V.toast(`Copy refreshed: ${kept} state${kept === 1 ? '' : 's'} kept in place, ${added} added, ${gone.size} removed`, 5000);
+  }
+
   // ---------- state flows from the project ----------
   function flowCatalogue() {
     const out = []; (F.allFlows ? F.allFlows() : []).forEach(fid => { const f = F.flowModel(fid); if (!f || !f.states || !f.states.length) return; const mv = F.moduleView ? F.moduleView(f.module) : null;
       out.push({ id: fid, name: f.name || fid, module: f.module, moduleLabel: (mv && (mv.label || mv.displayName)) || f.module, states: f.states.length, transitions: (f.transitions || []).filter(t => !t.removed).length, enabled: f.enabled !== false, origin: f.origin || 'existing' }); });
     return out.sort((a, b) => String(a.moduleLabel).localeCompare(String(b.moduleLabel)) || String(a.name).localeCompare(String(b.name)));
   }
+  // a short fingerprint of a flow's states and transitions, to tell when the original changed after it was copied to the board
+  function flowSig(f) { const t = (f.states || []).map(x => x.id + ':' + (x.label || x.name || '')).join('|') + '#' + (f.transitions || []).filter(x => !x.removed).map(x => x.id + ':' + x.from + '>' + x.to + ':' + (x.name || '')).join('|'); let h = 5381; for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) >>> 0; return h.toString(36) + '.' + (f.states || []).length; }
   // a flow becomes a frame with its states and transitions inside; positions come from the flow's own layout
   function placeFlow(fid, ox, oy) {
-    const f = F.flowModel(fid); if (!f) return null; const G = D.flowGeometry(f, { full: true }), g = uid('g');
+    const f = F.flowModel(fid); if (!f) return null; const G = D.flowGeometry(f, { full: true }), fr = uid('n');
     const xs = f.states.map(s => G && G.st && G.st[s.id] ? G.st[s.id].x : s.x || 0), ys = f.states.map(s => s.y || 0);
     const minx = Math.min(...f.states.map(s => s.x || 0)), miny = Math.min(...ys); void xs;
     const ids = {}; const nodes = f.states.map(s => { const b = D.boxSize(s.label, true); const id = uid('n'); ids[s.id] = id;
-      const typ = s.typeCode === 2 ? 'closed' : s.typeCode === 6 ? 'skipped' : 'open'; return { id, t: 'state', stype: typ, g, x: snapV(ox + 30 + ((s.x || 0) - minx) * .9), y: snapV(oy + 70 + ((s.y || 0) - miny) * .9), w: Math.max(120, b.w), h: 40, text: s.label || s.name || 'State', ref: { flow: fid, state: s.id } }; });
-    const edges = (f.transitions || []).filter(t => !t.removed && ids[t.from] && ids[t.to]).map(t => ({ id: uid('e'), from: ids[t.from], to: ids[t.to], label: t.name || '', ref: { flow: fid, transition: t.id } }));
+      const typ = s.typeCode === 2 ? 'closed' : s.typeCode === 6 ? 'skipped' : 'open'; return { id, t: 'state', stype: typ, fr, x: snapV(ox + 30 + ((s.x || 0) - minx) * .9), y: snapV(oy + 70 + ((s.y || 0) - miny) * .9), w: Math.max(120, b.w), h: 40, text: s.label || s.name || 'State', ref: { flow: fid, state: s.id } }; });
+    const edges = (f.transitions || []).filter(t => !t.removed && ids[t.from] && ids[t.to]).map(t => ({ id: uid('e'), from: ids[t.from], to: ids[t.to], label: t.name || '', fr, route: 'elbow', ref: { flow: fid, transition: t.id } }));
     const bb = bbox(nodes); const mv = F.moduleView ? F.moduleView(f.module) : null;
-    const frame = { id: uid('n'), t: 'frame', g, x: snapV(ox), y: snapV(oy), w: snapV(bb.x + bb.w - ox + 50), h: snapV(bb.y + bb.h - oy + 40), text: `${(mv && (mv.label || mv.displayName)) || f.module} · ${f.name || 'State flow'}`, src: { kind: 'flow', flowId: fid, module: f.module, origin: f.origin || 'existing' } };
+    const frame = { id: fr, t: 'frame', x: snapV(ox), y: snapV(oy), w: snapV(bb.x + bb.w - ox + 50), h: snapV(bb.y + bb.h - oy + 40), text: `${(mv && (mv.label || mv.displayName)) || f.module} · ${f.name || 'State flow'}`, src: { kind: 'flow', flowId: fid, module: f.module, origin: f.origin || 'existing', sig: flowSig(f) } };
     return { nodes: [frame].concat(nodes), edges, frame };
   }
   ACT.wbFlows = () => {
@@ -316,7 +476,7 @@
     if (!W.pick || !W.pick.size) return; pushUndo(); const c = centre(); let x = snapV(c.x - 200), y = snapV(c.y - 150); const added = [];
     const right = W.B.nodes.length ? bbox(W.B.nodes.filter(n => !n.hidden)) : null; if (right && right.w) { x = snapV(right.x + right.w + 80); y = snapV(right.y); }
     [...W.pick].forEach(fid => { const p = placeFlow(fid, x, y); if (!p) return; W.B.nodes.push(...p.nodes); W.B.edges.push(...p.edges); added.push(p.frame.id); y = snapV(p.frame.y + p.frame.h + 60); });
-    V.closeDrawer(); W.sel = new Set(); selectWithGroups(added); changed(); fit(); V.toast(added.length + ' flow' + (added.length === 1 ? '' : 's') + ' added as editable copies');
+    V.closeDrawer(); W.sel = new Set(added); changed(); fit(); V.toast(added.length + ' flow' + (added.length === 1 ? '' : 's') + ' added as editable copies');
   };
   ACT.wbNewFlow = () => { if (V.ACT.newFlowDlg) { V.go('flow'); setTimeout(() => V.ACT.newFlowDlg({ getAttribute: () => null }), 150); } else V.go('flow'); };
 
@@ -375,17 +535,17 @@
     let mx = Math.max(0, ...Object.values(lvl)); nodes.forEach(n => { if (lvl[n.id] === undefined) lvl[n.id] = ++mx; });
     const rows = {}; pushUndo(); const c0 = centre(); const right = W.B.nodes.length ? bbox(W.B.nodes.filter(n => !n.hidden)) : null;
     let ox = right && right.w ? snapV(right.x + right.w + 80) : snapV(c0.x - 300), oy = right && right.w ? snapV(right.y) : snapV(c0.y - 160);
-    const grp = uid('g'), map = {}, added = [];
+    const grp = uid('n'), map = {}, added = [];
     let imgW = 0;
     if (keep) { try { const rec = await API.uploadFile(S.project.id, W.imp.file, 'flow_image', { board: W.B.id }); const s = Math.min(1, 420 / W.imp.w); imgW = Math.round(W.imp.w * s);
       W.B.nodes.push({ id: uid('n'), t: 'image', fileId: rec.id, x: ox, y: oy + 60, w: imgW, h: Math.round(W.imp.h * s), dim: false }); } catch (e) { V.toast('The diagram was added, but the original image could not be kept: ' + e.message, 6000, true); } }
     const fx = ox + (imgW ? imgW + 60 : 0);
     nodes.forEach(n => { const L = lvl[n.id]; const r = rows[L] = (rows[L] || 0) + 1; const t = n.kind === 'decision' ? 'diamond' : n.kind === 'start' || n.kind === 'end' ? 'ellipse' : n.kind === 'process' ? 'rect' : 'state';
       const id = uid('n'); map[n.id] = id; const w = t === 'diamond' ? 160 : Math.max(130, Math.min(240, 18 + n.label.length * 7.4));
-      W.B.nodes.push({ id, t, stype: 'open', g: grp, x: snapV(fx + 30 + L * 240), y: snapV(oy + 70 + (r - 1) * 110), w, h: t === 'diamond' ? 90 : t === 'ellipse' ? 56 : 44, text: n.label, conf: n.confidence }); added.push(id); });
+      W.B.nodes.push({ id, t, stype: 'open', fr: grp, x: snapV(fx + 30 + L * 240), y: snapV(oy + 70 + (r - 1) * 110), w, h: t === 'diamond' ? 90 : t === 'ellipse' ? 56 : 44, text: n.label, conf: n.confidence }); added.push(id); });
     edges.forEach(e => W.B.edges.push({ id: uid('e'), from: map[e.from], to: map[e.to], label: e.label, conf: e.confidence }));
-    const bb = bbox(added.map(node)); const frame = { id: uid('n'), t: 'frame', g: grp, x: snapV(fx), y: snapV(oy), w: snapV(bb.x + bb.w - fx + 50), h: snapV(bb.y + bb.h - oy + 40), text: g.title || 'Imported flow', src: { kind: 'image' } };
-    W.B.nodes.push(frame); W.sel = new Set(); selectWithGroups([frame.id]); V.closeDrawer(); changed(); fit(); loadImages();
+    const bb = bbox(added.map(node)); const frame = { id: grp, t: 'frame', x: snapV(fx), y: snapV(oy), w: snapV(bb.x + bb.w - fx + 50), h: snapV(bb.y + bb.h - oy + 40), text: g.title || 'Imported flow', src: { kind: 'image' } };
+    W.B.nodes.push(frame); W.sel = new Set([frame.id]); V.closeDrawer(); changed(); fit(); loadImages();
     V.toast(`${nodes.length} steps and ${edges.length} connections added. Dashed outlines mark parts to double-check.`, 6000);
   });
 
@@ -436,6 +596,7 @@
     changed(); draw(); };
   ACT.wbGridT = el => { W.B.grid = el.checked; W.dirty = true; draw(); save(); };
   ACT.wbImgT = el => { W.B.nodes.forEach(n => { if (n.t === 'image') n.hidden = !el.checked; }); W.sel = new Set([...W.sel].filter(id => { const n = node(id); return n && !n.hidden; })); changed(); draw(); };   // the reference layer can be hidden without deleting it
+  ACT.wbRoute = el => { if (ro()) return; pushUndo(); W.B.route = el.value === 'elbow' ? 'elbow' : 'straight'; W.B.edges.forEach(e => { if (W.sel.has(e.id)) e.route = W.B.route; }); changed(); draw(); };
   ACT.wbSnapT = el => { W.B.snap = el.checked; W.dirty = true; save(); };
   ACT.wbZoomBy = a => { const svg = document.getElementById('wbSvg'), r = svg.getBoundingClientRect(), v = W.B.view, z = clamp(v.z * Number(a.getAttribute('data-k')), MINZ, MAXZ), mx = r.width / 2, my = r.height / 2; v.x = mx - (mx - v.x) * z / v.z; v.y = my - (my - v.y) * z / v.z; v.z = z; draw(); changedView(); };
   ACT.wbFit = () => fit();
