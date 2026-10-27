@@ -78,7 +78,7 @@
 
   // ---------- dashboard tabs: Overview, Delivery, Customers, Team & usage, Quality & records ----------
   const DTABS = [['overview', 'Overview'], ['delivery', 'Delivery'], ['customers', 'Customers'], ['usage', 'Team & usage'], ['quality', 'Quality & records']];
-  const HC = { healthy: '#14a8a8', attention: '#e08a00', stale: '#9aa6bd', live: '#1570EF', archived: '#9aa6bd' };
+  const HC = { healthy: '#079455', attention: '#F79009', stale: '#98A2B3', live: '#1D1A5E', archived: '#98A2B3' };
   const cap = t => { t = String(t || '').replace(/_/g, ' ').trim(); return t ? t[0].toUpperCase() + t.slice(1) : '—'; };
   const dcard = (t, sub, body, cls) => `<div class="adm-card ${cls || ''}"><div class="adm-h"><h3>${esc(t)}</h3>${sub ? `<span class="muted xs">${sub}</span>` : ''}</div>${body}</div>`;
   const empty = t => `<div class="adm-empty">${esc(t)}</div>`;
@@ -98,7 +98,7 @@
   function dashboard() {
     const bar = V.range.bar('adm', A.rg, { note: A.rg.period === 'all' ? '' : 'Projects with activity or created in this period' });
     const tabs = `<div class="dtabs" role="tablist" aria-label="Dashboard views">${DTABS.map(([k, l]) => `<button role="tab" aria-selected="${A.dash === k}" class="dtab${A.dash === k ? ' on' : ''}" data-act="admTab" data-t="${k}">${l}</button>`).join('')}</div>`;
-    return bar + tabs + dashBody();
+    return tabs + dashBody();
   }
 
   function deliveryDash() {
@@ -107,7 +107,7 @@
     const open = act.filter(p => p.stage < 6 && p.endDate); const past = open.filter(p => daysLeft(p) < 0), soon = open.filter(p => daysLeft(p) >= 0 && daysLeft(p) <= 30);
     const idleAvg = Math.round(act.reduce((a, p) => a + idleOf(p), 0) / act.length); const live = act.filter(p => p.stage === 6).length;
     const byStage = [0, 1, 2, 3, 4, 5, 6].map(i => { const g = act.filter(p => p.stage === i); return { v: g.length ? Math.round(g.reduce((a, p) => a + idleOf(p), 0) / g.length) : 0, l: STAGES[i].replace('Not started', 'New'), tip: g.length + ' project' + (g.length === 1 ? '' : 's') }; });
-    const brd = {}; act.forEach(p => { const k = p.brdStatus || 'draft'; brd[k] = (brd[k] || 0) + 1; }); const BC = ['#9aa6bd', '#e08a00', '#14a8a8', '#1570EF', '#6b4ee6'];
+    const brd = {}; act.forEach(p => { const k = p.brdStatus || 'draft'; brd[k] = (brd[k] || 0) + 1; }); const BC = ['#98A2B3', '#F79009', '#1570EF', '#079455', '#1D1A5E'];
     const sorted = act.slice().sort((a, b) => b.stage - a.stage || a.name.localeCompare(b.name));
     const tl = open.slice().sort((a, b) => daysLeft(a) - daysLeft(b)).slice(0, 8);
     return `<div class="kpi-grid k5">
@@ -180,7 +180,7 @@
     const i = A.ins; if (!i) return dcard('Quality & records', '', '<div class="adm-empty">Loading…</div>');
     const act = A.data.projects.filter(p => !p.archived); const n = Math.max(1, act.length);
     const st = {}, pr = {}; i.feedback.byKind.forEach(r => { st[r.status] = (st[r.status] || 0) + r.n; pr[r.priority] = (pr[r.priority] || 0) + r.n; });
-    const SC = { open: '#e08a00', answered: '#14a8a8', resolved: '#1570EF', closed: '#9aa6bd' }; const PC = { urgent: '#d81b60', high: '#e08a00', normal: '#1570EF', low: '#9aa6bd' };
+    const SC = { open: '#F79009', answered: '#1570EF', resolved: '#079455', closed: '#98A2B3' }; const PC = { urgent: '#D92D20', high: '#F79009', normal: '#1570EF', low: '#98A2B3' };
     const kindRows = k => { const m = {}; i.items.filter(r => r.kind === k).forEach(r => { m[r.st || 'No status'] = (m[r.st || 'No status'] || 0) + r.n; }); return Object.keys(m).map(x => ({ l: cap(x), v: m[x], c: /done|closed|signed|resolved|passed|mitigated/i.test(x) ? '#14a8a8' : /block|fail|open|risk/i.test(x) ? '#e08a00' : '#1570EF' })).sort((a, b) => b.v - a.v); };
     const tot = f => act.filter(f).length; const pct = c => Math.round(c / n * 100);
     const comp = [['Modules in scope', tot(p => p.modulesInScope > 0)], ['Workshop sessions planned', tot(p => p.sessions.total > 0)], ['Requirements captured', tot(p => p.requirements > 0)], ['State flows proposed', tot(p => p.flows > 0)], ['BRD exported', tot(p => p.brdExports > 0)], ['Customer access on', tot(p => p.customerAccessEnabled)]].map(([l, c]) => ({ l, v: pct(c), sub: c + ' of ' + act.length, c: '#6b4ee6' }));
@@ -260,8 +260,8 @@
     const body = A.sec === 'dashboard' ? dashboard() : A.sec === 'projects' ? projects() : A.sec === 'users' ? users() : A.sec === 'access' ? access() : A.sec === 'ai' ? aiPanel() : activity();
     return `<div class="adm-wrap"><aside class="adm-nav" aria-label="Admin sections"><div class="adm-me"><div class="pav lg" style="background:${tone(d.me.email || 'x')}">${esc(initials(d.me.name || d.me.email))}</div><div><b>${esc(d.me.name || 'Admin')}</b><div class="xs muted">${esc(d.me.email || '')}</div>${rchip(d.me.role)}</div></div>
       ${nav.map(([k, l, p]) => `<button class="adm-ni${A.sec === k ? ' on' : ''}" data-act="admSec" data-s="${k}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${p}"/></svg><span>${l}</span>${k === 'projects' ? `<em>${d.kpis.active}</em>` : ''}</button>`).join('')}
-      <div class="adm-nav-foot"><button class="btn sm" data-act="admPw">Change my password</button><button class="btn sm" data-act="toProjects">Back to projects</button></div></aside>
-      <main class="adm-main"><div class="adm-hero"><div class="adm-hero-t"><p class="adm-crumb">Admin console</p><h1>${title}</h1><p class="adm-sub">${esc(sub)}</p><div class="adm-hero-a">${d.me.role === 'sub' ? chip('r-sub', 'Read-only access') : ''}<button class="hm-btn ghost" type="button" data-act="admRefresh"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>Refresh</button></div></div><div class="adm-hero-art" aria-hidden="true"><div class="hm-lt" data-lottie="${{ dashboard: 'scene-dash', projects: 'scene-building', users: 'scene-workshop', access: 'scene-connect', ai: 'scene-dash', activity: 'scene-guide' }[A.sec] || 'scene-dash'}"></div></div></div>${body}</main></div>`;
+      <div class="adm-nav-foot">${root.FWBRun ? '' : '<button class="btn sm" data-act="admPw">Change my password</button>'}<button class="btn sm" data-act="toProjects">Back to projects</button></div></aside>
+      <main class="adm-main"><div class="adm-hero"><div class="adm-hero-t"><p class="adm-crumb">Admin console</p><h1>${title}</h1><p class="adm-sub">${esc(sub)}</p><div class="adm-hero-a">${d.me.role === 'sub' ? chip('r-sub', 'Read-only access') : ''}${A.sec === 'dashboard' ? V.range.bar('adm', A.rg, {}) : ''}<button class="hm-btn ghost" type="button" data-act="admRefresh"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>Refresh</button></div></div><div class="adm-hero-art" aria-hidden="true"><div class="hm-lt" data-lottie="${{ dashboard: 'scene-dash', projects: 'scene-building', users: 'scene-workshop', access: 'scene-connect', ai: 'scene-dash', activity: 'scene-guide' }[A.sec] || 'scene-dash'}"></div></div></div>${body}</main></div>`;
   };
 
   // ---------- AI providers and Outlook ----------

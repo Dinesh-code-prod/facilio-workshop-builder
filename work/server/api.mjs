@@ -23,7 +23,7 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
     report_attachment: { ext: ['pdf', 'xlsx', 'xls', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'csv', 'txt'], max: 20e6 },
     signoff_evidence: { ext: ['pdf', 'png', 'jpg', 'jpeg', 'msg', 'eml', 'docx'], max: 20e6 }, brd_signed: { ext: ['docx', 'pdf', 'json'], max: MAX_FILE }
   };
-  // record kinds the team can store (same list as the Netlify server's portal rules; customer-only rules come with the customer page)
+  // record kinds the team can store (customer-only rules come with the customer page)
   const KINDS = ['action', 'decision', 'raid', 'signoff', 'cr', 'onb', 'onbsub', 'onbfile', 'onbws', 'owner', 'agreement', 'minutes', 'checklist', 'build', 'uat', 'digest', 'ctrcore', 'ctrfees', 'ctrlegal', 'ctrrates', 'scope', 'modbrief', 'fieldreq', 'note', 'ctrwatch', 'usecase', 'discrepancy', 'brdrev', 'ai', 'hc', 'hcrep', 'ho', 'close', 'rep', 'kpi', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'lesson', 'tkt', 'res', 'ugv', 'ugu'];
   const DOC_SECTIONS = /^[a-z][a-z0-9_]{1,40}$/, ITEM_ID_RE = /^[A-Za-z0-9_-]{1,80}$/, GR_KEY = /^[a-z]{2,8}:[afbxw]:[A-Za-z0-9_-]{1,64}$/;
 

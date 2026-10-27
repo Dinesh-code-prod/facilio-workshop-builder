@@ -1,4 +1,4 @@
-/* Opening page (before sign-in): the cinematic introduction in src/cinema.js, shown once per browser session.
+/* Opening page (before sign-in), shown once per browser session: the customer journey (src/roadintro.js) on customer invite links, the tree intro (src/treeintro.js) for everyone else.
    Skipped for automated browsers (tests) unless ?intro=1, and for ?nointro. It only covers the app and never blocks it. */
 (function (root) {
   'use strict';
@@ -8,5 +8,8 @@
   if (!forced && (seen || automated || /[?&]nointro\b|#\/welcome/.test(root.location.search + root.location.hash))) return;
   try { sessionStorage.setItem('fwb_intro', '1'); } catch (e) { }
   // the rest of the app is bundled after this file, so start on the next tick
-  setTimeout(() => { try { const V = root.FWBViews; if (!V || !V.cinema) return; V.cinema({ aud: 'public', cta: 'Get started', wipe: true }).then(() => { }); } catch (e) { } }, 0);
+  // customer invite links (#/c/<project>) open on the customer journey (src/roadintro.js), which rises away to reveal the customer sign-in;
+  // every other visit (the Facilio team) keeps the tree intro and its liquid reveal
+  const customer = /#\/c\/[A-Za-z0-9_-]+/.test(root.location.hash);
+  setTimeout(() => { try { const V = root.FWBViews; if (!V) return; if (customer && V.roadIntro) { V.roadIntro({ logo: 'brand/logo-white.png' }).then(() => { }); return; } if (!V.cinema) return; V.cinema({ aud: 'public', cta: 'Get started', liquid: true }).then(() => { }); } catch (e) { } }, 0);
 })(typeof window !== 'undefined' ? window : globalThis);
