@@ -309,6 +309,12 @@
 
   // ---------- logos ----------
   async function logoData() { const d = BD(); const out = {}; for (const k of ['facilio', 'customer']) { const l = d.logos[k]; if (!l || !l.fileId) continue; try { const im = await root.FWBViews.docImage(await root.FWBViews.fileBlob(l.fileId)); const url = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(new Blob([im.u8], { type: im.mime })); }); out[k] = { u8: im.u8, url, w: im.w, h: im.h, type: im.type }; } catch (e) { console.warn('logo', k, e); } } return out; }
+  // the size chosen for a figure on the BRD page: 'fit' (page width, default), 'large' (a full page) or 'land' (a landscape page of its own)
+  const figSize = id => { const f = (BD().figSize || {})[id]; return ['large', 'land'].includes(f) ? f : 'fit'; };
+  // render at about three pixels per printed pixel so a diagram stays sharp when enlarged in Word (within the browser's canvas limits)
+  // and how much of that space it fills (30 to 100 %, default 100), set with − / + or by dragging the corner on the BRD page
+  const figPct = id => { const v = Number((BD().figPct || {})[id]); return Number.isFinite(v) && v >= 30 && v <= 100 ? Math.round(v) : 100; };
+  const figScale = (svg, targetPx) => { const m = String(svg).match(/viewBox="-?[\d.]+ -?[\d.]+ (\d+(?:\.\d+)?)/); const w = m ? +m[1] : 800; return Math.max(2, Math.min(6, 3 * targetPx / w)); };
   const fit = (w, h, mw, mh) => { const s = Math.min(mw / w, mh / h, 1); return { width: Math.max(1, Math.round(w * s)), height: Math.max(1, Math.round(h * s)) }; };
 
   // ================= DOCX =================
@@ -316,7 +322,7 @@
     progress = progress || (() => { }); const X = await root.FWBViews.loadDocx();
     const P = profile(); const PW = P.page.w - P.page.left - P.page.right; const pr = S.ws.project; const font = P.font || 'Calibri';
     const { Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, AlignmentType, ImageRun, PageBreak, TableOfContents, Header, Footer, PageNumber, LevelFormat, VerticalAlign } = X;
-    const docm = document_(); const logos = await logoData(); const body = [];
+    const docm = document_(); const logos = await logoData(); let body = []; const sections = [];
     const BORDER = { style: BorderStyle.SINGLE, size: 4, color: '000000' }; const borders = { top: BORDER, bottom: BORDER, left: BORDER, right: BORDER, insideHorizontal: BORDER, insideVertical: BORDER };
     const NOB = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' }; const noBorders = { top: NOB, bottom: NOB, left: NOB, right: NOB, insideHorizontal: NOB, insideVertical: NOB };
     const run = (t, o) => new TextRun(Object.assign({ text: String(t == null ? '' : t), font }, o || {}));
@@ -336,7 +342,12 @@
       if (b.t === 'h') { body.push(new Paragraph({ heading: [HeadingLevel.HEADING_1, HeadingLevel.HEADING_2, HeadingLevel.HEADING_3][b.lvl - 1], pageBreakBefore: !!b.pageBreakBefore, keepNext: true, children: [run(b.text)] })); continue; }
       if (b.t === 'p') { const kids = b.label ? [run(b.label, { bold: true }), run(' ' + b.text)] : [run(b.text, { bold: !!b.bold, italics: b.style === 'caption', size: b.style === 'caption' ? 17 : undefined, color: b.style === 'caption' ? '607796' : undefined })]; body.push(new Paragraph({ children: kids, spacing: { after: 120, line: 276 } })); continue; }
       if (b.t === 'ul') { b.items.forEach(x => body.push(new Paragraph({ numbering: { reference: 'bul', level: 0 }, spacing: { after: 60 }, children: [run(x)] }))); continue; }
-      if (b.t === 'figure') { try { const png = await D.svgToPng(b.svg, 2); const maxW = Math.min(620, Math.round(PW / 15)), maxH = 820; const s = fit(png.width, png.height, maxW, maxH); body.push(new Paragraph({ alignment: AlignmentType.CENTER, keepNext: true, children: [new ImageRun({ type: 'png', data: png.data, transformation: s })] })); } catch (e) { body.push(new Paragraph({ children: [run('[Diagram could not be rendered]')] })); } if (b.caption) body.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [run(b.caption, { italics: true, size: 18, color: '607796' })] })); continue; }
+      if (b.t === 'figure') { const sz = figSize(b.id); const land = sz === 'land';
+        // page area in pixels (twips / 15); a landscape figure gets a page of its own turned sideways, a large one a full portrait page
+        const k = figPct(b.id) / 100; let maxW = land ? Math.round((P.page.h - P.page.left - P.page.right) / 15) : Math.round(PW / 15), maxH = land ? Math.round((P.page.w - P.page.top - P.page.bottom) / 15) - 70 : sz === 'large' ? Math.round((P.page.h - P.page.top - P.page.bottom) / 15) - 90 : 820;
+        maxW = Math.round(maxW * k); maxH = Math.round(maxH * k); if (land) { sections.push(body); body = []; }
+        try { const png = await D.svgToPng(b.svg, figScale(b.svg, maxW)); const s = fit(png.width, png.height, maxW, maxH); if (sz === 'large') body.push(new Paragraph({ children: [new PageBreak()] })); body.push(new Paragraph({ alignment: AlignmentType.CENTER, keepNext: true, children: [new ImageRun({ type: 'png', data: png.data, transformation: s })] })); } catch (e) { body.push(new Paragraph({ children: [run('[Diagram could not be rendered]')] })); } if (b.caption) body.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [run(b.caption, { italics: true, size: 18, color: '607796' })] }));
+        if (land) { sections.push({ land: true, kids: body }); body = []; } continue; }
       if (b.t === 'table') { const tot = b.widths.reduce((a, c) => a + c, 0); const w = b.widths.map(x => Math.round(x * PW / tot));
         const hdr = new TableRow({ tableHeader: true, cantSplit: true, children: b.headers.map((h, k) => new TableCell({ width: { size: w[k], type: WidthType.DXA }, shading: { type: ShadingType.CLEAR, color: 'auto', fill: P.tableHeaderFill }, verticalAlign: VerticalAlign.CENTER, margins: { top: 50, bottom: 50, left: 80, right: 80 }, children: cellParas(h, { bold: true, keepNext: true, color: P.tableHeaderColor, align: AlignmentType.CENTER }) })) });
         const trs = b.rows.map(r => r && r.sub ? new TableRow({ cantSplit: true, children: [new TableCell({ columnSpan: b.headers.length, width: { size: PW, type: WidthType.DXA }, shading: { type: ShadingType.CLEAR, color: 'auto', fill: 'F2F2F2' }, margins: { top: 40, bottom: 40, left: 80, right: 80 }, children: cellParas(r.sub, { bold: true, keepNext: true }) })] }) : new TableRow({ cantSplit: true, children: r.map((c, k) => new TableCell({ width: { size: w[k], type: WidthType.DXA }, margins: { top: 40, bottom: 40, left: 80, right: 80 }, children: cellParas(c) })) }));
@@ -347,10 +358,10 @@
     const doc = new X.Document({ creator: pr.consultant || 'Facilio', title: (pr.client || 'Customer') + ' ' + titleOf(), description: 'Generated by Facilio Delivery Studio', features: { updateFields: true },
       styles: { default: { document: { run: { font, size: P.bodySize || 21 } } }, paragraphStyles: [1, 2, 3].map(n => ({ id: 'Heading' + n, name: 'Heading ' + n, basedOn: 'Normal', next: 'Normal', quickFormat: true, run: { size: P['h' + n].size, bold: true, color: P['h' + n].color, font: P['h' + n].font || font }, paragraph: { spacing: { before: 240 - n * 20, after: 160 - n * 20 }, outlineLevel: n - 1, keepNext: true } })) },
       numbering: { config: [{ reference: 'bul', levels: [{ level: 0, format: LevelFormat.BULLET, text: '•', alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 540, hanging: 270 } } } }] }] },
-      sections: [{ properties: { page: { size: { width: P.page.w, height: P.page.h }, margin: { top: P.page.top, right: P.page.right, bottom: P.page.bottom, left: P.page.left } }, titlePage: true },
+      sections: sections.concat([body]).map(x => Array.isArray(x) ? { kids: x } : x).filter((x, i) => i === 0 || x.kids.length).map((x, i) => ({ properties: { page: { size: x.land ? { width: P.page.h, height: P.page.w, orientation: X.PageOrientation ? X.PageOrientation.LANDSCAPE : 'landscape' } : { width: P.page.w, height: P.page.h }, margin: { top: P.page.top, right: P.page.right, bottom: P.page.bottom, left: P.page.left } }, titlePage: i === 0 },
         headers: { default: new Header({ children: hdrKids }), first: new Header({ children: [new Paragraph('')] }) },
         footers: { default: new Footer({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [run((P.footerText ? P.footerText + '  ·  ' : '') + 'Confidential  ·  Page ', { size: 16, color: '7B91B0' }), new TextRun({ children: [PageNumber.CURRENT], size: 16, color: '7B91B0', font }), run(' of ', { size: 16, color: '7B91B0' }), new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 16, color: '7B91B0', font })] })] }), first: new Footer({ children: [new Paragraph('')] }) },
-        children: body }] });
+        children: x.kids })) });
     progress('Packaging the Word document…'); return { blob: await X.Packer.toBlob(doc), stats: docm.stats };
   }
 
@@ -370,7 +381,9 @@
       if (b.t === 'h') { content.push({ text: b.text, style: 'h' + b.lvl, tocItem: b.lvl <= 2, tocMargin: [b.lvl === 2 ? 14 : 0, 0, 0, 0], pageBreak: b.pageBreakBefore ? 'before' : undefined, headlineLevel: b.lvl }); continue; }
       if (b.t === 'p') { content.push(b.label ? { text: [{ text: b.label + ' ', bold: true }, b.text], margin: [0, 0, 0, 6] } : { text: b.text, bold: !!b.bold, italics: b.style === 'caption', fontSize: b.style === 'caption' ? 8.5 : undefined, color: b.style === 'caption' ? '#607796' : undefined, margin: [0, 0, 0, 6] }); continue; }
       if (b.t === 'ul') { content.push({ ul: b.items, margin: [0, 0, 0, 6] }); continue; }
-      if (b.t === 'figure') { try { const png = await D.svgToPng(b.svg, 2); const s = fit(png.width, png.height, PWpt, 640); content.push({ image: png.dataUrl, width: s.width, height: s.height, alignment: 'center', margin: [0, 4, 0, 2] }); } catch (e) { content.push({ text: '[Diagram could not be rendered]' }); } if (b.caption) content.push({ text: b.caption, italics: true, fontSize: 8.5, color: '#607796', alignment: 'center', margin: [0, 0, 0, 8] }); continue; }
+      if (b.t === 'figure') { const sz = figSize(b.id); const land = sz === 'land'; const k = figPct(b.id) / 100; const mw = (land ? pt(P.page.h - P.page.left - P.page.right) : PWpt) * k, mh = (land ? pt(P.page.w - P.page.top - P.page.bottom) - 50 : sz === 'large' ? pt(P.page.h - P.page.top - P.page.bottom) - 60 : 640) * k;
+        try { const png = await D.svgToPng(b.svg, figScale(b.svg, mw * 4 / 3)); const s = fit(png.width, png.height, mw, mh); content.push(Object.assign({ image: png.dataUrl, width: s.width, height: s.height, alignment: 'center', margin: [0, 4, 0, 2] }, land ? { pageBreak: 'before', pageOrientation: 'landscape' } : sz === 'large' ? { pageBreak: 'before' } : {})); } catch (e) { content.push({ text: '[Diagram could not be rendered]' }); } if (b.caption) content.push({ text: b.caption, italics: true, fontSize: 8.5, color: '#607796', alignment: 'center', margin: [0, 0, 0, 8] });
+        if (land) content.push({ text: '', pageBreak: 'before', pageOrientation: 'portrait' }); continue; }
       if (b.t === 'table') { const tot = b.widths.reduce((a, x) => a + x, 0); const widths = b.widths.map(x => x / tot * PWpt - 4); const n = b.headers.length;
         const body = [b.headers.map(h => ({ text: h, bold: true, fillColor: c(P.tableHeaderFill), color: c(P.tableHeaderColor), alignment: 'center', fontSize: 8.5 }))];
         b.rows.forEach(r => { if (r && r.sub) body.push([Object.assign({ text: r.sub, bold: true, fillColor: '#F2F2F2', colSpan: n, fontSize: 8.5 })].concat(Array(n - 1).fill({}))); else body.push(r.map(cellNode)); });
@@ -386,5 +399,5 @@
     return { blob, stats: docm.stats };
   }
 
-  root.FWBBrd = { titleOf, TYPES, INTEG_RE, list: brdList, activeId, activeRec, state: BD, scopeSet, slug, buildBlocks, applyEdits, document: document_, toDocx, toPdf, profileTemplate, profile, SECTIONS, sectionOrder, DEFAULT_PROFILE, cellText, logoData, fit };
+  root.FWBBrd = { figSize, figPct, titleOf, TYPES, INTEG_RE, list: brdList, activeId, activeRec, state: BD, scopeSet, slug, buildBlocks, applyEdits, document: document_, toDocx, toPdf, profileTemplate, profile, SECTIONS, sectionOrder, DEFAULT_PROFILE, cellText, logoData, fit };
 })(typeof window !== 'undefined' ? window : globalThis);
