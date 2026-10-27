@@ -1,0 +1,32 @@
+// BRD diagrams: each figure (state flows, combined flows) can be exported at page width, on a full page, or on a landscape page of its own,
+// and is rendered sharp enough to enlarge in Word.
+import { chromium } from 'playwright'; import fs from 'node:fs'; import JSZip from 'jszip';
+const BASE = process.argv[2] || 'http://localhost:4175'; const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }); const p = await ctx.newPage();
+const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
+await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');
+const pid = await p.evaluate(async () => { const pid = (await (await fetch('/api/fn/api/projects', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Figure size', customer: 'Al Moallam Group' }) })).json()).project.id;
+  const nodes = [{ id: 'fa', t: 'frame', x: 0, y: 0, w: 900, h: 500, text: 'Work Order flow' }, { id: 'a1', t: 'state', x: 40, y: 80, w: 140, h: 44, text: 'Submitted' }, { id: 'a2', t: 'state', x: 300, y: 80, w: 140, h: 44, text: 'Assigned' }, { id: 'fb', t: 'frame', x: 1000, y: 0, w: 900, h: 500, text: 'Asset flow' }, { id: 'b1', t: 'state', x: 1060, y: 80, w: 140, h: 44, text: 'Active' }, { id: 'b2', t: 'state', x: 1400, y: 300, w: 140, h: 44, text: 'Retired' }];
+  await fetch(`/api/fn/api/projects/${pid}/items/cflow/cfx`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ data: { name: 'Work order to asset', nodes, edges: [{ id: 'e1', from: 'a1', to: 'a2', label: 'Assign' }, { id: 'e2', from: 'a2', to: 'b1', label: 'Create asset' }, { id: 'e3', from: 'b1', to: 'b2', label: 'Retire' }], inBrd: true } }) }); return pid; });
+await p.goto(BASE + `/#/p/${pid}/brd`); await p.reload(); await p.waitForSelector('.paper-scroll', { timeout: 30000 }); await p.waitForTimeout(1500);
+const fig = p.locator('figure', { hasText: 'Work order to asset' }); check('each BRD diagram has a size choice for the export', (await fig.locator('[data-act="brdFigSize"]').count()) === 3);
+await fig.locator('[data-v="land"]').click(); await p.waitForTimeout(400); check('choosing "Landscape page" is shown on the page', await fig.locator('.fig-note').count() === 1 && /Landscape/.test(await fig.locator('.fig-size button.on').textContent()));
+const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 150000 }), p.click('[data-act="brdDocx"]').then(() => p.waitForSelector('.dialog [data-r="1"]', { timeout: 4000 }).then(() => p.click('.dialog [data-r="1"]'), () => { }))]);
+await dl.saveAs('tests/ui/out/figsize.docx'); const zip = await JSZip.loadAsync(fs.readFileSync(await dl.path())); const xml = await zip.file('word/document.xml').async('string');
+const land = (xml.match(/w:orient="landscape"/g) || []).length; check('Word: the diagram sits on a landscape page of its own, the rest stays portrait', land === 1 && (xml.match(/<w:sectPr/g) || []).length >= 3, land + ' landscape, ' + (xml.match(/<w:sectPr/g) || []).length + ' sections');
+const ext = [...xml.matchAll(/<wp:extent cx="(\d+)" cy="(\d+)"/g)].map(m => [+m[1] / 9525, +m[2] / 9525]); const big = Math.max(...ext.map(e => e[0])); check('Word: the landscape diagram is wider than a portrait page allows', big > 900, Math.round(big) + ' px wide');
+const media = Object.keys(zip.files).filter(f => /^word\/media\/.*\.png$/.test(f)); let maxPx = 0; for (const f of media) { const u = await zip.file(f).async('uint8array'); const w = (u[16] << 24) | (u[17] << 16) | (u[18] << 8) | u[19]; maxPx = Math.max(maxPx, w); }
+check('Word: diagrams are rendered sharp enough to enlarge (about 3× print resolution)', maxPx >= 2800, maxPx + ' px');
+await fig.locator('[data-v="large"]').click(); await p.waitForTimeout(300);
+const [dl2] = await Promise.all([p.waitForEvent('download', { timeout: 150000 }), p.click('[data-act="brdPdf"]').then(() => p.waitForSelector('.dialog [data-r="1"]', { timeout: 4000 }).then(() => p.click('.dialog [data-r="1"]'), () => { }))]);
+const pdf = fs.readFileSync(await dl2.path()); check('PDF exports with the full-page diagram', pdf.slice(0, 4).toString() === '%PDF' && pdf.length > 20000, Math.round(pdf.length / 1024) + ' KB');
+await fig.locator('[data-v="fit"]').click(); await p.waitForTimeout(300);
+const ratio = () => fig.evaluate(f => Math.round(100 * f.querySelector('.fig-svg').getBoundingClientRect().width / f.clientWidth));
+await fig.locator('[data-act="brdFigPct"][data-d="-10"]').click(); await p.waitForTimeout(250); await fig.locator('[data-act="brdFigPct"][data-d="-10"]').click(); await p.waitForTimeout(300);
+check('− makes the diagram smaller on the BRD page', (await fig.locator('.fig-pct').textContent()) === '80%' && Math.abs((await ratio()) - 80) <= 2, await ratio() + '%');
+const gb = await fig.locator('.fig-grip').boundingBox(); await p.mouse.move(gb.x + 8, gb.y + 8); await p.mouse.down(); await p.mouse.move(gb.x - 120, gb.y + 8, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(400);
+const afterDrag = parseInt(await fig.locator('.fig-pct').textContent()); check('dragging the corner resizes it', afterDrag < 80 && afterDrag >= 30, afterDrag + '%');
+const [dl3] = await Promise.all([p.waitForEvent('download', { timeout: 150000 }), p.click('[data-act="brdDocx"]').then(() => p.waitForSelector('.dialog [data-r="1"]', { timeout: 4000 }).then(() => p.click('.dialog [data-r="1"]'), () => { }))]);
+const x3 = await (await JSZip.loadAsync(fs.readFileSync(await dl3.path()))).file('word/document.xml').async('string'); const ws3 = [...x3.matchAll(/<wp:extent cx="(\d+)"/g)].map(m => +m[1] / 9525).filter(w => w > 150); const want = 642 * afterDrag / 100; const w3 = ws3.reduce((a, w) => Math.abs(w - want) < Math.abs(a - want) ? w : a, 0);
+check('the smaller size is used in the Word export', Math.abs(w3 - want) <= 6, Math.round(w3) + ' px wide');
+await fig.locator('[data-act="brdFigPct"][data-d="10"]').click(); await p.waitForTimeout(250); check('+ makes it bigger again', parseInt(await fig.locator('.fig-pct').textContent()) === afterDrag + 10); await p.waitForTimeout(300); check('back to page width', await fig.locator('.fig-note').count() === 0);
+check('no page errors', !errs.length, errs.slice(0, 2).join(' | ')); console.log(`${res.filter(Boolean).length}/${res.length} checks passed`); await b.close();

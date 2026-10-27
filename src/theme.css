@@ -544,3 +544,18 @@ body .cf-row { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 
 body .cf-pv { border: 1px solid #e6e7f1; border-radius: 10px; background: #fff; overflow: hidden; display: grid; place-items: center; max-height: 160px; }
 body .cf-pv svg { max-width: 100%; height: auto; max-height: 158px; }
 @media (max-width: 860px) { body .wb-rail { top: 12px; transform: none; flex-direction: row; flex-wrap: wrap; max-width: calc(100% - 24px); } body .wb-rsep { width: 1px; height: auto; margin: 6px 4px; } body .wb-shapes { left: 12px; top: 64px; } body .cf-row { grid-template-columns: 1fr; } }
+
+/* ---------- BRD diagrams: choose how big each one is in the export ---------- */
+body .paper figure { position: relative; }
+body .paper .fig-size { display: flex; align-items: center; gap: 3px; flex-wrap: wrap; justify-content: center; margin: 0 auto 8px; padding: 3px; width: fit-content; background: #f1f2f8; border-radius: 9px; font-family: var(--th-sans, inherit); }
+body .paper .fig-size span { font-size: 11.5px; color: #6b6f8e; padding: 0 8px 0 6px; }
+body .paper .fig-size button { border: 0; background: none; border-radius: 7px; padding: 5px 10px; font-size: 12px; font-weight: 600; color: #4a4e6a; cursor: pointer; }
+body .paper .fig-size button:hover { color: #1d1f3d; } body .paper .fig-size button.on { background: #fff; color: var(--th-violet); box-shadow: 0 1px 3px rgba(29, 31, 61, .12); }
+body .paper figure.fig-large .fig-svg, body .paper figure.fig-land .fig-svg { outline: 2px dashed color-mix(in srgb, var(--th-violet) 35%, transparent); outline-offset: 4px; border-radius: 4px; }
+body .paper .fig-note { text-align: center; font-size: 11.5px; color: var(--th-violet); margin-top: 4px; }
+@media print { body .paper .fig-size, body .paper .fig-note { display: none !important; } }
+body .paper .fig-svg { position: relative; margin: 0 auto; max-width: 100%; }
+body .paper .fig-svg svg { width: 100% !important; height: auto !important; max-width: 100%; }
+body .paper .fig-sep { width: 1px; height: 18px; background: #dcdeea; margin: 0 4px; } body .paper .fig-pct { font: 600 12px var(--th-mono, monospace); color: #4a4e6a; min-width: 40px; text-align: center; }
+body .paper .fig-grip { position: absolute; right: -6px; bottom: -6px; width: 16px; height: 16px; border-radius: 4px; background: #fff; border: 2px solid var(--th-violet); cursor: nwse-resize; box-shadow: 0 1px 3px rgba(29, 31, 61, .2); }
+@media print { body .paper .fig-grip { display: none !important; } }
