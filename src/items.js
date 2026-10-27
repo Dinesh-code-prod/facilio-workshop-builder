@@ -13,7 +13,7 @@
     hiddenModules: []
   };
   V.CTL_DEFAULT = CTL_DEFAULT;
-  V.controls = () => { const d = (S.docs.portal_controls && S.docs.portal_controls.data) || {}; return { tabs: Object.assign({}, CTL_DEFAULT.tabs, d.tabs || {}), show: Object.assign({}, CTL_DEFAULT.show, d.show || {}), allow: Object.assign({}, CTL_DEFAULT.allow, d.allow || {}), hiddenModules: d.hiddenModules || [], phase: d.phase || {}, steps: d.steps || null }; };
+  V.controls = () => { const d = (S.docs.portal_controls && S.docs.portal_controls.data) || {}; return { tabs: Object.assign({}, CTL_DEFAULT.tabs, d.tabs || {}), show: Object.assign({}, CTL_DEFAULT.show, d.show || {}), allow: Object.assign({}, CTL_DEFAULT.allow, d.allow || {}), hiddenModules: d.hiddenModules || [], phase: d.phase || {}, steps: d.steps || null, cadence: d.cadence || '' }; };
   V.isCustomer = () => S.user && S.user.kind === 'customer';
   // customer side: may the customer do X (always true for the implementation team unless read-only)
   V.custAllow = k => !V.isCustomer() ? !S.readonly : V.controls().allow[k] !== false;

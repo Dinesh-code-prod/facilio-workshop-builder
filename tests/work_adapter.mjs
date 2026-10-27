@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import handler from '../work/server/api.mjs';
 const store = new Map(), files = new Map(); let maxVal = 0, calls = 0;
 const KEY = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
-const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' }, teams: { async send(m) { (globalThis.__SENT = globalThis.__SENT || []).push(m); return { delivered: 1, failed: 0 }; } }, fetch: async (cred, url, o) => { if (!globalThis.__GRAPH) { const e = new Error('credential not granted'); throw e; } return globalThis.__GRAPH(cred, url, o); }, secrets: { async get(k) { if (k === 'support_mailbox') return 'support@facilio.com'; if (k === 'ai_master_key') return globalThis.__MASTER || '';  if (k === 'anthropic_api_key' && globalThis.__KEY) return globalThis.__KEY; if (k === 'teams_notify' && globalThis.__TEAMS) return globalThis.__TEAMS; throw new Error('no secret'); } }, llm: async ({ messages }) => (globalThis.__LLMLEN = messages[1].content.length, globalThis.__LLMFAIL ? (() => { throw new Error('down'); })() : { model: 'mock', choices: [{ message: { content: '## Draft\nBased on [S1]. ' + messages[1].content.slice(0, 20) } }] }),
+const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' }, teams: { async send(m) { (globalThis.__SENT = globalThis.__SENT || []).push(m); return { delivered: 1, failed: 0 }; } }, fetch: async (cred, url, o) => { if (!globalThis.__GRAPH) { const e = new Error('credential not granted'); throw e; } return globalThis.__GRAPH(cred, url, o); }, secrets: { async get(k) { if (k === 'support_mailbox') return 'support@facilio.com'; if (k === 'ai_master_key') return globalThis.__MASTER || '';  if (k === 'anthropic_api_key' && globalThis.__KEY) return globalThis.__KEY; if (k === 'teams_notify' && globalThis.__TEAMS) return globalThis.__TEAMS; throw new Error('no secret'); } }, llm: async ({ messages }) => (globalThis.__LLMLEN = messages[1].content.length, (globalThis.__LLMCALLS = (globalThis.__LLMCALLS || 0) + 1), globalThis.__LLMFAIL || (globalThis.__LLMFAILRE && globalThis.__LLMFAILRE.test(messages[1].content)) ? (() => { throw new Error('down'); })() : globalThis.__LLMTEXT ? { model: 'mock', choices: [{ message: { content: globalThis.__LLMTEXT } }] } : { model: 'mock', choices: [{ message: { content: '## Draft\nBased on [S1]. ' + messages[1].content.slice(0, 20) } }] }),
   db: {
     async get(c, k) { calls++; const r = (store.get(c) || new Map()).get(k); return r ? { key: k, value: JSON.parse(r), updated_at: '', updated_by: '' } : null; },
     async put(c, k, v) { calls++; assert.ok(KEY.test(k), 'bad key ' + k); assert.ok(/^[A-Za-z0-9._-]{1,64}$/.test(c), 'bad collection ' + c); const t = JSON.stringify(v); maxVal = Math.max(maxVal, t.length); if (t.length > 128 * 1024) { const e = new Error('too large'); e.status = 413; throw e; } if (!store.has(c)) store.set(c, new Map()); store.get(c).set(k, t); },
@@ -513,5 +513,39 @@ await t('project Inbox: emails filed by project address, conversation and sender
   { const col = store.get('ml.' + P); const k = [...col.keys()][0]; const v = JSON.parse(col.get(k)); v.receivedAt = '2020-01-01T00:00:00Z'; col.set(k, JSON.stringify(v)); }
   r = await call(own, 'GET', `/api/projects/${P}/mail`); assert.equal(r.data.items.length, 2, 'emails older than the retention period are removed');
   await call(dinesh, 'PUT', '/api/mail/settings', { retentionDays: 0, autoTicket: true }); delete globalThis.__GRAPH;
+});
+await t('kick-off deck reading: model output rebuilt field by field, nothing invented passes, viewers cannot run it', async () => {
+  store.delete('rl'); const own = 'kick.owner@facilio.com', vw = 'kick.viewer@facilio.com';
+  let r = await call(own, 'POST', '/api/projects', { name: 'Kick Co', customer: 'K' }); const P = r.data.project.id; await call(own, 'POST', `/api/projects/${P}/members`, { email: vw, role: 'viewer' });
+  const deck = '--- Slide 2\nName | Role | Email\nDinesh R | Delivery Manager | dinesh.r@facilio.com\nPriya | Facilities Head | priya@acme.com\nWeekly status call';
+  r = await call(vw, 'POST', `/api/projects/${P}/ai/kickoff`, { text: deck }); assert.equal(r.status, 403, 'viewers cannot run it');
+  r = await call(own, 'POST', `/api/projects/${P}/ai/kickoff`, { text: 'short' }); assert.equal(r.status, 400);
+  globalThis.__LLMTEXT = 'Sure! ' + JSON.stringify({ facilioTeam: [{ name: 'Dinesh R', role: 'Delivery Manager', email: 'dinesh.r@facilio.com' }, { name: '', role: 'x' }], customerTeam: [{ name: '<img src=x onerror=alert(1)>Priya', role: 'Facilities Head', email: 'not-an-email' }],
+    cadence: 'every full moon', keyDates: [{ label: 'Go-live', date: '22/02/2027' }, { label: 'Kick-off', date: '2026-10-14' }], objectives: Array.from({ length: 30 }, (_, i) => 'Objective ' + i), nextSteps: [{ action: 'Send templates', owner: 'Facilio', due: 'soon' }], insights: 'not a list' });
+  try {
+    r = await call(own, 'POST', `/api/projects/${P}/ai/kickoff`, { text: deck, fileName: 'deck.pptx' }); assert.equal(r.status, 200); const d = r.data.data;
+    assert.equal(d.facilioTeam.length, 1, 'a person without a name is dropped'); assert.ok(!/[<>]/.test(d.customerTeam[0].name), 'markup removed'); assert.equal(d.customerTeam[0].email, '', 'invalid email dropped');
+    assert.equal(d.cadence, '', 'cadence only from the fixed list'); assert.deepEqual(d.keyDates.map(x => x.date), ['', '2026-10-14'], 'dates only in YYYY-MM-DD'); assert.equal(d.objectives.length, 12, 'lists are capped');
+    assert.equal(d.nextSteps[0].due, ''); assert.deepEqual(d.insights, [], 'wrong shapes become empty');
+    globalThis.__LLMTEXT = 'I could not read that.'; r = await call(own, 'POST', `/api/projects/${P}/ai/kickoff`, { text: deck }); assert.equal(r.status, 502);
+  } finally { delete globalThis.__LLMTEXT; }
+});
+await t('AI documents part by part: job, parts, retry, missing section marked, only the starter can use the job', async () => {
+  store.delete('rl'); const sam = 'parts.owner@facilio.com', out = 'parts.other@facilio.com'; let r0 = await call(sam, 'POST', '/api/projects', { name: 'Parts', customer: 'Acme' }); const pid = r0.data.project.id;
+  let r = await call(sam, 'POST', `/api/projects/${pid}/ai/job`, { task: 'wsr', instruction: 'Week 4' }); assert.equal(r.status, 201, JSON.stringify(r.data)); const job = r.data.job; const parts = r.data.parts; assert.ok(parts.length >= 4 && parts.length <= 8, 'wsr has its sections as parts'); assert.equal(r.data.provider, 'DeepSeek');
+  r = await call(out, 'POST', `/api/projects/${pid}/ai/job/${job}/part`, { n: 0 }); assert.ok(r.status === 403 || r.status === 404, 'another person cannot use the job');
+  r = await call(sam, 'POST', `/api/projects/${pid}/ai/job/${job}/part`, { n: 99 }); assert.equal(r.status, 400);
+  r = await call(sam, 'POST', `/api/projects/${pid}/ai/job/aj_000000000000000000/part`, { n: 0 }); assert.equal(r.status, 404);
+  globalThis.__LLMFAILRE = /PART 2 of/;
+  for (const p of parts) { r = await call(sam, 'POST', `/api/projects/${pid}/ai/job/${job}/part`, { n: p.n }); assert.equal(r.status, 200); if (p.n === 1) { assert.equal(r.data.ok, false); assert.equal(r.data.retry, true, 'a failed part asks for one shorter retry'); r = await call(sam, 'POST', `/api/projects/${pid}/ai/job/${job}/part`, { n: 1, short: true }); assert.equal(r.data.ok, false); assert.equal(r.data.retry, false); } else assert.equal(r.data.ok, true); }
+  globalThis.__LLMFAILRE = null; assert.ok(globalThis.__LLMLEN < 30000, 'each part prompt stays small');
+  r = await call(sam, 'POST', `/api/projects/${pid}/ai/job/${job}/finish`, {}); assert.equal(r.status, 201, JSON.stringify(r.data)); const d = r.data.item.data; assert.equal(d.status, 'draft'); assert.match(d.content, /^# Weekly status report/); assert.equal(r.data.missing.length, 1); assert.match(d.content, /could not be written in time/); assert.ok(d.sources.length >= 0);
+  r = await call(sam, 'POST', `/api/projects/${pid}/ai/job/${job}/finish`, {}); assert.equal(r.status, 404, 'a finished job is gone');
+  r = await call(sam, 'POST', `/api/projects/${pid}/ai/job`, { task: 'ftrrows', instruction: 'Module: Assets' }); assert.equal(r.data.parts.length, 1, 'a table task is one part'); const j2 = r.data.job;
+  globalThis.__LLMTEXT = '| Test Scenario | Steps | Expected | Portal | Role |\n|---|---|---|---|---|\n| Create asset | 1. Open / 2. Save | Saved | Main | Admin |';
+  r = await call(sam, 'POST', `/api/projects/${pid}/ai/job/${j2}/part`, { n: 0 }); assert.equal(r.data.ok, true); r = await call(sam, 'POST', `/api/projects/${pid}/ai/job/${j2}/finish`, {}); globalThis.__LLMTEXT = null; assert.match(r.data.item.data.content, /^\| Test Scenario/, 'a one-part draft has no added title');
+  r = await call(sam, 'POST', `/api/projects/${pid}/ai/job`, { task: 'uat' }); const j3 = r.data.job; globalThis.__LLMFAIL = true; for (const p of r.data.parts) await call(sam, 'POST', `/api/projects/${pid}/ai/job/${j3}/part`, { n: p.n }); globalThis.__LLMFAIL = false;
+  r = await call(sam, 'POST', `/api/projects/${pid}/ai/job/${j3}/finish`, {}); assert.equal(r.status, 502, 'nothing written: a clear error, not an empty draft');
+  r = await call(out, 'POST', `/api/projects/${pid}/ai/job`, { task: 'uat' }); assert.ok(r.status === 403 || r.status === 404);
 });
 console.log(`\n${n} checks passed, ${calls} storage calls, largest record ${(maxVal / 1024).toFixed(1)} KB`);

@@ -67,16 +67,18 @@
       wb.worksheets.forEach(ws => { for (let r = 1; r <= Math.min(ws.rowCount, 30); r++) { const map = {}; ws.getRow(r).eachCell({ includeEmpty: false }, (c, n) => { const t = norm(c.value); if (/^(task|task name|activity|name|milestone|description)\b/.test(t) && !map.t) map.t = n; else if (/^(start|start date|planned start|begin)/.test(t) && !map.s) map.s = n; else if (/^(end|end date|finish|planned end|due|due date)/.test(t) && !map.e) map.e = n; else if (/^(%|percent|% complete|progress|complete)/.test(t)) map.p = n; else if (/^status/.test(t)) map.st = n; else if (/^(owner|assigned|resource|responsible|assigned to|team)/.test(t)) map.o = n; });
         if (map.t && map.s && (!best || Object.keys(map).length > Object.keys(best.map).length)) best = { ws, hr: r, map }; } });
       if (!best) { toast('No task and start-date columns were found in the plan. Add rows by hand or check the header names.', 6000, true); return; }
-      const { ws, hr, map } = best; const out = []; let phase = '';
+      const { ws, hr, map } = best; const out = []; let phase = ''; const cname = String((S.project && S.project.customer) || '').toLowerCase().split(/\s+/)[0] || '';
+      const level = row => (row.outlineLevel || 0) * 20 + Number((row.getCell(map.t).alignment || {}).indent || 0); const nextRow = r => { for (let k = r + 1; k <= Math.min(ws.rowCount, r + 6); k++) { const x = ws.getRow(k); if (String(x.getCell(map.t).text || '').trim()) return x; } return null; };
       for (let r = hr + 1; r <= ws.rowCount; r++) { const row = ws.getRow(r); const title = String(norm(row.getCell(map.t).value) ? (row.getCell(map.t).text || '').trim() : ''); if (!title) continue; const s = toD(row.getCell(map.s).value), e = map.e ? toD(row.getCell(map.e).value) : '';
-        const lvl = row.outlineLevel || 0; const ownRaw = map.o ? norm(row.getCell(map.o).value) : ''; const owner = /customer|client/.test(ownRaw) && /facilio/.test(ownRaw) ? 'Both' : /customer|client/.test(ownRaw) ? 'Customer' : /facilio|implementation|consult/.test(ownRaw) ? 'Facilio' : ownRaw.includes(',') || ownRaw.includes('/') ? 'Both' : 'Facilio';
+        const ownRaw = map.o ? norm(row.getCell(map.o).value) : ''; const isC = /customer|client/.test(ownRaw) || (cname.length > 2 && ownRaw.includes(cname)); const owner = isC && /facilio/.test(ownRaw) ? 'Both' : isC ? 'Customer' : /facilio|implementation|consult/.test(ownRaw) ? 'Facilio' : ownRaw.includes(',') || ownRaw.includes('/') ? 'Both' : 'Facilio';
         let pc = map.p ? Number(String(row.getCell(map.p).value && row.getCell(map.p).value.result !== undefined ? row.getCell(map.p).value.result : row.getCell(map.p).value).replace('%', '')) : 0; if (!isNaN(pc) && pc > 0 && pc <= 1) pc = Math.round(pc * 100); if (isNaN(pc)) pc = 0;
         const stRaw = map.st ? norm(row.getCell(map.st).value) : ''; const status = /done|complete|closed/.test(stRaw) || pc >= 100 ? 'Done' : /block|hold|delay/.test(stRaw) ? 'Blocked' : /progress|started|ongoing|work/.test(stRaw) || pc > 0 ? 'In progress' : 'Not started';
-        const isPhase = lvl === 0 && ws.getRow(r + 1) && (ws.getRow(r + 1).outlineLevel || 0) > 0 && !s; if (isPhase) { phase = title; out.push({ id: F.uid('tr'), title, phase: '', start: '', end: '', owner: 'Both', status: 'Not started', pct: 0, isPhase: true }); continue; }
+        // a phase is a row whose next row sits deeper (Excel outline level or the task cell's indent)
+        const nx = nextRow(r); const isPhase = !!nx && level(nx) > level(row); if (isPhase) { phase = title; out.push({ id: F.uid('tr'), title, phase: '', start: '', end: '', owner: 'Both', status: 'Not started', pct: 0, isPhase: true }); continue; }
         if (!s) continue; out.push({ id: F.uid('tr'), title: title.slice(0, 200), phase, start: s, end: e && e >= s ? e : s, owner, status, pct: status === 'Done' ? 100 : pc, ms: !e || e === s });
       }
       if (!out.length) { toast('No dated tasks were found in the plan', 6000, true); return; }
-      saveRows(out, 'Imported from ' + cur.name); toast(out.filter(r => !r.isPhase).length + ' tasks imported'); V.render();
+      saveRows(out, 'Imported from ' + cur.name); TD().sourceFile = cur.fileId; toast(out.filter(r => !r.isPhase).length + ' tasks imported'); V.render();
     } finally { loading(false); }
   }
   function generate() {

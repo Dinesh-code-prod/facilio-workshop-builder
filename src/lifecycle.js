@@ -35,7 +35,7 @@
   // Word export: a real .docx (Office Open XML) built with the bundled docx library. The earlier export was HTML saved
   // as .doc, which Word Online, Teams/SharePoint previews and mobile Word show as blank.
   async function mdDocx(d) {
-    if (!root.docx) await V.loadScript('vendor/docx.iife.js'); const X = root.docx; if (!X || !X.Packer) throw new Error('The Word library did not load. Reload the page and try again.');
+    const X = await V.loadDocx();
     const { Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, AlignmentType, LevelFormat } = X; const font = 'Calibri';
     const runs = t => { const out = []; String(t || '').split(/(\*\*.+?\*\*|`.+?`|\[S\d+\])/g).forEach(p => { if (!p) return; if (/^\*\*.+\*\*$/.test(p)) out.push(new TextRun({ text: p.slice(2, -2), bold: true, font })); else if (/^`.+`$/.test(p)) out.push(new TextRun({ text: p.slice(1, -1), font: 'Consolas' })); else if (/^\[S\d+\]$/.test(p)) out.push(new TextRun({ text: p.slice(1, -1), superScript: true, color: '1570EF', font })); else out.push(new TextRun({ text: p, font })); }); return out.length ? out : [new TextRun({ text: '', font })]; };
     const B = { style: BorderStyle.SINGLE, size: 4, color: 'BBBBBB' }; const bd = { top: B, bottom: B, left: B, right: B };
@@ -60,6 +60,22 @@
   V.mdDocx = mdDocx;
   const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
+  // ---------- part-by-part AI documents (each server call stays inside the 25 s limit; see /ai/job in work/server/api.mjs) ----------
+  V.aiDoc = async (body, title) => {
+    const pid = S.project.id; const lm = m => (V.loadingMsg ? V.loadingMsg(m) : null); V.loading(true, 'Gathering the project sources…');
+    try {
+      const j = await API.post(`/api/projects/${pid}/ai/job`, body); const parts = j.parts || []; let done = 0, next = 0; const fail = [];
+      const say = () => lm(`${title || 'Writing the draft'} · ${j.provider || 'AI'} is writing ${parts.length > 1 ? 'section ' + Math.min(parts.length, done + 1) + ' of ' + parts.length : 'the draft'}…`); say();
+      const one = async n => { let r = await API.post(`/api/projects/${pid}/ai/job/${j.job}/part`, { n }).catch(e => { if (e && e.status === 429) throw e; return { ok: false, retry: true }; });
+        if (!r.ok && r.retry) r = await API.post(`/api/projects/${pid}/ai/job/${j.job}/part`, { n, short: true }).catch(e => { if (e && e.status === 429) throw e; return { ok: false }; });
+        if (!r.ok) fail.push(n); done++; say(); };
+      const worker = async () => { while (next < parts.length) await one(next++); };
+      await Promise.all(Array.from({ length: Math.min(3, parts.length) }, worker));
+      lm('Putting the draft together…'); const f = await API.post(`/api/projects/${pid}/ai/job/${j.job}/finish`, {});
+      if (f.missing && f.missing.length) toast(f.missing.length + ' section(s) could not be written in time and are marked in the draft: ' + f.missing.slice(0, 3).join('; '), 9000, true);
+      return f;
+    } finally { V.loading(false); }
+  };
   // ---------- run AI ----------
   ACT.aiRun = async a => {
     if (!canEdit()) { toast('You have read-only access'); return; } const task = a.getAttribute('data-task'); const pick = V.aiTplPick || ''; V.aiTplPick = '';
@@ -70,7 +86,7 @@
   async function provPick() { try { const st = await API.get('/api/ai/status'); const el = document.getElementById('ai_prov'); if (!el) return; el.innerHTML = `<label class="f">AI provider</label><select id="ai_pv"><option value="">Organisation default (${st.defaultProvider === 'claude' ? 'Claude' : 'DeepSeek'})</option><option value="deepseek">DeepSeek</option><option value="claude"${st.claude ? '' : ' disabled'}>Claude${st.claude ? '' : ' (not configured)'}</option></select>${st.fallback === 'deepseek' ? '<div class="xs muted">If Claude is unavailable, DeepSeek will be used and the draft will say so.</div>' : ''}`; } catch (e) { } }
   ACT.aiGo = a => V.busy(a, async () => {
     const task = a.getAttribute('data-task'); const ins = (document.getElementById('ai_ins') || {}).value || '';
-    try { const r = await API.post(`/api/projects/${S.project.id}/ai/run`, { task, instruction: ins, provider: (document.getElementById('ai_pv') || {}).value || undefined, templateId: (document.getElementById('ai_tpl') || {}).value || undefined }); await I().load(['ai'], true); closeDrawer(); toast('Draft ready for review'); ACT.aiOpen({ getAttribute: () => r.item.id }); }
+    try { const r = await V.aiDoc({ task, instruction: ins, provider: (document.getElementById('ai_pv') || {}).value || undefined, templateId: (document.getElementById('ai_tpl') || {}).value || undefined }, label(task)); await I().load(['ai'], true); closeDrawer(); toast('Draft ready for review'); ACT.aiOpen({ getAttribute: () => r.item.id }); }
     catch (e) { toast(e.message || 'The AI could not complete this', 6000, true); }
   });
   ACT.aiOpen = a => {
@@ -192,7 +208,7 @@
   ACT.repSave = a => V.busy(a, async () => { const id = a.getAttribute('data-id'); await I().put('rep', id, form(I().get('rep', id))); closeDrawer(); toast('Saved'); });
   ACT.repSent = a => V.busy(a, async () => { const id = a.getAttribute('data-id'); const r = form(I().get('rep', id)); if (!(await confirmDialog('Mark as sent', 'Confirm you have sent this report to the customer. It will be recorded with your name and today\'s date.', 'Mark sent', false))) return; await I().put('rep', id, Object.assign(r, { status: 'sent', sentBy: S.user.name || S.user.email, sentAt: new Date().toISOString() })); closeDrawer(); toast('Recorded as sent'); });
   ACT.repDel = a => V.busy(a, async () => { if (!(await confirmDialog('Delete report', 'Remove this report?', 'Delete', true))) return; await I().del('rep', a.getAttribute('data-id')); closeDrawer(); });
-  ACT.repAi = a => V.busy(a, async () => { const id = a.getAttribute('data-id'); const r = form(I().get('rep', id)); if (String(r.content || '').trim() && !(await confirmDialog('Replace the report text?', 'The report already has text. The AI draft will replace it; the draft is also kept under Deliverables & AI.', 'Replace with draft', true))) return; try { const x = await API.post(`/api/projects/${S.project.id}/ai/run`, { task: r.type === 'WSR' ? 'wsr' : 'monthly', instruction: `Period ${r.periodStart} to ${r.periodEnd}.` }); await I().load(['ai'], true); await I().put('rep', id, Object.assign(r, { content: x.item.data ? x.item.data.content : x.item.content, aiDraft: true })); closeDrawer(); ACT.repOpen({ getAttribute: () => id }); toast('Draft filled from project records. Review it before sending.'); } catch (e) { toast(e.message || 'The AI could not complete this', 6000, true); } });
+  ACT.repAi = a => V.busy(a, async () => { const id = a.getAttribute('data-id'); const r = form(I().get('rep', id)); if (String(r.content || '').trim() && !(await confirmDialog('Replace the report text?', 'The report already has text. The AI draft will replace it; the draft is also kept under Deliverables & AI.', 'Replace with draft', true))) return; try { const x = await V.aiDoc({ task: r.type === 'WSR' ? 'wsr' : 'monthly', instruction: `Period ${r.periodStart} to ${r.periodEnd}.` }, r.type === 'WSR' ? 'Weekly status report' : 'Monthly report'); await I().load(['ai'], true); await I().put('rep', id, Object.assign(r, { content: x.item.data ? x.item.data.content : x.item.content, aiDraft: true })); closeDrawer(); ACT.repOpen({ getAttribute: () => id }); toast('Draft filled from project records. Review it before sending.'); } catch (e) { toast(e.message || 'The AI could not complete this', 6000, true); } });
   ACT.repAtt = async a => { const id = a.getAttribute('data-id'); const f = (await V.pickFile('.pdf,.xlsx,.xls,.docx,.pptx,.png,.jpg,.jpeg,.csv,.txt'))[0]; if (!f) return; try { toast('Uploading…'); const rec = await API.uploadFile(S.project.id, f, 'report_attachment', { report: id }); const r = form(I().get('rep', id)); await I().put('rep', id, Object.assign(r, { attachments: (r.attachments || []).concat([{ id: rec.id, name: f.name }]) })); closeDrawer(); ACT.repOpen({ getAttribute: () => id }); } catch (e) { toast(e.message || 'Upload failed', 5000, true); } };
   ACT.repAttDel = a => V.busy(a, async () => { const id = a.getAttribute('data-id'); const r = form(I().get('rep', id)); r.attachments = (r.attachments || []).filter((x, i) => i !== Number(a.getAttribute('data-i'))); await I().put('rep', id, r); closeDrawer(); ACT.repOpen({ getAttribute: () => id }); });
   ACT.repAttDl = a => V.busy(a, async () => { const r = I().get('rep', a.getAttribute('data-id')); const x = r.attachments[Number(a.getAttribute('data-i'))]; const f = await API.downloadFile(S.project.id, x.id); V.download(x.name, f.blob); });

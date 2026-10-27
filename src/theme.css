@@ -411,3 +411,13 @@ body .card.stat.click:not(#_):hover, body .kpi.click:not(#_):hover { border-colo
 /* the plan strip (Planned / Actual / Variance / Go-live): one card, each cell with its own pale wash */
 body .pl-kpis > div:nth-child(1) { background: linear-gradient(180deg, var(--th-violet-soft), #fff 85%); } body .pl-kpis > div:nth-child(2) { background: linear-gradient(180deg, var(--th-cyan-soft), #fff 85%); }
 body .pl-kpis > div:nth-child(3) { background: linear-gradient(180deg, var(--th-orange-soft), #fff 85%); } body .pl-kpis > div:nth-child(4) { background: linear-gradient(180deg, var(--th-green-soft), #fff 85%); }
+
+/* kick-off deck: file card, AI review, summary */
+body .ki-file { display: flex; align-items: center; gap: 14px; padding: 14px 18px; margin-bottom: 14px; }
+body .ki-ic { flex: none; width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; font-family: var(--th-mono); font-size: 12px; font-weight: 600; color: var(--th-violet); background: var(--th-violet-soft); }
+body .ki-fm { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; } body .ki-fm b { overflow-wrap: anywhere; }
+body .ki-ver { margin: 0 0 14px; } body .ki-ver summary { cursor: pointer; font-size: 13px; color: var(--th-muted); margin-bottom: 8px; }
+body .ki-sum { margin-bottom: 14px; } body .ki-sum .card { margin: 0; }
+body .ki-list { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; line-height: 1.45; }
+body .ki-pp { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; cursor: pointer; } body .ki-pp input { margin-top: 3px; }
+body .ki-pp span { display: flex; flex-direction: column; } body .ki-pp small { color: var(--th-muted); font-size: 12px; }

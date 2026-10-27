@@ -33,7 +33,11 @@ const ctxFor = (email, origin) => ({
   viewer: { email, role: 'viewer' }, app: { name: 'facilio-delivery-studio' },
   secrets: { async get(k) { if (FAKE_CLAUDE && k === 'anthropic_api_key') return 'sk-ant-local-test-double-0000000000'; if (FAKE_GRAPH && k === 'support_mailbox') return 'delivery@facilio.com'; throw new Error('no secret'); } },
   ...(FAKE_GRAPH ? { fetch: fakeGraph, teams: { async send(m) { TEAMS_LOG.push(Object.assign({ at: new Date().toISOString() }, m)); return { delivered: 1, failed: 0 }; } } } : {}),
-  llm: async ({ messages }) => ({ model: 'mock', choices: [{ message: { content: '## Draft\n\nLocal preview draft based on [S1].\n\n- Confirmed: sample point\n- Assumption: sample point' } }] }),
+  // local test double for the platform LLM; for the kick-off deck it returns names it can find in the slide text (lines "Name | Role | email"), so the review screen can be exercised
+  llm: async ({ messages }) => { const sys = String(messages[0] && messages[0].content || ''); if (/kick-off presentation/.test(sys)) { const txt = String(messages[1].content || ''); const rows = txt.split('\n').filter(l => /\|/.test(l) && /@/.test(l)).map(l => l.split('|').map(x => x.trim()));
+      const ppl = rows.map(r => ({ name: r[0], role: r[1], email: r[2] })); const isF = p => /@facilio\.com$/i.test(p.email);
+      return { model: 'mock', choices: [{ message: { content: JSON.stringify({ facilioTeam: ppl.filter(isF), customerTeam: ppl.filter(p => !isF(p)), cadence: /weekly/i.test(txt) ? 'weekly' : '', meetings: ['Weekly status call, Tuesdays'], objectives: ['Go live with connected CAFM'], scope: ['Work orders', 'Assets'], keyDates: [{ label: 'Go-live', date: '2027-02-22' }], risks: ['Data readiness'], nextSteps: [{ action: 'Share onboarding templates', owner: 'Facilio', due: '2026-10-30' }], insights: ['<b>markup</b> stays text'] }) } }] }; }
+    return { model: 'mock', choices: [{ message: { content: '## Draft\n\nLocal preview draft based on [S1].\n\n- Confirmed: sample point\n- Assumption: sample point' } }] }; },
   db: {
     async get(c, k) { const r = (store.get(c) || new Map()).get(k); return r ? { key: k, value: JSON.parse(r), updated_at: new Date().toISOString(), updated_by: email } : null; },
     async put(c, k, v) { if (!store.has(c)) store.set(c, new Map()); store.get(c).set(k, JSON.stringify(v)); },

@@ -70,7 +70,7 @@
     } catch (e) { V.loading(false); toast(e.message || 'Could not save', 6000, true); return; } finally { V.loading(false); }
     toast('Walkthrough saved'); if (wantAi) await draft(id);
   });
-  async function draft(id) { V.loading(true, 'Drafting steps… this can take up to half a minute'); try { const r = await API.post(`/api/projects/${S.project.id}/ai/run`, { task: 'vidguide', vid: id }); await I().load(['ai'], true); V.loading(false); toast('Draft ready for review'); if (V.ACT.aiOpen) V.ACT.aiOpen({ getAttribute: () => r.item.id }); } catch (e) { V.loading(false); toast(e.message || 'The AI could not complete this', 7000, true); } }
+  async function draft(id) { try { const r = await V.aiDoc({ task: 'vidguide', vid: id }, 'Walkthrough steps'); await I().load(['ai'], true); V.loading(false); toast('Draft ready for review'); if (V.ACT.aiOpen) V.ACT.aiOpen({ getAttribute: () => r.item.id }); } catch (e) { V.loading(false); toast(e.message || 'The AI could not complete this', 7000, true); } }
   ACT.vgAgain = a => V.busy(a, async () => { await draft(a.getAttribute('data-id')); });
   ACT.vgDel = async a => { if (!(await confirmDialog('Delete walkthrough', 'Remove this walkthrough and its transcript? Saved screenshots stay in the project files.', 'Delete', true))) return; await I().del('vid', a.getAttribute('data-id')); };
   V.vidParse = parseTranscript;

@@ -67,21 +67,73 @@
   }
 
   // ================= KICK-OFF DECK =================
+  // The deck is kept as a file (download / replace / versions); it is not rendered. "Read the deck with AI" extracts the slide text and tables
+  // in the browser, the server asks the model for the teams, governance, dates, scope, risks and next steps, and the team reviews what to keep.
+  // What is kept lands in the project's people list (Facilio team / customer stakeholders) and in the kick-off summary below.
+  V.extraSections = (V.extraSections || []).concat(['kickoff_info']);
+  const KI = () => { let d = F.doc('kickoff_info'); if (!d || typeof d !== 'object') { S.docs.kickoff_info.data = d = {}; } d.objectives = d.objectives || []; d.scope = d.scope || []; d.keyDates = d.keyDates || []; d.risks = d.risks || []; d.meetings = d.meetings || []; d.insights = d.insights || []; d.nextSteps = d.nextSteps || []; return d; };
+  const fsize = n => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
   V.kickoff = { html() {
     const st = V.filesFor('kickoff', true); const files = (st.files || []).slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); const cur = files.find(f => !f.supersededBy); const ro = S.readonly; const cust = S.user.kind === 'customer';
-    const head = `<div class="page-header"><div class="t"><h1>Kick-off Deck</h1><p>${cust ? 'The project kick-off presentation shared by your Facilio implementation team.' : 'The original kick-off presentation, shown as uploaded — slides are rendered from the file and are not restyled.'}</p></div><div class="row">${cur ? `<button class="btn" data-act="dlFile" data-id="${esc(cur.id)}" data-name="${esc(cur.name)}">${ico('dl')}Download original</button>` : ''}${ro ? '' : `<button class="btn primary" data-act="uploadDeck" data-replace="${esc(cur ? cur.id : '')}">${ico('upl')}${cur ? 'Replace deck' : 'Upload deck'}</button>`}</div></div>`;
+    const head = `<div class="page-header"><div class="t"><h1>Kick-off Deck</h1><p>${cust ? 'The project kick-off presentation and what was agreed at kick-off.' : 'Keep the kick-off deck here and let AI read the teams, governance, key dates and next steps out of it. You review everything before it is saved.'}</p></div><div class="row">${cur ? `<button class="btn" data-act="dlFile" data-id="${esc(cur.id)}" data-name="${esc(cur.name)}">${ico('dl')}Download deck</button>` : ''}${ro ? '' : `<button class="btn${cur ? '' : ' primary'}" data-act="uploadDeck" data-replace="${esc(cur ? cur.id : '')}">${ico('upl')}${cur ? 'Replace deck' : 'Upload deck'}</button>`}${cur && !ro && !cust ? `<button class="btn primary" data-act="kiRead" data-id="${esc(cur.id)}">${ico('spark')}Read the deck with AI</button>` : ''}</div></div>`;
     if (st.loading) return head + '<div class="page-body"><div class="empty">Loading…</div></div>';
     if (st.error) return head + `<div class="page-body"><div class="notice err">${esc(st.error)}</div></div>`;
-    if (!cur) return head + `<div class="page-body"><div class="card empty"><h3>No kick-off deck yet</h3><p>${ro ? 'The implementation team has not uploaded the kick-off deck yet.' : 'Upload the PowerPoint (.pptx) or PDF kick-off deck. The original file is kept and can be downloaded.'}</p>${ro ? '' : `<button class="btn primary" data-act="uploadDeck">${ico('upl')}Upload deck</button>`}</div></div>`;
-    const isPdf = /\.pdf$/i.test(cur.name); const legacy = /\.ppt$/i.test(cur.name);
-    const versions = files.length > 1 && !cust ? `<div class="pink-label">Versions</div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>File</th><th>Uploaded</th><th>Size</th><th></th></tr></thead><tbody>${files.map(f => `<tr><td>${esc(f.name)} ${f.supersededBy ? tag('low', 'Previous') : tag('green', 'Current')}</td><td class="small">${esc(V.fmtDate(f.createdAt))}</td><td class="small">${esc(V.fmtSize(f.size))}</td><td class="acts"><button class="btn sm" data-act="dlFile" data-id="${esc(f.id)}" data-name="${esc(f.name)}">${ico('dl')}</button></td></tr>`).join('')}</tbody></table></div>` : '';
-    if (legacy) return head + `<div class="page-body"><div class="notice warn">${esc(cur.name)} is a legacy .ppt file, which cannot be rendered in the browser. Download the original, or save it as .pptx or PDF and replace it here.</div>${versions}</div>`;
-    return head + `<div class="page-body">${viewerShell('deck', cur.name)}<div class="xs muted" style="margin-top:6px">${isPdf ? 'Rendered with pdf.js.' : 'Rendered from the .pptx in your browser. Complex elements (some charts, SmartArt, embedded video, unusual fonts) may differ slightly from PowerPoint — download the original for exact fidelity.'} Use ← → keys to move between slides.</div>${versions}</div>`;
-  }, mount() {
-    const st = V.filesFor('kickoff', true); const cur = (st.files || []).find(f => !f.supersededBy); if (!cur || /\.ppt$/i.test(cur.name)) return;
-    hostLive('deck', cur.id, async L => { L.el.innerHTML = '<div class="small" style="color:#dfe4ea;padding:20px">Loading the deck…</div>'; const blob = await V.fileBlob(cur.id); L.el.innerHTML = ''; if (/\.pdf$/i.test(cur.name)) await buildPdf('deck', L, blob); else await buildPptx('deck', L, blob); paint('deck'); });
-    paint('deck');
-  } };
+    const k = KI();
+    const fileCard = cur ? `<div class="card ki-file"><div class="ki-ic">${/\.pdf$/i.test(cur.name) ? 'PDF' : 'PPT'}</div><div class="ki-fm"><b>${esc(cur.name)}</b><span class="small muted">${fsize(cur.size || 0)} · uploaded ${esc(new Date(cur.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }))}${k.readAt ? ` · read by AI ${esc(new Date(k.readAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }))}${k.readBy ? ' (' + esc(k.readBy) + ')' : ''}` : ''}</span></div>${k.readAt && k.readFile !== cur.id && !ro && !cust ? '<span class="tag amber">A newer deck has not been read yet</span>' : ''}</div>`
+      : `<div class="card empty"><h3>No kick-off deck yet</h3><p>${ro ? 'The implementation team has not uploaded the kick-off deck yet.' : 'Upload the PowerPoint (.pptx) or PDF kick-off deck. Then let AI read the teams and key facts from it.'}</p>${ro ? '' : `<button class="btn primary" data-act="uploadDeck" data-replace="">${ico('upl')}Upload deck</button>`}</div>`;
+    const versions = files.length > 1 && !cust ? `<details class="ki-ver"><summary>Earlier versions (${files.length - 1})</summary><div class="tbl-wrap"><table class="tbl"><thead><tr><th>File</th><th>Uploaded</th><th>Size</th><th></th></tr></thead><tbody>${files.filter(f => f.supersededBy).map(f => `<tr><td>${esc(f.name)}</td><td>${esc(new Date(f.createdAt).toLocaleString())}</td><td>${fsize(f.size || 0)}</td><td><button class="btn sm" data-act="dlFile" data-id="${esc(f.id)}" data-name="${esc(f.name)}">${ico('dl')}Download</button></td></tr>`).join('')}</tbody></table></div></details>` : '';
+    const list = (title, items, fmt) => items.length ? `<div class="card"><div class="card-h"><h3>${title}</h3></div><div class="card-b"><ul class="ki-list">${items.map(x => `<li>${fmt ? fmt(x) : esc(x)}</li>`).join('')}</ul></div></div>` : '';
+    const summary = (k.objectives.length + k.scope.length + k.keyDates.length + k.risks.length + k.nextSteps.length + k.insights.length) ? `<div class="grid g2 ki-sum">${list('Objectives', k.objectives)}${list('Scope', k.scope)}${list('Key dates', k.keyDates, x => `<b>${esc(x.date ? V.fmtDate(x.date) : 'Date to confirm')}</b> · ${esc(x.label)}`)}${list('Next steps', k.nextSteps, x => `${esc(x.action)}${x.owner ? ` <span class="muted">· ${esc(x.owner)}</span>` : ''}${x.due ? ` <span class="muted">· by ${esc(V.fmtDate(x.due))}</span>` : ''}`)}${list('Risks raised', k.risks)}${list('Notes and insights', k.insights.concat(k.meetings))}</div>` : '';
+    return head + `<div class="page-body">${fileCard}${versions}${summary}</div>`;
+  }, mount() { } };
+
+  // slide text: every paragraph and every table row (cells joined with " | "), slide by slide; PDF decks through pdf.js
+  async function deckText(blob, name) {
+    if (/\.pdf$/i.test(name)) { const pdfjs = await V.pdfjs(); const doc = await pdfjs.getDocument({ data: new Uint8Array(await blob.arrayBuffer()), isEvalSupported: false }).promise; let out = ''; for (let i = 1; i <= Math.min(doc.numPages, 80); i++) { const c = await (await doc.getPage(i)).getTextContent(); out += `\n--- Slide ${i}\n` + c.items.map(x => x.str).join(' '); } return out; }
+    const files = await V.zipTexts(blob, n => /^ppt\/slides\/slide\d+\.xml$/.test(n), { maxBytes: 40 * 1024 * 1024 });
+    files.sort((a, b) => Number(a.name.match(/(\d+)\.xml$/)[1]) - Number(b.name.match(/(\d+)\.xml$/)[1]));
+    const dp = new DOMParser(); let out = '';
+    for (const f of files) {
+      const x = dp.parseFromString(f.text, 'application/xml'); const q = (el, tag) => [...el.getElementsByTagNameNS('*', tag)]; const lines = [];
+      const inTable = el => { for (let p = el.parentNode; p; p = p.parentNode) if (p.localName === 'tbl') return true; return false; };
+      q(x, 'tbl').forEach(t => q(t, 'tr').forEach(r => { const cells = q(r, 'tc').map(c => q(c, 't').map(n => n.textContent).join(' ').replace(/\s+/g, ' ').trim()); if (cells.some(Boolean)) lines.push(cells.join(' | ')); }));
+      q(x, 'p').filter(p => !inTable(p)).forEach(p => { const t = q(p, 't').map(n => n.textContent).join('').replace(/\s+/g, ' ').trim(); if (t) lines.push(t); });
+      out += `\n--- Slide ${f.name.match(/(\d+)\.xml$/)[1]}\n` + lines.join('\n');
+    }
+    return out;
+  }
+  V.deckText = deckText;
+  let KR = null;   // the AI result under review
+  ACT.kiRead = async a => {
+    const st = V.filesFor('kickoff', true); const cur = (st.files || []).find(f => f.id === a.getAttribute('data-id')); if (!cur) return;
+    if (/\.ppt$/i.test(cur.name)) { toast('This is a legacy .ppt file. Save it as .pptx or PDF and replace it, then try again.', 6000, true); return; }
+    loading(true, 'Reading the slides…');
+    try { const text = await deckText(await V.fileBlob(cur.id), cur.name); V.loadingMsg('Asking AI for the teams and key facts…');
+      const r = await API.post(`/api/projects/${S.project.id}/ai/kickoff`, { text, fileName: cur.name }); KR = Object.assign({ fileId: cur.id, provider: r.provider, truncated: r.truncated, notice: r.notice }, r.data); kiReview(); }
+    catch (e) { toast(e.message || 'The deck could not be read', 7000, true); } finally { loading(false); }
+  };
+  function kiReview() {
+    const d = KR, ppl = F.doc('people'); const has = (list, x) => (list || []).some(y => (x.email && y.email && y.email.toLowerCase() === x.email) || String(y.name || '').trim().toLowerCase() === x.name.toLowerCase());
+    const row = (k, x, i) => `<label class="ki-pp"><input type="checkbox" data-ki="${k}" data-i="${i}"${has(k === 'f' ? ppl.team : ppl.stakeholders, x) ? ' disabled' : ' checked'}><span><b>${esc(x.name)}</b>${x.role ? ' · ' + esc(x.role) : ''}${x.email ? `<small>${esc(x.email)}</small>` : ''}${has(k === 'f' ? ppl.team : ppl.stakeholders, x) ? '<small>Already in the project</small>' : ''}</span></label>`;
+    const sec = (t, n) => `<div class="pink-label">${t} <span class="muted">(${n})</span></div>`;
+    const lst = a => a.length ? `<ul class="ki-list small">${a.map(x => `<li>${typeof x === 'string' ? esc(x) : esc(x.label || x.action) + (x.date || x.due ? ' · ' + esc(x.date || x.due) : '') + (x.owner ? ' · ' + esc(x.owner) : '')}</li>`).join('')}</ul>` : '<p class="small muted">Nothing found.</p>';
+    drawer('What AI read from the deck', `<div class="notice small" style="margin-bottom:12px">Read by ${esc(d.provider)}. Check every line: AI can misread slides. People you tick are added to the project's people list (Project Settings), not given access.${d.truncated ? ' The deck was long, so only the first part was read.' : ''}${d.notice ? ' ' + esc(d.notice) : ''}</div>
+      ${sec('Facilio team', d.facilioTeam.length)}${d.facilioTeam.map((x, i) => row('f', x, i)).join('') || '<p class="small muted">Nothing found.</p>'}
+      ${sec((S.project.customer || 'Customer') + ' team', d.customerTeam.length)}${d.customerTeam.map((x, i) => row('c', x, i)).join('') || '<p class="small muted">Nothing found.</p>'}
+      ${sec('Governance', (d.cadence ? 1 : 0) + d.meetings.length)}${d.cadence ? `<label class="ki-pp"><input type="checkbox" id="kiCad" checked><span>Steering meetings are <b>${esc(d.cadence)}</b></span></label>` : ''}${lst(d.meetings)}
+      ${sec('Objectives', d.objectives.length)}${lst(d.objectives)}${sec('Scope', d.scope.length)}${lst(d.scope)}${sec('Key dates', d.keyDates.length)}${lst(d.keyDates)}
+      ${sec('Next steps', d.nextSteps.length)}${lst(d.nextSteps)}${sec('Risks', d.risks.length)}${lst(d.risks)}${sec('Other insights', d.insights.length)}${lst(d.insights)}
+      <label class="ki-pp" style="margin-top:10px"><input type="checkbox" id="kiSum" checked><span>Save the objectives, scope, dates, next steps, risks and insights as the kick-off summary (replaces the previous summary)</span></label>`,
+      `<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="kiSave">Save what is ticked</button>`);
+  }
+  ACT.kiSave = () => {
+    const d = KR; if (!d) return; const ppl = F.doc('people'); ppl.team = ppl.team || []; ppl.stakeholders = ppl.stakeholders || []; let added = 0;
+    document.querySelectorAll('[data-ki]:checked').forEach(cb => { const x = (cb.getAttribute('data-ki') === 'f' ? d.facilioTeam : d.customerTeam)[Number(cb.getAttribute('data-i'))]; if (!x) return; (cb.getAttribute('data-ki') === 'f' ? ppl.team : ppl.stakeholders).push({ name: x.name, role: x.role, email: x.email, phone: '', source: 'kick-off deck' }); added++; });
+    if (added) F.markDirty('people');
+    const cad = document.getElementById('kiCad'); if (cad && cad.checked) { const pc = F.doc('portal_controls'); pc.cadence = d.cadence; F.markDirty('portal_controls'); }
+    if (document.getElementById('kiSum').checked) { const k = KI(); Object.assign(k, { objectives: d.objectives, scope: d.scope, keyDates: d.keyDates, nextSteps: d.nextSteps, risks: d.risks, insights: d.insights, meetings: d.meetings, readAt: new Date().toISOString(), readBy: S.user.name, readFile: d.fileId, provider: d.provider }); F.markDirty('kickoff_info'); }
+    F.log('Kick-off deck read with AI', added + ' people added'); KR = null; closeDrawer(); toast(added ? added + ' people added to the project' : 'Saved'); V.render();
+  };
   ACT.uploadDeck = async a => { const f = (await V.pickFile('.pptx,.ppt,.pdf'))[0]; if (!f) return; loading(true, 'Uploading the deck…');
     try { await API.uploadFile(S.project.id, f, 'kickoff', {}, a.getAttribute('data-replace') || null, p => V.loadingMsg('Uploading… ' + Math.round(p * 100) + '%')); V.invalidateFiles('kickoff'); F.log('Kick-off deck uploaded', f.name); F.markDirty('workshop'); toast('Deck uploaded'); V.render(); } finally { loading(false); } };
   ACT.dlFile = async a => { loading(true, 'Downloading…'); try { V.download(a.getAttribute('data-name'), await V.fileBlob(a.getAttribute('data-id'))); } finally { loading(false); } };

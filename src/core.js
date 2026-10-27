@@ -7,7 +7,7 @@
   const esc = s => String(s === undefined || s === null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   // Links people type or import are only rendered as links when they are web or mail addresses (never javascript:, data: and the like).
   // CSV cells: text that a spreadsheet would run as a formula (= + - @ tab CR at the start) is prefixed with ' so it opens as text. Numbers are left alone.
-  const csvText = v => (typeof v === 'string' && /^[=+\-@\t\r]/.test(v) ? "'" + v : v);
+  const csvText = v => { if (typeof v !== 'string') return v; v = v.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ' '); return /^[=+\-@\t\r]/.test(v) ? "'" + v : v; }; // no control characters pasted from Office; no formula injection
   const safeUrl = u => { const t = String(u == null ? '' : u).trim(); return /^(https?:\/\/|mailto:)/i.test(t) && !/[\u0000-\u001f\s]/.test(t) ? t : ''; };
   const uid = (p) => (p || 'id') + '_' + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-3);
   const clone = o => JSON.parse(JSON.stringify(o));
