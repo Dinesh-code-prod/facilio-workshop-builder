@@ -391,3 +391,23 @@ body .pl-pb { display: block; width: 110px; height: 7px; border-radius: 4px; bac
 body .tl-rt select.tl-who:not(#_) { width: auto; height: 32px !important; min-height: 32px !important; font-size: 12.5px !important; padding-top: 0 !important; padding-bottom: 0 !important; border-radius: var(--th-r-full) !important; }
 /* toasts are status messages with nothing to click: let clicks reach the page underneath (they used to block the bottom of the whiteboard) */
 body .toast { pointer-events: none; }
+
+/* ---------- KPI and stat cards: soft theme tints ----------
+   Each card takes one of the theme accents (violet, cyan, green, orange, pink, amber, in turn across a row) as a pale wash fading to white,
+   a thin accent edge on top and a tinted label. Values stay in ink, so the numbers keep full contrast; nothing is saturated. */
+body .card.stat:not(#_), body .kpi:not(#_) { --kp: var(--th-violet); --kp-soft: var(--th-violet-soft);
+  background: linear-gradient(165deg, var(--kp-soft) 0%, color-mix(in srgb, var(--kp-soft) 45%, #fff) 45%, #fff 100%) !important;
+  border-color: color-mix(in srgb, var(--kp) 16%, var(--th-line)) !important; box-shadow: inset 0 3px 0 color-mix(in srgb, var(--kp) 45%, transparent), var(--th-sh-1) !important; }
+body .card.stat:nth-child(6n+2):not(#_), body .kpi:nth-child(6n+2):not(#_) { --kp: var(--th-cyan); --kp-soft: var(--th-cyan-soft); }
+body .card.stat:nth-child(6n+3):not(#_), body .kpi:nth-child(6n+3):not(#_) { --kp: var(--th-green); --kp-soft: var(--th-green-soft); }
+body .card.stat:nth-child(6n+4):not(#_), body .kpi:nth-child(6n+4):not(#_) { --kp: var(--th-orange); --kp-soft: var(--th-orange-soft); }
+body .card.stat:nth-child(6n+5):not(#_), body .kpi:nth-child(6n+5):not(#_) { --kp: var(--th-pink); --kp-soft: var(--th-pink-soft); }
+body .card.stat:nth-child(6n+6):not(#_), body .kpi:nth-child(6n+6):not(#_) { --kp: var(--th-amber); --kp-soft: var(--th-amber-soft, #FEF4E6); }
+/* cards that already say what they mean keep that meaning */
+body .kpi.k-blue:not(#_) { --kp: var(--th-violet); --kp-soft: var(--th-violet-soft); } body .kpi.k-teal:not(#_) { --kp: var(--th-cyan); --kp-soft: var(--th-cyan-soft); } body .kpi.k-pink:not(#_) { --kp: var(--th-pink); --kp-soft: var(--th-pink-soft); }
+body .card.stat.bad:not(#_), body .kpi.bad:not(#_) { --kp: var(--th-red); --kp-soft: var(--th-red-soft); }
+body .card.stat .l:not(#_), body .kpi .kpi-l:not(#_) { color: color-mix(in srgb, var(--kp) 55%, var(--th-muted)) !important; }
+body .card.stat.click:not(#_):hover, body .kpi.click:not(#_):hover { border-color: color-mix(in srgb, var(--kp) 34%, var(--th-line)) !important; box-shadow: inset 0 3px 0 color-mix(in srgb, var(--kp) 60%, transparent), var(--th-sh-2) !important; }
+/* the plan strip (Planned / Actual / Variance / Go-live): one card, each cell with its own pale wash */
+body .pl-kpis > div:nth-child(1) { background: linear-gradient(180deg, var(--th-violet-soft), #fff 85%); } body .pl-kpis > div:nth-child(2) { background: linear-gradient(180deg, var(--th-cyan-soft), #fff 85%); }
+body .pl-kpis > div:nth-child(3) { background: linear-gradient(180deg, var(--th-orange-soft), #fff 85%); } body .pl-kpis > div:nth-child(4) { background: linear-gradient(180deg, var(--th-green-soft), #fff 85%); }
