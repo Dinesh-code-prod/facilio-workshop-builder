@@ -7,7 +7,7 @@
   const { tag, drawer, closeDrawer, toast, ico, confirmDialog } = V;
   const canEdit = () => !V.isCustomer() && !S.readonly; const canApprove = () => !V.isCustomer() && S.project && S.project.role === 'owner';
   const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-  const TABS = [['content', 'Content'], ['brand', 'Branding'], ['checks', 'Quality checks'], ['export', 'Export']];
+  const TABS = [['content', 'Content'], ['update', 'Update from configuration'], ['versions', 'Version history'], ['brand', 'Branding'], ['checks', 'Quality checks'], ['export', 'Export']];
   let W = null, WID = null, timer = null, saving = false, dirtyAt = 0;
   const strip = t => String(t || '').replace(/\s*\[S\d+\]/g, '');
   const when = d => d ? V.fmtDate(d) : '';
@@ -49,6 +49,7 @@
   }
   const flush = async () => { if (W && dirtyAt && canEdit()) { await save(); } };
   const edit = fn => { fn(); schedule(); };
+  V.ugCtx = { W: () => W, id: () => WID, edit, flush, canEdit, canApprove, schedule };
   const touchRender = () => { schedule(); V.render(); };
 
   // ---------- quality checks ----------
@@ -72,6 +73,7 @@
     const low = all.toLowerCase(); const cm = I().list('cmodx'), ca = I().list('capp');
     cm.filter(m => String(m.usage || '').trim()).forEach(m => { if (!low.includes(String(m.label || m.name).toLowerCase())) add('medium', 'Coverage', m.label || m.name, 'This custom module has usage instructions in Configuration Inputs but is not mentioned in the guide.'); });
     ca.forEach(a => { if (!low.includes(String(a.name).toLowerCase())) add('low', 'Coverage', a.name, 'This app is listed in Configuration Inputs but is not mentioned in the guide.'); });
+    (V.guideUpdate && V.guideUpdate.checks ? V.guideUpdate.checks(g) : []).forEach(c => out.push(c));
     const o = { high: 0, medium: 1, low: 2 }; return out.sort((a, b) => o[a.sev] - o[b.sev]);
   }
   V.guideChecks = checks;
@@ -81,7 +83,7 @@
   const stTag = s => { const x = STT[s] || STT.draft; return tag(x[0], x[1]); };
   V.guidebuilder = {
     html() {
-      I().load(['ugd', 'cmodx', 'capp', 'vid', 'ai']); if (!I().ready(['ugd'])) return '<div class="page-body"><div class="muted" style="padding:20px">Loading…</div></div>';
+      I().load(['ugd', 'cmodx', 'capp', 'vid', 'ai', 'ugv', 'ugu']); if (!I().ready(['ugd'])) return '<div class="page-body"><div class="muted" style="padding:20px">Loading…</div></div>';
       const can = canEdit();
       if (!S.ui.ugOpen || !(W && WID === S.ui.ugOpen) && !open(S.ui.ugOpen)) {
         S.ui.ugOpen = null; V.beforeLeave = null;
@@ -94,12 +96,14 @@
       const bar = `<div class="tabs" role="tablist">${TABS.map(([k, l]) => `<button class="tab${tab === k ? ' active' : ''}" role="tab" data-act="ugTab" data-v="${k}">${l}${k === 'checks' && ck.length ? ` <span class="xs">(${ck.length})</span>` : ''}</button>`).join('')}</div>`;
       let body = '';
       if (tab === 'content') body = contentHtml(can);
+      if (tab === 'update') body = V.guideUpdate ? V.guideUpdate.html() : '';
+      if (tab === 'versions') body = V.guideUpdate ? V.guideUpdate.versionsHtml() : '';
       if (tab === 'brand') body = brandHtml(can);
       if (tab === 'checks') body = checksHtml(ck);
       if (tab === 'export') body = `<div class="card" style="padding:16px"><p class="small">Exports use the branding and the current content. ${W.status === 'approved' ? 'This guide is approved.' : 'This guide is a <b>draft</b>: the cover says so.'} AI source tags are removed. ${ck.filter(c => c.sev === 'medium').length ? `<b>${ck.filter(c => c.sev === 'medium').length} medium finding(s)</b> are still open on the Quality checks tab.` : ''}</p><div class="row" style="gap:8px"><button class="btn primary" data-act="ugDocx">${ico('dl')}Word (.docx)</button><button class="btn" data-act="ugPdf">${ico('dl')}PDF</button></div></div>`;
       return head + `<div class="page-body">${bar}<div style="margin-top:12px">${body}</div></div>`;
     },
-    mount() { document.querySelectorAll('[data-ugimg]').forEach(async img => { try { const b = await V.fileBlob(img.getAttribute('data-ugimg')); img.src = URL.createObjectURL(b); } catch (e) { img.alt = 'Image not available'; } }); }
+    mount() { if (V.guideUpdate && V.guideUpdate.mount) V.guideUpdate.mount(); document.querySelectorAll('[data-ugimg]').forEach(async img => { try { const b = await V.fileBlob(img.getAttribute('data-ugimg')); img.src = URL.createObjectURL(b); } catch (e) { img.alt = 'Image not available'; } }); }
   };
   function contentHtml(can) {
     const s = W.sections; const d = can ? '' : 'disabled';

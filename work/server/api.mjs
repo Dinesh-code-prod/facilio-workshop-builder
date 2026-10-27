@@ -19,11 +19,12 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
     ftr_workbook: { ext: ['xlsx', 'xlsm'], max: 40e6 }, kpi_workbook: { ext: ['xlsx', 'xlsm'], max: 40e6 },
     config_evidence: { ext: ['pdf', 'xlsx', 'csv', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'txt'], max: 20e6 },
     guide_media: { ext: ['png', 'jpg', 'jpeg'], max: 8e6 },
+    ticket_attachment: { ext: ['pdf', 'xlsx', 'xls', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'csv', 'txt', 'msg', 'eml'], max: 20e6 },
     report_attachment: { ext: ['pdf', 'xlsx', 'xls', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'csv', 'txt'], max: 20e6 },
     signoff_evidence: { ext: ['pdf', 'png', 'jpg', 'jpeg', 'msg', 'eml', 'docx'], max: 20e6 }, brd_signed: { ext: ['docx', 'pdf', 'json'], max: MAX_FILE }
   };
   // record kinds the team can store (same list as the Netlify server's portal rules; customer-only rules come with the customer page)
-  const KINDS = ['action', 'decision', 'raid', 'signoff', 'cr', 'onb', 'onbsub', 'onbfile', 'onbws', 'owner', 'agreement', 'minutes', 'checklist', 'build', 'uat', 'digest', 'ctrcore', 'ctrfees', 'ctrlegal', 'ctrrates', 'scope', 'modbrief', 'fieldreq', 'note', 'ctrwatch', 'usecase', 'discrepancy', 'brdrev', 'ai', 'hc', 'hcrep', 'ho', 'close', 'rep', 'kpi', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'lesson'];
+  const KINDS = ['action', 'decision', 'raid', 'signoff', 'cr', 'onb', 'onbsub', 'onbfile', 'onbws', 'owner', 'agreement', 'minutes', 'checklist', 'build', 'uat', 'digest', 'ctrcore', 'ctrfees', 'ctrlegal', 'ctrrates', 'scope', 'modbrief', 'fieldreq', 'note', 'ctrwatch', 'usecase', 'discrepancy', 'brdrev', 'ai', 'hc', 'hcrep', 'ho', 'close', 'rep', 'kpi', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'lesson', 'tkt', 'res', 'ugv', 'ugu'];
   const DOC_SECTIONS = /^[a-z][a-z0-9_]{1,40}$/, ITEM_ID_RE = /^[A-Za-z0-9_-]{1,80}$/, GR_KEY = /^[a-z]{2,8}:[afbxw]:[A-Za-z0-9_-]{1,64}$/;
 
   class HttpError extends Error { constructor(status, msg, extra) { super(msg); this.status = status; this.extra = extra; } }
@@ -123,6 +124,45 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
     return out.sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
   }
   async function itemsFor(pid, kinds) { return [].concat(...(await Promise.all(kinds.map(k => itemsOf(pid, k))))); }
+
+
+  // ---------- tickets: shared rules, numbering, Teams notices, e-mail intake ----------
+  const TKT_STATUS = ['New', 'Open', 'In Progress', 'Waiting for Client', 'Resolved', 'Closed'], TKT_PRIO = ['Low', 'Medium', 'High', 'Urgent'];
+  async function ticketSanitize(s, pid, cur, data) {
+    const subject = str(data.subject, 200, 'Subject', true); const status = data.status || (cur ? cur.status : 'New');
+    if (!TKT_STATUS.includes(status)) throw new HttpError(400, 'Unknown ticket status'); const priority = data.priority || 'Medium'; if (!TKT_PRIO.includes(priority)) throw new HttpError(400, 'Unknown priority');
+    let n = cur && cur.n; if (!n) { const all = await itemsOf(pid, 'tkt'); n = all.reduce((m, it) => Math.max(m, Number(it.data.n) || 0), 0) + 1; }
+    // the conversation is append-only through the message route; an edit can never rewrite or drop earlier messages
+    const thread = cur && Array.isArray(cur.thread) ? cur.thread : (Array.isArray(data.thread) && !cur ? data.thread.slice(0, 1) : []);
+    const t = now(); const resolvedAt = status === 'Resolved' || status === 'Closed' ? ((cur && cur.resolvedAt) || t) : null;
+    return Object.assign({}, data, { n, subject, status, priority, thread, resolvedAt, lastActivity: cur ? t : (data.lastActivity || t), description: str(data.description, 20000, 'Description') });
+  }
+  async function teamsPing(project, pid, key, tk, title, assigneeEmail) {
+    try {
+      if (!CTX.teams || !CTX.teams.send) return; let on = ''; try { on = await CTX.secrets.get('teams_notify'); } catch (e) { }
+      if (String(on).toLowerCase() !== 'on') return; // off until an owner adds the plain secret teams_notify = on
+      const to = assigneeEmail ? [assigneeEmail] : undefined;
+      await CTX.teams.send({ to, channel: true, title, text: tk.subject, facts: [{ title: 'Project', value: project.name }, { title: 'Status', value: tk.status }, { title: 'Priority', value: tk.priority }, { title: 'Client', value: tk.org || (tk.requester && tk.requester.name) || '—' }], actions: [{ title: 'Open ticket', url: 'https://facilio-delivery-studio.facilio.work/#/p/' + pid + '/tickets/' + key }] });
+    } catch (e) { console.log('teams notice failed: ' + (e && e.message)); }
+  }
+  async function ticketNotify(project, key, cur, data, s) {
+    const id = 'TKT-' + data.n; const ae = data.assignee && data.assignee.email; const was = cur || {};
+    if (!cur) return teamsPing(project, project.id, key, data, id + ' created', ae);
+    if ((was.assignee && was.assignee.email) !== ae && ae) return teamsPing(project, project.id, key, data, id + ' assigned to ' + (data.assignee.name || ae), ae);
+    if (was.status !== data.status) return teamsPing(project, project.id, key, data, id + ' is now ' + data.status, ae);
+    if (was.priority !== data.priority) return teamsPing(project, project.id, key, data, id + ' priority is now ' + data.priority, ae);
+  }
+  async function ticketAppend(s, pid, key, msg, extra) {
+    return withLock('it.' + pid + '.tkt.' + key, async () => {
+      const col = 'it.' + pid + '.tkt', pcol = 'ip.' + pid + '.tkt'; const row = await dbGet(col, key); if (!row) throw new HttpError(404, 'Ticket not found'); const head = row.value, cur = await unpack(pcol, key, head);
+      const m = { id: rid('m'), at: now(), by: msg.by || s.name || s.email, byEmail: msg.byEmail || s.email, type: msg.type, text: str(msg.text, 20000, 'Message', true), attachments: (msg.attachments || []).slice(0, 10).map(a => ({ name: String(a.name || '').slice(0, 200), fileId: a.fileId ? String(a.fileId).slice(0, 80) : undefined, note: a.note ? String(a.note).slice(0, 200) : undefined })), ref: msg.ref ? String(msg.ref).slice(0, 300) : undefined };
+      const data = Object.assign({}, cur, extra || {}, { thread: (cur.thread || []).concat([m]).slice(-300), lastActivity: m.at });
+      if (cur.status === 'Waiting for Client' && m.type === 'inbound') data.status = 'Open'; // a client reply puts the ticket back in the team's hands
+      data.hist = (cur.hist || []).concat([{ at: m.at, who: m.by, side: 'facilio', event: m.type === 'note' ? 'Added an internal note' : m.type === 'inbound' ? 'Client message received' : 'Replied to the client' }]).slice(-40);
+      if (JSON.stringify(data).length > 150000) throw new HttpError(413, 'This ticket has reached its size limit. Open a follow-up ticket.');
+      const nh = Object.assign({}, head, { v: head.v + 1, ub: s.id, ua: m.at }); await save(col, pcol, key, nh, data, head.z); return itemOut('tkt', key, nh, data);
+    });
+  }
 
   // ---------- route table ----------
   const routes = [];
@@ -372,6 +412,36 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
 
   // items
   const kindList = q => String(q || '').split(',').filter(k => KINDS.includes(k));
+
+  // tickets across every project this person can open (items are per project, so this reads each project's ticket records)
+  route('GET', '/api/tickets', async () => {
+    const s = await me(); const ar = await adminRole(s); const rows = (await dbList('projects')).map(r => r.value).filter(p => p && !p.archived);
+    const mine = ar ? rows : rows.filter(p => (p.members || []).some(m => m.id === s.id)); const out = [];
+    const projects = mine.slice(0, 200).map(p => ({ id: p.id, name: p.name, customer: p.customer, canEdit: ar ? ar !== 'sub' : ((p.members || []).find(m => m.id === s.id) || {}).role !== 'viewer', members: (p.members || []).map(m => ({ id: m.id, email: m.email, name: m.name })) }));
+    for (const p of mine.slice(0, 200)) for (const it of await itemsOf(p.id, 'tkt')) out.push(Object.assign({ projectId: p.id, project: p.name, customer: p.customer, canEdit: ar ? ar !== 'sub' : ((p.members || []).find(m => m.id === s.id) || {}).role !== 'viewer' }, it));
+    return ok({ projects, tickets: out.sort((a, b) => String(b.data.lastActivity || b.updatedAt).localeCompare(String(a.data.lastActivity || a.updatedAt))).slice(0, 3000) });
+  });
+  // reply / internal note: appended on the server so two people replying at once never overwrite each other
+  route('POST', '/api/projects/:id/tickets/:item/message', async (b, P) => {
+    const s = await me(); await projectAccess(s, P.id, 'edit'); if (!ITEM_ID_RE.test(P.item)) throw new HttpError(400, 'Unknown ticket');
+    const type = b && b.type === 'note' ? 'note' : 'reply'; const it = await ticketAppend(s, P.id, P.item, { type, text: b && b.text, attachments: b && b.attachments });
+    await audit(P.id, s.id, 'tkt-' + type, P.item); return ok({ item: it }, 201);
+  });
+  // e-mail intake: one normalised message in (from Power Automate, Graph, a mail rule or a person pasting a mail), one ticket or one more message out. Duplicates are ignored.
+  route('POST', '/api/projects/:id/tickets/ingest', async (b, P) => {
+    const s = await me(); const { project } = await projectAccess(s, P.id, 'edit'); b = b || {};
+    const messageId = str(b.messageId, 300, 'messageId', true), conv = str(b.conversationId || b.messageId, 300, 'conversationId'); const from = b.from || {}; const email = str(from.email, 200, 'Sender e-mail', true).toLowerCase();
+    const all = await itemsOf(P.id, 'tkt'); const seen = all.find(t => (t.data.thread || []).some(m => m.ref === messageId)); if (seen) return ok({ duplicate: true, id: seen.id, ticket: seen.data.n });
+    const ex = all.find(t => t.data.extConv && t.data.extConv === conv && t.data.status !== 'Closed');
+    const text = str(b.body, 20000, 'Message', true); const att = Array.isArray(b.attachments) ? b.attachments.slice(0, 10).map(a => ({ name: String(a.name || 'attachment').slice(0, 200), note: 'Listed from the e-mail; the file itself is not copied' })) : [];
+    if (ex) { const it = await ticketAppend(s, P.id, ex.id, { type: 'inbound', text, by: from.name || email, byEmail: email, attachments: att, ref: messageId }); return ok({ duplicate: false, appended: true, id: ex.id, ticket: it.data.n, status: it.data.status }); }
+    const key = 'tk_' + rid('').slice(1, 13); const subject = str(b.subject || '(no subject)', 200, 'Subject');
+    const data = await ticketSanitize(s, P.id, null, { subject, description: text.slice(0, 20000), status: 'New', priority: 'Medium', source: 'email', org: project.customer || '', requester: { name: from.name || email, email }, extConv: conv, extRef: messageId, category: /\bmeet|\bcall\b|catch.?up|schedul/i.test(subject) ? 'Meeting request' : 'Client request', lastActivity: b.receivedAt || now(), thread: [] });
+    await withLock('it.' + P.id + '.tkt.' + key, async () => { const t = now(); await save('it.' + P.id + '.tkt', 'ip.' + P.id + '.tkt', key, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: t, ua: t }, Object.assign(data, { hist: [{ at: t, who: from.name || email, side: 'customer', event: 'Created from e-mail' }] }), 0); });
+    const it = await ticketAppend(s, P.id, key, { type: 'inbound', text, by: from.name || email, byEmail: email, attachments: att, ref: messageId });
+    await ticketNotify(project, key, null, it.data, s); await audit(P.id, s.id, 'tkt-email', key); return ok({ duplicate: false, created: true, id: key, ticket: it.data.n }, 201);
+  });
+
   route('GET', '/api/projects/:id/items', async (b, P, Q) => { const s = await me(); await projectAccess(s, P.id, 'read'); const kinds = kindList(Q.get('kinds')); if (!kinds.length) throw new HttpError(400, 'Name the kinds to load'); return ok({ items: await itemsFor(P.id, kinds) }); });
   route('GET', '/api/projects/:id/open', async (b, P, Q) => {
     const s = await me(); const { project, role } = await projectAccess(s, P.id, 'read');
@@ -395,15 +465,18 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
       const edited = cur && JSON.stringify([data.title, data.sections, data.customer, data.version]) !== JSON.stringify([cur.title, cur.sections, cur.customer, cur.version]);
       data = Object.assign({}, data, cur ? { status: edited && cur.status === 'approved' ? 'draft' : cur.status, approvedBy: edited && cur.status === 'approved' ? null : cur.approvedBy, approvedAt: edited && cur.status === 'approved' ? null : cur.approvedAt } : { status: 'draft', approvedBy: null, approvedAt: null });
     }
+    if (P.kind === 'tkt') { data = await ticketSanitize(s, P.id, cur, data); }
+    if (P.kind === 'res') { const u = String(data.url || '').trim(); if (!/^https?:\/\/[^\s]+$/i.test(u)) throw new HttpError(400, 'Enter a full link starting with http:// or https://'); if (!String(data.name || '').trim()) throw new HttpError(400, 'Name is required'); data = Object.assign({}, data, { url: u, name: String(data.name).trim().slice(0, 200), createdByName: cur ? cur.createdByName : (s.name || s.email) }); }
     if (P.kind === 'cr' && !cur) { const all = await itemsOf(P.id, 'cr'); const mx = all.reduce((m, it) => (/^[0-9]+$/.test(String(it.data.n)) ? Math.max(m, Number(it.data.n)) : m), 0); data = Object.assign({}, data, { n: mx + 1 }); }
     else if (P.kind === 'cr' && cur) data = Object.assign({}, data, { n: cur.n });
     const prevHist = cur && Array.isArray(cur.hist) ? cur.hist : [];
     const changed = Object.keys(data).filter(k => k !== 'hist' && JSON.stringify(data[k]) !== JSON.stringify(cur ? cur[k] : undefined));
     data = Object.assign({}, data, { hist: prevHist.concat(changed.length || !cur ? [{ at: now(), who: s.name || 'Implementation team', side: 'facilio', event: cur ? 'Updated ' + changed.slice(0, 6).join(', ') + (data.status && changed.includes('status') ? ' → ' + data.status : '') : 'Created' }] : []).slice(-40) });
-    if (JSON.stringify(data).length > (P.kind === 'onbws' ? 2000000 : P.kind === 'ugd' ? 400000 : P.kind === 'vid' ? 200000 : 60000)) throw new HttpError(413, 'Record too large');
+    if (JSON.stringify(data).length > (P.kind === 'onbws' ? 2000000 : (P.kind === 'ugd' || P.kind === 'ugv' || P.kind === 'ugu') ? 400000 : P.kind === 'vid' ? 200000 : P.kind === 'tkt' ? 150000 : 60000)) throw new HttpError(413, 'Record too large');
     const t = now(); const nh = { v: head ? head.v + 1 : 1, cb: head ? head.cb : s.id, cs: head ? head.cs : 'facilio', ub: s.id, us: 'facilio', ca: head ? head.ca : t, ua: t };
     await save(col, pcol, P.item, nh, data, head && head.z); await saveProject(project);
-    if (['signoff', 'cr', 'raid', 'onb', 'onbsub', 'decision', 'brdrev', 'ai', 'hc', 'ho', 'close', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid'].includes(P.kind)) await audit(P.id, s.id, P.kind + (cur ? '-updated' : '-created'), P.item + (data.status ? ' ' + data.status : ''));
+    if (P.kind === 'tkt') await ticketNotify(project, P.item, cur, data, s);
+    if (['signoff', 'cr', 'raid', 'onb', 'onbsub', 'decision', 'brdrev', 'ai', 'hc', 'ho', 'close', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'tkt', 'res', 'ugv', 'ugu'].includes(P.kind)) await audit(P.id, s.id, P.kind + (cur ? '-updated' : '-created'), P.item + (data.status ? ' ' + data.status : ''));
     return ok({ item: itemOut(P.kind, P.item, nh, data) });
   }));
   route('DELETE', '/api/projects/:id/items/:kind/:item', async (b, P) => {

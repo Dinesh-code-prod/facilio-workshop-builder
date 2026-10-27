@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import handler from '../work/server/api.mjs';
 const store = new Map(), files = new Map(); let maxVal = 0, calls = 0;
 const KEY = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
-const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' }, secrets: { async get(k) { if (k === 'anthropic_api_key' && globalThis.__KEY) return globalThis.__KEY; throw new Error('no secret'); } }, llm: async ({ messages }) => ({ model: 'mock', choices: [{ message: { content: '## Draft\nBased on [S1]. ' + messages[1].content.slice(0, 20) } }] }),
+const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' }, teams: { async send(m) { (globalThis.__SENT = globalThis.__SENT || []).push(m); return { delivered: 1, failed: 0 }; } }, secrets: { async get(k) { if (k === 'anthropic_api_key' && globalThis.__KEY) return globalThis.__KEY; if (k === 'teams_notify' && globalThis.__TEAMS) return globalThis.__TEAMS; throw new Error('no secret'); } }, llm: async ({ messages }) => ({ model: 'mock', choices: [{ message: { content: '## Draft\nBased on [S1]. ' + messages[1].content.slice(0, 20) } }] }),
   db: {
     async get(c, k) { calls++; const r = (store.get(c) || new Map()).get(k); return r ? { key: k, value: JSON.parse(r), updated_at: '', updated_by: '' } : null; },
     async put(c, k, v) { calls++; assert.ok(KEY.test(k), 'bad key ' + k); assert.ok(/^[A-Za-z0-9._-]{1,64}$/.test(c), 'bad collection ' + c); const t = JSON.stringify(v); maxVal = Math.max(maxVal, t.length); if (t.length > 128 * 1024) { const e = new Error('too large'); e.status = 413; throw e; } if (!store.has(c)) store.set(c, new Map()); store.get(c).set(k, t); },
@@ -136,6 +136,39 @@ await t('security: forged upload ids refused; superseded records stay out of AI 
   r = await call(sam, 'POST', `/api/projects/${pid}/files/${fid}/complete`, {}); assert.equal(r.status, 200); r = await call(sam, 'POST', `/api/projects/${pid}/files/${fid}/complete`, {}); assert.equal(r.status, 200, 'completing twice is harmless');
   await call(sam, 'PUT', `/api/projects/${pid}/items/decision/dec_old`, { data: { title: 'OLD-DECISION-MARKER', status: 'superseded' } }); await call(sam, 'PUT', `/api/projects/${pid}/items/decision/dec_new`, { data: { title: 'NEW-DECISION-MARKER' } });
   r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'gaps' }); assert.equal(r.status, 201); const lab = (r.data.item.data.sources || []).map(x => x.label).join('|'); assert.ok(/decision \(1\)/.test(lab), 'only the live decision is a source: ' + lab);
+});
+await t('tickets: numbering, lifecycle, append-only thread, permissions, cross-project list', async () => {
+  let r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t1`, { data: { subject: 'Cannot raise inventory request', description: 'Button missing', status: 'New', priority: 'High', requester: { name: 'Ann', email: 'ann@acme.com' }, org: 'Acme' } }); assert.equal(r.status, 200, JSON.stringify(r.data)); assert.equal(r.data.item.data.n, 1);
+  r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t2`, { data: { subject: 'Second', status: 'New', priority: 'Low' } }); assert.equal(r.data.item.data.n, 2);
+  r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t3`, { data: { subject: 'x', status: 'Weird' } }); assert.equal(r.status, 400); r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t3`, { data: { subject: '', status: 'New' } }); assert.equal(r.status, 400);
+  const rs = await Promise.all([1, 2, 3, 4].map(i => call(sam, 'POST', `/api/projects/${pid}/tickets/t1/message`, { type: i % 2 ? 'note' : 'reply', text: 'msg ' + i }))); assert.ok(rs.every(x => x.status === 201));
+  r = await call(sam, 'GET', `/api/projects/${pid}/items?kinds=tkt`); const t1 = r.data.items.find(x => x.id === 't1').data; assert.equal(t1.thread.length, 4, 'four simultaneous messages all kept');
+  r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t1`, { data: Object.assign({}, t1, { thread: [], status: 'In Progress' }) }); assert.equal(r.data.item.data.thread.length, 4, 'an edit cannot erase the conversation'); assert.equal(r.data.item.data.status, 'In Progress');
+  r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t1`, { data: Object.assign({}, r.data.item.data, { status: 'Resolved' }) }); assert.ok(r.data.item.data.resolvedAt); r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t1`, { data: Object.assign({}, r.data.item.data, { status: 'Open' }) }); assert.equal(r.data.item.data.resolvedAt, null, 'reopen clears the resolved time');
+  r = await call(out, 'POST', `/api/projects/${pid}/tickets/t1/message`, { type: 'reply', text: 'viewer' }); assert.equal(r.status, 403, 'viewers are read-only');
+  r = await call(sam, 'POST', `/api/projects/${pid}/tickets/t1/message`, { type: 'reply', text: '   ' }); assert.equal(r.status, 400);
+  r = await call(sam, 'GET', '/api/tickets'); assert.equal(r.data.tickets.length, 2); assert.equal(r.data.tickets[0].project, 'Alpha');
+  r = await call('stranger@facilio.com', 'GET', '/api/tickets'); assert.equal(r.data.tickets.length, 0, 'no access, no tickets');
+});
+await t('tickets: e-mail intake creates, dedupes and appends by conversation', async () => {
+  const mail = { messageId: '<m1@x>', conversationId: 'conv-1', from: { name: 'Ann', email: 'ann@acme.com' }, subject: 'Can we meet on Thursday?', body: 'Please schedule a call', attachments: [{ name: 'a.pdf' }] };
+  let r = await call(sam, 'POST', `/api/projects/${pid}/tickets/ingest`, mail); assert.equal(r.status, 201); assert.equal(r.data.created, true); const key = r.data.id;
+  r = await call(sam, 'POST', `/api/projects/${pid}/tickets/ingest`, mail); assert.equal(r.data.duplicate, true, 'same message twice is ignored');
+  r = await call(sam, 'POST', `/api/projects/${pid}/tickets/ingest`, Object.assign({}, mail, { messageId: '<m2@x>', body: 'Thursday 3pm works' })); assert.equal(r.data.appended, true); assert.equal(r.data.id, key);
+  r = await call(sam, 'GET', `/api/projects/${pid}/items?kinds=tkt`); const t = r.data.items.find(x => x.id === key).data; assert.equal(t.thread.length, 2); assert.equal(t.source, 'email'); assert.equal(t.category, 'Meeting request'); assert.equal(t.requester.email, 'ann@acme.com');
+  r = await call(sam, 'POST', `/api/projects/${pid}/tickets/ingest`, { messageId: 'z' }); assert.equal(r.status, 400, 'sender is required');
+});
+await t('tickets: Teams notices stay off until configured, then fire for create / assign / status / priority', async () => {
+  globalThis.__SENT = []; let r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t9`, { data: { subject: 'Quiet', status: 'New' } }); assert.equal(globalThis.__SENT.length, 0, 'off by default');
+  globalThis.__TEAMS = 'on'; r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t10`, { data: { subject: 'Loud', status: 'New', priority: 'Medium' } }); assert.equal(globalThis.__SENT.length, 1); assert.ok(/created/.test(globalThis.__SENT[0].title)); assert.ok(globalThis.__SENT[0].actions[0].url.includes(pid + '/tickets/t10'));
+  let d = r.data.item.data; r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t10`, { data: Object.assign({}, d, { assignee: { name: 'Lee', email: lead } }) }); assert.ok(/assigned/.test(globalThis.__SENT[1].title)); assert.deepEqual(globalThis.__SENT[1].to, [lead]);
+  d = r.data.item.data; r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t10`, { data: Object.assign({}, d, { status: 'Waiting for Client' }) }); assert.ok(/Waiting for Client/.test(globalThis.__SENT[2].title));
+  d = r.data.item.data; r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t10`, { data: Object.assign({}, d, { priority: 'Urgent' }) }); assert.ok(/Urgent/.test(globalThis.__SENT[3].title)); globalThis.__TEAMS = '';
+});
+await t('resources: links validated, owner kept', async () => {
+  let r = await call(sam, 'PUT', `/api/projects/${pid}/items/res/r1`, { data: { name: 'Kick-off recording', url: 'javascript:alert(1)', type: 'Recording' } }); assert.equal(r.status, 400, 'only http(s) links');
+  r = await call(sam, 'PUT', `/api/projects/${pid}/items/res/r1`, { data: { name: 'Kick-off recording', url: 'https://miro.com/app/board/x', type: 'Miro' } }); assert.equal(r.status, 200); assert.equal(r.data.item.data.createdByName, 'Sam K');
+  r = await call(dinesh, 'PUT', `/api/projects/${pid}/items/res/r1`, { data: Object.assign({}, r.data.item.data, { name: 'Renamed' }) }); assert.equal(r.data.item.data.createdByName, 'Sam K', 'original author kept');
 });
 await t('admin: only granted people, enforced on the server', async () => {
   let r = await call(sam, 'GET', '/api/admin/overview'); assert.equal(r.status, 403);
