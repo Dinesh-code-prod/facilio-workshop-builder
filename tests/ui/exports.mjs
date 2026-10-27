@@ -23,6 +23,7 @@ await page.goto(BASE + `/#/p/${pid}/dashreport`); await page.reload(); await pag
 const go = async v => { await page.evaluate(() => { document.querySelectorAll('.scrim').forEach(e => e.remove()); }); await page.evaluate(v => window.FWBViews.go(v), v); await page.waitForTimeout(900); await page.waitForSelector('#loading', { state: 'detached', timeout: 10000 }).catch(() => { }); };
 const lastToast = () => page.evaluate(() => [...document.querySelectorAll('.toast')].map(t => t.textContent).join(' | '));
 async function dl(name, trigger) {
+  await page.waitForSelector('#loading', { state: 'detached', timeout: 30000 }).catch(() => { }); await page.waitForTimeout(300);
   try { const [d] = await Promise.all([page.waitForEvent('download', { timeout: 45000 }), (async () => { await trigger(); for (let i = 0; i < 12; i++) { await page.waitForTimeout(150); const c = await page.$('.scrim .dialog [data-r="1"]'); if (c) { await c.click(); break; } } })()]); const f = path.join(OUT, d.suggestedFilename()); await d.saveAs(f); return f; }
   catch (e) { ok(name, null, [['download arrived (' + (await lastToast()) + ')', false]]); return null; }
 }

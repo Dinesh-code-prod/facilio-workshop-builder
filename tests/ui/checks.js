@@ -41,7 +41,7 @@
       if (tag === 'BUTTON' || tag === 'A' || el.hasAttribute('data-act')) {
         const bg = cs.backgroundColor, bd = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth), ul = /underline/.test(cs.textDecorationLine), ptr = cs.cursor === 'pointer';
         const parentColor = el.parentElement ? getComputedStyle(el.parentElement).color : '';
-        const plain = !/^(TR|TD|LI)$/.test(tag) && !el.matches('.dr-bar, .fn-row, .list-item') && (bg === 'rgba(0, 0, 0, 0)' || bg === 'transparent') && bd === 0 && !ul && cs.color === parentColor && !el.querySelector('svg,img,.fi') && el.innerText.trim().length > 1 && !el.closest('.sidebar, .adm-nav, .tabs, .dtabs, .seg, .popover, #userPop, .um-i, .tbl th, nav, [role=tablist], [role=menu]');
+        const plain = !/^(TR|TD|LI)$/.test(tag) && !el.matches('.dr-bar, .fn-row, .sb-r, .list-item') && (bg === 'rgba(0, 0, 0, 0)' || bg === 'transparent') && bd === 0 && !ul && cs.color === parentColor && !el.querySelector('svg,img,.fi') && el.innerText.trim().length > 1 && !el.closest('.sidebar, .adm-nav, .tabs, .dtabs, .seg, .popover, #userPop, .um-i, .tbl th, nav, [role=tablist], [role=menu]');
         if (plain) add('action-looks-like-text', el, ptr ? 'pointer' : 'no-pointer');
         if (!ptr && !el.disabled && cs.pointerEvents !== 'none' && tag !== 'A') add('no-pointer-cursor', el, '');
         if (tag === 'BUTTON' && !el.innerText.trim() && !el.getAttribute('aria-label') && !el.title) add('icon-no-label', el, '');
@@ -64,7 +64,7 @@
     }
     // overlapping controls and labels (siblings drawn on top of each other)
     const modal = [...document.querySelectorAll('.scrim, [aria-modal=true]')].filter(vis).pop(); const oscope = modal || scope;
-    const boxes = [...oscope.querySelectorAll('button, input, select, textarea, label, .btn, .tag, h1, h2, h3, h4')].filter(e => vis(e) && inViewport(e) && !e.closest('.popover, #userPop') && !e.closest('.cn, .auth-art, svg, .lsx, .switch')).map(e => ({ e, r: visibleRect(e) })).filter(x => x.r.right - x.r.left > 1 && x.r.bottom - x.r.top > 1);
+    const boxes = [...oscope.querySelectorAll('button, input, select, textarea, label, .btn, .tag, h1, h2, h3, h4')].filter(e => vis(e) && inViewport(e) && !e.closest('.popover, #userPop, .pw-wrap') && !e.closest('.cn, .auth-art, svg, .lsx, .switch')).map(e => ({ e, r: visibleRect(e) })).filter(x => x.r.right - x.r.left > 1 && x.r.bottom - x.r.top > 1);
     for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
       const a = boxes[i], b = boxes[j]; if (a.e.contains(b.e) || b.e.contains(a.e)) continue;
       const ox = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left), oy = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top);

@@ -456,6 +456,7 @@ body .navbar:not(#_) > .left { flex: none; display: flex; align-items: center; }
 body .navbar:not(#_) > .center { flex: 1 1 auto; min-width: 0; max-width: none; text-align: center; padding: 0 8px; }
 body .navbar:not(#_) > .right { flex: none; display: flex; align-items: center; }
 /* clickable list rows (chart bars, funnel rows, legends, recent lists): pointer, hover tint and focus ring, like table rows */
-body :is(.dr-bar, .fn-row.click, li.click, .list-item[data-act]) { border-radius: 6px; transition: background .12s; }
-body :is(.dr-bar, .fn-row.click, li.click, .list-item[data-act]):hover { background: var(--ds-blue-50) !important; }
+body :is(.dr-bar, .fn-row.click, li.click, .sb-r.click, .list-item[data-act]) { border-radius: 6px; transition: background .12s; }
+body :is(.dr-bar, .fn-row.click, li.click, .sb-r.click, .list-item[data-act]):hover { background: var(--ds-blue-50) !important; }
 body :is(.dr-bar, .fn-row.click, li.click):focus-visible { outline: 2px solid var(--ds-blue); outline-offset: 1px; }
+body .pp-step { font-size: 11.5px !important; letter-spacing: .4px !important; }
