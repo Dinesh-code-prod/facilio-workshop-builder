@@ -10,7 +10,8 @@ const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' 
     async delete(c, k) { calls++; (store.get(c) || new Map()).delete(k); },
     async list(c, o = {}) { calls++; const keys = [...(store.get(c) || new Map()).keys()].sort(); const start = o.cursor ? keys.findIndex(k => k > o.cursor) : 0; if (start < 0) return { items: [] }; const page = keys.slice(start, start + (o.limit || 50)); return { items: page.map(k => ({ key: k, value: JSON.parse(store.get(c).get(k)) })), cursor: start + page.length < keys.length ? page[page.length - 1] : undefined }; }
   },
-  files: { async uploadUrl(name) { const id = 'file_' + files.size; files.set(id, null); return { url: 'https://storage.example/' + id, file_id: id }; }, async url(id) { return { url: 'https://storage.example/get/' + id }; } } });
+  files: { async get(id) { const b = (globalThis.__FILEBYTES || {})[id]; if (!b) { const e = new Error('too large for get'); e.status = 413; throw e; } return { bytes: async () => b }; }, async delete(id) { files.delete(id); (globalThis.__DELETED = globalThis.__DELETED || []).push(id); }, async uploadUrl(name) { const id = 'file_' + (globalThis.__FID = (globalThis.__FID || 0) + 1); files.set(id, null); return { url: 'https://storage.example/' + id, file_id: id }; }, async url(id) { return { url: 'https://storage.example/get/' + id }; } } });
+const realFetch = globalThis.fetch; globalThis.fetch = async (u, o) => { if (String(u).startsWith('https://storage.example/')) throw new Error('storage not reachable in tests'); return realFetch(u, o); };
 const call = async (email, method, path, body, headers) => {
   const [p, q] = path.split('?'); const sub = p.replace(/^\/api/, '');
   const req = { method, path: sub, query: q || '', headers: headers || {}, text: async () => (body === undefined ? '' : JSON.stringify(body)), json: async () => body };
@@ -238,6 +239,14 @@ await t('support mailbox: sync routes mail by ticket tag and sender rules, parks
   r = await call(dinesh, 'POST', '/api/mail/sync'); assert.deepEqual([r.data.result.tickets, r.data.result.appended, r.data.result.unrouted], [0, 0, 0], 'second sync adds nothing');
   r = await call(dinesh, 'GET', '/api/mail/inbox'); assert.equal(r.data.items.length, 1); const mid = r.data.items[0].id;
   r = await call(dinesh, 'POST', `/api/mail/inbox/${mid}/route`, { projectId: pid }); assert.equal(r.status, 200); r = await call(dinesh, 'GET', '/api/mail/inbox'); assert.equal(r.data.items.length, 0);
+  // a ticket tag only routes for the ticket's own sender (or their company domain / a mailbox rule); shared mail domains need the exact address
+  globalThis.__GRAPH = async () => ({ ok: true, status: 200, json: async () => ({ value: [msg('BBB1', 'mallory@evil.org', 'Re: [TKT-1] please add me')] }) });
+  r = await call(dinesh, 'POST', '/api/mail/sync'); assert.deepEqual([r.data.result.appended, r.data.result.unrouted], [0, 1], 'a stranger quoting a ticket number is parked, not appended');
+  globalThis.__GRAPH = async () => ({ ok: true, status: 200, json: async () => ({ value: [msg('BBB2', 'cust.one@gmail.com', 'Login problem')] }) }); r = await call(dinesh, 'POST', '/api/mail/sync');
+  r = await call(dinesh, 'GET', '/api/mail/inbox'); const g = r.data.items.find(i => i.from.email === 'cust.one@gmail.com'); r = await call(dinesh, 'POST', `/api/mail/inbox/${g.id}/route`, { projectId: pid }); assert.equal(r.status, 200);
+  r = await call(dinesh, 'GET', `/api/projects/${pid}/items?kinds=tkt`); const gt = r.data.items.find(i => i.data.requester && i.data.requester.email === 'cust.one@gmail.com'); assert.ok(gt, 'ticket created for the gmail sender');
+  globalThis.__GRAPH = async () => ({ ok: true, status: 200, json: async () => ({ value: [msg('BBB3', 'someone.else@gmail.com', `Re: [TKT-${gt.data.n}]`), msg('BBB4', 'cust.one@gmail.com', `Re: [TKT-${gt.data.n}] more detail`)] }) });
+  r = await call(dinesh, 'POST', '/api/mail/sync'); assert.deepEqual([r.data.result.appended, r.data.result.unrouted], [1, 1], 'same gmail.com domain is not enough; the exact sender is appended');
   globalThis.__GRAPH = async () => ({ ok: false, status: 429, json: async () => ({}) }); r = await call(dinesh, 'POST', '/api/mail/sync'); assert.equal(r.status, 429);
   globalThis.__GRAPH = async () => ({ ok: false, status: 403, json: async () => ({}) }); r = await call(dinesh, 'POST', '/api/mail/sync'); assert.equal(r.status, 502); r = await call(dinesh, 'GET', '/api/mail/status'); assert.equal(r.data.last.ok, false); assert.match(r.data.last.error, /Mail\.Read/);
   delete globalThis.__GRAPH;
@@ -366,5 +375,38 @@ await t('authorization matrix: cross-project ids, viewers, sub-admins, privilege
   r = await call(alice, 'POST', `/api/projects/${A}/files`, { category: 'msa', name: 'run.exe', size: 10 }); assert.equal(r.status, 415);
   r = await call(alice, 'POST', `/api/projects/${A}/files`, { category: 'msa', name: 'big.pdf', size: 9e12 }); assert.equal(r.status, 413);
   r = await call(alice, 'PUT', `/api/projects/${A}/items/tkt/tk_a2`, { data: { subject: 'x', extRef: 'teams:forged', thread: [{ type: 'inbound', text: 'fake client message' }] } }); assert.equal(r.status, 200); assert.equal(r.data.item.data.extRef, undefined, 'source reference is server-only'); assert.equal((r.data.item.data.thread || []).length, 0, 'no seeded messages');
+});
+await t('uploads: content must match the file type; unreadable content is allowed but marked unchecked', async () => {
+  store.delete('rl'); const up = async (name, cat, bytes) => { let r = await call(dinesh, 'POST', `/api/projects/${pid}/files`, { category: cat, name, mime: 'x', size: 100 }); const fid = r.data.id;
+    r = await call(dinesh, 'POST', `/api/projects/${pid}/files/${fid}/chunks/0/url`, {}); const part = r.data.fileId; if (bytes) (globalThis.__FILEBYTES = globalThis.__FILEBYTES || {})[part] = bytes;
+    await call(dinesh, 'PUT', `/api/projects/${pid}/files/${fid}/chunks/0`, { fileId: part }); r = await call(dinesh, 'POST', `/api/projects/${pid}/files/${fid}/complete`, {}); return { r, fid, part }; };
+  let x = await up('contract.pdf', 'msa', Buffer.from('<html><script>alert(1)</script></html>')); assert.equal(x.r.status, 415, 'HTML named .pdf refused'); assert.ok(globalThis.__DELETED.includes(x.part), 'its parts are deleted');
+  let g = await call(dinesh, 'GET', `/api/projects/${pid}/files/${x.fid}`); assert.equal(g.status, 404, 'a rejected upload cannot be downloaded');
+  x = await up('contract.pdf', 'msa', Buffer.from('%PDF-1.7\n...')); assert.equal(x.r.status, 200); assert.equal(x.r.data.file.contentCheck, undefined); g = await call(dinesh, 'GET', `/api/projects/${pid}/files?category=msa`); assert.ok(g.data.files.some(f => f.id === x.fid));
+  x = await up('plan.xlsx', 'plan', Buffer.from([0x4D, 0x5A, 0x90, 0x00])); assert.equal(x.r.status, 415, 'an executable named .xlsx refused');
+  x = await up('plan.xlsx', 'plan', Buffer.concat([Buffer.from([0x50, 0x4B, 0x03, 0x04]), Buffer.alloc(30)])); assert.equal(x.r.status, 200);
+  x = await up('logo.png', 'logo_customer', Buffer.from([0xFF, 0xD8, 0xFF, 0xE0])); assert.equal(x.r.status, 415, 'a JPEG named .png refused (rename it)');
+  x = await up('notes.txt', 'msa', Buffer.from([0x50, 0x4B, 0x03, 0x04, 0, 0])); assert.equal(x.r.status, 415, 'a ZIP named .txt refused');
+  x = await up('big.pdf', 'msa', null); assert.equal(x.r.status, 200, 'content the platform cannot hand back is not blocked');
+  const rec = JSON.parse(store.get('fl.' + pid).get(x.fid)); assert.equal(rec.contentCheck, 'unchecked');
+});
+await t('project access: only the project members and admins; owners add Facilio colleagues by email; others see nothing', async () => {
+  store.delete('rl'); const own = 'owner.one@facilio.com', col = 'colleague.two@facilio.com', other = 'other.three@facilio.com';
+  let r = await call('someone@gmail.com', 'GET', '/api/projects'); assert.equal(r.status, 403, 'non-Facilio accounts are refused'); r = await call('x@facilio.com.evil.io', 'GET', '/api/auth/me'); assert.equal(r.status, 403);
+  r = await call(own, 'POST', '/api/projects', { name: 'Private Co', customer: 'P' }); const P = r.data.project.id;
+  for (const who of [col, other]) { r = await call(who, 'GET', '/api/projects'); assert.ok(!r.data.projects.some(p => p.id === P), 'not listed for ' + who); r = await call(who, 'GET', `/api/projects/${P}`); assert.equal(r.status, 404); r = await call(who, 'GET', '/api/tickets'); assert.ok(!r.data.projects.some(p => p.id === P)); }
+  r = await call(own, 'POST', `/api/projects/${P}/members`, { email: 'friend@gmail.com', role: 'editor' }); assert.equal(r.status, 400, 'only Facilio emails can be added');
+  r = await call(col, 'POST', `/api/projects/${P}/members`, { email: col, role: 'owner' }); assert.equal(r.status, 404, 'a non-member cannot add themselves');
+  r = await call(own, 'POST', `/api/projects/${P}/members`, { email: col, role: 'editor' }); assert.equal(r.status, 201);
+  r = await call(col, 'GET', '/api/projects'); assert.ok(r.data.projects.some(p => p.id === P), 'listed once added'); r = await call(col, 'PUT', `/api/projects/${P}/items/note/n_c1`, { data: { title: 'hello' } }); assert.equal(r.status, 200);
+  r = await call(col, 'POST', `/api/projects/${P}/members`, { email: other, role: 'editor' }); assert.equal(r.status, 403, 'editors cannot add people; only owners and admins');
+  r = await call(other, 'GET', `/api/projects/${P}`); assert.equal(r.status, 404, 'still no access for others');
+  r = await call(dinesh, 'GET', `/api/projects/${P}`); assert.equal(r.status, 200, 'admins can open every project');
+  r = await call(own, 'DELETE', `/api/projects/${P}/members/${col.replace('@', ':')}`); assert.equal(r.status, 200); r = await call(col, 'GET', `/api/projects/${P}`); assert.equal(r.status, 404, 'access ends as soon as someone is removed');
+});
+await t('access check fails closed; AI key and mailbox events appear in the admin audit', async () => {
+  const ctx = mkctx('owner.one@facilio.com'); const g = ctx.db.get; ctx.db.get = async (c, k) => { if (c === 'usr') throw new Error('store down'); return g(c, k); };
+  const res = await handler({ method: 'GET', path: '/projects', query: '', headers: {}, text: async () => '' }, ctx); assert.equal(res.status, 503);
+  let r = await call(dinesh, 'GET', '/api/admin/audit'); assert.ok(r.data.entries.some(e => e.action === 'ai-key-saved' || e.action === 'ai-key-removed'), 'AI key changes listed'); assert.ok(r.data.entries.some(e => e.action === 'mail-sync'), 'mail syncs listed');
 });
 console.log(`\n${n} checks passed, ${calls} storage calls, largest record ${(maxVal / 1024).toFixed(1)} KB`);

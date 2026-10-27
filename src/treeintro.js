@@ -236,6 +236,13 @@
         return (2 * u3 - 3 * u2 + 1) * v[i] + (u3 - 2 * u2 + u) * h * m[i] + (-2 * u3 + 3 * u2) * v[i + 1] + (u3 - u2) * h * m[i + 1];
       }
       const cam = t => [herm(CYv, CYm, t), Math.exp(herm(CZv, CZm, t))];
+      // where the tree sits on screen: centred while it grows, then (reveal 0 -> 1) scaled and slid left of the brand block
+      function camAt(t, reveal) {
+        const [cy, zm] = cam(t); const RW = W - LR, RH = RB - RT; let sc = FIT * zm, fx = LR + RW / 2, fy = RT + RH * .54;
+        if (WIDE) { const free = BL - LR, k = Math.min(1, free * .8 / (2 * 440 * sc)); sc *= lerp(1, k, reveal); fx = lerp(fx, LR + free / 2, reveal); }
+        else { sc *= 1 - .2 * reveal; fy -= RH * .17 * reveal; }
+        return { ox: fx - EXX, oy: fy - cy * sc, sc };
+      }
 
       /* ---------- Facilio mark: the logo's two squares are the seed ---------- */
       const logoImg = o.querySelector('.top img');
@@ -410,13 +417,7 @@
         bg.addColorStop(0, mixc([6, 5, 30], [14, 14, 70], mature)); bg.addColorStop(.6, mixc([10, 9, 44], [29, 26, 94], mature)); bg.addColorStop(1, mixc([8, 7, 38], [20, 22, 84], mature));
         g.fillStyle = bg; g.fillRect(0, 0, W, H);
         // camera / layout: the tree is centred, then slides left of the brand block for the reveal
-        const RW = W - LR, RH = RB - RT;
-        let sc = FIT * zm;
-        let fx = LR + RW / 2, fy = RT + RH * .54;
-        if (WIDE) {
-          const free = BL - LR, k = Math.min(1, free * .8 / (2 * 440 * sc)); sc *= lerp(1, k, reveal); fx = lerp(fx, LR + free / 2, reveal);
-        } else { sc *= 1 - .2 * reveal; fy -= RH * .17 * reveal; }
-        const ox = fx - EXX, oy = fy - cy * sc; LSC = sc;
+        const { ox, oy, sc } = camAt(t, reveal); LSC = sc;
         drawScenery(t, ta, ox, oy, zm, mature);
         const toS = (x, y) => [ox + x * sc, oy + y * sc];
         const gl = toS(0, -640), gr = 560 * sc;
@@ -499,9 +500,10 @@
         for (const b of roots) tipGlow(b, t, TIP_T);
         // leaves unfold
         for (const L of leaves) {
-          if (LO >= 0) break; if (L.ix % LSTEP[QTIER]) continue; if (t < L.t) continue; const u = (t - L.t) / 1.5; const k = backOut(u) * LGK[QTIER]; if (k <= .01) continue;
-          const th = L.ang + Math.sin(ta * 1.3 + L.ph) * .05 * sm(u) + (1 - clamp(u)) * 1.1 * L.flip; const zs = L.size / 56; const kx = k * zs, ky = k * zs * (.55 + .45 * clamp(u)); const cs = Math.cos(th), sn = Math.sin(th);
-          let lx = L.x + SK * L.y, ly = L.y, al = .9 * clamp(u * 2.2), th2 = th;
+          if (LO >= 0) break; if (L.ix % LSTEP[QTIER]) continue; if (t < L.t) continue; // each leaf unfolds over 1.8 s on curves whose speed starts and ends at zero (no overshoot, no snap at the end), so growth reads as one smooth swell
+          const u = (t - L.t) / 1.8; const gu = sm(clamp(u)), k = (1 - Math.pow(1 - clamp(u), 3)) * LGK[QTIER]; if (k <= .01) continue;
+          const th = L.ang + Math.sin(ta * 1.3 + L.ph) * .05 * gu + (1 - gu) * .7 * L.flip; const zs = L.size / 56; const kx = k * zs, ky = k * zs * (.55 + .45 * gu); const cs = Math.cos(th), sn = Math.sin(th);
+          let lx = L.x + SK * L.y, ly = L.y, al = .9 * sm(clamp(u * 2)), th2 = th;
           if (EXL) { const q = L.q, dk = EXT - q.d; if (dk > 0) { lx += q.vx * dk; ly += q.vy * dk + 520 * dk * dk; th2 += q.sp * dk; al *= clamp(1 - (dk - .5) / .9); if (al <= 0) continue; } }
           const cs2 = Math.cos(th2), sn2 = Math.sin(th2);
           g.setTransform(S0 * cs2 * kx, S0 * sn2 * kx, -S0 * sn2 * ky, S0 * cs2 * ky, EX + S0 * lx, EY + S0 * ly);
@@ -613,7 +615,7 @@
         OBST.ctl = null; OBST.tag = null;
       }
       const ov = (a, b, m = 0) => a.x < b.x + b.w + m && b.x < a.x + a.w + m && a.y < b.y + b.h + m && b.y < a.y + a.h + m;
-      function layoutLabels(t, cs, ox, oy, sc, SK, reveal) {
+      function targets(t, cs, ox, oy, sc, SK, reveal) {
         const final = t >= REVEAL;
         const top = final ? 64 : OBST.top;
         let bottom = H - 12;
@@ -629,7 +631,7 @@
           if (!want) { L.vis = false; continue; }
           const st = act ? 'act' : 'done';
           if (L.state !== st) {
-            if (L.state) L.placed = false; L.state = st; L.el.className = 'lbl ' + st + (L.el.classList.contains('show') ? ' show swap' : '');   // card -> chip: re-appear in place instead of sliding across the tree
+            if (L.state && L.ox !== undefined) L.morph = { t0: t, fx: L.ox, fy: L.oy }; L.state = st; L.el.className = 'lbl ' + st + (L.el.classList.contains('show') ? ' show' : '');   // card -> chip: the label glides to its new spot beside the same node
             L.el.querySelector('.n').innerHTML = act ? String(n.i + 1) : TICK;
             L.w = L.el.offsetWidth; L.h = L.el.offsetHeight;
           }
@@ -659,6 +661,33 @@
           if (clash && it.pri !== 100) { it.L.vis = false; continue; }
           it.L.vis = true; ok.push(it);
         }
+        return { ok, obst, top, bottom, left, right };
+      }
+      /* While the tree slides left for the reveal, labels ride with it: each keeps its offset from its own node, and that offset moves smoothly from where the
+         label was when the slide began to where it will sit when the slide ends (worked out once, at the start). No per-frame re-solving, so nothing jumps,
+         swaps or flickers mid-slide. Outside the slide, labels also follow their node rigidly and only their offset glides when the layout changes. */
+      let TRX = null, LT = 0;
+      function layoutLabels(t, cs, ox, oy, sc, SK, reveal) {
+        const now = performance.now(), fdt = LT ? Math.min(.1, (now - LT) / 1000) : 1 / 60; LT = now; const gk = 1 - Math.exp(-fdt * 14);   // glide rate, the same at any frame rate
+        const anchor = n => [ox + sc * (n.x + SK * n.y), oy + sc * n.y];
+        if (!(reveal > 0 && reveal < 1)) TRX = null;
+        else if (!TRX) {
+          const start = {}; labels.forEach(L => { if (L.vis && L.placed) { const [ax, ay] = anchor(nodes[L.i]); start[L.i] = [L.x - ax, L.y - ay]; } });
+          const E = camAt(t, 1), end = targets(t, cs, E.ox, E.oy, E.sc, SK, 1), eo = {};
+          for (const it of end.ok) eo[it.L.i] = { dx: it.x - it.ax, dy: it.y - it.ay, side: it.side, w: it.w, h: it.h, pri: it.pri };
+          TRX = { start, end: eo, r0: reveal };
+        }
+        let ok, obst, top, bottom, left, right;
+        if (TRX) {
+          const e = clamp((reveal - TRX.r0) / Math.max(1e-6, 1 - TRX.r0)); ok = []; obst = [];
+          for (const n of nodes) { if (t >= n.t + .15) { const [ax, ay] = anchor(n); obst.push({ x: ax - 13, y: ay - 13, w: 26, h: 26, node: n.i }); } }
+          labels.forEach(L => {
+            const n = nodes[L.i], [ax, ay] = anchor(n), en = TRX.end[L.i], st = TRX.start[L.i];
+            if (!en) { L.vis = false; if (st) { L.x = ax + st[0]; L.y = ay + st[1]; L.el.style.transform = `translate(${L.x.toFixed(2)}px,${L.y.toFixed(2)}px)`; } return; }
+            const dx = st ? lerp(st[0], en.dx, e) : en.dx, dy = st ? lerp(st[1], en.dy, e) : en.dy;
+            L.vis = true; ok.push({ L, ax, ay, side: en.side, w: en.w, h: en.h, pri: en.pri, x: ax + dx, y: ay + dy, rigid: true });
+          });
+        } else ({ ok, obst, top, bottom, left, right } = targets(t, cs, ox, oy, sc, SK, reveal));
         lastNodes = obst.filter(o => o.node !== undefined);
         // draw leader lines and move the DOM labels (eased so they glide rather than jump)
         g.setTransform(DPR, 0, 0, DPR, 0, 0);
@@ -668,21 +697,26 @@
           g.stroke(); g.restore(); }
         lastBoxes = [];
         // glide each label toward its spot; if any glide would cross another label, leave the order, or run into the logo, every label goes straight to its spot this frame
-        const nx = ok.map(it => { const L = it.L; if (!L.placed || !L.el.classList.contains('show') || Math.hypot(it.x - L.x, it.y - L.y) > 36) return [it.x, it.y]; return [L.x + (it.x - L.x) * .3, L.y + (it.y - L.y) * .3]; });
+        // glide the label's offset from its node (not its screen position), so a label never trails behind a moving node
+        const nx = ok.map(it => { const L = it.L; if (it.rigid) return [it.x, it.y]; if (!L.placed || !L.el.classList.contains('show') || L.ox === undefined) return [it.x, it.y];
+          const tx = it.x - it.ax, ty = it.y - it.ay;
+          if (L.morph) { const q = sm((t - L.morph.t0) / .6), M = L.morph; if (q >= 1) L.morph = null; return [it.ax + lerp(M.fx, tx, q), it.ay + lerp(M.fy, ty, q)]; }   // card -> chip: a 0.6 s ease, no jump
+          if (Math.hypot(tx - L.ox, ty - L.oy) > 36) return [it.x, it.y]; return [it.ax + L.ox + (tx - L.ox) * gk, it.ay + L.oy + (ty - L.oy) * gk]; });
         const gb = ok.map((it, k) => ({ x: nx[k][0], y: nx[k][1], w: it.w, h: it.h, i: it.L.i }));
-        let crossed = gb.some(b => b.x + b.w > right + .5 || b.x < left - .5 || b.y < top - .5 || b.y + b.h > bottom + .5);
-        for (let a = 0; a < gb.length && !crossed; a++) for (let b = a + 1; b < gb.length; b++) { const A = gb[a], B = gb[b]; if (ov(A, B, 1) || (A.i < B.i) !== (A.y + A.h / 2 > B.y + B.h / 2)) { crossed = true; break; } }
+        let crossed = TRX ? false : gb.some(b => b.x + b.w > right + .5 || b.x < left - .5 || b.y < top - .5 || b.y + b.h > bottom + .5);
+        for (let a = 0; a < gb.length && !crossed && !TRX; a++) for (let b = a + 1; b < gb.length; b++) { const A = gb[a], B = gb[b]; if (ov(A, B, 1) || (A.i < B.i) !== (A.y + A.h / 2 > B.y + B.h / 2)) { crossed = true; break; } }
         for (let k = 0; k < ok.length; k++) {
           const it = ok[k], L = it.L;
-          if (!L.placed || !L.el.classList.contains('show')) { L.x = it.x; L.y = it.y; L.placed = true; }
-          else if (Math.hypot(it.x - L.x, it.y - L.y) > 36) { L.x = it.x; L.y = it.y; L.el.classList.remove('swap'); void L.el.offsetWidth; L.el.classList.add('swap'); }   // a different spot (another label took its place): re-appear there, never slide across the tree
-          else if (crossed) { L.x = it.x; L.y = it.y; }
+          if (it.rigid || !L.placed || !L.el.classList.contains('show')) { L.x = nx[k][0]; L.y = nx[k][1]; L.placed = true; }
+          else if (L.ox !== undefined && !L.morph && Math.hypot((it.x - it.ax) - L.ox, (it.y - it.ay) - L.oy) > 36) { L.x = it.x; L.y = it.y; L.el.classList.remove('swap'); void L.el.offsetWidth; L.el.classList.add('swap'); }   // a different spot (another label took its place): re-appear there, never slide across the tree
+          else if (crossed && !L.morph) { L.x = it.x; L.y = it.y; }
           else { L.x = nx[k][0]; L.y = nx[k][1]; }
           const ex = Math.max(L.x, Math.min(L.x + it.w, it.ax)), ey = Math.max(L.y, Math.min(L.y + it.h, it.ay));
           g.strokeStyle = it.pri === 100 ? 'rgba(190,215,255,.85)' : 'rgba(141,184,255,.7)'; g.lineWidth = 1.5;
           g.beginPath(); g.moveTo(it.ax, it.ay); g.lineTo(ex, ey); g.stroke();
           g.fillStyle = g.strokeStyle; g.beginPath(); g.arc(ex, ey, 2, 0, TAU); g.fill();
-          L.el.style.transform = `translate(${L.x.toFixed(1)}px,${L.y.toFixed(1)}px)`;
+          L.ox = L.x - it.ax; L.oy = L.y - it.ay;
+          L.el.style.transform = `translate(${L.x.toFixed(2)}px,${L.y.toFixed(2)}px)`;
           L.el.style.setProperty('--ox', it.side > 0 ? '0' : '100%');
           lastBoxes.push({ i: L.i, x: it.x, y: it.y, w: it.w, h: it.h });
         }

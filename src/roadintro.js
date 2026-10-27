@@ -23,7 +23,7 @@
   ];
   const N = STEPS.length;
   // timing: a short opening, then each milestone gets a settled view (the sign is read here) followed by a brief pan to the next
-  const T0 = 3.2, STEP = 4.2, PAN = .9;   // T0: the opening shot holds long enough to read the title and see the first milestone
+  const T0 = 3.2, STEP = 4.2, PAN = 1.2;   // T0: the opening shot holds long enough to read the title and see the first milestone
   const AT = STEPS.map((_, i) => T0 + i * STEP);            // the camera arrives at milestone i
   const DWE = AT.map(a => a + STEP - PAN);                  // ... and leaves it
   const MID = AT.map((a, i) => (a + DWE[i]) / 2);            // the car passes the post here
@@ -109,6 +109,7 @@
       const barEl = $('.ri-bar'), openEl = $('.ri-open'), endEl = $('.ri-end'), routeEl = $('.ri-route'), noteEl = $('.ri-note');
       const dots = [...o.querySelectorAll('.ri-route span')], fillEl = $('.ri-route i'), sr = $('.ri-sr'), skipBtn = $('[data-r="skip"]');
       let W = 0, H = 0, DPR = 1, F = 1, HOR = 0, NARROW = false, PORT = false, T = 0, cam = { x: 0, z: 0, h: 30 };
+      let LASTMS = 0;
       let LT = -1;   // seconds into the lift-off, -1 before it starts
 
       function resize() {
@@ -126,18 +127,21 @@
         const want = NARROW ? .58 : .6, cz = camZat(MS[i]), zr = postZ(i) - cz;
         return { x: MS[i] - (want - .5) * W * zr / F + (t - MID[i]) * VC * .22, z: cz };
       }
+      // pans leave and arrive at the same drifting speed the camera has while it rests beside a post (a Hermite curve), so there is no hitch at either end
+      const DRIFT = VC * .22;
+      const herm = (p0, m0, p1, m1, u) => { const u2 = u * u, u3 = u2 * u; return (2 * u3 - 3 * u2 + 1) * p0 + (u3 - 2 * u2 + u) * m0 + (-2 * u3 + 3 * u2) * p1 + (u3 - u2) * m1; };
       function camera(t) {
         let c;
         let lift0 = 0;
         if (t < AT[0]) {   // opening: a wide, raised view down the valley with the first milestone in frame, easing down to settle beside it
-          const d0 = dwell(0, AT[0]), k = ease(t / AT[0]);
-          c = { x: lerp(d0.x - (NARROW ? 8 : 16), d0.x, k), z: lerp(d0.z - (PORT ? 30 : 46), d0.z, k) }; lift0 = lerp(PORT ? 8 : 10, 0, k);
+          const d0 = dwell(0, AT[0]), k = ease(t / AT[0]), u = clamp(t / AT[0]);
+          c = { x: herm(d0.x - (NARROW ? 8 : 16), 0, d0.x, DRIFT * AT[0], u), z: lerp(d0.z - (PORT ? 30 : 46), d0.z, k) }; lift0 = lerp(PORT ? 8 : 10, 0, k);
         } else if (t <= DWE[0]) c = dwell(0, t);
-        else if (t >= CRANE) c = dwell(N - 1, CRANE);
+        else if (t >= CRANE) c = dwell(N - 1, t);   // keeps its gentle drift; the crane blends it away
         else { let i = 0; while (i < N - 1 && t > DWE[i]) i++; i--;   // i = the milestone we are leaving
-          if (t < AT[i + 1]) { const a = dwell(i, DWE[i]), b = dwell(i + 1, AT[i + 1]), k = ease((t - DWE[i]) / PAN); c = { x: lerp(a.x, b.x, k), z: lerp(a.z, b.z, k) }; }
+          if (t < AT[i + 1]) { const a = dwell(i, DWE[i]), b = dwell(i + 1, AT[i + 1]), u = clamp((t - DWE[i]) / PAN), k = ease(u); c = { x: herm(a.x, DRIFT * PAN, b.x, DRIFT * PAN, u), z: lerp(a.z, b.z, k) }; }
           else c = dwell(i + 1, t); }
-        const k = ease((t - CRANE) / 2.4), mid = (MS[0] + DEST) / 2 + (NARROW ? 40 : 0);
+        const k = ease((t - CRANE) / 3.2), mid = (MS[0] + DEST) / 2 + (NARROW ? 40 : 0);
         cam = { x: lerp(c.x, mid, k), z: lerp(c.z, PORT ? -560 : NARROW ? -320 : -150, k), h: lerp(31 + lift0 + 2.5 * Math.sin(t * .3), PORT ? 120 : 52, k) };
       }
       const P = (x, y, z) => { const zr = z - cam.z; if (zr < 1) return null; const s = F / zr; return [W / 2 + (x - cam.x) * s, HOR + (cam.h - y) * s, s]; };
@@ -478,11 +482,15 @@
       function place(t, posts) {
         if (!measured) measure();
         const a = active(t); CAPBOX = null;
+        const nowMs = performance.now(), fdt = LASTMS ? Math.min(.1, (nowMs - LASTMS) / 1000) : 1 / 60; LASTMS = nowMs; const GLK = 1 - Math.exp(-fdt * 10);
         CAPS.forEach((el, i) => {
           const on = i === a && !!posts[i] && LT < 0;
           el.classList.toggle('on', on);
           if (!posts[i]) return;
-          const b = signBox(i, posts[i]); el.style.transform = `translate(${b.x.toFixed(1)}px,${b.y.toFixed(1)}px)`;
+          // the sign rides with its post; when it has to step aside for the car, its offset from the post glides there instead of jumping
+          const b0 = signBox(i, posts[i]), dx = b0.x - posts[i].x, dy = b0.y - posts[i].y;
+          if (el._dx === undefined || !on) { el._dx = dx; el._dy = dy; } else { el._dx += (dx - el._dx) * GLK; el._dy += (dy - el._dy) * GLK; }
+          const b = { x: posts[i].x + el._dx, y: posts[i].y + el._dy, w: b0.w, h: b0.h }; el.style.transform = `translate(${b.x.toFixed(2)}px,${b.y.toFixed(2)}px)`;
           if (on) { CAPBOX = b; const p = posts[i], ax = clamp(p.x, b.x + 16, b.x + b.w - 16), ay = b.y + b.h;
             g.setTransform(DPR, 0, 0, DPR, 0, 0); g.strokeStyle = 'rgba(214,226,255,.7)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(ax, ay); g.lineTo(p.x, p.y - 5); g.stroke(); }
         });
@@ -573,7 +581,7 @@
       o.addEventListener('wheel', e => e.preventDefault(), { passive: false }); o.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
       doc.addEventListener('keydown', key); root.addEventListener('resize', resize); doc.addEventListener('visibilitychange', vis);
       doc.body.appendChild(o); resize();
-      root.__ri = { frame: t => { playing = false; root.cancelAnimationFrame(raf); T = t; draw(t); }, liftAt: (t, lt) => { playing = false; root.cancelAnimationFrame(raf); T = t; LT = lt; o.classList.toggle('lifting', lt >= 0); draw(t); }, AT, DWE, END, CRANE, LEND,
+      root.__ri = { get cam() { return cam; }, frame: t => { playing = false; root.cancelAnimationFrame(raf); T = t; draw(t); }, liftAt: (t, lt) => { playing = false; root.cancelAnimationFrame(raf); T = t; LT = lt; o.classList.toggle('lifting', lt >= 0); draw(t); }, AT, DWE, END, CRANE, LEND,
         sceneBox: () => SCENEBOX, capBox: () => CAPBOX, carBox: () => carRect(), leave };
       try { skipBtn.focus({ preventScroll: true }); } catch (e) { }
       if (reduce) { T = END; draw(END); CHIPS.forEach(c => c.classList.remove('on')); $('.ri-still').hidden = false; skipBtn.hidden = true; try { $('[data-r="end"]').focus({ preventScroll: true }); } catch (e) { } return; }
