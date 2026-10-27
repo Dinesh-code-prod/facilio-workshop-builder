@@ -213,6 +213,17 @@
     return out;
   }
   V.attentionItems = attention;
+  // the plan rows of one delivery stage (artifact UAT / Go-live tabs): KPI strip and the matching tasks from the Plan Timeline
+  const STAGE_STEPS = { build: [4], uat: [5, 6, 7, 8], golive: [9, 10, 11] };
+  V.planStage = kind => {
+    const want = STAGE_STEPS[kind]; if (!want) return ''; const label = { build: 'build and internal testing', uat: 'UAT', golive: 'go-live, training and hypercare' }[kind];
+    const rows = TD().rows.filter(r => !r.isPhase && D(r.start) && want.includes(stepOfRow(r.title) >= 0 ? stepOfRow(r.title) : stepOfRow(r.phase || ''))   /* the task's own title decides first; its phase only when the title says nothing */).sort((a, b) => a.start.localeCompare(b.start));
+    if (!rows.length) return `<div class="notice small" style="margin-bottom:14px">The Plan Timeline has no ${esc(label)} tasks yet. ${canEdit() ? '<a href="#" data-act="nav" data-view="timeline">Add them on the Plan Timeline</a> to see their dates and progress here.' : ''}</div>`;
+    const ru = rollup(rows); const ver = TD().versions; const gv = ru.actual - ru.plan;
+    return `<section class="pl-stage"><div class="sec-k" style="margin-top:0"><p>From the project plan</p><h2>${esc({ build: 'Build in the plan', uat: 'UAT in the plan', golive: 'Go-live in the plan' }[kind])}</h2></div>
+      <div class="pl-kpis"><div><span>Planned</span><b>${ru.plan}%</b></div><div><span>Actual</span><b>${ru.actual}%</b></div><div><span>Variance</span><b class="${gv < 0 ? 'neg' : gv > 0 ? 'pos' : ''}">${gv > 0 ? '+' : ''}${gv} pts</b></div><div><span>Source</span><b class="sm">${ver.length ? 'Plan Timeline' : 'Plan Timeline (no baseline yet)'}</b><small>${esc(V.fmtDate(ru.start))} – ${esc(V.fmtDate(ru.end))}</small></div></div>
+      <div class="card" style="margin-top:12px"><div class="tbl-wrap"><table class="tbl pl-st"><thead><tr><th>Task</th><th>Owner</th><th>Start</th><th>End</th><th>Status</th><th>Plan</th><th>Actual</th><th>Var</th><th>Progress</th></tr></thead><tbody>${rows.map(r => { const pl = plannedPct(r), ac = pctOf(r); return `<tr class="${isLate(r) ? 'late' : ''}"><td><b>${esc(r.title)}</b></td><td>${esc(r.owner || '')}</td><td class="num">${fmtS(r.start)}</td><td class="num">${fmtS(D(r.end) || r.start)}</td><td>${chip(r.status)}</td><td class="num">${pl}%</td><td class="num">${ac}%</td><td class="num">${varTxt(ac, pl)}</td><td><span class="pl-pb"><i style="width:${ac}%"></i></span></td></tr>`; }).join('')}</tbody></table></div></div></section>`;
+  };
   // calendar tile (artifact pattern): coloured month band over the day number
   const dTile = (d, cls) => { if (!D(d)) return `<span class="dtile tbd${cls ? ' ' + cls : ''}" aria-hidden="true"><i>TBD</i><b>–</b></span>`; const x = new Date(d + 'T00:00:00Z'); return `<span class="dtile${cls ? ' ' + cls : ''}" aria-hidden="true"><i>${x.toLocaleDateString(undefined, { month: 'short', timeZone: 'UTC' })}</i><b>${x.getUTCDate()}</b></span>`; };
   V.dTile = dTile;

@@ -412,6 +412,22 @@ await t('access check fails closed; AI key and mailbox events appear in the admi
   const res = await handler({ method: 'GET', path: '/projects', query: '', headers: {}, text: async () => '' }, ctx); assert.equal(res.status, 503);
   let r = await call(dinesh, 'GET', '/api/admin/audit'); assert.ok(r.data.entries.some(e => e.action === 'ai-key-saved' || e.action === 'ai-key-removed'), 'AI key changes listed'); assert.ok(r.data.entries.some(e => e.action === 'mail-sync'), 'mail syncs listed');
 });
+await t('Explore Facilio: editors draft, only owners and admins publish; request authors come from the session; text is normalised', async () => {
+  store.delete('rl'); const own = 'show.owner@facilio.com', ed = 'show.editor@facilio.com';
+  let r = await call(own, 'POST', '/api/projects', { name: 'Show Co', customer: 'S' }); const P = r.data.project.id;
+  r = await call(own, 'POST', `/api/projects/${P}/members`, { email: ed, role: 'editor' }); assert.equal(r.status, 201);
+  r = await call(ed, 'PUT', `/api/projects/${P}/items/news/nw1`, { data: { title: '', status: 'draft' } }); assert.equal(r.status, 400, 'a title is required');
+  r = await call(ed, 'PUT', `/api/projects/${P}/items/news/nw1`, { data: { title: 'Inspections on mobile', capabilities: ['Offline checklists', 42] } }); assert.equal(r.status, 400, 'list items must be text');
+  r = await call(ed, 'PUT', `/api/projects/${P}/items/news/nw1`, { data: { title: 'Inspections on mobile', capabilities: ['Offline checklists'], availability: 'free!', imageId: '../x', status: 'draft', extra: 'dropped' } });
+  assert.equal(r.status, 200); let d = r.data.item.data; assert.equal(d.availability, 'discuss', 'unknown availability falls back'); assert.equal(d.imageId, '', 'a bad file id is dropped'); assert.equal(d.extra, undefined, 'unknown fields are not stored');
+  r = await call(ed, 'PUT', `/api/projects/${P}/items/news/nw1`, { data: Object.assign({}, d, { capabilities: ['Offline checklists'], status: 'published' }) }); assert.equal(r.status, 403, 'editors cannot publish');
+  r = await call(own, 'PUT', `/api/projects/${P}/items/news/nw1`, { data: Object.assign({}, d, { capabilities: ['Offline checklists'], status: 'published' }) }); assert.equal(r.status, 200); assert.equal(r.data.item.data.status, 'published'); assert.equal(r.data.item.data.publishedBy, own);
+  r = await call(ed, 'PUT', `/api/projects/${P}/items/news/nw1`, { data: Object.assign({}, r.data.item.data, { summary: 'Edited' }) }); assert.equal(r.status, 200, 'editors can still edit a published entry'); assert.equal(r.data.item.data.publishedBy, own, 'publisher kept');
+  r = await call(ed, 'PUT', `/api/projects/${P}/items/interest/in1`, { data: { newsId: 'nw1', title: 'Inspections on mobile', by: 'ceo@customer.com', byName: 'Fake', at: '2001-01-01', status: 'weird' } });
+  assert.equal(r.status, 200); d = r.data.item.data; assert.equal(d.by, ed, 'author from the session'); assert.notEqual(d.at, '2001-01-01', 'time from the server'); assert.equal(d.status, 'new');
+  r = await call(own, 'PUT', `/api/projects/${P}/items/interest/in1`, { data: Object.assign({}, d, { status: 'demo', by: own }) }); assert.equal(r.data.item.data.by, ed, 'the author cannot be changed later'); assert.equal(r.data.item.data.status, 'demo');
+  r = await call('outsider.x@facilio.com', 'GET', `/api/projects/${P}/items?kinds=news,interest`); assert.equal(r.status, 404, 'others cannot read them');
+});
 await t('sign-offs and approvals: recorded, undone or deleted only by owners and admins; editors still draft', async () => {
   store.delete('rl'); const own = 'signer.owner@facilio.com', ed = 'signer.editor@facilio.com';
   let r = await call(own, 'POST', '/api/projects', { name: 'Sign Co', customer: 'S' }); const P = r.data.project.id; await call(own, 'POST', `/api/projects/${P}/members`, { email: ed, role: 'editor' });

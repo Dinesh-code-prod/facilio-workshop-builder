@@ -48,7 +48,7 @@ await p.keyboard.down('Shift'); await p.mouse.move(fr.x0, fr.y0); await p.mouse.
 check('   a selection rectangle picks up several shapes', (await ST()).sel.length >= 2, (await ST()).sel.length + ' selected');
 
 // group drill-in: group two, first click selects group, second click selects one
-await p.click('[data-act="wbFit"]'); await p.waitForTimeout(150); await p.click('#wbSvg', { position: { x: 10, y: 10 } }); const c1b = await screen(a2[0].id); await p.mouse.click(c1b.x, c1b.y); await p.keyboard.down('Shift'); const c2b = await screen(a2[1].id); await p.mouse.click(c2b.x, c2b.y); await p.keyboard.up('Shift');
+await p.click('[data-act="wbFit"]'); await p.evaluate(() => document.querySelectorAll('.toast').forEach(t => t.remove())); await p.waitForTimeout(150); await p.click('#wbSvg', { position: { x: 10, y: 10 } }); const c1b = await screen(a2[0].id); await p.mouse.click(c1b.x, c1b.y); await p.keyboard.down('Shift'); const c2b = await screen(a2[1].id); await p.mouse.click(c2b.x, c2b.y); await p.keyboard.up('Shift');
 await p.keyboard.press('Control+g'); await p.waitForTimeout(100); await p.click('#wbSvg', { position: { x: 10, y: 10 } });
 const g1 = await screen(a2[1].id); await p.mouse.click(g1.x, g1.y); const selA = (await ST()).sel.length; await p.mouse.click(g1.x, g1.y); const selB = (await ST()).sel;
 check('   groups: first click selects the group, a second click selects one member', selA === 2 && selB.length === 1 && selB[0] === a2[1].id, `${selA} then ${selB.length}`);

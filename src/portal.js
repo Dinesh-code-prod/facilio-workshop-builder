@@ -3,7 +3,7 @@
 (function (root) {
   'use strict';
   const F = root.FWB; const { S, esc } = F; const V = root.FWBViews; const ACT = V.ACT; const { tag, toast } = V;
-  const TABS = [['cust_home', 'Overview'], ['kickoff', 'Kick-off'], ['contract', 'Know Your Contract'], ['scope', 'Scope'], ['plan', 'Project Plan and Timeline'], ['schedule', 'Workshop Schedule'], ['guide', 'Customer User Guide'], ['dashboards', 'Dashboard Gallery'], ['onboarding', 'Data Onboarding'], ['governance', 'Governance'], ['changes', 'Change Requests'], ['delivery', 'Build, UAT & Go-Live'], ['overview', 'Actions and decisions']];
+  const TABS = [['cust_home', 'Overview'], ['kickoff', 'Kick-off'], ['contract', 'Know Your Contract'], ['scope', 'Scope'], ['plan', 'Project Plan and Timeline'], ['schedule', 'Workshop Schedule'], ['guide', 'Customer User Guide'], ['dashboards', 'Dashboard Gallery'], ['onboarding', 'Data Onboarding'], ['governance', 'Governance'], ['changes', 'Change Requests'], ['delivery', 'Build, UAT & Go-Live'], ['overview', 'Actions and decisions'], ['showcase', 'Explore Facilio (published entries only)']];
   const SHOW = [['fees', 'Fees and payment milestones (Know Your Contract)'], ['rates', 'Rate card'], ['legal', 'Liability, penalties and law'], ['risks', 'Risks and issues (RAID log)'], ['trainers', 'Trainer names on workshops']];
   const ALLOW = [['answers', 'Answer workshop questions'], ['discuss', 'Post in discussions'], ['actions', 'Add and update their own actions'], ['signoff', 'Sign off documents'], ['raid', 'Add risks and issues'], ['cr', 'Raise change requests'], ['onboarding', 'Upload data onboarding workbooks']];
   const CADENCE = [['', 'Not set'], ['weekly', 'Weekly'], ['fortnightly', 'Fortnightly'], ['monthly', 'Monthly'], ['quarterly', 'Quarterly']];

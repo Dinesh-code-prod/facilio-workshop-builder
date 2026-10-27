@@ -18,13 +18,13 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     onboarding_workbook: { ext: ['xlsx'], max: 40e6 }, onboarding_files: { ext: ['xlsx', 'xls', 'csv', 'pdf', 'docx', 'zip'], max: 60e6 },
     ftr_workbook: { ext: ['xlsx', 'xlsm'], max: 40e6 }, kpi_workbook: { ext: ['xlsx', 'xlsm'], max: 40e6 },
     config_evidence: { ext: ['pdf', 'xlsx', 'csv', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'txt'], max: 20e6 },
-    guide_media: { ext: ['png', 'jpg', 'jpeg'], max: 8e6 }, flow_image: { ext: ['png', 'jpg', 'jpeg', 'webp'], max: 8e6 },
+    guide_media: { ext: ['png', 'jpg', 'jpeg'], max: 8e6 }, flow_image: { ext: ['png', 'jpg', 'jpeg', 'webp'], max: 8e6 }, showcase_image: { ext: ['png', 'jpg', 'jpeg', 'webp'], max: 5e6 },
     ticket_attachment: { ext: ['pdf', 'xlsx', 'xls', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'csv', 'txt', 'msg', 'eml'], max: 20e6 },
     report_attachment: { ext: ['pdf', 'xlsx', 'xls', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'csv', 'txt'], max: 20e6 },
     signoff_evidence: { ext: ['pdf', 'png', 'jpg', 'jpeg', 'msg', 'eml', 'docx'], max: 20e6 }, brd_signed: { ext: ['docx', 'pdf', 'json'], max: MAX_FILE }
   };
   // record kinds the team can store (customer-only rules come with the customer page)
-  const KINDS = ['action', 'decision', 'raid', 'signoff', 'cr', 'onb', 'onbsub', 'onbfile', 'onbws', 'owner', 'agreement', 'minutes', 'checklist', 'build', 'uat', 'digest', 'ctrcore', 'ctrfees', 'ctrlegal', 'ctrrates', 'scope', 'modbrief', 'fieldreq', 'note', 'ctrwatch', 'usecase', 'discrepancy', 'brdrev', 'ai', 'hc', 'hcrep', 'ho', 'close', 'rep', 'kpi', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'lesson', 'tkt', 'res', 'ugv', 'ugu', 'pnote', 'wb'];   // wb: process whiteboards
+  const KINDS = ['action', 'decision', 'raid', 'signoff', 'cr', 'onb', 'onbsub', 'onbfile', 'onbws', 'owner', 'agreement', 'minutes', 'checklist', 'build', 'uat', 'digest', 'ctrcore', 'ctrfees', 'ctrlegal', 'ctrrates', 'scope', 'modbrief', 'fieldreq', 'note', 'ctrwatch', 'usecase', 'discrepancy', 'brdrev', 'ai', 'hc', 'hcrep', 'ho', 'close', 'rep', 'kpi', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'lesson', 'tkt', 'res', 'ugv', 'ugu', 'pnote', 'wb', 'news', 'interest'];   // wb: process whiteboards; news: Explore Facilio entries; interest: customer requests for more information
   const DOC_SECTIONS = /^[a-z][a-z0-9_]{1,40}$/, ITEM_ID_RE = /^[A-Za-z0-9_-]{1,80}$/, GR_KEY = /^[a-z]{2,8}:[afbxw]:[A-Za-z0-9_-]{1,64}$/;
 
   class HttpError extends Error { constructor(status, msg, extra) { super(msg); this.status = status; this.extra = extra; } }
@@ -809,6 +809,23 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     if (P.kind === 'wb' && (!Array.isArray(data.nodes) || !Array.isArray(data.edges) || data.nodes.length > 3000 || data.edges.length > 6000)) throw new HttpError(400, 'A board needs nodes and edges lists (up to 3000 shapes and 6000 connectors)');
     if (P.kind === 'res') { const u = String(data.url || '').trim(); if (!/^https?:\/\/[^\s]+$/i.test(u)) throw new HttpError(400, 'Enter a full link starting with http:// or https://'); if (!String(data.name || '').trim()) throw new HttpError(400, 'Name is required'); data = Object.assign({}, data, { url: u, name: String(data.name).trim().slice(0, 200), createdByName: cur ? cur.createdByName : (s.name || s.email) }); }
     if (P.kind === 'pnote') { str(data.title, 200, 'Title', true); str(data.body || '', 20000, 'Note'); }
+    // Explore Facilio entries: text only (shown escaped), a fixed status, an uploaded image by file id; publishing is for project owners and admins
+    if (P.kind === 'news') {
+      const list = (v, n, m) => (Array.isArray(v) ? v : []).slice(0, n).map((x, i) => str(x, m, 'Item ' + (i + 1))).filter(Boolean);
+      const st = ['draft', 'published'].includes(data.status) ? data.status : 'draft';
+      if (st === 'published' && (!cur || cur.status !== 'published') && role !== 'owner') throw new HttpError(403, 'Only project owners and admins can publish to the customer');   // admins arrive here with role 'owner'
+      data = { title: str(data.title, 160, 'Title', true), module: str(data.module || '', 80, 'Module'), problem: str(data.problem || '', 1200, 'Problem'), summary: str(data.summary || '', 2000, 'Summary'),
+        capabilities: list(data.capabilities, 12, 300), useCases: list(data.useCases, 8, 300), relation: str(data.relation || '', 1200, 'Relationship to the project'),
+        availability: ['enabled', 'optional', 'discuss'].includes(data.availability) ? data.availability : 'discuss', source: str(data.source || '', 300, 'Source'),
+        imageId: typeof data.imageId === 'string' && /^[A-Za-z0-9_-]{1,80}$/.test(data.imageId) ? data.imageId : '', imageAlt: str(data.imageAlt || '', 200, 'Image description'),
+        status: st, publishedAt: st === 'published' ? (cur && cur.status === 'published' ? cur.publishedAt : now()) : null, publishedBy: st === 'published' ? (cur && cur.status === 'published' ? cur.publishedBy : s.email) : null, order: Number.isFinite(Number(data.order)) ? Number(data.order) : 0 };
+    }
+    // interest requests: who asked and when come from the session, never from the page
+    if (P.kind === 'interest') {
+      data = { newsId: str(data.newsId || '', 80, 'Entry'), title: str(data.title || '', 160, 'Title', true), module: str(data.module || '', 80, 'Module'), note: str(data.note || '', 1000, 'Note'),
+        status: ['new', 'contacted', 'demo', 'closed'].includes(data.status) ? data.status : 'new', owner: str(data.owner || '', 120, 'Owner'),
+        by: cur ? cur.by : s.email, byName: cur ? cur.byName : (s.name || s.email), byCustomer: cur ? !!cur.byCustomer : role === 'customer', at: cur ? cur.at : now() };
+    }
     if (P.kind === 'res' || P.kind === 'pnote') data = Object.assign({}, data, { createdByName: cur ? cur.createdByName : s.name, createdByEmail: cur ? cur.createdByEmail : s.email });
     if (P.kind === 'cr' && !cur) { const all = await itemsOf(P.id, 'cr'); const mx = all.reduce((m, it) => (/^[0-9]+$/.test(String(it.data.n)) ? Math.max(m, Number(it.data.n)) : m), 0); data = Object.assign({}, data, { n: mx + 1 }); }
     else if (P.kind === 'cr' && cur) data = Object.assign({}, data, { n: cur.n });

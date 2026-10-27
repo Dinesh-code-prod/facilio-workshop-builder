@@ -73,6 +73,6 @@
     const head = `<div class="page-header"><div class="t"><h1>Delivery</h1><p>Build and test progress, UAT and go-live readiness.</p></div></div>`;
     const tabs = `<div class="ob-tabs">${[['build', 'Build & Test'], ['uat', 'UAT'], ['golive', 'Go-live']].map(([k, l]) => `<button class="${t === k ? 'on' : ''}" data-act="dlTab" data-v="${k}">${l}</button>`).join('')}</div>`;
     if (!I().ready(['build', 'uat', 'checklist'])) return head + `<div class="page-body">${tabs}<div class="empty">Loading…</div></div>`;
-    return head + `<div class="page-body">${tabs}${(t === 'uat' || t === 'golive') && V.aiButton ? `<div class="row" style="margin:0 0 12px;gap:8px">${V.aiButton(t === 'uat' ? 'uat' : 'golive', t === 'uat' ? 'Draft UAT plan & test cases with AI' : 'AI readiness review')}</div>` : ''}${t === 'uat' ? uatTab() : t === 'golive' ? goliveTab() : buildTab()}</div>`;
+    return head + `<div class="page-body">${tabs}${(t === 'uat' || t === 'golive') && V.aiButton ? `<div class="row" style="margin:0 0 12px;gap:8px">${V.aiButton(t === 'uat' ? 'uat' : 'golive', t === 'uat' ? 'Draft UAT plan & test cases with AI' : 'AI readiness review')}</div>` : ''}${V.planStage ? V.planStage(t) : ''}${t === 'uat' ? uatTab() : t === 'golive' ? goliveTab() : buildTab()}</div>`;
   }, mount() { I().load(kinds); } };
 })(typeof window !== 'undefined' ? window : globalThis);
