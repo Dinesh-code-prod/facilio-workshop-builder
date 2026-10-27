@@ -7,6 +7,7 @@
 
   // ---------- icons ----------
   const ICON = {
+    clip: '<path d="M21.4 11.1 12.2 20.3a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>', mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
     flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>', bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/>', link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>', alert: '<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17v.5"/>', play: '<path d="M8 5v14l11-7z"/>', shield: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/>',
     home: '<path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/>', deck: '<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/>', plan: '<path d="M4 5h16M4 10h10M4 15h13M4 20h7"/>', cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
     book: '<path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h7z"/>', dash: '<rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/>',
@@ -96,7 +97,7 @@
     { g: '10. Hypercare', icon: 'flag', items: [['hypercare', 'Hypercare']] },
     { g: '11. Support Handover & 12. Closure', icon: 'flag', items: [['handover', 'Handover & Closure']] },
     { g: 'Documentation & Resources', icon: 'doc', items: [['guidebuilder', 'User Guide Builder'], ['pkgan', 'Configuration Analysis'], ['vidguide', 'Video to Guide'], ['guide', 'Customer User Guide'], ['resources', 'Notes & Links']] },
-    { g: 'Support & Tickets', icon: 'flag', items: [['tickets', 'Tickets']] },
+    { g: 'Support & Tickets', icon: 'flag', items: [['inbox', 'Inbox'], ['tickets', 'Tickets']] },
     { g: 'AI & Automation', icon: 'dash', items: [['aiwork', 'Deliverables & AI']] },
     { g: 'Administration', icon: 'gear', items: [['portal', 'Customer Portal'], ['custintro', 'Customer Introduction'], ['templates', 'Templates'], ['workspace', 'Workspace & Layout'], ['settings', 'Project Settings & Exports']] }
   ];
