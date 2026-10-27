@@ -1,8 +1,10 @@
-/* Customer introduction: "The road to go-live". A car drives through a mountain valley at dawn. At each of five milestones the camera settles beside the
-   roadside post while the car drives past, and the post carries its own sign: the customer's challenge at that stage and how Facilio helps.
-   When the journey ends (or Skip / Esc), a tractor-beam levitation lifts the scene away: every element (sky, ranges, valley, road, trees, posts, car,
-   text and branding) is pulled upward with its own slight delay, tilt and acceleration, with fine upward light trails, uncovering the customer sign-in
-   that sits still underneath. V.roadIntro(opts) resolves { how: 'end' | 'skip' } once the layer is gone. Illustrative only: no project data, no API calls.
+/* "Your road to go-live": the Delivery Studio story told along a road. A car drives through a mountain valley at dawn; at each of six milestones the camera
+   settles beside a roadside post whose sign names a real customer challenge and what Delivery Studio does about it (workspace, workshops to BRD,
+   configuration explained, AI drafts that people review, tracking and tickets, go-live and handover). The closing view says how it relates to Facilio:
+   Delivery Studio organises the implementation, Facilio is the platform the customer's teams use every day.
+   Played on customer invitation links and by "See how Delivery Studio helps" on both sign-in pages. When the journey ends (or Skip / Esc) it leaves
+   through the shared liquid reveal (src/liquid.js), the same exit as the tree intro's Get started, and uncovers the sign-in page underneath.
+   V.roadIntro(opts) resolves { how: 'end' | 'skip' } once the layer is gone. Illustrative only: no project data, no API calls.
    Canvas 2D; paused while the tab is hidden; reduced motion shows the finished picture with the steps written out and leaves with a short fade. */
 (function (root) {
   'use strict';
@@ -10,19 +12,22 @@
   const V = root.FWBViews = root.FWBViews || {};
 
   /* ---------------- the customer's journey: the challenge at each stage, and how Facilio helps ---------------- */
+  // Each stage names a real Delivery Studio capability (see the in-app menu); Facilio is the platform the customer runs on afterwards.
   const STEPS = [
-    { h: 'Start with clarity', c: 'Unclear goals and owners slow the start.', f: 'Together we agree goals, people and what to prepare.' },
-    { h: 'Bring requirements together', c: 'Decisions get lost in emails and files.', f: 'Workshop outcomes and requirements sit in one shared place.' },
-    { h: 'Turn requirements into a solution', c: 'Software that does not match how you work.', f: 'Facilio is configured around your workflows, step by step with you.' },
-    { h: 'Validate and prepare', c: 'Issues found late, users not ready.', f: 'You test key workflows, see issues resolved and get users trained.' },
-    { h: 'Go live with confidence', c: 'Launch day feels uncertain.', f: 'Readiness, training, early support and handover are planned together.' }
+    { h: 'Everything in one place', c: 'The contract, workshop notes and files are spread across emails and folders.', f: 'Delivery Studio keeps the contract, kick-off, workshop transcripts, notes and links in one project workspace.' },
+    { h: 'From workshops to a signed BRD', c: 'What was agreed in a workshop is lost before it reaches the document.', f: 'Workshop requirements are confirmed one by one and flow into use cases and the BRD, exported to Word or PDF for sign-off.' },
+    { h: 'Your configuration, explained', c: 'Modules, state flows and roles are hard to follow.', f: 'Your Facilio configuration is read and laid out as modules, state flows, roles and plain-language user guides.' },
+    { h: 'AI drafts, people decide', c: 'Writing UAT plans, guides and reports takes days.', f: 'AI drafts them from what is recorded in your project. Every draft cites its sources and is reviewed before anyone uses it.' },
+    { h: 'Progress and issues you can follow', c: 'It is unclear what is done, what is blocked and who owns it.', f: 'Actions, risks, UAT, FTR checks and your support tickets each have a status and an owner.' },
+    { h: 'Go live and hand over', c: 'Launch day and the handover feel uncertain.', f: 'Go-live readiness, hypercare and the handover pack are tracked, so your team runs day to day in Facilio with confidence.' }
   ];
+  const N = STEPS.length;
   // timing: a short opening, then each milestone gets a settled view (the sign is read here) followed by a brief pan to the next
-  const T0 = 2.0, STEP = 3.8, PAN = .75;
+  const T0 = 3.2, STEP = 4.2, PAN = .9;   // T0: the opening shot holds long enough to read the title and see the first milestone
   const AT = STEPS.map((_, i) => T0 + i * STEP);            // the camera arrives at milestone i
   const DWE = AT.map(a => a + STEP - PAN);                  // ... and leaves it
   const MID = AT.map((a, i) => (a + DWE[i]) / 2);            // the car passes the post here
-  const CRANE = DWE[4], END = CRANE + 3.1;                   // the camera lifts to show the whole road, the closing title holds, then the lift-off
+  const CRANE = DWE[N - 1], END = CRANE + 3.6;                   // the camera lifts to show the whole road, the closing title holds, then the lift-off
 
   /* ---------------- helpers ---------------- */
   const TAU = Math.PI * 2;
@@ -47,7 +52,7 @@
   { let u = -VC * (MID[0] - .2); for (let t = 0; t <= END + .01; t += DT) { CAR.push(u); u += VC * (1 - sm((t - CRANE + .4) / 2.4)) * DT; } }
   const carU = t => { const k = clamp(t, 0, END) / DT, i = Math.min(CAR.length - 2, Math.floor(k)); return lerp(CAR[i], CAR[i + 1], k - i); };
   const MS = MID.map(t => carU(t));                          // each post stands where the car is halfway through that milestone's view
-  const U_END = carU(END), DEST = Math.max(U_END + 30, MS[4] + 34);
+  const U_END = carU(END), DEST = Math.max(U_END + 30, MS[N - 1] + 34);
   const LAKE = { u: (MS[1] + MS[2]) / 2 + 30, z: 190, rx: 120, rz: 34 };
   const inLake = (x, z) => Math.pow((x - LAKE.u) / (LAKE.rx + 8), 2) + Math.pow((z - LAKE.z) / (LAKE.rz + 6), 2) < 1;
 
@@ -82,7 +87,6 @@
   const CLOUDS = Array.from({ length: 8 }, () => ({ x: R(), y: rr(.07, .3), w: rr(.16, .32), h: rr(.022, .05), v: rr(.003, .009) }));
   const MIST = Array.from({ length: 6 }, (_, i) => ({ z: [420, 620, 820, 300, 520, 760][i], x: R() * 2000, w: rr(500, 900), v: rr(6, 14) }));
   const GRASS = Array.from({ length: 220 }, () => ({ x: R(), h: rr(.035, .085), w: rr(.004, .01), lean: rr(-.5, .5), ph: R() * TAU, d: R() }));
-  const TRAILS = Array.from({ length: 90 }, () => ({ x: R(), y: rr(.3, 1.15), sp: rr(.7, 1.4), len: rr(.05, .16), w: rr(.6, 1.8), c: R() < .08 ? 3 : R() < .3 ? 2 : R() < .55 ? 1 : 0, d: rr(0, .35) }));
 
   V.roadIntro = function (opts) {
     opts = opts || {};
@@ -92,11 +96,11 @@
       const o = doc.createElement('div'); o.className = 'ri'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-modal', 'true'); o.setAttribute('aria-label', 'Your road to go-live with Facilio');
       o.innerHTML = `<canvas aria-hidden="true"></canvas>
         <div class="ri-bar"><img src="${logo}" alt="Facilio" width="87" height="24"><span class="ri-sep"></span><span class="ri-prod">Delivery Studio</span><span class="ri-sp"></span><button class="ri-btn" type="button" data-r="skip">Skip</button></div>
-        <div class="ri-open"><h1>Your road to go-live</h1><p>What Facilio solves for you at each step, from kick-off to everyday operations</p></div>
-        <div class="ri-caps">${STEPS.map((s, i) => `<div class="ri-cap"><div class="ri-k">Step ${i + 1} of 5</div><h2>${s.h}</h2><dl><div class="ri-c"><dt>Your challenge</dt><dd>${s.c}</dd></div><div class="ri-f"><dt>How Facilio helps</dt><dd>${s.f}</dd></div></dl></div>`).join('')}</div>
+        <div class="ri-open"><h1>Your road to go-live</h1><p>How Delivery Studio keeps your Facilio implementation organised, from kick-off to handover</p></div>
+        <div class="ri-caps">${STEPS.map((s, i) => `<div class="ri-cap"><div class="ri-k">Step ${i + 1} of ${N}</div><h2>${s.h}</h2><dl><div class="ri-c"><dt>The challenge</dt><dd>${s.c}</dd></div><div class="ri-f"><dt>How Delivery Studio helps</dt><dd>${s.f}</dd></div></dl></div>`).join('')}</div>
         <div class="ri-chips">${STEPS.map((s, i) => `<div class="ri-chip"><b>${i + 1}</b>${s.h}</div>`).join('')}</div>
-        <div class="ri-end"><img src="${logo}" alt="Facilio" width="220" height="61"><div class="ri-ds">Delivery Studio</div><h2>One clear road from kick-off to go-live</h2></div>
-        <div class="ri-route" aria-hidden="true"><i></i><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="ri-end"><img src="${logo}" alt="Facilio" width="220" height="61"><div class="ri-ds">Delivery Studio</div><h2>One clear road from kick-off to go-live</h2><p class="ri-rel">Delivery Studio organises the implementation work. Facilio is the platform your teams use every day for work orders, service requests, assets and more.</p></div>
+        <div class="ri-route" aria-hidden="true" style="--n:${N}"><i></i>${STEPS.map(() => '<span></span>').join('')}</div>
         <div class="ri-still" hidden><ol>${STEPS.map((s, i) => `<li><b><i>${i + 1}</i>${s.h}</b><p>${s.c} ${s.f}</p></li>`).join('')}</ol><button class="ri-btn solid" type="button" data-r="end">Continue</button></div>
         <div class="ri-note">Illustrative</div><div class="ri-sr" aria-live="polite"></div>`;
       const $ = s => o.querySelector(s);
@@ -124,19 +128,20 @@
       }
       function camera(t) {
         let c;
-        if (t < AT[0]) {   // opening: follow the car in, then settle at the first post
-          const u = carU(t), zc = roadZ(u), fol = { x: lerp(u, carU(t + .6), .35) + (.5 - (NARROW ? .5 : .4)) * W * (zc + 4) / F, z: camZat(u) }, d0 = dwell(0, AT[0]), k = ease((t - (AT[0] - PAN - .5)) / (PAN + .5));
-          c = { x: lerp(fol.x, d0.x, k), z: lerp(fol.z, d0.z, k) };
+        let lift0 = 0;
+        if (t < AT[0]) {   // opening: a wide, raised view down the valley with the first milestone in frame, easing down to settle beside it
+          const d0 = dwell(0, AT[0]), k = ease(t / AT[0]);
+          c = { x: lerp(d0.x - (NARROW ? 8 : 16), d0.x, k), z: lerp(d0.z - (PORT ? 30 : 46), d0.z, k) }; lift0 = lerp(PORT ? 8 : 10, 0, k);
         } else if (t <= DWE[0]) c = dwell(0, t);
-        else if (t >= CRANE) c = dwell(4, CRANE);
-        else { let i = 0; while (i < 4 && t > DWE[i]) i++; i--;   // i = the milestone we are leaving
+        else if (t >= CRANE) c = dwell(N - 1, CRANE);
+        else { let i = 0; while (i < N - 1 && t > DWE[i]) i++; i--;   // i = the milestone we are leaving
           if (t < AT[i + 1]) { const a = dwell(i, DWE[i]), b = dwell(i + 1, AT[i + 1]), k = ease((t - DWE[i]) / PAN); c = { x: lerp(a.x, b.x, k), z: lerp(a.z, b.z, k) }; }
           else c = dwell(i + 1, t); }
         const k = ease((t - CRANE) / 2.4), mid = (MS[0] + DEST) / 2 + (NARROW ? 40 : 0);
-        cam = { x: lerp(c.x, mid, k), z: lerp(c.z, PORT ? -560 : NARROW ? -320 : -150, k), h: lerp(31 + 2.5 * Math.sin(t * .3), PORT ? 120 : 52, k) };
+        cam = { x: lerp(c.x, mid, k), z: lerp(c.z, PORT ? -560 : NARROW ? -320 : -150, k), h: lerp(31 + lift0 + 2.5 * Math.sin(t * .3), PORT ? 120 : 52, k) };
       }
       const P = (x, y, z) => { const zr = z - cam.z; if (zr < 1) return null; const s = F / zr; return [W / 2 + (x - cam.x) * s, HOR + (cam.h - y) * s, s]; };
-      const day = t => sm((t - 3) / (CRANE - 1));
+      const day = t => .1 + .9 * sm((t - 1) / (CRANE - 1));
       const fogMix = (c, z, dl) => mix(c, mix([44, 42, 110], [170, 196, 230], dl), clamp((z - cam.z - 40) / 300) * .75);
 
       /* ---- lift-off: every element is pulled up with its own small delay, accelerating as it goes ---- */
@@ -336,7 +341,7 @@
       const postBase = i => ({ x: MS[i], y: roadY(MS[i]), z: postZ(i) });
       function drawPost(i, t) {
         const b = postBase(i), p = P(b.x, b.y, b.z); if (!p) return null;
-        const appear = t >= CRANE ? 1 : sm((t - AT[i] + PAN + .1) / .7); if (appear <= 0) return null;
+        const appear = t >= CRANE ? 1 : i === 0 ? sm((t - .3) / .9) : sm((t - AT[i] + PAN + .1) / .7); if (appear <= 0) return null;
         const s = p[2], top = P(b.x, b.y + 7.5 * appear, b.z), pass = clamp((t - MID[i] + .4) / 1.4);
         const lifted = LT >= 0 && liftAt(p[0], p[1], .34 + .03 * i, (i % 2 ? 1 : -1) * .05);
         g.save(); g.translate(p[0], p[1]); g.scale(1, .3);
@@ -357,11 +362,12 @@
         g.save(); g.globalAlpha = a;
         const glow = g.createRadialGradient(cx, cy, 0, cx, cy, 80 * k); glow.addColorStop(0, 'rgba(141,184,255,.26)'); glow.addColorStop(1, 'rgba(141,184,255,0)');
         g.fillStyle = glow; g.beginPath(); g.arc(cx, cy, 80 * k, 0, TAU); g.fill();
-        if (i === 0) {
+        const K = [0, 1, 2, 9, 3, 4][i];   // which illustration each stage uses (9: the AI draft)
+        if (K === 0) {
           const SP = [[-50, -24, -.5], [46, -30, .45], [-34, 28, .3], [40, 26, -.35]];
           SP.forEach((s0, j) => { const u = ease((e - .1 - j * .2) / 1); paper(cx + s0[0] * k * (1 - u), cy + s0[1] * k * (1 - u) - j * 2.4 * k * u, 32 * k, 42 * k, s0[2] * (1 - u) + (j - 1.5) * .04 * u); });
           tick(cx + 16 * k, cy - 25 * k, 8.5 * k, '#2EC9C4', clamp((e - 1.8) / .5));
-        } else if (i === 1) {
+        } else if (K === 1) {
           const nodes = [[-56, -28], [52, -30], [-52, 30], [56, 26]], cols = ['#8DB8FF', '#2EC9C4', '#8DB8FF', '#E5197F'];
           nodes.forEach((n, j) => {
             const u = ease((e - .1 - j * .4) / .6), x = cx + n[0] * k, y = cy + n[1] * k; if (u <= 0) return;
@@ -371,18 +377,32 @@
             if (u >= 1) { const pu = (t * .8 + j * .25) % 1; g.fillStyle = '#fff'; g.beginPath(); g.arc(lerp(x, cx, pu), lerp(y, cy, pu), 2 * k, 0, TAU); g.fill(); }
           });
           paper(cx, cy, 30 * k, 38 * k, 0);
-        } else if (i === 2) {
-          panel(cx - 48 * k, cy - 35 * k, 96 * k, 70 * k, k);
-          for (let j = 0; j < 3; j++) {
-            const y = cy - 18 * k + j * 18 * k, v = ease(on(j));
-            g.fillStyle = 'rgba(185,198,232,.75)'; g.fillRect(cx - 37 * k, y - 2 * k, 34 * k, 4 * k);
-            g.fillStyle = v > .5 ? '#1570EF' : 'rgba(255,255,255,.25)'; g.beginPath(); g.roundRect(cx + 10 * k, y - 6 * k, 24 * k, 12 * k, 6 * k); g.fill();
-            g.fillStyle = '#fff'; g.beginPath(); g.arc(cx + lerp(16, 28, v) * k, y, 4.3 * k, 0, TAU); g.fill();
-          }
-          g.save(); g.translate(cx + 52 * k, cy - 35 * k); g.rotate(t * 1.2); g.fillStyle = '#2EC9C4';
-          for (let j = 0; j < 8; j++) { g.rotate(TAU / 8); g.fillRect(-2.4 * k, -12 * k, 4.8 * k, 5.6 * k); }
-          g.beginPath(); g.arc(0, 0, 8.4 * k, 0, TAU); g.fill(); g.fillStyle = 'rgba(14,13,62,1)'; g.beginPath(); g.arc(0, 0, 3.4 * k, 0, TAU); g.fill(); g.restore();
-        } else if (i === 3) {
+        } else if (K === 2) {
+          // the configuration read back as something you can follow: three states of a flow, joined in order, and the role that moves it on
+          panel(cx - 58 * k, cy - 40 * k, 116 * k, 80 * k, k);
+          const ST = [['Open', '#8DB8FF'], ['In progress', '#2EC9C4'], ['Closed', '#1570EF']];
+          ST.forEach(([lb, col], j) => {
+            const v = ease(on(j)), y = cy - 24 * k + j * 22 * k, x = cx - 44 * k; if (v <= 0) return;
+            g.globalAlpha = a * v; g.fillStyle = col; g.beginPath(); g.roundRect(x, y - 7 * k, 52 * k, 14 * k, 7 * k); g.fill();
+            g.fillStyle = '#0E0D3E'; g.font = `600 ${Math.round(8 * k)}px Inter, Roboto, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(lb, x + 26 * k, y + .5 * k);
+            if (j) { g.strokeStyle = 'rgba(214,226,255,.85)'; g.lineWidth = 1.4 * k; g.beginPath(); g.moveTo(x + 26 * k, y - 15 * k); g.lineTo(x + 26 * k, y - 8.5 * k); g.stroke(); g.beginPath(); g.moveTo(x + 23 * k, y - 11 * k); g.lineTo(x + 26 * k, y - 8 * k); g.lineTo(x + 29 * k, y - 11 * k); g.stroke(); }
+            g.globalAlpha = a;
+          });
+          const rv = ease(clamp((e - 1.9) / .5)); if (rv > 0) { g.globalAlpha = a * rv; const rx = cx + 30 * k, ry = cy - 6 * k;
+            g.fillStyle = '#E5197F'; g.beginPath(); g.arc(rx, ry - 6 * k, 6 * k, 0, TAU); g.fill(); g.beginPath(); g.ellipse(rx, ry + 9 * k, 10 * k, 7 * k, 0, Math.PI, 0); g.fill();
+            g.fillStyle = 'rgba(214,226,255,.85)'; g.fillRect(rx - 13 * k, ry + 13 * k, 26 * k, 3 * k); g.globalAlpha = a; }
+          g.textAlign = 'start'; g.textBaseline = 'alphabetic';
+        } else if (K === 9) {
+          // AI drafts from the project's own records: lines write in, each tied to a source, then a person reviews and approves
+          paper(cx - 6 * k, cy + 2 * k, 70 * k, 84 * k, 0);
+          for (let j = 0; j < 5; j++) { const w = [44, 50, 38, 48, 30][j] * k, v = clamp((e - .4 - j * .32) / .3); if (v <= 0) continue;
+            g.fillStyle = '#7E8FC4'; g.fillRect(cx - 34 * k, cy - 26 * k + j * 11 * k, w * v, 3 * k);
+            if (v >= 1 && j % 2 === 0) { g.fillStyle = '#1570EF'; g.beginPath(); g.roundRect(cx - 34 * k + w + 3 * k, cy - 28 * k + j * 11 * k, 9 * k, 7 * k, 2 * k); g.fill(); } }
+          const sp = .75 + .25 * Math.sin(t * 4); g.save(); g.translate(cx - 44 * k, cy - 40 * k); g.scale(sp, sp); g.fillStyle = '#8DB8FF';
+          g.beginPath(); for (let j = 0; j < 8; j++) { const r = j % 2 ? 3.6 * k : 11 * k, ang = j * Math.PI / 4 - Math.PI / 2; j ? g.lineTo(Math.cos(ang) * r, Math.sin(ang) * r) : g.moveTo(Math.cos(ang) * r, Math.sin(ang) * r); } g.closePath(); g.fill(); g.restore();
+          const rv = ease(clamp((e - 2.3) / .5)); if (rv > 0) { g.globalAlpha = a * rv; g.fillStyle = 'rgba(14,13,62,.92)'; g.strokeStyle = 'rgba(46,201,196,.8)'; g.lineWidth = 1.2; g.beginPath(); g.roundRect(cx + 10 * k, cy + 24 * k, 52 * k, 20 * k, 10 * k); g.fill(); g.stroke();
+            tick(cx + 21 * k, cy + 34 * k, 6 * k, '#2EC9C4', clamp((e - 2.5) / .4)); g.fillStyle = '#E6EEFF'; g.font = `600 ${Math.round(8.5 * k)}px Inter, Roboto, sans-serif`; g.textBaseline = 'middle'; g.fillText('Reviewed', cx + 30 * k, cy + 34.5 * k); g.textBaseline = 'alphabetic'; g.globalAlpha = a; }
+        } else if (K === 3) {
           panel(cx - 50 * k, cy - 40 * k, 100 * k, 82 * k, k);
           for (let j = 0; j < 4; j++) {
             const y = cy - 26 * k + j * 15 * k, issue = j === 2, kk = clamp((e - .1 - j * .35) / .4), fix = clamp((e - 1.6) / .4);
@@ -392,6 +412,12 @@
           }
           const pr = ease(clamp((e - 1.7) / 1)); g.fillStyle = 'rgba(255,255,255,.18)'; g.beginPath(); g.roundRect(cx - 39 * k, cy + 30 * k, 78 * k, 6 * k, 3 * k); g.fill();
           const pg = g.createLinearGradient(cx - 39 * k, 0, cx + 39 * k, 0); pg.addColorStop(0, '#1570EF'); pg.addColorStop(1, '#8DB8FF'); g.fillStyle = pg; g.beginPath(); g.roundRect(cx - 39 * k, cy + 30 * k, 78 * k * Math.max(.02, pr), 6 * k, 3 * k); g.fill();
+          // a support ticket with a status and an owner, moving from open to resolved
+          const tv = ease(clamp((e - .6) / .5)); if (tv > 0) { const tx = cx + 58 * k, ty = cy - 30 * k + 8 * k * (1 - tv); g.globalAlpha = a * tv;
+            g.fillStyle = 'rgba(14,13,62,.94)'; g.strokeStyle = 'rgba(141,184,255,.55)'; g.lineWidth = 1; g.beginPath(); g.roundRect(tx, ty, 62 * k, 44 * k, 7 * k); g.fill(); g.stroke();
+            g.fillStyle = '#B9C6E8'; g.fillRect(tx + 8 * k, ty + 9 * k, 28 * k, 3 * k); g.fillRect(tx + 8 * k, ty + 16 * k, 40 * k, 3 * k);
+            const res = clamp((e - 2.2) / .4); g.fillStyle = res > .5 ? '#2EC9C4' : '#F5A524'; g.beginPath(); g.roundRect(tx + 8 * k, ty + 26 * k, 30 * k, 10 * k, 5 * k); g.fill();
+            g.fillStyle = '#E5197F'; g.beginPath(); g.arc(tx + 50 * k, ty + 31 * k, 5 * k, 0, TAU); g.fill(); g.globalAlpha = a; }
         } else {
           const v0 = ease(on(0)), v1 = ease(on(1)), v2 = ease(on(2));
           if (v0 > 0) { g.globalAlpha = a * v0; tick(cx, cy - 40 * k, 10 * k, '#2EC9C4', clamp((e - .4) / .5)); g.globalAlpha = a; }
@@ -409,7 +435,7 @@
         const lifted = LT >= 0 && liftAt(b[0], b[1], .3, .03);
         const s = b[2], w = 19 * s, h = 11 * s, x = b[0] - w / 2, y = b[1], col = fogMix(mix([30, 34, 92], [210, 222, 248], dl), z, dl);
         g.fillStyle = rgb(col); g.beginPath(); g.roundRect(x, y - h, w * .62, h, 2 * s); g.fill(); g.beginPath(); g.roundRect(x + w * .55, y - h * 1.45, w * .45, h * 1.45, 2 * s); g.fill();
-        const t0 = AT[4] + .4, lit = sm((t - t0) / 1.4);
+        const t0 = AT[N - 1] + .4, lit = sm((t - t0) / 1.4);
         for (let r = 0; r < 4; r++) for (let c = 0; c < 5; c++) {
           const on = lit * (hash(r * 7 + c * 13) < .75 ? 1 : 0) * sm((t - t0 - hash(r * 3 + c) * 1.2) / .4);
           g.fillStyle = on > 0 ? `rgba(255,236,190,${.35 + .6 * on})` : rgb(mix(col, [10, 10, 40], .3));
@@ -437,30 +463,10 @@
       }
       /* the pull: a soft column of light from above and fine upward trails in Facilio colours */
       const SPR = [];
-      function trailSprite(c) {
-        if (SPR[c]) return SPR[c]; const cols = ['141,184,255', '46,201,196', '244,247,255', '229,25,127'], sc = doc.createElement('canvas'); sc.width = 4; sc.height = 128;
-        const x = sc.getContext('2d'), gr = x.createLinearGradient(0, 0, 0, 128); gr.addColorStop(0, `rgba(${cols[c]},1)`); gr.addColorStop(1, `rgba(${cols[c]},0)`); x.fillStyle = gr; x.fillRect(0, 0, 4, 128); return SPR[c] = sc;
-      }
-      function beam() {
-        if (LT < 0) return;
-        const bell = Math.sin(Math.PI * clamp(LT / LEND));
-        g.save(); g.globalCompositeOperation = 'lighter';
-        g.save(); g.translate(W / 2, -H * .08); g.scale(W * .42 / H, 1);   // a soft elliptical column of light from above, no hard edges
-        const bg = g.createRadialGradient(0, 0, 0, 0, 0, H * 1.15); bg.addColorStop(0, `rgba(180,206,255,${.26 * bell})`); bg.addColorStop(.55, `rgba(141,184,255,${.08 * bell})`); bg.addColorStop(1, 'rgba(141,184,255,0)');
-        g.fillStyle = bg; g.beginPath(); g.arc(0, 0, H * 1.15, 0, TAU); g.fill(); g.restore();
-        for (const p of TRAILS) {
-          const k = clamp((LT - p.d) / (LEND - p.d)); if (k <= 0 || k >= 1) continue;
-          const y = (p.y - k * k * 1.9 * p.sp) * H, len = p.len * H * (1 + 2.2 * k), x = (p.x + (.5 - p.x) * .06 * k) * W;
-          if (y + len < 0) continue;
-          g.globalAlpha = .55 * Math.sin(Math.PI * k); g.drawImage(trailSprite(p.c), x - p.w / 2, y, p.w, len);   // bright head, fading tail
-        }
-        g.restore();
-      }
-
-      /* each step's sign sits on top of its post, with the challenge and how Facilio helps */
+      /* each step's sign sits on top of its post, with the challenge and how Delivery Studio helps */
       let measured = false, CW = [], CH = [], KW = [], KH = [], SCENEBOX = null, CAPBOX = null;
       const measure = () => { CW = CAPS.map(e => e.offsetWidth); CH = CAPS.map(e => e.offsetHeight); KW = CHIPS.map(e => e.offsetWidth); KH = CHIPS.map(e => e.offsetHeight); measured = true; };
-      const active = t => { for (let i = 0; i < 5; i++) if (t >= AT[i] - .15 && t < DWE[i] - .1) return i; return -1; };
+      const active = t => { for (let i = 0; i < N; i++) if (t >= (i ? AT[i] - .15 : 1.9) && t < DWE[i] - .1) return i; return -1; };   // the first sign joins the opening shot
       function carRect() { const u = carU(T), p = P(u, roadY(u), roadZ(u)); return p && { x: p[0] - 2.8 * p[2], y: p[1] - 2.6 * p[2], w: 5.6 * p[2], h: 2.8 * p[2] }; }
       function signBox(i, p) {
         const top = NARROW ? 62 : 74, y = clamp(p.y - CH[i] - 16, top, H - CH[i] - 60);
@@ -495,7 +501,7 @@
       }
 
       let lastA = -2;
-      const lastDone = t => { let d = -1; for (let i = 0; i < 5; i++) if (t >= DWE[i]) d = i; return d; };
+      const lastDone = t => { let d = -1; for (let i = 0; i < N; i++) if (t >= DWE[i]) d = i; return d; };
       function draw(t) {
         if (!W) return;
         camera(t); const dl = day(t);
@@ -505,7 +511,7 @@
         const items = [];
         for (const pr of PROPS) { const zr = pr.z - cam.z; if (zr < 2) continue; const sx = W / 2 + (pr.x - cam.x) * F / zr; if (sx < -120 || sx > W + 120) continue; items.push({ z: pr.z, f: () => drawProp(pr, t, dl) }); }
         const posts = [];
-        for (let i = 0; i < 5; i++) items.push({ z: postZ(i), f: () => { posts[i] = drawPost(i, t); } });
+        for (let i = 0; i < N; i++) items.push({ z: postZ(i), f: () => { posts[i] = drawPost(i, t); } });
         items.push({ z: roadZ(DEST) + RW * .5 + 30, f: () => destination(t, dl) });
         items.push({ z: roadZ(carU(t)) - RW * .2, f: () => drawCar(t, dl) });
         items.sort((p, q) => q.z - p.z); for (const it of items) it.f();
@@ -517,28 +523,27 @@
         if (a >= 0 && posts[a] && H >= 520 && !NARROW && LT < 0) {   // phones: the sign carries the step on its own
           const i = a, p = posts[i], vis = sm((t - AT[i] + .1) / .5) * (1 - sm((t - (DWE[i] - .5)) / .4));
           if (vis > .01) {
-            const k = clamp(p.s / 8, .85, 1.2), sb = signBox(i, p), hw = 64 * k, hh = 48 * k;
+            const k = clamp(p.s / 8, .85, 1.2), sb = signBox(i, p), hw = (i === 4 ? 92 : 64) * k, hh = 48 * k;
             // beside the sign, above the road: right of it when there is room, otherwise left
             let cx = sb.x + sb.w + 26 + hw; if (cx + hw > W - 12) cx = sb.x - 26 - hw;
             let cy = clamp(sb.y + sb.h * .55, 90 + hh, H - 70 - hh);
             cx = clamp(cx, hw + 10, W - hw - 10);
             const box = { x: cx - hw, y: cy - hh, w: hw * 2, h: hh * 2 }, c = carRect();
             const clash = (A, B) => A && B && A.x < B.x + B.w && B.x < A.x + A.w && A.y < B.y + B.h && B.y < A.y + A.h;
-            if (!clash(box, sb) && !clash(box, c)) { scene(i, t, vis, cx, cy, k); SCENEBOX = box; }
+            if (!clash(box, sb) && !clash(box, c)) { scene(i, t, vis, i === 4 ? cx - 28 * k : cx, cy, k); SCENEBOX = box; }
           }
         }
         grass(t, dl);
         const vgA = (.55 - .35 * dl) * (LT < 0 ? 1 : 1 - clamp(LT / .5));
         if (vgA > 0) { const vg = g.createRadialGradient(W / 2, H * .55, Math.min(W, H) * .3, W / 2, H * .55, Math.max(W, H) * .8); vg.addColorStop(0, 'rgba(5,4,30,0)'); vg.addColorStop(1, `rgba(5,4,30,${vgA})`); g.fillStyle = vg; g.fillRect(0, 0, W, H); }
         const fin = sm(t / .8); if (fin < 1 && LT < 0) { g.fillStyle = `rgba(10,9,48,${1 - fin})`; g.fillRect(0, 0, W, H); }
-        beam();
         place(t, posts);
-        openEl.classList.toggle('on', t > .3 && t < AT[0] - .35 && LT < 0);
+        openEl.classList.toggle('on', t > .3 && t < 2.2 && LT < 0);
         endEl.classList.toggle('on', t >= CRANE + 1.5);
         const done = lastDone(t);
-        fillEl.style.width = (80 * (t >= CRANE ? 1 : Math.max(0, Math.max(a, done) / 4))) + '%';
+        fillEl.style.width = ((100 - 100 / N) * (t >= CRANE ? 1 : Math.max(0, Math.max(a, done) / (N - 1)))) + '%';
         dots.forEach((d, i) => { d.className = t >= CRANE || i <= done && i !== a ? 'done' : i === a ? 'now' : i < a ? 'done' : ''; });
-        if (a !== lastA && a >= 0) { lastA = a; sr.textContent = `Step ${a + 1} of 5: ${STEPS[a].h}. Your challenge: ${STEPS[a].c} How Facilio helps: ${STEPS[a].f}`; }
+        if (a !== lastA && a >= 0) { lastA = a; sr.textContent = `Step ${a + 1} of ${N}: ${STEPS[a].h}. The challenge: ${STEPS[a].c} How Delivery Studio helps: ${STEPS[a].f}`; }
         if (t >= CRANE && lastA !== 9) { lastA = 9; sr.textContent = 'The journey is complete.'; }
       }
 
@@ -547,24 +552,20 @@
       function loop(now) {
         if (!playing) return; if (!start) start = now - T * 1000;
         T = Math.min(END, (now - start) / 1000); draw(T);
-        if (T >= END) { playing = false; if (opts.auto !== false) leave('end'); return; }
+        if (T >= END) { if (leaving) { raf = root.requestAnimationFrame(loop); return; } playing = false; if (opts.auto !== false) leave('end'); return; }
         raf = root.requestAnimationFrame(loop);
       }
       function finish(how) { if (!o.isConnected) return; o.remove(); doc.removeEventListener('keydown', key); root.removeEventListener('resize', resize); doc.removeEventListener('visibilitychange', vis); resolve({ how }); }
       function leave(how) {
-        if (leaving) return; leaving = true; playing = false; root.cancelAnimationFrame(raf);
+        if (leaving) return; leaving = true;
         o.querySelectorAll('button').forEach(b => { b.disabled = true; });
-        if (reduce) { o.addEventListener('transitionend', e => { if (e.target === o) finish(how); }); setTimeout(() => finish(how), 600); root.requestAnimationFrame(() => o.classList.add('fade')); return; }
-        if (how === 'skip') T = Math.max(T, CRANE + 1.8);   // skipping lands on the finished view first, so the lift-off reads as one movement
-        o.classList.add('lifting');   // the layer's own background goes; from here only what is drawn covers the page beneath
-        let t0 = 0;
-        const step = now => {
-          if (!t0) t0 = now; LT = (now - t0) / 1000;
-          draw(T);
-          if (LT >= LEND) { finish(how); return; }
-          root.requestAnimationFrame(step);
-        };
-        root.requestAnimationFrame(step);
+        if (reduce) { playing = false; root.cancelAnimationFrame(raf); o.addEventListener('transitionend', e => { if (e.target === o) finish(how); }); setTimeout(() => finish(how), 600); root.requestAnimationFrame(() => o.classList.add('fade')); return; }
+        // the same exit as the tree intro's "Get started": Facilio liquids rise, the wordmark fills, then they drain away to uncover the sign-in page
+        if (!V.liquidReveal) { o.classList.add('fade'); setTimeout(() => finish(how), 400); return; }
+        if (!playing && T < END) { playing = true; start = 0; raf = root.requestAnimationFrame(loop); }   // the journey keeps moving under the rising liquid
+        V.liquidReveal({ host: o, logo, dpr: DPR,
+          onCovered: () => { playing = false; root.cancelAnimationFrame(raf); cv.style.visibility = 'hidden'; o.classList.add('liq'); o.style.background = 'transparent'; },
+          onEntered: () => { if (V.replayAuthEntrance) V.replayAuthEntrance(); } }).then(() => finish(how));
       }
       const key = e => { if (e.key === 'Escape' && !leaving) leave('skip'); };
       const vis = () => { if (doc.hidden) { if (playing) { playing = false; root.cancelAnimationFrame(raf); held = 1; } } else if (held && !leaving) { held = 0; playing = true; start = 0; raf = root.requestAnimationFrame(loop); } };

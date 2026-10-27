@@ -124,7 +124,7 @@
   ACT.pkgCat = el => { S.ui.pkgCat = el.value; V.render(); };
   ACT.importConfig = async () => { const f = (await V.pickFile('.zip'))[0]; if (!f) return; if (!(await confirmDialog('Load org package', 'Replace the configuration used by this project with ' + f.name + '? Workshop proposals are kept.', 'Load package'))) return; await loadPackage(f); };
   async function loadPackage(f) {
-    loading(true, 'Reading the package…'); try { await V.loadScript('vendor/jszip.min.js'); const zip = await root.JSZip.loadAsync(f); const files = {}; for (const n of Object.keys(zip.files)) { if (/\.xml$/i.test(n) && !zip.files[n].dir) files[n.replace(/^.*?components\//, 'components/')] = await zip.files[n].async('string'); }
+    loading(true, 'Reading the package…'); try { const files = {}; for (const x of await V.zipTexts(f, n => /\.xml$/i.test(n))) files[x.name.replace(/^.*?components\//, 'components/')] = x.text;
       if (!Object.keys(files).some(n => /MODULE\.xml$/i.test(n))) throw new Error('This does not look like a Facilio org package (no MODULE.xml found). To bring in only a state flow, use Import from XML in the State Flow Builder.');
       V.loadingMsg('Analysing the configuration…'); await new Promise(r => setTimeout(r, 20)); const b = root.FWBParser.parsePackage(files, { DOMParser, sourceName: f.name });
       const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g; const party = l => (l || []).map(x => ({ name: x.name, deleted: x.deleted, ref: x.ref })); b.vendors = party(b.vendors); b.tenants = party(b.tenants); b.clients = party(b.clients); b.teams = (b.teams || []).map(t => ({ name: t.name, members: t.members, active: t.active, ref: t.ref }));

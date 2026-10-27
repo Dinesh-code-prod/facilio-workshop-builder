@@ -56,7 +56,7 @@
 
   const SEV = { high: ['red', 'High'], medium: ['tbc', 'Medium'], low: ['', 'Low'] };
   const T = { sev: '', app: '', q: '' };
-  const csv = rows => rows.map(r => r.map(c => '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"').join(',')).join('\n');
+  const csv = rows => rows.map(r => r.map(c => '"' + String(c == null ? '' : root.FWB.csvText(c)).replace(/"/g, '""') + '"').join(',')).join('\n');
   V.pkgan = {
     html() {
       const b = S.baseline; if (!b) return `<div class="page-header"><div class="t"><h1>Package Analysis</h1></div></div><div class="page-body"><div class="notice"><span>No configuration is loaded for this project.</span></div></div>`;

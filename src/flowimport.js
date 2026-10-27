@@ -11,7 +11,7 @@
   async function readFiles(files) {
     const named = [];
     for (const f of files) {
-      if (/\.zip$/i.test(f.name)) { await V.loadScript('vendor/jszip.min.js'); const zip = await root.JSZip.loadAsync(f); for (const n of Object.keys(zip.files)) if (/\.xml$/i.test(n) && !zip.files[n].dir && !/PackageConf\.xml$/i.test(n)) named.push({ name: f.name + ' › ' + n.replace(/^.*\//, ''), text: await zip.files[n].async('string') }); }
+      if (/\.zip$/i.test(f.name)) { for (const x of await V.zipTexts(f, n => /\.xml$/i.test(n) && !/PackageConf\.xml$/i.test(n))) named.push({ name: f.name + ' › ' + x.name.replace(/^.*\//, ''), text: x.text }); }
       else named.push({ name: f.name, text: await f.text() });
     }
     return named;

@@ -10,10 +10,14 @@
     "preview": "node tests/ui/devserver.mjs 4173",
     "test:ui": "node tests/ui/audit.mjs tests/ui/out",
     "test:exports": "node tests/ui/exports.mjs tests/ui/out-exports",
-    "test:smoke": "node tests/ui/smoke.mjs"
+    "test:smoke": "node tests/ui/smoke.mjs",
+    "test:security": "node tests/ui/security-check.mjs",
+    "test:csp": "node --import ./tests/ui/csp-watch.mjs tests/ui/csp-libs.mjs",
+    "test:whiteboard": "node tests/ui/whiteboard-check.mjs",
+    "test:welcome": "node tests/ui/welcome-check.mjs"
   },
   "devDependencies": {
-    "@xmldom/xmldom": "0.8.10",
+    "@xmldom/xmldom": "0.8.15",
     "esbuild": "^0.24.2",
     "exceljs": "^4.4.0",
     "jszip": "3.10.1",

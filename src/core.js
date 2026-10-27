@@ -5,6 +5,10 @@
 
   // ---------- helpers ----------
   const esc = s => String(s === undefined || s === null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // Links people type or import are only rendered as links when they are web or mail addresses (never javascript:, data: and the like).
+  // CSV cells: text that a spreadsheet would run as a formula (= + - @ tab CR at the start) is prefixed with ' so it opens as text. Numbers are left alone.
+  const csvText = v => (typeof v === 'string' && /^[=+\-@\t\r]/.test(v) ? "'" + v : v);
+  const safeUrl = u => { const t = String(u == null ? '' : u).trim(); return /^(https?:\/\/|mailto:)/i.test(t) && !/[\u0000-\u001f\s]/.test(t) ? t : ''; };
   const uid = (p) => (p || 'id') + '_' + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-3);
   const clone = o => JSON.parse(JSON.stringify(o));
   const deepFreeze = o => { if (o && typeof o === 'object' && !Object.isFrozen(o)) { Object.freeze(o); Object.values(o).forEach(deepFreeze); } return o; };
@@ -363,7 +367,7 @@
     return F;
   }
 
-  root.FWB = { S, P, esc, uid, clone, slug, humanize, secs, CATEGORY_LABEL, CATEGORY_ORDER, ACTOR_STATUS, VERIFICATION, REQ_CLASS, FIELD_TYPES_EDIT, PERMS, permText,
+  root.FWB = { S, P, esc, safeUrl, csvText, uid, clone, slug, humanize, secs, CATEGORY_LABEL, CATEGORY_ORDER, ACTOR_STATUS, VERIFICATION, REQ_CLASS, FIELD_TYPES_EDIT, PERMS, permText,
     newWorkshop, log, changed, on, emit, setBaseline, doc, flush, hasUnsaved, loadProjectDocs, reloadSection, paintSave, markDirty, SECTION_DEFAULTS, deepFreeze,
     wsMod, allModules, moduleView, fops, effFields, fieldLabel, effForm, formsForModule, formCatalog, formRole, flowModel, editableFlow, flowsForModule, allFlows, flowDiff, baselineFlowModel, autoLayout, statusLabelOf, actionsText,
     allActors, actor, actorLabel, isTbc, businessRank, CHAIN, nextReqId, modulePrefix, changeSummary, validate };

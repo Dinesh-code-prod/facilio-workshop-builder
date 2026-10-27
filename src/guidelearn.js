@@ -335,7 +335,7 @@
   ACT.glResp = a => { S.ui.glResp = a.getAttribute('data-v'); V.render(); };
   ACT.glRespRefresh = () => rLoad(true);
   ACT.glCsv = () => {
-    const q = s => '"' + String(s ?? '').replace(/"/g, '""') + '"'; const rows = [['Module', 'Type', 'Section / group', 'Item', 'Response', 'By', 'Kind', 'Updated']];
+    const q = s => '"' + String(root.FWB.csvText(s ?? '')).replace(/"/g, '""') + '"'; const rows = [['Module', 'Type', 'Section / group', 'Item', 'Response', 'By', 'Kind', 'Updated']];
     L.MODS.forEach(lm => {
       lm.form.forEach(s => s.questions.forEach(x => { const r = R.map[`${lm.key}:a:${x.id}`]; if (r) rows.push([lm.name, 'Question', s.section, x.q, fmt(r.value), r.authorName, r.authorKind, r.updatedAt]); }));
       Object.entries(lm.fieldGroups).forEach(([g, fs]) => fs.forEach(f => { const r = R.map[`${lm.key}:f:${f[0]}`]; if (r) rows.push([lm.name, 'Field', g, f[1], fmt(r.value), r.authorName, r.authorKind, r.updatedAt]); }));

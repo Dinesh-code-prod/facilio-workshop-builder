@@ -51,8 +51,15 @@
       const END = AUTO ? 38 : 44, REVEAL = AUTO ? 1e9 : 38.2;
       // real seconds -> timeline seconds. The whole intro is about 6.8s: growth 5s, then (opening page) the leaves open into the sign-in page in about 1.8s.
       const TK = AUTO ? 4.05 : 2.7, TR = 4.6 * TK; let WPTS = (AUTO ? [[0, 0], [1.1, 5], [2.2, 14.4], [3.4, 26.6], [4.6, 38]] : [[0, 0], [1.2, 5], [2.4, 14.4], [3.7, 26.6], [5.0, 38.2], [6.8, 44]]).map(([c, t]) => [c * TK, t]);
-      const warp = c => { if (c <= 0) return 0; for (let i = 1; i < WPTS.length; i++) if (c <= WPTS[i][0]) { const a = WPTS[i - 1], b = WPTS[i]; return lerp(a[1], b[1], (c - a[0]) / (b[0] - a[0])); } return WPTS[WPTS.length - 1][1]; };
-      const unwarp = t => { for (let i = 1; i < WPTS.length; i++) if (t <= WPTS[i][1]) { const a = WPTS[i - 1], b = WPTS[i]; return lerp(a[0], b[0], (t - a[1]) / (b[1] - a[1])); } return WPTS[WPTS.length - 1][0]; };
+      // real seconds -> timeline: a monotone cubic (Fritsch-Carlson) through the pacing keyframes. A straight line between them made the growth speed
+      // change abruptly at every keyframe, which reads as a stutter; this keeps the speed continuous and still passes exactly through each keyframe.
+      let WM = [];
+      const wslopes = () => { const n = WPTS.length, d = []; for (let i = 0; i < n - 1; i++) d.push((WPTS[i + 1][1] - WPTS[i][1]) / (WPTS[i + 1][0] - WPTS[i][0]));
+        WM = WPTS.map((_, i) => i === 0 ? d[0] : i === n - 1 ? d[n - 2] * .35 : d[i - 1] * d[i] <= 0 ? 0 : 2 / (1 / d[i - 1] + 1 / d[i])); };
+      wslopes();
+      const warp = c => { if (c <= 0) return 0; for (let i = 1; i < WPTS.length; i++) if (c <= WPTS[i][0]) { const a = WPTS[i - 1], b = WPTS[i], h = b[0] - a[0], u = (c - a[0]) / h, u2 = u * u, u3 = u2 * u;
+          return (2 * u3 - 3 * u2 + 1) * a[1] + (u3 - 2 * u2 + u) * h * WM[i - 1] + (-2 * u3 + 3 * u2) * b[1] + (u3 - u2) * h * WM[i]; } return WPTS[WPTS.length - 1][1]; };
+      const unwarp = t => { let lo = 0, hi = WPTS[WPTS.length - 1][0]; if (t >= WPTS[WPTS.length - 1][1]) return hi; for (let k = 0; k < 40; k++) { const m = (lo + hi) / 2; if (warp(m) < t) lo = m; else hi = m; } return (lo + hi) / 2; };   // inverse of the smooth warp (it is monotone)
       let CLK = 0, LO = -1, HOLES = [], LCX = 0, LCY = 0, LSC = 1, HOLD = false;   // CLK real clock, LO leaf-opening clock (-1 until it starts)
       const TAU = Math.PI * 2;
       let EXX = 0, EXT = 0, EXL = null;   // exit: EXX slides the whole scene left, EXT is the exit clock that frees the leaves one by one
@@ -160,7 +167,7 @@
       /* Pacing (brand ending): every stage gets the same real-time slot, measured from the moment its node appears on the tree, so each stage's info card
          is on screen long enough to read (stage 5 and 6 used to be skipped because their nodes appeared after the next stage had begun). */
       const SEED_S = 2.9, STEP_S = 1.75, LAST_S = 1.9, BRAND_S = 2.6;
-      if (!AUTO) WPTS = [[0, 0]].concat(nodes.map((n, i) => [SEED_S + i * STEP_S, n.t + .15]), [[SEED_S + 11 * STEP_S + LAST_S, REVEAL], [SEED_S + 11 * STEP_S + LAST_S + BRAND_S, END]]);
+      if (!AUTO) WPTS = [[0, 0]].concat(nodes.map((n, i) => [SEED_S + i * STEP_S, n.t + .15]), [[SEED_S + 11 * STEP_S + LAST_S, REVEAL], [SEED_S + 11 * STEP_S + LAST_S + BRAND_S, END]]); wslopes();
 
       // extra connection nodes (stage 7) and the links between them
       const links = [], lpts = [];
@@ -688,7 +695,7 @@
       let lastPhase = -2, lastStage = -3;
       function ui(t) {
         const ph = PHASES.findIndex(p => t >= p[0] && t < p[1]); const phase = ph < 0 ? PHASES.length - 1 : ph;
-        barEls.forEach((el, i) => { el.style.width = (phase > i ? 100 : phase === i ? clamp((t - PHASES[i][0]) / (PHASES[i][1] - PHASES[i][0])) * 100 : 0) + '%'; });
+        barEls.forEach((el, i) => { const v = phase > i ? 1 : phase === i ? clamp((t - PHASES[i][0]) / (PHASES[i][1] - PHASES[i][0])) : 0; if (el._v !== v) { el._v = v; el.style.transform = `scaleX(${v.toFixed(4)})`; } });   // transform, not width: no layout every frame
         if (phase !== lastPhase) {
           const first = lastPhase === -2; lastPhase = phase; const P = PHASES[phase];
           const apply = () => { lh1.textContent = P[2]; lh2.textContent = P[3]; head.classList.remove('sw'); measureChrome(); };
@@ -709,12 +716,12 @@
         if (closed) return; raf = root.requestAnimationFrame(frame);
         if (doc.hidden) { last = 0; return; }
         if (rm || HOLD || LIQ) return;
-        if (!last) last = ts; const dt = Math.min(.2, (ts - last) / 1000); last = ts;
+        if (!last) last = ts; const dt = Math.min(.1, (ts - last) / 1000); last = ts;   // a long frame (GC, tab switch) slows the clock for that frame instead of jumping the tree forward
         if (LO >= 0) { LO += dt; IDLE += dt; }
         else if (CLK < WPTS[WPTS.length - 1][0]) { CLK += dt; T = warp(CLK); if (AUTO && CLK >= TR) startLeaf(); }
         else { IDLE += dt; if (fno++ & 1) return; }   // after the intro: 30fps is plenty for the sway
         const c0 = performance.now(); draw(T); ui(T); const cost = performance.now() - c0;
-        if (T > 1.5 && QTIER < QT.length - 1) { slow = cost > 20 ? slow + 1 : Math.max(0, slow - 1); if (slow > 8) { QTIER++; QCAP = QT[QTIER]; slow = 0; resize(); } }   // slow device: step the canvas resolution down (1.5 > 1 > .75 > .55x) until frames fit
+        if (T > .3 && T < S[1] && QTIER < QT.length - 1) { slow = cost > 12 ? slow + 1 : Math.max(0, slow - 1); if (slow > 4) { QTIER++; QCAP = QT[QTIER]; slow = 0; resize(); } }   // decided early, then held   // slow device: step the canvas resolution down (1.5 > 1 > .75 > .55x) until frames fit
       }
       let leafTimers = false;
       function startLeaf() {
@@ -728,70 +735,11 @@
          Three Facilio-coloured liquids (teal, pink, then blue) rise from the bottom and flood the screen; the Facilio wordmark fills up with liquid like a glass,
          "Delivery Studio" settles under it, then the liquid drains downward, blue first with pink and teal trailing, and uncovers the next page (sign-in).
          The promise resolves once the screen is fully covered, so the caller can swap the page underneath before the drain starts. Canvas 2D only. */
-      function liquid(how, flag) {
+      function liquid(how, flag) {   // the shared liquid reveal (src/liquid.js); the road journey leaves the same way
         LIQ = true; o.classList.add('liq'); root.removeEventListener('keydown', key);
-        const c = doc.createElement('canvas'); c.className = 'ti-liq'; c.setAttribute('aria-hidden', 'true'); o.appendChild(c);
-        const x = c.getContext('2d'), lg = doc.createElement('canvas'), lx = lg.getContext('2d');
-        let cw = 0, ch = 0;
-        const fit = () => { cw = o.clientWidth; ch = o.clientHeight; c.width = Math.round(cw * DPR); c.height = Math.round(ch * DPR); };
-        fit(); root.addEventListener('resize', fit);
-        const LAY = [   // drawn back to front; the teal leads the rise and trails the drain, blue is the main body
-          { c0: '#3FD6CF', c1: '#17A8A3', up: 0, dn: .34, amp: 15, k: .0105, sp: 3.0 },
-          { c0: '#F0388F', c1: '#B8136A', up: .12, dn: .17, amp: 19, k: .0082, sp: 2.4 },
-          { c0: '#2C7DF5', c1: '#1D1A5E', up: .24, dn: 0, amp: 23, k: .0062, sp: 1.9, main: true }
-        ];
-        const RISE = 1.0, FULL = LAY[2].up + RISE + .02, D0 = 2.55, DRAIN = 1.1, TEND = D0 + LAY[0].dn + DRAIN + .1;
-        const bub = Array.from({ length: 26 }, () => ({ x: Math.random(), s: 1.5 + Math.random() * 3.5, v: .25 + Math.random() * .5, p: Math.random() }));
-        const t0 = performance.now(); let covered = false, entered = false, done = false;
-        const edge = (e, L) => e < D0 ? lerp(ch + 70, -90, easeIO((e - L.up) / RISE)) : lerp(-90, ch + 110, easeIO((e - D0 - L.dn) / DRAIN));
-        const surf = (e, L, xx, amp) => amp * Math.sin(xx * L.k + e * L.sp) + amp * .45 * Math.sin(xx * L.k * 2.3 - e * L.sp * 1.4 + 1.3);
-        function waveFill(ctx, e, L, y0, amp, w, fill) {
-          ctx.beginPath(); ctx.moveTo(-10, ch + 20); ctx.lineTo(-10, y0 + surf(e, L, -10, amp));
-          for (let xx = 0; xx <= w + 16; xx += 16) ctx.lineTo(xx, y0 + surf(e, L, xx, amp));
-          ctx.lineTo(w + 20, ch + 20); ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
-        }
-        function step(now) {
-          if (done) return;
-          const e = (now - t0) / 1000;
-          x.setTransform(DPR, 0, 0, DPR, 0, 0); x.clearRect(0, 0, cw, ch);
-          for (const L of LAY) {
-            const y0 = edge(e, L); if (y0 > ch + 60) continue;
-            const mv = e < D0 ? Math.sin(Math.PI * clamp((e - L.up) / RISE)) : Math.sin(Math.PI * clamp((e - D0 - L.dn) / DRAIN));
-            const amp = L.amp * (.35 + .65 * mv), gr = x.createLinearGradient(0, Math.max(-90, y0 - 30), 0, Math.max(-90, y0 - 30) + ch * .9);
-            gr.addColorStop(0, L.c0); gr.addColorStop(1, L.c1); waveFill(x, e, L, y0, amp, cw, gr);
-            // a bright meniscus along the surface
-            x.beginPath(); for (let xx = -10; xx <= cw + 16; xx += 16) { const yy = y0 + surf(e, L, xx, amp); xx < 0 ? x.moveTo(xx, yy) : x.lineTo(xx, yy); }
-            x.strokeStyle = 'rgba(255,255,255,.28)'; x.lineWidth = 2; x.stroke();
-            if (L.main) for (const b of bub) {   // bubbles rising inside the main liquid
-              const by = ch - ((e * b.v * ch * .55 + b.p * ch) % (ch + 40)), bx = b.x * cw + Math.sin(e * 2 + b.p * 9) * 8;
-              if (by < y0 + 10) continue; x.fillStyle = 'rgba(255,255,255,.14)'; x.beginPath(); x.arc(bx, by, b.s, 0, TAU); x.fill();
-            }
-          }
-          // the wordmark fills with liquid, like a glass
-          const show = sm((e - .55) / .4) * (1 - sm((e - D0 + .15) / .45));
-          if (show > 0 && logoImg.naturalWidth) {
-            const w = Math.min(cw * .46, 440), h = w * logoImg.naturalHeight / logoImg.naturalWidth, gx = (cw - w) / 2, lift = 14 * sm((e - D0 + .15) / .45), gy = ch / 2 - h / 2 - 26 - lift;
-            const pw = Math.round(w * DPR), ph = Math.round(h * DPR) + 2; if (lg.width !== pw || lg.height !== ph) { lg.width = pw; lg.height = ph; }
-            lx.setTransform(1, 0, 0, 1, 0, 0); lx.clearRect(0, 0, pw, ph); lx.globalCompositeOperation = 'source-over';
-            const fl = easeIO((e - .85) / 1.15), lv = lerp(ph + 6, -8, fl), A = { k: .045 / DPR, sp: 4.2 };
-            lx.beginPath(); lx.moveTo(-4, ph + 4); for (let xx = -4; xx <= pw + 8; xx += 6) lx.lineTo(xx, lv + (6 * DPR * (1 - fl * .6)) * Math.sin(xx * A.k + e * A.sp) + 2.5 * DPR * Math.sin(xx * A.k * 2.7 - e * 5));
-            lx.lineTo(pw + 8, ph + 4); lx.closePath(); lx.fillStyle = '#fff'; lx.fill();
-            lx.globalCompositeOperation = 'source-in'; lx.drawImage(logoImg, 0, 0, pw, ph - 2); lx.globalCompositeOperation = 'source-over';
-            x.globalAlpha = .2 * show; x.drawImage(logoImg, gx, gy, w, h);   // the empty glass
-            x.globalAlpha = show; x.drawImage(lg, gx, gy, w, h);
-            const ds = sm((e - 1.55) / .5) * show;
-            if (ds > 0) { x.globalAlpha = ds * .92; x.fillStyle = '#fff'; x.font = `500 ${Math.round(Math.max(15, w * .07))}px Inter, Roboto, Arial, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'top'; try { x.letterSpacing = '0.14em'; } catch (er) { } x.fillText('Delivery Studio', cw / 2, gy + h + 18 + 8 * (1 - ds)); try { x.letterSpacing = '0px'; } catch (er) { } }
-            x.globalAlpha = 1;
-          }
-          if (!covered && e >= FULL) {   // the screen is fully flooded: drop the tree scene and let the caller put the next page underneath
-            covered = true; cv.style.visibility = 'hidden'; if (cv2) cv2.style.visibility = 'hidden'; o.style.background = 'transparent';
-            resolve({ how, off: flag });
-          }
-          if (!entered && e >= D0 - .05) { entered = true; const au = doc.querySelector('.auth'); if (au) { au.classList.remove('auth-in'); void au.offsetWidth; au.classList.add('auth-in'); } }
-          if (e >= TEND) { done = true; root.removeEventListener('resize', fit); teardown(); return; }
-          root.requestAnimationFrame(step);
-        }
-        root.requestAnimationFrame(step);
+        V.liquidReveal({ host: o, logoImg, dpr: DPR,
+          onCovered: () => { cv.style.visibility = 'hidden'; if (cv2) cv2.style.visibility = 'hidden'; o.style.background = 'transparent'; resolve({ how, off: flag }); },
+          onEntered: () => V.replayAuthEntrance() }).then(teardown);
       }
       function teardown() { if (closed) return; closed = true; root.cancelAnimationFrame(raf); doc.body.classList.remove('cn-on'); root.removeEventListener('keydown', key); root.removeEventListener('resize', resize); delete root.__ti; cv.width = 1; cv.height = 1; o.remove(); }
       function finish(how) {
@@ -819,7 +767,7 @@
       o.addEventListener('click', e => { if (LIQ) return; const bt = e.target.closest('[data-r]'); if (bt) finish(bt.getAttribute('data-r')); });
       root.addEventListener('keydown', key);
       if (rm) { T = END; if (AUTO) setTimeout(() => finish('go'), 1600); }
-      root.__ti = { seek, nodes, S, END, REVEAL, warp, unwarp, TR, wpts: () => WPTS, get liq() { return LIQ; }, boxes: () => lastBoxes, nodeBoxes: () => lastNodes, scrub: (c, lo) => { HOLD = true; CLK = c; T = warp(c); if (lo >= 0) { prepLeaf(); LO = lo; o.classList.add('leafout'); o.style.background = 'transparent'; } else LO = -1; lastPhase = -2; lastStage = -3; draw(T); ui(T); }, get LO() { return LO; }, holes: () => HOLES.length, nl: () => leaves.length };
+      root.__ti = { seek, nodes, S, END, REVEAL, warp, unwarp, TR, wpts: () => WPTS, get liq() { return LIQ; }, boxes: () => lastBoxes, nodeBoxes: () => lastNodes, scrub: (c, lo) => { HOLD = true; CLK = c; T = warp(c); if (lo >= 0) { prepLeaf(); LO = lo; o.classList.add('leafout'); o.style.background = 'transparent'; } else LO = -1; lastPhase = -2; lastStage = -3; draw(T); ui(T); }, get LO() { return LO; }, get T() { return T; }, get tier() { return QTIER; }, holes: () => HOLES.length, nl: () => leaves.length };
       doc.body.appendChild(o); doc.body.classList.add('cn-on');
       resize(); ui(T); if (!logoImg.complete) logoImg.addEventListener('load', () => draw(T));
       raf = root.requestAnimationFrame(frame);

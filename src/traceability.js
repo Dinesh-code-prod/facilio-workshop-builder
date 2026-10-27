@@ -41,7 +41,7 @@
     I().list('cmodx').forEach(c => { const nm = c.name || c.label || c.id; const used = m.ucs.some(u => (u.modules || []).some(x => norm(x) === norm(nm))) || m.reqs.some(r => (r.modules || []).some(x => norm(x) === norm(nm))); if (!used) add('low', 'Custom module', nm, 'No requirement or use case refers to this custom module.'); });
     return f;
   }
-  const csvq = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const csvq = v => '"' + String(v == null ? '' : root.FWB.csvText(v)).replace(/"/g, '""') + '"';
   const LESSON_AREAS = ['Discovery', 'Workshops', 'Requirements', 'Configuration', 'Data migration', 'Integrations', 'UAT', 'Training', 'Go-live', 'Hypercare', 'Handover', 'Project management', 'Other'];
   const IMPACT = ['Low', 'Medium', 'High'];
   const KB = { items: [], loaded: '', q: '' }; const API = root.FWBApi;
