@@ -489,3 +489,35 @@ body #wbImgOut .tbl input[type=text] { min-height: 32px !important; height: 32px
 body #wbImgOut .tbl select { min-height: 32px !important; height: 32px; }
 @media (max-width: 860px) { body .wb-host { height: 62vh; min-height: 360px; } body .wb-grp + .wb-grp { padding-left: 0; box-shadow: none; } body .wb-hint { display: none; } }
 body .page-header select[data-change="wbPick"] { width: auto !important; max-width: 280px; }
+
+/* ---------- signed-in welcome (Run build): account chip, large "Open workspace", feature tiles ---------- */
+body .auth-form.night .aw-acct:not(#_) { display: flex; width: fit-content; align-items: center; gap: 12px; margin: 14px auto 22px; padding: 8px 14px 8px 8px; border-radius: 999px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); max-width: 100%; text-align: left; }
+body .auth-form.night .aw-av:not(#_) { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; color: #fff; background: linear-gradient(135deg, #E5197F, #1570EF); letter-spacing: .02em; }
+body .auth-form.night .aw-who:not(#_) { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+body .auth-form.night .aw-who b:not(#_) { color: #fff; font-size: 14.5px; font-weight: 600; }
+body .auth-form.night .aw-who small:not(#_) { color: #AEBBE0; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body .auth-form.night .aw-ok:not(#_) { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; color: #6EE7D8; background: rgba(23,179,174,.14); white-space: nowrap; }
+body .auth-form.night .aw-ok svg:not(#_) { width: 13px; height: 13px; }
+body .auth-form.night .auth-fields:not(#_) { display: flex !important; flex-direction: column; align-items: center; gap: 10px; width: 100% !important; max-width: none !important; }
+body .auth-form.night .btn.aw-go:not(#_) { width: 100% !important; max-width: 400px !important; height: 60px !important; min-height: 60px !important; padding: 0 28px !important; gap: 12px !important; font-size: 18px !important; font-weight: 650 !important; letter-spacing: .005em !important; border-radius: 16px !important; border: 0 !important; color: #fff !important; background: linear-gradient(135deg, #1570EF 0%, #2E7BFF 55%, #4C8DFF 100%) !important; box-shadow: 0 18px 36px -16px rgba(21,112,239,.95), inset 0 1px 0 rgba(255,255,255,.22) !important; transition: transform .2s, box-shadow .2s, filter .2s !important; }
+body .auth-form.night .btn.aw-go:not(#_):hover { transform: translateY(-2px) !important; filter: brightness(1.06) !important; box-shadow: 0 22px 40px -16px rgba(21,112,239,1), inset 0 1px 0 rgba(255,255,255,.26) !important; }
+body .auth-form.night .btn.aw-go:not(#_):active { transform: translateY(0) !important; }
+body .auth-form.night .btn.aw-go:not(#_):focus-visible { outline: 3px solid #8DB8FF !important; outline-offset: 3px !important; }
+body .auth-form.night .btn.aw-go svg:not(#_) { transition: transform .2s !important; }
+body .auth-form.night .btn.aw-go:not(#_):hover svg { transform: translateX(4px) !important; }
+body .auth-form.night .aw-hint:not(#_) { font-size: 13px; color: #8E9CC8; }
+body .auth-form.night .aw-feats:not(#_) { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 30px; padding-top: 24px; max-width: 560px; }
+body .auth-form.night .aw-feats li:not(#_) { display: flex; flex-direction: row; align-items: flex-start; gap: 12px; padding: 14px; border: 1px solid rgba(255,255,255,.1); border-left: 1px solid rgba(255,255,255,.1); border-radius: 14px; background: rgba(255,255,255,.045); font-size: 13.5px; line-height: 1.4; color: #AEBBE0; text-align: left; transition: background .2s, border-color .2s, transform .2s; }
+body .auth-form.night .aw-feats li:not(#_):hover { transform: translateY(-2px); background: rgba(255,255,255,.08); border-color: rgba(141,184,255,.35); }
+body .auth-form.night .aw-feats li > span:not(#_) { display: flex; flex-direction: column; gap: 2px; }
+body .auth-form.night .aw-feats li b:not(#_) { color: #fff; font-size: 15.5px; font-weight: 650; }
+body .auth-form.night .aw-feats li > i:not(#_) { flex: none; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; color: #fff; background: rgba(21,112,239,.35); }
+body .auth-form.night .aw-feats li:nth-child(2) > i:not(#_) { background: rgba(23,179,174,.32); }
+body .auth-form.night .aw-feats li:nth-child(3) > i:not(#_) { background: rgba(107,78,230,.38); }
+body .auth-form.night .aw-feats li:nth-child(4) > i:not(#_) { background: rgba(229,25,127,.32); }
+body .auth-form.night .aw-feats li > i svg:not(#_) { width: 18px; height: 18px; }
+@media (max-width: 520px) {
+  body .auth-form.night .aw-feats:not(#_) { grid-template-columns: 1fr; }
+  body .auth-form.night .aw-ok:not(#_) { display: none; }
+  body .auth-form.night .btn.aw-go:not(#_) { height: 56px !important; min-height: 56px !important; font-size: 17px !important; }
+}

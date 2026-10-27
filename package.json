@@ -14,7 +14,9 @@
     "test:security": "node tests/ui/security-check.mjs",
     "test:csp": "node --import ./tests/ui/csp-watch.mjs tests/ui/csp-libs.mjs",
     "test:whiteboard": "node tests/ui/whiteboard-check.mjs",
-    "test:welcome": "node tests/ui/welcome-check.mjs"
+    "test:welcome": "node tests/ui/welcome-check.mjs",
+    "test:tree-motion": "node tests/ui/tree-slide.mjs http://localhost:4173 1440 full",
+    "test:road-motion": "node tests/ui/road-smooth.mjs"
   },
   "devDependencies": {
     "@xmldom/xmldom": "0.8.15",
