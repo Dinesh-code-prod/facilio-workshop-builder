@@ -39,6 +39,19 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   async function dbGet(col, key) { return (await CTX.db.get(col, key)) || null; }
   async function dbPut(col, key, value) { try { await CTX.db.put(col, key, value); } catch (e) { throw new HttpError(e && e.status === 413 ? 413 : 502, e && e.status === 413 ? 'Record too large' : 'Could not save the record. Try again.'); } }
   async function dbDel(col, key) { await CTX.db.delete(col, key); }
+  // ---------- rate limits ----------
+  // Per signed-in person, per action group, fixed 10-minute windows counted in ctx.db so every server instance shares them.
+  // Limits sit well above what one person does by hand (they stop scripts, loops and runaway retries, not people) and keep AI spend inside provider quotas.
+  // Over the limit: HTTP 429 with a plain message and Retry-After. If the counter store itself fails the request goes ahead (a limiter must never lock people out).
+  const LIMITS = { ai: [40, 600], 'ai-image': [15, 600], 'ai-admin': [15, 600], upload: [200, 600], write: [1500, 600], ticket: [60, 600], teams: [30, 600], create: [30, 600], mail: [20, 600] };
+  const LIMIT_LABEL = { ai: 'AI requests', 'ai-image': 'flow image reads', 'ai-admin': 'AI key checks', upload: 'file uploads', write: 'saves', ticket: 'ticket messages', teams: 'tickets from Teams', create: 'new projects and templates', mail: 'mailbox syncs' };
+  async function limit(bucket, who) {
+    const L = LIMITS[bucket]; if (!L || !who) return; const [max, win] = L; const key = (bucket + '.' + who).slice(0, 127); const t = Math.floor(Date.now() / 1000), w = t - (t % win);
+    let cur; try { cur = await CTX.db.get('rl', key); } catch (e) { return; }
+    const v = cur && cur.value && cur.value.w === w ? cur.value : { w, n: 0 };
+    if (v.n >= max) { const retryAfter = Math.max(1, w + win - t); throw new HttpError(429, 'Too many ' + LIMIT_LABEL[bucket] + ' in a short time. Try again in ' + (retryAfter >= 90 ? Math.ceil(retryAfter / 60) + ' minutes' : retryAfter + ' seconds') + '.', { retryAfter, limit: max, windowSeconds: win }); }
+    try { await CTX.db.put('rl', key, { w, n: v.n + 1 }); } catch (e) { }
+  }
   async function dbList(col) {
     const out = []; let cursor = '', seen = new Set();
     for (let guard = 0; guard < 500; guard++) {
@@ -191,7 +204,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     out.sort((a, b) => String(b.at).localeCompare(String(a.at))); return ok({ items: out.slice(0, 1000) });
   });
   route('POST', '/api/projects', async (b) => {
-    const s = await me(); const id = rid('p'); const t = now(); const d = v => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
+    const s = await me(); await limit('create', s.id); const id = rid('p'); const t = now(); const d = v => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
     const p = { id, name: str(b.name, 160, 'Project name', true), customer: str(b.customer, 160, 'Customer name', true), description: str(b.description, 4000, 'Description'), startDate: d(b.startDate), endDate: d(b.endDate), customerAccessEnabled: false, archived: false, createdBy: s.id, createdAt: t, updatedAt: t, members: [{ id: s.id, email: s.email, name: s.name, role: 'owner' }] };
     await dbPut('projects', id, p);
     const team = Array.isArray(b.team) ? b.team.slice(0, 50) : [], stakeholders = Array.isArray(b.stakeholders) ? b.stakeholders.slice(0, 100) : [];
@@ -236,7 +249,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     const r = await docRead(P.id, P.section); return ok(r ? { data: r.data, version: r.head.v, updatedAt: r.head.at, updatedBy: r.head.by } : { data: null, version: 0 });
   });
   route('PUT', '/api/projects/:id/docs/:section', async (b, P) => {
-    const s = await me(); const { project } = await projectAccess(s, P.id, 'edit'); if (!DOC_SECTIONS.test(P.section)) throw new HttpError(400, 'Invalid section');
+    const s = await me(); const { project } = await projectAccess(s, P.id, 'edit'); if (!DOC_SECTIONS.test(P.section)) throw new HttpError(400, 'Invalid section'); await limit('write', s.id);
     if (!b || b.data === undefined) throw new HttpError(400, 'data is required');
     const v = await docWrite(s, P.id, P.section, b.data, Number.isInteger(b.baseVersion) ? b.baseVersion : -1); await saveProject(project); return ok({ version: v });
   });
@@ -339,7 +352,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     await dbPut('ai', 'cfg', { defaultProvider: dp, fallback: fb, by: s.email, at: now() }); return ok({ defaultProvider: dp, fallback: fb });
   });
   route('POST', '/api/admin/ai/key', async (b) => {
-    const s = await requireAdmin('admin'); const key = String(b && b.key || '').trim();
+    const s = await requireAdmin('admin'); await limit('ai-admin', s.id); const key = String(b && b.key || '').trim();
     if (!/^sk-ant-[A-Za-z0-9_\-]{20,}$/.test(key)) throw new HttpError(400, 'That does not look like an Anthropic API key. Keys start with sk-ant-.');
     if (!(await masterKey())) throw new HttpError(409, 'Saving a key here needs an encryption secret first. The app owner adds a plain secret named ai_master_key (any long random text) at secrets.facilio.work. Or add the key itself as anthropic_api_key there.');
     const chk = await checkAnthropic(key); if (!chk.ok) throw new HttpError(422, chk.message);
@@ -350,13 +363,13 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     await audit('ai', s.id, 'ai-key-removed', ''); const still = await keySource(); return ok({ ok: true, message: still === 'secret' ? 'The saved key was removed. A key set as the anthropic_api_key secret is still in use; only the app owner can remove that.' : 'The key was removed. DeepSeek stays in use.' });
   });
   route('POST', '/api/admin/ai/test', async () => {
-    const s = await requireAdmin('admin'); if (!(await haveClaude())) return ok({ ok: false, configured: false, message: 'No Claude key is configured. The app owner adds it as anthropic_api_key in the secrets portal.' });
+    const s = await requireAdmin('admin'); await limit('ai-admin', s.id); if (!(await haveClaude())) return ok({ ok: false, configured: false, message: 'No Claude key is configured. The app owner adds it as anthropic_api_key in the secrets portal.' });
     try { const k = await claudeKey(); const c = await checkAnthropic(k); if (!c.ok) return ok({ ok: false, configured: true, message: c.message }); return ok({ ok: true, configured: true, model: 'claude-sonnet-5-5', models: c.models.slice(0, 10), message: c.message }); }
     catch (e) { return ok({ ok: false, configured: true, message: e instanceof HttpError ? e.message : 'The test failed' }); }
   });
   route('GET', '/api/admin/ai/usage', async () => { await requireAdmin('admin'); const u = await aiUse(); const cfg = await aiCfg(); return ok({ usage: u, cfg, claudeConfigured: await haveClaude() }); });
   route('POST', '/api/projects/:id/ai/run', async (b, P) => {
-    const s = await me(); await projectAccess(s, P.id, 'edit'); const task = String(b && b.task || ''); const T = AI_TASKS[task]; if (!T) throw new HttpError(400, 'Unknown AI task');
+    const s = await me(); await projectAccess(s, P.id, 'edit'); const task = String(b && b.task || ''); const T = AI_TASKS[task]; if (!T) throw new HttpError(400, 'Unknown AI task'); await limit('ai', s.id);
     const instruction = str(b.instruction, 1500, 'Instruction'); const pv = await pickProvider(String(b.provider || ''));
     let tplText = ''; if (b.templateId) { const h = await tplHead(String(b.templateId)); if (!(await tplCanRead(s, h)) || h.status === 'retired') throw new HttpError(404, 'Template not available'); if (h.kind && TPL_TASK[h.kind] && TPL_TASK[h.kind] !== task) throw new HttpError(400, 'That template is for a different deliverable'); const td = await tplData(h, h.pub || h.latest); tplText = String(td && td.body || '').slice(0, 6000); }
     let vidId = ''; if (task === 'vidguide') { vidId = String(b.vid || ''); if (!ITEM_ID_RE.test(vidId)) throw new HttpError(400, 'Choose a walkthrough'); }
@@ -414,6 +427,7 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     const data = String(b && b.data || ''); if (!/^[A-Za-z0-9+/]+=*$/.test(data) || data.length > 2.2e6) throw new HttpError(413, 'The image is too large. Use one under about 1.5 MB (the page shrinks large images first).');
     const head = fromB64(data.slice(0, 32)); const sig = mt === 'image/png' ? head[0] === 0x89 && head[1] === 0x50 : mt === 'image/jpeg' ? head[0] === 0xFF && head[1] === 0xD8 : head[0] === 0x52 && head[8] === 0x57;
     if (!sig) throw new HttpError(415, 'The file is not the image type it claims to be');
+    await limit('ai-image', s.id);
     if (!(await haveClaude())) throw new HttpError(409, 'Reading diagrams from images needs Claude, which reads images. Ask an admin to add the Claude key under Admin › AI provider. DeepSeek, the default provider here, reads text only.');
     const out = await callClaude([{ role: 'system', content: FLOW_PROMPT }, { role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: mt, data } }, { type: 'text', text: 'Return the flow in this image as JSON.' + (b.hint ? ' Context from the user: ' + plain(b.hint, 200) : '') }] }], 3000);
     const graph = validFlowGraph(out.text);
@@ -456,7 +470,7 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     out.sort((a, c) => String(c.ua).localeCompare(String(a.ua))); const ar = await adminRole(s); return ok({ items: out.slice(0, 500), isAdmin: !!ar, kinds: TPL_KINDS });
   });
   route('POST', '/api/templates', async (b) => {
-    const s = await me(); const kind = String(b.kind || ''); if (!TPL_KINDS.includes(kind)) throw new HttpError(400, 'Choose a template type');
+    const s = await me(); const kind = String(b.kind || ''); if (!TPL_KINDS.includes(kind)) throw new HttpError(400, 'Choose a template type'); await limit('create', s.id);
     const scope = b.scope === 'project' ? 'project' : 'org'; let pid = null; if (scope === 'project') { pid = String(b.projectId || ''); await projectAccess(s, pid, 'edit'); }
     if (b.data === undefined || b.data === null || typeof b.data !== 'object') throw new HttpError(400, 'Template content is missing');
     const h = { id: rid('tpl').slice(0, 22), name: str(b.name, 120, 'Name', true), kind, scope, projectId: pid, desc: str(b.desc, 500, 'Description'), status: 'draft', latest: 0, pub: 0, versions: [], by: s.name || s.email, createdBy: s.id, at: now(), ua: now() };
@@ -504,7 +518,7 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
   });
   // reply / internal note: appended on the server so two people replying at once never overwrite each other
   route('POST', '/api/projects/:id/tickets/:item/message', async (b, P) => {
-    const s = await me(); await projectAccess(s, P.id, 'edit'); if (!ITEM_ID_RE.test(P.item)) throw new HttpError(400, 'Unknown ticket');
+    const s = await me(); await projectAccess(s, P.id, 'edit'); if (!ITEM_ID_RE.test(P.item)) throw new HttpError(400, 'Unknown ticket'); await limit('ticket', s.id);
     const type = b && b.type === 'note' ? 'note' : 'reply'; const it = await ticketAppend(s, P.id, P.item, { type, text: b && b.text, attachments: b && b.attachments });
     await audit(P.id, s.id, 'tkt-' + type, P.item); return ok({ item: it }, 201);
   });
@@ -523,7 +537,7 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     await ticketNotify(project, key, null, it.data, s); await audit(P.id, s.id, 'tkt-email', key); return { _st: 201, duplicate: false, created: true, id: key, ticket: it.data.n };
   }
   route('POST', '/api/projects/:id/tickets/ingest', async (b, P) => {
-    const s = await me(); const { project } = await projectAccess(s, P.id, 'edit'); const r = await ingestMail(s, project, b); const st = r._st; delete r._st; return ok(r, st);
+    const s = await me(); const { project } = await projectAccess(s, P.id, 'edit'); await limit('ticket', s.id); const r = await ingestMail(s, project, b); const st = r._st; delete r._st; return ok(r, st);
   });
 
   // ---------- support mailbox (Microsoft 365 via Graph) ----------
@@ -548,7 +562,7 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
   });
   route('POST', '/api/mail/inbox/:mid/dismiss', async (b, P) => { const s = await me(); await mailAdmin(s); await dbDel('inbox', P.mid); return ok({ ok: true }); });
   route('POST', '/api/mail/sync', async () => {
-    const s = await me(); await mailAdmin(s); const c = await mailCfg(); const t0 = now(); const res = { fetched: 0, tickets: 0, appended: 0, unrouted: 0, duplicates: 0, errors: [] };
+    const s = await me(); await mailAdmin(s); await limit('mail', s.id); const c = await mailCfg(); const t0 = now(); const res = { fetched: 0, tickets: 0, appended: 0, unrouted: 0, duplicates: 0, errors: [] };
     const fin = async err => { c.last = { at: t0, by: s.email, ok: !err, error: err || '', stats: res }; await dbPut('cfg', 'mail', c); await audit('mailbox', s.id, 'mail-sync', err ? 'failed' : 'ok'); };
     if (!CTX.fetch) { await fin('This platform build has no credential proxy'); throw new HttpError(503, 'Mailbox sync is not available here'); }
     const box = await mailboxAddress(); const base = box ? 'https://graph.microsoft.com/v1.0/users/' + encodeURIComponent(box) : 'https://graph.microsoft.com/v1.0/me';
@@ -585,7 +599,7 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     if (tool === 'suggest_ticket') { const text = String(b.text || ''); const ty = guessType(text); const ps = await editableProjects(s); const k = text.toLowerCase(); const cand = ps.filter(p => k.includes(String(p.customer || '').toLowerCase()) && p.customer || k.includes(p.name.toLowerCase())).slice(0, 5);
       return ok({ ticketType: ty, category: TEAMS_TYPES[ty][0], priority: guessPrio(text), subject: text.replace(/\s+/g, ' ').trim().slice(0, 100), projectCandidates: cand.map(p => p.name), note: 'Suggestions only. Check type, priority and project before creating the ticket.' }); }
     if (tool === 'create_ticket') {
-      const project = await resolveProject(s, b.project); await projectAccess(s, project.id, 'edit');
+      await limit('teams', s.id); const project = await resolveProject(s, b.project); await projectAccess(s, project.id, 'edit');
       const subject = str(b.subject, 200, 'Subject', true); const description = str(b.description || b.subject, 20000, 'Description'); const ty = TEAMS_TYPES[b.ticketType] ? b.ticketType : guessType(subject + ' ' + description); const prio = TKT_PRIO.includes(b.priority) ? b.priority : 'Medium';
       const link = String(b.teamsMessageLink || '').slice(0, 600); if (link && !/^https:\/\/teams\.(microsoft|live)\.com\//i.test(link)) throw new HttpError(400, 'The Teams message link is not a Teams link');
       const ref = String(b.teamsMessageId || link || '').slice(0, 280); const ext = ref ? 'teams:' + ref : ''; const all = await itemsOf(project.id, 'tkt');
@@ -631,7 +645,7 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     return ok({ project: projectOut(project, role), members: (project.members || []).map(memberOut), docs, items, kinds });
   });
   route('PUT', '/api/projects/:id/items/:kind/:item', async (b, P) => withLock('it.' + P.id + '.' + P.kind + '.' + P.item, async () => {
-    const s = await me(); if (!KINDS.includes(P.kind) || !ITEM_ID_RE.test(P.item)) throw new HttpError(400, 'Unknown item type'); const { project } = await projectAccess(s, P.id, 'edit');
+    const s = await me(); if (!KINDS.includes(P.kind) || !ITEM_ID_RE.test(P.item)) throw new HttpError(400, 'Unknown item type'); const { project } = await projectAccess(s, P.id, 'edit'); await limit('write', s.id);
     if (!b || !b.data || typeof b.data !== 'object' || Array.isArray(b.data)) throw new HttpError(400, 'data is required');
     const col = 'it.' + P.id + '.' + P.kind, pcol = 'ip.' + P.id + '.' + P.kind; const curRow = await dbGet(col, P.item); const head = curRow && curRow.value; const cur = head ? await unpack(pcol, P.item, head) : null;
     if (Number.isInteger(b.baseVersion) && (head ? head.v : 0) !== b.baseVersion) throw new HttpError(409, 'Conflict: this record was changed by someone else.', { current: head ? itemOut(P.kind, P.item, head, cur) : null });
@@ -681,7 +695,7 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
   });
   route('GET', '/api/projects/:id/feedback', async (b, P) => { const s = await me(); await projectAccess(s, P.id, 'read'); const rows = (await dbList('fb.' + P.id)).map(r => r.value); rows.sort((a, c) => String(c.createdAt).localeCompare(String(a.createdAt))); return ok({ items: rows.slice(0, 1000) }); });
   route('POST', '/api/projects/:id/feedback', async (b, P) => {
-    const s = await me(); await projectAccess(s, P.id, 'edit'); const id = rid('fb'); const t = now();
+    const s = await me(); await projectAccess(s, P.id, 'edit'); await limit('ticket', s.id); const id = rid('fb'); const t = now();
     const kind = ['question', 'concern', 'feedback', 'change'].includes(b.kind) ? b.kind : 'question', pr = ['low', 'normal', 'high'].includes(b.priority) ? b.priority : 'normal';
     await dbPut('fb.' + P.id, id, { id, module: str(b.module, 120, 'Module'), topic: str(b.topic, 200, 'Topic'), kind, priority: pr, body: str(b.body, 5000, 'Question or feedback', true), authorName: str(b.authorName, 120, 'Name') || s.name, authorKind: 'consultant', sessionRef: str(b.sessionRef, 80, 'Session'), status: 'open', response: null, createdAt: t, updatedAt: t });
     await audit(P.id, s.id, 'feedback-added', b.module || ''); return ok({ id }, 201);
@@ -700,7 +714,7 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     rows.sort((a, c) => String(c.createdAt).localeCompare(String(a.createdAt))); return ok({ files: rows.map(fileOut) });
   });
   route('POST', '/api/projects/:id/files', async (b, P) => {
-    const s = await me(); await projectAccess(s, P.id, 'edit'); const rule = FILE_RULES[b.category]; if (!rule) throw new HttpError(400, 'Unknown file category');
+    const s = await me(); await projectAccess(s, P.id, 'edit'); const rule = FILE_RULES[b.category]; if (!rule) throw new HttpError(400, 'Unknown file category'); await limit('upload', s.id);
     const name = str(b.name, 255, 'File name', true); const ext = (name.split('.').pop() || '').toLowerCase(); if (!rule.ext.includes(ext)) throw new HttpError(415, 'Unsupported file type .' + ext + ' — allowed: ' + rule.ext.join(', '));
     const size = Number(b.size); if (!(size > 0) || size > rule.max) throw new HttpError(413, 'File is empty or too large (max ' + Math.round(rule.max / 1e6) + ' MB)');
     const meta = b.meta && typeof b.meta === 'object' ? b.meta : {}; if (JSON.stringify(meta).length > 20000) throw new HttpError(400, 'Metadata too large');
@@ -918,5 +932,7 @@ export default async function handler(req, ctx) {
   let body; if (req.method !== 'GET' && req.method !== 'DELETE') { const t = req.text ? await req.text() : ''; if (t) { try { body = JSON.parse(t); } catch (e) { body = {}; } } else body = {}; }
   const sub = String(req.path || '/').startsWith('/') ? req.path : '/' + req.path;
   const res = await globalThis.__fwb.dispatch(req.method, '/api' + sub, query, body);
-  return new Response(JSON.stringify(res.data), { status: res.status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
+  const headers = { 'content-type': 'application/json', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
+  if (res.status === 429 && res.data && res.data.retryAfter) headers['retry-after'] = String(res.data.retryAfter);
+  return new Response(JSON.stringify(res.data), { status: res.status, headers });
 }

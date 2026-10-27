@@ -275,4 +275,48 @@ await t('Claude key in the app: needs the encryption secret, validated first, st
     r = await call(dinesh, 'DELETE', '/api/admin/ai/key'); assert.equal(r.status, 200); r = await call(dinesh, 'GET', '/api/ai/status'); assert.equal(r.data.claude, false);
   } finally { globalThis.fetch = real; globalThis.__MASTER = ''; }
 });
+await t('flow image import: type and content checked, needs Claude, the model reply is validated before it reaches the page', async () => {
+  const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]), Buffer.alloc(64)]).toString('base64');
+  let r = await call(out, 'POST', `/api/projects/${pid}/ai/flow-image`, { mediaType: 'image/png', data: png }); assert.ok(r.status === 403 || r.status === 404, 'outsiders cannot use it');
+  r = await call(dinesh, 'POST', `/api/projects/${pid}/ai/flow-image`, { mediaType: 'image/svg+xml', data: png }); assert.equal(r.status, 415, 'SVG and other types refused');
+  r = await call(dinesh, 'POST', `/api/projects/${pid}/ai/flow-image`, { mediaType: 'image/jpeg', data: png }); assert.equal(r.status, 415, 'content must match the claimed type');
+  r = await call(dinesh, 'POST', `/api/projects/${pid}/ai/flow-image`, { mediaType: 'image/png', data: 'not base64!' }); assert.equal(r.status, 413);
+  r = await call(dinesh, 'POST', `/api/projects/${pid}/ai/flow-image`, { mediaType: 'image/png', data: 'A'.repeat(2.3e6) }); assert.equal(r.status, 413, 'oversized refused');
+  r = await call(dinesh, 'POST', `/api/projects/${pid}/ai/flow-image`, { mediaType: 'image/png', data: png }); assert.equal(r.status, 409, 'DeepSeek alone cannot read images'); assert.match(r.data.error, /Claude/);
+  const real = globalThis.fetch; globalThis.__KEY = 'sk-ant-test-flow-key';
+  const reply = { nodes: [{ id: 'n1', label: 'Open', kind: 'start', confidence: 'clear' }, { id: 'n2', label: '<img src=x onerror=alert(1)>Review', kind: 'evil', confidence: 'clear' }, { id: 'n1', label: 'dupe' }, { id: 'n3', label: '' }],
+    edges: [{ from: 'n1', to: 'n2', label: 'Submit' }, { from: 'n2', to: 'n9', label: 'ghost' }] };
+  globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => ({ content: [{ text: 'Here you go: ' + JSON.stringify(reply) }], usage: { input_tokens: 1, output_tokens: 1 } }) });
+  try {
+    r = await call(dinesh, 'POST', `/api/projects/${pid}/ai/flow-image`, { mediaType: 'image/png', data: png }); assert.equal(r.status, 200);
+    const g = r.data.graph; assert.equal(g.nodes.length, 3, 'duplicate id dropped'); assert.equal(g.edges.length, 1, 'edge to a missing node dropped');
+    assert.ok(!/[<>]/.test(g.nodes[1].label), 'markup removed from labels'); assert.equal(g.nodes[1].kind, 'state', 'unknown kind replaced'); assert.equal(g.nodes[2].confidence, 'uncertain', 'unreadable step marked uncertain');
+    globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => ({ content: [{ text: 'I cannot see a diagram.' }], usage: { input_tokens: 1, output_tokens: 1 } }) });
+    r = await call(dinesh, 'POST', `/api/projects/${pid}/ai/flow-image`, { mediaType: 'image/png', data: png }); assert.equal(r.status, 502, 'non-JSON reply refused');
+  } finally { globalThis.fetch = real; globalThis.__KEY = ''; }
+});
+await t('rate limits: shared counter, 429 with Retry-After, per person, window resets, a failing counter never locks people out', async () => {
+  const rl = () => store.get('rl') || new Map(); const keyOf = (b, e) => b + '.' + e.replace('@', ':');
+  // exhaust the flow-image budget for one person without calling any model (requests stop at the limiter after validation)
+  const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4E, 0x47]), Buffer.alloc(40)]).toString('base64'); let r;
+  const used = JSON.parse(rl().get(keyOf('ai-image', dinesh)) || '{"n":0}').n; assert.ok(used >= 1, 'earlier calls were counted');
+  for (let i = used; i < 15; i++) { r = await call(dinesh, 'POST', `/api/projects/${pid}/ai/flow-image`, { mediaType: 'image/png', data: png }); assert.equal(r.status, 409, 'under the limit: normal answer'); }
+  const raw = await handler({ method: 'POST', path: `/projects/${pid}/ai/flow-image`, query: '', headers: {}, text: async () => JSON.stringify({ mediaType: 'image/png', data: png }) }, mkctx(dinesh));
+  assert.equal(raw.status, 429); const ra = Number(raw.headers.get('retry-after')); assert.ok(ra >= 1 && ra <= 600, 'Retry-After header set'); const j = await raw.json(); assert.match(j.error, /Too many flow image reads/); assert.equal(j.retryAfter, ra);
+  r = await call(lead, 'POST', '/api/projects', { name: 'Rate', customer: 'R' }); const p2 = r.data.project.id;
+  r = await call(lead, 'POST', `/api/projects/${p2}/ai/flow-image`, { mediaType: 'image/png', data: png }); assert.equal(r.status, 409, 'another person is not affected');
+  r = await call(dinesh, 'POST', `/api/projects/${pid}/ai/flow-image`, { mediaType: 'image/svg+xml', data: png }); assert.equal(r.status, 415, 'invalid requests are refused before the limiter');
+  r = await call(dinesh, 'GET', `/api/projects/${pid}`); assert.equal(r.status, 200, 'reads are not limited');
+  const k = keyOf('ai-image', dinesh), v = JSON.parse(rl().get(k)); rl().set(k, JSON.stringify({ w: v.w - 600, n: v.n }));
+  r = await call(dinesh, 'POST', `/api/projects/${pid}/ai/flow-image`, { mediaType: 'image/png', data: png }); assert.equal(r.status, 409, 'a new window starts fresh');
+  // Teams ticket creation and saves are limited too
+  rl().set(keyOf('teams', dinesh), JSON.stringify({ w: Math.floor(Date.now() / 1000) - (Math.floor(Date.now() / 1000) % 600), n: 30 }));
+  r = await call(dinesh, 'POST', '/api/', { project: 'Alpha', subject: 'x' }, { 'x-work-mcp-tool': 'create_ticket' }); assert.equal(r.status, 429);
+  rl().set(keyOf('write', dinesh), JSON.stringify({ w: Math.floor(Date.now() / 1000) - (Math.floor(Date.now() / 1000) % 600), n: 1500 }));
+  r = await call(dinesh, 'PUT', `/api/projects/${pid}/items/pnote/pn_rl`, { data: { title: 'x' } }); assert.equal(r.status, 429);
+  // fail open: if the counter store errors the request still goes through
+  const realGet = mkctx; const ctx = mkctx(dinesh); const g = ctx.db.get; ctx.db.get = async (c, key) => { if (c === 'rl') throw new Error('store down'); return g(c, key); };
+  const res = await handler({ method: 'PUT', path: `/projects/${pid}/items/pnote/pn_rl`, query: '', headers: {}, text: async () => JSON.stringify({ data: { title: 'x' } }) }, ctx);
+  assert.equal(res.status, 200, 'limiter store failure does not block saves'); void realGet;
+});
 console.log(`\n${n} checks passed, ${calls} storage calls, largest record ${(maxVal / 1024).toFixed(1)} KB`);
