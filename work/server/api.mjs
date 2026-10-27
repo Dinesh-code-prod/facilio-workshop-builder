@@ -118,6 +118,18 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   async function saveProject(p) { p.updatedAt = now(); await dbPut('projects', p.id, p); }
   // Project records hold the member list and archive flag, so changes re-read the record under a per-project lock and change only
   // what they mean to. A save elsewhere in the project only bumps updatedAt, and never writes back a copy loaded earlier in the request.
+  // ---------- sign-off and approval rules ----------
+  // Recording a decision (a sign-off signed, a change request approved or declined, hypercare exit or project closure, the BRD approved),
+  // undoing one, or deleting a decided record is for project owners and admins. Editors can still draft and edit everything else.
+  const decided = (kind, d) => { d = d || {}; if (kind === 'signoff') return d.status === 'signed'; if (kind === 'cr') return d.status === 'Approved' || d.status === 'Rejected';
+    if (kind === 'close') return !!(d.closedAt || d.exitAt); return false; };
+  const DECISION_MSG = { signoff: 'Only a project owner or an admin can record or undo a sign-off.', cr: 'Only a project owner or an admin can approve or decline a change request.', close: 'Only a project owner or an admin can record hypercare exit or close the project.' };
+  function decisionGuard(kind, role, cur, next) {
+    if (role === 'owner' || !DECISION_MSG[kind]) return;
+    const changed = kind === 'close' ? ['closedAt', 'closedBy', 'exitAt', 'exitBy'].some(f => String((cur || {})[f] || '') !== String((next || {})[f] || '')) : decided(kind, cur) !== decided(kind, next) || (decided(kind, cur) && String((cur || {}).status) !== String((next || {}).status));
+    if (changed) throw new HttpError(403, DECISION_MSG[kind]);
+  }
+  const brdApprovals = d => { d = d || {}; const out = { main: d.status || 'draft' }; for (const [k, v] of Object.entries(d.docs && typeof d.docs === 'object' ? d.docs : {})) out[k] = (v && v.status) || 'draft'; return out; };
   function patchProject(pid, fn) { return withLock('proj.' + pid, async () => { const r = await dbGet('projects', pid); if (!r || !r.value) throw new HttpError(404, 'Project not found'); const p = r.value; await fn(p); await saveProject(p); return p; }); }
   function touchProject(pid) { return withLock('proj.' + pid, async () => { const r = await dbGet('projects', pid); const p = r && r.value; if (!p || Date.now() - Date.parse(p.updatedAt || 0) < 30e3) return; await saveProject(p); }); }
   const audit = (pid, actor, action, detail) => dbPut('au.' + pid, Date.now().toString(36) + '-' + rid('a').slice(2, 8), { actor, action, detail: detail ? String(detail).slice(0, 500) : null, at: now() }).catch(() => { });
@@ -260,8 +272,10 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     const r = await docRead(P.id, P.section); return ok(r ? { data: r.data, version: r.head.v, updatedAt: r.head.at, updatedBy: r.head.by } : { data: null, version: 0 });
   });
   route('PUT', '/api/projects/:id/docs/:section', async (b, P) => {
-    const s = await me(); const { project } = await projectAccess(s, P.id, 'edit'); if (!DOC_SECTIONS.test(P.section)) throw new HttpError(400, 'Invalid section');
+    const s = await me(); const { project, role } = await projectAccess(s, P.id, 'edit'); if (!DOC_SECTIONS.test(P.section)) throw new HttpError(400, 'Invalid section');
     if (!b || b.data === undefined) throw new HttpError(400, 'data is required');
+    if (P.section === 'brddoc' && role !== 'owner') { const was = brdApprovals((await docRead(P.id, 'brddoc') || {}).data), now_ = brdApprovals(b.data);
+      for (const k of new Set([...Object.keys(was), ...Object.keys(now_)])) if ((was[k] === 'approved') !== (now_[k] === 'approved')) throw new HttpError(403, 'Only a project owner or an admin can approve a BRD or reopen an approved one.'); }
     const v = await docWrite(s, P.id, P.section, b.data, Number.isInteger(b.baseVersion) ? b.baseVersion : -1); await touchProject(P.id); return ok({ version: v });
   });
 
@@ -662,11 +676,11 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     return ok({ project: projectOut(project, role), members: (project.members || []).map(memberOut), docs, items, kinds });
   });
   route('PUT', '/api/projects/:id/items/:kind/:item', async (b, P) => withLock('it.' + P.id + '.' + P.kind + '.' + P.item, async () => {
-    const s = await me(); if (!KINDS.includes(P.kind) || !ITEM_ID_RE.test(P.item)) throw new HttpError(400, 'Unknown item type'); const { project } = await projectAccess(s, P.id, 'edit');
+    const s = await me(); if (!KINDS.includes(P.kind) || !ITEM_ID_RE.test(P.item)) throw new HttpError(400, 'Unknown item type'); const { project, role } = await projectAccess(s, P.id, 'edit');
     if (!b || !b.data || typeof b.data !== 'object' || Array.isArray(b.data)) throw new HttpError(400, 'data is required');
     const col = 'it.' + P.id + '.' + P.kind, pcol = 'ip.' + P.id + '.' + P.kind; const curRow = await dbGet(col, P.item); const head = curRow && curRow.value; const cur = head ? await unpack(pcol, P.item, head) : null;
     if (Number.isInteger(b.baseVersion) && (head ? head.v : 0) !== b.baseVersion) throw new HttpError(409, 'Conflict: this record was changed by someone else.', { current: head ? itemOut(P.kind, P.item, head, cur) : null });
-    let data = b.data;
+    let data = b.data; decisionGuard(P.kind, role, cur, data);
     if (P.kind === 'ai') { // AI drafts: status and approval are set only by the decision route; an edit to approved text reopens it as a draft
       if (!cur) throw new HttpError(403, 'AI drafts are created by the assistant only');
       const edited = typeof data.content === 'string' && data.content !== cur.content;
@@ -697,8 +711,9 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     return ok({ item: itemOut(P.kind, P.item, nh, data) });
   }));
   route('DELETE', '/api/projects/:id/items/:kind/:item', async (b, P) => {
-    const s = await me(); if (!KINDS.includes(P.kind)) throw new HttpError(400, 'Unknown item type'); await projectAccess(s, P.id, 'edit');
+    const s = await me(); if (!KINDS.includes(P.kind)) throw new HttpError(400, 'Unknown item type'); const { role } = await projectAccess(s, P.id, 'edit');
     const r = await dbGet('it.' + P.id + '.' + P.kind, P.item); if (!r) throw new HttpError(404, 'Not found');
+    if (role !== 'owner' && DECISION_MSG[P.kind]) { const cur = await unpack('ip.' + P.id + '.' + P.kind, P.item, r.value); if (decided(P.kind, cur)) throw new HttpError(403, 'Only a project owner or an admin can delete a decided record.'); }
     await dbDel('it.' + P.id + '.' + P.kind, P.item); for (let i = 0; i < (r.value.z || 0); i++) await dbDel('ip.' + P.id + '.' + P.kind, P.item + '.' + i).catch(() => { });
     await audit(P.id, s.id, P.kind + '-deleted', P.item); return ok({ ok: true });
   });
