@@ -229,7 +229,7 @@
     return await new Promise(res => cv.toBlob(res, 'image/png'));
   }
   const fname = ext => `${F.slug(S.project.name || 'project')}-dashboard-report-${V.today()}.${ext}`;
-  const csvCell = v => { const s = String(v == null ? '' : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const csvCell = v => { const s = String(v == null ? '' : root.FWB.csvText(v)); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
   const hexToArgb = h => 'FF' + h.replace('#', '').toUpperCase();
   const toDataUrl = b => new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(b); });
   ACT.drExport = a => V.busy(a, async () => {

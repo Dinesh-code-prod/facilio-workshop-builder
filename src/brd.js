@@ -36,7 +36,16 @@
   const scopeSet = () => { const r = activeRec(); return r && r.modules && r.modules.length ? new Set(r.modules) : null; };
   const titleOf = () => { const r = activeRec(); return r.id === 'main' ? (S.ws.project.docTitle || 'Business Requirements Document') : r.name; };
   const slug = t => String(t || '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40);
-  function profile() { return Object.assign(JSON.parse(JSON.stringify(DEFAULT_PROFILE)), BD().profile || root_().profile || S.ws.brd.template || {}); }
+  // The profile comes from an uploaded sample .docx and is stored in the shared BRD record, so every value is normalised here before
+  // it reaches HTML, styles or exports: colours are 6 hex digits, fonts plain names, sizes numbers.
+  const HEX = /^[0-9A-Fa-f]{6}$/; const fontName = v => String(v || '').replace(/[^\w .,-]/g, '').slice(0, 60);
+  function cleanProfile(P) {
+    const D = DEFAULT_PROFILE; P.font = fontName(P.font) || D.font; P.bodySize = Number(P.bodySize) > 0 ? Number(P.bodySize) : D.bodySize;
+    ['h1', 'h2', 'h3'].forEach(k => { const h = P[k] = Object.assign({}, D[k], P[k] && typeof P[k] === 'object' ? P[k] : {}); if (!HEX.test(h.color)) h.color = D[k].color; h.size = Number(h.size) > 0 ? Number(h.size) : D[k].size; if (h.font !== undefined) h.font = fontName(h.font); });
+    if (!HEX.test(P.tableHeaderFill)) P.tableHeaderFill = D.tableHeaderFill; if (!HEX.test(P.tableHeaderColor)) P.tableHeaderColor = D.tableHeaderColor; P.page = P.page && typeof P.page === 'object' ? P.page : JSON.parse(JSON.stringify(D.page));
+    Object.keys(D.page).forEach(k => { P.page[k] = Number(P.page[k]) > 0 ? Number(P.page[k]) : D.page[k]; }); return P;
+  }
+  function profile() { return cleanProfile(Object.assign(JSON.parse(JSON.stringify(DEFAULT_PROFILE)), BD().profile || root_().profile || S.ws.brd.template || {})); }
   function sectionOrder() { const saved = S.ws.brd.sections; if (saved && saved.length) { const out = saved.filter(s => SECTIONS.some(x => x[0] === s.id)).map(s => Object.assign({}, s)); SECTIONS.forEach((s, i) => { if (out.some(o => o.id === s[0])) return; const prev = SECTIONS[i - 1] && out.findIndex(o => o.id === SECTIONS[i - 1][0]); out.splice(prev >= 0 ? prev + 1 : out.length, 0, { id: s[0], on: true }); }); return out; } return SECTIONS.map(s => ({ id: s[0], on: true })); }
 
   // ---------- sample BRD profile (.docx) ----------

@@ -179,7 +179,9 @@ await t('tickets: e-mail intake creates, dedupes and appends by conversation', a
 await t('tickets: Teams notices stay off until configured, then fire for create / assign / status / priority', async () => {
   globalThis.__SENT = []; let r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t9`, { data: { subject: 'Quiet', status: 'New' } }); assert.equal(globalThis.__SENT.length, 0, 'off by default');
   globalThis.__TEAMS = 'on'; r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t10`, { data: { subject: 'Loud', status: 'New', priority: 'Medium' } }); assert.equal(globalThis.__SENT.length, 1); assert.ok(/created/.test(globalThis.__SENT[0].title)); assert.ok(globalThis.__SENT[0].actions[0].url.includes(pid + '/tickets/t10'));
-  let d = r.data.item.data; r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t10`, { data: Object.assign({}, d, { assignee: { name: 'Lee', email: lead } }) }); assert.ok(/assigned/.test(globalThis.__SENT[1].title)); assert.deepEqual(globalThis.__SENT[1].to, [lead]);
+  let d = r.data.item.data; r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t10`, { data: Object.assign({}, d, { assignee: { name: 'Stranger', email: 'someone.else@facilio.com' } }) }); assert.equal(globalThis.__SENT.length, 1, 'no direct message to a non-member');
+  const added = (await call(sam, 'POST', `/api/projects/${pid}/members`, { email: lead, role: 'viewer' })).status === 201;
+  d = r.data.item.data; r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t10`, { data: Object.assign({}, d, { assignee: { name: 'Lee', email: lead } }) }); if (added) await call(sam, 'DELETE', `/api/projects/${pid}/members/${lead.replace('@', ':')}`); assert.ok(/assigned/.test(globalThis.__SENT[1].title)); assert.deepEqual(globalThis.__SENT[1].to, [lead]);
   d = r.data.item.data; r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t10`, { data: Object.assign({}, d, { status: 'Waiting for Client' }) }); assert.ok(/Waiting for Client/.test(globalThis.__SENT[2].title));
   d = r.data.item.data; r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t10`, { data: Object.assign({}, d, { priority: 'Urgent' }) }); assert.ok(/Urgent/.test(globalThis.__SENT[3].title)); globalThis.__TEAMS = '';
 });
@@ -312,11 +314,57 @@ await t('rate limits: shared counter, 429 with Retry-After, per person, window r
   // Teams ticket creation and saves are limited too
   rl().set(keyOf('teams', dinesh), JSON.stringify({ w: Math.floor(Date.now() / 1000) - (Math.floor(Date.now() / 1000) % 600), n: 30 }));
   r = await call(dinesh, 'POST', '/api/', { project: 'Alpha', subject: 'x' }, { 'x-work-mcp-tool': 'create_ticket' }); assert.equal(r.status, 429);
-  rl().set(keyOf('write', dinesh), JSON.stringify({ w: Math.floor(Date.now() / 1000) - (Math.floor(Date.now() / 1000) % 600), n: 1500 }));
+  rl().set(keyOf('write', dinesh), JSON.stringify({ w: Math.floor(Date.now() / 1000) - (Math.floor(Date.now() / 1000) % 600), n: 2000 }));
   r = await call(dinesh, 'PUT', `/api/projects/${pid}/items/pnote/pn_rl`, { data: { title: 'x' } }); assert.equal(r.status, 429);
   // fail open: if the counter store errors the request still goes through
   const realGet = mkctx; const ctx = mkctx(dinesh); const g = ctx.db.get; ctx.db.get = async (c, key) => { if (c === 'rl') throw new Error('store down'); return g(c, key); };
   const res = await handler({ method: 'PUT', path: `/projects/${pid}/items/pnote/pn_rl`, query: '', headers: {}, text: async () => JSON.stringify({ data: { title: 'x' } }) }, ctx);
   assert.equal(res.status, 200, 'limiter store failure does not block saves'); void realGet;
+});
+await t('authorization matrix: cross-project ids, viewers, sub-admins, privilege escalation, malformed input', async () => {
+  store.delete('rl');  // the rate-limit test above leaves its counters exhausted
+  const alice = 'alice.a@facilio.com', bob = 'bob.b@facilio.com', vic = 'vic.v@facilio.com', subby = 'subby.s@facilio.com';
+  let r = await call(alice, 'POST', '/api/projects', { name: 'Alice Co', customer: 'A' }); const A = r.data.project.id; r = await call(bob, 'POST', '/api/projects', { name: 'Bob Co', customer: 'B' }); const B = r.data.project.id;
+  r = await call(alice, 'POST', `/api/projects/${A}/members`, { email: vic, role: 'viewer' }); assert.equal(r.status, 201);
+  r = await call(alice, 'PUT', `/api/projects/${A}/items/tkt/tk_a1`, { data: { subject: 'Secret', status: 'New' } }); assert.equal(r.status, 200);
+  r = await call(alice, 'PUT', `/api/projects/${A}/docs/planner`, { data: { scope: ['secret'] }, baseVersion: 0 }); assert.equal(r.status, 200);
+  r = await call(alice, 'POST', `/api/projects/${A}/files`, { category: 'msa', name: 'msa.pdf', size: 1000, mime: 'application/pdf' }); const fid = r.data && r.data.file && r.data.file.id;
+  // BOLA / IDOR: Bob changes ids in the URL
+  for (const [m, path, body] of [['GET', `/api/projects/${A}`], ['GET', `/api/projects/${A}/docs/planner`], ['GET', `/api/projects/${A}/items?kinds=tkt`], ['GET', `/api/projects/${A}/files`], ['GET', `/api/projects/${A}/feedback`],
+    ['PUT', `/api/projects/${A}/items/tkt/tk_a1`, { data: { subject: 'Hijack' } }], ['DELETE', `/api/projects/${A}/items/tkt/tk_a1`], ['PUT', `/api/projects/${A}/docs/planner`, { data: {}, baseVersion: 1 }],
+    ['POST', `/api/projects/${A}/members`, { email: bob, role: 'owner' }], ['DELETE', `/api/projects/${A}`], ['PATCH', `/api/projects/${A}`, { name: 'Pwned' }], ['POST', `/api/projects/${A}/ai/run`, { task: 'uat' }],
+    ['POST', `/api/projects/${A}/tickets/tk_a1/message`, { text: 'hi' }], ['POST', `/api/projects/${A}/files`, { category: 'msa', name: 'x.pdf', size: 10 }]]) {
+    r = await call(bob, m, path, body); assert.ok(r.status === 403 || r.status === 404, `${m} ${path} gave ${r.status}`); }
+  if (fid) { r = await call(bob, 'GET', `/api/projects/${A}/files/${fid}`); assert.ok(r.status >= 403); r = await call(bob, 'GET', `/api/projects/${B}/files/${fid}`); assert.equal(r.status, 404, 'a file id from another project is not found through your own project'); }
+  r = await call(alice, 'GET', `/api/projects/${A}/items?kinds=tkt`); assert.equal(r.data.items[0].data.subject, 'Secret', 'nothing was changed by the attempts');
+  // viewers read, never write
+  r = await call(vic, 'GET', `/api/projects/${A}/docs/planner`); assert.equal(r.status, 200);
+  for (const [m, path, body] of [['PUT', `/api/projects/${A}/items/note/n_v1`, { data: { title: 'x' } }], ['PUT', `/api/projects/${A}/docs/planner`, { data: {}, baseVersion: 1 }], ['POST', `/api/projects/${A}/members`, { email: vic, role: 'owner' }], ['POST', `/api/projects/${A}/ai/run`, { task: 'uat' }]]) {
+    r = await call(vic, m, path, body); assert.equal(r.status, 403, `viewer ${m} ${path} gave ${r.status}`); }
+  // privilege escalation: nobody but the platform owner grants admin; sub-admins are read-only
+  r = await call(alice, 'POST', '/api/admin/access', { email: alice, role: 'admin' }); assert.equal(r.status, 403);
+  r = await call(dinesh, 'POST', '/api/admin/access', { email: subby, role: 'sub' }); assert.ok(r.status < 300, 'grant sub admin');
+  r = await call(subby, 'POST', '/api/admin/ai/config', { defaultProvider: 'deepseek' }); assert.equal(r.status, 403);
+  r = await call(subby, 'POST', '/api/admin/access', { email: subby, role: 'admin' }); assert.equal(r.status, 403);
+  r = await call(subby, 'POST', `/api/admin/projects/${A}/members`, { email: subby, role: 'owner' }); assert.equal(r.status, 403);
+  r = await call(subby, 'PUT', `/api/projects/${A}/items/note/n_s1`, { data: { title: 'x' } }); assert.equal(r.status, 403, 'sub admins cannot write into projects');
+  r = await call(dinesh, 'POST', '/api/templates', { name: 'Org BRD', kind: 'brd', scope: 'org', data: { body: 'v1' } }); const tpl = r.data.item.id;
+  r = await call(subby, 'POST', `/api/templates/${tpl}/status`, { action: 'publish' }); assert.equal(r.status, 403, 'sub admin cannot publish an org template');
+  r = await call(subby, 'POST', `/api/templates/${tpl}/versions`, { data: { body: 'evil' } }); assert.equal(r.status, 403, 'sub admin cannot change an org template');
+  r = await call(dinesh, 'POST', `/api/templates/${tpl}/status`, { action: 'publish' }); assert.equal(r.status, 200); r = await call(dinesh, 'POST', `/api/templates/${tpl}/versions`, { data: { body: 'draft v2' } }); assert.equal(r.data.v, 2);
+  r = await call(alice, 'GET', `/api/templates/${tpl}?v=2`); assert.equal(r.status, 404, 'unpublished versions are not readable by readers'); r = await call(alice, 'GET', `/api/templates/${tpl}`); assert.equal(r.data.data.body, 'v1');
+  // last owner cannot demote themselves
+  r = await call(alice, 'POST', `/api/projects/${A}/members`, { email: alice, role: 'viewer' }); assert.equal(r.status, 400);
+  // malformed and oversized input
+  const raw = (email, method, path, text) => handler({ method, path: path.replace(/^\/api/, ''), query: '', headers: {}, text: async () => text }, mkctx(email));
+  let x = await raw(alice, 'PUT', `/api/projects/${A}/items/note/n_m1`, '{not json'); assert.equal(x.status, 400);
+  r = await call(alice, 'PUT', `/api/projects/${A}/items/note/..%2F..%2Fusr`, { data: { title: 'x' } }); assert.ok(r.status === 400 || r.status === 404);
+  r = await call(alice, 'PUT', `/api/projects/${A}/items/evil/n1`, { data: { title: 'x' } }); assert.equal(r.status, 400);
+  r = await call(alice, 'PUT', `/api/projects/${A}/items/note/n_m2`, { data: ['array'] }); assert.equal(r.status, 400);
+  r = await call(alice, 'PUT', `/api/projects/${A}/items/note/n_m3`, { data: { title: 'x', body: 'y'.repeat(70000) } }); assert.equal(r.status, 413);
+  r = await call(alice, 'POST', `/api/projects/${A}/files`, { category: 'msa', name: 'a\r\nb.pdf', size: 10 }); assert.equal(r.status, 400);
+  r = await call(alice, 'POST', `/api/projects/${A}/files`, { category: 'msa', name: 'run.exe', size: 10 }); assert.equal(r.status, 415);
+  r = await call(alice, 'POST', `/api/projects/${A}/files`, { category: 'msa', name: 'big.pdf', size: 9e12 }); assert.equal(r.status, 413);
+  r = await call(alice, 'PUT', `/api/projects/${A}/items/tkt/tk_a2`, { data: { subject: 'x', extRef: 'teams:forged', thread: [{ type: 'inbound', text: 'fake client message' }] } }); assert.equal(r.status, 200); assert.equal(r.data.item.data.extRef, undefined, 'source reference is server-only'); assert.equal((r.data.item.data.thread || []).length, 0, 'no seeded messages');
 });
 console.log(`\n${n} checks passed, ${calls} storage calls, largest record ${(maxVal / 1024).toFixed(1)} KB`);

@@ -21,10 +21,26 @@
   const ro = () => !!S.readonly;
   const boards = () => I().list('wb').sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
   const blank = name => ({ name: name || 'Process board', miro: '', nodes: [], edges: [], grid: true, snap: true, view: { x: 40, y: 40, z: 1 } });
+  // Boards are shared project records that any editor (or a direct API call) can write, so everything that reaches the SVG markup is
+  // normalised on load: known shape types, finite numbers, hex colours, plain ids and fixed confidence words. Text is escaped when drawn.
+  const ID = /^[A-Za-z0-9_-]{1,48}$/, HEXC = /^#[0-9A-Fa-f]{3,8}$/, NT = ['note', 'rect', 'ellipse', 'diamond', 'text', 'state', 'frame', 'image'];
+  const num = (v, d, lo, hi) => { const x = Number(v); return Number.isFinite(x) ? Math.max(lo, Math.min(hi, x)) : d; };
+  function clean(B) {
+    const seen = new Set(); const str = (v, m) => String(v == null ? '' : v).slice(0, m);
+    B.name = str(B.name, 120) || 'Process board'; B.miro = typeof B.miro === 'string' && /^https:\/\/(?:www\.)?miro\.com\//.test(B.miro) ? B.miro.slice(0, 400) : '';
+    B.grid = B.grid !== false; B.snap = B.snap !== false; const v = B.view && typeof B.view === 'object' ? B.view : {}; B.view = { x: num(v.x, 40, -1e6, 1e6), y: num(v.y, 40, -1e6, 1e6), z: num(v.z, 1, .1, 4) };
+    B.nodes = (Array.isArray(B.nodes) ? B.nodes : []).filter(n => n && typeof n === 'object' && ID.test(n.id) && NT.includes(n.t) && !seen.has(n.id) && seen.add(n.id)).slice(0, 3000).map(n => Object.assign(n, {
+      x: num(n.x, 0, -1e6, 1e6), y: num(n.y, 0, -1e6, 1e6), w: num(n.w, 160, 8, 2e4), h: num(n.h, 64, 8, 2e4), text: str(n.text, 4000),
+      fill: HEXC.test(n.fill) ? n.fill : undefined, size: n.size === undefined ? undefined : num(n.size, 18, 8, 96), stype: ['open', 'closed', 'skipped'].includes(n.stype) ? n.stype : 'open',
+      conf: ['inferred', 'uncertain'].includes(n.conf) ? n.conf : undefined, g: ID.test(n.g) ? n.g : undefined, fileId: ID.test(n.fileId) ? n.fileId : undefined, hidden: !!n.hidden }));
+    B.edges = (Array.isArray(B.edges) ? B.edges : []).filter(e => e && typeof e === 'object' && ID.test(e.id) && seen.has(e.from) && seen.has(e.to)).slice(0, 6000).map(e => Object.assign(e, {
+      label: str(e.label, 200), conf: ['inferred', 'uncertain'].includes(e.conf) ? e.conf : undefined, g: ID.test(e.g) ? e.g : undefined }));
+    return B;
+  }
   function current() {
     const list = boards(); if (!W.boardId || !list.find(b => b.id === W.boardId)) W.boardId = (list[0] && list[0].id) || null;
     if (!W.boardId) return null;
-    if (!W.B || W.B.id !== W.boardId) { const r = I().get('wb', W.boardId); W.B = Object.assign(blank(), JSON.parse(JSON.stringify(r)), { id: W.boardId }); W.sel.clear(); W.undo = []; W.redo = []; }
+    if (!W.B || W.B.id !== W.boardId) { const r = I().get('wb', W.boardId); W.B = clean(Object.assign(blank(), JSON.parse(JSON.stringify(r)), { id: W.boardId })); W.sel.clear(); W.undo = []; W.redo = []; }
     return W.B;
   }
   const node = id => W.B.nodes.find(n => n.id === id);
@@ -429,7 +445,7 @@
     V.drawer('Miro', `<p class="small" style="margin-top:0">You can keep a link to the customer's or team's Miro board with this whiteboard and open it from here.</p>
       <label class="f" for="wbMiroUrl">Miro board link</label><input type="url" id="wbMiroUrl" maxlength="200" placeholder="https://miro.com/app/board/…" value="${esc(W.B.miro || '')}"${ro() ? ' disabled' : ''}>
       <div class="notice small" style="margin-top:14px"><b>What is and is not connected.</b> Delivery Studio does not sync with Miro and does not create anything in Miro. To move this process into Miro, use Export PNG and drop the image on the Miro board, or rebuild it there. Creating editable Miro shapes and connectors automatically would need a Miro developer app with an OAuth access token for the Miro REST API (board items: shapes, sticky notes, connectors); that is not set up. The whiteboard here works without any Miro account.</div>`,
-      `${W.B.miro ? `<a class="btn" href="${esc(W.B.miro)}" target="_blank" rel="noopener noreferrer">Open in Miro</a>` : ''}<button class="btn" data-act="closeDrawer">Close</button>${ro() ? '' : '<button class="btn primary" data-act="wbMiroSave">Save link</button>'}`);
+      `${W.B.miro ? `<a class="btn" href="${esc(F.safeUrl(W.B.miro))}" target="_blank" rel="noopener noreferrer">Open in Miro</a>` : ''}<button class="btn" data-act="closeDrawer">Close</button>${ro() ? '' : '<button class="btn primary" data-act="wbMiroSave">Save link</button>'}`);
   };
   ACT.wbMiroSave = () => { const v = (document.getElementById('wbMiroUrl').value || '').trim(); if (v && !/^https:\/\/(?:www\.)?miro\.com\/app\/board\/[A-Za-z0-9_=-]+\/?(?:\?[\w=&%.-]*)?$/.test(v)) { V.toast('Use a Miro board link that starts with https://miro.com/app/board/', 6000, true); return; } W.B.miro = v; W.dirty = true; save(); V.closeDrawer(); V.toast(v ? 'Miro link saved' : 'Miro link removed'); };
 

@@ -60,6 +60,18 @@
   function pickFile(accept, multiple) { return new Promise(res => { const i = document.createElement('input'); i.type = 'file'; i.accept = accept || ''; i.multiple = !!multiple; i.onchange = () => res(Array.from(i.files)); i.click(); }); }
   // one shared promise per library: a second caller waits for the same load, and a failed load can be retried
   const scriptLoads = {};
+  // Reads the XML (or other matching) files out of an uploaded ZIP with limits, so a crafted archive cannot exhaust the tab: at most
+  // maxEntries files, at most maxBytes once unpacked (checked from the ZIP's own size records before unpacking, then while reading),
+  // and entries with absolute or parent (..) paths are skipped.
+  async function zipTexts(file, accept, o) {
+    o = o || {}; const maxEntries = o.maxEntries || 6000, maxBytes = o.maxBytes || 150 * 1024 * 1024; await loadScript('vendor/jszip.min.js');
+    let zip; try { zip = await root.JSZip.loadAsync(file); } catch (e) { throw new Error('This file could not be opened as a ZIP. It may be damaged or password protected.'); }
+    const names = Object.keys(zip.files).filter(n => !zip.files[n].dir); if (names.length > maxEntries) throw new Error('The ZIP holds ' + names.length + ' files, more than the ' + maxEntries + ' this screen reads.');
+    const pick = names.filter(n => !/(^|[\/\\])\.\.([\/\\]|$)|^[\/\\]/.test(n) && accept(n)); const declared = pick.reduce((a, n) => a + ((zip.files[n]._data && zip.files[n]._data.uncompressedSize) || 0), 0);
+    if (declared > maxBytes) throw new Error('The files in this ZIP are larger than this screen reads once unpacked (' + Math.round(maxBytes / 1048576) + ' MB).');
+    const out = []; let total = 0; for (const n of pick) { const t = await zip.files[n].async('string'); total += t.length; if (total > maxBytes) throw new Error('The files in this ZIP are larger than this screen reads once unpacked (' + Math.round(maxBytes / 1048576) + ' MB).'); out.push({ name: n, text: t }); }
+    return out;
+  }
   function loadScript(src) {
     if (!scriptLoads[src]) scriptLoads[src] = new Promise((res, rej) => { const old = document.querySelector(`script[data-src="${src}"]`); if (old) old.remove(); const s = document.createElement('script'); s.src = src; s.dataset.src = src; s.onload = () => res(); s.onerror = () => { delete scriptLoads[src]; s.remove(); rej(new Error('Could not load ' + src.replace(/^vendor\//, '') + '. Check your connection and try again.')); }; document.head.appendChild(s); });
     return scriptLoads[src];
@@ -67,7 +79,7 @@
   const fmtDate = d => { if (!d) return ''; const x = new Date(d); return isNaN(x) ? String(d) : x.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }); };
   const fmtSize = n => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
   function requireEdit() { if (S.readonly) { toast('You have read-only access to this project'); return false; } return true; }
-  Object.assign(V, { docImage, sheetName, ico, toast, loading, loadingMsg, tag, statusTag, sel, inp, ta, sw, drawer, closeDrawer, confirmDialog, download, pickFile, loadScript, getPath, setPath, fmtDate, fmtSize, requireEdit, bindTarget });
+  Object.assign(V, { docImage, sheetName, ico, toast, loading, loadingMsg, tag, statusTag, sel, inp, ta, sw, drawer, closeDrawer, confirmDialog, download, pickFile, loadScript, zipTexts, getPath, setPath, fmtDate, fmtSize, requireEdit, bindTarget });
   V.confirmInline = () => true; // legacy callers: destructive actions now use confirmDialog where it matters
 
   // ---------- routing ----------
@@ -225,7 +237,7 @@
     d.innerHTML = `<div class="um-head"><b>${esc(u.name)}</b><span>${esc(u.kind === 'customer' ? 'Customer stakeholder' : u.guest ? 'Guest workspace' : u.email)}</span>${role ? `<em>${esc(role)}</em>` : ''}</div>${u.guest ? '<button class="um-i" role="menuitem" data-act="upgradeGuest">Save as a full account</button>' : ''}${u.kind === 'consultant' ? '<button class="um-i" role="menuitem" data-act="toProjects">All projects</button>' : ''}${u.kind === 'consultant' && (u.adminRole || V.office()) ? '<button class="um-i" role="menuitem" data-act="openAdmin">Admin console</button>' : ''}<button class="um-i" role="menuitem" data-act="replayRoadmap">Product introduction</button><div class="um-sep"></div><button class="um-i um-out" role="menuitem" data-act="logout">Sign out</button>`; document.body.appendChild(d); const f = d.querySelector('.um-i'); if (f) f.focus(); };
   ACT.toProjects = async () => { loading(true, 'Back to your projects…'); try { if (V.ticketsLeave) V.ticketsLeave(); if (F.hasUnsaved()) await F.flush(); S.project = null; S.baseline = null; mode = 'projects'; await loadProjects(); history.replaceState(null, '', '#/projects'); render(); } finally { loading(false); } if (S.user.kind === 'consultant' && !refCache) setTimeout(() => { if (!refCache) API.reference().then(r => { refCache = refCache || r; }).catch(() => { }); }, 700); };
   ACT.officeContinue = () => { location.reload(); };
-  ACT.logout = async () => { if (S.user && S.user.guest && !V.office() && !(await confirmDialog('Sign out of guest workspace', 'You will need your guest key to come back. If you have lost it, save the workspace as a full account first (menu under your initials).', 'Sign out', true))) return; if (F.hasUnsaved()) await F.flush(); try { await API.post('/api/auth/logout'); } catch (e) { } if (root.FWBRun) { S.project = null; mode = 'auth'; authMsg = 'You have left the workspace. Close this tab, or open it again whenever you like.'; history.replaceState(null, '', '#/'); render(); return; } S.user = null; S.project = null; mode = 'auth'; history.replaceState(null, '', '#/'); render(); };
+  ACT.logout = async () => { if (S.user && S.user.guest && !V.office() && !(await confirmDialog('Sign out of guest workspace', 'You will need your guest key to come back. If you have lost it, save the workspace as a full account first (menu under your initials).', 'Sign out', true))) return; if (F.hasUnsaved()) await F.flush(); try { await API.post('/api/auth/logout'); } catch (e) { } try { Object.keys(localStorage).filter(k => /^facilio-onboarding-workspace/.test(k) && !localStorage.getItem('facilio-onboarding-dirty:' + k.split(':')[1])).forEach(k => localStorage.removeItem(k));  /* cached customer data leaves with the person; unsynced edits stay */ } catch (e) { } if (root.FWBRun) { S.project = null; mode = 'auth'; authMsg = 'You have left the workspace. Close this tab, or open it again whenever you like.'; history.replaceState(null, '', '#/'); render(); return; } S.user = null; S.project = null; mode = 'auth'; history.replaceState(null, '', '#/'); render(); };
 
   // ---------- auth screens ----------
   let authTab = 'signup'; let authMsg = ''; let health = { signupEnabled: false };

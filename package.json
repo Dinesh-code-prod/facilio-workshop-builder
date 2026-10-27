@@ -2,7 +2,7 @@
   "name": "facilio-delivery-studio",
   "version": "1.0.0",
   "private": true,
-  "description": "Facilio Delivery Studio \u2014 multi-project delivery workspace (Form Builder, State Flow Builder, roles, sessions, user guide, transcripts, validation, BRD), hosted on facilio.work.",
+  "description": "Facilio Delivery Studio — multi-project delivery workspace (Form Builder, State Flow Builder, roles, sessions, user guide, transcripts, validation, BRD), hosted on facilio.work.",
   "scripts": {
     "build": "node build.mjs",
     "test": "node tests/work_adapter.mjs && node tests/guide_intel.mjs",
@@ -13,7 +13,7 @@
     "test:smoke": "node tests/ui/smoke.mjs"
   },
   "devDependencies": {
-    "@xmldom/xmldom": "0.8.10",
+    "@xmldom/xmldom": "0.8.15",
     "esbuild": "^0.24.2",
     "exceljs": "^4.4.0",
     "jszip": "3.10.1",

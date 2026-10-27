@@ -102,7 +102,7 @@
     const pos = proc.steps.map((st, i) => ({ x: labelW + 15 + i * colW, y: 5 + lanes.indexOf(st.lane) * laneH + (laneH - boxH) / 2 }));
     proc.steps.forEach((st, i) => {
       if (i > 0) { const a = pos[i - 1], b = pos[i]; const v = VER[st.verification] || VER.verified; const x1 = a.x + boxW, y1 = a.y + boxH / 2, x2 = b.x, y2 = b.y + boxH / 2; const mx = (x1 + x2) / 2;
-        s += `<path d="M ${x1} ${y1} L ${mx} ${y1} L ${mx} ${y2} L ${x2 - 2} ${y2}" fill="none" stroke="${v.c}" stroke-width="1.6" ${v.d ? `stroke-dasharray="${v.d}"` : ''} marker-end="url(#sw-${st.verification || 'verified'})"/>`; }
+        s += `<path d="M ${x1} ${y1} L ${mx} ${y1} L ${mx} ${y2} L ${x2 - 2} ${y2}" fill="none" stroke="${v.c}" stroke-width="1.6" ${v.d ? `stroke-dasharray="${v.d}"` : ''} marker-end="url(#sw-${VER[st.verification] ? st.verification : 'verified'})"/>`; }
     });
     proc.steps.forEach((st, i) => {
       const p = pos[i]; const v = VER[st.verification] || VER.verified;

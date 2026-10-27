@@ -227,7 +227,7 @@
   }
   function csv() {
     const head = ['Project', 'Customer', 'Stage', 'Health', 'Sessions done', 'Sessions total', 'Requirements', 'Open actions', 'Overdue', 'Open questions', 'Files', 'Storage bytes', 'Owners', 'Created', 'Last activity', 'Archived'];
-    const q = v => '"' + String(v === undefined || v === null ? '' : v).replace(/"/g, '""') + '"';
+    const q = v => '"' + String(v === undefined || v === null ? '' : root.FWB.csvText(v)).replace(/"/g, '""') + '"';
     return [head.map(q).join(',')].concat(filtered().map(p => [p.name, p.customer, STAGES[p.stage], p.archived ? 'archived' : p.health, p.sessions.done, p.sessions.total, p.requirements, p.openActions, p.overdue, p.openFeedback, p.files, p.bytes, p.owners, fmt(p.createdAt), fmt(p.lastActivity), p.archived ? 'yes' : 'no'].map(q).join(','))).join('\r\n');
   }
 

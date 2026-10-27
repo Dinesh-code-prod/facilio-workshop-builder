@@ -77,7 +77,8 @@
     const flush = () => { if (cur.length) out.push(cur.join('')); cur = []; };
     const tools = b => edit ? `<span class="blk-tools"><button data-act="brdBlockMenu" data-id="${esc(b.id)}" title="Block options" aria-label="Block options">⋯</button></span>` : '';
     const cls = b => [b.edited && marks ? 'edited' : '', b.stale && marks ? 'stale' : '', b.inserted && marks ? 'edited inserted' : '', b.hiddenBlock ? 'hidden-blk' : ''].filter(Boolean).join(' ');
-    const cellHtml = (c, bid, ri, ci) => { const txt = R().cellText(c); const first = Array.isArray(c) ? c[0] : c; const st = first && typeof first === 'object' ? `${first.bold ? 'font-weight:700;' : ''}${first.color ? 'color:#' + first.color + ';' : ''}` : ''; const lines = Array.isArray(c) ? c.map(x => typeof x === 'object' && x ? `<span style="${x.bold ? 'font-weight:700;' : ''}${x.color ? 'color:#' + x.color + ';' : ''}${x.size ? 'font-size:' + (x.size / 2) + 'pt;' : ''}">${esc(x.text)}</span>` : esc(x)).join('<br>') : esc(txt).replace(/\n/g, '<br>');
+    const HEXC = /^[0-9A-Fa-f]{6}$/;
+    const cellHtml = (c, bid, ri, ci) => { const txt = R().cellText(c); const first = Array.isArray(c) ? c[0] : c; const st = first && typeof first === 'object' ? `${first.bold ? 'font-weight:700;' : ''}${HEXC.test(first.color) ? 'color:#' + first.color + ';' : ''}` : ''; const lines = Array.isArray(c) ? c.map(x => typeof x === 'object' && x ? `<span style="${x.bold ? 'font-weight:700;' : ''}${HEXC.test(x.color) ? 'color:#' + x.color + ';' : ''}${Number(x.size) > 0 ? 'font-size:' + (Number(x.size) / 2) + 'pt;' : ''}">${esc(x.text)}</span>` : esc(x)).join('<br>') : esc(txt).replace(/\n/g, '<br>');
       return `<td${c && c.edited && marks ? ' class="edited-cell"' : ''}><div ${edit ? ce : ''} data-cell="${esc(bid)}#${ri}.${ci}" style="${st}">${lines}</div></td>`; };
     bl.forEach(b => {
       if (b.hiddenBlock && !edit) return;
