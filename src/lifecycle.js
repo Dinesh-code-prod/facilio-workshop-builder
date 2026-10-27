@@ -34,40 +34,71 @@
   }
   // Word export: a real .docx (Office Open XML) built with the bundled docx library. The earlier export was HTML saved
   // as .doc, which Word Online, Teams/SharePoint previews and mobile Word show as blank.
+  // Every AI document exports in the Facilio document format, the same one the BRD uses (fonts, heading colours and sizes, table header fill,
+  // page setup, header and footer text from the project's BRD format, plus the Facilio and customer logos): a cover page with a document
+  // control table, then the numbered sections.
   async function mdDocx(d) {
-    const X = await V.loadDocx();
-    const { Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, AlignmentType, LevelFormat } = X; const font = 'Calibri';
-    const runs = t => { const out = []; String(t || '').split(/(\*\*.+?\*\*|`.+?`|\[S\d+\])/g).forEach(p => { if (!p) return; if (/^\*\*.+\*\*$/.test(p)) out.push(new TextRun({ text: p.slice(2, -2), bold: true, font })); else if (/^`.+`$/.test(p)) out.push(new TextRun({ text: p.slice(1, -1), font: 'Consolas' })); else if (/^\[S\d+\]$/.test(p)) out.push(new TextRun({ text: p.slice(1, -1), superScript: true, color: '1570EF', font })); else out.push(new TextRun({ text: p, font })); }); return out.length ? out : [new TextRun({ text: '', font })]; };
-    const B = { style: BorderStyle.SINGLE, size: 4, color: 'BBBBBB' }; const bd = { top: B, bottom: B, left: B, right: B };
-    const body = [new Paragraph({ heading: HeadingLevel.TITLE, children: [new TextRun({ text: d.title || 'Draft', font, bold: true, size: 40, color: '1D1A5E' })] }),
-      new Paragraph({ spacing: { after: 240 }, children: [new TextRun({ text: (ST[d.status] ? ST[d.status][1] : 'Draft') + (d.approvedBy ? ' — approved by ' + d.approvedBy + ' on ' + when(d.approvedAt) : ' — AI-assisted draft, not approved'), italics: true, color: '667085', font })] })];
-    let rows = null; const flush = () => { if (!rows) return; const n = Math.max(...rows.map(r => r.length)); body.push(new Table({ width: { size: 9600, type: WidthType.DXA }, columnWidths: Array(n).fill(Math.floor(9600 / n)), rows: rows.map((r, ri) => new TableRow({ tableHeader: ri === 0, cantSplit: true, children: Array.from({ length: n }, (_, k) => new TableCell({ borders: bd, width: { size: Math.floor(9600 / n), type: WidthType.DXA }, shading: ri === 0 ? { type: ShadingType.CLEAR, color: 'auto', fill: 'EEF2FB' } : undefined, margins: { top: 50, bottom: 50, left: 80, right: 80 }, children: [new Paragraph({ children: runs(r[k] || '') })] })) })) })); body.push(new Paragraph({ spacing: { after: 100 }, children: [] })); rows = null; };
+    const X = await V.loadDocx(); const R = root.FWBBrd || {}; const P = R.profile ? R.profile() : { font: 'Calibri', bodySize: 21, h1: { color: '351C75', size: 32 }, h2: { color: '351C75', size: 28 }, h3: { color: '351C75', size: 24 }, tableHeaderFill: '8DB3E2', tableHeaderColor: '000000', page: { w: 11906, h: 16838, top: 1134, right: 1134, bottom: 1134, left: 1134 }, headerText: '', footerText: '' };
+    const { Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, AlignmentType, LevelFormat, ImageRun, PageBreak, Header, Footer, PageNumber } = X; const font = P.font || 'Calibri'; const PW = P.page.w - P.page.left - P.page.right;
+    let logos = {}; try { logos = R.logoData ? await R.logoData() : {}; } catch (e) { }
+    const fitL = (l, mw, mh) => { const k = Math.min(mw / l.w, mh / l.h, 1); return new ImageRun({ type: l.type, data: l.u8, transformation: { width: Math.max(1, Math.round(l.w * k)), height: Math.max(1, Math.round(l.h * k)) } }); };
+    const run = (t, o) => new TextRun(Object.assign({ text: String(t == null ? '' : t), font }, o || {}));
+    const runs = t => { const out = []; String(t || '').split(/(\*\*.+?\*\*|`.+?`|\[S\d+\])/g).forEach(p => { if (!p) return; if (/^\*\*.+\*\*$/.test(p)) out.push(run(p.slice(2, -2), { bold: true })); else if (/^`.+`$/.test(p)) out.push(new TextRun({ text: p.slice(1, -1), font: 'Consolas' })); else if (/^\[S\d+\]$/.test(p)) out.push(run(p.slice(1, -1), { superScript: true, color: '1570EF' })); else out.push(run(p)); }); return out.length ? out : [run('')]; };
+    const B = { style: BorderStyle.SINGLE, size: 4, color: '000000' }; const bd = { top: B, bottom: B, left: B, right: B }; const NB = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' }; const nob = { top: NB, bottom: NB, left: NB, right: NB, insideHorizontal: NB, insideVertical: NB };
+    const cell = (txt, head, w) => new TableCell({ borders: bd, width: { size: w, type: WidthType.DXA }, shading: head ? { type: ShadingType.CLEAR, color: 'auto', fill: P.tableHeaderFill || '8DB3E2' } : undefined, margins: { top: 60, bottom: 60, left: 90, right: 90 }, children: [new Paragraph({ children: head ? [run(String(txt || '').replace(/\*\*/g, ''), { bold: true, color: P.tableHeaderColor || '000000', size: 19 })] : runs(txt).map(r => r) })] });
+    const pr = (S.ws && S.ws.project) || {}; const proj = S.project || {}; const status = (ST[d.status] ? ST[d.status][1] : 'Draft') + (d.approvedBy ? ' — approved by ' + d.approvedBy + ' on ' + when(d.approvedAt) : ' — AI-assisted draft, not approved');
+    const title = d.title || 'Document'; const body = [];
+    // cover: logos, title, customer, then the document control table
+    body.push(new Paragraph({ spacing: { before: 400 } }));
+    if (logos.facilio || logos.customer) body.push(new Table({ width: { size: PW, type: WidthType.DXA }, columnWidths: [PW / 2, PW / 2], borders: nob, rows: [new TableRow({ children: [new TableCell({ borders: nob, width: { size: PW / 2, type: WidthType.DXA }, children: [new Paragraph({ children: logos.facilio ? [fitL(logos.facilio, 200, 80)] : [] })] }), new TableCell({ borders: nob, width: { size: PW / 2, type: WidthType.DXA }, children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: logos.customer ? [fitL(logos.customer, 200, 80)] : [] })] })] })] }));
+    body.push(new Paragraph({ spacing: { before: 1600, after: 200 }, alignment: AlignmentType.CENTER, children: [run(title, { bold: true, size: 52, color: P.h1.color })] }));
+    body.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 120 }, children: [run('Facilio CAFM Implementation', { size: 28, color: '555555' })] }));
+    body.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 900 }, children: [run(pr.client || proj.customer || '', { bold: true, size: 30 })] }));
+    const ctl = [['Document', title], ['Customer', pr.client || proj.customer || '—'], ['Project', proj.name || '—'], ['Version', d.version ? 'V' + d.version + '.0' : 'V1.0'], ['Date', when(d._at || d.approvedAt || new Date().toISOString())], ['Prepared by', d.by || (S.user && S.user.name) || '—'], ['Status', status]].concat(d.provider ? [['Drafted with', d.provider + ' (AI-assisted; every statement to be checked against the sources)']] : []);
+    body.push(new Table({ width: { size: PW, type: WidthType.DXA }, columnWidths: [Math.round(PW * .28), PW - Math.round(PW * .28)], rows: ctl.map(([k, v]) => new TableRow({ cantSplit: true, children: [cell(k, true, Math.round(PW * .28)), cell(v, false, PW - Math.round(PW * .28))] })) }));
+    body.push(new Paragraph({ children: [new PageBreak()] }));
+    let rows = null; const flush = () => { if (!rows) return; const n = Math.max(...rows.map(r => r.length)); const w = Math.floor(PW / n); body.push(new Table({ width: { size: PW, type: WidthType.DXA }, columnWidths: Array(n).fill(w), rows: rows.map((r, ri) => new TableRow({ tableHeader: ri === 0, cantSplit: true, children: Array.from({ length: n }, (_, k) => cell(r[k] || '', ri === 0, w)) })) })); body.push(new Paragraph({ spacing: { after: 120 } })); rows = null; };
+    let first = true;
     String(d.content || '').split('\n').forEach(ln => { const t = ln.trim(); let m;
       if (/^\|.*\|$/.test(t)) { if (/^\|[\s:|-]+\|$/.test(t)) return; (rows = rows || []).push(t.slice(1, -1).split('|').map(c => c.trim())); return; }
       flush(); if (!t) return;
-      if ((m = t.match(/^(#{1,4})\s+(.*)/))) body.push(new Paragraph({ heading: [HeadingLevel.HEADING_1, HeadingLevel.HEADING_2, HeadingLevel.HEADING_3, HeadingLevel.HEADING_4][m[1].length - 1], keepNext: true, children: runs(m[2]) }));
+      if (first && (m = t.match(/^#\s+(.*)/)) && m[1].trim().toLowerCase() === title.toLowerCase()) { first = false; return; } first = false;   // the title is on the cover
+      if ((m = t.match(/^(#{1,4})\s+(.*)/))) body.push(new Paragraph({ heading: [HeadingLevel.HEADING_1, HeadingLevel.HEADING_2, HeadingLevel.HEADING_3, HeadingLevel.HEADING_4][Math.max(0, m[1].length - 2)], keepNext: true, children: runs(m[2]) }));
       else if ((m = t.match(/^[-*]\s+(.*)/))) body.push(new Paragraph({ numbering: { reference: 'bul', level: 0 }, spacing: { after: 60 }, children: runs(m[1]) }));
       else if ((m = t.match(/^\d+[.)]\s+(.*)/))) body.push(new Paragraph({ numbering: { reference: 'num', level: 0 }, spacing: { after: 60 }, children: runs(m[1]) }));
       else body.push(new Paragraph({ spacing: { after: 120 }, children: runs(t) })); });
     flush();
-    if (body.length < 3) body.push(new Paragraph({ children: [new TextRun({ text: '(This draft has no text yet.)', italics: true, color: '999999', font })] }));
-    const doc = new X.Document({ creator: 'Facilio', title: d.title || 'Draft', description: 'Exported from Facilio Delivery Studio',
-      styles: { default: { document: { run: { font, size: 22 } } }, paragraphStyles: [1, 2, 3, 4].map(n => ({ id: 'Heading' + n, name: 'Heading ' + n, basedOn: 'Normal', next: 'Normal', quickFormat: true, run: { size: [32, 28, 24, 22][n - 1], bold: true, color: '1D1A5E', font }, paragraph: { spacing: { before: 220, after: 100 }, outlineLevel: n - 1 } })) },
+    if (!String(d.content || '').trim()) body.push(new Paragraph({ children: [run('(This draft has no text yet.)', { italics: true, color: '999999' })] }));
+    const hs = [P.h1, P.h2, P.h3, P.h3]; const hText = P.headerText ? P.headerText : 'Facilio  |  ' + title + (pr.client || proj.customer ? '  |  ' + (pr.client || proj.customer) : '');
+    const doc = new X.Document({ creator: 'Facilio', title, description: 'Exported from Facilio Delivery Studio',
+      styles: { default: { document: { run: { font, size: P.bodySize || 21 } } }, paragraphStyles: [1, 2, 3, 4].map(n => ({ id: 'Heading' + n, name: 'Heading ' + n, basedOn: 'Normal', next: 'Normal', quickFormat: true, run: { size: hs[n - 1].size || [32, 28, 24, 22][n - 1], bold: true, color: hs[n - 1].color || '351C75', font: hs[n - 1].font || font }, paragraph: { spacing: { before: 240, after: 120 }, outlineLevel: n - 1 } })) },
       numbering: { config: [{ reference: 'bul', levels: [{ level: 0, format: LevelFormat.BULLET, text: '•', alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 540, hanging: 270 } } } }] }, { reference: 'num', levels: [{ level: 0, format: LevelFormat.DECIMAL, text: '%1.', alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 540, hanging: 360 } } } }] }] },
-      sections: [{ properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1134, right: 1134, bottom: 1134, left: 1134 } } }, children: body }] });
+      sections: [{ properties: { titlePage: true, page: { size: { width: P.page.w, height: P.page.h }, margin: { top: P.page.top, right: P.page.right, bottom: P.page.bottom, left: P.page.left } } },
+        headers: { default: new Header({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [run(hText, { size: 16, color: '777777' })] })] }), first: new Header({ children: [new Paragraph({})] }) },
+        footers: { default: new Footer({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [run((P.footerText || 'Facilio · Confidential') + '   ·   Page ', { size: 16, color: '777777' }), new TextRun({ children: [PageNumber.CURRENT], font, size: 16, color: '777777' }), run(' of ', { size: 16, color: '777777' }), new TextRun({ children: [PageNumber.TOTAL_PAGES], font, size: 16, color: '777777' })] })] }), first: new Footer({ children: [new Paragraph({})] }) },
+        children: body }] });
     return X.Packer.toBlob(doc);
   }
   V.mdDocx = mdDocx;
   const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
   // ---------- part-by-part AI documents (each server call stays inside the 25 s limit; see /ai/job in work/server/api.mjs) ----------
+  // the BRD draft follows this project's own BRD outline (the same headings, numbering and order as the BRD page and its Word export)
+  function brdHeads() { try { const B = root.FWBBrd; if (!B || !B.buildBlocks) return null; const bl = B.buildBlocks().blocks.filter(b => b.t === 'h' && !b.hiddenBlock); const out = []; let cur = null;
+      bl.forEach(b => { const t = String(b.text || '').replace(/\s+/g, ' ').trim(); if (!t) return; if (b.lvl === 1) { cur = { h: t, subs: [] }; out.push(cur); } else if (b.lvl === 2 && cur && cur.subs.length < 8) cur.subs.push(t.slice(0, 40)); });
+      const heads = out.filter(x => !/table of contents/i.test(x.h)).map(x => (x.h.slice(0, 90) + (x.subs.length ? ' (' + x.subs.join('; ') + ')' : '')).slice(0, 220));
+      if (heads.length > 18) { const keep = heads.slice(0, 17); keep.push(heads.slice(17).map(h => h.replace(/\s*\(.*$/, '')).join('; ').slice(0, 220)); return keep; } return heads.length >= 2 ? heads : null; } catch (e) { return null; } }
   V.aiDoc = async (body, title) => {
+    if (body && body.task === 'brd' && !body.headings && !body.templateId) { const h = brdHeads(); if (h) body = Object.assign({}, body, { headings: h }); }
     const pid = S.project.id; const lm = m => (V.loadingMsg ? V.loadingMsg(m) : null); V.loading(true, 'Gathering the project sources…');
     try {
       const j = await API.post(`/api/projects/${pid}/ai/job`, body); const parts = j.parts || []; let done = 0, next = 0; const fail = [];
       const say = () => lm(`${title || 'Writing the draft'} · ${j.provider || 'AI'} is writing ${parts.length > 1 ? 'section ' + Math.min(parts.length, done + 1) + ' of ' + parts.length : 'the draft'}…`); say();
-      const one = async n => { let r = await API.post(`/api/projects/${pid}/ai/job/${j.job}/part`, { n }).catch(e => { if (e && e.status === 429) throw e; return { ok: false, retry: true }; });
-        if (!r.ok && r.retry) r = await API.post(`/api/projects/${pid}/ai/job/${j.job}/part`, { n, short: true }).catch(e => { if (e && e.status === 429) throw e; return { ok: false }; });
+      // the platform model allows about 20 requests a minute per person: starts are spaced a little over 3 s apart, and a part refused for the rate waits and tries again
+      let nextAt = 0; const slot = async () => { const now = Date.now(), at = Math.max(now, nextAt); nextAt = at + 3300; if (at > now) await new Promise(r => setTimeout(r, at - now)); };
+      const post = async body => { for (let k = 0; k < 3; k++) { await slot(); try { return await API.post(`/api/projects/${pid}/ai/job/${j.job}/part`, body); } catch (e) { if (e && e.status === 429 && k < 2) { lm('The AI service is busy; waiting a moment…'); await new Promise(r => setTimeout(r, 20000)); continue; } if (e && e.status === 429) throw e; return { ok: false, retry: !body.short }; } } };
+      const one = async n => { let r = await post({ n });
+        if (!r.ok && r.retry) r = await post({ n, short: true });
         if (!r.ok) fail.push(n); done++; say(); };
       const worker = async () => { while (next < parts.length) await one(next++); };
       await Promise.all(Array.from({ length: Math.min(3, parts.length) }, worker));
@@ -78,8 +109,8 @@
   };
   // ---------- run AI ----------
   ACT.aiRun = async a => {
-    if (!canEdit()) { toast('You have read-only access'); return; } const task = a.getAttribute('data-task'); const pick = V.aiTplPick || ''; V.aiTplPick = '';
-    let tpls = []; try { tpls = V.tplList ? await V.tplList(task) : []; } catch (e) { }
+    if (!canEdit()) { toast('You have read-only access'); return; } const task = a.getAttribute('data-task'); let pick = V.aiTplPick || ''; V.aiTplPick = '';
+    let tpls = []; try { tpls = V.tplList ? await V.tplList(task) : []; } catch (e) { } if (!pick && task !== 'brd') { const org = tpls.find(t => t.scope === 'org'); if (org) pick = org.id; }   // the organisation's (Facilio) template is the default when there is one
     drawer('Generate with AI: ' + label(task), `<p class="small muted">The assistant uses only this project's records. The result is a <b>draft</b> that stays unapproved until a project owner approves it. It never records test results, sign-offs or completion.</p>${tpls.length ? `<label class="f">Template</label><select id="ai_tpl"><option value="">No template (standard structure)</option>${tpls.map(t => `<option value="${esc(t.id)}"${t.id === pick ? ' selected' : ''}>${esc(t.name)} (v${t.pub}${t.scope === 'org' ? ', organisation' : ', project'})</option>`).join('')}</select>` : ''}<div id="ai_prov"></div><label class="f">Anything specific? (optional)</label><textarea id="ai_ins" rows="4" maxlength="1500" placeholder="e.g. Only the Work Order and Asset modules"></textarea>`,
       `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="aiGo" data-task="${esc(task)}">Generate draft</button>`); provPick();
   };
