@@ -306,7 +306,7 @@
 
   // ================= DOCX =================
   async function toDocx(progress) {
-    progress = progress || (() => { }); if (!root.docx) await root.FWBViews.loadScript('vendor/docx.iife.js'); const X = root.docx;
+    progress = progress || (() => { }); const X = await root.FWBViews.loadDocx();
     const P = profile(); const PW = P.page.w - P.page.left - P.page.right; const pr = S.ws.project; const font = P.font || 'Calibri';
     const { Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, AlignmentType, ImageRun, PageBreak, TableOfContents, Header, Footer, PageNumber, LevelFormat, VerticalAlign } = X;
     const docm = document_(); const logos = await logoData(); const body = [];
@@ -349,7 +349,7 @@
 
   // ================= PDF (pdfmake; same blocks) =================
   async function toPdf(progress) {
-    progress = progress || (() => { }); const V = root.FWBViews; await V.loadScript('vendor/pdfmake.min.js'); await V.loadScript('vendor/vfs_fonts.js'); const pm = root.pdfMake;
+    progress = progress || (() => { }); const V = root.FWBViews; const pm = await V.loadPdfMake();
     const P = profile(); const pr = S.ws.project; const docm = document_(); const logos = await logoData(); const c = h => '#' + h; const content = [];
     const pt = twip => twip / 20; const PWpt = pt(P.page.w - P.page.left - P.page.right);
     const cellNode = v => { const lines = Array.isArray(v) ? v : (v && typeof v === 'object' ? [v] : String(v == null ? '' : v).split('\n')); return { stack: lines.map(l => typeof l === 'object' && l ? { text: String(l.text || ''), bold: !!l.bold, color: l.color ? c(l.color) : undefined, fontSize: l.size ? l.size / 2 : 8.5 } : { text: String(l), fontSize: 8.5 }) }; };

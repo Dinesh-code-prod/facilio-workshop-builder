@@ -334,7 +334,8 @@
     return { loaded: true, list }; };
   ACT.glResp = a => { S.ui.glResp = a.getAttribute('data-v'); V.render(); };
   ACT.glRespRefresh = () => rLoad(true);
-  ACT.glCsv = () => {
+  ACT.glCsv = async () => {
+    if (!rState().loaded) await rLoad(false); // started before the answers were fetched: wait for them, so the file is not just a header row
     const q = s => '"' + String(root.FWB.csvText(s ?? '')).replace(/"/g, '""') + '"'; const rows = [['Module', 'Type', 'Section / group', 'Item', 'Response', 'By', 'Kind', 'Updated']];
     L.MODS.forEach(lm => {
       lm.form.forEach(s => s.questions.forEach(x => { const r = R.map[`${lm.key}:a:${x.id}`]; if (r) rows.push([lm.name, 'Question', s.section, x.q, fmt(r.value), r.authorName, r.authorKind, r.updatedAt]); }));

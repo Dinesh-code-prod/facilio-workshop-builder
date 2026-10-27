@@ -58,6 +58,35 @@
     const w = bm ? bm.width : 800, h = bm ? bm.height : 450; if (bm && bm.close) bm.close();
     return { u8, type, ext: type === 'png' ? 'png' : 'jpeg', mime: type === 'png' ? 'image/png' : 'image/jpeg', w, h };
   }
+  // Word: text pasted from Office or PDFs can carry control characters (vertical tab, bell, form feed) that are not allowed in
+  // XML, and Word then refuses the whole file. Every exported TextRun and the document properties pass through xmlSafe.
+  const xmlSafe = s => String(s == null ? '' : s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F￾￿]/g, ' ');
+  async function loadDocx() {
+    if (!root.docx) await loadScript('vendor/docx.iife.js'); const X = root.docx; if (!X || !X.Packer) throw new Error('The Word library did not load. Reload the page and try again.');
+    if (!X.__safe) { const T = X.TextRun, D = X.Document; const clean = o => typeof o === 'string' ? xmlSafe(o) : o && typeof o.text === 'string' ? Object.assign({}, o, { text: xmlSafe(o.text) }) : o;
+      X.TextRun = class extends T { constructor(o) { super(clean(o)); } };
+      X.Document = class extends D { constructor(o) { const p = Object.assign({}, o); ['title', 'subject', 'creator', 'description', 'keywords', 'lastModifiedBy'].forEach(k => { if (typeof p[k] === 'string') p[k] = xmlSafe(p[k]); }); super(p); } }; X.__safe = true; }
+    return X;
+  }
+  // PDF (pdfmake): the bundled Roboto has no Arabic letters, so Arabic text came out blank. Arabic runs are drawn with Noto Sans
+  // Arabic (shaped by the PDF engine) and the words of each run are put in visual right-to-left order.
+  const ARC = '؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿'; const AR1 = new RegExp('[' + ARC + ']'), ARR = new RegExp('([' + ARC + ']+(?:[\\s،؛؟]+[' + ARC + ']+)*)');
+  const arRuns = s => String(s).split(ARR).filter(x => x !== '').flatMap(x => AR1.test(x) ? x.split(/\s+/).reverse().flatMap((w, i) => (i ? [{ text: ' ' }] : []).concat([{ text: w, font: 'NotoArabic' }])) : [{ text: x }]); // spaces kept as separate runs: a space inside a right-to-left run would be drawn on the wrong side
+  function pdfArabic(n) {
+    if (typeof n === 'string') return AR1.test(n) ? { text: arRuns(n) } : n; if (Array.isArray(n)) return n.map(pdfArabic); if (!n || typeof n !== 'object') return n;
+    const o = Object.assign({}, n); if (typeof o.text === 'string' && AR1.test(o.text)) o.text = arRuns(o.text); else if (Array.isArray(o.text)) o.text = o.text.flatMap(t => typeof t === 'string' ? (AR1.test(t) ? arRuns(t) : [t]) : [pdfArabic(t)]);
+    ['stack', 'columns', 'ul', 'ol'].forEach(k => { if (Array.isArray(o[k])) o[k] = pdfArabic(o[k]); }); if (o.table && Array.isArray(o.table.body)) o.table = Object.assign({}, o.table, { body: o.table.body.map(r => Array.isArray(r) ? r.map(pdfArabic) : r) }); return o;
+  }
+  let pdfReady = null;
+  async function loadPdfMake() {
+    await loadScript('vendor/pdfmake.min.js'); await loadScript('vendor/vfs_fonts.js'); const pm = root.pdfMake; if (!pm || !pm.createPdf) throw new Error('The PDF library did not load. Reload the page and try again.');
+    if (!pdfReady) pdfReady = (async () => { try { const r = await fetch('vendor/fonts/NotoSansArabic-Regular.ttf'); if (!r.ok) throw new Error(r.status); const u = new Uint8Array(await r.arrayBuffer()); let b = ''; for (let i = 0; i < u.length; i += 0x8000) b += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+      const A = 'NotoSansArabic-Regular.ttf'; const vfs = Object.assign({}, root.vfs || pm.vfs || {}, { [A]: btoa(b) }); if (pm.addVirtualFileSystem) pm.addVirtualFileSystem(vfs); pm.vfs = vfs; // vfs_fonts.js declares the Roboto files as the global `vfs`
+      const fonts = Object.assign({ Roboto: { normal: 'Roboto-Regular.ttf', bold: 'Roboto-Medium.ttf', italics: 'Roboto-Italic.ttf', bolditalics: 'Roboto-MediumItalic.ttf' } }, pm.fonts || {}, { NotoArabic: { normal: A, bold: A, italics: A, bolditalics: A } }); if (pm.setFonts) pm.setFonts(fonts); pm.fonts = fonts;
+      const create = pm.createPdf; const fix = f => typeof f === 'function' ? (...a) => pdfArabic(f(...a)) : pdfArabic(f);
+      pm.createPdf = (dd, ...rest) => create.call(pm, Object.assign({}, dd, { content: pdfArabic(dd.content), header: dd.header && fix(dd.header), footer: dd.footer && fix(dd.footer) }), ...rest); } catch (e) { console.warn('Arabic PDF font not loaded', e); pdfReady = null; } })();
+    await pdfReady; return pm;
+  }
   function sheetName(wb, name) { const base = String(name || 'Sheet').replace(/[\\/?*[\]:]/g, ' ').replace(/^'+|'+$/g, '').trim().slice(0, 31) || 'Sheet'; const taken = new Set(wb.worksheets.map(w => w.name.toLowerCase())); let n = base, i = 2; while (taken.has(n.toLowerCase())) { const sfx = ' (' + i++ + ')'; n = base.slice(0, 31 - sfx.length) + sfx; } return n; }
   function pickFile(accept, multiple) { return new Promise(res => { const i = document.createElement('input'); i.type = 'file'; i.accept = accept || ''; i.multiple = !!multiple; i.onchange = () => res(Array.from(i.files)); i.click(); }); }
   // one shared promise per library: a second caller waits for the same load, and a failed load can be retried
@@ -81,7 +110,7 @@
   const fmtDate = d => { if (!d) return ''; const x = new Date(d); return isNaN(x) ? String(d) : x.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }); };
   const fmtSize = n => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
   function requireEdit() { if (S.readonly) { toast('You have read-only access to this project'); return false; } return true; }
-  Object.assign(V, { docImage, sheetName, ico, toast, loading, loadingMsg, tag, statusTag, sel, inp, ta, sw, drawer, closeDrawer, confirmDialog, download, pickFile, loadScript, zipTexts, getPath, setPath, fmtDate, fmtSize, requireEdit, bindTarget });
+  Object.assign(V, { docImage, xmlSafe, loadDocx, loadPdfMake, pdfArabic, sheetName, ico, toast, loading, loadingMsg, tag, statusTag, sel, inp, ta, sw, drawer, closeDrawer, confirmDialog, download, pickFile, loadScript, zipTexts, getPath, setPath, fmtDate, fmtSize, requireEdit, bindTarget });
   V.confirmInline = () => true; // legacy callers: destructive actions now use confirmDialog where it matters
 
   // ---------- routing ----------

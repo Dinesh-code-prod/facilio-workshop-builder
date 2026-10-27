@@ -190,7 +190,7 @@
   ACT.ugDocx = a => V.busy(a, async () => {
     if (emptyGuide()) return; await flush(); V.loading(true, 'Writing the Word document…');
     try {
-      if (!root.docx) await V.loadScript('vendor/docx.iife.js'); const X = root.docx; const { Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, AlignmentType, ImageRun, PageBreak, TableOfContents, Footer, PageNumber, LevelFormat } = X;
+      const X = await V.loadDocx(); const { Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, AlignmentType, ImageRun, PageBreak, TableOfContents, Footer, PageNumber, LevelFormat } = X;
       const acc = hex(W.brand.accent); const font = 'Calibri'; const run = (t, o) => new TextRun(Object.assign({ text: String(t == null ? '' : t), font }, o || {})); const rr = t => runs(t).map(x => run(x.text, x.bold ? { bold: true } : {}));
       const body = []; const B = { style: BorderStyle.SINGLE, size: 4, color: 'BBBBBB' }; const bd = { top: B, bottom: B, left: B, right: B };
       if (W.brand.cover !== false) {
@@ -225,7 +225,7 @@
   ACT.ugPdf = a => V.busy(a, async () => {
     if (emptyGuide()) return; await flush(); V.loading(true, 'Writing the PDF…');
     try {
-      await V.loadScript('vendor/pdfmake.min.js'); await V.loadScript('vendor/vfs_fonts.js'); const pm = root.pdfMake; const acc = '#' + hex(W.brand.accent); const content = [];
+      const pm = await V.loadPdfMake(); const acc = '#' + hex(W.brand.accent); const content = [];
       if (W.brand.cover !== false) {
         if (W.brand.logo) { try { const m = await media(W.brand.logo.fileId); content.push(Object.assign({ image: m.dataUrl, alignment: 'right' }, fit(m.w, m.h, 130, 56))); } catch (e) { } }
         content.push({ text: W.title, fontSize: 28, bold: true, color: acc, alignment: 'center', margin: [0, 190, 0, 12] }); if (W.customer) content.push({ text: 'for ' + W.customer, fontSize: 16, alignment: 'center', margin: [0, 0, 0, 6] }); if (W.audience) content.push({ text: W.audience, fontSize: 12, color: '#607796', alignment: 'center', margin: [0, 0, 0, 24] });
