@@ -5,7 +5,7 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   const STEPS = [
     ['Kick-off & Discovery', '#1570EF', 'kickoff', 'Start here', ['Set up the contract, integrations and the kick-off deck', 'Build the project plan and timeline with the customer'], 'Kick-off Deck'],
-    ['Workshops', '#1570EF', 'planner', 'Run the sessions', ['Plan sessions and send the schedule', 'Paste or upload notes and transcripts; AI drafts the minutes'], 'Workshop Planner'],
+    ['Workshops', '#1570EF', 'planner', 'Run the sessions', ['Plan sessions and send the schedule', 'Paste or upload notes and transcripts; requirements are pulled out for you to confirm'], 'Workshop Planner'],
     ['Requirements', '#2F6FE0', 'transcripts', 'Capture & confirm', ['Turn transcripts into requirements', 'Mark each requirement confirmed with the customer'], 'Transcripts & Requirement Confirmation'],
     ['BRD & Sign-off', '#2F6FE0', 'brd', 'Agree the document', ['Generate the BRD from confirmed requirements', 'Track versions and approvals'], 'BRD Draft'],
     ['Configuration', '#0F57BD', 'modules', 'Build it', ['Design modules and forms in the Form Builder', 'Draw state flows; define roles and access'], 'System Modules & Form Builder'],

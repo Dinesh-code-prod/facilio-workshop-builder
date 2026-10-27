@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import handler from '../work/server/api.mjs';
 const store = new Map(), files = new Map(); let maxVal = 0, calls = 0;
 const KEY = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
-const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' }, teams: { async send(m) { (globalThis.__SENT = globalThis.__SENT || []).push(m); return { delivered: 1, failed: 0 }; } }, fetch: async (cred, url, o) => { if (!globalThis.__GRAPH) { const e = new Error('credential not granted'); throw e; } return globalThis.__GRAPH(cred, url, o); }, secrets: { async get(k) { if (k === 'support_mailbox') return 'support@facilio.com'; if (k === 'ai_master_key') return globalThis.__MASTER || '';  if (k === 'anthropic_api_key' && globalThis.__KEY) return globalThis.__KEY; if (k === 'teams_notify' && globalThis.__TEAMS) return globalThis.__TEAMS; throw new Error('no secret'); } }, llm: async ({ messages }) => ({ model: 'mock', choices: [{ message: { content: '## Draft\nBased on [S1]. ' + messages[1].content.slice(0, 20) } }] }),
+const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' }, teams: { async send(m) { (globalThis.__SENT = globalThis.__SENT || []).push(m); return { delivered: 1, failed: 0 }; } }, fetch: async (cred, url, o) => { if (!globalThis.__GRAPH) { const e = new Error('credential not granted'); throw e; } return globalThis.__GRAPH(cred, url, o); }, secrets: { async get(k) { if (k === 'support_mailbox') return 'support@facilio.com'; if (k === 'ai_master_key') return globalThis.__MASTER || '';  if (k === 'anthropic_api_key' && globalThis.__KEY) return globalThis.__KEY; if (k === 'teams_notify' && globalThis.__TEAMS) return globalThis.__TEAMS; throw new Error('no secret'); } }, llm: async ({ messages }) => (globalThis.__LLMLEN = messages[1].content.length, globalThis.__LLMFAIL ? (() => { throw new Error('down'); })() : { model: 'mock', choices: [{ message: { content: '## Draft\nBased on [S1]. ' + messages[1].content.slice(0, 20) } }] }),
   db: {
     async get(c, k) { calls++; const r = (store.get(c) || new Map()).get(k); return r ? { key: k, value: JSON.parse(r), updated_at: '', updated_by: '' } : null; },
     async put(c, k, v) { calls++; assert.ok(KEY.test(k), 'bad key ' + k); assert.ok(/^[A-Za-z0-9._-]{1,64}$/.test(c), 'bad collection ' + c); const t = JSON.stringify(v); maxVal = Math.max(maxVal, t.length); if (t.length > 128 * 1024) { const e = new Error('too large'); e.status = 413; throw e; } if (!store.has(c)) store.set(c, new Map()); store.get(c).set(k, t); },
@@ -86,6 +86,24 @@ await t('AI providers: DeepSeek default, Claude explicit, key never exposed, hon
     r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat', provider: 'claude' }); assert.equal(r.status, 201); assert.equal(r.data.item.data.provider, 'DeepSeek'); assert.match(r.data.item.data.notice, /Claude was not available/);
     r = await call(dinesh, 'GET', '/api/admin/ai/usage'); assert.ok(r.data.usage.claude.errors >= 2); assert.ok(!JSON.stringify(r.data).includes(SECRET));
   } finally { globalThis.fetch = real; globalThis.__KEY = ''; }
+});
+await t('AI providers: default follows the key, fallback gets a DeepSeek-sized prompt, key details for admins only', async () => {
+  // a large source set so the Claude and DeepSeek prompt sizes differ
+  for (let i = 0; i < 60; i++) await call(sam, 'PUT', `/api/projects/${pid}/items/raid/big${i}`, { data: { type: 'Risk', title: 'Risk ' + i + ' ' + 'x'.repeat(900), status: 'Open' } });
+  const KEY = 'sk-ant-test-FALLBACK-1'; globalThis.__KEY = KEY; const real = globalThis.fetch;
+  try {
+    let r = await call(dinesh, 'POST', '/api/admin/ai/config', { defaultProvider: 'claude', fallback: 'deepseek' }); assert.equal(r.status, 200);
+    r = await call(sam, 'GET', '/api/ai/status'); assert.equal(r.data.defaultProvider, 'claude'); assert.equal(r.data.keySource, undefined, 'key details are for admins only'); assert.equal(r.data.canStoreKey, undefined);
+    r = await call(dinesh, 'GET', '/api/ai/status'); assert.ok('keySource' in r.data, 'admins still see where the key comes from');
+    let claudeLen = 0; globalThis.fetch = async (u, o) => { claudeLen = JSON.parse(o.body).messages[0].content.length; return { ok: false, status: 500, json: async () => ({}) }; };
+    r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'handover' }); assert.equal(r.status, 201, JSON.stringify(r.data)); assert.equal(r.data.item.data.provider, 'DeepSeek'); assert.match(r.data.item.data.notice, /Claude was not available/);
+    assert.ok(claudeLen > globalThis.__LLMLEN, `fallback prompt (${globalThis.__LLMLEN}) is smaller than the Claude prompt (${claudeLen})`);
+    // the key disappears from the secrets portal while Claude is still the stored default: drafts use DeepSeek, as the status says
+    globalThis.__KEY = ''; r = await call(sam, 'GET', '/api/ai/status'); assert.equal(r.data.defaultProvider, 'deepseek');
+    globalThis.fetch = async () => { throw new Error('Claude must not be called'); }; r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat' }); assert.equal(r.status, 201); assert.equal(r.data.item.data.provider, 'DeepSeek');
+    // DeepSeek down: a clear error, nothing stored
+    globalThis.__LLMFAIL = true; const before = (await call(sam, 'GET', `/api/projects/${pid}/items?kinds=ai`)).data.items.length; r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat' }); assert.ok(r.status >= 500); assert.equal((await call(sam, 'GET', `/api/projects/${pid}/items?kinds=ai`)).data.items.length, before);
+  } finally { globalThis.fetch = real; globalThis.__KEY = ''; globalThis.__LLMFAIL = false; await call(dinesh, 'POST', '/api/admin/ai/config', { defaultProvider: 'deepseek', fallback: 'none' }); for (let i = 0; i < 60; i++) await call(sam, 'DELETE', `/api/projects/${pid}/items/raid/big${i}`); }
 });
 await t('templates: versions, publish needs admin, retire, project scope, AI uses template', async () => {
   let r = await call(sam, 'POST', '/api/templates', { name: 'BRD layout', kind: 'brd', scope: 'org', data: { body: '# Purpose\n# Scope' } }); assert.equal(r.status, 201); const id = r.data.item.id;

@@ -39,19 +39,35 @@
   function inp(path, ph, type, attrs) { const t = bindTarget(path); const v = getPath(t.obj, t.path); return `<input type="${type || 'text'}" data-bind="${esc(path)}" value="${esc(v == null ? '' : v)}" placeholder="${esc(ph || '')}" ${S.readonly ? 'disabled' : ''} ${attrs || ''}>`; }
   function ta(path, ph, rows) { const t = bindTarget(path); const v = getPath(t.obj, t.path); return `<textarea data-bind="${esc(path)}" rows="${rows || 3}" placeholder="${esc(ph || '')}" ${S.readonly ? 'disabled' : ''}>${esc(v || '')}</textarea>`; }
   function sw(path, on, attrs) { return `<label class="switch"><input type="checkbox" ${path ? `data-bind="${esc(path)}"` : ''} ${on ? 'checked' : ''} ${S.readonly ? 'disabled' : ''} ${attrs || ''}><span></span></label>`; }
-  function drawer(title, body, foot, opts) { closeDrawer(); const d = document.createElement('div'); d.className = 'scrim mk'; d.id = 'drawer'; d.innerHTML = `<div class="drawer${opts && opts.wide ? ' wide' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="drawer-h"><h2>${esc(title)}</h2><button class="btn ghost sm" data-act="closeDrawer" aria-label="Close">${ico('x')}</button></div><div class="drawer-b">${body}</div>${foot === false ? '' : `<div class="drawer-f">${foot || '<button class="btn" data-act="closeDrawer">Close</button>'}</div>`}</div>`; d.addEventListener('mousedown', e => { if (e.target === d) closeDrawer(); }); document.body.appendChild(d); if (V.motion) V.motion.open(d); const f = d.querySelector('.drawer-b input:not([type=checkbox]),.drawer-b select,.drawer-b textarea'); if (f) f.focus(); return d; }
+  function drawer(title, body, foot, opts) { closeDrawer(); const d = document.createElement('div'); d.className = 'scrim mk'; d.id = 'drawer'; d.innerHTML = `<div class="drawer${opts && opts.wide ? ' wide' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="drawer-h"><h2>${esc(title)}</h2><button class="btn ghost icon" data-act="closeDrawer" aria-label="Close" title="Close">${ico('x')}</button></div><div class="drawer-b">${body}</div>${foot === false ? '' : `<div class="drawer-f">${foot || '<button class="btn" data-act="closeDrawer">Close</button>'}</div>`}</div>`; d.addEventListener('mousedown', e => { if (e.target === d) closeDrawer(); }); document.body.appendChild(d); if (V.motion) V.motion.open(d); const f = d.querySelector('.drawer-b input:not([type=checkbox]),.drawer-b select,.drawer-b textarea'); if (f) f.focus(); return d; }
   function closeDrawer() { const d = document.getElementById('drawer'); if (d) { if (V.motion) V.motion.close(d); else d.remove(); } }
   function confirmDialog(title, msg, okLabel, danger) {
     return new Promise(res => { const d = document.createElement('div'); d.className = 'scrim center mk'; d.innerHTML = `<div class="dialog" role="alertdialog" aria-modal="true"><div class="dialog-h">${esc(title)}</div><div class="dialog-b">${esc(msg)}</div><div class="dialog-f"><button class="btn" data-r="0">Cancel</button><button class="btn ${danger ? 'danger' : 'primary'}" data-r="1">${esc(okLabel || 'Confirm')}</button></div></div>`;
       d.addEventListener('click', e => { const b = e.target.closest('[data-r]'); if (b || e.target === d) { if (V.motion) V.motion.close(d); else d.remove(); res(!!(b && b.getAttribute('data-r') === '1')); } }); document.body.appendChild(d); if (V.motion) V.motion.open(d); d.querySelector('[data-r="1"]').focus(); });
   }
-  function download(name, data, mime) { const blob = data instanceof Blob ? data : new Blob([data], { type: mime || 'application/octet-stream' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); }
+  // files are never handed over empty; the object URL stays alive long enough for large files to finish saving
+  function download(name, data, mime) { const blob = data instanceof Blob ? data : new Blob([data], { type: mime || 'application/octet-stream' }); if (!blob.size) throw new Error('The file came out empty, so it was not downloaded. Please report this.'); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 60000); }
+  // images for Word and Excel files: those formats take PNG or JPEG only, so the real type is read from the bytes and
+  // anything else (WebP, GIF, SVG, BMP) is redrawn as PNG. Returns { u8, type: 'png' | 'jpg', ext: 'png' | 'jpeg', mime, w, h }.
+  async function docImage(blob) {
+    let u8 = new Uint8Array(await blob.arrayBuffer()); let type = u8[0] === 0x89 && u8[1] === 0x50 ? 'png' : u8[0] === 0xFF && u8[1] === 0xD8 ? 'jpg' : '';
+    let bm = null; try { bm = await createImageBitmap(blob); } catch (e) { }
+    if (!type) { if (!bm) throw new Error('Unsupported image'); const c = document.createElement('canvas'); c.width = bm.width; c.height = bm.height; c.getContext('2d').drawImage(bm, 0, 0); const png = await new Promise(r => c.toBlob(r, 'image/png')); u8 = new Uint8Array(await png.arrayBuffer()); type = 'png'; }
+    const w = bm ? bm.width : 800, h = bm ? bm.height : 450; if (bm && bm.close) bm.close();
+    return { u8, type, ext: type === 'png' ? 'png' : 'jpeg', mime: type === 'png' ? 'image/png' : 'image/jpeg', w, h };
+  }
+  function sheetName(wb, name) { const base = String(name || 'Sheet').replace(/[\\/?*[\]:]/g, ' ').replace(/^'+|'+$/g, '').trim().slice(0, 31) || 'Sheet'; const taken = new Set(wb.worksheets.map(w => w.name.toLowerCase())); let n = base, i = 2; while (taken.has(n.toLowerCase())) { const sfx = ' (' + i++ + ')'; n = base.slice(0, 31 - sfx.length) + sfx; } return n; }
   function pickFile(accept, multiple) { return new Promise(res => { const i = document.createElement('input'); i.type = 'file'; i.accept = accept || ''; i.multiple = !!multiple; i.onchange = () => res(Array.from(i.files)); i.click(); }); }
-  async function loadScript(src) { if (document.querySelector(`script[data-src="${src}"]`)) return; await new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.dataset.src = src; s.onload = res; s.onerror = () => rej(new Error('Could not load ' + src)); document.head.appendChild(s); }); }
+  // one shared promise per library: a second caller waits for the same load, and a failed load can be retried
+  const scriptLoads = {};
+  function loadScript(src) {
+    if (!scriptLoads[src]) scriptLoads[src] = new Promise((res, rej) => { const old = document.querySelector(`script[data-src="${src}"]`); if (old) old.remove(); const s = document.createElement('script'); s.src = src; s.dataset.src = src; s.onload = () => res(); s.onerror = () => { delete scriptLoads[src]; s.remove(); rej(new Error('Could not load ' + src.replace(/^vendor\//, '') + '. Check your connection and try again.')); }; document.head.appendChild(s); });
+    return scriptLoads[src];
+  }
   const fmtDate = d => { if (!d) return ''; const x = new Date(d); return isNaN(x) ? String(d) : x.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }); };
   const fmtSize = n => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
   function requireEdit() { if (S.readonly) { toast('You have read-only access to this project'); return false; } return true; }
-  Object.assign(V, { ico, toast, loading, loadingMsg, tag, statusTag, sel, inp, ta, sw, drawer, closeDrawer, confirmDialog, download, pickFile, loadScript, getPath, setPath, fmtDate, fmtSize, requireEdit, bindTarget });
+  Object.assign(V, { docImage, sheetName, ico, toast, loading, loadingMsg, tag, statusTag, sel, inp, ta, sw, drawer, closeDrawer, confirmDialog, download, pickFile, loadScript, getPath, setPath, fmtDate, fmtSize, requireEdit, bindTarget });
   V.confirmInline = () => true; // legacy callers: destructive actions now use confirmDialog where it matters
 
   // ---------- routing ----------
@@ -109,7 +125,7 @@
     const key = ALIAS[S.ui.view] && !V[S.ui.view] ? ALIAS[S.ui.view] : S.ui.view; const view = V[key] || (/^cx_/.test(key) && V.customPage) || V.overview;
     let body; try { body = view.html(); } catch (e) { console.error(e); body = `<div class="page-body"><div class="notice err">This view could not be displayed: ${esc(e.message)}</div></div>`; }
     const sbOld = document.querySelector('.sidebar'); const sbTop = sbOld ? sbOld.scrollTop : (S.ui.navScroll || 0); // the whole shell is rebuilt on every render: carry the sidebar's scroll position across so a click never moves it
-    app.innerHTML = navbarHtml(true) + `<div class="shell"><nav class="sidebar" aria-label="Workspace">${sidebarHtml()}</nav><main class="main" id="main">${crumbHtml()}<div class="page">${V.phaseStrip ? V.phaseStrip() : ''}${body}</div></main></div>`;
+    app.innerHTML = navbarHtml(true) + `<div class="shell"><nav class="sidebar" id="projNav" aria-label="Workspace">${sidebarHtml()}</nav><main class="main" id="main">${crumbHtml()}<div class="page">${V.phaseStrip ? V.phaseStrip() : ''}${body}</div></main></div>`;
     const m = document.querySelector('.main'); if (m) m.scrollTop = scroll; const sbNew = document.querySelector('.sidebar'); if (sbNew) sbNew.scrollTop = sbTop;
     if (view.mount) try { view.mount(); } catch (e) { console.error(e); }
     if (V.motion) V.motion.route(key + '|' + (S.project ? S.project.id : ''));
@@ -119,11 +135,21 @@
   V.render = render; F.on(render);
 
   function initials(n) { return String(n || '?').split(/\s+/).map(x => x[0]).join('').slice(0, 2).toUpperCase(); }
+  // workspace switch: the one place to move between Projects and the Admin console. It is navigation, so it is drawn as
+  // a two-part switch in the top bar (current part marked with aria-current), never as a page action button.
+  // People without admin access only see a link back to all projects while inside a project.
+  function wsSwitchHtml(inProject) {
+    const u = S.user || {}; if (u.kind !== 'consultant') return '';
+    const admin = !!(u.adminRole || V.office()); const inAdmin = mode === 'admin';
+    if (!admin) return inProject ? '<span class="divider"></span><a class="nav-back" href="#/projects" data-act="toProjects">All projects</a>' : '';
+    const cur = ' aria-current="page"';
+    return `<span class="divider"></span><nav class="ws-switch" aria-label="Switch workspace"><a href="#/projects" data-act="toProjects"${inAdmin ? '' : cur}>Projects</a><a href="#/admin" data-act="openAdmin"${inAdmin ? cur : ''}>Admin</a></nav>`;
+  }
   function navbarHtml(inProject) {
     const u = S.user || {};
-    return `<header class="navbar"><div class="left"><img class="nav-logo" src="brand/logo-white.png" alt="Facilio" height="22"><span class="divider"></span><span class="title">Delivery Studio</span>${inProject && S.user.kind === 'consultant' ? `<span class="divider"></span><a href="#" data-act="toProjects" class="small">All projects</a>` : ''}</div>
+    return `<header class="navbar"><div class="left">${inProject ? '<button class="btn ghost icon nav-menu" data-act="navMenu" aria-label="Open the project menu" aria-controls="projNav" aria-expanded="false"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>' : ''}<img class="nav-logo" src="brand/logo-white.png" alt="Facilio" height="22"><span class="divider"></span><span class="title">Delivery Studio</span>${wsSwitchHtml(inProject)}</div>
       <div class="center">${inProject && S.project ? esc(S.project.name) + ' <span class="muted" style="font-weight:400">· ' + esc(S.project.customer) + '</span>' : ''}</div>
-      <div class="right">${S.custPreview ? `<span class="tag blue">Customer preview · read-only</span><button class="btn sm primary" data-act="custPreviewExit">Exit preview</button>` : (inProject && V.canPreviewCustomer && V.canPreviewCustomer() ? `<button class="btn sm" data-act="custPreview" title="See this project as the customer sees it">Preview as customer</button>` : '')}${inProject && !S.readonly && u.kind === 'consultant' ? '<span id="saveState" class="save-state"></span>' : ''}${S.readonly && u.kind === 'consultant' ? tag('tbc', 'Read-only') : ''}${V.bellHtml ? V.bellHtml() : ''}${u.kind === 'consultant' && (u.adminRole || V.office()) && !inProject ? `<button class="btn sm" data-act="openAdmin">Switch to Admin</button>` : ''}${V.office() && !inProject ? `<button class="btn sm nav-out" data-act="logout">Log out</button>` : ''}${V.office() ? '' : `${u.guest ? tag('tbc', 'Guest') : ''}<button class="avatar" data-act="userMenu" aria-label="Account">${esc(initials(u.name))}</button>`}</div></header>`;
+      <div class="right">${S.custPreview ? `<span class="tag blue">Customer preview · read-only</span><button class="btn sm primary" data-act="custPreviewExit">Exit preview</button>` : (inProject && V.canPreviewCustomer && V.canPreviewCustomer() ? `<button class="btn sm" data-act="custPreview" title="See this project as the customer sees it">Preview as customer</button>` : '')}${inProject && !S.readonly && u.kind === 'consultant' ? '<span id="saveState" class="save-state"></span>' : ''}${S.readonly && u.kind === 'consultant' ? tag('tbc', 'Read-only') : ''}${V.bellHtml ? V.bellHtml() : ''}${V.office() && !inProject ? `<button class="btn sm nav-out" data-act="logout">Sign out</button>` : ''}${V.office() ? '' : `${u.guest ? tag('tbc', 'Guest') : ''}<button class="avatar" data-act="userMenu" aria-label="Account">${esc(initials(u.name))}</button>`}</div></header>`;
   }
   const FI = root.FWBIcons || { has: () => false, svg: () => '' }; const GI = { Project: 'g_project', Delivery: 'g_delivery', Configuration: 'g_config', Requirements: 'g_req', Administration: 'g_admin' };
   const SEC = g => /^Project/.test(g) ? 'Projects & delivery' : /^1\./.test(g) ? 'Discover and define' : /^5\./.test(g) ? 'Build and validate' : /^10\./.test(g) ? 'Launch and support' : /^Administration/.test(g) ? 'Integrations & admin' : '';
@@ -166,17 +192,36 @@
     const u = el.getAttribute('data-ui'); if (u) { setPath(S.ui, u, el.type === 'checkbox' ? el.checked : el.value); render(); return; }
     const c = el.getAttribute('data-change'); if (c && ACT[c]) { try { const r = ACT[c](el, e); if (r && r.catch) r.catch(err => { loading(false); toast(err.message, 5000, true); }); } catch (err) { toast(err.message, 5000, true); } }
   });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeDrawer(); const p = document.getElementById('userPop'); if (p) p.remove(); } });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeDrawer(); const p = document.getElementById('userPop'); if (p) p.remove(); if (document.body.classList.contains('nav-open')) navMenu(false); return; }
+    if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) { const t = e.target; if (t && t.hasAttribute && t.hasAttribute('data-act') && !NATIVE.test(t.tagName)) { e.preventDefault(); t.click(); } }
+  });
+  // every clickable element that is not a native control can be reached with Tab and announced as a button
+  // (table rows and cells keep their table role and are only made focusable)
+  const NATIVE = /^(BUTTON|A|INPUT|SELECT|TEXTAREA|LABEL|OPTION|SUMMARY)$/;
+  function enhanceActions(rootEl) {
+    (rootEl || document).querySelectorAll('[data-act]').forEach(el => {
+      if (NATIVE.test(el.tagName) && !(el.tagName === 'A' && !el.hasAttribute('href'))) return;
+      if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+      if (!el.hasAttribute('role') && !/^(TR|TD|TH)$/.test(el.tagName)) el.setAttribute('role', 'button');
+    });
+  }
+  let enhanceQueued = false;
+  new MutationObserver(() => { if (enhanceQueued) return; enhanceQueued = true; requestAnimationFrame(() => { enhanceQueued = false; enhanceActions(); }); }).observe(document.documentElement, { childList: true, subtree: true });
+  V.enhanceActions = enhanceActions;
   root.addEventListener('beforeunload', e => { if (F.hasUnsaved()) { F.flush(); e.preventDefault(); e.returnValue = ''; } });
 
-  ACT.nav = a => go(a.getAttribute('data-view'));
+  ACT.nav = a => { navMenu(false); go(a.getAttribute('data-view')); };
+  function navMenu(open) { const on = open === undefined ? !document.body.classList.contains('nav-open') : !!open; document.body.classList.toggle('nav-open', on); const b = document.querySelector('.nav-menu'); if (b) { b.setAttribute('aria-expanded', String(on)); b.setAttribute('aria-label', on ? 'Close the project menu' : 'Open the project menu'); } if (on) { const f = document.querySelector('.sidebar .sb-item.active, .sidebar .sb-item'); if (f) f.focus(); } }
+  ACT.navMenu = () => navMenu();
+  document.addEventListener('click', e => { if (document.body.classList.contains('nav-open') && !e.target.closest('.sidebar, .nav-menu')) navMenu(false); });
   ACT.closeDrawer = () => closeDrawer();
   ACT.navTo = a => { const n = JSON.parse(a.getAttribute('data-nav')); go(n.view, { module: n.module || S.ui.module, moduleTab: n.tab || S.ui.moduleTab, flowId: n.flowId || S.ui.flowId, selected: n.sel || null, processId: n.processId || S.ui.processId, reqId: n.reqId || S.ui.reqId, guideModule: n.guideModule || S.ui.guideModule }); if (n.sel) { S.ui.selected = n.sel; render(); } };
   ACT.openModule = a => go('module', { module: a.getAttribute('data-module'), moduleTab: a.getAttribute('data-tab') || 'templates' });
   ACT.userMenu = () => { const old = document.getElementById('userPop'); if (old) { old.remove(); return; } const d = document.createElement('div'); d.id = 'userPop'; d.className = 'popover'; const u = S.user;
     const role = u.adminRole && !V.office() ? (u.adminRole === 'super' ? 'Platform owner' : u.adminRole === 'admin' ? 'Admin' : 'Sub admin') : '';
     d.setAttribute('role', 'menu');
-    d.innerHTML = `<div class="um-head"><b>${esc(u.name)}</b><span>${esc(u.kind === 'customer' ? 'Customer stakeholder' : u.guest ? 'Guest workspace' : u.email)}</span>${role ? `<em>${esc(role)}</em>` : ''}</div>${u.guest ? '<button class="um-i" role="menuitem" data-act="upgradeGuest">Save as a full account</button>' : ''}${u.kind === 'consultant' ? '<button class="um-i" role="menuitem" data-act="toProjects">All projects</button>' : ''}${u.kind === 'consultant' && (u.adminRole || V.office()) ? '<button class="um-i" role="menuitem" data-act="openAdmin">Admin console</button>' : ''}<button class="um-i" role="menuitem" data-act="replayRoadmap">Product introduction</button><div class="um-sep"></div><button class="um-i" role="menuitem" data-act="logout">Log out</button>`; document.body.appendChild(d); const f = d.querySelector('.um-i'); if (f) f.focus(); };
+    d.innerHTML = `<div class="um-head"><b>${esc(u.name)}</b><span>${esc(u.kind === 'customer' ? 'Customer stakeholder' : u.guest ? 'Guest workspace' : u.email)}</span>${role ? `<em>${esc(role)}</em>` : ''}</div>${u.guest ? '<button class="um-i" role="menuitem" data-act="upgradeGuest">Save as a full account</button>' : ''}${u.kind === 'consultant' ? '<button class="um-i" role="menuitem" data-act="toProjects">All projects</button>' : ''}${u.kind === 'consultant' && (u.adminRole || V.office()) ? '<button class="um-i" role="menuitem" data-act="openAdmin">Admin console</button>' : ''}<button class="um-i" role="menuitem" data-act="replayRoadmap">Product introduction</button><div class="um-sep"></div><button class="um-i um-out" role="menuitem" data-act="logout">Sign out</button>`; document.body.appendChild(d); const f = d.querySelector('.um-i'); if (f) f.focus(); };
   ACT.toProjects = async () => { loading(true, 'Back to your projects…'); try { if (V.ticketsLeave) V.ticketsLeave(); if (F.hasUnsaved()) await F.flush(); S.project = null; S.baseline = null; mode = 'projects'; await loadProjects(); history.replaceState(null, '', '#/projects'); render(); } finally { loading(false); } if (S.user.kind === 'consultant' && !refCache) setTimeout(() => { if (!refCache) API.reference().then(r => { refCache = refCache || r; }).catch(() => { }); }, 700); };
   ACT.officeContinue = () => { location.reload(); };
   ACT.logout = async () => { if (S.user && S.user.guest && !V.office() && !(await confirmDialog('Sign out of guest workspace', 'You will need your guest key to come back. If you have lost it, save the workspace as a full account first (menu under your initials).', 'Sign out', true))) return; if (F.hasUnsaved()) await F.flush(); try { await API.post('/api/auth/logout'); } catch (e) { } if (root.FWBRun) { S.project = null; mode = 'auth'; authMsg = 'You have left the workspace. Close this tab, or open it again whenever you like.'; history.replaceState(null, '', '#/'); render(); return; } S.user = null; S.project = null; mode = 'auth'; history.replaceState(null, '', '#/'); render(); };

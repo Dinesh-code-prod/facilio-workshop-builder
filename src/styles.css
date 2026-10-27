@@ -75,7 +75,7 @@ h1 { font-size: 18px; } h2 { font-size: 16px; } h3 { font-size: 14px; } h4 { fon
 .spacer { flex: 1; }
 
 /* ---------- inputs (element-ui look) ---------- */
-input[type=text], input[type=email], input[type=password], input[type=search], input[type=number], input[type=date], input[type=time], select, textarea {
+input[type=text], input[type=email], input[type=password], input[type=search], input[type=number], input[type=date], input[type=time], :where(input:not([type]), input[type=url], input[type=tel], input[type=datetime-local], input[type=month], input[type=week]), select, textarea {
   height: 36px; border: 1px solid #d8dce5; border-radius: var(--r); padding: 0 11px; background: #fff; width: 100%; color: var(--fc-text); }
 textarea { height: auto; min-height: 70px; padding: 8px 11px; line-height: 1.45; resize: vertical; }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--fc-primary); }
@@ -145,14 +145,12 @@ table.tbl { width: 100%; border-collapse: separate; border-spacing: 0; }
 .drawer { width: min(40vw, 640px); min-width: min(480px, 100vw); height: 100%; background: #fff; display: flex; flex-direction: column; box-shadow: var(--shadow-2); animation: slidein .18s ease-out; }
 .drawer.wide { width: min(70vw, 1100px); }
 @keyframes slidein { from { transform: translateX(40px); opacity: .6; } to { transform: none; opacity: 1; } }
-.drawer-h { padding: 15px 30px; border-bottom: 1px solid #edeeef; display: flex; align-items: center; gap: 10px; } .drawer-h h2 { flex: 1; font-size: 16px; text-transform: uppercase; letter-spacing: .4px; }
+.drawer-h { padding: 15px 30px; border-bottom: 1px solid #edeeef; display: flex; align-items: center; gap: 10px; } .drawer-h h2 { flex: 1; font-size: 16px; }
 .drawer-b { padding: 15px 30px 30px; overflow: auto; flex: 1; }
-.drawer-f, .dialog-f { display: flex; } .drawer-f .btn, .dialog-f .btn { flex: 1; height: auto; padding: 18px 0; border-radius: 0; border: 0; font-size: 14px; font-weight: 500; }
-.drawer-f .btn:not(.primary):not(.danger), .dialog-f .btn:not(.primary):not(.danger) { background: #f4f4f4; color: var(--fc-text); } .drawer-f .btn:not(.primary):not(.danger):hover { background: #e6e6e6; }
-.drawer-f .btn.danger { background: #fff3f3; }
+.drawer-f, .dialog-f { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; }
 .scrim.center { justify-content: center; align-items: center; }
 .dialog { width: min(520px, 94vw); background: #fff; border-radius: 4px; box-shadow: var(--shadow-2); display: flex; flex-direction: column; max-height: 90vh; overflow: hidden; }
-.dialog-h { padding: 18px 24px 10px; font-weight: 600; font-size: 15px; text-transform: uppercase; letter-spacing: .4px; color: var(--fc-text-strong); } .dialog-b { padding: 8px 24px 22px; overflow: auto; }
+.dialog-h { padding: 18px 24px 10px; font-weight: 600; font-size: 16px; color: var(--fc-text-strong); } .dialog-b { padding: 8px 24px 22px; overflow: auto; }
 .toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: #303133; color: #fff; padding: 10px 18px; border-radius: 4px; z-index: 100; box-shadow: var(--shadow-2); font-size: 13px; max-width: 80vw; }
 .toast.err { background: #b2373a; }
 .loading { position: fixed; inset: 0; background: rgba(255, 255, 255, .78); z-index: 200; display: grid; place-items: center; }
@@ -1666,7 +1664,7 @@ body, .main { background: var(--ws-bg) !important; }
 
 /* forms: labelled groups sit on a tinted panel, fields stay white */
 .card-b label, .drawer-b label, .dialog label { color: #344054; font-weight: 500; }
-input[type=text], input[type=email], input[type=password], input[type=search], input[type=number], input[type=date], input[type=time], select, textarea { background: var(--surface); border: 1px solid #C5CFDD; border-radius: 8px; }
+input[type=text], input[type=email], input[type=password], input[type=search], input[type=number], input[type=date], input[type=time], :where(input:not([type]), input[type=url], input[type=tel], input[type=datetime-local], input[type=month], input[type=week]), select, textarea { background: var(--surface); border: 1px solid #C5CFDD; border-radius: 8px; }
 input:hover:not(:disabled), select:hover:not(:disabled), textarea:hover:not(:disabled) { border-color: #98A2B3; }
 input:focus, select:focus, textarea:focus { border-color: var(--brand) !important; box-shadow: var(--ws-ring) !important; }
 input:disabled, select:disabled, textarea:disabled { background: var(--ws-tint); color: #667085; }
@@ -1675,7 +1673,6 @@ input:disabled, select:disabled, textarea:disabled { background: var(--ws-tint);
 /* overlays */
 .drawer-h, .dialog-h { background: var(--ws-tint); border-bottom: 1px solid var(--ws-line) !important; }
 .drawer-b, .dialog-b { background: var(--surface); }
-.drawer-f .btn:not(.primary):not(.danger), .dialog-f .btn:not(.primary):not(.danger) { background: var(--ws-tint); }
 
 /* empty states */
 .empty { background: var(--ws-tint); border: 1px dashed #B8C6DB; border-radius: var(--radius-card); color: #475467; }
@@ -2275,8 +2272,8 @@ body { min-height: 100%; height: auto; }
 /* ===== roomier forms in the side drawer ===== */
 .drawer { width: min(54vw, 780px) !important; }
 .drawer.wide { width: min(72vw, 1100px) !important; }
-.drawer-h { padding: 22px 36px !important; } .drawer-h h2 { font-size: 18px; letter-spacing: .2px; }
-.drawer-b { padding: 28px 36px 44px !important; }
+
+.drawer-b { padding: 24px 28px 32px !important; }
 .drawer-b .fgrid { gap: 22px 22px !important; }
 .drawer-b label.f { display: block; margin: 0 0 8px; font-size: 13.5px; font-weight: 700; color: #1D1A5E; }
 .drawer-b input[type=text], .drawer-b input[type=email], .drawer-b input[type=password], .drawer-b input[type=date], .drawer-b input[type=number], .drawer-b input:not([type]), .drawer-b select { min-height: 46px; padding: 0 14px; font-size: 14.5px; border-radius: 10px; }
@@ -2284,9 +2281,7 @@ body { min-height: 100%; height: auto; }
 .drawer-b .row { gap: 12px; margin-bottom: 12px !important; }
 .drawer-b .pink-label { margin: 34px 0 14px; padding-top: 22px; border-top: 1px solid #E5ECF7; font-size: 13px; letter-spacing: .06em; }
 .drawer-b .pink-label:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
-.drawer-b .btn.sm { min-height: 40px; padding: 0 16px; }
 .drawer-b .small.muted, .drawer-b .xs.muted { line-height: 1.55; margin-top: 8px; }
-.drawer-f .btn { padding: 22px 0 !important; font-size: 15px !important; font-weight: 700 !important; }
 /* team guide roadmap */
 .tg-lead { margin: 0 0 22px; font-size: 15px; color: #3D4F6E; line-height: 1.55; max-width: 62ch; }
 .tg-road { list-style: none; margin: 0; padding: 0 0 0 26px; position: relative; display: grid; gap: 16px; }

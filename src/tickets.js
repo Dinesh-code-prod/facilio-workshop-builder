@@ -151,7 +151,6 @@
     const r = cur(); const can = !V.isCustomer() && (isGlobal() ? (T.projects || []).some(p => p.canEdit) : !S.readonly);
     const total = inScope().length;
     return `<div class="tk${T.pane === 'conv' && r ? ' show-conv' : ''}">
-      <div class="tk-top"><div><h1>Tickets</h1><p class="muted">${isGlobal() ? 'Every project you can open.' : esc(S.project.name) + ' · ' + esc(S.project.customer)}${T.rows ? ` ${total} in total.` : ''}</p></div><div class="tk-topr">${isGlobal() ? `<button class="btn sm" data-act="toProjects">Back to projects</button>` : ''}<button class="btn sm ghost" data-act="tkReload" title="Reload tickets">Refresh</button>${isMailAdmin() ? '<button class="btn sm" data-act="mbOpen">Support mailbox</button>' : ''}<button class="btn primary" data-act="openOutlook">Open Outlook</button></div></div>
       <div class="tk-views" id="tkViews" role="group" aria-label="Ticket views">${viewsHtml()}</div>
       <div class="tk-grid"><aside class="tk-list" aria-label="Ticket list"><div class="tk-sw">${ico('search')}<input type="search" id="tkQ" data-tk="q" value="${esc(T.q)}" placeholder="Search ID, subject, requester, client, email" aria-label="Search tickets"></div>${filtersHtml()}<ul class="tk-ul" id="tkList" role="listbox" aria-label="Tickets">${listHtml()}</ul></aside>${convHtml(r)}${detailsHtml(r)}</div></div>`;
   }
@@ -190,8 +189,13 @@
   ACT.mbRoute = a => V.busy(a, async () => { const id = a.getAttribute('data-id'); const sel = document.querySelector(`[data-mp="${id}"]`); try { const r = await API.post(`/api/mail/inbox/${id}/route`, { projectId: sel.value }); toast('Ticket TKT-' + r.ticket + ' created'); } catch (e) { toast(e.message, 6000, true); } await mbLoad(); load(true); });
   ACT.mbDismiss = a => V.busy(a, async () => { try { await API.post(`/api/mail/inbox/${a.getAttribute('data-id')}/dismiss`, {}); } catch (e) { toast(e.message, 6000, true); } await mbLoad(); });
 
-  V.tickets = { html() { start(); return `<div class="page-body tk-page">${pageHtml()}</div>`; }, mount() { const th = document.getElementById('tkThread'); if (th) th.scrollTop = th.scrollHeight; } };
-  V.ticketsGlobalHtml = () => { V.ticketsGlobal = true; start(); return `<div class="shell tk-shell"><main class="main" id="main"><div class="page"><div class="page-body tk-page">${pageHtml()}</div></div></main></div>`; };
+  // page header uses the shared header band and button size; the subtitle separates project and count with " · "
+  function headerHtml() {
+    const total = inScope().length;
+    return `<div class="page-header"><div class="t"><h1>Tickets</h1><p>${isGlobal() ? 'Every project you can open' : esc(S.project.name) + ' · ' + esc(S.project.customer)}${T.rows ? ` · ${total} in total` : ''}</p></div><div class="row">${isGlobal() ? `<button class="btn" data-act="toProjects">Back to projects</button>` : ''}<button class="btn" data-act="tkReload" title="Reload tickets">Refresh</button>${isMailAdmin() ? '<button class="btn" data-act="mbOpen">Support mailbox</button>' : ''}<button class="btn primary" data-act="openOutlook">Open Outlook</button></div></div>`;
+  }
+  V.tickets = { html() { start(); return `${headerHtml()}<div class="page-body tk-page">${pageHtml()}</div>`; }, mount() { const th = document.getElementById('tkThread'); if (th) th.scrollTop = th.scrollHeight; } };
+  V.ticketsGlobalHtml = () => { V.ticketsGlobal = true; start(); return `<div class="shell tk-shell"><main class="main" id="main"><div class="page">${headerHtml()}<div class="page-body tk-page">${pageHtml()}</div></div></main></div>`; };
   V.ticketsLeave = () => { V.ticketsGlobal = false; T.rows = null; T.scope = ''; T.sel = null; };
   V.ticketCounts = () => { if (!T.rows || T.scope !== scopeKey()) return null; const c = counts(); return { open: c.open + c.progress + c.waiting, mine: c.mine }; };
 

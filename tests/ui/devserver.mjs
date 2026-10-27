@@ -1,0 +1,37 @@
+// Local preview server for UI testing: serves dist/ and runs the real server function (work/server/api.mjs)
+// against an in-memory mock of the facilio.work platform (verified viewer, db, private files, llm).
+// The signed-in person is taken from the `dev_user` cookie (default: the platform owner).
+// Usage: node tests/ui/devserver.mjs [port]
+import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path';
+import handler from '../../work/server/api.mjs';
+const here = path.dirname(new URL(import.meta.url).pathname); const dist = process.env.DIST || path.join(here, '..', '..', 'dist');
+const port = Number(process.argv[2] || process.env.PORT || 4173);
+const store = new Map(), blobs = new Map(); let fileSeq = 0;
+const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.mp4': 'video/mp4', '.woff2': 'font/woff2', '.dat': 'application/octet-stream', '.xlsx': 'application/octet-stream', '.lottie': 'application/json' };
+const ctxFor = (email, origin) => ({
+  viewer: { email, role: 'viewer' }, app: { name: 'facilio-delivery-studio' },
+  secrets: { async get() { throw new Error('no secret'); } },
+  llm: async ({ messages }) => ({ model: 'mock', choices: [{ message: { content: '## Draft\n\nLocal preview draft based on [S1].\n\n- Confirmed: sample point\n- Assumption: sample point' } }] }),
+  db: {
+    async get(c, k) { const r = (store.get(c) || new Map()).get(k); return r ? { key: k, value: JSON.parse(r), updated_at: new Date().toISOString(), updated_by: email } : null; },
+    async put(c, k, v) { if (!store.has(c)) store.set(c, new Map()); store.get(c).set(k, JSON.stringify(v)); },
+    async delete(c, k) { (store.get(c) || new Map()).delete(k); },
+    async list(c, o = {}) { const m = store.get(c) || new Map(); const keys = [...m.keys()].sort(); const start = o.cursor ? keys.findIndex(k => k > o.cursor) : 0; if (start < 0) return { items: [] }; const page = keys.slice(start, start + (o.limit || 50)); return { items: page.map(k => ({ key: k, value: JSON.parse(m.get(k)) })), cursor: start + page.length < keys.length ? page[page.length - 1] : undefined }; }
+  },
+  files: { async uploadUrl() { const id = 'f' + (++fileSeq); return { url: origin + '/__files/' + id, file_id: id }; }, async url(id) { return { url: origin + '/__files/' + id }; } }
+});
+const body = req => new Promise(res => { const ch = []; req.on('data', c => ch.push(c)); req.on('end', () => res(Buffer.concat(ch))); });
+http.createServer(async (req, res) => {
+  const u = new URL(req.url, 'http://localhost'); const origin = 'http://' + req.headers.host;
+  try {
+    if (u.pathname.startsWith('/__files/')) { const id = u.pathname.slice(9); if (req.method === 'PUT') { blobs.set(id, await body(req)); res.writeHead(200); return res.end(); } const b = blobs.get(id); res.writeHead(b ? 200 : 404); return res.end(b || ''); }
+    if (u.pathname.startsWith('/api/fn/api')) {
+      const email = decodeURIComponent((/(?:^|;\s*)dev_user=([^;]+)/.exec(req.headers.cookie || '') || [])[1] || 'dinesh.r@facilio.com');
+      const raw = (await body(req)).toString('utf8');
+      const r = await handler({ method: req.method, path: u.pathname.replace('/api/fn/api', '') || '/', query: u.search.slice(1), headers: req.headers, text: async () => raw, json: async () => (raw ? JSON.parse(raw) : undefined) }, ctxFor(email, origin));
+      res.writeHead(r.status, { 'content-type': 'application/json' }); return res.end(await r.text());
+    }
+    let p = path.join(dist, decodeURIComponent(u.pathname)); if (u.pathname === '/' || !fs.existsSync(p) || fs.statSync(p).isDirectory()) p = path.join(dist, 'index.html');
+    res.writeHead(200, { 'content-type': MIME[path.extname(p)] || 'application/octet-stream' }); fs.createReadStream(p).pipe(res);
+  } catch (e) { res.writeHead(500, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: e.message })); }
+}).listen(port, () => console.log('preview on http://localhost:' + port));

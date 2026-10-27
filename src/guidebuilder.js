@@ -153,7 +153,7 @@
     return out;
   }
   ACT.ugFromCfg = async () => { const s = cfgSections(); if (!s.length) { toast('Nothing is described in Configuration Inputs yet', 5000, true); return; } const have = new Set(W.sections.map(x => x.title.toLowerCase())); const add = s.filter(x => !have.has(x.title.toLowerCase())); edit(() => { W.sections = W.sections.concat(add); }); V.render(); toast(add.length + ' section(s) added' + (s.length - add.length ? ', ' + (s.length - add.length) + ' already there' : '')); };
-  ACT.ugFromAi = () => { const ai = I().list('ai').filter(x => x.task === 'guide'); if (!ai.length) { toast('No AI guide draft yet. Use "Generate guide draft" first.', 5000, true); return; } drawer('Add sections from an AI draft', `<p class="small">Sections are made from the draft's headings. AI labels (Missing, Assumption) stay in the text so the quality checks can flag them.</p><select id="ug_ai2">${ai.map(x => `<option value="${esc(x.id)}">${esc(when(x._created))} · ${esc(x.status || 'draft')}</option>`).join('')}</select>`, `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="ugAiGo">Add sections</button>`); };
+  ACT.ugFromAi = () => { const ai = I().list('ai').filter(x => x.task === 'guide'); if (!ai.length) { toast('No AI guide draft yet. Use "User guide" under Deliverables & AI first.', 5000, true); return; } drawer('Add sections from an AI draft', `<p class="small">Sections are made from the draft's headings. AI labels (Missing, Assumption) stay in the text so the quality checks can flag them.</p><select id="ug_ai2">${ai.map(x => `<option value="${esc(x.id)}">${esc(when(x._created))} · ${esc(x.status || 'draft')}</option>`).join('')}</select>`, `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="ugAiGo">Add sections</button>`); };
   ACT.ugAiGo = () => { const d = I().get('ai', document.getElementById('ug_ai2').value); closeDrawer(); if (!d) return; const s = sectionsFromMd(d.content); edit(() => { W.sections = W.sections.concat(s); }); V.render(); toast(s.length + ' section(s) added'); };
   ACT.ugFromVid = () => {
     const vids = I().list('vid').map(v => ({ v, drafts: I().list('ai').filter(a => a.task === 'vidguide' && a.vid === v.id) })).filter(x => x.drafts.length); if (!vids.length) { toast('No walkthrough has a draft yet. Use Video to Guide first.', 5000, true); return; }
@@ -178,14 +178,17 @@
 
   // ---------- export ----------
   async function media(fileId) {
-    const blob = await V.fileBlob(fileId); const buf = new Uint8Array(await blob.arrayBuffer()); const type = buf[0] === 0x89 ? 'png' : 'jpg'; let w = 800, h = 450; try { const bm = await createImageBitmap(blob); w = bm.width; h = bm.height; bm.close && bm.close(); } catch (e) { }
-    const dataUrl = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(new Blob([buf], { type: type === 'png' ? 'image/png' : 'image/jpeg' })); }); return { u8: buf, type, w, h, dataUrl };
+    const im = await V.docImage(await V.fileBlob(fileId)); const buf = im.u8, type = im.type, w = im.w, h = im.h;
+    const dataUrl = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(new Blob([buf], { type: im.mime })); }); return { u8: buf, type, w, h, dataUrl };
   }
   const fit = (w, h, mw, mh) => { const s = Math.min(mw / w, mh / h, 1); return { width: Math.max(1, Math.round(w * s)), height: Math.max(1, Math.round(h * s)) }; };
   const hex = c => String(c || '#1570EF').replace('#', '').toUpperCase().padEnd(6, '0').slice(0, 6);
   const dateStr = () => new Date().toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
+  // a guide with no written steps or screenshots would export as a cover page only, so say so instead of producing it
+  const hasContent = () => (W.sections || []).some(sec => (sec.blocks || []).some(b => b.t === 'img' ? !!b.fileId : String(b.text || '').trim()));
+  const emptyGuide = () => { if (hasContent()) return false; toast('This guide has no steps or screenshots yet, so there is nothing to export. Add content on the Content tab first.', 6000, true); return true; };
   ACT.ugDocx = a => V.busy(a, async () => {
-    await flush(); V.loading(true, 'Writing the Word document…');
+    if (emptyGuide()) return; await flush(); V.loading(true, 'Writing the Word document…');
     try {
       if (!root.docx) await V.loadScript('vendor/docx.iife.js'); const X = root.docx; const { Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, AlignmentType, ImageRun, PageBreak, TableOfContents, Footer, PageNumber, LevelFormat } = X;
       const acc = hex(W.brand.accent); const font = 'Calibri'; const run = (t, o) => new TextRun(Object.assign({ text: String(t == null ? '' : t), font }, o || {})); const rr = t => runs(t).map(x => run(x.text, x.bold ? { bold: true } : {}));
@@ -220,7 +223,7 @@
     } catch (e) { console.error(e); toast('Export failed: ' + (e.message || e), 7000, true); } finally { V.loading(false); }
   });
   ACT.ugPdf = a => V.busy(a, async () => {
-    await flush(); V.loading(true, 'Writing the PDF…');
+    if (emptyGuide()) return; await flush(); V.loading(true, 'Writing the PDF…');
     try {
       await V.loadScript('vendor/pdfmake.min.js'); await V.loadScript('vendor/vfs_fonts.js'); const pm = root.pdfMake; const acc = '#' + hex(W.brand.accent); const content = [];
       if (W.brand.cover !== false) {

@@ -76,7 +76,7 @@
   };
   ACT.pkgSev = el => { T.sev = el.value; V.render(); }; ACT.pkgApp = el => { T.app = el.value; V.render(); };
   ACT.pkgDigest = a => V.busy(a, async () => { await V.pkgDigestSave(); await F.flush(); toast('AI context updated'); V.render(); });
-  ACT.pkgCsv = () => { const r = analyse(S.baseline); V.download('package-findings.csv', csv([['Level', 'Area', 'Item', 'Finding']].concat(r.findings.map(f => [f.sev, f.area, f.item, f.detail]))), 'text/csv'); };
+  ACT.pkgCsv = () => { const r = analyse(S.baseline); V.download('package-findings.csv', '\ufeff' + csv([['Level', 'Area', 'Item', 'Finding']].concat(r.findings.map(f => [f.sev, f.area, f.item, f.detail]))), 'text/csv'); };
   ACT.pkgMod = a => {
     const r = analyse(S.baseline); const x = r.custom.find(c => c.name === a.getAttribute('data-n')); if (!x) return;
     drawer(x.label, `<p class="small">${esc(x.description || 'No description recorded.')}</p>

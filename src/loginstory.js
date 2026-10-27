@@ -24,7 +24,7 @@
   const T0 = {};
   const BEATS = {
     team: [[0, 'Bring in what you already have', 'Workshop recordings, the MSA, org packages and site walkthroughs flow into one project.'],
-      [3.6, 'AI helps read the inputs', 'It suggests requirements and open questions from what you upload, so less gets missed.'],
+      [3.6, 'Help reading the inputs', 'Transcripts are scanned for likely requirements and open questions, and AI drafts the documents for you to review.'],
       [6.6, 'Your team shapes every deliverable', 'AI gives a first draft. Consultants review, edit and approve requirements, the BRD and UAT scripts.'],
       [10.4, 'All 12 stages, one view', 'Every project moves around the same tracker, from kick-off to closure.']],
     cust: [[0, 'Projects usually start scattered', 'Email threads, spreadsheet versions and meeting notes pile up in different places.'],

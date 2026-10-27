@@ -238,7 +238,7 @@
     } finally { loading(false); }
   };
   async function buildPlanWb() {
-      const ExcelJS = await V.loadExcelJS(); const buf = await (await fetch('templates/workshop_plan_template.xlsx')).arrayBuffer(); const wb = new ExcelJS.Workbook(); await wb.xlsx.load(buf);
+      const ExcelJS = await V.loadExcelJS(); const tr = await fetch('templates/workshop_plan_template.xlsx'); if (!tr.ok) throw new Error('The workshop plan template could not be loaded (' + tr.status + '). Reload and try again.'); const buf = await tr.arrayBuffer(); const wb = new ExcelJS.Workbook(); await wb.xlsx.load(buf);
       const ws = wb.getWorksheet('Tentative Workshop Sessions') || wb.worksheets[0]; const cust = S.project.customer || 'Customer';
       ws.getCell('D2').value = 'Required ' + cust + ' Stakeholders';
       const tpl = ws.getRow(3); const styles = []; for (let c = 1; c <= 8; c++) styles[c] = JSON.parse(JSON.stringify(tpl.getCell(c).style || {})); const h = tpl.height;
