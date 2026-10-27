@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import handler from '../work/server/api.mjs';
 const store = new Map(), files = new Map(); let maxVal = 0, calls = 0;
 const KEY = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
-const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' }, teams: { async send(m) { (globalThis.__SENT = globalThis.__SENT || []).push(m); return { delivered: 1, failed: 0 }; } }, secrets: { async get(k) { if (k === 'anthropic_api_key' && globalThis.__KEY) return globalThis.__KEY; if (k === 'teams_notify' && globalThis.__TEAMS) return globalThis.__TEAMS; throw new Error('no secret'); } }, llm: async ({ messages }) => ({ model: 'mock', choices: [{ message: { content: '## Draft\nBased on [S1]. ' + messages[1].content.slice(0, 20) } }] }),
+const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' }, teams: { async send(m) { (globalThis.__SENT = globalThis.__SENT || []).push(m); return { delivered: 1, failed: 0 }; } }, fetch: async (cred, url, o) => { if (!globalThis.__GRAPH) { const e = new Error('credential not granted'); throw e; } return globalThis.__GRAPH(cred, url, o); }, secrets: { async get(k) { if (k === 'support_mailbox') return 'support@facilio.com';  if (k === 'anthropic_api_key' && globalThis.__KEY) return globalThis.__KEY; if (k === 'teams_notify' && globalThis.__TEAMS) return globalThis.__TEAMS; throw new Error('no secret'); } }, llm: async ({ messages }) => ({ model: 'mock', choices: [{ message: { content: '## Draft\nBased on [S1]. ' + messages[1].content.slice(0, 20) } }] }),
   db: {
     async get(c, k) { calls++; const r = (store.get(c) || new Map()).get(k); return r ? { key: k, value: JSON.parse(r), updated_at: '', updated_by: '' } : null; },
     async put(c, k, v) { calls++; assert.ok(KEY.test(k), 'bad key ' + k); assert.ok(/^[A-Za-z0-9._-]{1,64}$/.test(c), 'bad collection ' + c); const t = JSON.stringify(v); maxVal = Math.max(maxVal, t.length); if (t.length > 128 * 1024) { const e = new Error('too large'); e.status = 413; throw e; } if (!store.has(c)) store.set(c, new Map()); store.get(c).set(k, t); },
@@ -196,5 +196,30 @@ await t('concurrency: simultaneous saves and submits do not corrupt or duplicate
 });
 await t('unknown routes and customer sign-in are refused', async () => {
   let r = await call(dinesh, 'GET', '/api/nothing'); assert.equal(r.status, 404); r = await call(dinesh, 'POST', '/api/auth/login', {}); assert.equal(r.status, 403);
+});
+await t('client feedback and Delivery Studio questions become tickets once, linked to their source', async () => {
+  let r = await call(dinesh, 'POST', `/api/projects/${pid}/feedback`, { module: 'Inventory', topic: 'Reorder level unclear', kind: 'question', priority: 'high', body: 'How is the reorder level calculated?' }); assert.equal(r.status, 201);
+  r = await call(dinesh, 'PUT', `/api/projects/${pid}/docs/transcripts`, { data: { candidates: [{ id: 'cand_1', status: 'clarify', title: 'Purchase approval limit', category: 'question', text: 'Who approves purchase requests above 5k?', speaker: 'Client PM' }, { id: 'cand_2', status: 'pending', text: 'ignore me' }] }, baseVersion: 0 }); assert.equal(r.status, 200);
+  r = await call(dinesh, 'POST', `/api/projects/${pid}/tickets/sync-client`, {}); assert.equal(r.data.created, 2);
+  r = await call(dinesh, 'POST', `/api/projects/${pid}/tickets/sync-client`, {}); assert.equal(r.data.created, 0, 'second run adds nothing');
+  r = await call(dinesh, 'GET', `/api/projects/${pid}/items?kinds=tkt`); const fb = r.data.items.find(i => i.data.extRef && i.data.extRef.startsWith('fb:')), tq = r.data.items.find(i => i.data.extRef === 'tr:cand_1');
+  assert.ok(fb && fb.data.priority === 'High' && fb.data.category === 'Question' && fb.data.link.kind === 'feedback'); assert.ok(tq && tq.data.source === 'delivery studio');
+  r = await call(out, 'POST', `/api/projects/${pid}/tickets/sync-client`, {}); assert.ok(r.status >= 400, 'no access, no sync');
+});
+await t('support mailbox: sync routes mail by ticket tag and sender rules, parks the rest, never duplicates, and reports setup problems', async () => {
+  let r = await call(out, 'GET', '/api/mail/status'); assert.equal(r.status, 403, 'outsiders cannot see mailbox admin');
+  r = await call(dinesh, 'POST', '/api/mail/sync'); assert.equal(r.status, 424, 'no credential yet is a clear setup message'); assert.match(r.data.error, /graph_mail/);
+  r = await call(dinesh, 'PUT', '/api/mail/rules', { rules: [{ match: 'Acme.com', projectId: pid }] }); assert.equal(r.status, 200); assert.equal(r.data.rules[0].match, 'acme.com');
+  r = await call(dinesh, 'GET', `/api/projects/${pid}/items?kinds=tkt`); const first = r.data.items.find(i => i.data.n === 1);
+  const msg = (id, from, subject, conv) => ({ id, conversationId: conv || id, subject, from: { emailAddress: { name: 'X', address: from } }, body: { contentType: 'text', content: 'Hello ' + id }, receivedDateTime: '2026-10-27T10:00:00Z', hasAttachments: false, isDraft: false });
+  let seenUrl = ''; globalThis.__GRAPH = async (cred, url) => { seenUrl = url; return { ok: true, status: 200, json: async () => ({ value: [msg('AAA1', 'pat@acme.com', 'Need a training session'), msg('AAA2', 'who@other.org', 'Pricing?'), msg('AAA3', 'pat@acme.com', 'Re: ticket [TKT-1]'), msg('AAA4', 'support@facilio.com', 'our own')] }) }; };
+  r = await call(dinesh, 'POST', '/api/mail/sync'); assert.equal(r.status, 200); assert.match(seenUrl, /users\/support%40facilio\.com\/mailFolders\/inbox/);
+  assert.deepEqual([r.data.result.tickets, r.data.result.appended, r.data.result.unrouted], [1, 1, 1]);
+  r = await call(dinesh, 'POST', '/api/mail/sync'); assert.deepEqual([r.data.result.tickets, r.data.result.appended, r.data.result.unrouted], [0, 0, 0], 'second sync adds nothing');
+  r = await call(dinesh, 'GET', '/api/mail/inbox'); assert.equal(r.data.items.length, 1); const mid = r.data.items[0].id;
+  r = await call(dinesh, 'POST', `/api/mail/inbox/${mid}/route`, { projectId: pid }); assert.equal(r.status, 200); r = await call(dinesh, 'GET', '/api/mail/inbox'); assert.equal(r.data.items.length, 0);
+  globalThis.__GRAPH = async () => ({ ok: false, status: 429, json: async () => ({}) }); r = await call(dinesh, 'POST', '/api/mail/sync'); assert.equal(r.status, 429);
+  globalThis.__GRAPH = async () => ({ ok: false, status: 403, json: async () => ({}) }); r = await call(dinesh, 'POST', '/api/mail/sync'); assert.equal(r.status, 502); r = await call(dinesh, 'GET', '/api/mail/status'); assert.equal(r.data.last.ok, false); assert.match(r.data.last.error, /Mail\.Read/);
+  delete globalThis.__GRAPH;
 });
 console.log(`\n${n} checks passed, ${calls} storage calls, largest record ${(maxVal / 1024).toFixed(1)} KB`);

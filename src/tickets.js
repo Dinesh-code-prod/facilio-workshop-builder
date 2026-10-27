@@ -41,6 +41,7 @@
       if (sk === 'all') { const r = await API.get('/api/tickets'); T.projects = r.projects || []; const pm = new Map(T.projects.map(p => [p.id, p])); T.rows = (r.tickets || []).map(it => mk(it, pm.get(it.projectId) || { id: it.projectId, name: it.project, customer: it.customer, canEdit: it.canEdit })); }
       else {
         const p = { id: S.project.id, name: S.project.name, customer: S.project.customer, canEdit: !S.readonly, members: (S.members || []).map(m => ({ id: m.id, email: m.email, name: m.name })) }; T.projects = [p];
+        if (p.canEdit && !V.isCustomer()) { try { await API.post(`/api/projects/${p.id}/tickets/sync-client`, {}); } catch (e) { } } // pull in client feedback and Delivery Studio questions
         const r = await API.get(`/api/projects/${p.id}/items?kinds=tkt`); T.rows = (r.items || []).map(it => mk(it, p));
       }
       T.scope = sk; sortRows();
@@ -81,7 +82,7 @@
     if (T.err && !(T.rows && T.rows.length)) return `<li class="tk-empty err">${esc(T.err)}<br><button class="btn sm" data-act="tkReload">Try again</button></li>`;
     const rows = visible(); if (rows.length) return rows.map(rowHtml).join('');
     const any = inScope().length; const filtered = T.q || T.f.prio || T.f.asg || T.f.proj || T.f.age || T.view !== 'all';
-    return `<li class="tk-empty">${any && filtered ? 'No tickets match these filters.<br><button class="btn sm" data-act="tkClear">Clear filters</button>' : 'No tickets yet.' + (V.isCustomer() || S.readonly ? '' : '<br><button class="btn sm primary" data-act="tkNew">Create the first ticket</button>')}</li>`;
+    return `<li class="tk-empty">${any && filtered ? 'No tickets match these filters.<br><button class="btn sm" data-act="tkClear">Clear filters</button>' : 'No tickets yet.<br><span class="small">Tickets arrive from client emails and from client feedback and questions in Delivery Studio. They are not created here.</span>'}</li>`;
   }
   function asgOptions() { const m = new Map(); inScope().forEach(r => { const a = r.d.assignee; if (a && a.email) m.set(a.email, a.name || a.email); }); return [...m].sort((a, b) => a[1].localeCompare(b[1])); }
   function filtersHtml() {
@@ -150,11 +151,45 @@
     const r = cur(); const can = !V.isCustomer() && (isGlobal() ? (T.projects || []).some(p => p.canEdit) : !S.readonly);
     const total = inScope().length;
     return `<div class="tk${T.pane === 'conv' && r ? ' show-conv' : ''}">
-      <div class="tk-top"><div><h1>Tickets</h1><p class="muted">${isGlobal() ? 'Every project you can open.' : esc(S.project.name) + ' · ' + esc(S.project.customer)}${T.rows ? ` ${total} in total.` : ''}</p></div><div class="tk-topr">${isGlobal() ? `<button class="btn sm" data-act="toProjects">Back to projects</button>` : ''}<button class="btn sm ghost" data-act="tkReload" title="Reload tickets">Refresh</button>${can ? `<button class="btn primary" data-act="tkNew">${ico('plus')}Create ticket</button>` : ''}</div></div>
+      <div class="tk-top"><div><h1>Tickets</h1><p class="muted">${isGlobal() ? 'Every project you can open.' : esc(S.project.name) + ' · ' + esc(S.project.customer)}${T.rows ? ` ${total} in total.` : ''}</p></div><div class="tk-topr">${isGlobal() ? `<button class="btn sm" data-act="toProjects">Back to projects</button>` : ''}<button class="btn sm ghost" data-act="tkReload" title="Reload tickets">Refresh</button>${isMailAdmin() ? '<button class="btn sm" data-act="mbOpen">Support mailbox</button>' : ''}<button class="btn primary" data-act="openOutlook">Open Outlook</button></div></div>
       <div class="tk-views" id="tkViews" role="group" aria-label="Ticket views">${viewsHtml()}</div>
       <div class="tk-grid"><aside class="tk-list" aria-label="Ticket list"><div class="tk-sw">${ico('search')}<input type="search" id="tkQ" data-tk="q" value="${esc(T.q)}" placeholder="Search ID, subject, requester, client, email" aria-label="Search tickets"></div>${filtersHtml()}<ul class="tk-ul" id="tkList" role="listbox" aria-label="Tickets">${listHtml()}</ul></aside>${convHtml(r)}${detailsHtml(r)}</div></div>`;
   }
   function start() { if (!T.started) { T.started = true; } if (!T.rows || T.scope !== scopeKey()) { if (T.scope !== scopeKey()) { T.rows = null; T.sel = null; T.view = 'all'; T.q = ''; T.f = { prio: '', asg: '', proj: '', age: '' }; T.pane = 'list'; T.draft = ''; T.files = []; } load(); } }
+
+  /* Support mailbox: reads the shared Microsoft 365 mailbox through the server (nothing in the browser holds a mail credential). Needs the app owner to set up the graph_mail credential, so it says so plainly until a sync has worked. */
+  const isMailAdmin = () => !!(S.user && S.user.adminRole && S.user.adminRole !== 'sub');
+  const MB = { st: null, inbox: [], err: '', busy: false };
+  const when = iso => iso ? new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+  async function mbLoad() {
+    try { const [a, b, pr] = await Promise.all([API.get('/api/mail/status'), API.get('/api/mail/inbox'), API.get('/api/tickets')]); MB.st = a; MB.inbox = b.items || []; MB.projects = pr.projects || []; MB.err = ''; } catch (e) { MB.err = e.message || 'Could not load the mailbox'; }
+    mbPaint();
+  }
+  function mbHtml() {
+    if (MB.err) return `<p class="err">${esc(MB.err)}</p>`;
+    if (!MB.st) return '<p class="muted"><span class="tk-spin"></span>Loading…</p>';
+    const a = MB.st, l = a.last; const projOpts = (MB.projects || []).map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
+    const state = !l ? ['Needs configuration', 'No sync has run yet. Nothing is read from Outlook until the steps below are done.'] : l.ok ? ['Last sync worked', `${when(l.at)} by ${l.by}: ${l.stats.tickets} new, ${l.stats.appended} added to a ticket, ${l.stats.unrouted} waiting in the inbox.`] : ['Last sync failed', `${when(l.at)}: ${l.error}`];
+    return `<div class="tk-mb"><div class="tk-mbs ${l && l.ok ? 'ok' : l ? 'bad' : 'warn'}"><b>${esc(state[0])}</b><span>${esc(state[1])}</span></div>
+      <p class="small">Mailbox: <b>${esc(a.mailbox)}</b> · credential <code>${esc(a.credential)}</code></p>
+      <details${l && l.ok ? '' : ' open'}><summary>How to connect the mailbox</summary><ol class="small"><li>Register an app in Microsoft Entra with the Microsoft Graph permission <b>Mail.Read</b> (and <b>Mail.Read.Shared</b> for a shared mailbox) and grant admin consent.</li><li>Add it as an OAuth2 credential called <code>${esc(a.credential)}</code> at secrets.facilio.work and grant it to this app.</li><li>Optional: add a plain secret <code>support_mailbox</code> with the shared mailbox address.</li><li>Press Sync now. Replies containing <b>[TKT-number]</b> in the subject join that ticket; other mail follows the rules below.</li></ol><p class="small muted">Sync runs when you press the button. facilio.work has no scheduler yet, so it does not run on its own.</p></details>
+      <div class="row" style="gap:8px;margin:10px 0"><button class="btn primary" data-act="mbSync"${MB.busy ? ' disabled' : ''}>${MB.busy ? 'Syncing…' : 'Sync now'}</button></div>
+      <h4>Routing rules</h4><p class="small muted">Mail from this address or domain goes to the project. Anything else waits in the inbox below.</p>
+      <div id="mbRules">${(a.rules || []).map((r, i) => `<div class="row" style="gap:6px;margin-bottom:6px"><input type="text" class="mb-m" value="${esc(r.match)}" aria-label="Address or domain"><select class="mb-p" aria-label="Project">${(MB.projects || []).map(p => `<option value="${esc(p.id)}"${p.id === r.projectId ? ' selected' : ''}>${esc(p.name)}</option>`).join('')}</select><button class="btn sm ghost" data-act="mbRuleDel" data-i="${i}" aria-label="Remove rule">${ico('trash')}</button></div>`).join('') || '<p class="small muted">No rules yet.</p>'}</div>
+      <div class="row" style="gap:6px;margin:8px 0"><input type="text" id="mbNewM" placeholder="acme.com or name@acme.com" aria-label="New rule address or domain"><select id="mbNewP" aria-label="Project for the new rule">${projOpts}</select><button class="btn sm" data-act="mbRuleAdd">Add rule</button></div><button class="btn sm" data-act="mbRulesSave">Save rules</button>
+      <h4 style="margin-top:18px">Inbox: mail not matched to a project (${MB.inbox.length})</h4>
+      ${MB.inbox.length ? MB.inbox.map(m => `<div class="tk-mbm"><div><b>${esc(m.subject)}</b><div class="small muted">${esc(m.from.name)} &lt;${esc(m.from.email)}&gt; · ${esc(when(m.receivedAt))}</div><div class="small">${esc(m.preview)}</div></div><div class="row" style="gap:6px"><select data-mp="${esc(m.id)}" aria-label="Project for this mail">${projOpts}</select><button class="btn sm primary" data-act="mbRoute" data-id="${esc(m.id)}">Create ticket</button><button class="btn sm ghost" data-act="mbDismiss" data-id="${esc(m.id)}">Dismiss</button></div></div>`).join('') : '<p class="small muted">Nothing waiting.</p>'}</div>`;
+  }
+  function mbPaint() { const b = document.getElementById('mbBody'); if (b) b.innerHTML = mbHtml(); }
+  ACT.mbOpen = () => { drawer('Support mailbox', '<div id="mbBody"></div>', '<button class="btn" data-act="closeDrawer">Close</button>'); mbPaint(); mbLoad(); };
+  ACT.mbSync = async () => { MB.busy = true; mbPaint(); try { const r = await API.post('/api/mail/sync', {}); toast(`Sync finished: ${r.result.tickets} new, ${r.result.appended} added, ${r.result.unrouted} in the inbox`); } catch (e) { toast(e.message || 'Sync failed', 7000, true); } MB.busy = false; await mbLoad(); load(true); };
+  const rulesNow = () => [...document.querySelectorAll('#mbRules .row')].map(r => ({ match: r.querySelector('.mb-m').value.trim(), projectId: r.querySelector('.mb-p').value })).filter(x => x.match);
+  ACT.mbRuleAdd = () => { const m = (document.getElementById('mbNewM').value || '').trim(); if (!m) { toast('Enter an address or domain', 4000, true); return; } MB.st.rules = rulesNow().concat([{ match: m.toLowerCase(), projectId: document.getElementById('mbNewP').value }]); mbPaint(); };
+  ACT.mbRuleDel = a => { const r = rulesNow(); r.splice(Number(a.getAttribute('data-i')), 1); MB.st.rules = r; mbPaint(); };
+  ACT.mbRulesSave = a => V.busy(a, async () => { try { const r = await API.put('/api/mail/rules', { rules: rulesNow() }); MB.st.rules = r.rules; toast('Rules saved'); mbPaint(); } catch (e) { toast(e.message, 6000, true); } });
+  ACT.mbRoute = a => V.busy(a, async () => { const id = a.getAttribute('data-id'); const sel = document.querySelector(`[data-mp="${id}"]`); try { const r = await API.post(`/api/mail/inbox/${id}/route`, { projectId: sel.value }); toast('Ticket TKT-' + r.ticket + ' created'); } catch (e) { toast(e.message, 6000, true); } await mbLoad(); load(true); });
+  ACT.mbDismiss = a => V.busy(a, async () => { try { await API.post(`/api/mail/inbox/${a.getAttribute('data-id')}/dismiss`, {}); } catch (e) { toast(e.message, 6000, true); } await mbLoad(); });
+
   V.tickets = { html() { start(); return `<div class="page-body tk-page">${pageHtml()}</div>`; }, mount() { const th = document.getElementById('tkThread'); if (th) th.scrollTop = th.scrollHeight; } };
   V.ticketsGlobalHtml = () => { V.ticketsGlobal = true; start(); return `<div class="shell tk-shell"><main class="main" id="main"><div class="page"><div class="page-body tk-page">${pageHtml()}</div></div></main></div>`; };
   V.ticketsLeave = () => { V.ticketsGlobal = false; T.rows = null; T.scope = ''; T.sel = null; };

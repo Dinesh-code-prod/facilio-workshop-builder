@@ -428,18 +428,89 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
     await audit(P.id, s.id, 'tkt-' + type, P.item); return ok({ item: it }, 201);
   });
   // e-mail intake: one normalised message in (from Power Automate, Graph, a mail rule or a person pasting a mail), one ticket or one more message out. Duplicates are ignored.
-  route('POST', '/api/projects/:id/tickets/ingest', async (b, P) => {
-    const s = await me(); const { project } = await projectAccess(s, P.id, 'edit'); b = b || {};
+  async function ingestMail(s, project, b) {
+    b = b || {}; const P = { id: project.id };
     const messageId = str(b.messageId, 300, 'messageId', true), conv = str(b.conversationId || b.messageId, 300, 'conversationId'); const from = b.from || {}; const email = str(from.email, 200, 'Sender e-mail', true).toLowerCase();
-    const all = await itemsOf(P.id, 'tkt'); const seen = all.find(t => (t.data.thread || []).some(m => m.ref === messageId)); if (seen) return ok({ duplicate: true, id: seen.id, ticket: seen.data.n });
-    const ex = all.find(t => t.data.extConv && t.data.extConv === conv && t.data.status !== 'Closed');
+    const all = await itemsOf(P.id, 'tkt'); const seen = all.find(t => (t.data.thread || []).some(m => m.ref === messageId)); if (seen) return { _st: 200, duplicate: true, id: seen.id, ticket: seen.data.n };
+    const ex = (b._tid && all.find(t => t.id === b._tid)) || all.find(t => t.data.extConv && t.data.extConv === conv && t.data.status !== 'Closed');
     const text = str(b.body, 20000, 'Message', true); const att = Array.isArray(b.attachments) ? b.attachments.slice(0, 10).map(a => ({ name: String(a.name || 'attachment').slice(0, 200), note: 'Listed from the e-mail; the file itself is not copied' })) : [];
-    if (ex) { const it = await ticketAppend(s, P.id, ex.id, { type: 'inbound', text, by: from.name || email, byEmail: email, attachments: att, ref: messageId }); return ok({ duplicate: false, appended: true, id: ex.id, ticket: it.data.n, status: it.data.status }); }
+    if (ex) { const it = await ticketAppend(s, P.id, ex.id, { type: 'inbound', text, by: from.name || email, byEmail: email, attachments: att, ref: messageId }); return { _st: 200, duplicate: false, appended: true, id: ex.id, ticket: it.data.n, status: it.data.status }; }
     const key = 'tk_' + rid('').slice(1, 13); const subject = str(b.subject || '(no subject)', 200, 'Subject');
     const data = await ticketSanitize(s, P.id, null, { subject, description: text.slice(0, 20000), status: 'New', priority: 'Medium', source: 'email', org: project.customer || '', requester: { name: from.name || email, email }, extConv: conv, extRef: messageId, category: /\bmeet|\bcall\b|catch.?up|schedul/i.test(subject) ? 'Meeting request' : 'Client request', lastActivity: b.receivedAt || now(), thread: [] });
     await withLock('it.' + P.id + '.tkt.' + key, async () => { const t = now(); await save('it.' + P.id + '.tkt', 'ip.' + P.id + '.tkt', key, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: t, ua: t }, Object.assign(data, { hist: [{ at: t, who: from.name || email, side: 'customer', event: 'Created from e-mail' }] }), 0); });
     const it = await ticketAppend(s, P.id, key, { type: 'inbound', text, by: from.name || email, byEmail: email, attachments: att, ref: messageId });
-    await ticketNotify(project, key, null, it.data, s); await audit(P.id, s.id, 'tkt-email', key); return ok({ duplicate: false, created: true, id: key, ticket: it.data.n }, 201);
+    await ticketNotify(project, key, null, it.data, s); await audit(P.id, s.id, 'tkt-email', key); return { _st: 201, duplicate: false, created: true, id: key, ticket: it.data.n };
+  }
+  route('POST', '/api/projects/:id/tickets/ingest', async (b, P) => {
+    const s = await me(); const { project } = await projectAccess(s, P.id, 'edit'); const r = await ingestMail(s, project, b); const st = r._st; delete r._st; return ok(r, st);
+  });
+
+  // ---------- support mailbox (Microsoft 365 via Graph) ----------
+  // Needs configuration by the app owner: an OAuth2 credential named graph_mail (Mail.Read / Mail.Read.Shared) granted to this app, and optionally the plain secret support_mailbox (shared mailbox address; empty = the owner's own mailbox).
+  const MAIL_CRED = 'graph_mail';
+  const mailAdmin = async s => { const ar = await adminRole(s); if (!ar || ar === 'sub') throw new HttpError(403, 'Only admins can manage the support mailbox'); return ar; };
+  const mailCfg = async () => { const r = await dbGet('cfg', 'mail'); return (r && r.value) || { rules: [], last: null }; };
+  const domOf = e => String(e || '').toLowerCase().split('@')[1] || '';
+  async function mailboxAddress() { let m = ''; try { m = String(await CTX.secrets.get('support_mailbox') || '').trim(); } catch (e) { } return m; }
+  route('GET', '/api/mail/status', async () => {
+    const s = await me(); await mailAdmin(s); const c = await mailCfg(); const box = await mailboxAddress(); const inbox = await dbList('inbox');
+    return ok({ credential: MAIL_CRED, mailbox: box || '(the credential owner\'s own mailbox)', rules: c.rules || [], last: c.last || null, unrouted: inbox.length, hasFetch: !!CTX.fetch });
+  });
+  route('PUT', '/api/mail/rules', async (b) => {
+    const s = await me(); await mailAdmin(s); const rules = (Array.isArray(b && b.rules) ? b.rules : []).slice(0, 200).map(r => ({ match: str(String(r.match || '').toLowerCase(), 200, 'Match', true), projectId: str(r.projectId, 80, 'Project', true) }));
+    for (const r of rules) if (!(await dbGet('projects', r.projectId))) throw new HttpError(400, 'Unknown project in a rule'); const c = await mailCfg(); c.rules = rules; await dbPut('cfg', 'mail', c); return ok({ rules });
+  });
+  route('GET', '/api/mail/inbox', async () => { const s = await me(); await mailAdmin(s); const rows = (await dbList('inbox')).map(r => r.value); rows.sort((a, c) => String(c.receivedAt).localeCompare(String(a.receivedAt))); return ok({ items: rows.slice(0, 200) }); });
+  route('POST', '/api/mail/inbox/:mid/route', async (b, P) => {
+    const s = await me(); await mailAdmin(s); const m = await dbGet('inbox', P.mid); if (!m) throw new HttpError(404, 'Message not found'); const { project } = await projectAccess(s, str(b && b.projectId, 80, 'Project', true), 'edit');
+    const r = await ingestMail(s, project, m.value.mail); await dbDel('inbox', P.mid); await audit(project.id, s.id, 'mail-routed', P.mid); return ok({ ticket: r.ticket, projectId: project.id });
+  });
+  route('POST', '/api/mail/inbox/:mid/dismiss', async (b, P) => { const s = await me(); await mailAdmin(s); await dbDel('inbox', P.mid); return ok({ ok: true }); });
+  route('POST', '/api/mail/sync', async () => {
+    const s = await me(); await mailAdmin(s); const c = await mailCfg(); const t0 = now(); const res = { fetched: 0, tickets: 0, appended: 0, unrouted: 0, duplicates: 0, errors: [] };
+    const fin = async err => { c.last = { at: t0, by: s.email, ok: !err, error: err || '', stats: res }; await dbPut('cfg', 'mail', c); await audit('mailbox', s.id, 'mail-sync', err ? 'failed' : 'ok'); };
+    if (!CTX.fetch) { await fin('This platform build has no credential proxy'); throw new HttpError(503, 'Mailbox sync is not available here'); }
+    const box = await mailboxAddress(); const base = box ? 'https://graph.microsoft.com/v1.0/users/' + encodeURIComponent(box) : 'https://graph.microsoft.com/v1.0/me';
+    let r; try { r = await CTX.fetch(MAIL_CRED, base + '/mailFolders/inbox/messages?$top=25&$orderby=receivedDateTime desc&$select=id,conversationId,subject,from,body,receivedDateTime,hasAttachments,isDraft', { method: 'GET', headers: { Prefer: 'outlook.body-content-type="text"' } }); } catch (e) { await fin('Credential ' + MAIL_CRED + ' is missing or not granted to this app: ' + (e && e.message)); throw new HttpError(424, 'The mailbox credential "' + MAIL_CRED + '" is not set up yet. Ask the app owner to add it at secrets.facilio.work and grant it to this app.'); }
+    if (!r.ok) { const why = r.status === 401 || r.status === 403 ? 'Microsoft refused access (' + r.status + '). The credential needs Mail.Read and admin consent.' : r.status === 429 ? 'Microsoft is throttling requests. Try again in a minute.' : 'Microsoft returned ' + r.status; await fin(why); throw new HttpError(r.status === 429 ? 429 : 502, why); }
+    const msgs = ((await r.json()).value || []).filter(m => !m.isDraft).reverse(); res.fetched = msgs.length;
+    const projects = (await dbList('projects')).map(x => x.value).filter(x => x && !x.archived);
+    for (const m of msgs) {
+      try {
+        const email = String(m.from && m.from.emailAddress && m.from.emailAddress.address || '').toLowerCase(); if (!email) continue; if (box && email === box.toLowerCase()) continue;
+        const mail = { messageId: m.id, conversationId: m.conversationId || m.id, subject: m.subject || '(no subject)', body: String(m.body && m.body.content || '').slice(0, 20000) || '(empty message)', from: { name: m.from.emailAddress.name || email, email }, receivedAt: m.receivedDateTime, attachments: m.hasAttachments ? [{ name: 'Attachment (open the mail in Outlook)' }] : [] };
+        if ((await dbGet('mailseen', m.id.slice(-120)))) { res.duplicates++; continue; }
+        let target = null; const tag = /\[TKT-(\d+)\]/i.exec(mail.subject);
+        if (tag) { for (const p of projects) { const hit = (await itemsOf(p.id, 'tkt')).find(x => String(x.data.n) === tag[1]); if (hit) { target = p; mail._tid = hit.id; break; } } }
+        if (!target) { const rule = (c.rules || []).find(x => x.match === email || x.match === domOf(email)); if (rule) target = projects.find(p => p.id === rule.projectId) || null; }
+        if (!target) { await dbPut('inbox', m.id.slice(-120), { id: m.id.slice(-120), receivedAt: m.receivedDateTime, from: mail.from, subject: mail.subject, preview: mail.body.slice(0, 300), mail }); res.unrouted++; await dbPut('mailseen', m.id.slice(-120), { at: t0 }); continue; }
+        const out = await ingestMail(s, target, mail); await dbPut('mailseen', m.id.slice(-120), { at: t0 });
+        if (out.duplicate) res.duplicates++; else if (out.appended) res.appended++; else res.tickets++;
+      } catch (e) { res.errors.push(String(e && e.message || e).slice(0, 160)); }
+    }
+    await fin(res.errors.length && !res.tickets && !res.appended && !res.unrouted ? res.errors[0] : ''); return ok({ result: res });
+  });
+
+  // client items -> tickets: feedback, questions and anything raised on the client side, plus questions open in Delivery Studio. Idempotent: every source is keyed once (extRef) and never rewritten.
+  route('POST', '/api/projects/:id/tickets/sync-client', async (b, P) => {
+    const s = await me(); const { project } = await projectAccess(s, P.id, 'edit');
+    const all = await itemsOf(P.id, 'tkt'); const have = new Set(all.map(t => t.data.extRef).filter(Boolean)); const cand = [];
+    const FBC = { question: 'Question', concern: 'Client request', feedback: 'UAT finding', change: 'Change request' }, FBP = { high: 'High', normal: 'Medium', low: 'Low' };
+    (await dbList('fb.' + P.id)).map(r => r.value).forEach(f => { if (!f || !f.id) return; cand.push({ ref: 'fb:' + f.id, subject: (f.topic || f.body || 'Feedback').slice(0, 120), body: f.body || '', category: FBC[f.kind] || 'Client request', priority: FBP[f.priority] || 'Medium', status: f.status === 'resolved' ? 'Resolved' : f.status === 'answered' ? 'Waiting for Client' : 'New', source: 'client feedback', by: f.authorName, link: { kind: 'feedback', ref: f.id, label: (f.module ? f.module + ': ' : '') + (f.topic || 'Feedback') }, at: f.createdAt, reply: f.response }); });
+    const KC = { raid: 'Defect', action: 'Client request', cr: 'Change request', hc: 'Defect' };
+    for (const k of Object.keys(KC)) (await itemsOf(P.id, k)).filter(i => i.createdSide && i.createdSide !== 'facilio').forEach(i => { const d = i.data || {}; const t = String(d.title || d.name || d.summary || d.description || 'Client item').slice(0, 120); cand.push({ ref: k + ':' + i.id, subject: t, body: String(d.description || d.details || d.title || t), category: KC[k], priority: 'Medium', status: 'New', source: 'client portal', by: '', link: { kind: k, ref: i.id, label: t }, at: i.createdAt }); });
+    const tr = await docRead(P.id, 'transcripts'); const cs = (tr && tr.data && tr.data.candidates) || [];
+    cs.filter(c => c && c.status === 'clarify' && c.id).forEach(c => cand.push({ ref: 'tr:' + c.id, subject: ('Needs clarification: ' + (c.title || c.text || '')).slice(0, 120), body: String(c.text || '') + (c.context ? '\n\nContext: ' + c.context : ''), category: 'Question', priority: 'Medium', status: 'New', source: 'delivery studio', by: c.speaker || '', link: { kind: 'transcript', ref: c.id, label: 'Transcript question' }, at: tr.data.updatedAt || now() }));
+    let created = 0; const t = now();
+    for (const c of cand) {
+      if (have.has(c.ref) || created >= 50) continue;
+      const key = 'tk_' + rid('').slice(1, 13);
+      const data = await ticketSanitize(s, P.id, null, { subject: c.subject, description: c.body.slice(0, 20000), status: c.status, priority: c.priority, category: c.category, source: c.source, org: project.customer || '', requester: { name: c.by || project.customer || 'Client', email: '' }, link: c.link, extRef: c.ref, thread: [] });
+      await withLock('it.' + P.id + '.tkt.' + key, async () => { await save('it.' + P.id + '.tkt', 'ip.' + P.id + '.tkt', key, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: c.at || t, ua: t }, Object.assign(data, { hist: [{ at: t, who: 'Delivery Studio', side: 'facilio', event: 'Created from ' + c.source }] })); });
+      if (c.reply) { try { await ticketAppend(s, P.id, key, { type: 'reply', text: c.reply, by: 'Facilio team' }); } catch (e) { } }
+      have.add(c.ref); created++;
+    }
+    if (created) await audit(P.id, s.id, 'tkt-sync', String(created)); return ok({ created, scanned: cand.length });
   });
 
   route('GET', '/api/projects/:id/items', async (b, P, Q) => { const s = await me(); await projectAccess(s, P.id, 'read'); const kinds = kindList(Q.get('kinds')); if (!kinds.length) throw new HttpError(400, 'Name the kinds to load'); return ok({ items: await itemsFor(P.id, kinds) }); });
