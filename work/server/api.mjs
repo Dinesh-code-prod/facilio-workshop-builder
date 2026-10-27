@@ -88,8 +88,14 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   async function me() {
     if (ME) return ME;
     const email = String((CTX.viewer && CTX.viewer.email) || '').toLowerCase(); if (!email) throw new HttpError(401, 'Sign in required');
+    // Only Facilio accounts use Delivery Studio. The platform already limits sign-in to Facilio employees; this is a second check in the app.
+    if (!email.endsWith('@' + ALLOWED_DOMAIN)) throw new HttpError(403, 'Delivery Studio is for Facilio accounts (name@' + ALLOWED_DOMAIN + ').');
     const m = { id: ekey(email), email, name: nameFromEmail(email), kind: 'consultant', projectId: null, guest: false };
-    try { const u = await dbGet('usr', m.id); const stale = !u || !u.value || !u.value.seen || Date.now() - Date.parse(u.value.seen) > 6 * 3600e3; if (u && u.value && u.value.disabled) throw new HttpError(403, 'Your access has been switched off. Ask an admin.'); if (u && u.value && u.value.name) m.name = u.value.name; if (stale) await dbPut('usr', m.id, Object.assign({}, u && u.value, { email, name: m.name, seen: now(), created: (u && u.value && u.value.created) || now() })); } catch (e) { if (e instanceof HttpError && e.status === 403) throw e; }
+    // The disabled-user check must not be skipped: if the user record cannot be read, the request stops (503) instead of going ahead.
+    let u; try { u = await dbGet('usr', m.id); } catch (e) { throw new HttpError(503, 'Delivery Studio could not check your access just now. Try again in a moment.'); }
+    if (u && u.value && u.value.disabled) throw new HttpError(403, 'Your access has been switched off. Ask an admin.'); if (u && u.value && u.value.name) m.name = u.value.name;
+    const stale = !u || !u.value || !u.value.seen || Date.now() - Date.parse(u.value.seen) > 6 * 3600e3;
+    if (stale) { try { await dbPut('usr', m.id, Object.assign({}, u && u.value, { email, name: m.name, seen: now(), created: (u && u.value && u.value.created) || now() })); } catch (e) { } }
     ME = m; return ME;
   }
   async function adminRole(s) {
@@ -550,6 +556,8 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
   const MAIL_CRED = 'graph_mail';
   const mailAdmin = async s => { const ar = await adminRole(s); if (!ar || ar === 'sub') throw new HttpError(403, 'Only admins can manage the support mailbox'); return ar; };
   const mailCfg = async () => { const r = await dbGet('cfg', 'mail'); return (r && r.value) || { rules: [], last: null }; };
+  // shared mail providers: on these, a matching domain says nothing about who the sender is, so only the exact address counts
+  const PUBLIC_MAIL = new Set(['gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'live.com', 'msn.com', 'yahoo.com', 'yahoo.co.in', 'icloud.com', 'me.com', 'aol.com', 'proton.me', 'protonmail.com', 'zoho.com', 'gmx.com', 'mail.com', 'yandex.com', 'rediffmail.com']);
   const domOf = e => String(e || '').toLowerCase().split('@')[1] || '';
   async function mailboxAddress() { let m = ''; try { m = String(await CTX.secrets.get('support_mailbox') || '').trim(); } catch (e) { } return m; }
   route('GET', '/api/mail/status', async () => {
@@ -585,7 +593,7 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
         // or whose mailbox rule covers the sender. Anything else falls through to the rules and then the unrouted inbox for a person to place.
         if (tag) { const dom = domOf(email); const ruled = new Set((c.rules || []).filter(x => x.match === email || x.match === dom).map(x => x.projectId));
           for (const p of projects) { const hit = (await itemsOf(p.id, 'tkt')).find(x => String(x.data.n) === tag[1]); const req = hit && String(hit.data.requester && hit.data.requester.email || '').toLowerCase();
-            if (hit && (req === email || (req && domOf(req) === dom) || ruled.has(p.id))) { target = p; mail._tid = hit.id; break; } } }
+            if (hit && (req === email || (req && domOf(req) === dom && !PUBLIC_MAIL.has(dom)) || ruled.has(p.id))) { target = p; mail._tid = hit.id; break; } } }
         if (!target) { const rule = (c.rules || []).find(x => x.match === email || x.match === domOf(email)); if (rule) target = projects.find(p => p.id === rule.projectId) || null; }
         if (!target) { await dbPut('inbox', m.id.slice(-120), { id: m.id.slice(-120), receivedAt: m.receivedDateTime, from: mail.from, subject: mail.subject, preview: mail.body.slice(0, 300), mail }); res.unrouted++; await dbPut('mailseen', m.id.slice(-120), { at: t0 }); continue; }
         const out = await ingestMail(s, target, mail); await dbPut('mailseen', m.id.slice(-120), { at: t0 });
@@ -748,10 +756,37 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
   route('POST', '/api/projects/:id/files/:fid/complete', async (b, P) => {
     const s = await me(); await projectAccess(s, P.id, 'edit'); const r = await dbGet('fl.' + P.id, P.fid); if (!r) throw new HttpError(404, 'Upload not found'); const f = r.value; if (f.status === 'ready') return ok({ file: fileOut(f) });
     for (let i = 0; i < f.chunks; i++) if (!f.urls[i]) throw new HttpError(400, 'Chunk ' + i + ' missing');
-    f.status = 'ready'; await dbPut('fl.' + P.id, P.fid, f);
+    // the file's first bytes must match its extension (a .pdf must be a PDF, an .xlsx a ZIP package, and so on)
+    const head = await headBytes(f.urls[0]); const verdict = head ? contentMatches(f.name, head) : null;
+    if (verdict === false) { f.status = 'rejected'; await dbPut('fl.' + P.id, P.fid, f); for (const id of f.urls) { try { await CTX.files.delete(id, { private: true }); } catch (e) { } } await audit(P.id, s.id, 'file-rejected', f.category + ': ' + f.name);
+      throw new HttpError(415, 'The file content does not match its type (.' + (f.name.split('.').pop() || '').toLowerCase() + '). Save it again in that format and upload it.'); }
+    if (verdict === null) console.log('file content not checked', P.id, P.fid);
+    f.contentCheck = verdict === true ? 'ok' : 'unchecked'; f.status = 'ready'; await dbPut('fl.' + P.id, P.fid, f);
     if (f.replaces) { const o = await dbGet('fl.' + P.id, f.replaces); if (o) { o.value.supersededBy = f.id; await dbPut('fl.' + P.id, f.replaces, o.value); } }
     await audit(P.id, s.id, 'file-uploaded', f.category + ': ' + f.name); return ok({ file: fileOut(f) });
   });
+  // ---------- upload content check ----------
+  // Reads the first 4 KB of the first uploaded part. Returns null when the platform cannot hand the bytes back (the upload then
+  // goes ahead as 'unchecked' and is logged), so a storage hiccup never blocks people's uploads.
+  async function headBytes(fileId) {
+    try { const g = await CTX.files.get(fileId, { private: true }); const b = await g.bytes(); return Buffer.from(b).subarray(0, 4096); } catch (e) { }
+    try { const { url } = await CTX.files.url(fileId, { private: true, expires: 60 }); const r = await fetch(url, { headers: { range: 'bytes=0-4095' } }); if (r.ok || r.status === 206) return Buffer.from(await r.arrayBuffer()).subarray(0, 4096); } catch (e) { }
+    return null;
+  }
+  const SIG = { zip: [[0x50, 0x4B, 0x03, 0x04], [0x50, 0x4B, 0x05, 0x06]], ole: [[0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]], png: [[0x89, 0x50, 0x4E, 0x47]], jpg: [[0xFF, 0xD8, 0xFF]], gz: [[0x1F, 0x8B]] };
+  const starts = (b, list) => list.some(sig => sig.every((x, i) => b[i] === x));
+  function contentMatches(name, b) {
+    const ext = (String(name).split('.').pop() || '').toLowerCase();
+    if (ext === 'pdf') return b.subarray(0, 1024).includes(Buffer.from('%PDF-'));
+    if (['docx', 'xlsx', 'xlsm', 'pptx', 'zip'].includes(ext)) return starts(b, SIG.zip);
+    if (['xls', 'ppt', 'msg'].includes(ext)) return starts(b, SIG.ole);
+    if (ext === 'png') return starts(b, SIG.png);
+    if (ext === 'jpg' || ext === 'jpeg') return starts(b, SIG.jpg);
+    if (ext === 'webp') return b.subarray(0, 4).toString('latin1') === 'RIFF' && b.subarray(8, 12).toString('latin1') === 'WEBP';
+    if (ext === 'gz') return starts(b, SIG.gz);
+    if (['txt', 'csv', 'vtt', 'srt', 'json', 'eml'].includes(ext)) return !b.includes(0) && !starts(b, SIG.zip) && !starts(b, SIG.ole);  // text: no NUL bytes, not a binary package
+    return null;
+  }
   const fileForRead = async (s, P) => { await projectAccess(s, P.id, 'read'); const r = await dbGet('fl.' + P.id, P.fid); if (!r || r.value.deletedAt || r.value.status !== 'ready') throw new HttpError(404, 'File not found'); return r.value; };
   route('GET', '/api/projects/:id/files/:fid', async (b, P) => { const s = await me(); return ok({ file: fileOut(await fileForRead(s, P)), chunkSize: CHUNK }); });
   route('GET', '/api/projects/:id/files/:fid/chunks/:n', async (b, P) => {
@@ -801,7 +836,8 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
   }
   const who = (A, id) => { const u = A.users.find(x => x.id === id); return u ? u.email : (/^[^_]+:[^_]+$/.test(String(id || '')) ? String(id).replace(':', '@') : String(id || '')); };
   async function adminAuditAll(A) {
-    const sys = (await dbList(SYS)).map(r => Object.assign({ id: r.key, projectId: null }, r.value));
+    // system entries plus the AI-key and mailbox logs, which are written to their own collections
+    const sys = []; for (const col of [SYS, 'au.ai', 'au.mailbox']) sys.push(...(await dbList(col)).map(r => Object.assign({ id: r.key, projectId: null }, r.value)));
     const all = A.rows.reduce((a, r) => a.concat(r.au.map(e => Object.assign({}, e, { project: r.p.name }))), sys.map(e => Object.assign({}, e, { project: '' })));
     return all.sort((a, b) => String(b.at).localeCompare(String(a.at)));
   }
