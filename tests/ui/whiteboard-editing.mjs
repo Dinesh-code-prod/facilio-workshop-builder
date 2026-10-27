@@ -3,6 +3,8 @@
 // before the fix (flow grouped as one block), the original flow left unchanged, and a large board staying responsive.
 // Usage: node tests/ui/whiteboard-editing.mjs [baseUrl] [outDir]   (start the preview first: npm run preview)
 import { chromium } from 'playwright'; import fs from 'node:fs';
+let __pk = 0; const place = async (p, t) => { if (['rect', 'ellipse', 'diamond', 'tri', 'para', 'hex', 'frame'].includes(t)) { await p.click('#wbShapesB'); await p.click(`#wbShapes [data-wbtool="${t}"]`); } else await p.click(`.wb-rail [data-wbtool="${t}"]`); const bb = await p.locator('#wbSvg').boundingBox(); __pk++; await p.mouse.click(bb.x + bb.width / 2 - 330 + (__pk % 4) * 140, bb.y + bb.height / 2 - 60 + Math.floor(__pk / 4) % 3 * 110); };
+
 const BASE = process.argv[2] || 'http://localhost:4173'; const OUT = process.argv[3] || 'tests/ui/out'; fs.mkdirSync(OUT, { recursive: true });
 const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } }); const p = await ctx.newPage();
 const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
@@ -56,7 +58,7 @@ check('   groups: first click selects the group, a second click selects one memb
 // alignment guides during a drag
 await p.click('#wbSvg', { position: { x: 10, y: 10 } });
 const note = await p.evaluate(() => { const s = window.FWBViews.whiteboardState; const st = s.B.nodes.find(n => n.t === 'state'); return { id: st.id }; });
-await p.click('[data-act="wbAdd"][data-t="rect"]'); await p.waitForTimeout(150); const rectId = (await ST()).sel[0];
+await place(p, 'rect'); await p.waitForTimeout(150); const rectId = (await ST()).sel[0];
 const tgt = (await ST()).nodes.find(n => n.id === note.id); const rc = (await ST()).nodes.find(n => n.id === rectId);
 const z = await p.evaluate(() => window.FWBViews.whiteboardState.B.view.z);
 const start = await screen(rectId); const dxW = (tgt.x + tgt.w / 2) - (rc.x + rc.w / 2) + 3, dyW = 300;   // 3 units off the state's centre line

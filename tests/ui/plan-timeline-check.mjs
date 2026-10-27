@@ -1,0 +1,26 @@
+// Project Plan › Timeline & planning tab: built once from the uploaded workbook (phases by indent, the customer's name as owner), legend, collapse, update notice.
+import { chromium } from 'playwright'; import ExcelJS from 'exceljs'; import fs from 'node:fs';
+const BASE = process.argv[2] || 'http://localhost:4175'; const OUT = process.argv[3] || 'tests/ui/out'; fs.mkdirSync(OUT, { recursive: true });
+const wb = new ExcelJS.Workbook(); const ws = wb.addWorksheet('Plan'); ws.addRow(['Project plan – Al Moallam CAFM']); ws.addRow([]); ws.addRow(['Task Name', 'Owner', 'Start', 'End', '% Complete', 'Status']);
+const d = s => new Date(s + 'T00:00:00Z'); const add = (t, o, s, e, p, st, ind) => { const r = ws.addRow([t, o, s ? d(s) : null, e ? d(e) : null, p, st]); if (ind) r.getCell(1).alignment = { indent: ind }; else r.font = { bold: true }; };
+add('Project Initiation', '', '', '', '', '', 0); add('Kick-off meeting', 'Facilio/Al Moallam', '2026-09-01', '2026-09-01', 1, 'Completed', 1); add('Contract & governance setup', 'Facilio', '2026-09-01', '2026-09-08', 1, 'Completed', 1);
+add('Requirements', '', '', '', '', '', 0); add('Workshops', 'Facilio', '2026-09-09', '2026-10-05', 0.8, 'In progress', 1); add('Data templates filled', 'Al Moallam', '2026-09-20', '2026-10-20', 0.3, 'In progress', 1); add('BRD sign-off', 'Al Moallam', '2026-10-25', '2026-10-25', 0, 'Not started', 1);
+add('Build & UAT', '', '', '', '', '', 0); add('Configuration', 'Facilio', '2026-10-26', '2026-11-30', 0, 'Not started', 1); add('UAT', 'Al Moallam', '2026-12-01', '2026-12-20', 0, '', 1); add('Go-live', 'Facilio/Al Moallam', '2026-12-28', '2026-12-28', 0, '', 1);
+const file = OUT + '/al-moallam-plan.xlsx'; await wb.xlsx.writeFile(file);
+const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1440, height: 900 } }); const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, x) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (x ? '  (' + x + ')' : '')); };
+await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');
+const pid = await p.evaluate(async () => (await (await fetch('/api/fn/api/projects', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Al Moallam CAFM', customer: 'Al Moallam Group' }) })).json()).project.id);
+await p.goto(BASE + `/#/p/${pid}/plan`); await p.reload(); await p.waitForSelector('[data-act="planUpload"]');
+const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.click('.page-header [data-act="planUpload"]')]); await fc.setFiles(file); await p.waitForSelector('#planGrid', { timeout: 30000 });
+check('the Project Plan page has Workbook and Timeline & planning tabs', (await p.$$('.plan-tabs [data-act="planTab"]')).length === 2);
+await p.click('[data-act="planTab"][data-t="tl"]'); await p.waitForSelector('.pl-grid', { timeout: 30000 });
+const rows = await p.$$eval('.pl-grid tbody tr', t => t.map(r => ({ c: r.className, t: r.querySelector('.pl-task').textContent.trim() })));
+check('the timeline is built from the workbook on first open', rows.filter(r => /pl-ph/.test(r.c)).length === 3, rows.length + ' rows, ' + rows.filter(r => /pl-ph/.test(r.c)).length + ' phases');
+check('owners: the customer name and "Facilio/<customer>" are read', rows.some(r => /Data templates filled.*Customer/.test(r.t)) && rows.some(r => /Kick-off meeting.*Both/.test(r.t)), rows.slice(1, 4).map(r => r.t).join(' | '));
+check('the legend names the customer', (await p.textContent('.pl-legend')).includes('Al Moallam'));
+check('legend shows actual progress, status date and critical', /Actual progress/.test(await p.textContent('.pl-legend')) && /Status date/.test(await p.textContent('.pl-legend')));
+check('today marker drawn', !!(await p.$('.pl-today')));
+await p.screenshot({ path: OUT + '/plan-timeline-tab.png', fullPage: false });
+await p.click('[data-act="tlTog"] >> nth=0'); const after = await p.$$eval('.pl-grid tbody tr', t => t.length); check('a phase collapses', after < rows.length, rows.length + ' → ' + after);
+await p.click('[data-act="planTab"][data-t="wb"]'); await p.waitForSelector('#planGrid'); check('back to the workbook view', true);
+check('no page errors', !errs.length, errs.join(' | ')); console.log(`${res.filter(Boolean).length}/${res.length} checks passed`); await b.close();

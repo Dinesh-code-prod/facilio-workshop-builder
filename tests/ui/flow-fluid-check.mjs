@@ -1,0 +1,25 @@
+// State Flow Builder: states and transition buttons move on their own (pointer drag and arrow keys), a short press selects, the side panel stays tidy.
+import { chromium } from 'playwright';
+const BASE = process.argv[2] || 'http://localhost:4175'; const OUT = process.argv[3] || 'tests/ui/out'; const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1440, height: 1000 } });
+const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
+await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');
+const pid = await p.evaluate(async () => (await (await fetch('/api/fn/api/projects', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Flow fluid', customer: 'Acme' }) })).json()).project.id);
+await p.goto(BASE + `/#/p/${pid}/flow`); await p.reload(); await p.waitForSelector('[data-act="openFlow"]'); await p.click('[data-act="openFlow"]'); await p.waitForSelector('#canvas svg');
+const box = sel => p.locator(sel).first().boundingBox();
+const drag = async (sel, dx, dy) => { const bb = await box(sel); const x = bb.x + bb.width / 2, y = bb.y + bb.height / 2; await p.mouse.move(x, y); await p.mouse.down(); for (let i = 1; i <= 12; i++) await p.mouse.move(x + dx * i / 12, y + dy * i / 12); await p.mouse.up(); await p.waitForTimeout(250); };
+const eid = await p.getAttribute('#canvas [data-edge] >> nth=0', 'data-edge'); const pillSel = `#canvas [data-edge="${eid}"] .pill rect`;
+const before = await box(pillSel); await drag(pillSel, 90, 60); const after = await box(pillSel); const lp0 = await p.getAttribute(pillSel, 'x');
+check('a transition button drags on its own', Math.abs(after.x - before.x - 90 * 0.8) < 30 || Math.abs(after.x - before.x - 90) < 30, `${Math.round(before.x)},${Math.round(before.y)} → ${Math.round(after.x)},${Math.round(after.y)}`);
+const segs = await p.getAttribute(`#canvas [data-edge="${eid}"] path:not(.hit) >> nth=0`, 'd'); check('its connector bends through the moved button', (segs.match(/L/g) || []).length === 2, segs.slice(0, 60));
+const sid = await p.evaluate(eid => { const f = window.FWBCore ? null : null; const ids = [...document.querySelectorAll('#canvas [data-state]')].map(g => g.getAttribute('data-state')); return ids.find(i => !eid.includes(i.split('::').pop())) || ids[1]; }, eid); const sb = await box(`#canvas [data-state="${sid}"]`); await drag(`#canvas [data-state="${sid}"] rect`, -40, 70); const sa = await box(`#canvas [data-state="${sid}"]`);
+check('a state drags freely (no 10 px jumps needed)', Math.abs((sa.y - sb.y) - 70 * 0.8) < 12 || Math.abs((sa.y - sb.y) - 70) < 12, Math.round(sa.y - sb.y) + 'px');
+const rx = () => p.getAttribute(pillSel, 'x').then(Number); const rx0 = await rx();
+check('the moved button keeps its place (drawing units) when a state moves', String(rx0) === String(Number(lp0)), lp0 + ' → ' + rx0);
+await p.click(`#canvas [data-edge="${eid}"] .pill`, { force: true }); await p.waitForSelector('.tp-head'); check('a short press on a button opens its transition panel', (await p.textContent('.tp-eyebrow')).match(/state transition/i));
+const k0 = await box(pillSel); await p.keyboard.press('ArrowRight'); await p.keyboard.press('ArrowRight'); await p.waitForTimeout(250); const k1 = await box(pillSel); check('arrow keys nudge the selected button', k1.x - k0.x > 10, Math.round(k1.x - k0.x) + 'px');
+await p.keyboard.press('Control+z'); await p.waitForTimeout(250); check('undo puts it back', Math.abs((await box(pillSel)).x - (k0.x + (k1.x - k0.x) / 2)) < 4 || (await box(pillSel)).x < k1.x);
+const panel = await p.evaluate(() => { const s = document.getElementById('panel'); const over = [...s.querySelectorAll('input,select,textarea,button')].filter(e => { const r = e.getBoundingClientRect(), q = s.getBoundingClientRect(); return r.width > 0 && (r.right > q.right + 1 || r.left < q.left - 1); }).length; return { w: s.clientWidth, over, sw: s.scrollWidth - s.clientWidth }; });
+check('the transition panel has room and nothing spills sideways', panel.w >= 380 && panel.over === 0 && panel.sw <= 1, JSON.stringify(panel));
+await p.locator('.sfb').screenshot({ path: OUT + '/flow-fluid.png' });
+await p.click('[data-act="relayout"][data-dir="h"]'); await p.waitForTimeout(400); const segs2 = await p.getAttribute(`#canvas [data-edge="${eid}"] path:not(.hit) >> nth=0`, 'd'); check('Auto-Align re-centres moved buttons', (segs2.match(/L/g) || []).length === 1);
+check('no page errors', !errs.length, errs.join(' | ')); console.log(`${res.filter(Boolean).length}/${res.length} checks passed`); await b.close();

@@ -31,6 +31,9 @@
         return { t, pts, lx: x2 + out, ly: y1 - up, kind: typeKind(t) };
       }
       const A = anchors(a), Bn = anchors(b); let best = null;
+      // a transition button the person moved: the connector bends through it (state → button → state), using the sides nearest to the button
+      if (t.lp && isFinite(t.lp.x) && isFinite(t.lp.y)) { const L = [t.lp.x, t.lp.y]; const near = (P, q) => P.reduce((m, p, i) => { const d = Math.hypot(p[0] - q[0], p[1] - q[1]); return !m || d < m.d ? { d, i } : m; }, null).i;
+        const i = near(A, L), j = near(Bn, L); use(t.from, i); use(t.to, j); return { t, pts: [A[i], L, Bn[j]], lx: L[0], ly: L[1], kind: typeKind(t), fixed: true }; }
       for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) { const d = Math.hypot(A[i][0] - Bn[j][0], A[i][1] - Bn[j][1]) + 45 * ((used[t.from + ':' + i] || 0) + (used[t.to + ':' + j] || 0)); if (!best || d < best.d) best = { d, i, j }; }
       use(t.from, best.i); use(t.to, best.j);
       const p1 = A[best.i], p2 = Bn[best.j]; const tt = pi > 1 ? (pi % 2 ? 0.38 : 0.62) : 0.5;
@@ -39,7 +42,7 @@
     // place pills so they do not overlap each other or states: slide along the line, then nudge sideways
     const boxes = Object.values(st).map(b => ({ x: b.x - 4, y: b.y - 4, w: b.w + 8, h: b.h + 8 })); const placed = [];
     const hit = (x, y) => { const r = { x: x - PILL_W / 2 - 3, y: y - PILL_H / 2 - 3, w: PILL_W + 6, h: PILL_H + 6 }; const ov = q => r.x < q.x + q.w && q.x < r.x + r.w && r.y < q.y + q.h && q.y < r.y + r.h; return placed.some(ov) || boxes.some(ov); };
-    edges.forEach(e => { if (e.pts.length !== 2) { placed.push({ x: e.lx - PILL_W / 2, y: e.ly - PILL_H / 2, w: PILL_W, h: PILL_H }); return; }
+    edges.forEach(e => { if (e.fixed || e.pts.length !== 2) { placed.push({ x: e.lx - PILL_W / 2, y: e.ly - PILL_H / 2, w: PILL_W, h: PILL_H }); return; }
       const [p1, p2] = e.pts; const at = t => [p1[0] + (p2[0] - p1[0]) * t, p1[1] + (p2[1] - p1[1]) * t]; let best = null;
       for (const t of [0.5, 0.38, 0.62, 0.28, 0.72, 0.2, 0.8]) { const [x, y] = at(t); if (!hit(x, y)) { best = [x, y]; break; } }
       if (!best) { const len = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) || 1; const nx = -(p2[1] - p1[1]) / len, ny = (p2[0] - p1[0]) / len; const [mx, my] = at(0.5);
