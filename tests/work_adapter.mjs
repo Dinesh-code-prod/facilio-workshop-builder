@@ -427,6 +427,15 @@ await t('Explore Facilio: editors draft, only owners and admins publish; request
   assert.equal(r.status, 200); d = r.data.item.data; assert.equal(d.by, ed, 'author from the session'); assert.notEqual(d.at, '2001-01-01', 'time from the server'); assert.equal(d.status, 'new');
   r = await call(own, 'PUT', `/api/projects/${P}/items/interest/in1`, { data: Object.assign({}, d, { status: 'demo', by: own }) }); assert.equal(r.data.item.data.by, ed, 'the author cannot be changed later'); assert.equal(r.data.item.data.status, 'demo');
   r = await call('outsider.x@facilio.com', 'GET', `/api/projects/${P}/items?kinds=news,interest`); assert.equal(r.status, 404, 'others cannot read them');
+  // Teams notice: only for a new request, only when the Teams notices are switched on, to the channel and the project owners
+  r = await call(dinesh, 'PUT', '/api/mail/settings', { teamsOn: false }); globalThis.__SENT = [];
+  r = await call(ed, 'PUT', `/api/projects/${P}/items/interest/in2`, { data: { newsId: 'nw1', title: 'Inspections on mobile' } }); assert.equal(r.data.notice, 'none'); assert.equal(globalThis.__SENT.length, 0, 'nothing is sent while notices are off');
+  r = await call(dinesh, 'PUT', '/api/mail/settings', { teamsOn: true, teamsChannel: 'delivery-sales' }); assert.equal(r.status, 200);
+  r = await call(ed, 'PUT', `/api/projects/${P}/items/interest/in3`, { data: { newsId: 'nw1', title: 'Inspections on mobile', note: 'Demo please' } }); assert.equal(r.data.notice, 'teams');
+  const m = globalThis.__SENT.find(x => /Interest in Inspections on mobile/.test(x.title)); assert.ok(m, 'a Teams notice is sent'); assert.equal(m.channel, 'delivery-sales'); assert.deepEqual(m.to, [own], 'direct message to the project owners only');
+  assert.ok(/Automated Delivery Studio notification/.test(m.text) && /Demo please/.test(m.text)); assert.ok(/\/#\/p\/.+\/showcase$/.test(m.actions[0].url), 'links to the request');
+  const n = globalThis.__SENT.length; r = await call(own, 'PUT', `/api/projects/${P}/items/interest/in3`, { data: Object.assign({}, r.data.item.data, { status: 'contacted' }) }); assert.equal(globalThis.__SENT.length, n, 'updating a request sends nothing');
+  r = await call(dinesh, 'PUT', '/api/mail/settings', { teamsOn: false });
 });
 await t('sign-offs and approvals: recorded, undone or deleted only by owners and admins; editors still draft', async () => {
   store.delete('rl'); const own = 'signer.owner@facilio.com', ed = 'signer.editor@facilio.com';
