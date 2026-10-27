@@ -7,7 +7,7 @@
   const { tag, drawer, closeDrawer, toast, ico, confirmDialog } = V;
   const canEdit = () => !V.isCustomer() && !S.readonly; const canApprove = () => !V.isCustomer() && S.project && S.project.role === 'owner';
   const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-  const TABS = [['content', 'Content'], ['brand', 'Branding'], ['checks', 'Quality checks'], ['export', 'Export']];
+  const TABS = [['content', 'Content'], ['update', 'Update from configuration'], ['versions', 'Version history'], ['brand', 'Branding'], ['checks', 'Quality checks'], ['export', 'Export']];
   let W = null, WID = null, timer = null, saving = false, dirtyAt = 0;
   const strip = t => String(t || '').replace(/\s*\[S\d+\]/g, '');
   const when = d => d ? V.fmtDate(d) : '';
@@ -49,6 +49,7 @@
   }
   const flush = async () => { if (W && dirtyAt && canEdit()) { await save(); } };
   const edit = fn => { fn(); schedule(); };
+  V.ugCtx = { W: () => W, id: () => WID, edit, flush, canEdit, canApprove, schedule };
   const touchRender = () => { schedule(); V.render(); };
 
   // ---------- quality checks ----------
@@ -72,6 +73,7 @@
     const low = all.toLowerCase(); const cm = I().list('cmodx'), ca = I().list('capp');
     cm.filter(m => String(m.usage || '').trim()).forEach(m => { if (!low.includes(String(m.label || m.name).toLowerCase())) add('medium', 'Coverage', m.label || m.name, 'This custom module has usage instructions in Configuration Inputs but is not mentioned in the guide.'); });
     ca.forEach(a => { if (!low.includes(String(a.name).toLowerCase())) add('low', 'Coverage', a.name, 'This app is listed in Configuration Inputs but is not mentioned in the guide.'); });
+    (V.guideUpdate && V.guideUpdate.checks ? V.guideUpdate.checks(g) : []).forEach(c => out.push(c));
     const o = { high: 0, medium: 1, low: 2 }; return out.sort((a, b) => o[a.sev] - o[b.sev]);
   }
   V.guideChecks = checks;
@@ -81,7 +83,7 @@
   const stTag = s => { const x = STT[s] || STT.draft; return tag(x[0], x[1]); };
   V.guidebuilder = {
     html() {
-      I().load(['ugd', 'cmodx', 'capp', 'vid', 'ai']); if (!I().ready(['ugd'])) return '<div class="page-body"><div class="muted" style="padding:20px">Loading…</div></div>';
+      I().load(['ugd', 'cmodx', 'capp', 'vid', 'ai', 'ugv', 'ugu']); if (!I().ready(['ugd'])) return '<div class="page-body"><div class="muted" style="padding:20px">Loading…</div></div>';
       const can = canEdit();
       if (!S.ui.ugOpen || !(W && WID === S.ui.ugOpen) && !open(S.ui.ugOpen)) {
         S.ui.ugOpen = null; V.beforeLeave = null;
@@ -94,12 +96,14 @@
       const bar = `<div class="tabs" role="tablist">${TABS.map(([k, l]) => `<button class="tab${tab === k ? ' active' : ''}" role="tab" data-act="ugTab" data-v="${k}">${l}${k === 'checks' && ck.length ? ` <span class="xs">(${ck.length})</span>` : ''}</button>`).join('')}</div>`;
       let body = '';
       if (tab === 'content') body = contentHtml(can);
+      if (tab === 'update') body = V.guideUpdate ? V.guideUpdate.html() : '';
+      if (tab === 'versions') body = V.guideUpdate ? V.guideUpdate.versionsHtml() : '';
       if (tab === 'brand') body = brandHtml(can);
       if (tab === 'checks') body = checksHtml(ck);
       if (tab === 'export') body = `<div class="card" style="padding:16px"><p class="small">Exports use the branding and the current content. ${W.status === 'approved' ? 'This guide is approved.' : 'This guide is a <b>draft</b>: the cover says so.'} AI source tags are removed. ${ck.filter(c => c.sev === 'medium').length ? `<b>${ck.filter(c => c.sev === 'medium').length} medium finding(s)</b> are still open on the Quality checks tab.` : ''}</p><div class="row" style="gap:8px"><button class="btn primary" data-act="ugDocx">${ico('dl')}Word (.docx)</button><button class="btn" data-act="ugPdf">${ico('dl')}PDF</button></div></div>`;
       return head + `<div class="page-body">${bar}<div style="margin-top:12px">${body}</div></div>`;
     },
-    mount() { document.querySelectorAll('[data-ugimg]').forEach(async img => { try { const b = await V.fileBlob(img.getAttribute('data-ugimg')); img.src = URL.createObjectURL(b); } catch (e) { img.alt = 'Image not available'; } }); }
+    mount() { if (V.guideUpdate && V.guideUpdate.mount) V.guideUpdate.mount(); document.querySelectorAll('[data-ugimg]').forEach(async img => { try { const b = await V.fileBlob(img.getAttribute('data-ugimg')); img.src = URL.createObjectURL(b); } catch (e) { img.alt = 'Image not available'; } }); }
   };
   function contentHtml(can) {
     const s = W.sections; const d = can ? '' : 'disabled';
@@ -149,7 +153,7 @@
     return out;
   }
   ACT.ugFromCfg = async () => { const s = cfgSections(); if (!s.length) { toast('Nothing is described in Configuration Inputs yet', 5000, true); return; } const have = new Set(W.sections.map(x => x.title.toLowerCase())); const add = s.filter(x => !have.has(x.title.toLowerCase())); edit(() => { W.sections = W.sections.concat(add); }); V.render(); toast(add.length + ' section(s) added' + (s.length - add.length ? ', ' + (s.length - add.length) + ' already there' : '')); };
-  ACT.ugFromAi = () => { const ai = I().list('ai').filter(x => x.task === 'guide'); if (!ai.length) { toast('No AI guide draft yet. Use "Generate guide draft" first.', 5000, true); return; } drawer('Add sections from an AI draft', `<p class="small">Sections are made from the draft's headings. AI labels (Missing, Assumption) stay in the text so the quality checks can flag them.</p><select id="ug_ai2">${ai.map(x => `<option value="${esc(x.id)}">${esc(when(x._created))} · ${esc(x.status || 'draft')}</option>`).join('')}</select>`, `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="ugAiGo">Add sections</button>`); };
+  ACT.ugFromAi = () => { const ai = I().list('ai').filter(x => x.task === 'guide'); if (!ai.length) { toast('No AI guide draft yet. Use "User guide" under Deliverables & AI first.', 5000, true); return; } drawer('Add sections from an AI draft', `<p class="small">Sections are made from the draft's headings. AI labels (Missing, Assumption) stay in the text so the quality checks can flag them.</p><select id="ug_ai2">${ai.map(x => `<option value="${esc(x.id)}">${esc(when(x._created))} · ${esc(x.status || 'draft')}</option>`).join('')}</select>`, `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="ugAiGo">Add sections</button>`); };
   ACT.ugAiGo = () => { const d = I().get('ai', document.getElementById('ug_ai2').value); closeDrawer(); if (!d) return; const s = sectionsFromMd(d.content); edit(() => { W.sections = W.sections.concat(s); }); V.render(); toast(s.length + ' section(s) added'); };
   ACT.ugFromVid = () => {
     const vids = I().list('vid').map(v => ({ v, drafts: I().list('ai').filter(a => a.task === 'vidguide' && a.vid === v.id) })).filter(x => x.drafts.length); if (!vids.length) { toast('No walkthrough has a draft yet. Use Video to Guide first.', 5000, true); return; }
@@ -174,14 +178,17 @@
 
   // ---------- export ----------
   async function media(fileId) {
-    const blob = await V.fileBlob(fileId); const buf = new Uint8Array(await blob.arrayBuffer()); const type = buf[0] === 0x89 ? 'png' : 'jpg'; let w = 800, h = 450; try { const bm = await createImageBitmap(blob); w = bm.width; h = bm.height; bm.close && bm.close(); } catch (e) { }
-    const dataUrl = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(new Blob([buf], { type: type === 'png' ? 'image/png' : 'image/jpeg' })); }); return { u8: buf, type, w, h, dataUrl };
+    const im = await V.docImage(await V.fileBlob(fileId)); const buf = im.u8, type = im.type, w = im.w, h = im.h;
+    const dataUrl = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(new Blob([buf], { type: im.mime })); }); return { u8: buf, type, w, h, dataUrl };
   }
   const fit = (w, h, mw, mh) => { const s = Math.min(mw / w, mh / h, 1); return { width: Math.max(1, Math.round(w * s)), height: Math.max(1, Math.round(h * s)) }; };
   const hex = c => String(c || '#1570EF').replace('#', '').toUpperCase().padEnd(6, '0').slice(0, 6);
   const dateStr = () => new Date().toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
+  // a guide with no written steps or screenshots would export as a cover page only, so say so instead of producing it
+  const hasContent = () => (W.sections || []).some(sec => (sec.blocks || []).some(b => b.t === 'img' ? !!b.fileId : String(b.text || '').trim()));
+  const emptyGuide = () => { if (hasContent()) return false; toast('This guide has no steps or screenshots yet, so there is nothing to export. Add content on the Content tab first.', 6000, true); return true; };
   ACT.ugDocx = a => V.busy(a, async () => {
-    await flush(); V.loading(true, 'Writing the Word document…');
+    if (emptyGuide()) return; await flush(); V.loading(true, 'Writing the Word document…');
     try {
       if (!root.docx) await V.loadScript('vendor/docx.iife.js'); const X = root.docx; const { Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, AlignmentType, ImageRun, PageBreak, TableOfContents, Footer, PageNumber, LevelFormat } = X;
       const acc = hex(W.brand.accent); const font = 'Calibri'; const run = (t, o) => new TextRun(Object.assign({ text: String(t == null ? '' : t), font }, o || {})); const rr = t => runs(t).map(x => run(x.text, x.bold ? { bold: true } : {}));
@@ -216,7 +223,7 @@
     } catch (e) { console.error(e); toast('Export failed: ' + (e.message || e), 7000, true); } finally { V.loading(false); }
   });
   ACT.ugPdf = a => V.busy(a, async () => {
-    await flush(); V.loading(true, 'Writing the PDF…');
+    if (emptyGuide()) return; await flush(); V.loading(true, 'Writing the PDF…');
     try {
       await V.loadScript('vendor/pdfmake.min.js'); await V.loadScript('vendor/vfs_fonts.js'); const pm = root.pdfMake; const acc = '#' + hex(W.brand.accent); const content = [];
       if (W.brand.cover !== false) {

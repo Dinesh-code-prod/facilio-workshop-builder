@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import handler from '../work/server/api.mjs';
 const store = new Map(), files = new Map(); let maxVal = 0, calls = 0;
 const KEY = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
-const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' }, secrets: { async get(k) { if (k === 'anthropic_api_key' && globalThis.__KEY) return globalThis.__KEY; throw new Error('no secret'); } }, llm: async ({ messages }) => ({ model: 'mock', choices: [{ message: { content: '## Draft\nBased on [S1]. ' + messages[1].content.slice(0, 20) } }] }),
+const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' }, teams: { async send(m) { (globalThis.__SENT = globalThis.__SENT || []).push(m); return { delivered: 1, failed: 0 }; } }, fetch: async (cred, url, o) => { if (!globalThis.__GRAPH) { const e = new Error('credential not granted'); throw e; } return globalThis.__GRAPH(cred, url, o); }, secrets: { async get(k) { if (k === 'support_mailbox') return 'support@facilio.com'; if (k === 'ai_master_key') return globalThis.__MASTER || '';  if (k === 'anthropic_api_key' && globalThis.__KEY) return globalThis.__KEY; if (k === 'teams_notify' && globalThis.__TEAMS) return globalThis.__TEAMS; throw new Error('no secret'); } }, llm: async ({ messages }) => (globalThis.__LLMLEN = messages[1].content.length, globalThis.__LLMFAIL ? (() => { throw new Error('down'); })() : { model: 'mock', choices: [{ message: { content: '## Draft\nBased on [S1]. ' + messages[1].content.slice(0, 20) } }] }),
   db: {
     async get(c, k) { calls++; const r = (store.get(c) || new Map()).get(k); return r ? { key: k, value: JSON.parse(r), updated_at: '', updated_by: '' } : null; },
     async put(c, k, v) { calls++; assert.ok(KEY.test(k), 'bad key ' + k); assert.ok(/^[A-Za-z0-9._-]{1,64}$/.test(c), 'bad collection ' + c); const t = JSON.stringify(v); maxVal = Math.max(maxVal, t.length); if (t.length > 128 * 1024) { const e = new Error('too large'); e.status = 413; throw e; } if (!store.has(c)) store.set(c, new Map()); store.get(c).set(k, t); },
@@ -11,9 +11,9 @@ const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' 
     async list(c, o = {}) { calls++; const keys = [...(store.get(c) || new Map()).keys()].sort(); const start = o.cursor ? keys.findIndex(k => k > o.cursor) : 0; if (start < 0) return { items: [] }; const page = keys.slice(start, start + (o.limit || 50)); return { items: page.map(k => ({ key: k, value: JSON.parse(store.get(c).get(k)) })), cursor: start + page.length < keys.length ? page[page.length - 1] : undefined }; }
   },
   files: { async uploadUrl(name) { const id = 'file_' + files.size; files.set(id, null); return { url: 'https://storage.example/' + id, file_id: id }; }, async url(id) { return { url: 'https://storage.example/get/' + id }; } } });
-const call = async (email, method, path, body) => {
+const call = async (email, method, path, body, headers) => {
   const [p, q] = path.split('?'); const sub = p.replace(/^\/api/, '');
-  const req = { method, path: sub, query: q || '', headers: {}, text: async () => (body === undefined ? '' : JSON.stringify(body)), json: async () => body };
+  const req = { method, path: sub, query: q || '', headers: headers || {}, text: async () => (body === undefined ? '' : JSON.stringify(body)), json: async () => body };
   const r = await handler(req, mkctx(email)); return { status: r.status, data: await r.json() };
 };
 let n = 0; const t = async (name, fn) => { await fn(); n++; console.log('  ok  ' + name); };
@@ -78,7 +78,7 @@ await t('AI providers: DeepSeek default, Claude explicit, key never exposed, hon
     r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat' }); assert.equal(r.data.item.data.provider, 'DeepSeek', 'configuring a key does not change the default');
     r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat', provider: 'claude' }); assert.equal(r.status, 201); assert.equal(r.data.item.data.provider, 'Claude'); assert.equal(seen.key, SECRET); assert.ok(!JSON.stringify(r.data).includes(SECRET));
     r = await call(dinesh, 'POST', '/api/admin/ai/test', {}); assert.equal(r.data.ok, true); assert.ok(!JSON.stringify(r.data).includes(SECRET));
-    r = await call(dinesh, 'GET', '/api/admin/ai/usage'); assert.equal(r.data.usage.claude.inTok, 22); assert.equal(r.data.usage.claude.outTok, 14); assert.ok(!JSON.stringify(r.data).includes(SECRET)); assert.equal(r.data.usage.claude.errors, 0);
+    r = await call(dinesh, 'GET', '/api/admin/ai/usage'); assert.equal(r.data.usage.claude.inTok, 11); assert.equal(r.data.usage.claude.outTok, 7); assert.ok(!JSON.stringify(r.data).includes(SECRET)); assert.equal(r.data.usage.claude.errors, 0);
     r = await call(sam, 'GET', '/api/admin/ai/usage'); assert.equal(r.status, 403);
     globalThis.fetch = async () => ({ ok: false, status: 500, json: async () => ({}) });
     r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat', provider: 'claude' }); assert.equal(r.status, 502, 'an explicit Claude failure is reported, not hidden');
@@ -86,6 +86,24 @@ await t('AI providers: DeepSeek default, Claude explicit, key never exposed, hon
     r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat', provider: 'claude' }); assert.equal(r.status, 201); assert.equal(r.data.item.data.provider, 'DeepSeek'); assert.match(r.data.item.data.notice, /Claude was not available/);
     r = await call(dinesh, 'GET', '/api/admin/ai/usage'); assert.ok(r.data.usage.claude.errors >= 2); assert.ok(!JSON.stringify(r.data).includes(SECRET));
   } finally { globalThis.fetch = real; globalThis.__KEY = ''; }
+});
+await t('AI providers: default follows the key, fallback gets a DeepSeek-sized prompt, key details for admins only', async () => {
+  // a large source set so the Claude and DeepSeek prompt sizes differ
+  for (let i = 0; i < 60; i++) await call(sam, 'PUT', `/api/projects/${pid}/items/raid/big${i}`, { data: { type: 'Risk', title: 'Risk ' + i + ' ' + 'x'.repeat(900), status: 'Open' } });
+  const KEY = 'sk-ant-test-FALLBACK-1'; globalThis.__KEY = KEY; const real = globalThis.fetch;
+  try {
+    let r = await call(dinesh, 'POST', '/api/admin/ai/config', { defaultProvider: 'claude', fallback: 'deepseek' }); assert.equal(r.status, 200);
+    r = await call(sam, 'GET', '/api/ai/status'); assert.equal(r.data.defaultProvider, 'claude'); assert.equal(r.data.keySource, undefined, 'key details are for admins only'); assert.equal(r.data.canStoreKey, undefined);
+    r = await call(dinesh, 'GET', '/api/ai/status'); assert.ok('keySource' in r.data, 'admins still see where the key comes from');
+    let claudeLen = 0; globalThis.fetch = async (u, o) => { claudeLen = JSON.parse(o.body).messages[0].content.length; return { ok: false, status: 500, json: async () => ({}) }; };
+    r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'handover' }); assert.equal(r.status, 201, JSON.stringify(r.data)); assert.equal(r.data.item.data.provider, 'DeepSeek'); assert.match(r.data.item.data.notice, /Claude was not available/);
+    assert.ok(claudeLen > globalThis.__LLMLEN, `fallback prompt (${globalThis.__LLMLEN}) is smaller than the Claude prompt (${claudeLen})`);
+    // the key disappears from the secrets portal while Claude is still the stored default: drafts use DeepSeek, as the status says
+    globalThis.__KEY = ''; r = await call(sam, 'GET', '/api/ai/status'); assert.equal(r.data.defaultProvider, 'deepseek');
+    globalThis.fetch = async () => { throw new Error('Claude must not be called'); }; r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat' }); assert.equal(r.status, 201); assert.equal(r.data.item.data.provider, 'DeepSeek');
+    // DeepSeek down: a clear error, nothing stored
+    globalThis.__LLMFAIL = true; const before = (await call(sam, 'GET', `/api/projects/${pid}/items?kinds=ai`)).data.items.length; r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat' }); assert.ok(r.status >= 500); assert.equal((await call(sam, 'GET', `/api/projects/${pid}/items?kinds=ai`)).data.items.length, before);
+  } finally { globalThis.fetch = real; globalThis.__KEY = ''; globalThis.__LLMFAIL = false; await call(dinesh, 'POST', '/api/admin/ai/config', { defaultProvider: 'deepseek', fallback: 'none' }); for (let i = 0; i < 60; i++) await call(sam, 'DELETE', `/api/projects/${pid}/items/raid/big${i}`); }
 });
 await t('templates: versions, publish needs admin, retire, project scope, AI uses template', async () => {
   let r = await call(sam, 'POST', '/api/templates', { name: 'BRD layout', kind: 'brd', scope: 'org', data: { body: '# Purpose\n# Scope' } }); assert.equal(r.status, 201); const id = r.data.item.id;
@@ -137,6 +155,39 @@ await t('security: forged upload ids refused; superseded records stay out of AI 
   await call(sam, 'PUT', `/api/projects/${pid}/items/decision/dec_old`, { data: { title: 'OLD-DECISION-MARKER', status: 'superseded' } }); await call(sam, 'PUT', `/api/projects/${pid}/items/decision/dec_new`, { data: { title: 'NEW-DECISION-MARKER' } });
   r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'gaps' }); assert.equal(r.status, 201); const lab = (r.data.item.data.sources || []).map(x => x.label).join('|'); assert.ok(/decision \(1\)/.test(lab), 'only the live decision is a source: ' + lab);
 });
+await t('tickets: numbering, lifecycle, append-only thread, permissions, cross-project list', async () => {
+  let r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t1`, { data: { subject: 'Cannot raise inventory request', description: 'Button missing', status: 'New', priority: 'High', requester: { name: 'Ann', email: 'ann@acme.com' }, org: 'Acme' } }); assert.equal(r.status, 200, JSON.stringify(r.data)); assert.equal(r.data.item.data.n, 1);
+  r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t2`, { data: { subject: 'Second', status: 'New', priority: 'Low' } }); assert.equal(r.data.item.data.n, 2);
+  r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t3`, { data: { subject: 'x', status: 'Weird' } }); assert.equal(r.status, 400); r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t3`, { data: { subject: '', status: 'New' } }); assert.equal(r.status, 400);
+  const rs = await Promise.all([1, 2, 3, 4].map(i => call(sam, 'POST', `/api/projects/${pid}/tickets/t1/message`, { type: i % 2 ? 'note' : 'reply', text: 'msg ' + i }))); assert.ok(rs.every(x => x.status === 201));
+  r = await call(sam, 'GET', `/api/projects/${pid}/items?kinds=tkt`); const t1 = r.data.items.find(x => x.id === 't1').data; assert.equal(t1.thread.length, 4, 'four simultaneous messages all kept');
+  r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t1`, { data: Object.assign({}, t1, { thread: [], status: 'In Progress' }) }); assert.equal(r.data.item.data.thread.length, 4, 'an edit cannot erase the conversation'); assert.equal(r.data.item.data.status, 'In Progress');
+  r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t1`, { data: Object.assign({}, r.data.item.data, { status: 'Resolved' }) }); assert.ok(r.data.item.data.resolvedAt); r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t1`, { data: Object.assign({}, r.data.item.data, { status: 'Open' }) }); assert.equal(r.data.item.data.resolvedAt, null, 'reopen clears the resolved time');
+  r = await call(out, 'POST', `/api/projects/${pid}/tickets/t1/message`, { type: 'reply', text: 'viewer' }); assert.equal(r.status, 403, 'viewers are read-only');
+  r = await call(sam, 'POST', `/api/projects/${pid}/tickets/t1/message`, { type: 'reply', text: '   ' }); assert.equal(r.status, 400);
+  r = await call(sam, 'GET', '/api/tickets'); assert.equal(r.data.tickets.length, 2); assert.equal(r.data.tickets[0].project, 'Alpha');
+  r = await call('stranger@facilio.com', 'GET', '/api/tickets'); assert.equal(r.data.tickets.length, 0, 'no access, no tickets');
+});
+await t('tickets: e-mail intake creates, dedupes and appends by conversation', async () => {
+  const mail = { messageId: '<m1@x>', conversationId: 'conv-1', from: { name: 'Ann', email: 'ann@acme.com' }, subject: 'Can we meet on Thursday?', body: 'Please schedule a call', attachments: [{ name: 'a.pdf' }] };
+  let r = await call(sam, 'POST', `/api/projects/${pid}/tickets/ingest`, mail); assert.equal(r.status, 201); assert.equal(r.data.created, true); const key = r.data.id;
+  r = await call(sam, 'POST', `/api/projects/${pid}/tickets/ingest`, mail); assert.equal(r.data.duplicate, true, 'same message twice is ignored');
+  r = await call(sam, 'POST', `/api/projects/${pid}/tickets/ingest`, Object.assign({}, mail, { messageId: '<m2@x>', body: 'Thursday 3pm works' })); assert.equal(r.data.appended, true); assert.equal(r.data.id, key);
+  r = await call(sam, 'GET', `/api/projects/${pid}/items?kinds=tkt`); const t = r.data.items.find(x => x.id === key).data; assert.equal(t.thread.length, 2); assert.equal(t.source, 'email'); assert.equal(t.category, 'Meeting request'); assert.equal(t.requester.email, 'ann@acme.com');
+  r = await call(sam, 'POST', `/api/projects/${pid}/tickets/ingest`, { messageId: 'z' }); assert.equal(r.status, 400, 'sender is required');
+});
+await t('tickets: Teams notices stay off until configured, then fire for create / assign / status / priority', async () => {
+  globalThis.__SENT = []; let r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t9`, { data: { subject: 'Quiet', status: 'New' } }); assert.equal(globalThis.__SENT.length, 0, 'off by default');
+  globalThis.__TEAMS = 'on'; r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t10`, { data: { subject: 'Loud', status: 'New', priority: 'Medium' } }); assert.equal(globalThis.__SENT.length, 1); assert.ok(/created/.test(globalThis.__SENT[0].title)); assert.ok(globalThis.__SENT[0].actions[0].url.includes(pid + '/tickets/t10'));
+  let d = r.data.item.data; r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t10`, { data: Object.assign({}, d, { assignee: { name: 'Lee', email: lead } }) }); assert.ok(/assigned/.test(globalThis.__SENT[1].title)); assert.deepEqual(globalThis.__SENT[1].to, [lead]);
+  d = r.data.item.data; r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t10`, { data: Object.assign({}, d, { status: 'Waiting for Client' }) }); assert.ok(/Waiting for Client/.test(globalThis.__SENT[2].title));
+  d = r.data.item.data; r = await call(sam, 'PUT', `/api/projects/${pid}/items/tkt/t10`, { data: Object.assign({}, d, { priority: 'Urgent' }) }); assert.ok(/Urgent/.test(globalThis.__SENT[3].title)); globalThis.__TEAMS = '';
+});
+await t('resources: links validated, owner kept', async () => {
+  let r = await call(sam, 'PUT', `/api/projects/${pid}/items/res/r1`, { data: { name: 'Kick-off recording', url: 'javascript:alert(1)', type: 'Recording' } }); assert.equal(r.status, 400, 'only http(s) links');
+  r = await call(sam, 'PUT', `/api/projects/${pid}/items/res/r1`, { data: { name: 'Kick-off recording', url: 'https://miro.com/app/board/x', type: 'Miro' } }); assert.equal(r.status, 200); assert.equal(r.data.item.data.createdByName, 'Sam K');
+  r = await call(dinesh, 'PUT', `/api/projects/${pid}/items/res/r1`, { data: Object.assign({}, r.data.item.data, { name: 'Renamed' }) }); assert.equal(r.data.item.data.createdByName, 'Sam K', 'original author kept');
+});
 await t('admin: only granted people, enforced on the server', async () => {
   let r = await call(sam, 'GET', '/api/admin/overview'); assert.equal(r.status, 403);
   r = await call(dinesh, 'GET', '/api/admin/overview'); assert.equal(r.status, 200); assert.ok(r.data.projects.find(p => p.id === pid));
@@ -163,5 +214,65 @@ await t('concurrency: simultaneous saves and submits do not corrupt or duplicate
 });
 await t('unknown routes and customer sign-in are refused', async () => {
   let r = await call(dinesh, 'GET', '/api/nothing'); assert.equal(r.status, 404); r = await call(dinesh, 'POST', '/api/auth/login', {}); assert.equal(r.status, 403);
+});
+await t('client feedback and Delivery Studio questions become tickets once, linked to their source', async () => {
+  let r = await call(dinesh, 'POST', `/api/projects/${pid}/feedback`, { module: 'Inventory', topic: 'Reorder level unclear', kind: 'question', priority: 'high', body: 'How is the reorder level calculated?' }); assert.equal(r.status, 201);
+  r = await call(dinesh, 'PUT', `/api/projects/${pid}/docs/transcripts`, { data: { candidates: [{ id: 'cand_1', status: 'clarify', title: 'Purchase approval limit', category: 'question', text: 'Who approves purchase requests above 5k?', speaker: 'Client PM' }, { id: 'cand_2', status: 'pending', text: 'ignore me' }] }, baseVersion: 0 }); assert.equal(r.status, 200);
+  r = await call(dinesh, 'POST', `/api/projects/${pid}/tickets/sync-client`, {}); assert.equal(r.data.created, 2);
+  r = await call(dinesh, 'POST', `/api/projects/${pid}/tickets/sync-client`, {}); assert.equal(r.data.created, 0, 'second run adds nothing');
+  r = await call(dinesh, 'GET', `/api/projects/${pid}/items?kinds=tkt`); const fb = r.data.items.find(i => i.data.extRef && i.data.extRef.startsWith('fb:')), tq = r.data.items.find(i => i.data.extRef === 'tr:cand_1');
+  assert.ok(fb && fb.data.priority === 'High' && fb.data.category === 'Question' && fb.data.link.kind === 'feedback'); assert.ok(tq && tq.data.source === 'delivery studio');
+  r = await call(out, 'POST', `/api/projects/${pid}/tickets/sync-client`, {}); assert.ok(r.status >= 400, 'no access, no sync');
+});
+await t('support mailbox: sync routes mail by ticket tag and sender rules, parks the rest, never duplicates, and reports setup problems', async () => {
+  let r = await call(out, 'GET', '/api/mail/status'); assert.equal(r.status, 403, 'outsiders cannot see mailbox admin');
+  r = await call(dinesh, 'POST', '/api/mail/sync'); assert.equal(r.status, 424, 'no credential yet is a clear setup message'); assert.match(r.data.error, /graph_mail/);
+  r = await call(dinesh, 'PUT', '/api/mail/rules', { rules: [{ match: 'Acme.com', projectId: pid }] }); assert.equal(r.status, 200); assert.equal(r.data.rules[0].match, 'acme.com');
+  r = await call(dinesh, 'GET', `/api/projects/${pid}/items?kinds=tkt`); const first = r.data.items.find(i => i.data.n === 1);
+  const msg = (id, from, subject, conv) => ({ id, conversationId: conv || id, subject, from: { emailAddress: { name: 'X', address: from } }, body: { contentType: 'text', content: 'Hello ' + id }, receivedDateTime: '2026-10-27T10:00:00Z', hasAttachments: false, isDraft: false });
+  let seenUrl = ''; globalThis.__GRAPH = async (cred, url) => { seenUrl = url; return { ok: true, status: 200, json: async () => ({ value: [msg('AAA1', 'pat@acme.com', 'Need a training session'), msg('AAA2', 'who@other.org', 'Pricing?'), msg('AAA3', 'pat@acme.com', 'Re: ticket [TKT-1]'), msg('AAA4', 'support@facilio.com', 'our own')] }) }; };
+  r = await call(dinesh, 'POST', '/api/mail/sync'); assert.equal(r.status, 200); assert.match(seenUrl, /users\/support%40facilio\.com\/mailFolders\/inbox/);
+  assert.deepEqual([r.data.result.tickets, r.data.result.appended, r.data.result.unrouted], [1, 1, 1]);
+  r = await call(dinesh, 'POST', '/api/mail/sync'); assert.deepEqual([r.data.result.tickets, r.data.result.appended, r.data.result.unrouted], [0, 0, 0], 'second sync adds nothing');
+  r = await call(dinesh, 'GET', '/api/mail/inbox'); assert.equal(r.data.items.length, 1); const mid = r.data.items[0].id;
+  r = await call(dinesh, 'POST', `/api/mail/inbox/${mid}/route`, { projectId: pid }); assert.equal(r.status, 200); r = await call(dinesh, 'GET', '/api/mail/inbox'); assert.equal(r.data.items.length, 0);
+  globalThis.__GRAPH = async () => ({ ok: false, status: 429, json: async () => ({}) }); r = await call(dinesh, 'POST', '/api/mail/sync'); assert.equal(r.status, 429);
+  globalThis.__GRAPH = async () => ({ ok: false, status: 403, json: async () => ({}) }); r = await call(dinesh, 'POST', '/api/mail/sync'); assert.equal(r.status, 502); r = await call(dinesh, 'GET', '/api/mail/status'); assert.equal(r.data.last.ok, false); assert.match(r.data.last.error, /Mail\.Read/);
+  delete globalThis.__GRAPH;
+});
+await t('Teams (Otto tools): suggest, create with permissions, duplicate-safe, bad links refused', async () => {
+  const tool = (who, name, body) => call(who, 'POST', '/api/', body, { 'x-work-mcp': '1', 'x-work-mcp-tool': name });
+  let r = await tool(dinesh, 'suggest_ticket', { text: 'Acme says the approval email is not working before go-live' }); assert.equal(r.data.ticketType, 'bug'); assert.equal(r.data.priority, 'High');
+  r = await tool(out, 'create_ticket', { project: 'Alpha', subject: 'x' }); assert.ok(r.status >= 400, 'a person without access cannot create');
+  r = await tool(dinesh, 'create_ticket', { project: 'Alp', subject: 'Approver gets no email', description: 'From Teams', ticketType: 'bug', priority: 'High', teamsMessageId: 'msg-1', teamsMessageLink: 'https://teams.microsoft.com/l/message/abc' }); assert.equal(r.status, 201); assert.match(r.data.ticket, /^TKT-\d+$/); assert.equal(r.data.category, 'Defect');
+  const first = r.data.ticket; r = await tool(dinesh, 'create_ticket', { project: 'Alpha', subject: 'Approver gets no email', teamsMessageId: 'msg-1' }); assert.equal(r.data.duplicate, true); assert.equal(r.data.ticket, first, 'retry returns the same ticket');
+  r = await tool(dinesh, 'create_ticket', { project: 'Alpha', subject: 's', teamsMessageLink: 'https://evil.example/x' }); assert.equal(r.status, 400);
+  r = await tool(dinesh, 'create_ticket', { project: 'Nope', subject: 's' }); assert.equal(r.status, 404);
+  r = await call(dinesh, 'GET', `/api/projects/${pid}/items?kinds=tkt`); const tk = r.data.items.find(i => i.data.extRef === 'teams:msg-1'); assert.equal(tk.data.source, 'teams'); assert.equal(tk.data.reporter.email, dinesh);
+});
+await t('notes: saved per project, creator recorded and kept on edit, title required, viewers cannot write', async () => {
+  let r = await call(dinesh, 'PUT', `/api/projects/${pid}/items/pnote/pn_1`, { data: { title: 'Kick-off notes', body: 'Agreed scope', category: 'Meeting notes' } }); assert.equal(r.status, 200); assert.equal(r.data.item.data.createdByName, 'Dinesh R');
+  r = await call(dinesh, 'PUT', `/api/projects/${pid}/items/pnote/pn_1`, { data: { title: 'Kick-off notes v2', body: 'Agreed scope', createdByName: 'Forged' }, baseVersion: 1 }); assert.equal(r.status, 200); assert.equal(r.data.item.data.createdByName, 'Dinesh R', 'creator cannot be rewritten');
+  r = await call(dinesh, 'PUT', `/api/projects/${pid}/items/pnote/pn_2`, { data: { title: '  ', body: 'x' } }); assert.equal(r.status, 400);
+  r = await call(out, 'PUT', `/api/projects/${pid}/items/pnote/pn_3`, { data: { title: 'x' } }); assert.ok(r.status >= 400);
+  r = await call(dinesh, 'GET', `/api/projects/${pid}/items?kinds=pnote`); assert.equal(r.data.items.length, 1);
+});
+await t('Claude key in the app: needs the encryption secret, validated first, stored encrypted, removable, never returned', async () => {
+  const KEY = 'sk-ant-api03-ABCDEFGHIJKLMNOPQRSTUVWXYZ'; const real = globalThis.fetch;
+  let r = await call(out, 'POST', '/api/admin/ai/key', { key: KEY }); assert.equal(r.status, 403);
+  r = await call(dinesh, 'POST', '/api/admin/ai/key', { key: 'not-a-key' }); assert.equal(r.status, 400);
+  r = await call(dinesh, 'POST', '/api/admin/ai/key', { key: KEY }); assert.equal(r.status, 409); assert.match(r.data.error, /ai_master_key/);
+  globalThis.__MASTER = 'a-long-random-master-secret-value';
+  try {
+    globalThis.fetch = async () => ({ ok: false, status: 401, json: async () => ({}) }); r = await call(dinesh, 'POST', '/api/admin/ai/key', { key: KEY }); assert.equal(r.status, 422); assert.match(r.data.error, /rejected/);
+    globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => ({ data: [{ id: 'claude-sonnet-5-5' }] }) }); r = await call(dinesh, 'POST', '/api/admin/ai/key', { key: KEY }); assert.equal(r.status, 200); assert.ok(!JSON.stringify(r.data).includes(KEY));
+    const raw = JSON.stringify([...(store.get('ai') || new Map()).values()]); assert.ok(!raw.includes(KEY), 'the key is not stored readable');
+    r = await call(dinesh, 'GET', '/api/ai/status'); assert.equal(r.data.claude, true); assert.equal(r.data.keySource, 'app'); assert.ok(!JSON.stringify(r.data).includes(KEY));
+    let used = ''; globalThis.fetch = async (u, o) => { used = o.headers['x-api-key']; return { ok: true, status: 200, json: async () => ({ content: [{ text: 'hi [S1]' }], usage: { input_tokens: 1, output_tokens: 1 } }) }; };
+    r = await call(dinesh, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat', provider: 'claude' }); assert.equal(r.status, 201); assert.equal(used, KEY, 'the saved key is decrypted on the server for the call');
+    globalThis.__MASTER = 'a-different-master-value-entirely'; r = await call(dinesh, 'GET', '/api/ai/status'); assert.equal(r.data.claude, false, 'a wrong master key cannot read it');
+    globalThis.__MASTER = 'a-long-random-master-secret-value';
+    r = await call(dinesh, 'DELETE', '/api/admin/ai/key'); assert.equal(r.status, 200); r = await call(dinesh, 'GET', '/api/ai/status'); assert.equal(r.data.claude, false);
+  } finally { globalThis.fetch = real; globalThis.__MASTER = ''; }
 });
 console.log(`\n${n} checks passed, ${calls} storage calls, largest record ${(maxVal / 1024).toFixed(1)} KB`);

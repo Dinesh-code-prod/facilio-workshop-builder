@@ -254,17 +254,29 @@
 
   V.adminHtml = function () {
     const d = A.data; if (!d) return '<div class="adm-wrap"><div class="muted" style="padding:40px">Loading…</div></div>';
-    const nav = [['dashboard', 'Dashboard', 'M3 13h8V3H3zm0 8h8v-6H3zm10 0h8V11h-8zm0-18v6h8V3z'], ['projects', 'Projects', 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'], ['users', 'Users', 'M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0zM4 21a8 8 0 0 1 16 0z'], ['access', 'Access', 'M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z', 'super'], ['ai', 'AI & Outlook', 'M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z', 'admin'], ['activity', 'Activity', 'M3 12h4l3-8 4 16 3-8h4']].filter(n => !n[3] || can(n[3]));
-    const title = { dashboard: 'Dashboard', projects: 'Projects', users: 'Users', access: 'Access', ai: 'AI & Outlook', activity: 'Activity' }[A.sec];
-    const sub = { dashboard: 'Portfolio insights across every project', projects: `${d.kpis.active} active · ${d.kpis.archived} archived. Click a project for its insights.`, users: 'Accounts on this platform', access: 'Who can use this admin console', ai: 'Choose the AI provider and see how Outlook works here', activity: 'Latest recorded actions across all projects' }[A.sec];
-    const body = A.sec === 'dashboard' ? dashboard() : A.sec === 'projects' ? projects() : A.sec === 'users' ? users() : A.sec === 'access' ? access() : A.sec === 'ai' ? aiPanel() : activity();
+    const nav = [['dashboard', 'Dashboard', 'M3 13h8V3H3zm0 8h8v-6H3zm10 0h8V11h-8zm0-18v6h8V3z'], ['projects', 'Projects', 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'], ['users', 'Users', 'M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0zM4 21a8 8 0 0 1 16 0z'], ['access', 'Access', 'M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z', 'super'], ['ai', 'AI provider', 'M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z', 'admin'], ['integrations', 'Integrations', 'M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1', 'admin'], ['activity', 'Activity', 'M3 12h4l3-8 4 16 3-8h4']].filter(n => !n[3] || can(n[3]));
+    const title = { dashboard: 'Dashboard', projects: 'Projects', users: 'Users', access: 'Access', ai: 'AI provider', integrations: 'Integrations', activity: 'Activity' }[A.sec];
+    const sub = { dashboard: 'Portfolio insights across every project', projects: `${d.kpis.active} active · ${d.kpis.archived} archived. Click a project for its insights.`, integrations: 'Microsoft Teams, the support mailbox and Outlook', users: 'Accounts on this platform', access: 'Who can use this admin console', ai: 'Choose the AI provider and see how Outlook works here', activity: 'Latest recorded actions across all projects' }[A.sec];
+    const body = A.sec === 'dashboard' ? dashboard() : A.sec === 'projects' ? projects() : A.sec === 'users' ? users() : A.sec === 'access' ? access() : A.sec === 'ai' ? aiPanel() : A.sec === 'integrations' ? integrationsPanel() : activity();
     return `<div class="adm-wrap"><aside class="adm-nav" aria-label="Admin sections"><div class="adm-me"><div class="pav lg" style="background:${tone(d.me.email || 'x')}">${esc(initials(d.me.name || d.me.email))}</div><div><b>${esc(d.me.name || 'Admin')}</b><div class="xs muted">${esc(d.me.email || '')}</div>${rchip(d.me.role)}</div></div>
       ${nav.map(([k, l, p]) => `<button class="adm-ni${A.sec === k ? ' on' : ''}" data-act="admSec" data-s="${k}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${p}"/></svg><span>${l}</span>${k === 'projects' ? `<em>${d.kpis.active}</em>` : ''}</button>`).join('')}
-      <div class="adm-nav-foot">${root.FWBRun ? '' : '<button class="btn sm" data-act="admPw">Change my password</button>'}<button class="btn sm" data-act="toProjects">Back to projects</button></div></aside>
+      <div class="adm-nav-foot">${root.FWBRun ? '' : '<button class="sb-out" data-act="admPw">Change my password</button>'}<button class="sb-out" data-act="logout" title="Sign out and return to the sign-in page"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Sign out</button></div></aside>
       <main class="adm-main"><div class="adm-hero"><div class="adm-hero-t"><p class="adm-crumb">Admin console</p><h1>${title}</h1><p class="adm-sub">${esc(sub)}</p><div class="adm-hero-a">${d.me.role === 'sub' ? chip('r-sub', 'Read-only access') : ''}${A.sec === 'dashboard' ? V.range.bar('adm', A.rg, {}) : ''}<button class="hm-btn ghost" type="button" data-act="admRefresh"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>Refresh</button></div></div><div class="adm-hero-art" aria-hidden="true"><div class="hm-lt" data-lottie="${{ dashboard: 'scene-dash', projects: 'scene-building', users: 'scene-workshop', access: 'scene-connect', ai: 'scene-dash', activity: 'scene-guide' }[A.sec] || 'scene-dash'}"></div></div></div>${body}</main></div>`;
   };
 
   // ---------- AI providers and Outlook ----------
+  function integrationsPanel() {
+    const m = A.integ; const l = m && m.last;
+    const mail = !m ? 'Loading…' : m.error ? esc(m.error) : !l ? 'Needs configuration. No sync has run.' : l.ok ? 'Last sync worked (' + fmt(l.at) + ').' : 'Last sync failed: ' + esc(l.error);
+    return `<div class="adm-card"><div class="adm-h"><h3>Microsoft Teams</h3><span class="chip">Via Otto</span></div>
+      <p class="small" style="margin:0 0 8px">People create tickets from Teams by asking Otto, the facilio.work Teams bot: "create a Delivery Studio ticket from this message". Otto suggests a type, priority and project, asks the person to review them, and creates the ticket as that person, so project permissions apply. Retries return the same ticket.</p>
+      <p class="small muted" style="margin:0 0 8px">Setup: open the app in Teams through Otto (no tenant app upload needed), and add this app's MCP connector if you also want it in Claude. Ticket notices to Teams are off until the owner adds the plain secret <code>teams_notify</code> = on. Not yet verified live in a real Teams tenant.</p></div>
+    <div class="adm-card"><div class="adm-h"><h3>Support mailbox (Microsoft 365)</h3><span class="chip">${m && m.last && m.last.ok ? 'Working' : 'Needs configuration'}</span></div>
+      <p class="small" style="margin:0 0 8px">${mail}</p><p class="small muted" style="margin:0">Managed from Tickets, Support mailbox. Requires the <code>graph_mail</code> credential with Mail.Read, granted to this app.</p></div>
+    <div class="adm-card"><div class="adm-h"><h3>Outlook</h3><span class="chip">Open and compose only</span></div>
+      <p class="small" style="margin:0">Compose in Outlook and Open Outlook open a draft in Outlook on the web for the person to review and send. Nothing is sent from Delivery Studio.</p></div>
+    <div class="adm-card"><div class="adm-h"><h3>AI provider</h3></div><p class="small" style="margin:0">DeepSeek and Claude settings are in the AI provider section.</p></div>`;
+  }
   function aiPanel() {
     const x = A.ai; if (!x) return '<div class="muted" style="padding:30px">Loading…</div>'; const cl = x.st.claude, u = x.us.usage, cfg = x.us.cfg; const n = v => (v || 0).toLocaleString();
     const row = (id, name, note) => { const q = u[id]; const has = q.inTok || q.outTok; return `<tr><td><b>${name}</b>${x.st.defaultProvider === id ? ' <span class="chip">Default</span>' : ''}<div class="xs muted">${note}</div></td><td>${n(q.calls)}</td><td>${n(q.errors)}${q.lastError ? `<div class="xs muted">Last: ${esc(q.lastError.code)}</div>` : ''}</td><td>${has ? n(q.inTok) + ' in / ' + n(q.outTok) + ' out' : '<span class="muted">Not reported</span>'}</td></tr>`; };
@@ -274,14 +286,12 @@
       <label class="afld">If Claude is not available<select id="ai_fb"><option value="none"${cfg.fallback === 'none' ? ' selected' : ''}>Show an error (do not switch)</option><option value="deepseek"${cfg.fallback === 'deepseek' ? ' selected' : ''}>Use DeepSeek and say so on the draft</option></select></label></div>
       <div class="row" style="gap:8px;margin-top:12px"><button class="btn primary" data-act="aiCfgSave">Save</button><button class="btn" data-act="aiTest">Test Claude connection</button><span id="ai_res" class="small muted"></span></div></div>
     <div class="adm-card"><div class="adm-h"><h3>Claude API key</h3>${cl ? '<span class="chip">Configured</span>' : '<span class="chip">Not configured</span>'}</div>
-      <p class="small" style="margin:0 0 8px">${cl ? 'A key is stored. For safety it is never shown here, sent to the browser or written to logs.' : 'No key is stored yet.'}</p>
-      <p class="small muted" style="margin:0">The key is a secret named <code>anthropic_api_key</code>. On facilio.work only the app owner can add, replace or remove secrets, at <b>secrets.facilio.work</b>, so this screen cannot save a key. It shows whether one is set and lets you test it. A Claude API key gives access to Claude only: it does not give Claude Code skills, local files or MCP tools.</p></div>
+      <p class="small" style="margin:0 0 8px">${cl ? (x.st.keySource === 'secret' ? 'A key is set as the <code>anthropic_api_key</code> secret. Only the app owner can replace or remove it, at secrets.facilio.work.' : 'A key saved in the app is in use. It is stored encrypted and never shown again, sent to the browser or written to logs.') : 'No key is set. DeepSeek handles every AI task.'}</p>
+      ${x.st.canStoreKey ? `<div class="row" style="gap:8px;flex-wrap:wrap"><input type="password" id="ai_key" autocomplete="off" spellcheck="false" placeholder="sk-ant-…" aria-label="Anthropic API key" style="flex:1;min-width:240px"><button class="btn primary" data-act="aiKeySave">${cl && x.st.keySource === 'app' ? 'Replace and check' : 'Save and check'}</button>${cl && x.st.keySource === 'app' ? '<button class="btn" data-act="aiKeyRemove">Remove key</button>' : ''}</div><p class="xs muted" style="margin:6px 0 0">The key is checked with Anthropic before it is saved. If it is rejected, nothing is stored.</p>` : `<p class="small notice" style="margin:0">To save a key here, the app owner first adds a plain secret named <code>ai_master_key</code> (any long random text) at secrets.facilio.work. It encrypts saved keys. Alternatively the owner can add the key itself as <code>anthropic_api_key</code>.</p>`}
+      <p class="small muted" style="margin:10px 0 0"><b>Billing:</b> Anthropic API usage is billed to the account that owns the key, separately from any Claude subscription. A Claude Pro, Max or Team plan does not include API credits. Delivery Studio never uses Claude Code or subscription sign-ins, only an API key from console.anthropic.com. A Claude API key gives access to Claude only: it does not give Claude Code skills, local files or MCP tools.</p></div>
     <div class="adm-card"><div class="adm-h"><h3>Usage since tracking began</h3><span class="muted xs">Only what the providers report</span></div>
       <div class="tbl-wrap adm-tbl"><table class="tbl"><thead><tr><th>Provider</th><th>Requests</th><th>Errors</th><th>Tokens</th></tr></thead><tbody>${row('deepseek', 'DeepSeek', 'Facilio-hosted model')}${row('claude', 'Claude', 'Anthropic API')}</tbody></table></div>
-      <p class="xs muted" style="margin:8px 0 0">Costs are not estimated because no price list is configured. Prompts and responses are never stored here.</p></div>
-    <div class="adm-card"><div class="adm-h"><h3>Outlook</h3><span class="chip">Open and compose only</span></div>
-      <p class="small" style="margin:0 0 8px">Compose in Outlook and Open Outlook are available on the weekly digest and on reports. They open a draft in Outlook on the web for the person to review and send. Nothing is sent from Delivery Studio.</p>
-      <p class="small muted" style="margin:0">An inbox inside Delivery Studio is not available yet. It needs a Microsoft Entra app registration with the delegated <code>Mail.Read</code> permission, tenant admin consent, and a platform sign-in flow that hands the app each person's own Microsoft token. Today the platform gives the app only the signed-in email address. Details are in docs/OUTLOOK_FEASIBILITY.md.</p></div>`;
+      <p class="xs muted" style="margin:8px 0 0">Costs are not estimated because no price list is configured. Prompts and responses are never stored here.</p></div>`;
   }
 
   // ---------- project detail ----------
@@ -303,12 +313,13 @@
 
   // ---------- sign-in gate ----------
   async function enter() {
+    V.loading(true, 'Switching to Admin…');
     try { await load(); A.users = A.audit = A.access = null; show(); }
     catch (e) {
       if (e.status === 401) return signIn();
       if (e.status === 403) { toast('Your account does not have admin access. Ask the platform owner to add your email.', 6000, true); return; }
       toast(e.message, 5000, true);
-    }
+    } finally { V.loading(false); }
   }
   ACT.openAdmin = () => enter();
   function signIn(setup) {
@@ -332,7 +343,9 @@
 
   // ---------- actions ----------
   ACT.aiCfgSave = async () => { try { await API.post('/api/admin/ai/config', { defaultProvider: document.getElementById('ai_def').value, fallback: document.getElementById('ai_fb').value }); A.ai = null; toast('AI settings saved'); await lazy(); } catch (e) { toast(e.message, 5000, true); } };
-  ACT.aiTest = async a => V.busy(a, async () => { const el = document.getElementById('ai_res'); try { const r = await API.post('/api/admin/ai/test', {}); if (el) el.textContent = r.message; toast(r.message, 5000, !r.ok); A.ai = null; } catch (e) { toast(e.message, 5000, true); } });
+  ACT.aiKeySave = a => V.busy(a, async () => { const el = document.getElementById('ai_key'); const k = el ? el.value.trim() : ''; if (!k) { toast('Paste the API key first', 4000, true); return; } try { const r = await API.post('/api/admin/ai/key', { key: k }); if (el) el.value = ''; toast(r.message, 6000); } catch (e) { toast(e.message, 8000, true); } A.ai = null; show(); await lazy(); });
+  ACT.aiKeyRemove = async a => { if (!(await V.confirmDialog('Remove Claude key', 'Remove the saved key? AI tasks keep working with DeepSeek.', 'Remove'))) return; try { const r = await API.del('/api/admin/ai/key'); toast(r.message, 6000); } catch (e) { toast(e.message, 6000, true); } A.ai = null; show(); await lazy(); };
+  ACT.aiTest = async a => V.busy(a, async () => { const el = document.getElementById('ai_res'); try { const r = await API.post('/api/admin/ai/test', {}); if (el) el.textContent = r.message; toast(r.message, 5000, !r.ok); A.ai = null; await lazy(); const el2 = document.getElementById('ai_res'); if (el2) el2.textContent = r.message; } catch (e) { toast(e.message, 5000, true); } });
   ACT.admSec = async a => { A.sec = a.getAttribute('data-s'); show(); await lazy(); };
   async function lazy() {
     try {
@@ -340,6 +353,7 @@
       if (A.sec === 'users' && !A.users) { A.users = (await API.get('/api/admin/users', { noAuthRedirect: true })).users; show(); }
       if (A.sec === 'activity' && !A.audit) { A.audit = (await API.get('/api/admin/audit', { noAuthRedirect: true })).entries; show(); }
       if (A.sec === 'ai' && !A.ai) { const [st, us] = await Promise.all([API.get('/api/ai/status', { noAuthRedirect: true }), API.get('/api/admin/ai/usage', { noAuthRedirect: true })]); A.ai = { st, us }; show(); }
+      if (A.sec === 'integrations' && !A.integ) { try { A.integ = await API.get('/api/mail/status', { noAuthRedirect: true }); } catch (e) { A.integ = { error: e.message }; } show(); }
       if (A.sec === 'access' && !A.access) { A.access = await API.get('/api/admin/access', { noAuthRedirect: true }); show(); }
     } catch (e) { toast(e.message, 4000, true); }
   }

@@ -137,16 +137,16 @@
 
   // ---------- workbook ----------
   const HDR_REQ = 'FF0A7AFF', HDR_OPT = 'FF0F1D3A';
-  ACT.onbDownload = a => V.busy(a, async () => { const p = plan(); const only = a.getAttribute('data-tpl'); loading(true, 'Building the workbook…'); try {
+  ACT.onbDownload = a => V.busy(a, async () => { await loadT(); const p = plan(); const only = a.getAttribute('data-tpl'); loading(true, 'Building the workbook…'); try {
     const ExcelJS = await V.loadExcelJS(); const wb = new ExcelJS.Workbook(); wb.creator = 'Facilio'; const sheets = p.sheets.filter(s => !only || s.tpl === only);
     const ov = wb.addWorksheet('Overview'); ov.getCell('B2').value = `${S.project.customer || 'Customer'} · Facilio data onboarding`; ov.getCell('B2').font = { size: 16, bold: true }; ov.getCell('B3').value = T.MASTER_LEAD; ov.getCell('B3').font = { italic: true, size: 9, color: { argb: 'FF6B6785' } };
     ['Sheet', 'Module', 'What it holds', 'Priority', 'Due'].forEach((h, i) => { const c = ov.getCell(5, i + 2); c.value = h; c.font = { bold: true, color: { argb: 'FFFFFFFF' } }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: HDR_OPT } }; });
     sheets.forEach((s, i) => { const g = T.ONB.GUIDE.sheets[s.sheet] || {}; [s.sheet, s.tplName, g.purpose || '', s.crit, s.due ? new Date(s.due + 'T00:00:00Z') : ''].forEach((v, j) => { const c = ov.getCell(6 + i, j + 2); c.value = v; if (j === 4 && v) c.numFmt = 'dd-mmm-yyyy'; c.alignment = { wrapText: true, vertical: 'top' }; }); });
     [4, 22, 22, 60, 10, 14].forEach((w, i) => { ov.getColumn(i + 1).width = w; });
     const lists = wb.addWorksheet('Lists'); lists.state = 'veryHidden'; const listRef = {}; let lc = 1;
-    Object.entries(T.ONB.RULES.lists).forEach(([k, vals]) => { vals.forEach((v, i) => { lists.getCell(i + 1, lc).value = v; }); listRef[k] = `Lists!$${colLetter(lc)}$1:$${colLetter(lc)}$${vals.length}`; lc++; });
+    Object.entries(T.ONB.RULES.lists).filter(([, vals]) => vals && vals.length).forEach(([k, vals]) => { vals.forEach((v, i) => { lists.getCell(i + 1, lc).value = v; }); listRef[k] = `Lists!$${colLetter(lc)}$1:$${colLetter(lc)}$${vals.length}`; lc++; });
     const needCat = sheets.some(s => s.ents.includes('asset')); const where = {}; // ent → {sheet, col letter per column, firstRow}
-    sheets.forEach(s => { const ws = wb.addWorksheet(s.sheet.slice(0, 31)); const multi = s.ents.length > 1; let base = 1;
+    sheets.forEach(s => { const ws = wb.addWorksheet(V.sheetName(wb, s.sheet)); const multi = s.ents.length > 1; let base = 1;
       s.ents.forEach(k => { const cols = colsOf(k); let hr = base; if (multi) { ws.getCell(base, 1).value = T.ENT[k].label; ws.getCell(base, 1).font = { bold: true, size: 13 }; hr = base + 1; }
         where[k] = { sheet: ws.name, first: hr + 3, last: hr + (multi ? 38 : 600), cols: {} };
         cols.forEach((c, i) => { const col = i + 1; const L = colLetter(col); where[k].cols[c.k] = L;
@@ -157,7 +157,7 @@
           ws.getColumn(col).width = Math.max(14, Math.min(40, c.h.length + 4)); });
         ws.getRow(hr + 1).height = 42; base = hr + 40; });
       if (!multi) ws.views = [{ state: 'frozen', ySplit: 2 }]; });
-    if (needCat) { const cm = wb.addWorksheet('Asset Category Master'); cm.getCell('A1').value = 'Asset Category'; cm.getCell('A1').font = { bold: true, color: { argb: 'FFFFFFFF' } }; cm.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: HDR_OPT } }; T.ONB.SPEC.assetCategories.forEach((v, i) => { cm.getCell(i + 2, 1).value = typeof v === 'string' ? v : (v.name || v[0] || ''); }); cm.getColumn(1).width = 40; listRef.__cat = `'Asset Category Master'!$A$2:$A$${T.ONB.SPEC.assetCategories.length + 1}`; }
+    if (needCat) { const cm = wb.addWorksheet(V.sheetName(wb, 'Asset Category Master')); cm.getCell('A1').value = 'Asset Category'; cm.getCell('A1').font = { bold: true, color: { argb: 'FFFFFFFF' } }; cm.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: HDR_OPT } }; T.ONB.SPEC.assetCategories.forEach((v, i) => { cm.getCell(i + 2, 1).value = typeof v === 'string' ? v : (v.name || v[0] || ''); }); cm.getColumn(1).width = 40; listRef.__cat = `'${cm.name}'!$A$2:$A$${T.ONB.SPEC.assetCategories.length + 1}`; }
     // dropdowns: fixed lists, the asset category master, and lookups to the target sheet's column
     sheets.forEach(s => s.ents.forEach(k => { const w = where[k]; const ws = wb.getWorksheet(w.sheet); colsOf(k).forEach(c => { let f = null;
       if (c.list && listRef[c.listKey]) f = listRef[c.listKey]; else if (c.sheetList === 'assetCategory' && listRef.__cat) f = listRef.__cat; else if (c.lookup && where[c.lookup[0]] && where[c.lookup[0]].cols[c.lookup[1]]) { const t = where[c.lookup[0]]; const L = t.cols[c.lookup[1]]; f = `'${t.sheet}'!$${L}$${t.first}:$${L}$${t.last}`; }

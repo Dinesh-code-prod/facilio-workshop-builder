@@ -292,7 +292,7 @@
   function document_() { const r = buildBlocks(); r.blocks = applyEdits(r.blocks); return r; }
 
   // ---------- logos ----------
-  async function logoData() { const d = BD(); const out = {}; for (const k of ['facilio', 'customer']) { const l = d.logos[k]; if (!l || !l.fileId) continue; try { const blob = await root.FWBViews.fileBlob(l.fileId); const u8 = new Uint8Array(await blob.arrayBuffer()); const url = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(blob); }); const img = await createImageBitmap(blob); out[k] = { u8, url, w: img.width, h: img.height, type: /png/i.test(blob.type) || /\.png$/i.test(l.name) ? 'png' : 'jpg' }; } catch (e) { console.warn('logo', k, e); } } return out; }
+  async function logoData() { const d = BD(); const out = {}; for (const k of ['facilio', 'customer']) { const l = d.logos[k]; if (!l || !l.fileId) continue; try { const im = await root.FWBViews.docImage(await root.FWBViews.fileBlob(l.fileId)); const url = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(new Blob([im.u8], { type: im.mime })); }); out[k] = { u8: im.u8, url, w: im.w, h: im.h, type: im.type }; } catch (e) { console.warn('logo', k, e); } } return out; }
   const fit = (w, h, mw, mh) => { const s = Math.min(mw / w, mh / h, 1); return { width: Math.max(1, Math.round(w * s)), height: Math.max(1, Math.round(h * s)) }; };
 
   // ================= DOCX =================

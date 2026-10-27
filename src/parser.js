@@ -351,7 +351,8 @@
       const m = txt(e, 'moduleName'); const cfg = kid(e, 'config');
       return { module: m, name: txt(e, 'name'), link: txt(e, 'linkName'), enabled: bool(txt(e, 'Status')), buttonType: txt(e, 'Button_Type'), position: txt(e, 'Position_Type'),
         actionType: txt(cfg, 'actionType') || txt(cfg, 'navigateTo') || '', connectedApp: txt(cfg, 'Connected_App_Link_Name'), targetModule: txt(cfg, 'moduleName'),
-        criteria: parseCriteria(kid(e, 'Criteria'), ctx, m), performers: parseSharing(kid(e, 'ApproverList')), background: bool(txt(e, 'IsBackgroundActivity')), ref: ref('CUSTOM_BUTTON', e) };
+        criteria: parseCriteria(kid(e, 'Criteria'), ctx, m), performers: parseSharing(kid(e, 'ApproverList')), background: bool(txt(e, 'IsBackgroundActivity')),
+        actions: parseActions(kid(e, 'Actions_List'), ctx, m), cfg: cfg ? kids(cfg).reduce((o, k) => { o[k.nodeName] = (k.textContent || '').trim().slice(0, 160); return o; }, {}) : {}, ref: ref('CUSTOM_BUTTON', e) };
     });
 
     // ---- SLA

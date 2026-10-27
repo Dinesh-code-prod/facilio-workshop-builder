@@ -265,7 +265,7 @@
       <div class="row" style="margin-bottom:8px">${ro() ? '' : `<button class="btn" data-act="newSession">${ico('plus')}Add session (form)</button>`}<span class="spacer"></span><button class="btn" data-act="mfSheetDownload">${ico('dl')}Download Excel</button></div>
       <div id="mfxHost" style="min-height:420px"></div>${nav(true, true, 'Finalise')}`;
   }
-  ACT.mfSheetDownload = async () => { if (!live) return; live.ws.getColumn(COLID).values = []; try { const buf = await live.E.buffer(); V.download(F.slug(S.project.customer || 'Customer') + '_workshop_plan.xlsx', new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })); F.log('Workshop plan exported', 'from the live schedule'); } finally { writeIds(live.ws); live.E.render(); } };
+  ACT.mfSheetDownload = async () => { if (!live) return; live.ws.getColumn(COLID).eachCell({ includeEmpty: false }, c => { c.value = null; }); try { const buf = await live.E.buffer(); V.download(F.slug(S.project.customer || 'Customer') + '_workshop_plan.xlsx', new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })); F.log('Workshop plan exported', 'from the live schedule'); } finally { writeIds(live.ws); live.E.render(); } };
   V.msaflowLive = () => live;
   function mountSchedule() {
     if (step() !== 'schedule' || sub('schedule') !== 'live' || !document.getElementById('mfxHost')) return;

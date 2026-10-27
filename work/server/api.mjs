@@ -1,7 +1,7 @@
 /* FWB backend on facilio.work: one server function (/api/fn/api/...) that serves every /api/* route of the app.
    Identity comes from the platform (ctx.viewer, verified); data lives in ctx.db; file bytes in private ctx.files.
    Roles and project access are enforced HERE, on the server, so pages cannot bypass them. */
-let CTX = null;   // set at the start of every request (a Lambda handles one request at a time)
+let CTX = null, HDR = {};   // set at the start of every request (a Lambda handles one request at a time)
 {
   'use strict';
   const SUPER_ADMINS = ['dinesh.r@facilio.com'];
@@ -19,11 +19,12 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
     ftr_workbook: { ext: ['xlsx', 'xlsm'], max: 40e6 }, kpi_workbook: { ext: ['xlsx', 'xlsm'], max: 40e6 },
     config_evidence: { ext: ['pdf', 'xlsx', 'csv', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'txt'], max: 20e6 },
     guide_media: { ext: ['png', 'jpg', 'jpeg'], max: 8e6 },
+    ticket_attachment: { ext: ['pdf', 'xlsx', 'xls', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'csv', 'txt', 'msg', 'eml'], max: 20e6 },
     report_attachment: { ext: ['pdf', 'xlsx', 'xls', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'csv', 'txt'], max: 20e6 },
     signoff_evidence: { ext: ['pdf', 'png', 'jpg', 'jpeg', 'msg', 'eml', 'docx'], max: 20e6 }, brd_signed: { ext: ['docx', 'pdf', 'json'], max: MAX_FILE }
   };
   // record kinds the team can store (customer-only rules come with the customer page)
-  const KINDS = ['action', 'decision', 'raid', 'signoff', 'cr', 'onb', 'onbsub', 'onbfile', 'onbws', 'owner', 'agreement', 'minutes', 'checklist', 'build', 'uat', 'digest', 'ctrcore', 'ctrfees', 'ctrlegal', 'ctrrates', 'scope', 'modbrief', 'fieldreq', 'note', 'ctrwatch', 'usecase', 'discrepancy', 'brdrev', 'ai', 'hc', 'hcrep', 'ho', 'close', 'rep', 'kpi', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'lesson'];
+  const KINDS = ['action', 'decision', 'raid', 'signoff', 'cr', 'onb', 'onbsub', 'onbfile', 'onbws', 'owner', 'agreement', 'minutes', 'checklist', 'build', 'uat', 'digest', 'ctrcore', 'ctrfees', 'ctrlegal', 'ctrrates', 'scope', 'modbrief', 'fieldreq', 'note', 'ctrwatch', 'usecase', 'discrepancy', 'brdrev', 'ai', 'hc', 'hcrep', 'ho', 'close', 'rep', 'kpi', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'lesson', 'tkt', 'res', 'ugv', 'ugu', 'pnote'];
   const DOC_SECTIONS = /^[a-z][a-z0-9_]{1,40}$/, ITEM_ID_RE = /^[A-Za-z0-9_-]{1,80}$/, GR_KEY = /^[a-z]{2,8}:[afbxw]:[A-Za-z0-9_-]{1,64}$/;
 
   class HttpError extends Error { constructor(status, msg, extra) { super(msg); this.status = status; this.extra = extra; } }
@@ -123,6 +124,45 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
     return out.sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
   }
   async function itemsFor(pid, kinds) { return [].concat(...(await Promise.all(kinds.map(k => itemsOf(pid, k))))); }
+
+
+  // ---------- tickets: shared rules, numbering, Teams notices, e-mail intake ----------
+  const TKT_STATUS = ['New', 'Open', 'In Progress', 'Waiting for Client', 'Resolved', 'Closed'], TKT_PRIO = ['Low', 'Medium', 'High', 'Urgent'];
+  async function ticketSanitize(s, pid, cur, data) {
+    const subject = str(data.subject, 200, 'Subject', true); const status = data.status || (cur ? cur.status : 'New');
+    if (!TKT_STATUS.includes(status)) throw new HttpError(400, 'Unknown ticket status'); const priority = data.priority || 'Medium'; if (!TKT_PRIO.includes(priority)) throw new HttpError(400, 'Unknown priority');
+    let n = cur && cur.n; if (!n) { const all = await itemsOf(pid, 'tkt'); n = all.reduce((m, it) => Math.max(m, Number(it.data.n) || 0), 0) + 1; }
+    // the conversation is append-only through the message route; an edit can never rewrite or drop earlier messages
+    const thread = cur && Array.isArray(cur.thread) ? cur.thread : (Array.isArray(data.thread) && !cur ? data.thread.slice(0, 1) : []);
+    const t = now(); const resolvedAt = status === 'Resolved' || status === 'Closed' ? ((cur && cur.resolvedAt) || t) : null;
+    return Object.assign({}, data, { n, subject, status, priority, thread, resolvedAt, lastActivity: cur ? t : (data.lastActivity || t), description: str(data.description, 20000, 'Description') });
+  }
+  async function teamsPing(project, pid, key, tk, title, assigneeEmail) {
+    try {
+      if (!CTX.teams || !CTX.teams.send) return; let on = ''; try { on = await CTX.secrets.get('teams_notify'); } catch (e) { }
+      if (String(on).toLowerCase() !== 'on') return; // off until an owner adds the plain secret teams_notify = on
+      const to = assigneeEmail ? [assigneeEmail] : undefined;
+      await CTX.teams.send({ to, channel: true, title, text: tk.subject, facts: [{ title: 'Project', value: project.name }, { title: 'Status', value: tk.status }, { title: 'Priority', value: tk.priority }, { title: 'Client', value: tk.org || (tk.requester && tk.requester.name) || '—' }], actions: [{ title: 'Open ticket', url: 'https://facilio-delivery-studio.facilio.work/#/p/' + pid + '/tickets/' + key }] });
+    } catch (e) { console.log('teams notice failed: ' + (e && e.message)); }
+  }
+  async function ticketNotify(project, key, cur, data, s) {
+    const id = 'TKT-' + data.n; const ae = data.assignee && data.assignee.email; const was = cur || {};
+    if (!cur) return teamsPing(project, project.id, key, data, id + ' created', ae);
+    if ((was.assignee && was.assignee.email) !== ae && ae) return teamsPing(project, project.id, key, data, id + ' assigned to ' + (data.assignee.name || ae), ae);
+    if (was.status !== data.status) return teamsPing(project, project.id, key, data, id + ' is now ' + data.status, ae);
+    if (was.priority !== data.priority) return teamsPing(project, project.id, key, data, id + ' priority is now ' + data.priority, ae);
+  }
+  async function ticketAppend(s, pid, key, msg, extra) {
+    return withLock('it.' + pid + '.tkt.' + key, async () => {
+      const col = 'it.' + pid + '.tkt', pcol = 'ip.' + pid + '.tkt'; const row = await dbGet(col, key); if (!row) throw new HttpError(404, 'Ticket not found'); const head = row.value, cur = await unpack(pcol, key, head);
+      const m = { id: rid('m'), at: now(), by: msg.by || s.name || s.email, byEmail: msg.byEmail || s.email, type: msg.type, text: str(msg.text, 20000, 'Message', true), attachments: (msg.attachments || []).slice(0, 10).map(a => ({ name: String(a.name || '').slice(0, 200), fileId: a.fileId ? String(a.fileId).slice(0, 80) : undefined, note: a.note ? String(a.note).slice(0, 200) : undefined })), ref: msg.ref ? String(msg.ref).slice(0, 300) : undefined };
+      const data = Object.assign({}, cur, extra || {}, { thread: (cur.thread || []).concat([m]).slice(-300), lastActivity: m.at });
+      if (cur.status === 'Waiting for Client' && m.type === 'inbound') data.status = 'Open'; // a client reply puts the ticket back in the team's hands
+      data.hist = (cur.hist || []).concat([{ at: m.at, who: m.by, side: 'facilio', event: m.type === 'note' ? 'Added an internal note' : m.type === 'inbound' ? 'Client message received' : 'Replied to the client' }]).slice(-40);
+      if (JSON.stringify(data).length > 150000) throw new HttpError(413, 'This ticket has reached its size limit. Open a follow-up ticket.');
+      const nh = Object.assign({}, head, { v: head.v + 1, ub: s.id, ua: m.at }); await save(col, pcol, key, nh, data, head.z); return itemOut('tkt', key, nh, data);
+    });
+  }
 
   // ---------- route table ----------
   const routes = [];
@@ -234,7 +274,23 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
   // It is read only here, on the server, and is never returned, logged or stored in the database.
   const PROVIDERS = ['deepseek', 'claude'];
   const PNAME = { deepseek: 'DeepSeek', claude: 'Claude' };
-  const claudeKey = async () => { try { return (await CTX.secrets.get('anthropic_api_key')) || ''; } catch (e) { return ''; } };
+  // Key sources, in order: the owner's plain secret anthropic_api_key, or a key an admin saved in the app. A saved key is encrypted (AES-256-GCM) with a master key that lives only in the plain secret ai_master_key; the database never holds it readable, and it is never returned, logged or sent to the browser.
+  const b64 = u8 => Buffer.from(u8).toString('base64'), unb64 = t => new Uint8Array(Buffer.from(t, 'base64'));
+  async function masterKey() { let m = ''; try { m = String(await CTX.secrets.get('ai_master_key') || ''); } catch (e) { } if (m.length < 16) return null; const raw = await crypto.subtle.digest('SHA-256', te.encode(m)); return crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['encrypt', 'decrypt']); }
+  async function sealKey(plain) { const k = await masterKey(); if (!k) return null; const iv = crypto.getRandomValues(new Uint8Array(12)); const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, te.encode(plain)); return { iv: b64(iv), ct: b64(new Uint8Array(ct)) }; }
+  async function openKey(rec) { try { const k = await masterKey(); if (!k || !rec) return ''; return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(rec.iv) }, k, unb64(rec.ct))); } catch (e) { return ''; } }
+  const claudeKey = async () => { let k = ''; try { k = (await CTX.secrets.get('anthropic_api_key')) || ''; } catch (e) { } if (k) return k; const r = await dbGet('ai', 'key').catch(() => null); return r && r.value ? openKey(r.value) : ''; };
+  const keySource = async () => { let k = ''; try { k = (await CTX.secrets.get('anthropic_api_key')) || ''; } catch (e) { } if (k) return 'secret'; const r = await dbGet('ai', 'key').catch(() => null); return r && r.value ? 'app' : ''; };
+  // checks a key against Anthropic without spending tokens: GET /v1/models lists what the key can use
+  async function checkAnthropic(key) {
+    const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 15000);
+    try { const r = await fetch('https://api.anthropic.com/v1/models?limit=20', { headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' }, signal: ac.signal }); const j = await r.json().catch(() => ({}));
+      if (r.status === 401 || r.status === 403) return { ok: false, message: 'Anthropic rejected this key. Check that it was copied in full and has not been revoked.' };
+      if (r.status === 429) return { ok: false, message: 'Anthropic is rate limiting this key right now. The key may be fine; try again shortly.' };
+      if (!r.ok) return { ok: false, message: 'Anthropic returned an error (' + r.status + '). Try again later.' };
+      const models = (j.data || []).map(m => m.id).filter(Boolean); return { ok: true, models, message: models.includes('claude-sonnet-5-5') ? 'The key works and claude-sonnet-5-5 is available.' : 'The key works, but claude-sonnet-5-5 was not in its model list' + (models.length ? ' (it can use ' + models.slice(0, 3).join(', ') + ').' : '.') };
+    } catch (e) { return { ok: false, message: e && e.name === 'AbortError' ? 'Anthropic took too long to answer.' : 'Anthropic could not be reached from the server.' }; } finally { clearTimeout(to); }
+  }
   const haveClaude = async () => !!(await claudeKey());
   async function aiCfg() { const r = await dbGet('ai', 'cfg').catch(() => null); const v = (r && r.value) || {}; return { defaultProvider: v.defaultProvider === 'claude' ? 'claude' : 'deepseek', fallback: v.fallback === 'deepseek' ? 'deepseek' : 'none', by: v.by || null, at: v.at || null }; }
   const emptyUse = () => ({ calls: 0, errors: 0, inTok: 0, outTok: 0, last: null, lastError: null });
@@ -269,35 +325,56 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
     finally { clearTimeout(to); }
   }
   // provider: 'deepseek' | 'claude'. An explicit choice is never changed silently: a fallback happens only when the organisation policy allows it, and the notice says so.
-  async function callModel(messages, maxTokens, provider, fallback) {
+  // smaller(): optional, returns the DeepSeek-sized messages to use when Claude falls back to DeepSeek
+  async function callModel(messages, maxTokens, provider, fallback, smaller) {
     if (provider !== 'claude') return callDeepseek(messages, maxTokens);
     try { return await callClaude(messages, maxTokens); }
-    catch (e) { if (fallback === 'deepseek' && e instanceof HttpError) { const out = await callDeepseek(messages, maxTokens); out.notice = 'Claude was not available (' + e.message + ') so DeepSeek produced this draft, as the organisation fallback setting allows.'; return out; } throw e; }
+    catch (e) { if (fallback === 'deepseek' && e instanceof HttpError) { let out; try { out = await callDeepseek(smaller ? await smaller() : messages, maxTokens); } catch (e2) { if (e2 instanceof HttpError) e2.fellBack = true; throw e2; } out.notice = 'Claude was not available (' + e.message + ') so DeepSeek produced this draft, as the organisation fallback setting allows.'; out.fellBack = true; return out; } throw e; }
   }
-  const pickProvider = async (asked) => { const cfg = await aiCfg(); const p = asked === 'claude' || asked === 'deepseek' ? asked : cfg.defaultProvider; return { provider: p, explicit: asked === 'claude' || asked === 'deepseek', cfg }; };
-  route('GET', '/api/ai/status', async () => { await me(); const cfg = await aiCfg(); const have = await haveClaude(); const defaultProvider = cfg.defaultProvider === 'claude' && !have ? 'deepseek' : cfg.defaultProvider; return ok({ providers: [{ id: 'deepseek', name: 'DeepSeek', configured: true, isDefault: defaultProvider === 'deepseek' }, { id: 'claude', name: 'Claude', configured: have, isDefault: defaultProvider === 'claude' }], defaultProvider, fallback: cfg.fallback, claude: have, tasks: Object.keys(AI_TASKS) }); });
+  const pickProvider = async (asked) => { const cfg = await aiCfg(); const explicit = asked === 'claude' || asked === 'deepseek'; let p = explicit ? asked : cfg.defaultProvider; if (!explicit && p === 'claude' && !(await haveClaude())) p = 'deepseek'; return { provider: p, explicit, cfg }; };
+  route('GET', '/api/ai/status', async () => { await me(); const cfg = await aiCfg(); const have = await haveClaude(); const defaultProvider = cfg.defaultProvider === 'claude' && !have ? 'deepseek' : cfg.defaultProvider; return ok({ providers: [{ id: 'deepseek', name: 'DeepSeek', configured: true, isDefault: defaultProvider === 'deepseek' }, { id: 'claude', name: 'Claude', configured: have, isDefault: defaultProvider === 'claude' }], defaultProvider, fallback: cfg.fallback, claude: have, tasks: Object.keys(AI_TASKS), ...(await adminRole(await me()) ? { keySource: await keySource(), canStoreKey: !!(await masterKey()) } : {}) }); });
   route('POST', '/api/admin/ai/config', async (b) => {
     const s = await requireAdmin('admin'); const dp = String(b && b.defaultProvider || 'deepseek'); const fb = String(b && b.fallback || 'none'); if (!PROVIDERS.includes(dp)) throw new HttpError(400, 'Choose DeepSeek or Claude'); if (!['none', 'deepseek'].includes(fb)) throw new HttpError(400, 'Choose a fallback option');
     if (dp === 'claude' && !(await haveClaude())) throw new HttpError(409, 'Claude is not configured yet, so it cannot be the default. Add the key in the secrets portal first.');
     await dbPut('ai', 'cfg', { defaultProvider: dp, fallback: fb, by: s.email, at: now() }); return ok({ defaultProvider: dp, fallback: fb });
   });
+  route('POST', '/api/admin/ai/key', async (b) => {
+    const s = await requireAdmin('admin'); const key = String(b && b.key || '').trim();
+    if (!/^sk-ant-[A-Za-z0-9_\-]{20,}$/.test(key)) throw new HttpError(400, 'That does not look like an Anthropic API key. Keys start with sk-ant-.');
+    if (!(await masterKey())) throw new HttpError(409, 'Saving a key here needs an encryption secret first. The app owner adds a plain secret named ai_master_key (any long random text) at secrets.facilio.work. Or add the key itself as anthropic_api_key there.');
+    const chk = await checkAnthropic(key); if (!chk.ok) throw new HttpError(422, chk.message);
+    await dbPut('ai', 'key', Object.assign(await sealKey(key), { by: s.email, at: now() })); await audit('ai', s.id, 'ai-key-saved', ''); return ok({ ok: true, message: chk.message, models: chk.models.slice(0, 10) });
+  });
+  route('DELETE', '/api/admin/ai/key', async () => {
+    const s = await requireAdmin('admin'); await dbDel('ai', 'key').catch(() => { }); const cfg = await aiCfg(); if (cfg.defaultProvider === 'claude' && !(await haveClaude())) await dbPut('ai', 'cfg', { defaultProvider: 'deepseek', fallback: cfg.fallback, by: s.email, at: now() });
+    await audit('ai', s.id, 'ai-key-removed', ''); const still = await keySource(); return ok({ ok: true, message: still === 'secret' ? 'The saved key was removed. A key set as the anthropic_api_key secret is still in use; only the app owner can remove that.' : 'The key was removed. DeepSeek stays in use.' });
+  });
   route('POST', '/api/admin/ai/test', async () => {
     const s = await requireAdmin('admin'); if (!(await haveClaude())) return ok({ ok: false, configured: false, message: 'No Claude key is configured. The app owner adds it as anthropic_api_key in the secrets portal.' });
-    try { const r = await callClaude([{ role: 'user', content: 'Reply with the single word: ok' }], 8); return ok({ ok: true, configured: true, model: r.model, message: 'Claude answered. The key works.' }); }
+    try { const k = await claudeKey(); const c = await checkAnthropic(k); if (!c.ok) return ok({ ok: false, configured: true, message: c.message }); return ok({ ok: true, configured: true, model: 'claude-sonnet-5-5', models: c.models.slice(0, 10), message: c.message }); }
     catch (e) { return ok({ ok: false, configured: true, message: e instanceof HttpError ? e.message : 'The test failed' }); }
   });
   route('GET', '/api/admin/ai/usage', async () => { await requireAdmin('admin'); const u = await aiUse(); const cfg = await aiCfg(); return ok({ usage: u, cfg, claudeConfigured: await haveClaude() }); });
   route('POST', '/api/projects/:id/ai/run', async (b, P) => {
     const s = await me(); await projectAccess(s, P.id, 'edit'); const task = String(b && b.task || ''); const T = AI_TASKS[task]; if (!T) throw new HttpError(400, 'Unknown AI task');
-    const instruction = str(b.instruction, 1500, 'Instruction'); const pv = await pickProvider(String(b.provider || '')); const small = pv.provider !== 'claude'; let { src, text } = await aiContext(P.id, task, small); let vidId = '';
-    if (task === 'vidguide') { vidId = String(b.vid || ''); if (!ITEM_ID_RE.test(vidId)) throw new HttpError(400, 'Choose a walkthrough'); const vr = await dbGet('it.' + P.id + '.vid', vidId); if (!vr || !vr.value) throw new HttpError(404, 'Walkthrough not found'); const vd = await unpack('ip.' + P.id + '.vid', vidId, vr.value); const mm = t => (t == null ? '' : '[' + String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(Math.floor(t % 60)).padStart(2, '0') + '] ');
-      const tr = (vd.transcript || []).map(x => mm(x.t) + x.text).join('\n').slice(0, small ? 8000 : 18000); const fr = (vd.frames || []).map((f, i) => 'F' + (i + 1) + ' at ' + mm(f.t).trim() + ': ' + (f.caption || '(no caption)')).join('\n').slice(0, 2500);
-      src = [{ ref: 'S1', label: 'Walkthrough transcript: ' + (vd.title || 'untitled') }, { ref: 'S2', label: 'Screenshots (' + (vd.frames || []).length + ')' }]; text = `\n[S1] Walkthrough "${vd.title || ''}" transcript:\n${tr}\n\n[S2] Screenshots (place the marker after the step it shows):\n${fr}\n`; }
-    let tplText = ''; if (b.templateId) { const h = await tplHead(String(b.templateId)); if (!(await tplCanRead(s, h)) || h.status === 'retired') throw new HttpError(404, 'Template not available'); const td = await tplData(h, h.pub || h.latest); tplText = String(td && td.body || '').slice(0, 6000); }
-    const user = `TASK: ${T.ask}\n${instruction ? 'EXTRA INSTRUCTION FROM THE CONSULTANT: ' + instruction + '\n' : ''}${tplText ? 'FOLLOW THIS TEMPLATE STRUCTURE (headings and order; fill only from the sources, leave a heading with "Missing" when no source supports it):\n' + tplText + '\n' : ''}\nSOURCES (the only project information you may use):${text || '\n(No project records were found for this task. Say what is missing.)'}`;
-    let out; try { out = await callModel([{ role: 'system', content: AI_SYSTEM }, { role: 'user', content: user }], 2600, pv.provider, pv.cfg.fallback); }
-    catch (e) { if (!small || !(e instanceof HttpError) || e.status === 429 || e.status === 403) throw e; // the open model timed out: retry once with a shorter prompt
-      const short = `TASK: ${T.ask}\n${instruction ? 'EXTRA INSTRUCTION FROM THE CONSULTANT: ' + instruction + '\n' : ''}\nSOURCES (the only project information you may use; shortened):${text.slice(0, 6500)}`; out = await callModel([{ role: 'system', content: AI_SYSTEM }, { role: 'user', content: short }], 1200, 'deepseek', 'none'); }
+    const instruction = str(b.instruction, 1500, 'Instruction'); const pv = await pickProvider(String(b.provider || ''));
+    let tplText = ''; if (b.templateId) { const h = await tplHead(String(b.templateId)); if (!(await tplCanRead(s, h)) || h.status === 'retired') throw new HttpError(404, 'Template not available'); if (h.kind && TPL_TASK[h.kind] && TPL_TASK[h.kind] !== task) throw new HttpError(400, 'That template is for a different deliverable'); const td = await tplData(h, h.pub || h.latest); tplText = String(td && td.body || '').slice(0, 6000); }
+    let vidId = ''; if (task === 'vidguide') { vidId = String(b.vid || ''); if (!ITEM_ID_RE.test(vidId)) throw new HttpError(400, 'Choose a walkthrough'); }
+    // the sources and prompt for one size (DeepSeek takes the smaller context, Claude the larger)
+    const build = async small => {
+      let { src, text } = await aiContext(P.id, task, small);
+      if (task === 'vidguide') { const vr = await dbGet('it.' + P.id + '.vid', vidId); if (!vr || !vr.value) throw new HttpError(404, 'Walkthrough not found'); const vd = await unpack('ip.' + P.id + '.vid', vidId, vr.value); const mm = t => (t == null ? '' : '[' + String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(Math.floor(t % 60)).padStart(2, '0') + '] ');
+        const tr = (vd.transcript || []).map(x => mm(x.t) + x.text).join('\n').slice(0, small ? 8000 : 18000); const fr = (vd.frames || []).map((f, i) => 'F' + (i + 1) + ' at ' + mm(f.t).trim() + ': ' + (f.caption || '(no caption)')).join('\n').slice(0, 2500);
+        src = [{ ref: 'S1', label: 'Walkthrough transcript: ' + (vd.title || 'untitled') }, { ref: 'S2', label: 'Screenshots (' + (vd.frames || []).length + ')' }]; text = `\n[S1] Walkthrough "${vd.title || ''}" transcript:\n${tr}\n\n[S2] Screenshots (place the marker after the step it shows):\n${fr}\n`; }
+      const user = `TASK: ${T.ask}\n${instruction ? 'EXTRA INSTRUCTION FROM THE CONSULTANT: ' + instruction + '\n' : ''}${tplText ? 'FOLLOW THIS TEMPLATE STRUCTURE (headings and order; fill only from the sources, leave a heading with "Missing" when no source supports it):\n' + tplText + '\n' : ''}\nSOURCES (the only project information you may use):${text || '\n(No project records were found for this task. Say what is missing.)'}`;
+      return { src, text, messages: [{ role: 'system', content: AI_SYSTEM }, { role: 'user', content: user }] };
+    };
+    const big = await build(pv.provider !== 'claude'); let small = pv.provider !== 'claude'; let used = big; let smallBuilt = null;
+    const smaller = async () => { smallBuilt = smallBuilt || await build(true); return smallBuilt.messages; };
+    let out; try { out = await callModel(big.messages, 2600, pv.provider, pv.cfg.fallback, smaller); if (out.fellBack) { used = smallBuilt || big; small = true; } }
+    catch (e) { const ds = small || (e instanceof HttpError && e.fellBack); if (!ds || !(e instanceof HttpError) || e.status === 429 || e.status === 403) throw e; // the open model timed out: retry once with a shorter prompt
+      const base = smallBuilt || big; used = base; const short = `TASK: ${T.ask}\n${instruction ? 'EXTRA INSTRUCTION FROM THE CONSULTANT: ' + instruction + '\n' : ''}\nSOURCES (the only project information you may use; shortened):${base.text.slice(0, 6500)}`; out = await callModel([{ role: 'system', content: AI_SYSTEM }, { role: 'user', content: short }], 1200, 'deepseek', 'none'); }
+    const src = used.src;
     const id = rid('ai'); const t = now(); const data = { task, title: T.title, status: 'draft', content: out.text, sources: src, vid: vidId || undefined, provider: out.provider, model: out.model, notice: out.notice || undefined, instruction, by: s.name || s.email, version: 1, hist: [{ at: t, who: s.name || s.email, side: 'facilio', event: 'AI draft generated' }] };
     await save('it.' + P.id + '.ai', 'ip.' + P.id + '.ai', id, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: t, ua: t }, data, undefined);
     await audit(P.id, s.id, 'ai-draft', task + ' via ' + out.provider + (out.notice ? ' (fallback)' : '')); return ok({ item: itemOut('ai', id, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: t, ua: t }, data) }, 201);
@@ -311,6 +388,8 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
   });
 
   // ---------- templates: org-wide and per-project, versioned, publish / retire ----------
+  // template kind -> the AI task it can shape (kinds not listed here, such as workspace or kpi, are not used for AI drafts)
+  const TPL_TASK = { brd: 'brd', uat: 'uat', ftr: 'ftr', guide: 'guide', golive: 'golive', hypercare: 'hypercare', handover: 'handover', closure: 'closure', wsr: 'wsr', monthly: 'monthly' };
   const TPL_KINDS = ['workspace', 'ftr', 'kpi', 'brd', 'uat', 'guide', 'golive', 'hypercare', 'handover', 'closure', 'wsr', 'monthly', 'other'];
   const TPL_RE = /^tpl_[a-f0-9]{18}$/;
   const tplOut = h => ({ id: h.id, name: h.name, kind: h.kind, scope: h.scope, projectId: h.projectId || null, desc: h.desc || '', status: h.status, latest: h.latest, pub: h.pub || 0, versions: h.versions || [], by: h.by, createdBy: h.createdBy, at: h.at, ua: h.ua });
@@ -372,6 +451,135 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
 
   // items
   const kindList = q => String(q || '').split(',').filter(k => KINDS.includes(k));
+
+  // tickets across every project this person can open (items are per project, so this reads each project's ticket records)
+  route('GET', '/api/tickets', async () => {
+    const s = await me(); const ar = await adminRole(s); const rows = (await dbList('projects')).map(r => r.value).filter(p => p && !p.archived);
+    const mine = ar ? rows : rows.filter(p => (p.members || []).some(m => m.id === s.id)); const out = [];
+    const projects = mine.slice(0, 200).map(p => ({ id: p.id, name: p.name, customer: p.customer, canEdit: ar ? ar !== 'sub' : ((p.members || []).find(m => m.id === s.id) || {}).role !== 'viewer', members: (p.members || []).map(m => ({ id: m.id, email: m.email, name: m.name })) }));
+    for (const p of mine.slice(0, 200)) for (const it of await itemsOf(p.id, 'tkt')) out.push(Object.assign({ projectId: p.id, project: p.name, customer: p.customer, canEdit: ar ? ar !== 'sub' : ((p.members || []).find(m => m.id === s.id) || {}).role !== 'viewer' }, it));
+    return ok({ projects, tickets: out.sort((a, b) => String(b.data.lastActivity || b.updatedAt).localeCompare(String(a.data.lastActivity || a.updatedAt))).slice(0, 3000) });
+  });
+  // reply / internal note: appended on the server so two people replying at once never overwrite each other
+  route('POST', '/api/projects/:id/tickets/:item/message', async (b, P) => {
+    const s = await me(); await projectAccess(s, P.id, 'edit'); if (!ITEM_ID_RE.test(P.item)) throw new HttpError(400, 'Unknown ticket');
+    const type = b && b.type === 'note' ? 'note' : 'reply'; const it = await ticketAppend(s, P.id, P.item, { type, text: b && b.text, attachments: b && b.attachments });
+    await audit(P.id, s.id, 'tkt-' + type, P.item); return ok({ item: it }, 201);
+  });
+  // e-mail intake: one normalised message in (from Power Automate, Graph, a mail rule or a person pasting a mail), one ticket or one more message out. Duplicates are ignored.
+  async function ingestMail(s, project, b) {
+    b = b || {}; const P = { id: project.id };
+    const messageId = str(b.messageId, 300, 'messageId', true), conv = str(b.conversationId || b.messageId, 300, 'conversationId'); const from = b.from || {}; const email = str(from.email, 200, 'Sender e-mail', true).toLowerCase();
+    const all = await itemsOf(P.id, 'tkt'); const seen = all.find(t => (t.data.thread || []).some(m => m.ref === messageId)); if (seen) return { _st: 200, duplicate: true, id: seen.id, ticket: seen.data.n };
+    const ex = (b._tid && all.find(t => t.id === b._tid)) || all.find(t => t.data.extConv && t.data.extConv === conv && t.data.status !== 'Closed');
+    const text = str(b.body, 20000, 'Message', true); const att = Array.isArray(b.attachments) ? b.attachments.slice(0, 10).map(a => ({ name: String(a.name || 'attachment').slice(0, 200), note: 'Listed from the e-mail; the file itself is not copied' })) : [];
+    if (ex) { const it = await ticketAppend(s, P.id, ex.id, { type: 'inbound', text, by: from.name || email, byEmail: email, attachments: att, ref: messageId }); return { _st: 200, duplicate: false, appended: true, id: ex.id, ticket: it.data.n, status: it.data.status }; }
+    const key = 'tk_' + rid('').slice(1, 13); const subject = str(b.subject || '(no subject)', 200, 'Subject');
+    const data = await ticketSanitize(s, P.id, null, { subject, description: text.slice(0, 20000), status: 'New', priority: 'Medium', source: 'email', org: project.customer || '', requester: { name: from.name || email, email }, extConv: conv, extRef: messageId, category: /\bmeet|\bcall\b|catch.?up|schedul/i.test(subject) ? 'Meeting request' : 'Client request', lastActivity: b.receivedAt || now(), thread: [] });
+    await withLock('it.' + P.id + '.tkt.' + key, async () => { const t = now(); await save('it.' + P.id + '.tkt', 'ip.' + P.id + '.tkt', key, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: t, ua: t }, Object.assign(data, { hist: [{ at: t, who: from.name || email, side: 'customer', event: 'Created from e-mail' }] }), 0); });
+    const it = await ticketAppend(s, P.id, key, { type: 'inbound', text, by: from.name || email, byEmail: email, attachments: att, ref: messageId });
+    await ticketNotify(project, key, null, it.data, s); await audit(P.id, s.id, 'tkt-email', key); return { _st: 201, duplicate: false, created: true, id: key, ticket: it.data.n };
+  }
+  route('POST', '/api/projects/:id/tickets/ingest', async (b, P) => {
+    const s = await me(); const { project } = await projectAccess(s, P.id, 'edit'); const r = await ingestMail(s, project, b); const st = r._st; delete r._st; return ok(r, st);
+  });
+
+  // ---------- support mailbox (Microsoft 365 via Graph) ----------
+  // Needs configuration by the app owner: an OAuth2 credential named graph_mail (Mail.Read / Mail.Read.Shared) granted to this app, and optionally the plain secret support_mailbox (shared mailbox address; empty = the owner's own mailbox).
+  const MAIL_CRED = 'graph_mail';
+  const mailAdmin = async s => { const ar = await adminRole(s); if (!ar || ar === 'sub') throw new HttpError(403, 'Only admins can manage the support mailbox'); return ar; };
+  const mailCfg = async () => { const r = await dbGet('cfg', 'mail'); return (r && r.value) || { rules: [], last: null }; };
+  const domOf = e => String(e || '').toLowerCase().split('@')[1] || '';
+  async function mailboxAddress() { let m = ''; try { m = String(await CTX.secrets.get('support_mailbox') || '').trim(); } catch (e) { } return m; }
+  route('GET', '/api/mail/status', async () => {
+    const s = await me(); await mailAdmin(s); const c = await mailCfg(); const box = await mailboxAddress(); const inbox = await dbList('inbox');
+    return ok({ credential: MAIL_CRED, mailbox: box || '(the credential owner\'s own mailbox)', rules: c.rules || [], last: c.last || null, unrouted: inbox.length, hasFetch: !!CTX.fetch });
+  });
+  route('PUT', '/api/mail/rules', async (b) => {
+    const s = await me(); await mailAdmin(s); const rules = (Array.isArray(b && b.rules) ? b.rules : []).slice(0, 200).map(r => ({ match: str(String(r.match || '').toLowerCase(), 200, 'Match', true), projectId: str(r.projectId, 80, 'Project', true) }));
+    for (const r of rules) if (!(await dbGet('projects', r.projectId))) throw new HttpError(400, 'Unknown project in a rule'); const c = await mailCfg(); c.rules = rules; await dbPut('cfg', 'mail', c); return ok({ rules });
+  });
+  route('GET', '/api/mail/inbox', async () => { const s = await me(); await mailAdmin(s); const rows = (await dbList('inbox')).map(r => r.value); rows.sort((a, c) => String(c.receivedAt).localeCompare(String(a.receivedAt))); return ok({ items: rows.slice(0, 200) }); });
+  route('POST', '/api/mail/inbox/:mid/route', async (b, P) => {
+    const s = await me(); await mailAdmin(s); const m = await dbGet('inbox', P.mid); if (!m) throw new HttpError(404, 'Message not found'); const { project } = await projectAccess(s, str(b && b.projectId, 80, 'Project', true), 'edit');
+    const r = await ingestMail(s, project, m.value.mail); await dbDel('inbox', P.mid); await audit(project.id, s.id, 'mail-routed', P.mid); return ok({ ticket: r.ticket, projectId: project.id });
+  });
+  route('POST', '/api/mail/inbox/:mid/dismiss', async (b, P) => { const s = await me(); await mailAdmin(s); await dbDel('inbox', P.mid); return ok({ ok: true }); });
+  route('POST', '/api/mail/sync', async () => {
+    const s = await me(); await mailAdmin(s); const c = await mailCfg(); const t0 = now(); const res = { fetched: 0, tickets: 0, appended: 0, unrouted: 0, duplicates: 0, errors: [] };
+    const fin = async err => { c.last = { at: t0, by: s.email, ok: !err, error: err || '', stats: res }; await dbPut('cfg', 'mail', c); await audit('mailbox', s.id, 'mail-sync', err ? 'failed' : 'ok'); };
+    if (!CTX.fetch) { await fin('This platform build has no credential proxy'); throw new HttpError(503, 'Mailbox sync is not available here'); }
+    const box = await mailboxAddress(); const base = box ? 'https://graph.microsoft.com/v1.0/users/' + encodeURIComponent(box) : 'https://graph.microsoft.com/v1.0/me';
+    let r; try { r = await CTX.fetch(MAIL_CRED, base + '/mailFolders/inbox/messages?$top=25&$orderby=receivedDateTime desc&$select=id,conversationId,subject,from,body,receivedDateTime,hasAttachments,isDraft', { method: 'GET', headers: { Prefer: 'outlook.body-content-type="text"' } }); } catch (e) { await fin('Credential ' + MAIL_CRED + ' is missing or not granted to this app: ' + (e && e.message)); throw new HttpError(424, 'The mailbox credential "' + MAIL_CRED + '" is not set up yet. Ask the app owner to add it at secrets.facilio.work and grant it to this app.'); }
+    if (!r.ok) { const why = r.status === 401 || r.status === 403 ? 'Microsoft refused access (' + r.status + '). The credential needs Mail.Read and admin consent.' : r.status === 429 ? 'Microsoft is throttling requests. Try again in a minute.' : 'Microsoft returned ' + r.status; await fin(why); throw new HttpError(r.status === 429 ? 429 : 502, why); }
+    const msgs = ((await r.json()).value || []).filter(m => !m.isDraft).reverse(); res.fetched = msgs.length;
+    const projects = (await dbList('projects')).map(x => x.value).filter(x => x && !x.archived);
+    for (const m of msgs) {
+      try {
+        const email = String(m.from && m.from.emailAddress && m.from.emailAddress.address || '').toLowerCase(); if (!email) continue; if (box && email === box.toLowerCase()) continue;
+        const mail = { messageId: m.id, conversationId: m.conversationId || m.id, subject: m.subject || '(no subject)', body: String(m.body && m.body.content || '').slice(0, 20000) || '(empty message)', from: { name: m.from.emailAddress.name || email, email }, receivedAt: m.receivedDateTime, attachments: m.hasAttachments ? [{ name: 'Attachment (open the mail in Outlook)' }] : [] };
+        if ((await dbGet('mailseen', m.id.slice(-120)))) { res.duplicates++; continue; }
+        let target = null; const tag = /\[TKT-(\d+)\]/i.exec(mail.subject);
+        if (tag) { for (const p of projects) { const hit = (await itemsOf(p.id, 'tkt')).find(x => String(x.data.n) === tag[1]); if (hit) { target = p; mail._tid = hit.id; break; } } }
+        if (!target) { const rule = (c.rules || []).find(x => x.match === email || x.match === domOf(email)); if (rule) target = projects.find(p => p.id === rule.projectId) || null; }
+        if (!target) { await dbPut('inbox', m.id.slice(-120), { id: m.id.slice(-120), receivedAt: m.receivedDateTime, from: mail.from, subject: mail.subject, preview: mail.body.slice(0, 300), mail }); res.unrouted++; await dbPut('mailseen', m.id.slice(-120), { at: t0 }); continue; }
+        const out = await ingestMail(s, target, mail); await dbPut('mailseen', m.id.slice(-120), { at: t0 });
+        if (out.duplicate) res.duplicates++; else if (out.appended) res.appended++; else res.tickets++;
+      } catch (e) { res.errors.push(String(e && e.message || e).slice(0, 160)); }
+    }
+    await fin(res.errors.length && !res.tickets && !res.appended && !res.unrouted ? res.errors[0] : ''); return ok({ result: res });
+  });
+
+  // ---------- Teams: create a ticket through Otto ----------
+  // Otto (the facilio.work Teams bot) calls these as MCP tools AS the person who asked, so project permissions are the same as in the app. create_ticket is confirm-gated: Otto shows the fields and the person approves, which is the review step.
+  const TEAMS_TYPES = { customer_issue: ['Client request', 'external'], internal_feedback: ['Other', 'internal'], question: ['Question', 'external'], bug: ['Defect', 'internal'], other: ['Other', 'internal'] };
+  const guessType = t => /\b(bug|error|broken|crash|fails?|not working|defect|exception)\b/i.test(t) ? 'bug' : /\?|\b(how|why|can we|clarif|question|confirm)\b/i.test(t) ? 'question' : /\b(feedback|suggest|idea|improve|internal)\b/i.test(t) ? 'internal_feedback' : /\b(customer|client|requested|asked us|wants)\b/i.test(t) ? 'customer_issue' : 'other';
+  const guessPrio = t => /\b(urgent|asap|critical|blocker|production down|go-?live)\b/i.test(t) ? 'High' : 'Medium';
+  async function editableProjects(s) { const ar = await adminRole(s); const rows = (await dbList('projects')).map(r => r.value).filter(p => p && !p.archived); return rows.filter(p => ar ? ar !== 'sub' : ((p.members || []).find(m => m.id === s.id) || {}).role === 'owner' || ((p.members || []).find(m => m.id === s.id) || {}).role === 'member'); }
+  async function resolveProject(s, q) { const ps = await editableProjects(s); const k = String(q || '').trim().toLowerCase(); if (!k) throw new HttpError(400, 'Say which project this ticket belongs to. Projects you can use: ' + ps.slice(0, 15).map(p => p.name).join(', ')); const hit = ps.filter(p => p.id === q || p.name.toLowerCase() === k); const part = hit.length ? hit : ps.filter(p => (p.name + ' ' + (p.customer || '')).toLowerCase().includes(k)); if (part.length === 1) return part[0]; throw new HttpError(part.length ? 409 : 404, part.length ? 'More than one project matches: ' + part.slice(0, 8).map(p => p.name).join(', ') + '. Use the exact name.' : 'No project you can edit matches "' + q + '".'); }
+  route('POST', '/api/', async (b) => {
+    const tool = String(HDR['x-work-mcp-tool'] || ''); const s = await me(); b = b || {};
+    if (tool === 'list_projects') { const ps = await editableProjects(s); return ok({ projects: ps.slice(0, 50).map(p => ({ name: p.name, customer: p.customer || '' })) }); }
+    if (tool === 'suggest_ticket') { const text = String(b.text || ''); const ty = guessType(text); const ps = await editableProjects(s); const k = text.toLowerCase(); const cand = ps.filter(p => k.includes(String(p.customer || '').toLowerCase()) && p.customer || k.includes(p.name.toLowerCase())).slice(0, 5);
+      return ok({ ticketType: ty, category: TEAMS_TYPES[ty][0], priority: guessPrio(text), subject: text.replace(/\s+/g, ' ').trim().slice(0, 100), projectCandidates: cand.map(p => p.name), note: 'Suggestions only. Check type, priority and project before creating the ticket.' }); }
+    if (tool === 'create_ticket') {
+      const project = await resolveProject(s, b.project); await projectAccess(s, project.id, 'edit');
+      const subject = str(b.subject, 200, 'Subject', true); const description = str(b.description || b.subject, 20000, 'Description'); const ty = TEAMS_TYPES[b.ticketType] ? b.ticketType : guessType(subject + ' ' + description); const prio = TKT_PRIO.includes(b.priority) ? b.priority : 'Medium';
+      const link = String(b.teamsMessageLink || '').slice(0, 600); if (link && !/^https:\/\/teams\.(microsoft|live)\.com\//i.test(link)) throw new HttpError(400, 'The Teams message link is not a Teams link');
+      const ref = String(b.teamsMessageId || link || '').slice(0, 280); const ext = ref ? 'teams:' + ref : ''; const all = await itemsOf(project.id, 'tkt');
+      const url = 'https://facilio-delivery-studio.facilio.work/#/p/' + project.id + '/tickets';
+      const dup = ext && all.find(t => t.data.extRef === ext); if (dup) return ok({ duplicate: true, ticket: 'TKT-' + dup.data.n, project: project.name, url, message: 'A ticket for this Teams message already exists: TKT-' + dup.data.n });
+      const key = 'tk_' + rid('').slice(1, 13); const t = now();
+      const data = await ticketSanitize(s, project.id, null, { subject, description, status: 'New', priority: prio, category: TEAMS_TYPES[ty][0], origin: TEAMS_TYPES[ty][1], ticketType: ty, source: 'teams', org: project.customer || '', requester: { name: String(b.requesterName || s.name || s.email).slice(0, 120), email: '' }, reporter: { name: s.name, email: s.email }, extRef: ext, teams: link ? { messageLink: link } : undefined, thread: [] });
+      await withLock('it.' + project.id + '.tkt.' + key, async () => { await save('it.' + project.id + '.tkt', 'ip.' + project.id + '.tkt', key, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: t, ua: t }, Object.assign(data, { hist: [{ at: t, who: s.name || s.email, side: 'facilio', event: 'Created from Microsoft Teams' }] })); });
+      await ticketNotify(project, key, null, data, s); await audit(project.id, s.id, 'tkt-teams', key);
+      return ok({ duplicate: false, ticket: 'TKT-' + data.n, project: project.name, category: data.category, priority: data.priority, url, message: 'Created TKT-' + data.n + ' in ' + project.name }, 201);
+    }
+    throw new HttpError(404, 'Unknown tool');
+  });
+
+  // client items -> tickets: feedback, questions and anything raised on the client side, plus questions open in Delivery Studio. Idempotent: every source is keyed once (extRef) and never rewritten.
+  route('POST', '/api/projects/:id/tickets/sync-client', async (b, P) => {
+    const s = await me(); const { project } = await projectAccess(s, P.id, 'edit');
+    const all = await itemsOf(P.id, 'tkt'); const have = new Set(all.map(t => t.data.extRef).filter(Boolean)); const cand = [];
+    const FBC = { question: 'Question', concern: 'Client request', feedback: 'UAT finding', change: 'Change request' }, FBP = { high: 'High', normal: 'Medium', low: 'Low' };
+    (await dbList('fb.' + P.id)).map(r => r.value).forEach(f => { if (!f || !f.id) return; cand.push({ ref: 'fb:' + f.id, subject: (f.topic || f.body || 'Feedback').slice(0, 120), body: f.body || '', category: FBC[f.kind] || 'Client request', priority: FBP[f.priority] || 'Medium', status: f.status === 'resolved' ? 'Resolved' : f.status === 'answered' ? 'Waiting for Client' : 'New', source: 'client feedback', by: f.authorName, link: { kind: 'feedback', ref: f.id, label: (f.module ? f.module + ': ' : '') + (f.topic || 'Feedback') }, at: f.createdAt, reply: f.response }); });
+    const KC = { raid: 'Defect', action: 'Client request', cr: 'Change request', hc: 'Defect' };
+    for (const k of Object.keys(KC)) (await itemsOf(P.id, k)).filter(i => i.createdSide && i.createdSide !== 'facilio').forEach(i => { const d = i.data || {}; const t = String(d.title || d.name || d.summary || d.description || 'Client item').slice(0, 120); cand.push({ ref: k + ':' + i.id, subject: t, body: String(d.description || d.details || d.title || t), category: KC[k], priority: 'Medium', status: 'New', source: 'client portal', by: '', link: { kind: k, ref: i.id, label: t }, at: i.createdAt }); });
+    const tr = await docRead(P.id, 'transcripts'); const cs = (tr && tr.data && tr.data.candidates) || [];
+    cs.filter(c => c && c.status === 'clarify' && c.id).forEach(c => cand.push({ ref: 'tr:' + c.id, subject: ('Needs clarification: ' + (c.title || c.text || '')).slice(0, 120), body: String(c.text || '') + (c.context ? '\n\nContext: ' + c.context : ''), category: 'Question', priority: 'Medium', status: 'New', source: 'delivery studio', by: c.speaker || '', link: { kind: 'transcript', ref: c.id, label: 'Transcript question' }, at: tr.data.updatedAt || now() }));
+    let created = 0; const t = now();
+    for (const c of cand) {
+      if (have.has(c.ref) || created >= 50) continue;
+      const key = 'tk_' + rid('').slice(1, 13);
+      const data = await ticketSanitize(s, P.id, null, { subject: c.subject, description: c.body.slice(0, 20000), status: c.status, priority: c.priority, category: c.category, source: c.source, org: project.customer || '', requester: { name: c.by || project.customer || 'Client', email: '' }, link: c.link, extRef: c.ref, thread: [] });
+      await withLock('it.' + P.id + '.tkt.' + key, async () => { await save('it.' + P.id + '.tkt', 'ip.' + P.id + '.tkt', key, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: c.at || t, ua: t }, Object.assign(data, { hist: [{ at: t, who: 'Delivery Studio', side: 'facilio', event: 'Created from ' + c.source }] })); });
+      if (c.reply) { try { await ticketAppend(s, P.id, key, { type: 'reply', text: c.reply, by: 'Facilio team' }); } catch (e) { } }
+      have.add(c.ref); created++;
+    }
+    if (created) await audit(P.id, s.id, 'tkt-sync', String(created)); return ok({ created, scanned: cand.length });
+  });
+
   route('GET', '/api/projects/:id/items', async (b, P, Q) => { const s = await me(); await projectAccess(s, P.id, 'read'); const kinds = kindList(Q.get('kinds')); if (!kinds.length) throw new HttpError(400, 'Name the kinds to load'); return ok({ items: await itemsFor(P.id, kinds) }); });
   route('GET', '/api/projects/:id/open', async (b, P, Q) => {
     const s = await me(); const { project, role } = await projectAccess(s, P.id, 'read');
@@ -395,15 +603,20 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
       const edited = cur && JSON.stringify([data.title, data.sections, data.customer, data.version]) !== JSON.stringify([cur.title, cur.sections, cur.customer, cur.version]);
       data = Object.assign({}, data, cur ? { status: edited && cur.status === 'approved' ? 'draft' : cur.status, approvedBy: edited && cur.status === 'approved' ? null : cur.approvedBy, approvedAt: edited && cur.status === 'approved' ? null : cur.approvedAt } : { status: 'draft', approvedBy: null, approvedAt: null });
     }
+    if (P.kind === 'tkt') { data = await ticketSanitize(s, P.id, cur, data); }
+    if (P.kind === 'res') { const u = String(data.url || '').trim(); if (!/^https?:\/\/[^\s]+$/i.test(u)) throw new HttpError(400, 'Enter a full link starting with http:// or https://'); if (!String(data.name || '').trim()) throw new HttpError(400, 'Name is required'); data = Object.assign({}, data, { url: u, name: String(data.name).trim().slice(0, 200), createdByName: cur ? cur.createdByName : (s.name || s.email) }); }
+    if (P.kind === 'pnote') { str(data.title, 200, 'Title', true); str(data.body || '', 20000, 'Note'); }
+    if (P.kind === 'res' || P.kind === 'pnote') data = Object.assign({}, data, { createdByName: cur ? cur.createdByName : s.name, createdByEmail: cur ? cur.createdByEmail : s.email });
     if (P.kind === 'cr' && !cur) { const all = await itemsOf(P.id, 'cr'); const mx = all.reduce((m, it) => (/^[0-9]+$/.test(String(it.data.n)) ? Math.max(m, Number(it.data.n)) : m), 0); data = Object.assign({}, data, { n: mx + 1 }); }
     else if (P.kind === 'cr' && cur) data = Object.assign({}, data, { n: cur.n });
     const prevHist = cur && Array.isArray(cur.hist) ? cur.hist : [];
     const changed = Object.keys(data).filter(k => k !== 'hist' && JSON.stringify(data[k]) !== JSON.stringify(cur ? cur[k] : undefined));
     data = Object.assign({}, data, { hist: prevHist.concat(changed.length || !cur ? [{ at: now(), who: s.name || 'Implementation team', side: 'facilio', event: cur ? 'Updated ' + changed.slice(0, 6).join(', ') + (data.status && changed.includes('status') ? ' → ' + data.status : '') : 'Created' }] : []).slice(-40) });
-    if (JSON.stringify(data).length > (P.kind === 'onbws' ? 2000000 : P.kind === 'ugd' ? 400000 : P.kind === 'vid' ? 200000 : 60000)) throw new HttpError(413, 'Record too large');
+    if (JSON.stringify(data).length > (P.kind === 'onbws' ? 2000000 : (P.kind === 'ugd' || P.kind === 'ugv' || P.kind === 'ugu') ? 400000 : P.kind === 'vid' ? 200000 : P.kind === 'tkt' ? 150000 : 60000)) throw new HttpError(413, 'Record too large');
     const t = now(); const nh = { v: head ? head.v + 1 : 1, cb: head ? head.cb : s.id, cs: head ? head.cs : 'facilio', ub: s.id, us: 'facilio', ca: head ? head.ca : t, ua: t };
     await save(col, pcol, P.item, nh, data, head && head.z); await saveProject(project);
-    if (['signoff', 'cr', 'raid', 'onb', 'onbsub', 'decision', 'brdrev', 'ai', 'hc', 'ho', 'close', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid'].includes(P.kind)) await audit(P.id, s.id, P.kind + (cur ? '-updated' : '-created'), P.item + (data.status ? ' ' + data.status : ''));
+    if (P.kind === 'tkt') await ticketNotify(project, P.item, cur, data, s);
+    if (['signoff', 'cr', 'raid', 'onb', 'onbsub', 'decision', 'brdrev', 'ai', 'hc', 'ho', 'close', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'tkt', 'res', 'ugv', 'ugu'].includes(P.kind)) await audit(P.id, s.id, P.kind + (cur ? '-updated' : '-created'), P.item + (data.status ? ' ' + data.status : ''));
     return ok({ item: itemOut(P.kind, P.item, nh, data) });
   }));
   route('DELETE', '/api/projects/:id/items/:kind/:item', async (b, P) => {
@@ -658,7 +871,7 @@ let CTX = null;   // set at the start of every request (a Lambda handles one req
 }
 
 export default async function handler(req, ctx) {
-  CTX = ctx; globalThis.__fwb.reset();
+  CTX = ctx; HDR = (req && req.headers) || {}; globalThis.__fwb.reset();
   let query = req.query; if (query && typeof query === 'object') query = new URLSearchParams(query).toString(); query = String(query || '').replace(/^\?/, '');
   let body; if (req.method !== 'GET' && req.method !== 'DELETE') { const t = req.text ? await req.text() : ''; if (t) { try { body = JSON.parse(t); } catch (e) { body = {}; } } else body = {}; }
   const sub = String(req.path || '/').startsWith('/') ? req.path : '/' + req.path;

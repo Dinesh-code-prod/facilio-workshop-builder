@@ -11,7 +11,7 @@
     ['brd', 'Business Requirements Document (BRD)', 'Requirements'], ['uat', 'UAT plan and test cases', 'UAT'], ['ftr', 'FTR report', 'Testing'],
     ['config', 'Configuration documentation', 'Configuration'], ['guide', 'Customer user guide', 'Training'], ['training', 'Training material outline', 'Training'], ['golive', 'Go-live readiness review', 'Go-live'],
     ['hypercare', 'Hypercare status report', 'Hypercare'], ['handover', 'Support handover pack', 'Handover'], ['closure', 'Project closure report', 'Closure']];
-  const EXTRA = [['gaps', 'Missing requirements check'], ['workshop', 'Workshop intelligence'], ['pkg', 'Org package analysis']];
+  const EXTRA = [['gaps', 'Missing requirements check'], ['workshop', 'Workshop intelligence'], ['pkg', 'Org package analysis'], ['wsr', 'Weekly status report'], ['monthly', 'Monthly report'], ['ftrrows', 'FTR scenario suggestions'], ['vidguide', 'Guide steps from a walkthrough']];
   const label = t => (DELIV.concat(EXTRA.map(x => [x[0], x[1]])).find(d => d[0] === t) || [0, t])[1];
   const drafts = () => I().list('ai').sort((a, b) => (b._created || '').localeCompare(a._created || ''));
   const ST = { draft: ['tbc', 'Draft'], approved: ['green', 'Approved'], rejected: ['red', 'Rejected'] };
@@ -32,7 +32,33 @@
       else if (t) out += `<p>${inl(t)}</p>`;
     }); close(); return out;
   }
-  const docHtml = d => `<html><head><meta charset="utf-8"><title>${esc(d.title)}</title><style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#222}h2{color:#24216f}table{border-collapse:collapse}td,th{border:1px solid #999;padding:4px 8px}th{background:#eef}</style></head><body><h1>${esc(d.title)}</h1><p><i>${esc(ST[d.status] ? ST[d.status][1] : 'Draft')}${d.approvedBy ? ' — approved by ' + esc(d.approvedBy) + ' on ' + esc(when(d.approvedAt)) : ' — AI-assisted draft, not approved'}</i></p>${md(d.content)}</body></html>`;
+  // Word export: a real .docx (Office Open XML) built with the bundled docx library. The earlier export was HTML saved
+  // as .doc, which Word Online, Teams/SharePoint previews and mobile Word show as blank.
+  async function mdDocx(d) {
+    if (!root.docx) await V.loadScript('vendor/docx.iife.js'); const X = root.docx; if (!X || !X.Packer) throw new Error('The Word library did not load. Reload the page and try again.');
+    const { Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, AlignmentType, LevelFormat } = X; const font = 'Calibri';
+    const runs = t => { const out = []; String(t || '').split(/(\*\*.+?\*\*|`.+?`|\[S\d+\])/g).forEach(p => { if (!p) return; if (/^\*\*.+\*\*$/.test(p)) out.push(new TextRun({ text: p.slice(2, -2), bold: true, font })); else if (/^`.+`$/.test(p)) out.push(new TextRun({ text: p.slice(1, -1), font: 'Consolas' })); else if (/^\[S\d+\]$/.test(p)) out.push(new TextRun({ text: p.slice(1, -1), superScript: true, color: '1570EF', font })); else out.push(new TextRun({ text: p, font })); }); return out.length ? out : [new TextRun({ text: '', font })]; };
+    const B = { style: BorderStyle.SINGLE, size: 4, color: 'BBBBBB' }; const bd = { top: B, bottom: B, left: B, right: B };
+    const body = [new Paragraph({ heading: HeadingLevel.TITLE, children: [new TextRun({ text: d.title || 'Draft', font, bold: true, size: 40, color: '1D1A5E' })] }),
+      new Paragraph({ spacing: { after: 240 }, children: [new TextRun({ text: (ST[d.status] ? ST[d.status][1] : 'Draft') + (d.approvedBy ? ' — approved by ' + d.approvedBy + ' on ' + when(d.approvedAt) : ' — AI-assisted draft, not approved'), italics: true, color: '667085', font })] })];
+    let rows = null; const flush = () => { if (!rows) return; const n = Math.max(...rows.map(r => r.length)); body.push(new Table({ width: { size: 9600, type: WidthType.DXA }, columnWidths: Array(n).fill(Math.floor(9600 / n)), rows: rows.map((r, ri) => new TableRow({ tableHeader: ri === 0, cantSplit: true, children: Array.from({ length: n }, (_, k) => new TableCell({ borders: bd, width: { size: Math.floor(9600 / n), type: WidthType.DXA }, shading: ri === 0 ? { type: ShadingType.CLEAR, color: 'auto', fill: 'EEF2FB' } : undefined, margins: { top: 50, bottom: 50, left: 80, right: 80 }, children: [new Paragraph({ children: runs(r[k] || '') })] })) })) })); body.push(new Paragraph({ spacing: { after: 100 }, children: [] })); rows = null; };
+    String(d.content || '').split('\n').forEach(ln => { const t = ln.trim(); let m;
+      if (/^\|.*\|$/.test(t)) { if (/^\|[\s:|-]+\|$/.test(t)) return; (rows = rows || []).push(t.slice(1, -1).split('|').map(c => c.trim())); return; }
+      flush(); if (!t) return;
+      if ((m = t.match(/^(#{1,4})\s+(.*)/))) body.push(new Paragraph({ heading: [HeadingLevel.HEADING_1, HeadingLevel.HEADING_2, HeadingLevel.HEADING_3, HeadingLevel.HEADING_4][m[1].length - 1], keepNext: true, children: runs(m[2]) }));
+      else if ((m = t.match(/^[-*]\s+(.*)/))) body.push(new Paragraph({ numbering: { reference: 'bul', level: 0 }, spacing: { after: 60 }, children: runs(m[1]) }));
+      else if ((m = t.match(/^\d+[.)]\s+(.*)/))) body.push(new Paragraph({ numbering: { reference: 'num', level: 0 }, spacing: { after: 60 }, children: runs(m[1]) }));
+      else body.push(new Paragraph({ spacing: { after: 120 }, children: runs(t) })); });
+    flush();
+    if (body.length < 3) body.push(new Paragraph({ children: [new TextRun({ text: '(This draft has no text yet.)', italics: true, color: '999999', font })] }));
+    const doc = new X.Document({ creator: 'Facilio', title: d.title || 'Draft', description: 'Exported from Facilio Delivery Studio',
+      styles: { default: { document: { run: { font, size: 22 } } }, paragraphStyles: [1, 2, 3, 4].map(n => ({ id: 'Heading' + n, name: 'Heading ' + n, basedOn: 'Normal', next: 'Normal', quickFormat: true, run: { size: [32, 28, 24, 22][n - 1], bold: true, color: '1D1A5E', font }, paragraph: { spacing: { before: 220, after: 100 }, outlineLevel: n - 1 } })) },
+      numbering: { config: [{ reference: 'bul', levels: [{ level: 0, format: LevelFormat.BULLET, text: '•', alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 540, hanging: 270 } } } }] }, { reference: 'num', levels: [{ level: 0, format: LevelFormat.DECIMAL, text: '%1.', alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 540, hanging: 360 } } } }] }] },
+      sections: [{ properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1134, right: 1134, bottom: 1134, left: 1134 } } }, children: body }] });
+    return X.Packer.toBlob(doc);
+  }
+  V.mdDocx = mdDocx;
+  const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
   // ---------- run AI ----------
   ACT.aiRun = async a => {
@@ -63,7 +89,8 @@
     try { await API.post(`/api/projects/${S.project.id}/ai/${id}/decision`, { decision: dec, note }); await I().load(['ai'], true); closeDrawer(); toast(dec === 'approve' ? 'Approved' : dec === 'reject' ? 'Rejected' : 'Reopened'); } catch (e) { toast(e.message, 5000, true); }
   });
   ACT.aiDel = a => V.busy(a, async () => { if (!(await confirmDialog('Delete draft', 'Remove this draft?', 'Delete', true))) return; await I().del('ai', a.getAttribute('data-id')); closeDrawer(); });
-  ACT.aiExport = a => { const d = I().get('ai', a.getAttribute('data-id')); if (d) V.download((d.title || 'draft').replace(/[^\w-]+/g, '_') + '.doc', docHtml(d), 'application/msword'); };
+  // exports what is on screen, including text typed but not saved yet
+  ACT.aiExport = a => V.busy(a, async () => { const d = I().get('ai', a.getAttribute('data-id')); if (!d) return; const ta = document.getElementById('ai_c'); const x = Object.assign({}, d, ta ? { content: ta.value } : {}); V.download((d.title || 'draft').replace(/[^\w-]+/g, '_') + '.docx', new Blob([await mdDocx(x)], { type: DOCX })); toast('Word document ready'); });
   const aiBtn = (task, text) => canEdit() ? `<button class="btn sm ai-btn" data-act="aiRun" data-task="${task}">✦ ${esc(text || 'Generate with AI')}</button>` : '';
   V.aiButton = aiBtn; V.md = md;
 
@@ -165,7 +192,7 @@
   ACT.repSave = a => V.busy(a, async () => { const id = a.getAttribute('data-id'); await I().put('rep', id, form(I().get('rep', id))); closeDrawer(); toast('Saved'); });
   ACT.repSent = a => V.busy(a, async () => { const id = a.getAttribute('data-id'); const r = form(I().get('rep', id)); if (!(await confirmDialog('Mark as sent', 'Confirm you have sent this report to the customer. It will be recorded with your name and today\'s date.', 'Mark sent', false))) return; await I().put('rep', id, Object.assign(r, { status: 'sent', sentBy: S.user.name || S.user.email, sentAt: new Date().toISOString() })); closeDrawer(); toast('Recorded as sent'); });
   ACT.repDel = a => V.busy(a, async () => { if (!(await confirmDialog('Delete report', 'Remove this report?', 'Delete', true))) return; await I().del('rep', a.getAttribute('data-id')); closeDrawer(); });
-  ACT.repAi = a => V.busy(a, async () => { const id = a.getAttribute('data-id'); const r = form(I().get('rep', id)); try { const x = await API.post(`/api/projects/${S.project.id}/ai/run`, { task: r.type === 'WSR' ? 'wsr' : 'monthly', instruction: `Period ${r.periodStart} to ${r.periodEnd}.` }); await I().load(['ai'], true); await I().put('rep', id, Object.assign(r, { content: x.item.data ? x.item.data.content : x.item.content, aiDraft: true })); closeDrawer(); ACT.repOpen({ getAttribute: () => id }); toast('Draft filled from project records. Review it before sending.'); } catch (e) { toast(e.message || 'The AI could not complete this', 6000, true); } });
+  ACT.repAi = a => V.busy(a, async () => { const id = a.getAttribute('data-id'); const r = form(I().get('rep', id)); if (String(r.content || '').trim() && !(await confirmDialog('Replace the report text?', 'The report already has text. The AI draft will replace it; the draft is also kept under Deliverables & AI.', 'Replace with draft', true))) return; try { const x = await API.post(`/api/projects/${S.project.id}/ai/run`, { task: r.type === 'WSR' ? 'wsr' : 'monthly', instruction: `Period ${r.periodStart} to ${r.periodEnd}.` }); await I().load(['ai'], true); await I().put('rep', id, Object.assign(r, { content: x.item.data ? x.item.data.content : x.item.content, aiDraft: true })); closeDrawer(); ACT.repOpen({ getAttribute: () => id }); toast('Draft filled from project records. Review it before sending.'); } catch (e) { toast(e.message || 'The AI could not complete this', 6000, true); } });
   ACT.repAtt = async a => { const id = a.getAttribute('data-id'); const f = (await V.pickFile('.pdf,.xlsx,.xls,.docx,.pptx,.png,.jpg,.jpeg,.csv,.txt'))[0]; if (!f) return; try { toast('Uploading…'); const rec = await API.uploadFile(S.project.id, f, 'report_attachment', { report: id }); const r = form(I().get('rep', id)); await I().put('rep', id, Object.assign(r, { attachments: (r.attachments || []).concat([{ id: rec.id, name: f.name }]) })); closeDrawer(); ACT.repOpen({ getAttribute: () => id }); } catch (e) { toast(e.message || 'Upload failed', 5000, true); } };
   ACT.repAttDel = a => V.busy(a, async () => { const id = a.getAttribute('data-id'); const r = form(I().get('rep', id)); r.attachments = (r.attachments || []).filter((x, i) => i !== Number(a.getAttribute('data-i'))); await I().put('rep', id, r); closeDrawer(); ACT.repOpen({ getAttribute: () => id }); });
   ACT.repAttDl = a => V.busy(a, async () => { const r = I().get('rep', a.getAttribute('data-id')); const x = r.attachments[Number(a.getAttribute('data-i'))]; const f = await API.downloadFile(S.project.id, x.id); V.download(x.name, f.blob); });
@@ -177,7 +204,7 @@
     let m = `X-Unsent: 1\r\nTo: ${r.recipients}\r\nCc: ${r.cc}\r\nSubject: ${subjectOf(r)}\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary="${b}"\r\n\r\n--${b}\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Transfer-Encoding: base64\r\n\r\n${b64(new TextEncoder().encode(bodyOf(r)))}\r\n`;
     for (const x of (r.attachments || [])) { const f = await API.downloadFile(S.project.id, x.id); m += `--${b}\r\nContent-Type: ${f.file.mime || 'application/octet-stream'}; name="${x.name}"\r\nContent-Disposition: attachment; filename="${x.name}"\r\nContent-Transfer-Encoding: base64\r\n\r\n${b64(await f.blob.arrayBuffer())}\r\n`; }
     V.download((subjectOf(r).replace(/[^\w-]+/g, '_')) + '.eml', m + `--${b}--\r\n`, 'message/rfc822'); });
-  ACT.repExport = a => { const r = form(I().get('rep', a.getAttribute('data-id'))); V.download(subjectOf(r).replace(/[^\w-]+/g, '_') + '.doc', docHtml({ title: subjectOf(r), status: r.status === 'sent' ? 'approved' : 'draft', approvedBy: r.sentBy, approvedAt: r.sentAt, content: r.content }), 'application/msword'); };
+  ACT.repExport = a => V.busy(a, async () => { const r = form(I().get('rep', a.getAttribute('data-id'))); if (!String(r.content || '').trim()) { toast('The report has no text yet. Write it or draft it from project records first.', 5000, true); return; } V.download(subjectOf(r).replace(/[^\w-]+/g, '_') + '.docx', new Blob([await mdDocx({ title: subjectOf(r), status: r.status === 'sent' ? 'approved' : 'draft', approvedBy: r.sentBy, approvedAt: r.sentAt, content: r.content })], { type: DOCX })); toast('Word document ready'); });
   V.reports = { html() {
     I().load(KINDS); const head = `<div class="page-header"><div class="t"><h1>Status Reports</h1><p>Weekly (WSR) and monthly reports: build the structure, attach files, prepare the email and track what has been sent.</p></div></div>`; if (!I().ready(['rep'])) return head + '<div class="page-body"><div class="empty">Loading…</div></div>';
     const l = reps(); const can = canEdit(); const od = l.filter(overdue).length; const last = t => l.find(r => r.type === t && r.status === 'sent');

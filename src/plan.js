@@ -42,7 +42,9 @@
   let planEd = null;
   ACT.planOpenEditor = () => { S.ui.planEditor = true; S.ui.planEdKey = 'plan:' + Date.now(); V.render(); };
   ACT.planEdClose = async () => { if (planEd && planEd.dirty && !(await confirmDialog('Close the editor', 'You have unsaved changes. Close without saving?', 'Close without saving', true))) return; S.ui.planEditor = false; if (planEd) PD().view.sheet = Math.min(planEd.si, planEd.wb.worksheets.length - 1); planEd = null; V.render(); };
-  ACT.planEdDownload = async () => { if (!planEd) return; const d = PD(); const cur = d.versions.find(v => v.fileId === d.current) || d.versions[0]; V.download(cur.name.replace(/\.(xlsx|xlsm)$/i, '') + (planEd.dirty ? ' (edited)' : '') + '.xlsx', new Blob([await planEd.buffer()])); };
+  ACT.planEdDownload = async () => { if (!planEd) return; const d = PD(); const cur = d.versions.find(v => v.fileId === d.current) || d.versions[0]; // unchanged: hand back the stored file itself (re-saving through the editor would drop charts, pivots and macros)
+    if (!planEd.dirty && cur.fileId) { V.download(cur.name, await V.fileBlob(cur.fileId)); return; }
+    V.download(cur.name.replace(/\.(xlsx|xlsm)$/i, '') + ' (edited).xlsx', new Blob([await planEd.buffer()], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })); };
   ACT.planEdSave = async () => { if (!planEd) return; const d = PD(); const cur = d.versions.find(v => v.fileId === d.current) || d.versions[0]; loading(true, 'Saving a new version…');
     try { const buf = await planEd.buffer(); const name = cur.name.replace(/\.xlsm$/i, '.xlsx'); const file = new File([buf], name, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const rec = await API.uploadFile(S.project.id, file, 'plan', { editedFrom: cur.fileId }, cur.fileId, p => V.loadingMsg('Saving… ' + Math.round(p * 100) + '%'));

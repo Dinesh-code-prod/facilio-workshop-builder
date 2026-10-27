@@ -250,3 +250,10 @@ Templates drawer: "compare with v(n-1)" shows a line diff of two versions (added
 - Outlook (docs/OUTLOOK_FEASIBILITY.md): a native inbox is NOT available (no per-user Graph token on facilio.work). Built Compose in Outlook and Open Outlook (src/outlook.js) on the weekly digest and reports; existing mailto/.eml/copy kept; never sends.
 - AI providers: DeepSeek stays default. Claude is optional, chosen per task in the Generate drawer or as the org default (Admin > AI & Outlook). Key is the owner-managed secret anthropic_api_key (apps cannot write secrets), never returned or logged; masked status, connection test, explicit fallback policy with a notice on the draft, usage from provider-reported tokens only (no cost estimate). 14/14 server checks pass, including key-leak and fallback cases.
 - Not tested with real credentials: Claude calls (no key set), any Outlook inbox. Compose links were unit-tested for encoding, long bodies and bad addresses but not opened in a signed-in Outlook.
+
+## 55. UI, AI and export audit (27 Oct 2026)
+- Full report: `docs/UI_AI_EXPORT_AUDIT.md`. Browser checks live in `tests/ui/` (`npm run preview`, `test:ui`, `test:exports`, `test:smoke`).
+- One button scale (40 / 36 / 32 / icon), one field height (38), one drawer/dialog structure; older conflicting rules removed from `styles.css`.
+- Projects | Admin switch in the top bar; "Sign out" everywhere; project menu button below 860 px; keyboard access for every clickable row, card and tile.
+- AI: default follows the key, fallback uses a DeepSeek-sized prompt, report drafts ask before replacing text, admin AI panel no longer sticks on Loading, template kind checked.
+- Exports: the two Word exports are real .docx (were HTML saved as .doc); image types, sheet names, onboarding template loading, hidden ID column, unedited plan download, library loading fixed. 26/26 export content checks pass.
