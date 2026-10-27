@@ -195,7 +195,13 @@
   ACT.fitFlow = () => { const f = F.flowModel(S.ui.flowId); const G = D.flowGeometry(f, {}); const c = document.getElementById('sfbCanvas'); const w = c ? c.clientWidth - 20 : 900, h = c ? c.clientHeight - 20 : 600; S.ui.flowZoom = Math.max(0.4, Math.min(1.5, Math.floor(Math.min(w / G.W, h / G.H) * 10) / 10)); V.render(); };
   ACT.undo = () => { const f = ef(); const h = hist[f.id]; if (!h || !h.u.length) return; h.r.push(JSON.stringify(f)); S.ws.flows[f.id] = JSON.parse(h.u.pop()); F.changed('Undo', f.name); };
   ACT.redo = () => { const f = ef(); const h = hist[f.id]; if (!h || !h.r.length) return; h.u.push(JSON.stringify(f)); S.ws.flows[f.id] = JSON.parse(h.r.pop()); F.changed('Redo', f.name); };
-  ACT.dlPng = async () => { const f = F.flowModel(S.ui.flowId); const png = await D.svgToPng(D.flowSvg(f, { full: true }), 2); V.download(F.slug(f.name) + '.png', new Blob([png.data], { type: 'image/png' })); };
+  // the whole diagram (every state and transition, not the visible part), at high resolution, named after the module and the flow
+  ACT.dlPng = a => V.busy(a, async () => {
+    const f = F.flowModel(S.ui.flowId); if (!f) { V.toast('Open a state flow first', 4000, true); return; }
+    const png = await D.svgToPng(D.flowSvg(f, { full: true }), 2); const mv = F.moduleView(f.module);
+    const name = F.slug(((mv && mv.label) || f.module) + '-' + (f.name || 'state-flow')) + '.png';
+    V.download(name, new Blob([png.data], { type: 'image/png' })); V.toast(`Exported ${name} (${Math.round(png.width)} × ${Math.round(png.height)} diagram units)`);
+  });
   ACT.deleteFlow = async () => { if (!(await confirmDialog('Delete stateflow', 'Delete this proposed stateflow?', 'Delete', true))) return; const f = S.ws.flows[S.ui.flowId]; delete S.ws.flows[S.ui.flowId]; S.ui.flowModule = f.module; F.changed('Proposed stateflow deleted', f.name); V.go('flow', { flowId: null }); };
   ACT.resetFlow = async () => { if (!(await confirmDialog('Reset to source', 'Discard all workshop changes to this stateflow and show it as configured?', 'Reset', true))) return; delete S.ws.flows[S.ui.flowId]; delete hist[S.ui.flowId]; S.ui.selected = null; F.changed('Stateflow reset to source', S.ui.flowId); };
   ACT.relayout = a => { const dir = (a && a.getAttribute('data-dir')) || F.flowModel(S.ui.flowId).layoutDir || 'h'; mut(dir === 'v' ? 'Stateflow aligned top to bottom' : 'Stateflow aligned left to right', S.ui.flowId, f => { f.layoutDir = dir; f.states.forEach(s => { s.x = null; s.y = null; }); F.autoLayout(f.states, f.transitions, f.initial, dir); }); setTimeout(() => ACT.fitFlow(), 0); };

@@ -18,13 +18,13 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     onboarding_workbook: { ext: ['xlsx'], max: 40e6 }, onboarding_files: { ext: ['xlsx', 'xls', 'csv', 'pdf', 'docx', 'zip'], max: 60e6 },
     ftr_workbook: { ext: ['xlsx', 'xlsm'], max: 40e6 }, kpi_workbook: { ext: ['xlsx', 'xlsm'], max: 40e6 },
     config_evidence: { ext: ['pdf', 'xlsx', 'csv', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'txt'], max: 20e6 },
-    guide_media: { ext: ['png', 'jpg', 'jpeg'], max: 8e6 },
+    guide_media: { ext: ['png', 'jpg', 'jpeg'], max: 8e6 }, flow_image: { ext: ['png', 'jpg', 'jpeg', 'webp'], max: 8e6 },
     ticket_attachment: { ext: ['pdf', 'xlsx', 'xls', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'csv', 'txt', 'msg', 'eml'], max: 20e6 },
     report_attachment: { ext: ['pdf', 'xlsx', 'xls', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'csv', 'txt'], max: 20e6 },
     signoff_evidence: { ext: ['pdf', 'png', 'jpg', 'jpeg', 'msg', 'eml', 'docx'], max: 20e6 }, brd_signed: { ext: ['docx', 'pdf', 'json'], max: MAX_FILE }
   };
   // record kinds the team can store (customer-only rules come with the customer page)
-  const KINDS = ['action', 'decision', 'raid', 'signoff', 'cr', 'onb', 'onbsub', 'onbfile', 'onbws', 'owner', 'agreement', 'minutes', 'checklist', 'build', 'uat', 'digest', 'ctrcore', 'ctrfees', 'ctrlegal', 'ctrrates', 'scope', 'modbrief', 'fieldreq', 'note', 'ctrwatch', 'usecase', 'discrepancy', 'brdrev', 'ai', 'hc', 'hcrep', 'ho', 'close', 'rep', 'kpi', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'lesson', 'tkt', 'res', 'ugv', 'ugu', 'pnote'];
+  const KINDS = ['action', 'decision', 'raid', 'signoff', 'cr', 'onb', 'onbsub', 'onbfile', 'onbws', 'owner', 'agreement', 'minutes', 'checklist', 'build', 'uat', 'digest', 'ctrcore', 'ctrfees', 'ctrlegal', 'ctrrates', 'scope', 'modbrief', 'fieldreq', 'note', 'ctrwatch', 'usecase', 'discrepancy', 'brdrev', 'ai', 'hc', 'hcrep', 'ho', 'close', 'rep', 'kpi', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'lesson', 'tkt', 'res', 'ugv', 'ugu', 'pnote', 'wb'];   // wb: process whiteboards
   const DOC_SECTIONS = /^[a-z][a-z0-9_]{1,40}$/, ITEM_ID_RE = /^[A-Za-z0-9_-]{1,80}$/, GR_KEY = /^[a-z]{2,8}:[afbxw]:[A-Za-z0-9_-]{1,64}$/;
 
   class HttpError extends Error { constructor(status, msg, extra) { super(msg); this.status = status; this.extra = extra; } }
@@ -303,7 +303,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     const key = await claudeKey(); if (!key) throw new HttpError(409, 'Claude is not configured. The app owner needs to add the Claude API key in the secrets portal.');
     const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 40000);
     try {
-      const model = 'claude-sonnet-5-5'; const sys = messages.filter(m => m.role === 'system').map(m => m.content).join('\n'); const rest = messages.filter(m => m.role !== 'system');
+      const model = 'claude-sonnet-5-5'; const sys = messages.filter(m => m.role === 'system').map(m => m.content).join('\n'); const rest = messages.filter(m => m.role !== 'system');   // user content may be text or [{type:'image'},{type:'text'}] blocks
       const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', signal: ac.signal, headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' }, body: JSON.stringify({ model, max_tokens: maxTokens, system: sys, messages: rest }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) { const code = 'http_' + r.status; await aiNote('claude', false, null, code); throw new HttpError(r.status === 429 ? 429 : r.status === 401 || r.status === 403 ? 409 : 502, r.status === 429 ? 'Claude is rate limited right now. Try again shortly.' : r.status === 401 || r.status === 403 ? 'Claude rejected the configured API key. The app owner needs to check it.' : 'Claude returned an error (' + r.status + ').'); }
@@ -378,6 +378,48 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     const id = rid('ai'); const t = now(); const data = { task, title: T.title, status: 'draft', content: out.text, sources: src, vid: vidId || undefined, provider: out.provider, model: out.model, notice: out.notice || undefined, instruction, by: s.name || s.email, version: 1, hist: [{ at: t, who: s.name || s.email, side: 'facilio', event: 'AI draft generated' }] };
     await save('it.' + P.id + '.ai', 'ip.' + P.id + '.ai', id, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: t, ua: t }, data, undefined);
     await audit(P.id, s.id, 'ai-draft', task + ' via ' + out.provider + (out.notice ? ' (fallback)' : '')); return ok({ item: itemOut('ai', id, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: t, ua: t }, data) }, 201);
+  });
+  /* ---------- flow image -> editable diagram (Process Whiteboard) ----------
+     The image is analysed by Claude (the only configured provider that reads images; the platform model is text only). The model's answer is untrusted:
+     it is parsed as JSON and rebuilt field by field against a fixed schema, so only known node kinds, short plain-text labels and edges between known nodes survive.
+     Nothing is stored here; the page shows the result for review and the person decides what goes on the board. */
+  const FLOW_KINDS = ['start', 'end', 'state', 'process', 'decision'], FLOW_CONF = ['detected', 'inferred', 'uncertain'];
+  const plain = (v, max) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+  function validFlowGraph(raw) {
+    let j = raw; if (typeof j === 'string') { const m = j.match(/\{[\s\S]*\}/); if (!m) throw new HttpError(502, 'The image could not be read as a flow'); try { j = JSON.parse(m[0]); } catch (e) { throw new HttpError(502, 'The image could not be read as a flow'); } }
+    if (!j || typeof j !== 'object' || !Array.isArray(j.nodes) || !Array.isArray(j.edges)) throw new HttpError(502, 'The image could not be read as a flow');
+    const ids = new Set(), nodes = [], edges = [], dropped = [];
+    for (const n of j.nodes.slice(0, 80)) {
+      const id = plain(n && n.id, 24).replace(/[^A-Za-z0-9_-]/g, ''); const label = plain(n && n.label, 80);
+      if (!id || ids.has(id)) { dropped.push('node with a missing or repeated id'); continue; }
+      ids.add(id); nodes.push({ id, label: label || '(unreadable)', kind: FLOW_KINDS.includes(n.kind) ? n.kind : 'state', confidence: !label ? 'uncertain' : FLOW_CONF.includes(n.confidence) ? n.confidence : 'uncertain' });
+    }
+    for (const e of j.edges.slice(0, 160)) {
+      const from = plain(e && e.from, 24), to = plain(e && e.to, 24);
+      if (!ids.has(from) || !ids.has(to)) { dropped.push('connection to a node that is not in the diagram'); continue; }
+      edges.push({ from, to, label: plain(e.label, 60), confidence: FLOW_CONF.includes(e.confidence) ? e.confidence : 'uncertain' });
+    }
+    if (j.nodes.length > 80 || j.edges.length > 160) dropped.push('the diagram was larger than 80 steps or 160 connections; the rest was left out');
+    return { title: plain(j.title, 80), nodes, edges, dropped: [...new Set(dropped)], notes: plain(j.notes, 400) };
+  }
+  const FLOW_PROMPT = `You read flowcharts and state flow diagrams from images and return their structure. Answer with JSON only, no prose, in exactly this shape:
+{"title": string, "nodes": [{"id": "n1", "label": string, "kind": "start"|"end"|"state"|"process"|"decision", "confidence": "detected"|"inferred"|"uncertain"}],
+ "edges": [{"from": "n1", "to": "n2", "label": string, "confidence": "detected"|"inferred"|"uncertain"}], "notes": string}
+Rules: copy labels exactly as written; "detected" means you can read it clearly, "inferred" means it is implied (for example an arrowhead you cannot see clearly),
+"uncertain" means you are guessing. Never invent a step, state, condition or label you cannot see; if text is unreadable use an empty label with "uncertain".
+Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
+  route('POST', '/api/projects/:id/ai/flow-image', async (b, P) => {
+    const s = await me(); await projectAccess(s, P.id, 'edit');
+    const mt = String(b && b.mediaType || ''); if (!['image/png', 'image/jpeg', 'image/webp'].includes(mt)) throw new HttpError(415, 'Use a PNG, JPEG or WebP image');
+    const data = String(b && b.data || ''); if (!/^[A-Za-z0-9+/]+=*$/.test(data) || data.length > 2.2e6) throw new HttpError(413, 'The image is too large. Use one under about 1.5 MB (the page shrinks large images first).');
+    const head = fromB64(data.slice(0, 32)); const sig = mt === 'image/png' ? head[0] === 0x89 && head[1] === 0x50 : mt === 'image/jpeg' ? head[0] === 0xFF && head[1] === 0xD8 : head[0] === 0x52 && head[8] === 0x57;
+    if (!sig) throw new HttpError(415, 'The file is not the image type it claims to be');
+    if (!(await haveClaude())) throw new HttpError(409, 'Reading diagrams from images needs Claude, which reads images. Ask an admin to add the Claude key under Admin › AI provider. DeepSeek, the default provider here, reads text only.');
+    const out = await callClaude([{ role: 'system', content: FLOW_PROMPT }, { role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: mt, data } }, { type: 'text', text: 'Return the flow in this image as JSON.' + (b.hint ? ' Context from the user: ' + plain(b.hint, 200) : '') }] }], 3000);
+    const graph = validFlowGraph(out.text);
+    if (!graph.nodes.length) throw new HttpError(422, 'No flow steps could be read from this image');
+    await audit(P.id, s.id, 'ai-flow-image', graph.nodes.length + ' steps via Claude');
+    return ok({ graph, provider: out.provider, model: out.model });
   });
   route('POST', '/api/projects/:id/ai/:item/decision', async (b, P) => {
     const s = await me(); const { role } = await projectAccess(s, P.id, 'owner'); const d = String(b && b.decision || ''); if (!['approve', 'reject', 'reopen'].includes(d)) throw new HttpError(400, 'Choose approve, reject or reopen');

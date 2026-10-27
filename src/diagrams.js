@@ -115,8 +115,10 @@
     return s + '</svg>';
   }
 
+  // the largest scale (up to the one asked for) that stays inside what browsers can draw: about 16k pixels a side and 64M pixels in all
+  function safeScale(svg, want) { const m = svg.match(/viewBox="-?[\d.]+ -?[\d.]+ (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)"/); if (!m) return want || 2; const w = +m[1], h = +m[2]; return Math.max(.25, Math.min(want || 2, 15000 / Math.max(w, h), Math.sqrt(6.4e7 / Math.max(1, w * h)))); }
   async function svgToPng(svg, scale) {
-    scale = scale || 2;
+    scale = safeScale(svg, scale || 2);
     const m = svg.match(/viewBox="-?[\d.]+ -?[\d.]+ (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)"/); const w = m ? +m[1] : 800, h = m ? +m[2] : 400;
     const fixed = svg.replace(/width="[\d.]+" height="[\d.]+" viewBox/, `width="${w}" height="${h}" viewBox`);
     const blob = new Blob([fixed], { type: 'image/svg+xml;charset=utf-8' }); const url = URL.createObjectURL(blob);
@@ -129,5 +131,5 @@
     } finally { URL.revokeObjectURL(url); }
   }
 
-  root.FWBDiagrams = { flowSvg, flowGeometry, swimlaneSvg, svgToPng, boxSize, wrap, anchors, COLORS: C };
+  root.FWBDiagrams = { safeScale, flowSvg, flowGeometry, swimlaneSvg, svgToPng, boxSize, wrap, anchors, COLORS: C };
 })(typeof window !== 'undefined' ? window : globalThis);

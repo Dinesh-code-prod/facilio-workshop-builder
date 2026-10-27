@@ -78,6 +78,7 @@
     { g: '3. Requirements', icon: 'check', items: [['usecases', 'Use Cases'], ['checks', 'Checks & Validations']] },
     { g: '4. BRD & Approvals', icon: 'check', items: [['brd', 'BRD Draft']] },
     { g: '5. Configuration & Implementation', icon: 'modules', items: [['modules', 'System Modules & Form Builder'], ['flow', 'State Flow Builder'], ['roles', 'Roles & Access Permissions'], ['cfginputs', 'Configuration Inputs'], ['dashboards', 'Dashboard Gallery'], ['trace', 'Traceability & Quality']] },
+    { g: 'Process & State Flows', icon: 'flow', items: [['whiteboard', 'Process Whiteboard']] },
     { g: '6. UAT & Defects · 9. Go-Live', icon: 'flag', items: [['delivery', 'Build, UAT & Go-Live']] },
     { g: '7. FTR & KPI Documentation', icon: 'flag', items: [['ftr', 'FTR Report (Excel)'], ['kpi', 'KPI Workbooks'], ['reports', 'Status Reports (WSR / Monthly)']] },
     { g: '10. Hypercare', icon: 'flag', items: [['hypercare', 'Hypercare']] },
