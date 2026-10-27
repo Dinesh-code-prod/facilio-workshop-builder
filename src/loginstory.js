@@ -536,7 +536,7 @@
   function layout() {
     if (!art || !cv) return;
     const ar = art.getBoundingClientRect(); W = Math.max(1, Math.round(art.clientWidth)); H = Math.max(1, Math.round(art.clientHeight));
-    DPR = Math.min(2, root.devicePixelRatio || 1);
+    DPR = Math.min(1.5, root.devicePixelRatio || 1, Math.sqrt(1200000 / Math.max(1, W * H)));
     cv.width = W * DPR; cv.height = H * DPR; cv.style.width = W + 'px'; cv.style.height = H + 'px';
     const top = box.querySelector('.lsx-top').getBoundingClientRect().bottom - ar.top + 10;
     const note = art.querySelector('.auth-note'); const nr = note && note.offsetHeight ? note.getBoundingClientRect() : null;
@@ -558,12 +558,12 @@
     const dt = Math.min(.05, (now - last) / 1000); last = now;
     // hand-over from the opening intros: while the tree (team) or road (customer) intro still covers the page, the story waits;
     // it starts as the intro lifts away (liquid reveal / falling leaves / tractor-beam lift), so the two read as one sequence
-    if (!RM.matches && covered()) { T0[aud] = now + 350; lastT = 0; box.classList.remove('go'); }
+    if (!RM.matches && covered()) { T0[aud] = now + 120; lastT = 0; box.classList.remove('go'); }
     else box.classList.add('go');
     let t = (now - T0[aud]) / 1000; if (RM.matches) t = END[aud] + .5;
     cx.setTransform(DPR, 0, 0, DPR, 0, 0); cx.clearRect(0, 0, W, H);
     if (aud === 'team' && gridC) cx.drawImage(gridC, 0, 0, W, H);
-    if (t >= 0) { if (aud === 'team') team(t, RM.matches ? 0 : dt); else cust(t, RM.matches ? 0 : dt); }
+    { const tt = Math.max(0, t); if (aud === 'team') team(tt, RM.matches ? 0 : dt); else cust(tt, RM.matches ? 0 : dt); } /* draw the first scene at once; no blank wait before the motion starts */
     setBeat(Math.max(0, t));
     if (!RM.matches && !doc.hidden) raf = root.requestAnimationFrame(frame);
   }
@@ -575,7 +575,7 @@
     if (raf) root.cancelAnimationFrame(raf); raf = 0; if (ro) ro.disconnect();
     box = el; el.setAttribute('data-on', '1'); aud = el.getAttribute('data-aud') === 'cust' ? 'cust' : 'team';
     cv = el.querySelector('canvas'); cx = cv.getContext('2d'); art = el.closest('.auth-art') || el.parentNode;
-    if (!T0[aud]) T0[aud] = root.performance.now() + 700;
+    if (!T0[aud]) T0[aud] = root.performance.now() + 120;
     const t = (root.performance.now() - T0[aud]) / 1000; lastT = Math.max(0, t); teamFx = []; gpulse = 0; beatIdx = -1; last = root.performance.now();
     layout();
     if (root.ResizeObserver) { ro = new root.ResizeObserver(() => { layout(); kick(); }); ro.observe(art); }

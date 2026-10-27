@@ -260,7 +260,7 @@
     const body = A.sec === 'dashboard' ? dashboard() : A.sec === 'projects' ? projects() : A.sec === 'users' ? users() : A.sec === 'access' ? access() : A.sec === 'ai' ? aiPanel() : A.sec === 'integrations' ? integrationsPanel() : activity();
     return `<div class="adm-wrap"><aside class="adm-nav" aria-label="Admin sections"><div class="adm-me"><div class="pav lg" style="background:${tone(d.me.email || 'x')}">${esc(initials(d.me.name || d.me.email))}</div><div><b>${esc(d.me.name || 'Admin')}</b><div class="xs muted">${esc(d.me.email || '')}</div>${rchip(d.me.role)}</div></div>
       ${nav.map(([k, l, p]) => `<button class="adm-ni${A.sec === k ? ' on' : ''}" data-act="admSec" data-s="${k}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${p}"/></svg><span>${l}</span>${k === 'projects' ? `<em>${d.kpis.active}</em>` : ''}</button>`).join('')}
-      <div class="adm-nav-foot">${root.FWBRun ? '' : '<button class="btn sm" data-act="admPw">Change my password</button>'}<button class="btn sm" data-act="toProjects">Back to projects</button></div></aside>
+      <div class="adm-nav-foot">${root.FWBRun ? '' : '<button class="btn sm" data-act="admPw">Change my password</button>'}<button class="btn sm" data-act="toProjects">Switch to Projects</button></div></aside>
       <main class="adm-main"><div class="adm-hero"><div class="adm-hero-t"><p class="adm-crumb">Admin console</p><h1>${title}</h1><p class="adm-sub">${esc(sub)}</p><div class="adm-hero-a">${d.me.role === 'sub' ? chip('r-sub', 'Read-only access') : ''}${A.sec === 'dashboard' ? V.range.bar('adm', A.rg, {}) : ''}<button class="hm-btn ghost" type="button" data-act="admRefresh"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>Refresh</button></div></div><div class="adm-hero-art" aria-hidden="true"><div class="hm-lt" data-lottie="${{ dashboard: 'scene-dash', projects: 'scene-building', users: 'scene-workshop', access: 'scene-connect', ai: 'scene-dash', activity: 'scene-guide' }[A.sec] || 'scene-dash'}"></div></div></div>${body}</main></div>`;
   };
 
@@ -313,12 +313,13 @@
 
   // ---------- sign-in gate ----------
   async function enter() {
+    V.loading(true, 'Switching to Admin…');
     try { await load(); A.users = A.audit = A.access = null; show(); }
     catch (e) {
       if (e.status === 401) return signIn();
       if (e.status === 403) { toast('Your account does not have admin access. Ask the platform owner to add your email.', 6000, true); return; }
       toast(e.message, 5000, true);
-    }
+    } finally { V.loading(false); }
   }
   ACT.openAdmin = () => enter();
   function signIn(setup) {

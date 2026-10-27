@@ -205,7 +205,7 @@
       leaves.forEach((L, i) => { L.ix = i; });
       let W = 0, H = 0, DPR = 1, FIT = 1, QCAP = 1.5, QTIER = 0, slow = 0, WIDE = true, LR = 0, RT = 58, RB = 0, BL = 0, IDLE = 0;
       function resize() {
-        DPR = Math.min(QCAP, window.devicePixelRatio || 1) * (QCAP < 1 ? 1 : 1); W = o.clientWidth; H = o.clientHeight; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+        W = o.clientWidth; H = o.clientHeight; DPR = Math.min(QCAP, window.devicePixelRatio || 1); DPR = Math.max(.6, Math.min(DPR, Math.sqrt(1500000 / Math.max(1, W * H)))); /* pixel budget: a wide screen never draws more than about 1.5M pixels per frame, which keeps the intro smooth on ordinary GPUs */ cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
         WIDE = W >= 900 && W / H > 1.15; o.classList.toggle('narrow', !WIDE);
         RT = 58;
         RT = WIDE ? 112 : 150; LR = 0;
