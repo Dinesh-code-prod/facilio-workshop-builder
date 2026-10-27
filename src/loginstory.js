@@ -552,14 +552,17 @@
     const el = box.querySelector('.lsx-cap'); el.classList.remove('swap'); void el.offsetWidth; el.classList.add('swap');
     el.querySelector('b').textContent = B[i][1]; el.querySelector('span').textContent = B[i][2];
   }
+  let drawnUnder = false;
   function frame(now) {
     raf = 0;
     if (!cv || !cv.isConnected) { stop(); return; }
     const dt = Math.min(.05, (now - last) / 1000); last = now;
     // hand-over from the opening intros: while the tree (team) or road (customer) intro still covers the page, the story waits;
     // it starts as the intro lifts away (liquid reveal / falling leaves / tractor-beam lift), so the two read as one sequence
-    if (!RM.matches && covered()) { T0[aud] = now + 120; lastT = 0; box.classList.remove('go'); }
-    else box.classList.add('go');
+    if (!RM.matches && covered()) { T0[aud] = now + 120; lastT = 0; box.classList.remove('go');
+      // the intro covers the page: draw the first scene once, then only check back five times a second (no drawing under the intro, which made it stutter)
+      if (drawnUnder) { setTimeout(kick, 200); return; } drawnUnder = true; }
+    else { drawnUnder = false; box.classList.add('go'); }
     let t = (now - T0[aud]) / 1000; if (RM.matches) t = END[aud] + .5;
     cx.setTransform(DPR, 0, 0, DPR, 0, 0); cx.clearRect(0, 0, W, H);
     if (aud === 'team' && gridC) cx.drawImage(gridC, 0, 0, W, H);

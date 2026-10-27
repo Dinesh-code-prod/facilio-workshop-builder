@@ -578,3 +578,6 @@ body .wb-legend .lg { display: inline-block; width: 18px; height: 0; border-top:
 body .wb-legend .lg.ok { border-color: #079455; } body .wb-legend .lg.pr { border-top-style: dashed; border-color: #DC6803; } body .wb-legend .lg.mn { border-top-style: dashed; border-color: #7A5AF8; }
 body .wb-host .wb-el { cursor: grab; } body .wb-host .wb-eh { cursor: crosshair; }
 @media (max-width: 860px) { body .wb-legend { display: none; } }
+
+/* while an intro (road or tree) covers the page, the sign-in page underneath stops its own CSS animations, so the intro has the GPU to itself */
+body:has(.ri:not(.lifting)) .auth *, body:has(.cn.ti:not(.liq):not(.leafout):not(.exit):not(.out)) .auth * { animation-play-state: paused !important; }

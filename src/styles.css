@@ -2963,8 +2963,8 @@ body .pp-journey { background: linear-gradient(180deg, #F3F7FF, #fff 70%) !impor
 .ri-open p { margin: 10px 0 0; font-size: clamp(14px, 1.3vw, 17px); color: var(--ri-soft); text-shadow: 0 1px 14px rgba(5, 4, 30, .8); }
 /* step sign: sits on top of its roadside post; the customer's challenge, then how Facilio helps */
 .ri-cap { position: absolute; z-index: 4; left: 0; top: 0; width: min(310px, calc(100vw - 28px)); box-sizing: border-box; padding: 14px 16px 15px; border-radius: 14px;
-  background: rgba(13, 12, 58, .86); border: 1px solid rgba(141, 184, 255, .32); box-shadow: 0 18px 40px -18px rgba(0, 0, 0, .75), 0 0 0 4px rgba(141, 184, 255, .07);
-  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; pointer-events: none; transition: opacity .35s; }
+  background: rgba(13, 12, 58, .93); border: 1px solid rgba(141, 184, 255, .32); box-shadow: 0 18px 40px -18px rgba(0, 0, 0, .75), 0 0 0 4px rgba(141, 184, 255, .07);
+  opacity: 0; pointer-events: none; transition: opacity .35s; will-change: transform, opacity; }   /* no backdrop blur: re-blurring the moving scene behind a moving sign every frame caused stutter */
 .ri-cap.on { opacity: 1; transition: opacity .5s .2s; }
 .ri-k { font-size: 11.5px; font-weight: 600; letter-spacing: .06em; color: var(--ri-sky); font-variant-numeric: tabular-nums; }
 .ri-cap h2 { margin: 4px 0 10px; font-size: 19px; font-weight: 700; letter-spacing: -.01em; line-height: 1.2; color: #fff; text-wrap: balance; }

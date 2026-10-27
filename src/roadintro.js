@@ -23,11 +23,12 @@
   ];
   const N = STEPS.length;
   // timing: a short opening, then each milestone gets a settled view (the sign is read here) followed by a brief pan to the next
-  const T0 = 3.2, STEP = 4.2, PAN = 1.2;   // T0: the opening shot holds long enough to read the title and see the first milestone
+  // paced to be read: about 16 seconds per milestone (both texts on the sign, at an easy reading speed), so the whole journey runs a little under two minutes
+  const T0 = 5, STEP = 16, PAN = 2.2;   // T0: the opening shot holds long enough to read the title and see the first milestone
   const AT = STEPS.map((_, i) => T0 + i * STEP);            // the camera arrives at milestone i
   const DWE = AT.map(a => a + STEP - PAN);                  // ... and leaves it
   const MID = AT.map((a, i) => (a + DWE[i]) / 2);            // the car passes the post here
-  const CRANE = DWE[N - 1], END = CRANE + 3.6;                   // the camera lifts to show the whole road, the closing title holds, then the lift-off
+  const CRANE = DWE[N - 1], END = CRANE + 7;                   // the camera lifts to show the whole road, the closing title holds, then the lift-off
 
   /* ---------------- helpers ---------------- */
   const TAU = Math.PI * 2;
@@ -48,7 +49,7 @@
   const RW = 7.6, U0 = -200, U1 = 760;
 
   // car: a steady, unhurried drive that rolls to a stop at the destination
-  const VC = 15, DT = 1 / 120, CAR = [];
+  const VC = 63 / STEP, DT = 1 / 120, CAR = [];   // the posts stay 63 road units apart, so the car drives slower when each milestone is held longer
   { let u = -VC * (MID[0] - .2); for (let t = 0; t <= END + .01; t += DT) { CAR.push(u); u += VC * (1 - sm((t - CRANE + .4) / 2.4)) * DT; } }
   const carU = t => { const k = clamp(t, 0, END) / DT, i = Math.min(CAR.length - 2, Math.floor(k)); return lerp(CAR[i], CAR[i + 1], k - i); };
   const MS = MID.map(t => carU(t));                          // each post stands where the car is halfway through that milestone's view
@@ -110,10 +111,17 @@
       const dots = [...o.querySelectorAll('.ri-route span')], fillEl = $('.ri-route i'), sr = $('.ri-sr'), skipBtn = $('[data-r="skip"]');
       let W = 0, H = 0, DPR = 1, F = 1, HOR = 0, NARROW = false, PORT = false, T = 0, cam = { x: 0, z: 0, h: 30 };
       let LASTMS = 0;
+      // smoothness: the canvas is capped at about 3.2 million pixels; if the opening seconds still run below ~50 fps the render scale drops once, before the
+      // first sign appears (never mid-journey). Soft, slow-changing layers (sky, sun glow, vignette, mist, clouds) are drawn from cached images instead of
+      // full-screen gradients every frame.
+      let QSCALE = 1, qframes = [], qdone = false, SKYC = null, SKYK = '', VIGC = null; const BLOB = {};
+      function blob(col) { const k = col.join(','); if (BLOB[k]) return BLOB[k]; const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); const gr = x.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, rgb(col, 1)); gr.addColorStop(1, rgb(col, 0)); x.fillStyle = gr; x.fillRect(0, 0, 128, 128); return (BLOB[k] = c); }
+      function softBlob(colN, colD, dl, a, x, y, rx, ry) { const w = 2 * rx, h = 2 * ry; if (1 - dl > .01) { g.globalAlpha = a * (1 - dl); g.drawImage(blob(colN), x - rx, y - ry, w, h); } if (dl > .01) { g.globalAlpha = a * dl; g.drawImage(blob(colD), x - rx, y - ry, w, h); } g.globalAlpha = 1; }
       let LT = -1;   // seconds into the lift-off, -1 before it starts
 
       function resize() {
-        DPR = Math.min(2, root.devicePixelRatio || 1); W = o.clientWidth; H = o.clientHeight;
+        W = o.clientWidth; H = o.clientHeight; DPR = Math.min(2, root.devicePixelRatio || 1, Math.sqrt(3.2e6 / Math.max(1, W * H))) * QSCALE; DPR = Math.max(.75, DPR);   // at most ~3.2 MP of canvas
+        SKYC = null; VIGC = null;
         cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
         NARROW = W < 760; PORT = H > W;
         F = PORT ? .7 * W : .42 * Math.min(W, H * 1.75);
@@ -141,7 +149,7 @@
         else { let i = 0; while (i < N - 1 && t > DWE[i]) i++; i--;   // i = the milestone we are leaving
           if (t < AT[i + 1]) { const a = dwell(i, DWE[i]), b = dwell(i + 1, AT[i + 1]), u = clamp((t - DWE[i]) / PAN), k = ease(u); c = { x: herm(a.x, DRIFT * PAN, b.x, DRIFT * PAN, u), z: lerp(a.z, b.z, k) }; }
           else c = dwell(i + 1, t); }
-        const k = ease((t - CRANE) / 3.2), mid = (MS[0] + DEST) / 2 + (NARROW ? 40 : 0);
+        const k = ease((t - CRANE) / 4.5), mid = (MS[0] + DEST) / 2 + (NARROW ? 40 : 0);
         cam = { x: lerp(c.x, mid, k), z: lerp(c.z, PORT ? -560 : NARROW ? -320 : -150, k), h: lerp(31 + lift0 + 2.5 * Math.sin(t * .3), PORT ? 120 : 52, k) };
       }
       const P = (x, y, z) => { const zr = z - cam.z; if (zr < 1) return null; const s = F / zr; return [W / 2 + (x - cam.x) * s, HOR + (cam.h - y) * s, s]; };
@@ -168,20 +176,21 @@
         for (let j = 0; j < n; j++) { const offj = Math.abs(j - ctr); bird(lead - dir * offj * sz * 4.2, base + offj * sz * 2.2 + Math.sin(t * .9 + j) * sz * .6, sz, t * 8 + j * .9, a * fade, col); }
       }
       function sky(t, dl) {
-        const top = mix([7, 6, 32], [40, 94, 206], dl), mid = mix([20, 17, 72], [106, 152, 236], dl), low = mix([52, 38, 112], [255, 214, 196], dl);
-        const gr = g.createLinearGradient(0, 0, 0, HOR + 40); gr.addColorStop(0, rgb(top)); gr.addColorStop(.62, rgb(mid)); gr.addColorStop(1, rgb(low));
-        g.fillStyle = gr; g.fillRect(0, 0, W, HOR + 80);
+        const sx = W * (NARROW ? .86 : .74), sy = lerp(HOR + 40, HOR - H * .2, sm((t - 8) / 10)), sunA = .95 * sm((t - 10) / 3);
+        const key = Math.round(dl * 200) + '|' + Math.round(sy) + '|' + Math.round(sunA * 40) + '|' + W + 'x' + H;
+        if (!SKYC || key !== SKYK) {   // about one refresh a second at most; drawn at half size (it is all soft gradients)
+          SKYK = key; const sc = .5; if (!SKYC) { SKYC = document.createElement('canvas'); } SKYC.width = Math.max(2, Math.round(W * sc)); SKYC.height = Math.max(2, Math.round(H * sc)); const c = SKYC.getContext('2d'); c.setTransform(sc, 0, 0, sc, 0, 0);
+          const top = mix([7, 6, 32], [40, 94, 206], dl), mid = mix([20, 17, 72], [106, 152, 236], dl), low = mix([52, 38, 112], [255, 214, 196], dl);
+          const gr = c.createLinearGradient(0, 0, 0, HOR + 40); gr.addColorStop(0, rgb(top)); gr.addColorStop(.62, rgb(mid)); gr.addColorStop(1, rgb(low)); c.fillStyle = gr; c.fillRect(0, 0, W, HOR + 80);
+          const glow = c.createRadialGradient(sx, sy, 0, sx, sy, H * .7); glow.addColorStop(0, `rgba(255,224,200,${.55 * dl})`); glow.addColorStop(.25, `rgba(255,170,190,${.22 * dl})`); glow.addColorStop(1, 'rgba(255,160,190,0)'); c.fillStyle = glow; c.fillRect(0, 0, W, H);
+        }
+        g.drawImage(SKYC, 0, 0, W, H);
         const sa = 1 - sm(dl / .55);
         if (sa > 0) for (const s of STARS) { g.fillStyle = `rgba(210,225,255,${(.45 + .3 * Math.sin(t * 1.7 + s.p)) * sa})`; g.beginPath(); g.arc(s.x * W, s.y * H, s.s, 0, TAU); g.fill(); }
-        const sx = W * (NARROW ? .86 : .74), sy = lerp(HOR + 40, HOR - H * .2, sm((t - 8) / 10));
-        const glow = g.createRadialGradient(sx, sy, 0, sx, sy, H * .7);
-        glow.addColorStop(0, `rgba(255,224,200,${.55 * dl})`); glow.addColorStop(.25, `rgba(255,170,190,${.22 * dl})`); glow.addColorStop(1, 'rgba(255,160,190,0)');
-        g.fillStyle = glow; g.fillRect(0, 0, W, H);
-        g.fillStyle = `rgba(255,244,232,${.95 * sm((t - 10) / 3)})`; g.beginPath(); g.arc(sx, sy, Math.max(12, H * .028), 0, TAU); g.fill();
+        g.fillStyle = `rgba(255,244,232,${sunA})`; g.beginPath(); g.arc(sx, sy, Math.max(12, H * .028), 0, TAU); g.fill();
         for (const c of CLOUDS) {
-          const x = ((c.x + t * c.v) % 1.4 - .2) * W, y = c.y * H, w = c.w * W, h = c.h * H, col = mix([70, 62, 140], [255, 222, 232], dl);
-          const cg = g.createRadialGradient(x, y, 0, x, y, w * .5); cg.addColorStop(0, rgb(col, .3 + .25 * dl)); cg.addColorStop(1, rgb(col, 0));
-          g.save(); g.translate(x, y); g.scale(1, h / w); g.translate(-x, -y); g.fillStyle = cg; g.beginPath(); g.arc(x, y, w * .5, 0, TAU); g.fill(); g.restore();
+          const x = ((c.x + t * c.v) % 1.4 - .2) * W, y = c.y * H, w = c.w * W, h = c.h * H;
+          softBlob([70, 62, 140], [255, 222, 232], dl, .3 + .25 * dl, x, y, w * .5, h * .5);
         }
         const bc = rgb(mix([190, 205, 255], [40, 44, 96], dl), 1), s0 = Math.max(3.5, Math.min(W, H) * .0072);
         flock(t, 15, 2, H * .2, 7, s0, bc, .8); flock(t, 21, 11, H * .13, 5, s0 * .75, bc, .6);
@@ -202,6 +211,7 @@
           for (const m of MIST) {
             if (Math.abs(m.z - L.z) > 260 || m.z > L.z) continue;
             const ms = F / (m.z - cam.z), my = HOR + (cam.h - 6) * ms, mx = W / 2 + (((m.x + t * m.v) % 2400) - 1200 - (cam.x * .4) % 2400) * ms, mw = m.w * ms;
+            if (mx + mw < 0 || mx - mw > W) continue;   // off screen: skip
             const mc = mix([90, 90, 170], [235, 240, 255], dl), mg = g.createRadialGradient(mx, my, 0, mx, my, mw); mg.addColorStop(0, rgb(mc, .2 + .1 * dl)); mg.addColorStop(1, rgb(mc, 0));
             g.save(); g.translate(mx, my); g.scale(1, .14); g.translate(-mx, -my); g.fillStyle = mg; g.beginPath(); g.arc(mx, my, mw, 0, TAU); g.fill(); g.restore();
           }
@@ -470,7 +480,7 @@
       /* each step's sign sits on top of its post, with the challenge and how Delivery Studio helps */
       let measured = false, CW = [], CH = [], KW = [], KH = [], SCENEBOX = null, CAPBOX = null;
       const measure = () => { CW = CAPS.map(e => e.offsetWidth); CH = CAPS.map(e => e.offsetHeight); KW = CHIPS.map(e => e.offsetWidth); KH = CHIPS.map(e => e.offsetHeight); measured = true; };
-      const active = t => { for (let i = 0; i < N; i++) if (t >= (i ? AT[i] - .15 : 1.9) && t < DWE[i] - .1) return i; return -1; };   // the first sign joins the opening shot
+      const active = t => { for (let i = 0; i < N; i++) if (t >= (i ? AT[i] - .15 : 3.7) && t < DWE[i] - .1) return i; return -1; };   // the first sign appears as the opening title fades
       function carRect() { const u = carU(T), p = P(u, roadY(u), roadZ(u)); return p && { x: p[0] - 2.8 * p[2], y: p[1] - 2.6 * p[2], w: 5.6 * p[2], h: 2.8 * p[2] }; }
       function signBox(i, p) {
         const top = NARROW ? 62 : 74, y = clamp(p.y - CH[i] - 16, top, H - CH[i] - 60);
@@ -479,6 +489,7 @@
         const xs = [p.x - CW[i] / 2, p.x - CW[i] + 18, p.x - 18, 14, W - CW[i] - 14].map(x => clamp(x, 14, W - CW[i] - 14));
         const x = xs.find(fits); return { x: x == null ? xs[0] : x, y, w: CW[i], h: CH[i] };
       }
+      const setT = (el, v) => { if (el._tf !== v) { el._tf = v; el.style.transform = v; } };   // write a style only when it changes (fewer style recalculations per frame)
       function place(t, posts) {
         if (!measured) measure();
         const a = active(t); CAPBOX = null;
@@ -490,7 +501,7 @@
           // the sign rides with its post; when it has to step aside for the car, its offset from the post glides there instead of jumping
           const b0 = signBox(i, posts[i]), dx = b0.x - posts[i].x, dy = b0.y - posts[i].y;
           if (el._dx === undefined || !on) { el._dx = dx; el._dy = dy; } else { el._dx += (dx - el._dx) * GLK; el._dy += (dy - el._dy) * GLK; }
-          const b = { x: posts[i].x + el._dx, y: posts[i].y + el._dy, w: b0.w, h: b0.h }; el.style.transform = `translate(${b.x.toFixed(2)}px,${b.y.toFixed(2)}px)`;
+          const b = { x: posts[i].x + el._dx, y: posts[i].y + el._dy, w: b0.w, h: b0.h }; if (on || el._fade > nowMs) setT(el, `translate3d(${b.x.toFixed(1)}px,${b.y.toFixed(1)}px,0)`); if (on) el._fade = nowMs + 600;
           if (on) { CAPBOX = b; const p = posts[i], ax = clamp(p.x, b.x + 16, b.x + b.w - 16), ay = b.y + b.h;
             g.setTransform(DPR, 0, 0, DPR, 0, 0); g.strokeStyle = 'rgba(214,226,255,.7)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(ax, ay); g.lineTo(p.x, p.y - 5); g.stroke(); }
         });
@@ -501,10 +512,10 @@
           for (const b of boxes) if (x < b.x + b.w + 6 && b.x < x + KW[i] + 6 && y < b.y + b.h + 4 && b.y < y + KH[i] + 4) y = i % 2 ? b.y + b.h + 6 : b.y - KH[i] - 6;
           boxes.push({ x, y, w: KW[i], h: KH[i] });
           const ly = lift(.36 + .03 * i), u = liftU(.36 + .03 * i);
-          el.style.transform = `translate(${(x + (W / 2 - x - KW[i] / 2) * .05 * u * u).toFixed(1)}px,${(y - ly).toFixed(1)}px) rotate(${((i % 2 ? 1 : -1) * 4 * u).toFixed(2)}deg)`;
+          if (show || u > 0) setT(el, `translate(${(x + (W / 2 - x - KW[i] / 2) * .05 * u * u).toFixed(1)}px,${(y - ly).toFixed(1)}px) rotate(${((i % 2 ? 1 : -1) * 4 * u).toFixed(2)}deg)`);
         });
         // branding and controls are lifted too, each on its own beat
-        const tf = (el, d, base) => { const y = lift(d); el.style.transform = y ? `${base || ''} translate3d(0,${(-y).toFixed(1)}px,0)` : (base || ''); };
+        const tf = (el, d, base) => { const y = lift(d); setT(el, y ? `${base || ''} translate3d(0,${(-y).toFixed(1)}px,0)` : (base || '')); };
         tf(barEl, .02); tf(endEl, .12); tf(routeEl, .42, 'translateX(-50%)'); tf(noteEl, .44);
       }
 
@@ -514,10 +525,11 @@
         if (!W) return;
         camera(t); const dl = day(t);
         g.setTransform(DPR, 0, 0, DPR, 0, 0); g.clearRect(0, 0, W, H);
-        { const lifted = liftAt(W / 2, 0, 0, 0); sky(t, dl); if (lifted) g.restore(); }
-        ranges(t, dl); ground(t, dl); road(t, dl);
+        const SK = root.__riSkip || null;   // test hook: leave out parts of the scene to measure what each part costs to draw
+        { const lifted = liftAt(W / 2, 0, 0, 0); if (!SK || !SK.sky) sky(t, dl); if (lifted) g.restore(); }
+        if (!SK || !SK.ranges) ranges(t, dl); if (!SK || !SK.ground) ground(t, dl); if (!SK || !SK.road) road(t, dl);
         const items = [];
-        for (const pr of PROPS) { const zr = pr.z - cam.z; if (zr < 2) continue; const sx = W / 2 + (pr.x - cam.x) * F / zr; if (sx < -120 || sx > W + 120) continue; items.push({ z: pr.z, f: () => drawProp(pr, t, dl) }); }
+        for (const pr of (SK && SK.props ? [] : PROPS)) { const zr = pr.z - cam.z; if (zr < 2) continue; const sx = W / 2 + (pr.x - cam.x) * F / zr; if (sx < -120 || sx > W + 120) continue; items.push({ z: pr.z, f: () => drawProp(pr, t, dl) }); }
         const posts = [];
         for (let i = 0; i < N; i++) items.push({ z: postZ(i), f: () => { posts[i] = drawPost(i, t); } });
         items.push({ z: roadZ(DEST) + RW * .5 + 30, f: () => destination(t, dl) });
@@ -543,22 +555,25 @@
         }
         grass(t, dl);
         const vgA = (.55 - .35 * dl) * (LT < 0 ? 1 : 1 - clamp(LT / .5));
-        if (vgA > 0) { const vg = g.createRadialGradient(W / 2, H * .55, Math.min(W, H) * .3, W / 2, H * .55, Math.max(W, H) * .8); vg.addColorStop(0, 'rgba(5,4,30,0)'); vg.addColorStop(1, `rgba(5,4,30,${vgA})`); g.fillStyle = vg; g.fillRect(0, 0, W, H); }
+        if (vgA > 0) { if (!VIGC) { VIGC = document.createElement('canvas'); VIGC.width = Math.max(2, Math.round(W / 2)); VIGC.height = Math.max(2, Math.round(H / 2)); const c = VIGC.getContext('2d'); c.scale(.5, .5); const vg = c.createRadialGradient(W / 2, H * .55, Math.min(W, H) * .3, W / 2, H * .55, Math.max(W, H) * .8); vg.addColorStop(0, 'rgba(5,4,30,0)'); vg.addColorStop(1, 'rgba(5,4,30,1)'); c.fillStyle = vg; c.fillRect(0, 0, W, H); }
+          g.globalAlpha = vgA; g.drawImage(VIGC, 0, 0, W, H); g.globalAlpha = 1; }
         const fin = sm(t / .8); if (fin < 1 && LT < 0) { g.fillStyle = `rgba(10,9,48,${1 - fin})`; g.fillRect(0, 0, W, H); }
         place(t, posts);
-        openEl.classList.toggle('on', t > .3 && t < 2.2 && LT < 0);
+        openEl.classList.toggle('on', t > .3 && t < 3.6 && LT < 0);
         endEl.classList.toggle('on', t >= CRANE + 1.5);
         const done = lastDone(t);
-        fillEl.style.width = ((100 - 100 / N) * (t >= CRANE ? 1 : Math.max(0, Math.max(a, done) / (N - 1)))) + '%';
-        dots.forEach((d, i) => { d.className = t >= CRANE || i <= done && i !== a ? 'done' : i === a ? 'now' : i < a ? 'done' : ''; });
+        { const w = ((100 - 100 / N) * (t >= CRANE ? 1 : Math.max(0, Math.max(a, done) / (N - 1)))) + '%'; if (fillEl._w !== w) { fillEl._w = w; fillEl.style.width = w; } }
+        dots.forEach((d, i) => { const c = t >= CRANE || i <= done && i !== a ? 'done' : i === a ? 'now' : i < a ? 'done' : ''; if (d.className !== c) d.className = c; });
         if (a !== lastA && a >= 0) { lastA = a; sr.textContent = `Step ${a + 1} of ${N}: ${STEPS[a].h}. The challenge: ${STEPS[a].c} How Delivery Studio helps: ${STEPS[a].f}`; }
         if (t >= CRANE && lastA !== 9) { lastA = 9; sr.textContent = 'The journey is complete.'; }
       }
 
       /* playback, then the lift-off that uncovers the page underneath */
-      let raf = 0, start = 0, playing = false, leaving = false, held = 0;
+      let raf = 0, start = 0, playing = false, leaving = false, held = 0, LASTF = 0;
       function loop(now) {
         if (!playing) return; if (!start) start = now - T * 1000;
+        if (!qdone && LASTF) { qframes.push(now - LASTF); if (qframes.length >= 90 || T > AT[0] - 1.2) { qdone = true; const q = qframes.slice(10).sort((a, b) => a - b), med = q[Math.floor(q.length / 2)] || 16;
+          if (med > 20 && DPR > .8) { QSCALE = med > 34 ? .6 : .75; resize(); } } } LASTF = now;
         T = Math.min(END, (now - start) / 1000); draw(T);
         if (T >= END) { if (leaving) { raf = root.requestAnimationFrame(loop); return; } playing = false; if (opts.auto !== false) leave('end'); return; }
         raf = root.requestAnimationFrame(loop);

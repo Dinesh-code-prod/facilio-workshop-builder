@@ -12,7 +12,7 @@ async function run(label, url, skip) {
   const t0 = Date.now(); await p.click('[data-act="openWelcome"]');
   const started = await p.waitForFunction(() => window.__ri && document.querySelector('.ri canvas'), null, { timeout: 5000 }).then(() => true, () => false); check(label + ': road journey starts', started);
   if (skip) { await p.waitForTimeout(3500); await p.click('.ri [data-r="skip"]'); }
-  const liquid = await p.waitForSelector('.ri .ti-liq', { timeout: skip ? 4000 : 60000 }).then(() => true, () => false); check(label + ': leaves through the liquid reveal', liquid);
+  const liquid = await p.waitForSelector('.ri .ti-liq', { timeout: skip ? 4000 : 150000 }).then(() => true, () => false); check(label + ': leaves through the liquid reveal', liquid);
   await p.waitForTimeout(skip ? 1200 : 1200); if (liquid) await p.screenshot({ path: `${OUT}/${label}-liquid.png` });
   await p.waitForSelector('.ri', { state: 'detached', timeout: 20000 }).catch(() => { });
   const secs = ((Date.now() - t0) / 1000).toFixed(1); const back = !!(await p.$('.auth [data-act="openWelcome"]')); const hash = await p.evaluate(() => location.hash);
