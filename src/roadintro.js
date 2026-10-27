@@ -24,7 +24,7 @@
   const N = STEPS.length;
   // timing: a short opening, then each milestone gets a settled view (the sign is read here) followed by a brief pan to the next
   // paced to be read: about 16 seconds per milestone (both texts on the sign, at an easy reading speed), so the whole journey runs a little under two minutes
-  const T0 = 5, STEP = 16, PAN = 2.2;   // T0: the opening shot holds long enough to read the title and see the first milestone
+  const T0 = 5, STEP = 13.5, PAN = 2.2;   // T0: the opening shot holds long enough to read the title and see the first milestone
   const AT = STEPS.map((_, i) => T0 + i * STEP);            // the camera arrives at milestone i
   const DWE = AT.map(a => a + STEP - PAN);                  // ... and leaves it
   const MID = AT.map((a, i) => (a + DWE[i]) / 2);            // the car passes the post here
