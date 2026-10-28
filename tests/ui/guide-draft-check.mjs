@@ -19,7 +19,7 @@ const pid = await p.evaluate(async () => {
 const G = () => p.evaluate(() => { const c = window.FWBViews.ugCtx; const g = c && c.W(); return g ? JSON.parse(JSON.stringify(g)) : null; });
 await p.goto(BASE + `/#/p/${pid}/guidebuilder`); await p.reload(); await p.waitForSelector('[data-act="ugNew"]'); await p.waitForTimeout(600);
 await p.click('[data-act="ugNew"]'); await p.waitForSelector('#ug_t');
-check('the set-up shows the steps, modules from Configuration Inputs, readers, sources and sections', (await p.$$('#drawer .ug-steps li')).length === 5 && !!(await p.$('input[name="ug_m"][value="Permit to Work"]')) && (await p.$$('input[name="ug_s"]')).length === 6 && (await p.$$('input[name="ug_x"]')).length === 11);
+check('the set-up shows the steps, modules from Configuration Inputs, readers, sources and sections', (await p.$$('#drawer .ug-steps li')).length === 5 && !!(await p.$('input[name="ug_m"][value="Permit to Work"]')) && (await p.$$('input[name="ug_s"]')).length === 9 && (await p.$$('input[name="ug_x"]')).length === 11);
 await p.fill('#ug_t', 'Permit to Work guide'); await p.check('input[name="ug_m"][value="Permit to Work"]'); await p.fill('#ug_rx', 'Technician, Supervisor');
 for (const k of ['fields', 'status', 'actions', 'rules', 'related', 'faq', 'nav', 'before']) await p.uncheck(`input[name="ug_x"][value="${k}"]`);   // three sections keep the test short
 await p.screenshot({ path: `${OUT}/guide-draft-setup.png` });
