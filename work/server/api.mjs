@@ -1,6 +1,7 @@
 /* FWB backend on facilio.work: one server function (/api/fn/api/...) that serves every /api/* route of the app.
    Identity comes from the platform (ctx.viewer, verified); data lives in ctx.db; file bytes in private ctx.files.
    Roles and project access are enforced HERE, on the server, so pages cannot bypass them. */
+import { createAI, AIFail } from './_ai.mjs';
 let CTX = null, HDR = {};   // set at the start of every request (a Lambda handles one request at a time)
 {
   'use strict';
@@ -24,7 +25,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     signoff_evidence: { ext: ['pdf', 'png', 'jpg', 'jpeg', 'msg', 'eml', 'docx'], max: 20e6 }, brd_signed: { ext: ['docx', 'pdf', 'json'], max: MAX_FILE }
   };
   // record kinds the team can store (customer-only rules come with the customer page)
-  const KINDS = ['action', 'decision', 'raid', 'signoff', 'cr', 'onb', 'onbsub', 'onbfile', 'onbws', 'owner', 'agreement', 'minutes', 'checklist', 'build', 'uat', 'digest', 'ctrcore', 'ctrfees', 'ctrlegal', 'ctrrates', 'scope', 'modbrief', 'fieldreq', 'note', 'ctrwatch', 'usecase', 'discrepancy', 'brdrev', 'ai', 'hc', 'hcrep', 'ho', 'close', 'rep', 'kpi', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'lesson', 'tkt', 'res', 'ugv', 'ugu', 'pnote', 'wb', 'news', 'interest', 'cflow'];   // cflow: combined flows saved from a whiteboard (a snapshot the BRD can include); wb: process whiteboards; news: Explore Facilio entries; interest: customer requests for more information
+  const KINDS = ['action', 'decision', 'raid', 'signoff', 'cr', 'onb', 'onbsub', 'onbfile', 'onbws', 'owner', 'agreement', 'minutes', 'checklist', 'build', 'uat', 'digest', 'ctrcore', 'ctrfees', 'ctrlegal', 'ctrrates', 'scope', 'modbrief', 'fieldreq', 'note', 'ctrwatch', 'usecase', 'discrepancy', 'brdrev', 'ai', 'hc', 'hcrep', 'ho', 'close', 'rep', 'kpi', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'lesson', 'tkt', 'res', 'ugv', 'ugu', 'pnote', 'wb', 'news', 'interest', 'cflow', 'task'];   // task: Project Tasks (one register; sheets are saved views in the tasksheets document)   // cflow: combined flows saved from a whiteboard (a snapshot the BRD can include); wb: process whiteboards; news: Explore Facilio entries; interest: customer requests for more information
   const DOC_SECTIONS = /^[a-z][a-z0-9_]{1,40}$/, ITEM_ID_RE = /^[A-Za-z0-9_-]{1,80}$/, GR_KEY = /^[a-z]{2,8}:[afbxw]:[A-Za-z0-9_-]{1,64}$/;
 
   class HttpError extends Error { constructor(status, msg, extra) { super(msg); this.status = status; this.extra = extra; } }
@@ -296,127 +297,74 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   // ---------- AI assistant (server-side only; keys never reach the browser) ----------
   const AI_TASKS = {
     brd: { title: 'Business Requirements Document', kinds: ['decision', 'usecase', 'scope', 'raid', 'action'], docs: ['workshop', 'planner', 'brddoc', 'reviews'], ask: 'Draft the requested section(s) of the Business Requirements Document from the approved project information. Use the standard BRD structure (document info, summary, scope and exclusions, stakeholders, processes, functional and non-functional requirements, business rules and acceptance criteria, integrations and data, reports, roles, dependencies/assumptions/constraints, risks and open questions, traceability).' },
-    gaps: { title: 'Missing requirements check', kinds: ['cmodx', 'cfgrel', 'capp', 'decision', 'usecase', 'scope', 'raid', 'action', 'discrepancy'], docs: ['config_digest', 'workshop', 'planner', 'brddoc', 'reviews'], ask: 'Review the information and list missing requirements, contradictions, unanswered questions and risks before BRD sign-off.' },
+    gaps: { title: 'Missing requirements check', kinds: ['cmodx', 'cfgrel', 'capp', 'decision', 'usecase', 'scope', 'raid', 'action', 'discrepancy', 'task'], docs: ['config_digest', 'workshop', 'planner', 'brddoc', 'reviews'], ask: 'Review the information and list missing requirements, contradictions, unanswered questions and risks before BRD sign-off.' },
     uat: { title: 'UAT plan and test cases', kinds: ['cmodx', 'cfgrel', 'capp', 'decision', 'usecase', 'uat', 'checklist', 'build'], docs: ['config_digest', 'workshop', 'brddoc'], ask: 'Create a UAT plan (objectives, scope, approach, entry and exit criteria, roles, environment, test data, schedule, defect process, sign-off) and a table of test cases (ID, requirement ref, scenario, preconditions, steps, expected result). Leave Actual result, Status, Defect and Tester blank: only a human tester records them. Mark tests with no source requirement as "Suggested additional test".' },
     ftr: { title: 'FTR report', kinds: ['cmodx', 'cfgrel', 'capp', 'decision', 'uat', 'build', 'raid', 'signoff', 'cr'], docs: ['brddoc', 'plan'], ask: 'Prepare an FTR report skeleton. No definition of FTR is recorded in the sources unless one appears in them: if none does, say "FTR definition unconfirmed" at the top and use a neutral structure (summary, scope reviewed, configuration summary, requirements and traceability, test coverage and results, open defects and limitations, deviations, risks, evidence, next actions, approvals). Quote results only if they exist in the sources.' },
     ftrrows: { title: 'FTR scenarios (suggested)', kinds: ['cmodx', 'cfgrel', 'capp', 'decision', 'usecase', 'build', 'uat'], docs: ['config_digest', 'brddoc', 'config', 'workshop'], ask: 'Suggest test scenarios for the FTR workbook. Return ONLY a Markdown table with the columns: Test Scenario | Steps to Reproduce | Expected Outcome | Portal | Can be accessed by Role. One row per scenario, numbered steps separated by " / ". Base every row on the sources (use cases, decisions, configuration). Do not include results, pass/fail, screenshots or approvals: those come from a human tester. If the sources do not support a scenario, do not add it.' },
     guide: { title: 'Customer user guide', kinds: ['cmodx', 'cfgrel', 'capp', 'decision', 'usecase', 'build'], docs: ['config_digest', 'guide_published', 'workshop', 'config'], ask: 'Draft a customer-friendly user guide outline with role-based procedures. Only describe UI controls and steps that appear in the sources; for anything else write "[Screenshot or source needed]". Exclude internal notes, fees and contract detail.' },
     config: { title: 'Configuration documentation', kinds: ['cmodx', 'cfgrel', 'capp', 'decision', 'build'], docs: ['config_digest', 'config', 'workshop'], ask: 'Document the configuration (modules, forms and fields, workflows, notifications, roles, integrations, import mappings, reports, known limitations). Mark each statement as Confirmed (in the sources) or Needs manual verification.' },
     workshop: { title: 'Workshop intelligence', kinds: ['decision', 'action', 'usecase', 'raid', 'minutes'], docs: ['workshop', 'planner', 'transcripts'], ask: 'From the workshop information: propose agenda items, module-specific discovery questions, decisions, actions, assumptions, risks, candidate requirements, contradictions between sessions and follow-up questions. All findings are proposals for review.' },
-    golive: { title: 'Go-live readiness review', kinds: ['checklist', 'uat', 'build', 'raid', 'signoff', 'cr', 'hc'], docs: ['plan'], ask: 'Review the recorded evidence against go-live criteria (approved scope/BRD, configuration verified, data migration, integrations, UAT sign-off, critical defects, training, documentation, access, rollback plan, support ownership, customer approval). List blockers, risks, missing or contradictory evidence and suggested owners. Do not give a confidence score; the decision belongs to authorised people.' },
+    golive: { title: 'Go-live readiness review', kinds: ['checklist', 'uat', 'build', 'raid', 'signoff', 'cr', 'hc', 'task'], docs: ['plan'], ask: 'Review the recorded evidence against go-live criteria (approved scope/BRD, configuration verified, data migration, integrations, UAT sign-off, critical defects, training, documentation, access, rollback plan, support ownership, customer approval). List blockers, risks, missing or contradictory evidence and suggested owners. Do not give a confidence score; the decision belongs to authorised people.' },
     hypercare: { title: 'Hypercare status report', kinds: ['hc', 'hcrep', 'raid', 'action'], docs: [], ask: 'Write today\'s hypercare status report from the recorded issues: summary, open issues by severity, recurring patterns, workarounds, customer feedback, and recommended follow-ups. Do not close issues or change severity.' },
-    handover: { title: 'Support handover pack', kinds: ['cmodx', 'cfgrel', 'capp', 'lesson', 'ho', 'hc', 'raid', 'signoff', 'build', 'uat'], docs: ['config_digest', 'brddoc', 'config', 'plan'], ask: 'Assemble a support handover pack outline from the recorded artifacts (solution overview, configuration inventory, integrations, known issues and workarounds, outstanding defects, support procedures and contacts, access handover, training, hypercare summary, open actions) and list the missing documents.' },
-    wsr: { title: 'Weekly status report (WSR)', kinds: ['action', 'decision', 'raid', 'cr', 'uat', 'build', 'hc'], docs: ['plan'], ask: 'Write a weekly status report with these sections: Overall status (RAG with reason), Progress this week, Planned next week, Milestones and dates, Risks and issues, Decisions and customer actions needed, Change requests, Attachments to include. Use only recorded facts; leave a section as "No information recorded" when the sources have none.' },
-    monthly: { title: 'Monthly report', kinds: ['action', 'decision', 'raid', 'cr', 'uat', 'build', 'signoff', 'hc'], docs: ['plan'], ask: 'Write a monthly project report with these sections: Executive summary, Progress against plan, Milestones achieved and upcoming, Deliverables status, Risks and issues, Change requests, Customer actions outstanding, Next month focus. Use only recorded facts and say where information is missing.' },
+    handover: { title: 'Support handover pack', kinds: ['cmodx', 'cfgrel', 'capp', 'lesson', 'ho', 'hc', 'raid', 'signoff', 'build', 'uat', 'task'], docs: ['config_digest', 'brddoc', 'config', 'plan'], ask: 'Assemble a support handover pack outline from the recorded artifacts (solution overview, configuration inventory, integrations, known issues and workarounds, outstanding defects, support procedures and contacts, access handover, training, hypercare summary, open actions) and list the missing documents.' },
+    wsr: { title: 'Weekly status report (WSR)', kinds: ['action', 'decision', 'raid', 'cr', 'uat', 'build', 'hc', 'task'], docs: ['plan'], ask: 'Write a weekly status report with these sections: Overall status (RAG with reason), Progress this week, Planned next week, Milestones and dates, Risks and issues, Decisions and customer actions needed, Change requests, Attachments to include. Use only recorded facts; leave a section as "No information recorded" when the sources have none.' },
+    monthly: { title: 'Monthly report', kinds: ['action', 'decision', 'raid', 'cr', 'uat', 'build', 'signoff', 'hc', 'task'], docs: ['plan'], ask: 'Write a monthly project report with these sections: Executive summary, Progress against plan, Milestones achieved and upcoming, Deliverables status, Risks and issues, Change requests, Customer actions outstanding, Next month focus. Use only recorded facts and say where information is missing.' },
     pkg: { title: 'Org package analysis', kinds: ['cmodx', 'cfgrel', 'capp', 'decision', 'usecase'], docs: ['config_digest', 'config', 'workshop'], ask: 'Analyse the organisation configuration digest. Summarise what is configured; for each custom module state its apparent purpose, fields that matter, which app tabs show it and which roles use it; describe how modules relate (relationships, lookups, buttons); list gaps, inconsistencies and questions to confirm with the customer. Use only the digest and records. Do not guess a purpose that is not stated; write Missing instead.' },
     training: { title: 'Training material outline', kinds: ['cmodx', 'cfgrel', 'capp', 'decision', 'usecase'], docs: ['config_digest', 'guide_published', 'workshop'], ask: 'Draft a role-based training outline: for each role, which apps and tabs they use, the modules they work in, the key tasks (steps only where the sources describe them), and how the custom modules and their relationships behave. Mark anything not in the sources as Missing.' },
     vidguide: { title: 'Steps from a recorded walkthrough', kinds: [], docs: [], ask: 'Turn the walkthrough transcript into clear end-user steps. Use a short title, a one-line purpose, then numbered steps in the order shown. Describe only what the transcript or the screenshot captions say: do not invent buttons, menu names or fields. After a step that a screenshot illustrates, write its marker on its own line, for example [F2]. Write Missing for anything unclear and list questions to confirm at the end.' },
     closure: { title: 'Project closure report', kinds: ['ho', 'hc', 'signoff', 'cr', 'raid', 'decision'], docs: ['plan', 'brddoc'], ask: 'Draft a project closure report (outcomes against scope, changes, deliveries, issues, lessons learned, open items and owners). State only what the records show.' }
   };
+  // tasks as report sources: what they are and where they stand, not their comments, saved guidance or import columns
+  const taskBrief = r => { const d = r.data || {}; return { id: 'T-' + d.n, title: d.title, type: d.type, status: d.status, priority: d.priority || undefined, owner: d.owner || 'unassigned', eta: d.eta || undefined, due: d.due || undefined, module: d.module || undefined, blocker: d.blocker || undefined, question: d.question ? { status: d.question.status, answered: !!(d.question.final || '').trim() } : undefined }; };
   const AI_SYSTEM = 'You are an implementation consultant\'s assistant inside Facilio\'s Delivery Studio. Work only from the SOURCES supplied for this one project. Cite sources inline as [S1], [S2]. Label statements as Confirmed (stated in a source), Assumption, Suggestion or Missing information. Never invent customer decisions, approvals, sign-offs, test results, configuration details or completion status. If a source is absent, say so. Your output is a DRAFT for human review; you cannot approve, publish, close or change records. Write clear Markdown.';
   const clip = (v, n) => { let t = typeof v === 'string' ? v : JSON.stringify(v); return t.length > n ? t.slice(0, n) + ' …[truncated]' : t; };
   async function aiContext(pid, task, small) {
     const T = AI_TASKS[task]; const src = []; let text = ''; let n = 0;
     for (const d of T.docs) { const r = await docRead(pid, d).catch(() => null); if (r && r.data && Object.keys(r.data).length) { n++; src.push({ ref: 'S' + n, label: 'Document: ' + d }); text += `\n[S${n}] Document "${d}":\n${clip(r.data, d === 'config_digest' ? (small ? (task === 'pkg' ? 9000 : 4000) : 12000) : (small ? 2000 : 5000))}\n`; } }
-    for (const k of T.kinds) { const rows = await itemsOf(pid, k).catch(() => []); const live = rows.filter(r => !(r.data && (r.data.superseded === true || r.data.status === 'superseded'))); rows.length = 0; rows.push(...live); if (rows.length) { n++; src.push({ ref: 'S' + n, label: 'Records: ' + k + ' (' + rows.length + ')' }); text += `\n[S${n}] Records "${k}" (${rows.length}):\n${clip(rows.slice(0, small ? 25 : 40).map(r => Object.assign({ id: r.id }, r.data, { hist: undefined })), small ? 2000 : 3500)}\n`; } }
+    for (const k of T.kinds) { const rows = await itemsOf(pid, k).catch(() => []); const live = rows.filter(r => !(r.data && (r.data.superseded === true || r.data.status === 'superseded'))); rows.length = 0; rows.push(...live); if (rows.length) { n++; src.push({ ref: 'S' + n, label: 'Records: ' + k + ' (' + rows.length + ')' }); text += `\n[S${n}] Records "${k}" (${rows.length}):\n${clip(rows.slice(0, small ? 25 : 40).map(r => k === 'task' ? taskBrief(r) : Object.assign({ id: r.id }, r.data, { hist: undefined })), small ? 2000 : 3500)}\n`; } }
     return { src, text: text.slice(0, small ? 13000 : 26000) };
   }
-  // ---------- AI providers: DeepSeek (default, Facilio-hosted) and Claude (optional, explicit) ----------
-  // The Claude key is a PLAIN secret named anthropic_api_key, managed by the app owner at secrets.facilio.work (apps cannot write secrets).
-  // It is read only here, on the server, and is never returned, logged or stored in the database.
-  const PROVIDERS = ['deepseek', 'claude'];
-  const PNAME = { deepseek: 'DeepSeek', claude: 'Claude' };
-  // Key sources, in order: the owner's plain secret anthropic_api_key, or a key an admin saved in the app. A saved key is encrypted (AES-256-GCM) with a master key that lives only in the plain secret ai_master_key; the database never holds it readable, and it is never returned, logged or sent to the browser.
-  const b64 = u8 => Buffer.from(u8).toString('base64'), unb64 = t => new Uint8Array(Buffer.from(t, 'base64'));
-  async function masterKey() { let m = ''; try { m = String(await CTX.secrets.get('ai_master_key') || ''); } catch (e) { } if (m.length < 16) return null; const raw = await crypto.subtle.digest('SHA-256', te.encode(m)); return crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['encrypt', 'decrypt']); }
-  async function sealKey(plain) { const k = await masterKey(); if (!k) return null; const iv = crypto.getRandomValues(new Uint8Array(12)); const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, te.encode(plain)); return { iv: b64(iv), ct: b64(new Uint8Array(ct)) }; }
-  async function openKey(rec) { try { const k = await masterKey(); if (!k || !rec) return ''; return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(rec.iv) }, k, unb64(rec.ct))); } catch (e) { return ''; } }
-  const claudeKey = async () => { let k = ''; try { k = (await CTX.secrets.get('anthropic_api_key')) || ''; } catch (e) { } if (k) return k; const r = await dbGet('ai', 'key').catch(() => null); return r && r.value ? openKey(r.value) : ''; };
-  const keySource = async () => { let k = ''; try { k = (await CTX.secrets.get('anthropic_api_key')) || ''; } catch (e) { } if (k) return 'secret'; const r = await dbGet('ai', 'key').catch(() => null); return r && r.value ? 'app' : ''; };
-  // checks a key against Anthropic without spending tokens: GET /v1/models lists what the key can use
-  async function checkAnthropic(key) {
-    const ac = new AbortController(); const to = setTimeout(() => ac.abort(), 15000);
-    try { const r = await fetch('https://api.anthropic.com/v1/models?limit=20', { headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' }, signal: ac.signal }); const j = await r.json().catch(() => ({}));
-      if (r.status === 401 || r.status === 403) return { ok: false, message: 'Anthropic rejected this key. Check that it was copied in full and has not been revoked.' };
-      if (r.status === 429) return { ok: false, message: 'Anthropic is rate limiting this key right now. The key may be fine; try again shortly.' };
-      if (!r.ok) return { ok: false, message: 'Anthropic returned an error (' + r.status + '). Try again later.' };
-      const models = (j.data || []).map(m => m.id).filter(Boolean); return { ok: true, models, message: models.includes('claude-sonnet-5-5') ? 'The key works and claude-sonnet-5-5 is available.' : 'The key works, but claude-sonnet-5-5 was not in its model list' + (models.length ? ' (it can use ' + models.slice(0, 3).join(', ') + ').' : '.') };
-    } catch (e) { return { ok: false, message: e && e.name === 'AbortError' ? 'Anthropic took too long to answer.' : 'Anthropic could not be reached from the server.' }; } finally { clearTimeout(to); }
-  }
-  const haveClaude = async () => !!(await claudeKey());
-  async function aiCfg() { const r = await dbGet('ai', 'cfg').catch(() => null); const v = (r && r.value) || {}; return { defaultProvider: v.defaultProvider === 'claude' ? 'claude' : 'deepseek', fallback: v.fallback === 'deepseek' ? 'deepseek' : 'none', by: v.by || null, at: v.at || null }; }
-  const emptyUse = () => ({ calls: 0, errors: 0, inTok: 0, outTok: 0, last: null, lastError: null });
-  async function aiUse() { const r = await dbGet('ai', 'use').catch(() => null); const v = (r && r.value) || {}; const o = {}; for (const p of PROVIDERS) o[p] = Object.assign(emptyUse(), v[p] || {}); return o; }
-  // usage is recorded only from what the provider reports; no prompts, keys or response text are stored
-  async function aiNote(provider, okay, usage, errCode) {
-    try { const u = await aiUse(); const x = u[provider]; x.calls += 1; x.last = now(); if (okay) { if (usage) { x.inTok += Number(usage.in) || 0; x.outTok += Number(usage.out) || 0; } } else { x.errors += 1; x.lastError = { at: now(), code: String(errCode || 'error').slice(0, 60) }; } await dbPut('ai', 'use', u); } catch (e) { /* visibility only; never block the task */ }
-  }
-  async function callClaude(messages, maxTokens, budget = 21000) {
-    const key = await claudeKey(); if (!key) throw new HttpError(409, 'Claude is not configured. The app owner needs to add the Claude API key in the secrets portal.');
-    const ac = new AbortController(); const to = setTimeout(() => ac.abort(), Math.max(4000, Math.min(21000, budget - 1500)));
-    try {
-      const model = 'claude-sonnet-5-5'; const sys = messages.filter(m => m.role === 'system').map(m => m.content).join('\n'); const rest = messages.filter(m => m.role !== 'system');   // user content may be text or [{type:'image'},{type:'text'}] blocks
-      const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', signal: ac.signal, headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' }, body: JSON.stringify({ model, max_tokens: maxTokens, system: sys, messages: rest }) });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok) { const code = 'http_' + r.status; await aiNote('claude', false, null, code); throw new HttpError(r.status === 429 ? 429 : r.status === 401 || r.status === 403 ? 409 : 502, r.status === 429 ? 'Claude is rate limited right now. Try again shortly.' : r.status === 401 || r.status === 403 ? 'Claude rejected the configured API key. The app owner needs to check it.' : 'Claude returned an error (' + r.status + ').'); }
-      const text = (j.content || []).map(c => c.text || '').join(''); if (!text) { await aiNote('claude', false, null, 'empty'); throw new HttpError(502, 'Claude returned no text'); }
-      await aiNote('claude', true, j.usage ? { in: j.usage.input_tokens, out: j.usage.output_tokens } : null);
-      return { text, provider: 'Claude', model };
-    } catch (e) { if (e instanceof HttpError) throw e; await aiNote('claude', false, null, e && e.name === 'AbortError' ? 'timeout' : 'network'); throw new HttpError(e && e.name === 'AbortError' ? 504 : 502, e && e.name === 'AbortError' ? 'Claude took too long. Try a narrower request.' : 'Claude could not be reached. Try again.'); }
-    finally { clearTimeout(to); }
-  }
-  // The server function has 25 s in all (the gateway cuts the round trip at ~29 s), so every model call is time-boxed well inside that,
-  // and a long document is written part by part (see /ai/job below) instead of in one long call.
-  const timeBox = (p, ms) => { let t; return Promise.race([p, new Promise((_, rej) => { t = setTimeout(() => { const e = new Error('time box'); e.name = 'AbortError'; rej(e); }, ms); })]).finally(() => clearTimeout(t)); };
-  async function callDeepseek(messages, maxTokens, budget = 21000) {
-    const to = null;
-    try {
-      const r = await timeBox(CTX.llm({ messages, max_tokens: Math.min(maxTokens, 1800), temperature: 0.2 }), Math.max(4000, Math.min(21000, budget)));
-      const text = r && r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content; if (!text) { await aiNote('deepseek', false, null, 'empty'); throw new HttpError(502, 'The AI returned no text'); }
-      const us = r.usage ? { in: r.usage.prompt_tokens || r.usage.input_tokens, out: r.usage.completion_tokens || r.usage.output_tokens } : null;
-      await aiNote('deepseek', true, us);
-      return { text, provider: 'DeepSeek', model: r.model || 'default' };
-    } catch (e) { if (e instanceof HttpError) throw e; const ab = e && e.name === 'AbortError'; const st = Number(e && (e.status || e.statusCode)) || 0;
-      console.error('deepseek call failed', ab ? 'timeout' : (st || '') + ' ' + String(e && e.message || e).slice(0, 160));   // the reason only, never the prompt or the answer
-      await aiNote('deepseek', false, null, ab ? 'timeout' : st === 429 ? 'rate' : 'error');
-      if (st === 429 || /rate|limit|quota|cap/i.test(String(e && e.message))) throw new HttpError(429, 'The AI service limit for your account was reached (about 20 requests a minute, plus a daily cost cap). Wait a minute and try again.');
-      throw new HttpError(ab ? 504 : 502, ab ? 'The AI took too long. Try a narrower request.' : 'The AI service could not be reached. Try again.'); }
-  }
-  // provider: 'deepseek' | 'claude'. An explicit choice is never changed silently: a fallback happens only when the organisation policy allows it, and the notice says so.
-  // smaller(): optional, returns the DeepSeek-sized messages to use when Claude falls back to DeepSeek
-  async function callModel(messages, maxTokens, provider, fallback, smaller, budget = 21000) {
-    const t0 = Date.now(); const left = () => budget - (Date.now() - t0);
-    if (provider !== 'claude') return callDeepseek(messages, maxTokens, budget);
-    try { return await callClaude(messages, maxTokens, budget); }
-    catch (e) { if (fallback === 'deepseek' && e instanceof HttpError && left() > 6000) { let out; try { out = await callDeepseek(smaller ? await smaller() : messages, maxTokens, left()); } catch (e2) { if (e2 instanceof HttpError) e2.fellBack = true; throw e2; } out.notice = 'Claude was not available (' + e.message + ') so DeepSeek produced this draft, as the organisation fallback setting allows.'; out.fellBack = true; return out; } throw e; }
-  }
-  const pickProvider = async (asked) => { const cfg = await aiCfg(); const explicit = asked === 'claude' || asked === 'deepseek'; let p = explicit ? asked : cfg.defaultProvider; if (!explicit && p === 'claude' && !(await haveClaude())) p = 'deepseek'; return { provider: p, explicit, cfg }; };
-  route('GET', '/api/ai/status', async () => { await me(); const cfg = await aiCfg(); const have = await haveClaude(); const defaultProvider = cfg.defaultProvider === 'claude' && !have ? 'deepseek' : cfg.defaultProvider; return ok({ providers: [{ id: 'deepseek', name: 'DeepSeek', configured: true, isDefault: defaultProvider === 'deepseek' }, { id: 'claude', name: 'Claude', configured: have, isDefault: defaultProvider === 'claude' }], defaultProvider, fallback: cfg.fallback, claude: have, tasks: Object.keys(AI_TASKS), ...(await adminRole(await me()) ? { keySource: await keySource(), canStoreKey: !!(await masterKey()) } : {}) }); });
+  // ---------- AI providers ----------
+  // Every model call goes through the shared AI service in ./_ai.mjs (provider choice, capability checks, retries, fallback policy,
+  // usage counters, error normalisation). Nothing below calls DeepSeek or Anthropic directly; tests/work_adapter.mjs checks that.
+  const AI = createAI({ ctx: () => CTX, db: { get: (c, k) => CTX.db.get(c, k), put: (c, k, v) => dbPut(c, k, v), del: (c, k) => dbDel(c, k) }, now, log: (...a) => console.error(...a) });
+  const PNAME = AI.names; const PROVIDERS = Object.keys(PNAME);
+  const haveClaude = () => AI.adapters.claude.configured();
+  const aiErr = e => (e instanceof AIFail ? new HttpError(e.status, e.message, { code: e.code }) : e);
+  // the shared service with HttpError for the routes; op names what the feature needs, never a provider
+  const aiGen = async q => { try { return await AI.generate(q); } catch (e) { throw aiErr(e); } };
+  const aiJSON = async (q, v) => { try { return await AI.generateJSON(q, v); } catch (e) { throw aiErr(e); } };
+  const aiPick = async (op, asked) => { try { return await AI.choose(op, PROVIDERS.includes(asked) ? asked : ''); } catch (e) { throw aiErr(e); } };
+  route('GET', '/api/ai/status', async () => {
+    const s = await me(); const st = await AI.status(); const admin = !!(await adminRole(s));
+    return ok({ providers: st.providers.map(p => Object.assign({ id: p.id, name: p.name, configured: p.configured, isDefault: p.isDefault, caps: { image: !!p.caps.image } }, admin ? { model: p.model, defaultModel: p.defaultModel } : {})), defaultProvider: st.defaultProvider, fallback: st.fallback, claude: st.providers.some(p => p.id === 'claude' && p.configured), tasks: Object.keys(AI_TASKS),
+      ...(admin ? { routes: st.routes, groups: st.groups, keySource: await AI.keySource(), canStoreKey: !!(await AI.masterKey()) } : {}) });
+  });
   route('POST', '/api/admin/ai/config', async (b) => {
-    const s = await requireAdmin('admin'); const dp = String(b && b.defaultProvider || 'deepseek'); const fb = String(b && b.fallback || 'none'); if (!PROVIDERS.includes(dp)) throw new HttpError(400, 'Choose DeepSeek or Claude'); if (!['none', 'deepseek'].includes(fb)) throw new HttpError(400, 'Choose a fallback option');
-    if (dp === 'claude' && !(await haveClaude())) throw new HttpError(409, 'Claude is not configured yet, so it cannot be the default. Add the key in the secrets portal first.');
-    await dbPut('ai', 'cfg', { defaultProvider: dp, fallback: fb, by: s.email, at: now() }); return ok({ defaultProvider: dp, fallback: fb });
+    const s = await requireAdmin('admin'); let c; try { c = await AI.saveConfig(b, s.email); } catch (e) { throw aiErr(e); }
+    await audit('ai', s.id, 'ai-config', c.defaultProvider + ' / fallback ' + c.fallback); return ok({ defaultProvider: c.defaultProvider, fallback: c.fallback, routes: c.routes, models: c.models });
   });
   route('POST', '/api/admin/ai/key', async (b) => {
     const s = await requireAdmin('admin'); await limit('ai-admin', s.id); const key = String(b && b.key || '').trim();
     if (!/^sk-ant-[A-Za-z0-9_\-]{20,}$/.test(key)) throw new HttpError(400, 'That does not look like an Anthropic API key. Keys start with sk-ant-.');
-    if (!(await masterKey())) throw new HttpError(409, 'Saving a key here needs an encryption secret first. The app owner adds a plain secret named ai_master_key (any long random text) at secrets.facilio.work. Or add the key itself as anthropic_api_key there.');
-    const chk = await checkAnthropic(key); if (!chk.ok) throw new HttpError(422, chk.message);
-    await dbPut('ai', 'key', Object.assign(await sealKey(key), { by: s.email, at: now() })); await audit('ai', s.id, 'ai-key-saved', ''); return ok({ ok: true, message: chk.message, models: chk.models.slice(0, 10) });
+    if (!(await AI.masterKey())) throw new HttpError(409, 'Saving a key here needs an encryption secret first. The app owner adds a plain secret named ai_master_key (any long random text) at secrets.facilio.work. Or add the key itself as anthropic_api_key there.');
+    const chk = await AI.verifyClaude(key); if (!chk.ok) throw new HttpError(422, chk.message);
+    const model = (await AI.config()).models.claude || AI.defaultModel.claude; const msg = chk.models.includes(model) ? 'The key works and ' + model + ' is available.' : 'The key works, but ' + model + ' was not in its model list' + (chk.models.length ? ' (it can use ' + chk.models.slice(0, 3).join(', ') + ').' : '.');
+    await dbPut('ai', 'key', Object.assign(await AI.sealKey(key), { by: s.email, at: now() })); await audit('ai', s.id, 'ai-key-saved', ''); return ok({ ok: true, message: msg, models: chk.models.slice(0, 10) });
   });
   route('DELETE', '/api/admin/ai/key', async () => {
-    const s = await requireAdmin('admin'); await dbDel('ai', 'key').catch(() => { }); const cfg = await aiCfg(); if (cfg.defaultProvider === 'claude' && !(await haveClaude())) await dbPut('ai', 'cfg', { defaultProvider: 'deepseek', fallback: cfg.fallback, by: s.email, at: now() });
-    await audit('ai', s.id, 'ai-key-removed', ''); const still = await keySource(); return ok({ ok: true, message: still === 'secret' ? 'The saved key was removed. A key set as the anthropic_api_key secret is still in use; only the app owner can remove that.' : 'The key was removed. DeepSeek stays in use.' });
+    const s = await requireAdmin('admin'); await dbDel('ai', 'key').catch(() => { }); await AI.dropClaude(s.email);
+    await audit('ai', s.id, 'ai-key-removed', ''); const still = await AI.keySource(); return ok({ ok: true, message: still === 'secret' ? 'The saved key was removed. A key set as the anthropic_api_key secret is still in use; only the app owner can remove that.' : 'The key was removed. DeepSeek stays in use.' });
   });
   route('POST', '/api/admin/ai/test', async () => {
     const s = await requireAdmin('admin'); await limit('ai-admin', s.id); if (!(await haveClaude())) return ok({ ok: false, configured: false, message: 'No Claude key is configured. The app owner adds it as anthropic_api_key in the secrets portal.' });
-    try { const k = await claudeKey(); const c = await checkAnthropic(k); if (!c.ok) return ok({ ok: false, configured: true, message: c.message }); return ok({ ok: true, configured: true, model: 'claude-sonnet-5-5', models: c.models.slice(0, 10), message: c.message }); }
-    catch (e) { return ok({ ok: false, configured: true, message: e instanceof HttpError ? e.message : 'The test failed' }); }
+    const model = (await AI.config()).models.claude || AI.defaultModel.claude; const c = await AI.verifyClaude(await AI.claudeKey()); if (!c.ok) return ok({ ok: false, configured: true, message: c.message });
+    return ok({ ok: true, configured: true, model, models: c.models.slice(0, 10), message: c.models.includes(model) ? 'The key works and ' + model + ' is available.' : 'The key works, but ' + model + ' was not in its model list' + (c.models.length ? ' (it can use ' + c.models.slice(0, 3).join(', ') + ').' : '.') });
   });
-  route('GET', '/api/admin/ai/usage', async () => { await requireAdmin('admin'); const u = await aiUse(); const cfg = await aiCfg(); return ok({ usage: u, cfg, claudeConfigured: await haveClaude() }); });
+  route('GET', '/api/admin/ai/usage', async () => { await requireAdmin('admin'); const cfg = await AI.config(); return ok({ usage: await AI.usage(), cfg, claudeConfigured: await haveClaude() }); });
   route('POST', '/api/projects/:id/ai/run', async (b, P) => {
     const s = await me(); await projectAccess(s, P.id, 'edit'); const task = String(b && b.task || ''); const T = AI_TASKS[task]; if (!T) throw new HttpError(400, 'Unknown AI task'); await limit('ai', s.id);
-    const instruction = str(b.instruction, 1500, 'Instruction'); const pv = await pickProvider(String(b.provider || ''));
+    const instruction = str(b.instruction, 1500, 'Instruction'); const pv = await aiPick('document', String(b.provider || ''));
     let tplText = ''; if (b.templateId) { const h = await tplHead(String(b.templateId)); if (!(await tplCanRead(s, h)) || h.status === 'retired') throw new HttpError(404, 'Template not available'); if (h.kind && TPL_TASK[h.kind] && TPL_TASK[h.kind] !== task) throw new HttpError(400, 'That template is for a different deliverable'); const td = await tplData(h, h.pub || h.latest); tplText = String(td && td.body || '').slice(0, 6000); }
     let vidId = ''; if (task === 'vidguide') { vidId = String(b.vid || ''); if (!ITEM_ID_RE.test(vidId)) throw new HttpError(400, 'Choose a walkthrough'); }
     // the sources and prompt for one size (DeepSeek takes the smaller context, Claude the larger)
@@ -426,12 +374,12 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
         const tr = (vd.transcript || []).map(x => mm(x.t) + x.text).join('\n').slice(0, small ? 8000 : 18000); const fr = (vd.frames || []).map((f, i) => 'F' + (i + 1) + ' at ' + mm(f.t).trim() + ': ' + (f.caption || '(no caption)')).join('\n').slice(0, 2500);
         src = [{ ref: 'S1', label: 'Walkthrough transcript: ' + (vd.title || 'untitled') }, { ref: 'S2', label: 'Screenshots (' + (vd.frames || []).length + ')' }]; text = `\n[S1] Walkthrough "${vd.title || ''}" transcript:\n${tr}\n\n[S2] Screenshots (place the marker after the step it shows):\n${fr}\n`; }
       const user = `TASK: ${T.ask}\n${instruction ? 'EXTRA INSTRUCTION FROM THE CONSULTANT: ' + instruction + '\n' : ''}${tplText ? 'FOLLOW THIS TEMPLATE STRUCTURE (headings and order; fill only from the sources, leave a heading with "Missing" when no source supports it):\n' + tplText + '\n' : ''}\nSOURCES (the only project information you may use):${text || '\n(No project records were found for this task. Say what is missing.)'}`;
-      return { src, text, messages: [{ role: 'system', content: AI_SYSTEM }, { role: 'user', content: user }] };
+      return { src, text, system: AI_SYSTEM, messages: [{ role: 'user', content: user }] };
     };
     const big = await build(pv.provider !== 'claude'); let small = pv.provider !== 'claude'; let used = big; let smallBuilt = null;
-    const smaller = async () => { smallBuilt = smallBuilt || await build(true); return smallBuilt.messages; };
+    const smaller = async () => { smallBuilt = smallBuilt || await build(true); return { system: smallBuilt.system, messages: smallBuilt.messages }; };
     // one time-boxed call (the browser uses the part-by-part /ai/job flow for full documents; this route stays for short tasks and the Teams tools)
-    let out = await callModel(big.messages, small ? 900 : 1600, pv.provider, pv.cfg.fallback, smaller, 21000); if (out.fellBack) { used = smallBuilt || big; small = true; }
+    let out = await aiGen({ op: 'document', pv, system: big.system, messages: big.messages, maxTokens: small ? 900 : 1600, smaller, budget: 21000 }); if (out.fellBack) { used = smallBuilt || big; small = true; }
     const src = used.src;
     const id = rid('ai'); const t = now(); const data = { task, title: T.title, status: 'draft', content: out.text, sources: src, vid: vidId || undefined, provider: out.provider, model: out.model, notice: out.notice || undefined, instruction, by: s.name || s.email, version: 1, hist: [{ at: t, who: s.name || s.email, side: 'facilio', event: 'AI draft generated' }] };
     await save('it.' + P.id + '.ai', 'ip.' + P.id + '.ai', id, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: t, ua: t }, data, undefined);
@@ -473,11 +421,11 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     const head = fromB64(data.slice(0, 32)); const sig = mt === 'image/png' ? head[0] === 0x89 && head[1] === 0x50 : mt === 'image/jpeg' ? head[0] === 0xFF && head[1] === 0xD8 : head[0] === 0x52 && head[8] === 0x57;
     if (!sig) throw new HttpError(415, 'The file is not the image type it claims to be');
     await limit('ai-image', s.id);
-    if (!(await haveClaude())) throw new HttpError(409, 'Reading diagrams from images needs Claude, which reads images. Ask an admin to add the Claude key under Admin › AI provider. DeepSeek, the default provider here, reads text only.');
-    const out = await callClaude([{ role: 'system', content: FLOW_PROMPT }, { role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: mt, data } }, { type: 'text', text: 'Return the flow in this image as JSON.' + (b.hint ? ' Context from the user: ' + plain(b.hint, 200) : '') }] }], 3000);
-    const graph = validFlowGraph(out.text);
+    // the operation needs image reading; the shared service picks a provider that has it (Claude) or explains that none is configured
+    const out = await aiJSON({ op: 'vision', system: FLOW_PROMPT, messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: mt, data } }, { type: 'text', text: 'Return the flow in this image as JSON.' + (b.hint ? ' Context from the user: ' + plain(b.hint, 200) : '') }] }], maxTokens: 3000, budget: 21000 }, validFlowGraph);
+    const graph = out.data;
     if (!graph.nodes.length) throw new HttpError(422, 'No flow steps could be read from this image');
-    await audit(P.id, s.id, 'ai-flow-image', graph.nodes.length + ' steps via Claude');
+    await audit(P.id, s.id, 'ai-flow-image', graph.nodes.length + ' steps via ' + out.provider);
     return ok({ graph, provider: out.provider, model: out.model });
   });
   // ---------- kick-off deck: read the team and the key facts out of the deck's text ----------
@@ -512,7 +460,7 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
   async function jobGet(s, P, job) { if (!JOB_RE.test(String(job))) throw new HttpError(400, 'Bad job'); const r = await dbGet('aj', P.id + '.' + job); const j = r && r.value; if (!j || j.uid !== s.id || Date.parse(j.ca) < Date.now() - 3600e3) throw new HttpError(404, 'This AI job has expired. Start it again.'); return j; }
   route('POST', '/api/projects/:id/ai/job', async (b, P) => {
     const s = await me(); await projectAccess(s, P.id, 'edit'); b = b || {}; const task = String(b.task || ''); const T = AI_TASKS[task]; if (!T) throw new HttpError(400, 'Unknown AI task'); await limit('ai', s.id);
-    const instruction = str(b.instruction, 1500, 'Instruction'); const pv = await pickProvider(String(b.provider || ''));
+    const instruction = str(b.instruction, 1500, 'Instruction'); const pv = await aiPick('document', String(b.provider || ''));
     let tplText = ''; if (b.templateId) { const h = await tplHead(String(b.templateId)); if (!(await tplCanRead(s, h)) || h.status === 'retired') throw new HttpError(404, 'Template not available'); if (h.kind && TPL_TASK[h.kind] && TPL_TASK[h.kind] !== task) throw new HttpError(400, 'That template is for a different deliverable'); const td = await tplData(h, h.pub || h.latest); tplText = String(td && td.body || '').slice(0, 6000); }
     let vidId = '', src, text;
     if (task === 'vidguide') { vidId = String(b.vid || ''); if (!ITEM_ID_RE.test(vidId)) throw new HttpError(400, 'Choose a walkthrough'); const vr = await dbGet('it.' + P.id + '.vid', vidId); if (!vr || !vr.value) throw new HttpError(404, 'Walkthrough not found'); const vd = await unpack('ip.' + P.id + '.vid', vidId, vr.value); const mm = t => (t == null ? '' : '[' + String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(Math.floor(t % 60)).padStart(2, '0') + '] ');
@@ -524,8 +472,8 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     if (!given.length && !(tplText && tplHeads(tplText).length >= 2) && heads.length > 1) heads = heads.map((h, i) => (i + 1) + '. ' + h);   // Facilio documents number their sections
     const parts = []; const per = 1; for (let i = 0; i < heads.length; i += per) parts.push(heads.slice(i, i + per));
     const job = 'aj_' + Array.from(crypto.getRandomValues(new Uint8Array(9)), x => x.toString(16).padStart(2, '0')).join('');
-    await dbPut('aj', P.id + '.' + job, { uid: s.id, task, provider: pv.provider, fallback: pv.cfg.fallback, instruction, tplText: tplText.slice(0, 3000), vid: vidId || undefined, src, text: String(text || ''), parts, ca: now() });
-    return ok({ job, parts: parts.map((h, n) => ({ n, headings: h })), provider: PNAME[pv.provider] }, 201);
+    await dbPut('aj', P.id + '.' + job, { uid: s.id, task, provider: pv.provider, explicit: pv.explicit, instruction, tplText: tplText.slice(0, 3000), vid: vidId || undefined, src, text: String(text || ''), parts, ca: now() });
+    return ok({ job, parts: parts.map((h, n) => ({ n, headings: h })), provider: PNAME[pv.provider], notice: pv.moved ? PNAME[pv.moved.from] + ' cannot do this here, so ' + PNAME[pv.provider] + ' is writing it.' : undefined }, 201);
   });
   route('POST', '/api/projects/:id/ai/job/:job/part', async (b, P) => {
     const s = await me(); await projectAccess(s, P.id, 'edit'); const j = await jobGet(s, P, P.job); const n = Number(b && b.n); if (!Number.isInteger(n) || n < 0 || n >= j.parts.length) throw new HttpError(400, 'Bad part'); await limit('ai-part', s.id);
@@ -535,7 +483,9 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
       : `You are writing PART ${n + 1} of ${j.parts.length} of this document. Write ONLY these section${j.parts[n].length > 1 ? 's' : ''}, each as a "## " heading followed by its content:\n${j.parts[n].map(h => '- ' + h).join('\n')}\nWrite in the Facilio document style used in its BRDs: formal and neutral, third person, short paragraphs, and Markdown tables (with a header row) wherever items have attributes, such as roles, requirements, test cases, risks, owners or dates. Keep each heading exactly as given, including its number. When a heading lists sub-sections in brackets, write the heading without the brackets and each sub-section as a "### " heading in that order. Do not write a document title, an introduction, a conclusion or any other section. ${short ? 'Be brief: about 120 words per section.' : 'About 180 to 260 words per section; use bullet points and tables where they help.'} If the sources say nothing for a section, write the heading and "Missing information: …" saying what is needed.`;
     const user = `TASK: ${T.ask}\n${j.instruction ? 'EXTRA INSTRUCTION FROM THE CONSULTANT: ' + j.instruction + '\n' : ''}${j.tplText ? 'TEMPLATE THE DOCUMENT FOLLOWS (for wording and order):\n' + j.tplText.slice(0, short ? 800 : 3000) + '\n' : ''}\n${ask}\n\nSOURCES (the only project information you may use):${srcText || '\n(No project records were found for this task. Say what is missing.)'}`;
     const maxT = whole ? (short ? 700 : 1100) : (short ? 320 : /\(/.test(j.parts[n].join('')) ? 700 : 480) * j.parts[n].length;
-    let out; try { out = await callModel([{ role: 'system', content: AI_SYSTEM }, { role: 'user', content: user }], j.provider === 'claude' ? Math.max(maxT, 900) : maxT, j.provider, j.fallback, null, 20000); }
+    // every part uses the provider chosen when the job started (an explicit choice stays explicit; a default may still fall back by policy)
+    const jp = await aiPick('document', j.explicit || j.provider !== 'claude' ? j.provider : '');
+    let out; try { out = await aiGen({ op: 'document', pv: jp, system: AI_SYSTEM, messages: [{ role: 'user', content: user }], maxTokens: j.provider === 'claude' ? Math.max(maxT, 900) : maxT, budget: 20000 }); }
     catch (e) { if (e instanceof HttpError && (e.status === 504 || e.status === 502)) return ok({ n, ok: false, retry: !short, message: e.message }); throw e; }
     let t = String(out.text || '').trim(); if (!whole) t = t.replace(/^#\s+[^\n]*\n+/, '');
     await dbPut('ajp', P.id + '.' + P.job + '.' + n, { t: t.slice(0, 40000), provider: out.provider, model: out.model, notice: out.notice || undefined });
@@ -558,8 +508,8 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
   // admin check of the platform model: a tiny call and a short paragraph, timed, so an admin can see whether DeepSeek answers and how fast
   route('POST', '/api/admin/ai/probe', async () => {
     const s = await requireAdmin('admin'); await limit('ai-admin', s.id); const res = { ok: false };
-    try { const t0 = Date.now(); const a = await callDeepseek([{ role: 'user', content: 'Reply with the single word OK.' }], 8, 12000); res.pingMs = Date.now() - t0; res.model = a.model;
-      const t1 = Date.now(); const r = await callDeepseek([{ role: 'system', content: AI_SYSTEM }, { role: 'user', content: 'TASK: In about 120 words, explain what a Business Requirements Document is for in a Facilio implementation. SOURCES: none; say that no project sources were used.' }], 220, 10000); res.genMs = Date.now() - t1; res.chars = r.text.length;
+    try { const t0 = Date.now(); const a = await aiGen({ op: 'probe', provider: 'deepseek', messages: [{ role: 'user', content: 'Reply with the single word OK.' }], maxTokens: 8, budget: 12000 }); res.pingMs = Date.now() - t0; res.model = a.model;
+      const t1 = Date.now(); const r = await aiGen({ op: 'probe', provider: 'deepseek', system: AI_SYSTEM, messages: [{ role: 'user', content: 'TASK: In about 120 words, explain what a Business Requirements Document is for in a Facilio implementation. SOURCES: none; say that no project sources were used.' }], maxTokens: 220, budget: 10000 }); res.genMs = Date.now() - t1; res.chars = r.text.length;
       res.ok = true; res.message = `DeepSeek answered in ${(res.pingMs / 1000).toFixed(1)} s and wrote ${r.text.length} characters in ${(res.genMs / 1000).toFixed(1)} s. Documents are written part by part, so each part stays inside the 25-second server limit.`; res.sample = r.text.slice(0, 600);
     } catch (e) { res.message = e instanceof HttpError ? e.message : 'The check failed'; }
     return ok(res);
@@ -584,9 +534,9 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
   }
   route('POST', '/api/projects/:id/ai/kickoff', async (b, P) => {
     const s = await me(); await projectAccess(s, P.id, 'edit'); const text = String(b && b.text || ''); if (text.trim().length < 40) throw new HttpError(400, 'The deck has almost no text to read');
-    await limit('ai', s.id); const pv = await pickProvider(String(b.provider || '')); const cut = pv.provider === 'claude' ? 60000 : 24000;
-    const out = await callModel([{ role: 'system', content: KICK_PROMPT }, { role: 'user', content: 'Deck: ' + plain(b.fileName || 'kick-off deck', 200) + '\n\n' + text.slice(0, cut) }], 1300, pv.provider, pv.cfg.fallback);
-    const data = validKickoff(out.text); await audit(P.id, s.id, 'ai-kickoff', (data.facilioTeam.length + data.customerTeam.length) + ' people via ' + out.provider);
+    await limit('ai', s.id); const pv = await aiPick('extract', String(b.provider || '')); const cut = pv.provider === 'claude' ? 60000 : 24000;
+    const out = await aiJSON({ op: 'extract', pv, system: KICK_PROMPT, messages: [{ role: 'user', content: 'Deck: ' + plain(b.fileName || 'kick-off deck', 200) + '\n\n' + text.slice(0, cut) }], maxTokens: 1300, smaller: async () => ({ system: KICK_PROMPT, messages: [{ role: 'user', content: 'Deck: ' + plain(b.fileName || 'kick-off deck', 200) + '\n\n' + text.slice(0, 24000) }] }), budget: 21000 }, validKickoff);
+    const data = out.data; await audit(P.id, s.id, 'ai-kickoff', (data.facilioTeam.length + data.customerTeam.length) + ' people via ' + out.provider);
     return ok({ data, provider: out.provider, model: out.model, truncated: text.length > cut, notice: out.notice || '' });
   });
   route('POST', '/api/projects/:id/ai/:item/decision', async (b, P) => {
@@ -595,6 +545,135 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     const status = d === 'approve' ? 'approved' : d === 'reject' ? 'rejected' : 'draft'; const t = now(); const note = str(b.note, 500, 'Note');
     const data = Object.assign({}, cur, { status, approvedBy: d === 'approve' ? (s.name || s.email) : null, approvedAt: d === 'approve' ? t : null, decisionNote: note, hist: (cur.hist || []).concat([{ at: t, who: s.name || s.email, side: 'facilio', event: d === 'approve' ? 'Approved' : d === 'reject' ? 'Rejected' : 'Reopened as draft' + (note ? ': ' + note : '') }]) });
     const nh = Object.assign({}, head, { v: head.v + 1, ub: s.id, us: 'facilio', ua: t }); await save(col, pcol, P.item, nh, data, head.z); await audit(P.id, s.id, 'ai-' + d, cur.task); return ok({ item: itemOut('ai', P.item, nh, data) });
+  });
+
+  // ---------- Project Tasks ----------
+  // One register per project (item kind "task"); sheets are saved views of it (document section "tasksheets"), never copies.
+  // Everything a task holds is validated here: fixed types, statuses and priorities, owners who are members of the project,
+  // real dates, links to records that exist in this project, comments whose author and time come from the session.
+  const TASK_TYPES = ['BRD Task', 'Requirement Task', 'Customer Question', 'Customer Response Required', 'Change Request', 'FTR / Technical Task', 'User Guide Task', 'UAT Task', 'Implementation Task', 'Issue / Blocker', 'Internal Action', 'Customer Action Required', 'Meeting Follow-up', 'Go-Live / Handover Task', 'Other'];
+  const TASK_STATUS = ['To Do', 'In Progress', 'Blocked', 'Awaiting Customer', 'Awaiting Internal Input', 'In Review', 'Done', 'Cancelled'];
+  const TASK_PRIO = ['Critical', 'High', 'Medium', 'Low'];
+  const TASK_STAGES = ['Project Setup & Kickoff', 'Requirements & Workshops', 'Configuration & Documentation', 'Implementation & Integrations', 'Testing & UAT', 'Go-Live & Handover', 'Closure & Follow-Up'];
+  const Q_STATUS = ['New', 'Needs Triage', 'Assigned', 'In Progress', 'Awaiting Internal Input', 'Awaiting Customer', 'Answered', 'Closed'];
+  const TASK_SRC = ['manual', 'transcript', 'import', 'meeting', 'email', 'action', 'question', 'ai'];
+  const QTYPES = ['Customer Question', 'Customer Response Required'];
+  const isoDay = (v, label) => { const t = String(v == null ? '' : v).trim(); if (!t) return ''; if (!/^\d{4}-\d{2}-\d{2}$/.test(t) || isNaN(Date.parse(t + 'T00:00:00Z')) || new Date(t + 'T00:00:00Z').toISOString().slice(0, 10) !== t) throw new HttpError(400, label + ' must be a real date (YYYY-MM-DD)'); return t; };
+  const oneOf = (v, list, label, dflt) => { const t = String(v == null ? '' : v).trim(); if (!t) return dflt; if (!list.includes(t)) throw new HttpError(400, label + ' "' + t.slice(0, 40) + '" is not one of the allowed values'); return t; };
+  const teamOf = project => (project.members || []).filter(m => m.role !== 'customer');
+  async function taskSanitize(s, project, cur, d) {
+    const team = teamOf(project); const ownerOk = v => { const e = String(v || '').trim().toLowerCase(); if (!e) return ''; if (!team.some(m => String(m.email).toLowerCase() === e)) throw new HttpError(400, 'The owner must be a member of this project (' + e.slice(0, 80) + ' is not)'); return e; };
+    const type = oneOf(d.type, TASK_TYPES, 'Task type', 'Other'), status = oneOf(d.status, TASK_STATUS, 'Status', 'To Do');
+    const out = {
+      title: str(d.title, 300, 'Title', true), desc: str(d.desc || '', 8000, 'Description'), type, status, priority: oneOf(d.priority, TASK_PRIO, 'Priority', ''),
+      owner: ownerOk(d.owner), eta: isoDay(d.eta, 'ETA'), due: isoDay(d.due, 'Due date'), stage: oneOf(d.stage, TASK_STAGES, 'Project stage', ''), module: str(d.module || '', 120, 'Module'),
+      blocker: str(d.blocker || '', 2000, 'Blocker'), notes: str(d.notes || '', 4000, 'Delivery notes'), completion: str(d.completion || '', 3000, 'Completion note'),
+      src: { type: oneOf(d.src && d.src.type, TASK_SRC, 'Source', cur && cur.src ? cur.src.type : 'manual'), ref: str(d.src && d.src.ref || '', 300, 'Source reference'), quote: str(d.src && d.src.quote || '', 1500, 'Source excerpt'), label: str(d.src && d.src.label || '', 200, 'Source name') },
+      // links to other records of this project: [{ kind, id, label }]; documents are named by section ({ kind: 'doc', id: <section> })
+      links: (Array.isArray(d.links) ? d.links : []).slice(0, 30).map(l => ({ kind: String(l && l.kind || ''), id: String(l && l.id || ''), label: str(l && l.label || '', 200, 'Link label') })).filter(l => (KINDS.includes(l.kind) && ITEM_ID_RE.test(l.id)) || (l.kind === 'doc' && DOC_SECTIONS.test(l.id))),
+      deps: [...new Set((Array.isArray(d.deps) ? d.deps : []).map(String).filter(x => ITEM_ID_RE.test(x)))].slice(0, 20),
+      checklist: (Array.isArray(d.checklist) ? d.checklist : []).slice(0, 60).map(c => ({ t: str(c && c.t || '', 300, 'Checklist item'), done: !!(c && c.done) })).filter(c => c.t),
+      guidance: (Array.isArray(d.guidance) ? d.guidance : []).slice(-8).map(g => ({ at: String(g && g.at || '').slice(0, 30), by: str(g && g.by || '', 120, 'By'), action: str(g && g.action || '', 60, 'Action'), provider: str(g && g.provider || '', 30, 'Provider'), text: str(g && g.text || '', 6000, 'Guidance') })),
+      // extra columns kept from an imported workbook (header -> value), shown and exported as they came
+      extra: Object.fromEntries(Object.entries(d.extra && typeof d.extra === 'object' && !Array.isArray(d.extra) ? d.extra : {}).slice(0, 30).map(([k, v]) => [plain(k, 60), plain(v, 1000)]).filter(([k]) => k)),
+      sugg: d.sugg && typeof d.sugg === 'object' ? { owner: plain(d.sugg.owner, 120), eta: plain(d.sugg.eta, 60), note: plain(d.sugg.note, 300) } : undefined,   // AI suggestions, never confirmed values
+      flag: str(d.flag || '', 300, 'Review flag'), key: plain(d.key || (cur && cur.key) || '', 200)
+    };
+    if (out.deps.length) { const known = new Set((await itemsOf(project.id, 'task')).map(r => r.id)); out.deps = out.deps.filter(x => known.has(x)); }
+    // comments are append-only: earlier comments stay as they were; a new one gets its author and time from the session
+    const old = cur && Array.isArray(cur.comments) ? cur.comments : []; const sent = Array.isArray(d.comments) ? d.comments : [];
+    const fresh = sent.slice(old.length).slice(0, 5).map(c => ({ at: now(), who: s.name || s.email, email: s.email, text: str(c && c.text || '', 4000, 'Comment', true), internal: c && c.internal !== false }));
+    out.comments = old.concat(fresh).slice(-200);
+    // customer questions: the wording, who answers, by when, and the answer — a draft until someone records the final answer
+    if (QTYPES.includes(type) || (d.question && (d.question.text || d.question.final))) {
+      const q = d.question || {}; const qs = oneOf(q.status, Q_STATUS, 'Response status', 'New');
+      out.question = { text: str(q.text || '', 4000, 'Customer question'), status: qs, respOwner: ownerOk(q.respOwner), respDue: isoDay(q.respDue, 'Response date'), draft: str(q.draft || '', 8000, 'Draft response'), final: str(q.final || '', 8000, 'Final response'), channel: str(q.channel || '', 120, 'Channel'),
+        answeredAt: (qs === 'Answered' || qs === 'Closed') ? ((cur && cur.question && cur.question.answeredAt) || now()) : '', answeredBy: (qs === 'Answered' || qs === 'Closed') ? ((cur && cur.question && cur.question.answeredBy) || s.name || s.email) : '' };
+      if ((qs === 'Answered' || qs === 'Closed') && !out.question.final.trim()) throw new HttpError(400, 'Record the final response before marking the question answered. A drafted response stays a draft.');
+    }
+    // completion: who and when come from the session; questions need a final response, and every task records what was done when it is closed by someone other than its owner
+    if (status === 'Done') { out.completedAt = cur && cur.status === 'Done' ? cur.completedAt : now(); out.completedBy = cur && cur.status === 'Done' ? cur.completedBy : (s.name || s.email); if (QTYPES.includes(type) && !(out.question && out.question.final.trim())) throw new HttpError(400, 'A customer question is done only when its final response is recorded.'); }
+    if (cur) { out.n = cur.n; out.createdBy = cur.createdBy; }
+    else { const all = await itemsOf(project.id, 'task'); out.n = all.reduce((m, it) => Math.max(m, Number(it.data && it.data.n) || 0), 0) + 1; out.createdBy = s.name || s.email;
+      if (out.key && all.some(it => it.data && it.data.key === out.key)) throw new HttpError(409, 'This task was already created from the same source row.'); }
+    return out;
+  }
+  // ---------- AI for tasks (shared AI service: assist, classify, extract) ----------
+  const TASK_SYS = 'You help a Facilio implementation consultant with one project task inside Delivery Studio. Use only the CONTEXT given. Cite context items inline as [C1], [C2]. Separate clearly: "Facts" (stated in the context), "Recommendations" (your suggestions) and "Assumptions and missing information". Never invent customer decisions, approvals, product behaviour, configuration details, owners, dates or test results. You cannot change records, send messages, approve anything or mark work complete: say what the person should do. Write concise Markdown.';
+  const ASSIST = {
+    explain: 'Explain this task in plain language: the expected outcome, success criteria, how it fits the wider project, and anything ambiguous.',
+    plan: 'Write a step-by-step action plan: prerequisites and dependencies first, then the steps in order, then how to verify the result.',
+    missing: 'List the information that is missing or unclear before this task can be completed, who would normally provide it, and the questions to ask.',
+    next: 'Recommend the single next best action, and say whether the task can proceed now or needs clarification, approval, customer input or investigation first.',
+    blocker: 'Analyse the recorded blocker and related context. Separate confirmed findings from possible causes, suggest troubleshooting steps and the information still needed.',
+    response: 'Draft a reply to the customer for this question or request, in a professional tone. Answer only from the context; where the context does not answer it, say what will be confirmed and by when only if a date is recorded. Then list the unresolved points. Mark the draft clearly as a draft.',
+    review: 'Review this task for completion: compare the objective with the recorded work, checklist and evidence, list incomplete steps or missing deliverables, suggest checks, and draft a completion note. Do not state that it is complete.',
+    deliverable: 'Prepare the deliverable this task type calls for (for example requirement wording with acceptance criteria, a UAT scenario with preconditions, steps and expected results, user guide steps, an implementation checklist, a follow-up message or a handover checklist). Use only verified context; mark gaps.',
+    ask: ''
+  };
+  const TYPE_HINT = { 'BRD Task': 'requirement wording, gaps and acceptance criteria', 'Requirement Task': 'clarifications, assumptions, dependencies and expected outcomes', 'Customer Question': 'what is being asked, the information needed and a draft answer', 'Customer Response Required': 'a context-aware response and the unresolved points', 'Change Request': 'a summary of the proposal and the areas to assess for impact (scope, effort, BRD, configuration, UAT, timeline)', 'FTR / Technical Task': 'an investigation plan, a technical checklist and validation steps', 'User Guide Task': 'clear end-user instructions from verified functionality only', 'UAT Task': 'scenarios with preconditions, steps and expected results', 'Implementation Task': 'implementation and verification steps', 'Issue / Blocker': 'evidence analysis and troubleshooting', 'Internal Action': 'next steps and dependencies', 'Customer Action Required': 'the decision or deliverable needed from the customer and a follow-up message', 'Meeting Follow-up': 'a summary of actions with source references', 'Go-Live / Handover Task': 'readiness and handover checklists', 'Other': 'practical next steps' };
+  async function taskContext(pid, task) {
+    const ctx = []; const add = (label, body) => { if (body && String(body).trim()) ctx.push({ ref: 'C' + (ctx.length + 1), label, body: String(body) }); };
+    add('The task', JSON.stringify({ id: 'T-' + task.n, title: task.title, description: task.desc, type: task.type, status: task.status, priority: task.priority, owner: task.owner || 'unassigned', eta: task.eta || 'not set', due: task.due || 'not set', stage: task.stage, module: task.module, blocker: task.blocker, checklist: task.checklist, question: task.question ? { text: task.question.text, status: task.question.status, draft: task.question.draft ? 'a draft exists' : '', final: task.question.final } : undefined, completion: task.completion }));
+    if (task.src && (task.src.quote || task.src.label)) add('Where the task came from (' + (task.src.type || 'manual') + ')', (task.src.label ? task.src.label + ': ' : '') + (task.src.quote || ''));
+    if (task.comments && task.comments.length) add('Comments', task.comments.slice(-15).map(c => c.at.slice(0, 10) + ' ' + c.who + (c.internal ? ' (internal)' : '') + ': ' + c.text).join('\n'));
+    if (task.guidance && task.guidance.length) add('Guidance saved earlier', task.guidance.slice(-2).map(g => g.action + ': ' + g.text.slice(0, 1200)).join('\n---\n'));
+    for (const l of (task.links || []).slice(0, 8)) { if (l.kind === 'doc') { const r = await docRead(pid, l.id).catch(() => null); if (r && r.data) add('Linked document ' + l.id, clip(r.data, 2500)); continue; } const rows = await itemsOf(pid, l.kind).catch(() => []); const r = rows.find(x => x.id === l.id); if (r) add('Linked ' + l.kind + ' ' + (l.label || l.id), clip(Object.assign({}, r.data, { hist: undefined }), 2000)); }
+    if (task.deps && task.deps.length) { const all = await itemsOf(pid, 'task'); const ds = all.filter(r => task.deps.includes(r.id)); if (ds.length) add('Tasks this depends on', ds.map(r => 'T-' + r.data.n + ' ' + r.data.title + ' [' + r.data.status + ']').join('\n')); }
+    // related records of the same module: requirements and decisions, so answers can draw on what was agreed
+    if (task.module) { const m = task.module.toLowerCase(); for (const k of ['usecase', 'decision', 'cr', 'uat']) { const rows = (await itemsOf(pid, k).catch(() => [])).filter(r => JSON.stringify(r.data || {}).toLowerCase().includes(m)).slice(0, 6); if (rows.length) add('Related ' + k + ' records for ' + task.module, clip(rows.map(r => Object.assign({ id: r.id }, r.data, { hist: undefined })), 2500)); } }
+    return ctx;
+  }
+  route('POST', '/api/projects/:id/tasks/:item/assist', async (b, P) => {
+    const s = await me(); await projectAccess(s, P.id, 'edit'); if (!ITEM_ID_RE.test(P.item)) throw new HttpError(400, 'Bad id'); await limit('ai', s.id);
+    const action = String(b && b.action || ''); if (!(action in ASSIST)) throw new HttpError(400, 'Unknown assistance');
+    const q = str(b && b.question || '', 1500, 'Question'); if (action === 'ask' && !q.trim()) throw new HttpError(400, 'Ask a question about the task');
+    const row = await dbGet('it.' + P.id + '.task', P.item); if (!row || !row.value) throw new HttpError(404, 'Task not found'); const task = await unpack('ip.' + P.id + '.task', P.item, row.value);
+    const pv = await aiPick('assist', String(b.provider || '')); const big = pv.provider === 'claude';
+    const ctx = await taskContext(P.id, task); const body = list => list.map(c => `[${c.ref}] ${c.label}:\n${c.body.slice(0, big ? 6000 : 2500)}`).join('\n\n').slice(0, big ? 40000 : 12000);
+    const ask = (action === 'ask' ? 'Answer this question about the task: ' + q : ASSIST[action]) + `\nFor a "${task.type}" task, focus on ${TYPE_HINT[task.type] || 'practical next steps'}.`;
+    const out = await aiGen({ op: 'assist', pv, system: TASK_SYS, messages: [{ role: 'user', content: 'REQUEST: ' + ask + '\n\nCONTEXT (the only project information you may use):\n' + body(ctx) }], maxTokens: big ? 1600 : 900, budget: 21000, smaller: async () => ({ system: TASK_SYS, messages: [{ role: 'user', content: 'REQUEST: ' + ask + '\n\nCONTEXT:\n' + ctx.map(c => `[${c.ref}] ${c.label}:\n${c.body.slice(0, 2500)}`).join('\n\n').slice(0, 12000) }] }) });
+    await audit(P.id, s.id, 'task-ai', P.item + ' ' + action + ' via ' + out.provider);
+    return ok({ text: out.text, provider: out.provider, model: out.model, notice: out.notice || '', sources: ctx.map(c => ({ ref: c.ref, label: c.label })) });
+  });
+  // checklist from the AI: returned for review; the page asks before it is added to the task
+  route('POST', '/api/projects/:id/tasks/:item/checklist', async (b, P) => {
+    const s = await me(); await projectAccess(s, P.id, 'edit'); if (!ITEM_ID_RE.test(P.item)) throw new HttpError(400, 'Bad id'); await limit('ai', s.id);
+    const row = await dbGet('it.' + P.id + '.task', P.item); if (!row || !row.value) throw new HttpError(404, 'Task not found'); const task = await unpack('ip.' + P.id + '.task', P.item, row.value);
+    const ctx = await taskContext(P.id, task);
+    const out = await aiJSON({ op: 'assist', provider: String(b && b.provider || ''), system: TASK_SYS + ' Reply with JSON only.', messages: [{ role: 'user', content: 'Return {"items": [string]} : an ordered completion checklist of 3 to 12 short, verifiable steps for this task, based only on the context. No numbering in the strings.\n\nCONTEXT:\n' + ctx.map(c => `[${c.ref}] ${c.label}:\n${c.body.slice(0, 2500)}`).join('\n\n').slice(0, 12000) }], maxTokens: 700, budget: 21000 },
+      j => { const items = (Array.isArray(j && j.items) ? j.items : []).map(x => plain(x, 300).replace(/^\s*(\d+[.)]|[-*•])\s*/, '')).filter(Boolean).slice(0, 12); if (!items.length) throw new AIFail('invalid_output', 'No checklist items came back'); return { items }; });
+    return ok({ items: out.data.items, provider: out.provider, notice: out.notice || '' });
+  });
+  // classification: by intent, not keywords; ambiguous items are flagged for a person to decide
+  const CLASSIFY_SYS = 'You classify items from a Facilio implementation project into task types by their intent, not by keywords. Types: ' + TASK_TYPES.join('; ') + '. Guidance: a request to explain something is a Customer Question; a request to confirm or decide something is Customer Response Required; adding something beyond the agreed scope is a Change Request (subject to review); updating the BRD is a BRD Task; configuring or building is an Implementation Task; something preventing progress is an Issue / Blocker. If an item could reasonably be two types, set "ambiguous": true and explain. Reply with JSON only.';
+  const validClass = n => j => { const a = Array.isArray(j && j.items) ? j.items : Array.isArray(j) ? j : null; if (!a) throw new AIFail('invalid_output', 'No classification came back');
+    const out = []; for (let i = 0; i < n; i++) { const x = a.find(y => Number(y && y.i) === i) || a[i]; if (!x) { out.push({ i, type: '', ambiguous: true, reason: 'No answer for this item' }); continue; } const ty = TASK_TYPES.includes(x.type) ? x.type : ''; out.push({ i, type: ty, alt: TASK_TYPES.includes(x.alt) ? x.alt : '', ambiguous: !ty || !!x.ambiguous, reason: plain(x.reason, 240) || (!ty ? 'The type given was not one of the allowed types' : '') }); } return out; };
+  route('POST', '/api/projects/:id/tasks/classify', async (b, P) => {
+    const s = await me(); await projectAccess(s, P.id, 'edit'); await limit('ai', s.id);
+    const items = (Array.isArray(b && b.items) ? b.items : []).slice(0, 25).map(x => ({ title: plain(x && x.title, 300), desc: plain(x && x.desc, 800) })).filter(x => x.title); if (!items.length) throw new HttpError(400, 'Nothing to classify');
+    const out = await aiJSON({ op: 'classify', provider: String(b.provider || ''), system: CLASSIFY_SYS, messages: [{ role: 'user', content: 'Classify each item. Return {"items": [{"i": <index>, "type": <one type exactly as listed>, "alt": <second likely type or "">, "ambiguous": true|false, "reason": <one short sentence>}]}\n\n' + items.map((x, i) => i + '. ' + x.title + (x.desc ? ' — ' + x.desc : '')).join('\n') }], maxTokens: 300 + items.length * 70, budget: 21000 }, validClass(items.length));
+    return ok({ items: out.data, provider: out.provider, notice: out.notice || '' });
+  });
+  // transcript -> proposed tasks. The answer is validated field by field: owners and dates survive only when the transcript states them,
+  // every task carries the words it came from, and a quote that is not in the transcript is flagged. Nothing is saved here.
+  const EXTRACT_SYS = 'You read part of a Facilio implementation meeting transcript and list the actionable items in it. Distinguish real commitments (someone agreed to do something), customer questions that need an answer, requests that need a customer response or decision, proposed scope changes, BRD updates, technical investigations, implementation work, customer actions, internal follow-ups, issues and blockers, UAT and defect actions, and go-live or handover tasks. Do not list general discussion or hypothetical ideas as tasks. Never invent an owner, a date, a decision or an approval: set "owner" and "eta" only when the transcript states them, and copy the exact words that state them. Reply with JSON only.';
+  route('POST', '/api/projects/:id/tasks/extract', async (b, P) => {
+    const s = await me(); await projectAccess(s, P.id, 'edit'); await limit('ai', s.id);
+    const text = String(b && b.text || ''); if (text.trim().length < 40) throw new HttpError(400, 'The transcript part has almost no text'); if (text.length > 30000) throw new HttpError(413, 'Send the transcript in parts of up to 30,000 characters');
+    const pv = await aiPick('extract', String(b.provider || '')); const cut = pv.provider === 'claude' ? 30000 : 12000; const part = text.slice(0, cut);
+    const norm = t => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); const hay = norm(part);
+    const shape = 'Return {"items": [{"title": short imperative title, "desc": one or two sentences, "type": one of [' + TASK_TYPES.join(', ') + '], "kind": "commitment"|"question"|"request"|"proposal"|"issue"|"discussion", "module": module or functional area or "", "owner": the person the transcript names as doing it or "", "ownerQuote": the exact words naming the owner or "", "eta": date or timing exactly as said or "", "etaQuote": exact words or "", "priority": "High"|"Medium"|"Low"|"", "quote": the exact sentence the item comes from, "ambiguous": true|false, "reason": why it is ambiguous or ""}]}. Return {"items": []} when there is nothing actionable.';
+    const valid = j => { const a = Array.isArray(j && j.items) ? j.items : null; if (!a) throw new AIFail('invalid_output', 'No task list came back');
+      return a.slice(0, 40).map(x => { const q = plain(x && x.quote, 600); const found = q && hay.includes(norm(q).slice(0, 120)); const oq = plain(x && x.ownerQuote, 200), eq = plain(x && x.etaQuote, 200);
+        const ownerSaid = oq && hay.includes(norm(oq)); const etaSaid = eq && hay.includes(norm(eq));
+        const ty = TASK_TYPES.includes(x && x.type) ? x.type : 'Other'; const kind = ['commitment', 'question', 'request', 'proposal', 'issue', 'discussion'].includes(x && x.kind) ? x.kind : 'discussion';
+        return { title: plain(x && x.title, 200), desc: plain(x && x.desc, 800), type: ty, kind, module: plain(x && x.module, 120), owner: ownerSaid ? plain(x.owner, 120) : '', ownerQuote: ownerSaid ? oq : '', eta: etaSaid ? plain(x.eta, 60) : '', etaQuote: etaSaid ? eq : '', priority: ['High', 'Medium', 'Low'].includes(x && x.priority) ? x.priority : '', quote: q, quoteFound: !!found,
+          ambiguous: !!(x && x.ambiguous) || !found || ty === 'Other' || kind === 'discussion', reason: plain(x && x.reason, 240) || (!found ? 'The quoted words were not found in the transcript; check before keeping it.' : ''), droppedOwner: !!(x && x.owner) && !ownerSaid, droppedEta: !!(x && x.eta) && !etaSaid };
+      }).filter(x => x.title); };
+    const out = await aiJSON({ op: 'extract', pv, system: EXTRACT_SYS, messages: [{ role: 'user', content: shape + '\n\nTRANSCRIPT' + (b.label ? ' (' + plain(b.label, 120) + ')' : '') + ':\n' + part }], maxTokens: pv.provider === 'claude' ? 3500 : 1800, budget: 21000 }, valid);
+    await audit(P.id, s.id, 'task-extract', out.data.length + ' proposed via ' + out.provider);
+    return ok({ items: out.data, provider: out.provider, notice: out.notice || '', truncated: text.length > cut, used: part.length });
   });
 
   // ---------- templates: org-wide and per-project, versioned, publish / retire ----------
@@ -956,18 +1035,19 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
         status: ['new', 'contacted', 'demo', 'closed'].includes(data.status) ? data.status : 'new', owner: str(data.owner || '', 120, 'Owner'),
         by: cur ? cur.by : s.email, byName: cur ? cur.byName : (s.name || s.email), byCustomer: cur ? !!cur.byCustomer : role === 'customer', at: cur ? cur.at : now() };
     }
+    if (P.kind === 'task') data = await taskSanitize(s, project, cur, data);
     if (P.kind === 'res' || P.kind === 'pnote') data = Object.assign({}, data, { createdByName: cur ? cur.createdByName : s.name, createdByEmail: cur ? cur.createdByEmail : s.email });
     if (P.kind === 'cr' && !cur) { const all = await itemsOf(P.id, 'cr'); const mx = all.reduce((m, it) => (/^[0-9]+$/.test(String(it.data.n)) ? Math.max(m, Number(it.data.n)) : m), 0); data = Object.assign({}, data, { n: mx + 1 }); }
     else if (P.kind === 'cr' && cur) data = Object.assign({}, data, { n: cur.n });
     const prevHist = cur && Array.isArray(cur.hist) ? cur.hist : [];
     const changed = Object.keys(data).filter(k => k !== 'hist' && JSON.stringify(data[k]) !== JSON.stringify(cur ? cur[k] : undefined));
     data = Object.assign({}, data, { hist: prevHist.concat(changed.length || !cur ? [{ at: now(), who: s.name || 'Implementation team', side: 'facilio', event: cur ? 'Updated ' + changed.slice(0, 6).join(', ') + (data.status && changed.includes('status') ? ' → ' + data.status : '') : 'Created' }] : []).slice(-40) });
-    if (JSON.stringify(data).length > (P.kind === 'onbws' ? 2000000 : (P.kind === 'ugd' || P.kind === 'ugv' || P.kind === 'ugu') ? 400000 : P.kind === 'vid' ? 200000 : P.kind === 'tkt' ? 150000 : 60000)) throw new HttpError(413, 'Record too large');
+    if (JSON.stringify(data).length > (P.kind === 'onbws' ? 2000000 : (P.kind === 'ugd' || P.kind === 'ugv' || P.kind === 'ugu') ? 400000 : P.kind === 'vid' ? 200000 : P.kind === 'tkt' ? 150000 : P.kind === 'task' ? 120000 : 60000)) throw new HttpError(413, 'Record too large');
     const t = now(); const nh = { v: head ? head.v + 1 : 1, cb: head ? head.cb : s.id, cs: head ? head.cs : 'facilio', ub: s.id, us: 'facilio', ca: head ? head.ca : t, ua: t };
     await save(col, pcol, P.item, nh, data, head && head.z); await touchProject(P.id);
     if (P.kind === 'tkt') await ticketNotify(project, P.item, cur, data, s);
     let notice; if (P.kind === 'interest' && !cur) { notice = await interestNotice(project, P.item, data) ? 'teams' : 'none'; await audit(P.id, s.id, 'interest-created', P.item + ' ' + data.title); }
-    if (['signoff', 'cr', 'raid', 'onb', 'onbsub', 'decision', 'brdrev', 'ai', 'hc', 'ho', 'close', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'tkt', 'res', 'ugv', 'ugu'].includes(P.kind)) await audit(P.id, s.id, P.kind + (cur ? '-updated' : '-created'), P.item + (data.status ? ' ' + data.status : ''));
+    if (['signoff', 'cr', 'raid', 'onb', 'onbsub', 'decision', 'brdrev', 'ai', 'hc', 'ho', 'close', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'tkt', 'res', 'ugv', 'ugu', 'task'].includes(P.kind)) await audit(P.id, s.id, P.kind + (cur ? '-updated' : '-created'), P.item + (data.status ? ' ' + data.status : ''));
     return ok(Object.assign({ item: itemOut(P.kind, P.item, nh, data) }, notice ? { notice } : {}));
   }));
   route('DELETE', '/api/projects/:id/items/:kind/:item', async (b, P) => {

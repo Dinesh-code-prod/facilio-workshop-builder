@@ -119,7 +119,7 @@
   // `sec` is the small section heading drawn above the first group of each part; `fi` is the group's Facilio icon.
   // Tabs & Layouts (src/templates.js) can rename, re-icon, reorder, add and delete groups per project on top of this.
   const NAV = [
-    { g: 'Project', sec: 'Projects & delivery', icon: 'dash', fi: 'g_project', items: [['dashreport', 'Dashboard Report'], ['overview', 'Project Overview'], ['lifecycle', 'Delivery Lifecycle'], ['proadmap', 'Project Roadmap']] },
+    { g: 'Project', sec: 'Projects & delivery', icon: 'dash', fi: 'g_project', items: [['dashreport', 'Dashboard Report'], ['overview', 'Project Overview'], ['tasks', 'Tasks'], ['lifecycle', 'Delivery Lifecycle'], ['proadmap', 'Project Roadmap']] },
     { g: '1. Kick-off & Planning', sec: 'Discover and define', icon: 'flag', fi: 'kickoff', items: [['msaflow', 'Contract'], ['contracts', 'Contracts & Integrations'], ['kickoff', 'Kick-off Deck'], ['plan', 'Project Plan'], ['timeline', 'Plan Timeline'], ['governance', 'Governance & RAID'], ['changes', 'Change Requests']] },
     { g: '2. Workshops & Requirements', sec: 'Discover and define', icon: 'mic', fi: 'transcripts', items: [['transcripts', 'Transcripts & Requirement Confirmation'], ['usecases', 'Use Cases'], ['checks', 'Checks & Validations']] },
     { g: '3. Requirements to BRD', sec: 'Discover and define', icon: 'doc', fi: 'g_req', items: [['modules', 'System Modules & Form Builder'], ['flow', 'State Flow Builder'], ['whiteboard', 'Process Whiteboard'], ['roles', 'Roles & Access Permissions'], ['brd', 'BRD Draft']] },

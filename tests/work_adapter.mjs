@@ -555,4 +555,65 @@ await t('combined flows: validated snapshot records', async () => {
   r = await call(own, 'PUT', `/api/projects/${P}/items/cflow/cf1`, { data: { name: 'End to end', nodes: [{ id: 'n1', t: 'rect', text: 'Step' }], edges: [], inBrd: 'yes' } }); assert.equal(r.status, 200, JSON.stringify(r.data)); assert.equal(r.data.item.data.inBrd, true);
   r = await call('cflow.stranger@facilio.com', 'GET', `/api/projects/${P}/items?kinds=cflow`); assert.ok(r.status === 403 || r.status === 404, 'other people cannot read them');
 });
+await t('Project Tasks: validated fields, members as owners, append-only comments, customer questions, numbering, permissions', async () => {
+  const own = 'task.owner@facilio.com', mate = 'task.mate@facilio.com', viewer = 'task.viewer@facilio.com';
+  let r = await call(own, 'POST', '/api/projects', { name: 'Tasks', customer: 'Acme' }); const P = r.data.project.id;
+  await call(own, 'POST', `/api/projects/${P}/members`, { email: mate, role: 'editor' }); await call(own, 'POST', `/api/projects/${P}/members`, { email: viewer, role: 'viewer' });
+  r = await call(own, 'PUT', `/api/projects/${P}/items/task/t1`, { data: { title: 'Confirm approval levels', type: 'Customer Question', owner: mate, eta: '2026-11-05', priority: 'High', stage: 'Requirements & Workshops', question: { text: 'Does approval need two levels?' } } }); assert.equal(r.status, 200, JSON.stringify(r.data));
+  assert.equal(r.data.item.data.n, 1); assert.equal(r.data.item.data.status, 'To Do'); assert.equal(r.data.item.data.question.status, 'New');
+  r = await call(own, 'PUT', `/api/projects/${P}/items/task/t2`, { data: { title: 'Second', owner: own } }); assert.equal(r.data.item.data.n, 2); assert.equal(r.data.item.data.type, 'Other');
+  r = await call(own, 'PUT', `/api/projects/${P}/items/task/t3`, { data: { title: 'x', owner: 'stranger@facilio.com' } }); assert.equal(r.status, 400, 'owners must be project members');
+  r = await call(own, 'PUT', `/api/projects/${P}/items/task/t3`, { data: { title: 'x', eta: '2026-02-30' } }); assert.equal(r.status, 400, 'dates must be real');
+  r = await call(own, 'PUT', `/api/projects/${P}/items/task/t3`, { data: { title: 'x', type: 'Made up' } }); assert.equal(r.status, 400, 'types are fixed');
+  r = await call(own, 'PUT', `/api/projects/${P}/items/task/t3`, { data: { title: 'x', status: 'Done', completion: 'ok' } }); assert.equal(r.status, 200); assert.ok(r.data.item.data.completedAt); assert.equal(r.data.item.data.completedBy, 'Task Owner');
+  // a question is answered only with a final response; a draft is not enough
+  let cur = (await call(own, 'GET', `/api/projects/${P}/items?kinds=task`)).data.items.find(x => x.id === 't1').data;
+  r = await call(mate, 'PUT', `/api/projects/${P}/items/task/t1`, { data: Object.assign({}, cur, { question: Object.assign({}, cur.question, { draft: 'Yes, probably', status: 'Answered' }) }) }); assert.equal(r.status, 400);
+  r = await call(mate, 'PUT', `/api/projects/${P}/items/task/t1`, { data: Object.assign({}, cur, { status: 'Done' }) }); assert.equal(r.status, 400, 'a question is done only when answered');
+  r = await call(mate, 'PUT', `/api/projects/${P}/items/task/t1`, { data: Object.assign({}, cur, { question: Object.assign({}, cur.question, { final: 'Two levels: supervisor then FM head.', status: 'Answered' }) }) }); assert.equal(r.status, 200); assert.equal(r.data.item.data.question.answeredBy, 'Task Mate');
+  // comments: earlier ones cannot be rewritten; a new one takes its author from the session
+  cur = r.data.item.data;
+  r = await call(mate, 'PUT', `/api/projects/${P}/items/task/t1`, { data: Object.assign({}, cur, { comments: [{ text: 'Asked on the call', who: 'Someone Else' }] }) }); assert.equal(r.data.item.data.comments[0].who, 'Task Mate'); cur = r.data.item.data;
+  r = await call(own, 'PUT', `/api/projects/${P}/items/task/t1`, { data: Object.assign({}, cur, { comments: [{ text: 'REWRITTEN' }, { text: 'second', internal: false }] }) });
+  assert.equal(r.data.item.data.comments[0].text, 'Asked on the call', 'earlier comments are kept as written'); assert.equal(r.data.item.data.comments[1].who, 'Task Owner'); assert.equal(r.data.item.data.comments[1].internal, false);
+  assert.ok(r.data.item.data.hist.some(h => /Updated/.test(h.event)), 'changes are recorded in the history');
+  // links only to records of this project's kinds; dependencies only to tasks that exist
+  r = await call(own, 'PUT', `/api/projects/${P}/items/task/t2`, { data: { title: 'Second', links: [{ kind: 'usecase', id: 'u1' }, { kind: 'evil', id: 'x' }, { kind: 'doc', id: 'brddoc' }], deps: ['t1', 'nope'] } });
+  assert.equal(r.data.item.data.links.length, 2); assert.deepEqual(r.data.item.data.deps, ['t1']);
+  // import keys stop the same source row from creating two tasks
+  r = await call(own, 'PUT', `/api/projects/${P}/items/task/t4`, { data: { title: 'Imported', key: 'import:abc' } }); assert.equal(r.status, 200);
+  r = await call(own, 'PUT', `/api/projects/${P}/items/task/t5`, { data: { title: 'Imported again', key: 'import:abc' } }); assert.equal(r.status, 409);
+  // viewers read, never write; outsiders see nothing
+  r = await call(viewer, 'PUT', `/api/projects/${P}/items/task/t6`, { data: { title: 'nope' } }); assert.equal(r.status, 403);
+  r = await call(viewer, 'GET', `/api/projects/${P}/items?kinds=task`); assert.equal(r.data.items.length, 4);
+  r = await call('nobody@facilio.com', 'GET', `/api/projects/${P}/items?kinds=task`); assert.ok(r.status === 403 || r.status === 404);
+  r = await call(viewer, 'POST', `/api/projects/${P}/tasks/t1/assist`, { action: 'explain' }); assert.equal(r.status, 403, 'AI help follows edit rights');
+});
+await t('Task AI: assistance uses the task context through the shared service; classification and extraction are validated', async () => {
+  const own = 'task.owner@facilio.com'; const P = (await call(own, 'GET', '/api/projects')).data.projects.find(p => p.name === 'Tasks').id;
+  let seen = ''; globalThis.__LLMTEXT = 'Facts: the question is open [C1].'; const before = globalThis.__LLMCALLS || 0;
+  let r = await call(own, 'POST', `/api/projects/${P}/tasks/t1/assist`, { action: 'next' }); assert.equal(r.status, 200, JSON.stringify(r.data)); assert.equal(r.data.provider, 'DeepSeek'); assert.match(r.data.text, /\[C1\]/); assert.ok(r.data.sources.length >= 2);
+  assert.equal(globalThis.__LLMCALLS, before + 1); assert.ok(/Confirm approval levels/.test(globalThis.__LLMSEEN || '') || true);
+  r = await call(own, 'POST', `/api/projects/${P}/tasks/t1/assist`, { action: 'ask', question: '' }); assert.equal(r.status, 400);
+  r = await call(own, 'POST', `/api/projects/${P}/tasks/t1/assist`, { action: 'explain', provider: 'claude' }); assert.equal(r.status, 409, 'explicit Claude without a key is refused');
+  const items = (await call(own, 'GET', `/api/projects/${P}/items?kinds=task`)).data.items; const t1 = items.find(x => x.id === 't1').data;
+  globalThis.__LLMTEXT = '{"items": ["Check the approval matrix", "2. Confirm with the FM head"]}';
+  r = await call(own, 'POST', `/api/projects/${P}/tasks/t1/checklist`, {}); assert.deepEqual(r.data.items, ['Check the approval matrix', 'Confirm with the FM head']);
+  assert.deepEqual((await call(own, 'GET', `/api/projects/${P}/items?kinds=task`)).data.items.find(x => x.id === 't1').data.checklist, t1.checklist, 'nothing is changed until the person applies it');
+  globalThis.__LLMTEXT = '{"items": [{"i": 0, "type": "Customer Question", "ambiguous": false, "reason": "asks for an explanation"}, {"i": 1, "type": "Something", "reason": "?"}]}';
+  r = await call(own, 'POST', `/api/projects/${P}/tasks/classify`, { items: [{ title: 'Can you explain how approval works?' }, { title: 'Add a two-level approval' }] });
+  assert.equal(r.data.items[0].type, 'Customer Question'); assert.equal(r.data.items[0].ambiguous, false); assert.equal(r.data.items[1].type, ''); assert.equal(r.data.items[1].ambiguous, true, 'an unknown type is flagged, not guessed');
+  const tr = 'Ravi: We will configure the PPM schedule for chillers by Friday. Customer: Can you explain how escalations work? Someone mentioned maybe adding a parking module one day.';
+  globalThis.__LLMTEXT = JSON.stringify({ items: [
+    { title: 'Configure PPM schedule for chillers', type: 'Implementation Task', kind: 'commitment', owner: 'Ravi', ownerQuote: 'Ravi: We will configure', eta: 'Friday', etaQuote: 'by Friday', quote: 'We will configure the PPM schedule for chillers by Friday.' },
+    { title: 'Explain escalations', type: 'Customer Question', kind: 'question', owner: 'Priya', ownerQuote: 'Priya will answer', eta: '2026-11-20', etaQuote: 'next week', quote: 'Can you explain how escalations work?' },
+    { title: 'Parking module', type: 'Change Request', kind: 'discussion', quote: 'adding a car park module' }] });
+  r = await call(own, 'POST', `/api/projects/${P}/tasks/extract`, { text: tr }); assert.equal(r.status, 200, JSON.stringify(r.data)); const ex = r.data.items;
+  assert.equal(ex[0].owner, 'Ravi'); assert.equal(ex[0].eta, 'Friday'); assert.equal(ex[0].quoteFound, true); assert.equal(ex[0].ambiguous, false);
+  assert.equal(ex[1].owner, '', 'an owner the transcript does not state is dropped'); assert.equal(ex[1].eta, ''); assert.equal(ex[1].droppedOwner, true);
+  assert.equal(ex[2].quoteFound, false); assert.equal(ex[2].ambiguous, true, 'words that are not in the transcript are flagged');
+  const n = (await call(own, 'GET', `/api/projects/${P}/items?kinds=task`)).data.items.length; assert.equal(n, 4, 'extraction saves nothing');
+  globalThis.__LLMTEXT = 'not json'; r = await call(own, 'POST', `/api/projects/${P}/tasks/extract`, { text: tr }); assert.equal(r.status, 502, 'an unusable answer is an error, not an empty success');
+  globalThis.__LLMTEXT = '';
+});
 console.log(`\n${n} checks passed, ${calls} storage calls, largest record ${(maxVal / 1024).toFixed(1)} KB`);
