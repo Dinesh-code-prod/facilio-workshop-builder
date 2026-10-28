@@ -167,12 +167,25 @@
     <pattern id="wbGrid" width="${GRID}" height="${GRID}" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#D0D5DD"/></pattern></defs>`;
   function worldSvg(forExport) {
     const ns = W.B.nodes, frames = ns.filter(n => n.t === 'frame'), imgs = ns.filter(n => n.t === 'image'), rest = ns.filter(n => n.t !== 'frame' && n.t !== 'image');
-    return imgs.map(n => nodeSvg(n, forExport)).join('') + frames.map(n => nodeSvg(n, forExport)).join('') + W.B.edges.map(e => edgeSvg(e, forExport)).join('') + rest.map(n => nodeSvg(n, forExport)).join('') + (forExport ? '' : endHandles());
+    return imgs.map(n => nodeSvg(n, forExport)).join('') + frames.map(n => nodeSvg(n, forExport)).join('') + W.B.edges.map(e => edgeSvg(e, forExport)).join('') + rest.map(n => nodeSvg(n, forExport)).join('') + (forExport ? '' : endHandles() + delChip());
   }
   // the two ends of a single selected connector, drawn above the shapes so they can always be grabbed
   function endHandles() {
     if (ro() || W.sel.size !== 1) return ''; const e = W.B.edges.find(x => W.sel.has(x.id)); if (!e) return ''; const p = edgePts(e); if (!p || !p.p0) return ''; const r = 6 / Math.max(.5, W.B.view.z);
     return ['from', 'to'].map((end, i) => { const q = i ? p.p1 : p.p0; return `<circle class="wb-eh" data-eh="${end}" data-e="${esc(e.id)}" cx="${q[0]}" cy="${q[1]}" r="${r}" fill="#fff" stroke="#1570EF" stroke-width="2"><title>Drag to attach this end to another shape</title></circle>`; }).join('');
+  }
+  // Miro-style delete chip: hovering an element (or selecting just one) shows a small delete button at its corner. Hovering never
+  // deletes; the click does, and it is undoable (Ctrl+Z). Drawn at a constant screen size whatever the zoom.
+  function delChip() {
+    if (ro() || W.dragging || W.edit || W.tool !== 'select') return ''; let id = W.hover; if (!id && W.sel.size === 1) id = [...W.sel][0]; if (!id) return '';
+    const z = Math.max(.2, W.B.view.z); let x, y; const n = node(id);
+    if (n) { if (n.lock || n.hidden) return ''; x = n.x + n.w; y = n.y; }
+    else { const e = W.B.edges.find(q => q.id === id); const p = e && edgePts(e); if (!p) return ''; const lo = e.lo || { x: 0, y: 0 }; x = (p.lx != null ? p.lx : (p.p0[0] + p.p1[0]) / 2) + lo.x + 14 / z; y = (p.ly != null ? p.ly : (p.p0[1] + p.p1[1]) / 2) + lo.y - 14 / z; }
+    return `<g class="wb-hdel" data-del="${esc(id)}" transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(1 / z).toFixed(4)})" role="button" aria-label="Delete"><circle r="11" fill="#fff" stroke="#D92D20" stroke-width="1.5"/><path d="M-4 -4L4 4M4 -4L-4 4" stroke="#D92D20" stroke-width="2" stroke-linecap="round"/><title>Delete (Del) · Ctrl+Z to undo</title></g>`;
+  }
+  function delOne(id) {
+    const n = node(id); if (n && n.lock) { V.toast('Unlock it first to delete it'); return; }
+    pushUndo(); W.B.nodes = W.B.nodes.filter(q => q.id !== id); W.B.edges = W.B.edges.filter(e => e.id !== id && e.from !== id && e.to !== id); W.sel.delete(id); W.hover = null; changed(); draw(); V.toast('Deleted. Press Ctrl+Z to undo.', 3000);
   }
   function draw() {
     const svg = document.getElementById('wbSvg'); if (!svg || !W.B) return;
@@ -269,6 +282,7 @@
     svg.addEventListener('pointerdown', ev => {
       if (W.edit) commitEdit(); ctxClose(); if (ev.button === 2) return;   // right button: the context menu handles it
       const host = document.getElementById('wbHost'); host.focus({ preventScroll: true });
+      const dEl = ev.target.closest('[data-del]'); if (dEl && !ro()) { ev.preventDefault(); ev.stopPropagation(); delOne(dEl.getAttribute('data-del')); return; }   // the chip never starts a drag
       const p = toWorld(ev), hEl = ev.target.closest('[data-h]'), nEl = ev.target.closest('[data-id]'), eEl = ev.target.closest('[data-e]'), ehEl = ev.target.closest('[data-eh]'), elEl = ev.target.closest('[data-el]');
       svg.setPointerCapture(ev.pointerId);
       if (W.tool === 'hand' || ev.button === 1) { drag = { kind: 'pan', sx: ev.clientX, sy: ev.clientY, vx: W.B.view.x, vy: W.B.view.y }; host.classList.add('panning'); W.dragging = true; return; }
@@ -298,7 +312,8 @@
       drag = { kind: 'pan', sx: ev.clientX, sy: ev.clientY, vx: W.B.view.x, vy: W.B.view.y }; host.classList.add('panning'); draw();
     });
     svg.addEventListener('pointermove', ev => {
-      if (!drag) return; const p = toWorld(ev);
+      if (!drag) { const t = ev.target.closest && ev.target.closest('[data-del],[data-id],[data-e]'); const h = t ? (t.getAttribute('data-del') || t.getAttribute('data-id') || t.getAttribute('data-e')) : null; if (h !== W.hover) { W.hover = h; paint(); } return; }
+      const p = toWorld(ev);
       if (drag.kind === 'ink') { const l = W.ink[W.ink.length - 1]; if (Math.hypot(p.x - l[0], p.y - l[1]) * W.B.view.z >= 2 && W.ink.length < 4000) { W.ink.push([p.x, p.y]); paint(); } return; }
       if (drag.kind === 'move' || drag.kind === 'resize') W.dragging = true;
       if (drag.kind === 'pan') { W.B.view.x = drag.vx + ev.clientX - drag.sx; W.B.view.y = drag.vy + ev.clientY - drag.sy; paint(); }
@@ -328,7 +343,7 @@
         if (t) { const to = t.getAttribute('data-id'); if (!W.B.edges.some(e => e.from === d.from && e.to === to)) { pushUndo(); const ne = { id: uid('e'), from: d.from, to, label: '' }; if (W.tool === 'connect-elbow') ne.route = 'elbow'; if (W.tool === 'connect-both') ne.ah = 'both'; if (W.tool === 'connect-line') ne.ah = 'none'; W.B.edges.push(ne); W.sel = new Set([ne.id]); changed(); const k = edgeKind(ne).k; if (k === 'manual') V.toast('Connected. This link between two flows is a drawing only: it is not recorded in Configuration Inputs.', 5000); else if (k === 'confirmed') V.toast('Connected. The relationship register confirms this link.'); } }
         draw(); }
     };
-    svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
+    svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end); svg.addEventListener('pointerleave', () => { if (!drag && W.hover) { W.hover = null; paint(); } });
     svg.addEventListener('dblclick', ev => {
       if (ro()) return; const nEl = ev.target.closest('[data-id]'), eEl = ev.target.closest('[data-e]');
       if (nEl) { const n = node(nEl.getAttribute('data-id')); if (n.t !== 'image' && n.t !== 'ink' && !n.lock) startEdit(n); return; }
@@ -708,7 +723,7 @@
   ACT.wbRenameGo = async () => { const name = nameVal(); if (!name) { V.toast('Give the board a name', 4000, true); return; } V.closeDrawer(); W.B.name = name; W.dirty = true; await save(); V.render(); };
   ACT.wbTool = a => { W.tool = a.getAttribute('data-wbtool'); popsClose(); draw(); const h = document.getElementById('wbHost'); if (h) h.focus({ preventScroll: true }); };
   ACT.wbAdd = a => { const c = centre(), t = a.getAttribute('data-t'), [w, h] = SIZES[t]; addNode(t, c.x - w / 2 + (W.B.nodes.length % 5) * 12, c.y - h / 2 + (W.B.nodes.length % 5) * 12); };
-  ACT.wbDel = () => { if (ro() || !W.sel.size) return; if ([...W.sel].some(id => (node(id) || {}).lock)) { W.sel = new Set([...W.sel].filter(id => !(node(id) || {}).lock)); if (!W.sel.size) { V.toast('Unlock it first to delete it'); draw(); return; } } pushUndo(); const ids = W.sel; W.B.nodes = W.B.nodes.filter(n => !ids.has(n.id)); W.B.edges = W.B.edges.filter(e => !ids.has(e.id) && !ids.has(e.from) && !ids.has(e.to)); W.sel = new Set(); changed(); draw(); };
+  ACT.wbDel = async () => { if (ro() || !W.sel.size) return; const many = [...W.sel].filter(id => node(id)).length; if (many >= 8 && !(await V.confirmDialog('Delete ' + many + ' elements', 'Delete the ' + many + ' selected elements and their connectors? You can undo this with Ctrl+Z.', 'Delete', true))) return; if ([...W.sel].some(id => (node(id) || {}).lock)) { W.sel = new Set([...W.sel].filter(id => !(node(id) || {}).lock)); if (!W.sel.size) { V.toast('Unlock it first to delete it'); draw(); return; } } pushUndo(); const ids = W.sel; W.B.nodes = W.B.nodes.filter(n => !ids.has(n.id)); W.B.edges = W.B.edges.filter(e => !ids.has(e.id) && !ids.has(e.from) && !ids.has(e.to)); W.sel = new Set(); changed(); draw(); };
   ACT.wbUndo = () => { if (ro() || !W.undo.length) return; W.redo.push(snapshot()); const s = JSON.parse(W.undo.pop()); W.B.nodes = s.nodes; W.B.edges = s.edges; W.sel = new Set(); changed(); draw(); };
   ACT.wbRedo = () => { if (ro() || !W.redo.length) return; W.undo.push(snapshot()); const s = JSON.parse(W.redo.pop()); W.B.nodes = s.nodes; W.B.edges = s.edges; W.sel = new Set(); changed(); draw(); };
   ACT.wbGroup = () => { const ns = [...W.sel].map(node).filter(Boolean); if (ns.length < 2 || ro()) return; pushUndo(); const g = uid('g'); ns.forEach(n => { n.g = g; }); changed(); draw(); V.toast('Grouped: they move together'); };

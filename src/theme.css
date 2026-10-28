@@ -763,3 +763,5 @@ body .tl-row:hover .tl-rt, body .tl-row:focus-within .tl-rt, body .tl-row.off .t
 @media (hover: none) { body .tl-row .tl-rt { opacity: 1; } }
 body .tl-rt .tl-rm:not(#_):hover { color: var(--th-red) !important; background: var(--th-red-soft) !important; }
 body .tl-rt .tl-show:not(#_) { color: var(--th-violet) !important; }
+/* whiteboard: the delete button shown on the hovered (or the one selected) element */
+body #wbSvg .wb-hdel { cursor: pointer; } body #wbSvg .wb-hdel circle { transition: fill .12s; } body #wbSvg .wb-hdel:hover circle { fill: #FFEDEB; }
