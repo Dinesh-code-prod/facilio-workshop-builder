@@ -210,7 +210,7 @@
       const brand = $('brand'), head = $('head');
       const WIND = 120, QT = [1.5, 1, .75, .55], LSTEP = [1, 2, 3, 4], LGK = [1, 1.3, 1.5, 1.7];   // quality tiers: canvas scale, draw every n-th leaf, leaf size to compensate
       leaves.forEach((L, i) => { L.ix = i; });
-      let W = 0, H = 0, DPR = 1, FIT = 1, QCAP = 1.5, QTIER = 0, slow = 0, WIDE = true, LR = 0, RT = 58, RB = 0, BL = 0, IDLE = 0;
+      let ECOST = 0, EDT = 0; let W = 0, H = 0, DPR = 1, FIT = 1, QCAP = 1.5, QTIER = 0, slow = 0, WIDE = true, LR = 0, RT = 58, RB = 0, BL = 0, IDLE = 0;
       function resize() {
         W = o.clientWidth; H = o.clientHeight; DPR = Math.min(QCAP, window.devicePixelRatio || 1); DPR = Math.max(.6, Math.min(DPR, Math.sqrt(1500000 / Math.max(1, W * H)))); /* pixel budget: a wide screen never draws more than about 1.5M pixels per frame, which keeps the intro smooth on ordinary GPUs */ cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
         WIDE = W >= 900 && W / H > 1.15; o.classList.toggle('narrow', !WIDE);
@@ -755,7 +755,13 @@
         else if (CLK < WPTS[WPTS.length - 1][0]) { CLK += dt; T = warp(CLK); if (AUTO && CLK >= TR) startLeaf(); }
         else { IDLE += dt; if (fno++ & 1) return; }   // after the intro: 30fps is plenty for the sway
         const c0 = performance.now(); draw(T); ui(T); const cost = performance.now() - c0;
-        if (T > .3 && T < S[1] && QTIER < QT.length - 1) { slow = cost > 12 ? slow + 1 : Math.max(0, slow - 1); if (slow > 4) { QTIER++; QCAP = QT[QTIER]; slow = 0; resize(); } }   // decided early, then held   // slow device: step the canvas resolution down (1.5 > 1 > .75 > .55x) until frames fit
+        /* Smoothness guard for the whole growth, not just the first second: the canopy gains leaves with every stage, so a device that is fast
+           at stage 1 can drop frames at stage 7 (the stutter as stages appear). Both the drawing cost and the real frame interval are tracked as
+           running averages; when either stays over budget the next quality tier is used (fewer leaf sprites drawn, slightly larger, then a lower
+           canvas scale). Tiers only ever go down during one intro, so the picture never flips back and forth. */
+        if (LO < 0 && T > .3 && QTIER < QT.length - 1) { ECOST = ECOST ? ECOST * .9 + cost * .1 : cost; EDT = EDT ? EDT * .9 + dt * 1000 * .1 : dt * 1000;
+          slow = ECOST > 9 || EDT > 21 ? slow + 1 : Math.max(0, slow - 2);
+          if (slow > 20) { QTIER++; slow = 0; ECOST = 0; EDT = 0; if (QT[QTIER] < QCAP) { QCAP = QT[QTIER]; resize(); } } }
       }
       let leafTimers = false;
       function startLeaf() {
