@@ -786,3 +786,4 @@ body .ug-cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } body 
 body .ug-k { margin: 0 0 6px; font-family: var(--th-mono); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--th-muted); }
 @media (max-width: 760px) { body .ug-cmp { grid-template-columns: 1fr; } }
 body .opk-cl { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-weight: 400; color: var(--th-muted); }
+body .page-header .t p a:not(.btn):not(#_):not(#__) { color: var(--th-violet) !important; text-decoration: underline; text-underline-offset: 2px; }   /* links inside a page lead read as links (an older rule made header text inherit) */
