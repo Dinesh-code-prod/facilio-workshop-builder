@@ -5,9 +5,11 @@
   'use strict';
   const F = root.FWB; const { S, esc } = F; const V = root.FWBViews; const API = root.FWBApi; const ACT = V.ACT;
   const { drawer, closeDrawer, toast, confirmDialog } = V;
-  const A = { sec: 'dashboard', dash: 'overview', ins: null, q: '', filter: 'all', stage: 'all', data: null, users: null, audit: null, access: null, detail: null };
+  const A = { sec: 'dashboard', dash: 'command', ins: null, q: '', filter: 'all', stage: 'all', data: null, users: null, audit: null, access: null, detail: null };
   const STAGES = ['Not started', 'Contract', 'Workshops', 'Requirements', 'BRD', 'UAT', 'Go-live'];
-  const HEALTH = { healthy: ['Healthy', 'h-healthy'], attention: ['Needs attention', 'h-attention'], stale: ['Stale', 'h-stale'], live: ['Live', 'h-live'], archived: ['Archived', 'h-stale'] };
+  // one health vocabulary for the whole console (work/server/_portfolio.mjs decides it; see the Command center's "How health is worked out")
+  const HEALTH = { blocked: ['Blocked', 'h-bad'], overdue: ['Overdue', 'h-bad'], at_risk: ['At risk', 'h-attention'], on_track: ['On track', 'h-healthy'], insufficient: ['Insufficient data', 'h-stale'], on_hold: ['On hold', 'h-stale'], completed: ['Completed', 'h-live'], cancelled: ['Cancelled', 'h-stale'], archived: ['Archived', 'h-stale'] };
+  V.ADM_HEALTH = HEALTH;
   const ROLE = { super: ['Platform owner', 'r-super'], admin: ['Admin', 'r-admin'], sub: ['Sub admin', 'r-sub'] };
   const can = lvl => { const r = A.data && A.data.me.role; return lvl === 'super' ? r === 'super' : lvl === 'admin' ? r === 'super' || r === 'admin' : !!r; };
   const val = id => (document.getElementById(id) || {}).value || '';
@@ -16,7 +18,7 @@
   const ago = d => { if (!d) return 'never'; const m = Math.floor((Date.now() - new Date(d).getTime()) / 6e4); if (m < 2) return 'just now'; if (m < 60) return m + ' min ago'; const h = Math.floor(m / 60); if (h < 24) return h + ' h ago'; const dd = Math.floor(h / 24); return dd < 31 ? dd + (dd === 1 ? ' day ago' : ' days ago') : fmt(d); };
   const size = b => b > 1e9 ? (b / 1e9).toFixed(1) + ' GB' : b > 1e6 ? (b / 1e6).toFixed(1) + ' MB' : b > 1e3 ? Math.round(b / 1e3) + ' KB' : b + ' B';
   const chip = (cls, t) => `<span class="hchip ${cls}">${esc(t)}</span>`;
-  const hchip = h => { const x = HEALTH[h] || HEALTH.healthy; return chip(x[1], x[0]); };
+  const hchip = h => { const x = HEALTH[h] || HEALTH.insufficient; return chip(x[1], x[0]); };
   const rchip = r => { const x = ROLE[r]; return x ? chip(x[1], x[0]) : ''; };
   const ownerName = o => { const x = String(o || '').split(',')[0].trim(); return !x ? '—' : /guest\.local$/.test(x) ? 'Office team' : x; };
   const initials = n => String(n || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase();
@@ -30,7 +32,7 @@
     const R = V.range, sp = R.span(A.rg); if (!raw || (!sp[0] && !sp[1])) return raw;
     const ps = raw.projects.filter(p => R.inRange(p.lastActivity, sp) || R.inRange(p.createdAt, sp)), act = ps.filter(p => !p.archived); const sum = f => act.reduce((a, p) => a + (f(p) || 0), 0);
     const kpis = Object.assign({}, raw.kpis, { active: act.length, archived: ps.length - act.length, customers: new Set(act.map(p => String(p.customer).trim().toLowerCase())).size, files: sum(p => p.files), bytes: sum(p => p.bytes), sessions: sum(p => p.sessions.total), upcoming: sum(p => p.sessions.upcoming), requirements: sum(p => p.requirements), flows: sum(p => p.flows), openActions: sum(p => p.openActions), overdue: sum(p => p.overdue), openQuestions: sum(p => p.openFeedback), raidOpen: sum(p => p.raidOpen), brdApproved: act.filter(p => p.brdStatus === 'approved').length, live: act.filter(p => p.stage === 6).length });
-    const health = { healthy: 0, attention: 0, stale: 0, live: 0 }; act.forEach(p => { health[p.health] = (health[p.health] || 0) + 1; });
+    const health = {}; Object.keys(HEALTH).forEach(k => { health[k] = 0; }); act.forEach(p => { health[p.health] = (health[p.health] || 0) + 1; });
     const weekly = (raw.weekly || []).filter(w => (!sp[1] || w.week <= sp[1]) && (!sp[0] || add7(w.week) >= sp[0])); const monthly = (raw.monthly || []).filter(m => (!sp[0] || m.month >= sp[0].slice(0, 7)) && (!sp[1] || m.month <= sp[1].slice(0, 7)));
     return Object.assign({}, raw, { projects: ps, kpis, health, weekly, monthly, stages: [0, 1, 2, 3, 4, 5, 6].map(n => act.filter(p => p.stage === n).length),
       attention: act.filter(p => p.reasons.length).sort((a, b) => b.reasons.length - a.reasons.length || b.overdue - a.overdue).slice(0, 8).map(p => ({ id: p.id, name: p.name, customer: p.customer, reasons: p.reasons })),
@@ -46,7 +48,7 @@
   function bars(rows, fmtLabel, cls) { const mx = Math.max(1, ...rows.map(r => r.v)); return `<div class="bchart ${cls || ''}">${rows.map(r => `<div class="bcol" title="${esc(r.tip || '')}"><span class="bval">${r.v}</span><div class="bbar" style="--h:${Math.round(r.v / mx * 100)}%"></div><span class="blab">${esc(r.l)}</span></div>`).join('')}</div>`; }
   function overviewDash() {
     const d = A.data, k = d.kpis; const tot = Math.max(1, k.active);
-    const h = d.health; const seg = [['healthy', '#14a8a8'], ['attention', '#e08a00'], ['stale', '#9aa6bd'], ['live', '#1570EF']]; let acc = 0;
+    const h = d.health; const seg = [['blocked', '#D92D20'], ['overdue', '#B42318'], ['at_risk', '#E8690B'], ['on_track', '#12A35B'], ['insufficient', '#9A9AA6'], ['on_hold', '#6B6B78'], ['completed', '#1570EF']]; let acc = 0;
     const conic = seg.map(([key, c]) => { const a = acc / tot * 360; acc += (h[key] || 0); return `${c} ${a}deg ${acc / tot * 360}deg`; }).join(', ');
     const mx = Math.max(1, ...d.stages.slice(1)); const wk = d.weekly.map(w => ({ v: w.n, l: w.week.slice(5), tip: 'Week of ' + w.week })); const mo = d.monthly.map(m => ({ v: m.n, l: new Date(m.month + '-01T00:00:00Z').toLocaleDateString(undefined, { month: 'short', timeZone: 'UTC' }), tip: m.month }));
     const fmx = Math.max(1, ...d.files.map(f => f.bytes));
@@ -77,8 +79,8 @@
 
 
   // ---------- dashboard tabs: Overview, Delivery, Customers, Team & usage, Quality & records ----------
-  const DTABS = [['overview', 'Overview'], ['delivery', 'Delivery'], ['customers', 'Customers'], ['usage', 'Team & usage'], ['quality', 'Quality & records']];
-  const HC = { healthy: '#079455', attention: '#F79009', stale: '#98A2B3', live: '#1D1A5E', archived: '#98A2B3' };
+  const DTABS = [['command', 'Command center'], ['overview', 'Activity overview'], ['delivery', 'Delivery'], ['customers', 'Customers'], ['usage', 'Team & usage'], ['quality', 'Quality & records']];
+  const HC = { blocked: '#D92D20', overdue: '#B42318', at_risk: '#E8690B', on_track: '#12A35B', insufficient: '#9A9AA6', on_hold: '#6B6B78', completed: '#1570EF', cancelled: '#9A9AA6', archived: '#98A2B3' };
   const cap = t => { t = String(t || '').replace(/_/g, ' ').trim(); return t ? t[0].toUpperCase() + t.slice(1) : '—'; };
   const dcard = (t, sub, body, cls) => `<div class="adm-card ${cls || ''}"><div class="adm-h"><h3>${esc(t)}</h3>${sub ? `<span class="muted xs">${sub}</span>` : ''}</div>${body}</div>`;
   const empty = t => `<div class="adm-empty">${esc(t)}</div>`;
@@ -93,7 +95,7 @@
 
   function dashBody() {
     const keep = A.data; A.data = applyRange(A.raw || keep);
-    try { return (A.dash === 'delivery' ? deliveryDash() : A.dash === 'customers' ? customersDash() : A.dash === 'usage' ? usageDash() : A.dash === 'quality' ? qualityDash() : overviewDash()) + (V.admViz ? V.admViz.extra(A.dash, { A, STAGES, ownerName }) : ''); } finally { A.data = keep; }
+    try { if (A.dash === 'command') return V.cmd ? V.cmd.html() : ''; return (A.dash === 'delivery' ? deliveryDash() : A.dash === 'customers' ? customersDash() : A.dash === 'usage' ? usageDash() : A.dash === 'quality' ? qualityDash() : overviewDash()) + (V.admViz ? V.admViz.extra(A.dash, { A, STAGES, ownerName }) : ''); } finally { A.data = keep; }
   }
   function dashboard() {
     const bar = V.range.bar('adm', A.rg, { note: A.rg.period === 'all' ? '' : 'Projects with activity or created in this period' });
@@ -220,7 +222,7 @@
   }
   function projects() {
     const rows = filtered(); const d = A.data; const cnt = f => d.projects.filter(p => f === 'archived' ? p.archived : !p.archived && (f === 'all' || (f === 'attention' ? p.reasons.length : p.health === f))).length;
-    const chips = [['all', 'All'], ['attention', 'Needs attention'], ['healthy', 'Healthy'], ['stale', 'Stale'], ['live', 'Live'], ['archived', 'Archived']].map(([k, l]) => `<button class="fchip${A.filter === k ? ' on' : ''}" data-act="admFilter" data-f="${k}">${l}<b>${cnt(k)}</b></button>`).join('');
+    const chips = [['all', 'All'], ['attention', 'Needs attention'], ['blocked', 'Blocked'], ['overdue', 'Overdue'], ['at_risk', 'At risk'], ['on_track', 'On track'], ['insufficient', 'Insufficient data'], ['on_hold', 'On hold'], ['completed', 'Completed'], ['archived', 'Archived']].map(([k, l]) => `<button class="fchip${A.filter === k ? ' on' : ''}" data-act="admFilter" data-f="${k}">${l}<b>${cnt(k)}</b></button>`).join('');
     return `<div class="adm-tools"><input type="search" id="admQ" placeholder="Search project, customer or owner" value="${esc(A.q)}" aria-label="Search projects"><select id="admStage" data-change="admStageSel" aria-label="Stage"><option value="all">Any stage</option>${STAGES.map((s, i) => `<option value="${i}"${String(A.stage) === String(i) ? ' selected' : ''}>${esc(s)}</option>`).join('')}</select><span class="spacer"></span><button class="btn" data-act="admExport">Export CSV</button></div>
       <div class="fchips">${chips}</div>
       ${rows.length ? `<div class="tbl-wrap adm-tbl"><table class="tbl"><thead><tr><th>Project</th><th>Stage</th><th>Health</th><th>Sessions</th><th>Requirements</th><th>Actions</th><th>Questions</th><th>Last activity</th><th>Owner</th></tr></thead><tbody>${rows.map(p => `<tr class="click${p.archived ? ' arch' : ''}" data-act="admDetail" data-id="${esc(p.id)}" tabindex="0"><td><div class="pcell"><div class="pav" style="background:${tone(p.name)}">${esc(initials(p.customer || p.name))}</div><div><b>${esc(p.name)}</b><div class="xs muted">${esc(p.customer)}</div></div></div></td><td>${stageDots(p.stage)}<div class="xs muted">${esc(STAGES[p.stage])}</div></td><td>${hchip(p.health)}</td><td>${p.sessions.done}/${p.sessions.total}</td><td>${p.requirements}</td><td>${p.openActions}${p.overdue ? ` <b class="bad xs">${p.overdue} late</b>` : ''}</td><td>${p.openFeedback}</td><td class="xs">${ago(p.lastActivity)}</td><td class="xs">${esc(ownerName(p.owners))}</td></tr>`).join('')}</tbody></table></div>` : '<div class="adm-card adm-empty">No project matches these filters.</div>'}`;
@@ -256,7 +258,7 @@
     const d = A.data; if (!d) return '<div class="adm-wrap"><div class="muted" style="padding:40px">Loading…</div></div>';
     const nav = [['dashboard', 'Dashboard', 'M3 13h8V3H3zm0 8h8v-6H3zm10 0h8V11h-8zm0-18v6h8V3z'], ['projects', 'Projects', 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'], ['users', 'Users', 'M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0zM4 21a8 8 0 0 1 16 0z'], ['access', 'Access', 'M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z', 'super'], ['ai', 'AI provider', 'M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z', 'admin'], ['integrations', 'Integrations', 'M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1', 'admin'], ['activity', 'Activity', 'M3 12h4l3-8 4 16 3-8h4']].filter(n => !n[3] || can(n[3]));
     const title = { dashboard: 'Dashboard', projects: 'Projects', users: 'Users', access: 'Access', ai: 'AI provider', integrations: 'Integrations', activity: 'Activity' }[A.sec];
-    const sub = { dashboard: 'Portfolio insights across every project', projects: `${d.kpis.active} active · ${d.kpis.archived} archived. Click a project for its insights.`, integrations: 'Microsoft Teams, the support mailbox and Outlook', users: 'Accounts on this platform', access: 'Who can use this admin console', ai: 'Choose the AI provider and see how Outlook works here', activity: 'Latest recorded actions across all projects' }[A.sec];
+    const sub = { dashboard: 'Portfolio health, what needs attention and why, across every project', projects: `${d.kpis.active} active · ${d.kpis.archived} archived. Click a project for its insights.`, integrations: 'Microsoft Teams, the support mailbox and Outlook', users: 'Accounts on this platform', access: 'Who can use this admin console', ai: 'Choose the AI provider and see how Outlook works here', activity: 'Latest recorded actions across all projects' }[A.sec];
     const body = A.sec === 'dashboard' ? dashboard() : A.sec === 'projects' ? projects() : A.sec === 'users' ? users() : A.sec === 'access' ? access() : A.sec === 'ai' ? aiPanel() : A.sec === 'integrations' ? integrationsPanel() : activity();
     return `<div class="adm-wrap"><aside class="adm-nav" aria-label="Admin sections"><div class="adm-me"><div class="pav lg" style="background:${tone(d.me.email || 'x')}">${esc(initials(d.me.name || d.me.email))}</div><div><b>${esc(d.me.name || 'Admin')}</b><div class="xs muted">${esc(d.me.email || '')}</div>${rchip(d.me.role)}</div></div>
       ${nav.map(([k, l, p]) => `<button class="adm-ni${A.sec === k ? ' on' : ''}" data-act="admSec" data-s="${k}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${p}"/></svg><span>${l}</span>${k === 'projects' ? `<em>${d.kpis.active}</em>` : ''}</button>`).join('')}
@@ -319,7 +321,7 @@
   // ---------- sign-in gate ----------
   async function enter() {
     V.loading(true, 'Switching to Admin…');
-    try { await load(); A.users = A.audit = A.access = null; show(); }
+    try { await load(); A.users = A.audit = A.access = null; if (V.cmd) V.cmd.reset(); show(); lazy(); }
     catch (e) {
       if (e.status === 401) return signIn();
       if (e.status === 403) { toast('Your account does not have admin access. Ask the platform owner to add your email.', 6000, true); return; }
@@ -356,6 +358,7 @@
   ACT.admSec = async a => { A.sec = a.getAttribute('data-s'); show(); await lazy(); };
   async function lazy() {
     try {
+      if (A.sec === 'dashboard' && A.dash === 'command' && V.cmd && !V.cmd.ready()) { await V.cmd.load(); show(); }
       if (A.sec === 'dashboard' && (A.dash === 'usage' || A.dash === 'quality') && !A.ins) { A.ins = await API.get('/api/admin/insights', { noAuthRedirect: true }); show(); }
       if (A.sec === 'users' && !A.users) { A.users = (await API.get('/api/admin/users', { noAuthRedirect: true })).users; show(); }
       if (A.sec === 'activity' && !A.audit) { A.audit = (await API.get('/api/admin/audit', { noAuthRedirect: true })).entries; show(); }
@@ -364,7 +367,7 @@
       if (A.sec === 'access' && !A.access) { A.access = await API.get('/api/admin/access', { noAuthRedirect: true }); show(); }
     } catch (e) { toast(e.message, 4000, true); }
   }
-  ACT.admRefresh = async () => { try { await load(); A.users = A.audit = A.access = A.ins = A.ai = null; show(); await lazy(); toast('Refreshed'); } catch (e) { toast(e.message, 4000, true); } };
+  ACT.admRefresh = async () => { try { await load(); A.users = A.audit = A.access = A.ins = A.ai = null; if (V.cmd) V.cmd.reset(); show(); await lazy(); toast('Refreshed'); } catch (e) { toast(e.message, 4000, true); } };
   ACT.admGo = async a => { const g = a.getAttribute('data-go'); if (g === 'attention') { A.sec = 'projects'; A.filter = 'attention'; A.stage = 'all'; } else if (g === 'projects') { A.sec = 'projects'; A.filter = 'all'; A.stage = 'all'; } else A.sec = g; show(); await lazy(); };
   ACT.admStage = a => { A.sec = 'projects'; A.stage = a.getAttribute('data-s'); A.filter = 'all'; show(); };
   ACT.admFilter = a => { A.sec = 'projects'; A.filter = a.getAttribute('data-f'); A.stage = 'all'; show(); };

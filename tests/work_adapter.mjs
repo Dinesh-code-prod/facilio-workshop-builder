@@ -616,4 +616,33 @@ await t('Task AI: assistance uses the task context through the shared service; c
   globalThis.__LLMTEXT = 'not json'; r = await call(own, 'POST', `/api/projects/${P}/tasks/extract`, { text: tr }); assert.equal(r.status, 502, 'an unusable answer is an error, not an empty success');
   globalThis.__LLMTEXT = '';
 });
+await t('Admin Command Center: admins only, consistent metrics, manual status by owners, my work, AI briefing on evidence', async () => {
+  const own = 'cc.owner@facilio.com', ed = 'cc.editor@facilio.com';
+  let r = await call(own, 'POST', '/api/projects', { name: 'CC blocked', customer: 'Beta' }); const PB = r.data.project.id; await call(own, 'POST', `/api/projects/${PB}/members`, { email: ed, role: 'editor' });
+  await call(own, 'PUT', `/api/projects/${PB}/items/task/b1`, { data: { title: 'SSO broken', status: 'Blocked', priority: 'Critical', owner: own, blocker: 'IdP cert' } });
+  await call(own, 'PUT', `/api/projects/${PB}/items/task/b2`, { data: { title: 'Answer the customer', type: 'Customer Question', owner: ed, question: { text: 'q', respOwner: ed } } });
+  r = await call(own, 'POST', '/api/projects', { name: 'CC hold', customer: 'Beta' }); const PH = r.data.project.id;
+  r = await call(ed, 'PATCH', `/api/projects/${PB}`, { deliveryStatus: 'on_hold' }); assert.equal(r.status, 403, 'editors cannot change the delivery status');
+  r = await call(own, 'PATCH', `/api/projects/${PH}`, { deliveryStatus: 'paused' }); assert.equal(r.status, 400);
+  r = await call(own, 'PATCH', `/api/projects/${PH}`, { deliveryStatus: 'on_hold', deliveryNote: 'Customer budget review' }); assert.equal(r.status, 200); assert.equal(r.data.project.deliveryStatus, 'on_hold'); assert.equal(r.data.project.deliveryStatusBy, 'Cc Owner');
+  r = await call(own, 'GET', '/api/admin/command'); assert.equal(r.status, 403, 'not for people without an admin role');
+  r = await call(dinesh, 'GET', '/api/admin/command'); assert.equal(r.status, 200); const c = r.data;
+  const pb = c.projects.find(p => p.id === PB), ph = c.projects.find(p => p.id === PH); assert.equal(pb.health, 'blocked'); assert.equal(ph.health, 'on_hold'); assert.equal(ph.note, 'Customer budget review');
+  const act = c.projects.filter(p => p.manual === 'active'); const cnt = h => act.filter(p => p.health === h).length;
+  assert.equal(c.metrics.total, c.projects.length); assert.equal(c.metrics.inProgress, act.length); assert.equal(c.metrics.onHold, c.projects.filter(p => p.manual === 'on_hold').length);
+  assert.equal(c.metrics.blocked + c.metrics.overdue + c.metrics.atRisk + c.metrics.onTrack + c.metrics.insufficient, c.metrics.inProgress, 'every active project has exactly one health');
+  for (const [k, h] of [['blocked', 'blocked'], ['overdue', 'overdue'], ['atRisk', 'at_risk'], ['onTrack', 'on_track'], ['insufficient', 'insufficient']]) assert.equal(c.metrics[k], cnt(h), k);
+  assert.ok(c.signals.every(g => act.some(p => p.id === g.project)), 'signals come from active projects only'); assert.ok(c.signals.some(g => g.project === PB && g.code === 'blocker' && g.ev.length));
+  assert.ok(!c.projects.some(p => p.id === PH && c.signals.some(g => g.project === PH)), 'a project on hold is not in the attention list');
+  assert.ok(c.trends.snapshots.length >= 1 && c.trends.tasksWeekly.length === 8); assert.ok(c.workload.owners.some(w => w.owner === own && w.high >= 1));
+  r = await call(dinesh, 'GET', '/api/admin/overview'); assert.equal(r.data.projects.find(p => p.id === PB).health, 'blocked', 'the overview uses the same health');
+  // my work: only my tasks and the questions I must answer
+  r = await call(ed, 'GET', '/api/my/work'); assert.equal(r.status, 200); assert.ok(r.data.items.every(x => x.project === PB) && r.data.items.some(x => x.id === 'b2' && x.respond)); assert.ok(!r.data.items.some(x => x.id === 'b1'));
+  r = await call('cc.stranger@facilio.com', 'GET', '/api/my/work'); assert.equal(r.data.items.length, 0);
+  // briefing: admins only, through the shared service, on the computed evidence
+  globalThis.__LLMTEXT = 'Summary [P1] [E1]'; r = await call(own, 'POST', '/api/admin/ai/briefing', {}); assert.equal(r.status, 403);
+  r = await call(dinesh, 'POST', '/api/admin/ai/briefing', {}); assert.equal(r.status, 200, JSON.stringify(r.data)); assert.equal(r.data.provider, 'DeepSeek'); assert.ok(r.data.evidence >= 1); assert.ok(r.data.projects.length >= 1);
+  r = await call(dinesh, 'POST', '/api/admin/ai/briefing', { projectId: PB }); assert.equal(r.data.projects.length, 1); assert.equal(r.data.projects[0].id, PB);
+  r = await call(dinesh, 'POST', '/api/admin/ai/briefing', { projectId: 'p_nope' }); assert.equal(r.status, 404); globalThis.__LLMTEXT = '';
+});
 console.log(`\n${n} checks passed, ${calls} storage calls, largest record ${(maxVal / 1024).toFixed(1)} KB`);

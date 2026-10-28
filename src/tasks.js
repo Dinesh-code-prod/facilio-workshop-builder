@@ -103,6 +103,8 @@
         ${all.length && can ? '<p class="xs muted" style="margin-top:10px">Click a cell to edit it. Click an ID to open the task, its comments, customer response and the AI Task Assistant. <button class="btn link sm" data-act="tkBringIn">Bring in existing actions and questions</button></p>' : ''}</div>`;
     },
     mount() {
+      // opened from the Admin Command Center or My work: open that task once
+      if (S.ui.tkOpenOnce) { const id = S.ui.tkOpenOnce; S.ui.tkOpenOnce = null; const t = I().get('task', id); if (t) setTimeout(() => taskForm(t), 0); }
       const q = document.getElementById('tkQ'); if (q) q.addEventListener('input', () => { S.ui.tkQ = q.value; const p = q.selectionStart; V.render(); const n = document.getElementById('tkQ'); if (n) { n.focus(); n.setSelectionRange(p, p); } });
       const a = document.getElementById('tkAdd'); if (a) a.addEventListener('keydown', e => { if (e.key === 'Enter' && a.value.trim()) { e.preventDefault(); quickAdd(a.value.trim()); } });
       document.querySelectorAll('.pt-c.ed').forEach(td => td.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === 'F2') { e.preventDefault(); td.click(); } }));

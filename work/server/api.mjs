@@ -2,6 +2,7 @@
    Identity comes from the platform (ctx.viewer, verified); data lives in ctx.db; file bytes in private ctx.files.
    Roles and project access are enforced HERE, on the server, so pages cannot bypass them. */
 import { createAI, AIFail } from './_ai.mjs';
+import { assess, docsOf, workload, RULES as HRULES, HEALTH_LABEL, MANUAL } from './_portfolio.mjs';
 let CTX = null, HDR = {};   // set at the start of every request (a Lambda handles one request at a time)
 {
   'use strict';
@@ -105,7 +106,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     else { try { const g = await dbGet('grant', s.id); if (g && g.value) role = g.value.role === 'admin' ? 'admin' : 'sub'; } catch (e) { } }
     ROLE = { role, at: Date.now() }; return role;
   }
-  const projectOut = (p, role) => ({ id: p.id, name: p.name, customer: p.customer, description: p.description, startDate: p.startDate || null, endDate: p.endDate || null, customerAccessEnabled: !!p.customerAccessEnabled, createdAt: p.createdAt, updatedAt: p.updatedAt, role });
+  const projectOut = (p, role) => ({ id: p.id, name: p.name, customer: p.customer, description: p.description, startDate: p.startDate || null, endDate: p.endDate || null, customerAccessEnabled: !!p.customerAccessEnabled, deliveryStatus: MANUAL.includes(p.deliveryStatus) ? p.deliveryStatus : 'active', deliveryStatusBy: p.deliveryStatusBy || null, deliveryStatusAt: p.deliveryStatusAt || null, createdAt: p.createdAt, updatedAt: p.updatedAt, role });
   async function projectAccess(s, id, need) {
     const r = await dbGet('projects', id); const p = r && r.value; if (!p || p.archived) throw new HttpError(404, 'Project not found');
     const ar = await adminRole(s);
@@ -251,7 +252,10 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   });
   route('GET', '/api/projects/:id', async (b, P) => { const s = await me(); const { project, role } = await projectAccess(s, P.id, 'read'); return ok({ project: projectOut(project, role), members: (project.members || []).map(memberOut) }); });
   route('PATCH', '/api/projects/:id', async (b, P) => {
-    const s = await me(); await projectAccess(s, P.id, 'edit'); const d = v => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
+    const s = await me(); const acc = await projectAccess(s, P.id, 'edit'); const d = v => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
+    // the delivery status (Active, On hold, Completed, Cancelled) is set by a person, never by the health rules: project owners and admins only
+    if (b.deliveryStatus !== undefined) { if (!MANUAL.includes(b.deliveryStatus)) throw new HttpError(400, 'Choose Active, On hold, Completed or Cancelled'); if (acc.role !== 'owner') throw new HttpError(403, 'Only a project owner or an admin can change the delivery status');
+      const note = str(b.deliveryNote || '', 300, 'Note'); await patchProject(P.id, project => { project.deliveryStatus = b.deliveryStatus; project.deliveryStatusBy = s.name || s.email; project.deliveryStatusAt = now(); project.deliveryStatusNote = note; }); ADM = null; await audit(P.id, s.id, 'delivery-status', b.deliveryStatus + (note ? ': ' + note : '')); }
     const project = await patchProject(P.id, project => { if (b.name !== undefined) project.name = str(b.name, 160, 'Project name', true); if (b.customer !== undefined) project.customer = str(b.customer, 160, 'Customer', true);
     if (b.description !== undefined) project.description = str(b.description, 4000, 'Description'); if (b.startDate !== undefined) project.startDate = d(b.startDate); if (b.endDate !== undefined) project.endDate = d(b.endDate); });
     await audit(P.id, s.id, 'project-updated', null); return ok({ project: projectOut(project, (await projectAccess(s, P.id, 'read')).role) });
@@ -1181,10 +1185,12 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     const today = now().slice(0, 10);
     const rows = await pmap(list, 5, async p => {
       const id = p.id; const sg = async f => { try { return await f(); } catch (e) { return null; } };
-      const [planner, workshop, brd, items, files, fb, au] = await Promise.all([
-        sg(() => docRead(id, 'planner')), sg(() => docRead(id, 'workshop')), sg(() => docRead(id, 'brddoc')),
-        sg(() => itemsFor(id, ['action', 'raid', 'uat', 'signoff'])), sg(() => dbList('fl.' + id)), sg(() => dbList('fb.' + id)), sg(() => dbList('au.' + id))]);
-      return { p, planner: planner && planner.data || {}, workshop: workshop && workshop.data || {}, brd: brd && brd.data || {}, items: items || [], files: (files || []).map(r => r.value).filter(f => f && !f.deletedAt), fb: (fb || []).map(r => r.value), au: (au || []).map(r => Object.assign({ id: r.key, projectId: id }, r.value)) };
+      const [planner, workshop, brd, plan, controls, ftr, items, files, fb, au] = await Promise.all([
+        sg(() => docRead(id, 'planner')), sg(() => docRead(id, 'workshop')), sg(() => docRead(id, 'brddoc')), sg(() => docRead(id, 'plan_struct')), sg(() => docRead(id, 'portal_controls')), sg(() => docRead(id, 'ftr_wb')),
+        sg(() => itemsFor(id, ['action', 'raid', 'uat', 'signoff', 'task', 'decision', 'cr', 'hc', 'ai', 'ugd'])), sg(() => dbList('fl.' + id)), sg(() => dbList('fb.' + id)), sg(() => dbList('au.' + id))]);
+      // AI drafts and user guides are large; the portfolio needs only their status
+      const slim = (items || []).map(i => (i.kind === 'ai' || i.kind === 'ugd') ? Object.assign({}, i, { data: { task: i.data && i.data.task, title: i.data && i.data.title, status: i.data && i.data.status, missingParts: i.data && i.data.missingParts } }) : i);
+      return { p, planner: planner && planner.data || {}, workshop: workshop && workshop.data || {}, brd: brd && brd.data || {}, plan: plan && plan.data || {}, controls: controls && controls.data || {}, ftr: ftr && ftr.data || {}, items: slim, files: (files || []).map(r => r.value).filter(f => f && !f.deletedAt), fb: (fb || []).map(r => r.value), au: (au || []).map(r => Object.assign({ id: r.key, projectId: id }, r.value)) };
     });
     ADM = { at: Date.now(), rows, users, gm, grants };
     return ADM;
@@ -1208,26 +1214,84 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
       const last = [p.updatedAt].concat(items.map(i => i.updatedAt), au.map(e => e.at)).filter(Boolean).sort().pop();
       const openFb = fb.filter(f => f && f.status === 'open').length;
       const x = { scope: Array.isArray(planner.scope) ? planner.scope.length : 0, reqs: Array.isArray(workshop.requirements) ? workshop.requirements.length : 0, brdStatus: brd.status || '', brdExports: Array.isArray(brd.exports) ? brd.exports.length : 0, uat: items.filter(i => i.kind === 'uat').length, signed, sessions: { total: sess.length, upcoming: sess.filter(y => (y.date || '') >= today).length, done: sess.filter(y => y.date && y.date < today).length } };
-      const stage = stageOf(x); const idle = daysAgo(last || p.createdAt); const reasons = [];
-      if (od) reasons.push(od + ' overdue action' + (od > 1 ? 's' : '')); if (blocked) reasons.push(blocked + ' blocked'); if (openFb >= 3) reasons.push(openFb + ' open customer questions'); if (idle > 14) reasons.push('No activity for ' + idle + ' days');
-      const health = p.archived ? 'archived' : stage === 6 ? 'live' : idle > 14 ? 'stale' : (od || blocked || openFb >= 3) ? 'attention' : 'healthy';
+      const stage = stageOf(x); const H = assess({ p, plan: A.rows.find(rr => rr.p === p).plan, controls: A.rows.find(rr => rr.p === p).controls, brd, items, au }, today);
+      // one health definition for the whole console (work/server/_portfolio.mjs); the reasons are its signals
+      const reasons = H.signals.filter(g => g.sev !== 'medium' || H.health !== 'on_track').slice(0, 4).map(g => g.title);
+      const health = p.archived ? 'archived' : H.health;
       return { id: p.id, name: p.name, customer: p.customer, description: p.description, archived: !!p.archived, customerAccessEnabled: !!p.customerAccessEnabled, startDate: p.startDate, endDate: p.endDate, createdAt: p.createdAt, updatedAt: p.updatedAt, lastActivity: last || p.updatedAt,
         members: (p.members || []).length, owners: (p.members || []).filter(m => m.role === 'owner').map(m => m.email).join(', '), files: files.length, bytes: files.reduce((a, f) => a + (f.size || 0), 0), openFeedback: openFb,
         modulesInScope: x.scope, sessions: x.sessions, requirements: x.reqs, flows: workshop.flows && typeof workshop.flows === 'object' ? Object.keys(workshop.flows).length : 0, brdStatus: x.brdStatus || 'draft', brdExports: x.brdExports,
-        stage, health, reasons, openActions, overdue: od, blocked, raidOpen, uat: x.uat, signed };
+        stage, health, healthWhy: H.why, reasons, openActions, overdue: od, blocked, raidOpen, uat: x.uat, signed, deliveryStatus: H.manual };
     }).sort((a, b) => (a.archived - b.archived) || String(b.updatedAt).localeCompare(String(a.updatedAt)));
     const act = projects.filter(p => !p.archived); const sum = f => act.reduce((a, p) => a + f(p), 0);
     const auAll = A.rows.reduce((a, r) => a.concat(r.au), []);
     const weekly = []; for (let k = 7; k >= 0; k--) { const key = weekStart(Date.now() - k * 7 * 864e5); weekly.push({ week: key, n: auAll.filter(e => weekStart(e.at) === key).length }); }
     const monthly = []; for (let k = 5; k >= 0; k--) { const d = new Date(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() - k); const key = d.toISOString().slice(0, 7); monthly.push({ month: key, n: projects.filter(p => String(p.createdAt).slice(0, 7) === key).length }); }
     const cat = {}; A.rows.forEach(r => r.files.forEach(f => { const c = cat[f.category] = cat[f.category] || { category: f.category, n: 0, bytes: 0 }; c.n++; c.bytes += f.size || 0; }));
-    const health = { healthy: 0, attention: 0, stale: 0, live: 0 }; act.forEach(p => { health[p.health] = (health[p.health] || 0) + 1; });
+    const health = {}; Object.keys(HEALTH_LABEL).forEach(k => { health[k] = 0; }); act.forEach(p => { health[p.health] = (health[p.health] || 0) + 1; });
     const active7 = A.users.filter(u => u.seen && Date.now() - Date.parse(u.seen) < 7 * 864e5).length;
     return ok({ me: { role: s.adminRole, email: s.email, name: s.name }, superAdmins: SUPER_ADMINS, projects,
       kpis: { active: act.length, archived: projects.length - act.length, customers: new Set(act.map(p => String(p.customer).trim().toLowerCase())).size, people: A.users.length, guests: 0, activePeople7d: active7, files: sum(p => p.files), bytes: sum(p => p.bytes), sessions: sum(p => p.sessions.total), upcoming: sum(p => p.sessions.upcoming), requirements: sum(p => p.requirements), flows: sum(p => p.flows), openActions: sum(p => p.openActions), overdue: sum(p => p.overdue), openQuestions: sum(p => p.openFeedback), raidOpen: sum(p => p.raidOpen), customerAccess: 0, brdApproved: act.filter(p => p.brdStatus === 'approved').length, live: act.filter(p => p.stage === 6).length },
       stages: [0, 1, 2, 3, 4, 5, 6].map(n => act.filter(p => p.stage === n).length), health, weekly, monthly, files: Object.values(cat).sort((a, b) => b.bytes - a.bytes),
       attention: act.filter(p => p.reasons.length).sort((a, b) => b.reasons.length - a.reasons.length || b.overdue - a.overdue).slice(0, 8).map(p => ({ id: p.id, name: p.name, customer: p.customer, reasons: p.reasons })),
       recent: act.slice().sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity)).slice(0, 6).map(p => ({ id: p.id, name: p.name, customer: p.customer, lastActivity: p.lastActivity, stage: p.stage })) });
+  });
+  /* ---------- Admin Command Center ----------
+     Every number here comes from the projects' records through assess() in _portfolio.mjs; each one is defined in RULES and in
+     docs/ADMIN_COMMAND_CENTER.md. Archived projects are counted apart and left out of everything else. A daily snapshot of each
+     project's health is kept (collection hsnap) so trends can be shown from the day snapshots began; nothing is reconstructed. */
+  async function command() {
+    const A = await loadAll(); const today = now().slice(0, 10); const live = A.rows.filter(r => !r.p.archived);
+    const rows = live.map(r => { const h = assess(r, today); return { r, h, docs: docsOf(r, today) }; });
+    const projects = rows.map(({ r, h, docs }) => ({ id: r.p.id, name: r.p.name, customer: r.p.customer, health: h.health, why: h.why, manual: h.manual, note: r.p.deliveryStatusNote || '', metrics: h.metrics, docs,
+      counts: { critical: h.signals.filter(g => g.sev === 'critical').length, high: h.signals.filter(g => g.sev === 'high').length, medium: h.signals.filter(g => g.sev === 'medium').length },
+      owners: (r.p.members || []).filter(m => m.role === 'owner').map(m => m.name || m.email) }));
+    const active = projects.filter(p => p.manual === 'active'); const n = f => active.filter(f).length;
+    const metrics = { total: projects.length, archived: A.rows.length - live.length, inProgress: active.length, completed: projects.filter(p => p.manual === 'completed').length, onHold: projects.filter(p => p.manual === 'on_hold').length, cancelled: projects.filter(p => p.manual === 'cancelled').length,
+      atRisk: n(p => p.health === 'at_risk'), blocked: n(p => p.health === 'blocked'), overdue: n(p => p.health === 'overdue'), onTrack: n(p => p.health === 'on_track'), insufficient: n(p => p.health === 'insufficient'),
+      awaitingCustomer: n(p => p.metrics.custWaiting > 0), deadlines: n(p => p.metrics.deadlineSoon) };
+    const sigOf = x => x.h.signals.map(g => Object.assign({}, g, { projectName: x.r.p.name, customer: x.r.p.customer, health: x.h.health }));
+    // the attention lists cover active projects; signals of projects put on hold, completed or cancelled by a person stay available for their drawer
+    const signals = rows.filter(x => x.h.manual === 'active').flatMap(sigOf), held = rows.filter(x => x.h.manual !== 'active').flatMap(sigOf);
+    // trends: today's snapshot is written once; history is whatever snapshots exist
+    let snaps = []; try { if (!(await dbGet('hsnap', today))) { const c = {}; projects.forEach(p => { c[p.health] = (c[p.health] || 0) + 1; }); await dbPut('hsnap', today, { at: now(), counts: c, projects: Object.fromEntries(projects.map(p => [p.id, p.health])) }); } snaps = (await dbList('hsnap')).map(x => ({ day: x.key, counts: x.value.counts || {} })).sort((a, b) => a.day.localeCompare(b.day)).slice(-90); } catch (e) { }
+    const tasks = live.flatMap(r => r.items.filter(i => i.kind === 'task' && i.data)); const weeks = Array.from({ length: 8 }, (_, i) => weekStart(Date.now() - (7 - i) * 7 * 864e5));
+    const answered = tasks.filter(t => t.data.question && t.data.question.answeredAt && Date.now() - Date.parse(t.data.question.answeredAt) < 90 * 864e5).map(t => (Date.parse(t.data.question.answeredAt) - Date.parse(t.createdAt)) / 864e5).filter(x => x >= 0).sort((a, b) => a - b);
+    const auAll = live.flatMap(r => r.au);
+    const trends = { snapshots: snaps, firstSnapshot: snaps.length ? snaps[0].day : today,
+      tasksWeekly: weeks.map(w => ({ week: w, created: tasks.filter(t => weekStart(t.createdAt) === w).length, completed: tasks.filter(t => t.data.completedAt && weekStart(t.data.completedAt) === w).length })),
+      questionTurnaround: answered.length ? { n: answered.length, medianDays: Math.round(answered[Math.floor(answered.length / 2)] * 10) / 10 } : null,
+      activityWeekly: weeks.map(w => ({ week: w, n: auAll.filter(e => weekStart(e.at) === w).length })) };
+    return { today, metrics, projects, signals, held, workload: workload(rows.filter(x => x.h.manual === 'active').map(x => x.r), today), trends, rules: HRULES, labels: HEALTH_LABEL };
+  }
+  route('GET', '/api/admin/command', async () => { const s = await requireAdmin('sub'); const c = await command(); const names = {}; (await loadAll()).users.forEach(u => { names[String(u.email || '').toLowerCase()] = u.name || nameFromEmail(u.email); });
+    c.workload.owners.forEach(w => { w.name = names[w.owner] || nameFromEmail(w.owner); }); return ok(Object.assign(c, { me: { role: s.adminRole } })); });
+  // AI briefing over the computed portfolio: only the derived facts and evidence labels go to the model, never documents or records
+  const ADMIN_SYS = 'You brief a Facilio delivery administrator on their portfolio of implementation projects. Use only the EVIDENCE given: it was computed from the project records by fixed rules. Cite evidence as [E12] or projects as [P3]. Structure: a short executive summary, then "Projects needing attention" (for each: what is wrong, the evidence, why it matters, the recommended next action and its owner when recorded), then "Patterns across projects", then "Recommended actions for the administrator" in priority order. Label each point as Fact (stated by the evidence) or Inference (your reading). Never invent statuses, dates, decisions, completion, money or probabilities. Do not claim anything is getting better or worse unless the HISTORY section shows it. Write concise Markdown.';
+  route('POST', '/api/admin/ai/briefing', async (b) => {
+    const s = await requireAdmin('sub'); await limit('ai', s.id); const c = await command(); const pid = String(b && b.projectId || '');
+    let list = c.projects.filter(p => p.manual === 'active'); if (pid) { list = c.projects.filter(p => p.id === pid); if (!list.length) throw new HttpError(404, 'Project not found'); }
+    const rank = { blocked: 0, overdue: 1, at_risk: 2, insufficient: 3, on_track: 4 }; list = list.sort((x, y) => (rank[x.health] ?? 5) - (rank[y.health] ?? 5) || (y.counts.critical - x.counts.critical)).slice(0, pid ? 1 : 15);
+    let e = 0; const lines = [];
+    list.forEach((p, i) => { const m = p.metrics; lines.push(`[P${i + 1}] ${p.name} (${p.customer}) · health ${HEALTH_LABEL[p.health]} because: ${p.why.join('; ')} · plan step ${m.stage ? m.stage + ' of 12 ' + m.stageTitle : 'not recorded'} · next milestone ${m.nextMilestone ? m.nextMilestone.title + ' ' + m.nextMilestone.date : 'none dated'} · target ${m.target || 'none'} ${m.targetKind ? '(' + m.targetKind + ')' : ''} · open tasks ${m.openTasks}, overdue ${m.overdueTasks}, blockers ${m.blockers}, waiting on customer ${m.custWaiting} · last activity ${String(m.lastActivity).slice(0, 10)}`);
+      c.signals.filter(g => g.project === p.id).slice(0, 8).forEach(g => { e++; lines.push(`  [E${e}] ${g.kind === 'issue' ? 'Issue' : 'Risk'}, ${g.sev}: ${g.title}. Why: ${g.why} Rule action: ${g.action}${g.owner ? ' Owner: ' + g.owner + '.' : ''}${g.since ? ' Since ' + g.since + '.' : ''} Records: ${(g.ev || []).slice(0, 4).map(x => x.label).join(' | ')}`); }); });
+    const hist = c.trends.snapshots.length >= 2 ? c.trends.snapshots.slice(-8).map(x => x.day + ': ' + Object.entries(x.counts).map(([k, v]) => HEALTH_LABEL[k] + ' ' + v).join(', ')).join('\n') : 'Not available (health snapshots began ' + c.trends.firstSnapshot + ').';
+    const ask = pid ? 'Explain this project\'s health and what the administrator should do next.' : 'Write the portfolio briefing.' + (b && b.focus ? ' Focus: ' + plain(b.focus, 200) : '');
+    const user = `${ask}\n\nPORTFOLIO (${c.today}): ${c.metrics.inProgress} active projects; ${c.metrics.blocked} blocked, ${c.metrics.overdue} overdue, ${c.metrics.atRisk} at risk, ${c.metrics.onTrack} on track, ${c.metrics.insufficient} with insufficient data; ${c.metrics.onHold} on hold; ${c.metrics.completed} completed.\n\nEVIDENCE:\n${lines.join('\n') || '(no active projects)'}\n\nHISTORY:\n${hist}`;
+    const out = await aiGen({ op: 'assist', system: ADMIN_SYS, messages: [{ role: 'user', content: user.slice(0, 30000) }], maxTokens: 1800, budget: 21000 });
+    await audit('ai', s.id, 'admin-briefing', (pid || 'portfolio') + ' via ' + out.provider);
+    return ok({ text: out.text, provider: out.provider, model: out.model, notice: out.notice || '', projects: list.map((p, i) => ({ ref: 'P' + (i + 1), id: p.id, name: p.name })), evidence: e, generatedAt: now() });
+  });
+  // a team member's own work across the projects they belong to (the server decides which projects that is)
+  route('GET', '/api/my/work', async () => {
+    const s = await me(); const today = now().slice(0, 10); const mine = String(s.email || '').toLowerCase();
+    const ps = (await dbList('projects')).map(r => r.value).filter(p => p && !p.archived && (p.members || []).some(m => m.id === s.id && m.role !== 'customer'));
+    const out = []; await pmap(ps, 5, async p => { const ts = await itemsOf(p.id, 'task').catch(() => []);
+      ts.forEach(t => { const d = t.data || {}; if (['Done', 'Cancelled'].includes(d.status)) return; const owner = String(d.owner || '').toLowerCase() === mine, resp = d.question && String(d.question.respOwner || '').toLowerCase() === mine && !['Answered', 'Closed'].includes(d.question.status); if (!owner && !resp) return;
+        const due = [d.due, d.eta].filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x || '')).sort()[0] || ''; out.push({ project: p.id, projectName: p.name, id: t.id, n: d.n, title: d.title, type: d.type, status: d.status, priority: d.priority || '', due, overdue: !!(due && due < today), blocked: d.status === 'Blocked' || !!String(d.blocker || '').trim(), respond: resp }); }); });
+    out.sort((a, b) => (b.overdue - a.overdue) || (b.blocked - a.blocked) || String(a.due || '9999').localeCompare(String(b.due || '9999')));
+    const week = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+    return ok({ today, counts: { open: out.length, overdue: out.filter(x => x.overdue).length, week: out.filter(x => x.due && x.due >= today && x.due <= week).length, blocked: out.filter(x => x.blocked).length, respond: out.filter(x => x.respond).length }, items: out.slice(0, 50) });
   });
   route('GET', '/api/admin/insights', async () => {
     await requireAdmin('sub'); const A = await loadAll(); const auAll = await adminAuditAll(A);
