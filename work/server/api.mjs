@@ -86,7 +86,11 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   }
 
   // ---------- identity and roles ----------
-  let ME = null, ROLE = null;
+  let ME = null, ROLE = null, OWN = null;
+  /* Platform owner (super admin). SUPER_ADMINS is only the starting value: once ownership is handed over in Admin › Access, the owner is the
+     record cfg/owner and the previous owner has no admin access at all (the code value no longer counts). Read once per request, so a handover
+     takes effect on everyone's next request. */
+  async function owners() { if (OWN) return OWN; let r = null; try { r = await dbGet('cfg', 'owner'); } catch (e) { } OWN = r && r.value && r.value.email ? [String(r.value.email).toLowerCase()] : SUPER_ADMINS.slice(); return OWN; }
   async function me() {
     if (ME) return ME;
     const email = String((CTX.viewer && CTX.viewer.email) || '').toLowerCase(); if (!email) throw new HttpError(401, 'Sign in required');
@@ -102,7 +106,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   }
   async function adminRole(s) {
     if (ROLE && Date.now() - ROLE.at < 20000) return ROLE.role;
-    let role = null; if (SUPER_ADMINS.includes(s.email)) role = 'super';
+    let role = null; if ((await owners()).includes(s.email)) role = 'super';
     else { try { const g = await dbGet('grant', s.id); if (g && g.value) role = g.value.role === 'admin' ? 'admin' : 'sub'; } catch (e) { } }
     ROLE = { role, at: Date.now() }; return role;
   }
@@ -1296,7 +1300,7 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     const cat = {}; A.rows.forEach(r => r.files.forEach(f => { const c = cat[f.category] = cat[f.category] || { category: f.category, n: 0, bytes: 0 }; c.n++; c.bytes += f.size || 0; }));
     const health = {}; Object.keys(HEALTH_LABEL).forEach(k => { health[k] = 0; }); act.forEach(p => { health[p.health] = (health[p.health] || 0) + 1; });
     const active7 = A.users.filter(u => u.seen && Date.now() - Date.parse(u.seen) < 7 * 864e5).length;
-    return ok({ me: { role: s.adminRole, email: s.email, name: s.name }, superAdmins: SUPER_ADMINS, projects,
+    return ok({ me: { role: s.adminRole, email: s.email, name: s.name }, superAdmins: await owners(), projects,
       kpis: { active: act.length, archived: projects.length - act.length, customers: new Set(act.map(p => String(p.customer).trim().toLowerCase())).size, people: A.users.length, guests: 0, activePeople7d: active7, files: sum(p => p.files), bytes: sum(p => p.bytes), sessions: sum(p => p.sessions.total), upcoming: sum(p => p.sessions.upcoming), requirements: sum(p => p.requirements), flows: sum(p => p.flows), openActions: sum(p => p.openActions), overdue: sum(p => p.overdue), openQuestions: sum(p => p.openFeedback), raidOpen: sum(p => p.raidOpen), customerAccess: 0, brdApproved: act.filter(p => p.brdStatus === 'approved').length, live: act.filter(p => p.stage === 6).length },
       stages: [0, 1, 2, 3, 4, 5, 6].map(n => act.filter(p => p.stage === n).length), health, weekly, monthly, files: Object.values(cat).sort((a, b) => b.bytes - a.bytes),
       attention: act.filter(p => p.reasons.length).sort((a, b) => b.reasons.length - a.reasons.length || b.overdue - a.overdue).slice(0, 8).map(p => ({ id: p.id, name: p.name, customer: p.customer, reasons: p.reasons })),
@@ -1393,7 +1397,7 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
   });
   const guardUser = async (s, id) => {
     const r = await dbGet('usr', id); if (!r) throw new HttpError(404, 'User not found'); const u = r.value; const em = String(u.email).toLowerCase(); const g = await dbGet('grant', id);
-    if (id === s.id || SUPER_ADMINS.includes(em)) throw new HttpError(400, 'This account cannot be changed here'); if (g && s.adminRole !== 'super') throw new HttpError(403, 'Only the platform owner can change another admin');
+    if (id === s.id || (await owners()).includes(em)) throw new HttpError(400, 'This account cannot be changed here'); if (g && s.adminRole !== 'super') throw new HttpError(403, 'Only the platform owner can change another admin');
     return { u, em, g };
   };
   route('PATCH', '/api/admin/users/:id', async (b, P) => {
@@ -1429,18 +1433,31 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
   });
   route('GET', '/api/admin/access', async () => {
     await requireAdmin('super'); const A = await loadAll();
-    return ok({ owners: SUPER_ADMINS.map(e => { const u = A.users.find(x => String(x.email).toLowerCase() === e); return { email: e, name: u ? u.name : '', hasAccount: !!u, lastSeen: u ? u.seen : null }; }),
+    return ok({ owners: (await owners()).map(e => { const u = A.users.find(x => String(x.email).toLowerCase() === e); return { email: e, name: u ? u.name : '', hasAccount: !!u, lastSeen: u ? u.seen : null }; }),
       grants: A.grants.map(g => { const v = g.value; const u = A.users.find(x => x.id === g.key); return { email: v.email, role: v.role === 'admin' ? 'admin' : 'sub', name: u ? u.name : '', hasAccount: !!u, disabled: !!(u && u.disabled), grantedBy: v.by || '', createdAt: v.at, lastSeen: u ? u.seen : null }; }).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))) });
   });
   route('POST', '/api/admin/access', async (b) => {
     const s = await requireAdmin('super'); const email = str(b.email, 200, 'Email', true).toLowerCase(); if (!isEmail(email)) throw new HttpError(400, 'Enter a valid email address');
-    const role = b.role === 'admin' ? 'admin' : b.role === 'sub' ? 'sub' : null; if (!role) throw new HttpError(400, 'Choose Admin or Sub admin'); if (SUPER_ADMINS.includes(email)) throw new HttpError(400, 'That email is already a platform owner');
+    const role = b.role === 'admin' ? 'admin' : b.role === 'sub' ? 'sub' : null; if (!role) throw new HttpError(400, 'Choose Admin or Sub admin'); if ((await owners()).includes(email)) throw new HttpError(400, 'That email is already the platform owner');
     if (!email.endsWith('@' + ALLOWED_DOMAIN)) throw new HttpError(403, 'Use a Facilio office email (name@' + ALLOWED_DOMAIN + ')');
     const id = ekey(email); const old = await dbGet('grant', id); const u = await dbGet('usr', id); if (!u) await dbPut('usr', id, { email, name: str(b.name, 120, 'Name') || nameFromEmail(email), seen: null, created: now() });
     await dbPut('grant', id, { email, role, by: s.email, at: (old && old.value.at) || now() }); ADM = null; ROLE = null; await audit('sys', s.id, 'admin_grant_' + role, email);
     return ok({ ok: true, created: false, tempPassword: null });
   });
   route('POST', '/api/admin/access/reset', async () => { throw new HttpError(400, 'Nobody has a separate password here. Everyone signs in with their Facilio Microsoft account.'); });
+  // hand the platform owner role to another Facilio email: the new owner gets everything, the current owner loses all admin access
+  route('POST', '/api/admin/owner/transfer', async (b) => {
+    const s = await requireAdmin('super'); b = b || {}; const email = str(b.email, 200, 'Email', true).toLowerCase();
+    if (!isEmail(email)) throw new HttpError(400, 'Enter a valid email address'); if (!email.endsWith('@' + ALLOWED_DOMAIN)) throw new HttpError(403, 'Use a Facilio office email (name@' + ALLOWED_DOMAIN + ')');
+    if (String(b.confirm || '').trim().toLowerCase() !== email) throw new HttpError(400, 'Type the new owner\'s email again to confirm');
+    const cur = await owners(); if (cur.includes(email)) throw new HttpError(400, 'That email is already the platform owner');
+    const id = ekey(email); if (!(await dbGet('usr', id))) await dbPut('usr', id, { email, name: nameFromEmail(email), seen: null, created: now() });
+    await dbDel('grant', id).catch(() => { });                                    // the owner role replaces any Admin / Sub admin grant
+    for (const old of cur) await dbDel('grant', ekey(old)).catch(() => { });     // and the previous owner keeps no admin access
+    await dbPut('cfg', 'owner', { email, by: s.email, at: now(), previous: cur });
+    OWN = null; ROLE = null; ADM = null; await audit('sys', s.id, 'owner_transfer', cur.join(', ') + ' → ' + email);
+    return ok({ ok: true, owner: email });
+  });
   route('POST', '/api/admin/access/revoke', async (b) => {
     const s = await requireAdmin('super'); const email = str(b.email, 200, 'Email', true).toLowerCase(); await dbDel('grant', ekey(email)); ADM = null; ROLE = null; await audit('sys', s.id, 'admin_revoke', email); return ok({ ok: true });
   });
@@ -1458,7 +1475,7 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     }
     return { status: 404, data: { error: 'Not found' } };
   }
-  globalThis.__fwb = { dispatch, reset() { ME = null; ROLE = null; }, ekey, nameFromEmail };
+  globalThis.__fwb = { dispatch, reset() { ME = null; ROLE = null; OWN = null; } /* OWN too: a warm server must not keep a previous owner after a handover */, ekey, nameFromEmail };
 }
 
 export default async function handler(req, ctx) {

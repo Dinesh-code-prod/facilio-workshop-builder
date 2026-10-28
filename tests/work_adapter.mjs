@@ -659,4 +659,27 @@ await t('Admin Command Center: admins only, consistent metrics, manual status by
   r = await call(dinesh, 'POST', '/api/admin/ai/briefing', { projectId: PB }); assert.equal(r.data.projects.length, 1); assert.equal(r.data.projects[0].id, PB);
   r = await call(dinesh, 'POST', '/api/admin/ai/briefing', { projectId: 'p_nope' }); assert.equal(r.status, 404); globalThis.__LLMTEXT = '';
 });
+await t('ownership handover: the new owner gets everything, the previous owner loses all admin access at once (same warm server)', async () => {
+  const next = 'new.owner@facilio.com', adminX = 'admin.x@facilio.com';
+  let r = await call(dinesh, 'GET', '/api/admin/access'); assert.equal(r.status, 200); assert.deepEqual(r.data.owners.map(o => o.email), [dinesh]);
+  r = await call(dinesh, 'POST', '/api/admin/access', { email: adminX, role: 'admin' }); assert.equal(r.status, 200);
+  r = await call(dinesh, 'POST', '/api/admin/owner/transfer', { email: next, confirm: 'someone.else@facilio.com' }); assert.equal(r.status, 400, 'the email must be typed twice');
+  r = await call(adminX, 'POST', '/api/admin/owner/transfer', { email: adminX, confirm: adminX }); assert.equal(r.status, 403, 'only the owner can hand over');
+  r = await call(dinesh, 'POST', '/api/admin/owner/transfer', { email: 'x@gmail.com', confirm: 'x@gmail.com' }); assert.equal(r.status, 403, 'Facilio emails only');
+  r = await call(dinesh, 'POST', '/api/admin/owner/transfer', { email: next, confirm: next }); assert.equal(r.status, 200, JSON.stringify(r.data));
+  // the very next requests, on the same server instance that served the old owner a moment ago
+  r = await call(dinesh, 'GET', '/api/auth/me'); assert.equal(r.data.user.adminRole, null, 'previous owner has no admin role'); assert.equal(r.data.user.superAdmin, false);
+  for (const [m, path] of [['GET', '/api/admin/overview'], ['GET', '/api/admin/access'], ['GET', '/api/admin/users']]) { r = await call(dinesh, m, path); assert.equal(r.status, 403, 'previous owner: ' + path); }
+  r = await call(dinesh, 'POST', '/api/admin/access', { email: dinesh, role: 'admin' }); assert.equal(r.status, 403, 'previous owner cannot give himself access back');
+  r = await call(next, 'GET', '/api/auth/me'); assert.equal(r.data.user.adminRole, 'super'); r = await call(next, 'GET', '/api/admin/access'); assert.equal(r.status, 200); assert.deepEqual(r.data.owners.map(o => o.email), [next]);
+  assert.ok(!r.data.grants.some(g => g.email === dinesh), 'previous owner is not listed with admin access');
+  r = await call(adminX, 'GET', '/api/admin/overview'); assert.equal(r.status, 200, 'other admins keep their access');
+  r = await call(next, 'POST', '/api/admin/owner/transfer', { email: dinesh, confirm: dinesh }); assert.equal(r.status, 200, 'the new owner can hand it back');
+  // another server instance makes the handover: this instance has the current owner cached and must not keep honouring it
+  r = await call(dinesh, 'GET', '/api/admin/overview'); assert.equal(r.status, 200);
+  store.get('cfg').set('owner', JSON.stringify({ email: next, by: dinesh, at: new Date().toISOString(), previous: [dinesh] }));
+  r = await call(dinesh, 'GET', '/api/admin/overview'); assert.equal(r.status, 403, 'a handover made by another (warm) instance takes effect here on the next request');
+  store.get('cfg').set('owner', JSON.stringify({ email: dinesh, by: next, at: new Date().toISOString(), previous: [next] })); r = await call(next, 'GET', '/api/admin/access'); assert.equal(r.status, 403);
+  r = await call(dinesh, 'POST', '/api/admin/access/revoke', { email: adminX }); assert.equal(r.status, 200);
+});
 console.log(`\n${n} checks passed, ${calls} storage calls, largest record ${(maxVal / 1024).toFixed(1)} KB`);
