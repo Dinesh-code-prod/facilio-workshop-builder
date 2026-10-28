@@ -1,0 +1,92 @@
+<Components>
+   <MODULE Created_Version="1.0" Modified_Version="1.0" Status="ADDED" Type="1" Unique_Identifier="229762">
+      <name>custom_nonconformityreport</name>
+      <Description>Non-Conformity Report</Description>
+      <displayName>Non-Conformity Report</displayName>
+      <Module_Type>1</Module_Type>
+      <IsCustom>true</IsCustom>
+      <Is_StateFlow_Enabled>true</Is_StateFlow_Enabled>
+      <isHiddenModule>false</isHiddenModule>
+   </MODULE>
+   <MODULE Created_Version="1.0" Modified_Version="1.0" Status="ADDED" Type="1" Unique_Identifier="109409">
+      <name>people</name>
+      <Description/>
+      <displayName>People</displayName>
+      <Module_Type>1</Module_Type>
+      <IsCustom>false</IsCustom>
+      <Is_StateFlow_Enabled>false</Is_StateFlow_Enabled>
+      <isHiddenModule>false</isHiddenModule>
+   </MODULE>
+   <MODULE Created_Version="1.0" Modified_Version="1.0" Status="ADDED" Type="1" Unique_Identifier="109419">
+      <name>workorder</name>
+      <Description>Manage and track maintenance tasks and repairs across facilities</Description>
+      <displayName>Work Order</displayName>
+      <Module_Type>1</Module_Type>
+      <IsCustom>false</IsCustom>
+      <Is_StateFlow_Enabled>true</Is_StateFlow_Enabled>
+      <isHiddenModule>false</isHiddenModule>
+      <ModuleSettings>
+         <ModuleSetting>
+            <ConfigurationName>glimpse</ConfigurationName>
+            <Status>true</Status>
+         </ModuleSetting>
+      </ModuleSettings>
+      <Glimpse>
+         <IsActive>true</IsActive>
+         <GlimpseFields>
+            <GlimpseField>
+               <FieldName>siteId</FieldName>
+               <SequenceNumber>1</SequenceNumber>
+            </GlimpseField>
+            <GlimpseField>
+               <FieldName>resource</FieldName>
+               <SequenceNumber>2</SequenceNumber>
+            </GlimpseField>
+            <GlimpseField>
+               <FieldName>dueDate</FieldName>
+               <SequenceNumber>3</SequenceNumber>
+            </GlimpseField>
+            <GlimpseField>
+               <FieldName>assignedTo</FieldName>
+               <SequenceNumber>4</SequenceNumber>
+            </GlimpseField>
+         </GlimpseFields>
+      </Glimpse>
+   </MODULE>
+   <MODULE Created_Version="1.0" Modified_Version="1.0" Status="ADDED" Type="1" Unique_Identifier="109302">
+      <name>site</name>
+      <Description>Administer operations and information across your portfolio of sites</Description>
+      <displayName>Site</displayName>
+      <Module_Type>1</Module_Type>
+      <IsCustom>false</IsCustom>
+      <Is_StateFlow_Enabled>true</Is_StateFlow_Enabled>
+      <isHiddenModule>false</isHiddenModule>
+      <ModuleSettings>
+         <ModuleSetting>
+            <ConfigurationName>siteMapView</ConfigurationName>
+            <Status>true</Status>
+         </ModuleSetting>
+         <ModuleSetting>
+            <ConfigurationName>glimpse</ConfigurationName>
+            <Status>true</Status>
+         </ModuleSetting>
+      </ModuleSettings>
+      <Glimpse>
+         <IsActive>true</IsActive>
+         <GlimpseFields>
+            <GlimpseField>
+               <FieldName>noOfBuildings</FieldName>
+               <SequenceNumber>1</SequenceNumber>
+            </GlimpseField>
+            <GlimpseField>
+               <FieldName>sysCreatedBy</FieldName>
+               <SequenceNumber>2</SequenceNumber>
+            </GlimpseField>
+            <GlimpseField>
+               <FieldName>sysCreatedTime</FieldName>
+               <SequenceNumber>3</SequenceNumber>
+            </GlimpseField>
+         </GlimpseFields>
+      </Glimpse>
+   </MODULE>
+</Components>

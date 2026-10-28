@@ -1,0 +1,20 @@
+<Components>
+   <TICKET_STATUS Created_Version="1.0" Modified_Version="1.0" Parent_Id="109302" Status="ADDED" Type="24" Unique_Identifier="141104">
+      <parentModuleName>site</parentModuleName>
+      <displayName>Active</displayName>
+      <recordLocked>false</recordLocked>
+      <requestedState>false</requestedState>
+      <status>active</status>
+      <timerEnabled>false</timerEnabled>
+      <typeCode>1</typeCode>
+   </TICKET_STATUS>
+   <TICKET_STATUS Created_Version="1.0" Modified_Version="1.0" Parent_Id="109302" Status="ADDED" Type="24" Unique_Identifier="141105">
+      <parentModuleName>site</parentModuleName>
+      <displayName>In Active</displayName>
+      <recordLocked>false</recordLocked>
+      <requestedState>false</requestedState>
+      <status>inactive</status>
+      <timerEnabled>false</timerEnabled>
+      <typeCode>2</typeCode>
+   </TICKET_STATUS>
+</Components>

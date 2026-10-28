@@ -1,0 +1,13 @@
+<Package>
+   <name>standalone_package_400000077_1792134301142</name>
+   <displayName>standalone_package_400000077_1792134301142</displayName>
+   <version>1.0</version>
+   <type>1</type>
+   <Components>
+      <Component Type="MODULE">MODULE.xml</Component>
+      <Component Type="TICKET_STATUS">TICKET_STATUS.xml</Component>
+      <Component Type="FIELD">FIELD.xml</Component>
+      <Component Type="STATE_FLOW">STATE_FLOW.xml</Component>
+      <Component Type="STATE_TRANSITION">STATE_TRANSITION.xml</Component>
+   </Components>
+</Package>
