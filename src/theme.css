@@ -751,3 +751,15 @@ body .hm-mw-l { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px
 body .hm-mw-t { display: flex; flex-direction: column; min-width: 0; } body .hm-mw-t b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } body .hm-mw-t small { color: var(--th-muted); font-size: 12px; }
 
 body .hm-port-top .cmd-ev { justify-content: space-between; border-radius: var(--th-r-md); } body .hm-port-top .cmd-ev > span { min-width: 0; }
+
+/* ---------- sub-headings inside a menu group (e.g. 3. Solution Design & Configuration) ---------- */
+body .sidebar .sb-sub { margin: 10px 0 2px; padding: 0 10px 0 28px; font-family: var(--th-mono); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .6px; color: var(--th-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body .sidebar .sb-group > .sb-title + .sb-sub { margin-top: 4px; }
+body .tl-rows .tl-sub { list-style: none; margin: 8px 0 -2px; padding: 0 4px; font-family: var(--th-mono); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .6px; color: var(--th-muted); }
+body .tl-rows .tl-sub:first-child { margin-top: 0; }
+/* tab cards: actions appear on hover or keyboard focus, as in Facilio (edit, remove from the menu) */
+body .tl-row .tl-rt { opacity: 0; transition: opacity .12s; }
+body .tl-row:hover .tl-rt, body .tl-row:focus-within .tl-rt, body .tl-row.off .tl-rt { opacity: 1; }
+@media (hover: none) { body .tl-row .tl-rt { opacity: 1; } }
+body .tl-rt .tl-rm:not(#_):hover { color: var(--th-red) !important; background: var(--th-red-soft) !important; }
+body .tl-rt .tl-show:not(#_) { color: var(--th-violet) !important; }
