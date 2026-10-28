@@ -40,6 +40,11 @@ await t('brd: an approved change request (CR Converted) is given to the BRD draf
 await t('uat: an approved change request is given to the UAT draft', async () => { const { prompt } = await draft('uat'); assert.ok(prompt.includes('Add escalation after 4 hours'), 'approved CR is not a UAT source'); });
 await t('every AI draft is saved as an unapproved draft', async () => { const { item } = await draft('brd'); assert.equal(item.data.status, 'draft'); });
 await t('the gaps check still sees draft requirements and the open question (it exists to find them)', async () => { const { prompt } = await draft('gaps'); assert.ok(prompt.includes('Auto-close permits after 30 days') && prompt.includes('supervisor sign-off replace')); });
+await t('UAT guide section: confirmed requirements and approved changes only; drafts labelled; rejected and unapproved changes left out', async () => {
+  prompts = []; const r = await call(sam, 'POST', `/api/projects/${pid}/ai/guide-section`, { kind: 'uat', title: 'Test scenarios', sources: { reqs: true, crs: true, usecases: true } }); assert.equal(r.status, 200, JSON.stringify(r.data)); const pr = prompts.join('\n');
+  assert.match(pr, /ONE SECTION of a UAT guide/); assert.match(around(pr, 'Permits need two approval levels'), /CONFIRMED REQUIREMENTS/);
+  const a = around(pr, 'Auto-close permits after 30 days'); assert.ok(!a || /NOT YET CONFIRMED/.test(a)); assert.ok(!pr.includes('Send SMS alerts to contractors'), 'rejected requirement');
+  assert.ok(pr.includes('Add escalation after 4 hours'), 'approved CR is a source'); assert.ok(!pr.includes('Remove the asset module') && !pr.includes('Add a visitor module'), 'rejected or unapproved CR was sent'); });
 // change request decisions: who may record them (the statuses the page really writes)
 const ed = 'ed.one@facilio.com'; await call(sam, 'POST', `/api/projects/${pid}/members`, { email: ed, role: 'editor' });
 await t('an editor cannot approve a change request (CR Converted is a decision)', async () => { const r = await call(ed, 'PUT', `/api/projects/${pid}/items/cr/cr1`, { data: { n: 1, title: 'Add a visitor module', status: 'CR Converted', mod: 'visitor' } }); assert.equal(r.status, 403, String(r.status)); });

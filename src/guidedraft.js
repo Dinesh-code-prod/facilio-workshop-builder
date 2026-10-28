@@ -28,10 +28,23 @@
     ['faq', 'Troubleshooting and FAQ', 'Common problems and their answers', true],
     ['related', 'Related procedures', 'Other procedures and dependencies the reader may need', false]
   ];
-  const SRC = [['cfg', 'Configuration Inputs', 'custom modules, relationships and apps, and the configuration digest', ['cmodx', 'cfgrel', 'capp']], ['decisions', 'Confirmed decisions', 'decisions recorded in workshops', ['decision']], ['usecases', 'Use cases', 'use cases and their steps', ['usecase']], ['brd', 'BRD', 'the BRD document', []], ['build', 'Build items', 'what has been built and verified', ['build']], ['published', 'Customer User Guide (published)', 'the module workbook shared with the customer', []]];
+  // a UAT guide: what customer testers follow during user acceptance testing (same drafting workflow, UAT-shaped sections and sources)
+  const STRUCT_UAT = [
+    ['u_purpose', 'Purpose and scope of UAT', 'What this UAT covers (modules, processes) and what is out of scope', true],
+    ['u_roles', 'Roles and responsibilities', 'Who tests, who fixes, who signs off', true],
+    ['u_env', 'Test environment and access', 'Where to test, test users and logins, test data to use', true],
+    ['u_how', 'How to test', 'The approach, entry and exit criteria, and how long testing runs', true],
+    ['u_scen', 'Test scenarios', 'Scenarios per module: requirement, preconditions, steps, expected result; actual result and pass/fail left for the tester', true],
+    ['u_defects', 'Recording results and defects', 'How to record results, raise a defect and its severity, and what happens next', true],
+    ['u_out', 'Not in this UAT', 'Unconfirmed requirements and changes that are not approved, so testers know what not to test', true],
+    ['u_signoff', 'Sign-off', 'How UAT is signed off and by whom', true],
+    ['u_sched', 'Schedule and contacts', 'UAT sessions, dates and who to contact', false]
+  ];
+  const SRC = [['cfg', 'Configuration Inputs', 'custom modules, relationships and apps, and the configuration digest', ['cmodx', 'cfgrel', 'capp']], ['decisions', 'Confirmed decisions', 'decisions recorded in workshops', ['decision']], ['usecases', 'Use cases', 'use cases and their steps', ['usecase']], ['brd', 'BRD', 'the BRD document', []], ['build', 'Build items', 'what has been built and verified', ['build']], ['published', 'Customer User Guide (published)', 'the module workbook shared with the customer', []], ['reqs', 'Confirmed requirements', 'requirements agreed in the workshops (drafts are given as not agreed)', []], ['uat', 'UAT sessions and readiness', 'UAT demos, training and the readiness checklist', ['uat', 'checklist']], ['crs', 'Approved change requests', 'agreed changes to scope', ['cr']]];
+  const SRC_ON = { user: ['cfg', 'decisions', 'usecases', 'brd', 'build', 'reqs'], uat: ['reqs', 'usecases', 'crs', 'uat', 'cfg', 'decisions'] };
   const LEVELS = [['overview', 'Overview'], ['steps', 'Step-by-step'], ['detailed', 'Detailed (fields, statuses, buttons)']];
   const KINDS = [...new Set(SRC.flatMap(x => x[3]))].concat(['vid']);
-  const DOCS = { cfg: ['config_digest', 'config'], brd: ['brddoc'], published: ['guide_published'] };
+  const DOCS = { cfg: ['config_digest', 'config'], brd: ['brddoc'], published: ['guide_published'], reqs: ['workshop'] };
 
   const modOptions = () => { const set = new Map(); try { (F.allModules ? F.allModules() : []).filter(m => m.inScope).forEach(m => set.set(m.label, 1)); } catch (e) { } I().list('cmodx').forEach(m => set.set(m.label || m.name, 1)); return [...set.keys()].filter(Boolean).sort(); };
   const roleOptions = () => { try { return [...new Set((F.allActors ? F.allActors() : []).map(a => a.roleName).filter(Boolean))].sort(); } catch (e) { return []; } };
@@ -47,17 +60,18 @@
   const stale = (g, s) => !!(s.ai && s.ai.sig && g.plan && s.ai.sig !== sig(g.plan));
 
   // ---------- new guide: a short guided set-up (like starting a BRD draft) ----------
-  ACT.ugNew = () => {
-    I().load(KINDS); const mods = modOptions(), roles = roleOptions(); const vids = I().list('vid'); const ai = I().list('ai').filter(x => x.task === 'guide'); const cfg = I().list('cmodx').length + I().list('capp').length;
+  ACT.ugNewUat = () => ACT.ugNew({ getAttribute: () => 'uat' });
+  ACT.ugNew = a => {
+    const kind = a && a.getAttribute && a.getAttribute('data-k') === 'uat' ? 'uat' : 'user'; const ST = kind === 'uat' ? STRUCT_UAT : STRUCT; I().load(KINDS); const mods = modOptions(), roles = roleOptions(); const vids = I().list('vid'); const ai = I().list('ai').filter(x => x.task === 'guide'); const cfg = I().list('cmodx').length + I().list('capp').length;
     const chk = (name, v, l, on, sub) => `<label class="ug-opt"><input type="checkbox" name="${name}" value="${esc(v)}"${on ? ' checked' : ''}><span><b>${esc(l)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span></label>`;
-    drawer('New user guide', `<ol class="ug-steps" aria-label="Steps"><li class="on">Set up</li><li>Draft sections</li><li>Review and edit</li><li>Check</li><li>Approve and export</li></ol>
-      <label class="f" for="ug_t">Guide title</label><input type="text" id="ug_t" maxlength="120" value="User guide">
+    drawer(kind === 'uat' ? 'New UAT guide' : 'New user guide', `<input type="hidden" id="ug_kind" value="${kind}">${kind === 'uat' ? '<p class="small" style="margin-top:0">A guide for the customer\'s testers: what to test, how, the scenarios with expected results, how to record defects and sign off. Scenarios come only from confirmed requirements, approved changes and use cases.</p>' : ''}<ol class="ug-steps" aria-label="Steps"><li class="on">Set up</li><li>Draft sections</li><li>Review and edit</li><li>Check</li><li>Approve and export</li></ol>
+      <label class="f" for="ug_t">Guide title</label><input type="text" id="ug_t" maxlength="120" value="${kind === 'uat' ? 'UAT guide' : 'User guide'}">
       <div class="fgrid"><div><label class="f" for="ug_c">Customer</label><input type="text" id="ug_c" maxlength="80" value="${esc((S.project && S.project.customer) || '')}"></div><div><label class="f" for="ug_lv">Level of detail</label><select id="ug_lv">${LEVELS.map(([k, l]) => `<option value="${k}"${k === 'steps' ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></div></div>
       <fieldset class="ug-fs"><legend class="f">1. Modules or workflows this guide covers</legend>${mods.length ? `<div class="ug-opts">${mods.map(m => chk('ug_m', m, m, false)).join('')}</div>` : '<p class="small muted">No module is marked in scope yet (System Modules) and no custom module is described (Configuration Inputs). You can still write the guide; the AI then uses all project records.</p>'}<input type="text" id="ug_mx" maxlength="200" placeholder="Other modules, separated by commas" style="margin-top:6px"></fieldset>
       <fieldset class="ug-fs"><legend class="f">2. Readers (roles)</legend>${roles.length ? `<div class="ug-opts">${roles.map(r => chk('ug_r', r, r, false)).join('')}</div>` : ''}<input type="text" id="ug_rx" maxlength="200" placeholder="${roles.length ? 'Other roles, separated by commas' : 'e.g. Technician, Helpdesk agent'}" style="margin-top:6px"></fieldset>
-      <fieldset class="ug-fs"><legend class="f">3. Sources the AI may use</legend><div class="ug-opts">${SRC.map(([k, l, sub]) => chk('ug_s', k, l, k !== 'published', sub)).join('')}</div>
+      <fieldset class="ug-fs"><legend class="f">3. Sources the AI may use</legend><div class="ug-opts">${SRC.map(([k, l, sub]) => chk('ug_s', k, l, SRC_ON[kind].includes(k), sub)).join('')}</div>
         ${vids.length ? `<label class="f" for="ug_v">Recorded walkthrough (optional)</label><select id="ug_v"><option value="">None</option>${vids.map(v => `<option value="${esc(v.id)}">${esc(v.title || 'Walkthrough')}</option>`).join('')}</select>` : '<p class="xs muted">A recorded walkthrough can be added from Video to Guide.</p>'}</fieldset>
-      <fieldset class="ug-fs"><legend class="f">4. Sections</legend><div class="ug-opts">${STRUCT.map(([k, l, sub, on]) => chk('ug_x', k, l, on, sub)).join('')}</div></fieldset>
+      <fieldset class="ug-fs"><legend class="f">4. Sections</legend><div class="ug-opts">${ST.map(([k, l, sub, on]) => chk('ug_x', k, l, on, sub)).join('')}</div></fieldset>
       <label class="f" for="ug_start">Then</label><select id="ug_start"><option value="gen">Write every section now with AI (one at a time, about 10–20 s each)</option><option value="empty">Create the sections empty; I will write or generate them one by one</option>${cfg ? `<option value="cfg">Start from Configuration Inputs (no AI)</option>` : ''}${ai.length ? `<option value="ai">Start from an existing AI guide draft (${ai.length})</option>` : ''}</select>
       <p class="xs muted" style="margin-top:8px">The AI writes only from the chosen sources and marks what it cannot find as <b>[Missing: …]</b>. Everything stays a draft until a project owner approves it.</p>`,
       `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="ugWizGo">${ico('plus')}Create guide</button>`, { wide: true });
@@ -66,10 +80,10 @@
   const extra = id => ((document.getElementById(id) || {}).value || '').split(',').map(x => x.trim()).filter(Boolean);
   ACT.ugWizGo = a => V.busy(a, async () => {
     const val = i => ((document.getElementById(i) || {}).value || '').trim(); const title = val('ug_t'); if (!title) { toast('Enter a title'); return; }
-    const plan = { modules: [...new Set(picked('ug_m').concat(extra('ug_mx')))].slice(0, 20), roles: [...new Set(picked('ug_r').concat(extra('ug_rx')))].slice(0, 12), level: val('ug_lv') || 'steps', sources: {}, vid: val('ug_v') || '' };
+    const kind = val('ug_kind') === 'uat' ? 'uat' : 'user'; const plan = { kind, modules: [...new Set(picked('ug_m').concat(extra('ug_mx')))].slice(0, 20), roles: [...new Set(picked('ug_r').concat(extra('ug_rx')))].slice(0, 12), level: val('ug_lv') || 'steps', sources: {}, vid: val('ug_v') || '' };
     picked('ug_s').forEach(k => { plan.sources[k] = true; }); const start = val('ug_start');
     if (!Object.keys(plan.sources).length && !plan.vid && start === 'gen') { toast('Choose at least one source, or create the sections empty'); return; }
-    let sections = picked('ug_x').map(k => { const d = STRUCT.find(x => x[0] === k); return { id: uid('s'), title: d[1], brief: d[2], blocks: [], gen: start === 'gen' ? 'pending' : undefined }; });
+    let sections = picked('ug_x').map(k => { const d = STRUCT.concat(STRUCT_UAT).find(x => x[0] === k); return { id: uid('s'), title: d[1], brief: d[2], blocks: [], gen: start === 'gen' ? 'pending' : undefined }; });
     if (start === 'cfg' && V.ugCfgSections) sections = V.ugCfgSections();
     if (start === 'ai') { const d = I().list('ai').filter(x => x.task === 'guide').sort((p, q) => String(q._created || '').localeCompare(String(p._created || '')))[0]; if (d && V.ugSectionsFromMd) sections = V.ugSectionsFromMd(d.content); }
     const id = I().uid('ug');
@@ -82,7 +96,7 @@
   const busy = new Set(); let runAll = false;
   async function writeSection(sec, g) {
     const others = (g.sections || []).filter(x => x !== sec).map(x => x.title);
-    return API.post(`/api/projects/${S.project.id}/ai/guide-section`, { title: sec.title, brief: sec.brief || '', guideTitle: g.title, modules: g.plan.modules, roles: g.plan.roles, level: g.plan.level, sources: g.plan.sources, vid: g.plan.vid || undefined, others });
+    return API.post(`/api/projects/${S.project.id}/ai/guide-section`, { title: sec.title, brief: sec.brief || '', guideTitle: g.title, modules: g.plan.modules, roles: g.plan.roles, level: g.plan.level, sources: g.plan.sources, vid: g.plan.vid || undefined, others, kind: g.plan.kind === 'uat' ? 'uat' : undefined });
   }
   const meta = r => ({ at: new Date().toISOString(), provider: r.provider, model: r.model, notice: r.notice || '', srcs: (r.sources || []).map(s => s.ref + ' ' + s.label), sig: sig(W().plan) });
   const hasText = sec => (sec.blocks || []).some(b => (b.t === 'md' && String(b.text || '').trim()) || b.t === 'img');
@@ -133,7 +147,7 @@
       <fieldset class="ug-fs"><legend class="f">Sources</legend><div class="ug-opts">${SRC.map(([k, l]) => chk('ug_s', k, l, !!plan.sources[k])).join('')}</div>${vids.length ? `<label class="f" for="ug_v">Walkthrough</label><select id="ug_v"><option value="">None</option>${vids.map(v => `<option value="${esc(v.id)}"${v.id === plan.vid ? ' selected' : ''}>${esc(v.title || 'Walkthrough')}</option>`).join('')}</select>` : ''}</fieldset>`,
       `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="ugPlanGo">Save set-up</button>`, { wide: true });
   };
-  ACT.ugPlanGo = () => { const val = i => ((document.getElementById(i) || {}).value || '').trim(); const plan = { modules: [...new Set(picked('ug_m').concat(extra('ug_mx')))].slice(0, 20), roles: [...new Set(picked('ug_r').concat(extra('ug_rx')))].slice(0, 12), level: val('ug_lv') || 'steps', sources: {}, vid: val('ug_v') };
+  ACT.ugPlanGo = () => { const val = i => ((document.getElementById(i) || {}).value || '').trim(); const plan = { kind: (W().plan || {}).kind || 'user', modules: [...new Set(picked('ug_m').concat(extra('ug_mx')))].slice(0, 20), roles: [...new Set(picked('ug_r').concat(extra('ug_rx')))].slice(0, 12), level: val('ug_lv') || 'steps', sources: {}, vid: val('ug_v') };
     picked('ug_s').forEach(k => { plan.sources[k] = true; }); C().edit(() => { W().plan = plan; if (!W().audience && plan.roles.length) W().audience = plan.roles.join(', '); }); closeDrawer(); V.render(); toast('Set-up saved'); };
 
   // ---------- what the builder shows ----------
@@ -141,7 +155,7 @@
     const g = W(); if (!g) return ''; const secs = g.sections || []; const written = secs.filter(hasText).length, aiN = secs.filter(s => s.ai).length, st = secs.filter(s => stale(g, s)).length, props = secs.filter(s => s.proposal).length, miss = secs.filter(s => /\[Missing[:\]]/i.test((s.blocks || []).map(b => b.text || '').join(' '))).length;
     const step = !g.plan ? 0 : written < secs.length || !secs.length ? 1 : props || st || miss ? 2 : g.status === 'approved' ? 4 : 3;
     const steps = ['Set up', 'Draft sections', 'Review and edit', 'Check', 'Approve and export'];
-    const p = g.plan; const planLine = p ? `${esc((p.modules || []).join(', ') || 'All modules')} · ${esc((p.roles || []).join(', ') || 'readers not set')} · ${esc((LEVELS.find(x => x[0] === p.level) || ['', ''])[1])} · sources: ${esc(SRC.filter(x => p.sources[x[0]]).map(x => x[1]).join(', ') || 'none')}${p.vid ? ' + walkthrough' : ''}` : 'Not set up yet: choose modules, readers and sources so sections can be generated.';
+    const p = g.plan; const planLine = p ? `${p.kind === 'uat' ? '<b>UAT guide</b> · ' : ''}${esc((p.modules || []).join(', ') || 'All modules')} · ${esc((p.roles || []).join(', ') || 'readers not set')} · ${esc((LEVELS.find(x => x[0] === p.level) || ['', ''])[1])} · sources: ${esc(SRC.filter(x => p.sources[x[0]]).map(x => x[1]).join(', ') || 'none')}${p.vid ? ' + walkthrough' : ''}` : 'Not set up yet: choose modules, readers and sources so sections can be generated.';
     return `<div class="card ug-top"><ol class="ug-steps" aria-label="Progress">${steps.map((t, i) => `<li class="${i < step ? 'done' : i === step ? 'on' : ''}"${i === step ? ' aria-current="step"' : ''}>${esc(t)}</li>`).join('')}</ol>
       <div class="ug-plan"><span class="small"><b>Set-up:</b> ${planLine}</span>${can ? `<span class="row" style="gap:6px"><button class="btn sm" data-act="ugPlan">${ico('edit')}Set-up</button>${p ? `<button class="btn sm primary" data-act="ugGenAll"${runAll ? ' disabled' : ''}>${ico('spark')}${runAll ? 'Writing…' : 'Write empty sections'}</button>` : ''}</span>` : ''}</div>
       <div class="ug-stat small muted">${written}/${secs.length} sections have text · ${aiN} written with AI${st ? ` · <b class="ug-warn">${st} with changed sources</b>` : ''}${props ? ` · <b class="ug-warn">${props} proposal(s) to review</b>` : ''}${miss ? ` · <b class="ug-warn">${miss} with [Missing] markers</b>` : ''}</div></div>`;
