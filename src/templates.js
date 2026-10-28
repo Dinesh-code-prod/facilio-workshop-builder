@@ -121,27 +121,47 @@
   });
 
   // ---------- workspace: Tabs & Layouts ----------
-  // One layout document per project (section "workspace"): labels, hidden tabs, moves between groups, order, extra groups, custom pages,
-  // phone visibility and who may see a tab. It only arranges the menu: every page still checks access on the server.
+  // One layout document per project (section "workspace"), modelled on Facilio's Setup > Tabs and Layout:
+  //   groups   – extra groups added in this project (their keys); gl / gi – a label and an icon for any group, standard or added;
+  //   gdel     – standard groups deleted here, each with the group its tabs went to;
+  //   labels, hidden, roles – per tab: menu label, left out of the menu, who sees it; move / order / groupOrder – where tabs and groups sit;
+  //   custom   – pages written in the workspace itself; mobile – kept from the earlier phone layout.
+  // It only arranges the menu: every page still checks access on the server.
   const wsNorm = w => ({ hidden: (w && w.hidden) || [], labels: (w && w.labels) || {}, move: (w && w.move) || {}, order: (w && w.order) || {}, groupOrder: (w && w.groupOrder) || [], custom: (w && w.custom) || [],
-    groups: (w && Array.isArray(w.groups) && w.groups) || [], mobile: Object.assign({ hidden: [], groupOrder: [] }, (w && w.mobile) || {}), roles: (w && w.roles) || {} });
-  const ws = () => { const d = F.doc('workspace') || {}; const n = wsNorm(d); Object.keys(n).forEach(k => { if (d[k] === undefined) d[k] = n[k]; }); if (!d.mobile.hidden) d.mobile.hidden = []; if (!d.mobile.groupOrder) d.mobile.groupOrder = []; return d; };
+    groups: (w && Array.isArray(w.groups) && w.groups) || [], mobile: Object.assign({ hidden: [], groupOrder: [] }, (w && w.mobile) || {}), roles: (w && w.roles) || {},
+    gl: (w && w.gl) || {}, gi: (w && w.gi) || {}, gdel: (w && w.gdel) || {}, v: (w && w.v) || 0 });
+  // layouts saved before the menu was regrouped (28 Oct 2026) name the old groups; point them at the new ones once
+  function migrate(d) {
+    if (d.v >= 2) return; const A = V.NAV_ALIAS || {}; const m = n => A[n] || n; const uniq = a => a.filter((x, i) => a.indexOf(x) === i);
+    Object.keys(d.move).forEach(k => { d.move[k] = m(d.move[k]); });
+    const ord = {}; Object.keys(d.order).forEach(k => { const nk = m(k); ord[nk] = uniq((ord[nk] || []).concat(d.order[k] || [])); }); d.order = ord;
+    d.groupOrder = uniq(d.groupOrder.map(m)); d.mobile.groupOrder = uniq((d.mobile.groupOrder || []).map(m));
+    const base = (V.navBase ? V.navBase() : []).map(g => g.g); d.groups = uniq(d.groups.map(m)).filter(n => !base.includes(n));
+    d.custom.forEach(c => { if (c.group) c.group = m(c.group); }); d.v = 2;
+  }
+  const ws = () => { const d = F.doc('workspace') || {}; const n = wsNorm(d); Object.keys(n).forEach(k => { if (d[k] === undefined) d[k] = n[k]; }); if (!d.mobile.hidden) d.mobile.hidden = []; if (!d.mobile.groupOrder) d.mobile.groupOrder = []; migrate(d); return d; };
   const KEEP = ['workspace', 'settings', 'templates'];
   const WHO = { all: 'Everyone in the project', edit: 'Owners and editors', owner: 'Owners only' };
   const roleOk = (need, role) => !need || need === 'all' || (need === 'edit' ? role !== 'viewer' : role === 'owner');
   function compute(groups, w, all, opt) {
-    opt = opt || {}; const items = []; groups.forEach((g, gi) => g.items.forEach((it, ii) => items.push({ id: it[0], l: it[1], t: it[2], orig: it[1], g: w.move[it[0]] || g.g, icon: g.icon, o: gi * 100 + ii })));
-    w.custom.forEach((c, i) => items.push({ id: 'cx_' + c.id, l: c.label, orig: c.label, g: c.group || 'Project', icon: 'doc', o: 9000 + i, custom: true }));
+    opt = opt || {}; const del = w.gdel || {}; const baseKeys = groups.map(g => g.g);
+    // a tab whose group was deleted follows that group's tabs to where they went (or to the first remaining standard group)
+    const live = n => !del[n]; const first = baseKeys.find(live) || (w.groups || []).find(live) || 'Project';
+    const res = n => { for (let i = 0; i < 6 && n && del[n]; i++) n = del[n]; return n && live(n) ? n : first; };
+    const items = []; groups.forEach((g, gi) => g.items.forEach((it, ii) => items.push({ id: it[0], l: it[1], t: it[2], orig: it[1], home: g.g, g: res(w.move[it[0]] || g.g), o: gi * 100 + ii })));
+    w.custom.forEach((c, i) => items.push({ id: 'cx_' + c.id, l: c.label, orig: c.label, g: res(c.group || first), o: 9000 + i, custom: true }));
     const mh = (w.mobile && w.mobile.hidden) || [];
     items.forEach(x => { if (w.labels[x.id] && !x.custom) x.l = w.labels[x.id]; const keep = KEEP.includes(x.id); x.webHidden = !keep && w.hidden.includes(x.id); x.mobHidden = !keep && mh.includes(x.id); x.who = keep ? 'all' : (w.roles[x.id] || 'all');
       x.hidden = x.webHidden || (opt.mobile && x.mobHidden) || (!keep && opt.role && !roleOk(x.who, opt.role)); });
-    const names = []; groups.forEach(g => names.push(g.g)); (w.groups || []).forEach(n => { if (!names.includes(n)) names.push(n); }); items.forEach(x => { if (!names.includes(x.g)) names.push(x.g); });
+    const names = []; const add = n => { if (n && live(n) && !names.includes(n)) names.push(n); }; baseKeys.forEach(add); (w.groups || []).forEach(add); items.forEach(x => add(x.g));
     const go = opt.mobile && w.mobile && w.mobile.groupOrder && w.mobile.groupOrder.length ? w.mobile.groupOrder : (w.groupOrder || []);
     const ord = go.filter(n => names.includes(n)).concat(names.filter(n => !go.includes(n)));
-    return ord.map(n => { const arr = (w.order[n] || []); let its = items.filter(x => x.g === n && (all || !x.hidden)); its.sort((a, b) => { const ia = arr.indexOf(a.id), ib = arr.indexOf(b.id); if (ia >= 0 && ib >= 0) return ia - ib; if (ia >= 0) return -1; if (ib >= 0) return 1; return a.o - b.o; }); const src = groups.find(g => g.g === n); return { g: n, icon: (src && src.icon) || 'flag', items: its, extra: !src && (w.groups || []).includes(n) }; }).filter(g => g.items.length || all);
+    return ord.map(n => { const arr = (w.order[n] || []); let its = items.filter(x => x.g === n && (all || !x.hidden)); its.sort((a, b) => { const ia = arr.indexOf(a.id), ib = arr.indexOf(b.id); if (ia >= 0 && ib >= 0) return ia - ib; if (ia >= 0) return -1; if (ib >= 0) return 1; return a.o - b.o; });
+      const src = groups.find(g => g.g === n); const ik = (w.gi || {})[n] || (src && src.fi ? 'f:' + src.fi : 'l:' + ((src && src.icon) || 'flag'));
+      return { key: n, g: (w.gl || {})[n] || n, sec: (src && src.sec) || '', ik, icon: (src && src.icon) || 'flag', items: its, extra: !src, builtin: !!src }; }).filter(g => g.items.length || all);
   }
-  // the menu as shown: on phones the phone layout, and tabs limited to roles the person does not have are left out (the server still decides access)
-  V.wsApply = (groups, opt) => { const w = ws(); opt = opt || {}; const o = { mobile: false, role: opt.role !== undefined ? opt.role : (S.project && S.project.role) }; const out = compute(groups, w, false, o); return out.map(g => ({ g: g.g, icon: g.icon, items: g.items.map(x => [x.id, x.l, x.t]) })); };
+  // the menu as shown: tabs limited to roles the person does not have are left out (the server still decides access)
+  V.wsApply = (groups, opt) => { const w = ws(); opt = opt || {}; const o = { mobile: false, role: opt.role !== undefined ? opt.role : (S.project && S.project.role) }; const out = compute(groups, w, false, o); return out.map(g => ({ g: g.g, key: g.key, sec: g.sec, ik: g.ik, icon: g.icon, items: g.items.map(x => [x.id, x.l, x.t]) })); };
   V.customPage = {
     html() {
       const id = String(S.ui.view || '').replace(/^cx_/, ''); const c = ws().custom.find(x => x.id === id); if (!c) return '<div class="page-body"><div class="notice err"><span>This page was removed from the workspace.</span></div></div>';
@@ -149,87 +169,131 @@
     }
   };
   const PRESETS = { full: ['Full workspace (everything)', []], lean: ['Lean delivery (hide planning extras)', ['dashreport', 'contracts', 'kickoff', 'dashboards', 'timeline']], report: ['Reporting and handover (hide configuration and requirements)', ['modules', 'flow', 'roles', 'transcripts', 'usecases', 'checks', 'brd']] };
-  const FI = root.FWBIcons || { has: () => false, svg: () => '' };
-  const GI = { Project: 'g_project', Administration: 'g_admin' };
-  const gIcon = g => (FI.has(GI[g.g]) ? FI.svg(GI[g.g]) : ico(g.icon || 'flag'));
+  const gIcon = g => (V.navIcon ? V.navIcon(g.ik) : ico(g.icon || 'flag'));
   const grip = '<span class="tl-grip" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>';
-  function layout(mobile) { const w = ws(); const gs = compute(V.navBase(), w, true, { mobile }); return gs; }
+  function layout() { return compute(V.navBase(), ws(), true, { mobile: false }); }
+  const gByKey = k => layout().find(g => g.key === k);
+  const typeOf = x => (KEEP.includes(x.id) ? 'Always shown' : x.custom ? 'Custom page' : 'Page');
   V.workspace = {
     html() {
-      const base = V.navBase ? V.navBase() : []; const w = ws(); const can = canEdit(); const mobile = false;   // one layout: the web menu
-      const gs = compute(base, w, true, { mobile }); const q = (S.ui.wsQ || '').toLowerCase(); const cur = gs.find(g => g.g === S.ui.wsGroup) || gs[0]; if (cur) S.ui.wsGroup = cur.g;
-      const head = `<div class="page-header"><div class="t"><h1>Tabs &amp; Layouts</h1><p>Choose which tabs this project's menu shows, how they are grouped and in which order. Hiding a tab only tidies the menu: every page still checks access on the server. Customers keep their own portal menu. This page, Settings and Templates are always shown.</p></div><div class="row">${can ? `<select data-change="wsPreset" style="width:auto" aria-label="Apply a preset"><option value="">Apply a preset…</option>${Object.keys(PRESETS).map(k => `<option value="${k}">${esc(PRESETS[k][0])}</option>`).join('')}</select><button class="btn" data-act="wsSaveTpl">Save as template</button><button class="btn" data-act="wsReset">Reset to default</button>` : ''}</div></div>`;
+      const base = V.navBase ? V.navBase() : []; const w = ws(); const can = canEdit();
+      const gs = compute(base, w, true, {}); const q = (S.ui.wsQ || '').toLowerCase(); const cur = gs.find(g => g.key === S.ui.wsGroup) || gs[0]; if (cur) S.ui.wsGroup = cur.key;
+      const head = `<div class="page-header"><div class="t"><h1>Tabs &amp; Layouts</h1><p>Arrange this project's menu the way the work flows: rename any group or tab, give groups an icon, create and delete groups, and drag tabs and groups into order. Hiding a tab only tidies the menu; every page still checks access on the server. Customers keep their own portal menu.</p></div><div class="row">${can ? `<select data-change="wsPreset" style="width:auto" aria-label="Apply a preset"><option value="">Apply a preset…</option>${Object.keys(PRESETS).map(k => `<option value="${k}">${esc(PRESETS[k][0])}</option>`).join('')}</select><button class="btn" data-act="wsSaveTpl">Save as template</button><button class="btn" data-act="wsReset">Reset to default</button>` : ''}</div></div>`;
       const glist = gs.filter(g => !q || g.g.toLowerCase().includes(q) || g.items.some(x => x.l.toLowerCase().includes(q)));
-      const left = `<aside class="tl-groups" aria-label="Tab groups"><div class="tl-gh"><h3>Tab Group</h3>${can && !mobile ? `<button class="btn sm" data-act="wsNewGroup">${ico('plus')}New Tab Group</button>` : ''}</div>
+      const left = `<aside class="tl-groups" aria-label="Tab groups"><div class="tl-gh"><h3>Tab groups</h3>${can ? `<button class="btn sm" data-act="wsNewGroup">${ico('plus')}New Tab Group</button>` : ''}</div>
         <div class="tl-search">${ico('search')}<input type="search" id="wsQ" placeholder="Search groups" aria-label="Search groups" value="${esc(S.ui.wsQ || '')}"></div>
-        <ul class="tl-glist" role="listbox" aria-label="Groups">${glist.map(g => { const shown = g.items.filter(x => !(mobile ? x.mobHidden || x.webHidden : x.webHidden)).length; return `<li class="tl-g${g === cur ? ' on' : ''}" role="option" aria-selected="${g === cur}" tabindex="0" data-act="wsGroup" data-g="${esc(g.g)}" draggable="${can}" data-wsg="${esc(g.g)}">${can ? grip : ''}<span class="tl-gi">${gIcon(g)}</span><span class="tl-gn">${esc(g.g)}</span><span class="tl-gc">${shown}</span></li>`; }).join('') || '<li class="tl-none">No group matches.</li>'}</ul>
-        ${can ? `<p class="xs muted tl-tip">Drag groups to reorder them${mobile ? ' for phones' : ''}. Drop a tab on a group to move it there.</p>` : ''}</aside>`;
-      const rows = cur ? cur.items : []; const off = x => (mobile ? x.mobHidden || x.webHidden : x.webHidden);
-      const right = cur ? `<section class="tl-main" aria-label="${esc(cur.g)} tabs"><div class="tl-mh"><h3>${esc(cur.g)}</h3><span class="xs muted">${rows.filter(x => !off(x)).length} of ${rows.length} shown${mobile ? ' on phones' : ''}</span><span class="spacer"></span>${can ? `<button class="btn sm icon" data-act="wsGroupStep" data-g="${esc(cur.g)}" data-d="-1" aria-label="Move group up${mobile ? ' on phones' : ''}" title="Move group up"${gs.indexOf(cur) === 0 ? ' disabled' : ''}>↑</button><button class="btn sm icon" data-act="wsGroupStep" data-g="${esc(cur.g)}" data-d="1" aria-label="Move group down${mobile ? ' on phones' : ''}" title="Move group down"${gs.indexOf(cur) === gs.length - 1 ? ' disabled' : ''}>↓</button>${cur.extra ? `<button class="btn sm" data-act="wsGroupRename" data-g="${esc(cur.g)}">Rename</button>${cur.items.length ? '' : `<button class="btn sm danger" data-act="wsGroupDel" data-g="${esc(cur.g)}">Delete group</button>`}` : ''}${mobile ? '' : `<button class="btn sm" data-act="wsAddTab" data-g="${esc(cur.g)}">${ico('plus')}Add</button>`}` : ''}</div>
-        <ul class="tl-rows" data-wsg="${esc(cur.g)}">${rows.map((x, i) => `<li class="tl-row${off(x) ? ' off' : ''}" draggable="${can && !mobile}" data-wsid="${esc(x.id)}">${can && !mobile ? grip : ''}<span class="tl-rn"><b>${esc(x.l)}</b><small>${x.custom ? 'Custom page' : 'Page'}${x.l !== x.orig ? ' · was ' + esc(x.orig) : ''}${x.who !== 'all' ? ' · ' + esc(WHO[x.who]) : ''}</small></span>
-          ${can ? `<span class="tl-rt">${KEEP.includes(x.id) ? '<span class="xs muted">Always shown</span>' : `<label class="switch" title="${mobile ? 'Show on phones' : 'Show in the menu'}"><input type="checkbox" data-change="${mobile ? 'wsHideMob' : 'wsHide'}" data-id="${esc(x.id)}"${off(x) ? '' : ' checked'}${mobile && x.webHidden ? ' disabled' : ''} aria-label="Show ${esc(x.l)}${mobile ? ' on phones' : ''}"><span></span></label>`}${KEEP.includes(x.id) ? '' : `<select class="tl-who" data-change="wsWho" data-id="${esc(x.id)}" aria-label="Who sees ${esc(x.l)} in the menu" title="Who sees this tab in the menu">${Object.keys(WHO).map(k => `<option value="${k}"${x.who === k ? ' selected' : ''}>${WHO[k]}</option>`).join('')}</select>`}${mobile ? '' : `<button class="btn sm icon" data-act="wsUp" data-id="${esc(x.id)}" ${i === 0 ? 'disabled' : ''} aria-label="Move ${esc(x.l)} up">↑</button><button class="btn sm icon" data-act="wsDown" data-id="${esc(x.id)}" ${i === rows.length - 1 ? 'disabled' : ''} aria-label="Move ${esc(x.l)} down">↓</button><button class="btn sm" data-act="wsRename" data-id="${esc(x.id)}">${x.custom ? 'Edit' : 'Rename'}</button>`}</span>` : ''}</li>`).join('') || '<li class="tl-none">This group has no tabs yet. Use Add, or drag a tab onto it.</li>'}</ul>
-        ${mobile ? '<p class="xs muted tl-tip">A tab hidden on the web is hidden on phones too.</p>' : ''}</section>` : '';
-      // preview of the menu as it will look (web: the side menu; mobile: the phone menu)
-      const pv = compute(base, w, false, { mobile }); const preview = `<aside class="tl-prev${mobile ? ' phone' : ''}" aria-label="Preview"><p class="tl-pk">Preview · ${mobile ? 'phone menu' : 'side menu'}</p><div class="tl-pbox">${pv.map(g => `<div class="tl-pg"><b>${esc(g.g)}</b>${g.items.map(x => `<span${S.ui.view === x.id ? ' class="on"' : ''}>${esc(x.l)}</span>`).join('')}</div>`).join('')}</div></aside>`;
+        <ul class="tl-glist" aria-label="Groups">${glist.map(g => { const shown = g.items.filter(x => !x.webHidden).length; return `<li class="tl-g${g === cur ? ' on' : ''}" draggable="${can}" data-g="${esc(g.key)}" data-wsg="${esc(g.key)}">${can ? grip : ''}<button type="button" class="tl-gsel" data-act="wsGroup" data-g="${esc(g.key)}"${g === cur ? ' aria-current="true"' : ''}><span class="tl-gi">${gIcon(g)}</span><span class="tl-gn">${esc(g.g)}</span><span class="tl-gc" title="${shown} shown in the menu">${shown}</span></button>${can ? `<span class="tl-gact"><button type="button" class="btn sm icon ghost" data-act="wsGroupEdit" data-g="${esc(g.key)}" aria-label="Edit group ${esc(g.g)}" title="Edit name and icon">${ico('edit')}</button><button type="button" class="btn sm icon ghost" data-act="wsGroupDel" data-g="${esc(g.key)}" aria-label="Delete group ${esc(g.g)}" title="Delete group"${gs.length < 2 ? ' disabled' : ''}>${ico('trash')}</button></span>` : ''}</li>`; }).join('') || '<li class="tl-none">No group matches.</li>'}</ul>
+        ${can ? '<p class="xs muted tl-tip">Drag groups to reorder them. Drop a tab on a group to move it there.</p>' : ''}</aside>`;
+      const rows = cur ? cur.items : []; const at = cur ? gs.indexOf(cur) : -1;
+      const right = cur ? `<section class="tl-main" aria-label="${esc(cur.g)} tabs"><div class="tl-mh"><span class="tl-mi" aria-hidden="true">${gIcon(cur)}</span><div class="tl-mt"><h3>${esc(cur.g)}</h3><span class="xs muted">${rows.filter(x => !x.webHidden).length} of ${rows.length} shown${cur.g !== cur.key && cur.builtin ? ' · standard group “' + esc(cur.key) + '”' : cur.extra ? ' · added in this project' : ''}</span></div><span class="spacer"></span>${can ? `<span class="tl-mact"><button class="btn sm icon" data-act="wsGroupStep" data-g="${esc(cur.key)}" data-d="-1" aria-label="Move group up" title="Move group up"${at === 0 ? ' disabled' : ''}>${ico('up')}</button><button class="btn sm icon" data-act="wsGroupStep" data-g="${esc(cur.key)}" data-d="1" aria-label="Move group down" title="Move group down"${at === gs.length - 1 ? ' disabled' : ''}>${ico('down')}</button><button class="btn sm" data-act="wsGroupEdit" data-g="${esc(cur.key)}">${ico('edit')}Edit group</button><button class="btn sm primary" data-act="wsAddTab" data-g="${esc(cur.key)}">${ico('plus')}Add tabs</button></span>` : ''}</div>
+        <ul class="tl-rows" data-wsg="${esc(cur.key)}">${rows.map((x, i) => `<li class="tl-row${x.webHidden ? ' off' : ''}" draggable="${can}" data-wsid="${esc(x.id)}">${can ? grip : ''}<span class="tl-rn"><b>${esc(x.l)}</b><small>${typeOf(x)}${x.l !== x.orig ? ' · renamed from ' + esc(x.orig) : ''}${x.webHidden ? ' · hidden from the menu' : ''}${x.who !== 'all' ? ' · ' + esc(WHO[x.who]) : ''}</small></span>
+          ${can ? `<span class="tl-rt">${KEEP.includes(x.id) ? '' : `<label class="switch" title="Show in the menu"><input type="checkbox" data-change="wsHide" data-id="${esc(x.id)}"${x.webHidden ? '' : ' checked'} aria-label="Show ${esc(x.l)} in the menu"><span></span></label>`}<button class="btn sm icon ghost" data-act="wsUp" data-id="${esc(x.id)}" ${i === 0 ? 'disabled' : ''} aria-label="Move ${esc(x.l)} up" title="Move up">${ico('up')}</button><button class="btn sm icon ghost" data-act="wsDown" data-id="${esc(x.id)}" ${i === rows.length - 1 ? 'disabled' : ''} aria-label="Move ${esc(x.l)} down" title="Move down">${ico('down')}</button><button class="btn sm icon ghost" data-act="wsRename" data-id="${esc(x.id)}" aria-label="Edit ${esc(x.l)}" title="Edit tab">${ico('edit')}</button></span>` : ''}</li>`).join('') || '<li class="tl-none">This group has no tabs yet. Use Add tabs, or drag a tab onto it.</li>'}</ul></section>` : '';
+      // preview of the menu as it will look
+      const pv = compute(base, w, false, {}); const preview = `<aside class="tl-prev" aria-label="Preview"><p class="tl-pk">Preview · side menu</p><div class="tl-pbox">${pv.map(g => `<div class="tl-pg"><b><i aria-hidden="true">${gIcon(g)}</i>${esc(g.g)}</b>${g.items.map(x => `<span${S.ui.view === x.id ? ' class="on"' : ''}>${esc(x.l)}</span>`).join('')}</div>`).join('')}</div></aside>`;
       return head + `<div class="page-body"><div class="tl-grid">${left}${right}${preview}</div></div>`;
     },
     mount() {
       const q = document.getElementById('wsQ'); if (q) q.addEventListener('input', () => { S.ui.wsQ = q.value; const pos = q.selectionStart; V.render(); const n = document.getElementById('wsQ'); if (n) { n.focus(); n.setSelectionRange(pos, pos); } });
-      document.querySelectorAll('.tl-g[tabindex]').forEach(li => li.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); li.click(); } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); const all = [...document.querySelectorAll('.tl-g[tabindex]')]; const j = all.indexOf(li) + (e.key === 'ArrowDown' ? 1 : -1); if (all[j]) all[j].focus(); } }));
-      if (!canEdit()) return; const mobile = S.ui.wsMode === 'mobile'; let drag = null;
+      document.querySelectorAll('.tl-gsel').forEach(b => b.addEventListener('keydown', e => { if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); const all = [...document.querySelectorAll('.tl-gsel')]; const j = all.indexOf(b) + (e.key === 'ArrowDown' ? 1 : -1); if (all[j]) all[j].focus(); } }));
+      if (!canEdit()) return; let drag = null;
       document.querySelectorAll('.tl-row[draggable="true"]').forEach(r => { r.addEventListener('dragstart', e => { drag = { tab: r.getAttribute('data-wsid') }; r.classList.add('drag'); try { e.dataTransfer.setData('text/plain', drag.tab); e.dataTransfer.effectAllowed = 'move'; } catch (x) { } }); r.addEventListener('dragend', () => { r.classList.remove('drag'); document.querySelectorAll('.ws-over').forEach(x => x.classList.remove('ws-over')); });
         r.addEventListener('dragover', e => { if (drag && drag.tab) { e.preventDefault(); r.classList.add('ws-over'); } }); r.addEventListener('dragleave', () => r.classList.remove('ws-over')); r.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); if (drag && drag.tab) dropAt(drag.tab, r.closest('[data-wsg]').getAttribute('data-wsg'), r.getAttribute('data-wsid')); }); });
       document.querySelectorAll('.tl-g[data-wsg]').forEach(g => { g.addEventListener('dragstart', e => { drag = { group: g.getAttribute('data-wsg') }; g.classList.add('drag'); try { e.dataTransfer.setData('text/plain', drag.group); } catch (x) { } }); g.addEventListener('dragend', () => { g.classList.remove('drag'); document.querySelectorAll('.ws-over').forEach(x => x.classList.remove('ws-over')); });
         g.addEventListener('dragover', e => { if (drag) { e.preventDefault(); g.classList.add('ws-over'); } }); g.addEventListener('dragleave', () => g.classList.remove('ws-over'));
-        g.addEventListener('drop', e => { e.preventDefault(); g.classList.remove('ws-over'); if (!drag) return; const to = g.getAttribute('data-wsg'); if (drag.tab && !mobile) dropAt(drag.tab, to, null); else if (drag.group) moveGroup(drag.group, to, mobile); drag = null; }); });
+        g.addEventListener('drop', e => { e.preventDefault(); g.classList.remove('ws-over'); if (!drag) return; const to = g.getAttribute('data-wsg'); if (drag.tab) dropAt(drag.tab, to, null); else if (drag.group) moveGroup(drag.group, to); drag = null; }); });
       const rl = document.querySelector('.tl-rows'); if (rl) { rl.addEventListener('dragover', e => { if (drag && drag.tab) e.preventDefault(); }); rl.addEventListener('drop', e => { e.preventDefault(); if (drag && drag.tab) dropAt(drag.tab, rl.getAttribute('data-wsg'), null); }); }
     }
   };
   function commit(what) { F.changed(what, '', { section: 'workspace' }); }
-  function setOrder(gs) { const w = ws(); w.order = {}; gs.forEach(g => { w.order[g.g] = g.items.map(x => x.id); }); w.groupOrder = gs.map(g => g.g); }
-  function dropAt(id, group, before) {
-    if (!id || id === before) return; const gs = layout(false); const w = ws(); let item = null; gs.forEach(g => { const i = g.items.findIndex(x => x.id === id); if (i >= 0) item = g.items.splice(i, 1)[0]; }); if (!item) return;
-    const tg = gs.find(g => g.g === group); if (!tg) return; const at = before ? tg.items.findIndex(x => x.id === before) : -1; if (at >= 0) tg.items.splice(at, 0, item); else tg.items.push(item);
-    setOrder(gs); if (item.custom) { const c = w.custom.find(x => 'cx_' + x.id === id); if (c) c.group = group; } else w.move[id] = group; commit('Menu reordered');
+  function setOrder(gs) { const w = ws(); w.order = {}; gs.forEach(g => { w.order[g.key] = g.items.map(x => x.id); }); w.groupOrder = gs.map(g => g.key); }
+  // put a tab in a group (before another tab, or at the end); no commit, so several changes can be saved as one
+  function place(id, group, before) {
+    const gs = layout(); const w = ws(); let item = null; gs.forEach(g => { const i = g.items.findIndex(x => x.id === id); if (i >= 0) item = g.items.splice(i, 1)[0]; }); if (!item) return false;
+    const tg = gs.find(g => g.key === group); if (!tg) return false; const at = before ? tg.items.findIndex(x => x.id === before) : -1; if (at >= 0) tg.items.splice(at, 0, item); else tg.items.push(item);
+    setOrder(gs); if (item.custom) { const c = w.custom.find(x => 'cx_' + x.id === id); if (c) c.group = group; } else if (group === item.home) delete w.move[id]; else w.move[id] = group; return true;
   }
-  function moveGroup(from, to, mobile) { if (from === to) return; const w = ws(); const names = layout(mobile).map(g => g.g); const i = names.indexOf(from); if (i < 0) return; names.splice(i, 1); names.splice(names.indexOf(to), 0, from); if (mobile) w.mobile.groupOrder = names; else w.groupOrder = names; commit(mobile ? 'Phone menu groups reordered' : 'Menu groups reordered'); }
-  ACT.wsGroupStep = a => { const mobile = S.ui.wsMode === 'mobile'; const g = a.getAttribute('data-g'), d = Number(a.getAttribute('data-d')); const w = ws(); const names = layout(mobile).map(x => x.g); const i = names.indexOf(g), j = i + d; if (i < 0 || j < 0 || j >= names.length) return; names[i] = names[j]; names[j] = g; if (mobile) w.mobile.groupOrder = names; else w.groupOrder = names; commit(mobile ? 'Phone menu groups reordered' : 'Menu groups reordered'); };
-  ACT.wsGroup = a => { S.ui.wsGroup = a.getAttribute('data-g'); V.render(); };
+  function dropAt(id, group, before) { if (!id || id === before) return; if (place(id, group, before)) commit('Menu reordered'); }
+  function moveGroup(from, to) { if (from === to) return; const w = ws(); const names = layout().map(g => g.key); const i = names.indexOf(from); if (i < 0) return; names.splice(i, 1); names.splice(names.indexOf(to), 0, from); w.groupOrder = names; commit('Menu groups reordered'); }
+  ACT.wsGroupStep = a => { const g = a.getAttribute('data-g'), d = Number(a.getAttribute('data-d')); const w = ws(); const names = layout().map(x => x.key); const i = names.indexOf(g), j = i + d; if (i < 0 || j < 0 || j >= names.length) return; names[i] = names[j]; names[j] = g; w.groupOrder = names; commit('Menu groups reordered'); };
+  ACT.wsGroup = a => { S.ui.wsGroup = a.getAttribute('data-g'); V.render(); const b = document.querySelector('.tl-g.on .tl-gsel'); if (b) b.focus(); };
   ACT.wsUp = a => step(a.getAttribute('data-id'), -1); ACT.wsDown = a => step(a.getAttribute('data-id'), 1);
-  function step(id, d) { const gs = layout(false); const g = gs.find(x => x.items.some(i => i.id === id)); if (!g) return; const i = g.items.findIndex(x => x.id === id), j = i + d; if (j < 0 || j >= g.items.length) return; const t = g.items[i]; g.items[i] = g.items[j]; g.items[j] = t; setOrder(gs); commit('Menu reordered'); }
+  function step(id, d) { const gs = layout(); const g = gs.find(x => x.items.some(i => i.id === id)); if (!g) return; const i = g.items.findIndex(x => x.id === id), j = i + d; if (j < 0 || j >= g.items.length) return; const t = g.items[i]; g.items[i] = g.items[j]; g.items[j] = t; setOrder(gs); commit('Menu reordered'); }
   ACT.wsHide = el => { const w = ws(); const id = el.getAttribute('data-id'); if (KEEP.includes(id)) return; const s = new Set(w.hidden); el.checked ? s.delete(id) : s.add(id); w.hidden = [...s]; commit(el.checked ? 'Menu item shown' : 'Menu item hidden'); };
-  ACT.wsHideMob = el => { const w = ws(); const id = el.getAttribute('data-id'); if (KEEP.includes(id)) return; const s = new Set(w.mobile.hidden); el.checked ? s.delete(id) : s.add(id); w.mobile.hidden = [...s]; commit(el.checked ? 'Shown on phones' : 'Hidden on phones'); };
   ACT.wsWho = el => { const w = ws(); const id = el.getAttribute('data-id'); if (KEEP.includes(id)) return; if (el.value === 'all') delete w.roles[id]; else w.roles[id] = el.value; commit('Menu visibility by role changed'); toast('Saved. This only changes the menu; page access is still checked on the server.', 5000); };
   ACT.wsMove = el => { const id = el.getAttribute('data-id'); dropAt(id, el.value, null); };
   ACT.wsPreset = el => { const p = PRESETS[el.value]; if (!p) return; const w = ws(); w.hidden = p[1].slice(); commit('Workspace preset applied'); toast('Preset applied'); };
-  ACT.wsReset = async () => { if (!(await confirmDialog('Reset to default', 'Restore the standard menu? Custom pages and extra groups are removed too.', 'Reset', true))) return; const w = F.doc('workspace'); Object.keys(w).forEach(k => delete w[k]); Object.assign(w, wsNorm({})); commit('Workspace reset'); };
-  ACT.wsNewGroup = () => drawer('New tab group', `<label class="f" for="wsg_n">Group name</label><input type="text" id="wsg_n" maxlength="40" placeholder="e.g. Customer reporting">`, `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="wsNewGroupGo">Create</button>`);
-  ACT.wsNewGroupGo = () => { const n = ((document.getElementById('wsg_n') || {}).value || '').trim(); if (!n) { toast('Name the group'); return; } if (layout(false).some(g => g.g.toLowerCase() === n.toLowerCase())) { toast('A group with that name exists'); return; } const w = ws(); w.groups = (w.groups || []).concat(n); S.ui.wsGroup = n; closeDrawer(); commit('Tab group created'); };
-  ACT.wsGroupRename = a => { const g = a.getAttribute('data-g'); drawer('Rename group', `<label class="f" for="wsg_n">Group name</label><input type="text" id="wsg_n" maxlength="40" value="${esc(g)}">`, `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="wsGroupRenameGo" data-g="${esc(g)}">Save</button>`); };
-  ACT.wsGroupRenameGo = a => { const from = a.getAttribute('data-g'); const to = ((document.getElementById('wsg_n') || {}).value || '').trim(); if (!to || to === from) { closeDrawer(); return; } if (layout(false).some(g => g.g.toLowerCase() === to.toLowerCase())) { toast('A group with that name exists'); return; }
-    const w = ws(); w.groups = w.groups.map(x => (x === from ? to : x)); Object.keys(w.move).forEach(k => { if (w.move[k] === from) w.move[k] = to; }); w.custom.forEach(c => { if (c.group === from) c.group = to; }); if (w.order[from]) { w.order[to] = w.order[from]; delete w.order[from]; } w.groupOrder = w.groupOrder.map(x => (x === from ? to : x)); w.mobile.groupOrder = w.mobile.groupOrder.map(x => (x === from ? to : x)); S.ui.wsGroup = to; closeDrawer(); commit('Tab group renamed'); };
-  ACT.wsGroupDel = async a => { const g = a.getAttribute('data-g'); if (!(await confirmDialog('Delete group', `Delete the empty group "${g}"?`, 'Delete', true))) return; const w = ws(); w.groups = w.groups.filter(x => x !== g); w.groupOrder = w.groupOrder.filter(x => x !== g); w.mobile.groupOrder = w.mobile.groupOrder.filter(x => x !== g); S.ui.wsGroup = null; commit('Tab group deleted'); };
-  // Add: bring an existing tab into this group, show a hidden one, or create a custom page here
-  ACT.wsAddTab = a => { const g = a.getAttribute('data-g'); const all = layout(false).flatMap(x => x.items.map(i => Object.assign({ grp: x.g }, i))).filter(i => i.grp !== g || i.webHidden);
-    drawer('Add a tab to ' + g, `<p class="small muted" style="margin-top:0">Pick an existing page to move into this group (hidden pages are shown again), or create a custom page.</p><input type="search" id="wsa_q" placeholder="Search tabs" aria-label="Search tabs"><ul class="tl-add" id="wsa_l">${all.map(i => `<li data-q="${esc((i.l + ' ' + i.grp).toLowerCase())}"><button type="button" class="tl-addb" data-act="wsAddTabGo" data-id="${esc(i.id)}" data-g="${esc(g)}"><b>${esc(i.l)}</b><small>${esc(i.grp)}${i.webHidden ? ' · hidden' : ''}</small></button></li>`).join('')}</ul>`,
+  ACT.wsReset = async () => { if (!(await confirmDialog('Reset to default', 'Restore the standard menu? Renamed and deleted groups, group icons, custom pages and extra groups are reset too.', 'Reset', true))) return; const w = F.doc('workspace'); Object.keys(w).forEach(k => delete w[k]); Object.assign(w, wsNorm({ v: 2 })); S.ui.wsGroup = null; commit('Workspace reset'); };
+  // new or edited group: a name and an icon (the icon grid follows Facilio's "New Tab Group" dialog)
+  function groupForm(key) {
+    const g = key ? gByKey(key) : null; const cur = g ? g.ik : 'l:flag'; const icons = (V.NAV_ICONS || []).slice(); if (cur && !icons.includes(cur)) icons.unshift(cur);
+    const std = g && g.builtin ? `<p class="small muted" style="margin:6px 0 0">Standard group: <b>${esc(g.key)}</b>. Clear the name to restore it.</p>` : '';
+    drawer(g ? 'Edit tab group' : 'New tab group', `<label class="f" for="wsg_n">Tab group name</label><input type="text" id="wsg_n" maxlength="40" placeholder="Enter group name" value="${esc(g ? g.g : '')}">${std}
+      <fieldset class="tl-icons"><legend class="f">Choose icon<span class="xs muted"> Select an icon for this tab group</span></legend><input type="hidden" id="wsg_i" value="${esc(cur)}"><div class="tl-igrid" role="radiogroup" aria-label="Group icon">${icons.map(k => `<button type="button" class="tl-ic${k === cur ? ' on' : ''}" role="radio" aria-checked="${k === cur}" aria-label="${esc(k.slice(2).replace(/^g_/, '').replace(/_/g, ' '))}" title="${esc(k.slice(2).replace(/^g_/, '').replace(/_/g, ' '))}" data-act="wsPickIcon" data-k="${esc(k)}">${V.navIcon(k)}</button>`).join('')}</div></fieldset>`,
+      `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="wsGroupSave" data-g="${esc(key || '')}">${g ? 'Save' : 'Create'}</button>`);
+    const n = document.getElementById('wsg_n'); if (n) n.focus();
+  }
+  ACT.wsPickIcon = a => { const k = a.getAttribute('data-k'); const h = document.getElementById('wsg_i'); if (h) h.value = k; document.querySelectorAll('.tl-ic').forEach(b => { const on = b === a; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); }); };
+  ACT.wsNewGroup = () => groupForm(null);
+  ACT.wsGroupEdit = a => groupForm(a.getAttribute('data-g'));
+  ACT.wsGroupRename = ACT.wsGroupEdit;
+  ACT.wsGroupSave = a => {
+    const key = a.getAttribute('data-g'); const w = ws(); const val = i => ((document.getElementById(i) || {}).value || '').trim(); let name = val('wsg_n'); const icon = val('wsg_i');
+    const gs = layout(); const g = key ? gs.find(x => x.key === key) : null; if (!name && g && g.builtin) name = g.key; if (!name) { toast('Name the group'); return; }
+    if (gs.some(x => x.key !== key && (x.g.toLowerCase() === name.toLowerCase() || x.key.toLowerCase() === name.toLowerCase()))) { toast('A group with that name exists'); return; }
+    if (!g) { const taken = n => gs.some(x => x.key === n) || (w.gdel || {})[n] !== undefined || (V.navBase() || []).some(b => b.g === n); let k = name; for (let i = 2; taken(k); i++) k = name + ' ' + i; w.groups = (w.groups || []).concat(k); if (k !== name) w.gl[k] = name; if (icon) w.gi[k] = icon; S.ui.wsGroup = k; closeDrawer(); commit('Tab group created'); return; }
+    if (name === g.key) delete w.gl[key]; else w.gl[key] = name;
+    const std = (V.navBase() || []).find(b => b.g === key); const dflt = std ? (std.fi ? 'f:' + std.fi : 'l:' + (std.icon || 'flag')) : ''; if (icon && icon !== dflt) w.gi[key] = icon; else delete w.gi[key];
+    closeDrawer(); commit('Tab group updated');
+  };
+  // delete any group; its tabs move to the group chosen here (a standard group is remembered as deleted, Reset brings it back)
+  ACT.wsGroupDel = a => {
+    const key = a.getAttribute('data-g'); const gs = layout(); const g = gs.find(x => x.key === key); if (!g) return; if (gs.length < 2) { toast('Keep at least one group'); return; }
+    const others = gs.filter(x => x.key !== key); const n = g.items.length;
+    drawer('Delete tab group', `<p style="margin-top:0">Delete <b>${esc(g.g)}</b>?${g.builtin ? ' It is a standard group; Reset to default brings it back.' : ''}</p>${n ? `<label class="f" for="wsg_to">Move its ${n} tab${n === 1 ? '' : 's'} to</label><select id="wsg_to">${others.map(x => `<option value="${esc(x.key)}">${esc(x.g)}</option>`).join('')}</select><p class="small muted">Tabs are never deleted with a group; they keep their names and settings.</p>` : '<p class="small muted">The group is empty.</p>'}`,
+      `<button class="btn" data-act="closeDrawer">Cancel</button><span class="spacer"></span><button class="btn danger" data-act="wsGroupDelGo" data-g="${esc(key)}">Delete group</button>`);
+  };
+  ACT.wsGroupDelGo = a => {
+    const key = a.getAttribute('data-g'); const w = ws(); const gs = layout(); const g = gs.find(x => x.key === key); if (!g) { closeDrawer(); return; }
+    const to = ((document.getElementById('wsg_to') || {}).value) || (gs.find(x => x.key !== key) || {}).key; if (!to) { closeDrawer(); return; }
+    g.items.slice().forEach(x => place(x.id, to, null));
+    if (g.builtin) w.gdel[key] = to; else w.groups = (w.groups || []).filter(x => x !== key);
+    Object.keys(w.move).forEach(k => { if (w.move[k] === key) w.move[k] = to; }); delete w.gl[key]; delete w.gi[key]; delete w.order[key]; w.groupOrder = w.groupOrder.filter(x => x !== key); w.mobile.groupOrder = (w.mobile.groupOrder || []).filter(x => x !== key);
+    S.ui.wsGroup = to; closeDrawer(); commit('Tab group deleted'); toast(g.items.length ? 'Group deleted; its tabs moved' : 'Group deleted');
+  };
+  // Add tabs: bring an existing tab into this group, show a hidden one, or create a custom page here
+  ACT.wsAddTab = a => { const g = a.getAttribute('data-g'); const gs = layout(); const gl = (gs.find(x => x.key === g) || {}).g || g; const all = gs.flatMap(x => x.items.map(i => Object.assign({ grp: x.key, grpl: x.g }, i))).filter(i => i.grp !== g || i.webHidden);
+    drawer('Add tabs to ' + gl, `<p class="small muted" style="margin-top:0">Pick a page to move into this group (hidden pages are shown again), or create a custom page.</p><input type="search" id="wsa_q" placeholder="Search tabs" aria-label="Search tabs"><ul class="tl-add" id="wsa_l">${all.map(i => `<li data-q="${esc((i.l + ' ' + i.grpl).toLowerCase())}"><button type="button" class="tl-addb" data-act="wsAddTabGo" data-id="${esc(i.id)}" data-g="${esc(g)}"><b>${esc(i.l)}</b><small>${esc(i.grpl)}${i.webHidden ? ' · hidden' : ''}</small></button></li>`).join('')}</ul>`,
       `<button class="btn" data-act="wsAddPage">${ico('plus')}Custom page</button><span class="spacer"></span><button class="btn" data-act="closeDrawer">Close</button>`, { wide: true });
     const q = document.getElementById('wsa_q'); q.addEventListener('input', () => { const v = q.value.trim().toLowerCase(); document.querySelectorAll('#wsa_l li').forEach(li => { li.hidden = v && !li.getAttribute('data-q').includes(v); }); }); q.focus(); };
-  ACT.wsAddTabGo = a => { const id = a.getAttribute('data-id'), g = a.getAttribute('data-g'); const w = ws(); w.hidden = w.hidden.filter(x => x !== id); closeDrawer(); dropAt(id, g, null); toast('Added to ' + g); };
+  ACT.wsAddTabGo = a => { const id = a.getAttribute('data-id'), g = a.getAttribute('data-g'); const w = ws(); w.hidden = w.hidden.filter(x => x !== id); closeDrawer(); dropAt(id, g, null); toast('Added to ' + ((gByKey(g) || {}).g || g)); };
+  // edit a tab: label, group, shown in the menu, who sees it — all in one place
   ACT.wsRename = a => {
-    const id = a.getAttribute('data-id'); const w = ws(); const base = V.navBase().flatMap(g => g.items).find(i => i[0] === id); const c = id.startsWith('cx_') ? w.custom.find(x => 'cx_' + x.id === id) : null;
+    const id = a.getAttribute('data-id'); const w = ws(); const c = id.startsWith('cx_') ? w.custom.find(x => 'cx_' + x.id === id) : null;
     if (c) return ACT.wsAddPage({ getAttribute: k => (k === 'data-id' ? c.id : null) });
-    drawer('Rename menu item', `<label class="f">Menu label</label><input type="text" id="ws_l" maxlength="40" value="${esc(w.labels[id] || (base ? base[1] : ''))}"><p class="small muted">Original name: ${esc(base ? base[1] : '')}. Leave blank to restore it.</p>`, `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="wsRenameGo" data-id="${esc(id)}">Save</button>`);
+    const gs = layout(); const g = gs.find(x => x.items.some(i => i.id === id)); const x = g && g.items.find(i => i.id === id); if (!x) return; const keep = KEEP.includes(id);
+    drawer('Edit tab', `<label class="f" for="ws_l">Menu label</label><input type="text" id="ws_l" maxlength="40" value="${esc(w.labels[id] || x.orig)}"><p class="small muted" style="margin:6px 0 0">Original name: ${esc(x.orig)}. Leave blank to restore it.</p>
+      <label class="f" for="ws_g">Tab group</label><select id="ws_g">${gs.map(o => `<option value="${esc(o.key)}"${o === g ? ' selected' : ''}>${esc(o.g)}</option>`).join('')}</select>
+      ${keep ? '<p class="small muted">This tab is always shown so the menu can always be changed back.</p>' : `<label class="f" for="ws_w">Who sees it in the menu</label><select id="ws_w">${Object.keys(WHO).map(k => `<option value="${k}"${x.who === k ? ' selected' : ''}>${WHO[k]}</option>`).join('')}</select>
+      <label class="tl-chk"><input type="checkbox" id="ws_s"${x.webHidden ? '' : ' checked'}> Show in the menu</label><p class="small muted" style="margin:4px 0 0">The menu only; page access is still checked on the server.</p>`}`,
+      `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="wsRenameGo" data-id="${esc(id)}">Save</button>`);
+    const l = document.getElementById('ws_l'); if (l) l.focus();
   };
-  ACT.wsRenameGo = a => { const w = ws(); const id = a.getAttribute('data-id'); const v = document.getElementById('ws_l').value.trim(); if (v) w.labels[id] = v; else delete w.labels[id]; closeDrawer(); commit('Menu item renamed'); };
+  ACT.wsRenameGo = a => {
+    const w = ws(); const id = a.getAttribute('data-id'); const v = ((document.getElementById('ws_l') || {}).value || '').trim(); const base = V.navBase().flatMap(g => g.items).find(i => i[0] === id);
+    if (v && (!base || v !== base[1])) w.labels[id] = v; else delete w.labels[id];
+    if (!KEEP.includes(id)) { const s = document.getElementById('ws_s'); if (s) { const h = new Set(w.hidden); s.checked ? h.delete(id) : h.add(id); w.hidden = [...h]; } const who = document.getElementById('ws_w'); if (who) { if (who.value === 'all') delete w.roles[id]; else w.roles[id] = who.value; } }
+    const to = (document.getElementById('ws_g') || {}).value; const g = layout().find(x => x.items.some(i => i.id === id)); if (to && g && g.key !== to) place(id, to, null);
+    closeDrawer(); commit('Menu item updated'); toast('Saved');
+  };
   ACT.wsAddPage = a => {
-    const id = a && a.getAttribute && a.getAttribute('data-id'); const w = ws(); const c = id ? w.custom.find(x => x.id === id) : null; const names = layout(false).map(g => g.g); const def = c ? c.group : (S.ui.wsGroup || 'Project');
-    drawer(c ? 'Edit page' : 'Add a page', `<label class="f">Menu label</label><input type="text" id="cp_l" maxlength="40" value="${esc(c ? c.label : '')}" placeholder="e.g. Customer escalation contacts"><label class="f">Menu group</label><select id="cp_g">${names.map(n => `<option${def === n ? ' selected' : ''}>${esc(n)}</option>`).join('')}<option value="__new">New group…</option></select><input type="text" id="cp_gn" maxlength="30" placeholder="New group name" style="display:none;margin-top:6px"><label class="f">Content (headings with #, lists with -, tables with |)</label><textarea id="cp_b" rows="12">${esc(c ? c.body : '')}</textarea>`,
+    const id = a && a.getAttribute && a.getAttribute('data-id'); const w = ws(); const c = id ? w.custom.find(x => x.id === id) : null; const gs = layout(); const def = c ? c.group : (S.ui.wsGroup || (gs[0] || {}).key);
+    drawer(c ? 'Edit page' : 'Add a page', `<label class="f">Menu label</label><input type="text" id="cp_l" maxlength="40" value="${esc(c ? c.label : '')}" placeholder="e.g. Customer escalation contacts"><label class="f">Tab group</label><select id="cp_g">${gs.map(g => `<option value="${esc(g.key)}"${def === g.key ? ' selected' : ''}>${esc(g.g)}</option>`).join('')}<option value="__new">New group…</option></select><input type="text" id="cp_gn" maxlength="30" placeholder="New group name" style="display:none;margin-top:6px"><label class="f">Content (headings with #, lists with -, tables with |)</label><textarea id="cp_b" rows="12">${esc(c ? c.body : '')}</textarea>`,
       `${c ? `<button class="btn danger" data-act="wsDelPage" data-id="${esc(id)}">Delete page</button>` : ''}<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="wsPageGo" data-id="${esc(id || '')}">Save</button>`, { wide: true });
     const sel = document.getElementById('cp_g'); if (sel) sel.addEventListener('change', () => { document.getElementById('cp_gn').style.display = sel.value === '__new' ? '' : 'none'; });
   };
   ACT.wsEditPage = a => ACT.wsAddPage(a);
   ACT.wsPageGo = a => {
-    const w = ws(); const g = i => (document.getElementById(i) || {}).value || ''; const label = g('cp_l').trim(); if (!label) { toast('Enter a menu label'); return; } let grp = g('cp_g'); if (grp === '__new') grp = g('cp_gn').trim(); if (!grp) { toast('Name the group'); return; }
+    const w = ws(); const g = i => (document.getElementById(i) || {}).value || ''; const label = g('cp_l').trim(); if (!label) { toast('Enter a menu label'); return; } let grp = g('cp_g'); if (grp === '__new') { grp = g('cp_gn').trim(); if (grp && !layout().some(x => x.key === grp)) w.groups = (w.groups || []).concat(grp); } if (!grp) { toast('Name the group'); return; }
     const id = a.getAttribute('data-id'); if (id) { const c = w.custom.find(x => x.id === id); if (c) Object.assign(c, { label, group: grp, body: g('cp_b') }); } else { w.custom.push({ id: 'p' + Date.now().toString(36), label, group: grp, body: g('cp_b') }); }
     closeDrawer(); commit('Workspace page saved'); toast('Saved');
   };

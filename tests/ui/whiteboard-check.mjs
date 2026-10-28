@@ -8,7 +8,7 @@ const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; c
 await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');
 const pid = await p.evaluate(async () => { const have = (await (await fetch('/api/fn/api/projects')).json()).projects || []; if (have.length) return have[0].id; const r = await fetch('/api/fn/api/projects', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Whiteboard test', customer: 'Acme' }) }); return (await r.json()).project.id; });
 await p.goto(BASE + `/#/p/${pid}/whiteboard`); await p.reload(); await p.waitForSelector('main.main', { state: 'attached' }); await p.waitForTimeout(1500);
-check('menu has Process Whiteboard under Process & State Flows', await p.evaluate(() => window.FWBViews.navFor().some(g => g.g === 'Process & State Flows' && g.items.some(i => i[0] === 'whiteboard'))));
+check('menu has Process Whiteboard under Requirements to BRD', await p.evaluate(() => window.FWBViews.navFor().some(g => g.g === '3. Requirements to BRD' && g.items.some(i => i[0] === 'whiteboard'))));
 const W = () => p.evaluate(() => { const s = window.FWBViews.whiteboardState; return s.B ? { nodes: s.B.nodes.length, edges: s.B.edges.length, frames: s.B.nodes.filter(n => n.t === 'frame').length, states: s.B.nodes.filter(n => n.t === 'state').length, sel: s.sel.size, undo: s.undo.length, name: s.B.name } : null; });
 // new board
 await p.click('[data-act="wbNew"]'); await p.fill('#wbName', 'Order to cash'); await p.click('#drawer .btn.primary'); await p.waitForSelector('#wbSvg'); await p.waitForTimeout(600);
