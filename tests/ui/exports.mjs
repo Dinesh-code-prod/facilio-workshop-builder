@@ -72,7 +72,7 @@ f = await dl('Status report e-mail (.eml)', () => click('#drawer [data-act="repE
 await page.keyboard.press('Escape');
 
 // --- User Guide Builder: Word and PDF
-await go('guidebuilder'); const nb = await page.$('[data-act="ugNew"]'); if (nb) { await nb.click(); await page.waitForTimeout(600); await page.locator('#drawer .drawer-f .btn.primary').first().click(); await page.waitForTimeout(1500); }
+await go('guidebuilder'); const nb = await page.$('[data-act="ugNew"]'); if (nb) { await nb.click(); await page.waitForTimeout(600); await page.selectOption('#ug_start', 'empty').catch(() => { }); await page.locator('#drawer .drawer-f .btn.primary').first().click(); await page.waitForTimeout(1500); }
 await page.locator('.tabs > *, [role=tab]', { hasText: /export/i }).first().click().catch(() => { }); await page.waitForTimeout(800);
 const emptyRefused = await page.evaluate(async () => { const n0 = document.querySelectorAll('a[download]').length; const b = document.querySelector('[data-act="ugDocx"]'); if (!b) return 'no button'; b.click(); await new Promise(r => setTimeout(r, 900)); return [...document.querySelectorAll('.toast')].map(t => t.textContent).join(' '); });
   ok('User guide: empty guide is not exported blank', null, [['refused with a message (' + String(emptyRefused).slice(0, 60) + ')', /nothing to export/i.test(emptyRefused)]]);

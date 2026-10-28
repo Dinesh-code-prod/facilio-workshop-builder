@@ -65,6 +65,20 @@ await t('AI: draft is server-made, unapproved, editor cannot self-approve, owner
   r = await call(sam, 'PUT', `/api/projects/${pid}/items/ai/${id}`, { data: { content: 'changed' } }); assert.equal(r.data.item.data.status, 'draft', 'edit reopens approved text');
   r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'bogus' }); assert.equal(r.status, 400);
 });
+await t('User guide section: one section from the chosen sources, nothing saved, project access and input checked', async () => {
+  await call(sam, 'PUT', `/api/projects/${pid}/items/cmodx/pw1`, { data: { label: 'Permit to Work', usage: 'Raise a permit before hot work' } });
+  await call(sam, 'PUT', `/api/projects/${pid}/items/decision/dg1`, { data: { title: 'Visitor badges are printed at reception' } });
+  const before = (await call(sam, 'GET', `/api/projects/${pid}/items?kinds=ai`)).data.items.length;
+  let r = await call(sam, 'POST', `/api/projects/${pid}/ai/guide-section`, { title: 'Step-by-step procedures', brief: 'Main tasks', guideTitle: 'Permits guide', modules: ['Permit to Work'], roles: ['Technician'], level: 'steps', sources: { cfg: true, decisions: true } });
+  assert.equal(r.status, 200, JSON.stringify(r.data)); assert.ok(r.data.text && r.data.provider, 'text and provider returned');
+  assert.ok(r.data.sources.some(x => /cmodx/.test(x.label)), 'the configuration record about the module is a source'); assert.ok(!r.data.sources.some(x => /decision/.test(x.label)), 'a decision about another module is left out');
+  assert.equal((await call(sam, 'GET', `/api/projects/${pid}/items?kinds=ai`)).data.items.length, before, 'nothing is saved by the route');
+  r = await call(sam, 'POST', `/api/projects/${pid}/ai/guide-section`, { title: '', sources: { cfg: true } }); assert.equal(r.status, 400, 'a section needs a title');
+  r = await call(sam, 'POST', `/api/projects/${pid}/ai/guide-section`, { title: 'X', sources: {} }); assert.equal(r.status, 400, 'at least one source');
+  r = await call(sam, 'POST', `/api/projects/${pid}/ai/guide-section`, { title: 'X', sources: { cfg: true }, vid: '../x' }); assert.equal(r.status, 400, 'walkthrough id is validated');
+  r = await call(out, 'POST', `/api/projects/${pid}/ai/guide-section`, { title: 'X', sources: { cfg: true } }); assert.ok(r.status === 403 || r.status === 404, 'no access to other projects');
+  for (const [k, id] of [['cmodx', 'pw1'], ['decision', 'dg1']]) { r = await call(sam, 'DELETE', `/api/projects/${pid}/items/${k}/${id}`); assert.ok(r.status < 300, 'clean up ' + k + ' ' + r.status); }
+});
 await t('AI providers: DeepSeek default, Claude explicit, key never exposed, honest fallback', async () => {
   let r = await call(sam, 'GET', '/api/ai/status'); assert.equal(r.data.defaultProvider, 'deepseek'); assert.equal(r.data.claude, false);
   r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat' }); assert.equal(r.status, 201); assert.equal(r.data.item.data.provider, 'DeepSeek');

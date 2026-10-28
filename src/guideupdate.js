@@ -158,5 +158,5 @@
 
   // findings that belong in the guide's own Quality checks tab
   function checks(g) { const r = U.runFor === gid() ? U.run : null; if (!r) return []; return G.validate(g, { items: r.items, findings: r.findings }, r.proposals).map(x => ({ sev: x.sev, area: 'Configuration update', item: x.what, detail: x.detail })); }
-  V.guideUpdate = { html, versionsHtml, checks, mount() { }, _U: U };
+  V.guideUpdate = { html, versionsHtml, checks, snapshot, mount() { }, _U: U };
 })(typeof window !== 'undefined' ? window : globalThis);

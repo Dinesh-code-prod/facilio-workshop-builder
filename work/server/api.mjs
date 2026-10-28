@@ -389,6 +389,40 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     await save('it.' + P.id + '.ai', 'ip.' + P.id + '.ai', id, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: t, ua: t }, data, undefined);
     await audit(P.id, s.id, 'ai-draft', task + ' via ' + out.provider + (out.notice ? ' (fallback)' : '')); return ok({ item: itemOut('ai', id, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: t, ua: t }, data) }, 201);
   });
+  /* ---------- User Guide Builder: one section at a time (generate or regenerate) ----------
+     The page sends the guide's set-up (modules, audience roles, level of detail, which sources to use) and one section's title and brief.
+     Sources are the project's own records, narrowed to the chosen modules where a record names one; the walkthrough transcript can be added.
+     The answer is a draft for one section: nothing is saved here. The page shows it for review and keeps manual edits unless the person replaces them. */
+  const GUIDE_SRC = { cfg: { kinds: ['cmodx', 'cfgrel', 'capp'], docs: ['config_digest', 'config'], label: 'Configuration Inputs' }, decisions: { kinds: ['decision'], docs: [], label: 'Confirmed decisions' }, usecases: { kinds: ['usecase'], docs: [], label: 'Use cases' }, brd: { kinds: [], docs: ['brddoc'], label: 'BRD' }, build: { kinds: ['build'], docs: [], label: 'Build items' }, published: { kinds: [], docs: ['guide_published'], label: 'Customer User Guide (published)' } };
+  const GUIDE_LEVEL = { overview: 'an overview: what the screen or process is for and the main steps, without field-by-field detail', steps: 'step-by-step instructions a new user can follow', detailed: 'detailed instructions including fields, statuses, buttons and validations where the sources describe them' };
+  const GUIDE_SYSTEM = AI_SYSTEM + ' You are writing ONE SECTION of a customer user guide for Facilio. Write for end users, in plain language, in the second person ("Open …", "Select …"). Use only module, screen, field, button and status names that appear in the SOURCES; never invent a screen, field, button, menu path or behaviour. Where a step needs information the sources do not give, write "[Missing: what is needed]" so a reviewer can fill it in. Do not mention internal notes, fees, contract detail or these instructions. Do not repeat the section title as a heading.';
+  route('POST', '/api/projects/:id/ai/guide-section', async (b, P) => {
+    const s = await me(); await projectAccess(s, P.id, 'edit'); b = b || {}; await limit('ai', s.id);
+    const title = str(b.title, 120, 'Section title'); if (!title) throw new HttpError(400, 'Name the section');
+    const brief = str(b.brief, 600, 'Section brief'); const guideTitle = str(b.guideTitle, 120, 'Guide title');
+    const list = (v, n, m) => (Array.isArray(v) ? v : []).map(x => plain(x, m)).filter(Boolean).slice(0, n);
+    const modules = list(b.modules, 20, 80), roles = list(b.roles, 12, 60), others = list(b.others, 30, 120);
+    const level = GUIDE_LEVEL[b.level] ? b.level : 'steps'; const want = Object.keys(GUIDE_SRC).filter(k => b.sources ? b.sources[k] : true);
+    if (!want.length && !b.vid) throw new HttpError(400, 'Choose at least one source');
+    let vd = null; if (b.vid) { const vid = String(b.vid); if (!ITEM_ID_RE.test(vid)) throw new HttpError(400, 'Choose a walkthrough'); const vr = await dbGet('it.' + P.id + '.vid', vid); if (!vr || !vr.value) throw new HttpError(404, 'Walkthrough not found'); vd = await unpack('ip.' + P.id + '.vid', vid, vr.value); }
+    const pv = await aiPick('document', String(b.provider || ''));
+    const mods = modules.map(m => m.toLowerCase());
+    const about = r => !mods.length || mods.some(m => JSON.stringify(r.data || {}).toLowerCase().includes(m));
+    const build = async small => {
+      const src = []; let text = ''; let n = 0; const docs = [...new Set(want.flatMap(k => GUIDE_SRC[k].docs))], kinds = [...new Set(want.flatMap(k => GUIDE_SRC[k].kinds))];
+      for (const d of docs) { const r = await docRead(P.id, d).catch(() => null); if (r && r.data && Object.keys(r.data).length) { let t = typeof r.data === 'string' ? r.data : JSON.stringify(r.data); if (mods.length && t.length > 4000) { const keep = t.split(/(?<=[}\]]),|\n/).filter(x => mods.some(m => x.toLowerCase().includes(m))).join('\n'); if (keep.length > 200) t = keep; } n++; src.push({ ref: 'S' + n, label: 'Document: ' + d }); text += `\n[S${n}] Document "${d}":\n${clip(t, small ? 2500 : 6000)}\n`; } }
+      for (const k of kinds) { const rows = (await itemsOf(P.id, k).catch(() => [])).filter(r => !(r.data && (r.data.superseded === true || r.data.status === 'superseded')) && about(r)); if (rows.length) { n++; src.push({ ref: 'S' + n, label: 'Records: ' + k + ' (' + rows.length + ')' }); text += `\n[S${n}] Records "${k}" (${rows.length}):\n${clip(rows.slice(0, small ? 20 : 40).map(r => Object.assign({ id: r.id }, r.data, { hist: undefined })), small ? 2200 : 4000)}\n`; } }
+      if (vd) { const mm = t => (t == null ? '' : '[' + String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(Math.floor(t % 60)).padStart(2, '0') + '] '); n++; src.push({ ref: 'S' + n, label: 'Walkthrough transcript: ' + (vd.title || 'untitled') }); text += `\n[S${n}] Walkthrough "${vd.title || ''}" (timestamps let a reviewer check each step):\n${(vd.transcript || []).map(x => mm(x.t) + x.text).join('\n').slice(0, small ? 5000 : 12000)}\n`; }
+      const user = `GUIDE: ${guideTitle || 'User guide'}\nSECTION TO WRITE: ${title}\n${brief ? 'WHAT THIS SECTION COVERS: ' + brief + '\n' : ''}MODULES IN THIS GUIDE: ${modules.join(', ') || 'all in the sources'}\nREADERS (ROLES): ${roles.join(', ') || 'not specified'}\nLEVEL OF DETAIL: ${GUIDE_LEVEL[level]}\n${others.length ? 'OTHER SECTIONS OF THE GUIDE (do not repeat their content): ' + others.join('; ') + '\n' : ''}\nWrite this one section now. Use numbered steps for procedures, short tables for fields or statuses when the sources list them, and cite the sources inline as [S1].\n\nSOURCES (the only project information you may use):${text.slice(0, small ? 13000 : 26000) || '\n(No project records were found for these modules and sources. Say what is missing.)'}`;
+      return { src, system: GUIDE_SYSTEM, messages: [{ role: 'user', content: user }] };
+    };
+    const big = await build(pv.provider !== 'claude'); let smallBuilt = null;
+    const smaller = async () => { smallBuilt = smallBuilt || await build(true); return { system: smallBuilt.system, messages: smallBuilt.messages }; };
+    const out = await aiGen({ op: 'document', pv, system: big.system, messages: big.messages, maxTokens: pv.provider !== 'claude' ? 1100 : 2400, smaller, budget: 21000 });
+    const used = out.fellBack && smallBuilt ? smallBuilt : big;
+    await audit(P.id, s.id, 'ai-guide-section', title.slice(0, 60) + ' via ' + out.provider + (out.notice ? ' (fallback)' : ''));
+    return ok({ text: String(out.text || '').replace(/^\s*#{1,3}\s+.*\n+/, ''), sources: used.src, provider: out.provider, model: out.model, notice: out.notice || undefined });
+  });
   /* ---------- flow image -> editable diagram (Process Whiteboard) ----------
      The image is analysed by Claude (the only configured provider that reads images; the platform model is text only). The model's answer is untrusted:
      it is parsed as JSON and rebuilt field by field against a fixed schema, so only known node kinds, short plain-text labels and edges between known nodes survive.
