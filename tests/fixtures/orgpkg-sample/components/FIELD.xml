@@ -1,0 +1,287 @@
+<Components>
+   <FIELD Created_Version="1.0" Modified_Version="1.0" Parent_Id="197985" Status="ADDED" Type="2" Unique_Identifier="1802291">
+      <name>lookup_custom_pdfbuildertemplates</name>
+      <displayName>Lookup</displayName>
+      <moduleName>custom_pdfbuildertemplates</moduleName>
+      <Locked>false</Locked>
+      <Required>false</Required>
+      <Is_Default>false</Is_Default>
+      <DataType>7</DataType>
+      <Main_Field>false</Main_Field>
+      <Display_Type>10</Display_Type>
+      <specialType/>
+      <relatedListDisplayName>PDF Builder Templates</relatedListDisplayName>
+      <lookupModuleName>people</lookupModuleName>
+   </FIELD>
+   <FIELD Created_Version="1.0" Modified_Version="1.0" Parent_Id="109496" Status="ADDED" Type="2" Unique_Identifier="2048446">
+      <name>rejection_reason_purchaserequest</name>
+      <displayName>Rejection Reason</displayName>
+      <moduleName>purchaserequest</moduleName>
+      <Locked>false</Locked>
+      <Required>false</Required>
+      <Is_Default>false</Is_Default>
+      <DataType>17</DataType>
+      <Main_Field>false</Main_Field>
+      <Display_Type>2</Display_Type>
+      <skipSizeCheck>false</skipSizeCheck>
+   </FIELD>
+   <FIELD Created_Version="1.0" Modified_Version="1.0" Parent_Id="229762" Status="ADDED" Type="2" Unique_Identifier="2115059">
+      <name>name</name>
+      <displayName>Name</displayName>
+      <moduleName>custom_nonconformityreport</moduleName>
+      <Locked>false</Locked>
+      <Required>true</Required>
+      <Is_Default>true</Is_Default>
+      <DataType>1</DataType>
+      <Main_Field>true</Main_Field>
+      <Display_Type>1</Display_Type>
+      <regex/>
+      <maxLength>-1</maxLength>
+   </FIELD>
+   <FIELD Created_Version="1.0" Modified_Version="1.0" Parent_Id="229762" Status="ADDED" Type="2" Unique_Identifier="2115131">
+      <name>root_cause_of_problem_custom_nonconformityreport</name>
+      <displayName>Root Cause of Problem</displayName>
+      <moduleName>custom_nonconformityreport</moduleName>
+      <Locked>false</Locked>
+      <Required>false</Required>
+      <Is_Default>false</Is_Default>
+      <DataType>8</DataType>
+      <Main_Field>false</Main_Field>
+      <Display_Type>3</Display_Type>
+      <values>
+         <Value_Element>
+            <sequence>1</sequence>
+            <visible>true</visible>
+            <index>1</index>
+            <value>Unapproved/Inappropriate Material</value>
+         </Value_Element>
+         <Value_Element>
+            <sequence>2</sequence>
+            <visible>true</visible>
+            <index>2</index>
+            <value>Unapproved Drawing</value>
+         </Value_Element>
+         <Value_Element>
+            <sequence>3</sequence>
+            <visible>true</visible>
+            <index>3</index>
+            <value>Untrained/Inexperienced worker</value>
+         </Value_Element>
+         <Value_Element>
+            <sequence>4</sequence>
+            <visible>true</visible>
+            <index>4</index>
+            <value>Not Following Process Requirement</value>
+         </Value_Element>
+         <Value_Element>
+            <sequence>5</sequence>
+            <visible>true</visible>
+            <index>5</index>
+            <value>Inadequate Supervision</value>
+         </Value_Element>
+         <Value_Element>
+            <sequence>6</sequence>
+            <visible>true</visible>
+            <index>6</index>
+            <value>Irresponsible Supervision</value>
+         </Value_Element>
+      </values>
+   </FIELD>
+   <FIELD Created_Version="1.0" Modified_Version="1.0" Parent_Id="229762" Status="ADDED" Type="2" Unique_Identifier="2115132">
+      <name>recommended_corrective_action_custom_nonconformityreport</name>
+      <displayName>Recommended Corrective Action</displayName>
+      <moduleName>custom_nonconformityreport</moduleName>
+      <Locked>false</Locked>
+      <Required>false</Required>
+      <Is_Default>false</Is_Default>
+      <DataType>18</DataType>
+      <Main_Field>false</Main_Field>
+      <Display_Type>2</Display_Type>
+      <regex/>
+      <maxLength>-1</maxLength>
+   </FIELD>
+   <FIELD Created_Version="1.0" Modified_Version="1.0" Parent_Id="229762" Status="ADDED" Type="2" Unique_Identifier="2115133">
+      <name>ncr_no__custom_nonconformityreport</name>
+      <displayName>NCR No.</displayName>
+      <moduleName>custom_nonconformityreport</moduleName>
+      <Locked>false</Locked>
+      <Required>false</Required>
+      <Is_Default>false</Is_Default>
+      <DataType>1</DataType>
+      <Main_Field>false</Main_Field>
+      <Display_Type>1</Display_Type>
+      <regex/>
+      <maxLength>-1</maxLength>
+   </FIELD>
+   <FIELD Created_Version="1.0" Modified_Version="1.0" Parent_Id="109419" Status="ADDED" Type="2" Unique_Identifier="1775380">
+      <name>location_workorder</name>
+      <displayName>Location</displayName>
+      <moduleName>workorder</moduleName>
+      <Locked>false</Locked>
+      <Required>false</Required>
+      <Is_Default>false</Is_Default>
+      <DataType>7</DataType>
+      <Main_Field>false</Main_Field>
+      <Display_Type>31</Display_Type>
+      <specialType/>
+      <relatedListDisplayName>Work Order</relatedListDisplayName>
+      <lookupModuleName>location</lookupModuleName>
+   </FIELD>
+   <FIELD Created_Version="1.0" Modified_Version="1.0" Parent_Id="109432" Status="ADDED" Type="2" Unique_Identifier="973418">
+      <name>isNewReadingRule</name>
+      <displayName>Is New Reading Rule</displayName>
+      <moduleName>newreadingalarm</moduleName>
+      <Locked>false</Locked>
+      <Required>false</Required>
+      <Is_Default>false</Is_Default>
+      <DataType>4</DataType>
+      <Main_Field>false</Main_Field>
+      <Display_Type>5</Display_Type>
+      <trueVal/>
+      <falseVal/>
+   </FIELD>
+   <FIELD Created_Version="1.0" Modified_Version="1.0" Parent_Id="109539" Status="ADDED" Type="2" Unique_Identifier="974178">
+      <name>issuedCount</name>
+      <displayName>Issued Count</displayName>
+      <moduleName>assetSpareParts</moduleName>
+      <Locked>false</Locked>
+      <Required>false</Required>
+      <Is_Default>false</Is_Default>
+      <DataType>2</DataType>
+      <Main_Field>false</Main_Field>
+      <Display_Type>9</Display_Type>
+      <unit/>
+      <minValue/>
+      <metric>-1</metric>
+      <maxValue/>
+      <counterField/>
+      <unitId>-1</unitId>
+   </FIELD>
+   <FIELD Created_Version="1.0" Modified_Version="1.0" Parent_Id="222706" Status="ADDED" Type="2" Unique_Identifier="2044954">
+      <name>target_date_custom_incidentmanagement</name>
+      <displayName>Target Date</displayName>
+      <moduleName>custom_incidentmanagement</moduleName>
+      <Locked>false</Locked>
+      <Required>false</Required>
+      <Is_Default>false</Is_Default>
+      <DataType>5</DataType>
+      <Main_Field>false</Main_Field>
+      <Display_Type>6</Display_Type>
+      <allowedDays>
+         <Value_Element>
+            <value>MONDAY</value>
+         </Value_Element>
+         <Value_Element>
+            <value>TUESDAY</value>
+         </Value_Element>
+         <Value_Element>
+            <value>WEDNESDAY</value>
+         </Value_Element>
+         <Value_Element>
+            <value>THURSDAY</value>
+         </Value_Element>
+         <Value_Element>
+            <value>FRIDAY</value>
+         </Value_Element>
+         <Value_Element>
+            <value>SATURDAY</value>
+         </Value_Element>
+         <Value_Element>
+            <value>SUNDAY</value>
+         </Value_Element>
+      </allowedDays>
+   </FIELD>
+   <FIELD Created_Version="1.0" Modified_Version="1.0" Parent_Id="222706" Status="ADDED" Type="2" Unique_Identifier="2044977">
+      <name>rejection_reason_custom_incidentmanagement</name>
+      <displayName>Rejection Reason</displayName>
+      <moduleName>custom_incidentmanagement</moduleName>
+      <Locked>false</Locked>
+      <Required>false</Required>
+      <Is_Default>false</Is_Default>
+      <DataType>14</DataType>
+      <Main_Field>false</Main_Field>
+      <Display_Type>3</Display_Type>
+      <values>
+         <Value_Element>
+            <sequence>1</sequence>
+            <visible>true</visible>
+            <index>1</index>
+            <value>Choice 1</value>
+         </Value_Element>
+         <Value_Element>
+            <sequence>2</sequence>
+            <visible>true</visible>
+            <index>2</index>
+            <value>Choice 2</value>
+         </Value_Element>
+      </values>
+   </FIELD>
+   <FIELD Created_Version="1.0" Modified_Version="1.0" Parent_Id="222706" Status="ADDED" Type="2" Unique_Identifier="2044976">
+      <name>investigation_duration_custom_incidentmanagement</name>
+      <displayName>Investigation Duration</displayName>
+      <moduleName>custom_incidentmanagement</moduleName>
+      <Locked>false</Locked>
+      <Required>false</Required>
+      <Is_Default>false</Is_Default>
+      <DataType>2</DataType>
+      <Main_Field>false</Main_Field>
+      <Display_Type>23</Display_Type>
+      <unit/>
+      <minValue/>
+      <metric>5</metric>
+      <maxValue/>
+      <counterField/>
+      <unitId>-1</unitId>
+   </FIELD>
+   <FIELD Created_Version="1.0" Modified_Version="1.0" Parent_Id="222706" Status="ADDED" Type="2" Unique_Identifier="2044975">
+      <name>investigation_end_time_custom_incidentmanagement</name>
+      <displayName>Investigation End Time</displayName>
+      <moduleName>custom_incidentmanagement</moduleName>
+      <Locked>false</Locked>
+      <Required>false</Required>
+      <Is_Default>false</Is_Default>
+      <DataType>6</DataType>
+      <Main_Field>false</Main_Field>
+      <Display_Type>7</Display_Type>
+      <allowedDays>
+         <Value_Element>
+            <value>MONDAY</value>
+         </Value_Element>
+         <Value_Element>
+            <value>TUESDAY</value>
+         </Value_Element>
+         <Value_Element>
+            <value>WEDNESDAY</value>
+         </Value_Element>
+         <Value_Element>
+            <value>THURSDAY</value>
+         </Value_Element>
+         <Value_Element>
+            <value>FRIDAY</value>
+         </Value_Element>
+         <Value_Element>
+            <value>SATURDAY</value>
+         </Value_Element>
+         <Value_Element>
+            <value>SUNDAY</value>
+         </Value_Element>
+      </allowedDays>
+   </FIELD>
+   <FIELD Created_Version="1.0" Modified_Version="1.0" Parent_Id="109328" Status="ADDED" Type="2" Unique_Identifier="972092">
+      <name>currentQuantity</name>
+      <displayName>Current Quantity</displayName>
+      <moduleName>itemTypes</moduleName>
+      <Locked>false</Locked>
+      <Required>false</Required>
+      <Is_Default>true</Is_Default>
+      <DataType>3</DataType>
+      <Main_Field>false</Main_Field>
+      <Display_Type>9</Display_Type>
+      <unit/>
+      <minValue/>
+      <metric>-1</metric>
+      <maxValue/>
+      <counterField/>
+      <unitId>-1</unitId>
+   </FIELD>
+</Components>

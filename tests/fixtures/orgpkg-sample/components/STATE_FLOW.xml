@@ -1,0 +1,18 @@
+<Components>
+   <STATE_FLOW Created_Version="1.0" Modified_Version="1.0" Parent_Id="109302" Status="ADDED" Type="40" Unique_Identifier="670710">
+      <name>Default Stateflow</name>
+      <Description/>
+      <moduleName>site</moduleName>
+      <StateflowLinkName>defaultstateflow</StateflowLinkName>
+      <Activity_Type>CREATE</Activity_Type>
+      <defaultStateflow>true</defaultStateflow>
+      <defaultStateName>active</defaultStateName>
+      <Rule_Type>STATE_FLOW</Rule_Type>
+      <draft>false</draft>
+      <draftParentId>-1</draftParentId>
+      <Execution_Order>1</Execution_Order>
+      <Status>true</Status>
+      <On_Success>false</On_Success>
+      <Locked>false</Locked>
+   </STATE_FLOW>
+</Components>

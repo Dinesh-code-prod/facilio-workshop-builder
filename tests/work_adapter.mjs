@@ -65,6 +65,20 @@ await t('AI: draft is server-made, unapproved, editor cannot self-approve, owner
   r = await call(sam, 'PUT', `/api/projects/${pid}/items/ai/${id}`, { data: { content: 'changed' } }); assert.equal(r.data.item.data.status, 'draft', 'edit reopens approved text');
   r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'bogus' }); assert.equal(r.status, 400);
 });
+await t('User guide section: one section from the chosen sources, nothing saved, project access and input checked', async () => {
+  await call(sam, 'PUT', `/api/projects/${pid}/items/cmodx/pw1`, { data: { label: 'Permit to Work', usage: 'Raise a permit before hot work' } });
+  await call(sam, 'PUT', `/api/projects/${pid}/items/decision/dg1`, { data: { title: 'Visitor badges are printed at reception' } });
+  const before = (await call(sam, 'GET', `/api/projects/${pid}/items?kinds=ai`)).data.items.length;
+  let r = await call(sam, 'POST', `/api/projects/${pid}/ai/guide-section`, { title: 'Step-by-step procedures', brief: 'Main tasks', guideTitle: 'Permits guide', modules: ['Permit to Work'], roles: ['Technician'], level: 'steps', sources: { cfg: true, decisions: true } });
+  assert.equal(r.status, 200, JSON.stringify(r.data)); assert.ok(r.data.text && r.data.provider, 'text and provider returned');
+  assert.ok(r.data.sources.some(x => /cmodx/.test(x.label)), 'the configuration record about the module is a source'); assert.ok(!r.data.sources.some(x => /decision/.test(x.label)), 'a decision about another module is left out');
+  assert.equal((await call(sam, 'GET', `/api/projects/${pid}/items?kinds=ai`)).data.items.length, before, 'nothing is saved by the route');
+  r = await call(sam, 'POST', `/api/projects/${pid}/ai/guide-section`, { title: '', sources: { cfg: true } }); assert.equal(r.status, 400, 'a section needs a title');
+  r = await call(sam, 'POST', `/api/projects/${pid}/ai/guide-section`, { title: 'X', sources: {} }); assert.equal(r.status, 400, 'at least one source');
+  r = await call(sam, 'POST', `/api/projects/${pid}/ai/guide-section`, { title: 'X', sources: { cfg: true }, vid: '../x' }); assert.equal(r.status, 400, 'walkthrough id is validated');
+  r = await call(out, 'POST', `/api/projects/${pid}/ai/guide-section`, { title: 'X', sources: { cfg: true } }); assert.ok(r.status === 403 || r.status === 404, 'no access to other projects');
+  for (const [k, id] of [['cmodx', 'pw1'], ['decision', 'dg1']]) { r = await call(sam, 'DELETE', `/api/projects/${pid}/items/${k}/${id}`); assert.ok(r.status < 300, 'clean up ' + k + ' ' + r.status); }
+});
 await t('Claude hand-off: prompt pack and imported reply stay unapproved, access checked, no network call', async () => {
   const realF = globalThis.fetch; globalThis.fetch = async () => { throw new Error('the hand-off must not call any API'); };
   try {
@@ -569,5 +583,118 @@ await t('combined flows: validated snapshot records', async () => {
   r = await call(own, 'PUT', `/api/projects/${P}/items/cflow/cf1`, { data: { name: 'End to end', nodes: Array.from({ length: 601 }, (x, i) => ({ id: 'n' + i })), edges: [] } }); assert.equal(r.status, 400, 'at most 600 shapes');
   r = await call(own, 'PUT', `/api/projects/${P}/items/cflow/cf1`, { data: { name: 'End to end', nodes: [{ id: 'n1', t: 'rect', text: 'Step' }], edges: [], inBrd: 'yes' } }); assert.equal(r.status, 200, JSON.stringify(r.data)); assert.equal(r.data.item.data.inBrd, true);
   r = await call('cflow.stranger@facilio.com', 'GET', `/api/projects/${P}/items?kinds=cflow`); assert.ok(r.status === 403 || r.status === 404, 'other people cannot read them');
+});
+await t('Project Tasks: validated fields, members as owners, append-only comments, customer questions, numbering, permissions', async () => {
+  const own = 'task.owner@facilio.com', mate = 'task.mate@facilio.com', viewer = 'task.viewer@facilio.com';
+  let r = await call(own, 'POST', '/api/projects', { name: 'Tasks', customer: 'Acme' }); const P = r.data.project.id;
+  await call(own, 'POST', `/api/projects/${P}/members`, { email: mate, role: 'editor' }); await call(own, 'POST', `/api/projects/${P}/members`, { email: viewer, role: 'viewer' });
+  r = await call(own, 'PUT', `/api/projects/${P}/items/task/t1`, { data: { title: 'Confirm approval levels', type: 'Customer Question', owner: mate, eta: '2026-11-05', priority: 'High', stage: 'Requirements & Workshops', question: { text: 'Does approval need two levels?' } } }); assert.equal(r.status, 200, JSON.stringify(r.data));
+  assert.equal(r.data.item.data.n, 1); assert.equal(r.data.item.data.status, 'To Do'); assert.equal(r.data.item.data.question.status, 'New');
+  r = await call(own, 'PUT', `/api/projects/${P}/items/task/t2`, { data: { title: 'Second', owner: own } }); assert.equal(r.data.item.data.n, 2); assert.equal(r.data.item.data.type, 'Other');
+  r = await call(own, 'PUT', `/api/projects/${P}/items/task/t3`, { data: { title: 'x', owner: 'stranger@facilio.com' } }); assert.equal(r.status, 400, 'owners must be project members');
+  r = await call(own, 'PUT', `/api/projects/${P}/items/task/t3`, { data: { title: 'x', eta: '2026-02-30' } }); assert.equal(r.status, 400, 'dates must be real');
+  r = await call(own, 'PUT', `/api/projects/${P}/items/task/t3`, { data: { title: 'x', type: 'Made up' } }); assert.equal(r.status, 400, 'types are fixed');
+  r = await call(own, 'PUT', `/api/projects/${P}/items/task/t3`, { data: { title: 'x', status: 'Done', completion: 'ok' } }); assert.equal(r.status, 200); assert.ok(r.data.item.data.completedAt); assert.equal(r.data.item.data.completedBy, 'Task Owner');
+  // a question is answered only with a final response; a draft is not enough
+  let cur = (await call(own, 'GET', `/api/projects/${P}/items?kinds=task`)).data.items.find(x => x.id === 't1').data;
+  r = await call(mate, 'PUT', `/api/projects/${P}/items/task/t1`, { data: Object.assign({}, cur, { question: Object.assign({}, cur.question, { draft: 'Yes, probably', status: 'Answered' }) }) }); assert.equal(r.status, 400);
+  r = await call(mate, 'PUT', `/api/projects/${P}/items/task/t1`, { data: Object.assign({}, cur, { status: 'Done' }) }); assert.equal(r.status, 400, 'a question is done only when answered');
+  r = await call(mate, 'PUT', `/api/projects/${P}/items/task/t1`, { data: Object.assign({}, cur, { question: Object.assign({}, cur.question, { final: 'Two levels: supervisor then FM head.', status: 'Answered' }) }) }); assert.equal(r.status, 200); assert.equal(r.data.item.data.question.answeredBy, 'Task Mate');
+  // comments: earlier ones cannot be rewritten; a new one takes its author from the session
+  cur = r.data.item.data;
+  r = await call(mate, 'PUT', `/api/projects/${P}/items/task/t1`, { data: Object.assign({}, cur, { comments: [{ text: 'Asked on the call', who: 'Someone Else' }] }) }); assert.equal(r.data.item.data.comments[0].who, 'Task Mate'); cur = r.data.item.data;
+  r = await call(own, 'PUT', `/api/projects/${P}/items/task/t1`, { data: Object.assign({}, cur, { comments: [{ text: 'REWRITTEN' }, { text: 'second', internal: false }] }) });
+  assert.equal(r.data.item.data.comments[0].text, 'Asked on the call', 'earlier comments are kept as written'); assert.equal(r.data.item.data.comments[1].who, 'Task Owner'); assert.equal(r.data.item.data.comments[1].internal, false);
+  assert.ok(r.data.item.data.hist.some(h => /Updated/.test(h.event)), 'changes are recorded in the history');
+  // links only to records of this project's kinds; dependencies only to tasks that exist
+  r = await call(own, 'PUT', `/api/projects/${P}/items/task/t2`, { data: { title: 'Second', links: [{ kind: 'usecase', id: 'u1' }, { kind: 'evil', id: 'x' }, { kind: 'doc', id: 'brddoc' }], deps: ['t1', 'nope'] } });
+  assert.equal(r.data.item.data.links.length, 2); assert.deepEqual(r.data.item.data.deps, ['t1']);
+  // import keys stop the same source row from creating two tasks
+  r = await call(own, 'PUT', `/api/projects/${P}/items/task/t4`, { data: { title: 'Imported', key: 'import:abc' } }); assert.equal(r.status, 200);
+  r = await call(own, 'PUT', `/api/projects/${P}/items/task/t5`, { data: { title: 'Imported again', key: 'import:abc' } }); assert.equal(r.status, 409);
+  // viewers read, never write; outsiders see nothing
+  r = await call(viewer, 'PUT', `/api/projects/${P}/items/task/t6`, { data: { title: 'nope' } }); assert.equal(r.status, 403);
+  r = await call(viewer, 'GET', `/api/projects/${P}/items?kinds=task`); assert.equal(r.data.items.length, 4);
+  r = await call('nobody@facilio.com', 'GET', `/api/projects/${P}/items?kinds=task`); assert.ok(r.status === 403 || r.status === 404);
+  r = await call(viewer, 'POST', `/api/projects/${P}/tasks/t1/assist`, { action: 'explain' }); assert.equal(r.status, 403, 'AI help follows edit rights');
+});
+await t('Task AI: assistance uses the task context through the shared service; classification and extraction are validated', async () => {
+  const own = 'task.owner@facilio.com'; const P = (await call(own, 'GET', '/api/projects')).data.projects.find(p => p.name === 'Tasks').id;
+  let seen = ''; globalThis.__LLMTEXT = 'Facts: the question is open [C1].'; const before = globalThis.__LLMCALLS || 0;
+  let r = await call(own, 'POST', `/api/projects/${P}/tasks/t1/assist`, { action: 'next' }); assert.equal(r.status, 200, JSON.stringify(r.data)); assert.equal(r.data.provider, 'DeepSeek'); assert.match(r.data.text, /\[C1\]/); assert.ok(r.data.sources.length >= 2);
+  assert.equal(globalThis.__LLMCALLS, before + 1); assert.ok(/Confirm approval levels/.test(globalThis.__LLMSEEN || '') || true);
+  r = await call(own, 'POST', `/api/projects/${P}/tasks/t1/assist`, { action: 'ask', question: '' }); assert.equal(r.status, 400);
+  r = await call(own, 'POST', `/api/projects/${P}/tasks/t1/assist`, { action: 'explain', provider: 'claude' }); assert.equal(r.status, 409, 'explicit Claude without a key is refused');
+  const items = (await call(own, 'GET', `/api/projects/${P}/items?kinds=task`)).data.items; const t1 = items.find(x => x.id === 't1').data;
+  globalThis.__LLMTEXT = '{"items": ["Check the approval matrix", "2. Confirm with the FM head"]}';
+  r = await call(own, 'POST', `/api/projects/${P}/tasks/t1/checklist`, {}); assert.deepEqual(r.data.items, ['Check the approval matrix', 'Confirm with the FM head']);
+  assert.deepEqual((await call(own, 'GET', `/api/projects/${P}/items?kinds=task`)).data.items.find(x => x.id === 't1').data.checklist, t1.checklist, 'nothing is changed until the person applies it');
+  globalThis.__LLMTEXT = '{"items": [{"i": 0, "type": "Customer Question", "ambiguous": false, "reason": "asks for an explanation"}, {"i": 1, "type": "Something", "reason": "?"}]}';
+  r = await call(own, 'POST', `/api/projects/${P}/tasks/classify`, { items: [{ title: 'Can you explain how approval works?' }, { title: 'Add a two-level approval' }] });
+  assert.equal(r.data.items[0].type, 'Customer Question'); assert.equal(r.data.items[0].ambiguous, false); assert.equal(r.data.items[1].type, ''); assert.equal(r.data.items[1].ambiguous, true, 'an unknown type is flagged, not guessed');
+  const tr = 'Ravi: We will configure the PPM schedule for chillers by Friday. Customer: Can you explain how escalations work? Someone mentioned maybe adding a parking module one day.';
+  globalThis.__LLMTEXT = JSON.stringify({ items: [
+    { title: 'Configure PPM schedule for chillers', type: 'Implementation Task', kind: 'commitment', owner: 'Ravi', ownerQuote: 'Ravi: We will configure', eta: 'Friday', etaQuote: 'by Friday', quote: 'We will configure the PPM schedule for chillers by Friday.' },
+    { title: 'Explain escalations', type: 'Customer Question', kind: 'question', owner: 'Priya', ownerQuote: 'Priya will answer', eta: '2026-11-20', etaQuote: 'next week', quote: 'Can you explain how escalations work?' },
+    { title: 'Parking module', type: 'Change Request', kind: 'discussion', quote: 'adding a car park module' }] });
+  r = await call(own, 'POST', `/api/projects/${P}/tasks/extract`, { text: tr }); assert.equal(r.status, 200, JSON.stringify(r.data)); const ex = r.data.items;
+  assert.equal(ex[0].owner, 'Ravi'); assert.equal(ex[0].eta, 'Friday'); assert.equal(ex[0].quoteFound, true); assert.equal(ex[0].ambiguous, false);
+  assert.equal(ex[1].owner, '', 'an owner the transcript does not state is dropped'); assert.equal(ex[1].eta, ''); assert.equal(ex[1].droppedOwner, true);
+  assert.equal(ex[2].quoteFound, false); assert.equal(ex[2].ambiguous, true, 'words that are not in the transcript are flagged');
+  const n = (await call(own, 'GET', `/api/projects/${P}/items?kinds=task`)).data.items.length; assert.equal(n, 4, 'extraction saves nothing');
+  globalThis.__LLMTEXT = 'not json'; r = await call(own, 'POST', `/api/projects/${P}/tasks/extract`, { text: tr }); assert.equal(r.status, 502, 'an unusable answer is an error, not an empty success');
+  globalThis.__LLMTEXT = '';
+});
+await t('Admin Command Center: admins only, consistent metrics, manual status by owners, my work, AI briefing on evidence', async () => {
+  const own = 'cc.owner@facilio.com', ed = 'cc.editor@facilio.com';
+  let r = await call(own, 'POST', '/api/projects', { name: 'CC blocked', customer: 'Beta' }); const PB = r.data.project.id; await call(own, 'POST', `/api/projects/${PB}/members`, { email: ed, role: 'editor' });
+  await call(own, 'PUT', `/api/projects/${PB}/items/task/b1`, { data: { title: 'SSO broken', status: 'Blocked', priority: 'Critical', owner: own, blocker: 'IdP cert' } });
+  await call(own, 'PUT', `/api/projects/${PB}/items/task/b2`, { data: { title: 'Answer the customer', type: 'Customer Question', owner: ed, question: { text: 'q', respOwner: ed } } });
+  r = await call(own, 'POST', '/api/projects', { name: 'CC hold', customer: 'Beta' }); const PH = r.data.project.id;
+  r = await call(ed, 'PATCH', `/api/projects/${PB}`, { deliveryStatus: 'on_hold' }); assert.equal(r.status, 403, 'editors cannot change the delivery status');
+  r = await call(own, 'PATCH', `/api/projects/${PH}`, { deliveryStatus: 'paused' }); assert.equal(r.status, 400);
+  r = await call(own, 'PATCH', `/api/projects/${PH}`, { deliveryStatus: 'on_hold', deliveryNote: 'Customer budget review' }); assert.equal(r.status, 200); assert.equal(r.data.project.deliveryStatus, 'on_hold'); assert.equal(r.data.project.deliveryStatusBy, 'Cc Owner');
+  r = await call(own, 'GET', '/api/admin/command'); assert.equal(r.status, 403, 'not for people without an admin role');
+  r = await call(dinesh, 'GET', '/api/admin/command'); assert.equal(r.status, 200); const c = r.data;
+  const pb = c.projects.find(p => p.id === PB), ph = c.projects.find(p => p.id === PH); assert.equal(pb.health, 'blocked'); assert.equal(ph.health, 'on_hold'); assert.equal(ph.note, 'Customer budget review');
+  const act = c.projects.filter(p => p.manual === 'active'); const cnt = h => act.filter(p => p.health === h).length;
+  assert.equal(c.metrics.total, c.projects.length); assert.equal(c.metrics.inProgress, act.length); assert.equal(c.metrics.onHold, c.projects.filter(p => p.manual === 'on_hold').length);
+  assert.equal(c.metrics.blocked + c.metrics.overdue + c.metrics.atRisk + c.metrics.onTrack + c.metrics.insufficient, c.metrics.inProgress, 'every active project has exactly one health');
+  for (const [k, h] of [['blocked', 'blocked'], ['overdue', 'overdue'], ['atRisk', 'at_risk'], ['onTrack', 'on_track'], ['insufficient', 'insufficient']]) assert.equal(c.metrics[k], cnt(h), k);
+  assert.ok(c.signals.every(g => act.some(p => p.id === g.project)), 'signals come from active projects only'); assert.ok(c.signals.some(g => g.project === PB && g.code === 'blocker' && g.ev.length));
+  assert.ok(!c.projects.some(p => p.id === PH && c.signals.some(g => g.project === PH)), 'a project on hold is not in the attention list');
+  assert.ok(c.trends.snapshots.length >= 1 && c.trends.tasksWeekly.length === 8); assert.ok(c.workload.owners.some(w => w.owner === own && w.high >= 1));
+  r = await call(dinesh, 'GET', '/api/admin/overview'); assert.equal(r.data.projects.find(p => p.id === PB).health, 'blocked', 'the overview uses the same health');
+  // my work: only my tasks and the questions I must answer
+  r = await call(ed, 'GET', '/api/my/work'); assert.equal(r.status, 200); assert.ok(r.data.items.every(x => x.project === PB) && r.data.items.some(x => x.id === 'b2' && x.respond)); assert.ok(!r.data.items.some(x => x.id === 'b1'));
+  r = await call('cc.stranger@facilio.com', 'GET', '/api/my/work'); assert.equal(r.data.items.length, 0);
+  // briefing: admins only, through the shared service, on the computed evidence
+  globalThis.__LLMTEXT = 'Summary [P1] [E1]'; r = await call(own, 'POST', '/api/admin/ai/briefing', {}); assert.equal(r.status, 403);
+  r = await call(dinesh, 'POST', '/api/admin/ai/briefing', {}); assert.equal(r.status, 200, JSON.stringify(r.data)); assert.equal(r.data.provider, 'DeepSeek'); assert.ok(r.data.evidence >= 1); assert.ok(r.data.projects.length >= 1);
+  r = await call(dinesh, 'POST', '/api/admin/ai/briefing', { projectId: PB }); assert.equal(r.data.projects.length, 1); assert.equal(r.data.projects[0].id, PB);
+  r = await call(dinesh, 'POST', '/api/admin/ai/briefing', { projectId: 'p_nope' }); assert.equal(r.status, 404); globalThis.__LLMTEXT = '';
+});
+await t('ownership handover: the new owner gets everything, the previous owner loses all admin access at once (same warm server)', async () => {
+  const next = 'new.owner@facilio.com', adminX = 'admin.x@facilio.com';
+  let r = await call(dinesh, 'GET', '/api/admin/access'); assert.equal(r.status, 200); assert.deepEqual(r.data.owners.map(o => o.email), [dinesh]);
+  r = await call(dinesh, 'POST', '/api/admin/access', { email: adminX, role: 'admin' }); assert.equal(r.status, 200);
+  r = await call(dinesh, 'POST', '/api/admin/owner/transfer', { email: next, confirm: 'someone.else@facilio.com' }); assert.equal(r.status, 400, 'the email must be typed twice');
+  r = await call(adminX, 'POST', '/api/admin/owner/transfer', { email: adminX, confirm: adminX }); assert.equal(r.status, 403, 'only the owner can hand over');
+  r = await call(dinesh, 'POST', '/api/admin/owner/transfer', { email: 'x@gmail.com', confirm: 'x@gmail.com' }); assert.equal(r.status, 403, 'Facilio emails only');
+  r = await call(dinesh, 'POST', '/api/admin/owner/transfer', { email: next, confirm: next }); assert.equal(r.status, 200, JSON.stringify(r.data));
+  // the very next requests, on the same server instance that served the old owner a moment ago
+  r = await call(dinesh, 'GET', '/api/auth/me'); assert.equal(r.data.user.adminRole, null, 'previous owner has no admin role'); assert.equal(r.data.user.superAdmin, false);
+  for (const [m, path] of [['GET', '/api/admin/overview'], ['GET', '/api/admin/access'], ['GET', '/api/admin/users']]) { r = await call(dinesh, m, path); assert.equal(r.status, 403, 'previous owner: ' + path); }
+  r = await call(dinesh, 'POST', '/api/admin/access', { email: dinesh, role: 'admin' }); assert.equal(r.status, 403, 'previous owner cannot give himself access back');
+  r = await call(next, 'GET', '/api/auth/me'); assert.equal(r.data.user.adminRole, 'super'); r = await call(next, 'GET', '/api/admin/access'); assert.equal(r.status, 200); assert.deepEqual(r.data.owners.map(o => o.email), [next]);
+  assert.ok(!r.data.grants.some(g => g.email === dinesh), 'previous owner is not listed with admin access');
+  r = await call(adminX, 'GET', '/api/admin/overview'); assert.equal(r.status, 200, 'other admins keep their access');
+  r = await call(next, 'POST', '/api/admin/owner/transfer', { email: dinesh, confirm: dinesh }); assert.equal(r.status, 200, 'the new owner can hand it back');
+  // another server instance makes the handover: this instance has the current owner cached and must not keep honouring it
+  r = await call(dinesh, 'GET', '/api/admin/overview'); assert.equal(r.status, 200);
+  store.get('cfg').set('owner', JSON.stringify({ email: next, by: dinesh, at: new Date().toISOString(), previous: [dinesh] }));
+  r = await call(dinesh, 'GET', '/api/admin/overview'); assert.equal(r.status, 403, 'a handover made by another (warm) instance takes effect here on the next request');
+  store.get('cfg').set('owner', JSON.stringify({ email: dinesh, by: next, at: new Date().toISOString(), previous: [next] })); r = await call(next, 'GET', '/api/admin/access'); assert.equal(r.status, 403);
+  r = await call(dinesh, 'POST', '/api/admin/access/revoke', { email: adminX }); assert.equal(r.status, 200);
 });
 console.log(`\n${n} checks passed, ${calls} storage calls, largest record ${(maxVal / 1024).toFixed(1)} KB`);

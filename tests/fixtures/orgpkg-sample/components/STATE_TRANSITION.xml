@@ -1,0 +1,73 @@
+<Components>
+   <STATE_TRANSITION Created_Version="1.0" Modified_Version="1.0" Parent_Id="109326" Status="ADDED" Type="41" Unique_Identifier="670728">
+      <moduleName>vendors</moduleName>
+      <FromStateName>Requested</FromStateName>
+      <ToStateName>Approved</ToStateName>
+      <StateflowName>Default Vendor Stateflow</StateflowName>
+      <StateflowLinkName>defaultvendorstateflow</StateflowLinkName>
+      <Type>1</Type>
+      <name>Approve</name>
+      <linkName>approve</linkName>
+      <Status>false</Status>
+      <Activity_Type>STATE_TRANSITION</Activity_Type>
+      <Rule_Type>STATE_RULE</Rule_Type>
+      <ShouldExecuteFromPermalink>false</ShouldExecuteFromPermalink>
+      <ShowInClientPortal>false</ShowInClientPortal>
+      <ShowInOccupantPortal>false</ShowInOccupantPortal>
+      <ShowInTenantPortal>false</ShowInTenantPortal>
+      <ShowInVendorPortal>false</ShowInVendorPortal>
+      <Comment_Required>false</Comment_Required>
+      <ButtonType>1</ButtonType>
+      <ValidationList/>
+   </STATE_TRANSITION>
+   <STATE_TRANSITION Created_Version="1.0" Modified_Version="1.0" Parent_Id="109326" Status="ADDED" Type="41" Unique_Identifier="670729">
+      <moduleName>vendors</moduleName>
+      <FromStateName>Requested</FromStateName>
+      <ToStateName>Rejected</ToStateName>
+      <StateflowName>Default Vendor Stateflow</StateflowName>
+      <StateflowLinkName>defaultvendorstateflow</StateflowLinkName>
+      <Type>1</Type>
+      <name>Reject</name>
+      <linkName>reject</linkName>
+      <Status>false</Status>
+      <Activity_Type>STATE_TRANSITION</Activity_Type>
+      <Rule_Type>STATE_RULE</Rule_Type>
+      <ShouldExecuteFromPermalink>false</ShouldExecuteFromPermalink>
+      <ShowInClientPortal>false</ShowInClientPortal>
+      <ShowInOccupantPortal>false</ShowInOccupantPortal>
+      <ShowInTenantPortal>false</ShowInTenantPortal>
+      <ShowInVendorPortal>false</ShowInVendorPortal>
+      <Comment_Required>false</Comment_Required>
+      <ButtonType>2</ButtonType>
+      <ValidationList/>
+   </STATE_TRANSITION>
+   <STATE_TRANSITION Created_Version="1.0" Modified_Version="1.0" Parent_Id="109419" Status="ADDED" Type="41" Unique_Identifier="670722">
+      <moduleName>workorder</moduleName>
+      <FromStateName>Work in Progress</FromStateName>
+      <ToStateName>Resolved</ToStateName>
+      <StateflowName>Default Stateflow</StateflowName>
+      <StateflowLinkName>defaultstateflow</StateflowLinkName>
+      <Type>1</Type>
+      <name>Resolve</name>
+      <linkName>resolve</linkName>
+      <Status>true</Status>
+      <Activity_Type>STATE_TRANSITION</Activity_Type>
+      <Rule_Type>STATE_RULE</Rule_Type>
+      <ShouldExecuteFromPermalink>false</ShouldExecuteFromPermalink>
+      <ShowInClientPortal>false</ShowInClientPortal>
+      <ShowInOccupantPortal>false</ShowInOccupantPortal>
+      <ShowInTenantPortal>false</ShowInTenantPortal>
+      <ShowInVendorPortal>true</ShowInVendorPortal>
+      <Comment_Required>false</Comment_Required>
+      <ButtonType>1</ButtonType>
+      <ValidationList>
+         <validation>
+            <errorMessage>Tasks should be completed before resolve</errorMessage>
+            <name/>
+            <namedCriteriaName>Tasks should be completed before resolve</namedCriteriaName>
+            <criteriaLinkName>tasksshouldbecompletedbeforeresolve</criteriaLinkName>
+            <criteriaModuleName>workorder</criteriaModuleName>
+         </validation>
+      </ValidationList>
+   </STATE_TRANSITION>
+</Components>
