@@ -131,3 +131,12 @@ that translates the request into the provider's own API and throws only `AIFail`
 Not verified: calls to the real DeepSeek platform model from this change (the first deploy does that; use Admin › AI
 provider › Test DeepSeek), and any call to the real Anthropic API (no key is available). The Anthropic adapter is
 implemented and tested against mocked responses only.
+
+## Capacity, limits and what people see when the AI is busy
+- **Default provider (platform AI):** each signed-in person has their own allowance (about 20 requests a minute and a daily cap). A hundred different people generating drafts at the same moment do not compete with each other; one person firing many requests in a burst (a long document written in parts) can reach their own minute limit.
+- **Organisation Claude key:** the limits are Anthropic's, and they are shared by everyone using the key. This is the one place where many people can crowd each other out; pick a tier with enough requests a minute for the team, or leave the platform AI as the default.
+- **Per-person caps in the app** (`LIMITS` in `api.mjs`): 40 AI requests, 240 document parts and 15 flow-image reads per person every 10 minutes, stored in the `rl` collection and shared by every copy of the server.
+- **When a limit is hit:** the AI layer fails fast (it no longer retries a rate limit that lasts a minute, which only adds load), and the answer carries `Retry-After`. The page (`src/api.js`) then waits and tries again by itself: AI requests up to three times for up to 30 seconds each, other refused requests once, reads again after a network error or a 502/503/504. Each wait shows a short note. After that the person sees the server's own wording and what to do.
+- **Not retried automatically:** a 502/504 on a write (the work may have started), errors that retrying cannot fix (no key, refused request).
+- **Check:** `npm run test:load` (100 projects, 100 people at once, the AI limit behaviour, and that nobody can read another project under load) and `npm run test:scale` (database calls and time for the busiest pages). `LAT=8` adds a delay to every database call to stand in for the real database.
+

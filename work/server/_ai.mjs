@@ -91,7 +91,7 @@ export function createAI(env) {
       let r; try { r = await timeBox(ctx().llm(body), q.timeoutMs); }
       catch (e) { if (e instanceof AIFail) throw e; const st = Number(e && (e.status || e.statusCode)) || 0; const m = String(e && e.message || e);
         log('deepseek call failed', (st || '') + ' ' + m.slice(0, 160));   // the reason only, never the prompt or the answer
-        if (st === 429 || /rate|limit|quota|cap/i.test(m)) throw new AIFail('rate_limited', 'The AI service limit for your account was reached (about 20 requests a minute, plus a daily cost cap). Wait a minute and try again.');
+        if (st === 429 || /rate|limit|quota|cap/i.test(m)) throw new AIFail('rate_limited', 'You have reached the AI limit for now (about 20 requests a minute for each person, plus a daily allowance). Wait a minute and try again. If it keeps happening, the daily allowance may be used up: it resets tomorrow, or an admin can add the organisation Claude key under Admin › AI provider.');
         if (st === 400 || st === 404 || /model/i.test(m) && st >= 400 && st < 500) throw new AIFail('bad_request', 'The platform model refused the request' + (body.model ? ' (check the model "' + body.model + '" in Admin › AI provider)' : '') + '.');
         throw new AIFail('unavailable', 'The AI service could not be reached. Try again.'); }
       const text = r && r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content;

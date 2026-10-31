@@ -1,19 +1,19 @@
 // Load check for the facilio.work server function: 100 projects, 100 people at once, AI drafts included.
 // Each request runs in its own copy of the server module, one request per copy at a time, the way the platform runs it (every copy has its own memory).
-// The database is an in-memory stand-in with a delay per call (LAT, default 8 ms). The AI service is a stand-in that allows 20 requests a minute for the whole
-// account, answers in 1.2 s and fails now and then, like the real one. Run: node tests/load_ai.mjs   (USERS=100 LAT=8 AI_RPM=20)
+// The database is an in-memory stand-in with a delay per call (LAT, default 8 ms). The AI service is a stand-in that allows 20 requests a minute for each signed-in person (the platform's
+// own limit), answers in 1.2 s and fails now and then, like the real one. Run: node tests/load_ai.mjs   (USERS=100 LAT=8 AI_RPM=20)
 import assert from 'node:assert/strict';
 const USERS = +process.env.USERS || 100, LAT = +process.env.LAT || 8, AI_RPM = +process.env.AI_RPM || 20;
 const store = new Map(); const nap = ms => new Promise(r => setTimeout(r, ms)); let dbCalls = 0;
-const aiLog = { calls: 0, limited: 0, failed: 0, ok: 0 }; const aiStamps = [];
-const llm = async ({ messages }) => {
-  aiLog.calls++; const t = Date.now(); while (aiStamps.length && t - aiStamps[0] > 60000) aiStamps.shift();
-  if (aiStamps.length >= AI_RPM) { aiLog.limited++; const e = new Error('rate limit exceeded'); e.status = 429; throw e; }
-  aiStamps.push(t); await nap(1200);
+const aiLog = { calls: 0, limited: 0, failed: 0, ok: 0 }; const stamps = new Map();
+const mkLlm = email => async ({ messages }) => {
+  aiLog.calls++; const t = Date.now(); const mine = (stamps.get(email) || []).filter(x => t - x <= 60000); stamps.set(email, mine);
+  if (mine.length >= AI_RPM) { aiLog.limited++; const e = new Error('rate limit exceeded'); e.status = 429; throw e; }
+  mine.push(t); await nap(1200);
   if (aiLog.calls % 20 === 7) { aiLog.failed++; const e = new Error('upstream unavailable'); e.status = 503; throw e; }
-  aiLog.ok++; return { model: 'mock', choices: [{ message: { content: '## Draft\nBased on [S1]. ' + String((messages[1] || {}).content || '').slice(0, 20) } }] };
+  aiLog.ok++; return { model: 'mock', choices: [{ message: { content: '## Draft Based on [S1]. ' + String((messages[1] || {}).content || '').slice(0, 20) } }] };
 };
-const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' }, secrets: { async get() { throw new Error('no secret'); } }, llm,
+const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' }, secrets: { async get() { throw new Error('no secret'); } }, llm: mkLlm(email),
   db: {
     async get(c, k) { dbCalls++; await nap(LAT); const r = (store.get(c) || new Map()).get(k); return r ? { key: k, value: JSON.parse(r), updated_at: '', updated_by: '' } : null; },
     async put(c, k, v) { dbCalls++; await nap(LAT); const t = JSON.stringify(v); assert.ok(t.length <= 128 * 1024, 'record over 128 KB: ' + c + '/' + k); if (!store.has(c)) store.set(c, new Map()); store.get(c).set(k, t); return { key: k }; },
@@ -49,21 +49,25 @@ section('Privacy under load: nobody can open somebody else\'s project');
 const peek = await Promise.all(people.slice(0, 40).map((em, i) => call(em, 'GET', `/api/projects/${ids[(i + 1) % USERS]}/docs/workshop`)));
 assert.ok(peek.every(x => x.status === 404 || x.status === 403), 'every cross-project read is refused'); console.log('  ok  40 of 40 cross-project reads refused');
 
-section(`Everyone clicks "generate a draft" at the same moment (AI allows ${AI_RPM} a minute for the whole account)`);
+section(`Everyone clicks "generate a draft" at the same moment (each person has ${AI_RPM} AI requests a minute of their own)`);
 const t0 = performance.now();
 const ai = await Promise.all(people.map((em, i) => call(em, 'POST', `/api/projects/${ids[i]}/ai/guide-section`, { title: 'Overview', brief: 'What the project delivers', guideTitle: 'Guide ' + i, level: 'steps' })));
 const wall = performance.now() - t0; const by = {}; ai.forEach(x => { by[x.status] = (by[x.status] || 0) + 1; });
-const msgs = {}; ai.filter(x => x.status >= 400).forEach(x => { const m = String(x.data.error || '').slice(0, 90); msgs[m] = (msgs[m] || 0) + 1; });
-console.log(`  finished in ${(wall / 1000).toFixed(1)} s. Results by status:`, JSON.stringify(by), `| AI service saw ${aiLog.calls} calls: ${aiLog.ok} ok, ${aiLog.limited} limited, ${aiLog.failed} failed`);
-console.log('  what people were told:', JSON.stringify(msgs, null, 1).replace(/\n\s*/g, ' '));
-console.log('  slowest answer', Math.max(...ai.map(x => x.ms)).toFixed(0), 'ms; Retry-After sent on', ai.filter(x => x.retryAfter).length, 'of', ai.filter(x => x.status === 429).length, 'limit answers');
+console.log(`  finished in ${(wall / 1000).toFixed(1)} s. Results by status:`, JSON.stringify(by), `| AI service saw ${aiLog.calls} calls: ${aiLog.ok} ok, ${aiLog.limited} limited, ${aiLog.failed} failed (and retried)`);
 assert.ok(ai.every(x => x.status === 200 || x.data.error), 'every failure carries a message a person can act on');
-assert.ok(ai.every(x => x.status !== 500), 'no request ends in an unexplained server error');
+assert.ok(ai.filter(x => x.status === 200).length >= USERS - 2, 'with one request each, nearly everyone gets a draft; a brief upstream failure is retried once');
 assert.ok(Math.max(...ai.map(x => x.ms)) < 25000, 'no request hangs past the platform time limit');
-assert.ok(by[200] >= Math.min(AI_RPM - 2, USERS), 'the AI capacity that exists is actually used');
 
-section('A person who gets "try again" can: the same click a minute later succeeds');
-aiStamps.length = 0; store.delete('rl'); const failed = ai.map((x, i) => [x, i]).filter(([x]) => x.status !== 200).slice(0, 5);
-const again = await Promise.all(failed.map(([, i]) => call(people[i], 'POST', `/api/projects/${ids[i]}/ai/guide-section`, { title: 'Overview', brief: 'What the project delivers', guideTitle: 'Guide ' + i, level: 'steps' })));
+section('One person writes a long document: 30 AI requests in a burst (the platform allows 20 a minute for each person)');
+aiLog.calls = aiLog.ok = aiLog.limited = aiLog.failed = 0; stamps.clear(); store.delete('rl');
+const burst = await Promise.all(Array.from({ length: 30 }, () => call(people[0], 'POST', `/api/projects/${ids[0]}/ai/guide-section`, { title: 'Part', brief: 'A part', guideTitle: 'Long guide', level: 'steps' })));
+const bb = {}; burst.forEach(x => { bb[x.status] = (bb[x.status] || 0) + 1; }); const lim = burst.filter(x => x.status === 429);
+console.log('  results by status:', JSON.stringify(bb), '| every refusal says how long to wait:', lim.every(x => x.retryAfter && Number(x.retryAfter) > 0), `(first: "${(lim[0] && lim[0].data.error || '').slice(0, 70)}", Retry-After ${lim[0] && lim[0].retryAfter} s)`);
+assert.ok(lim.length > 0 && lim.every(x => x.retryAfter), 'refusals carry Retry-After so the page can wait and carry on by itself');
+assert.ok(burst.every(x => x.status === 200 || x.status === 429), 'a burst ends in drafts or a clear wait, never a crash');
+
+section('A person told "wait" gets their draft after the wait');
+stamps.clear(); const again = await Promise.all(lim.slice(0, 5).map(() => call(people[0], 'POST', `/api/projects/${ids[0]}/ai/guide-section`, { title: 'Part', brief: 'A part', guideTitle: 'Long guide', level: 'steps' })));
 console.log('  retry results', JSON.stringify(again.map(x => x.status))); assert.ok(again.every(x => x.status === 200 || (x.data && x.data.error)));
-console.log(`\ndatabase calls in total: ${dbCalls}`);
+console.log(`
+database calls in total: ${dbCalls}`);
