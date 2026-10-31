@@ -58,10 +58,41 @@
   const linkedChanged = t => (t.links || []).filter(l => l.kind !== 'doc').some(l => { const r = I().get(l.kind, l.id); return r && r._at && t._at && r._at > t._at; });
 
   // ---------- filtering, sorting, grouping ----------
-  function rows(sh, all) {
+  // ---------- quick filters (this visit only; the sheet's saved filters are not changed) ----------
+  const QF = () => (S.ui.tkF = S.ui.tkF || {});
+  const quickPass = t => { const f = QF(); const own = String(t.owner || '').toLowerCase(); const wk = V.addDays(today(), 7);
+    if (f.owner === 'me' ? own !== me() : f.owner === 'none' ? !!own : f.owner && own !== String(f.owner).toLowerCase()) return false;
+    if (f.status === 'open' ? CLOSED.includes(t.status) : f.status && t.status !== f.status) return false;
+    if (f.priority === 'none' ? !!t.priority : f.priority && t.priority !== f.priority) return false;
+    if (f.type && t.type !== f.type) return false;
+    if (f.due === 'overdue' && !late(t)) return false;
+    if (f.due === 'week' && !(!CLOSED.includes(t.status) && ((t.due && t.due >= today() && t.due <= wk) || (t.eta && t.eta >= today() && t.eta <= wk)))) return false;
+    if (f.due === 'nodate' && (t.due || t.eta || CLOSED.includes(t.status))) return false;
+    if (f.attention && !attention(t)) return false;
+    if (f.question && !(t.question && !['Answered', 'Closed'].includes(t.question.status) && !CLOSED.includes(t.status))) return false;
+    return true; };
+  const qfCount = () => Object.values(QF()).filter(Boolean).length;
+  function quickBar(total, shown) {
+    const f = QF(); const o = (list, cur, any) => '<option value="">' + esc(any) + '</option>' + list.map(([v, l]) => '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(l) + '</option>').join('');
+    const sel = (k, label, list, any) => '<label class="pt-qf"><span>' + esc(label) + '</span><select data-change="tkQf" data-k="' + k + '" aria-label="Filter by ' + esc(label.toLowerCase()) + '">' + o(list, f[k], any) + '</select></label>';
+    const n = qfCount();
+    return '<div class="pt-qfbar" role="group" aria-label="Filter tasks">' +
+      sel('owner', 'Owner', [['me', 'Me'], ['none', 'Unassigned']].concat(team().map(m => [m.email, m.name])), 'Anyone') +
+      sel('status', 'Status', [['open', 'Open (not done)']].concat(STATUS.map(x => [x, x])), 'Any status') +
+      sel('priority', 'Priority', PRIO.map(x => [x, x]).concat([['none', 'No priority']]), 'Any priority') +
+      sel('type', 'Type', TYPES.map(x => [x, x]), 'Any type') +
+      sel('due', 'Due', [['overdue', 'Overdue'], ['week', 'Due in the next 7 days'], ['nodate', 'No date set']], 'Any time') +
+      '<label class="pt-qc"><input type="checkbox" data-change="tkQf" data-k="attention"' + (f.attention ? ' checked' : '') + '> Needs attention</label>' +
+      '<label class="pt-qc"><input type="checkbox" data-change="tkQf" data-k="question"' + (f.question ? ' checked' : '') + '> Customer questions waiting</label>' +
+      (n ? '<button type="button" class="btn sm" data-act="tkQfClear">Clear filters (' + n + ')</button><span class="xs muted">Showing ' + shown + ' of ' + total + '</span>' : '') + '</div>';
+  }
+  ACT.tkQf = el => { const k = el.getAttribute('data-k'); QF()[k] = el.type === 'checkbox' ? (el.checked || '') : el.value; V.render(); };
+  ACT.tkQfClear = () => { S.ui.tkF = {}; V.render(); };
+  function rows(sh, all, quick) {
     const f = sh.f || {}; const q = String(S.ui.tkQ || '').trim().toLowerCase(); let list = tasks();
     if (!all) list = list.filter(t => (!f.types || !f.types.length || f.types.includes(t.type)) && (!f.status || !f.status.length || f.status.includes(t.status)) && (!f.resp || !f.resp.length || (t.question && f.resp.includes(t.question.status)))
       && (!f.owner || (f.owner === 'me' ? String(t.owner).toLowerCase() === me() : String(t.owner).toLowerCase() === String(f.owner).toLowerCase())) && (!f.open || !CLOSED.includes(t.status)) && (f.flag !== 'attention' || attention(t)));
+    if (quick) list = list.filter(quickPass);
     if (q) list = list.filter(t => [tid(t), t.title, t.desc, t.module, t.type, t.status, who(t.owner), t.notes, t.blocker, t.question && t.question.text].join(' ').toLowerCase().includes(q));
     const s = sh.sort || { c: 'n', d: 1 }; const k = s.c || 'n', d = s.d === -1 ? -1 : 1;
     const rank = (c, v) => c === 'status' ? STATUS.indexOf(v) : c === 'priority' ? (v ? PRIO.indexOf(v) : 9) : c === 'type' ? TYPES.indexOf(v) : c === 'stage' ? (v ? STAGES.indexOf(v) : 99) : v;
@@ -73,7 +104,7 @@
   // ---------- the page ----------
   V.tasks = {
     html() {
-      const d = doc(); const sh = sheet(); S.ui.tkSheet = sh.id; const can = canEdit(); const board = viewMode() === 'board'; const all = tasks(); const list = rows(sh); const sel = S.ui.tkSel = S.ui.tkSel || new Set();
+      const d = doc(); const sh = sheet(); S.ui.tkSheet = sh.id; const can = canEdit(); const board = viewMode() === 'board'; const all = tasks(); const list = rows(sh, false, true); const sel = S.ui.tkSel = S.ui.tkSel || new Set();
       [...sel].forEach(id => { if (!all.some(t => t.id === id)) sel.delete(id); });
       const open = all.filter(t => !CLOSED.includes(t.status)); const k = (l, v, cls) => `<div class="kpi${cls ? ' ' + cls : ''}"><div class="kpi-l">${l}</div><div class="kpi-v">${v}</div></div>`;
       const head = `<div class="page-header"><div class="t"><h1>Tasks</h1><p>Every activity on this project in one register: create and assign tasks, track customer questions to an answer, import and export Excel, pull tasks out of meeting transcripts and ask the AI Task Assistant for help. Sheets are saved views of the same tasks.</p></div>
@@ -84,6 +115,7 @@
       const bar = `<div class="pt-bar"><div class="tl-search pt-q">${ico('search')}<input type="search" id="tkQ" placeholder="Search tasks" aria-label="Search tasks" value="${esc(S.ui.tkQ || '')}"></div>
         <select data-change="tkGroup" aria-label="Group by"><option value="">No grouping</option>${['type', 'status', 'owner', 'priority', 'stage', 'module'].map(g => `<option value="${g}"${sh.group === g ? ' selected' : ''}>Group by ${esc(COLS[g].l.toLowerCase())}</option>`).join('')}</select>
         <div class="kb-seg" role="group" aria-label="View"><button type="button" class="${board ? '' : 'on'}" data-act="tkView" data-v="list" aria-pressed="${!board}">List</button><button type="button" class="${board ? 'on' : ''}" data-act="tkView" data-v="board" aria-pressed="${board}">Board</button></div><span class="spacer"></span><span class="small muted">${list.length} of ${all.length} task${all.length === 1 ? '' : 's'}</span>${can ? `<button class="btn sm" data-act="tkSheetCfg">${ico('gear')}Sheet settings</button>` : ''}</div>`;
+      const qf = quickBar(rows(sh).length, list.length);
       const bulk = sel.size && can ? `<div class="pt-bulk" role="region" aria-label="Selected tasks"><b>${sel.size} selected</b><select data-change="tkBulk" data-f="status" aria-label="Set status"><option value="">Set status…</option>${opt(STATUS)}</select><select data-change="tkBulk" data-f="owner" aria-label="Set owner"><option value="">Set owner…</option>${team().map(m => `<option value="${esc(m.email)}">${esc(m.name)}</option>`).join('')}</select><select data-change="tkBulk" data-f="priority" aria-label="Set priority"><option value="">Set priority…</option>${opt(PRIO)}</select><button class="btn sm" data-act="tkClassify">${ico('spark')}Suggest types (AI)</button><span class="spacer"></span><button class="btn sm" data-act="tkSelNone">Clear</button><button class="btn sm danger" data-act="tkBulkDel">${ico('trash')}Delete</button></div>` : '';
       const th = `<tr>${can ? `<th class="pt-ck"><input type="checkbox" data-change="tkSelAll" aria-label="Select all shown"${list.length && list.every(t => sel.has(t.id)) ? ' checked' : ''}></th>` : ''}${cols.map(c => { const s = sh.sort || {}; const on = s.c === c; return `<th style="width:${W(c)}px" data-col="${c}"${on ? ` aria-sort="${s.d === -1 ? 'descending' : 'ascending'}"` : ''}><button type="button" class="pt-sort" data-act="tkSort" data-c="${c}">${esc(COLS[c].l)}${on ? (s.d === -1 ? ' ↓' : ' ↑') : ''}</button>${can ? `<span class="pt-rs" data-col="${c}" aria-hidden="true"></span>` : ''}</th>`; }).join('')}</tr>`;
       const cell = (t, c) => { const v = val(t, c); let h;
@@ -99,7 +131,7 @@
       const body = groupsOf(sh, list).map(([g, ts]) => (sh.group ? `<tr class="pt-g"><td colspan="${cols.length + (can ? 1 : 0)}">${esc(COLS[sh.group].l)}: <b>${esc(g)}</b> <span class="muted">${ts.length}</span></td></tr>` : '') + ts.map(t => `<tr class="${CLOSED.includes(t.status) ? 'done' : ''}${sel.has(t.id) ? ' sel' : ''}" data-id="${esc(t.id)}">${can ? `<td class="pt-ck"><input type="checkbox" data-change="tkSel" data-id="${esc(t.id)}" aria-label="Select ${esc(tid(t))}"${sel.has(t.id) ? ' checked' : ''}></td>` : ''}${cols.map(c => cell(t, c)).join('')}</tr>`).join('')).join('');
       const add = can ? `<div class="pt-add"><input type="text" id="tkAdd" placeholder="Add a task to this sheet and press Enter" aria-label="Quick add a task" maxlength="300"></div>` : '';
       const empty = !all.length ? `<div class="empty"><h3>No tasks yet</h3><p class="muted">Create a task, import an Excel tracker, pull tasks out of a meeting transcript, or bring in this project's existing actions and workshop questions.</p>${can ? `<div class="row" style="justify-content:center;gap:8px;margin-top:10px"><button class="btn" data-act="tkBringIn">Bring in existing actions and questions</button><button class="btn primary" data-act="tkNew">${ico('plus')}New task</button></div>` : ''}</div>` : '';
-      return head + `<div class="page-body pt-page">${kpis}${tabs}${bar}${board ? '' : bulk}${empty || (all.length && !list.length ? V.ui.noResults('tasks', S.ui.tkQ ? 'tkClearQ' : '', S.ui.tkQ ? '' : 'No task fits this sheet yet. Pick another sheet, or add a task.') : board ? boardHtml(sh, list, can) : `<div class="pt-wrap"><table class="tbl pt-grid" style="min-width:${cols.reduce((s, c) => s + W(c), can ? 44 : 0)}px"><colgroup>${can ? '<col style="width:44px">' : ''}${cols.map(c => `<col style="width:${W(c)}px">`).join('')}</colgroup><thead>${th}</thead><tbody>${body || `<tr><td colspan="${cols.length + 1}" class="muted" style="padding:18px">No task matches this sheet${S.ui.tkQ ? ' and search' : ''}.</td></tr>`}</tbody></table></div>${add}`)}
+      return head + `<div class="page-body pt-page">${kpis}${tabs}${bar}${qf}${board ? '' : bulk}${empty || (all.length && !list.length ? V.ui.noResults('tasks', qfCount() ? 'tkQfClear' : S.ui.tkQ ? 'tkClearQ' : '', qfCount() || S.ui.tkQ ? '' : 'No task fits this sheet yet. Pick another sheet, or add a task.') : board ? boardHtml(sh, list, can) : `<div class="pt-wrap"><table class="tbl pt-grid" style="min-width:${cols.reduce((s, c) => s + W(c), can ? 44 : 0)}px"><colgroup>${can ? '<col style="width:44px">' : ''}${cols.map(c => `<col style="width:${W(c)}px">`).join('')}</colgroup><thead>${th}</thead><tbody>${body || `<tr><td colspan="${cols.length + 1}" class="muted" style="padding:18px">No task matches this sheet${S.ui.tkQ ? ' and search' : ''}.</td></tr>`}</tbody></table></div>${add}`)}
         ${all.length && can && !board ? '<p class="xs muted" style="margin-top:10px">Click a cell to edit it. Click an ID to open the task, its comments, customer response and the AI Task Assistant. <button class="btn link sm" data-act="tkBringIn">Bring in existing actions and questions</button></p>' : ''}</div>`;
     },
     mount() {

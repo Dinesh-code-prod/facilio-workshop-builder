@@ -7,6 +7,9 @@
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
     { v: '1.9.1', date: '2026-10-31', kind: 'UPDATE', all: true, title: 'Claude project review, import from Claude, guides for agent and integration projects', notes: [
+      'Task filters: owner, status, priority, type, due date, needs attention and customer questions waiting, for the list and the board, with a clear button.',
+      'Guides and videos in your own Claude: pick a format (document, step-by-step guide, walkthrough or video with voice-over); the prompt says what to attach (your recorded video) and which Claude skills to use. A skills pack (ZIP per skill) can be downloaded from the app, with install steps.',
+      'Open in Claude now also covers guide sections, the kick-off deck reader, flow from an image and the admin briefing; the reply comes back into the same step.',
       'Facilio screens page (Workshops & Requirements): the real Facilio screens we hold pictures of, kept inside Delivery Studio, to search, open full size and save as PNG during a requirement session.',
       'Use your own Claude for the task assistant: in a task, pick an action (or checklist) and Open in Claude. The prompt is the same one the built-in AI gets; paste the reply back into the same panel. Tasks from a transcript can also be run in your own Claude, part by part, with the same review step.',
       'Dashboards: a bento-grid dashboard for the team (progress, tasks, what is late, waiting on the customer, requirements, sign-offs, next 14 days), one for customers (their phase, what is waiting on them, sessions, sign-offs), and a portfolio view at the top of the Admin dashboard.',

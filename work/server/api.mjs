@@ -473,7 +473,9 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     const heads = (Array.isArray(b.headings) ? b.headings : []).slice(0, 30).map(h => String(h == null ? '' : h).replace(/\s+/g, ' ').trim().slice(0, 220)).filter(Boolean);
     const { src, text } = await aiContext(P.id, task, false);
     const prompt = AI_SYSTEM + '\n\n' + aiUserMsg(T, instruction, tplText, text) + (heads.length ? '\n\nUSE THESE HEADINGS, in this order, exactly as written:\n' + heads.map(h => '## ' + h).join('\n') : '') + '\n\nREPLY FORMAT: reply with the Markdown document only, with no introduction or closing remarks. Keep the [S#] citations.';
-    await audit(P.id, s.id, 'ai-pack', task); return ok({ task, title: T.title, prompt, sources: src, chars: prompt.length });
+    const skillsLine = (task === 'guide' || task === 'uat') ? '\n\nSKILLS: if your Claude has the video-to-user-guide skill installed, use it when I attach a recorded walkthrough; use the demo-video, ui-mockup-video and remotion skills if I ask for a video. If a skill is not installed, carry on without it.' : '';
+    const finalPrompt = prompt + skillsLine;
+    await audit(P.id, s.id, 'ai-pack', task); return ok({ task, title: T.title, prompt: finalPrompt, sources: src, chars: finalPrompt.length });
   });
   // Project review pack for Claude: the whole project (documents and records) as one prompt, with what to check and a reply format that can be imported back as tasks.
   route('POST', '/api/projects/:id/ai/review-pack', async (b, P) => {

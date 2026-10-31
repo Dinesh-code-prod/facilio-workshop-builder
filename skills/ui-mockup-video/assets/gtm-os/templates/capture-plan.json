@@ -1,0 +1,11 @@
+{
+  "description": "Example only: adapt these selectors to a disposable demo app before executing.",
+  "actions": [
+    {"type": "waitFor", "selector": "textarea[aria-label='Message']"},
+    {"type": "fill", "selector": "textarea[aria-label='Message']", "value": "Draft a launch brief"},
+    {"type": "hold", "ms": 800},
+    {"type": "click", "selector": "button[aria-label='Send']"},
+    {"type": "waitFor", "selector": "[data-demo-state='draft-ready']", "timeoutMs": 60000},
+    {"type": "hold", "ms": 1800}
+  ]
+}

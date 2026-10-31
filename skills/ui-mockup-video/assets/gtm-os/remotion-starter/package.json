@@ -1,0 +1,38 @@
+{
+  "name": "demo-skills-video-starter",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "render:launch": "node render.mjs Launch out/launch-1080p.mp4 1",
+    "render:ui": "node render.mjs UiMockup out/ui-mockup-1080p.mp4 1",
+    "render:loop": "node render.mjs DiagramLoop out/diagram-loop-1080p.mp4 1",
+    "render:4k": "node render.mjs Launch out/launch-4k.mp4 2",
+    "render:prores": "node render.mjs Launch out/launch-4k-prores.mov 2 prores",
+    "poster": "remotion still src/index.ts Launch out/poster.png --frame=370 --image-format=png --scale=2",
+    "render:slack": "node render.mjs SlackThread out/slack-thread-1080p.mp4 1",
+    "render:slack:4k": "node render.mjs SlackThread out/slack-thread-4k.mp4 2",
+    "render:slack:prores": "node render.mjs SlackThread out/slack-thread-4k-prores.mov 2 prores",
+    "render:openmuse": "node render.mjs OpenMuseLaunch out/openmuse-launch-1080p.mp4 1",
+    "render:opendots": "node render.mjs OpenDotsLaunch out/opendots-launch-1080p.mp4 1",
+    "review": "node review.mjs"
+  },
+  "dependencies": {
+    "@fontsource/inter": "5.3.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.530"
+  },
+  "devDependencies": {
+    "@remotion/cli": "4.0.530",
+    "@types/react": "18.3.31",
+    "@types/react-dom": "18.3.7",
+    "playwright": "1.63.0",
+    "typescript": "5.9.3"
+  }
+}

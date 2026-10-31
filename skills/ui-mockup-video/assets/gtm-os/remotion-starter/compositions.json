@@ -1,0 +1,53 @@
+{
+  "Launch": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "durationInFrames": 720,
+    "reviewFrames": [0, 119, 120, 346, 370, 479, 480, 599, 600, 719]
+  },
+  "UiMockup": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "durationInFrames": 360,
+    "reviewFrames": [0, 75, 76, 225, 226, 250, 359]
+  },
+  "DiagramLoop": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "durationInFrames": 240,
+    "reviewFrames": [0, 120, 239]
+  },
+  "SlackThread": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "durationInFrames": 930,
+    "reviewFrames": [
+      0, 125, 126, 163, 164, 167, 168, 239, 363, 428, 429, 465, 501, 609, 714,
+      797, 929
+    ]
+  },
+  "OpenMuseLaunch": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "durationInFrames": 1080,
+    "reviewFrames": [
+      0, 134, 135, 269, 270, 404, 405, 539, 540, 674, 675, 809, 810, 944, 945,
+      1079
+    ]
+  },
+  "OpenDotsLaunch": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "durationInFrames": 960,
+    "reviewFrames": [
+      0, 119, 120, 239, 240, 359, 360, 479, 480, 599, 600, 719, 720, 839, 840,
+      959
+    ]
+  }
+}

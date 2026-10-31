@@ -4,7 +4,7 @@
 (function (root) {
   'use strict';
   const F = root.FWB; const { S, esc } = F; const V = root.FWBViews; const ACT = V.ACT; const { toast } = V;
-  const OUT = { walkthrough: ['Walkthrough', 'The viewer clicks through each step at their own pace. Best for how-to and training.'], video: ['Video', 'Plays by itself, with optional voice-over. Best for a short explainer.'], guide: ['User guide section', 'Written steps for the customer, drafted from the same facts.'], training: ['Training outline', 'A role-based outline for a training session.'] };
+  const OUT = { walkthrough: ['Walkthrough', 'The viewer clicks through each step at their own pace. Best for how-to and training.'], video: ['Video', 'Plays by itself, with optional voice-over. Best for a short explainer.'], stepguide: ['Step-by-step guide', 'Numbered steps with the screen, what to click and a "press Next" cue. For customers who want to follow along.'], guide: ['Document guide', 'A written guide as a document, drafted from the same facts.'], training: ['Training outline', 'A role-based outline for a training session.'] };
   const AUD = { users: 'customer end users (people who do the daily work)', admins: 'customer administrators (people who set things up)', team: 'the Facilio delivery team (internal training)' };
   const VO = { none: 'no voice-over, on-screen text only', en: 'English voice-over', ar: 'Arabic voice-over' };
   const ui = () => S.ui;
@@ -39,13 +39,21 @@
     } catch (e) { }
     return { kit: kitScreens(label), name, label, desc: String((base && base.description) || (mv && mv.description) || '').slice(0, 300), fields, nFields: base ? (base.fields || []).length : 0, nForms: base ? (Array.isArray(base.forms) ? base.forms.length : Number(base.forms) || 0) : 0, flow, custom: !!(base && base.custom) };
   }
+  // how Claude should produce each kind of output, including what to attach and which skills to use
+  const PRODUCE = o => ({
+    video: 'HOW TO PRODUCE IT: I will attach a screen recording of this process to this chat. Use it as the source of truth for what is clicked and in what order. Give me the storyboard first: for each scene the screen, the action (click this, then that), the on-screen caption and the voice-over line. Then build the video if you can; if not, give me the storyboard and the voice-over script to produce it.',
+    walkthrough: 'HOW TO PRODUCE IT: a click-through the viewer steps through at their own pace. For each step give the screen, what to click, what the viewer should see afterwards and the text of the "Next" prompt. If I attach a recording, follow it.',
+    stepguide: 'HOW TO PRODUCE IT: a step-by-step guide. Number every step. For each give the screen, what to click or type, what the user should see, and a "press Next" cue. Mark where a screenshot goes. If I attach a recording, follow it.',
+    guide: 'HOW TO PRODUCE IT: a written guide as a document, with a short introduction, numbered steps, and a list of the screenshots needed. No video.',
+    training: 'HOW TO PRODUCE IT: a role-based training outline with objectives, an agenda with timings, exercises and a check at the end.'
+  })[o] || '';
   function brief(f) {
     const p = S.project || {}, o = ui().vsOut || 'walkthrough', kind = o === 'video' ? 'video' : 'walkthrough', min = Math.max(1, Math.min(10, Number(ui().vsMin) || 2));
     const title = f.label + (kind === 'video' ? ': how it works' : ': step by step');
     const steps = f.flow ? f.flow.steps.slice(0, 12).map((s, i) => `${i + 1}. ${s.name}: ${s.from} to ${s.to}${s.checks.length ? ' (checks: ' + s.checks.join('; ') + ')' : ''}${s.portals.length ? ' (shown in the ' + s.portals.join(' and ') + ' portal)' : ''}`).join('\n') : '(no state flow is configured for this module in the project; describe the steps from the Facilio screens and mark them "to confirm")';
     return [`Make a ${kind}: "${title}"`, `For: ${AUD[ui().vsAud] || AUD.users}`, `Customer: ${p.customer || 'the customer'} (project "${p.name || ''}"). Use sample data only; never real customer data.`, `App and module: Facilio CMMS, ${f.label}${f.desc ? '. ' + f.desc : ''}`, '',
       'Story, step by step (from this project\'s configuration):', steps, '', f.fields.length ? `Key fields on the record: ${f.fields.join(', ')}.` : '', f.kit.length ? `Screens: use these real Facilio product screens (sample data):\n${f.kit.slice(0, 8).map(x => `- ${x[0]}: ${x[3]}`).join('\n')}` : `Screens: use the real Facilio product screens for ${f.label} if you have them; otherwise say which screen is missing.`, 'Say "to confirm" for anything that is not in the configuration. Do not invent steps, buttons or fields. Label features that do not ship yet as "coming soon".',
-      `Voice-over: ${VO[ui().vsVo] || VO.none}. Length: about ${min} minute${min > 1 ? 's' : ''}.`].filter(x => x !== null).join('\n');
+      `Voice-over: ${VO[ui().vsVo] || VO.none}. Length: about ${min} minute${min > 1 ? 's' : ''}.`, PRODUCE(o), V.skillsPromptLine || ''].filter(x => x !== null).join('\n');
   }
   const opt = (v, cur, l) => `<option value="${esc(v)}"${String(v) === String(cur) ? ' selected' : ''}>${esc(l)}</option>`;
   const sel = (k, label, opts, cur) => `<div><label class="f">${label}</label><select data-change="vsSet" data-k="${k}" aria-label="${label}">${opts}</select></div>`;
@@ -72,7 +80,7 @@
       make = `<div class="card" style="padding:16px"><div class="sec-k"><p>Step 3</p><h2>Make the ${out}</h2></div>
         <p class="small muted">Edit the brief if you like, copy it, then copy it into your own Claude, or into the video and walkthrough creator. Attach any screenshots you have.</p>
         <textarea id="vs_brief" rows="14" data-change="vsBrief" style="font-family:ui-monospace,Menlo,monospace;font-size:12px" aria-label="Brief">${esc(text)}</textarea>
-        <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" data-act="vsCopy">Copy brief</button><button class="btn primary" data-act="vsClaude">Copy and open Claude</button><button class="btn" data-act="vsTab" data-v="kit">Find screens in the Product Tour</button></div></div>`;
+        <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" data-act="vsCopy">Copy brief</button><button class="btn primary" data-act="vsClaude">Copy and open Claude</button><button class="btn" data-act="vsTab" data-v="kit">Find screens in the Product Tour</button></div>${V.skillsNote ? V.skillsNote() : ''}</div>`;
     } else {
       const task = out === 'guide' ? 'guide' : 'training';
       make = `<div class="card" style="padding:16px"><div class="sec-k"><p>Step 3</p><h2>Draft the ${esc(OUT[out][0].toLowerCase())}</h2></div>

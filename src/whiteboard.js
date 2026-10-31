@@ -543,7 +543,7 @@
       <label class="f" for="wbImgHint" style="margin-top:14px">What does it show? (optional)</label><input type="text" id="wbImgHint" maxlength="200" placeholder="e.g. Work order approval in the maintenance app">
       <label class="chk" style="margin-top:12px"><input type="checkbox" id="wbImgKeep" checked> Keep the original image on the board as a reference layer</label>
       <div id="wbImgOut"></div>`,
-      `<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="wbImgRead" id="wbImgRead" disabled>Read the diagram</button>`, { wide: true });
+      `<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn" data-act="wbImgClaude" title="Read the picture in your own Claude">Use my own Claude</button><button class="btn primary" data-act="wbImgRead" id="wbImgRead" disabled>Read the diagram</button>`, { wide: true });
   };
   async function sniff(file) { const b = new Uint8Array(await file.slice(0, 12).arrayBuffer()); if (b[0] === 0x89 && b[1] === 0x50) return 'image/png'; if (b[0] === 0xFF && b[1] === 0xD8) return 'image/jpeg'; if (b[0] === 0x52 && b[1] === 0x49 && b[8] === 0x57 && b[9] === 0x45) return 'image/webp'; return ''; }
   ACT.wbImgPick = async () => {
@@ -561,6 +561,8 @@
     const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', .9)); const buf = new Uint8Array(await blob.arrayBuffer()); let bin = ''; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
     return { data: btoa(bin), mediaType: 'image/jpeg', w: c.width, h: c.height };
   }
+  ACT.wbImgClaude = () => { const out = document.getElementById('wbImgOut'); if (!out) return; V.claudeHandoff({ title: 'Flow from an image', url: `/api/projects/${S.project.id}/ai/flow-image`, body: { hint: ((document.getElementById('wbImgHint') || {}).value || '').slice(0, 200) }, extra: 'Attach the flow picture to the chat too.', into: 'wbImgOut',
+    onReply: r => { W.imp = W.imp || {}; W.imp.graph = r.graph; out.innerHTML = reviewHtml(r.graph, r.provider); const keep = document.getElementById('wbImgKeep'); if (keep && !W.imp.file) { keep.checked = false; keep.disabled = true; } const go = document.querySelector('#drawer .drawer-f .btn.primary'); if (go) { go.textContent = 'Add to board'; go.setAttribute('data-act', 'wbImgAdd'); go.disabled = false; } } }); };
   ACT.wbImgRead = a => V.busy(a, async () => {
     if (!W.imp) return; const out = document.getElementById('wbImgOut'); out.innerHTML = '<p class="small muted">Reading the diagram… this can take up to half a minute.</p>';
     try {

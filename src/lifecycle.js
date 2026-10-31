@@ -127,7 +127,7 @@
     const p = V.claudePack; if (!p) return;
     drawer('Open in Claude: ' + p.title, `<ol class="small"><li>${copied ? 'The prompt is copied.' : 'Copy the prompt with the button below.'} Open Claude, start a new chat, paste it (Ctrl+V) and send.</li><li>Check Claude's reply, copy it, come back to this page and paste it below. Keep this panel open while you work in Claude.</li></ol>
       <div class="row" style="gap:8px;margin:8px 0"><a class="btn" href="https://claude.ai/new" target="_blank" rel="noopener noreferrer">Open Claude (web)</a><a class="btn" href="claude://claude.ai/new" title="Works if the Claude desktop app is installed">Open Claude Desktop</a><button class="btn" data-act="aiPackCopy">Copy prompt${copied ? ' again' : ''}</button><button class="btn" data-act="aiPackDl">Download as .md</button></div>
-      <div class="notice">The prompt contains this project's records. It runs in your own Claude account and counts against your own usage. Delivery Studio sends nothing to Claude and reads nothing back. The pasted reply becomes an unapproved draft.</div>
+      ${V.skillsNote ? V.skillsNote() : ''}<div class="notice">The prompt contains this project's records. It runs in your own Claude account and counts against your own usage. Delivery Studio sends nothing to Claude and reads nothing back. The pasted reply becomes an unapproved draft.</div>
       <label class="f">Claude's reply</label><textarea id="ai_paste" rows="14" placeholder="Paste Claude's reply here"></textarea>`,
       `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="aiImport">Import as draft</button>`, { wide: true });
   }
