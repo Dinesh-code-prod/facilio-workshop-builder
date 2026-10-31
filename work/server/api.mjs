@@ -315,6 +315,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   };
   const AI_SYSTEM = 'You are an implementation consultant\'s assistant inside Facilio\'s Delivery Studio. Work only from the SOURCES supplied for this one project. Cite sources inline as [S1], [S2]. Label statements as Confirmed (stated in a source), Assumption, Suggestion or Missing information. Never invent customer decisions, approvals, sign-offs, test results, configuration details or completion status. If a source is absent, say so. Your output is a DRAFT for human review; you cannot approve, publish, close or change records. Write clear Markdown.';
   const clip = (v, n) => { let t = typeof v === 'string' ? v : JSON.stringify(v); return t.length > n ? t.slice(0, n) + ' …[truncated]' : t; };
+  const aiUserMsg = (T, instruction, tplText, text) => `TASK: ${T.ask}\n${instruction ? 'EXTRA INSTRUCTION FROM THE CONSULTANT: ' + instruction + '\n' : ''}${tplText ? 'FOLLOW THIS TEMPLATE STRUCTURE (headings and order; fill only from the sources, leave a heading with "Missing" when no source supports it):\n' + tplText + '\n' : ''}\nSOURCES (the only project information you may use):${text || '\n(No project records were found for this task. Say what is missing.)'}`;
   async function aiContext(pid, task, small) {
     const T = AI_TASKS[task]; const src = []; let text = ''; let n = 0;
     for (const d of T.docs) { const r = await docRead(pid, d).catch(() => null); if (r && r.data && Object.keys(r.data).length) { n++; src.push({ ref: 'S' + n, label: 'Document: ' + d }); text += `\n[S${n}] Document "${d}":\n${clip(r.data, d === 'config_digest' ? (small ? (task === 'pkg' ? 9000 : 4000) : 12000) : (small ? 2000 : 5000))}\n`; } }
@@ -425,7 +426,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
       if (task === 'vidguide') { const vr = await dbGet('it.' + P.id + '.vid', vidId); if (!vr || !vr.value) throw new HttpError(404, 'Walkthrough not found'); const vd = await unpack('ip.' + P.id + '.vid', vidId, vr.value); const mm = t => (t == null ? '' : '[' + String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(Math.floor(t % 60)).padStart(2, '0') + '] ');
         const tr = (vd.transcript || []).map(x => mm(x.t) + x.text).join('\n').slice(0, small ? 8000 : 18000); const fr = (vd.frames || []).map((f, i) => 'F' + (i + 1) + ' at ' + mm(f.t).trim() + ': ' + (f.caption || '(no caption)')).join('\n').slice(0, 2500);
         src = [{ ref: 'S1', label: 'Walkthrough transcript: ' + (vd.title || 'untitled') }, { ref: 'S2', label: 'Screenshots (' + (vd.frames || []).length + ')' }]; text = `\n[S1] Walkthrough "${vd.title || ''}" transcript:\n${tr}\n\n[S2] Screenshots (place the marker after the step it shows):\n${fr}\n`; }
-      const user = `TASK: ${T.ask}\n${instruction ? 'EXTRA INSTRUCTION FROM THE CONSULTANT: ' + instruction + '\n' : ''}${tplText ? 'FOLLOW THIS TEMPLATE STRUCTURE (headings and order; fill only from the sources, leave a heading with "Missing" when no source supports it):\n' + tplText + '\n' : ''}\nSOURCES (the only project information you may use):${text || '\n(No project records were found for this task. Say what is missing.)'}`;
+      const user = aiUserMsg(T, instruction, tplText, text);
       return { src, text, messages: [{ role: 'system', content: AI_SYSTEM }, { role: 'user', content: user }] };
     };
     const big = await build(pv.provider !== 'claude'); let small = pv.provider !== 'claude'; let used = big; let smallBuilt = null;
@@ -436,6 +437,28 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     const id = rid('ai'); const t = now(); const data = { task, title: T.title, status: 'draft', content: out.text, sources: src, vid: vidId || undefined, provider: out.provider, model: out.model, notice: out.notice || undefined, instruction, by: s.name || s.email, version: 1, hist: [{ at: t, who: s.name || s.email, side: 'facilio', event: 'AI draft generated' }] };
     await save('it.' + P.id + '.ai', 'ip.' + P.id + '.ai', id, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: t, ua: t }, data, undefined);
     await audit(P.id, s.id, 'ai-draft', task + ' via ' + out.provider + (out.notice ? ' (fallback)' : '')); return ok({ item: itemOut('ai', id, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: t, ua: t }, data) }, 201);
+  });
+  // ---------- Claude hand-off (no API, no cost to the app): the person pastes the prompt into their OWN claude.ai and brings the reply back as a draft ----------
+  // Nothing is sent to or read from claude.ai by the app. The reply is untrusted text: it is stored as an unapproved draft and goes through the same review and approval as any AI draft.
+  const PACK_TASKS = Object.keys(AI_TASKS).filter(k => k !== 'vidguide');
+  route('POST', '/api/projects/:id/ai/pack', async (b, P) => {
+    const s = await me(); await projectAccess(s, P.id, 'edit'); const task = String(b && b.task || ''); const T = AI_TASKS[task]; if (!T || !PACK_TASKS.includes(task)) throw new HttpError(400, 'This task cannot be drafted in Claude'); await limit('ai', s.id);
+    const instruction = str(b.instruction, 1500, 'Instruction');
+    let tplText = ''; if (b.templateId) { const h = await tplHead(String(b.templateId)); if (!(await tplCanRead(s, h)) || h.status === 'retired') throw new HttpError(404, 'Template not available'); if (h.kind && TPL_TASK[h.kind] && TPL_TASK[h.kind] !== task) throw new HttpError(400, 'That template is for a different deliverable'); const td = await tplData(h, h.pub || h.latest); tplText = String(td && td.body || '').slice(0, 6000); }
+    const heads = (Array.isArray(b.headings) ? b.headings : []).slice(0, 30).map(h => String(h == null ? '' : h).replace(/\s+/g, ' ').trim().slice(0, 220)).filter(Boolean);
+    const { src, text } = await aiContext(P.id, task, false);
+    const prompt = AI_SYSTEM + '\n\n' + aiUserMsg(T, instruction, tplText, text) + (heads.length ? '\n\nUSE THESE HEADINGS, in this order, exactly as written:\n' + heads.map(h => '## ' + h).join('\n') : '') + '\n\nREPLY FORMAT: reply with the Markdown document only, with no introduction or closing remarks. Keep the [S#] citations.';
+    await audit(P.id, s.id, 'ai-pack', task); return ok({ task, title: T.title, prompt, sources: src, chars: prompt.length });
+  });
+  route('POST', '/api/projects/:id/ai/import', async (b, P) => {
+    const s = await me(); await projectAccess(s, P.id, 'edit'); const task = String(b && b.task || ''); const T = AI_TASKS[task]; if (!T || !PACK_TASKS.includes(task)) throw new HttpError(400, 'Unknown AI task'); await limit('ai', s.id);
+    const content = String(b && b.content || '').replace(/\r\n/g, '\n').trim();
+    if (content.length < 200) throw new HttpError(400, 'Paste the full reply from Claude. What was pasted is too short to be a draft.'); if (content.length > 120000) throw new HttpError(413, 'That reply is too long to import (limit 120,000 characters). Ask Claude for one section at a time.');
+    const { src } = await aiContext(P.id, task, false); const known = new Set(src.map(x => x.ref)); const cited = [...new Set(content.match(/\[S\d+\]/g) || [])]; const unknown = cited.filter(r => !known.has(r.slice(1, -1)));
+    const notice = 'Written in Claude by ' + (s.name || s.email) + ' and pasted in; Delivery Studio did not run it. The sources listed are the project records as they are now.' + (cited.length ? '' : ' The reply has no [S#] citations, so check every statement.') + (unknown.length ? ' It cites sources this project does not have: ' + unknown.slice(0, 6).join(', ') + '.' : '');
+    const id = rid('ai'); const t = now(); const data = { task, title: T.title, status: 'draft', content, sources: src, provider: 'Claude (manual)', model: 'claude.ai', notice, instruction: '', by: s.name || s.email, version: 1, hist: [{ at: t, who: s.name || s.email, side: 'facilio', event: 'Imported from Claude' }] };
+    await save('it.' + P.id + '.ai', 'ip.' + P.id + '.ai', id, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: t, ua: t }, data, undefined);
+    await audit(P.id, s.id, 'ai-import', task + ' via Claude (manual)'); return ok({ item: itemOut('ai', id, { v: 1, cb: s.id, cs: 'facilio', ub: s.id, us: 'facilio', ca: t, ua: t }, data) }, 201);
   });
   /* ---------- flow image -> editable diagram (Process Whiteboard) ----------
      The image is analysed by Claude (the only configured provider that reads images; the platform model is text only). The model's answer is untrusted:
