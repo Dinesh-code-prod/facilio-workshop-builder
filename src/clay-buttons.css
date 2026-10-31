@@ -1,0 +1,22 @@
+/* Clay buttons, kept slight (31 Oct 2026): a soft light edge on top, a faint shade underneath and a small shadow, so a button looks just a little
+   raised. Labelled buttons only (primary, normal, danger); ghost, link and icon buttons are untouched, and borders stay as the theme has them.
+   Colours come from the theme tokens, so the primary stays Facilio violet. One file: take it out of build.mjs to go back. */
+body .btn.primary:not(.icon):not([disabled]):not(#_) {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--th-violet) 88%, #fff) 0%, var(--th-violet) 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), inset 0 -1px 2px rgba(40, 14, 130, .2), 0 3px 8px -4px color-mix(in srgb, var(--th-violet) 55%, transparent) !important;
+}
+body .btn.primary:not(.icon):not([disabled]):not(#_):hover { background: linear-gradient(180deg, color-mix(in srgb, var(--th-violet) 80%, #fff) 0%, color-mix(in srgb, var(--th-violet) 94%, #fff) 100%) !important; }
+body .btn.primary:not(.icon):not([disabled]):not(#_):active { transform: translateY(1px); box-shadow: inset 0 2px 4px rgba(20, 8, 80, .3), 0 1px 2px color-mix(in srgb, var(--th-violet) 40%, transparent) !important; }
+
+body .btn:not(.primary):not(.danger):not(.ghost):not(.link):not(.icon):not([disabled]):not(#_), body .navbar .right .btn:not(.primary):not(.icon):not([disabled]):not(#_) {
+  background: linear-gradient(180deg, #fff 0%, var(--th-soft) 100%) !important;
+  box-shadow: inset 0 1px 0 #fff, inset 0 -1px 2px rgba(98, 98, 140, .08), 0 1px 3px rgba(40, 40, 90, .1) !important;
+}
+body .btn:not(.primary):not(.danger):not(.ghost):not(.link):not(.icon):not([disabled]):not(#_):hover, body .navbar .right .btn:not(.primary):not(.icon):not([disabled]):not(#_):hover { background: linear-gradient(180deg, #fff 0%, var(--th-soft-2) 100%) !important; }
+body .btn:not(.primary):not(.danger):not(.ghost):not(.link):not(.icon):not([disabled]):not(#_):active, body .navbar .right .btn:not(.primary):not(.icon):not([disabled]):not(#_):active { box-shadow: inset 0 2px 4px rgba(98, 98, 140, .18), 0 1px 1px rgba(40, 40, 90, .06) !important; }
+
+body .btn.danger:not(.icon):not([disabled]):not(#_) {
+  background: linear-gradient(180deg, #fff 0%, var(--th-red-soft) 100%) !important;
+  box-shadow: inset 0 1px 0 #fff, inset 0 -1px 2px color-mix(in srgb, var(--th-red) 14%, transparent), 0 1px 3px color-mix(in srgb, var(--th-red) 22%, transparent) !important;
+}
+body .btn.danger:not(.icon):not([disabled]):not(#_):active { box-shadow: inset 0 2px 4px color-mix(in srgb, var(--th-red) 25%, transparent) !important; }

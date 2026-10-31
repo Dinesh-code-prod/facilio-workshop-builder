@@ -13,7 +13,7 @@
     if (body !== undefined && !(body instanceof ArrayBuffer) && !(body instanceof Uint8Array) && !(body instanceof Blob)) { h['content-type'] = 'application/json'; b = JSON.stringify(body); }
     else if (body !== undefined) h['content-type'] = 'application/octet-stream';
     let r;
-    try { r = await fetch(path, { method, headers: h, body: b, credentials: 'same-origin' }); }
+    try { const req = fetch(path, { method, headers: h, body: b, credentials: 'same-origin' }); r = await (root.FWBNet ? root.FWBNet.track(req) : req); }
     catch (e) { throw new ApiError(0, 'Network error — check your connection'); }
     const ct = r.headers.get('content-type') || '';
     const data = ct.includes('application/json') ? await r.json() : (opts.raw ? r : await r.arrayBuffer());

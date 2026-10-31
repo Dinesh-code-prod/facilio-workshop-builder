@@ -143,7 +143,7 @@
       `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="ugCreate">Create</button>`);
   };
   ACT.ugCreate = a => V.busy(a, async () => {
-    const g = i => ((document.getElementById(i) || {}).value || '').trim(); if (!g('ug_t')) { toast('Enter a title'); return; } const id = I().uid('ug'); let sections = []; const src = g('ug_s');
+    const g = i => ((document.getElementById(i) || {}).value || '').trim(); if (!g('ug_t')) { V.ui.field('ug_t', 'Enter a title'); return; } const id = I().uid('ug'); let sections = []; const src = g('ug_s');
     if (src === 'cfg') sections = cfgSections(); if (src === 'ai') { const d = I().get('ai', g('ug_ai')); if (d) sections = sectionsFromMd(d.content); }
     await I().put('ugd', id, { title: g('ug_t'), customer: g('ug_c'), audience: g('ug_a'), version: '0.1', status: 'draft', brand: { accent: '#1570EF', footer: '', cover: true, logo: null }, sections });
     closeDrawer(); S.ui.ugOpen = id; S.ui.ugTab = 'content'; W = null; V.render();

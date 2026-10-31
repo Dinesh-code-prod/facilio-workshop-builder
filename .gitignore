@@ -6,3 +6,5 @@ dist-run/
 dist-work/
 tests/ui/out/
 tests/ui/out-exports/
+
+tests/ui/.devdata.json

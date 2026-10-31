@@ -20,20 +20,21 @@
   const NAME_RE = /^[A-Za-z_][A-Za-z0-9_.-]*$/;
   function el(tag, attrs, kids) { if (!NAME_RE.test(tag)) throw new Error('Bad element name ' + tag); return { tag, attrs: attrs || null, kids: kids === undefined ? null : kids }; }
   function ser(n, ind) {
-    ind = ind || ''; const a = n.attrs ? Object.keys(n.attrs).map(k => { if (!NAME_RE.test(k)) throw new Error('Bad attribute ' + k); return ' ' + k + '="' + esc(n.attrs[k]) + '"'; }).join('') : '';
+    ind = ind || ''; if (n.cdata != null) return ind + '<' + n.tag + '><![CDATA[' + String(n.cdata).split(']]>').join(']]]]><![CDATA[>') + ']]></' + n.tag + '>'; const a = n.attrs ? Object.keys(n.attrs).map(k => { if (!NAME_RE.test(k)) throw new Error('Bad attribute ' + k); return ' ' + k + '="' + esc(n.attrs[k]) + '"'; }).join('') : '';
     if (n.kids == null || n.kids === '') return ind + '<' + n.tag + a + ' />';
     if (!Array.isArray(n.kids)) return ind + '<' + n.tag + a + '>' + esc(n.kids) + '</' + n.tag + '>';
     return ind + '<' + n.tag + a + '>\n' + n.kids.map(k => ser(k, ind + '   ')).join('\n') + '\n' + ind + '</' + n.tag + '>';
   }
   const doc = (rootTag, kids) => ser(el(rootTag, null, kids)) + '\n';
+  const cd = (k, v) => { if (!NAME_RE.test(k)) throw new Error('Bad element name ' + k); return { tag: k, attrs: null, kids: null, cdata: v }; };
   const kv = (k, v) => el(k, null, v === '' || v == null ? '' : String(v));
 
   // ---------- naming rules seen in the sample ----------
   const fieldName = (label, mod) => String(label || '').toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + mod;
   const linkName = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
   const statusName = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-  const COMPONENT_TYPE = { MODULE: 1, FIELD: 2, TICKET_STATUS: 24, STATE_FLOW: 40, STATE_TRANSITION: 41 };
-  const ORDER = ['MODULE', 'TICKET_STATUS', 'FIELD', 'STATE_FLOW', 'STATE_TRANSITION'];   // the order these types have in the sample's PackageConf.xml
+  const COMPONENT_TYPE = { MODULE: 1, FIELD: 2, TICKET_STATUS: 24, STATE_FLOW: 40, STATE_TRANSITION: 41, NOTIFICATION: 42 };
+  const ORDER = ['MODULE', 'TICKET_STATUS', 'FIELD', 'STATE_FLOW', 'STATE_TRANSITION', 'NOTIFICATION'];   // the order these types have in the sample's PackageConf.xml
 
   // field types: DataType / Display_Type and the type-specific children, as in user-made fields of the sample
   const DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
@@ -140,6 +141,50 @@
           rec: errs0.length || errs.length || unsupported ? null : el('STATE_TRANSITION', { Created_Version: '1.0', Modified_Version: '1.0', Parent_Id: parentOf(fl.module), Status: 'ADDED', Type: COMPONENT_TYPE.STATE_TRANSITION, Unique_Identifier: newId() }, [kv('moduleName', fl.module), kv('FromStateName', stName[t.from]), kv('ToStateName', stName[t.to]), kv('StateflowName', fl.name), kv('StateflowLinkName', flowLink), kv('Type', 1), kv('name', t.name), kv('linkName', link), kv('Status', t.enabled === false ? 'false' : 'true'), kv('Activity_Type', 'STATE_TRANSITION'), kv('Rule_Type', 'STATE_RULE'), kv('ShouldExecuteFromPermalink', 'false'), kv('ShowInClientPortal', show('client')), kv('ShowInOccupantPortal', show('occupant')), kv('ShowInTenantPortal', show('tenant')), kv('ShowInVendorPortal', show('vendor')), kv('Comment_Required', t.commentRequired ? 'true' : 'false'), kv('ButtonType', Number(t.buttonType) || 0), kv('ValidationList', '')]) });
       });
     });
+
+    // 4. notifications (from the Notifications tab). Shape copied from the user-made notifications of the sample (NOTIFICATION.xml, 27 records):
+    //    a "created" rule (Activity_Type CREATE, TriggerLinkName create) or a state rule (FIELD_CHANGE on moduleState, criteria by the status identifier),
+    //    with an email action (BULK_EMAIL_NOTIFICATION: subject, HTML message, ${placeholders}, "to" = the current user or a field's email).
+    const statusOf = (mod, label) => {
+      const want = String(label || '').trim().toLowerCase(); if (!want) return null; const bm = baseMod(mod);
+      const hit = ((bm && bm.statuses) || []).find(x => String(x.label || '').toLowerCase() === want || String(x.name || '').toLowerCase() === want);
+      if (hit && hit.uid) return { name: hit.name, uid: hit.uid };
+      const own = items.find(i => i.type === 'TICKET_STATUS' && i.module === mod && i.rec && i.name.toLowerCase().startsWith(want + ' ('));
+      return own ? { name: own.key.slice(own.key.lastIndexOf('.') + 1), uid: own.rec.attrs.Unique_Identifier, dep: own.key } : null;
+    };
+    const html = t => String(t || '').split(/\r?\n/).map(l => '<p>' + esc(l) + '</p>').join('');
+    const tokens = (...texts) => { const out = []; texts.join(' ').replace(/\$\{([A-Za-z0-9_.]+)(?::-)?\}/g, (m, p) => { if (!out.includes(p)) out.push(p); return m; }); return out; };
+    (model.notifications || []).forEach(n => {
+      const mod = n.module; const link = linkName(n.name) + '__C'; const key = 'NOTIFICATION:' + mod + '.' + link; const errs = []; let unsupported = ''; const deps = newMods.has(mod) ? ['MODULE:' + mod] : [];
+      const ch = n.channels || {}; const email = !!ch.email; const others = ['push', 'sms', 'whatsapp', 'inapp'].filter(k => ch[k]).map(k => ({ push: 'push', sms: 'SMS', whatsapp: 'WhatsApp', inapp: 'in-app' })[k]);
+      if (!String(n.name || '').trim()) errs.push('The notification has no name.');
+      if (!modExists(mod)) errs.push('Module ' + mod + ' is not in the organisation package and is not a new module of this project.');
+      if (items.some(i => i.key === key)) errs.push('Two notifications would get the same link name ' + link + '.');
+      if (email && !(String(n.subject || '').trim() && String(n.message || '').trim())) errs.push('An email notification needs a subject and a message.');
+      if (!email) unsupported = 'Only the email channel is exported (' + (others.length ? 'this one uses ' + others.join(', ') : 'no channel is chosen') + ').';
+      let st = null; const byState = n.trigger === 'state';
+      if (byState) { st = statusOf(mod, n.state); if (!st) errs.push('The state "' + (n.state || '') + '" is not a state of ' + mod + ' (in the organisation or in this project\'s new states).'); else if (st.dep) deps.push(st.dep);
+        if (!newMods.has(mod)) unsupported = unsupported || 'State rules are exported for new custom modules only: the rule names the module\'s own database column (CustomModuleData.MODULE_STATE in the sample), which is not known for other modules.'; }
+      if (others.length && email) manual.push({ area: 'Notification ' + n.name, detail: 'Also meant to go by ' + others.join(', ') + ': those channels are not exported yet. Set them up by hand.' });
+      if ((n.recipients || []).length) manual.push({ area: 'Notification ' + n.name, detail: 'Recipients (' + n.recipients.join(', ') + '): the package stores recipients as a script or a field\'s email, not as role names. Choose the recipients when implementing.' });
+      let rec = null;
+      if (!errs.length && !unsupported) {
+        const toExpr = n.toField ? '${' + mod + '.' + n.toField + '.email:-}' : '${cs.email}'; const names = tokens(n.subject, n.message, toExpr);
+        const prm = nm => el('parameter', null, [kv('name', nm), kv('typeString', 'String'), kv('workflowFieldType', 'STRING')]);
+        const action = el('Action', null, [kv('Action_Type', 'BULK_EMAIL_NOTIFICATION'), el('Serialized_Action', null, [kv('Action_Name', n.name + '_BULK_EMAIL_NOTIFICATION_Action'), kv('Link_Name', ''), kv('Action_Type', 3), kv('Action_Type', 'BULK_EMAIL_NOTIFICATION'), kv('Action_Status', 'true'), kv('Module_Name', mod),
+          el('Template', null, [kv('Template_Name', n.name + ' Email Template'), kv('Template_Type', 'EMAIL'), cd('Placeholder', JSON.stringify(names)), kv('is_FTL', 'false'), kv('Is_Attachment_Added', 'false'),
+            el('workflow', null, [el('expressions', null, [el('Expression', null, [kv('Constant', '${org.domain}'), kv('Name', 'org.domain'), kv('Criteria', '')])]), el('parameters', null, [prm('org.domain'), prm(mod)])]),
+            el('Original_Template', null, [el('Value_Element', null, [kv('emailStructureName', n.name), kv('html', 'true'), cd('message', html(n.message)), kv('sendAsSeparateMail', 'true'), kv('subject', n.subject), kv('to', toExpr)])])])])]);
+        const desc = (n.note ? n.note + ' ' : '') + ((n.recipients || []).length ? 'Recipients: ' + n.recipients.join(', ') + '.' : '');
+        const head = [kv('name', n.name), kv('linkName', link), kv('Description', desc.trim()), kv('moduleName', mod), kv('Activity_Type', byState ? 'FIELD_CHANGE' : 'CREATE'), kv('Execution_Order', -1), kv('Status', n.status === 'off' ? 'false' : 'true'), kv('Rule_Type', 'MODULE_RULE_NOTIFICATION'), kv('On_Success', 'false'),
+          kv('Version_Group_Id', -1), kv('Version_Number', -1), kv('Is_Latest_Version', 'true'), kv('Schedule_info', ''), kv('Schedule_Type', 'AFTER'), kv('Time_Interval', -1), kv('Job_Time', ''), kv('Last_Schedule_Rule_Executed_Time', -1), kv('Locked', 'false'), kv('TriggerLinkName', byState ? 'statuschange__C' : 'create')];
+        const crit = byState ? [el('Criteria', null, [kv('Pattern', '( 1 )'), el('Conditions_List', null, [el('Condition', null, [kv('Sequence', 1), kv('Value', st.uid), kv('FieldName', 'moduleState'), kv('Column_Name', 'CustomModuleData.MODULE_STATE'), kv('Json_Value', ''), kv('Operator', 36), kv('Is_Expression_Value', 'false'),
+          el('PickList_Element', null, [kv('Parent_Module_Name', mod), kv('moduleName', 'ticketstatus'), kv('PickList_Value', st.name)])])]), kv('Criteria_ModuleName', mod)])] : [];
+        rec = el('NOTIFICATION', { Created_Version: '1.0', Modified_Version: '1.0', Parent_Id: parentOf(mod), Status: 'ADDED', Type: COMPONENT_TYPE.NOTIFICATION, Unique_Identifier: newId() },
+          head.concat(crit, [el('Actions_List', null, [action])], byState ? [el('Field_Change_Fields', null, [kv('Change_Field_Name', 'moduleState')])] : []));
+      }
+      add({ key, type: 'NOTIFICATION', name: n.name + ' (' + mod + ')', module: mod, src: n.src, errors: errs, unsupported, deps, rec, uidNew: true });
+    });
     (model.changes || []).forEach(c => manual.push(c));
     // selection: what is eligible, what was picked, and the dependencies that come with it
     const byKey = new Map(items.map(i => [i.key, i]));
@@ -185,6 +230,7 @@
     (recs.TICKET_STATUS || []).forEach(r => parentOk(r, t(r, 'parentModuleName')));
     (recs.STATE_FLOW || []).forEach(r => { parentOk(r, t(r, 'moduleName')); if (!statuses.has(t(r, 'moduleName') + '|' + t(r, 'defaultStateName'))) bad('State flow ' + t(r, 'name') + ': default state ' + t(r, 'defaultStateName') + ' is not a status of the module'); });
     (recs.STATE_TRANSITION || []).forEach(r => { const m = t(r, 'moduleName'); parentOk(r, m); ['FromStateName', 'ToStateName'].forEach(k => { if (!statuses.has(m + '|' + t(r, k))) bad('Transition ' + t(r, 'name') + ': ' + k + ' ' + t(r, k) + ' is not a status of ' + m); }); if (!flows.has(m + '|' + t(r, 'StateflowLinkName'))) bad('Transition ' + t(r, 'name') + ': state flow ' + t(r, 'StateflowLinkName') + ' is not in the package or the organisation'); });
+    (recs.NOTIFICATION || []).forEach(r => { parentOk(r, t(r, 'moduleName')); if (!r.getElementsByTagName('Action').length) bad('Notification ' + t(r, 'name') + ' has no action'); if (t(r, 'Activity_Type') === 'FIELD_CHANGE' && !t(r, 'Value')) bad('Notification ' + t(r, 'name') + ' names no state'); });
     return out;
   }
 
@@ -193,6 +239,12 @@
     const L = []; const st = { ready: 'Ready', draft: 'Draft (BRD not signed off)', clarify: 'Awaiting clarification (source requirement not confirmed)', blocked: 'Blocked (source requirement rejected or deferred)', unsupported: 'Not exportable yet', error: 'Validation error' };
     L.push('# Organisation package report: ' + res.name, '', 'Generated by Facilio Delivery Studio. This package has passed structural validation only; it has NOT been imported into a Facilio organisation. Delivery Studio does not change any live organisation.', '');
     L.push('- Organisation: ' + (model.orgId || 'unknown') + (model.reference ? ' (bundled reference configuration, not the customer\'s own package)' : ''), '- Source package: ' + (model.packageName || 'unknown'), '- BRD signed off: ' + (model.brdSigned ? 'yes' : 'no'), '- Status: ' + (res.draft ? 'DRAFT: contains components that are not approved' : 'approved components only'), '- Structural check: ' + (check ? (check.ok ? 'passed (' + check.checked + ' records)' : 'FAILED: ' + check.errors.join('; ')) : 'not run'), '');
+    const so = model.signoff || {}; const rs = model.reqSummary || null; const crs = model.crs || [];
+    L.push('## Where this configuration comes from', '');
+    L.push('- BRD sign-off: ' + (so.status === 'signed' ? 'signed' + (so.signer ? ' by ' + so.signer : '') + (so.signedAt ? ' on ' + String(so.signedAt).slice(0, 10) : '') : 'not signed off. Everything below is a draft until it is.'));
+    if (rs) L.push('- Requirements: ' + rs.total + ' in the project (' + Object.keys(rs.byStatus).map(k => rs.byStatus[k] + ' ' + k.toLowerCase()).join(', ') + '). Only configuration traced to a Confirmed requirement is marked Ready.');
+    L.push('- Notifications: ' + ((model.notifications || []).length) + ' set up in the Notifications tab.', '- Change requests: ' + crs.length + (crs.length ? ' (see below).' : '.'), '');
+    if (crs.length) { L.push('### Change requests', '', '| No. | Change | Status | Effect on this configuration |', '|---|---|---|---|'); crs.forEach(c => L.push('| ' + c.n + ' | ' + String(c.title || '').replace(/\|/g, '/') + ' | ' + c.status + ' | ' + (/^(rejected|withdrawn|cancelled|declined)$/i.test(c.status) ? 'None: not agreed.' : /^(draft|requested|proposed)$/i.test(c.status) ? 'Not agreed yet: do not implement.' : 'Agreed: check that the configuration below reflects it.') + ' |')); L.push(''); }
     L.push('## Included components', '', '| Type | Component | Module | Status | Source requirements | Depends on |', '|---|---|---|---|---|---|');
     res.items.filter(i => i.included).forEach(i => L.push('| ' + i.type + ' | ' + i.name + ' | ' + i.module + ' | ' + st[i.readiness] + (i.auto ? ' (added as a dependency)' : '') + ' | ' + (((i.src || {}).reqs || []).map(r => r.id + ' (' + r.status + ')').join(', ') || 'none recorded') + ' | ' + ((i.deps || []).join(', ') || '—') + ' |'));
     L.push('', '## Not included', '', '| Type | Component | Status | Reason |', '|---|---|---|---|');

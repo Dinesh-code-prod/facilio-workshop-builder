@@ -79,7 +79,7 @@
   const picked = n => [...document.querySelectorAll(`input[name="${n}"]:checked`)].map(x => x.value);
   const extra = id => ((document.getElementById(id) || {}).value || '').split(',').map(x => x.trim()).filter(Boolean);
   ACT.ugWizGo = a => V.busy(a, async () => {
-    const val = i => ((document.getElementById(i) || {}).value || '').trim(); const title = val('ug_t'); if (!title) { toast('Enter a title'); return; }
+    const val = i => ((document.getElementById(i) || {}).value || '').trim(); const title = val('ug_t'); if (!title) { V.ui.field('ug_t', 'Enter a title'); return; }
     const kind = val('ug_kind') === 'uat' ? 'uat' : 'user'; const plan = { kind, modules: [...new Set(picked('ug_m').concat(extra('ug_mx')))].slice(0, 20), roles: [...new Set(picked('ug_r').concat(extra('ug_rx')))].slice(0, 12), level: val('ug_lv') || 'steps', sources: {}, vid: val('ug_v') || '' };
     picked('ug_s').forEach(k => { plan.sources[k] = true; }); const start = val('ug_start');
     if (!Object.keys(plan.sources).length && !plan.vid && start === 'gen') { toast('Choose at least one source, or create the sections empty'); return; }

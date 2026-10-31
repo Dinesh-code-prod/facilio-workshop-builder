@@ -176,7 +176,7 @@
   }
   ACT.suggestTopics = () => { const ms = Array.from(document.querySelectorAll('#ss_mods input:checked')).map(i => i.value); const out = []; ms.forEach(m => { const fl = F.flowsForModule(m); out.push(modLabel(m) + ' — process walkthrough' + (fl.length ? ' and stateflow review' : '')); out.push(modLabel(m) + ' — form fields and mandatory data'); if (F.allActors().some(a => a.roleName)) out.push(modLabel(m) + ' — roles, approvals and notifications'); }); const ta = document.getElementById('ss_topics'); ta.value = (ta.value ? ta.value + '\n' : '') + out.map((x, i) => (i + 1) + '. ' + x).join('\n'); };
   ACT.saveSession = a => {
-    const v = id => document.getElementById(id).value; const title = v('ss_title').trim(); if (!title) { toast('Enter the session title'); return; }
+    const v = id => document.getElementById(id).value; const title = v('ss_title').trim(); if (!title) { V.ui.field('ss_title', 'Enter the session title'); return; }
     const data = { no: Number(v('ss_no')) || 1, status: v('ss_status'), title, date: v('ss_date'), mode: v('ss_mode'), start: v('ss_start'), end: v('ss_end'), minutes: Number(v('ss_min')) || P().settings.defaultMinutes, modules: Array.from(document.querySelectorAll('#ss_mods input:checked')).map(i => i.value), topics: v('ss_topics').trim(), participants: v('ss_part').trim(), prep: v('ss_prep').trim(), notes: v('ss_notes').trim() }; if (V.sessAudRead) Object.assign(data, V.sessAudRead());
     if (data.start && data.end && mins(data) <= 0) { toast('End time must be after the start time'); return; }
     const d = P(); const id = a.getAttribute('data-id'); if (d.sessions.some(x => x.no === data.no && x.id !== id)) toast('Note: another session already has number ' + data.no, 4000);

@@ -7,6 +7,10 @@ import handler from '../../work/server/api.mjs';
 const here = path.dirname(fileURLToPath(import.meta.url)); const dist = process.env.DIST || path.join(here, '..', '..', 'dist');
 const port = Number(process.argv[2] || process.env.PORT || 4173);
 const store = new Map(), blobs = new Map(); let fileSeq = 0;
+// Keep the local data between restarts (records only; uploaded files stay in memory). Delete tests/ui/.devdata.json to start empty, or set NO_PERSIST=1.
+const dataFile = path.join(here, '.devdata.json'); let saveT = 0;
+if (!process.env.NO_PERSIST) { try { for (const [c, rows] of Object.entries(JSON.parse(fs.readFileSync(dataFile, 'utf8')))) store.set(c, new Map(Object.entries(rows))); } catch (e) { /* first run */ } }
+const persist = () => { if (process.env.NO_PERSIST) return; clearTimeout(saveT); saveT = setTimeout(() => { try { fs.writeFileSync(dataFile, JSON.stringify(Object.fromEntries([...store].map(([c, m]) => [c, Object.fromEntries(m)])))); } catch (e) { } }, 400); };
 // FAKE_CLAUDE=1: a local test double for Anthropic, so the image-to-flow review can be exercised without a key. It returns a fixed answer that
 // includes an edge to a missing node and markup in a label, which the server must strip. It is never used by the deployed app.
 const FAKE_CLAUDE = process.env.FAKE_CLAUDE === '1';
@@ -55,8 +59,8 @@ const ctxFor = (email, origin) => ({
     return { model: 'mock', choices: [{ message: { content: (hs.length ? hs : ['Draft']).map(h => '## ' + h + '\n\nLocal preview draft based on [S1].\n\n- Confirmed: sample point\n- Assumption: sample point').join('\n\n') } }] }; },
   db: {
     async get(c, k) { const r = (store.get(c) || new Map()).get(k); return r ? { key: k, value: JSON.parse(r), updated_at: new Date().toISOString(), updated_by: email } : null; },
-    async put(c, k, v) { if (!store.has(c)) store.set(c, new Map()); store.get(c).set(k, JSON.stringify(v)); },
-    async delete(c, k) { (store.get(c) || new Map()).delete(k); },
+    async put(c, k, v) { if (!store.has(c)) store.set(c, new Map()); store.get(c).set(k, JSON.stringify(v)); persist(); },
+    async delete(c, k) { (store.get(c) || new Map()).delete(k); persist(); },
     async list(c, o = {}) { const m = store.get(c) || new Map(); const keys = [...m.keys()].sort(); const start = o.cursor ? keys.findIndex(k => k > o.cursor) : 0; if (start < 0) return { items: [] }; const page = keys.slice(start, start + (o.limit || 50)); return { items: page.map(k => ({ key: k, value: JSON.parse(m.get(k)) })), cursor: start + page.length < keys.length ? page[page.length - 1] : undefined }; }
   },
   files: { async uploadUrl() { const id = 'f' + (++fileSeq); return { url: origin + '/__files/' + id, file_id: id }; }, async url(id) { return { url: origin + '/__files/' + id }; } }

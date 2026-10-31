@@ -101,7 +101,7 @@
   ACT.xfImg = async () => { const f = (await V.pickFile('image/png,image/jpeg,image/webp'))[0]; if (!f) return; if (f.size > 5e6) { toast('That image is larger than 5 MB', 5000, true); return; }
     try { const rec = await API.uploadFile(S.project.id, f, 'showcase_image', {}); S.ui.scImg = rec.id; const n = document.getElementById('sc_imgn'); if (n) n.textContent = f.name; toast('Image uploaded'); } catch (e) { toast(e.message || 'Upload failed', 6000, true); } };
   ACT.xfSave = a => V.busy(a, async () => {
-    const id = a.getAttribute('data-id'); const cur = id ? I().get('news', id) : null; const title = val('sc_t'); if (!title) { toast('Give the entry a title'); return; }
+    const id = a.getAttribute('data-id'); const cur = id ? I().get('news', id) : null; const title = val('sc_t'); if (!title) { V.ui.field('sc_t', 'Give the entry a title'); return; }
     const d = Object.assign({}, cur || {}, { title, module: val('sc_mod'), problem: val('sc_p'), summary: val('sc_s'), capabilities: lines('sc_c'), useCases: lines('sc_u'), relation: val('sc_r'), availability: val('sc_a'), source: val('sc_src'), imageId: S.ui.scImg || '', imageAlt: val('sc_alt'), status: cur ? cur.status : 'draft' });
     try { await I().put('news', id || I().uid('nw'), d); closeDrawer(); toast(cur && cur.status === 'published' ? 'Saved. The customer sees the change.' : 'Saved as draft'); V.render(); } catch (e) { toast(e.message, 6000, true); } });
   ACT.xfPub = a => V.busy(a, async () => {

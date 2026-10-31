@@ -6,6 +6,33 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '1.9.0', date: '2026-10-31', kind: 'UPDATE', all: true, title: 'Guided Product Tour, nicer Module guides, a smarter project plan, UI states', notes: [
+      'Product Tour: a guided, full-screen tour of the real Facilio screens, chapter by chapter, with a plain explanation for each. It plays on its own or with the arrow keys. The team can save a chapter as a video file made in the browser.',
+      'Module guides have a cleaner look: a clear module list, a progress band and softer sections. The content is the same.',
+      'Project plan timeline: Day, Week and Month scales that scroll sideways, drag a bar to move it or drag its end to change the end date, Shift moves every later task, a baseline ghost, Shift tasks by working days, and a working calendar for the weekend and holidays.',
+      'Plan workbook: many more Excel functions, including IFS, SWITCH, XLOOKUP, SUMIFS, COUNTIFS, DATEDIF, WORKDAY.INTL and NETWORKDAYS.INTL with weekends and holidays.',
+      'Consistent states across the app: empty, loading, error, offline, slow connection, no results, no access, required fields and success messages.',
+      'Team: Tasks Board, a full Team Guide page, Agent Setup for Facilio AI agent projects, and Add email (.eml) in the Inbox.'] },
+    { v: '1.8.3', date: '2026-10-31', kind: 'UPDATE', title: 'Task board and a new Team Guide', notes: [
+      'Tasks now has a List and a Board view. The Board has one column per status; drag a card to another column and the list shows the same change. Each card has a status menu and Alt + Arrow keys for keyboard use.',
+      'The Team Guide is now a full page in the Project menu: the stages in menu order from kick-off to closure, with what to do, which page to open, what done looks like and what to watch for, plus working rules and tick-boxes.',
+      'Page headings use a dark gradient like the Up next band, with no striped edge. Admin buttons that were unreadable are fixed.'] },
+    { v: '1.8.2', date: '2026-10-31', kind: 'UPDATE', all: true, title: 'A clearer notification bell', notes: [
+      'The bell is now a compact panel: Needs you, Delivery assistant and Activity, with unread and mark-all-read.',
+      'Every notification opens the exact page and tab it is about (for example an overdue action opens Governance, Actions).',
+      'Delivery assistant (Facilio team): points out what the project cycle says is missing or late, such as plan tasks behind schedule, actions with no owner or due date, workshops with no minutes, and customer actions overdue.',
+      'The menu now follows the project order from kick-off to hypercare and closure, and Checks has six tabs instead of eight.'] },
+    { v: '1.8.1', date: '2026-10-31', kind: 'UPDATE', all: true, title: 'Product Tour, Module guides and Discover more', notes: [
+      'Product Tour: real Facilio screens in full size, grouped by what they do (raise and track work, assets, quotes and invoices, field service, reports, setup, the mobile app). Use it in requirement sessions to see how Facilio looks and how each action works.',
+      'Module guides: the standard Facilio guide for each business module, with screens, a worked example, the process, short videos, the standard fields, the questions we will ask and a preparation checklist.',
+      'Discover more with Facilio: the Facilio modules that are not part of your contract, grouped into solution areas, with what each one does and a button to say you are interested. Your Facilio team follows up on every request.',
+      'One font across the whole app, buttons with a slight raised look, and a soft depth on boxes and KPI tiles.'] },
+    { v: '1.8.0', date: '2026-10-31', kind: 'UPDATE', title: 'Notifications, a fuller package export, Open in Claude everywhere', notes: [
+      'New Notifications tab (Solution Design & Configuration): set who is told what and when for each module. Email notifications are written into the organisation package in the format of the standard package; other channels and recipients are listed as steps to do by hand.',
+      'The Org Package Export report now shows the BRD sign-off, the requirements and every change request with its effect on the configuration.',
+      'An Open in Claude button now sits beside every AI button. It copies the prompt for your own Claude account (web or desktop); bring the reply back with Import as draft. Deliverables & AI explains both ways.',
+      'Project Overview now holds Delivery lifecycle, Roadmap, Plan vs actual and Reports as tabs, so the menu has one progress page instead of five.',
+      'In the Product Tour the team can open the live, clickable screen to show how buttons and actions work. The Modules page opens on the customer\'s own modules.'] },
     { v: '1.7.0', date: '2026-10-31', kind: 'UPDATE', all: true, title: 'Simpler menus, Learn & Prepare, Guides & Video Studio', notes: [
       'The menu now follows the delivery path: kick-off, workshops, design, UAT, hypercare. Rarely needed pages moved to "More tools". Nothing was removed.',
       'Customers get a shorter menu and a new Learn & Prepare page: what Facilio is, how the project runs, how to prepare for a session, what to bring, and the words they will hear.',

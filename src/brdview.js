@@ -45,7 +45,7 @@
   ACT.brdFormType = () => { const f = readForm(); const T = R().TYPES; if (f && !f.id && !f.name.trim()) { /* keep empty so the placeholder shows */ } if (f && T[f.type].integ && !f.modules.length) f.modules = F.allModules().filter(m => m.inScope && T[f.type].pick(m.name)).map(m => m.name); brdForm(); };
   ACT.brdFormSuggest = () => { const f = readForm(); const T = R().TYPES; f.modules = F.allModules().filter(m => m.inScope && T[f.type].pick(m.name)).map(m => m.name); brdForm(); };
   ACT.brdFormSave = () => {
-    const f = readForm(); const T = R().TYPES; const name = (f.name || '').trim(); if (!name) { toast('Give the BRD a name'); return; }
+    const f = readForm(); const T = R().TYPES; const name = (f.name || '').trim(); if (!name) { V.ui.field('bf_name', 'Give the BRD a name'); return; }
     const list = R().list(); if (list.some(r => r.id !== f.id && r.name.toLowerCase() === name.toLowerCase())) { toast('Another BRD already has that name'); return; }
     const rec = { id: f.id || F.uid('brd'), name, type: f.type, modules: f.modules.slice(), system: T[f.type].integ ? (f.system || '').trim() : '', direction: T[f.type].integ ? f.direction : '', notes: (f.notes || '').trim() };
     if (V.contractBasis && (!f.id || !(list.find(r => r.id === f.id) || {}).basis)) rec.basis = V.contractBasis();

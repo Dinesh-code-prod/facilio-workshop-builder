@@ -1,0 +1,7 @@
+/* One font (31 Oct 2026): everything uses the font of the sidebar, Inter, whatever the size: titles, numbers, small labels, badges, buttons and fields.
+   Before this the app mixed in Plus Jakarta Sans (titles), IBM Plex Mono (small labels and badges) and a few leftovers.
+   Kept as they are on purpose: real code (code, pre, kbd, samp) and the two document previews, the BRD page (.paper) and the Excel preview (.xls-table),
+   because they show how the Word and Excel files will look. One file: take it out of build.mjs to go back. */
+:root { --th-display: var(--th-font); --th-mono: var(--th-font); --font: var(--th-font); }
+html body *:not(code):not(pre):not(kbd):not(samp):not(.paper):not(.paper *):not(.xls-table):not(.xls-table *):not(#_):not(#__),
+html body *:not(.paper *):not(.xls-table *):not(#_):not(#__)::before, html body *:not(.paper *):not(.xls-table *):not(#_):not(#__)::after { font-family: var(--th-font) !important; }

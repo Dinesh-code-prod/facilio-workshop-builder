@@ -131,7 +131,7 @@
   ACT.ctAddTeam = () => { if (V.requireEdit && !V.requireEdit()) return; contractForm({ type: 'cr', status: 'approved', source: 'team' }); };
   ACT.ctEdit = a => { if (V.requireEdit && !V.requireEdit()) return; contractForm(real(a.getAttribute('data-c'))); };
   ACT.ctSave = a => {
-    const t = val('cc_title').trim(); if (!t) { toast('Give it a title'); return; } const id = a.getAttribute('data-c'); const data = { title: t, type: val('cc_type'), status: val('cc_status'), ref: val('cc_ref').trim(), date: val('cc_date') };
+    const t = val('cc_title').trim(); if (!t) { V.ui.field('cc_title', 'Give it a title'); return; } const id = a.getAttribute('data-c'); const data = { title: t, type: val('cc_type'), status: val('cc_status'), ref: val('cc_ref').trim(), date: val('cc_date') };
     if (id) Object.assign(real(id), data); else list().push(Object.assign({ id: F.uid('ctr'), source: 'team', facts: [], addedAt: new Date().toISOString() }, data));
     closeDrawer(); F.changed(id ? 'Contract edited' : 'Contract item added', t, { section: 'planner' });
   };

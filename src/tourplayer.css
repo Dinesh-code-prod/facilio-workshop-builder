@@ -1,0 +1,34 @@
+/* Product Tour: hero, chapter cards and the full-screen player */
+.tp-hero { padding: 26px 28px; border-radius: 18px; color: #fff; margin-bottom: 16px; background: radial-gradient(520px 220px at 100% 0%, rgba(72, 11, 203, .6), transparent 70%), radial-gradient(420px 200px at 82% 120%, rgba(219, 0, 0, .28), transparent 70%), radial-gradient(360px 160px at 100% 100%, rgba(56, 215, 255, .2), transparent 70%), linear-gradient(120deg, #0E0B1F, #1A1446); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 16px 28px -18px rgba(14, 11, 31, .65); }
+.tp-eyebrow { margin: 0 0 6px; font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #7CF3C6; }
+.tp-hero h2 { margin: 0 0 8px; font-size: 26px; letter-spacing: -.02em; color: #fff !important; }
+.tp-hero p { margin: 0 0 16px; max-width: 62ch; color: rgba(255, 255, 255, .82); font-size: 15px; line-height: 1.6; }
+.tp-hero .row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; } .tp-hero .xs { color: rgba(255, 255, 255, .6); }
+.tp-chaps { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+.tp-chap { position: relative; display: grid; gap: 6px; text-align: left; padding: 0 0 14px; border-radius: 16px; overflow: hidden; border: 1px solid #ebe8f5; background: linear-gradient(180deg, #fff, #fbfaff); box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(40, 40, 90, .06), 0 12px 22px -18px rgba(60, 40, 140, .4); cursor: pointer; font: inherit; color: #1b1630; transition: transform .18s ease, box-shadow .18s ease; }
+.tp-chap:hover { transform: translateY(-3px); box-shadow: inset 0 1px 0 #fff, 0 3px 6px rgba(40, 40, 90, .08), 0 18px 28px -14px rgba(60, 40, 140, .45); }
+.tp-cover { display: block; height: 130px; overflow: hidden; border-bottom: 1px solid #ebe8f5; background: #f1ecff; } .tp-cover img { width: 100%; height: 100%; object-fit: cover; object-position: top left; display: block; transition: transform .5s ease; } .tp-chap:hover .tp-cover img { transform: scale(1.05); }
+.tp-n { position: absolute; top: 10px; left: 10px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 800; color: #fff; background: linear-gradient(135deg, #6a3df0, #3b1fa8); box-shadow: 0 6px 12px -6px rgba(60, 40, 140, .7); }
+.tp-chap b { padding: 4px 14px 0; font-size: 15px; } .tp-chap small { padding: 0 14px; font-size: 13px; line-height: 1.5; color: #5d5878; } .tp-chap em { padding: 4px 14px 0; font-style: normal; font-size: 12px; font-weight: 700; color: #6a3df0; }
+
+body.tp-open { overflow: hidden; }
+#tourP { position: fixed; inset: 0; z-index: 9800; display: grid; grid-template-rows: auto 1fr auto; background: radial-gradient(800px 400px at 100% 0%, rgba(72, 11, 203, .45), transparent 70%), linear-gradient(120deg, #0E0B1F, #15103a); color: #fff; animation: tpIn .22s ease both; }
+@keyframes tpIn { from { opacity: 0; } to { opacity: 1; } }
+#tourP header { display: flex; align-items: center; gap: 12px; padding: 14px 20px; }
+.tp-chip { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #7CF3C6; background: rgba(124, 243, 198, .12); border-radius: 999px; padding: 4px 11px; }
+.tp-ct { font-size: 15px; } #tourP .spacer { flex: 1; }
+#tourP .tp-b { background: rgba(255, 255, 255, .1) !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, .22) !important; }
+.tp-stage { display: grid; grid-template-columns: 54px minmax(0, 1fr) 54px; align-items: center; gap: 8px; padding: 0 12px; min-height: 0; }
+.tp-nav { width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .25); background: rgba(255, 255, 255, .08); color: #fff; font-size: 26px; line-height: 1; cursor: pointer; } .tp-nav:hover:not(:disabled) { background: rgba(255, 255, 255, .2); } .tp-nav:disabled { opacity: .3; cursor: default; }
+.tp-frame { margin: 0; align-self: center; justify-self: center; max-height: 100%; max-width: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr); border-radius: 14px; overflow: hidden; background: #fff; box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .7), 0 0 0 1px rgba(255, 255, 255, .12); }
+.tp-bar { display: flex; align-items: center; gap: 6px; padding: 9px 12px; background: #eceaf5; } .tp-bar i { width: 10px; height: 10px; border-radius: 50%; background: #c9c4de; } .tp-bar span { margin-left: 10px; flex: 1; text-align: center; font-size: 12px; color: #5d5878; padding: 3px 10px; border-radius: 999px; background: #fff; max-width: 420px; }
+.tp-img { display: block; max-width: 100%; max-height: calc(100vh - 250px); width: auto; height: auto; object-fit: contain; animation: tpImg .5s ease both; }
+@keyframes tpImg { from { opacity: 0; transform: scale(.985); } to { opacity: 1; transform: none; } }
+#tourP footer { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 24px; align-items: end; padding: 14px 24px 18px; }
+.tp-cap small { display: block; font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #b9a4fb; margin-bottom: 4px; } .tp-cap b { display: block; font-size: 18px; } .tp-cap p { margin: 4px 0 0; max-width: 78ch; font-size: 14.5px; line-height: 1.55; color: rgba(255, 255, 255, .8); }
+.tp-segs { display: flex; gap: 6px; } .tp-seg { width: 46px; height: 8px; border: 0; padding: 0; border-radius: 99px; background: rgba(255, 255, 255, .18); overflow: hidden; cursor: pointer; } .tp-seg i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #8f6bff, #7CF3C6); border-radius: 99px; transition: width .3s; } .tp-seg.done i { width: 100%; }
+.tp-timer { position: absolute; left: 0; right: 0; top: 0; height: 2px; background: rgba(255, 255, 255, .08); } .tp-timer i { display: block; height: 100%; width: 0; background: #7CF3C6; animation-name: tpTime; animation-timing-function: linear; animation-fill-mode: forwards; } @keyframes tpTime { to { width: 100%; } }
+@media (max-width: 720px) { .tp-stage { grid-template-columns: 1fr; } .tp-nav { display: none; } #tourP footer { grid-template-columns: 1fr; } .tp-img { max-height: calc(100vh - 300px); } }
+@media (prefers-reduced-motion: reduce) { #tourP, .tp-img, .tp-chap, .tp-cover img { animation: none; transition: none; } }
+body #tourP .tp-b:not(#_) { background: rgba(255, 255, 255, .12) !important; background-image: none !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, .28) !important; box-shadow: none !important; }
+body #tourP .tp-b:not(#_):hover { background: rgba(255, 255, 255, .22) !important; }

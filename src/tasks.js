@@ -73,7 +73,7 @@
   // ---------- the page ----------
   V.tasks = {
     html() {
-      const d = doc(); const sh = sheet(); S.ui.tkSheet = sh.id; const can = canEdit(); const all = tasks(); const list = rows(sh); const sel = S.ui.tkSel = S.ui.tkSel || new Set();
+      const d = doc(); const sh = sheet(); S.ui.tkSheet = sh.id; const can = canEdit(); const board = viewMode() === 'board'; const all = tasks(); const list = rows(sh); const sel = S.ui.tkSel = S.ui.tkSel || new Set();
       [...sel].forEach(id => { if (!all.some(t => t.id === id)) sel.delete(id); });
       const open = all.filter(t => !CLOSED.includes(t.status)); const k = (l, v, cls) => `<div class="kpi${cls ? ' ' + cls : ''}"><div class="kpi-l">${l}</div><div class="kpi-v">${v}</div></div>`;
       const head = `<div class="page-header"><div class="t"><h1>Tasks</h1><p>Every activity on this project in one register: create and assign tasks, track customer questions to an answer, import and export Excel, pull tasks out of meeting transcripts and ask the AI Task Assistant for help. Sheets are saved views of the same tasks.</p></div>
@@ -83,7 +83,7 @@
       const cols = (sh.cols || BASE).filter(c => COLS[c]); const W = c => (sh.widths && sh.widths[c]) || COLS[c].w;
       const bar = `<div class="pt-bar"><div class="tl-search pt-q">${ico('search')}<input type="search" id="tkQ" placeholder="Search tasks" aria-label="Search tasks" value="${esc(S.ui.tkQ || '')}"></div>
         <select data-change="tkGroup" aria-label="Group by"><option value="">No grouping</option>${['type', 'status', 'owner', 'priority', 'stage', 'module'].map(g => `<option value="${g}"${sh.group === g ? ' selected' : ''}>Group by ${esc(COLS[g].l.toLowerCase())}</option>`).join('')}</select>
-        <span class="spacer"></span><span class="small muted">${list.length} of ${all.length} task${all.length === 1 ? '' : 's'}</span>${can ? `<button class="btn sm" data-act="tkSheetCfg">${ico('gear')}Sheet settings</button>` : ''}</div>`;
+        <div class="kb-seg" role="group" aria-label="View"><button type="button" class="${board ? '' : 'on'}" data-act="tkView" data-v="list" aria-pressed="${!board}">List</button><button type="button" class="${board ? 'on' : ''}" data-act="tkView" data-v="board" aria-pressed="${board}">Board</button></div><span class="spacer"></span><span class="small muted">${list.length} of ${all.length} task${all.length === 1 ? '' : 's'}</span>${can ? `<button class="btn sm" data-act="tkSheetCfg">${ico('gear')}Sheet settings</button>` : ''}</div>`;
       const bulk = sel.size && can ? `<div class="pt-bulk" role="region" aria-label="Selected tasks"><b>${sel.size} selected</b><select data-change="tkBulk" data-f="status" aria-label="Set status"><option value="">Set status…</option>${opt(STATUS)}</select><select data-change="tkBulk" data-f="owner" aria-label="Set owner"><option value="">Set owner…</option>${team().map(m => `<option value="${esc(m.email)}">${esc(m.name)}</option>`).join('')}</select><select data-change="tkBulk" data-f="priority" aria-label="Set priority"><option value="">Set priority…</option>${opt(PRIO)}</select><button class="btn sm" data-act="tkClassify">${ico('spark')}Suggest types (AI)</button><span class="spacer"></span><button class="btn sm" data-act="tkSelNone">Clear</button><button class="btn sm danger" data-act="tkBulkDel">${ico('trash')}Delete</button></div>` : '';
       const th = `<tr>${can ? `<th class="pt-ck"><input type="checkbox" data-change="tkSelAll" aria-label="Select all shown"${list.length && list.every(t => sel.has(t.id)) ? ' checked' : ''}></th>` : ''}${cols.map(c => { const s = sh.sort || {}; const on = s.c === c; return `<th style="width:${W(c)}px" data-col="${c}"${on ? ` aria-sort="${s.d === -1 ? 'descending' : 'ascending'}"` : ''}><button type="button" class="pt-sort" data-act="tkSort" data-c="${c}">${esc(COLS[c].l)}${on ? (s.d === -1 ? ' ↓' : ' ↑') : ''}</button>${can ? `<span class="pt-rs" data-col="${c}" aria-hidden="true"></span>` : ''}</th>`; }).join('')}</tr>`;
       const cell = (t, c) => { const v = val(t, c); let h;
@@ -99,10 +99,11 @@
       const body = groupsOf(sh, list).map(([g, ts]) => (sh.group ? `<tr class="pt-g"><td colspan="${cols.length + (can ? 1 : 0)}">${esc(COLS[sh.group].l)}: <b>${esc(g)}</b> <span class="muted">${ts.length}</span></td></tr>` : '') + ts.map(t => `<tr class="${CLOSED.includes(t.status) ? 'done' : ''}${sel.has(t.id) ? ' sel' : ''}" data-id="${esc(t.id)}">${can ? `<td class="pt-ck"><input type="checkbox" data-change="tkSel" data-id="${esc(t.id)}" aria-label="Select ${esc(tid(t))}"${sel.has(t.id) ? ' checked' : ''}></td>` : ''}${cols.map(c => cell(t, c)).join('')}</tr>`).join('')).join('');
       const add = can ? `<div class="pt-add"><input type="text" id="tkAdd" placeholder="Add a task to this sheet and press Enter" aria-label="Quick add a task" maxlength="300"></div>` : '';
       const empty = !all.length ? `<div class="empty"><h3>No tasks yet</h3><p class="muted">Create a task, import an Excel tracker, pull tasks out of a meeting transcript, or bring in this project's existing actions and workshop questions.</p>${can ? `<div class="row" style="justify-content:center;gap:8px;margin-top:10px"><button class="btn" data-act="tkBringIn">Bring in existing actions and questions</button><button class="btn primary" data-act="tkNew">${ico('plus')}New task</button></div>` : ''}</div>` : '';
-      return head + `<div class="page-body pt-page">${kpis}${tabs}${bar}${bulk}${empty || `<div class="pt-wrap"><table class="tbl pt-grid" style="min-width:${cols.reduce((s, c) => s + W(c), can ? 44 : 0)}px"><colgroup>${can ? '<col style="width:44px">' : ''}${cols.map(c => `<col style="width:${W(c)}px">`).join('')}</colgroup><thead>${th}</thead><tbody>${body || `<tr><td colspan="${cols.length + 1}" class="muted" style="padding:18px">No task matches this sheet${S.ui.tkQ ? ' and search' : ''}.</td></tr>`}</tbody></table></div>${add}`}
-        ${all.length && can ? '<p class="xs muted" style="margin-top:10px">Click a cell to edit it. Click an ID to open the task, its comments, customer response and the AI Task Assistant. <button class="btn link sm" data-act="tkBringIn">Bring in existing actions and questions</button></p>' : ''}</div>`;
+      return head + `<div class="page-body pt-page">${kpis}${tabs}${bar}${board ? '' : bulk}${empty || (all.length && !list.length ? V.ui.noResults('tasks', S.ui.tkQ ? 'tkClearQ' : '', S.ui.tkQ ? '' : 'No task fits this sheet yet. Pick another sheet, or add a task.') : board ? boardHtml(sh, list, can) : `<div class="pt-wrap"><table class="tbl pt-grid" style="min-width:${cols.reduce((s, c) => s + W(c), can ? 44 : 0)}px"><colgroup>${can ? '<col style="width:44px">' : ''}${cols.map(c => `<col style="width:${W(c)}px">`).join('')}</colgroup><thead>${th}</thead><tbody>${body || `<tr><td colspan="${cols.length + 1}" class="muted" style="padding:18px">No task matches this sheet${S.ui.tkQ ? ' and search' : ''}.</td></tr>`}</tbody></table></div>${add}`)}
+        ${all.length && can && !board ? '<p class="xs muted" style="margin-top:10px">Click a cell to edit it. Click an ID to open the task, its comments, customer response and the AI Task Assistant. <button class="btn link sm" data-act="tkBringIn">Bring in existing actions and questions</button></p>' : ''}</div>`;
     },
     mount() {
+      mountBoard();
       // opened from the Admin Command Center or My work: open that task once
       if (S.ui.tkOpenOnce) { const id = S.ui.tkOpenOnce; S.ui.tkOpenOnce = null; const t = I().get('task', id); if (t) setTimeout(() => taskForm(t), 0); }
       const q = document.getElementById('tkQ'); if (q) q.addEventListener('input', () => { S.ui.tkQ = q.value; const p = q.selectionStart; V.render(); const n = document.getElementById('tkQ'); if (n) { n.focus(); n.setSelectionRange(p, p); } });
@@ -115,6 +116,38 @@
         document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up); }));
     }
   };
+  // ---------- board view (Jira-style): one column per status, drag a card to change its status; the list shows the same tasks ----------
+  const viewMode = () => { if (!S.ui.tkView) { try { S.ui.tkView = localStorage.getItem('fwb_tkview') || 'list'; } catch (e) { S.ui.tkView = 'list'; } } return S.ui.tkView; };
+  const initials = e => { const n = who(e) || ''; return n ? n.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map(x => x[0].toUpperCase()).join('') : ''; };
+  const prank = t => (t.priority ? PRIO.indexOf(t.priority) : 9);
+  function boardHtml(sh, list, can) {
+    const card = t => { const ini = initials(t.owner); const q = t.question && !['Answered', 'Closed'].includes(t.question.status);
+      return `<article class="kb-card p-${prank(t)}${late(t) ? ' late' : ''}${CLOSED.includes(t.status) ? ' done' : ''}" ${can ? 'draggable="true"' : ''} tabindex="0" role="button" data-act="tkOpen" data-id="${esc(t.id)}" data-status="${esc(t.status)}" aria-label="${esc(tid(t) + ': ' + t.title + ', ' + t.status)}">
+        <div class="kb-t">${esc(t.title)}</div>
+        <div class="kb-m"><span class="kb-ty">${esc(t.type)}</span>${t.blocker && t.blocker.trim() ? '<span class="kb-fl" title="' + esc(t.blocker) + '">Blocker</span>' : ''}${q ? '<span class="kb-fl q" title="Customer question awaiting an answer">Question</span>' : ''}</div>
+        <div class="kb-f"><span class="kb-id">${esc(tid(t))}</span>${t.priority ? '<span class="pt-pr p-' + PRIO.indexOf(t.priority) + '">' + esc(t.priority) + '</span>' : ''}${t.due || t.eta ? '<span class="kb-d' + (late(t) ? ' late' : '') + '">' + esc(V.fmtDate ? V.fmtDate(t.due || t.eta) : (t.due || t.eta)) + '</span>' : ''}<span class="spacer"></span>${ini ? '<span class="kb-av" title="' + esc(who(t.owner)) + '">' + esc(ini) + '</span>' : '<span class="kb-av none" title="Unassigned"></span>'}</div>
+        ${can ? '<select class="kb-mv" data-change="tkMoveSel" data-id="' + esc(t.id) + '" aria-label="Move ' + esc(tid(t)) + ' to">' + opt(STATUS, t.status) + '</select>' : ''}</article>`; };
+    const lane = (title, ts) => `<div class="kb-lane">${title ? '<h3 class="kb-lh">' + esc(title) + ' <span>' + ts.length + '</span></h3>' : ''}<div class="kb-cols">${STATUS.map(st => { const c = ts.filter(t => t.status === st).sort((a, b) => prank(a) - prank(b) || (a.n || 0) - (b.n || 0));
+      return `<section class="kb-col k${STATUS.indexOf(st)}" data-status="${esc(st)}" aria-label="${esc(st)}"><header><b>${esc(st)}</b><span>${c.length}</span></header><div class="kb-drop">${c.map(card).join('') || '<div class="kb-none">No tasks</div>'}</div>${can && st === 'To Do' ? '<button type="button" class="kb-new" data-act="tkNew">+ Create task</button>' : ''}</section>`; }).join('')}</div></div>`;
+    return `<div class="kb" id="kb">${groupsOf(sh, list).map(([g, ts]) => lane(sh.group ? COLS[sh.group].l + ': ' + g : '', ts)).join('')}</div><p class="xs muted" style="margin-top:10px">Drag a card to another column to change its status. The list shows the same change. Keyboard: focus a card and press Alt + Arrow, or use the status menu on the card.</p>`;
+  }
+  async function moveTo(id, status) {
+    const t = I().get('task', id); if (!t || !status || t.status === status || !STATUS.includes(status)) return;
+    if (status === 'Done' && t.question && !(t.question.final || '').trim()) { toast('Record the final response to the customer question first (open the task).', 6000, true); V.render(); return; }
+    try { await save(t, { status }, tid(t) + ' moved to ' + status); } catch (e) { toast(e.message, 6000, true); V.render(); } }
+  ACT.tkClearQ = () => { S.ui.tkQ = ''; V.render(); };
+  ACT.tkView = a => { S.ui.tkView = a.getAttribute('data-v') === 'board' ? 'board' : 'list'; try { localStorage.setItem('fwb_tkview', S.ui.tkView); } catch (e) { } V.render(); };
+  ACT.tkMoveSel = el => moveTo(el.getAttribute('data-id'), el.value);
+  function mountBoard() {
+    const kb = document.getElementById('kb'); if (!kb) return; let drag = null;
+    kb.addEventListener('dragstart', e => { const c = e.target.closest && e.target.closest('.kb-card'); if (!c) return; drag = c.getAttribute('data-id'); c.classList.add('dragging'); kb.classList.add('moving'); try { e.dataTransfer.setData('text/plain', drag); e.dataTransfer.effectAllowed = 'move'; } catch (x) { } });
+    kb.addEventListener('dragend', () => { drag = null; kb.classList.remove('moving'); kb.querySelectorAll('.dragging,.over').forEach(x => x.classList.remove('dragging', 'over')); });
+    kb.addEventListener('dragover', e => { const d = e.target.closest && e.target.closest('.kb-col'); if (!d || !drag) return; e.preventDefault(); kb.querySelectorAll('.over').forEach(x => x !== d && x.classList.remove('over')); d.classList.add('over');
+      const r = kb.getBoundingClientRect(); if (e.clientX > r.right - 60) kb.scrollLeft += 18; else if (e.clientX < r.left + 60) kb.scrollLeft -= 18; });
+    kb.addEventListener('drop', e => { const d = e.target.closest && e.target.closest('.kb-col'); if (!d || !drag) return; e.preventDefault(); const id = drag; drag = null; moveTo(id, d.getAttribute('data-status')); });
+    kb.addEventListener('keydown', e => { const c = e.target.closest && e.target.closest('.kb-card'); if (!c || e.target.tagName === 'SELECT') return;
+      if (e.key === 'Enter') { e.preventDefault(); c.click(); } else if (e.altKey && (e.key === 'ArrowRight' || e.key === 'ArrowLeft') && canEdit()) { e.preventDefault(); const i = STATUS.indexOf(c.getAttribute('data-status')) + (e.key === 'ArrowRight' ? 1 : -1); const to = STATUS[i]; if (to) moveTo(c.getAttribute('data-id'), to); } });
+  }
   async function save(t, data, msg) { const out = await I().put('task', t ? t.id : I().uid('t'), Object.assign({}, t || {}, data)); if (msg) toast(msg); return out; }
   async function quickAdd(title) { const sh = sheet(); const f = sh.f || {}; const d = { title, type: f.types && f.types.length === 1 ? f.types[0] : 'Other', status: 'To Do', src: { type: 'manual' } }; if (f.owner === 'me') d.owner = me(); if (QTYPES.includes(d.type)) d.question = { text: title, status: 'New' };
     try { await save(null, d, 'Task added'); const n = document.getElementById('tkAdd'); if (n) n.focus(); } catch (e) { toast(e.message, 5000, true); } }
@@ -161,7 +194,7 @@
       `${sh && d.sheets.length > 1 ? `<button class="btn danger" data-act="tkSheetDel" data-id="${esc(sh.id)}">Delete sheet</button>` : ''}${sh ? `<button class="btn" data-act="tkSheetMove" data-id="${esc(sh.id)}" data-d="-1">Move left</button><button class="btn" data-act="tkSheetMove" data-id="${esc(sh.id)}" data-d="1">Move right</button><button class="btn" data-act="tkSheetDup" data-id="${esc(sh.id)}">Duplicate</button>` : ''}<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="tkSheetSave" data-id="${esc(sh ? sh.id : '')}">Save</button>`, { wide: true });
   }
   ACT.tkColMove = a => { const li = a.closest('li'); const d = Number(a.getAttribute('data-d')); const sib = d < 0 ? li.previousElementSibling : li.nextElementSibling; if (!sib) return; if (d < 0) li.parentNode.insertBefore(li, sib); else li.parentNode.insertBefore(sib, li); a.focus(); };
-  ACT.tkSheetSave = a => { const id = a.getAttribute('data-id'); const d = doc(); const name = (document.getElementById('tks_n').value || '').trim(); if (!name) { toast('Name the sheet'); return; } if (d.sheets.some(s => s.id !== id && s.name.toLowerCase() === name.toLowerCase())) { toast('A sheet with that name exists'); return; }
+  ACT.tkSheetSave = a => { const id = a.getAttribute('data-id'); const d = doc(); const name = (document.getElementById('tks_n').value || '').trim(); if (!name) { V.ui.field('tks_n', 'Name the sheet'); return; } if (d.sheets.some(s => s.id !== id && s.name.toLowerCase() === name.toLowerCase())) { toast('A sheet with that name exists'); return; }
     const cols = [...document.querySelectorAll('#tks_cols li')].filter(li => li.querySelector('input').checked).map(li => li.getAttribute('data-c'));
     const ticked = n => [...document.querySelectorAll(`input[name="${n}"]:checked`)].map(x => x.value); const x = document.getElementById('tks_x').value;
     const f = { types: ticked('tks_t'), status: ticked('tks_s'), owner: document.getElementById('tks_o').value, open: x === 'open', flag: x === 'attention' ? 'attention' : '' };
@@ -263,7 +296,7 @@
       pop.remove(); }); };
   const g = id => { const el = document.getElementById(id); return el ? el.value : undefined; };
   ACT.tkSave = a => V.busy(a, async () => {
-    const id = a.getAttribute('data-id'); const t = id ? I().get('task', id) : null; const title = (g('tkf_t') || '').trim(); if (!title) { toast('Give the task a title'); return; }
+    const id = a.getAttribute('data-id'); const t = id ? I().get('task', id) : null; const title = (g('tkf_t') || '').trim(); if (!title) { V.ui.field('tkf_t', 'Give the task a title'); return; }
     const type = g('tkf_ty'); const D = S.ui.tkDraft || { links: [], deps: [], checklist: [] };
     document.querySelectorAll('#tkf_cl input[type=checkbox][data-i]').forEach(x => { const c = D.checklist[Number(x.getAttribute('data-i'))]; if (c) c.done = x.checked; });
     const d = { title, desc: g('tkf_d'), type, status: g('tkf_s'), priority: g('tkf_p'), owner: g('tkf_o'), eta: g('tkf_e'), due: g('tkf_du'), stage: g('tkf_st'), module: (g('tkf_m') || '').trim(), blocker: g('tkf_b'), notes: g('tkf_n'), links: D.links, deps: D.deps.filter(x => x !== id), checklist: D.checklist.filter(Boolean) };

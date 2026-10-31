@@ -62,7 +62,7 @@
 
   // ---------- custom module ----------
   ACT.ciModNew = () => drawer('Add a custom module', `<label class="f">Module name</label><input type="text" id="cm_n" maxlength="80" placeholder="e.g. Fleet Inspections"><p class="small muted">Use this for a customer module that is not in the loaded package or the workshop modules.</p>`, `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="ciModAdd">Add</button>`);
-  ACT.ciModAdd = a => V.busy(a, async () => { const n = gv('cm_n'); if (!n) { toast('Enter the module name'); return; } const id = sid('m_' + n); if (I().get('cmodx', id)) { toast('Already listed'); return; } await I().put('cmodx', id, { name: n, label: n, purpose: '', usage: '', tabs: '', actions: '', statuses: '', workflow: '', roles: '', notes: '', files: [], status: 'Proposed', source: 'manual' }); closeDrawer(); OPEN.cmodx(id); });
+  ACT.ciModAdd = a => V.busy(a, async () => { const n = gv('cm_n'); if (!n) { V.ui.field('cm_n', 'Enter the module name'); return; } const id = sid('m_' + n); if (I().get('cmodx', id)) { toast('Already listed'); return; } await I().put('cmodx', id, { name: n, label: n, purpose: '', usage: '', tabs: '', actions: '', statuses: '', workflow: '', roles: '', notes: '', files: [], status: 'Proposed', source: 'manual' }); closeDrawer(); OPEN.cmodx(id); });
   ACT.ciModOpen = a => {
     const name = a.getAttribute('data-n'); let id = a.getAttribute('data-id'); const m = moduleList().find(x => name ? x.name === name : x.x && (x.x._id === id || x.x.id === id)); if (!m) return; id = m.x ? (m.x._id || m.x.id) : sid('m_' + m.name);
     const x = m.x || { name: m.name, label: m.label, purpose: m.desc || '', usage: '', tabs: '', actions: '', statuses: '', workflow: '', roles: '', notes: '', files: [], status: 'Proposed', source: m.origin }; const can = canEdit();
@@ -97,7 +97,7 @@
       `${id && can ? `<button class="btn danger" data-act="ciDel" data-k="capp" data-id="${esc(id)}">Delete</button>` : ''}<span class="spacer"></span><button class="btn" data-act="closeDrawer">Close</button>${can ? `<button class="btn primary" data-act="ciAppSave" data-id="${esc(id || '')}">Save</button>` : ''}`, { wide: true });
   };
   ACT.ciAppSave = a => V.busy(a, async () => {
-    if (!gv('ca_n')) { toast('Enter the app name'); return; } const id = a.getAttribute('data-id') || I().uid('ap'); const cur = I().get('capp', id) || { files: [], source: 'manual' };
+    if (!gv('ca_n')) { V.ui.field('ca_n', 'Enter the app name'); return; } const id = a.getAttribute('data-id') || I().uid('ap'); const cur = I().get('capp', id) || { files: [], source: 'manual' };
     const tabs = [...document.querySelectorAll('.ci-tab')].map(r => { const q = c => ((r.querySelector('.' + c) || {}).value || '').trim(); return { name: q('ct-n'), modules: q('ct-m'), purpose: q('ct-p'), navigation: q('ct-v'), functionality: q('ct-f'), roles: q('ct-r') }; }).filter(t => t.name);
     await I().put('capp', id, Object.assign({}, cur, { name: gv('ca_n'), audience: gv('ca_a'), status: gv('ca_st'), purpose: gv('ca_p'), navigation: gv('ca_v'), integration: gv('ca_i'), notes: gv('ca_x'), tabs })); closeDrawer(); toast('Saved');
   });

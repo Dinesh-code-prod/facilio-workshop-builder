@@ -110,7 +110,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     else { try { const g = await dbGet('grant', s.id); if (g && g.value) role = g.value.role === 'admin' ? 'admin' : 'sub'; } catch (e) { } }
     ROLE = { role, at: Date.now() }; return role;
   }
-  const projectOut = (p, role) => ({ id: p.id, name: p.name, customer: p.customer, description: p.description, startDate: p.startDate || null, endDate: p.endDate || null, customerAccessEnabled: !!p.customerAccessEnabled, deliveryStatus: MANUAL.includes(p.deliveryStatus) ? p.deliveryStatus : 'active', deliveryStatusBy: p.deliveryStatusBy || null, deliveryStatusAt: p.deliveryStatusAt || null, createdAt: p.createdAt, updatedAt: p.updatedAt, role });
+  const projectOut = (p, role) => ({ id: p.id, name: p.name, customer: p.customer, description: p.description, startDate: p.startDate || null, endDate: p.endDate || null, type: p.type === 'agents' ? 'agents' : 'cmms', customerAccessEnabled: !!p.customerAccessEnabled, deliveryStatus: MANUAL.includes(p.deliveryStatus) ? p.deliveryStatus : 'active', deliveryStatusBy: p.deliveryStatusBy || null, deliveryStatusAt: p.deliveryStatusAt || null, createdAt: p.createdAt, updatedAt: p.updatedAt, role });
   async function projectAccess(s, id, need) {
     const r = await dbGet('projects', id); const p = r && r.value; if (!p || p.archived) throw new HttpError(404, 'Project not found');
     const ar = await adminRole(s);
@@ -254,7 +254,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   });
   route('POST', '/api/projects', async (b) => {
     const s = await me(); await limit('create', s.id); const id = rid('p'); const t = now(); const d = v => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
-    const p = { id, name: str(b.name, 160, 'Project name', true), customer: str(b.customer, 160, 'Customer name', true), description: str(b.description, 4000, 'Description'), startDate: d(b.startDate), endDate: d(b.endDate), customerAccessEnabled: false, archived: false, createdBy: s.id, createdAt: t, updatedAt: t, members: [{ id: s.id, email: s.email, name: s.name, role: 'owner' }] };
+    const p = { id, name: str(b.name, 160, 'Project name', true), customer: str(b.customer, 160, 'Customer name', true), description: str(b.description, 4000, 'Description'), startDate: d(b.startDate), endDate: d(b.endDate), type: b.type === 'agents' ? 'agents' : 'cmms', customerAccessEnabled: false, archived: false, createdBy: s.id, createdAt: t, updatedAt: t, members: [{ id: s.id, email: s.email, name: s.name, role: 'owner' }] };
     await dbPut('projects', id, p);
     const team = Array.isArray(b.team) ? b.team.slice(0, 50) : [], stakeholders = Array.isArray(b.stakeholders) ? b.stakeholders.slice(0, 100) : [];
     await docWrite(s, id, 'people', { team, stakeholders }, 0);
@@ -267,7 +267,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     if (b.deliveryStatus !== undefined) { if (!MANUAL.includes(b.deliveryStatus)) throw new HttpError(400, 'Choose Active, On hold, Completed or Cancelled'); if (acc.role !== 'owner') throw new HttpError(403, 'Only a project owner or an admin can change the delivery status');
       const note = str(b.deliveryNote || '', 300, 'Note'); await patchProject(P.id, project => { project.deliveryStatus = b.deliveryStatus; project.deliveryStatusBy = s.name || s.email; project.deliveryStatusAt = now(); project.deliveryStatusNote = note; }); ADM = null; await audit(P.id, s.id, 'delivery-status', b.deliveryStatus + (note ? ': ' + note : '')); }
     const project = await patchProject(P.id, project => { if (b.name !== undefined) project.name = str(b.name, 160, 'Project name', true); if (b.customer !== undefined) project.customer = str(b.customer, 160, 'Customer', true);
-    if (b.description !== undefined) project.description = str(b.description, 4000, 'Description'); if (b.startDate !== undefined) project.startDate = d(b.startDate); if (b.endDate !== undefined) project.endDate = d(b.endDate); });
+    if (b.description !== undefined) project.description = str(b.description, 4000, 'Description'); if (b.type !== undefined) project.type = b.type === 'agents' ? 'agents' : 'cmms'; if (b.startDate !== undefined) project.startDate = d(b.startDate); if (b.endDate !== undefined) project.endDate = d(b.endDate); });
     await audit(P.id, s.id, 'project-updated', null); return ok({ project: projectOut(project, (await projectAccess(s, P.id, 'read')).role) });
   });
   route('DELETE', '/api/projects/:id', async (b, P) => { const s = await me(); await projectAccess(s, P.id, 'owner'); await patchProject(P.id, p => { p.archived = true; }); await audit(P.id, s.id, 'project-archived', null); return ok({ ok: true }); });

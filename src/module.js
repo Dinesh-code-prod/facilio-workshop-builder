@@ -36,7 +36,7 @@
   // ================= MODULES LIST =================
   V.modules = { html() {
     if (!S.baseline) return '<div class="page-body"><div class="empty">Configuration not loaded.</div></div>';
-    const fl = S.ui.filters; const q = (fl.q || '').toLowerCase(); const tab = S.ui.modTab || 'system';
+    const fl = S.ui.filters; const q = (fl.q || '').toLowerCase(); const tab = S.ui.modTab || (F.allModules().some(m => !m.system) ? 'custom' : 'system');   // open on the customer's own modules; the 400+ system modules are one click away
     let list = F.allModules().filter(m => tab === 'system' ? m.system : !m.system);
     if (fl.scope === 'inuse') list = list.filter(m => m.inUse); else if (fl.scope === 'brd') list = list.filter(m => m.inScope);
     if (fl.priority !== 'all') list = list.filter(m => m.priority === fl.priority);

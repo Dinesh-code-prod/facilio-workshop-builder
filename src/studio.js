@@ -47,7 +47,7 @@
     const title = f.label + (kind === 'video' ? ': how it works' : ': step by step');
     const steps = f.flow ? f.flow.steps.slice(0, 12).map((s, i) => `${i + 1}. ${s.name}: ${s.from} to ${s.to}${s.checks.length ? ' (checks: ' + s.checks.join('; ') + ')' : ''}${s.portals.length ? ' (shown in the ' + s.portals.join(' and ') + ' portal)' : ''}`).join('\n') : '(no state flow is configured for this module in the project; describe the steps from the Facilio screens and mark them "to confirm")';
     return [`Make a ${kind}: "${title}"`, `For: ${AUD[ui().vsAud] || AUD.users}`, `Customer: ${p.customer || 'the customer'} (project "${p.name || ''}"). Use sample data only; never real customer data.`, `App and module: Facilio CMMS, ${f.label}${f.desc ? '. ' + f.desc : ''}`, '',
-      'Story, step by step (from this project\'s configuration):', steps, '', f.fields.length ? `Key fields on the record: ${f.fields.join(', ')}.` : '', f.kit.length ? `Screens: use these CMMS Demo Kit screens (real product UI, sample data):\n${f.kit.slice(0, 8).map(x => `- ${x[0]}: ${x[3]}`).join('\n')}` : `Screens: use the CMMS Demo Kit screens for ${f.label} if the kit has them; otherwise say which screen is missing.`, 'Say "to confirm" for anything that is not in the configuration. Do not invent steps, buttons or fields. Label features that do not ship yet as "coming soon".',
+      'Story, step by step (from this project\'s configuration):', steps, '', f.fields.length ? `Key fields on the record: ${f.fields.join(', ')}.` : '', f.kit.length ? `Screens: use these real Facilio product screens (sample data):\n${f.kit.slice(0, 8).map(x => `- ${x[0]}: ${x[3]}`).join('\n')}` : `Screens: use the real Facilio product screens for ${f.label} if you have them; otherwise say which screen is missing.`, 'Say "to confirm" for anything that is not in the configuration. Do not invent steps, buttons or fields. Label features that do not ship yet as "coming soon".',
       `Voice-over: ${VO[ui().vsVo] || VO.none}. Length: about ${min} minute${min > 1 ? 's' : ''}.`].filter(x => x !== null).join('\n');
   }
   const opt = (v, cur, l) => `<option value="${esc(v)}"${String(v) === String(cur) ? ' selected' : ''}>${esc(l)}</option>`;
@@ -68,14 +68,14 @@
       <p class="small">${f.desc ? esc(f.desc) : '<span class="muted">No description in the configuration.</span>'}</p>
       <p class="small"><b>${f.nFields}</b> fields · <b>${f.nForms}</b> form${f.nForms === 1 ? '' : 's'}${f.custom ? ' · custom module' : ''}</p>
       ${f.fields.length ? `<p class="small"><b>Key fields:</b> ${f.fields.map(esc).join(', ')}</p>` : ''}${flowHtml}
-      <p class="small" style="margin-top:8px"><b>Demo Kit screens:</b> ${f.kit.length ? f.kit.map(x => `<button class="btn sm" data-act="vsView" data-i="${DK().screens.indexOf(x)}" title="${esc(x[3])}">${esc(x[0])}</button>`).join(' ') : '<span class="muted">none found for this module. Browse the Demo Kit tab.</span>'}</p></div>`;
+      <p class="small" style="margin-top:8px"><b>Product Tour screens:</b> ${f.kit.length ? f.kit.map(x => `<button class="btn sm" data-act="vsView" data-i="${DK().screens.indexOf(x)}" title="${esc(x[3])}">${esc(x[0])}</button>`).join(' ') : '<span class="muted">none found for this module. Browse the Product Tour tab.</span>'}</p></div>`;
     let make;
     if (isMedia) {
       const text = ui().vsBrief != null ? ui().vsBrief : brief(f);
       make = `<div class="card" style="padding:16px"><div class="sec-k"><p>Step 3</p><h2>Make the ${out}</h2></div>
         <p class="small muted">Edit the brief if you like, copy it, then copy it into your own Claude, or into the video and walkthrough creator. Attach any screenshots you have.</p>
         <textarea id="vs_brief" rows="14" data-change="vsBrief" style="font-family:ui-monospace,Menlo,monospace;font-size:12px" aria-label="Brief">${esc(text)}</textarea>
-        <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" data-act="vsCopy">Copy brief</button><button class="btn primary" data-act="vsClaude">Copy and open Claude</button><button class="btn" data-act="vsTab" data-v="kit">Find screens in the Demo Kit</button></div></div>`;
+        <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" data-act="vsCopy">Copy brief</button><button class="btn primary" data-act="vsClaude">Copy and open Claude</button><button class="btn" data-act="vsTab" data-v="kit">Find screens in the Product Tour</button></div></div>`;
     } else {
       const task = out === 'guide' ? 'guide' : 'training';
       make = `<div class="card" style="padding:16px"><div class="sec-k"><p>Step 3</p><h2>Draft the ${esc(OUT[out][0].toLowerCase())}</h2></div>
@@ -86,13 +86,7 @@
     return `<div class="grid g2" style="align-items:start"><div style="display:grid;gap:14px">${pick}${know}</div><div style="display:grid;gap:14px">${make}${also}</div></div>`;
   }
   function kitTab() {
-    const shots = DK().screens.map((x, i) => [x, i]);
-    const card = ([x, i]) => '<button class="card" style="padding:0;text-align:left;overflow:hidden;cursor:pointer" data-act="vsView" data-i="' + i + '" aria-label="Open ' + esc(x[0]) + '">'
-      + (x[5] ? '<img src="demokit/' + esc(x[5]) + '" alt="" loading="lazy" style="width:100%;display:block;border-bottom:1px solid var(--fc-border)">' : '<div style="height:90px;background:var(--fc-bg,#f5f7fb)"></div>')
-      + '<div style="padding:10px 12px"><b class="small">' + esc(x[0]) + '</b><div class="xs muted">' + esc(x[1]) + ' · ' + esc(x[2]) + '</div><div class="xs" style="margin-top:4px">' + esc(x[3]) + '</div></div></button>';
-    const mods = [...new Set(DK().screens.map(x => x[1]))];
-    return '<div class="card" style="padding:14px"><p class="small">The real Facilio product screens, on sample data. Use them to find the screens a video should show and to explain to a customer how information is captured. Click a screen to open it here.</p></div>'
-      + mods.map(m => '<div class="sec-k" style="margin-top:18px"><p>' + esc(m) + '</p></div><div class="grid g3">' + shots.filter(([x]) => x[1] === m).map(card).join('') + '</div>').join('');
+    return '<div class="card" style="padding:14px"><p class="small">The real Facilio product screens, on sample data, grouped the way the customer sees them on their Product Tour page. Use them to find the screens a video should show. Click a screen to open it here.</p></div>' + (V.sfBody ? V.sfBody(true) : '');
   }
   function linksTab() {
     return '<div class="card" style="padding:14px"><b>Story ideas</b> <span class="small muted">real events told start to finish, good starting points for a walkthrough</span>'
@@ -103,13 +97,13 @@
     html() {
       const tab = ui().vsTab || 'create';
       const head = `<div class="page-header"><div class="t"><h1>Guides &amp; Video Studio</h1><p>Turn what this project knows about the customer's setup into guides, videos and walkthroughs. For the Facilio team: customers do not see this page.</p></div></div>`;
-      const tabs = `<div class="tabs" role="tablist">${[['create', 'Create'], ['kit', 'Demo Kit'], ['links', 'Story ideas and tips']].map(([k, l]) => `<button class="tab${tab === k ? ' active' : ''}" role="tab" aria-selected="${tab === k}" data-act="vsTab" data-v="${k}">${l}</button>`).join('')}</div>`;
+      const tabs = `<div class="tabs" role="tablist">${[['create', 'Create'], ['kit', 'Product Tour'], ['links', 'Story ideas and tips']].map(([k, l]) => `<button class="tab${tab === k ? ' active' : ''}" role="tab" aria-selected="${tab === k}" data-act="vsTab" data-v="${k}">${l}</button>`).join('')}</div>`;
       return head + `<div class="page-body">${tabs}${tab === 'kit' ? kitTab() : tab === 'links' ? linksTab() : createTab()}</div>`;
     }
   };
   // opens one kit screen inside the app: the saved picture when there is one, otherwise the live page (needs Facilio sign-in in this browser)
   ACT.vsView = a => { const x = DK().screens[Number(a.getAttribute('data-i'))]; if (!x) return;
-    const body = x[5] ? '<img src="demokit/' + esc(x[5]) + '" alt="' + esc(x[0]) + '" style="width:100%;border:1px solid var(--fc-border);border-radius:6px">'
+    const body = x[5] ? '<img src="demokit/hd/' + esc(x[5]) + '" alt="' + esc(x[0]) + '" style="width:100%;border:1px solid var(--fc-border);border-radius:6px">'
       : '<iframe title="' + esc(x[0]) + '" src="' + esc(DK().base + x[4]) + '" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin" style="width:100%;height:70vh;border:1px solid var(--fc-border);border-radius:6px"></iframe><p class="xs muted" style="margin-top:6px">This is the live screen. If it is blank, your Facilio sign-in has expired in this browser.</p>';
     V.drawer(x[0], '<p class="small muted">' + esc(x[1]) + ' · ' + esc(x[2]) + '</p><p class="small">' + esc(x[3]) + '</p>' + body, '<span class="spacer"></span><button class="btn" data-act="closeDrawer">Close</button>', { wide: true }); };
   ACT.vsTab = a => { ui().vsTab = a.getAttribute('data-v'); V.render(); };

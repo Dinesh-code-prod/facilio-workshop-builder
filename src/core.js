@@ -32,7 +32,7 @@
   function newWorkshop() {
     return { schema: 'fwb.workshop/2', created: new Date().toISOString(), updated: new Date().toISOString(),
       project: { client: '', orgId: '', region: '', consultant: '', pm: '', members: '', version: 'V1.0', date: new Date().toISOString().slice(0, 10), background: '', objective: '', docTitle: 'Business Requirements Document' },
-      modules: {}, customModules: [], fieldOps: {}, formOps: {}, flows: {}, roles: [], rolePermOps: {}, processes: [], requirements: [], questions: [], log: [], crossLinks: {},
+      modules: {}, customModules: [], fieldOps: {}, formOps: {}, flows: {}, roles: [], notifications: [], rolePermOps: {}, processes: [], requirements: [], questions: [], log: [], crossLinks: {},
       brd: { includeTechnical: true, includeFormOnly: true, sections: null, template: null, versionHistory: [{ version: 'V1.0', date: new Date().toISOString().slice(0, 10), author: '', change: 'Initial draft from requirement workshop' }], approvals: [{ name: '', role: 'Customer Sponsor', date: '' }, { name: '', role: 'Facilio Project Manager', date: '' }] },
       attachments: { screenshots: [] } };
   }
