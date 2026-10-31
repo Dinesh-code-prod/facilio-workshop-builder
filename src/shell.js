@@ -342,8 +342,8 @@
   const val = id => (document.getElementById(id) || {}).value || '';
   ACT.runEnter = async () => { try { const au = document.querySelector('.auth'); if (au && !matchMedia('(prefers-reduced-motion: reduce)').matches) { au.classList.add('auth-leave'); await new Promise(r => setTimeout(r, 480)); } loading(true, 'Opening your workspace…'); authMsg = ''; await gate(afterLogin); } catch (e) { toast(e.message, 5000, true); } finally { loading(false); } };
   ACT.authTab = a => { authTab = a.getAttribute('data-v'); authMsg = ''; render(); };
-  // roadmap introduction between sign-in and the home page (see roadmap.js); skipped when switched off, automated, or already refreshed into a session
-  async function gate(next) { if (V.roadmap && V.roadmapDue && V.roadmapDue()) { loading(false); await V.roadmap(); loading(true, 'Opening your workspace…'); } return next(); }
+  // sign-in goes straight to the home page: the tree intro already played first (the roadmap introduction is still in the account menu, Product introduction)
+  async function gate(next) { return next(); }
   ACT.doLogin = async () => { try { loading(true, 'Signing in…'); const r = await API.post('/api/auth/login', { email: val('a_email'), password: val('a_pw') }, { noAuthRedirect: true }); S.user = r.user; authMsg = ''; await gate(afterLogin); } catch (e) { authMsg = e.message; render(); } finally { loading(false); } };
   ACT.doSignup = async () => { try { loading(true, 'Creating account…'); const r = await API.post('/api/auth/signup', { name: val('a_name'), email: val('a_email'), password: val('a_pw'), inviteCode: val('a_inv') }, { noAuthRedirect: true }); S.user = r.user; authMsg = ''; await gate(afterLogin); } catch (e) { authMsg = e.message; render(); } finally { loading(false); } };
   ACT.doGuest = async () => { try { loading(true, 'Creating your workspace…'); const r = await API.post('/api/auth/guest', { name: val('g_name'), inviteCode: val('g_code') }, { noAuthRedirect: true }); S.user = r.user; authMsg = ''; await gate(afterLogin); showGuestKey(r.guestKey); } catch (e) { authMsg = e.message; render(); } finally { loading(false); } };

@@ -1,9 +1,10 @@
-/* Opening page (before sign-in), shown once per browser session: the customer journey (src/roadintro.js) on customer invite links, the tree intro (src/treeintro.js) for everyone else.
+/* Opening page (before sign-in), shown on every fresh load: the customer journey (src/roadintro.js) on customer invite links, the tree intro (src/treeintro.js) for everyone else.
    Skipped for automated browsers (tests) unless ?intro=1, and for ?nointro. It only covers the app and never blocks it. */
 (function (root) {
   'use strict';
   const doc = root.document; if (!doc) return;
-  let seen = false; try { seen = sessionStorage.getItem('fwb_intro') === '1'; } catch (e) { }
+  // the tree intro plays first on every fresh load of the sign-in screen (not on a deep link into a project, and not for ?nointro); Skip leads to the sign-in page
+  const seen = /#\/p\//.test(root.location.hash);
   const forced = /[?&]intro=1\b/.test(root.location.search); const automated = !!(root.navigator && root.navigator.webdriver);
   if (!forced && (seen || automated || /[?&]nointro\b|#\/welcome/.test(root.location.search + root.location.hash))) return;
   try { sessionStorage.setItem('fwb_intro', '1'); } catch (e) { }
