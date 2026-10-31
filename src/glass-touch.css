@@ -1,0 +1,22 @@
+/* Glass highlight (31 Oct 2026): only the ACTIVE states get it: the open tab, the open menu item, and the Projects | Admin switch. They become
+   a violet-to-blue glass pill with a soft light across the top and a gentle glow. Hovering a menu item or tab gives a faint tinted glass.
+   Nothing else changes: pages, cards, colours and fonts stay as theme.css has them. Colours come from the theme's --th-violet tokens. */
+body .sidebar .sb-item.active:not(#_), body .tabs .tab.active:not(#_), body .tabs .tab.on:not(#_), body .tabs > button.active:not(#_), body .tabs > button.on:not(#_), body .navbar .left .ws-switch a[aria-current]:not(#_) {
+  position: relative; overflow: hidden; color: #fff !important;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--th-violet) 96%, transparent) 0%, color-mix(in srgb, var(--th-violet-2) 92%, transparent) 55%, rgba(40, 92, 235, .9) 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .38), inset 0 -1px 0 rgba(0, 0, 0, .14), 0 8px 18px -8px color-mix(in srgb, var(--th-violet) 70%, transparent) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(1.3); backdrop-filter: blur(10px) saturate(1.3);
+}
+/* the sheen: light on the top half of the glass */
+body .sidebar .sb-item.active::before, body .tabs .tab.active::before, body .tabs .tab.on::before, body .tabs > button.active::before, body .tabs > button.on::before, body .navbar .left .ws-switch a[aria-current]::before {
+  content: ""; position: absolute; inset: 0 0 48% 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .3), rgba(255, 255, 255, 0));
+}
+body .sidebar .sb-item.active .sb-badge:not(#_) { background: rgba(255, 255, 255, .22) !important; color: #fff !important; }
+/* hover: a faint tinted glass, never on the active one */
+body .sidebar .sb-item:not(.active):hover:not(#_), body .tabs .tab:not(.active):not(.on):hover:not(#_), body .tabs > button:not(.active):not(.on):hover:not(#_) {
+  background: color-mix(in srgb, var(--th-violet) 8%, transparent) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--th-violet) 16%, transparent), inset 0 1px 0 rgba(255, 255, 255, .6) !important;
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+@media (prefers-reduced-transparency: reduce) { body .sidebar .sb-item.active, body .tabs .tab.active, body .navbar .left .ws-switch a[aria-current] { backdrop-filter: none; } }

@@ -7,7 +7,7 @@
   const F = root.FWB; const { S } = F; const V = root.FWBViews; const API = root.FWBApi;
 
   const CTL_DEFAULT = {
-    tabs: { cust_home: true, kickoff: true, schedule: true, guide: true, dashboards: true, overview: true, scope: false, contract: false, plan: true, onboarding: false, workshops: true, governance: true, changes: true, delivery: true, showcase: true },
+    tabs: { cust_home: true, kickoff: true, schedule: true, guide: true, dashboards: true, overview: true, scope: true, contract: true, plan: true, onboarding: true, prepare: true, workshops: true, governance: true, changes: true, delivery: true, showcase: false },
     show: { fees: false, rates: false, legal: false, risks: true, trainers: true },
     allow: { answers: true, discuss: true, actions: true, signoff: true, raid: true, cr: true, onboarding: true },
     hiddenModules: []
