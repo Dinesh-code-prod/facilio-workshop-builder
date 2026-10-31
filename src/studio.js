@@ -37,7 +37,8 @@
         flow = { name: m.name, states: m.states.map(s => s.label || s.name), steps: all };
       }
     } catch (e) { }
-    return { kit: kitScreens(label), name, label, desc: String((base && base.description) || (mv && mv.description) || '').slice(0, 300), fields, nFields: base ? (base.fields || []).length : 0, nForms: base ? (Array.isArray(base.forms) ? base.forms.length : Number(base.forms) || 0) : 0, flow, custom: !!(base && base.custom) };
+    const cfg = V.cfgInputs ? V.cfgInputs.forModule(label, name) : null;   // what Configuration Inputs (src/cfginputs.js) records for this module
+    return { cfg, kit: kitScreens(label), name, label, desc: String((base && base.description) || (mv && mv.description) || '').slice(0, 300), fields, nFields: base ? (base.fields || []).length : 0, nForms: base ? (Array.isArray(base.forms) ? base.forms.length : Number(base.forms) || 0) : 0, flow, custom: !!(base && base.custom) };
   }
   // how Claude should produce each kind of output, including what to attach and which skills to use
   const STAGE = () => { const so = V.items && V.items.ready(['signoff']) ? V.items.get('signoff', 'brd') : null; return so && so.status === 'signed' ? 'PROJECT STAGE: the BRD is SIGNED OFF. Base the story on this customer\'s own signed-off process above, not on generic Facilio wording.' : 'PROJECT STAGE: the BRD is NOT signed off yet. Use the standard Facilio process for this module as a starting point, and mark anything project-specific "to confirm".'; };
@@ -48,17 +49,37 @@
     guide: 'HOW TO PRODUCE IT: a written guide as a document, with a short introduction, numbered steps, and a list of the screenshots needed. No video.',
     training: 'HOW TO PRODUCE IT: a role-based training outline with objectives, an agenda with timings, exercises and a check at the end.'
   })[o] || '';
+  // the customer-specific lines from Configuration Inputs: purpose, usage, roles, where the module sits in the apps, and how it relates to other modules
+  function cfgLines(f) {
+    const c = f.cfg; if (!c || (!c.mod && !c.rels.length && !c.tabs.length)) return '';
+    const m = c.mod || {}; const L = ['From Configuration Inputs (customer-specific; items marked proposed are not confirmed yet):'];
+    if (m.purpose) L.push('- Purpose: ' + m.purpose); if (m.usage) L.push('- How it is used: ' + m.usage); if (m.roles) L.push('- Who can do what: ' + m.roles);
+    c.tabs.forEach(t => L.push(`- Where users find it: ${t.app} › ${t.name}${t.navigation ? ' (' + t.navigation + ')' : ''}${t.roles ? ', for ' + t.roles : ''}`));
+    c.rels.forEach(r => L.push('- Relationship: ' + c.relLine(r)));
+    return L.join('\n');
+  }
   function brief(f) {
     const p = S.project || {}, o = ui().vsOut || 'walkthrough', kind = o === 'video' ? 'video' : 'walkthrough', min = Math.max(1, Math.min(10, Number(ui().vsMin) || 2));
     const title = f.label + (kind === 'video' ? ': how it works' : ': step by step');
     const steps = f.flow ? f.flow.steps.slice(0, 12).map((s, i) => `${i + 1}. ${s.name}: ${s.from} to ${s.to}${s.checks.length ? ' (checks: ' + s.checks.join('; ') + ')' : ''}${s.portals.length ? ' (shown in the ' + s.portals.join(' and ') + ' portal)' : ''}`).join('\n') : '(no state flow is configured for this module in the project; describe the steps from the Facilio screens and mark them "to confirm")';
     return [`Make a ${kind}: "${title}"`, `For: ${AUD[ui().vsAud] || AUD.users}`, `Customer: ${p.customer || 'the customer'} (project "${p.name || ''}"). Use sample data only; never real customer data.`, `App and module: Facilio CMMS, ${f.label}${f.desc ? '. ' + f.desc : ''}`, '',
-      'Story, step by step (from this project\'s configuration):', steps, '', f.fields.length ? `Key fields on the record: ${f.fields.join(', ')}.` : '', f.kit.length ? `Screens: use these real Facilio product screens (sample data):\n${f.kit.slice(0, 8).map(x => `- ${x[0]}: ${x[3]}`).join('\n')}` : `Screens: use the real Facilio product screens for ${f.label} if you have them; otherwise say which screen is missing.`, 'Say "to confirm" for anything that is not in the configuration. Do not invent steps, buttons or fields. Label features that do not ship yet as "coming soon".',
+      'Story, step by step (from this project\'s configuration):', steps, '', cfgLines(f), f.fields.length ? `Key fields on the record: ${f.fields.join(', ')}.` : '', f.kit.length ? `Screens: use these real Facilio product screens (sample data):\n${f.kit.slice(0, 8).map(x => `- ${x[0]}: ${x[3]}`).join('\n')}` : `Screens: use the real Facilio product screens for ${f.label} if you have them; otherwise say which screen is missing.`, 'Say "to confirm" for anything that is not in the configuration. Do not invent steps, buttons or fields. Label features that do not ship yet as "coming soon".',
       `Voice-over: ${VO[ui().vsVo] || VO.none}. Length: about ${min} minute${min > 1 ? 's' : ''}.`, PRODUCE(o), STAGE(), V.skillsPromptLine || ''].filter(x => x !== null).join('\n');
   }
   const opt = (v, cur, l) => `<option value="${esc(v)}"${String(v) === String(cur) ? ' selected' : ''}>${esc(l)}</option>`;
   const sel = (k, label, opts, cur) => `<div><label class="f">${label}</label><select data-change="vsSet" data-k="${k}" aria-label="${label}">${opts}</select></div>`;
 
+  function cfgHtml(f) {
+    const c = f.cfg; if (!c) return ''; const m = c.mod || {};
+    if (!c.mod && !c.rels.length && !c.tabs.length) return '<p class="small muted vs-cfg">Nothing about this module in Configuration Inputs yet. <button class="btn sm" data-act="nav" data-view="cfginputs">Describe it</button></p>';
+    return `<div class="small vs-cfg" style="margin-top:8px"><b>From Configuration Inputs</b><ul style="padding-left:18px;margin:4px 0">${m.purpose ? `<li>Purpose: ${esc(m.purpose)}</li>` : ''}${m.roles ? `<li>Who can do what: ${esc(m.roles)}</li>` : ''}${c.tabs.map(t => `<li>Tab: ${esc(t.app)} › ${esc(t.name)}${t.roles ? ' · ' + esc(t.roles) : ''}</li>`).join('')}${c.rels.map(r => `<li>${esc(c.relLine(r))}</li>`).join('')}</ul></div>`;
+  }
+  // training: the role-based path (which tabs each role sees and what each does) from the apps and tabs register
+  function rolePathHtml() {
+    const C = V.cfgInputs; if (!C) return ''; const rp = C.rolePath();
+    if (!rp.length) return '<p class="small muted vs-path" style="margin-top:10px">No apps and tabs in Configuration Inputs yet, so there is no role-based path to show. <button class="btn sm" data-act="nav" data-view="cfginputs">Add apps and tabs</button></p>';
+    return `<div class="vs-path" style="margin-top:12px"><b class="small">Role-based path from Configuration Inputs</b><p class="xs muted" style="margin:2px 0 6px">Which tabs each role sees and what each does. The AI training outline reads the same records; copy this into your own outline if you write it by hand.</p>${rp.map(g => `<div class="small" style="margin-bottom:6px"><b${g.missing ? ' class="muted"' : ''}>${esc(g.role)}</b><ul style="padding-left:18px;margin:2px 0">${g.tabs.map(t => `<li>${esc(t.app)} › ${esc(t.name)}: ${esc([t.purpose, t.functionality].filter(Boolean).join('. ') || 'what it does is not recorded yet')}</li>`).join('')}</ul></div>`).join('')}<button class="btn sm" data-act="vsPathCopy">Copy role-based path</button></div>`;
+  }
   function createTab() {
     const { hot, rest } = modules(); const cur = ui().vsMod || (hot[0] && hot[0].name) || ''; const out = ui().vsOut || 'walkthrough';
     if (!cur) return '<div class="card empty"><h3>No modules yet</h3><p>Load the customer\'s org package in Project Settings, then come back. The studio writes from what is configured.</p></div>';
@@ -73,7 +94,7 @@
     const know = `<div class="card" style="padding:16px"><div class="sec-k"><p>Step 2</p><h2>What this project knows about ${esc(f.label)}</h2></div>
       <p class="small">${f.desc ? esc(f.desc) : '<span class="muted">No description in the configuration.</span>'}</p>
       <p class="small"><b>${f.nFields}</b> fields · <b>${f.nForms}</b> form${f.nForms === 1 ? '' : 's'}${f.custom ? ' · custom module' : ''}</p>
-      ${f.fields.length ? `<p class="small"><b>Key fields:</b> ${f.fields.map(esc).join(', ')}</p>` : ''}${flowHtml}
+      ${f.fields.length ? `<p class="small"><b>Key fields:</b> ${f.fields.map(esc).join(', ')}</p>` : ''}${flowHtml}${cfgHtml(f)}
       <p class="small" style="margin-top:8px"><b>Product Tour screens:</b> ${f.kit.length ? f.kit.map(x => `<button class="btn sm" data-act="vsView" data-i="${DK().screens.indexOf(x)}" title="${esc(x[3])}">${esc(x[0])}</button>`).join(' ') : '<span class="muted">none found for this module. Browse the Product Tour tab.</span>'}</p></div>`;
     let make;
     if (isMedia) {
@@ -86,7 +107,7 @@
       const task = out === 'guide' ? 'guide' : 'training';
       make = `<div class="card" style="padding:16px"><div class="sec-k"><p>Step 3</p><h2>Draft the ${esc(OUT[out][0].toLowerCase())}</h2></div>
         <p class="small muted">This uses the existing AI drafts. They read the project's records and the org package, and stay unapproved until a project owner approves them. Add "${esc(f.label)}" in the instruction box.</p>
-        <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:6px">${V.aiButton ? V.aiButton(task, out === 'guide' ? 'Draft customer user guide' : 'Draft training outline') : ''}<button class="btn" data-act="nav" data-view="guidebuilder">Open the User Guide Builder</button></div></div>`;
+        <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:6px">${V.aiButton ? V.aiButton(task, out === 'guide' ? 'Draft customer user guide' : 'Draft training outline') : ''}<button class="btn" data-act="nav" data-view="guidebuilder">Open the User Guide Builder</button></div>${out === 'training' ? rolePathHtml() : ''}</div>`;
     }
     const also = `<div class="card" style="padding:14px"><b>Already have a video?</b> <span class="small">Turn its transcript into guide steps with</span> <button class="btn sm" data-act="nav" data-view="vidguide">Video to Guide</button></div>`;
     return `<div class="grid g2" style="align-items:start"><div style="display:grid;gap:14px">${pick}${know}</div><div style="display:grid;gap:14px">${make}${also}</div></div>`;
@@ -101,7 +122,7 @@
   }
   V.vstudio = {
     html() {
-      const tab = ui().vsTab || 'create';
+      const tab = ui().vsTab || 'create'; if (V.cfgInputs) V.cfgInputs.load();
       const head = `<div class="page-header"><div class="t"><h1>Guides &amp; Video Studio</h1><p>Turn what this project knows about the customer's setup into guides, videos and walkthroughs. For the Facilio team: customers do not see this page.</p></div></div>`;
       const tabs = `<div class="tabs" role="tablist">${[['create', 'Create'], ['kit', 'Product Tour'], ['links', 'Story ideas and tips']].map(([k, l]) => `<button class="tab${tab === k ? ' active' : ''}" role="tab" aria-selected="${tab === k}" data-act="vsTab" data-v="${k}">${l}</button>`).join('')}</div>`;
       return head + `<div class="page-body">${tabs}${tab === 'kit' ? kitTab() : tab === 'links' ? linksTab() : createTab()}</div>`;
@@ -118,5 +139,6 @@
   const copy = async text => { try { await navigator.clipboard.writeText(text); return true; } catch (e) { return false; } };
   const current = () => { const t = document.getElementById('vs_brief'); return t ? t.value : ''; };
   ACT.vsCopy = async () => { toast((await copy(current())) ? 'Brief copied' : 'Copy was blocked. Select the text and copy it by hand', 4000); };
+  ACT.vsPathCopy = async () => { const t = V.cfgInputs ? V.cfgInputs.rolePathMd() : ''; toast(t && (await copy(t)) ? 'Role-based path copied' : 'Copy was blocked. Select the text and copy it by hand', 4000); };
   ACT.vsClaude = async () => { const ok = await copy(current()); toast(ok ? 'Brief copied. Paste it into a new Claude chat (Ctrl+V)' : 'Copy was blocked. Select the brief and copy it by hand', 6000); window.open('https://claude.ai/new', '_blank', 'noopener'); };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -45,3 +45,7 @@ body .kb-seg button.on:not(#_) { background: #fff; color: #1b1630; box-shadow: 0
 .pt-qfbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; margin: 0 0 12px; padding: 10px 12px; border-radius: 14px; background: linear-gradient(180deg, #fff, #faf9fe); border: 1px solid #ebe8f5; box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(40, 40, 90, .05); }
 .pt-qf { display: grid; gap: 3px; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #6b6685; } .pt-qf select { height: 32px; min-width: 130px; max-width: 200px; font-size: 13px; font-weight: 500; letter-spacing: 0; text-transform: none; color: #1b1630; }
 .pt-qc { display: inline-flex; align-items: center; gap: 6px; height: 32px; font-size: 13px; color: #33304a; cursor: pointer; } .pt-qc input { accent-color: #6a3df0; width: 16px; height: 16px; }
+/* Board on touch screens and phones: drag and drop does not work with touch, so the status menu on each card stays visible,
+   a tap on it never opens the task, and columns snap one at a time when swiped. */
+@media (hover: none), (pointer: coarse) { .kb-mv { display: block; } }
+@media (max-width: 600px) { .kb { scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; } .kb-cols { grid-auto-columns: minmax(78vw, 1fr); } .kb-col { min-width: 0; scroll-snap-align: start; } .kb-mv { display: block; height: 36px; font-size: 14px; } }
