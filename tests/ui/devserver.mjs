@@ -2,9 +2,9 @@
 // against an in-memory mock of the facilio.work platform (verified viewer, db, private files, llm).
 // The signed-in person is taken from the `dev_user` cookie (default: the platform owner).
 // Usage: node tests/ui/devserver.mjs [port]
-import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path';
+import { fileURLToPath } from 'node:url'; import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path';
 import handler from '../../work/server/api.mjs';
-const here = path.dirname(new URL(import.meta.url).pathname); const dist = process.env.DIST || path.join(here, '..', '..', 'dist');
+const here = path.dirname(fileURLToPath(import.meta.url)); const dist = process.env.DIST || path.join(here, '..', '..', 'dist');
 const port = Number(process.argv[2] || process.env.PORT || 4173);
 const store = new Map(), blobs = new Map(); let fileSeq = 0;
 // FAKE_CLAUDE=1: a local test double for Anthropic, so the image-to-flow review can be exercised without a key. It returns a fixed answer that
