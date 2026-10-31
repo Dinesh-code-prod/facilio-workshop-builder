@@ -112,13 +112,37 @@
     if (!canEdit()) { toast('You have read-only access'); return; } const task = a.getAttribute('data-task'); let pick = V.aiTplPick || ''; V.aiTplPick = '';
     let tpls = []; try { tpls = V.tplList ? await V.tplList(task) : []; } catch (e) { } if (!pick && task !== 'brd') { const org = tpls.find(t => t.scope === 'org'); if (org) pick = org.id; }   // the organisation's (Facilio) template is the default when there is one
     drawer('Generate with AI: ' + label(task), `<p class="small muted">The assistant uses only this project's records. The result is a <b>draft</b> that stays unapproved until a project owner approves it. It never records test results, sign-offs or completion.</p>${tpls.length ? `<label class="f">Template</label><select id="ai_tpl"><option value="">No template (standard structure)</option>${tpls.map(t => `<option value="${esc(t.id)}"${t.id === pick ? ' selected' : ''}>${esc(t.name)} (v${t.pub}${t.scope === 'org' ? ', organisation' : ', project'})</option>`).join('')}</select>` : ''}<div id="ai_prov"></div><label class="f">Anything specific? (optional)</label><textarea id="ai_ins" rows="4" maxlength="1500" placeholder="e.g. Only the Work Order and Asset modules"></textarea>`,
-      `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="aiGo" data-task="${esc(task)}">Generate draft</button>`); provPick();
+      `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn" data-act="aiClaude" data-task="${esc(task)}" title="Use your own Claude account: copy the prompt, paste it in claude.ai, bring the reply back">Draft in Claude</button><button class="btn primary" data-act="aiGo" data-task="${esc(task)}">Generate draft</button>`); provPick();
   };
   async function provPick() { try { const st = await API.get('/api/ai/status'); const el = document.getElementById('ai_prov'); if (!el) return; el.innerHTML = `<label class="f">AI provider</label><select id="ai_pv"><option value="">Organisation default (${st.defaultProvider === 'claude' ? 'Claude' : 'DeepSeek'})</option><option value="deepseek">DeepSeek</option><option value="claude"${st.claude ? '' : ' disabled'}>Claude${st.claude ? '' : ' (not configured)'}</option></select>${st.fallback === 'deepseek' ? '<div class="xs muted">If Claude is unavailable, DeepSeek will be used and the draft will say so.</div>' : ''}`; } catch (e) { } }
   ACT.aiGo = a => V.busy(a, async () => {
     const task = a.getAttribute('data-task'); const ins = (document.getElementById('ai_ins') || {}).value || '';
     try { const r = await V.aiDoc({ task, instruction: ins, provider: (document.getElementById('ai_pv') || {}).value || undefined, templateId: (document.getElementById('ai_tpl') || {}).value || undefined }, label(task)); await I().load(['ai'], true); closeDrawer(); toast('Draft ready for review'); ACT.aiOpen({ getAttribute: () => r.item.id }); }
     catch (e) { toast(e.message || 'The AI could not complete this', 6000, true); }
+  });
+  // ---------- Draft in Claude (no API): copy the prompt, work in the person's own claude.ai, paste the reply back as a draft ----------
+  // The app never sends anything to claude.ai or reads from it; the person does both steps with their own account and usage.
+  const copyText = async t => { try { await navigator.clipboard.writeText(t); return true; } catch (e) { return false; } };
+  function claudeStep(copied) {
+    const p = V.claudePack; if (!p) return;
+    drawer('Draft in Claude: ' + p.title, `<ol class="small"><li>${copied ? 'The prompt is copied.' : 'Copy the prompt with the button below.'} Open Claude, start a new chat, paste it (Ctrl+V) and send.</li><li>Check Claude's reply, copy it, and paste it below.</li></ol>
+      <div class="row" style="gap:8px;margin:8px 0"><a class="btn" href="https://claude.ai/new" target="_blank" rel="noopener noreferrer">Open Claude</a><button class="btn" data-act="aiPackCopy">Copy prompt${copied ? ' again' : ''}</button><button class="btn" data-act="aiPackDl">Download as .md</button></div>
+      <div class="notice">The prompt contains this project's records. It runs in your own Claude account and counts against your own usage. Delivery Studio sends nothing to Claude and reads nothing back. The pasted reply becomes an unapproved draft.</div>
+      <label class="f">Claude's reply</label><textarea id="ai_paste" rows="14" placeholder="Paste Claude's reply here"></textarea>`,
+      `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="aiImport">Import as draft</button>`, { wide: true });
+  }
+  ACT.aiClaude = a => V.busy(a, async () => {
+    const task = a.getAttribute('data-task'); const body = { task, instruction: (document.getElementById('ai_ins') || {}).value || '', templateId: (document.getElementById('ai_tpl') || {}).value || undefined };
+    if (task === 'brd' && !body.templateId) { const h = brdHeads(); if (h) body.headings = h; }
+    try { const r = await API.post(`/api/projects/${S.project.id}/ai/pack`, body); V.claudePack = { task, title: r.title, prompt: r.prompt }; const ok = await copyText(r.prompt); claudeStep(ok); if (ok) window.open('https://claude.ai/new', '_blank', 'noopener'); }
+    catch (e) { toast(e.message || 'Could not prepare the prompt', 6000, true); }
+  });
+  ACT.aiPackCopy = async () => { const p = V.claudePack; if (p) toast((await copyText(p.prompt)) ? 'Prompt copied' : 'Copy was blocked. Use Download as .md instead', 4000); };
+  ACT.aiPackDl = () => { const p = V.claudePack; if (p) V.download((p.title || 'prompt').replace(/[^\w-]+/g, '_') + '_prompt.md', new Blob([p.prompt], { type: 'text/markdown' })); };
+  ACT.aiImport = a => V.busy(a, async () => {
+    const p = V.claudePack; if (!p) return; const content = (document.getElementById('ai_paste') || {}).value || '';
+    try { const r = await API.post(`/api/projects/${S.project.id}/ai/import`, { task: p.task, content }); V.claudePack = null; await I().load(['ai'], true); closeDrawer(); toast('Draft imported for review'); ACT.aiOpen({ getAttribute: () => r.item.id }); }
+    catch (e) { toast(e.message || 'Could not import this reply', 6000, true); }
   });
   ACT.aiOpen = a => {
     const id = a.getAttribute('data-id') || a.getAttribute(); const d = I().get('ai', id); if (!d) return; const can = canEdit();
