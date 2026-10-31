@@ -442,7 +442,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     const level = GUIDE_LEVEL[b.level] ? b.level : 'steps'; const uatKind = b.kind === 'uat'; const want = Object.keys(GUIDE_SRC).filter(k => b.sources ? b.sources[k] : true);
     if (!want.length && !b.vid) throw new HttpError(400, 'Choose at least one source');
     let vd = null; if (b.vid) { const vid = String(b.vid); if (!ITEM_ID_RE.test(vid)) throw new HttpError(400, 'Choose a walkthrough'); const vr = await dbGet('it.' + P.id + '.vid', vid); if (!vr || !vr.value) throw new HttpError(404, 'Walkthrough not found'); vd = await unpack('ip.' + P.id + '.vid', vid, vr.value); }
-    const pv = await aiPick('document', String(b.provider || ''));
+    const pv = (b.claudePack || b.reply) ? { provider: 'claude' } : await aiPick('document', String(b.provider || ''));
     const mods = modules.map(m => m.toLowerCase());
     const about = r => !mods.length || mods.some(m => JSON.stringify(r.data || {}).toLowerCase().includes(m));
     const build = async small => {
@@ -454,6 +454,8 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
       return { src, system: uatKind ? UAT_SYSTEM : GUIDE_SYSTEM, messages: [{ role: 'user', content: user }] };
     };
     const big = await build(pv.provider !== 'claude'); let smallBuilt = null;
+    if (b.claudePack) return ok({ title: 'Guide section: ' + title, prompt: big.system + '\n\n' + big.messages[0].content + '\n\nREPLY IN MARKDOWN ONLY: the section text, with no introduction or closing remarks. Keep the [S#] citations.', sources: big.src });
+    if (b.reply) { const txt = String(b.reply).replace(/\r\n/g, '\n').trim(); if (txt.length < 40) throw new HttpError(400, 'Paste the full reply from Claude'); if (txt.length > 40000) throw new HttpError(413, 'That reply is too long to import'); await audit(P.id, s.id, 'ai-guide-section', title.slice(0, 60) + ' via Claude (manual)'); return ok({ text: txt.replace(/^\s*#{1,3}\s+.*\n+/, ''), sources: big.src, provider: 'Claude (manual)', model: 'claude.ai', notice: CLAUDE_NOTE(s) }); }
     const smaller = async () => { smallBuilt = smallBuilt || await build(true); return { system: smallBuilt.system, messages: smallBuilt.messages }; };
     const out = await aiGen({ op: 'document', pv, system: big.system, messages: big.messages, maxTokens: pv.provider !== 'claude' ? 1100 : 2400, smaller, budget: 21000 });
     const used = out.fellBack && smallBuilt ? smallBuilt : big;
@@ -525,6 +527,8 @@ Rules: copy labels exactly as written; "detected" means you can read it clearly,
 Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
   route('POST', '/api/projects/:id/ai/flow-image', async (b, P) => {
     const s = await me(); await projectAccess(s, P.id, 'edit');
+    if (b && b.claudePack) return ok({ title: 'Flow from an image', needsImage: true, prompt: FLOW_PROMPT + '\n\nAttach the flow picture to this chat, then reply with JSON only. Return the flow in the image as JSON.' + (b.hint ? ' Context from the user: ' + plain(b.hint, 200) : '') });
+    if (b && b.reply) { const graph = validFlowGraph(jsonFrom(b.reply)); if (!graph.nodes.length) throw new HttpError(422, 'No flow steps were found in the reply'); await audit(P.id, s.id, 'ai-flow-image', graph.nodes.length + ' steps via Claude (manual)'); return ok({ graph, provider: 'Claude (manual)', model: 'claude.ai' }); }
     const mt = String(b && b.mediaType || ''); if (!['image/png', 'image/jpeg', 'image/webp'].includes(mt)) throw new HttpError(415, 'Use a PNG, JPEG or WebP image');
     const data = String(b && b.data || ''); if (!/^[A-Za-z0-9+/]+=*$/.test(data) || data.length > 2.2e6) throw new HttpError(413, 'The image is too large. Use one under about 1.5 MB (the page shrinks large images first).');
     const head = fromB64(data.slice(0, 32)); const sig = mt === 'image/png' ? head[0] === 0x89 && head[1] === 0x50 : mt === 'image/jpeg' ? head[0] === 0xFF && head[1] === 0xD8 : head[0] === 0x52 && head[8] === 0x57;
@@ -643,7 +647,9 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
   }
   route('POST', '/api/projects/:id/ai/kickoff', async (b, P) => {
     const s = await me(); await projectAccess(s, P.id, 'edit'); const text = String(b && b.text || ''); if (text.trim().length < 40) throw new HttpError(400, 'The deck has almost no text to read');
-    await limit('ai', s.id); const pv = await aiPick('extract', String(b.provider || '')); const cut = pv.provider === 'claude' ? 60000 : 24000;
+    await limit('ai', s.id); const pv = (b.claudePack || b.reply) ? { provider: 'claude' } : await aiPick('extract', String(b.provider || '')); const cut = pv.provider === 'claude' ? 60000 : 24000;
+    if (b.claudePack) return ok({ title: 'Kick-off deck', prompt: KICK_PROMPT + '\n\nReply with JSON only.\n\nDeck: ' + plain(b.fileName || 'kick-off deck', 200) + '\n\n' + text.slice(0, cut), truncated: text.length > cut });
+    if (b.reply) { const data = validKickoff(jsonFrom(b.reply)); await audit(P.id, s.id, 'ai-kickoff', (data.facilioTeam.length + data.customerTeam.length) + ' people via Claude (manual)'); return ok({ data, provider: 'Claude (manual)', model: 'claude.ai', truncated: text.length > cut, notice: CLAUDE_NOTE(s) }); }
     const out = await aiJSON({ op: 'extract', pv, system: KICK_PROMPT, messages: [{ role: 'user', content: 'Deck: ' + plain(b.fileName || 'kick-off deck', 200) + '\n\n' + text.slice(0, cut) }], maxTokens: 1300, smaller: async () => ({ system: KICK_PROMPT, messages: [{ role: 'user', content: 'Deck: ' + plain(b.fileName || 'kick-off deck', 200) + '\n\n' + text.slice(0, 24000) }] }), budget: 21000 }, validKickoff);
     const data = out.data; await audit(P.id, s.id, 'ai-kickoff', (data.facilioTeam.length + data.customerTeam.length) + ' people via ' + out.provider);
     return ok({ data, provider: out.provider, model: out.model, truncated: text.length > cut, notice: out.notice || '' });
@@ -1398,6 +1404,9 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     const hist = c.trends.snapshots.length >= 2 ? c.trends.snapshots.slice(-8).map(x => x.day + ': ' + Object.entries(x.counts).map(([k, v]) => HEALTH_LABEL[k] + ' ' + v).join(', ')).join('\n') : 'Not available (health snapshots began ' + c.trends.firstSnapshot + ').';
     const ask = pid ? 'Explain this project\'s health and what the administrator should do next.' : 'Write the portfolio briefing.' + (b && b.focus ? ' Focus: ' + plain(b.focus, 200) : '');
     const user = `${ask}\n\nPORTFOLIO (${c.today}): ${c.metrics.inProgress} active projects; ${c.metrics.blocked} blocked, ${c.metrics.overdue} overdue, ${c.metrics.atRisk} at risk, ${c.metrics.onTrack} on track, ${c.metrics.insufficient} with insufficient data; ${c.metrics.onHold} on hold; ${c.metrics.completed} completed.\n\nEVIDENCE:\n${lines.join('\n') || '(no active projects)'}\n\nHISTORY:\n${hist}`;
+    const pj = list.map((p, i) => ({ ref: 'P' + (i + 1), id: p.id, name: p.name }));
+    if (b && b.claudePack) return ok({ title: pid ? 'Project health' : 'Portfolio briefing', prompt: ADMIN_SYS + '\n\n' + user.slice(0, 30000) + '\n\nREPLY IN MARKDOWN ONLY.' });
+    if (b && b.reply) { const txt = String(b.reply).replace(/\r\n/g, '\n').trim(); if (txt.length < 40) throw new HttpError(400, 'Paste the full reply from Claude'); await audit('ai', s.id, 'admin-briefing', (pid || 'portfolio') + ' via Claude (manual)'); return ok({ text: txt.slice(0, 20000), provider: 'Claude (manual)', model: 'claude.ai', notice: CLAUDE_NOTE(s), projects: pj, evidence: e, generatedAt: now() }); }
     const out = await aiGen({ op: 'assist', system: ADMIN_SYS, messages: [{ role: 'user', content: user.slice(0, 30000) }], maxTokens: 1800, budget: 21000 });
     await audit('ai', s.id, 'admin-briefing', (pid || 'portfolio') + ' via ' + out.provider);
     return ok({ text: out.text, provider: out.provider, model: out.model, notice: out.notice || '', projects: list.map((p, i) => ({ ref: 'P' + (i + 1), id: p.id, name: p.name })), evidence: e, generatedAt: now() });

@@ -1,18 +1,15 @@
-/* Guides & Video Studio (Facilio team only): turns what this project already knows (the org package: modules, fields, forms, state flows) into
-   things the team has to produce: a brief for a Comet video or walkthrough, a customer user guide, a training outline.
-   Comet (comet.facilio.work) is Facilio's own tool where Claude builds videos and click-through walkthroughs from the real product screens
-   (the CMMS Demo Kit) on sample data. Delivery Studio does not call Comet: it writes the brief from the project's configuration and the person
-   pastes it into Comet's Create screen. Only facts found in the configuration go into the brief; anything else is marked "to confirm". */
+/* Guides & Video Studio: writes the briefs for the things the team has to produce: a video or walkthrough, a customer user guide, a training outline.
+   Everything is written from the project's own configuration and the real Facilio screens kept in this app. Only facts found in the configuration go into a brief;
+   anything else is marked "to confirm". */
 (function (root) {
   'use strict';
   const F = root.FWB; const { S, esc } = F; const V = root.FWBViews; const ACT = V.ACT; const { toast } = V;
-  const COMET = 'https://comet.facilio.work', KIT = COMET + '/library/cmms-demo-kit/index.html', CONNECTOR = 'https://mcp.facilio.work/comet';
   const OUT = { walkthrough: ['Walkthrough', 'The viewer clicks through each step at their own pace. Best for how-to and training.'], video: ['Video', 'Plays by itself, with optional voice-over. Best for a short explainer.'], guide: ['User guide section', 'Written steps for the customer, drafted from the same facts.'], training: ['Training outline', 'A role-based outline for a training session.'] };
   const AUD = { users: 'customer end users (people who do the daily work)', admins: 'customer administrators (people who set things up)', team: 'the Facilio delivery team (internal training)' };
   const VO = { none: 'no voice-over, on-screen text only', en: 'English voice-over', ar: 'Arabic voice-over' };
   const ui = () => S.ui;
   // the demo kit's own screens for a module (src/demokit-data.js); matched on the module name, ignoring case and a plural s
-  const DK = () => root.FWBDemoKit || { base: KIT.replace(/index\.html$/, ''), screens: [], journeys: [] };
+  const DK = () => root.FWBDemoKit || { base: '', screens: [], journeys: [] };
   const norm = s => String(s || '').toLowerCase().replace(/[^a-z]/g, '').replace(/s$/, '');
   const kitScreens = label => DK().screens.filter(x => norm(x[1]) === norm(label));
   const stateLabel = (m, id) => { const s = (m.states || []).find(x => x.id === id); return s ? (s.label || s.name) : String(id || ''); };
@@ -101,10 +98,10 @@
       return head + `<div class="page-body">${tabs}${tab === 'kit' ? kitTab() : tab === 'links' ? linksTab() : createTab()}</div>`;
     }
   };
-  // opens one kit screen inside the app: the saved picture when there is one, otherwise the live page (needs Facilio sign-in in this browser)
-  ACT.vsView = a => { const x = DK().screens[Number(a.getAttribute('data-i'))]; if (!x) return;
+  // opens one screen inside the app (the saved picture; screens without one are not shown)
+  ACT.vsView = a => { const x = DK().screens[Number(a.getAttribute('data-i'))]; if (!x || !x[5]) return;
     const body = x[5] ? '<img src="demokit/hd/' + esc(x[5]) + '" alt="' + esc(x[0]) + '" style="width:100%;border:1px solid var(--fc-border);border-radius:6px">'
-      : '<iframe title="' + esc(x[0]) + '" src="' + esc(DK().base + x[4]) + '" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin" style="width:100%;height:70vh;border:1px solid var(--fc-border);border-radius:6px"></iframe><p class="xs muted" style="margin-top:6px">This is the live screen. If it is blank, your Facilio sign-in has expired in this browser.</p>';
+      : '';
     V.drawer(x[0], '<p class="small muted">' + esc(x[1]) + ' · ' + esc(x[2]) + '</p><p class="small">' + esc(x[3]) + '</p>' + body, '<span class="spacer"></span><button class="btn" data-act="closeDrawer">Close</button>', { wide: true }); };
   ACT.vsTab = a => { ui().vsTab = a.getAttribute('data-v'); V.render(); };
   ACT.vsSet = el => { const k = el.getAttribute('data-k'); ui()['vs' + k[0].toUpperCase() + k.slice(1)] = el.value; ui().vsBrief = null; V.render(); };

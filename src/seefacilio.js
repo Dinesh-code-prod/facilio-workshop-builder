@@ -19,7 +19,7 @@
     { id: 'mobile', title: 'On the move: the mobile app', blurb: 'Technicians open, work and close jobs from their phone, with QR scanning for assets.', has: x => x[2] === 'WorkQ' }
   ];
   V.sfGroups = GROUPS;
-  const visible = all => DK().screens.map((x, i) => [x, i]).filter(([x]) => all || x[5]);
+  const visible = () => DK().screens.map((x, i) => [x, i]).filter(([x]) => x[5]);
   const card = ([x, i]) => `<button class="card" style="padding:0;text-align:left;overflow:hidden;cursor:pointer" data-act="sfView" data-i="${i}" aria-label="Open ${esc(x[0])}">`
     + (x[5] ? `<img src="demokit/${esc(x[5])}" alt="" loading="lazy" style="width:100%;display:block;border-bottom:1px solid var(--fc-border)">` : '<div style="height:96px;display:flex;align-items:center;justify-content:center;background:var(--ds-soft,#f3f4f8)" class="small muted">Live screen only</div>')
     + `<div style="padding:10px 12px"><b class="small">${esc(x[0])}</b><div class="xs" style="margin-top:4px">${esc(x[3])}</div></div></button>`;
@@ -42,12 +42,10 @@
   };
   // opens one screen: the full-size picture, or (team only) the live clickable screen, which needs Facilio sign-in in this browser
   function openScreen(i, live) {
-    const x = DK().screens[i]; if (!x) return; const team = !cust(); const showLive = (live && team) || !x[5];
-    const body = showLive ? `<iframe title="${esc(x[0])}" src="${esc(DK().base + x[4])}" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin" style="width:100%;height:70vh;border:1px solid var(--fc-border);border-radius:6px"></iframe><p class="xs muted" style="margin-top:6px">Live screen: click through it to show how the buttons and actions work. If it is blank, your Facilio sign-in has expired in this browser.</p>`
-      : `<img src="demokit/hd/${esc(x[5])}" alt="${esc(x[0])}" style="width:100%;border:1px solid var(--fc-border);border-radius:6px"><p class="xs muted" style="margin-top:6px">${team ? 'This is a picture. Open the live version to click through it and show how the buttons and actions work.' : 'This is a picture of the screen. Your consultant can click through the live version with you in the session.'}</p>`;
-    const toggle = team && x[5] ? (live ? `<button class="btn" data-act="sfView" data-i="${i}">Show the picture</button>` : `<button class="btn" data-act="sfLive" data-i="${i}">Open live, clickable version</button>`) : '';
+    const x = DK().screens[i]; if (!x || !x[5]) return; const team = !cust(); const showLive = false;
+    const body = `<img src="demokit/hd/${esc(x[5])}" alt="${esc(x[0])}" style="width:100%;border:1px solid var(--fc-border);border-radius:6px">`;
+    const toggle = `<a class="btn" href="demokit/hd/${esc(x[5])}" target="_blank" rel="noopener">Open the picture in a new tab</a>`;
     V.drawer(x[0], `<p class="small muted">${esc(x[1])} · ${esc(x[2])}</p><p class="small">${esc(x[3])}</p>${body}`, '<span class="spacer"></span>' + toggle + '<button class="btn" data-act="closeDrawer">Close</button>', { wide: true });
   }
   ACT.sfView = a => openScreen(Number(a.getAttribute('data-i')), false);
-  ACT.sfLive = a => openScreen(Number(a.getAttribute('data-i')), true);
 })(typeof window !== 'undefined' ? window : globalThis);

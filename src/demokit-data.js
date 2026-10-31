@@ -60,5 +60,5 @@
     ['Ops Vision insight to board decision', 'FM director', ['Chat with Ask Atom', 'Create an Ops Vision insight', 'Approve the data plan', 'Read and download a report', 'Create a dashboard and add widgets']],
     ['Vendor quote to approved payment', 'Contractor technician', ['WhatsApp chat with the intake agent', 'Chat agent creates a work order', 'Quote from a work order', 'Quote lifecycle', 'Invoice and payment']]
   ];
-  root.FWBDemoKit = { base: 'https://comet.facilio.work/library/cmms-demo-kit/', screens: S, journeys: J };
+  root.FWBDemoKit = { base: '', screens: S, journeys: J };
 })(typeof window !== 'undefined' ? window : globalThis);
