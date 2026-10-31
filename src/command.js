@@ -15,7 +15,7 @@
   const fmt = d => (d ? (V.fmtDate ? V.fmtDate(d) : String(d).slice(0, 10)) : '');
   const ago = iso => { if (!iso) return ''; const d = Math.floor((Date.now() - Date.parse(iso)) / 864e5); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago'; };
   const canSet = () => C.data && C.data.me && C.data.me.role !== 'sub';
-  V.cmd = { ready: () => !!(C.data || C.err), reset: () => { C.data = null; C.err = null; C.ai = null; }, async load() { try { C.data = await API.get('/api/admin/command', { noAuthRedirect: true }); C.err = null; } catch (e) { C.err = e.message || 'Could not load'; } }, html };
+  V.cmd = { get: () => C.data, ready: () => !!(C.data || C.err), reset: () => { C.data = null; C.err = null; C.ai = null; }, async load() { try { C.data = await API.get('/api/admin/command', { noAuthRedirect: true }); C.err = null; } catch (e) { C.err = e.message || 'Could not load'; } }, html };
   const show = () => V.setMode('admin');
 
   // ---------- the portfolio table's rows after the summary filters ----------

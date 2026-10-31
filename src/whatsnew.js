@@ -7,6 +7,7 @@
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
     { v: '1.9.1', date: '2026-10-31', kind: 'UPDATE', all: true, title: 'Claude project review, import from Claude, guides for agent and integration projects', notes: [
+      'Dashboards: a bento-grid dashboard for the team (progress, tasks, what is late, waiting on the customer, requirements, sign-offs, next 14 days), one for customers (their phase, what is waiting on them, sessions, sign-offs), and a portfolio view at the top of the Admin dashboard.',
       'Project review in Claude (Deliverables & AI): exports the whole project as one prompt with what to check and a reply format. Paste the reply back from Claude to create a task for each gap it found.',
       'Import from Claude: bring back a pasted reply or a .docx, .xlsx, .csv, .md, .txt or package file. Text becomes an unapproved draft; spreadsheets open the Tasks or plan import; nothing is saved until you confirm.',
       'New customer guides: Facilio AI Agents (what agents are, what Atom AI can do, how a project runs, what we need) and Connecting Your Systems (how Facilio integrates with ERP, building systems, helpdesk and messaging tools).',

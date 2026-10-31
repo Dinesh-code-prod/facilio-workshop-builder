@@ -121,7 +121,7 @@
   // The team menu in project order: the project home, what runs the whole project, then the stages from kick-off to hypercare and closure,
   // then support, what the customer sees, settings and the rarely needed pages. Sub-headings (subs: page id to heading) group the design pages.
   const NAV = [
-    { g: 'Project', sec: 'Projects & delivery', icon: 'dash', fi: 'g_project', items: [['overview', 'Project Overview'], ['teamhelp', 'Team Guide'], ['tasks', 'Tasks'], ['whatsnew', "What's new"]] },
+    { g: 'Project', sec: 'Projects & delivery', icon: 'dash', fi: 'g_project', items: [['projdash', 'Dashboard'], ['overview', 'Project Overview'], ['teamhelp', 'Team Guide'], ['tasks', 'Tasks'], ['whatsnew', "What's new"]] },
     { g: 'Project control', sec: 'Projects & delivery', icon: 'shield', fi: 'g_project', items: [['governance', 'Governance & RAID'], ['changes', 'Change Requests'], ['aiwork', 'Deliverables & AI'], ['reports', 'Status Reports (WSR / Monthly)']] },
     { g: '1. Kick-off & Planning', sec: 'Discover and define', icon: 'flag', fi: 'kickoff', items: [['msaflow', 'Contract'], ['kickoff', 'Kick-off Deck'], ['plan', 'Project Plan']] },
     { g: '2. Workshops & Requirements', sec: 'Discover and define', icon: 'mic', fi: 'transcripts', items: [['transcripts', 'Transcripts & Requirement Confirmation'], ['usecases', 'Use Cases'], ['checks', 'Checks & Validations']] },
@@ -142,7 +142,7 @@
     '3. Requirements to BRD': '3. Solution Design & Configuration', '4. Configuration & Build': '3. Solution Design & Configuration', '5. UAT & Go-Live': '4. UAT & Go-Live', '6. Hypercare & Handover': '5. Hypercare & Handover' };
   { const REN = { '5. Hypercare & Handover': '6. Hypercare, Handover & Closure', 'Guides & Video Studio': '5. Training & Guides', 'Support & AI': 'Support & Tickets' }; Object.keys(V.NAV_ALIAS).forEach(k => { V.NAV_ALIAS[k] = REN[V.NAV_ALIAS[k]] || V.NAV_ALIAS[k]; }); Object.assign(V.NAV_ALIAS, REN, { 'AI & Automation': 'Project control', 'Guides & Documentation': '5. Training & Guides', 'Administration': 'Settings' }); }
   // customer menu: [view, label, portal tab that must be on]
-  const CUSTOMER_NAV = [{ g: 'Start here', icon: 'home', items: [['cust_home', 'Welcome', 'cust_home'], ['kickoff', 'Kick-off', 'kickoff'], ['contract', 'Contract', 'contract'], ['scope', 'Scope', 'scope'], ['timeline', 'Plan Timeline', 'plan']] },
+  const CUSTOMER_NAV = [{ g: 'Start here', icon: 'home', items: [['projdash', 'Dashboard', 'projdash'], ['cust_home', 'Welcome', 'cust_home'], ['kickoff', 'Kick-off', 'kickoff'], ['contract', 'Contract', 'contract'], ['scope', 'Scope', 'scope'], ['timeline', 'Plan Timeline', 'plan']] },
     { g: 'Prepare for the sessions', icon: 'flag', items: [['schedule', 'Workshop Schedule', 'schedule'], ['prepare', 'Learn & Prepare', 'prepare'], ['seefacilio', 'Product Tour', 'seefacilio'], ['learnlib', 'Module guides', 'learnlib'], ['agentguide', 'Facilio AI Agents', 'agentguide'], ['integguide', 'Connecting Your Systems', 'integguide'], ['guide', 'Customer User Guide', 'guide'], ['dashboards', 'Dashboard Gallery', 'dashboards'], ['onboarding', 'Data Onboarding', 'onboarding']] },
     { g: 'Decisions and delivery', icon: 'check', items: [['governance', 'Sign-offs & Decisions', 'governance'], ['changes', 'Change Requests', 'changes'], ['delivery', 'Build, UAT & Go-Live', 'delivery']] },
     { g: 'And more', icon: 'spark', items: [['whatsnew', "What's new", 'whatsnew'], ['explore', 'Discover more', 'explore']] }];
