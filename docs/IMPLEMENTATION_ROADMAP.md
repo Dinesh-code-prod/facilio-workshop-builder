@@ -10,7 +10,7 @@ Principle: extend what exists, preserve all data, no duplicate modules and no se
 | 3 | Facilio theme, sidebar, roadmap intro | Done, deployed |
 | 4 | Templates (versioned, org + project, publish / retire) and configurable workspace | Done, deployed 24 Oct |
 | 5 | Org-package (ZIP) inventory and analysis | Done, deployed 24 Oct (Package Analysis page, AI digest) |
-| **5b** | **Customer-specific configuration inputs (below)** | **Done, deployed 24 Oct (Configuration Inputs page). Pending: relationship diagram (P3), training/UAT reuse beyond AI drafts** |
+| **5b** | **Customer-specific configuration inputs (below)** | **Done. Configuration Inputs page deployed 24 Oct; relationship diagram and training / support-handover reuse beyond AI drafts added 31 Oct (not deployed yet, see IMPLEMENTATION_STATUS.md section 59)** |
 | 6 | User Guide Builder, video-to-guide | Next |
 | 7 | Traceability, quality checks, version comparison, knowledge library, lessons learned, retention | After 6 |
 | 8 | Customer-facing read-only pages | After 7 |
@@ -44,7 +44,7 @@ Each accepts structured manual entry, free-text notes, file uploads (screenshots
 | P1 | Feed all three into the existing AI sources | Core of the requirement |
 | P2 | File uploads and CSV / Excel import | Convenience once the registers exist |
 | P2 | Reuse in UAT, FTR, training and handover outputs | Delivers the value across deliverables |
-| P3 | Relationship diagram (read-only, reuses the diagram helper) | Helpful for workshops and guides |
+| P3 | Relationship diagram (read-only, reuses the diagram helper) | Helpful for workshops and guides. Done 31 Oct: Configuration Inputs › Module relationships |
 
 ### Dependencies
 - Phase 5 (org-package inventory) for the import preview.

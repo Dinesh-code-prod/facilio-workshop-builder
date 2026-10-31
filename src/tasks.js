@@ -163,22 +163,26 @@
       return `<section class="kb-col k${STATUS.indexOf(st)}" data-status="${esc(st)}" aria-label="${esc(st)}"><header><b>${esc(st)}</b><span>${c.length}</span></header><div class="kb-drop">${c.map(card).join('') || '<div class="kb-none">No tasks</div>'}</div>${can && st === 'To Do' ? '<button type="button" class="kb-new" data-act="tkNew">+ Create task</button>' : ''}</section>`; }).join('')}</div></div>`;
     return `<div class="kb" id="kb">${groupsOf(sh, list).map(([g, ts]) => lane(sh.group ? COLS[sh.group].l + ': ' + g : '', ts)).join('')}</div><p class="xs muted" style="margin-top:10px">Drag a card to another column to change its status. The list shows the same change. Keyboard: focus a card and press Alt + Arrow, or use the status menu on the card.</p>`;
   }
-  async function moveTo(id, status) {
+  // the board is drawn again after every save; give focus back to the moved card so keyboard and status-menu users can carry on from it
+  const refocus = (id, sel) => requestAnimationFrame(() => { const c = document.querySelector('.kb-card[data-id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]'); const el = c && (sel ? c.querySelector('select.kb-mv') : c); if (el) { el.focus({ preventScroll: false }); if (c.scrollIntoView) c.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } });
+  async function moveTo(id, status, focus) {
     const t = I().get('task', id); if (!t || !status || t.status === status || !STATUS.includes(status)) return;
-    if (status === 'Done' && t.question && !(t.question.final || '').trim()) { toast('Record the final response to the customer question first (open the task).', 6000, true); V.render(); return; }
-    try { await save(t, { status }, tid(t) + ' moved to ' + status); } catch (e) { toast(e.message, 6000, true); V.render(); } }
+    if (status === 'Done' && t.question && !(t.question.final || '').trim()) { toast('Record the final response to the customer question first (open the task).', 6000, true); V.render(); if (focus) refocus(id, focus === 'sel'); return; }
+    try { await save(t, { status }, tid(t) + ' moved to ' + status); } catch (e) { toast(e.message, 6000, true); V.render(); } if (focus) refocus(id, focus === 'sel'); }
   ACT.tkClearQ = () => { S.ui.tkQ = ''; V.render(); };
   ACT.tkView = a => { S.ui.tkView = a.getAttribute('data-v') === 'board' ? 'board' : 'list'; try { localStorage.setItem('fwb_tkview', S.ui.tkView); } catch (e) { } V.render(); };
-  ACT.tkMoveSel = el => moveTo(el.getAttribute('data-id'), el.value);
+  ACT.tkMoveSel = el => moveTo(el.getAttribute('data-id'), el.value, 'sel');
   function mountBoard() {
     const kb = document.getElementById('kb'); if (!kb) return; let drag = null;
+    // the status menu sits inside the card, which opens the task on click: keep clicks and taps on the menu from opening the drawer
+    kb.addEventListener('click', e => { if (e.target.closest && e.target.closest('select.kb-mv')) e.stopPropagation(); });
     kb.addEventListener('dragstart', e => { const c = e.target.closest && e.target.closest('.kb-card'); if (!c) return; drag = c.getAttribute('data-id'); c.classList.add('dragging'); kb.classList.add('moving'); try { e.dataTransfer.setData('text/plain', drag); e.dataTransfer.effectAllowed = 'move'; } catch (x) { } });
     kb.addEventListener('dragend', () => { drag = null; kb.classList.remove('moving'); kb.querySelectorAll('.dragging,.over').forEach(x => x.classList.remove('dragging', 'over')); });
     kb.addEventListener('dragover', e => { const d = e.target.closest && e.target.closest('.kb-col'); if (!d || !drag) return; e.preventDefault(); kb.querySelectorAll('.over').forEach(x => x !== d && x.classList.remove('over')); d.classList.add('over');
       const r = kb.getBoundingClientRect(); if (e.clientX > r.right - 60) kb.scrollLeft += 18; else if (e.clientX < r.left + 60) kb.scrollLeft -= 18; });
     kb.addEventListener('drop', e => { const d = e.target.closest && e.target.closest('.kb-col'); if (!d || !drag) return; e.preventDefault(); const id = drag; drag = null; moveTo(id, d.getAttribute('data-status')); });
     kb.addEventListener('keydown', e => { const c = e.target.closest && e.target.closest('.kb-card'); if (!c || e.target.tagName === 'SELECT') return;
-      if (e.key === 'Enter') { e.preventDefault(); c.click(); } else if (e.altKey && (e.key === 'ArrowRight' || e.key === 'ArrowLeft') && canEdit()) { e.preventDefault(); const i = STATUS.indexOf(c.getAttribute('data-status')) + (e.key === 'ArrowRight' ? 1 : -1); const to = STATUS[i]; if (to) moveTo(c.getAttribute('data-id'), to); } });
+      if (e.key === 'Enter') { e.preventDefault(); c.click(); } else if (e.altKey && (e.key === 'ArrowRight' || e.key === 'ArrowLeft') && canEdit()) { e.preventDefault(); const i = STATUS.indexOf(c.getAttribute('data-status')) + (e.key === 'ArrowRight' ? 1 : -1); const to = STATUS[i]; if (to) moveTo(c.getAttribute('data-id'), to, 'card'); } });
   }
   async function save(t, data, msg) { const out = await I().put('task', t ? t.id : I().uid('t'), Object.assign({}, t || {}, data)); if (msg) toast(msg); return out; }
   async function quickAdd(title) { const sh = sheet(); const f = sh.f || {}; const d = { title, type: f.types && f.types.length === 1 ? f.types[0] : 'Other', status: 'To Do', src: { type: 'manual' } }; if (f.owner === 'me') d.owner = me(); if (QTYPES.includes(d.type)) d.question = { text: title, status: 'New' };

@@ -3159,3 +3159,15 @@ body .pp-journey { background: linear-gradient(180deg, #F3F7FF, #fff 70%) !impor
 .ri .ti-liq { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 60; pointer-events: none; }
 .ri.liq { pointer-events: none; }
 .ri.liq > :not(.ti-liq) { opacity: 0; transition: opacity .45s .1s; }
+/* Configuration Inputs: read-only relationship diagram (src/cfginputs.js) */
+.ci-rel-scroll { overflow: auto; -webkit-overflow-scrolling: touch; max-width: 100%; max-height: 70vh; border: 1px solid var(--fc-border, #e4e7ec); border-radius: 6px; background: #fff; margin-top: 8px; }
+.ci-rel-scroll:focus-visible { outline: 2px solid #1570EF; outline-offset: 2px; }
+.ci-rel-scroll svg { display: block; max-width: none; }
+.ci-rel-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; }
+.ci-rel-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.ci-rel-legend .ci-ln { display: inline-block; width: 26px; height: 0; }
+.ci-rel-legend .ci-bx { display: inline-block; width: 18px; height: 11px; border-radius: 2px; }
+.ci-rel-diagram .notice { margin-bottom: 8px; }
+.ci-rel-list { margin-top: 10px; } .ci-rel-list ul { padding-left: 18px; margin: 6px 0 0; line-height: 1.6; }
+.ci-cfg-reg { max-height: 360px; overflow: auto; }
+@media (max-width: 600px) { .ci-rel-scroll { max-height: 60vh; } .ci-rel-legend { gap: 4px 10px; } }
