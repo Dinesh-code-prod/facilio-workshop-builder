@@ -32,7 +32,7 @@
   ACT.uiBack = () => { if (history.length > 1) history.back(); else V.go('overview'); };
   ACT.uiGo = a => V.go(a.getAttribute('data-view') || 'overview');
   // views a customer never opens: shown a clear no-access panel instead of silently landing on the overview
-  const TEAM_ONLY = ['tasks', 'teamhelp', 'aiwork', 'reports', 'transcripts', 'usecases', 'checks', 'brd', 'modules', 'flow', 'whiteboard', 'cfginputs', 'roles', 'notifications', 'vstudio', 'guidebuilder', 'vidguide', 'inbox', 'tickets', 'settings', 'templates', 'workspace', 'contracts', 'pkgan', 'trace', 'orgpkg', 'showcase', 'msaflow'];
+  const TEAM_ONLY = ['demokit', 'tasks', 'teamhelp', 'aiwork', 'reports', 'transcripts', 'usecases', 'checks', 'brd', 'modules', 'flow', 'whiteboard', 'cfginputs', 'roles', 'notifications', 'vstudio', 'guidebuilder', 'vidguide', 'inbox', 'tickets', 'settings', 'templates', 'workspace', 'contracts', 'pkgan', 'trace', 'orgpkg', 'showcase', 'msaflow'];
   ui.blocked = key => !!(S.user && S.user.kind === 'customer' && TEAM_ONLY.includes(key));
 
   // ---------- toasts: icon, type, close button; errors are announced and stay longer ----------

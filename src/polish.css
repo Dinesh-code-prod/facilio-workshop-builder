@@ -91,3 +91,10 @@ body .tg2-chips a:not(#_), body .gl-jump:not(#_) button { background: linear-gra
 body .tg2-chips a:not(#_):hover, body .gl-jump:not(#_) button:hover, body .gl-jump:not(#_) button.on { color: #4b2bb8 !important; border-color: #cbbdf5; transform: translateY(-1px); background: linear-gradient(180deg, #fff, #f1ecff) !important; box-shadow: inset 0 1px 0 #fff, 0 8px 14px -10px rgba(106, 61, 240, .5); }
 /* Notices: a calm neutral box with a violet edge (warning and error keep their own colours). */
 body .notice:not(.warn):not(.err):not(.danger):not(.ok):not(#_):not(#__) { background: linear-gradient(180deg, #fbfaff, #f6f3ff) !important; border: 1px solid #e6e2f2 !important; border-left: 3px solid #8f6bff !important; color: #33304a !important; box-shadow: inset 0 1px 0 #fff !important; }
+
+/* Phone width: button rows in headers and toolbars wrap instead of running off the screen. */
+@media (max-width: 720px) {
+  body .page-header .row:not(#_), body .page-body .row:not(#_), body .tk-vt:not(#_), body .tk-views:not(#_) { flex-wrap: wrap !important; }
+  body .page-header:not(#_) { padding-left: 16px !important; padding-right: 16px !important; }
+  body .pt-bar:not(#_), body .pl-tools:not(#_), body .card-h:not(#_) { flex-wrap: wrap; row-gap: 8px; }
+}

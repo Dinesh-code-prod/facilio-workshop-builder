@@ -38,7 +38,7 @@
     mount() { if (!VG.file) return; V.hostLive('vg', VG.url, async L => { const v = document.createElement('video'); v.src = VG.url; v.controls = true; v.preload = 'metadata'; v.style.cssText = 'width:100%;max-height:340px;background:#000;border-radius:10px'; L.el.appendChild(v); v.addEventListener('error', () => toast('This browser cannot play that video. Try MP4 (H.264) or WebM.', 7000, true)); }); }
   };
   ACT.vgPick = async () => {
-    sync(); const f = (await V.pickFile('video/*,.mp4,.webm,.mov'))[0]; if (!f) return; if (VG.url) URL.revokeObjectURL(VG.url);
+    sync(); const f = (await V.pickFile('video/*,.mp4,.webm,.mov'))[0]; if (!f) return; if (f.size > 1.5e9) { toast('That video is ' + (f.size / 1e9).toFixed(1) + ' GB. Use a recording under 1.5 GB (trim it or lower the quality). The video stays in your browser; only the screenshots you keep are saved.', 8000, true); return; } if (VG.url) URL.revokeObjectURL(VG.url);
     VG.file = f; VG.url = URL.createObjectURL(f); VG.dur = 0; const probe = document.createElement('video'); probe.preload = 'metadata'; probe.src = VG.url;
     probe.onloadedmetadata = () => { VG.dur = probe.duration || 0; V.render(); }; probe.onerror = () => toast('This browser cannot read that video. Try MP4 (H.264) or WebM.', 7000, true); if (!VG.title) VG.title = f.name.replace(/\.[^.]+$/, ''); V.render();
   };
