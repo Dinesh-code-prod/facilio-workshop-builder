@@ -125,3 +125,7 @@ body .adm-main > .adm-hero:not(#_):not(#__) { background-color: #12104A !importa
 body .adm-main > .adm-hero:not(#_):not(#__)::before, body .adm-main > .adm-hero:not(#_):not(#__)::after { display: none !important; }
 body .adm-hero .rgdd-btn:not(#_):not(#__), body .adm-hero .btn:not(#_):not(#__) { background: #fff !important; color: #0f1d3a !important; }
 body .adm-nav .adm-ni.on:not(#_):not(#__) { background: #0f1d3a !important; background-image: none !important; box-shadow: none !important; }
+
+/* the "+ New report" action on the Status Reports cards: a clear, full-size button, not a small tag */
+body .rep-new.btn:not(#_):not(#__) { height: 38px !important; min-height: 38px !important; padding: 0 18px !important; border-radius: 10px !important; background: #1570EF !important; background-image: none !important; border: 1px solid #1570EF !important; color: #fff !important; font-size: 13.5px !important; font-weight: 650 !important; white-space: nowrap; box-shadow: 0 1px 2px rgba(16, 40, 90, .25) !important; }
+body .rep-new.btn:not(#_):not(#__):hover { background: #0f5fd0 !important; border-color: #0f5fd0 !important; }
