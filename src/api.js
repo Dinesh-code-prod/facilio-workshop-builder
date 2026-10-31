@@ -12,9 +12,21 @@
     const h = { 'x-fwb-csrf': '1' }; let b = body;
     if (body !== undefined && !(body instanceof ArrayBuffer) && !(body instanceof Uint8Array) && !(body instanceof Blob)) { h['content-type'] = 'application/json'; b = JSON.stringify(body); }
     else if (body !== undefined) h['content-type'] = 'application/octet-stream';
-    let r;
-    try { const req = fetch(path, { method, headers: h, body: b, credentials: 'same-origin' }); r = await (root.FWBNet ? root.FWBNet.track(req) : req); }
-    catch (e) { throw new ApiError(0, 'Network error — check your connection'); }
+    // When the server is busy the app tries again by itself, so people do not have to: a read (GET) is retried up to twice on a network blip or a 502/503/504;
+    // any request the server turned away with 429 (before doing any work) is retried when it asks to wait a short while (Retry-After): once for up to 8 seconds, and for AI requests up to three times
+    // for up to 30 seconds each, with a short note on screen each time.
+    // Longer waits and every other error are shown as they are, with the server's own wording (how long to wait, or what to do).
+    const nap = ms => new Promise(res => setTimeout(res, ms)); const safe = method === 'GET'; let r;
+    for (let attempt = 0; ; attempt++) {
+      try { const req = fetch(path, { method, headers: h, body: b, credentials: 'same-origin' }); r = await (root.FWBNet ? root.FWBNet.track(req) : req); }
+      catch (e) { if (safe && attempt < 2) { await nap(400 * (attempt * 2 + 1)); continue; } throw new ApiError(0, 'Network error — check your connection'); }
+      let wait = null;
+      if (r.status === 429) { const ai = /\/ai\//.test(path), ra = Number(r.headers.get('retry-after')) || 0; if (attempt < (ai ? 3 : 1) && ra > 0 && ra <= (ai ? 30 : 8)) wait = ra * 1000; }
+      else if (safe && attempt < 2 && (r.status === 502 || r.status === 503 || r.status === 504)) wait = 500 * (attempt + 1);
+      if (wait === null) break;
+      try { if (root.FWBViews && root.FWBViews.toast && r.status === 429) root.FWBViews.toast((/\/ai\//.test(path) ? 'The AI is busy right now. ' : 'The server is busy. ') + 'Trying again in ' + Math.ceil(wait / 1000) + ' seconds…', wait + 800); } catch (e) { }
+      await nap(wait + Math.floor(Math.random() * 250));
+    }
     const ct = r.headers.get('content-type') || '';
     const data = ct.includes('application/json') ? await r.json() : (opts.raw ? r : await r.arrayBuffer());
     if (!r.ok) { if (r.status === 401 && root.FWBShell && !opts.noAuthRedirect) root.FWBShell.sessionExpired(); throw new ApiError(r.status, (data && data.error) || ('Request failed (' + r.status + ')'), data); }

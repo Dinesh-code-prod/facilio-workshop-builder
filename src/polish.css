@@ -104,3 +104,24 @@ body #userPop.popover:not(#_):not(#__), body .popover:not(#_):not(#__), body .me
 
 /* the "Open ..." buttons in the Team guide: the stage colour with white text (the shared button style had turned them white on white) */
 body .tg-go.btn:not(#_):not(#__) { background: var(--c, #1570EF) !important; background-image: none !important; border-color: var(--c, #1570EF) !important; color: #fff !important; box-shadow: 0 1px 2px rgba(16, 24, 40, .2) !important; }
+
+/* admin: the date-range menu opens above the dashboard tiles (the console header sat below them in stacking order) */
+body .adm-main > .adm-hero:not(#_):not(#__) { z-index: 60 !important; overflow: visible !important; }
+
+/* the top bar (logo, Delivery Studio, Projects/Admin) stays put on every page for team, admin and customer: nothing in the page may stack above it */
+body .navbar:not(#_):not(#__) { position: sticky !important; top: 0 !important; z-index: 500 !important; }
+
+/* Admin portal: flat and matte. No gradients, no inset shine, no glow. Buttons, cards, badges and the header follow the app theme (white surfaces, thin borders, Facilio blue and navy). */
+body .adm-main .btn:not(.primary):not(.danger):not(#_):not(#__), body .adm-main .rgdd-btn:not(#_):not(#__), body .adm-nav .btn:not(.primary):not(#_):not(#__) { background: #fff !important; background-image: none !important; border: 1px solid #d3dcee !important; color: #0f1d3a !important; box-shadow: none !important; }
+body .adm-main .btn:not(.primary):not(.danger):not(#_):not(#__):hover, body .adm-main .rgdd-btn:not(#_):not(#__):hover { background: #f4f8fe !important; border-color: #b9c8e4 !important; }
+body .adm-main .btn.primary:not(#_):not(#__), body .adm-main button.primary:not(#_):not(#__) { background: #1570EF !important; background-image: none !important; border: 1px solid #1570EF !important; color: #fff !important; box-shadow: none !important; }
+body .adm-main .btn.primary:not(#_):not(#__):hover { background: #0f5fd0 !important; border-color: #0f5fd0 !important; }
+body .adm-main .btn.danger:not(#_):not(#__) { background: #fff !important; background-image: none !important; border: 1px solid #f0b8b3 !important; color: #b42318 !important; box-shadow: none !important; }
+body .adm-main .adm-card:not(#_):not(#__), body .adm-main .kpi:not(#_):not(#__), body .adm-main .card:not(#_):not(#__) { background: #fff !important; background-image: none !important; border: 1px solid #e3eaf6 !important; box-shadow: 0 1px 2px rgba(16, 40, 90, .05) !important; }
+body .adm-main .adm-h:not(#_):not(#__) { background: transparent !important; background-image: none !important; box-shadow: none !important; border-bottom: 1px solid #edf1f8 !important; }
+body .adm-main .notice:not(#_):not(#__), body .adm-main p.notice:not(#_):not(#__) { background: #f4f8fe !important; background-image: none !important; border: 1px solid #dbe6f7 !important; box-shadow: none !important; color: #0f1d3a !important; }
+body .hchip.r-super:not(#_):not(#__), body .adm-nav .hchip:not(#_):not(#__) { background: #1D1A5E !important; background-image: none !important; color: #fff !important; box-shadow: none !important; border: 0 !important; }
+body .adm-main > .adm-hero:not(#_):not(#__) { background-color: #12104A !important; background-image: none !important; background-size: auto !important; box-shadow: none !important; animation: none !important; }
+body .adm-main > .adm-hero:not(#_):not(#__)::before, body .adm-main > .adm-hero:not(#_):not(#__)::after { display: none !important; }
+body .adm-hero .rgdd-btn:not(#_):not(#__), body .adm-hero .btn:not(#_):not(#__) { background: #fff !important; color: #0f1d3a !important; }
+body .adm-nav .adm-ni.on:not(#_):not(#__) { background: #0f1d3a !important; background-image: none !important; box-shadow: none !important; }

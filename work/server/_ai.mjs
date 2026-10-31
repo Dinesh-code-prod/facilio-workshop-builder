@@ -174,7 +174,11 @@ export function createAI(env) {
     };
     const run = async (adapter, model, req) => {
       try { return await once(adapter, model, req, false); }
-      catch (e) { const wait = e.code === 'rate_limited' ? Math.min(2500, Math.max(800, (e.retryAfter || 0) * 1000)) : 600;
+      catch (e) {
+        // a rate limit is shared by the whole account and lasts about a minute: asking again two seconds later only adds to the pile. Fail fast and say how long to wait
+        // (20 seconds when the service did not say), so the page can wait and try again by itself. Only a very short stated wait is worth retrying here.
+        if (e.code === 'rate_limited') { if (!e.retryAfter) e.retryAfter = 20; if (e.retryAfter > 3 || left() < e.retryAfter * 1000 + 8000) throw e; }
+        const wait = e.code === 'rate_limited' ? Math.min(2500, Math.max(800, (e.retryAfter || 0) * 1000)) : 600;
         if (!e.retryable || left() < wait + 8000) throw e; await sleep(wait); return once(adapter, model, req, true); }
     };
     const req = { system: q.system, messages: q.messages, maxTokens: q.maxTokens, temperature: q.temperature };

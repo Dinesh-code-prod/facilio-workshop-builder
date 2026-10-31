@@ -26,8 +26,11 @@ body .projects-page.hm .hm-search svg:not(#_):not(#__), body .projects-page.hm .
 }
 
 
-/* the night city and road, quiet, behind the whole team sign-in page (the customer view already draws its own city) */
+/* the night mountains and forest from the product animation, quiet, behind the whole team sign-in page (the customer view already draws its own city) */
 body .auth:has(.lsx[data-aud="team"]):not(#_):not(#__) { position: relative; isolation: isolate; }
-body .auth:has(.lsx[data-aud="team"]):not(#_):not(#__)::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: url(brand/login-city.svg) center bottom / 100% auto no-repeat; opacity: .5; -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 45%); mask-image: linear-gradient(180deg, transparent 0, #000 45%); }
+body .auth:has(.lsx[data-aud="team"]):not(#_):not(#__)::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: url(brand/login-scene.svg) center bottom / cover no-repeat; }
 body .auth:has(.lsx[data-aud="team"]) > *:not(.auth-note):not(#_):not(#__) { position: relative; z-index: 1; }
 body .auth:has(.lsx[data-aud="team"]) > .auth-note:not(#_):not(#__) { z-index: 1; }
+
+/* the account chip waits for the rest of the sign-in page: it is the last thing to appear, not the first */
+.auth-in .auth-form.night .aw-acct:not(#_):not(#__) { opacity: 0; animation: nsRise .8s cubic-bezier(.2, .7, .2, 1) 1.6s forwards !important; }

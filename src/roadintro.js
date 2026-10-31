@@ -23,12 +23,12 @@
   ];
   const N = STEPS.length;
   // timing: a short opening, then each milestone gets a settled view (the sign is read here) followed by a brief pan to the next
-  // paced to be read: about 16 seconds per milestone (both texts on the sign, at an easy reading speed), so the whole journey runs a little under two minutes
-  const T0 = 5, STEP = 13.5, PAN = 2.2;   // T0: the opening shot holds long enough to read the title and see the first milestone
+  // paced to be read: 11 seconds per milestone (both texts on the sign), so the whole journey runs about 77 seconds; the car drives a little faster to keep to the posts
+  const T0 = 5, STEP = 11, PAN = 2.2;   // T0: the opening shot holds long enough to read the title and see the first milestone
   const AT = STEPS.map((_, i) => T0 + i * STEP);            // the camera arrives at milestone i
   const DWE = AT.map(a => a + STEP - PAN);                  // ... and leaves it
   const MID = AT.map((a, i) => (a + DWE[i]) / 2);            // the car passes the post here
-  const CRANE = DWE[N - 1], END = CRANE + 7;                   // the camera lifts to show the whole road, the closing title holds, then the lift-off
+  const CRANE = DWE[N - 1], END = CRANE + 6;                   // the camera lifts to show the whole road, the closing title holds, then the lift-off
 
   /* ---------------- helpers ---------------- */
   const TAU = Math.PI * 2;
@@ -49,7 +49,7 @@
   const RW = 7.6, U0 = -200, U1 = 760;
 
   // car: a steady, unhurried drive that rolls to a stop at the destination
-  const VC = 63 / STEP, DT = 1 / 120, CAR = [];   // the posts stay 63 road units apart, so the car drives slower when each milestone is held longer
+  const VC = 85 / STEP, DT = 1 / 120, CAR = [];   // the posts stay 85 road units apart, so the car drives slower when each milestone is held longer
   { let u = -VC * (MID[0] - .2); for (let t = 0; t <= END + .01; t += DT) { CAR.push(u); u += VC * (1 - sm((t - CRANE + .4) / 2.4)) * DT; } }
   const carU = t => { const k = clamp(t, 0, END) / DT, i = Math.min(CAR.length - 2, Math.floor(k)); return lerp(CAR[i], CAR[i + 1], k - i); };
   const MS = MID.map(t => carU(t));                          // each post stands where the car is halfway through that milestone's view
@@ -111,6 +111,7 @@
       const dots = [...o.querySelectorAll('.ri-route span')], fillEl = $('.ri-route i'), sr = $('.ri-sr'), skipBtn = $('[data-r="skip"]');
       let W = 0, H = 0, DPR = 1, F = 1, HOR = 0, NARROW = false, PORT = false, T = 0, cam = { x: 0, z: 0, h: 30 };
       let LASTMS = 0;
+      let CARLAST = 0, CARPREV = null, CARANG = null;   // the car's own clock, last road position and smoothed tilt (for steady motion at any frame rate)
       // smoothness: the canvas is capped at about 3.2 million pixels; if the opening seconds still run below ~50 fps the render scale drops once, before the
       // first sign appears (never mid-journey). Soft, slow-changing layers (sky, sun glow, vignette, mist, clouds) are drawn from cached images instead of
       // full-screen gradients every frame.
@@ -314,13 +315,19 @@
       function drawCar(t, dl) {
         const u = carU(t), z = roadZ(u) - RW * .2, p = P(u, roadY(u), z), q = P(u + 2, roadY(u + 2), roadZ(u + 2) - RW * .2); if (!p || !q) return;
         const lifted = LT >= 0 && liftAt(p[0], p[1], .4, .06);
-        const ang = clamp(Math.atan2(q[1] - p[1], q[0] - p[0]), -.2, .2), s = p[2], L = 5.1 * s, Hh = 1.75 * s, night = 1 - sm(dl / .7);
+        const tgt = clamp(Math.atan2(q[1] - p[1], q[0] - p[0]), -.2, .2), nowC = performance.now(), dtf = CARLAST ? Math.min(.1, (nowC - CARLAST) / 1000) : 1 / 60, du = CARPREV === null ? 0 : Math.min(2, Math.abs(u - CARPREV));
+        CARLAST = nowC; CARPREV = u; CARANG = CARANG === null || LT >= 0 ? tgt : CARANG + (tgt - CARANG) * (1 - Math.exp(-dtf * 7));   // the tilt eases toward the road's slope instead of snapping to it each frame
+        const ang = CARANG, s = p[2], L = 5.1 * s, Hh = 1.75 * s, night = 1 - sm(dl / .7);
         const bob = Math.sin(u * 1.7) * Hh * .012, wr = Hh * .27, spin = u / .34;
         g.save(); g.translate(p[0], p[1]); g.rotate(ang);
         if (night > 0) { const bg = g.createLinearGradient(L * .5, 0, L * 4.4, 0); bg.addColorStop(0, `rgba(225,236,255,${.4 * night})`); bg.addColorStop(1, 'rgba(225,236,255,0)'); g.fillStyle = bg; g.beginPath(); g.moveTo(L * .48, -Hh * .52); g.lineTo(L * 4.4, -Hh * 1.3); g.lineTo(L * 4.4, Hh * .45); g.lineTo(L * .48, -Hh * .3); g.closePath(); g.fill(); }
         const shd = g.createRadialGradient(0, 0, 0, 0, 0, L * .62); shd.addColorStop(0, 'rgba(4,4,20,.5)'); shd.addColorStop(1, 'rgba(4,4,20,0)');
         g.save(); g.scale(1, .22); g.fillStyle = shd; g.beginPath(); g.arc(0, 0, L * .62, 0, TAU); g.fill(); g.restore();
-        g.translate(0, bob);
+        // on the road, not above it: a tight dark contact patch under each tyre, a dark gap under the car, and dust kicked up behind the rear wheel
+        g.fillStyle = 'rgba(4,4,20,.62)'; for (const wx of [-L * .3, L * .31]) { g.beginPath(); g.ellipse(wx, Hh * .015, wr * 1.0, wr * .2, 0, 0, TAU); g.fill(); }
+        g.fillStyle = 'rgba(4,4,20,.4)'; g.fillRect(-L * .42, -Hh * .03, L * .84, Hh * .055);
+        { const dust = mix([120, 112, 190], [214, 200, 186], dl); for (let k = 0; k < 7; k++) { const age = (t * 1.4 + k / 7) % 1, dx = -L * .5 - age * L * 1.7, dy = -Hh * .06 - age * Hh * .45, r = Hh * (.07 + .26 * age); g.fillStyle = rgb(dust, .26 * (1 - age) * (.6 + .4 * Math.sin(k * 2.1))); g.beginPath(); g.arc(dx, dy, r, 0, TAU); g.fill(); } }
+        g.translate(0, bob - Hh * .07);   // the tyres rest on the road
         const body = g.createLinearGradient(0, -Hh * 1.32, 0, -Hh * .12); body.addColorStop(0, '#FFFFFF'); body.addColorStop(.45, '#E4EAF8'); body.addColorStop(1, '#9AA7CC');
         g.fillStyle = body; g.beginPath();
         g.moveTo(-L * .5, -Hh * .3); g.lineTo(-L * .5, -Hh * .62); g.quadraticCurveTo(-L * .49, -Hh * .78, -L * .4, -Hh * .82);
@@ -344,8 +351,11 @@
         for (const wx of [-L * .3, L * .31]) {
           g.fillStyle = '#0E0F2A'; g.beginPath(); g.arc(wx, -Hh * .2, wr, 0, TAU); g.fill();
           g.fillStyle = '#B8C2E2'; g.beginPath(); g.arc(wx, -Hh * .2, wr * .62, 0, TAU); g.fill();
-          g.strokeStyle = '#5A6496'; g.lineWidth = Math.max(.6, wr * .14); g.beginPath();
-          for (let k = 0; k < 5; k++) { const a = spin + k * TAU / 5; g.moveTo(wx, -Hh * .2); g.lineTo(wx + Math.cos(a) * wr * .58, -Hh * .2 + Math.sin(a) * wr * .58); } g.stroke();
+          // wheel motion blur: the spokes are drawn at several angles between this frame and the last, so a fast wheel looks like a spinning wheel, not a flickering one
+          const dsp = du / .34, nb = Math.max(1, Math.min(8, Math.ceil(dsp / .16)));
+          g.strokeStyle = '#5A6496'; g.lineWidth = Math.max(.6, wr * .14); g.globalAlpha = nb > 1 ? Math.max(.22, 1.6 / nb) : 1;
+          for (let j = 0; j < nb; j++) { const base = spin - dsp * (j / nb); g.beginPath(); for (let k = 0; k < 5; k++) { const a = base + k * TAU / 5; g.moveTo(wx, -Hh * .2); g.lineTo(wx + Math.cos(a) * wr * .58, -Hh * .2 + Math.sin(a) * wr * .58); } g.stroke(); }
+          g.globalAlpha = 1;
           g.fillStyle = '#2A2F60'; g.beginPath(); g.arc(wx, -Hh * .2, wr * .14, 0, TAU); g.fill();
         }
         g.restore();

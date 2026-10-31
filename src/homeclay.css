@@ -43,3 +43,26 @@ body .projects-page.hm .proj-card:not(#_):not(#__):hover { transform: translateY
 
 /* solid, clearly visible white tiles: the number tiles, the panels and the project cards */
 body .projects-page.hm .hm-stats .pp-stat:nth-child(n):not(#_):not(#__), body .projects-page.hm .hm-port:not(#_):not(#__), body .projects-page.hm .hm-mywork:not(#_):not(#__), body .projects-page.hm .proj-grid > .proj-card:nth-child(n):not(#_):not(#__), body .projects-page.hm .proj-card:not(#_):not(#__) { background: #fff !important; -webkit-backdrop-filter: none; backdrop-filter: none; border: 1px solid #dfe6f3 !important; box-shadow: 0 1px 2px rgba(16, 40, 90, .06), 0 10px 22px -14px rgba(16, 40, 90, .22) !important; }
+
+/* project cards: white frosted glass with a soft clay edge; only the avatar carries the project's own colour, so a project is easy to spot without a coloured card */
+body .projects-page.hm .proj-grid > .proj-card[style*="--tone"]:nth-child(n):not(#_):not(#__) { background: linear-gradient(150deg, #ffffff 0%, rgba(246, 249, 255, .92) 55%, rgba(236, 243, 253, .85) 100%) !important; -webkit-backdrop-filter: blur(12px) saturate(1.2); backdrop-filter: blur(12px) saturate(1.2); border: 1px solid #dfe6f3 !important; box-shadow: inset 0 1px 0 #fff, inset 0 -4px 10px rgba(40, 80, 150, .05), 0 1px 2px rgba(16, 40, 90, .06), 0 14px 26px -18px rgba(16, 40, 90, .3) !important; }
+body .projects-page.hm .proj-grid > .proj-card[style*="--tone"]:nth-child(n):not(#_):not(#__):hover { transform: translateY(-3px); box-shadow: inset 0 1px 0 #fff, inset 0 -4px 10px rgba(40, 80, 150, .06), 0 2px 4px rgba(16, 40, 90, .08), 0 20px 32px -16px rgba(16, 40, 90, .35) !important; }
+body .projects-page.hm .proj-av[style], body .projects-page.hm .proj-grid > .proj-card[style*="--tone"]:nth-child(n) .proj-av:not(#_):not(#__) { background: linear-gradient(145deg, color-mix(in srgb, var(--tone) 62%, #fff), var(--tone)) !important; color: #fff !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 -3px 6px rgba(0, 0, 0, .15), 0 6px 12px -6px var(--tone) !important; }
+
+/* tiles or list, sort, and "show more" so a long list of projects stays easy to scan */
+.hm-bar { flex-wrap: wrap; gap: 12px; } .hm-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-left: auto; }
+.pj-sort select { height: 40px; padding: 0 12px; border: 1px solid #d6dff0; border-radius: 10px; background: #fff; color: #0f1d3a; font: inherit; font-size: 13.5px; }
+.pj-view { display: inline-flex; border: 1px solid #d6dff0; border-radius: 10px; overflow: hidden; background: #fff; } .pj-view button { width: 40px; height: 38px; border: 0; background: transparent; color: #5a6c87; cursor: pointer; display: grid; place-items: center; } .pj-view button.on { background: #1D1A5E; color: #fff; } .pj-view button:focus-visible { outline: 2px solid #1570EF; outline-offset: -2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.pj-list { display: grid; background: #fff; border: 1px solid #dfe6f3; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 2px rgba(16, 40, 90, .05), 0 12px 24px -18px rgba(16, 40, 90, .25); }
+.pj-h, .pj-r { display: grid; grid-template-columns: minmax(220px, 2.2fr) minmax(130px, 1.2fr) 100px 120px 120px 90px; align-items: center; gap: 14px; padding: 11px 16px; }
+.pj-h { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #6b7a94; background: #f6f9fe; border-bottom: 1px solid #e6edf8; }
+.pj-r { border-top: 1px solid #edf1f8; cursor: pointer; font-size: 13.5px; color: #0f1d3a; } .pj-h + .pj-r { border-top: 0; } .pj-r:hover, .pj-r:focus-visible { background: #f3f7fe; outline: none; }
+.pj-n { display: flex; align-items: center; gap: 12px; min-width: 0; } .pj-n b { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .pj-c { color: #44546f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .pj-d { color: #5a6c87; font-size: 13px; }
+.proj-av.sm { width: 32px; height: 32px; min-width: 32px; border-radius: 10px; font-size: 12px; display: grid; place-items: center; font-weight: 700; flex: none; }
+.pj-more { display: flex; justify-content: center; margin: 16px 0 4px; }
+@media (max-width: 860px) { .pj-h, .pj-r { grid-template-columns: minmax(0, 1fr) 90px 90px; } .pj-h span:nth-child(2), .pj-r > :nth-child(2), .pj-h span:nth-child(4), .pj-r > :nth-child(4), .pj-h span:nth-child(6) { display: none; } .hm-tools { margin-left: 0; width: 100%; } }
+/* the search sits on the left, right after the heading; sort and the tile/list switch stay on the right */
+body .projects-page.hm .hm-bar:not(#_):not(#__) { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; }
+body .projects-page.hm .hm-bar .hm-search:not(#_):not(#__) { order: 2; flex: 1 1 280px; max-width: 440px; width: auto; margin: 0; }
+body .projects-page.hm .hm-bar .hm-tools:not(#_):not(#__) { order: 3; margin-left: auto; }

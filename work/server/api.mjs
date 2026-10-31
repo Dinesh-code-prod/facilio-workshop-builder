@@ -3,6 +3,7 @@
    Roles and project access are enforced HERE, on the server, so pages cannot bypass them. */
 import { createAI, AIFail } from './_ai.mjs';
 import { assess, docsOf, workload, RULES as HRULES, HEALTH_LABEL, MANUAL } from './_portfolio.mjs';
+let FWB = null; // this copy of the server's own dispatcher (not looked up through a global, so two copies in one process cannot mix)
 let CTX = null, HDR = {};   // set at the start of every request (a Lambda handles one request at a time)
 {
   'use strict';
@@ -371,7 +372,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   const AI = createAI({ ctx: () => CTX, db: { get: (c, k) => CTX.db.get(c, k), put: (c, k, v) => dbPut(c, k, v), del: (c, k) => dbDel(c, k) }, now, log: (...a) => console.error(...a) });
   const PNAME = AI.names; const PROVIDERS = Object.keys(PNAME);
   const haveClaude = () => AI.adapters.claude.configured();
-  const aiErr = e => (e instanceof AIFail ? new HttpError(e.status, e.message, { code: e.code }) : e);
+  const aiErr = e => (e instanceof AIFail ? new HttpError(e.status, e.message, { code: e.code, retryAfter: e.retryAfter || undefined }) : e);
   // the shared service with HttpError for the routes; op names what the feature needs, never a provider
   const aiGen = async q => { try { return await AI.generate(q); } catch (e) { throw aiErr(e); } };
   const aiJSON = async (q, v) => { try { return await AI.generateJSON(q, v); } catch (e) { throw aiErr(e); } };
@@ -1542,15 +1543,15 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     }
     return { status: 404, data: { error: 'Not found' } };
   }
-  globalThis.__fwb = { dispatch, reset() { ME = null; ROLE = null; OWN = null; } /* OWN too: a warm server must not keep a previous owner after a handover */, ekey, nameFromEmail };
+  FWB = globalThis.__fwb = { dispatch, reset() { ME = null; ROLE = null; OWN = null; } /* OWN too: a warm server must not keep a previous owner after a handover */, ekey, nameFromEmail };
 }
 
 export default async function handler(req, ctx) {
-  CTX = ctx; HDR = (req && req.headers) || {}; globalThis.__fwb.reset();
+  CTX = ctx; HDR = (req && req.headers) || {}; FWB.reset();
   let query = req.query; if (query && typeof query === 'object') query = new URLSearchParams(query).toString(); query = String(query || '').replace(/^\?/, '');
   let body; if (req.method !== 'GET' && req.method !== 'DELETE') { const t = req.text ? await req.text() : ''; if (t) { try { body = JSON.parse(t); } catch (e) { body = {}; } } else body = {}; }
   const sub = String(req.path || '/').startsWith('/') ? req.path : '/' + req.path;
-  const res = (await globalThis.__fwb.dispatch(req.method, '/api' + sub, query, body)) || { status: 500, data: { error: 'Something went wrong on the server.' } };
+  const res = (await FWB.dispatch(req.method, '/api' + sub, query, body)) || { status: 500, data: { error: 'Something went wrong on the server.' } };
   const headers = { 'content-type': 'application/json', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
   if (res.status === 429 && res.data && res.data.retryAfter) headers['retry-after'] = String(res.data.retryAfter);
   return new Response(JSON.stringify(res.data), { status: res.status, headers });
