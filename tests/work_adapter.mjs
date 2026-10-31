@@ -65,6 +65,21 @@ await t('AI: draft is server-made, unapproved, editor cannot self-approve, owner
   r = await call(sam, 'PUT', `/api/projects/${pid}/items/ai/${id}`, { data: { content: 'changed' } }); assert.equal(r.data.item.data.status, 'draft', 'edit reopens approved text');
   r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'bogus' }); assert.equal(r.status, 400);
 });
+await t('Claude hand-off: prompt pack and imported reply stay unapproved, access checked, no network call', async () => {
+  const realF = globalThis.fetch; globalThis.fetch = async () => { throw new Error('the hand-off must not call any API'); };
+  try {
+    let r = await call(sam, 'POST', `/api/projects/${pid}/ai/pack`, { task: 'uat', instruction: 'Only Work Orders', headings: ['1. Intro', '2. Scope'] }); assert.equal(r.status, 200, JSON.stringify(r.data));
+    assert.match(r.data.prompt, /Only Work Orders/); assert.match(r.data.prompt, /## 1\. Intro/); assert.match(r.data.prompt, /REPLY FORMAT/); assert.match(r.data.prompt, /SOURCES/);
+    r = await call(sam, 'POST', `/api/projects/${pid}/ai/pack`, { task: 'vidguide' }); assert.equal(r.status, 400); r = await call(sam, 'POST', `/api/projects/${pid}/ai/pack`, { task: 'bogus' }); assert.equal(r.status, 400);
+    r = await call(out, 'POST', `/api/projects/${pid}/ai/pack`, { task: 'uat' }); assert.ok(r.status === 403 || r.status === 404, 'pack: no access to other projects');
+    const reply = '## UAT plan\nScope is the Work Order module [S1] and also [S99].\n' + 'x'.repeat(300);
+    r = await call(sam, 'POST', `/api/projects/${pid}/ai/import`, { task: 'uat', content: reply }); assert.equal(r.status, 201, JSON.stringify(r.data));
+    assert.equal(r.data.item.data.status, 'draft'); assert.equal(r.data.item.data.provider, 'Claude (manual)'); assert.match(r.data.item.data.notice, /S99/, 'a citation the project does not have is flagged');
+    r = await call(sam, 'POST', `/api/projects/${pid}/ai/import`, { task: 'uat', content: 'too short' }); assert.equal(r.status, 400);
+    r = await call(sam, 'POST', `/api/projects/${pid}/ai/import`, { task: 'uat', content: 'y'.repeat(120001) }); assert.equal(r.status, 413);
+    r = await call(out, 'POST', `/api/projects/${pid}/ai/import`, { task: 'uat', content: reply }); assert.ok(r.status === 403 || r.status === 404, 'import: no access to other projects');
+  } finally { globalThis.fetch = realF; }
+});
 await t('AI providers: DeepSeek default, Claude explicit, key never exposed, honest fallback', async () => {
   let r = await call(sam, 'GET', '/api/ai/status'); assert.equal(r.data.defaultProvider, 'deepseek'); assert.equal(r.data.claude, false);
   r = await call(sam, 'POST', `/api/projects/${pid}/ai/run`, { task: 'uat' }); assert.equal(r.status, 201); assert.equal(r.data.item.data.provider, 'DeepSeek');
