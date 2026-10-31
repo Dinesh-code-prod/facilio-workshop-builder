@@ -10,6 +10,7 @@
   const { drawer, closeDrawer, toast } = V;
   const DELIVERABLES = [['brd', 'Business Requirements Document', /\bbrd\b|business requirement|requirements? document/i], ['uat', 'UAT plan and test cases', /\buat\b|test case|acceptance/i], ['guide', 'Customer user guide', /user guide|how to|step \d|walkthrough/i], ['ftr', 'FTR report', /\bftr\b|first time right/i], ['config', 'Configuration documentation', /configuration|field|module setup/i], ['workshop', 'Workshop intelligence', /workshop|transcript|requirement session/i], ['golive', 'Go-live readiness review', /go.?live|readiness/i], ['hypercare', 'Hypercare status report', /hypercare/i], ['handover', 'Support handover pack', /handover|hand over/i], ['wsr', 'Weekly status report (WSR)', /weekly|\bwsr\b/i], ['monthly', 'Monthly report', /monthly/i], ['gaps', 'Missing requirements check', /missing|gap/i]];
   let X = null; // { name, kind, text, file, sheets, note }
+  let PRESET = '';
   const guess = text => { const h = String(text).slice(0, 1500); const m = DELIVERABLES.find(d => d[2].test(h)); return m ? m[0] : 'brd'; };
   async function docxText(file) {
     await V.loadScript('vendor/jszip.min.js'); const zip = await root.JSZip.loadAsync(file); const f = zip.file('word/document.xml'); if (!f) throw new Error('This does not look like a Word document');
@@ -44,7 +45,7 @@
     let result = '';
     if (X) {
       const head = `<div class="ci-found"><b>${esc(X.name || 'Pasted text')}</b>${X.note ? `<span class="xs muted"> · ${esc(X.note)}</span>` : ''}</div>`;
-      if (X.kind === 'text') { const g = X.task || guess(X.text); const len = X.text.trim().length; const short = len < 200;
+      if (X.kind === 'text') { const g = X.task || PRESET || guess(X.text); const len = X.text.trim().length; const short = len < 200;
         result = `${head}${parseFindings(X.text).length ? `<div class="notice" style="margin-bottom:8px"><span>This reply has <b>${parseFindings(X.text).length} findings</b> in the import format. You can create a task for each, or save the whole reply as a draft.</span></div>` : ''}<div class="notice"><span>This is <b>text</b> (${len.toLocaleString()} characters). It will be saved as an <b>unapproved draft</b> in Deliverables &amp; AI. A person reviews and approves it there. Sources cited as [S1], [S2] are checked against this project.</span></div>${short ? '<div class="notice warn" style="margin-top:8px"><span>This is too short to be a draft (at least 200 characters). Paste the whole reply.</span></div>' : ''}
           <label class="f" style="margin-top:10px">Which deliverable is this?</label><select id="ci_task" data-change="ciTask">${DELIVERABLES.map(d => `<option value="${d[0]}"${d[0] === g ? ' selected' : ''}>${esc(d[1])}</option>`).join('')}</select>
           <div class="ci-prev"><b class="xs">Preview</b><pre>${esc(X.text.slice(0, 900))}${X.text.length > 900 ? '\n…' : ''}</pre></div>`; }
@@ -65,7 +66,9 @@
     return `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button>${b}`;
   }
   const open = () => drawer('Import from Claude', body(), foot());
-  ACT.claudeImport = () => { X = null; open(); };
+  ACT.claudeImport = () => { X = null; PRESET = ''; open(); };
+  // "Add from Claude" beside an Open in Claude button: the same drawer, with that deliverable already chosen
+  ACT.aiAddFrom = a => { X = null; PRESET = (a && a.getAttribute && a.getAttribute('data-task')) || ''; open(); };
   ACT.ciFile = async el => { const f = el.files && el.files[0]; if (!f) return; try { await read(f); } catch (e) { X = null; toast(e.message, 6000, true); } open(); };
   ACT.ciPaste = el => { const t = el.value.trim(); if (!t) { X = null; open(); return; } X = { name: 'Pasted text', kind: 'text', text: t }; open(); const n = document.getElementById('ci_paste'); if (n) n.value = el.value; };
   ACT.ciTask = el => { if (X) X.task = el.value; };
@@ -114,8 +117,8 @@
   // o: { title, url, body, extra (what else to do in Claude, e.g. attach a picture), into (id of a box to draw in, else a drawer), onReply(result) }
   let HO = null;
   V.claudeHandoff = async o => {
-    try { const r = await API.post(o.url, Object.assign({}, o.body, { claudePack: true })); HO = Object.assign({}, o, { prompt: r.prompt, name: r.title || o.title }); const ok = await copy(r.prompt); if (ok) window.open('https://claude.ai/new', '_blank', 'noopener');
-      const html = `<div class="notice"><span>${ok ? 'The prompt is copied. Paste it into the new Claude chat (Ctrl+V).' : 'Copy the prompt below, open Claude and paste it.'} ${esc(o.extra || '')} Then paste Claude's whole reply here.</span></div><div class="row" style="gap:8px;margin:8px 0;flex-wrap:wrap"><a class="btn sm" href="https://claude.ai/new" target="_blank" rel="noopener noreferrer">Open Claude (web)</a><a class="btn sm" href="claude://claude.ai/new">Open Claude Desktop</a><button type="button" class="btn sm" data-act="hoCopy">Copy the prompt</button></div>${V.skillsNote ? V.skillsNote() : ''}<textarea id="hoR" rows="8" placeholder="Paste Claude's reply here"></textarea><div class="row" style="gap:8px;margin-top:8px"><button type="button" class="btn sm primary" data-act="hoBack">Bring the reply back</button></div>`;
+    try { const r = o.skipPack ? { prompt: '', title: o.title } : await API.post(o.url, Object.assign({}, o.body, { claudePack: true })); HO = Object.assign({}, o, { prompt: r.prompt, name: r.title || o.title }); const ok = o.skipPack ? false : await copy(r.prompt); if (ok) window.open('https://claude.ai/new', '_blank', 'noopener');
+      const html = (o.skipPack ? `<div class="notice"><span>Paste the whole reply Claude gave you here.</span></div>` : `<div class="notice"><span>${ok ? 'The prompt is copied. Paste it into the new Claude chat (Ctrl+V).' : 'Copy the prompt below, open Claude and paste it.'} ${esc(o.extra || '')} Then paste Claude's whole reply here.</span></div>`) + (o.skipPack ? '' : `<div class="row" style="gap:8px;margin:8px 0;flex-wrap:wrap"><a class="btn sm" href="https://claude.ai/new" target="_blank" rel="noopener noreferrer">Open Claude (web)</a><a class="btn sm" href="claude://claude.ai/new">Open Claude Desktop</a><button type="button" class="btn sm" data-act="hoCopy">Copy the prompt</button></div>${V.skillsNote ? V.skillsNote() : ''}`) + `<textarea id="hoR" rows="8" placeholder="Paste Claude's reply here"></textarea><div class="row" style="gap:8px;margin-top:8px"><button type="button" class="btn sm primary" data-act="hoBack">Bring the reply back</button></div>`;
       const into = o.into && document.getElementById(o.into); if (into) into.innerHTML = html; else drawer((r.title || o.title || 'Use your own Claude'), html, '<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button>', { wide: true }); }
     catch (e) { toast(e.message || 'Could not prepare the prompt', 6000, true); } };
   ACT.hoCopy = async () => toast((await copy((HO || {}).prompt || '')) ? 'Prompt copied' : 'Copy was blocked', 3000);

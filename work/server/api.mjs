@@ -454,7 +454,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
       return { src, system: uatKind ? UAT_SYSTEM : GUIDE_SYSTEM, messages: [{ role: 'user', content: user }] };
     };
     const big = await build(pv.provider !== 'claude'); let smallBuilt = null;
-    if (b.claudePack) return ok({ title: 'Guide section: ' + title, prompt: big.system + '\n\n' + big.messages[0].content + '\n\nREPLY IN MARKDOWN ONLY: the section text, with no introduction or closing remarks. Keep the [S#] citations.', sources: big.src });
+    if (b.claudePack) return ok({ title: 'Guide section: ' + title, prompt: big.system + '\n\n' + await stageLine(P.id) + '\n\n' + big.messages[0].content + '\n\nREPLY IN MARKDOWN ONLY: the section text, with no introduction or closing remarks. Keep the [S#] citations.', sources: big.src });
     if (b.reply) { const txt = String(b.reply).replace(/\r\n/g, '\n').trim(); if (txt.length < 40) throw new HttpError(400, 'Paste the full reply from Claude'); if (txt.length > 40000) throw new HttpError(413, 'That reply is too long to import'); await audit(P.id, s.id, 'ai-guide-section', title.slice(0, 60) + ' via Claude (manual)'); return ok({ text: txt.replace(/^\s*#{1,3}\s+.*\n+/, ''), sources: big.src, provider: 'Claude (manual)', model: 'claude.ai', notice: CLAUDE_NOTE(s) }); }
     const smaller = async () => { smallBuilt = smallBuilt || await build(true); return { system: smallBuilt.system, messages: smallBuilt.messages }; };
     const out = await aiGen({ op: 'document', pv, system: big.system, messages: big.messages, maxTokens: pv.provider !== 'claude' ? 1100 : 2400, smaller, budget: 21000 });
@@ -474,7 +474,8 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     const { src, text } = await aiContext(P.id, task, false);
     const prompt = AI_SYSTEM + '\n\n' + aiUserMsg(T, instruction, tplText, text) + (heads.length ? '\n\nUSE THESE HEADINGS, in this order, exactly as written:\n' + heads.map(h => '## ' + h).join('\n') : '') + '\n\nREPLY FORMAT: reply with the Markdown document only, with no introduction or closing remarks. Keep the [S#] citations.';
     const skillsLine = (task === 'guide' || task === 'uat') ? '\n\nSKILLS: if your Claude has the video-to-user-guide skill installed, use it when I attach a recorded walkthrough; use the demo-video, ui-mockup-video and remotion skills if I ask for a video. If a skill is not installed, carry on without it.' : '';
-    const finalPrompt = prompt + skillsLine;
+    const stage = (task === 'guide' || task === 'uat') ? '\n\n' + await stageLine(P.id) : '';
+    const finalPrompt = prompt + stage + skillsLine;
     await audit(P.id, s.id, 'ai-pack', task); return ok({ task, title: T.title, prompt: finalPrompt, sources: src, chars: finalPrompt.length });
   });
   // Project review pack for Claude: the whole project (documents and records) as one prompt, with what to check and a reply format that can be imported back as tasks.
@@ -730,6 +731,9 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
   };
   const TYPE_HINT = { 'BRD Task': 'requirement wording, gaps and acceptance criteria', 'Requirement Task': 'clarifications, assumptions, dependencies and expected outcomes', 'Customer Question': 'what is being asked, the information needed and a draft answer', 'Customer Response Required': 'a context-aware response and the unresolved points', 'Change Request': 'a summary of the proposal and the areas to assess for impact (scope, effort, BRD, configuration, UAT, timeline)', 'FTR / Technical Task': 'an investigation plan, a technical checklist and validation steps', 'User Guide Task': 'clear end-user instructions from verified functionality only', 'UAT Task': 'scenarios with preconditions, steps and expected results', 'Implementation Task': 'implementation and verification steps', 'Issue / Blocker': 'evidence analysis and troubleshooting', 'Internal Action': 'next steps and dependencies', 'Customer Action Required': 'the decision or deliverable needed from the customer and a follow-up message', 'Meeting Follow-up': 'a summary of actions with source references', 'Go-Live / Handover Task': 'readiness and handover checklists', 'Other': 'practical next steps' };
   // Claude hand-off for the task AI: the same prompt DeepSeek gets (claudePack), and the pasted reply checked the same way (reply)
+  // the guide prompts follow the project's stage: standard guides first, the customer's own signed-off process once the BRD is signed
+  async function stageLine(pid) { const rows = await itemsOf(pid, 'signoff').catch(() => []); const b = rows.find(r => r.id === 'brd'); const signed = !!(b && b.data && b.data.status === 'signed');
+    return signed ? 'PROJECT STAGE: the BRD is SIGNED OFF. Base this on the customer\'s own process: the confirmed requirements, configuration and state flows in the sources. Be specific to this project; do not fall back to generic wording where the sources are specific.' : 'PROJECT STAGE: the BRD is NOT signed off yet. Write the standard Facilio guide for the modules involved, as a starting point. Mark every project-specific statement "to confirm" and do not present anything as agreed with the customer.'; }
   const jsonFrom = t => { const x = String(t || ''); const m = /```(?:json)?\s*([\s\S]*?)```/i.exec(x); const c = m ? m[1] : ((/[\[{][\s\S]*[\]}]/.exec(x) || [''])[0]); try { return JSON.parse(c.trim()); } catch (e) { throw new HttpError(400, 'The reply has no valid JSON block. Ask Claude to reply with the JSON only.'); } };
   const CLAUDE_NOTE = s0 => 'Written in Claude by ' + (s0.name || s0.email) + ' and pasted in; Delivery Studio did not run it.';
   async function taskContext(pid, task) {

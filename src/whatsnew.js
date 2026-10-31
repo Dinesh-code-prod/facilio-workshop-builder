@@ -7,6 +7,8 @@
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
     { v: '1.9.1', date: '2026-10-31', kind: 'UPDATE', all: true, title: 'Claude project review, import from Claude, guides for agent and integration projects', notes: [
+      'Add from Claude now sits beside every Open in Claude button (deliverables, task assistant, transcript tasks, guide sections, kick-off deck, flow from an image, admin briefing, project review) so a reply you already have can be brought in without starting again.',
+      'Guide prompts follow the project stage: before the BRD is signed off Claude is asked for the standard Facilio guide, with project-specific points marked to confirm; after sign-off it is asked to base the guide on the confirmed process of the customer.',
       'Task filters: owner, status, priority, type, due date, needs attention and customer questions waiting, for the list and the board, with a clear button.',
       'Guides and videos in your own Claude: pick a format (document, step-by-step guide, walkthrough or video with voice-over); the prompt says what to attach (your recorded video) and which Claude skills to use. A skills pack (ZIP per skill) can be downloaded from the app, with install steps.',
       'Open in Claude now also covers guide sections, the kick-off deck reader, flow from an image and the admin briefing; the reply comes back into the same step.',

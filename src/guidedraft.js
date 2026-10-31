@@ -111,7 +111,7 @@
     finally { busy.delete(sec.id); V.render(); }
   }
   ACT.ugClaude = a => { const i = Number(a.getAttribute('data-i')); const g = W(); const sec = g && g.sections[i]; if (!sec) return; if (!g.plan) { toast('Set up this guide first (modules, readers, sources)', 5000, true); ACT.ugPlan(); return; }
-    V.claudeHandoff({ title: 'Guide section: ' + sec.title, url: `/api/projects/${S.project.id}/ai/guide-section`, body: secBody(sec, g), extra: 'If you have a recorded walkthrough of this process, attach it to the chat as well.', onReply: r => gen(i, { reply: r }).catch(() => { }) }); };
+    V.claudeHandoff({ title: 'Guide section: ' + sec.title, url: `/api/projects/${S.project.id}/ai/guide-section`, body: secBody(sec, g), skipPack: a.getAttribute('data-add') === '1', extra: 'If you have a recorded walkthrough of this process, attach it to the chat as well.', onReply: r => gen(i, { reply: r }).catch(() => { }) }); };
   ACT.ugGen = a => { const i = Number(a.getAttribute('data-i')); gen(i).catch(() => { }); };
   ACT.ugGenAll = async () => {
     const g = W(); if (!g || runAll) return; runAll = true; const todo = g.sections.map((s, i) => [s, i]).filter(([s]) => s.gen === 'pending' || s.gen === 'error' || !hasText(s)); let ok = 0, failed = 0;
@@ -169,7 +169,7 @@
     if (s.edited) out.push(tag('green', 'Edited by a person'));
     if (stale(g, s)) out.push(`<span title="The records this section was written from have changed since. Review it, or regenerate (your edits are kept as a proposal).">${tag('orange', 'Sources changed')}</span>`);
     if (s.proposal) out.push(`<button class="btn sm" data-act="ugProposal" data-id="${esc(s.id)}">${ico('eye')}Review AI proposal</button>`);
-    if (can) out.push(`<button class="btn sm" data-act="ugClaude" data-i="${i}" title="Write this section in your own Claude">In Claude</button>`);
+    if (can) out.push(`<button class="btn sm" data-act="ugClaude" data-i="${i}" title="Write this section in your own Claude">In Claude</button><button class="btn sm" data-act="ugClaude" data-add="1" data-i="${i}" title="Bring back the text Claude wrote for this section">Add from Claude</button>`);
     if (can) out.push(`<button class="btn sm" data-act="ugBrief" data-i="${i}" title="${esc(s.brief || 'Say what this section should cover')}">Brief</button><button class="btn sm" data-act="ugGen" data-i="${i}"${busy.has(s.id) ? ' disabled' : ''}>${ico('spark')}${hasText(s) ? 'Regenerate' : 'Generate'}</button>`);
     return out.length ? `<div class="ug-sbar">${out.join('')}</div>` : '';
   }
