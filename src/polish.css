@@ -98,3 +98,9 @@ body .notice:not(.warn):not(.err):not(.danger):not(.ok):not(#_):not(#__) { backg
   body .page-header:not(#_) { padding-left: 16px !important; padding-right: 16px !important; }
   body .pt-bar:not(#_), body .pl-tools:not(#_), body .card-h:not(#_) { flex-wrap: wrap; row-gap: 8px; }
 }
+
+/* the account menu, the dropdown menus and popovers always sit above page content (toolbars and cards go up to 300), and below dialogs and tours (9500+) */
+body #userPop.popover:not(#_):not(#__), body .popover:not(#_):not(#__), body .menu:not(#_):not(#__) { z-index: 9100 !important; }
+
+/* the "Open ..." buttons in the Team guide: the stage colour with white text (the shared button style had turned them white on white) */
+body .tg-go.btn:not(#_):not(#__) { background: var(--c, #1570EF) !important; background-image: none !important; border-color: var(--c, #1570EF) !important; color: #fff !important; box-shadow: 0 1px 2px rgba(16, 24, 40, .2) !important; }

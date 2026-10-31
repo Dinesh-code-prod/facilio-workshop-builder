@@ -173,9 +173,11 @@
   // ---------- render ----------
   let mode = 'boot'; // boot | auth | projects | workspace
   function render() {
+    if (!S.user) { const up = document.getElementById('userPop'); if (up) up.remove(); }   // signed out: no account menu on the sign-in screen
     const app = document.getElementById('app'); if (!app) return;
     if (mode === 'auth') { const keep = {}; document.querySelectorAll('.auth-box input[type=text],.auth-box input[type=email]').forEach(i => { if (i.id && i.value) keep[i.id] = i.value; }); app.innerHTML = authHtml(); Object.entries(keep).forEach(([k, v]) => { const i = document.getElementById(k); if (i && !i.value) i.value = v; }); mountAuth(); return; }
-    if (mode === 'projects') { app.innerHTML = navbarHtml(false) + projectsHtml(); if (V.motion) V.motion.route('projects'); return; }
+    if (mode !== 'projects') S.ui.homeGuide = false;
+    if (mode === 'projects') { app.innerHTML = navbarHtml(false) + (S.ui.homeGuide && V.homeGuideHtml ? V.homeGuideHtml() : projectsHtml()); if (V.motion) V.motion.route('projects'); return; }
     if (mode === 'tickets') { app.innerHTML = navbarHtml(false) + (V.ticketsGlobalHtml ? V.ticketsGlobalHtml() : ''); return; }
     if (mode === 'admin') { app.innerHTML = navbarHtml(false) + (V.adminHtml ? V.adminHtml() : ''); return; }
     if (mode !== 'workspace') return;
@@ -234,6 +236,7 @@
   document.addEventListener('click', e => {
     const a = e.target.closest('[data-act]'); if (!a) { const pop = document.getElementById('userPop'); if (pop && !e.target.closest('#userPop')) pop.remove(); return; }
     const fn = ACT[a.getAttribute('data-act')]; if (!fn) return;
+    if (a.closest('#userPop')) { const up = document.getElementById('userPop'); if (up) up.remove(); }   // choosing anything in the account menu closes it (Sign out, switching role, all projects...)
     if (a.tagName === 'A' || a.tagName === 'BUTTON') e.preventDefault();
     // one click at a time per action and record: a second click while the first is still running is ignored (stops duplicate saves, imports, generates)
     const key = a.getAttribute('data-act') + '|' + (a.getAttribute('data-id') || a.getAttribute('data-k') || a.getAttribute('data-v') || ''); if (inflight.has(key)) { e.preventDefault(); return; }

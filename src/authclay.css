@@ -1,0 +1,33 @@
+/* Welcome and sign-in screen in the Facilio palette: navy, Facilio blue, pink accents. Calm surfaces, crisp edges, no glow. */
+body .auth:not(#_):not(#__) { background: radial-gradient(900px 600px at 28% 55%, rgba(21, 112, 239, .22), transparent 70%), radial-gradient(700px 500px at 85% 15%, rgba(229, 25, 127, .10), transparent 70%), linear-gradient(165deg, #0A0830 0%, #11104A 58%, #1D1A5E 100%) !important; }
+body .auth .auth-box h2:not(#_):not(#__), body .auth h1 em:not(#_):not(#__), body .auth em:not(#_):not(#__), body .auth .lsx-rp:not(#_):not(#__) { color: #8DB8FF !important; }
+body .auth .auth-note:not(#_):not(#__) { color: rgba(255, 255, 255, .55) !important; }
+body .auth .av-learn:not(#_):not(#__), body .auth .aw-go:not(#_):not(#__) { background: linear-gradient(180deg, #2E86F7, #1570EF) !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, .18) !important; border-radius: 10px !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 1px 2px rgba(0, 0, 0, .3), 0 10px 18px -10px rgba(21, 112, 239, .7) !important; }
+body .auth .av-learn:not(#_):not(#__):hover, body .auth .aw-go:not(#_):not(#__):hover { filter: brightness(1.07); }
+body .auth .aw-acct:not(#_):not(#__), body .auth .auth-feats li:not(#_):not(#__) { background: rgba(22, 24, 88, .88) !important; background-image: none !important; border: 1px solid rgba(255, 255, 255, .12) !important; border-radius: 12px !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 1px 2px rgba(0, 0, 0, .25) !important; backdrop-filter: none !important; }
+body .auth .auth-feats li:not(#_):not(#__):hover { background: rgba(255, 255, 255, .09) !important; border-color: rgba(141, 184, 255, .35) !important; }
+body .auth .aw-who:not(#_):not(#__), body .auth .aw-who span:not(#_):not(#__), body .auth .auth-feats li span:not(#_):not(#__) { color: rgba(255, 255, 255, .72) !important; }
+body .auth .aw-who b:not(#_):not(#__) { color: #fff !important; }
+body .auth .aw-ok:not(#_):not(#__) { background: rgba(124, 243, 198, .14) !important; color: #aaf0d6 !important; border-color: rgba(124, 243, 198, .3) !important; }
+
+/* projects home: the inner header bars of the two panels sit on the panel, not as white boxes inside it */
+body .projects-page.hm .hm-port-top:not(#_):not(#__), body .projects-page.hm .hm-bar:not(#_):not(#__) { background: transparent !important; box-shadow: none !important; border-bottom: 1px solid rgba(98, 80, 160, .12) !important; }
+body .projects-page.hm .hm-search svg:not(#_):not(#__), body .projects-page.hm .hm-search .fi:not(#_):not(#__) { color: #7a739a !important; }
+
+/* Layout: the two halves fill the whole page. The story, logo and note sit in the left half; sign-in is the right half. */
+@media (min-width: 1100px) {
+  body .auth:has(.auth-form.night):not(#_):not(#__) { grid-template-columns: minmax(0, 1.2fr) minmax(440px, 1fr) !important; justify-content: stretch !important; column-gap: 0 !important; }
+  body .auth:has(.auth-form.night) .auth-art:not(#_):not(#__) { padding: 40px clamp(32px, 4vw, 80px) 28px clamp(32px, 4vw, 80px) !important; }
+  body .auth:has(.auth-form.night) .auth-art h1:not(#_):not(#__) { max-width: 720px; }
+  body .auth:has(.auth-form.night) .auth-note:not(#_):not(#__) { position: absolute !important; left: clamp(32px, 4vw, 80px) !important; right: auto !important; bottom: 24px !important; text-align: left !important; }
+  body .auth:has(.auth-form.night) .auth-form:not(#_):not(#__) { margin: 0 !important; padding: 40px clamp(40px, 6vw, 120px) !important; border: 0 !important; background: transparent !important; box-shadow: none !important; }
+  body .auth:has(.auth-form.night) .auth-art:not(#_):not(#__) { background: transparent !important; }
+  body .auth:has(.auth-form.night) .auth-box:not(#_):not(#__) { width: min(480px, 100%); }
+}
+
+
+/* the night city and road, quiet, behind the whole team sign-in page (the customer view already draws its own city) */
+body .auth:has(.lsx[data-aud="team"]):not(#_):not(#__) { position: relative; isolation: isolate; }
+body .auth:has(.lsx[data-aud="team"]):not(#_):not(#__)::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: url(brand/login-city.svg) center bottom / 100% auto no-repeat; opacity: .5; -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 45%); mask-image: linear-gradient(180deg, transparent 0, #000 45%); }
+body .auth:has(.lsx[data-aud="team"]) > *:not(.auth-note):not(#_):not(#__) { position: relative; z-index: 1; }
+body .auth:has(.lsx[data-aud="team"]) > .auth-note:not(#_):not(#__) { z-index: 1; }

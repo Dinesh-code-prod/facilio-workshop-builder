@@ -77,7 +77,11 @@
   ACT.tgTick = el => { const s = getDone(); const k = el.getAttribute('data-k'); el.checked ? s.add(k) : s.delete(k); setDone(s); V.render(); };
   ACT.tgReset = () => { setDone(new Set()); V.render(); };
   ACT.tgJump = a => { const e = document.getElementById(a.getAttribute('data-id')); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
-  ACT.tgGo = a => { if (ACT.closeDrawer) ACT.closeDrawer(); const v = a.getAttribute('data-view'); if (v && V.go) V.go(v); };
-  ACT.teamGuide = () => V.go('teamhelp');
-  V.teamGuide = () => V.go('teamhelp');
+  // inside a project the guide is a page. On the projects home (no project open) the same guide shows in place of the project list, with a way back.
+  const drawerGo = ACT.tgGo;
+  V.homeGuideHtml = () => `<main class="main"><div class="page"><div style="margin:0 0 10px"><button type="button" class="btn sm" data-act="tgBack">&larr; Back to projects</button></div>${V.teamhelp.html()}</div></main>`;
+  ACT.tgBack = () => { S.ui.homeGuide = false; V.render(); };
+  ACT.tgGo = a => { if (!S.project && drawerGo) { S.ui.homeGuide = false; return drawerGo(a); } if (ACT.closeDrawer) ACT.closeDrawer(); const v = a.getAttribute('data-view'); if (v && V.go) V.go(v); };
+  V.teamGuide = () => { if (S.project) return V.go('teamhelp'); S.ui.homeGuide = true; V.render(); try { root.scrollTo(0, 0); } catch (e) { } };
+  ACT.teamGuide = () => V.teamGuide();
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -147,11 +147,14 @@
     }
     cx.restore();
   }
-  let gpulse = 0, teamFx = [], lastT = 0;
+  let gpulse = 0, teamFx = [], lastT = 0, curProg = 0;
   function drawGlobe(t, ang, intro, pulse, scan) {
     const { cx: X, cy: Y, R } = G;
     // halo + atmosphere
-    glow(X, Y, R * 1.8, '21,112,239', .16 * intro + pulse * .08);
+    glow(X, Y, R * 2.6, '21,112,239', .22 * intro + pulse * .1);
+    glow(X, Y, R * 1.5, '141,184,255', .16 * intro);
+    // breathing rings: soft waves leaving the studio, one every few seconds
+    for (let k = 0; k < 3; k++) { const ph = ((t * .22 + k / 3) % 1), rr = R * (1.05 + ph * .9); cx.strokeStyle = `rgba(141,184,255,${(1 - ph) * .28 * intro})`; cx.lineWidth = 1.5; cx.beginPath(); cx.arc(X, Y, rr, 0, TAU); cx.stroke(); }
     if (pulse > .02) glow(X, Y, R * 1.3, '229,25,127', pulse * .1);
     const gi = cx.createRadialGradient(X - R * .35, Y - R * .4, R * .1, X, Y, R);
     gi.addColorStop(0, '#332C93'); gi.addColorStop(.75, '#221D6B'); gi.addColorStop(1, '#1A1659');
@@ -181,6 +184,22 @@
     }
     // rim light
     cx.strokeStyle = `rgba(255,255,255,${.28 + pulse * .3})`; cx.lineWidth = 1.5; cx.beginPath(); cx.arc(X, Y, R, 0, TAU); cx.stroke();
+    // satellites: the many customer projects that orbit one studio (small lights with a short trail, in front of and behind the globe)
+    for (let k = 0; k < 9; k++) {
+      const lat = ((k % 3) - 1) * .5 + Math.sin(t * .3 + k) * .08, base = t * (.32 + (k % 3) * .06) + k * .72;
+      for (let j = 7; j >= 0; j--) { const p = rot([Math.cos(lat) * Math.cos(base - j * .07), -Math.sin(lat), Math.cos(lat) * Math.sin(base - j * .07)], 0); const z = p[2]; const rr2 = R * 1.16; const a = (1 - j / 8) * (z > 0 ? .85 : .35) * intro;
+        cx.fillStyle = `rgba(${k % 3 === 0 ? '124,243,198' : k % 3 === 1 ? '255,170,210' : '141,184,255'},${a})`; if (!j && z > 0) glow(X + p[0] * rr2, Y + p[1] * rr2, 14, k % 3 === 0 ? '124,243,198' : k % 3 === 1 ? '255,170,210' : '141,184,255', .55 * intro); cx.beginPath(); cx.arc(X + p[0] * rr2, Y + p[1] * rr2, (j ? 1.4 : 3) * (z > 0 ? 1 : .75), 0, TAU); cx.fill(); }
+    }
+    // delivery core: once the tracker runs, a progress ring and the percentage fill the middle of the globe
+    if (curProg > 0.001 && intro >= 1) {
+      const r = R * .55, sc = cx.createRadialGradient(X, Y, r * .2, X, Y, r * 1.5); sc.addColorStop(0, 'rgba(18,14,60,.78)'); sc.addColorStop(1, 'rgba(18,14,60,0)');
+      cx.fillStyle = sc; cx.beginPath(); cx.arc(X, Y, r * 1.5, 0, TAU); cx.fill();
+      cx.lineCap = 'round'; cx.lineWidth = Math.max(4, R * .07); cx.strokeStyle = 'rgba(255,255,255,.14)'; cx.beginPath(); cx.arc(X, Y, r, 0, TAU); cx.stroke();
+      const gr = cx.createLinearGradient(X - r, Y - r, X + r, Y + r); gr.addColorStop(0, '#8DB8FF'); gr.addColorStop(1, '#E5197F'); cx.strokeStyle = gr;
+      cx.beginPath(); cx.arc(X, Y, r, -Math.PI / 2, -Math.PI / 2 + curProg * TAU); cx.stroke(); cx.lineCap = 'butt';
+      cx.fillStyle = '#fff'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.font = `800 ${Math.round(R * .3)}px ${FONT}`; cx.fillText(Math.round(curProg * 100) + '%', X, Y - R * .03);
+      cx.fillStyle = 'rgba(255,255,255,.75)'; cx.font = `600 ${Math.max(9, Math.round(R * .095))}px ${FONT}`; cx.fillText(curProg >= 1 ? 'DELIVERED' : 'DELIVERY TRACKED', X, Y + R * .2); cx.textAlign = 'start'; cx.textBaseline = 'alphabetic';
+    }
   }
   function surf(lat, lon, ang) { const p = rot([Math.cos(lat) * Math.cos(lon), -Math.sin(lat), Math.cos(lat) * Math.sin(lon)], ang); return { x: G.cx + p[0] * G.R, y: G.cy + p[1] * G.R, z: p[2] }; }
   function arc(a, b, lift, head, tail, col, width) {
@@ -212,7 +231,11 @@
     cx.save(); cx.globalAlpha = a;
     const s = opt.scale || 1; cx.translate(x + w / 2, y + h / 2); cx.scale(s, s); cx.translate(-x - w / 2, -y - h / 2);
     cx.shadowColor = 'rgba(8,6,40,.4)'; cx.shadowBlur = 18; cx.shadowOffsetY = 6;
-    cx.fillStyle = opt.dim ? '#E9ECF7' : '#fff'; rr(x, y, w, h, 12); cx.fill(); cx.shadowColor = 'transparent';
+    const cg = cx.createLinearGradient(0, y, 0, y + h); cg.addColorStop(0, opt.dim ? '#F1F2FA' : '#FFFFFF'); cg.addColorStop(1, opt.dim ? '#DDE0F0' : '#E4EDFB');
+    cx.fillStyle = cg; rr(x, y, w, h, 14); cx.fill(); cx.shadowColor = 'transparent';
+    // clay depth: a bright rim on top, a soft shade underneath
+    cx.save(); rr(x, y, w, h, 14); cx.clip(); cx.strokeStyle = 'rgba(255,255,255,.95)'; cx.lineWidth = 2; rr(x + 1, y + 1, w - 2, h - 2, 13); cx.stroke();
+    const sh = cx.createLinearGradient(0, y + h - 14, 0, y + h); sh.addColorStop(0, 'rgba(40,80,150,0)'); sh.addColorStop(1, 'rgba(40,80,150,.18)'); cx.fillStyle = sh; cx.fillRect(x, y + h - 14, w, 14); cx.restore();
     if (opt.stroke) { cx.strokeStyle = opt.stroke; cx.lineWidth = 2; cx.stroke(); }
     if (opt.glowCol && opt.glowK > 0) { cx.strokeStyle = `rgba(${opt.glowCol},${.6 * opt.glowK})`; cx.lineWidth = 2; rr(x - 3, y - 3, w + 6, h + 6, 14); cx.stroke(); }
     const ic = Math.min(30, h - 16);
@@ -243,6 +266,7 @@
     const prog = clamp((t - RING_T) / RING_D, 0, 1);
     const spin = sm(13.8, 14.8, t) + (t < RING_T ? sm(1, 2, t) * .7 * (1 - sm(RING_T - .6, RING_T, t)) : 0);
 
+    curProg = prog;
     drawRing(t, false, prog, spin * sm(0, 1.5, t));
     drawGlobe(t, ang, intro, gpulse, scan);
     drawRing(t, true, prog, spin * sm(0, 1.5, t));

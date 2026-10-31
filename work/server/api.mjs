@@ -229,7 +229,9 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   // ---------- route table ----------
   const routes = [];
   const route = (method, pattern, fn) => routes.push({ method, re: new RegExp('^' + pattern.replace(/:(\w+)/g, '(?<$1>[^/]+)') + '$'), fn });
-  const ok = (data, status) => ({ status: status || 200, data });
+  // every Claude hand-off prompt (title + prompt) names the team's installed skills; Claude uses them if it has them and carries on if not
+  const SKILLS_LINE = 'SKILLS (optional): if your Claude has these skills installed, use them where they fit: excel-analysis (spreadsheets and .xlsx files), video-to-user-guide (steps from a recorded walkthrough), demo-video, ui-mockup-video, video-editing and the remotion skills (building and rendering a video), brag (a short launch video of a project website), graphify (how a codebase or a set of documents fits together). If a skill is not installed, carry on without it. Whatever you use, keep the reply format this prompt asks for.';
+  const ok = (data, status) => { if (data && typeof data.title === 'string' && typeof data.prompt === 'string' && !data.prompt.includes('SKILLS (optional)')) data = Object.assign({}, data, { prompt: data.prompt + String.fromCharCode(10, 10) + SKILLS_LINE }); return { status: status || 200, data }; };
 
   route('GET', '/api/health', async () => ok({ ok: true, openMode: false, runMode: true, time: now() }));
   route('GET', '/api/auth/me', async () => {
