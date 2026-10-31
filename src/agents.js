@@ -18,6 +18,7 @@
     ['audit', 'Audit Report Intelligence', 'Reads inspection reports (text, voice, photo, PDF), extracts findings and raises corrective work orders.', ['Inspection templates', 'Sample reports in each format', 'Finding-to-work-order mapping', 'Severity rules'], 'Feed real reports. Check every finding is extracted and each corrective work order is right.'],
     ['contractor', 'Contractor Work Tracker', 'Takes updates sent by WhatsApp, voice or message and structures them into the CMMS.', ['Contractor contacts and channels', 'Work categories', 'Photo classification rules', 'Which fields an update fills'], 'Send updates in every channel, with good and bad photos. Check the records created.']
   ];
+  V.agentCatalog = AGENTS;
   const PATH = [
     ['Choose the agents and how success is measured', 'Pick the agents above that fit, and write one measurable outcome for each (for example: requests answered within 5 minutes).'],
     ['Connect the data source', 'Facilio CMMS data is already connected. For another system (Fiix, eMaint, FMX, Corrigo, Brightly) agree the connection with the Facilio AI team and the customer\'s IT.'],

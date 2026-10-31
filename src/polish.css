@@ -77,3 +77,17 @@ body input[type="file"]:not(#_):hover { border-color: #8f6bff !important; backgr
 body input[type="file"]:not(#_):focus-visible { outline: 0; box-shadow: 0 0 0 3px rgba(106, 61, 240, .18); }
 body input[type="file"]:not(#_)::file-selector-button { margin-right: 12px; padding: 7px 16px; border: 1px solid #d9d3f3; border-radius: 999px; background: linear-gradient(180deg, #fff, #f1ecff); color: #4b2bb8; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer; box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(60, 40, 140, .12); transition: background .15s; }
 body input[type="file"]:not(#_)::file-selector-button:hover { background: #e6dcff; }
+
+/* Buttons whose old style was "white text on a coloured fill" (the AI draft button, Watch the introduction, roadmap go) lost the fill to the clay buttons and
+   showed white text on white. They are violet clay buttons, like every primary button. */
+body .btn.ai-btn:not(#_):not(#__), body .ai-btn:not(#_):not(#__), body .pp-primary:not(#_):not(#__), body .rm-go:not(#_):not(#__), body .pp-watch:not(#_):not(#__) {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--th-violet) 88%, #fff) 0%, var(--th-violet) 100%) !important; color: #fff !important; border: 1px solid var(--th-violet) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), inset 0 -1px 2px rgba(40, 14, 130, .2), 0 3px 8px -4px color-mix(in srgb, var(--th-violet) 55%, transparent) !important; }
+body .btn.ai-btn:not(#_):not(#__):hover, body .ai-btn:not(#_):not(#__):hover, body .pp-primary:not(#_):not(#__):hover, body .rm-go:not(#_):not(#__):hover, body .pp-watch:not(#_):not(#__):hover { background: linear-gradient(180deg, color-mix(in srgb, var(--th-violet) 80%, #fff) 0%, color-mix(in srgb, var(--th-violet) 94%, #fff) 100%) !important; color: #fff !important; }
+body .btn.ai-btn:not(#_):not(#__) *, body .ai-btn:not(#_):not(#__) * { color: inherit !important; }
+
+/* Jump chips and pills: soft clay pills in the app's ink and violet, not flat pale-blue boxes. */
+body .tg2-chips a:not(#_), body .gl-jump:not(#_) button { background: linear-gradient(180deg, #fff, #f6f4fb) !important; color: #1b1630 !important; border: 1px solid #e6e2f2; border-radius: 999px; padding: 7px 14px; font-weight: 600; font-size: 13px; text-decoration: none; box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(40, 40, 90, .08), 0 6px 12px -10px rgba(60, 40, 140, .35); transition: transform .15s ease, box-shadow .15s ease, color .15s; }
+body .tg2-chips a:not(#_):hover, body .gl-jump:not(#_) button:hover, body .gl-jump:not(#_) button.on { color: #4b2bb8 !important; border-color: #cbbdf5; transform: translateY(-1px); background: linear-gradient(180deg, #fff, #f1ecff) !important; box-shadow: inset 0 1px 0 #fff, 0 8px 14px -10px rgba(106, 61, 240, .5); }
+/* Notices: a calm neutral box with a violet edge (warning and error keep their own colours). */
+body .notice:not(.warn):not(.err):not(.danger):not(.ok):not(#_):not(#__) { background: linear-gradient(180deg, #fbfaff, #f6f3ff) !important; border: 1px solid #e6e2f2 !important; border-left: 3px solid #8f6bff !important; color: #33304a !important; box-shadow: inset 0 1px 0 #fff !important; }

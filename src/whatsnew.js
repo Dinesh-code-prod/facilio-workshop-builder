@@ -6,6 +6,12 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '1.9.1', date: '2026-10-31', kind: 'UPDATE', all: true, title: 'Claude project review, import from Claude, guides for agent and integration projects', notes: [
+      'Project review in Claude (Deliverables & AI): exports the whole project as one prompt with what to check and a reply format. Paste the reply back from Claude to create a task for each gap it found.',
+      'Import from Claude: bring back a pasted reply or a .docx, .xlsx, .csv, .md, .txt or package file. Text becomes an unapproved draft; spreadsheets open the Tasks or plan import; nothing is saved until you confirm.',
+      'New customer guides: Facilio AI Agents (what agents are, what Atom AI can do, how a project runs, what we need) and Connecting Your Systems (how Facilio integrates with ERP, building systems, helpdesk and messaging tools).',
+      'Requirement sessions: Show Facilio (the guided tour of real screens) and the Requirements whiteboard are one click away on the Transcripts page. The whiteboard can now export a JPG as well as a PNG.',
+      'Fixed: buttons that showed white text on white (the AI draft button and others), blue-tinted boxes, the search ring, and the file picker look.'] },
     { v: '1.9.0', date: '2026-10-31', kind: 'UPDATE', all: true, title: 'Guided Product Tour, nicer Module guides, a smarter project plan, UI states', notes: [
       'Product Tour: a guided, full-screen tour of the real Facilio screens, chapter by chapter, with a plain explanation for each. It plays on its own or with the arrow keys. The team can save a chapter as a video file made in the browser.',
       'Module guides have a cleaner look: a clear module list, a progress band and softer sections. The content is the same.',

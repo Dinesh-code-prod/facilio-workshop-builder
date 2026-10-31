@@ -227,7 +227,7 @@
     if (!I().ready(['wb'])) { I().load(['wb', 'cflow']).then(() => V.render()); return `<div class="page-header"><div class="t"><h1>Process Whiteboard</h1></div></div><div class="page-body"><div class="empty">Loading boards…</div></div>`; }
     const B = current(); const list = boards();
     const head = `<div class="page-header"><div class="t"><h1>Process Whiteboard</h1><p>Lay out individual processes and the project's state flows side by side, connect them into one end-to-end process, and export it. Flows placed here are copies: the State Flow Builder stays the place to change a flow.</p></div>
-      <div class="row">${list.length ? `<select data-change="wbPick" aria-label="Board">${list.map(b => `<option value="${esc(b.id)}"${b.id === W.boardId ? ' selected' : ''}>${esc(b.name || 'Untitled board')}</option>`).join('')}</select>` : ''}${ro() ? '' : '<button class="btn" data-act="wbNew">New board</button>'}${B && !ro() ? '<button class="btn" data-act="wbRename">Rename</button>' : ''}${B ? '<button class="btn primary" data-act="wbExport" data-scope="board">Export PNG</button>' : ''}</div></div>`;
+      <div class="row">${list.length ? `<select data-change="wbPick" aria-label="Board">${list.map(b => `<option value="${esc(b.id)}"${b.id === W.boardId ? ' selected' : ''}>${esc(b.name || 'Untitled board')}</option>`).join('')}</select>` : ''}${ro() ? '' : '<button class="btn" data-act="wbNew">New board</button>'}${B && !ro() ? '<button class="btn" data-act="wbRename">Rename</button>' : ''}${B ? '<button class="btn" data-act="wbExport" data-scope="board" data-fmt="jpg">Export JPG</button><button class="btn primary" data-act="wbExport" data-scope="board">Export PNG</button>' : ''}</div></div>`;
     if (!B) return head + `<div class="page-body"><div class="card empty"><h3>No boards yet</h3><p>Create a board, then add notes and shapes, or place your project's state flows on it.</p>${ro() ? '' : '<div class="row empty-acts"><button class="btn primary" data-act="wbNew">Create a board</button></div>'}</div></div>`;
     const dis = ro() ? ' disabled' : ''; const nCf = cflows().length;
     const RB = (tool, icon, label, keyH) => `<button class="wb-rb" type="button" data-act="wbTool" data-wbtool="${tool}" aria-pressed="false" title="${esc(label)}${keyH ? ' (' + keyH + ')' : ''}" aria-label="${esc(label)}"${tool !== 'select' && tool !== 'hand' ? dis : ''}>${icon}</button>`;
@@ -604,7 +604,7 @@
   });
 
   // ---------- export ----------
-  async function exportPng(scope) {
+  async function exportPng(scope, fmt) {
     const list = (scope === 'sel' ? [...W.sel].map(node).filter(Boolean) : W.B.nodes).filter(n => !n.hidden);
     if (!list.length) { V.toast(scope === 'sel' ? 'Select something to export' : 'The board is empty', 4000, true); return; }
     // a selected frame exports with everything inside it
@@ -618,8 +618,9 @@
     // high resolution, kept inside what browsers can draw (about 16k pixels a side, 64M pixels in all)
     const scale = Math.max(.5, Math.min(2, 15000 / Math.max(w, h), Math.sqrt(6.4e7 / (w * h))));
     const png = await D.svgToPng(svg, scale); W.imgData = null;
-    const name = (W.B.name || 'process-board').replace(/[^\w-]+/g, '_') + (scope === 'sel' ? '_selection' : '') + '.png';
-    V.download(name, new Blob([png.data], { type: 'image/png' })); V.toast(`Exported ${name} (${Math.round(w * scale)} × ${Math.round(h * scale)} px)`);
+    const jpg = fmt === 'jpg'; const base = (W.B.name || 'process-board').replace(/[^\w-]+/g, '_') + (scope === 'sel' ? '_selection' : ''); const name = base + (jpg ? '.jpg' : '.png'); let out = new Blob([png.data], { type: 'image/png' });
+    if (jpg) { const bm = await createImageBitmap(out); const cv = document.createElement('canvas'); cv.width = bm.width; cv.width = bm.width; cv.height = bm.height; const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(bm, 0, 0); out = await new Promise(r => cv.toBlob(r, 'image/jpeg', .92)); }
+    V.download(name, out); V.toast(`Exported ${name} (${Math.round(w * scale)} × ${Math.round(h * scale)} px)`);
   }
   root.__wbExportSvg = () => { const b = bbox(W.B.nodes); return { bbox: b, nodes: W.B.nodes.length, edges: W.B.edges.length }; };
 
@@ -710,7 +711,7 @@
   ACT.wbCfDel = a => V.busy(a, async () => { if (!(await V.confirmDialog('Delete combined flow', 'Delete this saved combined flow? It is also removed from the BRD. The board is not changed.', 'Delete', true))) return; await I().del('cflow', a.getAttribute('data-id')); ACT.wbCflows(); });
 
   // ---------- actions ----------
-  ACT.wbExport = a => V.busy(a, () => exportPng(a.getAttribute('data-scope')));
+  ACT.wbExport = a => V.busy(a, () => exportPng(a.getAttribute('data-scope'), a.getAttribute('data-fmt')));
   ACT.wbPick = el => { save(); W.boardId = el.value; W.B = null; V.render(); };
   function askName(title, value, act) {
     V.drawer(title, `<label class="f" for="wbName">Board name</label><input type="text" id="wbName" maxlength="80" value="${esc(value)}">`, `<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="${act}">Save</button>`);
