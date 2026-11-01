@@ -25,6 +25,8 @@ Last updated: 1 Nov 2026, personal account, local session. Everything below is p
 - Third increment (1 Nov 2026): MSA Scope Check page (src/msalogic.js, src/msafind.js; 5 kinds of finding; team decisions stored as item kind mfind), UAT issue board (src/uat.js; tasks get a uat part), original UAT tracker kept (file category uat_source), UAT charts in the guide builder. Open items in docs/AUDIT_2026-11-01.md. Next recommended: lifecycle tracker (owner per stage, confirmed mark-complete), dashboard layouts, Discover more admin.
 - Deployed to facilio.work at commit f4fa814 (deploy 100). Review status is pending, so only the owner and Ashwin can open it. See `docs/DEPLOYS.md`.
 
+- Lifecycle tracker (1 Nov 2026): nine stages, owner, status, owner-only close / not applicable / reopen with history (src/lifelogic.js, src/lifenav.js, src/lifetrack.css, item kind lcstage, tests/life.mjs).
+
 ## Next steps, in order
 1. The user checks the live app after deploy 90 (sign-in skyline, admin tabs, Facilio screens, Status Reports button, one AI action).
 2. Otto (the facilio.work Teams bot): build project-aware tools in `work/server/api.mjs` and `work/work.json`: my projects, who is on a project's team, my tasks, overdue, project status (counts), a "current project" setting, and add/update task with `confirm: true`. Scope every tool to projects the person is a member of, even for admins (today `editableProjects` lets admins see all).

@@ -28,8 +28,8 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     signoff_evidence: { ext: ['pdf', 'png', 'jpg', 'jpeg', 'msg', 'eml', 'docx'], max: 20e6 }, brd_signed: { ext: ['docx', 'pdf', 'json'], max: MAX_FILE }
   };
   // record kinds the team can store (customer-only rules come with the customer page)
-  const KINDS = ['action', 'decision', 'raid', 'signoff', 'cr', 'onb', 'onbsub', 'onbfile', 'onbws', 'owner', 'agreement', 'minutes', 'checklist', 'build', 'uat', 'digest', 'ctrcore', 'ctrfees', 'ctrlegal', 'ctrrates', 'scope', 'modbrief', 'fieldreq', 'note', 'ctrwatch', 'usecase', 'discrepancy', 'brdrev', 'ai', 'hc', 'hcrep', 'ho', 'close', 'rep', 'kpi', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'lesson', 'tkt', 'res', 'ugv', 'ugu', 'pnote', 'wb', 'news', 'interest', 'cflow', 'task', 'utc', 'mfind'];   // mfind: the team's decision on an MSA scope finding (status and note; team only). utc: UAT test cases (module-wise scenarios, steps, expected and actual results, status; team only)
-  const TEAM_KINDS = new Set(['utc', 'mfind']);   // kinds customers can neither list nor change   // task: Project Tasks (one register; sheets are saved views in the tasksheets document)   // cflow: combined flows saved from a whiteboard (a snapshot the BRD can include); wb: process whiteboards; news: Explore Facilio entries; interest: customer requests for more information
+  const KINDS = ['action', 'decision', 'raid', 'signoff', 'cr', 'onb', 'onbsub', 'onbfile', 'onbws', 'owner', 'agreement', 'minutes', 'checklist', 'build', 'uat', 'digest', 'ctrcore', 'ctrfees', 'ctrlegal', 'ctrrates', 'scope', 'modbrief', 'fieldreq', 'note', 'ctrwatch', 'usecase', 'discrepancy', 'brdrev', 'ai', 'hc', 'hcrep', 'ho', 'close', 'rep', 'kpi', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'lesson', 'tkt', 'res', 'ugv', 'ugu', 'pnote', 'wb', 'news', 'interest', 'cflow', 'task', 'utc', 'mfind', 'lcstage'];   // mfind: the team's decision on an MSA scope finding (status and note; team only). utc: UAT test cases (module-wise scenarios, steps, expected and actual results, status; team only)
+  const TEAM_KINDS = new Set(['utc', 'mfind', 'lcstage']);   // kinds customers can neither list nor change   // task: Project Tasks (one register; sheets are saved views in the tasksheets document)   // cflow: combined flows saved from a whiteboard (a snapshot the BRD can include); wb: process whiteboards; news: Explore Facilio entries; interest: customer requests for more information
   const DOC_SECTIONS = /^[a-z][a-z0-9_]{1,40}$/, ITEM_ID_RE = /^[A-Za-z0-9_-]{1,80}$/, GR_KEY = /^[a-z]{2,8}:[afbxw]:[A-Za-z0-9_-]{1,64}$/;
 
   class HttpError extends Error { constructor(status, msg, extra) { super(msg); this.status = status; this.extra = extra; } }
@@ -140,8 +140,8 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   // 'Approved', which the page never writes, so an editor could record 'CR Converted' (the approval) without being an owner.
   const CR_DECIDED = ['Approved', 'CR Converted', 'Waived Off', 'Delivered', 'Rejected'];
   const decided = (kind, d) => { d = d || {}; if (kind === 'signoff') return d.status === 'signed'; if (kind === 'cr') return CR_DECIDED.includes(d.status);
-    if (kind === 'close') return !!(d.closedAt || d.exitAt); return false; };
-  const DECISION_MSG = { signoff: 'Only a project owner or an admin can record or undo a sign-off.', cr: 'Only a project owner or an admin can approve or decline a change request.', close: 'Only a project owner or an admin can record hypercare exit or close the project.' };
+    if (kind === 'close') return !!(d.closedAt || d.exitAt); if (kind === 'lcstage') return d.status === 'closed' || d.status === 'na'; return false; };
+  const DECISION_MSG = { signoff: 'Only a project owner or an admin can record or undo a sign-off.', cr: 'Only a project owner or an admin can approve or decline a change request.', close: 'Only a project owner or an admin can record hypercare exit or close the project.', lcstage: 'Only a project owner or an admin can close a lifecycle stage, mark it not applicable or reopen it.' };
   function decisionGuard(kind, role, cur, next) {
     if (role === 'owner' || !DECISION_MSG[kind]) return;
     if (kind === 'cr' && cur) { const a = String(cur.status || ''), b = String((next || {}).status || '');
@@ -1221,7 +1221,7 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     await save(col, pcol, P.item, nh, data, head && head.z); await touchProject(P.id);
     if (P.kind === 'tkt') await ticketNotify(project, P.item, cur, data, s);
     let notice; if (P.kind === 'interest' && !cur) { notice = await interestNotice(project, P.item, data) ? 'teams' : 'none'; await audit(P.id, s.id, 'interest-created', P.item + ' ' + data.title); }
-    if (['signoff', 'cr', 'raid', 'onb', 'onbsub', 'decision', 'brdrev', 'ai', 'hc', 'ho', 'close', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'tkt', 'res', 'ugv', 'ugu', 'task'].includes(P.kind)) await audit(P.id, s.id, P.kind + (cur ? '-updated' : '-created'), P.item + (data.status ? ' ' + data.status : ''));
+    if (['signoff', 'cr', 'raid', 'onb', 'onbsub', 'decision', 'brdrev', 'ai', 'hc', 'ho', 'close', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'tkt', 'res', 'ugv', 'ugu', 'task', 'lcstage'].includes(P.kind)) await audit(P.id, s.id, P.kind + (cur ? '-updated' : '-created'), P.item + (data.status ? ' ' + data.status : ''));
     return ok(Object.assign({ item: itemOut(P.kind, P.item, nh, data) }, notice ? { notice } : {}));
   }));
   route('DELETE', '/api/projects/:id/items/:kind/:item', async (b, P) => {

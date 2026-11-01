@@ -6,6 +6,12 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '2.3.0', date: '2026-11-01', kind: 'UPDATE', title: 'Lifecycle tracker: nine stages with an owner and a recorded closure', notes: [
+      'Delivery Lifecycle now shows nine stages: Project Kickoff, Workshops & Requirements, Solution Design & Configuration, Implementation, UAT & Go-Live, Training & Documentation, Go-Live Handover, Hypercare and Project Closure.',
+      'Each stage shows its status (Completed, Current, Upcoming, Delayed, Blocked or Not applicable), owner, completion date, progress as a count of records, critical blockers, pending actions and upcoming activities.',
+      'Status comes from what the project has recorded, never from a percentage. A stage with no records is Upcoming, not complete. Behind-schedule plan rows make a stage Delayed; blocked actions, high risks, customer concerns, critical UAT issues and high MSA findings make it Blocked.',
+      'A project owner or admin can close a stage, mark it not applicable or reopen it, after a confirmation. Their name, the date and a note are kept in the stage history. If a stage is closed while records are still open, the page says so.',
+      'Anyone on the team can set the owner of a stage. Actions and plan rows are tied to a stage by the words in their title.'] },
     { v: '2.2.0', date: '2026-11-01', kind: 'UPDATE', title: 'MSA Scope Check, a UAT issue board, kept tracker files, UAT charts', notes: [
       'New MSA Scope Check (Workshops & Requirements): confirmed requirements and use cases are held against the signed MSA, and every finding says which of five kinds it is: confirmed contractual conflict, potential scope deviation, missing contractual information, pending customer clarification, or requirement not sufficiently confirmed. Each shows the item, the MSA wording with page and section, why, and what to do next, and opens the requirement or the MSA scope.',
       'It points at wording to read; it does not decide a contract question. Missing information is a finding, never a pass. Record your decision on each finding (open, in clarification, needs change request, resolved, not an issue) with a note; your name and the date are kept. The menu shows how many findings still need a person.',
