@@ -13,5 +13,6 @@ Deploy the current code of this repository to the facilio.work app `facilio-deli
 6. If I am not the owner or a collaborator, stop and say so. Otherwise run `get_upload_url`, upload `/tmp/fds.zip` (the link lasts 10 minutes; ask for a fresh one if it expires), and run `deploy_app_zip` in replace mode. Replace mode drops anything deployed that is not in the zip.
 7. If the review status is `approved`, a deploy goes live for everyone at once: ask me to confirm before running `deploy_app_zip`, even if I said to go ahead earlier. If it is `pending`, only the owner and collaborators can open the app, so go ahead.
 8. Show the result and any load errors, and the address to check: https://facilio-delivery-studio.facilio.work (press Ctrl+F5).
+9. After a successful deploy, add one line to the table in `docs/DEPLOYS.md` (date and time in UTC, the commit from step 1, the deploy number from the result, who ran it, one short note), then commit and push that file (`git push origin main`).
 
 Never delete or rename the app, change who can open it, or submit it for review.
