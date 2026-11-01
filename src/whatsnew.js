@@ -6,6 +6,21 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '2.0.1', date: '2026-11-01', kind: 'UPDATE', title: 'Org package with views, an agent brief, and Review with Claude', notes: [
+      'New Views tab on every module: choose the app, the columns in order, the sort, a state filter, other filters and who the view is shared with. Views go into the organisation package as VIEW and VIEW_GROUP records in the format of the standard package.',
+      'Agent brief: one JSON file, grouped by module, that tells the Org Builder agent what is inside the package, what is not and why, and what to do by hand after the import.',
+      'Org Package Export opens with a readiness checklist: BRD sign-off, confirmed requirements, modules, state flows, views and notifications, each with a button to the page that fixes it.',
+      'Review with Claude: your own Claude gets the brief and a careful review request; paste the reply back to save it as a draft review or turn each finding into a task. Nothing is applied automatically.',
+      'Project Settings > JSON exports starts with the organisation package and its readiness.',
+      'Module pages show the everyday tabs first (Templates, Fields, Buttons, Views, Requirements); Related, Automation, Review, Notes and Process are one click away under More.',
+      'Longer forms keep the essentials in view and fold the rest under "More options". Nothing was removed, and anything that already has a value stays open.'] },
+    { v: '2.0.0', date: '2026-11-01', kind: 'UPDATE', all: true, title: 'Discover more as a scroll story, a new opening tree, a clearer look', notes: [
+      'Discover more is now a scroll-driven page in the style of facilio.com: real Facilio screens that change as you scroll, one chapter for each solution area, and a different picture for every module.',
+      'The sign-in pages have a Discover more with Facilio button that opens the same story full screen, so customers can explore before they sign in.',
+      'The opening animation is a real tree: a thick trunk with bark, limbs that arch up and out, and leaves in the Facilio colours, with a night sky, a skyline that lights up, wind turbines and fireflies. It runs smoothly because finished leaves are drawn once.',
+      'Facilio blue replaces violet across the app, and small boxes have the same soft depth as the cards.',
+      'Project Overview has a tidier layout for deliverables, upcoming sessions, people and recent activity.',
+      'Transcripts: clear buttons for Analyse, Edit details, Replace file, Download and Remove.'] },
     { v: '1.9.1', date: '2026-10-31', kind: 'UPDATE', all: true, title: 'Claude project review, import from Claude, guides for agent and integration projects', notes: [
       'Add from Claude now sits beside every Open in Claude button (deliverables, task assistant, transcript tasks, guide sections, kick-off deck, flow from an image, admin briefing, project review) so a reply you already have can be brought in without starting again.',
       'Guide prompts follow the project stage: before the BRD is signed off Claude is asked for the standard Facilio guide, with project-specific points marked to confirm; after sign-off it is asked to base the guide on the confirmed process of the customer.',
@@ -85,15 +100,18 @@
   V.whatsnew = {
     html() {
       const all = list(), f = F.S.ui.wnFilter || 'all', seen = getSeen(); const si = all.findIndex(r => r.v === seen);
-      const shown = f === 'major' ? all.filter(r => r.kind === 'UPDATE') : all;
+      const shown = f === 'major' ? all.filter(r => r.kind === 'UPDATE') : f === 'fixes' ? all.filter(r => r.kind === 'FIXES') : all;
       const fmt = d => { const x = new Date(d + 'T00:00:00'); return isNaN(x) ? d : x.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }); };
-      const chips = `<div class="row" style="gap:8px;margin-bottom:14px">${[['all', 'Everything'], ['major', 'Major updates']].map(([k, l]) => `<button class="btn sm${f === k ? ' primary' : ''}" data-act="wnFilter" data-v="${k}" aria-pressed="${f === k}">${l}</button>`).join('')}</div>`;
-      const card = (r, i) => { const fresh = seen && si > 0 && all.indexOf(r) < si;
-        return `<div class="card" style="padding:16px;margin-bottom:12px"><div class="row" style="gap:10px;align-items:center;flex-wrap:wrap"><b>${esc(r.v)}</b><span class="xs muted">${esc(fmt(r.date))}</span><span class="tag ${r.kind === 'UPDATE' ? 'g' : 'o'}">${esc(r.kind)}</span>${i === 0 && f === 'all' ? '<span class="tag v">Latest</span>' : ''}${fresh ? '<span class="tag v">New since your last visit</span>' : ''}</div>
-          <h3 style="margin:8px 0 6px">${esc(r.title)}</h3><ul class="small" style="padding-left:18px;line-height:1.7;margin:0">${r.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul></div>`; };
+      const nNew = seen && si > 0 ? si : 0; const nUpd = all.filter(r => r.kind === 'UPDATE').length; const cust = V.isCustomer && V.isCustomer();
+      const hero = `<section class="wn-hero"><div class="wn-hero-l"><span class="dx-pill"><i></i>Release notes</span><h2>What's new in Delivery Studio</h2><p>Every change, newest first. You are on <b>v${esc(V.whatsnewVersion())}</b>${cust ? '.' : '. Entries marked For everyone are also shown to customers.'}</p></div>
+        <div class="wn-stats"><div><b>${all.length}</b><span>releases</span></div><div><b>${nUpd}</b><span>new capabilities</span></div><div class="${nNew ? 'hot' : ''}"><b>${nNew}</b><span>since your last visit</span></div></div></section>`;
+      const chips = `<div class="wn-chips" role="group" aria-label="Filter">${[['all', 'Everything'], ['major', 'New capabilities'], ['fixes', 'Fixes']].map(([k, l]) => `<button class="wn-chip${f === k ? ' on' : ''}" data-act="wnFilter" data-v="${k}" aria-pressed="${f === k}">${l}</button>`).join('')}</div>`;
+      const card = (r, i) => { const fresh = seen && si > 0 && all.indexOf(r) < si; const head = r.notes.slice(0, 5), rest = r.notes.slice(5); const li = n => `<li>${esc(n)}</li>`;
+        return `<li class="wn-it${i === 0 && f === 'all' ? ' latest' : ''}"><span class="wn-dot" aria-hidden="true"></span><article class="wn-card"><header class="wn-h"><span class="wn-v">v${esc(r.v)}</span><span class="wn-d">${esc(fmt(r.date))}</span><span class="wn-k ${r.kind === 'UPDATE' ? 'up' : 'fx'}">${r.kind === 'UPDATE' ? 'New' : 'Fixes'}</span>${cust ? '' : '<span class="wn-a">' + (r.all ? 'For everyone' : 'Team') + '</span>'}${i === 0 && f === 'all' ? '<span class="wn-k now">Latest</span>' : ''}${fresh ? '<span class="wn-k now">New since your last visit</span>' : ''}</header>
+          <h3>${esc(r.title)}</h3><ul class="wn-ul">${head.map(li).join('')}</ul>${rest.length ? `<details class="wn-more"><summary>Show ${rest.length} more change${rest.length === 1 ? '' : 's'}</summary><ul class="wn-ul">${rest.map(li).join('')}</ul></details>` : ''}</article></li>`; };
       setTimeout(() => setSeen(V.whatsnewVersion()), 1500);
-      return `<div class="page-header"><div class="t"><h1>What's new</h1><p>Every version of Delivery Studio: new features, improvements and fixes. Currently on <b>${esc(V.whatsnewVersion())}</b>.</p></div></div>
-        <div class="page-body">${chips}${shown.length ? shown.map(card).join('') : '<div class="card empty"><h3>Nothing here yet</h3><p>New features and fixes will appear here.</p></div>'}</div>`;
+      return `<div class="page-header"><div class="t"><h1>What's new</h1><p>New features, improvements and fixes, with the version and the date.</p></div></div>
+        <div class="page-body wn">${hero}${chips}${shown.length ? '<ol class="wn-tl">' + shown.map(card).join('') + '</ol>' : '<div class="card empty"><h3>Nothing here yet</h3><p>New features and fixes will appear here.</p></div>'}</div>`;
     }
   };
   ACT.wnFilter = a => { F.S.ui.wnFilter = a.getAttribute('data-v'); V.render(); };

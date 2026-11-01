@@ -20,3 +20,4 @@ body .xp-marq-in span:not(#_):not(#__), body .xp-card-f span:not(#_):not(#__), b
 body .ovb-t:not(#_):not(#__), body .mk-tile:not(#_):not(#__), body .xp-card:not(#_):not(#__) { box-shadow: var(--dp-sh) !important; }
 body .dx-tile:not(#_):not(#__), body .dx-frame:not(#_):not(#__) { box-shadow: var(--dp-sh) !important; }
 body .dx-npill:not(#_):not(#__), body .dx-pill.dark:not(#_):not(#__) { box-shadow: var(--dp-sh-sm) !important; }
+body .wn-card:not(#_):not(#__), body .wn-chip:not(#_):not(#__) { box-shadow: var(--dp-sh) !important; }

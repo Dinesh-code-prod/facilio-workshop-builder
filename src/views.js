@@ -59,9 +59,10 @@
       <label class="f">Show only records…</label>
       ${st.length ? `<div class="row" style="gap:6px"><select id="vw_sop" aria-label="State condition">${opt('is', d.stateFilter && d.stateFilter.op, 'whose state is')}${opt('isnot', d.stateFilter && d.stateFilter.op, 'whose state is not')}</select><select id="vw_sst"><option value="">Any state</option>${st.map(x => opt(x, d.stateFilter && d.stateFilter.state, x)).join('')}</select></div>` : '<div class="small muted">This module has no state flow, so there is no state filter.</div>'}
       ${flt}<button type="button" class="btn sm" data-act="vwFilterAdd" style="margin-top:6px">Add another filter</button><div class="xs muted">A state filter is packaged for custom modules. Other filters go to the Org Builder agent in the agent brief, because the package needs their database columns.</div>
+      <details class="adv"${(d.sharedRoles || []).length || (d.reqs || []).length || d.note ? ' open' : ''} style="margin:10px 0"><summary>More options: sharing, requirements, note</summary>
       ${roles.length ? `<label class="f">Share with roles (leave empty for the default)</label><div class="row" style="gap:12px;flex-wrap:wrap;max-height:120px;overflow:auto">${roles.slice(0, 60).map((r, i) => `<label class="row" style="gap:5px"><input type="checkbox" class="vw_role" value="${esc(r)}"${(d.sharedRoles || []).includes(r) ? ' checked' : ''}> ${esc(r)}</label>`).join('')}</div>` : ''}
       <label class="f" for="vw_reqs">Comes from requirement(s)</label><select id="vw_reqs" multiple size="4">${reqs.map(r => `<option value="${esc(r.id)}"${(d.reqs || []).includes(r.id) ? ' selected' : ''}>${esc(r.id)} ${esc(String(r.title || '').slice(0, 70))}</option>`).join('')}</select>
-      <label class="f" for="vw_note">Note (optional)</label><input id="vw_note" type="text" maxlength="300" value="${esc(d.note || '')}">`;
+      <label class="f" for="vw_note">Note (optional)</label><input id="vw_note" type="text" maxlength="300" value="${esc(d.note || '')}"></details>`;
   }
   const footer = `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="vwSave">Save view</button>`;
   const $ = id => document.getElementById(id);
