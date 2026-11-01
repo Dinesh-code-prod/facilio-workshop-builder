@@ -13,6 +13,7 @@ Last updated: 1 Nov 2026, personal account, local session. Everything below is p
 - Project Overview: Deliverables, Upcoming sessions, People and Recent activity are now bento tiles (`src/overviewbento.css`); heading and Up next unchanged.
 - Water-reveal logo and text drawn at full pixel density (`src/liquid.js`).
 - Discover more is a scroll-driven marketing page: pinned stage of real 1920 px Facilio screens that wipe in on scroll, one numbered chapter per solution area (even chapters: arrow rail; odd chapters: tiles pan sideways while scrolling down), closing call to action (`src/explore.js`, `src/explore2.css`). Violet theme variables remapped to Facilio blue (`src/theme.css`). Depth added to small boxes missed earlier (`src/depthlayer.css`, end of file).
+- Discover more rebuilt in facilio.com art style (black dot-grid stages, isometric slabs, serif headlines) with CSS scroll-driven motion (no scroll JS): `src/explore.js`, `src/explore2.css`; every module has its own isometric illustration drawn in code (`src/dxart.js`); the sign-in pages have a Discover more with Facilio button opening the same story full screen (`src/discoverlogin.js`, #/discover). Serif is a system fallback; Libre Caslon Condensed would need a font file.
 - Deployed to facilio.work at commit 6f5b78a (deploy 91). Review status is pending, so only the owner and Ashwin can open it. See `docs/DEPLOYS.md`.
 
 ## Next steps, in order

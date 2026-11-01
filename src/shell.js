@@ -296,7 +296,7 @@
   let authTab = 'signup'; let authMsg = ''; let health = { signupEnabled: false };
   let authAnimated = false;
   // the same highlighted button on the team and the customer sign-in: it plays the road-to-go-live journey (src/welcome.js)
-  const LEARN = '<a class="av-learn" href="#/welcome" data-act="openWelcome" role="button"><span class="av-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5.5v13l10.5-6.5z"/></svg></span><span>See how Delivery Studio helps</span><span class="av-dur">2 min</span></a>';
+  const LEARN = '<a class="av-learn" href="#/welcome" data-act="openWelcome" role="button"><span class="av-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5.5v13l10.5-6.5z"/></svg></span><span>See how Delivery Studio helps</span><span class="av-dur">2 min</span></a>' + '<a class="av-learn av-disc" href="#/discover" data-act="openDiscover" role="button"><span class="av-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M4 12h16"/></svg></span><span>Discover more with Facilio</span></a>';
   function authHtmlBase() {
     const custM = location.hash.match(/#\/c\/([A-Za-z0-9_-]+)(?:~([A-Za-z0-9_-]+))?/) || []; const custId = custM[1] || ''; const custCode = custM[2] || '';
     if (custId && authTab !== 'customer') authTab = 'customer';
