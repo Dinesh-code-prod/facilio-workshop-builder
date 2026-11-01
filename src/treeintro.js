@@ -102,11 +102,12 @@
         if (d === 1) spec = [[.30, -1, 62, .78], [.42, 1, 58, .8], [.54, -1, 50, .74], [.64, 1, 48, .72], [.76, -1, 42, .62], [.84, 1, 40, .6], [1, -1, 24, .72], [1, 1, 22, .7]];
         else if (d === 2) spec = [[.34, -1, 50, .66], [.55, 1, 46, .62], [.78, -1, 40, .58], [1, 1, 22, .62]];
         else if (d === 3) spec = [[.45, -1, 46, .66], [.75, 1, 40, .62], [1, -1, 24, .66]];
+        else if (d === 5) spec = [[1, -1, 30, .7]];
         else spec = [[.55, 1, 44, .66], [1, -1, 26, .7]];
         spec.forEach(([f, side, a, lf], k) => {
-          const s = at(parent, f); let ang = s[3] + side * (a + rr(-8, 8)) * Math.PI / 180;
-          ang = ang * .86 + UP * .14; // tropism: lean toward the light
-          const len = parent.len * lf * rr(.9, 1.08);
+          const s = at(parent, f); let ang = s[3] + side * (a + rr(-16, 16)) * Math.PI / 180;
+          ang = ang * .82 + UP * .18; // tropism: lean toward the light
+          const len = parent.len * lf * rr(.78, 1.2);
           // primary branches wait for stage 5 and then sprout from the finished trunk, lowest first; everything else starts where its parent has got to
           const t0 = d === 1 ? S[4] + .1 + k * .3 : parent.t0 + f * parent.dur - .12;
           const kid = mk(branches, s[0], s[1], ang, len, Math.max(2.4, s[2] * (d === 1 ? .56 : .8)), d, t0, DUR[d] * rr(.9, 1.1) * (len / 220 > 1 ? 1.1 : 1), 0);
@@ -114,7 +115,7 @@
         });
       }
       const trunk = mk(branches, 0, 0, UP, 330, 92, 0, S[2], DUR[0], 0, .05);
-      grow(trunk, 4);
+      grow(trunk, 5);
       // roots (stage 2)
       const tap = mk(roots, 0, 12, Math.PI / 2, 178, 13, 0, S[1], 5.2, 1, 0.02);
       (function growRoots(p, depth) {
@@ -122,18 +123,18 @@
         for (const [f, side, a, lf] of spec) { const s = at(p, f); const ang = s[3] + side * (a + rr(-8, 8)) * Math.PI / 180; const len = p.len * lf * rr(.9, 1.1); const k = mk(roots, s[0], s[1], ang, len, Math.max(1.4, s[2] * .62), depth + 1, p.t0 + f * p.dur, DUR[depth + 2] * 1.1, 1); growRoots(k, depth + 1); }
       })(tap, 0);
       // leaves: they only start to unfold in stage 8 (first wave) and stage 9 (second wave, a fuller canopy)
-      const LC = ['#2F7BFF', '#4C8FFF', '#6AA6FF', '#8DB8FF', '#2F7BFF', '#3E86FF', '#1F9BD6', '#35B6C9', '#5BA0F5'];
+      const LC = ['#1570EF', '#1570EF', '#2F86FF', '#33C9C9', '#33C9C9', '#2EC9C4', '#E5197F', '#E5197F', '#8DB8FF', '#EAF2FF'];
       for (const b of branches) {
-        if (b.depth < 2) continue;
-        const n = b.depth >= 4 ? 8 : b.depth === 3 ? 6 : 4;
+        if (b.depth < 3 || R() < .22) continue;
+        const n = b.depth >= 5 ? 3 : b.depth === 4 ? 3 : 2;
         for (let i = 0; i < n; i++) {
-          const f = b.depth >= 3 ? .4 + .6 * (i + 1) / n : .7 + .3 * R();
+          const f = b.depth >= 3 ? .38 + .62 * (i + 1) / n : .75 + .25 * R();
           const s = at(b, Math.min(1, f)); const side = i % 2 ? 1 : -1;
-          const roll = R(); const col = roll < .10 ? '#2EC9C4' : roll < .14 ? '#E5197F' : roll < .18 ? '#8DB8FF' : LC[(R() * LC.length) | 0];
+          const roll = R(); const col = LC[(R() * LC.length) | 0];
           const waveB = b.depth >= 4 ? R() < .75 : R() < .4;
           const base = tAt(b, f) + .3;
           const when = (waveB ? S[8] + .2 : S[7] + .2) + R() * 3.4;
-          leaves.push({ x: s[0], y: s[1], ang: s[3] + side * rr(.5, 1.2), size: rr(20, 36) * (b.depth >= 4 ? .88 : 1) * (waveB ? 1.06 : 1), col, t: Math.max(base, when), ph: R() * TAU, flip: side });
+          leaves.push({ x: s[0], y: s[1], ang: s[3] + side * rr(.5, 1.2), size: rr(16, 25) * (b.depth >= 5 ? .88 : 1) * (waveB ? 1.06 : 1), col, t: Math.max(base, when), ph: R() * TAU, flip: side });
         }
       }
       leaves.sort((a, b) => a.t - b.t);
@@ -289,10 +290,12 @@
       function tipGlow(b, t, spr) { const gr = growth(b, t); if (gr <= 0 || gr >= 1) return; const p = tipPoint(b, gr), rad = b.depth === 0 ? 16 : 9; g.drawImage(spr, p[0] - rad, p[1] - rad, rad * 2, rad * 2); }
       const LSPR = {}; function leafSpr(col) { if (LSPR[col]) return LSPR[col]; const c = document.createElement('canvas'); c.width = 128; c.height = 80; const x = c.getContext('2d'); x.scale(2, 2); x.translate(2, 20); const z = 56;
         const body = () => { x.beginPath(); x.moveTo(0, 0); x.bezierCurveTo(z * .30, -z * .36, z * .80, -z * .30, z, 0); x.bezierCurveTo(z * .80, z * .30, z * .30, z * .36, 0, 0); x.closePath(); };
-        const gd = x.createLinearGradient(0, 0, z, 0); gd.addColorStop(0, 'rgba(8,16,70,.9)'); gd.addColorStop(.18, col); gd.addColorStop(1, 'rgba(210,230,255,.92)'); body(); x.fillStyle = col; x.fill(); x.fillStyle = gd; x.globalAlpha = .55; x.fill(); x.globalAlpha = 1;
-        x.save(); body(); x.clip(); const hl = x.createLinearGradient(0, -z * .3, 0, z * .3); hl.addColorStop(0, 'rgba(255,255,255,.34)'); hl.addColorStop(.5, 'rgba(255,255,255,0)'); hl.addColorStop(1, 'rgba(0,10,60,.25)'); x.fillStyle = hl; x.fillRect(0, -z * .4, z, z * .8); x.restore();
-        x.strokeStyle = 'rgba(255,255,255,.55)'; x.lineWidth = 1; x.beginPath(); x.moveTo(1, 0); x.quadraticCurveTo(z * .5, -z * .02, z * .92, 0); x.stroke();
-        x.strokeStyle = 'rgba(255,255,255,.22)'; x.lineWidth = .7; for (let k = 1; k <= 4; k++) { const px = z * (.14 + k * .17); x.beginPath(); x.moveTo(px, 0); x.lineTo(px + z * .13, -z * (.16 - k * .018)); x.moveTo(px, 0); x.lineTo(px + z * .13, z * (.16 - k * .018)); x.stroke(); }
+        body(); x.fillStyle = col; x.fill();
+        x.save(); body(); x.clip(); const hl = x.createLinearGradient(0, -z * .3, 0, z * .3); hl.addColorStop(0, 'rgba(255,255,255,.40)'); hl.addColorStop(.55, 'rgba(255,255,255,0)'); hl.addColorStop(1, 'rgba(255,255,255,.10)'); x.fillStyle = hl; x.fillRect(0, -z * .4, z, z * .8);
+        const tip = x.createLinearGradient(0, 0, z, 0); tip.addColorStop(0, 'rgba(255,255,255,0)'); tip.addColorStop(1, 'rgba(255,255,255,.28)'); x.fillStyle = tip; x.fillRect(0, -z * .4, z, z * .8); x.restore();
+        body(); x.strokeStyle = 'rgba(255,255,255,.55)'; x.lineWidth = 1.1; x.stroke();
+        x.strokeStyle = 'rgba(255,255,255,.7)'; x.lineWidth = 1.1; x.beginPath(); x.moveTo(1, 0); x.quadraticCurveTo(z * .5, -z * .02, z * .92, 0); x.stroke();
+        x.strokeStyle = 'rgba(255,255,255,.3)'; x.lineWidth = .8; for (let k = 1; k <= 4; k++) { const px = z * (.14 + k * .17); x.beginPath(); x.moveTo(px, 0); x.lineTo(px + z * .13, -z * (.16 - k * .018)); x.moveTo(px, 0); x.lineTo(px + z * .13, z * (.16 - k * .018)); x.stroke(); }
         return LSPR[col] = c; }
       const mixc = (a, b, k) => `rgb(${Math.round(lerp(a[0], b[0], k))},${Math.round(lerp(a[1], b[1], k))},${Math.round(lerp(a[2], b[2], k))})`;
       function stageAt(t) { if (t >= REVEAL) return 12; let c = -1; for (let i = 0; i < 12; i++) if (t >= nodes[i].t + .15) c = i; return c; }   // a stage is active from the moment its node is on the tree until the next node appears
@@ -331,7 +334,7 @@
           g.ellipse(bx, by - h * .55, w * .32, h * .45, 0, 0, TAU); g.rect(bx - w * .05, by - h * .15, w * .1, h * .15);
         }
       }
-      const CLOUDS = Array.from({ length: 6 }, (_, i) => ({ x: R(), y: .08 + R() * .3, w: .16 + R() * .16, v: .004 + R() * .006, a: .05 + R() * .06, ph: R() * TAU }));
+      const CLOUDS = Array.from({ length: 6 }, (_, i) => ({ x: R(), y: .08 + R() * .3, w: .16 + R() * .16, v: .004 + R() * .006, a: .1 + R() * .08, ph: R() * TAU }));
       const CITY = (() => { const out = []; let x = 0; while (x < 1.05) { const w = rr(.012, .03), h = rr(.03, .13); const wins = []; const cols = Math.max(1, Math.floor(w / .006)), rows = Math.max(2, Math.floor(h / .012)); for (let c = 0; c < cols; c++) for (let r = 0; r < rows; r++) if (R() < .5) wins.push({ c, r, on: rr(4, 36), ph: R() * TAU }); out.push({ x, w, h, cols, rows, wins }); x += w + rr(.002, .012); } return out; })();
       const FLIES = Array.from({ length: 30 }, () => ({ x: R(), y: .62 + R() * .3, ph: R() * TAU, sp: .15 + R() * .35, r: 18 + R() * 40, on: rr(5, 22) }));
       const GRASS = Array.from({ length: 90 }, () => ({ x: rr(-340, 340), h: rr(14, 46), l: rr(-.5, .5), ph: R() * TAU, d: R() * 5, c: R() }));
@@ -354,8 +357,17 @@
         // the distant city: a facilities skyline whose windows come on, one by one, as the delivery stages are completed
         { const base = H * .73, bh = H, lit = sm(t / 40); g.fillStyle = 'rgba(22,30,96,' + (.55 + .25 * mature) + ')';
           for (const b of CITY) { const bx = b.x * W, bw = b.w * W, bhh = b.h * bh; if (bx > W) break; g.fillRect(bx, base - bhh, bw, bhh + 20);
-            const cw = bw / b.cols, rh = bhh / b.rows; for (const w of b.wins) { if (t < w.on) continue; const fl = .55 + .45 * Math.sin(ta * .7 + w.ph), a = Math.min(1, (t - w.on) / 1.5) * (.35 + .5 * fl) * (.5 + .5 * lit); g.fillStyle = 'rgba(190,215,255,' + a + ')'; g.fillRect(bx + w.c * cw + cw * .22, base - bhh + w.r * rh + rh * .25, Math.max(1.2, cw * .5), Math.max(1.2, rh * .4)); }
+            const cw = bw / b.cols, rh = bhh / b.rows; for (const w of b.wins) { if (t < w.on) continue; const fl = .55 + .45 * Math.sin(ta * .7 + w.ph), a = Math.min(1, (t - w.on) / 1.5) * (.55 + .45 * fl) * (.6 + .4 * lit); g.fillStyle = w.ph > 4.4 ? 'rgba(51,201,201,' + a + ')' : w.ph < 1 ? 'rgba(255,120,185,' + a + ')' : 'rgba(205,225,255,' + a + ')'; g.fillRect(bx + w.c * cw + cw * .22, base - bhh + w.r * rh + rh * .25, Math.max(1.2, cw * .5), Math.max(1.2, rh * .4)); }
             g.fillStyle = 'rgba(22,30,96,' + (.55 + .25 * mature) + ')'; } }
+        // wind turbines turning on the far hills: clean energy, in the logo's colours
+        { const sz = Math.min(W, H) * .11, hb = H * .75; [[.07, .8], [.14, 1], [.89, .9], [.95, .72]].forEach(([fx, k], i) => { const bx = fx * W, h = sz * k, sp = (.5 + i * .13) * (rm ? 0 : 1), a0 = ta * sp + i; g.strokeStyle = 'rgba(141,184,255,.55)'; g.lineWidth = Math.max(1.4, sz * .03); g.lineCap = 'round'; g.beginPath(); g.moveTo(bx, hb); g.lineTo(bx, hb - h); g.stroke();
+          for (let b = 0; b < 3; b++) { const an = a0 + b * TAU / 3; g.strokeStyle = b === 0 ? 'rgba(229,25,127,.8)' : 'rgba(234,242,255,.8)'; g.lineWidth = Math.max(1.2, sz * .026); g.beginPath(); g.moveTo(bx, hb - h); g.lineTo(bx + Math.cos(an) * sz * .46 * k, hb - h + Math.sin(an) * sz * .46 * k); g.stroke(); }
+          g.fillStyle = '#EAF2FF'; g.beginPath(); g.arc(bx, hb - h, Math.max(2, sz * .035), 0, TAU); g.fill(); }); }
+        // a hot-air balloon drifts across the sky now and then
+        { const per = 46, u = ((ta - 8) % per) / per; if (ta > 8) { const bx = lerp(W * 1.1, -W * .1, u), by = H * (.22 + .05 * Math.sin(ta * .35)), r = Math.min(W, H) * .045, fade = sm(u / .06) * sm((1 - u) / .06);
+          g.globalAlpha = .92 * fade; const stripes = ['#E5197F', '#EAF2FF', '#33C9C9', '#1570EF', '#E5197F', '#EAF2FF'];
+          g.save(); g.beginPath(); g.ellipse(bx, by, r * .82, r, 0, 0, TAU); g.clip(); stripes.forEach((c, k) => { g.fillStyle = c; g.fillRect(bx - r * .82 + k * r * 1.64 / 6, by - r, r * 1.64 / 6 + 1, r * 2); }); g.restore();
+          g.strokeStyle = 'rgba(234,242,255,.7)'; g.lineWidth = 1; g.beginPath(); g.moveTo(bx - r * .3, by + r * .94); g.lineTo(bx - r * .2, by + r * 1.5); g.moveTo(bx + r * .3, by + r * .94); g.lineTo(bx + r * .2, by + r * 1.5); g.stroke(); g.fillStyle = '#1D1A5E'; g.fillRect(bx - r * .22, by + r * 1.5, r * .44, r * .3); g.globalAlpha = 1; } }
         // far flock in the sky (between the stars and the hills)
         drawFlock(ta, t);
         LAYERS.forEach((L, li) => {
@@ -384,7 +396,7 @@
           for (const [x, y, ph] of lit) { const a = sm((t - 20) / 6) * (.35 + .3 * Math.sin(ta * 2 + ph)); g.fillStyle = `rgba(46,201,196,${a})`; g.beginPath(); g.arc(x, y, 1.6 + li, 0, TAU); g.fill(); }
           if (li === LAYERS.length - 1) { // low mist rolling between the hills and the tree
             for (let m = 0; m < 3; m++) { const mxp = ((ta * (.006 + m * .004) + m * .37) % 1.6 - .3) * W, myp = ly - (8 + m * 10) * s; const rg = g.createRadialGradient(mxp, myp, 0, mxp, myp, W * .3); rg.addColorStop(0, 'rgba(120,160,240,' + (.07 * sm(t / 8)) + ')'); rg.addColorStop(1, 'rgba(120,160,240,0)'); g.save(); g.translate(mxp, myp); g.scale(1, .16); g.translate(-mxp, -myp); g.fillStyle = rg; g.fillRect(mxp - W * .3, myp - W * .3, W * .6, W * .6); g.restore(); }
-            for (const f of FLIES) { if (t < f.on) continue; const fx = f.x * W + Math.sin(ta * f.sp + f.ph) * f.r, fy = f.y * H + Math.cos(ta * f.sp * 1.3 + f.ph) * f.r * .5, a = (.35 + .65 * Math.max(0, Math.sin(ta * 1.6 + f.ph * 3))) * sm((t - f.on) / 2); const rad = 8 + 3 * Math.sin(ta + f.ph); g.globalAlpha = a; g.drawImage(TIP_T, fx - rad, fy - rad, rad * 2, rad * 2); g.fillStyle = 'rgba(235,250,255,' + a + ')'; g.beginPath(); g.arc(fx, fy, 1.3, 0, TAU); g.fill(); g.globalAlpha = 1; }
+            for (const f of FLIES) { if (t < f.on) continue; const fx = f.x * W + Math.sin(ta * f.sp + f.ph) * f.r, fy = f.y * H + Math.cos(ta * f.sp * 1.3 + f.ph) * f.r * .5, a = (.35 + .65 * Math.max(0, Math.sin(ta * 1.6 + f.ph * 3))) * sm((t - f.on) / 2); const rad = 13 + 4 * Math.sin(ta + f.ph); g.globalAlpha = a; g.drawImage(TIP_T, fx - rad, fy - rad, rad * 2, rad * 2); g.fillStyle = 'rgba(235,250,255,' + a + ')'; g.beginPath(); g.arc(fx, fy, 1.3, 0, TAU); g.fill(); g.globalAlpha = 1; }
           }
         });
       }
@@ -507,8 +519,8 @@
         const thick = 1 + .14 * sm((t - S[3]) / 2.5); // stage 4: the trunk firms up
         for (const b of branches) {
           const gr2 = growth(b, t); if (gr2 <= 0) continue;
-          const dcol = ['#1B2A74', '#22398F', '#2A4BB0', '#3A62D6', '#4D7BEE', '#6A98FF'][Math.min(5, b.depth)];
-          strokeBranch(b, gr2, dcol, `rgba(141,184,255,${.34 + .06 * b.depth})`, b.depth === 0 ? thick : 1, 1);
+          const dcol = ['#243892', '#2C47B0', '#3659C8', '#4670E0', '#5A86F2', '#78A4FF'][Math.min(5, b.depth)];
+          strokeBranch(b, gr2, dcol, `rgba(175,208,255,${.6 + .05 * b.depth})`, b.depth === 0 ? thick : 1, 1);
           if (b.depth === 0) { // bark grain: long dark fissures and a few pale ridges along the trunk
             const up0 = easeOut(gr2) * .35 + gr2 * .65, lim0 = Math.floor(up0 * N);
             [[-.62, 0], [-.28, 1], [.1, 0], [.42, 1], [.7, 0]].forEach(([off, lite], gi) => { g.strokeStyle = lite ? 'rgba(160,195,255,.16)' : 'rgba(6,12,60,.34)'; g.lineWidth = lite ? 1.4 : 2.2; g.lineCap = 'round'; g.beginPath(); let st = false;
@@ -539,7 +551,7 @@
           if (LO >= 0) break; if (L.ix % LSTEP[QTIER]) continue; if (t < L.t) continue; // each leaf unfolds over 1.8 s on curves whose speed starts and ends at zero (no overshoot, no snap at the end), so growth reads as one smooth swell
           const u = (t - L.t) / 1.8; const gu = sm(clamp(u)), k = (1 - Math.pow(1 - clamp(u), 3)) * LGK[QTIER]; if (k <= .01) continue;
           const th = L.ang + Math.sin(ta * 1.3 + L.ph) * .05 * gu + (1 - gu) * .7 * L.flip; const zs = L.size / 56; const kx = k * zs, ky = k * zs * (.55 + .45 * gu); const cs = Math.cos(th), sn = Math.sin(th);
-          let lx = L.x + SK * L.y, ly = L.y, al = .9 * sm(clamp(u * 2)), th2 = th;
+          let lx = L.x + SK * L.y, ly = L.y, al = .98 * sm(clamp(u * 2)), th2 = th;
           if (EXL) { const q = L.q, dk = EXT - q.d; if (dk > 0) { lx += q.vx * dk; ly += q.vy * dk + 520 * dk * dk; th2 += q.sp * dk; al *= clamp(1 - (dk - .5) / .9); if (al <= 0) continue; } }
           const cs2 = Math.cos(th2), sn2 = Math.sin(th2);
           g.setTransform(S0 * cs2 * kx, S0 * sn2 * kx, -S0 * sn2 * ky, S0 * cs2 * ky, EX + S0 * lx, EY + S0 * ly);
