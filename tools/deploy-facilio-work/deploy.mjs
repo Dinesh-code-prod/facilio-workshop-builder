@@ -2,6 +2,8 @@
 // It talks to the facilio.work connector (https://mcp.facilio.work/mcp) the same way Claude does. You sign in once with your Facilio (Microsoft) account in the browser
 // window that opens; nothing about the sign-in is stored in this project.
 //
+// NOTE (1 Nov 2026): facilio.work's sign-in (Cognito) only accepts approved return addresses. Run from a plain computer this stops with "redirect_mismatch" unless the platform team
+// adds http://localhost:12256/oauth/callback for this client. Claude's own connector (claude.ai) is the supported route until then.
 //   node deploy.mjs --check        sign in, show who you are, the tools and the app's current state. Changes nothing.
 //   node deploy.mjs                the same, then (after you type DEPLOY) uploads the zip and deploys it in replace mode.
 //   options: --app=<app name>   (default facilio-delivery-studio)   --zip=<path to the zip>   --yes (skip the DEPLOY question)
