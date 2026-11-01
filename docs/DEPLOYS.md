@@ -6,3 +6,4 @@ One line per deploy: date and time (UTC), commit, deploy number, who ran it, not
 |---|---|---|---|---|
 | 2026-11-01 08:34 | 233f74f | 90 | dinesh.r@facilio.com (personal Claude account, claude.ai/code) | 263 files, 42 MB. Login skyline, admin tabs, Facilio screens panel, depth layer, retries. Review still pending. |
 | 2026-11-01 09:27 | 6f5b78a | 91 | dinesh.r@facilio.com (personal Claude account, local Claude Code) | 263 files, 42 MB. Overview bento, Discover more marketing page, crisper water-reveal logo, blue replaces violet, depth on small boxes, Transcripts buttons. Review still pending. |
+| 2026-11-01 09:43 | 7b88b74 | 92 | dinesh.r@facilio.com (personal Claude account, local Claude Code) | 263 files, 42 MB. Discover more rebuilt (Facilio art style, scroll-driven motion, per-module illustrations) and a Discover more story on the sign-in pages. Review still pending. |
