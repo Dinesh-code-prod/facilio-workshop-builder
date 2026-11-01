@@ -5,7 +5,7 @@
   'use strict';
   const F = root.FWB; const { S, esc } = F; const V = root.FWBViews; const ACT = V.ACT; const { drawer, closeDrawer, ico } = V;
   const nav = o => `data-act="hwGo" data-nav="${esc(JSON.stringify(o))}"`;
-  const tr = () => { const d = F.doc('transcripts'); return { items: (d.items || []).filter(i => !i.superseded), cands: d.candidates || [], hist: d.history || [] }; };
+  const tr = () => { const d = F.doc('transcripts'); return { items: (d.items || []).filter(i => !i.superseded && !i.removed), cands: d.candidates || [], hist: d.history || [] }; };
   const reqs = () => S.ws.requirements || [];
   const nReq = s => reqs().filter(r => (r.status || 'Draft') === s).length;
   const plural = (n, a, b) => n + ' ' + (n === 1 ? a : b);
