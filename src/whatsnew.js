@@ -6,6 +6,10 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '2.5.2', date: '2026-11-01', kind: 'UPDATE', title: 'A calmer calendar: jump to any month or year', notes: [
+      'Click the month and year in the calendar title to jump straight to any month or year: pick a year, then a month, and it opens. There is also a Go to a date box.',
+      'The side panel, the mini calendar and the Up next list are gone, so the calendar has the whole width. Which plan steps show is now one Filter menu instead of a long list.',
+      'Keyboard: left and right arrows move between periods, T goes to today, N adds a reminder, and D, W, M and Y switch between day, week, month and year.'] },
     { v: '2.5.1', date: '2026-11-01', kind: 'UPDATE', title: 'Calendar redesign: a colour for every plan step', notes: [
       'Every plan item on the calendar now takes the colour of its plan step (Kick-Off, Workshops, BRD, Implementation and so on). Blues are discover and define, steel blues build and test, pinks are UAT and launch, slate and green are hand-over and go-live.',
       'A step ribbon above the calendar shows the whole plan in those colours, with today marked. Click a step to jump to it. The side panel lists the steps with their dates and lets you show or hide each one.',
