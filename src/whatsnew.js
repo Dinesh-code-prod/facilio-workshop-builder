@@ -6,6 +6,12 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '2.4.0', date: '2026-11-01', kind: 'UPDATE', title: 'Discover more library, dashboard layouts, UAT attachments', notes: [
+      'Admin > Discover more: one library of product highlights for every project. Write an entry, or paste or upload a product note and let the AI write a draft from that text only. Nothing is shown until you read it and publish it.',
+      'Each entry can target every project or chosen ones, and can have start and end dates. Customers see it on Explore Facilio only while it is published and inside its dates; the dates are checked on every visit, so nothing needs a scheduler.',
+      'The admin dashboard can be arranged: choose Customize layout to move widgets, change their width or hide them, per tab. Your layout is saved for you, and the platform owner can save a starting layout for each admin role.',
+      'The admin dashboard now explains in plain words how project health (Blocked, Overdue, At risk, Insufficient data, On track) is worked out.',
+      'UAT test cases accept attachments: screenshots, recordings and documents, for the project team only.'] },
     { v: '2.3.0', date: '2026-11-01', kind: 'UPDATE', title: 'Lifecycle tracker: nine stages with an owner and a recorded closure', notes: [
       'Delivery Lifecycle now shows nine stages: Project Kickoff, Workshops & Requirements, Solution Design & Configuration, Implementation, UAT & Go-Live, Training & Documentation, Go-Live Handover, Hypercare and Project Closure.',
       'Each stage shows its status (Completed, Current, Upcoming, Delayed, Blocked or Not applicable), owner, completion date, progress as a count of records, critical blockers, pending actions and upcoming activities.',

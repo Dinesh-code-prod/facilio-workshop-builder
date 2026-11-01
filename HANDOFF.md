@@ -27,6 +27,8 @@ Last updated: 1 Nov 2026, personal account, local session. Everything below is p
 
 - Lifecycle tracker (1 Nov 2026): nine stages, owner, status, owner-only close / not applicable / reopen with history (src/lifelogic.js, src/lifenav.js, src/lifetrack.css, item kind lcstage, tests/life.mjs).
 
+- Fifth increment (1 Nov 2026): Discover more library in Admin (src/admdiscover.js; dm collection), admin dashboard layouts (src/admlayout.js; ulay), health rules text, UAT test-case attachments (file category uat_evidence). Not built: push notifications and scheduled Teams reminders (platform has no push or scheduler), customer-side UAT execution.
+
 ## Next steps, in order
 1. The user checks the live app after deploy 90 (sign-in skyline, admin tabs, Facilio screens, Status Reports button, one AI action).
 2. Otto (the facilio.work Teams bot): build project-aware tools in `work/server/api.mjs` and `work/work.json`: my projects, who is on a project's team, my tasks, overdue, project status (counts), a "current project" setting, and add/update task with `confirm: true`. Scope every tool to projects the person is a member of, even for admins (today `editableProjects` lets admins see all).

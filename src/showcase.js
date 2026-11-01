@@ -12,7 +12,11 @@
   const AV = { enabled: ['Already in your project', 'g'], optional: ['Available to add', 'v'], discuss: ['Let us discuss', 'o'] };
   const IST = { new: ['New', 'blue'], contacted: ['Contacted', 'tbc'], demo: ['Demo booked', 'green'], closed: ['Closed', 'low'] };
   const img = {}; // file id -> object URL
-  const entries = () => I().list('news').slice().sort((a, b) => (a.order || 0) - (b.order || 0) || String(b._at || '').localeCompare(String(a._at || '')));
+  // entries the admin library shows this project (published, inside their dates, targeted); read from the server each time the page opens
+  const G = { pid: '', items: [] };
+  const globals = () => (G.pid === (S.project && S.project.id) ? G.items : []);
+  const getN = id => I().get('news', id) || globals().find(x => x.id === id);
+  const entries = () => I().list('news').concat(globals()).slice().sort((a, b) => (a.order || 0) - (b.order || 0) || String(b._at || '').localeCompare(String(a._at || '')));
   const visible = () => entries().filter(n => !cust() || n.status === 'published');
   const mods = () => (F.allModules ? F.allModules() : []).filter(m => m && m.name).sort((a, b) => (b.inScope - a.inScope) || String(a.label).localeCompare(String(b.label)));
   const modLabel = n => { const m = mods().find(x => x.name === n); return m ? m.label : n; };
@@ -25,7 +29,7 @@
     return `<article class="sc-card${n.status !== 'published' ? ' draft' : ''}">${thumb(n)}<div class="sc-b">
       <div class="sc-tags">${n.module ? `<span class="sc-chip">${esc(modLabel(n.module))}</span>` : ''}<span class="sc-chip ${av[1]}">${av[0]}</span>${!cust() ? (n.status === 'published' ? tag('green', 'Published') : tag('low', 'Draft')) : ''}</div>
       <h3>${esc(n.title)}</h3>${n.summary ? `<p>${esc(n.summary.length > 220 ? n.summary.slice(0, 219) + '…' : n.summary)}</p>` : ''}
-      <div class="sc-acts"><button class="btn sm" data-act="xfOpen" data-id="${esc(n.id)}">Learn more</button>${cust() ? (mineAsked(n) ? '<span class="sc-sent">Request sent</span>' : `<button class="btn sm primary" data-act="xfAsk" data-id="${esc(n.id)}">I'm interested</button>`) : `${canEdit() ? `<button class="btn sm" data-act="xfEdit" data-id="${esc(n.id)}">Edit</button>` : ''}${isOwner() ? `<button class="btn sm${n.status === 'published' ? '' : ' primary'}" data-act="xfPub" data-id="${esc(n.id)}">${n.status === 'published' ? 'Unpublish' : 'Publish'}</button>` : ''}${asks ? `<span class="sc-asks">${asks} interested</span>` : ''}`}</div></div></article>`;
+      <div class="sc-acts"><button class="btn sm" data-act="xfOpen" data-id="${esc(n.id)}">Learn more</button>${cust() ? (mineAsked(n) ? '<span class="sc-sent">Request sent</span>' : `<button class="btn sm primary" data-act="xfAsk" data-id="${esc(n.id)}">I'm interested</button>`) : `${n.global ? '<span class="sc-asks">From the Facilio library</span>' : ''}${canEdit() && !n.global ? `<button class="btn sm" data-act="xfEdit" data-id="${esc(n.id)}">Edit</button>` : ''}${isOwner() && !n.global ? `<button class="btn sm${n.status === 'published' ? '' : ' primary'}" data-act="xfPub" data-id="${esc(n.id)}">${n.status === 'published' ? 'Unpublish' : 'Publish'}</button>` : ''}${asks ? `<span class="sc-asks">${asks} interested</span>` : ''}`}</div></div></article>`;
   }
   function requestsHtml() {
     const rs = I().list('interest').slice().sort((a, b) => String(b.at).localeCompare(String(a.at)));
@@ -45,13 +49,13 @@
         : (cust() ? `<div class="sec-k"><p>Recommended for you</p><h2>From your Facilio team</h2></div>${grid(pub)}` : `${pub.length ? `<div class="sec-k"><p>Published</p><h2>What ${esc(sc)} sees</h2></div>${grid(pub)}` : ''}${drafts.length ? `<div class="sec-k"><p>Drafts</p><h2>Not visible to ${esc(sc)}</h2></div>${grid(drafts)}` : ''}`);
       return head + `<div class="page-body">${tabs}${body}</div>`;
     },
-    mount() { loadImages(); }
+    mount() { loadImages(); const id = S.project && S.project.id; if (id && G.pid !== id) { G.pid = id; G.items = []; API.get('/api/projects/' + id + '/discover').then(r => { G.items = r.items || []; if (S.ui.view === 'showcase') V.render(); }).catch(() => { }); } }
   };
   ACT.xfTab = a => { S.ui.scTab = a.getAttribute('data-v'); V.render(); };
 
   // ---------- detail ----------
   ACT.xfOpen = a => {
-    const n = I().get('news', a.getAttribute('data-id')); if (!n) return; const av = AV[n.availability] || AV.discuss;
+    const n = getN(a.getAttribute('data-id')); if (!n) return; const av = AV[n.availability] || AV.discuss;
     const ul = (t, xs) => (xs || []).length ? `<h4 class="sc-dh">${t}</h4><ul class="sc-ul">${xs.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
     drawer(n.title, `${thumb(n)}<div class="sc-tags" style="margin:14px 0 6px">${n.module ? `<span class="sc-chip">${esc(modLabel(n.module))}</span>` : ''}<span class="sc-chip ${av[1]}">${av[0]}</span></div>
       ${n.problem ? `<h4 class="sc-dh">The problem it solves</h4><p>${esc(n.problem)}</p>` : ''}${n.summary ? `<h4 class="sc-dh">Overview</h4><p>${esc(n.summary)}</p>` : ''}${ul('What it does', n.capabilities)}${ul('Where it helps', n.useCases)}
@@ -61,11 +65,11 @@
   };
 
   // ---------- interest ----------
-  ACT.xfAsk = a => { const n = I().get('news', a.getAttribute('data-id')); if (!n) return;
+  ACT.xfAsk = a => { const n = getN(a.getAttribute('data-id')); if (!n) return;
     drawer('Ask about ' + n.title, `<p class="small muted" style="margin-top:0">Your Facilio team will get in touch. Add anything that would help them prepare (optional).</p><label class="f" for="sc_note">Note</label><textarea id="sc_note" rows="4" maxlength="1000" placeholder="e.g. We would like a demo for the maintenance team"></textarea>`,
       `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="xfAskGo" data-id="${esc(n.id)}">Send request</button>`); };
   ACT.xfAskGo = a => V.busy(a, async () => {
-    const n = I().get('news', a.getAttribute('data-id')); if (!n) return; const note = (document.getElementById('sc_note') || {}).value || ''; const who = cust() ? ((S.user && S.user.name) || (S.project && S.project.customer) || 'The customer') : 'The customer';
+    const n = getN(a.getAttribute('data-id')); if (!n) return; const note = (document.getElementById('sc_note') || {}).value || ''; const who = cust() ? ((S.user && S.user.name) || (S.project && S.project.customer) || 'The customer') : 'The customer';
     try { await I().put('interest', I().uid('in'), { newsId: n.id, title: n.title, module: n.module || '', note: note.trim().slice(0, 1000), status: 'new' });
       const due = new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10);
       await I().put('action', I().uid('a'), { text: `Follow up: ${who} asked about "${n.title}"${note.trim() ? ' (' + note.trim().slice(0, 120) + ')' : ''}`, side: 'facilio', status: 'Open', mod: n.module || 'project', owner: '', due });
@@ -105,7 +109,7 @@
     const d = Object.assign({}, cur || {}, { title, module: val('sc_mod'), problem: val('sc_p'), summary: val('sc_s'), capabilities: lines('sc_c'), useCases: lines('sc_u'), relation: val('sc_r'), availability: val('sc_a'), source: val('sc_src'), imageId: S.ui.scImg || '', imageAlt: val('sc_alt'), status: cur ? cur.status : 'draft' });
     try { await I().put('news', id || I().uid('nw'), d); closeDrawer(); toast(cur && cur.status === 'published' ? 'Saved. The customer sees the change.' : 'Saved as draft'); V.render(); } catch (e) { toast(e.message, 6000, true); } });
   ACT.xfPub = a => V.busy(a, async () => {
-    const n = I().get('news', a.getAttribute('data-id')); if (!n) return; const on = n.status !== 'published';
+    const n = getN(a.getAttribute('data-id')); if (!n) return; const on = n.status !== 'published';
     if (on && !n.source) { toast('Name the source of the wording before publishing', 6000, true); return; }
     if (on && !(await confirmDialog('Publish to the customer', `"${n.title}" will appear under Explore Facilio for ${(S.project && S.project.customer) || 'the customer'}. Check that every statement comes from ${n.source}.`, 'Publish'))) return;
     try { await I().put('news', n.id, Object.assign({}, n, { status: on ? 'published' : 'draft' })); toast(on ? 'Published' : 'Unpublished'); V.render(); } catch (e) { toast(e.message, 6000, true); } });

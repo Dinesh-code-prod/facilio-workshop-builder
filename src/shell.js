@@ -179,7 +179,7 @@
     if (mode !== 'projects') S.ui.homeGuide = false;
     if (mode === 'projects') { app.innerHTML = navbarHtml(false) + (S.ui.homeGuide && V.homeGuideHtml ? V.homeGuideHtml() : projectsHtml()); if (V.motion) V.motion.route('projects'); return; }
     if (mode === 'tickets') { app.innerHTML = navbarHtml(false) + (V.ticketsGlobalHtml ? V.ticketsGlobalHtml() : ''); return; }
-    if (mode === 'admin') { app.innerHTML = navbarHtml(false) + (V.adminHtml ? V.adminHtml() : ''); return; }
+    if (mode === 'admin') { app.innerHTML = navbarHtml(false) + (V.adminHtml ? V.adminHtml() : ''); if (V.adminPost) V.adminPost(); return; }
     if (mode !== 'workspace') return;
     if (S.ui.view === 'onboarding' && S.ui.onbTab === 'excel' && document.getElementById('onbFrame')) return; // keep the embedded tool alive: re-rendering would reload it
     const main = document.querySelector('.main'); const scroll = main ? main.scrollTop : 0;

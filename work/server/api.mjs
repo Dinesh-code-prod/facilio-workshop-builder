@@ -19,6 +19,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     logo_facilio: { ext: ['png', 'jpg', 'jpeg'], max: 4e6 }, logo_customer: { ext: ['png', 'jpg', 'jpeg'], max: 4e6 }, brd_template: { ext: ['docx'], max: 30e6 },
     config_package: { ext: ['gz', 'json', 'zip'], max: MAX_FILE }, screenshot: { ext: ['png', 'jpg', 'jpeg'], max: 8e6 }, brd_export: { ext: ['docx', 'pdf'], max: MAX_FILE },
     onboarding_workbook: { ext: ['xlsx'], max: 40e6 }, onboarding_files: { ext: ['xlsx', 'xls', 'csv', 'pdf', 'docx', 'zip'], max: 60e6 },
+    uat_evidence: { ext: ['png', 'jpg', 'jpeg', 'webp', 'pdf', 'docx', 'xlsx', 'mp4', 'mov', 'txt'], max: 25e6 },   // screenshots and recordings attached to a UAT test case (team only)
     uat_source: { ext: ['xlsx', 'xlsm', 'xls', 'csv', 'txt'], max: 20e6 },   // the original UAT tracker a team imported from (team only)
     ftr_workbook: { ext: ['xlsx', 'xlsm'], max: 40e6 }, kpi_workbook: { ext: ['xlsx', 'xlsm'], max: 40e6 },
     config_evidence: { ext: ['pdf', 'xlsx', 'csv', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'txt'], max: 20e6 },
@@ -486,6 +487,41 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   const SEARCH_KINDS = { action: ['Action', 'governance'], decision: ['Decision', 'governance'], raid: ['RAID item', 'governance'], signoff: ['Sign-off', 'governance'], cr: ['Change request', 'changes'], minutes: ['Meeting minutes', 'governance'], checklist: ['Checklist item', 'delivery'], build: ['Build record', 'delivery'], uat: ['UAT record', 'delivery'], utc: ['UAT test case', 'delivery'], mfind: ['MSA finding decision', 'msafind'], scope: ['Scope', 'msaflow'], usecase: ['Use case', 'usecases'], discrepancy: ['Check finding', 'checks'], ai: ['AI draft', 'aiwork'], hc: ['Hypercare', 'hypercare'], ho: ['Handover item', 'handover'], close: ['Closure record', 'handover'], ugd: ['User guide', 'guidebuilder'], lesson: ['Lesson learned', 'handover'], tkt: ['Ticket', 'tickets'], res: ['Note or link', 'resources'], task: ['Task', 'tasks'], cmodx: ['Configuration input', 'cfginputs'], cfgrel: ['Configuration input', 'cfginputs'], capp: ['Configuration input', 'cfginputs'], news: ['Discover more entry', 'explore'] };
   const SKIP_KEY = /^(id|key|ca|ua|cb|ub|cs|us|v|hist|history|sources|ref|attachments|file|fileId|token)$/;
   const flatText = (v, out, d) => { if (out.n > 6000 || d > 6) return; if (typeof v === 'string') { out.t.push(v); out.n += v.length; } else if (typeof v === 'number') out.t.push(String(v)); else if (Array.isArray(v)) v.slice(0, 80).forEach(x => flatText(x, out, d + 1)); else if (v && typeof v === 'object') Object.keys(v).slice(0, 60).forEach(k => { if (!SKIP_KEY.test(k)) flatText(v[k], out, d + 1); }); };
+  // ---- Discover more library: written once by an admin, shown to the customers of the projects it targets while its dates are open.
+  // The dates are checked on every read, so nothing needs a scheduler. Text only; the customer page escapes it.
+  const DM_FIELDS = e => ({ id: e.id, title: e.title, module: e.module, problem: e.problem, summary: e.summary, capabilities: e.capabilities, useCases: e.useCases, availability: e.availability, source: e.source, relation: '', status: 'published', global: true });
+  const dmLive = (e, pid, today) => e.status === 'published' && (!e.from || e.from <= today) && (!e.until || e.until >= today) && (e.audience !== 'projects' || (e.projects || []).includes(pid));
+  const dmDay = v => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : '');
+  function dmClean(b, id, cur, s) {
+    const list = (v, n, m) => (Array.isArray(v) ? v : []).slice(0, n).map(x => plain(x, m)).filter(Boolean);
+    const from = dmDay(b.from), until = dmDay(b.until); if (from && until && until < from) throw new HttpError(400, 'The end date is before the start date');
+    const audience = b.audience === 'projects' ? 'projects' : 'all'; const projects = audience === 'projects' ? list(b.projects, 200, 80) : [];
+    if (audience === 'projects' && !projects.length) throw new HttpError(400, 'Choose at least one project, or show it to every project');
+    const st = ['draft', 'published'].includes(b.status) ? b.status : 'draft';
+    return { id, title: str(b.title, 160, 'Title', true), module: str(b.module || '', 80, 'Module'), problem: str(b.problem || '', 1200, 'Problem'), summary: str(b.summary || '', 2000, 'Summary'), capabilities: list(b.capabilities, 12, 300), useCases: list(b.useCases, 8, 300),
+      availability: ['enabled', 'optional', 'discuss'].includes(b.availability) ? b.availability : 'discuss', source: str(b.source || '', 300, 'Source'), status: st, from, until, audience, projects,
+      createdBy: (cur && cur.createdBy) || s.email, createdAt: (cur && cur.createdAt) || now(), updatedBy: s.email, updatedAt: now(), publishedAt: st === 'published' ? ((cur && cur.publishedAt) || now()) : null };
+  }
+  route('GET', '/api/admin/discover', async () => { await requireAdmin('admin'); const today = now().slice(0, 10); const rows = (await dbList('dm')).map(r => r.value).filter(Boolean).sort((a, c) => String(c.updatedAt).localeCompare(String(a.updatedAt)));
+    return ok({ items: rows.map(e => Object.assign({}, e, { live: dmLive(Object.assign({}, e, { audience: 'all' }), '', today), phase: e.status !== 'published' ? 'draft' : e.from && e.from > today ? 'scheduled' : e.until && e.until < today ? 'ended' : 'live' })) }); });
+  route('PUT', '/api/admin/discover/:id', async (b, P) => { const s = await requireAdmin('admin'); if (!/^dm_[A-Za-z0-9_-]{4,40}$/.test(P.id)) throw new HttpError(400, 'Bad id');
+    const cur = await dbGet('dm', P.id); const data = dmClean(b || {}, P.id, cur && cur.value, s); await dbPut('dm', P.id, data); await audit('admin', s.id, 'discover-saved', P.id + ' ' + data.status + ' ' + data.title.slice(0, 60)); return ok({ item: data }); });
+  route('DELETE', '/api/admin/discover/:id', async (b, P) => { const s = await requireAdmin('admin'); await dbDel('dm', P.id); await audit('admin', s.id, 'discover-deleted', P.id); return ok({ ok: true }); });
+  // an uploaded or pasted product note becomes a DRAFT entry; nothing is published, and the admin reads and edits it first
+  route('POST', '/api/admin/discover/draft', async (b) => { const s = await requireAdmin('admin'); await limit('ai', s.id); const text = String(b && b.text || '').trim(); if (text.length < 60) throw new HttpError(400, 'There is almost no text to read');
+    const SYS = 'You write a customer-facing product highlight for Facilio, a facilities and operations platform, using ONLY the supplied text. Never add a feature, number, date or claim that is not in the text. Reply with JSON only: {"title": string, "module": string, "problem": string, "summary": string, "capabilities": [string], "useCases": [string]}. Short plain sentences. Leave a field empty rather than guess.';
+    const out = await aiJSON({ op: 'extract', provider: String(b.provider || ''), system: SYS, messages: [{ role: 'user', content: 'Source: ' + plain(b.fileName || 'pasted text', 200) + '\n\n' + text.slice(0, 24000) }], maxTokens: 1400, budget: 21000 }, j => { if (!j || typeof j !== 'object' || Array.isArray(j)) throw new HttpError(502, 'The note could not be read'); return j; });
+    const j = out.data || {}; const l = (v, n, m) => (Array.isArray(v) ? v : []).slice(0, n).map(x => plain(x, m)).filter(Boolean);
+    await audit('admin', s.id, 'discover-draft', plain(b.fileName || 'pasted text', 80)); return ok({ draft: { title: plain(j.title, 160), module: plain(j.module, 80), problem: plain(j.problem, 1200), summary: plain(j.summary, 2000), capabilities: l(j.capabilities, 12, 300), useCases: l(j.useCases, 8, 300), source: plain(b.fileName || 'Pasted product note', 300) }, provider: out.provider || '' }); });
+  route('GET', '/api/projects/:id/discover', async (b, P) => { const s = await me(); await projectAccess(s, P.id, 'read'); const today = now().slice(0, 10);
+    const rows = (await dbList('dm')).map(r => r.value).filter(e => e && dmLive(e, P.id, today)); return ok({ items: rows.map(DM_FIELDS) }); });
+  // ---- Admin dashboard layout: which widgets show, their order and width, per tab. Yours first, else the default the platform owner saved for your role.
+  function layClean(raw) { const out = {}; if (!raw || typeof raw !== 'object') return out; Object.keys(raw).slice(0, 12).forEach(t => { if (!/^[a-z0-9_-]{1,30}$/.test(t)) return; const v = raw[t] || {}; const k = a => (Array.isArray(a) ? a : []).slice(0, 40).map(x => plain(x, 80)).filter(Boolean);
+    const span = {}; Object.keys(v.span || {}).slice(0, 40).forEach(n => { const w = Number(v.span[n]); if ([4, 6, 8, 12].includes(w)) span[plain(n, 80)] = w; }); out[t] = { order: k(v.order), hidden: k(v.hidden), span }; }); return out; }
+  route('GET', '/api/me/layout', async () => { const s = await requireAdmin('sub'); const mine = await dbGet('ulay', s.id); if (mine && mine.value) return ok({ layout: mine.value.layout || {}, source: 'yours' });
+    const def = await dbGet('ulay', 'role.' + s.adminRole); return ok({ layout: (def && def.value && def.value.layout) || {}, source: def && def.value ? 'role' : '', role: s.adminRole }); });
+  route('PUT', '/api/me/layout', async (b) => { const s = await requireAdmin('sub'); if (b && b.reset) { await dbDel('ulay', s.id).catch(() => { }); return ok({ ok: true }); } await dbPut('ulay', s.id, { layout: layClean(b && b.layout), at: now() }); return ok({ ok: true }); });
+  route('PUT', '/api/admin/layout/default', async (b) => { const s = await requireAdmin('super'); const role = String(b && b.role || ''); if (!['sub', 'admin', 'super'].includes(role)) throw new HttpError(400, 'Choose a role'); await dbPut('ulay', 'role.' + role, { layout: layClean(b.layout), at: now(), by: s.email }); await audit('admin', s.id, 'layout-default', role); return ok({ ok: true }); });
   route('GET', '/api/projects/:id/search', async (b, P, Q) => {
     const s = await me(); const { role } = await projectAccess(s, P.id, 'read'); if (role === 'customer') throw new HttpError(403, 'Search covers the whole project record and is for the project team');
     const q = String(Q.get('q') || '').trim().toLowerCase().replace(/\s+/g, ' ').slice(0, 80); if (q.length < 3) return ok({ q, results: [], note: 'Type at least 3 letters' });
@@ -1316,7 +1352,7 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     if (['txt', 'csv', 'vtt', 'srt', 'json', 'eml'].includes(ext)) return !b.includes(0) && !starts(b, SIG.zip) && !starts(b, SIG.ole);  // text: no NUL bytes, not a binary package
     return null;
   }
-  const TEAM_FILES = new Set(['uat_source']);   // file categories customers cannot open
+  const TEAM_FILES = new Set(['uat_source', 'uat_evidence']);   // file categories customers cannot open
   const fileForRead = async (s, P) => { const acc = await projectAccess(s, P.id, 'read'); const r = await dbGet('fl.' + P.id, P.fid); if (!r || r.value.deletedAt || r.value.status !== 'ready') throw new HttpError(404, 'File not found'); if (acc.role === 'customer' && TEAM_FILES.has(r.value.category)) throw new HttpError(404, 'File not found'); return r.value; };
   route('GET', '/api/projects/:id/files/:fid', async (b, P) => { const s = await me(); return ok({ file: fileOut(await fileForRead(s, P)), chunkSize: CHUNK }); });
   route('GET', '/api/projects/:id/files/:fid/chunks/:n', async (b, P) => {
