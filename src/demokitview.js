@@ -32,8 +32,8 @@
       if (!sel) main = '<section class="dkv-main"><div class="empty">Nothing to show. Clear the search or choose another app.</div></section>';
       else { const idx = list.indexOf(sel);
         main = `<section class="dkv-main"><header class="dkv-h"><div class="dkv-t"><small>${esc(sel.group)}</small><h2>${esc(sel.label)}</h2>${sel.desc ? `<p>${esc(sel.desc)}</p>` : ''}${(sel.tags || []).length ? `<div class="dkv-tags">${sel.tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''}</div>
-          <div class="dkv-a"><button type="button" class="btn" data-act="dkStep" data-d="-1"${idx <= 0 ? ' disabled' : ''} aria-label="Previous screen">&larr; Previous</button><button type="button" class="btn" data-act="dkStep" data-d="1"${idx >= list.length - 1 ? ' disabled' : ''} aria-label="Next screen">Next &rarr;</button><button type="button" class="btn" data-act="dkPng" data-id="${esc(sel.id)}">Save PNG</button><a class="btn primary" href="demokit/shots/${esc(sel.id)}.png" target="_blank" rel="noopener">Open full size</a></div></header>
-          <a class="dkv-frame" href="demokit/shots/${esc(sel.id)}.png" target="_blank" rel="noopener" aria-label="Open ${esc(sel.label)} full size"><img src="demokit/shots/${esc(sel.id)}.png" alt="${esc(sel.label)}" decoding="async"></a><p class="dkv-foot">${idx + 1} of ${list.length}${q || app !== 'all' ? ' in this view' : ''} &middot; use the up and down arrow keys to move between screens</p></section>`; }
+          <div class="dkv-a"><button type="button" class="btn" data-act="dkStep" data-d="-1"${idx <= 0 ? ' disabled' : ''} aria-label="Previous screen">&larr; Previous</button><button type="button" class="btn" data-act="dkStep" data-d="1"${idx >= list.length - 1 ? ' disabled' : ''} aria-label="Next screen">Next &rarr;</button><button type="button" class="btn" data-act="dkPng" data-id="${esc(sel.id)}">Save PNG</button><a class="btn primary" href="demokit/shots/${esc(sel.id)}.webp" target="_blank" rel="noopener">Open full size</a></div></header>
+          <a class="dkv-frame" href="demokit/shots/${esc(sel.id)}.webp" target="_blank" rel="noopener" aria-label="Open ${esc(sel.label)} full size"><img src="demokit/shots/${esc(sel.id)}.webp" alt="${esc(sel.label)}" decoding="async"></a><p class="dkv-foot">${idx + 1} of ${list.length}${q || app !== 'all' ? ' in this view' : ''} &middot; use the up and down arrow keys to move between screens</p></section>`; }
       return head + `<div class="page-body"><div class="dkv">${side}${main}</div></div>`;
     },
     mount() {
@@ -47,6 +47,9 @@
   ACT.dkStep = a => step(Number(a.getAttribute('data-d')) || 0);
   ACT.dkApp = el => { ui().dkApp = el.value; ui().dkSel = ''; V.render(); };
   ACT.dkGroup = a => { const g = a.getAttribute('data-g'), c = ui().dkClosed = ui().dkClosed || {}; c[g] = !c[g]; V.render(); };
-  // save the screen as a PNG file (the pictures are already PNG)
-  ACT.dkPng = a => V.busy(a, async () => { const id = a.getAttribute('data-id'); const it = (ITEMS || []).find(x => x.id === id); if (!it) return; const r = await fetch('demokit/shots/' + id + '.png'); if (!r.ok) throw new Error('The picture could not be loaded.'); const blob = await r.blob(); const name = 'facilio-' + String(it.label).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.png'; V.download(name, blob); V.toast('Saved ' + name); });
+  // save the screen as a PNG file: the pictures are stored as WebP (smaller), so draw the picture and write it out as PNG
+  ACT.dkPng = a => V.busy(a, async () => { const id = a.getAttribute('data-id'); const it = (ITEMS || []).find(x => x.id === id); if (!it) return;
+    const im = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('The picture could not be loaded.')); i.src = 'demokit/shots/' + id + '.webp'; });
+    const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; c.getContext('2d').drawImage(im, 0, 0);
+    const blob = await new Promise(r => c.toBlob(r, 'image/png')); const name = 'facilio-' + String(it.label).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.png'; V.download(name, blob); V.toast('Saved ' + name); });
 })(typeof window !== 'undefined' ? window : globalThis);
