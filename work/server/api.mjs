@@ -19,6 +19,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     logo_facilio: { ext: ['png', 'jpg', 'jpeg'], max: 4e6 }, logo_customer: { ext: ['png', 'jpg', 'jpeg'], max: 4e6 }, brd_template: { ext: ['docx'], max: 30e6 },
     config_package: { ext: ['gz', 'json', 'zip'], max: MAX_FILE }, screenshot: { ext: ['png', 'jpg', 'jpeg'], max: 8e6 }, brd_export: { ext: ['docx', 'pdf'], max: MAX_FILE },
     onboarding_workbook: { ext: ['xlsx'], max: 40e6 }, onboarding_files: { ext: ['xlsx', 'xls', 'csv', 'pdf', 'docx', 'zip'], max: 60e6 },
+    uat_source: { ext: ['xlsx', 'xlsm', 'xls', 'csv', 'txt'], max: 20e6 },   // the original UAT tracker a team imported from (team only)
     ftr_workbook: { ext: ['xlsx', 'xlsm'], max: 40e6 }, kpi_workbook: { ext: ['xlsx', 'xlsm'], max: 40e6 },
     config_evidence: { ext: ['pdf', 'xlsx', 'csv', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'txt'], max: 20e6 },
     guide_media: { ext: ['png', 'jpg', 'jpeg'], max: 8e6 }, flow_image: { ext: ['png', 'jpg', 'jpeg', 'webp'], max: 8e6 }, showcase_image: { ext: ['png', 'jpg', 'jpeg', 'webp'], max: 5e6 },
@@ -27,8 +28,8 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     signoff_evidence: { ext: ['pdf', 'png', 'jpg', 'jpeg', 'msg', 'eml', 'docx'], max: 20e6 }, brd_signed: { ext: ['docx', 'pdf', 'json'], max: MAX_FILE }
   };
   // record kinds the team can store (customer-only rules come with the customer page)
-  const KINDS = ['action', 'decision', 'raid', 'signoff', 'cr', 'onb', 'onbsub', 'onbfile', 'onbws', 'owner', 'agreement', 'minutes', 'checklist', 'build', 'uat', 'digest', 'ctrcore', 'ctrfees', 'ctrlegal', 'ctrrates', 'scope', 'modbrief', 'fieldreq', 'note', 'ctrwatch', 'usecase', 'discrepancy', 'brdrev', 'ai', 'hc', 'hcrep', 'ho', 'close', 'rep', 'kpi', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'lesson', 'tkt', 'res', 'ugv', 'ugu', 'pnote', 'wb', 'news', 'interest', 'cflow', 'task', 'utc'];   // utc: UAT test cases (module-wise scenarios, steps, expected and actual results, status; team only)
-  const TEAM_KINDS = new Set(['utc']);   // kinds customers can neither list nor change   // task: Project Tasks (one register; sheets are saved views in the tasksheets document)   // cflow: combined flows saved from a whiteboard (a snapshot the BRD can include); wb: process whiteboards; news: Explore Facilio entries; interest: customer requests for more information
+  const KINDS = ['action', 'decision', 'raid', 'signoff', 'cr', 'onb', 'onbsub', 'onbfile', 'onbws', 'owner', 'agreement', 'minutes', 'checklist', 'build', 'uat', 'digest', 'ctrcore', 'ctrfees', 'ctrlegal', 'ctrrates', 'scope', 'modbrief', 'fieldreq', 'note', 'ctrwatch', 'usecase', 'discrepancy', 'brdrev', 'ai', 'hc', 'hcrep', 'ho', 'close', 'rep', 'kpi', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'lesson', 'tkt', 'res', 'ugv', 'ugu', 'pnote', 'wb', 'news', 'interest', 'cflow', 'task', 'utc', 'mfind'];   // mfind: the team's decision on an MSA scope finding (status and note; team only). utc: UAT test cases (module-wise scenarios, steps, expected and actual results, status; team only)
+  const TEAM_KINDS = new Set(['utc', 'mfind']);   // kinds customers can neither list nor change   // task: Project Tasks (one register; sheets are saved views in the tasksheets document)   // cflow: combined flows saved from a whiteboard (a snapshot the BRD can include); wb: process whiteboards; news: Explore Facilio entries; interest: customer requests for more information
   const DOC_SECTIONS = /^[a-z][a-z0-9_]{1,40}$/, ITEM_ID_RE = /^[A-Za-z0-9_-]{1,80}$/, GR_KEY = /^[a-z]{2,8}:[afbxw]:[A-Za-z0-9_-]{1,64}$/;
 
   class HttpError extends Error { constructor(status, msg, extra) { super(msg); this.status = status; this.extra = extra; } }
@@ -482,7 +483,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
      Reads the same stores the pages read, after the same project access check. Customers are refused: the search covers internal records (notes, risks, AI drafts) that
      customers never see, and it must not be a way around the per-record rules. Uploaded files are not indexed (their text is not stored); transcripts are found through
      the requirements and findings made from them. */
-  const SEARCH_KINDS = { action: ['Action', 'governance'], decision: ['Decision', 'governance'], raid: ['RAID item', 'governance'], signoff: ['Sign-off', 'governance'], cr: ['Change request', 'changes'], minutes: ['Meeting minutes', 'governance'], checklist: ['Checklist item', 'delivery'], build: ['Build record', 'delivery'], uat: ['UAT record', 'delivery'], utc: ['UAT test case', 'delivery'], scope: ['Scope', 'msaflow'], usecase: ['Use case', 'usecases'], discrepancy: ['Check finding', 'checks'], ai: ['AI draft', 'aiwork'], hc: ['Hypercare', 'hypercare'], ho: ['Handover item', 'handover'], close: ['Closure record', 'handover'], ugd: ['User guide', 'guidebuilder'], lesson: ['Lesson learned', 'handover'], tkt: ['Ticket', 'tickets'], res: ['Note or link', 'resources'], task: ['Task', 'tasks'], cmodx: ['Configuration input', 'cfginputs'], cfgrel: ['Configuration input', 'cfginputs'], capp: ['Configuration input', 'cfginputs'], news: ['Discover more entry', 'explore'] };
+  const SEARCH_KINDS = { action: ['Action', 'governance'], decision: ['Decision', 'governance'], raid: ['RAID item', 'governance'], signoff: ['Sign-off', 'governance'], cr: ['Change request', 'changes'], minutes: ['Meeting minutes', 'governance'], checklist: ['Checklist item', 'delivery'], build: ['Build record', 'delivery'], uat: ['UAT record', 'delivery'], utc: ['UAT test case', 'delivery'], mfind: ['MSA finding decision', 'msafind'], scope: ['Scope', 'msaflow'], usecase: ['Use case', 'usecases'], discrepancy: ['Check finding', 'checks'], ai: ['AI draft', 'aiwork'], hc: ['Hypercare', 'hypercare'], ho: ['Handover item', 'handover'], close: ['Closure record', 'handover'], ugd: ['User guide', 'guidebuilder'], lesson: ['Lesson learned', 'handover'], tkt: ['Ticket', 'tickets'], res: ['Note or link', 'resources'], task: ['Task', 'tasks'], cmodx: ['Configuration input', 'cfginputs'], cfgrel: ['Configuration input', 'cfginputs'], capp: ['Configuration input', 'cfginputs'], news: ['Discover more entry', 'explore'] };
   const SKIP_KEY = /^(id|key|ca|ua|cb|ub|cs|us|v|hist|history|sources|ref|attachments|file|fileId|token)$/;
   const flatText = (v, out, d) => { if (out.n > 6000 || d > 6) return; if (typeof v === 'string') { out.t.push(v); out.n += v.length; } else if (typeof v === 'number') out.t.push(String(v)); else if (Array.isArray(v)) v.slice(0, 80).forEach(x => flatText(x, out, d + 1)); else if (v && typeof v === 'object') Object.keys(v).slice(0, 60).forEach(k => { if (!SKIP_KEY.test(k)) flatText(v[k], out, d + 1); }); };
   route('GET', '/api/projects/:id/search', async (b, P, Q) => {
@@ -708,6 +709,7 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
   const TASK_STATUS = ['To Do', 'In Progress', 'Blocked', 'Awaiting Customer', 'Awaiting Internal Input', 'In Review', 'Done', 'Cancelled'];
   const TASK_PRIO = ['Critical', 'High', 'Medium', 'Low'];
   const TASK_STAGES = ['Project Setup & Kickoff', 'Requirements & Workshops', 'Configuration & Documentation', 'Implementation & Integrations', 'Testing & UAT', 'Go-Live & Handover', 'Closure & Follow-Up'];
+  const UAT_ISSUE_ST = ['New', 'Open', 'Assigned', 'In Progress', 'Fixed', 'Ready for Retesting', 'Retesting', 'Closed', 'Deferred'], UAT_SEV = ['Critical', 'Major', 'Minor', 'Trivial'];
   const Q_STATUS = ['New', 'Needs Triage', 'Assigned', 'In Progress', 'Awaiting Internal Input', 'Awaiting Customer', 'Answered', 'Closed'];
   const TASK_SRC = ['manual', 'transcript', 'import', 'meeting', 'email', 'action', 'question', 'ai'];
   const QTYPES = ['Customer Question', 'Customer Response Required'];
@@ -720,6 +722,7 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     const out = {
       title: str(d.title, 300, 'Title', true), desc: str(d.desc || '', 8000, 'Description'), type, status, priority: oneOf(d.priority, TASK_PRIO, 'Priority', ''),
       owner: ownerOk(d.owner), eta: isoDay(d.eta, 'ETA'), due: isoDay(d.due, 'Due date'), stage: oneOf(d.stage, TASK_STAGES, 'Project stage', ''), module: str(d.module || '', 120, 'Module'),
+      uat: d.uat && typeof d.uat === 'object' ? { status: oneOf(d.uat.status, UAT_ISSUE_ST, 'UAT issue status', 'Open'), severity: oneOf(d.uat.severity, UAT_SEV, 'Severity', '') } : undefined,   // set on issues raised in UAT: the board column and the severity
       blocker: str(d.blocker || '', 2000, 'Blocker'), notes: str(d.notes || '', 4000, 'Delivery notes'), completion: str(d.completion || '', 3000, 'Completion note'),
       src: { type: oneOf(d.src && d.src.type, TASK_SRC, 'Source', cur && cur.src ? cur.src.type : 'manual'), ref: str(d.src && d.src.ref || '', 300, 'Source reference'), quote: str(d.src && d.src.quote || '', 1500, 'Source excerpt'), label: str(d.src && d.src.label || '', 200, 'Source name') },
       // links to other records of this project: [{ kind, id, label }]; documents are named by section ({ kind: 'doc', id: <section> })
@@ -1313,7 +1316,8 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     if (['txt', 'csv', 'vtt', 'srt', 'json', 'eml'].includes(ext)) return !b.includes(0) && !starts(b, SIG.zip) && !starts(b, SIG.ole);  // text: no NUL bytes, not a binary package
     return null;
   }
-  const fileForRead = async (s, P) => { await projectAccess(s, P.id, 'read'); const r = await dbGet('fl.' + P.id, P.fid); if (!r || r.value.deletedAt || r.value.status !== 'ready') throw new HttpError(404, 'File not found'); return r.value; };
+  const TEAM_FILES = new Set(['uat_source']);   // file categories customers cannot open
+  const fileForRead = async (s, P) => { const acc = await projectAccess(s, P.id, 'read'); const r = await dbGet('fl.' + P.id, P.fid); if (!r || r.value.deletedAt || r.value.status !== 'ready') throw new HttpError(404, 'File not found'); if (acc.role === 'customer' && TEAM_FILES.has(r.value.category)) throw new HttpError(404, 'File not found'); return r.value; };
   route('GET', '/api/projects/:id/files/:fid', async (b, P) => { const s = await me(); return ok({ file: fileOut(await fileForRead(s, P)), chunkSize: CHUNK }); });
   route('GET', '/api/projects/:id/files/:fid/chunks/:n', async (b, P) => {
     const s = await me(); const f = await fileForRead(s, P); const n = Number(P.n); if (!Number.isInteger(n) || n < 0 || n >= f.chunks || !f.urls[n]) throw new HttpError(400, 'Invalid chunk');

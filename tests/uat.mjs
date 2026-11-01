@@ -27,4 +27,15 @@ t('the summary counts saved test cases only: passed includes Approved, not run i
   const s = U.summarize(cases, ['workorder', 'asset', 'space']); assert.equal(s.total, 7); assert.equal(s.passed, 2); assert.equal(s.failed, 1); assert.equal(s.blocked, 1); assert.equal(s.notRun, 2); assert.equal(s.passRate, 29);
   assert.deepEqual(s.perModule.workorder, { total: 4, passed: 2, failed: 1, blocked: 1, notRun: 0, open: 0 }); assert.deepEqual(s.perModule.asset, { total: 3, passed: 0, failed: 0, blocked: 0, notRun: 2, open: 1 }); assert.equal(s.perModule.space.total, 0);
   const e = U.summarize([], ['workorder']); assert.equal(e.total, 0); assert.equal(e.passRate, null); });
+t('a UAT issue is a task with a uat part, or an Issue / Blocker linked to a test case; its board column comes from the uat status, else from the task status', () => {
+  assert.ok(U.isUatIssue({ uat: { status: 'New' } })); assert.ok(U.isUatIssue({ type: 'Issue / Blocker', links: [{ kind: 'utc', id: 'x' }] })); assert.ok(!U.isUatIssue({ type: 'Issue / Blocker', links: [] })); assert.ok(!U.isUatIssue({ type: 'UAT Task' }));
+  assert.equal(U.issueStatus({ uat: { status: 'Retesting' }, status: 'In Review' }), 'Retesting'); assert.equal(U.issueStatus({ status: 'Done' }), 'Closed'); assert.equal(U.issueStatus({ status: 'In Progress' }), 'In Progress'); assert.equal(U.issueStatus({ uat: { status: 'bogus' }, status: 'To Do' }), 'Open');
+  U.ISSUE_ST.forEach(s => assert.ok(U.TASK_OF[s], s)); assert.equal(U.TASK_OF.Closed, 'Done'); assert.equal(U.TASK_OF.Deferred, 'Awaiting Internal Input'); });
+t('issue filters narrow by module, priority, owner and words (title, description or T-number)', () => {
+  const l = [{ n: 1, title: 'Cannot save asset', module: 'Assets', priority: 'High', owner: 'a@x.com' }, { n: 2, title: 'Wrong label', desc: 'on the space form', module: 'Spaces', priority: 'Low', owner: '' }];
+  assert.equal(U.issueFilter(l, { mod: 'Assets' }).length, 1); assert.equal(U.issueFilter(l, { pri: 'Low' })[0].n, 2); assert.equal(U.issueFilter(l, { q: 'space form' })[0].n, 2); assert.equal(U.issueFilter(l, { q: 't-1' })[0].n, 1); assert.equal(U.issueFilter(l, { own: 'a@x.com' }).length, 1); assert.equal(U.issueFilter(l, {}).length, 2); });
+t('chart data is counted from saved records, empty statuses are left out, and nothing is drawn for no data', () => {
+  const cs = [{ mod: 'asset', status: 'Passed' }, { mod: 'asset', status: 'Failed' }, { mod: 'space', status: 'Not Started' }]; const d = U.chartData('status', cs, [], x => x);
+  assert.deepEqual(d.rows.map(r => r.label + ':' + r.value), ['Not Started:1', 'Passed:1', 'Failed:1']); const m = U.chartData('module', cs, [], x => x.toUpperCase()); assert.equal(m.rows[0].label, 'ASSET'); assert.equal(m.rows[0].value, 2); assert.equal(m.rows[0].parts.find(p => p[0] === 'Failed')[1], 1);
+  const i = U.chartData('issues', [], [{ uat: { status: 'Fixed' } }, { status: 'Done' }, { status: 'To Do' }], x => x); assert.deepEqual(i.rows.map(r => r.label + ':' + r.value), ['Open:1', 'Fixed:1', 'Closed:1']); assert.equal(U.chartData('status', [], [], x => x).rows.length, 0); });
 console.log(`\n${n} UAT checks passed`);

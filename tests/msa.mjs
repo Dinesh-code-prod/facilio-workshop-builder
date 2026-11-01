@@ -1,0 +1,35 @@
+// MSA scope check rules (src/msalogic.js): the five kinds of finding, what each rests on, and that missing information is never read as "fine".
+import assert from 'node:assert/strict'; import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url); const M = require('../src/msalogic.js');
+let n = 0; const t = (name, fn) => { fn(); n++; console.log('  ok  ' + name); };
+const labels = { inventory: 'Inventory', workorder: 'Work Order', asset: 'Asset', visitor: 'Visitor' };
+const scope = [{ text: 'Work order management', module: 'workorder', status: 'matched', page: 4, section: '3.1' }, { text: 'Asset registry', module: 'asset', status: 'uncertain', page: 5, section: '3.2' }, { text: 'Visitor management', module: 'visitor', status: 'excluded', page: 6, section: '3.4' }];
+const exclusions = [{ text: 'Inventory management and purchasing are excluded from the scope of this Agreement.', page: 9, section: '7.2' }, { text: 'Integration with third party ERP payroll systems is not included.', page: 9, section: '7.3' }];
+const base = () => ({ msaUploaded: true, scope, exclusions, labels, requirements: [], useCases: [], questions: [] });
+const find = (fs, cls, ref) => fs.filter(f => f.cls === cls && (!ref || (f.ref && f.ref.id === ref)));
+
+t('no MSA uploaded: one high "missing information" finding, and nothing else is compared', () => {
+  const fs = M.analyse({ msaUploaded: false, scope: [], exclusions: [], labels, requirements: [{ id: 'WO-1', title: 'Create work orders', status: 'Confirmed', modules: ['workorder'] }] });
+  assert.equal(find(fs, 'missing').filter(f => !f.ref).length, 1); assert.equal(find(fs, 'missing')[0].sev, 'high'); assert.equal(find(fs, 'conflict').length + find(fs, 'deviation').length, 0); });
+t('an MSA with nothing read from it is "missing information", not a pass', () => {
+  const fs = M.analyse({ msaUploaded: true, scope: [], exclusions: [], labels, requirements: [{ id: 'WO-1', title: 'Create work orders', status: 'Confirmed', modules: ['workorder'] }] }); const p = find(fs, 'missing').filter(f => !f.ref); assert.equal(p.length, 1); assert.equal(p[0].sev, 'medium'); assert.equal(find(fs, 'deviation').length, 0); });
+t('a CONFIRMED requirement for a module named in an MSA exclusion is a confirmed conflict, with the clause, page and section', () => {
+  const fs = M.analyse(Object.assign(base(), { requirements: [{ id: 'INV-1', title: 'Track spare part stock levels', status: 'Confirmed', modules: ['inventory'] }] })); const c = find(fs, 'conflict', 'INV-1'); assert.equal(c.length, 1); assert.equal(c[0].sev, 'high'); assert.equal(c[0].msa.page, 9); assert.equal(c[0].msa.section, '7.2'); assert.equal(c[0].msa.kind, 'exclusion'); assert.ok(/Read the clause/.test(c[0].why)); assert.ok(/change request/.test(c[0].action)); });
+t('the same match on a requirement that is NOT confirmed is only a potential deviation: no unsupported contract call', () => {
+  const fs = M.analyse(Object.assign(base(), { requirements: [{ id: 'INV-2', title: 'Purchasing of spare parts', status: 'Draft', modules: ['inventory'] }] })); assert.equal(find(fs, 'conflict').length, 0); assert.equal(find(fs, 'deviation', 'INV-2').filter(f => f.msa && f.msa.kind === 'exclusion')[0].sev, 'medium'); });
+t('a module a person marked as not included in the MSA scope makes a confirmed requirement a high deviation; no entry at all makes a medium one', () => {
+  const fs = M.analyse(Object.assign(base(), { requirements: [{ id: 'V-1', title: 'Register guests at reception', status: 'Confirmed', modules: ['visitor'] }, { id: 'X-1', title: 'Safety permits', status: 'Confirmed', modules: ['permit'] }] }));
+  assert.equal(find(fs, 'deviation', 'V-1')[0].sev, 'high'); assert.equal(find(fs, 'deviation', 'V-1')[0].msa.kind, 'scope-excluded'); const x = find(fs, 'deviation', 'X-1')[0]; assert.equal(x.sev, 'medium'); assert.equal(x.msa, null); });
+t('an MSA entry nobody has confirmed is "pending clarification", and a confirmed entry raises nothing', () => {
+  const fs = M.analyse(Object.assign(base(), { requirements: [{ id: 'A-1', title: 'Asset hierarchy', status: 'Confirmed', modules: ['asset'] }, { id: 'W-1', title: 'Assign work orders', status: 'Confirmed', modules: ['workorder'] }] }));
+  assert.equal(find(fs, 'pending', 'A-1')[0].msa.kind, 'scope-uncertain'); assert.equal(fs.filter(f => f.ref && f.ref.id === 'W-1').length, 0); });
+t('an open question on a requirement is pending clarification; an answered one is not', () => {
+  const fs = M.analyse(Object.assign(base(), { requirements: [{ id: 'W-2', title: 'Escalate overdue work orders', status: 'Confirmed', modules: ['workorder'] }], questions: [{ id: 'q1', reqId: 'W-2', text: 'Who approves escalations?', status: 'Open' }, { id: 'q2', reqId: 'W-2', text: 'Old question', status: 'Answered' }] })); const p = find(fs, 'pending', 'W-2'); assert.equal(p.length, 1); assert.ok(/Who approves/.test(p[0].why)); });
+t('requirements and use cases that are not confirmed are flagged, and rejected or withdrawn ones are ignored; a requirement with no module cannot be compared', () => {
+  const fs = M.analyse(Object.assign(base(), { requirements: [{ id: 'W-3', title: 'Bulk close', status: 'Draft', modules: ['workorder'] }, { id: 'W-4', title: 'Dropped idea', status: 'Rejected', modules: ['workorder'] }, { id: 'N-1', title: 'Something general', status: 'Confirmed', modules: [] }], useCases: [{ id: 'UC-1', title: 'Out of hours call-out', confirmation: 'Unconfirmed', modules: ['workorder'] }, { id: 'UC-2', title: 'Confirmed one', confirmation: 'Customer confirmed', modules: ['workorder'] }] }));
+  assert.equal(find(fs, 'unconfirmed', 'W-3').length, 1); assert.equal(fs.filter(f => f.ref && f.ref.id === 'W-4').length, 0); assert.equal(find(fs, 'unconfirmed', 'UC-1').length, 1); assert.equal(fs.filter(f => f.ref && f.ref.id === 'UC-2').length, 0); assert.equal(find(fs, 'missing', 'N-1').length, 1); });
+t('findings are ordered by severity then kind, keys are unique and stable, and a decision is kept only while the finding exists', () => {
+  const inp = Object.assign(base(), { requirements: [{ id: 'INV-1', title: 'Track stock', status: 'Confirmed', modules: ['inventory'] }, { id: 'W-3', title: 'Bulk close', status: 'Draft', modules: ['workorder'] }] }); const fs = M.analyse(inp); assert.equal(fs[0].cls, 'conflict'); assert.equal(new Set(fs.map(f => f.key)).size, fs.length); assert.deepEqual(M.analyse(inp).map(f => f.key), fs.map(f => f.key));
+  const w = M.withDecisions(fs, [{ key: fs[0].key, status: 'In clarification', note: 'Asked the PM', by: 'A', at: '2026-11-01' }, { key: 'gone|x', status: 'Resolved' }]); assert.equal(w[0].status, 'In clarification'); assert.equal(w[0].note, 'Asked the PM'); assert.equal(w[1].status, 'Open'); assert.equal(w.length, fs.length);
+  const s = M.summary(M.withDecisions(fs, [{ key: fs[0].key, status: 'Resolved' }])); assert.equal(s.total, fs.length); assert.equal(s.active, fs.length - 1); assert.equal(s.by.conflict.active, 0); assert.equal(s.by.conflict.total, 1); });
+console.log(`\n${n} MSA checks passed`);

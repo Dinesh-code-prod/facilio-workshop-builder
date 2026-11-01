@@ -10,7 +10,7 @@
   // key, name, short label, the roadmap checkpoints it rolls up (indexes into V.roadmapStages), the menu pages worked on in it, sign-offs that close it
   const STAGES = [
     { k: 'setup', name: 'Project Setup & Kickoff', short: 'Setup', cps: [0], views: ['msaflow', 'kickoff', 'plan', 'timeline', 'governance', 'changes'], so: [], hint: 'Contract and scope, kick-off deck, project plan and governance.' },
-    { k: 'req', name: 'Requirements & Workshops', short: 'Requirements', cps: [1, 2, 3], views: ['transcripts', 'usecases', 'checks', 'brd', 'onboarding'], so: ['brd'], hint: 'Workshop sessions, confirmed requirements, BRD and its sign-off.' },
+    { k: 'req', name: 'Requirements & Workshops', short: 'Requirements', cps: [1, 2, 3], views: ['transcripts', 'usecases', 'checks', 'msafind', 'brd', 'onboarding'], so: ['brd'], hint: 'Workshop sessions, confirmed requirements, BRD and its sign-off.' },
     { k: 'config', name: 'Configuration & Documentation', short: 'Configuration', cps: [6, 7], views: ['modules', 'flow', 'roles', 'cfginputs', 'dashboards', 'trace'], so: [], hint: 'Modules, forms, state flows, roles, configuration inputs, FTR workbook and guides.' },
     { k: 'impl', name: 'Implementation & Integrations', short: 'Implementation', cps: [4], views: ['contracts'], so: [], hint: 'Building each module in scope and the integrations register.' },
     { k: 'uat', name: 'Testing & UAT', short: 'Testing & UAT', cps: [5], views: ['delivery'], so: ['uat'], hint: 'UAT sessions, defects and the UAT sign-off.' },

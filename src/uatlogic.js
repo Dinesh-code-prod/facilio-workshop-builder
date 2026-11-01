@@ -63,6 +63,21 @@
     const total = cases.length; const passed = GOOD.reduce((n, s) => n + by[s], 0);
     return { total, byStatus: by, passed, failed: by.Failed, blocked: by.Blocked, notRun: by['Not Started'] + by['Ready for Testing'], passRate: total ? Math.round(100 * passed / total) : null, perModule: per };
   }
-  const api = { STATUS, FIELDS, suggestMap, findHeaderRow, normStatus, nextId, readRows, summarize, keysOf };
+  // ---------- UAT issues: the board is a view of the central task register (type Issue / Blocker, with a "uat" part), not a second list ----------
+  const ISSUE_ST = ['New', 'Open', 'Assigned', 'In Progress', 'Fixed', 'Ready for Retesting', 'Retesting', 'Closed', 'Deferred'];
+  const SEVERITY = ['Critical', 'Major', 'Minor', 'Trivial'];
+  const TASK_OF = { New: 'To Do', Open: 'To Do', Assigned: 'To Do', 'In Progress': 'In Progress', Fixed: 'In Review', 'Ready for Retesting': 'In Review', Retesting: 'In Review', Closed: 'Done', Deferred: 'Awaiting Internal Input' };   // what each board column means in Tasks
+  const FROM_TASK = { 'To Do': 'Open', 'In Progress': 'In Progress', 'In Review': 'Fixed', Done: 'Closed', Cancelled: 'Closed', Blocked: 'Open', 'Awaiting Customer': 'Open', 'Awaiting Internal Input': 'Deferred' };
+  const isUatIssue = t => !!(t && (t.uat || (t.type === 'Issue / Blocker' && (t.links || []).some(l => l.kind === 'utc'))));
+  const issueStatus = t => (t && t.uat && ISSUE_ST.includes(t.uat.status)) ? t.uat.status : (FROM_TASK[t && t.status] || 'Open');
+  const FIXED = ['Fixed', 'Ready for Retesting', 'Closed'];
+  function issueFilter(issues, f) { f = f || {}; const q = norm(f.q); return issues.filter(t => (!f.mod || t.module === f.mod) && (!f.pri || t.priority === f.pri) && (!f.own || t.owner === f.own) && (!q || norm(t.title + ' ' + (t.desc || '') + ' T-' + t.n).includes(q))); }
+  // chart data: every figure is a count of saved test cases or issues
+  function chartData(type, cases, issues, labelOf) {
+    if (type === 'status') { const s = summarize(cases, []); return { title: 'Test cases by status', unit: 'test cases', rows: STATUS.filter(k => s.byStatus[k]).map(k => ({ label: k, value: s.byStatus[k] })) }; }
+    if (type === 'issues') { const by = {}; ISSUE_ST.forEach(k => { by[k] = 0; }); issues.forEach(t => { by[issueStatus(t)]++; }); return { title: 'UAT issues by status', unit: 'issues', rows: ISSUE_ST.filter(k => by[k]).map(k => ({ label: k, value: by[k] })) }; }
+    const s = summarize(cases, []); return { title: 'UAT progress by module', unit: 'test cases', stacked: true, rows: Object.entries(s.perModule).filter(([, m]) => m.total).map(([k, m]) => ({ label: labelOf ? labelOf(k) : k, parts: [['Passed', m.passed], ['Failed', m.failed], ['Blocked', m.blocked], ['Not run', m.notRun], ['In progress or retesting', m.open]], value: m.total })).sort((a, b) => b.value - a.value) };
+  }
+  const api = { STATUS, ISSUE_ST, SEVERITY, TASK_OF, isUatIssue, issueStatus, FIXED, issueFilter, chartData, FIELDS, suggestMap, findHeaderRow, normStatus, nextId, readRows, summarize, keysOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBUat = api;
 })(typeof window !== 'undefined' ? window : globalThis);

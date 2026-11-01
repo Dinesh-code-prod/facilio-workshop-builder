@@ -6,6 +6,13 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '2.2.0', date: '2026-11-01', kind: 'UPDATE', title: 'MSA Scope Check, a UAT issue board, kept tracker files, UAT charts', notes: [
+      'New MSA Scope Check (Workshops & Requirements): confirmed requirements and use cases are held against the signed MSA, and every finding says which of five kinds it is: confirmed contractual conflict, potential scope deviation, missing contractual information, pending customer clarification, or requirement not sufficiently confirmed. Each shows the item, the MSA wording with page and section, why, and what to do next, and opens the requirement or the MSA scope.',
+      'It points at wording to read; it does not decide a contract question. Missing information is a finding, never a pass. Record your decision on each finding (open, in clarification, needs change request, resolved, not an issue) with a note; your name and the date are kept. The menu shows how many findings still need a person.',
+      'UAT issues now have a board (Delivery > UAT): New, Open, Assigned, In Progress, Fixed, Ready for Retesting, Retesting, Closed and Deferred. Drag a card or use its menu. Issues are tasks, so they also show in Tasks, and every move is written to the issue history. Moving an issue to retesting puts its test case into Retesting; a test case that passes its retest closes the issue.',
+      'Test-case imports keep the original Excel or CSV file for the team: download it from the imported cases.',
+      'UAT guides can hold charts: Add UAT chart draws progress by module, test cases by status or UAT issues by status from the saved records, with a caption that says what it counts and when.',
+      'Go-live readiness also lists UAT issues that are not closed.'] },
     { v: '2.1.0', date: '2026-11-01', kind: 'UPDATE', title: 'UAT test cases by module, Excel import, issues in Tasks', notes: [
       'Delivery > UAT now starts with UAT test cases for the modules of this project: scenario, steps, expected and actual result, status, tester, date and evidence. Pick a module to see its cases; a summary shows passed, failed, blocked and not run, all counted from the saved test cases.',
       'Statuses: Not Started, Ready for Testing, In Progress, Passed, Failed, Blocked, Deferred, Retesting and Approved. Change one right in the list; the tester and date fill in when a case is run.',
