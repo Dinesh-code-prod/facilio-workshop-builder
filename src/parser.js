@@ -136,6 +136,7 @@
     const DOMP = opts.DOMParser || root.DOMParser;
     const log = opts.log || function () {};
     const comp = {}; const inventory = []; const gaps = []; const largeCounts = {};
+    let viewText = '';   // the VIEW file is too large to parse as a document; a light pass below keeps the names of the visible views
     let pkgConf = null;
     const names = Object.keys(files);
     for (const n of names) if (/(^|\/)PackageConf\.xml$/i.test(n)) pkgConf = files[n];
@@ -152,6 +153,7 @@
         const count = (text.match(new RegExp('<' + type + '[\\s>]', 'g')) || []).length;
         const byModule = {}; (text.match(/<(?:moduleName|ModuleName|Module_Name)>[^<]+/g) || []).forEach(x => { const m = x.replace(/^<[^>]+>/, '').trim(); byModule[m] = (byModule[m] || 0) + 1; });
         largeCounts[type] = byModule;
+        if (type === 'VIEW') viewText = text;
         inventory.push({ type, file: n, records: count, size, parsed: false, note: LARGE_SKIP[type] });
         continue;
       }
@@ -485,9 +487,14 @@
     delete catalog.TRIGGER;
     const viewCounts = {}; ['VIEW', 'PAGE_LAYOUT', 'DASHBOARD_WIDGET'].forEach(t => { if (largeCounts[t]) viewCounts[t] = largeCounts[t]; });
     (comp.VIEW_GROUP || []).forEach(e => { const m = txt(e, 'moduleName') || txt(e, 'Module_Name'); if (m) { viewCounts.VIEW_GROUP = viewCounts.VIEW_GROUP || {}; viewCounts.VIEW_GROUP[m] = (viewCounts.VIEW_GROUP[m] || 0) + 1; } });
+    // existing views per module (visible ones only): [link name, display name, app, view group, is default]. Names only: columns and filters are not kept (size).
+    const views = {};
+    if (viewText) { const tx = (b, k) => { const m = b.match(new RegExp('<' + k + '>([^<]*)</' + k + '>')); return m ? m[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').trim() : ''; };
+      for (const b of viewText.split('<VIEW ').slice(1)) { if (tx(b, 'Is_Hidden') === 'true') continue; const m = tx(b, 'moduleName'); if (!m) continue; const l = views[m] = views[m] || []; if (l.length < 60) l.push([tx(b, 'name'), tx(b, 'displayName'), tx(b, 'AppLinkName'), tx(b, 'ViewGroupName'), tx(b, 'isDefault') === 'true' ? 1 : 0]); } }
+    const viewGroups = {}; (comp.VIEW_GROUP || []).forEach(e => { const m = txt(e, 'ModuleName') || txt(e, 'moduleName'); if (!m) return; (viewGroups[m] = viewGroups[m] || []).push([txt(e, 'Name'), txt(e, 'DisplayName'), txt(e, 'AppLinkName')]); });
     const moduleSummary = { system: Object.values(modules).filter(m => !m.custom).length, custom: Object.values(modules).filter(m => m.custom).map(m => m.name) };
 
-    return { schema: 'fwb.baseline/1', meta, catalog, triggers, viewCounts, moduleSummary, inventory: inventory.sort((a, b) => a.type.localeCompare(b.type)), gaps, modules, fields: undefined, forms, formRules, statuses,
+    return { schema: 'fwb.baseline/1', meta, catalog, triggers, viewCounts, views, viewGroups, moduleSummary, inventory: inventory.sort((a, b) => a.type.localeCompare(b.type)), gaps, modules, fields: undefined, forms, formRules, statuses,
       apps, webtabs, roles, flows, transitions, approvals, workflowRules, notifications, buttons, sla, slaEntities, relationships,
       vendors, tenants, clients, teams, peopleTypes, userRoleCounts, functions, connectedApps, emailTemplates, dashboards, reports,
       portfolio, assetLinks, actors, portalEvidence, enums: { CATEGORY_LABEL, TRANSITION_TYPE_LABEL } };

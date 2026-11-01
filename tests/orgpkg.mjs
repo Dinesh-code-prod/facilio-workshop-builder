@@ -3,9 +3,9 @@
 // Checks that every generated record has the sample's attributes and the same child elements in the same order for its kind, the sample's
 // naming rules, references (Parent_Id, module, state and flow names), approval gating, dependencies, unsupported items, the structural
 // check, and that the ZIP re-opens with exactly the files PackageConf.xml lists. Usage: node tests/orgpkg.mjs
-import assert from 'node:assert/strict'; import fs from 'node:fs'; import { createRequire } from 'node:module';
+import assert from 'node:assert/strict'; import fs from 'node:fs'; import { createRequire } from 'node:module'; import { fileURLToPath } from 'node:url';
 const require = createRequire(import.meta.url); const { DOMParser } = require('@xmldom/xmldom'); const JSZip = require('jszip'); const O = require('../src/orgpkg.js');
-const FX = new URL('./fixtures/orgpkg-sample/', import.meta.url).pathname;
+const FX = fileURLToPath(new URL('./fixtures/orgpkg-sample/', import.meta.url));
 const arr = nl => Array.from({ length: nl.length }, (_, i) => nl.item(i)); const P = new DOMParser(); const parse = t => P.parseFromString(t, 'text/xml');
 const recs = T => arr(parse(fs.readFileSync(FX + 'components/' + T + '.xml', 'utf8')).documentElement.childNodes).filter(n => n.nodeType === 1);
 const tx = (r, k) => { const e = r.getElementsByTagName(k)[0]; return e ? e.textContent : ''; };
@@ -68,4 +68,40 @@ await t('nothing personal or secret is written (no e-mail addresses, keys, licen
 await t('BRD not signed off: nothing is exported unless drafts are chosen, then the package is named DRAFT_', async () => { const r1 = O.build(Object.assign({}, model, { brdSigned: false }), { now: NOW }); assert.equal(r1.items.filter(i => i.included).length, 0); const r2 = O.build(Object.assign({}, model, { brdSigned: false }), { now: NOW, includeDrafts: true }); assert.ok(r2.items.some(i => i.included)); assert.match(r2.name, /^DRAFT_/); assert.ok(!r2.items.find(x => /Not agreed/.test(x.name)).included, 'blocked stays out'); });
 await t('picking one field of the new module brings the module along (dependency)', async () => { const r = O.build(model, { now: NOW, selected: new Set(['FIELD:custom_permittowork.my_date_custom_permittowork']) }); const inc = r.items.filter(i => i.included).map(i => i.key); assert.deepEqual(inc.sort(), ['FIELD:custom_permittowork.my_date_custom_permittowork', 'MODULE:custom_permittowork']); assert.ok(r.items.find(i => i.key === 'MODULE:custom_permittowork').auto); });
 await t('the report states structural validation only, lists manual steps, warnings and traceability', async () => { const md = O.report(res, model, O.verify(res.files, model, DOMParser)); assert.match(md, /has NOT been imported/); assert.match(md, /Make mandatory/); assert.match(md, /Notify the HSE manager/); assert.match(md, /Unique_Identifier/); assert.match(md, /REQ-1 \(Confirmed\)/); assert.match(md, /Feature_License_List/); });
+
+// ---- views: the Views tab of a module becomes VIEW (+ VIEW_GROUP) records shaped like the user-made views of custom modules in the sample
+const vModel = Object.assign({}, model, { apps: ['maintenance', 'vendor'], viewGroups: { site: [['systemviews', 'System Views', 'maintenance']] }, roleNames: ['Administrator'], baseViews: { site: [['allsites', 'All Sites', 'maintenance']] },
+  views: [
+    { module: 'custom_permittowork', label: 'Awaiting Approval', app: 'maintenance', group: 'allViews', isDefault: false, columns: [{ name: 'name', label: 'Name' }, { name: 'sysCreatedTime', label: 'Created Time' }], sort: { field: 'sysCreatedTime', dir: 'desc' }, stateFilter: { op: 'is', state: 'Requested' }, sharedRoles: ['Administrator', 'Proposed Role'], src: ok },
+    { module: 'custom_permittowork', label: 'All Permits', app: 'maintenance', group: 'allViews', isDefault: true, columns: [{ name: 'name', label: 'Name' }, { name: 'siteId', label: 'Site' }], src: ok },
+    { module: 'custom_permittowork', label: 'Hot Work Only', app: 'maintenance', group: 'allViews', columns: [{ name: 'name', label: 'Name' }], otherFilters: [{ field: 'workType', op: 'is', value: 'Hot work' }], src: ok },
+    { module: 'custom_permittowork', label: 'No columns', app: 'maintenance', columns: [], src: ok },
+    { module: 'custom_permittowork', label: 'Bad column', app: 'maintenance', columns: [{ name: 'nosuchfield', label: 'X' }], src: ok },
+    { module: 'site', label: 'All Sites', app: 'maintenance', columns: [{ name: 'name', label: 'Name' }], src: ok }] });
+const vres = O.build(vModel, { now: NOW, closedStates });
+const vgen = T => vres.files['components/' + T + '.xml'] ? arr(parse(vres.files['components/' + T + '.xml']).documentElement.childNodes).filter(x => x.nodeType === 1) : [];
+await t('VIEW: same attributes and child elements, in order, as a user-made view of a custom module in the sample (with and without a state filter)', async () => {
+  const sampleF = recs('VIEW').find(r => /awaitingreview/.test(tx(r, 'name'))), sampleP = recs('VIEW').find(r => tx(r, 'name') === 'all');
+  const g = vgen('VIEW'); assert.equal(g.length, 2); const f = g.find(x => tx(x, 'displayName') === 'Awaiting Approval'), p = g.find(x => tx(x, 'displayName') === 'All Permits');
+  assert.deepEqual(attrs(f), attrs(sampleF)); assert.deepEqual(kids(f).filter(k => k !== 'View_Sharing'), kids(sampleF)); assert.deepEqual(kids(p), kids(sampleP).filter(k => k !== 'Criteria'));
+  const c = f.getElementsByTagName('Condition')[0]; assert.equal(tx(c, 'FieldName'), 'moduleState'); assert.equal(tx(c, 'Column_Name'), 'CustomModuleData.MODULE_STATE'); assert.equal(tx(c, 'Operator'), '36');
+  const sv = recs('VIEW').find(r => /awaitingreview/.test(tx(r, 'name'))).getElementsByTagName('Condition')[0]; assert.deepEqual(kids(c), kids(sv)); assert.equal(tx(f, 'Sequence_Number') !== '-1', true); assert.equal(tx(p, 'Sequence_Number'), '-1'); });
+await t('VIEW_GROUP: created once for the new module and app, same attributes and children as the sample; none for a group the organisation already has', async () => {
+  const g = vgen('VIEW_GROUP'); assert.equal(g.length, 1); const s0 = recs('VIEW_GROUP')[0]; assert.deepEqual(attrs(g[0]), attrs(s0)); assert.deepEqual(kids(g[0]), kids(s0)); assert.equal(tx(g[0], 'Name'), 'allViews'); assert.equal(tx(g[0], 'ModuleName'), 'custom_permittowork'); });
+await t('views: sharing by role keeps roles of the organisation and lists the others as manual steps', async () => {
+  const f = vgen('VIEW').find(x => tx(x, 'displayName') === 'Awaiting Approval'); const roles = arr(f.getElementsByTagName('Role_Name')).map(x => x.textContent); assert.deepEqual(roles, ['Administrator']); assert.ok(vres.manual.some(m => /Proposed Role/.test(m.detail))); });
+await t('views: a view with other filters, no columns, an unknown column or a name the organisation already has is not exported, and says why', async () => {
+  const by = l => vres.items.find(x => x.type === 'VIEW' && x.name.startsWith(l)); assert.ok(by('Hot Work Only').unsupported && !by('Hot Work Only').included); assert.ok(by('No columns').errors.length && !by('No columns').included);
+  assert.ok(by('Bad column').errors.join(' ').includes('nosuchfield')); assert.ok(by('All Sites').errors.join(' ').includes('already has a view')); assert.ok(vres.manual.some(m => /Hot Work Only/.test(m.area))); });
+await t('views: the structural check passes, and catches a view that points at a view group that does not exist', async () => {
+  const c = O.verify(vres.files, vModel, DOMParser); assert.ok(c.ok, c.errors.join('; ')); const f = Object.assign({}, vres.files); f['components/VIEW.xml'] = f['components/VIEW.xml'].replace(/<ViewGroupName>allViews</g, '<ViewGroupName>nogroup<'); assert.ok(!O.verify(f, vModel, DOMParser).ok); });
+await t('views: PackageConf lists VIEW_GROUP and VIEW in the order of the sample package', async () => { const sample = ['MODULE', 'TICKET_STATUS', 'FIELD', 'VIEW_GROUP', 'VIEW', 'STATE_FLOW', 'STATE_TRANSITION', 'NOTIFICATION'];   /* the order of the Component entries in the sample's PackageConf.xml */ const ours = vres.types; const idx = ours.map(T => sample.indexOf(T)); assert.ok(idx.every((v, i) => v >= 0 && (i === 0 || v > idx[i - 1])), ours.join(',')); });
+
+await t('the agent brief groups everything by module, says what is in the package and what is not and why, and carries the manual steps', async () => {
+  const b = O.brief(vres, vModel, { now: NOW, closedStates, projectName: 'Acme', customer: 'Acme Ltd' }); assert.equal(b.schema, 'facilio.delivery-studio.agent-brief/1'); assert.ok(b.howToUse.length >= 5); assert.equal(b.project.name, 'Acme'); assert.equal(b.package.recordsInPackage, vres.items.filter(i => i.included).length);
+  const m = b.modules.find(x => x.module === 'custom_permittowork'); assert.ok(m && m.isNew && m.fields.length >= 10 && m.flows.length === 1 && m.views.length === 5);
+  const v = m.views.find(x => x.label === 'Awaiting Approval'); assert.equal(v.status, 'in-package'); assert.deepEqual(v.filters, [{ field: 'state', op: 'is', value: 'Requested' }]); assert.deepEqual(v.columns, ['name', 'sysCreatedTime']);
+  const hot = m.views.find(x => x.label === 'Hot Work Only'); assert.equal(hot.status, 'manual'); assert.ok(/not in the package/.test(hot.reason)); assert.deepEqual(hot.filters, [{ field: 'workType', op: 'is', value: 'Hot work' }]);
+  assert.ok(m.flows[0].transitions.some(x => x.name === 'Approve' && x.status === 'in-package' && x.from === 'Requested' && x.to === 'Approved')); assert.ok(b.manualSteps.some(x => /Hot Work Only/.test(x.area))); assert.ok(b.notInPackage.some(x => x.type === 'VIEW' && /No columns/.test(x.name)));
+  assert.ok(!/@|api[_-]?key/i.test(JSON.stringify(b))); assert.doesNotThrow(() => JSON.parse(JSON.stringify(b))); });
 console.log(`${n} passed, ${fails} failed`); if (fails) process.exit(1);

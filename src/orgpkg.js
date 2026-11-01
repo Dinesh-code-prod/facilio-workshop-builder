@@ -12,7 +12,7 @@
    - child elements and their order per field type are copied from user-made fields of that type in the sample (see FIELD_T).
    Not known from the sample, so not invented: whether import accepts new Unique_Identifier values (new records get new numbers, flagged), whether
    Status="MODIFIED"/removals exist (only ADDED is in the sample: changes and removals are listed as manual steps), Feature_License_List (org specific:
-   left out, flagged), transition conditions, actions, approvals and role assignments (no structured source in Delivery Studio: manual steps). */
+   left out, flagged), view filters other than "state is / is not" on a custom module, transition conditions, actions, approvals and role assignments (no structured source in Delivery Studio: manual steps). */
 (function (root) {
   'use strict';
   // ---------- a small, safe XML writer (escaping is done here, never by string concatenation of values) ----------
@@ -33,8 +33,8 @@
   const fieldName = (label, mod) => String(label || '').toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + mod;
   const linkName = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
   const statusName = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-  const COMPONENT_TYPE = { MODULE: 1, FIELD: 2, TICKET_STATUS: 24, STATE_FLOW: 40, STATE_TRANSITION: 41, NOTIFICATION: 42 };
-  const ORDER = ['MODULE', 'TICKET_STATUS', 'FIELD', 'STATE_FLOW', 'STATE_TRANSITION', 'NOTIFICATION'];   // the order these types have in the sample's PackageConf.xml
+  const COMPONENT_TYPE = { MODULE: 1, FIELD: 2, TICKET_STATUS: 24, STATE_FLOW: 40, STATE_TRANSITION: 41, NOTIFICATION: 42, VIEW: 12, VIEW_GROUP: 97 };
+  const ORDER = ['MODULE', 'TICKET_STATUS', 'FIELD', 'VIEW_GROUP', 'VIEW', 'STATE_FLOW', 'STATE_TRANSITION', 'NOTIFICATION'];   // the order these types have in the sample's PackageConf.xml
 
   // field types: DataType / Display_Type and the type-specific children, as in user-made fields of the sample
   const DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
@@ -185,6 +185,53 @@
       }
       add({ key, type: 'NOTIFICATION', name: n.name + ' (' + mod + ')', module: mod, src: n.src, errors: errs, unsupported, deps, rec, uidNew: true });
     });
+    // 5. views (from the Views tab of a module). VIEW_GROUP is added only when the module has no view group with that name in that app yet.
+    //    Shape from the sample: columns (View_Fields_List), sort, an optional state filter (Operator 36 = is, 37 = is not, on the module's state column of a custom module),
+    //    sharing by role. Any other filter is kept in the agent brief and listed as a manual step, because its database column is not known.
+    const SYS_COLS = ['name', 'siteId', 'sysCreatedTime', 'sysModifiedTime'];
+    const APPS = model.apps || null; const groupsDone = new Set();
+    const customMod = mod => newMods.has(mod) || !!(baseMod(mod) && baseMod(mod).custom);
+    const fieldKnown = (mod, fname) => { if (SYS_COLS.includes(fname) && customMod(mod)) return true; const bm = baseMod(mod); if (bm && (bm.fields || []).includes(fname)) return true; return items.some(i => i.type === 'FIELD' && i.module === mod && i.rec && i.key === 'FIELD:' + mod + '.' + fname); };
+    (model.views || []).forEach((v, vi) => {
+      const mod = v.module; const link = linkName(v.name || v.label) || ('view' + (vi + 1)); const key = 'VIEW:' + mod + '.' + link; const errs = []; let unsupported = ''; const deps = newMods.has(mod) ? ['MODULE:' + mod] : [];
+      const app = v.app || 'maintenance'; const bm = baseMod(mod); const isCustom = newMods.has(mod) || !!(bm && bm.custom);
+      if (!String(v.label || '').trim()) errs.push('The view has no name.');
+      if (!modExists(mod)) errs.push('Module ' + mod + ' is not in the organisation package and is not a new module of this project.');
+      if (APPS && !APPS.includes(app)) errs.push('The app "' + app + '" is not an app of the organisation.');
+      if (items.some(i => i.key === key)) errs.push('Two views of this module would get the same name ' + link + '.');
+      if (((model.baseViews || {})[mod] || []).some(b => b[0] === link && (!b[2] || b[2] === app))) errs.push('The module already has a view named ' + link + ' in this app.');
+      const cols = v.columns || []; if (!cols.length) errs.push('A view needs at least one column.');
+      cols.forEach(c => { if (!fieldKnown(mod, c.name)) errs.push('Column "' + (c.label || c.name) + '" (' + c.name + ') is not a field of ' + mod + '.'); else { const dk = 'FIELD:' + mod + '.' + c.name; if (items.some(i => i.key === dk)) deps.push(dk); } });
+      if (v.sort && v.sort.field && !fieldKnown(mod, v.sort.field)) errs.push('The sort field ' + v.sort.field + ' is not a field of ' + mod + '.');
+      let crit = null; const sf = v.stateFilter;
+      if (sf && sf.state) { const st = statusOf(mod, sf.state);
+        if (!st) errs.push('The state "' + sf.state + '" is not a state of ' + mod + ' (in the organisation or in this project\'s new states).');
+        else if (!isCustom) unsupported = 'A state filter is exported for custom modules only: it names the module\'s own state column (CustomModuleData.MODULE_STATE in the sample), which is not known for other modules.';
+        else { if (st.dep) deps.push(st.dep); crit = { st, op: sf.op === 'isnot' ? 37 : 36 }; } }
+      const others = (v.otherFilters || []).filter(f => f && f.field);
+      if (others.length && !unsupported) unsupported = 'This view has filters other than "state is / is not" (' + others.map(f => f.field + ' ' + f.op + ' ' + (f.value || '')).join('; ') + '). Their database columns are not known, so the view is not in the package: create it from the agent brief.';
+      others.forEach(f => manual.push({ area: 'View ' + v.label, detail: 'Filter ' + f.field + ' ' + f.op + (f.value ? ' ' + f.value : '') + '.' }));
+      const roles = (v.sharedRoles || []).filter(Boolean); const known = new Set(model.roleNames || []); const okRoles = roles.filter(r => !model.roleNames || known.has(r)); const badRoles = roles.filter(r => !okRoles.includes(r));
+      if (badRoles.length) manual.push({ area: 'View ' + v.label, detail: 'Share with role(s) ' + badRoles.join(', ') + ': not roles of the organisation package (proposed roles are not exported). Share the view by hand after creating the role.' });
+      let rec = null; const grp = v.group || 'allViews'; const grpLabel = v.groupLabel || (v.group ? v.group : 'All Views');
+      if (!errs.length && !unsupported) {
+        const gKnown = ((model.viewGroups || {})[mod] || []).some(g => g[0] === grp && (!g[2] || g[2] === app));
+        const gKey = 'VIEW_GROUP:' + mod + '.' + app + '.' + grp;
+        if (!gKnown && !groupsDone.has(gKey)) { groupsDone.add(gKey); deps.push(gKey);
+          add({ key: gKey, type: 'VIEW_GROUP', name: grpLabel + ' (' + mod + ', ' + app + ')', module: mod, src: v.src, errors: [], deps: newMods.has(mod) ? ['MODULE:' + mod] : [], uidNew: true,
+            rec: el('VIEW_GROUP', { Created_Version: '1.0', Modified_Version: '1.0', Parent_Id: parentOf(mod), Status: 'ADDED', Type: COMPONENT_TYPE.VIEW_GROUP, Unique_Identifier: newId() }, [kv('Name', grp), kv('DisplayName', grpLabel), kv('ModuleName', mod), kv('AppLinkName', app), kv('SequenceNumber', -1), kv('ViewGroupType', 1)]) }); }
+        else if (!gKnown) deps.push(gKey);
+        const colEl = c => el('View_Field', null, [kv('displayName', c.label || c.name), kv('View_Field_Name', c.name), kv('Customization', ''), kv('moduleName', mod), kv('Facilio_Field_Name', c.name)]);
+        const kids = [kv('name', link), kv('moduleName', mod), kv('displayName', v.label), kv('isDefault', v.isDefault ? 'true' : 'false'), kv('View_Type', 1), kv('Is_Locked', 'false'), kv('Package_Locked', 'false'), kv('Status', 'true'), kv('Sequence_Number', v.isDefault ? -1 : 1000 + vi),
+          kv('Is_List_View', 'true'), kv('Is_Calendar_View', 'false'), kv('IsTimeLineView', 'false'), kv('Exclude_Module_Criteria', 'false'), kv('Is_Hidden', 'false'), kv('AppLinkName', app), kv('ViewGroupName', grp), el('View_Fields_List', null, cols.map(colEl))];
+        if (v.sort && v.sort.field) kids.push(el('View_Sort_Fields_List', null, [el('View_Sort_Field', null, [kv('Sort_Field_Name', v.sort.field), kv('Is_Ascending', v.sort.dir === 'asc' ? 'true' : 'false'), kv('moduleName', mod), kv('Facilio_Field_Name', v.sort.field)])]));
+        if (crit) kids.push(el('Criteria', null, [kv('Pattern', '( 1 )'), el('Conditions_List', null, [el('Condition', null, [kv('Sequence', 1), kv('Value', crit.st.uid), kv('FieldName', 'moduleState'), kv('Column_Name', 'CustomModuleData.MODULE_STATE'), kv('Json_Value', ''), kv('Operator', crit.op), kv('Is_Expression_Value', 'false'),
+          el('PickList_Element', null, [kv('Parent_Module_Name', mod), kv('moduleName', 'ticketstatus'), kv('PickList_Value', crit.st.name)])])]), kv('Criteria_ModuleName', mod)]));
+        if (okRoles.length) kids.push(el('View_Sharing', null, [el('Sharing_Context', null, okRoles.map(r => el('Single_Sharing_Context', null, [kv('Sharing_Type', 'ROLE'), kv('Role_Name', r)])))]));
+        rec = el('VIEW', { Created_Version: '1.0', Modified_Version: '1.0', Parent_Id: parentOf(mod), Status: 'ADDED', Type: COMPONENT_TYPE.VIEW, Unique_Identifier: newId() }, kids);
+      }
+      add({ key, type: 'VIEW', name: v.label + ' (' + mod + ')', module: mod, src: v.src, errors: errs, unsupported, deps, rec, uidNew: true });
+    });
     (model.changes || []).forEach(c => manual.push(c));
     // selection: what is eligible, what was picked, and the dependencies that come with it
     const byKey = new Map(items.map(i => [i.key, i]));
@@ -230,6 +277,11 @@
     (recs.TICKET_STATUS || []).forEach(r => parentOk(r, t(r, 'parentModuleName')));
     (recs.STATE_FLOW || []).forEach(r => { parentOk(r, t(r, 'moduleName')); if (!statuses.has(t(r, 'moduleName') + '|' + t(r, 'defaultStateName'))) bad('State flow ' + t(r, 'name') + ': default state ' + t(r, 'defaultStateName') + ' is not a status of the module'); });
     (recs.STATE_TRANSITION || []).forEach(r => { const m = t(r, 'moduleName'); parentOk(r, m); ['FromStateName', 'ToStateName'].forEach(k => { if (!statuses.has(m + '|' + t(r, k))) bad('Transition ' + t(r, 'name') + ': ' + k + ' ' + t(r, k) + ' is not a status of ' + m); }); if (!flows.has(m + '|' + t(r, 'StateflowLinkName'))) bad('Transition ' + t(r, 'name') + ': state flow ' + t(r, 'StateflowLinkName') + ' is not in the package or the organisation'); });
+    const groups = new Set(); Object.entries((model && model.viewGroups) || {}).forEach(([m, l]) => l.forEach(g => groups.add(m + '|' + g[0]))); (recs.VIEW_GROUP || []).forEach(r => { parentOk(r, t(r, 'ModuleName')); groups.add(t(r, 'ModuleName') + '|' + t(r, 'Name')); });
+    const pkgFields = new Set((recs.FIELD || []).map(r => t(r, 'moduleName') + '|' + t(r, 'name')));
+    (recs.VIEW || []).forEach(r => { const m = t(r, 'moduleName'); parentOk(r, m); if (t(r, 'ViewGroupName') && !groups.has(m + '|' + t(r, 'ViewGroupName'))) bad('View ' + t(r, 'name') + ': view group ' + t(r, 'ViewGroupName') + ' is neither in the package nor in the organisation');
+      if (!r.getElementsByTagName('View_Field').length) bad('View ' + t(r, 'name') + ' has no columns');
+      arr(r.getElementsByTagName('View_Field')).forEach(f => { const n = t(f, 'View_Field_Name'); const bmf = (model && model.modules && model.modules[m] && model.modules[m].fields) || []; if (!(['name', 'siteId', 'sysCreatedTime', 'sysModifiedTime'].includes(n) || bmf.includes(n) || pkgFields.has(m + '|' + n))) bad('View ' + t(r, 'name') + ': column ' + n + ' is not a field of ' + m); }); });
     (recs.NOTIFICATION || []).forEach(r => { parentOk(r, t(r, 'moduleName')); if (!r.getElementsByTagName('Action').length) bad('Notification ' + t(r, 'name') + ' has no action'); if (t(r, 'Activity_Type') === 'FIELD_CHANGE' && !t(r, 'Value')) bad('Notification ' + t(r, 'name') + ' names no state'); });
     return out;
   }
@@ -254,6 +306,38 @@
     L.push('', '## For the Org Builder skill', '', 'The ZIP follows the layout of the sample standalone package (PackageConf.xml, components/<TYPE>.xml, metafiles/). The Org Builder skill\'s own input requirements were not available to Delivery Studio; confirm them before importing. Records are new (Status="ADDED"); changes to existing configuration and removals are listed above as manual steps.');
     return L.join('\n') + '\n';
   }
-  const api = { build, verify, report, fieldName, linkName, statusName, FIELD_T, ORDER };
+  /* The agent brief: everything the Org Builder skill / agent needs, in one JSON file, grouped by module, with what is in the package, what is not and why,
+     and what must be done by hand after the import. A separate download (nothing is added inside the package). */
+  function brief(res, model, opts) {
+    opts = opts || {}; const so = model.signoff || {}; const byMod = {}; const lab = n => ((model.modules || {})[n] || {}).label || ((model.newModules || []).find(m => m.name === n) || {}).label || n;
+    const M = n => byMod[n] || (byMod[n] = { module: n, label: lab(n), isNew: (model.newModules || []).some(m => m.name === n), description: '', fields: [], flows: [], notifications: [], views: [] });
+    const reqIds = s => ((s && s.reqs) || []).map(r => r.id + ' (' + r.status + ')');
+    const WHY = { draft: 'The BRD is not signed off yet, so this is a draft.', clarify: 'The requirement behind it is not confirmed yet.', blocked: 'The requirement behind it was rejected or deferred.', error: 'It has errors.', unsupported: 'Not exportable yet.' };
+    const st = (type, name) => { const i = res.items.find(x => x.type === type && x.name === name); if (!i) return { status: 'not-exported' }; const why = [].concat(i.errors || [], i.unsupported ? [i.unsupported] : []);
+      return i.included ? { status: 'in-package', component: i.key } : { status: i.readiness === 'unsupported' ? 'manual' : i.readiness === 'ready' ? 'not-selected' : i.readiness, component: i.key, reason: why.join(' ') || WHY[i.readiness] || undefined }; };
+    (model.newModules || []).forEach(m => { const o = M(m.name); o.description = m.description || ''; Object.assign(o, { moduleComponent: st('MODULE', m.label + ' (' + m.name + ')'), requirements: reqIds(m.src), stateFlowEnabled: !!m.stateflow }); });
+    (model.newFields || []).forEach(f => { const nm = (f.mainField && (res.items.some(i => i.key === 'FIELD:' + f.module + '.name')) && /^name$/i.test(f.name || '')) ? 'name' : fieldName(f.label, f.module);
+      M(f.module).fields.push(Object.assign({ name: nm, label: f.label, type: f.type, required: !!f.required, mainField: !!f.mainField }, f.options && f.options.length ? { options: f.options } : {}, f.lookup ? { lookupModule: f.lookup } : {}, { requirements: reqIds(f.src) }, st('FIELD', f.label + ' (' + nm + ')'))); });
+    (model.flows || []).forEach(fl => { M(fl.module).flows.push({ name: fl.name, isNew: !!fl.isNew, existingLink: fl.isNew ? undefined : fl.link, description: fl.description || '', entryCondition: fl.criteria || undefined,
+      states: fl.states.map(s => ({ label: s.label, name: s.name || undefined, initial: s.id === fl.initial, closed: !!(opts.closedStates && opts.closedStates.has(fl.key + '|' + s.id)) })),
+      transitions: fl.transitions.map(t => { const from = (fl.states.find(s => s.id === t.from) || {}).label, to = (fl.states.find(s => s.id === t.to) || {}).label; return Object.assign({ name: t.name, from, to, commentRequired: !!t.commentRequired, portals: t.portals || [], condition: t.condition || undefined, instructions: t.extras && t.extras.length ? t.extras : undefined, requirements: reqIds(t.src) }, st('STATE_TRANSITION', t.name + ' (' + fl.name + ')')); }),
+      requirements: reqIds(fl.src), flowComponent: fl.isNew ? st('STATE_FLOW', fl.name + ' (' + fl.module + ')') : undefined }); });
+    (model.notifications || []).forEach(n => { M(n.module).notifications.push(Object.assign({ name: n.name, when: n.trigger === 'state' ? 'a record moves to "' + n.state + '"' : 'a record is created', channels: Object.keys(n.channels || {}).filter(k => n.channels[k]), recipients: n.recipients || [], sendToField: n.toField || undefined, subject: n.subject || undefined, message: n.message || undefined, on: n.status !== 'off', requirements: reqIds(n.src) }, st('NOTIFICATION', n.name + ' (' + n.module + ')'))); });
+    (model.views || []).forEach(v => { M(v.module).views.push(Object.assign({ name: linkName(v.name || v.label), label: v.label, app: v.app || 'maintenance', group: v.group || 'allViews', isDefault: !!v.isDefault, columns: (v.columns || []).map(c => c.name), sort: v.sort && v.sort.field ? v.sort : undefined,
+      filters: [].concat(v.stateFilter && v.stateFilter.state ? [{ field: 'state', op: v.stateFilter.op === 'isnot' ? 'is not' : 'is', value: v.stateFilter.state }] : [], (v.otherFilters || []).filter(f => f.field).map(f => ({ field: f.field, op: f.op, value: f.value || '' }))),
+      sharedWithRoles: v.sharedRoles || [], requirements: reqIds(v.src) }, st('VIEW', v.label + ' (' + v.module + ')'))); });
+    const inc = res.items.filter(i => i.included);
+    return { schema: 'facilio.delivery-studio.agent-brief/1', generatedAt: new Date(opts.now || Date.now()).toISOString(), generatedBy: 'Facilio Delivery Studio',
+      purpose: 'The approved configuration of one customer project, for the Org Builder skill or agent to implement in a Facilio organisation. Delivery Studio never changes a live organisation.',
+      howToUse: ['1. Check "approval" and "organisation". If the BRD is not signed (draft: true) do not deploy; ask the delivery team.', '2. Import the ZIP named in "package.file" (components are in "package.importOrder"). Only records with status "in-package" are inside it.',
+        '3. For every item with status "manual", "blocked", "draft" or "not-selected", read "reason": it is NOT in the ZIP. Create it yourself from the details given here, or ask.', '4. Do every step in "manualSteps" and "changesToExisting" after the import. They are changes the package cannot carry.', '5. Names in "modules" are the exact names used in the package (modules, fields, link names): use them as they are.', '6. Report back what was imported and what was done by hand.'],
+      project: { name: opts.projectName || '', customer: opts.customer || '' }, organisation: { orgId: model.orgId || '', sourcePackage: model.packageName || '', referenceConfigurationOnly: !!model.reference },
+      approval: { brdSigned: !!model.brdSigned, signedBy: so.signer || '', signedAt: so.signedAt || '', draft: !!res.draft },
+      package: { file: res.name + '.zip', components: res.counts, importOrder: res.types, recordsInPackage: inc.length },
+      modules: Object.values(byMod).sort((a, b) => a.module.localeCompare(b.module)),
+      notInPackage: res.items.filter(i => !i.included).map(i => ({ type: i.type, name: i.name, module: i.module, status: i.readiness, reason: [].concat(i.errors || [], i.unsupported ? [i.unsupported] : []).join(' ') || (i.readiness === 'ready' ? 'not selected' : WHY[i.readiness] || i.readiness) })),
+      manualSteps: res.manual.map(m => ({ area: m.area || m.item || '', detail: m.detail })), changesToExisting: (model.changes || []).map(c => ({ area: c.area, item: c.item, detail: c.detail })), warnings: res.warnings.concat(res.missing).map(w => ({ item: w.item, detail: w.detail })) };
+  }
+  const api = { build, verify, report, brief, fieldName, linkName, statusName, FIELD_T, ORDER };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBOrgPkg = api;
 })(typeof window !== 'undefined' ? window : globalThis);

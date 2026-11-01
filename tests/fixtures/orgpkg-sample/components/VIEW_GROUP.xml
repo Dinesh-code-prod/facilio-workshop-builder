@@ -1,0 +1,10 @@
+<Components>
+   <VIEW_GROUP Created_Version="1.0" Modified_Version="1.0" Parent_Id="222706" Status="ADDED" Type="97" Unique_Identifier="90587">
+      <Name>allViews</Name>
+      <DisplayName>All Views</DisplayName>
+      <ModuleName>custom_incidentmanagement</ModuleName>
+      <AppLinkName>maintenance</AppLinkName>
+      <SequenceNumber>-1</SequenceNumber>
+      <ViewGroupType>1</ViewGroupType>
+   </VIEW_GROUP>
+</Components>
