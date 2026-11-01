@@ -140,3 +140,9 @@ implemented and tested against mocked responses only.
 - **Not retried automatically:** a 502/504 on a write (the work may have started), errors that retrying cannot fix (no key, refused request).
 - **Check:** `npm run test:load` (100 projects, 100 people at once, the AI limit behaviour, and that nobody can read another project under load) and `npm run test:scale` (database calls and time for the busiest pages). `LAT=8` adds a delay to every database call to stand in for the real database.
 
+
+## Claude hand-off: same information, way back in (1 Nov 2026 review)
+- **Same information.** The built-in draft (`/ai/run`, `/ai/job`) and the Claude prompt (`/ai/pack`, or `claudePack: true` on the other AI routes) are built from the same functions: `aiContext(projectId, task, small)` for the sources and `aiUserMsg` for the request. DeepSeek gets the smaller context (`small = true`), Claude the larger one, and the sources have the same `[S#]` references, so a draft written in either is checked the same way. Every AI task except the video walkthrough has a Claude pack (`PACK_TASKS`).
+- **The way back.** Each hand-off has an import: a pasted reply goes to `/ai/import` (saved as a draft with "Claude (manual)" as the provider and the sources listed) or, for the routes with `reply`, is validated by the same code that checks the built-in model's answer. The project review and the Org Package review return findings in one fenced JSON block that becomes tasks.
+- **Org Package Export** now has "Review with Claude": the agent brief and a review request go to the person's own Claude, and the reply is pasted back into the same drawer to be saved as a draft review or turned into tasks (the same two actions as the project review). It is advice only; nothing is applied.
+- **Checked by reading the code, not by a runtime test:** that both paths call `aiContext` and `aiUserMsg`. A test that compares the two prompts for one project is a worthwhile next step.
