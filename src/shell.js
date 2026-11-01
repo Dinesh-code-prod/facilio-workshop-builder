@@ -144,7 +144,7 @@
   // customer menu: [view, label, portal tab that must be on]
   const CUSTOMER_NAV = [{ g: 'Start here', icon: 'home', items: [['projdash', 'Dashboard', 'projdash'], ['cust_home', 'Welcome', 'cust_home'], ['kickoff', 'Kick-off', 'kickoff'], ['contract', 'Contract', 'contract'], ['scope', 'Scope', 'scope'], ['timeline', 'Plan Timeline', 'plan']] },
     { g: 'Prepare for the sessions', icon: 'flag', items: [['schedule', 'Workshop Schedule', 'schedule'], ['prepare', 'Learn & Prepare', 'prepare'], ['seefacilio', 'Product Tour', 'seefacilio'], ['learnlib', 'Module guides', 'learnlib'], ['agentguide', 'Facilio AI Agents', 'agentguide'], ['integguide', 'Connecting Your Systems', 'integguide'], ['guide', 'Customer User Guide', 'guide'], ['dashboards', 'Dashboard Gallery', 'dashboards'], ['onboarding', 'Data Onboarding', 'onboarding']] },
-    { g: 'Decisions and delivery', icon: 'check', items: [['governance', 'Sign-offs & Decisions', 'governance'], ['changes', 'Change Requests', 'changes'], ['delivery', 'Build, UAT & Go-Live', 'delivery']] },
+    { g: 'Decisions and delivery', icon: 'check', items: [['governance', 'Sign-offs & Decisions', 'governance'], ['changes', 'Change Requests', 'changes'], ['delivery', 'Build, UAT & Go-Live', 'delivery'], ['uatrun', 'UAT Testing', 'delivery']] },
     { g: 'And more', icon: 'spark', items: [['whatsnew', "What's new", 'whatsnew'], ['explore', 'Discover more', 'explore']] }];
   // only menu entries whose view exists, and for customers only the tabs the implementation team has switched on
   // Office open mode (temporary): set by the server (OFFICE_OPEN_MODE=1). Hides sign-in, accounts, project access and the Roles view; nothing is removed.

@@ -6,6 +6,12 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '2.5.0', date: '2026-11-01', kind: 'UPDATE', title: 'Project calendar, customer UAT testing', notes: [
+      'Project Plan has a new Calendar tab with Day, Week, Month and Year views and a side panel with a month picker and what is coming up. It is drawn from the project plan, workshop sessions, UAT and go-live dates, sign-offs and actions that fall due, colour-coded by kind, with filters and search.',
+      'The team can add reminders, events and deadlines on any day. They show on the calendar, and a reminder appears in the notification bell on its day. Reminders are for the team only; customers see the plan, workshop schedule and their own actions.',
+      'Customer UAT testing: the team shares chosen test cases (UAT > Share test cases). The customer sees the scenario, steps and expected result on a UAT Testing page, and records Passed, Failed or Blocked with what happened and an optional link to a screenshot.',
+      'Results are not mixed into the team test cases automatically: choose Bring results in to write them to the test cases, then log issues for failures as usual.',
+      'Behind the scenes, the platform owner is no longer named in the code. It comes from the platform_owner secret, and, until that is set, from the person facilio.work reports as the owner of the app. A bug that would have split an owner email at the letter s is fixed.'] },
     { v: '2.4.0', date: '2026-11-01', kind: 'UPDATE', title: 'Discover more library, dashboard layouts, UAT attachments', notes: [
       'Admin > Discover more: one library of product highlights for every project. Write an entry, or paste or upload a product note and let the AI write a draft from that text only. Nothing is shown until you read it and publish it.',
       'Each entry can target every project or chosen ones, and can have start and end dates. Customers see it on Explore Facilio only while it is published and inside its dates; the dates are checked on every visit, so nothing needs a scheduler.',

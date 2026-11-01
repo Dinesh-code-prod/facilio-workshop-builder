@@ -20,6 +20,7 @@
       const nod = open.filter(a => !a.due).length; if (nod) mk('nodue-' + nod, `${nod} open action${nod > 1 ? 's have' : ' has'} no due date, so nobody can be late on ${nod > 1 ? 'them' : 'it'}`, 'governance', { govTab: 'actions' });
       const noo = open.filter(a => !a.owner).length; if (noo) mk('noown-' + noo, `${noo} open action${noo > 1 ? 's have' : ' has'} no owner`, 'governance', { govTab: 'actions' });
     }
+    if (V.calDue) V.calDue().forEach(x => mk('cal-' + x.id + '-' + x.date, `Reminder: ${x.title} (${V.fmtDate(x.date)})`, 'plan', { planTab: 'cal' }, x.date < today ? 'late' : ''));
     const ss = ((F.doc('planner') || {}).sessions) || [];
     const past = ss.filter(s => s.date && s.date < today && !['cancelled', 'completed'].includes(s.status));
     if (past.length) mk('sess-' + past.length, `${past.length} workshop session${past.length > 1 ? 's' : ''} already happened but ${past.length > 1 ? 'are' : 'is'} not marked completed ("${past[0].title || 'Session ' + (past[0].no || '')}")`, 'planner', null, 'late');

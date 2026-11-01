@@ -35,7 +35,7 @@ const fakeGraph = async (cred, url) => { if (/\/attachments\/[^/]+\/\$value/.tes
   return { ok: true, status: 200, json: async () => ({ value: fakeMail() }) }; };
 const ctxFor = (email, origin) => ({
   viewer: { email, role: 'viewer' }, app: { name: 'facilio-delivery-studio' },
-  secrets: { async get(k) { if (FAKE_CLAUDE && k === 'anthropic_api_key') return 'sk-ant-local-test-double-0000000000'; if (FAKE_GRAPH && k === 'support_mailbox') return 'delivery@facilio.com'; throw new Error('no secret'); } },
+  secrets: { async get(k) { if (k === 'platform_owner') return 'dinesh.r@facilio.com'; if (FAKE_CLAUDE && k === 'anthropic_api_key') return 'sk-ant-local-test-double-0000000000'; if (FAKE_GRAPH && k === 'support_mailbox') return 'delivery@facilio.com'; throw new Error('no secret'); } },
   ...(FAKE_GRAPH ? { fetch: fakeGraph, teams: { async send(m) { TEAMS_LOG.push(Object.assign({ at: new Date().toISOString() }, m)); return { delivered: 1, failed: 0 }; } } } : {}),
   // local test double for the platform LLM; for the kick-off deck it returns names it can find in the slide text (lines "Name | Role | email"), so the review screen can be exercised
   llm: async ({ messages }) => { const sys = String(messages[0] && messages[0].content || ''); if (/kick-off presentation/.test(sys)) { const txt = String(messages[1].content || ''); const rows = txt.split('\n').filter(l => /\|/.test(l) && /@/.test(l)).map(l => l.split('|').map(x => x.trim()));

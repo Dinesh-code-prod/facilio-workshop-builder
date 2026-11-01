@@ -7,7 +7,6 @@ let FWB = null; // this copy of the server's own dispatcher (not looked up throu
 let CTX = null, HDR = {};   // set at the start of every request (a Lambda handles one request at a time)
 {
   'use strict';
-  const SUPER_ADMINS = ['dinesh.r@facilio.com'];
   const ALLOWED_DOMAIN = 'facilio.com';
   const CHUNK = 16 * 1024 * 1024;            // bytes per uploaded file part (Facilio Run allows 25 MB per upload)
   const MAX_VALUE = 100000;                  // bytes of JSON per stored record (Facilio Run's limit is 128 KB); bigger records are gzipped and split
@@ -29,8 +28,8 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     signoff_evidence: { ext: ['pdf', 'png', 'jpg', 'jpeg', 'msg', 'eml', 'docx'], max: 20e6 }, brd_signed: { ext: ['docx', 'pdf', 'json'], max: MAX_FILE }
   };
   // record kinds the team can store (customer-only rules come with the customer page)
-  const KINDS = ['action', 'decision', 'raid', 'signoff', 'cr', 'onb', 'onbsub', 'onbfile', 'onbws', 'owner', 'agreement', 'minutes', 'checklist', 'build', 'uat', 'digest', 'ctrcore', 'ctrfees', 'ctrlegal', 'ctrrates', 'scope', 'modbrief', 'fieldreq', 'note', 'ctrwatch', 'usecase', 'discrepancy', 'brdrev', 'ai', 'hc', 'hcrep', 'ho', 'close', 'rep', 'kpi', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'lesson', 'tkt', 'res', 'ugv', 'ugu', 'pnote', 'wb', 'news', 'interest', 'cflow', 'task', 'utc', 'mfind', 'lcstage'];   // mfind: the team's decision on an MSA scope finding (status and note; team only). utc: UAT test cases (module-wise scenarios, steps, expected and actual results, status; team only)
-  const TEAM_KINDS = new Set(['utc', 'mfind', 'lcstage']);   // kinds customers can neither list nor change   // task: Project Tasks (one register; sheets are saved views in the tasksheets document)   // cflow: combined flows saved from a whiteboard (a snapshot the BRD can include); wb: process whiteboards; news: Explore Facilio entries; interest: customer requests for more information
+  const KINDS = ['action', 'decision', 'raid', 'signoff', 'cr', 'onb', 'onbsub', 'onbfile', 'onbws', 'owner', 'agreement', 'minutes', 'checklist', 'build', 'uat', 'digest', 'ctrcore', 'ctrfees', 'ctrlegal', 'ctrrates', 'scope', 'modbrief', 'fieldreq', 'note', 'ctrwatch', 'usecase', 'discrepancy', 'brdrev', 'ai', 'hc', 'hcrep', 'ho', 'close', 'rep', 'kpi', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'lesson', 'tkt', 'res', 'ugv', 'ugu', 'pnote', 'wb', 'news', 'interest', 'cflow', 'task', 'utc', 'mfind', 'lcstage', 'cal', 'utr'];   // utr: a UAT test case the team shared with the customer, and the customer's result on it   // mfind: the team's decision on an MSA scope finding (status and note; team only). utc: UAT test cases (module-wise scenarios, steps, expected and actual results, status; team only)
+  const TEAM_KINDS = new Set(['utc', 'mfind', 'lcstage', 'cal']);   // kinds customers can neither list nor change   // task: Project Tasks (one register; sheets are saved views in the tasksheets document)   // cflow: combined flows saved from a whiteboard (a snapshot the BRD can include); wb: process whiteboards; news: Explore Facilio entries; interest: customer requests for more information
   const DOC_SECTIONS = /^[a-z][a-z0-9_]{1,40}$/, ITEM_ID_RE = /^[A-Za-z0-9_-]{1,80}$/, GR_KEY = /^[a-z]{2,8}:[afbxw]:[A-Za-z0-9_-]{1,64}$/;
 
   class HttpError extends Error { constructor(status, msg, extra) { super(msg); this.status = status; this.extra = extra; } }
@@ -91,16 +90,17 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
 
   // ---------- identity and roles ----------
   let ME = null, ROLE = null, OWN = null;
-  /* Platform owner (super admin). The starting value is the secret platform_owner, else SUPER_ADMINS: once ownership is handed over in Admin › Access, the owner is the
+  /* Platform owner (super admin). The starting value is the secret platform_owner, else the facilio.work owner of this app (ctx.viewer.role 'owner'), so no person is named in the code: once ownership is handed over in Admin › Access, the owner is the
      record cfg/owner and the previous owner has no admin access at all (the code value no longer counts). Read once per request, so a handover
      takes effect on everyone's next request. */
   async function owners() { if (OWN) return OWN; let r = null; try { r = await dbGet('cfg', 'owner'); } catch (e) { }
     if (r && r.value && r.value.email) { OWN = [String(r.value.email).toLowerCase()]; return OWN; }
     // no handover yet: the starting owner comes from the platform secret platform_owner (one or more Facilio emails, comma separated), so a person is not fixed in the code.
-    // SUPER_ADMINS stays only as the last-resort starting value until that secret is set; after that it can be emptied without anyone losing access.
+    // with no secret either, the app's own platform owner (the person facilio.work reports as role 'owner') is the starting owner: nobody is locked out, and no name sits in the code.
     let sec = ''; try { sec = String(await CTX.secrets.get('platform_owner') || ''); } catch (e) { }
-    const fromSecret = sec.split(/[,;s]+/).map(x => x.trim().toLowerCase()).filter(x => /^[^@s]+@[^@s]+$/.test(x) && x.endsWith('@' + ALLOWED_DOMAIN));
-    OWN = fromSecret.length ? fromSecret : SUPER_ADMINS.slice(); return OWN; }
+    const fromSecret = sec.split(/[,;\s]+/).map(x => x.trim().toLowerCase()).filter(x => /^[^@\s]+@[^@\s]+$/.test(x) && x.endsWith('@' + ALLOWED_DOMAIN));
+    if (fromSecret.length) { OWN = fromSecret; return OWN; }
+    const v = CTX.viewer || {}; return v.role === 'owner' && v.email ? [String(v.email).toLowerCase()] : []; }   // not cached: it depends on who is asking
   async function me() {
     if (ME) return ME;
     const email = String((CTX.viewer && CTX.viewer.email) || '').toLowerCase(); if (!email) throw new HttpError(401, 'Sign in required');
@@ -1211,6 +1211,9 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     const col = 'it.' + P.id + '.' + P.kind, pcol = 'ip.' + P.id + '.' + P.kind; const curRow = await dbGet(col, P.item); const head = curRow && curRow.value; const cur = head ? await unpack(pcol, P.item, head) : null;
     if (Number.isInteger(b.baseVersion) && (head ? head.v : 0) !== b.baseVersion) throw new HttpError(409, 'Conflict: this record was changed by someone else.', { current: head ? itemOut(P.kind, P.item, head, cur) : null });
     let data = b.data; decisionGuard(P.kind, role, cur, data);
+    // a customer can only record a result on a test case the team shared: the case itself stays as the team wrote it
+    if (P.kind === 'utr' && role === 'customer') { if (!cur) throw new HttpError(403, 'Test cases are shared by the project team'); const res = ['Passed', 'Failed', 'Blocked'].includes(data.result) ? data.result : 'Pending'; const link = str(data.link || '', 500, 'Evidence link'); if (link && !/^https?:\/\//i.test(link)) throw new HttpError(400, 'The evidence link must start with https://');
+      data = Object.assign({}, cur, { result: res, actual: str(data.actual || '', 2000, 'Actual result'), link, by: s.name || s.email, at: now() }); }
     if (P.kind === 'ai') { // AI drafts: status and approval are set only by the decision route; an edit to approved text reopens it as a draft
       if (!cur) throw new HttpError(403, 'AI drafts are created by the assistant only');
       const edited = typeof data.content === 'string' && data.content !== cur.content;
@@ -1257,11 +1260,11 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     await save(col, pcol, P.item, nh, data, head && head.z); await touchProject(P.id);
     if (P.kind === 'tkt') await ticketNotify(project, P.item, cur, data, s);
     let notice; if (P.kind === 'interest' && !cur) { notice = await interestNotice(project, P.item, data) ? 'teams' : 'none'; await audit(P.id, s.id, 'interest-created', P.item + ' ' + data.title); }
-    if (['signoff', 'cr', 'raid', 'onb', 'onbsub', 'decision', 'brdrev', 'ai', 'hc', 'ho', 'close', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'tkt', 'res', 'ugv', 'ugu', 'task', 'lcstage'].includes(P.kind)) await audit(P.id, s.id, P.kind + (cur ? '-updated' : '-created'), P.item + (data.status ? ' ' + data.status : ''));
+    if (['signoff', 'cr', 'raid', 'onb', 'onbsub', 'decision', 'brdrev', 'ai', 'hc', 'ho', 'close', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'tkt', 'res', 'ugv', 'ugu', 'task', 'lcstage', 'utr'].includes(P.kind)) await audit(P.id, s.id, P.kind + (cur ? '-updated' : '-created'), P.item + (data.status ? ' ' + data.status : ''));
     return ok(Object.assign({ item: itemOut(P.kind, P.item, nh, data) }, notice ? { notice } : {}));
   }));
   route('DELETE', '/api/projects/:id/items/:kind/:item', async (b, P) => {
-    const s = await me(); if (!KINDS.includes(P.kind)) throw new HttpError(400, 'Unknown item type'); const { role } = await projectAccess(s, P.id, 'edit'); if (role === 'customer' && TEAM_KINDS.has(P.kind)) throw new HttpError(403, 'Not permitted');
+    const s = await me(); if (!KINDS.includes(P.kind)) throw new HttpError(400, 'Unknown item type'); const { role } = await projectAccess(s, P.id, 'edit'); if (role === 'customer' && (TEAM_KINDS.has(P.kind) || P.kind === 'utr')) throw new HttpError(403, 'Not permitted');
     const r = await dbGet('it.' + P.id + '.' + P.kind, P.item); if (!r) throw new HttpError(404, 'Not found');
     if (role !== 'owner' && DECISION_MSG[P.kind]) { const cur = await unpack('ip.' + P.id + '.' + P.kind, P.item, r.value); if (decided(P.kind, cur)) throw new HttpError(403, 'Only a project owner or an admin can delete a decided record.'); }
     await dbDel('it.' + P.id + '.' + P.kind, P.item); for (let i = 0; i < (r.value.z || 0); i++) await dbDel('ip.' + P.id + '.' + P.kind, P.item + '.' + i).catch(() => { });
@@ -1370,7 +1373,7 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
   });
 
   // ---------- admin console (platform owner, Admin, Sub admin) ----------
-  // Roles: platform owner = SUPER_ADMINS, Admin / Sub admin come from the `grant` collection. Access rules are enforced here in the page (Facilio Run has no server code).
+  // Roles: platform owner = secret platform_owner (or the app's platform owner until it is set), Admin / Sub admin come from the `grant` collection. Access rules are enforced here in the page (Facilio Run has no server code).
   const SYS = 'au.sys';
   const isEmail = e => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
   async function requireAdmin(level) {
@@ -1532,8 +1535,8 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
       log: r.au.slice().sort((a, c) => String(c.at).localeCompare(String(a.at))).slice(0, 12).map(l => ({ action: l.action, detail: l.detail || '', at: l.at, who: who(A, l.actor) })) });
   });
   route('GET', '/api/admin/users', async () => {
-    await requireAdmin('sub'); const A = await loadAll();
-    return ok({ users: A.users.map(u => { const em = String(u.email || '').toLowerCase(); const g = A.gm[em]; return { id: u.id, email: u.email, name: u.name || nameFromEmail(em), guest: false, disabled: !!u.disabled, createdAt: u.created || u.seen, projects: A.rows.filter(r => (r.p.members || []).some(m => m.id === u.id)).length, lastSeen: u.seen, role: SUPER_ADMINS.includes(em) ? 'super' : g ? (g.role === 'admin' ? 'admin' : 'sub') : null }; }).sort((a, b) => String(b.lastSeen || '').localeCompare(String(a.lastSeen || ''))) });
+    await requireAdmin('sub'); const A = await loadAll(); const own = await owners();
+    return ok({ users: A.users.map(u => { const em = String(u.email || '').toLowerCase(); const g = A.gm[em]; return { id: u.id, email: u.email, name: u.name || nameFromEmail(em), guest: false, disabled: !!u.disabled, createdAt: u.created || u.seen, projects: A.rows.filter(r => (r.p.members || []).some(m => m.id === u.id)).length, lastSeen: u.seen, role: own.includes(em) ? 'super' : g ? (g.role === 'admin' ? 'admin' : 'sub') : null }; }).sort((a, b) => String(b.lastSeen || '').localeCompare(String(a.lastSeen || ''))) });
   });
   const guardUser = async (s, id) => {
     const r = await dbGet('usr', id); if (!r) throw new HttpError(404, 'User not found'); const u = r.value; const em = String(u.email).toLowerCase(); const g = await dbGet('grant', id);
