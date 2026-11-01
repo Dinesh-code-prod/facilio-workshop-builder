@@ -5,7 +5,7 @@
   "description": "Facilio Delivery Studio — multi-project delivery workspace (Form Builder, State Flow Builder, roles, sessions, user guide, transcripts, validation, BRD), hosted on facilio.work.",
   "scripts": {
     "build": "node build.mjs",
-    "test": "node tests/work_adapter.mjs && node tests/ai_layer.mjs && node tests/portfolio.mjs && node tests/guide_intel.mjs && node tests/orgpkg_export.mjs && node tests/orgpkg.mjs && node tests/eml_parse.mjs",
+    "test": "node tests/work_adapter.mjs && node tests/ai_layer.mjs && node tests/portfolio.mjs && node tests/guide_intel.mjs && node tests/orgpkg_export.mjs && node tests/orgpkg.mjs && node tests/uat.mjs && node tests/eml_parse.mjs",
     "build:reference": "node scripts/build-reference.mjs",
     "preview": "node tests/ui/devserver.mjs 4173",
     "test:ui": "node tests/ui/audit.mjs tests/ui/out",

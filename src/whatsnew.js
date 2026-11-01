@@ -6,6 +6,14 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '2.1.0', date: '2026-11-01', kind: 'UPDATE', title: 'UAT test cases by module, Excel import, issues in Tasks', notes: [
+      'Delivery > UAT now starts with UAT test cases for the modules of this project: scenario, steps, expected and actual result, status, tester, date and evidence. Pick a module to see its cases; a summary shows passed, failed, blocked and not run, all counted from the saved test cases.',
+      'Statuses: Not Started, Ready for Testing, In Progress, Passed, Failed, Blocked, Deferred, Retesting and Approved. Change one right in the list; the tester and date fill in when a case is run.',
+      'A failed or blocked test case can raise an issue in Tasks (type Issue / Blocker, stage Testing & UAT) linked to the test case. When that issue is done, the test case says "Fix done: retest" and one click sends it to retesting.',
+      'Import a test tracker from Excel or CSV: choose the sheet and header row, match the columns (suggested for you), see a preview and a report of duplicates, unknown statuses and unknown modules, then import. Columns you do not match are kept on the test case.',
+      'Go-live readiness now looks at the test cases: none recorded means unknown, and failed, blocked or unfinished cases are listed as blockers.',
+      'UAT demos and training sessions can hold a facilitator, a meeting link, a recording link and notes. The UAT guide and the AI drafts read the saved test cases.',
+      'Test cases are for the project team; customers cannot list or change them.'] },
     { v: '2.0.2', date: '2026-11-01', kind: 'UPDATE', title: 'Project search, priority colours in the menu, more project statuses', notes: [
       'Search the whole project: the new Search button in the top bar (or Ctrl+K) looks through requirements, decisions, actions, risks, change requests, UAT and build records, tasks, guides, notes, configuration inputs, the BRD and more. Each result shows what it is, where it sits in the delivery stages and the matching text, and opens its page. For the project team.',
       'Menu markers with a meaning: Governance turns red when an action is overdue or a sign-off has a concern, orange for an open high-impact risk, yellow for a sign-off that is waiting. Change Requests shows yellow when one is waiting for a decision. Hover for the reason. Nothing shows when there is nothing to do.',
