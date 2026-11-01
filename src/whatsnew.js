@@ -6,6 +6,10 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '2.5.1', date: '2026-11-01', kind: 'UPDATE', title: 'Calendar redesign: a colour for every plan step', notes: [
+      'Every plan item on the calendar now takes the colour of its plan step (Kick-Off, Workshops, BRD, Implementation and so on). Blues are discover and define, steel blues build and test, pinks are UAT and launch, slate and green are hand-over and go-live.',
+      'A step ribbon above the calendar shows the whole plan in those colours, with today marked. Click a step to jump to it. The side panel lists the steps with their dates and lets you show or hide each one.',
+      'Behind-schedule items are outlined in red, finished ones are dimmed with a tick, actions due are outlined bars, and your own reminders have a pink edge. Month, week, day and year views share the same look as the rest of the app.'] },
     { v: '2.5.0', date: '2026-11-01', kind: 'UPDATE', title: 'Project calendar, customer UAT testing', notes: [
       'Project Plan has a new Calendar tab with Day, Week, Month and Year views and a side panel with a month picker and what is coming up. It is drawn from the project plan, workshop sessions, UAT and go-live dates, sign-offs and actions that fall due, colour-coded by kind, with filters and search.',
       'The team can add reminders, events and deadlines on any day. They show on the calendar, and a reminder appears in the notification bell on its day. Reminders are for the team only; customers see the plan, workshop schedule and their own actions.',

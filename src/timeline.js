@@ -23,7 +23,7 @@
     rows.forEach(r => { const i = stepOfRow(r.title + ' ' + (r.phase || '')); if (i < 0 || !D(r.start)) return; const x = info[i]; x.n++; if (!x.start || r.start < x.start) x.start = r.start; const e = D(r.end) || r.start; if (!x.end || e > x.end) x.end = e; });
     return info;
   }
-  V.planSteps = stepInfo;
+  V.planSteps = stepInfo; V.planStepOf = r => stepOfRow((r.title || '') + ' ' + (r.phase || ''));
   function phaseNow() {
     const ph = V.controls().phase || {}; const info = stepInfo(); const today = V.today(); let cur = -1;
     if (ph.step >= 1 && ph.step <= 12) cur = ph.step - 1; else info.forEach(x => { if (x.start && x.start <= today) cur = Math.max(cur, x.i); });
