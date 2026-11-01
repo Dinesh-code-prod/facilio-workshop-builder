@@ -88,10 +88,16 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
 
   // ---------- identity and roles ----------
   let ME = null, ROLE = null, OWN = null;
-  /* Platform owner (super admin). SUPER_ADMINS is only the starting value: once ownership is handed over in Admin › Access, the owner is the
+  /* Platform owner (super admin). The starting value is the secret platform_owner, else SUPER_ADMINS: once ownership is handed over in Admin › Access, the owner is the
      record cfg/owner and the previous owner has no admin access at all (the code value no longer counts). Read once per request, so a handover
      takes effect on everyone's next request. */
-  async function owners() { if (OWN) return OWN; let r = null; try { r = await dbGet('cfg', 'owner'); } catch (e) { } OWN = r && r.value && r.value.email ? [String(r.value.email).toLowerCase()] : SUPER_ADMINS.slice(); return OWN; }
+  async function owners() { if (OWN) return OWN; let r = null; try { r = await dbGet('cfg', 'owner'); } catch (e) { }
+    if (r && r.value && r.value.email) { OWN = [String(r.value.email).toLowerCase()]; return OWN; }
+    // no handover yet: the starting owner comes from the platform secret platform_owner (one or more Facilio emails, comma separated), so a person is not fixed in the code.
+    // SUPER_ADMINS stays only as the last-resort starting value until that secret is set; after that it can be emptied without anyone losing access.
+    let sec = ''; try { sec = String(await CTX.secrets.get('platform_owner') || ''); } catch (e) { }
+    const fromSecret = sec.split(/[,;s]+/).map(x => x.trim().toLowerCase()).filter(x => /^[^@s]+@[^@s]+$/.test(x) && x.endsWith('@' + ALLOWED_DOMAIN));
+    OWN = fromSecret.length ? fromSecret : SUPER_ADMINS.slice(); return OWN; }
   async function me() {
     if (ME) return ME;
     const email = String((CTX.viewer && CTX.viewer.email) || '').toLowerCase(); if (!email) throw new HttpError(401, 'Sign in required');
@@ -267,8 +273,10 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   route('PATCH', '/api/projects/:id', async (b, P) => {
     const s = await me(); const acc = await projectAccess(s, P.id, 'edit'); const d = v => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
     // the delivery status (Active, On hold, Completed, Cancelled) is set by a person, never by the health rules: project owners and admins only
-    if (b.deliveryStatus !== undefined) { if (!MANUAL.includes(b.deliveryStatus)) throw new HttpError(400, 'Choose Active, On hold, Completed or Cancelled'); if (acc.role !== 'owner') throw new HttpError(403, 'Only a project owner or an admin can change the delivery status');
-      const note = str(b.deliveryNote || '', 300, 'Note'); await patchProject(P.id, project => { project.deliveryStatus = b.deliveryStatus; project.deliveryStatusBy = s.name || s.email; project.deliveryStatusAt = now(); project.deliveryStatusNote = note; }); ADM = null; await audit(P.id, s.id, 'delivery-status', b.deliveryStatus + (note ? ': ' + note : '')); }
+    if (b.deliveryStatus !== undefined) { if (!MANUAL.includes(b.deliveryStatus)) throw new HttpError(400, 'Choose Active, On hold, Completed, Cancelled, Churned, Not workable or Discontinued'); if (acc.role !== 'owner') throw new HttpError(403, 'Only a project owner or an admin can change the delivery status');
+      const note = str(b.deliveryNote || '', 300, 'Note'); const prevStatus = (acc.project && acc.project.deliveryStatus) || 'active';
+      if (b.deliveryStatus !== 'active' && b.deliveryStatus !== prevStatus && !note.trim()) throw new HttpError(400, 'Give a reason for this status. It is kept in the project history.');
+      await patchProject(P.id, project => { if (b.deliveryStatus !== prevStatus) { const h = Array.isArray(project.deliveryStatusHistory) ? project.deliveryStatusHistory : []; h.push({ from: prevStatus, to: b.deliveryStatus, reason: note, by: s.name || s.email, at: now() }); project.deliveryStatusHistory = h.slice(-50); } project.deliveryStatus = b.deliveryStatus; project.deliveryStatusBy = s.name || s.email; project.deliveryStatusAt = now(); project.deliveryStatusNote = note; }); ADM = null; await audit(P.id, s.id, 'delivery-status', b.deliveryStatus + (note ? ': ' + note : '')); }
     const project = await patchProject(P.id, project => { if (b.name !== undefined) project.name = str(b.name, 160, 'Project name', true); if (b.customer !== undefined) project.customer = str(b.customer, 160, 'Customer', true);
     if (b.description !== undefined) project.description = str(b.description, 4000, 'Description'); if (b.type !== undefined) project.type = b.type === 'agents' ? 'agents' : 'cmms'; if (b.startDate !== undefined) project.startDate = d(b.startDate); if (b.endDate !== undefined) project.endDate = d(b.endDate); });
     await audit(P.id, s.id, 'project-updated', null); return ok({ project: projectOut(project, (await projectAccess(s, P.id, 'read')).role) });
@@ -469,6 +477,29 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   // ---------- Claude hand-off (no API, no cost to the app): the person pastes the prompt into their OWN claude.ai and brings the reply back as a draft ----------
   // Nothing is sent to or read from claude.ai by the app. The reply is untrusted text: it is stored as an unapproved draft and goes through the same review and approval as any AI draft.
   const PACK_TASKS = Object.keys(AI_TASKS).filter(k => k !== 'vidguide');
+  /* ---------- global project search: the saved records and documents of one project, for the project team ----------
+     Reads the same stores the pages read, after the same project access check. Customers are refused: the search covers internal records (notes, risks, AI drafts) that
+     customers never see, and it must not be a way around the per-record rules. Uploaded files are not indexed (their text is not stored); transcripts are found through
+     the requirements and findings made from them. */
+  const SEARCH_KINDS = { action: ['Action', 'governance'], decision: ['Decision', 'governance'], raid: ['RAID item', 'governance'], signoff: ['Sign-off', 'governance'], cr: ['Change request', 'changes'], minutes: ['Meeting minutes', 'governance'], checklist: ['Checklist item', 'delivery'], build: ['Build record', 'delivery'], uat: ['UAT record', 'delivery'], scope: ['Scope', 'msaflow'], usecase: ['Use case', 'usecases'], discrepancy: ['Check finding', 'checks'], ai: ['AI draft', 'aiwork'], hc: ['Hypercare', 'hypercare'], ho: ['Handover item', 'handover'], close: ['Closure record', 'handover'], ugd: ['User guide', 'guidebuilder'], lesson: ['Lesson learned', 'handover'], tkt: ['Ticket', 'tickets'], res: ['Note or link', 'resources'], task: ['Task', 'tasks'], cmodx: ['Configuration input', 'cfginputs'], cfgrel: ['Configuration input', 'cfginputs'], capp: ['Configuration input', 'cfginputs'], news: ['Discover more entry', 'explore'] };
+  const SKIP_KEY = /^(id|key|ca|ua|cb|ub|cs|us|v|hist|history|sources|ref|attachments|file|fileId|token)$/;
+  const flatText = (v, out, d) => { if (out.n > 6000 || d > 6) return; if (typeof v === 'string') { out.t.push(v); out.n += v.length; } else if (typeof v === 'number') out.t.push(String(v)); else if (Array.isArray(v)) v.slice(0, 80).forEach(x => flatText(x, out, d + 1)); else if (v && typeof v === 'object') Object.keys(v).slice(0, 60).forEach(k => { if (!SKIP_KEY.test(k)) flatText(v[k], out, d + 1); }); };
+  route('GET', '/api/projects/:id/search', async (b, P, Q) => {
+    const s = await me(); const { role } = await projectAccess(s, P.id, 'read'); if (role === 'customer') throw new HttpError(403, 'Search covers the whole project record and is for the project team');
+    const q = String(Q.get('q') || '').trim().toLowerCase().replace(/\s+/g, ' ').slice(0, 80); if (q.length < 3) return ok({ q, results: [], note: 'Type at least 3 letters' });
+    const toks = q.split(' ').filter(Boolean).slice(0, 6); const results = [];
+    const test = hay => { const h = hay.toLowerCase(); const exact = h.includes(q); if (!exact && !toks.every(t => h.includes(t))) return null; return { exact, i: h.indexOf(exact ? q : toks[0]) }; };
+    const excerpt = (hay, i) => { const a = Math.max(0, i - 50); return (a ? '…' : '') + hay.slice(a, i + 110).replace(/\s+/g, ' ').trim() + (i + 110 < hay.length ? '…' : ''); };
+    const push = (kind, label, view, title, hay, id) => { const m = test(hay); if (m) results.push({ kind, label, view, title: String(title || label).slice(0, 120), excerpt: excerpt(hay, m.i), exact: m.exact, id: id || '' }); };
+    await Promise.all(Object.keys(SEARCH_KINDS).map(async k => { let rows = []; try { rows = await itemsOf(P.id, k); } catch (e) { return; }
+      for (const r of rows) { const d = r.data || {}; if (d.superseded === true || d.removed === true || d.status === 'superseded') continue; const out = { t: [], n: 0 }; flatText(d, out, 0);
+        push(k, SEARCH_KINDS[k][0], SEARCH_KINDS[k][1], d.title || d.name || d.subject || d.question || d.text || d.decision || d.summary || out.t[0], out.t.join(' · '), r.id); } }));
+    for (const [sec, label, view, listKey] of [['workshop', 'Requirement', 'transcripts', 'requirements'], ['workshop', 'Open question', 'transcripts', 'questions'], ['planner', 'Workshop session', 'planner', 'sessions'], ['brddoc', 'BRD', 'brd', ''], ['notifications', 'Notification', 'notifications', '']]) {
+      let doc = null; try { doc = await docRead(P.id, sec); } catch (e) { } const d = doc && doc.data; if (!d) continue;
+      const rows = listKey ? (Array.isArray(d[listKey]) ? d[listKey] : []) : [d]; rows.slice(0, 400).forEach(x => { const out = { t: [], n: 0 }; flatText(x, out, 0); push(sec, label, view, (x && (x.title || x.name || x.id || x.question)) || label, out.t.join(' · '), (x && x.id) || ''); }); }
+    results.sort((a, c) => (c.exact - a.exact) || a.label.localeCompare(c.label)); await audit(P.id, s.id, 'search', 'chars ' + q.length);
+    return ok({ q, results: results.slice(0, 60), total: results.length });
+  });
   route('POST', '/api/projects/:id/ai/pack', async (b, P) => {
     const s = await me(); await projectAccess(s, P.id, 'edit'); const task = String(b && b.task || ''); const T = AI_TASKS[task]; if (!T || !PACK_TASKS.includes(task)) throw new HttpError(400, 'This task cannot be drafted in Claude'); await limit('ai', s.id);
     const instruction = str(b.instruction, 1500, 'Instruction');
@@ -1378,11 +1409,11 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
   async function command() {
     const A = await loadAll(); const today = now().slice(0, 10); const live = A.rows.filter(r => !r.p.archived);
     const rows = live.map(r => { const h = assess(r, today); return { r, h, docs: docsOf(r, today) }; });
-    const projects = rows.map(({ r, h, docs }) => ({ id: r.p.id, name: r.p.name, customer: r.p.customer, health: h.health, why: h.why, manual: h.manual, note: r.p.deliveryStatusNote || '', metrics: h.metrics, docs,
+    const projects = rows.map(({ r, h, docs }) => ({ id: r.p.id, name: r.p.name, customer: r.p.customer, health: h.health, why: h.why, manual: h.manual, note: r.p.deliveryStatusNote || '', statusHistory: (r.p.deliveryStatusHistory || []).slice(-10), metrics: h.metrics, docs,
       counts: { critical: h.signals.filter(g => g.sev === 'critical').length, high: h.signals.filter(g => g.sev === 'high').length, medium: h.signals.filter(g => g.sev === 'medium').length },
       owners: (r.p.members || []).filter(m => m.role === 'owner').map(m => m.name || m.email) }));
     const active = projects.filter(p => p.manual === 'active'); const n = f => active.filter(f).length;
-    const metrics = { total: projects.length, archived: A.rows.length - live.length, inProgress: active.length, completed: projects.filter(p => p.manual === 'completed').length, onHold: projects.filter(p => p.manual === 'on_hold').length, cancelled: projects.filter(p => p.manual === 'cancelled').length,
+    const metrics = { total: projects.length, archived: A.rows.length - live.length, inProgress: active.length, completed: projects.filter(p => p.manual === 'completed').length, onHold: projects.filter(p => p.manual === 'on_hold').length, cancelled: projects.filter(p => p.manual === 'cancelled').length, churned: projects.filter(p => p.manual === 'churned').length, notWorkable: projects.filter(p => p.manual === 'not_workable').length, discontinued: projects.filter(p => p.manual === 'discontinued').length,
       atRisk: n(p => p.health === 'at_risk'), blocked: n(p => p.health === 'blocked'), overdue: n(p => p.health === 'overdue'), onTrack: n(p => p.health === 'on_track'), insufficient: n(p => p.health === 'insufficient'),
       awaitingCustomer: n(p => p.metrics.custWaiting > 0), deadlines: n(p => p.metrics.deadlineSoon) };
     const sigOf = x => x.h.signals.map(g => Object.assign({}, g, { projectName: x.r.p.name, customer: x.r.p.customer, health: x.h.health }));

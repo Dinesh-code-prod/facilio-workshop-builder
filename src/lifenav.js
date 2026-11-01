@@ -18,6 +18,7 @@
     { k: 'close', name: 'Closure & Follow-Up', short: 'Closure', cps: [9, 11], views: ['hypercare'], so: [], hint: 'Hypercare, project closure and follow-up.' }
   ];
   const STAGE_OF = {}; STAGES.forEach((s, i) => s.views.forEach(v => { STAGE_OF[v] = i; }));
+  V.stageOfView = view => { const i = STAGE_OF[view]; return i == null ? '' : STAGES[i].name; };
   V.LIFE_STAGES = STAGES; V.lifeStageOf = v => (v in STAGE_OF ? STAGE_OF[v] : -1);
   const ST = { none: ['No activity yet', 'none'], progress: ['In progress', 'progress'], done: ['Complete', 'done'] };
   const KINDS = ['action', 'raid', 'signoff'];

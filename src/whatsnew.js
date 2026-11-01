@@ -6,6 +6,12 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '2.0.2', date: '2026-11-01', kind: 'UPDATE', title: 'Project search, priority colours in the menu, more project statuses', notes: [
+      'Search the whole project: the new Search button in the top bar (or Ctrl+K) looks through requirements, decisions, actions, risks, change requests, UAT and build records, tasks, guides, notes, configuration inputs, the BRD and more. Each result shows what it is, where it sits in the delivery stages and the matching text, and opens its page. For the project team.',
+      'Menu markers with a meaning: Governance turns red when an action is overdue or a sign-off has a concern, orange for an open high-impact risk, yellow for a sign-off that is waiting. Change Requests shows yellow when one is waiting for a decision. Hover for the reason. Nothing shows when there is nothing to do.',
+      'Project status: Churned, Not workable and Discontinued join Active, On hold, Completed and Cancelled. A reason is required and every change is kept in the project history. These projects leave the active figures and stay available for history. Nothing is deleted.',
+      'BRD Draft is now the last step of Solution Design & Configuration, after the modules, flows, roles and notifications it is written from.',
+      'The platform owner at first start now comes from a platform secret instead of a name fixed in the code.'] },
     { v: '2.0.1', date: '2026-11-01', kind: 'UPDATE', title: 'Org package with views, an agent brief, and Review with Claude', notes: [
       'New Views tab on every module: choose the app, the columns in order, the sort, a state filter, other filters and who the view is shared with. Views go into the organisation package as VIEW and VIEW_GROUP records in the format of the standard package.',
       'Agent brief: one JSON file, grouped by module, that tells the Org Builder agent what is inside the package, what is not and why, and what to do by hand after the import.',

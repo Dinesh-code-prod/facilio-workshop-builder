@@ -1,7 +1,7 @@
 // Health rules of the Admin Command Center (work/server/_portfolio.mjs) on projects in known states: each project's health,
 // the signal behind it, its evidence and the portfolio metrics. Pure functions, no storage.
 import assert from 'node:assert/strict';
-import { assess, docsOf, workload, planInfo, RULES } from '../work/server/_portfolio.mjs';
+import { assess, docsOf, workload, planInfo, RULES, MANUAL } from '../work/server/_portfolio.mjs';
 const today = '2026-10-28'; const ago = n => new Date(Date.parse(today + 'T12:00:00Z') - n * 864e5).toISOString(); const day = n => ago(-n).slice(0, 10);
 let n = 0; const t = (name, fn) => { fn(); n++; console.log('  ok  ' + name); };
 const task = (id, d, created = 3, updated = 1) => ({ kind: 'task', id, data: Object.assign({ n: Number(id.replace(/\D/g, '')) || 1, title: 'Task ' + id, status: 'To Do', type: 'Implementation Task' }, d), createdAt: ago(created), updatedAt: ago(updated) });
@@ -95,4 +95,5 @@ t('plan steps map like the Plan Timeline page, and a forced phase wins', () => {
   const pi = planInfo(plan([{ title: 'UAT sign-off', start: day(-3) }, { title: 'Training', start: day(4) }]), { phase: { step: 4 } }, today); assert.equal(pi.cur, 3); assert.equal(pi.forced, true);
   const pj = planInfo(plan([{ title: 'UAT sign-off', start: day(-3) }, { title: 'Training', start: day(4) }]), {}, today); assert.equal(pj.curTitle, 'UAT Sign-Off'); assert.equal(pj.next.title, 'Training The Wider Team');
 });
+t('Churned, Not workable and Discontinued are set by a person, shown as set, and are not active', () => { for (const st of ['churned', 'not_workable', 'discontinued']) { const b = base(); b.p.deliveryStatus = st; b.p.deliveryStatusBy = 'Admin'; const h = assess(b, today); assert.equal(h.health, st); assert.equal(h.manual, st); assert.match(h.why[0], /Set by Admin/); } assert.ok(MANUAL.includes('churned') && MANUAL.includes('not_workable') && MANUAL.includes('discontinued')); });
 console.log(`\n${n} portfolio health checks passed`);

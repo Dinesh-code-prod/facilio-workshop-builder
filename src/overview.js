@@ -11,6 +11,14 @@
       const tr = (F.doc('transcripts').candidates || []).filter(c => c.status === 'pending' || c.status === 'clarify').length; if (tr) out.transcripts = { n: tr };
       const fb = V.feedbackItems ? (V.feedbackItems() || []).filter(x => x.status === 'open' || x.status === 'follow-up').length : 0; if (fb) out.guide = { n: fb };
       const r = V.brdReadiness ? V.brdReadiness() : null; if (r && r.blocking) out.checks = { n: r.blocking, cls: 'warn' };
+      // priority colours, from saved records only: red = a deadline already missed or a concern raised, orange = a high-impact risk or issue still open, yellow = waiting on a decision. No record, no marker (never a green "all good").
+      const It = V.items; if (It && It.ready(['action', 'raid', 'signoff', 'cr'])) { const today = V.today ? V.today() : new Date().toISOString().slice(0, 10);
+        const od = It.list('action').filter(a => a.status !== 'Done' && a.due && a.due < today).length; const sc = It.list('signoff').filter(x => x.status === 'concern').length;
+        const hi = It.list('raid').filter(x => x.status !== 'Closed' && x.impact === 'High').length; const sp = It.list('signoff').filter(x => x.status === 'requested').length;
+        if (od + sc) out.governance = { n: od + sc, cls: 'crit', why: (od ? od + ' action(s) overdue' : '') + (od && sc ? ', ' : '') + (sc ? sc + ' sign-off concern(s)' : '') };
+        else if (hi) out.governance = { n: hi, cls: 'high', why: hi + ' open high-impact risk(s) or issue(s)' };
+        else if (sp) out.governance = { n: sp, cls: 'pend', why: sp + ' sign-off(s) waiting' };
+        const cp = It.list('cr').filter(c => ['Requested', 'Draft', 'Proposed'].includes(c.status)).length; if (cp) out.changes = { n: cp, cls: 'pend', why: cp + ' change request(s) waiting for a decision' }; }
     } catch (e) { console.warn(e); }
     return out;
   };

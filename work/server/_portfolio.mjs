@@ -15,9 +15,9 @@
    Thresholds are in RULES below. Nothing here changes a record. */
 
 export const RULES = { idleDays: 14, questionDays: 7, questionLongDays: 14, decisionDays: 7, crDays: 14, blockerLongDays: 14, goLiveSoonDays: 21, deadlineDays: 14, concentration: 0.6, concentrationMin: 3 };
-export const HEALTH = ['blocked', 'overdue', 'at_risk', 'on_track', 'insufficient', 'on_hold', 'completed', 'cancelled'];
-export const HEALTH_LABEL = { blocked: 'Blocked', overdue: 'Overdue', at_risk: 'At risk', on_track: 'On track', insufficient: 'Insufficient data', on_hold: 'On hold', completed: 'Completed', cancelled: 'Cancelled' };
-export const MANUAL = ['active', 'on_hold', 'completed', 'cancelled'];
+export const HEALTH = ['blocked', 'overdue', 'at_risk', 'on_track', 'insufficient', 'on_hold', 'completed', 'cancelled', 'churned', 'not_workable', 'discontinued'];
+export const HEALTH_LABEL = { blocked: 'Blocked', overdue: 'Overdue', at_risk: 'At risk', on_track: 'On track', insufficient: 'Insufficient data', on_hold: 'On hold', completed: 'Completed', cancelled: 'Cancelled', churned: 'Churned', not_workable: 'Not workable', discontinued: 'Discontinued' };
+export const MANUAL = ['active', 'on_hold', 'completed', 'cancelled', 'churned', 'not_workable', 'discontinued'];   // set by a person; anything but 'active' leaves the active delivery figures and stays in the history
 export const STEPS = ['Kick-Off', 'Workshops & Data Templates', 'BRD Sign-Off', 'Final Implementation Timeline', 'Implementation & Testing', 'Demo To UAT Users', 'UAT & Feedback', 'Feedback Incorporated', 'UAT Sign-Off', 'Training The Wider Team', 'Data Clean-Up', 'Go-Live & Hypercare'];
 // the same mapping of plan rows to the 12 standard steps as the Plan Timeline page (src/timeline.js)
 const STEP_RE = [/kick.?off|project start/i, /workshop|data template|requirement (session|gathering)|discovery/i, /\bbrd\b|requirement.*sign/i, /final.*(timeline|plan)|implementation timeline|project plan/i, /implementation|configur|build|set.?up|internal test/i, /demo|handover|hand over/i, /\buat\b|user acceptance|feedback/i, /incorporat|feedback.*(fix|resol|appl)/i, /uat.*sign|sign.?off.*uat/i, /train/i, /clean.?up|migrat|data load|cut.?over/i, /go.?live|hyper.?care/i];
