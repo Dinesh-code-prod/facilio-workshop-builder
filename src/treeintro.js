@@ -100,14 +100,14 @@
       function grow(parent, maxDepth) {
         const d = parent.depth + 1; if (d > maxDepth) return;
         let spec; // [fraction, side, angleOffset, lenFactor]
-        if (d === 1) spec = [[.58, -1, 74, 1.08], [.68, 1, 70, 1.12], [.8, -1, 56, 1.22], [.88, 1, 52, 1.26], [1, -1, 38, 1.3], [1, 1, 34, 1.25], [.96, -1, 12, 1.1]];
-        else if (d === 2) spec = [[.3, -1, 56, .62], [.52, 1, 52, .6], [.74, -1, 44, .56], [1, 1, 26, .58]];
+        if (d === 1) spec = [[.5, -1, 52, .8], [.62, 1, 50, .84], [.74, -1, 40, .92], [.85, 1, 38, .96], [1, -1, 26, 1], [1, 1, 24, .98], [.96, -1, 8, .9]];
+        else if (d === 2) spec = [[.3, -1, 50, .6], [.52, 1, 46, .58], [.74, -1, 40, .54], [1, 1, 22, .56]];
         else if (d === 3) spec = [[.45, -1, 46, .66], [.75, 1, 40, .62], [1, -1, 24, .66]];
         else if (d === 5) spec = [[1, -1, 30, .7]];
         else spec = [[.55, 1, 44, .66], [1, -1, 26, .7]];
         spec.forEach(([f, side, a, lf], k) => {
           const s = at(parent, f); let ang = s[3] + side * (a + rr(-16, 16)) * Math.PI / 180;
-          ang = ang * .91 + UP * .09;
+          ang = ang * .8 + UP * .2;
           if (Math.sin(ang) > -(d === 1 ? .1 : .16)) { const el = rr(d === 1 ? .1 : .16, .6); ang = Math.cos(ang) >= 0 ? -el : -(Math.PI - el); }   // keep every branch growing up and out // tropism: lean toward the light
           const len = parent.len * lf * rr(.78, 1.2);
           // primary branches wait for stage 5 and then sprout from the finished trunk, lowest first; everything else starts where its parent has got to
@@ -116,10 +116,10 @@
           parent.kids.push(kid); grow(kid, maxDepth);
         });
       }
-      const trunk = mk(branches, 0, 0, UP, 215, 132, 0, S[2], DUR[0], 0, .07);
+      const trunk = mk(branches, 0, 0, UP, 300, 84, 0, S[2], DUR[0], 0, .06);
       grow(trunk, 5);
       // roots (stage 2)
-      const tap = mk(roots, 0, 12, Math.PI / 2, 200, 30, 0, S[1], 5.2, 1, 0.02);
+      const tap = mk(roots, 0, 12, Math.PI / 2, 190, 22, 0, S[1], 5.2, 1, 0.02);
       (function growRoots(p, depth) {
         if (depth >= 3) return; const spec = depth === 0 ? [[.2, -1, 64, .66], [.3, 1, 60, .66], [.46, -1, 52, .6], [.6, 1, 50, .56], [.8, -1, 40, .5], [1, 1, 28, .5]] : [[.4, -1, 46, .64], [.8, 1, 40, .6], [1, -1, 22, .6]];
         for (const [f, side, a, lf] of spec) { const s = at(p, f); const ang = s[3] + side * (a + rr(-8, 8)) * Math.PI / 180; const len = p.len * lf * rr(.9, 1.1); const k = mk(roots, s[0], s[1], ang, len, Math.max(1.4, s[2] * .62), depth + 1, p.t0 + f * p.dur, DUR[depth + 2] * 1.1, 1); growRoots(k, depth + 1); }
@@ -131,15 +131,15 @@
       let TOPY = 0; for (const b of branches) for (const q of b.pts) TOPY = Math.min(TOPY, q[1]);
       for (const b of branches) {
         if (b.depth < 3 && !(b.depth === 2 && R() < .5)) continue;
-        const n = b.depth >= 5 ? 7 : b.depth === 4 ? 7 : b.depth === 3 ? 7 : 5, spread = 2.6;
-        for (const f of (b.depth >= 4 ? [.6, .92] : [.75])) { const s0 = at(b, f); if (s0[1] > -290) continue;
+        const n = b.depth >= 5 ? 5 : b.depth === 4 ? 6 : b.depth === 3 ? 6 : 4, spread = 2.5;
+        for (const f of (b.depth >= 4 ? [.6, .92] : [.75])) { const s0 = at(b, f); if (s0[1] > -340) continue;
         for (let i = 0; i < n; i++) {
           const a0 = s0[3] + ((i + .5) / n - .5) * spread + rr(-.22, .22), off = rr(2, 22), x = s0[0] + Math.cos(a0) * off, y = s0[1] + Math.sin(a0) * off;
           const u = clamp((y - TOPY) / (-TOPY + 160)), tone = Math.round(clamp(u * .55 + rr(0, .14)) * 3) / 3 * .5;
           const col = shade(LC[(R() * LC.length) | 0], tone);
           const waveB = b.depth >= 4 ? R() < .7 : R() < .4;
           const base = tAt(b, f) + .3, when = (waveB ? S[8] + .2 : S[7] + .2) + R() * 3.4;
-          leaves.push({ x, y, ang: a0 + rr(-.35, .35), size: rr(26, 42) * (b.depth >= 5 ? .9 : 1), col, shp: (R() * 3) | 0, t: Math.max(base, when), ph: R() * TAU, flip: i % 2 ? 1 : -1 });
+          leaves.push({ x, y, ang: a0 + rr(-.35, .35), size: rr(24, 38) * (b.depth >= 5 ? .9 : 1), col, shp: (R() * 3) | 0, t: Math.max(base, when), ph: R() * TAU, flip: i % 2 ? 1 : -1 });
         } }
       }
       leaves.sort((a, b) => a.t - b.t);
@@ -156,7 +156,7 @@
       for (let i = 4; i < 12; i++) {
         const side = i % 2 ? 1 : -1; let best = null, bs = 1e9;
         const dmin = i === 4 ? 1 : i === 5 ? 2 : i === 6 ? 2 : 3, dmax = i === 4 ? 1 : i === 5 ? 2 : i === 6 ? 3 : 4;
-        const nt = S[i] + .5, target = lerp(-300, YMIN + 56, (i - 4) / 7), prevY = nodes[i - 1].y;
+        const nt = S[i] + .5, target = lerp(-340, YMIN + 56, (i - 4) / 7), prevY = nodes[i - 1].y;
         for (const b of branches) {
           if (b.depth < dmin || b.depth > dmax) continue;
           for (const f of [.3, .5, .8, 1]) {
@@ -166,7 +166,7 @@
             if (pen < bs) { bs = pen; best = { x: s[0], y: s[1], t: Math.max(nt, tn) }; }
           }
         }
-        if (!best) { const yy = lerp(-300, YMIN + 56, (i - 4) / 7); best = { x: side * 70, y: yy, t: nt }; }
+        if (!best) { const yy = lerp(-340, YMIN + 56, (i - 4) / 7); best = { x: side * 70, y: yy, t: nt }; }
         pushNode(best.x, best.y, best.t, i);
       }
       nodes.forEach((n, i) => { n.t = Math.max(n.t, i ? nodes[i - 1].t + .5 : 0); });
@@ -265,6 +265,17 @@
       const SEED = { pink: { ts: 1.5, tx: -8, ty: -7, col: '#E5197F', rot: -.5 }, teal: { ts: 1.85, tx: 8, ty: -7, col: '#2EC9C4', rot: .5 } };
       const LAND = 1.3, SINK0 = 3.9;
 
+      const BARK = Array.from({ length: 24 }, () => ({ off: rr(-.94, .94), ph: rr(0, TAU), f: rr(2, 7), amp: rr(.02, .07), dash: rr(6, 22), gap: rr(3, 12), w: rr(1.3, 3.4), lite: R() < .3, a: rr(.25, .6) }));
+      const KNOTS = [{ f: .3, off: -.34, r: 15, rot: .3 }, { f: .62, off: .4, r: 12, rot: -.4 }, { f: .85, off: -.1, r: 9, rot: .1 }];
+      const BUTT = Array.from({ length: 7 }, (_, i) => ({ x: (i / 6 - .5) * 2 * .92, ph: rr(0, TAU), lite: i % 2 === 0 }));
+      let CC = null, CX = null, CCB = null, ccN = 0; const CBS = 1.25;
+      function bakeLeaves(t) {
+        if (!CC) { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const L of leaves) { x0 = Math.min(x0, L.x); x1 = Math.max(x1, L.x); y0 = Math.min(y0, L.y); y1 = Math.max(y1, L.y); } const M = 80; CCB = { x: x0 - M, y: y0 - M, w: x1 - x0 + 2 * M, h: y1 - y0 + 2 * M };
+          CC = document.createElement('canvas'); CC.width = Math.ceil(CCB.w * CBS); CC.height = Math.ceil(CCB.h * CBS); CX = CC.getContext('2d'); CX.imageSmoothingEnabled = true; CX.imageSmoothingQuality = 'high'; ccN = 0; }
+        if (ccN && t < leaves[ccN - 1].t + 1.8) { CX.setTransform(1, 0, 0, 1, 0, 0); CX.clearRect(0, 0, CC.width, CC.height); ccN = 0; }
+        while (ccN < leaves.length && t >= leaves[ccN].t + 1.85) { const L = leaves[ccN++], zs = L.size / 56, cs = Math.cos(L.ang), sn = Math.sin(L.ang);
+          CX.setTransform(CBS * cs * zs, CBS * sn * zs, -CBS * sn * zs, CBS * cs * zs, CBS * (L.x - CCB.x), CBS * (L.y - CCB.y)); CX.globalAlpha = .98; CX.drawImage(leafSpr(L.col, L.shp), -2, -20, 64, 40); }
+      }
       /* ---------- scene drawing ---------- */
       const dust = Array.from({ length: 60 }, () => ({ x: rr(-1, 1), y: rr(-1, 1), z: rr(.3, 1), s: rr(.6, 1.8), p: rr(0, TAU) }));
       const growth = (b, t) => clamp((t - b.t0) / b.dur);
@@ -526,10 +537,21 @@
           const gr2 = growth(b, t); if (gr2 <= 0) continue;
           const dcol = ['#56659F', '#5E6DA8', '#6675B0', '#6E7DB8', '#7685C0', '#7E8DC8'][Math.min(5, b.depth)];
           strokeBranch(b, gr2, dcol, `rgba(215,226,255,${.62 + .04 * b.depth})`, b.depth === 0 ? thick : 1, 1);
-          if (b.depth === 0) { // bark grain: long dark fissures and a few pale ridges along the trunk
-            const up0 = easeOut(gr2) * .35 + gr2 * .65, lim0 = Math.floor(up0 * N);
-            [[-.62, 0], [-.28, 1], [.1, 0], [.42, 1], [.7, 0]].forEach(([off, lite], gi) => { g.strokeStyle = lite ? 'rgba(160,195,255,.16)' : 'rgba(6,12,60,.34)'; g.lineWidth = lite ? 1.4 : 2.2; g.lineCap = 'round'; g.beginPath(); let st = false;
-              for (let i = 1; i <= Math.min(N, lim0); i++) { if ((i + gi) % 5 === 0) { st = false; continue; } const p = b.pts[i]; const w = b.ws[i] * thick * off * .86; const x0 = p[0] + w + Math.sin(i * 1.7 + gi * 2.3) * 1.4; if (!st) { g.moveTo(x0, p[1]); st = true; } else g.lineTo(x0, p[1]); } g.stroke(); });
+          if (b.depth === 0) { // the trunk as wood: uneven edges, a rounded body, broken fissures, knots
+            const up0 = easeOut(gr2) * .35 + gr2 * .65, uMax = Math.min(1, up0), STEPS = 44, nrm = u => { const a = at(b, Math.max(0, u - .02)), c = at(b, Math.min(1, u + .02)); const dx = c[0] - a[0], dy = c[1] - a[1], l = Math.hypot(dx, dy) || 1; return [-dy / l, dx / l]; };
+            const edge = (u, side) => { const p = at(b, u), n = nrm(u), w = p[2] * thick * .5 * (1 + .05 * Math.sin(u * 23 + side) + .035 * Math.sin(u * 51 + 2 * side)); return [p[0] + n[0] * w * side, p[1] + n[1] * w * side]; };
+            g.save(); g.beginPath(); for (let i = 0; i <= STEPS; i++) { const q = edge(uMax * i / STEPS, -1); i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]); } for (let i = STEPS; i >= 0; i--) { const q = edge(uMax * i / STEPS, 1); g.lineTo(q[0], q[1]); } g.closePath();
+            const wb = b.ws[0] * thick * .56, bg = g.createLinearGradient(-wb, 0, wb, 0); bg.addColorStop(0, '#2B3770'); bg.addColorStop(.18, '#4C5B96'); bg.addColorStop(.45, '#7384BF'); bg.addColorStop(.7, '#55659F'); bg.addColorStop(1, '#27336A'); g.fillStyle = bg; g.fill(); g.clip();
+            g.lineCap = 'round'; BARK.forEach((k, gi) => { g.strokeStyle = k.lite ? 'rgba(200,215,255,' + (k.a * .5) + ')' : 'rgba(8,14,64,' + k.a + ')'; g.lineWidth = k.w; g.setLineDash([k.dash, k.gap]); g.lineDashOffset = gi * 7; g.beginPath();
+              for (let i = 0; i <= STEPS; i++) { const u = uMax * i / STEPS, p = at(b, u), n = nrm(u), w = p[2] * thick * .5 * (k.off + Math.sin(u * k.f * 6 + k.ph) * k.amp * 4), x = p[0] + n[0] * w, y = p[1] + n[1] * w; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke(); });
+            g.setLineDash([]); for (const kn of KNOTS) { if (kn.f > uMax) continue; const p = at(b, kn.f), n = nrm(kn.f), x = p[0] + n[0] * p[2] * thick * .5 * kn.off, y = p[1] + n[1] * p[2] * thick * .5 * kn.off;
+              for (let r = 1; r <= 3; r++) { g.strokeStyle = r % 2 ? 'rgba(8,14,64,.5)' : 'rgba(200,215,255,.3)'; g.lineWidth = 1.5; g.beginPath(); g.ellipse(x, y, kn.r * r / 3 * .75, kn.r * r / 3 * 1.25, kn.rot, 0, TAU); g.stroke(); } g.fillStyle = 'rgba(8,14,64,.55)'; g.beginPath(); g.ellipse(x, y, kn.r * .2, kn.r * .38, kn.rot, 0, TAU); g.fill(); }
+            g.restore();
+            g.lineCap = 'round'; for (const sd of [-1, 1]) { g.strokeStyle = sd < 0 ? 'rgba(215,226,255,.7)' : 'rgba(8,14,64,.55)'; g.lineWidth = 2.2; g.beginPath(); for (let i = 0; i <= STEPS; i++) { const q = edge(uMax * i / STEPS, sd); i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]); } g.stroke(); }
+          } else if (b.depth === 1 && gr2 >= .15) { // the great limbs carry the same grain
+            const up1 = easeOut(gr2) * .35 + gr2 * .65; g.lineCap = 'round'; g.setLineDash([10, 9]);
+            for (const [off, c] of [[-.35, 'rgba(8,14,64,.42)'], [.3, 'rgba(8,14,64,.34)'], [-.05, 'rgba(200,215,255,.22)']]) { g.strokeStyle = c; g.lineWidth = 1.8; g.beginPath(); for (let i = 0; i <= 18; i++) { const u = up1 * i / 18, p = at(b, u), w = p[2] * off, x = p[0] - Math.sin(p[3]) * w, y = p[1] + Math.cos(p[3]) * w; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke(); }
+            g.setLineDash([]);
           }
           if (b.depth <= 1) { // soft light along the lit side: gives the wood some roundness
             g.strokeStyle = b.depth ? 'rgba(255,255,255,.10)' : 'rgba(255,255,255,.14)'; g.lineWidth = b.depth ? 1.6 : 2.6; g.lineCap = 'round'; g.beginPath();
@@ -539,9 +561,10 @@
         }
         { // root flare: the trunk widens into buttresses at the ground and melts into the roots, so it reads as one growing plant
           const tk = branches[0], fk = sm(growth(tk, t) * 4) * thick; if (fk > 0) {
-            const fw = 40 + 90 * fk, fh = 110 * Math.min(1, .35 + fk), fg = g.createLinearGradient(0, -fh, 0, 18);
+            const fw = 30 + 52 * fk, fh = 120 * Math.min(1, .35 + fk), fg = g.createLinearGradient(0, -fh, 0, 18);
             fg.addColorStop(0, 'rgba(86,101,159,0)'); fg.addColorStop(.22, '#56659F'); fg.addColorStop(.8, '#56659F'); fg.addColorStop(1, 'rgba(86,101,159,0)');
             g.fillStyle = fg; g.beginPath(); g.moveTo(-26, -fh); g.bezierCurveTo(-28, -fh * .42, -fw * .55, -fh * .08, -fw, 8); g.quadraticCurveTo(0, 26, fw, 8); g.bezierCurveTo(fw * .55, -fh * .08, 28, -fh * .42, 26, -fh); g.closePath(); g.fill();
+            g.lineCap = 'round'; for (const bt of BUTT) { g.strokeStyle = bt.lite ? 'rgba(200,215,255,.3)' : 'rgba(8,14,64,.45)'; g.lineWidth = bt.lite ? 2 : 2.8; g.beginPath(); g.moveTo(bt.x * 40, -fh * .55); g.bezierCurveTo(bt.x * 60, -fh * .2, bt.x * fw * .8 + Math.sin(bt.ph) * 6, -fh * .02, bt.x * fw * 1.08, 10); g.stroke(); }
             g.strokeStyle = 'rgba(141,184,255,.30)'; g.lineWidth = 1.6; g.lineCap = 'round'; for (const sd of [-1, 1]) { g.beginPath(); g.moveTo(sd * 26, -fh * .8); g.bezierCurveTo(sd * 28, -fh * .42, sd * fw * .55, -fh * .08, sd * fw * .98, 5); g.stroke(); }
           }
         }
@@ -552,8 +575,9 @@
         for (const b of branches) tipGlow(b, t, TIP_B);
         for (const b of roots) tipGlow(b, t, TIP_T);
         // leaves unfold
+        if (LO < 0 && !EXL && leaves.length) { bakeLeaves(t); if (ccN) { setW(); g.globalAlpha = 1; g.drawImage(CC, CCB.x, CCB.y, CCB.w, CCB.h); } }
         for (const L of leaves) {
-          if (LO >= 0) break; if (L.ix % LSTEP[QTIER]) continue; if (t < L.t) continue; // each leaf unfolds over 1.8 s on curves whose speed starts and ends at zero (no overshoot, no snap at the end), so growth reads as one smooth swell
+          if (LO >= 0) break; if (!EXL && L.ix < ccN) continue; if (L.ix % LSTEP[QTIER]) continue; if (t < L.t) continue; // each leaf unfolds over 1.8 s on curves whose speed starts and ends at zero (no overshoot, no snap at the end), so growth reads as one smooth swell
           const u = (t - L.t) / 1.8; const gu = sm(clamp(u)), k = (1 - Math.pow(1 - clamp(u), 3)) * LGK[QTIER]; if (k <= .01) continue;
           const th = L.ang + Math.sin(ta * 1.3 + L.ph) * .05 * gu + (1 - gu) * .7 * L.flip; const zs = L.size / 56; const kx = k * zs, ky = k * zs * (.55 + .45 * gu); const cs = Math.cos(th), sn = Math.sin(th);
           let lx = L.x + SK * L.y, ly = L.y, al = .98 * sm(clamp(u * 2)), th2 = th;
