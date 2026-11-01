@@ -13,7 +13,7 @@ Last updated: 1 Nov 2026, personal account, local session. Everything below is p
 - Project Overview: Deliverables, Upcoming sessions, People and Recent activity are now bento tiles (`src/overviewbento.css`); heading and Up next unchanged.
 - Water-reveal logo and text drawn at full pixel density (`src/liquid.js`).
 - Discover more is a scroll-driven marketing page: pinned stage of real 1920 px Facilio screens that wipe in on scroll, one numbered chapter per solution area (even chapters: arrow rail; odd chapters: tiles pan sideways while scrolling down), closing call to action (`src/explore.js`, `src/explore2.css`). Violet theme variables remapped to Facilio blue (`src/theme.css`). Depth added to small boxes missed earlier (`src/depthlayer.css`, end of file).
-- Deployed to facilio.work at commit 233f74f (deploy 90). Review status is pending, so only the owner and Ashwin can open it. See `docs/DEPLOYS.md`.
+- Deployed to facilio.work at commit 6f5b78a (deploy 91). Review status is pending, so only the owner and Ashwin can open it. See `docs/DEPLOYS.md`.
 
 ## Next steps, in order
 1. The user checks the live app after deploy 90 (sign-in skyline, admin tabs, Facilio screens, Status Reports button, one AI action).
