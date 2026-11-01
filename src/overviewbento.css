@@ -1,0 +1,24 @@
+/* Project Overview bento: deliverables, sessions, people and activity as tiles */
+.ovb{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;align-items:start}
+.ovb-t{background:#fff;border:1px solid #e3e8f2;border-radius:18px;padding:18px;box-shadow:0 1px 0 #fff inset,0 6px 18px rgba(17,24,60,.07)}
+.ovb-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.ovb-h h3{margin:0;font-size:15px}
+.ovb-deliv{grid-column:span 8}.ovb-sess{grid-column:span 4}.ovb-ppl{grid-column:span 5}.ovb-act{grid-column:span 7}
+.ovb-dg{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.ovb-d{display:flex;align-items:center;gap:12px;text-align:left;background:#f6f8fc;border:1px solid transparent;border-radius:14px;padding:12px;cursor:pointer;font:inherit;color:inherit;transition:background .15s,border-color .15s,transform .15s}
+.ovb-d:hover{background:#fff;border-color:#c9d3ea;transform:translateY(-1px)}
+.ovb-n{flex:none;width:30px;height:30px;border-radius:9px;background:#e8eefc;color:#1D1A5E;font-weight:700;font-size:12px;display:grid;place-items:center}
+.ovb-dt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.ovb-dt b{font-size:13px}
+.ovb-s{display:flex;gap:12px;padding:10px 0;border-top:1px solid #eef1f7}.ovb-s:first-of-type{border-top:0;padding-top:0}
+.ovb-date{flex:none;width:46px;height:50px;border-radius:12px;background:#e8eefc;color:#1D1A5E;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.ovb-date b{font-size:18px}.ovb-date span{font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+.ovb-st b{font-size:13px}
+.ovb-pl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#6b7694;margin:12px 0 6px}.ovb-pl:first-of-type{margin-top:0}
+.ovb-p{display:flex;align-items:center;gap:10px;padding:5px 0}
+.ovb-av{flex:none;width:30px;height:30px;border-radius:50%;background:#1D1A5E;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center}
+.ovb-pt{display:flex;flex-direction:column;min-width:0}.ovb-pt b{font-size:13px}
+.ovb-tl{list-style:none;margin:0;padding:0 0 0 14px;border-left:2px solid #e3e8f2}
+.ovb-tl li{position:relative;padding:0 0 12px 12px;font-size:13px}
+.ovb-tl li::before{content:"";position:absolute;left:-21px;top:4px;width:10px;height:10px;border-radius:50%;background:#fff;border:2px solid #1D1A5E}
+@media(max-width:1100px){.ovb-deliv,.ovb-sess,.ovb-ppl,.ovb-act{grid-column:span 12}}
+@media(max-width:600px){.ovb-dg{grid-template-columns:1fr}}

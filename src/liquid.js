@@ -14,7 +14,7 @@
   const easeIO = x => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
   const lerp = (a, b, t) => a + (b - a) * t;
   V.liquidReveal = function (o) {
-    const host = o.host, DPR = o.dpr || Math.min(1.5, root.devicePixelRatio || 1);
+    const host = o.host, DPR = Math.max(o.dpr || 0, Math.min(2, root.devicePixelRatio || 1), 1.5);   // always crisp: this canvas only draws the logo, the wave and the text, so it can afford full density, whatever the tree stage used
     let logoImg = o.logoImg; if (!logoImg) { logoImg = new Image(); logoImg.src = o.logo || 'brand/logo-white.png'; }
     return new Promise(resolve => {
       const c = doc.createElement('canvas'); c.className = 'ti-liq'; c.setAttribute('aria-hidden', 'true'); host.appendChild(c);
@@ -40,7 +40,7 @@
       function step(now) {
         if (done) return;
         const e = (now - t0) / 1000;
-        x.setTransform(DPR, 0, 0, DPR, 0, 0); x.clearRect(0, 0, cw, ch);
+        x.setTransform(DPR, 0, 0, DPR, 0, 0); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.clearRect(0, 0, cw, ch);
         for (const L of LAY) {
           const y0 = edge(e, L); if (y0 > ch + 60) continue;
           const mv = e < D0 ? Math.sin(Math.PI * clamp((e - L.up) / RISE)) : Math.sin(Math.PI * clamp((e - D0 - L.dn) / DRAIN));
@@ -63,7 +63,7 @@
           const fl = easeIO((e - .85) / 1.15), lv = lerp(ph + 6, -8, fl), A = { k: .045 / DPR, sp: 4.2 };
           lx.beginPath(); lx.moveTo(-4, ph + 4); for (let xx = -4; xx <= pw + 8; xx += 6) lx.lineTo(xx, lv + (6 * DPR * (1 - fl * .6)) * Math.sin(xx * A.k + e * A.sp) + 2.5 * DPR * Math.sin(xx * A.k * 2.7 - e * 5));
           lx.lineTo(pw + 8, ph + 4); lx.closePath(); lx.fillStyle = '#fff'; lx.fill();
-          lx.globalCompositeOperation = 'source-in'; lx.drawImage(logoImg, 0, 0, pw, ph - 2); lx.globalCompositeOperation = 'source-over';
+          lx.imageSmoothingQuality = 'high'; lx.globalCompositeOperation = 'source-in'; lx.drawImage(logoImg, 0, 0, pw, ph - 2); lx.globalCompositeOperation = 'source-over';
           x.globalAlpha = .2 * show; x.drawImage(logoImg, gx, gy, w, h);   // the empty glass
           x.globalAlpha = show; x.drawImage(lg, gx, gy, w, h);
           const ds = sm((e - 1.55) / .5) * show;

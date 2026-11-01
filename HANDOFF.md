@@ -10,6 +10,8 @@ Last updated: 1 Nov 2026, personal account, local session. Everything below is p
 - Facilio screens: side panel of grouped screens with a large 1920 px preview (102 screens, WebP, `public/demokit/shots`).
 - Server: AI limits fail fast with Retry-After; the page waits and retries by itself (`src/api.js`); `tests/load_ai.mjs` (100 projects, 100 people).
 - Road animation ("See how Delivery Studio helps"): 16 s shorter, wheel blur, tyres grounded.
+- Project Overview: Deliverables, Upcoming sessions, People and Recent activity are now bento tiles (`src/overviewbento.css`); heading and Up next unchanged.
+- Water-reveal logo and text drawn at full pixel density (`src/liquid.js`).
 - Deployed to facilio.work at commit 233f74f (deploy 90). Review status is pending, so only the owner and Ashwin can open it. See `docs/DEPLOYS.md`.
 
 ## Next steps, in order
