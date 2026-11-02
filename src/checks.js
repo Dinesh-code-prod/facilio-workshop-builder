@@ -48,7 +48,7 @@
   // ================= VIEW =================
   V.checks = { html() {
     const tab0 = S.ui.chkTab || 'summary'; const tab = ({ records: 'history', changes: 'history', log: 'history' })[tab0] || tab0; const v = validation(); const cnt = s => v.filter(x => x.sev === s).length; const cs = F.changeSummary();
-    const tabs = [['summary', 'Readiness'], ['validation', 'Validation', cnt('blocking') + cnt('warning')], ['modules', 'Module status'], ['coverage', 'Scope coverage'], ['sources', 'Source checks', V.sourceCheckCount ? V.sourceCheckCount() : 0], ['history', 'History and changes', cs.additions.length + cs.modifications.length + cs.removals.length]];
+    const tabs = [['summary', 'Readiness'], ['validation', 'Validation', cnt('blocking') + cnt('warning')], ['modules', 'Module status'], ['coverage', 'Scope coverage'], ['sources', 'Source checks', V.sourceCheckCount ? V.sourceCheckCount() : 0], ['history', 'Change history', cs.additions.length + cs.modifications.length + cs.removals.length]];
     return `<div class="page-header"><div class="t"><h1>Checks &amp; Validations</h1><p>Consistency checks across scope, sessions, configuration changes, roles, transcripts and requirements, with the review status of every module and the BRD's readiness.</p></div><div class="row">${V.howtoButton('checks')}<button class="btn" data-act="exportJson" data-kind="changes">${ico('dl')}Change summary JSON (E)</button></div></div>
       <div class="tabs">${tabs.map(([k, l, c]) => `<button class="tab${tab === k ? ' active' : ''}" data-act="chkTab" data-v="${k}">${esc(l)}${c ? `<span class="cnt">${c}</span>` : ''}</button>`).join('')}</div><div class="page-body">${V.tabHint('checks', tab)}${CT[tab](v)}</div>`;
   } };

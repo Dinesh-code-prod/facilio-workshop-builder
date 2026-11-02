@@ -32,12 +32,14 @@ Group 2 now has three pages in working order, with small headings in the menu:
 
 Each tab shows the existing page unchanged, so no data or feature was removed. Old links, bookmarks and buttons (`#/usecases`, `#/msafind`, "Open Use Cases") still work and land in the right tab. The menu number badges for Checks & Validations now add the MSA findings to the blocking checks. Code: `src/workshubs.js`, menu in `src/shell.js`, test `tests/ui/workshops-hubs-check.mjs`.
 
-## Not changed yet (decide with me)
-1. **Dashboard and Project Overview** both answer "where are we?". Another session owns the dashboards, so I left them. Suggestion: one "Project" page with the dashboards as its tabs, or keep Dashboard for numbers and Overview for the plan and lifecycle, and say so in the page titles.
-2. **Team Guide and What's new**: move both under a small "Help" group at the bottom of the menu, so "Project" has only Dashboard, Overview and Tasks.
-3. **Project control** could sit under **Project** as sub-headings instead of a second group.
+## Also done in the second pass
+- **Project** is one group with two headings: Where are we? (Dashboard, Project Overview) and Run the project (Tasks, Governance & RAID, Change Requests, Deliverables & AI, Status Reports, Traceability & Quality). The separate Project control group is gone; saved layouts that used it land in Project.
+- **Help** is a small group before Settings with Team Guide and What's new.
+- Tab names: "History" became "Review history" (Transcripts) and "History and changes" became "Change history" (Checks).
+
+## Still not changed (decide with me)
+1. **Dashboard and Project Overview** (now side by side under "Where are we?") both answer "where are we?". Another session owns the dashboards, so I left them. Suggestion: one "Project" page with the dashboards as its tabs, or keep Dashboard for numbers and Overview for the plan and lifecycle, and say so in the page titles.
 4. **Requirement Session Planner** lives inside Contract but is about running workshops. Suggest moving it to "Run the sessions", next to Facilio Screens.
 5. **Traceability appears three times**: Use Cases > Traceability, Transcripts > Session → BRD, and Traceability & Quality. Suggest keeping one (Traceability & Quality) and linking to it.
 6. **Inside Checks & Validations**, Scope coverage and MSA scope check say related things; Source checks and Validation also overlap. Suggest merging Scope coverage into the MSA scope check tab, and Validation plus Source checks into one list.
-7. **History** exists in Transcripts (decisions on statements) and in Checks (changes to configuration). They are different records, but the name is the same; rename to "Review history" and "Change history".
 8. Customer menu is not touched.
