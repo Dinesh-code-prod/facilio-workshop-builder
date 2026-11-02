@@ -28,7 +28,8 @@ Where the product stands, how it is delivered, and what is next. Earlier phase n
 1. **Review and approval.** Submit the app for review once the owner is ready; this repository's docs 01 to 06 are the review pack.
 2. **Verify live.** Press Sync now in Tickets with the mailbox; run the connector from the organisation Claude account (ask the Claude organisation owner to allow custom connectors or add the connector once for everyone).
 3. **Find the AI error.** Read the live logs for "AI service could not be reached" in Describe with AI; the prompt, retry and relevance ranking are already improved.
-4. **Connector write tools.** Add a requirement or question, create a task, add whiteboard steps, each saved as a draft a person confirms.
+4. **More AI where it helps.** See the ranked list in [reference/ai-opportunities.md](reference/ai-opportunities.md); minutes of meeting from transcripts is done.
+4a. **Connector write tools.** Add a requirement or question, create a task, add whiteboard steps, each saved as a draft a person confirms.
 5. **Pictures.** A tool that returns an image, or upload to the app plus a `get_attachment` tool, so Import from image works without copy and paste.
 6. **Menu tidy-up still open.** Merge Dashboard and Project Overview; move the session planner next to Facilio Screens; one Traceability view instead of three; merge overlapping tabs inside Checks and Validations. Details in [reports/menu-audit.md](reports/menu-audit.md).
 7. **Customer sign-in.** Finish the invitation flow on its branch, then ask the platform to allow outside sign-ins for this app.

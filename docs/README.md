@@ -15,7 +15,7 @@ Read these six in order to understand Delivery Studio, check it and approve it.
 | Folder | Holds |
 |---|---|
 | [operations/](operations/) | How to deploy ([DEPLOY.md](operations/DEPLOY.md)) and the log of every deploy ([DEPLOYS.md](operations/DEPLOYS.md)) |
-| [reference/](reference/) | Deeper notes on one area: the Claude connector, privacy and retention, AI architecture, admin command centre, tickets and mailbox, Outlook, Teams, design and motion |
+| [reference/](reference/) | Deeper notes on one area: the Claude connector, AI opportunities, privacy and retention, AI architecture, admin command centre, tickets and mailbox, Outlook, Teams, design and motion |
 | [reports/](reports/) | Audits and status reports with dates (latest: [qa-2026-11-02.md](reports/qa-2026-11-02.md)): implementation status, audits, menu audit, master-prompt compliance, pending items |
 | `motionkit/`, `screenshots/` | The Facilio Motion Kit data and screenshots used in notes |
 

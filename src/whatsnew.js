@@ -6,6 +6,11 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '2.9.0', date: '2026-11-02', kind: 'UPDATE', title: 'Minutes of meeting from transcripts, Discover more scrolls', notes: [
+      'Transcripts > Create MOM: DeepSeek or your own Claude turns a call transcript into minutes of meeting (attendees, agenda, discussion, decisions, actions with owners and dates, risks, questions, next steps). You see a preview, then the Meeting minutes form opens filled in. The connector can do the same: get_transcripts, get_mom_pack, save_minutes.',
+      'Discover more now moves as you scroll: the headline assembles word by word, a thin line shows how far you are, every second solution area becomes a strip that slides sideways, and chapter numbers and headings sharpen in as they arrive. It stays still for people who ask for reduced motion, and on phones.',
+      'Review of where else AI could help, in order of value: docs/reference/ai-opportunities.md.'
+    ] },
     { v: '2.8.8', date: '2026-11-02', kind: 'UPDATE', title: 'Idle sign-out, nothing typed is lost, larger Claude answers', notes: [
       'After 30 minutes without activity you are signed out of the app (a warning appears two minutes before). Unsaved changes are saved first, or kept in your browser.',
       'If your session ends while you are typing, what you typed is kept for 24 hours. After you sign in and open the project again, unsaved changes to documents are put back and saved, and text from open forms is shown with a Copy button.',

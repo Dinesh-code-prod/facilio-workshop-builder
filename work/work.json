@@ -492,6 +492,158 @@
       "project"
      ]
     }
+   },
+   {
+    "name": "get_transcripts",
+    "description": "The workshop and call transcripts uploaded to the project: name, date, session, status, how many statements were read from each, and whether the text is stored.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      },
+      "limit": {
+       "type": "number"
+      }
+     },
+     "required": [
+      "project"
+     ]
+    }
+   },
+   {
+    "name": "get_transcript",
+    "description": "Read the text of one transcript, 25,000 characters at a time (use part for the next piece).",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      },
+      "id": {
+       "type": "string",
+       "description": "Transcript id from get_transcripts"
+      },
+      "part": {
+       "type": "number"
+      }
+     },
+     "required": [
+      "project",
+      "id"
+     ]
+    }
+   },
+   {
+    "name": "get_mom_pack",
+    "description": "The prepared prompt that turns one transcript into minutes of meeting (attendees, agenda, discussion, decisions, actions with owners and dates, risks, questions, next steps). Write the minutes from it, then call save_minutes.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      },
+      "id": {
+       "type": "string"
+      },
+      "title": {
+       "type": "string"
+      },
+      "date": {
+       "type": "string",
+       "description": "Meeting date, YYYY-MM-DD"
+      },
+      "attendees": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "project",
+      "id"
+     ]
+    }
+   },
+   {
+    "name": "save_minutes",
+    "description": "Save finished minutes of meeting in Governance & RAID > Meeting minutes. A person reviews them there and adds decisions, actions and risks to the registers.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      },
+      "title": {
+       "type": "string"
+      },
+      "date": {
+       "type": "string"
+      },
+      "summary": {
+       "type": "string"
+      },
+      "attendees": {
+       "type": "array",
+       "items": {
+        "type": "object"
+       }
+      },
+      "agenda": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       }
+      },
+      "discussion": {
+       "type": "array",
+       "items": {
+        "type": "object"
+       }
+      },
+      "decisions": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       }
+      },
+      "actions": {
+       "type": "array",
+       "items": {
+        "type": "object"
+       }
+      },
+      "risks": {
+       "type": "array",
+       "items": {
+        "type": "object"
+       }
+      },
+      "questions": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       }
+      },
+      "nextSteps": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       }
+      }
+     },
+     "required": [
+      "project",
+      "title"
+     ]
+    },
+    "confirm": true
    }
   ]
  }
