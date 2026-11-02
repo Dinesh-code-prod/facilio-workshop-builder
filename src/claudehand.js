@@ -83,7 +83,7 @@
     const imgP = img && d !== 'copy' && fitsLink ? copyImg(img) : Promise.resolve(null);   // started inside the click
     V.claudeLaunch(o, d).then(async r => { const okImg = await imgP; let t = r.said;
       if (img && !r.ref && d !== 'copy') t += okImg === true ? ' The picture is on your clipboard: click the message box and press Ctrl+V once more to attach it. A web page cannot attach the file for you.' : okImg === false ? ' This browser did not let the page copy the picture, so use Download the image and attach it with the paperclip.' : ' The clipboard holds the prompt, so use Copy the image next and paste it as well, or Download the image.';
-      setStatus(t, !r.ok || okImg === false); if (r.id) startPoll(r); }); };
+      setStatus(t, !r.ok || okImg === false); if (r.id) startPoll(r); else if (!r.prefilled && r.ok) toast(d === 'copy' || r.copied ? 'Prompt copied. In Claude, click the message box and press Ctrl+V, then send.' : 'Claude opened without the prompt. Use Copy the prompt, then paste it in Claude.', 9000); }); };
   ACT.hoImg = async () => { if (!HO || !HO.image) return; const ok = await copyImg(HO.image); setStatus(ok ? 'The picture is on your clipboard. In the Claude chat, click the message box and press Ctrl+V.' : 'This browser did not let the page copy the picture. Use Download the image and attach it with the paperclip.', !ok); };
   ACT.hoDl = () => { if (HO && HO.image) dl(HO.image, 'flow-diagram.png'); };
   ACT.hoCopy = async () => toast((await copyText(L.wrap((HO || {}).prompt || '', meta({ title: (HO || {}).name })))) ? 'Prompt copied' : 'Copy was blocked', 3000);

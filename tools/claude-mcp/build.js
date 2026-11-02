@@ -7,7 +7,8 @@ const crcT = (() => { const t = []; for (let n = 0; n < 256; n++) { let c = n; f
 const crc = b => { let c = 0xffffffff; for (const x of b) c = crcT[(c ^ x) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
 const parts = [], cen = []; let off = 0;
 for (const f of files) {
-  const data = fs.readFileSync(path.join(root, f)), def = zlib.deflateRawSync(data, { level: 9 }), name = Buffer.from(f), c = crc(data);
+  const data = Buffer.from(fs.readFileSync(path.join(root, f), 'utf8').replace(/\r\n/g, '\n')),   // always LF, so a build on Windows gives the same package as on Mac or Linux
+    def = zlib.deflateRawSync(data, { level: 9 }), name = Buffer.from(f), c = crc(data);
   const lh = Buffer.alloc(30); lh.writeUInt32LE(0x04034b50, 0); lh.writeUInt16LE(20, 4); lh.writeUInt16LE(0x0800, 6); lh.writeUInt16LE(8, 8); lh.writeUInt16LE(0, 10); lh.writeUInt16LE(0x21, 12); lh.writeUInt32LE(c, 14); lh.writeUInt32LE(def.length, 18); lh.writeUInt32LE(data.length, 22); lh.writeUInt16LE(name.length, 26);
   parts.push(lh, name, def);
   const ch = Buffer.alloc(46); ch.writeUInt32LE(0x02014b50, 0); ch.writeUInt16LE(20, 4); ch.writeUInt16LE(20, 6); ch.writeUInt16LE(0x0800, 8); ch.writeUInt16LE(8, 10); ch.writeUInt16LE(0, 12); ch.writeUInt16LE(0x21, 14); ch.writeUInt32LE(c, 16); ch.writeUInt32LE(def.length, 20); ch.writeUInt32LE(data.length, 24); ch.writeUInt16LE(name.length, 28); ch.writeUInt32LE(off, 42);
