@@ -380,11 +380,16 @@
         { const sz = Math.min(W, H) * .11, hb = H * .75; [[.07, .8], [.14, 1], [.89, .9], [.95, .72]].forEach(([fx, k], i) => { const bx = fx * W, h = sz * k, sp = (.5 + i * .13) * (rm ? 0 : 1), a0 = ta * sp + i; g.strokeStyle = 'rgba(141,184,255,.55)'; g.lineWidth = Math.max(1.4, sz * .03); g.lineCap = 'round'; g.beginPath(); g.moveTo(bx, hb); g.lineTo(bx, hb - h); g.stroke();
           for (let b = 0; b < 3; b++) { const an = a0 + b * TAU / 3; g.strokeStyle = b === 0 ? 'rgba(229,25,127,.8)' : 'rgba(234,242,255,.8)'; g.lineWidth = Math.max(1.2, sz * .026); g.beginPath(); g.moveTo(bx, hb - h); g.lineTo(bx + Math.cos(an) * sz * .46 * k, hb - h + Math.sin(an) * sz * .46 * k); g.stroke(); }
           g.fillStyle = '#EAF2FF'; g.beginPath(); g.arc(bx, hb - h, Math.max(2, sz * .035), 0, TAU); g.fill(); }); }
-        // a hot-air balloon drifts across the sky now and then
-        { const per = 46, u = ((ta - 8) % per) / per; if (ta > 8) { const bx = lerp(W * 1.1, -W * .1, u), by = H * (.22 + .05 * Math.sin(ta * .35)), r = Math.min(W, H) * .045, fade = sm(u / .06) * sm((1 - u) / .06);
-          g.globalAlpha = .92 * fade; const stripes = ['#E5197F', '#EAF2FF', '#33C9C9', '#1570EF', '#E5197F', '#EAF2FF'];
-          g.save(); g.beginPath(); g.ellipse(bx, by, r * .82, r, 0, 0, TAU); g.clip(); stripes.forEach((c, k) => { g.fillStyle = c; g.fillRect(bx - r * .82 + k * r * 1.64 / 6, by - r, r * 1.64 / 6 + 1, r * 2); }); g.restore();
-          g.strokeStyle = 'rgba(234,242,255,.7)'; g.lineWidth = 1; g.beginPath(); g.moveTo(bx - r * .3, by + r * .94); g.lineTo(bx - r * .2, by + r * 1.5); g.moveTo(bx + r * .3, by + r * .94); g.lineTo(bx + r * .2, by + r * 1.5); g.stroke(); g.fillStyle = '#1D1A5E'; g.fillRect(bx - r * .22, by + r * 1.5, r * .44, r * .3); g.globalAlpha = 1; } }
+        // a paper plane glides across the sky now and then, leaving a dotted trail (white wings, pink fold: Facilio colours, readable on the night sky)
+        { const per = 40, u = ((ta - 8) % per) / per; if (ta > 8) { const r = Math.min(W, H) * .028, fade = sm(u / .06) * sm((1 - u) / .06);
+          const px = lerp(-W * .08, W * 1.08, u), py = H * (.2 + .06 * Math.sin(u * TAU * 1.1)) - u * H * .04, nx = lerp(-W * .08, W * 1.08, u + .004), ny = H * (.2 + .06 * Math.sin((u + .004) * TAU * 1.1)) - (u + .004) * H * .04, ang = Math.atan2(ny - py, nx - px);
+          g.globalAlpha = .9 * fade; g.fillStyle = 'rgba(234,242,255,.7)';
+          for (let k = 1; k <= 9; k++) { const uu = u - k * .006; if (uu < 0) break; const tx = lerp(-W * .08, W * 1.08, uu), ty = H * (.2 + .06 * Math.sin(uu * TAU * 1.1)) - uu * H * .04; g.globalAlpha = .6 * fade * (1 - k / 10); g.beginPath(); g.arc(tx, ty, Math.max(1, r * .06), 0, TAU); g.fill(); }
+          g.globalAlpha = .95 * fade; g.save(); g.translate(px, py); g.rotate(ang - .12);
+          g.fillStyle = '#EAF2FF'; g.beginPath(); g.moveTo(r * 1.6, 0); g.lineTo(-r * 1.1, -r * .75); g.lineTo(-r * .55, -r * .05); g.closePath(); g.fill();
+          g.fillStyle = '#8DB8FF'; g.beginPath(); g.moveTo(r * 1.6, 0); g.lineTo(-r * .55, -r * .05); g.lineTo(-r * 1.1, r * .55); g.closePath(); g.fill();
+          g.fillStyle = '#E5197F'; g.beginPath(); g.moveTo(r * 1.6, 0); g.lineTo(-r * .55, -r * .05); g.lineTo(-r * .2, r * .22); g.closePath(); g.fill();
+          g.restore(); g.globalAlpha = 1; } }
         // far flock in the sky (between the stars and the hills)
         drawFlock(ta, t);
         LAYERS.forEach((L, li) => {
