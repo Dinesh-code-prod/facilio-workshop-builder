@@ -41,3 +41,5 @@ Last updated: 1 Nov 2026, personal account, local session. Everything below is p
 - Not copied from the Comet CMMS demo kit: 260 live pages (the kit is about 500 MB).
 - AI limit: the platform allows about 20 requests a minute and a daily cost cap per signed-in person; an organisation Claude key is shared by everyone (see `docs/AI_ARCHITECTURE.md`).
 - Deploys need a Claude session with the `facilio work` connector signed in with the Facilio account (any Claude account type works). Run `/deploy`.
+
+- Second Nov 2026 (deploys 107 and 108): see docs/MASTER_PROMPT_COMPLIANCE_2026-11-02.md for the section-by-section status against the master prompt. Merged the other account's BRD scope commits first. Admin > AI > Check image reading must be run once on the live app to learn whether the platform accepts picture input.
