@@ -1,0 +1,69 @@
+/* Traceability & Quality, page guides, explained AI panels, Training & Guides path, UAT and Go-live sub-tabs. Flat and matte: Facilio navy, blue, pink and sky only. */
+.tq-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+.tq-tile { text-align: left; background: #fff; border: 1px solid var(--fc-border, #e3e6ee); border-radius: 8px; padding: 14px 16px; cursor: pointer; display: grid; gap: 2px; font: inherit; color: #1D1A5E; }
+.tq-tile b { font-size: 26px; line-height: 1.1; font-weight: 700; }
+.tq-tile span { font-size: 13px; font-weight: 600; }
+.tq-tile small { font-size: 12px; color: #5b6075; }
+.tq-tile.on { border-color: #1570EF; box-shadow: inset 0 0 0 1px #1570EF; }
+.tq-tile.ok b { color: #2f8f55; } .tq-tile.bad b { color: #E5197F; } .tq-tile.warn b { color: #1570EF; }
+.tq-key { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 16px; font-size: 12px; color: #5b6075; }
+.tq-q { height: 30px; border: 1px solid var(--fc-border, #e3e6ee); border-radius: 6px; padding: 0 10px; min-width: 170px; }
+.tq-p { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #eef0f6; color: #46506b; }
+.tq-p.done { background: #DEF2E5; color: #1f6b3d; } .tq-p.part { background: #DBEBFA; color: #14509e; } .tq-p.todo { background: #eef0f6; color: #5b6075; }
+.tq-p.gap { background: #FBE2EE; color: #a3125a; } .tq-p.fail { background: #E5197F; color: #fff; }
+.tq-t tr.click { cursor: pointer; } .tq-t tr.click:hover { background: #f6f8fd; } .tq-t td { vertical-align: top; }
+.tq-gaps { display: grid; gap: 10px; padding: 14px 16px; }
+.tq-gap { border: 1px solid var(--fc-border, #e3e6ee); border-left: 4px solid #8DB8FF; border-radius: 8px; padding: 12px 14px; background: #fff; }
+.tq-gap.high { border-left-color: #E5197F; } .tq-gap.medium { border-left-color: #1570EF; }
+.tq-gap p { margin: 6px 0 0; font-size: 13px; }
+.tq-gh { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tq-chain { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.tq-step { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--fc-border, #e3e6ee); border-radius: 8px; }
+.tq-step > i { flex: none; width: 24px; height: 24px; border-radius: 50%; background: #1D1A5E; color: #fff; font-style: normal; font-size: 12px; display: grid; place-items: center; }
+.tq-step.gap > i, .tq-step.fail > i { background: #E5197F; } .tq-step.done > i { background: #2f8f55; }
+.tq-link { background: none; border: 0; padding: 0; color: #1570EF; cursor: pointer; font: inherit; text-decoration: underline; }
+
+/* what is this page for */
+.pg { border: 1px solid var(--fc-border, #e3e6ee); border-radius: 8px; background: #f6f8fd; margin: 0 0 14px; }
+.pg > summary { cursor: pointer; padding: 10px 14px; display: flex; gap: 10px; align-items: baseline; list-style: none; color: #1D1A5E; font-size: 13px; }
+.pg > summary::-webkit-details-marker { display: none; }
+.pg > summary::before { content: '\25B8'; color: #1570EF; }
+.pg[open] > summary::before { content: '\25BE'; }
+.pg > summary span { color: #5b6075; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg-b { padding: 0 16px 12px 30px; font-size: 13px; line-height: 1.6; }
+.pg-b p { margin: 0 0 6px; } .pg-b ol { margin: 0 0 6px; padding-left: 18px; }
+
+/* explained AI panel */
+.aip { margin: 0 0 14px; }
+.aip > summary { cursor: pointer; padding: 12px 16px; display: flex; gap: 12px; align-items: baseline; list-style: none; color: #1D1A5E; }
+.aip > summary::-webkit-details-marker { display: none; }
+.aip > summary::before { content: '\2726'; color: #1570EF; }
+.aip > summary span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.aip-b { padding: 0 16px 14px; }
+.aip-how { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+.aip-how div { border: 1px solid var(--fc-border, #e3e6ee); border-radius: 8px; padding: 10px 12px; background: #f6f8fd; display: grid; gap: 4px; font-size: 12px; color: #46506b; }
+.aip-how b { color: #1D1A5E; font-size: 13px; }
+.aip-rows { display: grid; }
+.aip-row { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 10px 0; border-top: 1px solid var(--fc-border, #e3e6ee); }
+
+/* Training & Guides */
+.tp-path { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.tp-step { text-align: left; display: grid; gap: 3px; padding: 12px 14px 12px 44px; position: relative; background: #fff; border: 1px solid var(--fc-border, #e3e6ee); border-radius: 8px; cursor: pointer; font: inherit; color: #1D1A5E; }
+.tp-step i { position: absolute; left: 12px; top: 12px; width: 22px; height: 22px; border-radius: 50%; background: #8DB8FF; color: #1D1A5E; font-style: normal; font-size: 12px; display: grid; place-items: center; font-weight: 700; }
+.tp-step.on { border-color: #1570EF; box-shadow: inset 0 0 0 1px #1570EF; } .tp-step.on i { background: #1570EF; color: #fff; }
+.tp-step span { font-size: 12px; color: #5b6075; }
+.tp-srcs { margin-bottom: 14px; }
+.tp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 0 16px 14px; }
+.tp-src { display: flex; gap: 10px; align-items: center; border: 1px solid var(--fc-border, #e3e6ee); border-radius: 8px; padding: 10px 12px; }
+.tp-src > i { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 12px; font-weight: 700; }
+.tp-src.ok > i { background: #DEF2E5; color: #1f6b3d; } .tp-src.todo > i { background: #FBE2EE; color: #a3125a; }
+.tp-src > div { flex: 1; min-width: 0; }
+
+/* UAT and Go-live sub-tabs */
+.dl-cap { margin: 0 0 10px; }
+.dl-sub { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+.dl-sub button { text-align: left; display: grid; gap: 1px; padding: 8px 14px; background: #fff; border: 1px solid var(--fc-border, #e3e6ee); border-radius: 8px; cursor: pointer; font: inherit; color: #1D1A5E; min-width: 140px; }
+.dl-sub button span { font-size: 11px; color: #5b6075; }
+.dl-sub button.on { border-color: #1570EF; background: #f0f6ff; box-shadow: inset 0 0 0 1px #1570EF; }
+
+@media (max-width: 900px) { .tq-tiles, .aip-how, .tp-path, .tp-grid { grid-template-columns: 1fr; } }

@@ -6,6 +6,12 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '2.8.0', date: '2026-11-02', kind: 'UPDATE', title: 'Clearer pages: Traceability & Quality, AI panels, Training & Guides, UAT & Go-live', notes: [
+      'Traceability & Quality now starts with what it is for. It follows each requirement through use cases, module, build and testing, lists the gaps with why they matter and where to fix them (Open button), and keeps the lessons learned. It moved to Project control and shows a count in the menu.',
+      'Rows of blue AI, Open in Claude and Add from Claude buttons are now one panel that explains the three ways to draft a document (Configuration Inputs, UAT, Go-live, Training and Guides).',
+      'Training & Guides: a four-step path across its pages, and a panel showing what the drafts read (BRD draft, Configuration Inputs, org package, Facilio and customer logos) with buttons to load the org package and add logos.',
+      'UAT and Go-live are split into sub-tabs with a one-line caption each (Test cases, Issues, Tester guide, Demos and training, What to check, Checklist and actions; Readiness, Checklist, Actions), and each page has a "What is this page for?" guide you can close.',
+      'BRD draft: a section or block that cannot be drawn no longer blanks the page; it is replaced by a short note, and an error page now shows the reason.'] },
     { v: '2.7.1', date: '2026-11-02', kind: 'UPDATE', title: 'Whiteboard: select with a rectangle and move everything together; where to get the Claude extension', notes: [
       'Process Whiteboard: drag on empty space to draw a selection rectangle; everything inside it is selected. A dashed box shows the selection: drag from anywhere inside it to move all of it together. Hold Shift or Ctrl to add to a selection. To pan, hold Space and drag, use the hand tool, the middle mouse button or the scroll wheel.',
       'Moving a flow frame now carries everything that belongs to it: the states and buttons of the copied flow, and anything whose centre sits inside the frame.',

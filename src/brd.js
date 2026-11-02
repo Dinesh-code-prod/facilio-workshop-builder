@@ -103,7 +103,7 @@
 
     ctx = 'cover'; add({ id: 'cover', t: 'cover', title: rec.id === 'main' ? (pr.docTitle || 'Business Requirements Document') : rec.name, subtitle: rec.id === 'main' ? 'Facilio CAFM Implementation' : (ty.label + (rec.system ? ' · ' + rec.system : '') + ' · Facilio Implementation'), customer: pr.client || (S.project && S.project.customer) || TBC, version: pr.version || 'V1.0', date: pr.date || new Date().toISOString().slice(0, 10), status: ({ draft: 'Draft', review: 'In review', approved: 'Approved' })[BD().status || 'draft'] }); BR();
     for (const sid of order) {
-      ctx = sid;
+      ctx = sid; try {
       if (sid === 'control') { H(1, 'Document Control', 'h'); H(2, 'Version History', 'h2v'); TB(['Version', 'Date', 'Author', 'Description of change'], (S.ws.brd.versionHistory || []).map(v => [v.version, v.date, v.author || pr.consultant || '', v.change]), [1, 1.2, 1.6, 4], 'versions'); H(2, 'Review and Approval', 'h2a'); TB(['Name', 'Role', 'Signature', 'Date'], (S.ws.brd.approvals || []).map(a => [a.name || '', a.role || '', '', a.date || '']), [2, 2, 2, 1.2], 'approvals'); BR(); }
       else if (sid === 'toc') { add({ id: 'toc', t: 'toc' }); BR(); }
       else if (sid === 'project') { H(1, ++secNo + '. Project Information', 'h'); TB(['Item', 'Detail'], [['Project Title', 'Facilio CAFM Implementation – ' + (pr.client || TBC)], ['Customer', pr.client || TBC], ['Org ID', pr.orgId || TBC], ['Region', pr.region || TBC], ['Document Version', pr.version || 'V1.0'], ['Facilio Consultant', pr.consultant || TBC], ['Project Manager', pr.pm || TBC], ['Implementation Members', pr.members || TBC], ['Configuration source', cfgName + (pkgDate ? ' (exported ' + pkgDate + ')' : '')]], [1, 2.4], 'info'); }
@@ -234,6 +234,7 @@
         TB(['Severity', 'Area', 'Item', 'Finding'], v.filter(x => x.sev !== 'info').slice(0, 300).map(x => [humanize(x.sev), x.area, x.item, x.msg]), [0.8, 1.1, 2.2, 4], 'list', { empty: 'No findings.' }); }
       else if (sid === 'sources' && B) { H(1, 'Appendix B — Configuration Source', 'h'); P('Configuration analysed: ' + cfgName + (pkgDate ? ', exported ' + pkgDate : '') + '. The source configuration is read-only; all workshop changes are recorded separately.', 'src');
         TB(['Component', 'Records', 'Status'], B.inventory.map(i => [humanize(i.type.toLowerCase()), String(i.records), i.parsed ? 'Analysed' : (i.note || 'Not analysed')]), [2.4, 0.7, 3], 'inv'); H(2, 'Known limitations of the source', 'h2l'); UL(B.gaps.filter(g => g.area !== 'Modules').map(g => g.area + ' — ' + g.item + ': ' + g.detail), 'gaps'); }
+      } catch (e) { console.error('BRD section ' + sid, e); ctx = 'err:' + sid; add({ id: id('err'), t: 'p', text: 'This section could not be built (' + sid + '): ' + String((e && e.message) || e).slice(0, 160) + '. The rest of the document is not affected.', style: 'caption' }); }
     }
 
     function moduleSection(m) {
