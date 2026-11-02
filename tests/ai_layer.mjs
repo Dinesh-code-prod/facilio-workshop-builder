@@ -10,7 +10,7 @@ const AI = createAI({ ctx: () => ctx, db: { get: async (c, k) => (db.has(c + '/'
 const real = globalThis.fetch; let fetches = [], fetchImpl = null;
 globalThis.fetch = async (u, o) => { fetches.push({ u: String(u), o }); return fetchImpl(String(u), o); };
 const resp = (status, j, h = {}) => ({ ok: status < 300, status, headers: { get: k => h[k.toLowerCase()] }, json: async () => j });
-let n = 0; const t = async (name, fn) => { llmCalls = []; fetches = []; llmImpl = null; fetchImpl = null; await fn(); n++; console.log('  ok  ' + name); };
+let n = 0; const t = async (name, fn) => { AI.resetBreaker(); llmCalls = []; fetches = []; llmImpl = null; fetchImpl = null; await fn(); n++; console.log('  ok  ' + name); };
 const rejects = async (p, code) => { try { await p; } catch (e) { assert.ok(e instanceof AIFail, 'normalised error, got ' + e); assert.equal(e.code, code, e.message); return e; } assert.fail('expected ' + code); };
 const msg = [{ role: 'user', content: 'hello' }];
 
@@ -103,5 +103,11 @@ await t('structured output: validated, repaired once, never passed through unche
 await t('no feature calls a provider outside the shared layer', async () => {
   const files = ['work/server/api.mjs', ...fs.readdirSync('src').filter(f => f.endsWith('.js')).map(f => 'src/' + f)];
   for (const f of files) { const s = fs.readFileSync(f, 'utf8'); assert.ok(!/api\.anthropic\.com|api\.deepseek\.com|CTX\.llm\(|ctx\.llm\(/.test(s), f + ' calls a provider directly'); }
+});
+await t('after six failures in a row the provider is paused and the next call fails at once', async () => {
+  llmImpl = () => { throw Object.assign(new Error('down'), { status: 503 }); };
+  for (let i = 0; i < 6; i++) { try { await AI.generate({ op: 'document', messages: msg, maxTokens: 10 }); } catch (e) { /* expected */ } }
+  llmCalls = []; await rejects(AI.generate({ op: 'document', messages: msg, maxTokens: 10 }), 'unavailable');
+  assert.equal(llmCalls.length, 0, 'a paused provider is not called');
 });
 globalThis.fetch = real; console.log(`\n${n} AI layer checks passed`);

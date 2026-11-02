@@ -48,7 +48,9 @@ const hasImage = msgs => msgs.some(m => Array.isArray(m.content) && m.content.so
 
 /* env: { ctx: () => platform ctx, db: { get(col,key), put(col,key,val), del(col,key) }, now: () => iso string, log?: (...a) => void }
    Everything the service stores lives in the "ai" collection: cfg (configuration), use (counters), key (an encrypted Claude key). */
+
 export function createAI(env) {
+  const BREAKER = {};   // provider id -> { fails, until }; see "Circuit breaker" in generate()
   const ctx = () => env.ctx(); const now = env.now; const log = env.log || (() => { });
   const dbGet = async (k) => { try { const r = await env.db.get('ai', k); return r && r.value; } catch (e) { return null; } };
 
@@ -190,9 +192,13 @@ export function createAI(env) {
   async function generate(q) {
     const budget = q.budget || 21000; const t0 = Date.now(); const left = () => budget - (Date.now() - t0);
     const pv = q.pv || await choose(q.op, q.provider); const A = ADAPTERS[pv.provider];
+    // Circuit breaker: after 6 failures in a row the provider is skipped for 30 seconds, so people get a quick, plain answer instead of waiting through retries.
+    // shortcut: kept in memory per running instance, not shared between instances; move it to the database if the service ever runs many instances.
     const once = async (adapter, model, req, retried) => {
-      try { const out = await adapter.generate(Object.assign({ model, timeoutMs: Math.max(4000, Math.min(21000, left() - 1000)) }, req)); await note(adapter.id, true, out.usage, null, retried); return Object.assign(out, { provider: adapter.name, providerId: adapter.id }); }
-      catch (e) { const f = e instanceof AIFail ? e : new AIFail('unavailable', 'The AI service failed.'); await note(adapter.id, false, null, f.code, retried); throw f; }
+      const br = BREAKER[adapter.id] || (BREAKER[adapter.id] = { fails: 0, until: 0 });
+      if (br.until > Date.now() && !(env.noBreaker && env.noBreaker())) { const e = new AIFail('unavailable', NAMES[adapter.id] + ' is not answering, so it is paused for a short while. Try again in half a minute.'); e.retryable = false; e.retryAfter = Math.ceil((br.until - Date.now()) / 1000); throw e; }
+      try { const out = await adapter.generate(Object.assign({ model, timeoutMs: Math.max(4000, Math.min(21000, left() - 1000)) }, req)); br.fails = 0; await note(adapter.id, true, out.usage, null, retried); return Object.assign(out, { provider: adapter.name, providerId: adapter.id }); }
+      catch (e) { const f = e instanceof AIFail ? e : new AIFail('unavailable', 'The AI service failed.'); if (['unavailable', 'timeout', 'empty'].includes(f.code) && ++br.fails >= 6) { br.until = Date.now() + 30000; br.fails = 0; } await note(adapter.id, false, null, f.code, retried); throw f; }
     };
     const run = async (adapter, model, req) => {
       try { return await once(adapter, model, req, false); }
@@ -234,6 +240,7 @@ export function createAI(env) {
   }
   // saving the configuration: everything is validated before it is stored; a provider without a key cannot be made the default or a route
   async function saveConfig(b, by) {
+    for (const k of Object.keys(BREAKER)) delete BREAKER[k];   // an admin changing the setup clears any pause
     const cur = await config(); b = b || {};
     const dp = b.defaultProvider === undefined ? cur.defaultProvider : String(b.defaultProvider); if (!PROVIDERS.includes(dp)) throw new AIFail('bad_request', 'Choose DeepSeek or Claude');
     const fb = b.fallback === undefined ? cur.fallback : String(b.fallback); if (!['none', 'deepseek'].includes(fb)) throw new AIFail('bad_request', 'Choose a fallback option');
@@ -257,5 +264,5 @@ export function createAI(env) {
     try { const out = await vision.generate({ system: 'Answer with one word.', messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: 'image/png', data: RED } }, { type: 'text', text: 'What colour is the square in this picture? One word.' }] }], maxTokens: 12, timeoutMs: 20000 });
       const red = /red/i.test(out.text); return { ok: red, model: out.model, ms: Date.now() - t0, message: red ? 'The platform accepted a picture and described it correctly (' + out.model + '). "Read the diagram" can use it.' : 'The model answered, but not correctly ("' + String(out.text).slice(0, 40) + '"), so it cannot be trusted to read diagrams. Use My Claude.' };
     } catch (e) { return { ok: false, model: DEFAULT_MODEL.vision, message: e instanceof AIFail ? e.message : 'The check failed' }; } }
-  return { visionProbe, choose, generate, generateJSON, status, config, saveConfig, dropClaude, usage, keySource, claudeKey, sealKey, masterKey, verifyClaude: k => claude.verify(k), adapters: ADAPTERS, names: NAMES, defaultModel: DEFAULT_MODEL };
+  return { resetBreaker: () => { for (const k of Object.keys(BREAKER)) delete BREAKER[k]; }, visionProbe, choose, generate, generateJSON, status, config, saveConfig, dropClaude, usage, keySource, claudeKey, sealKey, masterKey, verifyClaude: k => claude.verify(k), adapters: ADAPTERS, names: NAMES, defaultModel: DEFAULT_MODEL };
 }

@@ -380,7 +380,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   // ---------- AI providers ----------
   // Every model call goes through the shared AI service in ./_ai.mjs (provider choice, capability checks, retries, fallback policy,
   // usage counters, error normalisation). Nothing below calls DeepSeek or Anthropic directly; tests/work_adapter.mjs checks that.
-  const AI = createAI({ ctx: () => CTX, db: { get: (c, k) => CTX.db.get(c, k), put: (c, k, v) => dbPut(c, k, v), del: (c, k) => dbDel(c, k) }, now, log: (...a) => console.error(...a) });
+  const AI = createAI({ noBreaker: () => globalThis.__NOBREAKER, ctx: () => CTX, db: { get: (c, k) => CTX.db.get(c, k), put: (c, k, v) => dbPut(c, k, v), del: (c, k) => dbDel(c, k) }, now, log: (...a) => console.error(...a) });
   const PNAME = AI.names; const PROVIDERS = Object.keys(PNAME);
   const haveClaude = () => AI.adapters.claude.configured();
   const aiErr = e => (e instanceof AIFail ? new HttpError(e.status, e.message, { code: e.code, retryAfter: e.retryAfter || undefined }) : e);

@@ -19,6 +19,7 @@ Run `/handoff`. It commits and pushes finished work, puts half-done work on a `w
 - CSS: styles are layered in the order listed in `build.mjs`; later layers win. Overrides use `body ...:not(#_):not(#__)` with `!important`. `depthlayer.css` is the last layer.
 - Preview locally: `node build.mjs`, then `node tests/ui/devserver.mjs 4173` and open http://localhost:4173/?nointro (`?intro=1` forces the opening animation). Local data is in `tests/ui/.devdata.json` (not committed).
 - Tests: `npm test`. Also `npm run test:load` (100 projects, 100 people, AI limits) and `npm run test:scale`.
+- CI: `.github/workflows/test.yml` runs `npm test` and the build on every push.
 - Deploy: `/deploy`, or see `docs/operations/DEPLOY.md`. The site must stay under 50 MB extracted (about 41 MB now).
 
 ## Look and feel (the user's rules)

@@ -1,4 +1,5 @@
 // Tests the facilio.work server function (work/server/api.mjs) against a mock of the platform's ctx (db limits, verified viewer, private files).
+globalThis.__NOBREAKER = 1;   // the tests fail the AI on purpose many times in one process; the pause is tested in ai_layer.mjs
 import assert from 'node:assert/strict';
 import handler from '../work/server/api.mjs';
 const store = new Map(), files = new Map(); let maxVal = 0, calls = 0;

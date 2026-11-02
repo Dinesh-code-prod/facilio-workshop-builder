@@ -132,7 +132,7 @@
       let TOPY = 0; for (const b of branches) for (const q of b.pts) TOPY = Math.min(TOPY, q[1]);
       for (const b of branches) {
         if (b.depth < 3 && !(b.depth === 2 && R() < .5)) continue;
-        const n = b.depth >= 5 ? 5 : b.depth === 4 ? 6 : b.depth === 3 ? 6 : 4, spread = 2.5;
+        const n = b.depth >= 5 ? 4 : b.depth === 4 ? 5 : b.depth === 3 ? 5 : 4, spread = 2.5;   // about a fifth fewer leaves than before (smoother); each is a little larger to keep the canopy full
         for (const f of (b.depth >= 4 ? [.6, .92] : [.75])) { const s0 = at(b, f); if (s0[1] > -340) continue;
         for (let i = 0; i < n; i++) {
           const a0 = s0[3] + ((i + .5) / n - .5) * spread + rr(-.22, .22), off = rr(2, 22), x = s0[0] + Math.cos(a0) * off, y = s0[1] + Math.sin(a0) * off;
@@ -140,7 +140,7 @@
           const col = shade(LC[(R() * LC.length) | 0], tone);
           const waveB = b.depth >= 4 ? R() < .7 : R() < .4;
           const base = tAt(b, f) + .3, when = (waveB ? S[8] + .2 : S[7] + .2) + R() * 3.4;
-          leaves.push({ x, y, ang: a0 + rr(-.35, .35), size: rr(24, 38) * (b.depth >= 5 ? .9 : 1), col, shp: (R() * 3) | 0, t: Math.max(base, when), ph: R() * TAU, flip: i % 2 ? 1 : -1 });
+          leaves.push({ x, y, ang: a0 + rr(-.35, .35), size: rr(26, 41) * (b.depth >= 5 ? .9 : 1), col, shp: (R() * 3) | 0, t: Math.max(base, when), ph: R() * TAU, flip: i % 2 ? 1 : -1 });
         } }
       }
       leaves.sort((a, b) => a.t - b.t);

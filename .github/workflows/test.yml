@@ -1,0 +1,18 @@
+# Runs the server and logic tests and the build on every push and pull request. It does not deploy: deploys go through the facilio.work connector (docs/operations/DEPLOY.md).
+name: test
+on:
+  push:
+    branches: [main, feat/simpler-studio]
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: node build.mjs
