@@ -140,5 +140,5 @@
   const current = () => { const t = document.getElementById('vs_brief'); return t ? t.value : ''; };
   ACT.vsCopy = async () => { toast((await copy(current())) ? 'Brief copied' : 'Copy was blocked. Select the text and copy it by hand', 4000); };
   ACT.vsPathCopy = async () => { const t = V.cfgInputs ? V.cfgInputs.rolePathMd() : ''; toast(t && (await copy(t)) ? 'Role-based path copied' : 'Copy was blocked. Select the text and copy it by hand', 4000); };
-  ACT.vsClaude = async () => { const ok = await copy(current()); toast(ok ? 'Brief copied. Paste it into a new Claude chat (Ctrl+V)' : 'Copy was blocked. Select the brief and copy it by hand', 6000); window.open('https://claude.ai/new', '_blank', 'noopener'); };
+  ACT.vsClaude = async () => { const q = await V.claudeOpenSimple(current(), { title: 'Video guide brief' }); toast(q.said, 8000); };
 })(typeof window !== 'undefined' ? window : globalThis);

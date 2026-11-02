@@ -63,7 +63,7 @@ const ctxFor = (email, origin) => ({
     async delete(c, k) { (store.get(c) || new Map()).delete(k); persist(); },
     async list(c, o = {}) { const m = store.get(c) || new Map(); const keys = [...m.keys()].sort(); const start = o.cursor ? keys.findIndex(k => k > o.cursor) : 0; if (start < 0) return { items: [] }; const page = keys.slice(start, start + (o.limit || 50)); return { items: page.map(k => ({ key: k, value: JSON.parse(m.get(k)) })), cursor: start + page.length < keys.length ? page[page.length - 1] : undefined }; }
   },
-  files: { async uploadUrl() { const id = 'f' + (++fileSeq); return { url: origin + '/__files/' + id, file_id: id }; }, async url(id) { return { url: origin + '/__files/' + id }; } }
+  files: { async uploadUrl() { const id = 'f' + (++fileSeq); return { url: origin + '/__files/' + id, file_id: id }; }, async url(id) { return { url: origin + '/__files/' + id }; }, async put(o) { const id = 'f' + (++fileSeq); blobs.set(id, Buffer.from(o.body)); return { file_id: id, size: Buffer.byteLength(o.body) }; }, async get(id) { const b = blobs.get(id); if (!b) { const e = new Error('not found'); e.status = 404; throw e; } return { bytes: async () => b, text: async () => Buffer.from(b).toString('utf8') }; }, async delete(id) { blobs.delete(id); } }
 });
 const body = req => new Promise(res => { const ch = []; req.on('data', c => ch.push(c)); req.on('end', () => res(Buffer.concat(ch))); });
 http.createServer(async (req, res) => {

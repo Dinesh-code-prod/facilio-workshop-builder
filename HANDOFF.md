@@ -31,6 +31,8 @@ Last updated: 1 Nov 2026, personal account, local session. Everything below is p
 
 - Sixth increment (1 Nov 2026): Project Plan > Calendar (src/plancal.js; item kind cal), customer UAT testing (item kind utr; uat.js), SUPER_ADMINS removed (owner = secret platform_owner, else the app's facilio.work owner; regex bug in the secret parser fixed). Push notifications still not built (platform has no push service).
 
+- Open in Claude (2 Nov 2026): every Claude button now goes through one engine (src/claudelogic.js, src/claudehand.js, server /handoff routes) and a Claude Desktop extension in tools/claude-mcp (packaged to public/claude/facilio-delivery-studio.mcpb; rebuild with node tools/claude-mcp/build.js after editing it). Architecture, limits and what is unverified (Claude Desktop itself, real signed storage): docs/CLAUDE_HANDOFF.md.
+
 ## Next steps, in order
 1. The user checks the live app after deploy 90 (sign-in skyline, admin tabs, Facilio screens, Status Reports button, one AI action).
 2. Otto (the facilio.work Teams bot): build project-aware tools in `work/server/api.mjs` and `work/work.json`: my projects, who is on a project's team, my tasks, overdue, project status (counts), a "current project" setting, and add/update task with `confirm: true`. Scope every tool to projects the person is a member of, even for admins (today `editableProjects` lets admins see all).

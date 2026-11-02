@@ -48,8 +48,8 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   // Per signed-in person, per action group, fixed 10-minute windows counted in ctx.db so every server instance shares them.
   // Limits sit well above what one person does by hand (they stop scripts, loops and runaway retries, not people) and keep AI spend inside provider quotas.
   // Over the limit: HTTP 429 with a plain message and Retry-After. If the counter store itself fails the request goes ahead (a limiter must never lock people out).
-  const LIMITS = { ai: [40, 600], 'ai-part': [240, 600], 'ai-image': [15, 600], 'ai-admin': [15, 600], upload: [200, 600], write: [2000, 600], ticket: [60, 600], teams: [30, 600], create: [30, 600], mail: [20, 600] };
-  const LIMIT_LABEL = { ai: 'AI requests', 'ai-part': 'AI document parts', 'ai-image': 'flow image reads', 'ai-admin': 'AI key checks', upload: 'file uploads', write: 'saves', ticket: 'ticket messages', teams: 'tickets from Teams', create: 'new projects and templates', mail: 'mailbox syncs' };
+  const LIMITS = { ai: [40, 600], 'ai-part': [240, 600], 'ai-image': [15, 600], 'ai-admin': [15, 600], upload: [200, 600], write: [2000, 600], ticket: [60, 600], handoff: [60, 600], teams: [30, 600], create: [30, 600], mail: [20, 600] };
+  const LIMIT_LABEL = { ai: 'AI requests', 'ai-part': 'AI document parts', 'ai-image': 'flow image reads', 'ai-admin': 'AI key checks', upload: 'file uploads', write: 'saves', ticket: 'ticket messages', handoff: 'Open in Claude hand-offs', teams: 'tickets from Teams', create: 'new projects and templates', mail: 'mailbox syncs' };
   async function limit(bucket, who) {
     const L = LIMITS[bucket]; if (!L || !who) return; const [max, win] = L; const key = (bucket + '.' + who).slice(0, 127); const t = Math.floor(Date.now() / 1000), w = t - (t % win);
     let cur; try { cur = await CTX.db.get('rl', key); } catch (e) { return; }
@@ -616,6 +616,40 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     await audit(P.id, s.id, 'ai-flow-image', graph.nodes.length + ' steps via ' + out.provider);
     return ok({ graph, provider: out.provider, model: out.model });
   });
+  // ---------- Claude hand-off: one package per "Open in Claude" click ----------
+  // The page sends the task prompt and any pictures or documents. The server stores ONE private package (task, project name, expected output, the files) and hands back a signed,
+  // short-lived link to it: that link is the hand-off reference. A local Claude Desktop extension (tools/claude-mcp) opens the reference, shows Claude the real picture and text,
+  // and sends the answer to a signed upload link that is inside the package. The page then collects the answer through GET /handoff/:id and runs it through the same checks as a
+  // pasted reply. No Anthropic API key is involved and nothing here calls Claude: the person's own Claude subscription does the work. A reference works for one hour only.
+  const HO_TTL = 3600e3; const HO_MAX_B64 = 3400000;
+  const HO_TYPES = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'application/pdf': 'pdf', 'text/plain': 'txt', 'text/csv': 'csv', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx' };
+  const hoMagic = (mt, head) => (mt === 'image/png' ? head[0] === 0x89 && head[1] === 0x50 : mt === 'image/jpeg' ? head[0] === 0xFF && head[1] === 0xD8 : mt === 'image/webp' ? head[0] === 0x52 && head[8] === 0x57 : mt === 'application/pdf' ? head[0] === 0x25 && head[1] === 0x50 : /officedocument/.test(mt) ? head[0] === 0x50 && head[1] === 0x4B : true);
+  const hoId = () => { const a = new Uint8Array(16); crypto.getRandomValues(a); return Buffer.from(a).toString('hex'); };
+  route('POST', '/api/projects/:id/handoff', async (b, P) => {
+    const s = await me(); const { project, role } = await projectAccess(s, P.id, 'edit'); if (role === 'customer') throw new HttpError(403, 'Open in Claude is for the project team'); await limit('handoff', s.id); b = b || {};
+    const prompt = String(b.prompt || ''); if (prompt.trim().length < 10) throw new HttpError(400, 'There is no task to hand over'); if (prompt.length > 1500000) throw new HttpError(413, 'The task is too large to hand over; nothing is cut off silently');
+    const list = Array.isArray(b.files) ? b.files.slice(0, 8) : []; let total = 0;
+    const files = list.map(f => { const mt = String(f && f.mime || ''); if (!HO_TYPES[mt]) throw new HttpError(415, 'That file type cannot be handed to Claude: ' + plain(f && f.name, 60)); const data = String(f.data || ''); if (!/^[A-Za-z0-9+/]+=*$/.test(data)) throw new HttpError(400, 'A file was not sent correctly'); total += data.length;
+      if (!hoMagic(mt, fromB64(data.slice(0, 64)))) throw new HttpError(415, 'The file is not the type it claims to be: ' + plain(f.name, 60)); return { name: plain(f.name, 120) || 'file.' + HO_TYPES[mt], mime: mt, size: Math.floor(data.length * 3 / 4), data, text: String(f.text || '').slice(0, 200000) }; });
+    if (total > HO_MAX_B64) throw new HttpError(413, 'The files are too large to hand over (about 2.5 MB in all). Use smaller pictures or fewer documents.');
+    const id = hoId(); const exp = new Date(Date.now() + HO_TTL).toISOString(); const up = await CTX.files.uploadUrl('handoff-' + id + '-result.json', { private: true });
+    const pkg = { v: 1, id, createdAt: now(), expiresAt: exp, project: { name: project.name, customer: project.customer || '' }, by: s.name || '', title: plain(b.title, 120) || 'Task', task: plain(b.task, 60) || 'task', module: plain(b.module, 80), context: String(b.context || '').slice(0, 20000), instructions: prompt,
+      expect: { format: b.expect && b.expect.format === 'text' ? 'text' : 'json', note: plain(b.expect && b.expect.note, 1500), schema: b.expect && b.expect.schema ? String(JSON.stringify(b.expect.schema)).slice(0, 6000) : '' }, files, resultPut: up.url };
+    const body = JSON.stringify(pkg); if (body.length > 3.9e6) throw new HttpError(413, 'The hand-off is too large');
+    const put = await CTX.files.put({ filename: 'handoff-' + id + '.json', body, content_type: 'application/json', private: true }); const u = await CTX.files.url(put.file_id, { private: true, expires: 3600 });
+    await dbPut('ho', id, { id, project: P.id, user: s.id, pkg: put.file_id, res: up.file_id, exp, task: pkg.task, title: pkg.title, files: files.length });
+    await audit(P.id, s.id, 'claude-handoff', pkg.task + ' · ' + pkg.title.slice(0, 60) + ' · ' + files.length + ' file(s)');
+    return ok({ id, expires: exp, reference: u.url, files: files.length });
+  });
+  async function hoGone(r) { try { await CTX.files.delete(r.pkg, { private: true }); } catch (e) { } try { await CTX.files.delete(r.res, { private: true }); } catch (e) { } try { await dbDel('ho', r.id); } catch (e) { } }
+  route('GET', '/api/projects/:id/handoff/:hid', async (b, P) => {
+    const s = await me(); await projectAccess(s, P.id, 'edit'); const row = await dbGet('ho', P.hid); const r = row && row.value;
+    if (!r || r.project !== P.id || r.user !== s.id) throw new HttpError(404, 'That hand-off was not found');   // another person's or another project's hand-off looks the same as a missing one
+    if (Date.parse(r.exp) < Date.now()) { await hoGone(r); throw new HttpError(410, 'This hand-off has expired. Open Claude again from the page to make a new one.'); }
+    let text = ''; try { const g = await CTX.files.get(r.res, { private: true }); text = String(await g.text() || ''); } catch (e) { }
+    return ok(text.trim() ? { status: 'done', result: text.slice(0, 2000000) } : { status: 'waiting', expires: r.exp });
+  });
+  route('DELETE', '/api/projects/:id/handoff/:hid', async (b, P) => { const s = await me(); await projectAccess(s, P.id, 'edit'); const row = await dbGet('ho', P.hid); const r = row && row.value; if (!r || r.project !== P.id || r.user !== s.id) throw new HttpError(404, 'That hand-off was not found'); await hoGone(r); await audit(P.id, s.id, 'claude-handoff-closed', P.hid.slice(0, 8)); return ok({ ok: true }); });
   // ---------- Process Whiteboard: describe a process in words and the AI builds it (the Miro-style AI box) ----------
   // The person types what the process is. The model returns the steps and connections in the same shape as the image reader, and names which of THIS project's
   // existing state flows (sent by the page as a short index) belong in it. Nothing is added to the board here: the page shows a review and the person decides.

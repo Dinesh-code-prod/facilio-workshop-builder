@@ -555,7 +555,7 @@
     catch (e) { out.innerHTML = `<div class="notice err">${esc(e.message || 'The description could not be turned into a flow')}</div>`; } });
   ACT.wbAiClaude = a => { const out = document.getElementById('wbAiOut'); if (!out) return; const add = !!(a && a.getAttribute && a.getAttribute('data-add') === '1'); const text = aiText();
     if (!add && text.length < 10) { V.toast('Describe the process first, so Claude gets it', 4000, true); return; }
-    V.claudeHandoff({ skipPack: add, title: 'Process from a description', url: aiUrl(), body: { text, flows: flowIdx() }, extra: 'Claude can reply with JSON (best), or draw a flowchart picture: save the picture and use Import from image.', into: 'wbAiOut', onReply: r => { out.innerHTML = aiReview(r, r.provider); aiReady(); } }); };
+    V.claudeHandoff({ skipPack: add, task: 'flow-text', module: 'Process Whiteboard', expect: { format: 'json', note: 'Delivery Studio flow shape plus useFlows', schema: root.FWBClaude.FLOW_SHAPE }, title: 'Process from a description', url: aiUrl(), body: { text, flows: flowIdx() }, extra: 'Claude can reply with JSON (best), or draw a flowchart picture: save the picture and use Import from image.', into: 'wbAiOut', onReply: r => { out.innerHTML = aiReview(r, r.provider); aiReady(); } }); };
   ACT.wbAiAdd = a => V.busy(a, async () => { const ids = [...document.querySelectorAll('[data-wbf]:checked')].map(x => x.value); const steps = document.querySelectorAll('[data-wbn]:checked').length;
     if (!steps && !ids.length) { V.toast('Nothing is ticked', 4000, true); return; }
     if (steps) await ACT.wbImgAdd(null); if (ids.length) { W.pick = new Set(ids); ACT.wbFlowsGo(); } else if (!steps) V.closeDrawer(); });
@@ -614,9 +614,12 @@
     // ready for a one-click hand-off to Claude: the picture as a PNG and the prompt, prepared now so the click itself can open Claude
     const mine = W.imp; mine.png = null; mine.pack = '';
     pngBlob(f).then(b => { mine.png = b; }).catch(() => { });
+    // what Claude Desktop's extension is given: the ORIGINAL file when it is small enough for a hand-off (about 2.4 MB), else a 1600 px JPEG of it; the original stays on the board either way
+    mine.send = f.size <= 2.4e6 ? { blob: f, mime: type, name: f.name } : null; if (!mine.send) jpegBlob(f).then(b => { mine.send = { blob: b, mime: 'image/jpeg', name: f.name.replace(/\.[a-z0-9]+$/i, '') + '-1600px.jpg' }; }).catch(() => { });
     API.post(`/api/projects/${S.project.id}/ai/flow-image`, { claudePack: true }).then(r => { mine.pack = r.prompt || ''; }).catch(() => { });
   };
   // the picture as a PNG (at most 2000 px on the long side), which is the one image type browsers let a page put on the clipboard
+  async function jpegBlob(file) { const bm = await createImageBitmap(file); const k = Math.min(1, 1600 / Math.max(bm.width, bm.height)); const c = document.createElement('canvas'); c.width = Math.round(bm.width * k); c.height = Math.round(bm.height * k); const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(bm, 0, 0, c.width, c.height); bm.close && bm.close(); return new Promise((res, rej) => c.toBlob(b => (b ? res(b) : rej(new Error('jpg'))), 'image/jpeg', .9)); }
   async function pngBlob(file) { const bm = await createImageBitmap(file); const k = Math.min(1, 2000 / Math.max(bm.width, bm.height)); const c = document.createElement('canvas'); c.width = Math.round(bm.width * k); c.height = Math.round(bm.height * k); const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(bm, 0, 0, c.width, c.height); bm.close && bm.close(); return new Promise((res, rej) => c.toBlob(b => (b ? res(b) : rej(new Error('png'))), 'image/png')); }
   // shrink to at most 1600 px on the long side (smaller upload, same legibility for the model)
   async function shrink(file) {
@@ -627,10 +630,10 @@
   }
   ACT.wbImgClaude = a => { const out = document.getElementById('wbImgOut'); if (!out) return; const add = !!(a && a.getAttribute && a.getAttribute('data-add') === '1'); const hint = ((document.getElementById('wbImgHint') || {}).value || '').slice(0, 200);
     if (!add && !(W.imp && W.imp.file)) { V.toast('Choose the picture first, so it goes to Claude together with the prompt', 5000, true); return; }
-    if (!add && !(W.imp.png && W.imp.pack)) { V.toast('The picture is still being prepared. Try again in a second.', 4000); return; }
+    if (!add && !(W.imp.png && W.imp.pack && W.imp.send)) { V.toast('The picture is still being prepared. Try again in a second.', 4000); return; }
     const o = { skipPack: add, title: 'Flow from an image', url: `/api/projects/${S.project.id}/ai/flow-image`, body: { hint }, extra: 'Attach the flow picture to the chat too.', into: 'wbImgOut',
       onReply: r => { W.imp = W.imp || {}; W.imp.graph = r.graph; out.innerHTML = reviewHtml(r.graph, r.provider); const keep = document.getElementById('wbImgKeep'); if (keep && !W.imp.file) { keep.checked = false; keep.disabled = true; } const go = document.querySelector('#drawer .drawer-f .btn.primary'); if (go) { go.textContent = 'Add to board'; go.setAttribute('data-act', 'wbImgAdd'); go.disabled = false; } } };
-    if (!add) Object.assign(o, { prompt: W.imp.pack + (hint ? '\n\nContext from the user: ' + hint : ''), image: W.imp.png, autoOpen: true });
+    if (!add) Object.assign(o, { prompt: W.imp.pack + (hint ? '\n\nContext from the user: ' + hint : ''), image: W.imp.png, autoOpen: true, task: 'flow-image', module: 'Process Whiteboard', context: 'Whiteboard: ' + (W.B && W.B.name || ''), files: [{ name: W.imp.send.name, mime: W.imp.send.mime, blob: W.imp.send.blob }], expect: { format: 'json', note: 'Delivery Studio flow shape: nodes and edges with confidence', schema: root.FWBClaude.FLOW_SHAPE } });
     V.claudeHandoff(o); };
   ACT.wbImgRead = a => V.busy(a, async () => {
     if (!W.imp) return; const out = document.getElementById('wbImgOut'); out.innerHTML = '<p class="small muted">Reading the diagram… this can take up to half a minute.</p>';

@@ -6,6 +6,11 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '2.7.0', date: '2026-11-02', kind: 'UPDATE', title: 'Open in Claude: one hand-off for every button, and a Claude Desktop extension', notes: [
+      'Every Open in Claude button in the app now uses one hand-off. Prompts say who is asking, which project, page and module, what the task is and what happens to the answer. A prompt that is too long for a link is never cut: it is copied, or sent as a hand-off.',
+      'New Claude Desktop extension (download it from any Open in Claude panel, double-click it, tick the box). With it, Open Claude Desktop sends a short prompt and Claude opens your picture, PDF, Word or Excel text through the extension, then sends its answer back; the page picks it up by itself and shows a preview before anything is saved.',
+      'No API key and no extra cost: it uses your own Claude subscription. The hand-off is a one-hour signed link; it can be closed early and is deleted when it expires.',
+      'Claude on the web cannot read files from your computer or from Delivery Studio, and a web page cannot attach a file to another site: the prompt goes in the link and the picture is put on your clipboard, then you paste it with Ctrl+V.'] },
     { v: '2.6.0', date: '2026-11-02', kind: 'UPDATE', title: 'Whiteboard AI and Claude hand-off, state flow delete, calmer calendar', notes: [
       'Process Whiteboard now looks like the State Flow Builder: white boxes with a thin blue line, coloured pill labels, the same arrows and canvas. Export follows the same look.',
       'Describe with AI: type a process in words and the AI draws the steps and connections and points at the existing state flows of your project that belong in it. You check it before it is added.',
