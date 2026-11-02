@@ -127,7 +127,7 @@ table.tbl { width: 100%; border-collapse: separate; border-spacing: 0; }
 .tbl tr.click { cursor: pointer; } .tbl tr.sel td { background: #f1ecff !important; }
 .tbl tr.removed td { color: var(--fc-muted); text-decoration: line-through; }
 .tbl .num { text-align: right; font-variant-numeric: tabular-nums; }
-.tbl .acts { opacity: 0; white-space: nowrap; } .tbl tr:hover .acts { opacity: 1; }
+.tbl .acts { white-space: nowrap; }   /* row buttons are always visible */
 .dash { color: var(--fc-muted); }
 
 /* ---------- tags ---------- */
@@ -307,7 +307,7 @@ hr.sep { border: 0; border-top: 1px solid var(--fc-border); margin: 16px 0; }
 
 /* ---------- BRD editor blocks ---------- */
 .paper .blk { position: relative; }
-.paper .blk-tools { position: absolute; left: -40px; top: 0; opacity: 0; transition: opacity .15s; } .paper .blk:hover .blk-tools { opacity: 1; }
+.paper .blk-tools { position: absolute; left: -40px; top: 0; }   /* block tools are always visible */
 .paper .blk-tools button { border: 1px solid var(--fc-border-3); background: #fff; border-radius: 3px; cursor: pointer; width: 26px; height: 22px; line-height: 1; color: var(--fc-caption); }
 .paper .is-hidden > :not(.blk-tools):not(.hidden-note) { opacity: .3; text-decoration: line-through; } .paper .hidden-note { color: #c0393a; }
 .paper .stale { border-left: 3px solid #f7a23b; padding-left: 6px; margin-left: -9px; }

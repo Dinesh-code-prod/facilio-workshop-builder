@@ -456,11 +456,11 @@ body .tl-gi { display: inline-grid; place-items: center; width: 28px; height: 28
 body .tl-g.on .tl-gi { background: var(--th-ink); color: #fff; }
 body .tl-gn { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 body .tl-gc { font-family: var(--th-mono); font-size: 11px; color: var(--th-faint); min-width: 18px; text-align: right; }
-body .tl-gact { display: none; gap: 0; flex: none; } body .tl-g:hover .tl-gact, body .tl-g:focus-within .tl-gact { display: inline-flex; }
+body .tl-gact { display: inline-flex; gap: 0; flex: none; }   /* the group's buttons are always visible */
 body .tl-g:hover .tl-gc, body .tl-g:focus-within .tl-gc { display: none; }
 body .tl-gact .btn:not(#_) { width: 30px !important; height: 30px !important; min-width: 30px; padding: 0 !important; color: var(--th-muted) !important; }
 body .tl-gact .btn:not(#_):hover { color: var(--th-ink) !important; background: #fff !important; }
-@media (hover: none) { body .tl-gact { display: inline-flex; } body .tl-gc { display: none; } }
+body .tl-gc { display: none; }
 body .tl-grip { display: inline-grid; grid-template-columns: repeat(2, 3px); gap: 2px 3px; padding: 2px; cursor: grab; flex: none; } body .tl-grip i { width: 3px; height: 3px; border-radius: 50%; background: var(--th-faint); }
 body .tl-main { padding: 18px 18px 20px; background: var(--th-soft); min-width: 0; }
 body .tl-mh { flex-wrap: wrap; } body .tl-mi { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--th-ink); color: #fff; flex: none; } body .tl-mi svg { width: 18px; height: 18px; }
@@ -758,9 +758,7 @@ body .sidebar .sb-group > .sb-title + .sb-sub { margin-top: 4px; }
 body .tl-rows .tl-sub { list-style: none; margin: 8px 0 -2px; padding: 0 4px; font-family: var(--th-mono); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .6px; color: var(--th-muted); }
 body .tl-rows .tl-sub:first-child { margin-top: 0; }
 /* tab cards: actions appear on hover or keyboard focus, as in Facilio (edit, remove from the menu) */
-body .tl-row .tl-rt { opacity: 0; transition: opacity .12s; }
-body .tl-row:hover .tl-rt, body .tl-row:focus-within .tl-rt, body .tl-row.off .tl-rt { opacity: 1; }
-@media (hover: none) { body .tl-row .tl-rt { opacity: 1; } }
+body .tl-row .tl-rt { opacity: 1; }   /* the row's buttons are always visible */
 body .tl-rt .tl-rm:not(#_):hover { color: var(--th-red) !important; background: var(--th-red-soft) !important; }
 body .tl-rt .tl-show:not(#_) { color: var(--th-violet) !important; }
 /* whiteboard: the delete button shown on the hovered (or the one selected) element */

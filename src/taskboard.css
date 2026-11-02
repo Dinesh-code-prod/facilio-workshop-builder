@@ -35,8 +35,7 @@ body .kb-seg button.on:not(#_) { background: #fff; color: #1b1630; box-shadow: 0
 .kb-d.late { color: #b4234f; font-weight: 700; }
 .kb-av { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 10.5px; font-weight: 700; color: #fff; background: linear-gradient(135deg, #6a3df0, #3b1fa8); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 1px 3px rgba(60, 40, 140, .3); }
 .kb-av.none { background: #fff; box-shadow: inset 0 0 0 1.5px #d9d6e8; }
-.kb-mv { display: none; width: 100%; margin-top: 8px; height: 28px; font-size: 12px; }
-.kb-card:hover .kb-mv, .kb-card:focus-within .kb-mv { display: block; }
+.kb-mv { display: block; width: 100%; margin-top: 8px; height: 28px; font-size: 12px; }   /* the move menu is always visible */
 .kb-new { margin-top: 8px; border: 1px dashed #cbc4ea; background: transparent; border-radius: 10px; padding: 8px; font: inherit; font-size: 12.5px; font-weight: 600; color: #6a3df0; cursor: pointer; }
 .kb-new:hover { background: #fff; }
 @media (prefers-reduced-motion: reduce) { .kb-card, .kb-col { transition: none; } .kb-card:hover { transform: none; } }
