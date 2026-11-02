@@ -6,6 +6,10 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '2.8.4', date: '2026-11-02', kind: 'UPDATE', title: 'Workshops & Requirements: three pages in working order', notes: [
+      'Workshops & Requirements now has three pages: Facilio Screens (run the sessions), Requirements & Use Cases (capture and confirm), and Checks & Validations (check before design).',
+      'Use Cases is now a tab next to the transcripts and requirements, and MSA Scope Check is a tab of Checks & Validations. Nothing was removed, and old links still open the right tab.'
+    ] },
     { v: '2.8.3', date: '2026-11-02', kind: 'UPDATE', title: 'Process Whiteboard: Describe with AI reads your text better, Align works on whole flows', notes: [
       'Describe with AI: the AI now reads your description more carefully (spelling mistakes, short forms such as SR and WO, every approval and branch you wrote) and sees the project flows that match your words in full. If the AI service does not answer, it tries again once with a shorter request.',
       'A flow built from your description is drawn like a State Flow Builder flow: state pills, the last step closed, straight connections.',

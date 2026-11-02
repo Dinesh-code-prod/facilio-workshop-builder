@@ -13,6 +13,7 @@
       const r = V.brdReadiness ? V.brdReadiness() : null; if (r && r.blocking) out.checks = { n: r.blocking, cls: 'warn' };
       const ts = V.traceSummary ? V.traceSummary() : null; if (ts && ts.gaps) out.trace = { n: ts.gaps, cls: ts.high ? 'crit' : 'pend', why: ts.gaps + ' gap(s) between requirements, build and testing' + (ts.high ? ', ' + ts.high + ' to fix first' : '') };
       const ma = V.msaActive ? V.msaActive() : null; if (ma && ma.active) out.msafind = { n: ma.active, cls: ma.high ? 'crit' : 'pend', why: ma.active + ' MSA scope finding(s) need a person' + (ma.high ? ', ' + ma.high + ' high' : '') };
+      if (out.msafind) { const c = out.checks || { n: 0 }; out.checks = { n: c.n + out.msafind.n, cls: out.msafind.high || c.cls ? 'crit' : 'pend', why: (out.msafind.why || '') + (c.n ? '; ' + c.n + ' blocking check(s)' : '') }; }   // MSA Scope Check is a tab of Checks & Validations
       // priority colours, from saved records only: red = a deadline already missed or a concern raised, orange = a high-impact risk or issue still open, yellow = waiting on a decision. No record, no marker (never a green "all good").
       const It = V.items; if (It && It.ready(['action', 'raid', 'signoff', 'cr'])) { const today = V.today ? V.today() : new Date().toISOString().slice(0, 10);
         const od = It.list('action').filter(a => a.status !== 'Done' && a.due && a.due < today).length; const sc = It.list('signoff').filter(x => x.status === 'concern').length;
