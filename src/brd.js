@@ -25,14 +25,17 @@
     erp: { label: 'ERP / procurement integration', short: 'ERP', integ: true, hint: 'An ERP or finance system exchanging procurement, inventory, vendor and invoice data with Facilio.', pick: n => /inventory|item|tool|storeroom|purchase|requestforquotation|vendorquotes|quote|invoice|vendors|^workorder$|^asset$/i.test(n) },
     agent: { label: 'Fully connected (agent-run)', short: 'Agent-run', integ: true, hint: 'No internal team works in the account: agents and rules run it, connected to the customer\'s other systems.', pick: n => /servicerequest|^workorder$|^asset$|inventory|purchase|invoice|vendors/i.test(n) }
   };
+  TYPES.import = { label: 'Imported or blank BRD', short: 'Own BRD', integ: false, hint: 'A BRD you brought in or started blank. It keeps your own structure; nothing is generated into it.', pick: () => false };
   const INTEG_RE = /servicerequest|^workorder$|^asset$|inventory|^item$|^tool$|storeroom|purchase|requestforquotation|vendorquotes|^quote$|invoice|vendors/i;
   const exchangeHint = n => /servicerequest/i.test(n) ? 'Tickets from the service desk create service requests; status and comments sync back' : /^workorder$/i.test(n) ? 'Work orders created from approved requests; status and completion sync back' : /^asset$/i.test(n) ? 'Asset master data shared or synchronised' : /inventory|^item$|^tool$|storeroom/i.test(n) ? 'Stock levels, issues and receipts' : /purchase|requestforquotation|vendorquotes|quote|invoice|vendors/i.test(n) ? 'Procurement documents and vendor master data' : 'Records exchanged';
-  const root_ = () => { const d = F.doc('brddoc'); d.logos = d.logos || {}; if (!Array.isArray(d.list) || !d.list.length) d.list = [{ id: 'main', name: 'Main BRD', type: 'core', modules: [] }]; if (!d.list.some(x => x.id === 'main')) d.list.unshift({ id: 'main', name: 'Main BRD', type: 'core', modules: [] }); d.docs = d.docs || {}; return d; };
+  const root_ = () => { const d = F.doc('brddoc'); d.logos = d.logos || {}; if (!Array.isArray(d.list) || !d.list.length) d.list = [{ id: 'main', name: 'Main BRD', type: 'core', modules: [] }], d.mainRemoved = false; if (!d.mainRemoved && !d.list.some(x => x.id === 'main')) d.list.unshift({ id: 'main', name: 'Main BRD', type: 'core', modules: [] }); d.docs = d.docs || {}; return d; };
   const brdList = () => root_().list;
-  const activeId = () => { const l = brdList(); return l.some(x => x.id === S.ui.brdId) ? S.ui.brdId : 'main'; };
+  const activeId = () => { const l = brdList(); return l.some(x => x.id === S.ui.brdId) ? S.ui.brdId : l[0].id; };
   const activeRec = () => { const id = activeId(); return brdList().find(x => x.id === id); };
   const BD = (id) => { const d = root_(); id = id || activeId(); let x = d; if (id !== 'main') { x = d.docs[id] = d.docs[id] || {}; x.logos = d.logos; if (!x.status) x.status = 'draft'; }
     x.edits = x.edits || {}; x.inserts = x.inserts || {}; x.hidden = x.hidden || {}; x.exports = x.exports || []; x.logos = x.logos || {}; return x; };
+  // delete a BRD; the main one is cleared (and dropped from the list when others exist), the last one left is never removed
+  function removeBrd(id) { const d = root_(); const rec = d.list.find(x => x.id === id); if (!rec) return; if (id === 'main') { ['edits', 'inserts', 'hidden', 'exports', 'figSize', 'figPct', 'profile', 'reviewedBy', 'reviewedAt'].forEach(k => { delete d[k]; }); d.status = 'draft'; if (d.list.length > 1) { d.list = d.list.filter(x => x.id !== 'main'); d.mainRemoved = true; } } else { d.list = d.list.filter(x => x.id !== id); delete d.docs[id]; } }
   const scopeSet = () => { const r = activeRec(); return r && r.modules && r.modules.length ? new Set(r.modules) : null; };
   const titleOf = () => { const r = activeRec(); return r.id === 'main' ? (S.ws.project.docTitle || 'Business Requirements Document') : r.name; };
   const slug = t => String(t || '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40);
@@ -93,7 +96,7 @@
     const order = sectionOrder().filter(s => s.on).map(s => s.id);
     const CHAIN = ['site', 'building', 'floor', 'space', 'asset', 'serviceRequest', 'workorder', 'plannedmaintenance', 'preventivemaintenance', 'inspectionResponse', 'inspectionTemplate', 'workpermit', 'quote', 'requestForQuotation', 'vendorQuotes', 'inventoryrequest', 'purchaserequest', 'purchaseorder', 'invoice', 'vendors', 'insurance', 'tenant', 'client', 'people', 'employee', 'facilitybooking', 'spacebooking', 'invitevisitor', 'visitorlog'];
     const rank = m => { const i = CHAIN.indexOf(m.name); return i < 0 ? 100 + { high: 0, medium: 1, low: 2 }[m.priority] : i; };
-    const rec = activeRec(); const scope = scopeSet(); const ty = TYPES[rec.type] || TYPES.core; const integ = ty.integ && rec.type !== 'core';
+    const rec = activeRec(); if (rec.imported) return { blocks: [{ id: 'imp:title', t: 'h', lvl: 1, text: rec.name }], stats: { modules: 0, questions: 0, confirmed: 0, pending: 0 } }; const scope = scopeSet(); const ty = TYPES[rec.type] || TYPES.core; const integ = ty.integ && rec.type !== 'core';
     const inScope = F.allModules().filter(m => m.inScope && (!scope || scope.has(m.name))).sort((a, b) => rank(a) - rank(b) || a.label.localeCompare(b.label));
     const inBrd = r => !scope || !(r.modules && r.modules.length) || r.modules.some(x => scope.has(x)); const confirmed = S.ws.requirements.filter(r => r.status === 'Confirmed' && inBrd(r)); const pending = S.ws.requirements.filter(r => r.status !== 'Confirmed' && r.status !== 'Rejected' && inBrd(r));
     const allQuestions = []; const addQ = (area, text) => { if (text && !allQuestions.find(x => x.text === text)) allQuestions.push({ area, text }); };
@@ -295,17 +298,24 @@
   const cellText = c => Array.isArray(c) ? c.map(x => typeof x === 'object' && x ? x.text : String(x == null ? '' : x)).join('\n') : (c && typeof c === 'object' ? c.text : String(c == null ? '' : c));
   function applyEdits(blocks) {
     const d = BD(); const out = [];
+    // inserted blocks (paragraph, heading, list or table) follow the block they were added after; they can be chained. An imported BRD is one title block plus a chain of these.
+    const emit = id => (d.inserts[id] || []).forEach(ins => { const t = ins.t || 'p'; out.push(Object.assign({}, ins, { t, inserted: true, after: id }, t === 'table' ? { widths: ins.headers.map(() => 1), rows: ins.rows } : {})); emit(ins.id); });
     blocks.forEach(b => {
       if (d.hidden[b.id]) { out.push(Object.assign({}, b, { hiddenBlock: true })); return; }
       const e = d.edits[b.id]; let x = b;
-      if (e && (b.t === 'p' || b.t === 'h')) x = Object.assign({}, b, { text: e.text, edited: true, stale: e.base !== undefined && e.base !== b.text, base: b.text });
+      if (e && (b.t === 'p' || b.t === 'h')) x = Object.assign({}, b, { text: e.text, html: e.html, edited: true, stale: e.base !== undefined && e.base !== b.text, base: b.text });
       else if (e && b.t === 'ul') x = Object.assign({}, b, { items: e.text.split('\n').filter(Boolean), edited: true, stale: e.base !== undefined && e.base !== b.items.join('\n') });
-      if (b.t === 'table') { let any = false; const rows = b.rows.map((r, ri) => r && r.sub ? r : r.map((c, ci) => { const ce = d.edits[b.id + '#' + ri + '.' + ci]; if (ce) { any = true; return { text: ce.text, edited: true }; } return c; })); if (any) x = Object.assign({}, b, { rows, edited: true }); }
-      out.push(x);
-      (d.inserts[b.id] || []).forEach(ins => out.push({ id: ins.id, t: 'p', text: ins.text, inserted: true, after: b.id }));
+      if (b.t === 'table') { let any = false; const rows = b.rows.map((r, ri) => r && r.sub ? r : r.map((c, ci) => { const ce = d.edits[b.id + '#' + ri + '.' + ci]; if (ce) { any = true; return { text: ce.text, edited: true }; } return c; })); const headers = b.headers.map((h, ci) => { const he = d.edits[b.id + '#h.' + ci]; if (he) { any = true; return he.text; } return h; }); if (any) x = Object.assign({}, b, { rows, headers, edited: true }); }
+      out.push(x); emit(b.id);
     });
     return out;
   }
+  // Rich text kept in an edited paragraph: only bold, italic, underline and line breaks survive; everything else becomes plain text.
+  const escH = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const MARK = { B: 'b', STRONG: 'b', I: 'i', EM: 'i', U: 'u' };
+  function cleanHtml(h) { const body = new DOMParser().parseFromString('<body>' + h, 'text/html').body; let out = ''; const walk = n => n.childNodes.forEach(c => { if (c.nodeType === 3) out += escH(c.nodeValue.replace(/ /g, ' ')); else if (c.nodeName === 'BR') out += '<br>'; else if (MARK[c.nodeName]) { out += '<' + MARK[c.nodeName] + '>'; walk(c); out += '</' + MARK[c.nodeName] + '>'; } else walk(c); }); walk(body); return out; }
+  // cleaned html -> runs for the exports
+  function htmlRuns(h) { const body = new DOMParser().parseFromString('<body>' + h, 'text/html').body; const out = []; const walk = (n, st) => n.childNodes.forEach(c => { if (c.nodeType === 3) out.push(Object.assign({ text: c.nodeValue }, st)); else if (c.nodeName === 'BR') out.push({ br: true }); else walk(c, MARK[c.nodeName] ? Object.assign({}, st, { [{ b: 'bold', i: 'italics', u: 'underline' }[MARK[c.nodeName]]]: true }) : st); }); walk(body, {}); return out; }
   function document_() { const r = buildBlocks(); r.blocks = applyEdits(r.blocks); return r; }
 
   // ---------- logos ----------
@@ -341,7 +351,7 @@
       if (b.t === 'pagebreak') { body.push(new Paragraph({ children: [new PageBreak()] })); continue; }
       if (b.t === 'toc') { body.push(new Paragraph({ children: [run('Table of Contents', { bold: true, size: P.h1.size, color: P.h1.color })], spacing: { after: 200 } })); body.push(new TableOfContents('Table of Contents', { hyperlink: true, headingStyleRange: '1-2' })); body.push(new Paragraph({ children: [run('Right-click the table and choose “Update Field” to refresh page numbers.', { italics: true, size: 16, color: '7B91B0' })] })); continue; }
       if (b.t === 'h') { body.push(new Paragraph({ heading: [HeadingLevel.HEADING_1, HeadingLevel.HEADING_2, HeadingLevel.HEADING_3][b.lvl - 1], pageBreakBefore: !!b.pageBreakBefore, keepNext: true, children: [run(b.text)] })); continue; }
-      if (b.t === 'p') { const kids = b.label ? [run(b.label, { bold: true }), run(' ' + b.text)] : [run(b.text, { bold: !!b.bold, italics: b.style === 'caption', size: b.style === 'caption' ? 17 : undefined, color: b.style === 'caption' ? '607796' : undefined })]; body.push(new Paragraph({ children: kids, spacing: { after: 120, line: 276 } })); continue; }
+      if (b.t === 'p') { const kids = b.label ? [run(b.label, { bold: true }), run(' ' + b.text)] : b.html ? htmlRuns(b.html).map(r => r.br ? new TextRun({ break: 1 }) : run(r.text, { bold: !!b.bold || r.bold, italics: r.italics, underline: r.underline ? {} : undefined })) : [run(b.text, { bold: !!b.bold, italics: b.style === 'caption', size: b.style === 'caption' ? 17 : undefined, color: b.style === 'caption' ? '607796' : undefined })]; body.push(new Paragraph({ children: kids, spacing: { after: 120, line: 276 } })); continue; }
       if (b.t === 'ul') { b.items.forEach(x => body.push(new Paragraph({ numbering: { reference: 'bul', level: 0 }, spacing: { after: 60 }, children: [run(x)] }))); continue; }
       if (b.t === 'figure') { const sz = figSize(b.id); const land = sz === 'land';
         // page area in pixels (twips / 15); a landscape figure gets a page of its own turned sideways, a large one a full portrait page
@@ -380,7 +390,7 @@
       if (b.t === 'pagebreak') { if (content.length) content[content.length - 1].pageBreak = 'after'; continue; }
       if (b.t === 'toc') { content.push(toc); continue; }
       if (b.t === 'h') { content.push({ text: b.text, style: 'h' + b.lvl, tocItem: b.lvl <= 2, tocMargin: [b.lvl === 2 ? 14 : 0, 0, 0, 0], pageBreak: b.pageBreakBefore ? 'before' : undefined, headlineLevel: b.lvl }); continue; }
-      if (b.t === 'p') { content.push(b.label ? { text: [{ text: b.label + ' ', bold: true }, b.text], margin: [0, 0, 0, 6] } : { text: b.text, bold: !!b.bold, italics: b.style === 'caption', fontSize: b.style === 'caption' ? 8.5 : undefined, color: b.style === 'caption' ? '#607796' : undefined, margin: [0, 0, 0, 6] }); continue; }
+      if (b.t === 'p') { content.push(b.label ? { text: [{ text: b.label + ' ', bold: true }, b.text], margin: [0, 0, 0, 6] } : { text: b.html ? htmlRuns(b.html).map(r => r.br ? { text: '\n' } : { text: r.text, bold: r.bold, italics: r.italics, decoration: r.underline ? 'underline' : undefined }) : b.text, bold: !!b.bold, italics: b.style === 'caption', fontSize: b.style === 'caption' ? 8.5 : undefined, color: b.style === 'caption' ? '#607796' : undefined, margin: [0, 0, 0, 6] }); continue; }
       if (b.t === 'ul') { content.push({ ul: b.items, margin: [0, 0, 0, 6] }); continue; }
       if (b.t === 'figure') { const sz = figSize(b.id); const land = sz === 'land'; const k = figPct(b.id) / 100; const mw = (land ? pt(P.page.h - P.page.left - P.page.right) : PWpt) * k, mh = (land ? pt(P.page.w - P.page.top - P.page.bottom) - 50 : sz === 'large' ? pt(P.page.h - P.page.top - P.page.bottom) - 60 : 640) * k;
         try { const png = await D.svgToPng(b.svg, figScale(b.svg, mw * 4 / 3)); const s = fit(png.width, png.height, mw, mh); content.push(Object.assign({ image: png.dataUrl, width: s.width, height: s.height, alignment: 'center', margin: [0, 4, 0, 2] }, land ? { pageBreak: 'before', pageOrientation: 'landscape' } : sz === 'large' ? { pageBreak: 'before' } : {})); } catch (e) { content.push({ text: '[Diagram could not be rendered]' }); } if (b.caption) content.push({ text: b.caption, italics: true, fontSize: 8.5, color: '#607796', alignment: 'center', margin: [0, 0, 0, 8] });
@@ -400,5 +410,5 @@
     return { blob, stats: docm.stats };
   }
 
-  root.FWBBrd = { figSize, figPct, titleOf, TYPES, INTEG_RE, list: brdList, activeId, activeRec, state: BD, scopeSet, slug, buildBlocks, applyEdits, document: document_, toDocx, toPdf, profileTemplate, profile, SECTIONS, sectionOrder, DEFAULT_PROFILE, cellText, logoData, fit };
+  root.FWBBrd = { remove: removeBrd, cleanHtml, figSize, figPct, titleOf, TYPES, INTEG_RE, list: brdList, activeId, activeRec, state: BD, scopeSet, slug, buildBlocks, applyEdits, document: document_, toDocx, toPdf, profileTemplate, profile, SECTIONS, sectionOrder, DEFAULT_PROFILE, cellText, logoData, fit };
 })(typeof window !== 'undefined' ? window : globalThis);

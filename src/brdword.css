@@ -1,0 +1,26 @@
+/* BRD Draft: tidy toolbar, menus, formatting bar and sign-off banner. Facilio colours only. */
+body .brd-top { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #fff; border-bottom: 1px solid #e3e9f5; flex-wrap: wrap; }
+body .brd-top .grp { display: flex; align-items: center; gap: 6px; }
+body .fmtbar { display: flex; align-items: center; gap: 4px; padding: 6px 14px; background: #f7f9fe; border-bottom: 1px solid #e3e9f5; flex-wrap: wrap; }
+body .fmtbar button { min-width: 30px; height: 28px; padding: 0 9px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: #1D1A5E; font: inherit; font-size: 12.5px; cursor: pointer; }
+body .fmtbar button:hover { background: #e8f0fe; border-color: #cfe0fb; }
+body .fmtbar .sep { width: 1px; height: 18px; background: #d6e0f3; margin: 0 6px; }
+body .brd-stat { padding: 6px 14px; font-size: 12px; color: #5b6785; background: #fff; }
+body .mnu { position: relative; }
+body .mnu > summary { list-style: none; cursor: pointer; } body .mnu > summary::-webkit-details-marker { display: none; }
+body .mnu > summary::after { content: ' ▾'; font-size: 10px; }
+body .mnu-list { position: absolute; right: 0; top: calc(100% + 4px); z-index: 80; min-width: 230px; background: #fff; border: 1px solid #d6e0f3; border-radius: 10px; box-shadow: 0 6px 18px rgba(0, 0, 0, .12); padding: 6px; }
+body .mnu-h { padding: 8px 10px 3px; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: #5b6785; }
+body .mnu-i { display: block; width: 100%; text-align: left; padding: 7px 10px; border: 0; border-radius: 6px; background: none; font: inherit; font-size: 13px; color: #1D1A5E; cursor: pointer; }
+body .mnu-i:hover { background: #eaf1fe; }
+body .brd-ban { margin: 10px 14px 0; border-radius: 10px; border: 1px solid #e3e9f5; background: #f7f9fe; font-size: 13px; }
+body .brd-ban.err { border-color: #f4b6d3; background: #fff5fa; } body .brd-ban.warn { background: #f7f9fe; }
+body .brd-ban-h { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 14px; border: 0; background: none; font: inherit; text-align: left; color: #1D1A5E; }
+body button.brd-ban-h { cursor: pointer; }
+body .brd-ban.err .brd-ban-h b { color: #E5197F; } body .brd-ban-h span { flex: 1; color: #3b4766; } body .brd-ban-h em { font-style: normal; color: #1570EF; font-size: 12px; }
+body .brd-ban-b { padding: 0 14px 10px; } body .brd-ban-b ul { list-style: none; margin: 8px 0 0; padding: 0; }
+body .brd-ban-b li { display: flex; gap: 12px; justify-content: space-between; align-items: baseline; padding: 6px 0; border-top: 1px solid #f0d6e3; }
+body .brd-ban-b li a { white-space: nowrap; color: #1570EF; font-weight: 600; }
+body .paper [data-txt]:empty::before, body .paper h1:empty::before, body .paper h2:empty::before, body .paper h3:empty::before { content: 'Type here…'; color: #9aa6c2; font-weight: 400; }
+body .paper td div[contenteditable], body .paper th div[contenteditable] { min-height: 1.3em; }
+body .paper li:empty::before { content: 'List item'; color: #9aa6c2; }

@@ -6,6 +6,12 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '2.8.2', date: '2026-11-02', kind: 'UPDATE', title: 'BRD Draft: edit like Word, import your own BRD, delete drafts', notes: [
+      'BRD Draft: type directly on the page, make text bold, italic or underlined, press Enter for a new paragraph, and add headings, bullet lists and tables below any block. Edits are saved with the BRD and go into the Word and PDF exports.',
+      'Import a BRD you already have (Word, PDF, text or Markdown) or start a blank one. It becomes its own tab and you edit it on the page.',
+      'Any BRD can now be deleted, with a confirmation, including the Main BRD. The last one left is cleared and a fresh draft is built from the project data.',
+      'A shorter toolbar (the less common actions are under More) and a clearer sign-off notice: each problem is on its own line with a link to fix it.'
+    ] },
     { v: '2.8.1', date: '2026-11-02', kind: 'UPDATE', title: 'BRD fix, Configuration Hub, admin clone and delete, PDF export', notes: [
       'BRD Draft: fixed a crash that blanked the page when a combined flow contained a state with a transition back to itself (for example Inactive to Inactive).',
       'Solution Design & Configuration now follows the working order: build the solution, set up access, alerts and data, record all configuration in the Configuration Hub, then write the BRD last. Configuration Inputs became the Configuration Hub: an overview of system modules, custom modules, relationships and connected apps. Templates, documents and tools held as modules in the Facilio org (PDF templates, VBA files, the BRD document) are listed apart and left out of the checks.',
