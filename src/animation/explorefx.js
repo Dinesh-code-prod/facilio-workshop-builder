@@ -11,8 +11,8 @@
   const base = V.explore.mount; let pans = [], rail = null, dx = null, raf = 0, bound = false;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const ok = () => !(root.matchMedia && (root.matchMedia('(prefers-reduced-motion: reduce)').matches || !root.matchMedia('(min-width: 900px) and (hover: hover)').matches));
-  function kinetic() {
-    const h = d.querySelector('.dx-hero h2'); if (!h || h.getAttribute('data-fx')) return; h.setAttribute('data-fx', '1'); let i = 0;
+  function kinetic(scope) {
+    const h = (scope || d).querySelector('.dx-hero h2'); if (!h || h.getAttribute('data-fx')) return; h.setAttribute('data-fx', '1'); let i = 0;
     const wrap = node => { Array.from(node.childNodes).forEach(c => { if (c.nodeType === 3) { const frag = d.createDocumentFragment(); c.nodeValue.split(/(\s+)/).forEach(w => { if (!w) return; if (/^\s+$/.test(w)) frag.appendChild(d.createTextNode(' ')); else { const s = d.createElement('span'); s.className = 'dxfx-w'; s.style.setProperty('--w', String(i++)); s.textContent = w; frag.appendChild(s); } }); c.replaceWith(frag); } else if (c.nodeType === 1) wrap(c); }); };
     wrap(h);
   }
@@ -39,6 +39,12 @@
     d.querySelectorAll('.dx-ch').forEach((ch, i) => { if (i % 2 === 1) setupPan(ch); });
     measure(); frame(); [400, 1200].forEach(ms => setTimeout(() => { if (d.body.contains(dx)) { measure(); frame(); } }, ms));   // pictures and fonts change widths a moment after the first paint
     if (!bound) { bound = true; root.addEventListener('scroll', tick, { passive: true }); root.addEventListener('resize', () => { if (d.body.contains(dx) && pans.length) { measure(); tick(); } }); }
+  };
+  // the login page's Discover more: a full-screen overlay that scrolls by itself
+  V.explorefxOverlay = o => {
+    if (!o || !ok()) return; o.classList.add('dx-fx'); kinetic(o);
+    const top = o.querySelector('.dx-ov-top'); if (!top) return; const r = d.createElement('div'); r.className = 'dxfx-rail'; r.setAttribute('aria-hidden', 'true'); r.innerHTML = '<i></i>'; top.appendChild(r);
+    let q = 0; const upd = () => { q = 0; const h = o.scrollHeight - o.clientHeight; r.style.setProperty('--k', String(clamp(h > 0 ? o.scrollTop / h : 0, 0, 1))); }; o.addEventListener('scroll', () => { if (!q) q = root.requestAnimationFrame(upd); }, { passive: true }); upd();
   };
   V.explorefx = { measure, frame };
 })(typeof window !== 'undefined' ? window : globalThis);
