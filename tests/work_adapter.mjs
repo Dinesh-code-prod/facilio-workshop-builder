@@ -593,6 +593,14 @@ await t('process described in words: steps and connections come back checked, on
     globalThis.__LLMTEXT = 'I cannot do that.'; r = await call(own, 'POST', `/api/projects/${P}/ai/flow-text`, body); assert.ok(r.status >= 400, 'an unreadable answer is refused');
   } finally { delete globalThis.__LLMTEXT; }
 });
+await t('process described in words: on a project with many flows the relevant ones are sent in full and the request stays short; abbreviations and typos are explained to the model', async () => {
+  store.delete('rl'); const own = 'ft2.owner@facilio.com'; let r = await call(own, 'POST', '/api/projects', { name: 'Flow text 2', customer: 'K' }); const P = r.data.project.id;
+  const flows = []; for (let i = 0; i < 100; i++) flows.push({ id: 'mod' + i + '::f', name: 'Default flow ' + i, moduleLabel: 'Module ' + i, states: Array.from({ length: 16 }, (_, k) => 'State ' + k + ' of module ' + i) });
+  flows.push({ id: 'serviceRequest::f1', name: 'Default', moduleLabel: 'Service Request', states: ['Submitted', 'Approved', 'Rejected'] });
+  r = await call(own, 'POST', `/api/projects/${P}/ai/flow-text`, { claudePack: true, text: 'If a client raises a request in tenant portal, SR created and goes for approval, the approved sr converted into a ticket', flows }); assert.equal(r.status, 200);
+  assert.match(r.data.prompt, /serviceRequest::f1 | Service Request · Default | states: Submitted, Approved, Rejected/, 'the flow the text refers to (SR = service request) is listed with its states');
+  assert.ok(r.data.prompt.length < 14000, 'the request stays short: ' + r.data.prompt.length); assert.match(r.data.prompt, /SR = service request/); assert.match(r.data.prompt, /spelling mistakes/);
+});
 await t('AI documents part by part: job, parts, retry, missing section marked, only the starter can use the job', async () => {
   store.delete('rl'); const sam = 'parts.owner@facilio.com', out = 'parts.other@facilio.com'; let r0 = await call(sam, 'POST', '/api/projects', { name: 'Parts', customer: 'Acme' }); const pid = r0.data.project.id;
   let r = await call(sam, 'POST', `/api/projects/${pid}/ai/job`, { task: 'wsr', instruction: 'Week 4' }); assert.equal(r.status, 201, JSON.stringify(r.data)); const job = r.data.job; const parts = r.data.parts; assert.ok(parts.length >= 4 && parts.length <= 8, 'wsr has its sections as parts'); assert.equal(r.data.provider, 'DeepSeek');

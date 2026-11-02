@@ -6,6 +6,11 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '2.8.3', date: '2026-11-02', kind: 'UPDATE', title: 'Process Whiteboard: Describe with AI reads your text better, Align works on whole flows', notes: [
+      'Describe with AI: the AI now reads your description more carefully (spelling mistakes, short forms such as SR and WO, every approval and branch you wrote) and sees the project flows that match your words in full. If the AI service does not answer, it tries again once with a shorter request.',
+      'A flow built from your description is drawn like a State Flow Builder flow: state pills, the last step closed, straight connections.',
+      'Align and distribute: work on whole flows (a frame moves with the states inside it), skip locked items, and say so when there is nothing to do.'
+    ] },
     { v: '2.8.2', date: '2026-11-02', kind: 'UPDATE', title: 'BRD Draft: edit like Word, import your own BRD, delete drafts', notes: [
       'BRD Draft: type directly on the page, make text bold, italic or underlined, press Enter for a new paragraph, and add headings, bullet lists and tables below any block. Edits are saved with the BRD and go into the Word and PDF exports.',
       'Import a BRD you already have (Word, PDF, text or Markdown) or start a blank one. It becomes its own tab and you edit it on the page.',

@@ -678,10 +678,12 @@
     if (keep) { try { const rec = await API.uploadFile(S.project.id, W.imp.file, 'flow_image', { board: W.B.id }); const s = Math.min(1, 420 / W.imp.w); imgW = Math.round(W.imp.w * s);
       W.B.nodes.push({ id: uid('n'), t: 'image', fileId: rec.id, x: ox, y: oy + 60, w: imgW, h: Math.round(W.imp.h * s), dim: false }); } catch (e) { V.toast('The diagram was added, but the original image could not be kept: ' + e.message, 6000, true); } }
     const fx = ox + (imgW ? imgW + 60 : 0);
-    nodes.forEach(n => { const L = lvl[n.id]; const r = rows[L] = (rows[L] || 0) + 1; const t = n.kind === 'decision' ? 'diamond' : n.kind === 'start' || n.kind === 'end' ? 'ellipse' : n.kind === 'process' ? 'rect' : 'state';
+    // a flow described in words is drawn exactly like a State Flow Builder flow: state pills (the last step closed), straight connections
+    const sf = !!(W.imp && W.imp.text);
+    nodes.forEach(n => { const L = lvl[n.id]; const r = rows[L] = (rows[L] || 0) + 1; if (sf) { const id = uid('n'); map[n.id] = id; W.B.nodes.push({ id, t: 'state', stype: n.kind === 'end' ? 'closed' : 'open', fr: grp, x: snapV(fx + 30 + L * 260), y: snapV(oy + 70 + (r - 1) * 90), w: Math.max(120, D.boxSize(n.label, true).w), h: 40, text: n.label, conf: n.confidence }); added.push(id); return; } const t = n.kind === 'decision' ? 'diamond' : n.kind === 'start' || n.kind === 'end' ? 'ellipse' : n.kind === 'process' ? 'rect' : 'state';
       const id = uid('n'); map[n.id] = id; const w = t === 'diamond' ? 160 : Math.max(130, Math.min(240, 18 + n.label.length * 7.4));
       W.B.nodes.push({ id, t, stype: 'open', fr: grp, x: snapV(fx + 30 + L * 240), y: snapV(oy + 70 + (r - 1) * 110), w, h: t === 'diamond' ? 90 : t === 'ellipse' ? 56 : 44, text: n.label, conf: n.confidence }); added.push(id); });
-    edges.forEach(e => W.B.edges.push({ id: uid('e'), from: map[e.from], to: map[e.to], label: e.label, conf: e.confidence }));
+    edges.forEach(e => W.B.edges.push(Object.assign({ id: uid('e'), from: map[e.from], to: map[e.to], label: e.label, conf: e.confidence }, sf ? { fr: grp, route: 'straight' } : {})));
     const bb = bbox(added.map(node)); const frame = { id: grp, t: 'frame', x: snapV(fx), y: snapV(oy), w: snapV(bb.x + bb.w - fx + 50), h: snapV(bb.y + bb.h - oy + 40), text: g.title || 'Imported flow', src: { kind: 'image' } };
     W.B.nodes.push(frame); W.sel = new Set([frame.id]); V.closeDrawer(); changed(); fit(); loadImages();
     V.toast(`${nodes.length} steps and ${edges.length} connections added. Dashed outlines mark parts to double-check.`, 6000);
@@ -813,11 +815,20 @@
   ACT.wbRedo = () => { if (ro() || !W.redo.length) return; W.undo.push(snapshot()); const s = JSON.parse(W.redo.pop()); W.B.nodes = s.nodes; W.B.edges = s.edges; W.sel = new Set(); changed(); draw(); };
   ACT.wbGroup = () => { const ns = [...W.sel].map(node).filter(Boolean); if (ns.length < 2 || ro()) return; pushUndo(); const g = uid('g'); ns.forEach(n => { n.g = g; }); changed(); draw(); V.toast('Grouped: they move together'); };
   ACT.wbUngroup = () => { const ns = [...W.sel].map(node).filter(Boolean); if (!ns.length || ro()) return; pushUndo(); ns.forEach(n => { delete n.g; }); changed(); draw(); };
-  ACT.wbAlign = el => { const how = el.value; el.value = ''; const ns = [...W.sel].map(node).filter(n => n && n.t !== 'frame'); if (ns.length < 2 || ro()) return; pushUndo(); const b = bbox(ns);
-    if (how === 'l') ns.forEach(n => { n.x = b.x; }); if (how === 'r') ns.forEach(n => { n.x = b.x + b.w - n.w; }); if (how === 'c') ns.forEach(n => { n.x = Math.round(b.x + b.w / 2 - n.w / 2); });
-    if (how === 't') ns.forEach(n => { n.y = b.y; }); if (how === 'b') ns.forEach(n => { n.y = b.y + b.h - n.h; }); if (how === 'm') ns.forEach(n => { n.y = Math.round(b.y + b.h / 2 - n.h / 2); });
-    if (how === 'dh' && ns.length > 2) { ns.sort((p, q) => p.x - q.x); const gap = (b.w - ns.reduce((a, n) => a + n.w, 0)) / (ns.length - 1); let x = b.x; ns.forEach(n => { n.x = Math.round(x); x += n.w + gap; }); }
-    if (how === 'dv' && ns.length > 2) { ns.sort((p, q) => p.y - q.y); const gap = (b.h - ns.reduce((a, n) => a + n.h, 0)) / (ns.length - 1); let y = b.y; ns.forEach(n => { n.y = Math.round(y); y += n.h + gap; }); }
+  // Align and distribute. A selected frame (a copied flow) moves as one block with everything inside it; locked items stay where they are; nothing is silent.
+  ACT.wbAlign = el => { const how = el.value; el.value = ''; if (!how || ro()) return;
+    const sel = [...W.sel].map(node).filter(n => n && !n.hidden); const inside = (fr, m) => m !== fr && !m.hidden && (m.fr === fr.id || (m.t === 'frame' ? m.x >= fr.x && m.y >= fr.y && m.x + m.w <= fr.x + fr.w && m.y + m.h <= fr.y + fr.h : (m.x + m.w / 2 >= fr.x && m.x + m.w / 2 <= fr.x + fr.w && m.y + m.h / 2 >= fr.y && m.y + m.h / 2 <= fr.y + fr.h)));
+    const kids = fr => W.B.nodes.filter(m => inside(fr, m)); const carried = new Set(); sel.filter(n => n.t === 'frame').forEach(fr => kids(fr).forEach(m => carried.add(m.id)));
+    const units = sel.filter(n => !carried.has(n.id)).map(n => ({ n, kids: n.t === 'frame' ? kids(n) : [] })); const free = units.filter(u => !u.n.lock);
+    if (units.length < 2) { V.toast('Select two or more items to align', 4000, true); return; }
+    if (free.length < 2) { V.toast('The selected items are locked. Unlock them to align.', 4000, true); return; }
+    if ((how === 'dh' || how === 'dv') && free.length < 3) { V.toast('Distributing needs three or more items', 4000, true); return; }
+    pushUndo(); const b = bbox(units.map(u => u.n)); const to = (u, x, y) => { const dx = x == null ? 0 : Math.round(x) - u.n.x, dy = y == null ? 0 : Math.round(y) - u.n.y; [u.n].concat(u.kids).forEach(m => { m.x += dx; m.y += dy; }); };
+    if (how === 'l') free.forEach(u => to(u, b.x, null)); if (how === 'r') free.forEach(u => to(u, b.x + b.w - u.n.w, null)); if (how === 'c') free.forEach(u => to(u, b.x + b.w / 2 - u.n.w / 2, null));
+    if (how === 't') free.forEach(u => to(u, null, b.y)); if (how === 'b') free.forEach(u => to(u, null, b.y + b.h - u.n.h)); if (how === 'm') free.forEach(u => to(u, null, b.y + b.h / 2 - u.n.h / 2));
+    if (how === 'dh') { free.sort((p, q) => p.n.x - q.n.x); const gap = (b.w - free.reduce((t, u) => t + u.n.w, 0)) / (free.length - 1); let x = b.x; free.forEach(u => { to(u, x, null); x += u.n.w + gap; }); }
+    if (how === 'dv') { free.sort((p, q) => p.n.y - q.n.y); const gap = (b.h - free.reduce((t, u) => t + u.n.h, 0)) / (free.length - 1); let y = b.y; free.forEach(u => { to(u, null, y); y += u.n.h + gap; }); }
+    if (free.length < units.length) V.toast((units.length - free.length) + ' locked item(s) were left where they are', 4000);
     changed(); draw(); };
   ACT.wbGridT = el => { W.B.grid = el.checked; W.dirty = true; draw(); save(); };
   ACT.wbImgT = el => { W.B.nodes.forEach(n => { if (n.t === 'image') n.hidden = !el.checked; }); W.sel = new Set([...W.sel].filter(id => { const n = node(id); return n && !n.hidden; })); changed(); draw(); };   // the reference layer can be hidden without deleting it
