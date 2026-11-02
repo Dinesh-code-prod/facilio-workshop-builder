@@ -1,3 +1,5 @@
+> **Update 2 November 2026:** the Claude Desktop extension (.mcpb, `tools/claude-mcp`) was removed. The app connector `https://mcp.facilio.work/facilio-delivery-studio` replaces it (tools in `work/work.json`, code in `work/server/api.mjs`, section 'Claude connector'). Pictures cannot go through the connector; the page offers Copy the image instead. The sections below describe the old extension and are kept for history.
+
 # Open in Claude: one hand-off for every button (2 Nov 2026)
 
 What changed, why this design, what was tested, and what still needs a person. Written after reading the official Claude documentation (links at the end) and the code.

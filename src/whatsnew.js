@@ -6,6 +6,11 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '2.8.6', date: '2026-11-02', kind: 'UPDATE', title: 'Claude connector reads the whole project; the old extension is gone', notes: [
+      'The Delivery Studio connector can now read everything in a project: requirements, transcript statements, open questions, use cases, tickets (including e-mail), actions, decisions, risks and issues, change requests, sign-offs, tasks, UAT, hypercare, handover, notes, the project documents, a search across the project and recent activity. Ask Claude to call connector_help to see what it can do and how to prepare UAT, guides, status reports and issue lists.',
+      'The Claude Desktop extension (.mcpb) was removed. The connector replaces it. Pictures cannot go through the connector: use Copy the image and paste it in Claude.',
+      'Project Settings > Claude connection shows the project id, the connector address and the steps for Claude Code and Claude Desktop.'
+    ] },
     { v: '2.8.5', date: '2026-11-02', kind: 'UPDATE', title: 'Claude connector: your own Claude can read projects and send answers back', notes: [
       'Add the Facilio Delivery Studio connector once in Claude (Settings > Connectors > Add custom connector, address https://mcp.facilio.work/facilio-delivery-studio) and sign in with your Facilio account. It works in Claude on the web, the desktop app and the phone, with nothing to download.',
       'Claude can then find your projects, read requirements, open questions and use cases, take the same task packs as Open in Claude, and save finished drafts back as unapproved drafts. Everything runs as you, with your project access.',

@@ -10,9 +10,7 @@
 (function (root) {
   'use strict';
   const F = root.FWB; const { S, esc } = F; const V = root.FWBViews; const ACT = V.ACT; const API = root.FWBApi; const L = root.FWBClaude; const { drawer, closeDrawer, toast } = V;
-  const EXT_URL = 'claude/facilio-delivery-studio.mcpb';
   const ls = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { } } };
-  const hasExt = () => ls.get('fwb_claude_ext') === '1';
   const hasConn = () => ls.get('fwb_claude_conn') === '1';
   const CONN_URL = 'https://mcp.facilio.work/facilio-delivery-studio';
   const copyText = async t => { try { await navigator.clipboard.writeText(t); return true; } catch (e) { return false; } };
@@ -33,10 +31,7 @@
     const full = L.wrap(o.prompt, meta(o));
     // with the connector added in Claude, the prompt only carries the hand-off id (pictures cannot travel through the connector, so a task with a picture uses the extension or the clipboard)
     if (hasConn() && dest !== 'copy' && !(o.files || []).some(f => /^image\//.test(f.mime))) { try { const r = await makePackage(o, full); return { full, ref: r.id, id: r.id, expires: r.expires, conn: true }; } catch (e) { toast((e.message || 'The hand-off could not be prepared') + ' Falling back to a copied prompt.', 7000, true); return { full, ref: '', id: '', failed: true }; } }
-    const needsPkg = hasExt() && dest === 'desktop' && ((o.files && o.files.length) || !L.fits('desktop', full));
-    if (!needsPkg) return { full, ref: '', id: '' };
-    try { const r = await makePackage(o, full); return { full, ref: r.reference, id: r.id, expires: r.expires }; }
-    catch (e) { toast((e.message || 'The hand-off could not be prepared') + ' Falling back to a copied prompt.', 7000, true); return { full, ref: '', id: '', failed: true }; }
+    return { full, ref: '', id: '' };
   }
 
   // ---------- the launcher every button uses ----------
@@ -46,12 +41,11 @@
     const p = await prepare(o, dest); const full = p.full; let said = '';
     if (dest === 'copy') { const ok = await copyText(full); window.open('https://claude.ai/new', '_blank', 'noopener'); return { ok, prefilled: false, ref: '', said: ok ? 'The prompt is copied. In Claude, click the message box and press Ctrl+V.' : 'This browser blocked copying. Use Copy the prompt.' }; }
     if (p.conn) { const lk = L.link(dest === 'desktop' ? 'desktop' : 'web', L.connPrompt(o.title, p.id)); if (dest === 'desktop') V.claudeNav(lk.href); else window.open(lk.href, '_blank', 'noopener'); return { ok: true, prefilled: lk.prefilled, ref: p.ref, id: p.id, expires: p.expires, said: 'Claude was opened with a short prompt that uses the Facilio Delivery Studio connector. Press Enter to send it. Claude reads the task from Delivery Studio and the answer arrives here by itself.' }; }
-    if (dest === 'desktop' && p.ref) { const lk = L.link('desktop', L.refPrompt(o.title, p.ref)); V.claudeNav(lk.href); return { ok: true, prefilled: lk.prefilled, ref: p.ref, id: p.id, expires: p.expires, said: 'Claude Desktop was opened with a short prompt that carries the hand-off reference. Claude opens the picture and documents through the Delivery Studio extension and sends its answer back here by itself.' }; }
     const lk = L.link(dest === 'desktop' ? 'desktop' : 'web', full); let copied = false; if (!lk.prefilled) copied = await copyText(full);
     if (dest === 'desktop') V.claudeNav(lk.href); else window.open(lk.href, '_blank', 'noopener');
     said = lk.prefilled ? 'Claude was opened with the prompt in the message box (if the box is empty, use Copy the prompt and paste it).' : copied ? 'The prompt is too long to put in a link without losing part of it, so it is copied: in Claude click the message box and press Ctrl+V.' : 'The prompt is too long for a link and this browser blocked copying: use Copy the prompt.';
     if (dest === 'desktop') said += ' If Claude Desktop did not open, it is not installed or links from this browser are blocked; use Open Claude Web.';
-    if (o.files && o.files.length && !p.ref) said += dest === 'desktop' && !hasExt() ? ' Install the Delivery Studio Claude extension to let Claude open your pictures and documents itself.' : '';
+    if (o.files && o.files.length) said += ' The picture or files cannot go through the connector: use Copy the image and paste it in Claude.';
     return { ok: true, prefilled: lk.prefilled, copied, ref: '', said };
   };
   // the simple case for the buttons that only need the prompt opened: copy it, open Claude with it where it fits, say what happened
@@ -77,7 +71,7 @@
       HO = Object.assign({}, o, { prompt: r.prompt, name: r.title || o.title, files, image: o.image || (files.find(f => /^image\//.test(f.mime)) || {}).blob || null }); stopPoll();
       const hasFiles = !o.skipPack && files.length > 0;
       const conn = `<label class="chk small" style="margin:6px 0;display:flex;gap:8px"><input type="checkbox" data-change="hoConn"${hasConn() ? ' checked' : ''}> <span><b>I added the Facilio Delivery Studio connector in Claude</b> (Claude > Settings > Connectors > Add custom connector, name it Facilio Delivery Studio, paste <code>${CONN_URL}</code> and sign in with your Facilio account). Works in Claude on the web, the desktop app and the phone, with nothing to download.</span></label>`;
-      const ext = conn + `<label class="chk small" style="margin:6px 0;display:flex;gap:8px"><input type="checkbox" data-change="hoExt"${hasExt() ? ' checked' : ''}> <span>I installed the Claude extension on this computer (Claude Desktop then reads the pictures and documents itself and sends the answer back).</span></label><div class="row" style="gap:8px;margin:0 0 8px;flex-wrap:wrap"><a class="btn sm" href="${EXT_URL}" download="facilio-delivery-studio.mcpb">Download facilio-delivery-studio.mcpb</a><button type="button" class="btn sm" data-act="claudeExtHelp">Where and how to install it</button></div>`;
+      const ext = conn;
       const what = hasFiles && o.task === 'flow-image' ? `<p class="small" style="margin:0 0 8px"><b>What Claude is asked to do:</b> read the picture, list every shape, label, decision and arrow, work out the order and direction and the branches, and answer with JSON that Process Whiteboard can read back. Nothing is added to the board until you check it.</p>` : '';
       const row = o.skipPack ? '' : `<div class="row" style="gap:8px;margin:8px 0;flex-wrap:wrap"><button type="button" class="btn sm primary" data-act="hoGo" data-d="web">Open Claude Web</button><button type="button" class="btn sm" data-act="hoGo" data-d="desktop">Open Claude Desktop</button><button type="button" class="btn sm" data-act="hoGo" data-d="copy">Copy Prompt and Open Claude</button></div>
         <div class="row" style="gap:8px;margin:0 0 8px;flex-wrap:wrap">${HO.image ? '<button type="button" class="btn sm" data-act="hoImg">Copy the image</button><button type="button" class="btn sm" data-act="hoDl">Download the image</button>' : ''}<button type="button" class="btn sm" data-act="hoCopy">Copy the prompt</button><button type="button" class="btn sm" data-act="hoDlP">Download the prompt (.md)</button></div>${ext}<div id="hoStatus" class="notice small" hidden></div>${V.skillsNote && !hasFiles ? V.skillsNote() : ''}`;
@@ -101,23 +95,10 @@
   V.claudeQuickLinks = () => '<button type="button" class="btn sm primary" data-act="clqGo" data-d="web">Open Claude Web</button><button type="button" class="btn sm" data-act="clqGo" data-d="desktop">Open Claude Desktop</button><button type="button" class="btn sm" data-act="clqGo" data-d="copy">Copy Prompt and Open Claude</button>';
   ACT.clqGo = a => { const q = V.claudeQuick; if (!q || !q.prompt) return; V.claudeLaunch({ title: q.title || 'Task', task: q.task || 'task', prompt: q.prompt, expect: { format: 'text' } }, a.getAttribute('data-d')).then(r => toast(r.said, 8000)); };
   ACT.hoConn = el => { ls.set('fwb_claude_conn', el.checked ? '1' : '0'); toast(el.checked ? 'Open Claude will now send the short connector prompt' : 'Open Claude will send the full prompt', 4000); };
-  ACT.hoExt = el => { ls.set('fwb_claude_ext', el.checked ? '1' : '0'); toast(el.checked ? 'Open Claude Desktop will now send the short hand-off prompt' : 'Open Claude Desktop will send the full prompt', 4000); };
   // where to get the extension and how to install it: one text, shown in Project Settings > Claude Desktop extension and from every Open in Claude panel
-  V.claudeExtHtml = () => `<div class="notice" style="margin-bottom:12px"><span><b>Recommended: the Delivery Studio connector.</b> In Claude open Settings > Connectors > Add custom connector, name it <b>Facilio Delivery Studio</b>, paste <code>${CONN_URL}</code> and sign in with your Facilio account. It works in Claude on the web, the desktop app and the phone, needs no download, and lets Claude read your projects (requirements, questions, use cases) and send drafts back. Then tick <label class="chk" style="display:inline-flex;gap:6px"><input type="checkbox" data-change="hoConn"${hasConn() ? ' checked' : ''}> I added the connector</label>. The extension below is only needed for tasks that carry a picture.</span></div>`
-    + `<p class="small" style="margin-top:0">A small add-on for the <b>Claude Desktop app on your computer</b> (Windows or Mac). With it, Open Claude Desktop gives Claude your picture, PDF, Word or Excel text itself, and Claude sends its answer back to this page. Install it <b>once on each computer</b>. It is <b>not</b> installed in a web browser, on claude.ai or on the phone app, and it needs no API key.</p>
-    <div class="row" style="gap:10px;flex-wrap:wrap;margin:10px 0"><a class="btn primary" href="${EXT_URL}" download="facilio-delivery-studio.mcpb">Download facilio-delivery-studio.mcpb</a><span class="xs muted">about 8 KB; it saves in your Downloads folder</span></div>
-    <h4 style="margin:14px 0 6px">Install it in Claude Desktop</h4>
-    <ol class="small" style="line-height:1.75;margin:0 0 8px"><li><b>Claude Desktop installed and signed in?</b> If not, install it from <a href="https://claude.com/download" target="_blank" rel="noopener noreferrer">claude.com/download</a> and sign in with your normal Claude account.</li>
-      <li><b>Download the file above.</b> Its name is <code>facilio-delivery-studio.mcpb</code>.</li>
-      <li><b>Double-click the file.</b> Claude Desktop opens an install screen for "Facilio Delivery Studio hand-off" that lists its seven tools. Choose <b>Install</b>. It asks for no folders and no keys.</li>
-      <li><b>If double-clicking does nothing:</b> open Claude Desktop, go to <b>Settings</b>, open <b>Extensions</b> (in newer versions: Settings, Desktop app, then Manage next to Extensions) and drag the file onto that screen. Menu names differ a little between versions.</li>
-      <li><b>Check it:</b> the extension is listed in Settings, Extensions, and switched on.</li>
-      <li><b>Tell Delivery Studio:</b> tick the box below (it is remembered in this browser). Then use <b>Open Claude Desktop</b> from any Open in Claude panel.</li></ol>
-    <label class="chk" style="display:flex;gap:8px;margin:8px 0"><input type="checkbox" data-change="hoExt"${hasExt() ? ' checked' : ''}> <span>I installed the Claude extension on this computer</span></label>
-    <div class="notice small"><span><b>Team or Enterprise Claude plan?</b> An owner of your Claude organisation may need to allow desktop extensions first. If the install screen says it is blocked, ask them. <b>To update</b>, download the file again and double-click it. <b>Claude on the web</b> cannot use this extension: it gets the prompt in the link and the picture on your clipboard instead.</span></div>`;
   // Project Settings > Claude connection: this project's id, the connector address and ready-made lines for Claude Code and Claude Desktop, each with a copy button
   const cp = (label, val) => `<div style="margin:6px 0"><div class="xs muted">${esc(label)}</div><div class="row" style="gap:8px;align-items:flex-start"><code style="flex:1;white-space:pre-wrap;word-break:break-all;background:#f4f7fd;border:1px solid #e3e9f5;border-radius:8px;padding:8px 10px;font-size:12px">${esc(val)}</code><button type="button" class="btn sm" data-act="hoCopyVal" data-val="${esc(val)}">Copy</button></div></div>`;
-  V.claudeProjectHtml = () => { const pr = S.project || {}; const id = pr.id || ''; const start = 'Use the Facilio Delivery Studio connector. Work on the project "' + (pr.name || '') + '" (id ' + id + '). Call project_overview first, then help me with: ';
+  V.claudeProjectHtml = () => { const pr = S.project || {}; const id = pr.id || ''; const start = 'Use the Facilio Delivery Studio connector. Work on the project "' + (pr.name || '') + '" (id ' + id + '). Call connector_help if you are unsure what you can do, then project_overview, then help me with: ';
     return `<p class="small" style="margin-top:0">Connect your own Claude to <b>this project</b>. Claude can then read its requirements, open questions and use cases, take the same task packs as Open in Claude, and save finished drafts back here as <b>unapproved drafts</b>. It runs as you, with your project access, and uses your own Claude plan (no API key).</p>
       ${cp('Project name', pr.name || '')}${cp('Project ID', id)}${cp('Connector address', CONN_URL)}
       <h4 style="margin:14px 0 6px">Claude Code (terminal)</h4>${cp('Run once', 'claude mcp add --transport http facilio-delivery-studio ' + CONN_URL)}<div class="xs muted">Then run <code>/mcp</code> in Claude Code and choose to sign in with your Facilio account.</div>
@@ -125,6 +106,5 @@
       <h4 style="margin:14px 0 6px">Start a chat about this project</h4>${cp('Paste this as your first message, then say what you need', start)}
       <label class="chk" style="display:flex;gap:8px;margin:12px 0 0"><input type="checkbox" data-change="hoConn"${hasConn() ? ' checked' : ''}> <span>I added the connector. Open in Claude then sends one short line instead of the whole prompt.</span></label>`; };
   ACT.hoCopyVal = async a => toast((await copyText(a.getAttribute('data-val') || '')) ? 'Copied' : 'Copy was blocked by the browser', 2500);
-  ACT.claudeExtHelp = () => drawer('Install the Claude Desktop extension', V.claudeExtHtml(), '<span class="spacer"></span><button class="btn" data-act="closeDrawer">Close</button>', { wide: true });
-  V.claudeExtOn = hasExt; V.claudeExtUrl = EXT_URL;
+  V.claudeExtOn = hasConn;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -322,6 +322,176 @@
       "result"
      ]
     }
+   },
+   {
+    "name": "connector_help",
+    "description": "What this connector can do, grouped, with ready recipes for UAT, guides, issue tracking, status reports and gap checks. Call this first when unsure.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "topic": {
+       "type": "string",
+       "description": "Optional: uat, guides, issues, status, gaps"
+      }
+     },
+     "required": []
+    }
+   },
+   {
+    "name": "list_record_kinds",
+    "description": "Every kind of record this project holds (actions, decisions, risks and issues, change requests, sign-offs, tasks, UAT, hypercare, handover, guides, notes ...) with how many of each, plus the project documents you can read.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      }
+     },
+     "required": [
+      "project"
+     ]
+    }
+   },
+   {
+    "name": "get_records",
+    "description": "Read the records of one kind (use list_record_kinds for the kinds). Short view by default; filter by status or words; pass detail \"full\" to read records in depth.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      },
+      "kind": {
+       "type": "string",
+       "description": "For example raid, action, decision, cr, signoff, task, utc, uat, hc, usecase, note"
+      },
+      "status": {
+       "type": "string"
+      },
+      "text": {
+       "type": "string",
+       "description": "Words to look for"
+      },
+      "detail": {
+       "type": "string",
+       "description": "brief (default) or full"
+      },
+      "limit": {
+       "type": "number",
+       "description": "How many to return (default shown in the answer)"
+      }
+     },
+     "required": [
+      "project",
+      "kind"
+     ]
+    }
+   },
+   {
+    "name": "get_tickets",
+    "description": "The project tickets (including those that arrived by e-mail or from Teams): number, subject, status, priority, source, requester.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      },
+      "status": {
+       "type": "string"
+      },
+      "text": {
+       "type": "string"
+      },
+      "limit": {
+       "type": "number",
+       "description": "How many to return (default shown in the answer)"
+      }
+     },
+     "required": [
+      "project"
+     ]
+    }
+   },
+   {
+    "name": "get_document",
+    "description": "Read a project document, or one part of it. Without part it lists the parts. Sections: workshop (parts: project, modules, customModules, flows, roles, notifications, processes, requirements, questions, brd, log ...), transcripts, planner (sessions, scope), brddoc, reviews, plan_struct, notifications, agentscope, people, config_digest, config, guide_published.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      },
+      "section": {
+       "type": "string"
+      },
+      "part": {
+       "type": "string"
+      },
+      "limit": {
+       "type": "number",
+       "description": "How many to return (default shown in the answer)"
+      }
+     },
+     "required": [
+      "project",
+      "section"
+     ]
+    }
+   },
+   {
+    "name": "search_project",
+    "description": "Search a word or phrase across the whole project (requirements, transcripts, flows, roles, decisions ...).",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      },
+      "query": {
+       "type": "string"
+      },
+      "limit": {
+       "type": "number",
+       "description": "How many to return (default shown in the answer)"
+      }
+     },
+     "required": [
+      "project",
+      "query"
+     ]
+    }
+   },
+   {
+    "name": "recent_activity",
+    "description": "What changed in the project lately and who changed it.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      },
+      "limit": {
+       "type": "number",
+       "description": "How many to return (default shown in the answer)"
+      }
+     },
+     "required": [
+      "project"
+     ]
+    }
    }
   ]
  }
