@@ -132,7 +132,7 @@
       let TOPY = 0; for (const b of branches) for (const q of b.pts) TOPY = Math.min(TOPY, q[1]);
       for (const b of branches) {
         if (b.depth < 3 && !(b.depth === 2 && R() < .5)) continue;
-        const n = b.depth >= 5 ? 4 : b.depth === 4 ? 5 : b.depth === 3 ? 5 : 4, spread = 2.5;   // about a fifth fewer leaves than before (smoother); each is a little larger to keep the canopy full
+        const n = b.depth >= 5 ? 3 : b.depth === 4 ? 4 : b.depth === 3 ? 4 : 3, spread = 2.4;   // about a fifth fewer leaves than before (smoother); each is a little larger to keep the canopy full
         for (const f of (b.depth >= 4 ? [.6, .92] : [.75])) { const s0 = at(b, f); if (s0[1] > -340) continue;
         for (let i = 0; i < n; i++) {
           const a0 = s0[3] + ((i + .5) / n - .5) * spread + rr(-.22, .22), off = rr(2, 22), x = s0[0] + Math.cos(a0) * off, y = s0[1] + Math.sin(a0) * off;
@@ -140,7 +140,7 @@
           const col = shade(LC[(R() * LC.length) | 0], tone);
           const waveB = b.depth >= 4 ? R() < .7 : R() < .4;
           const base = tAt(b, f) + .3, when = (waveB ? S[8] + .2 : S[7] + .2) + R() * 3.4;
-          leaves.push({ x, y, ang: a0 + rr(-.35, .35), size: rr(26, 41) * (b.depth >= 5 ? .9 : 1), col, shp: (R() * 3) | 0, t: Math.max(base, when), ph: R() * TAU, flip: i % 2 ? 1 : -1 });
+          leaves.push({ x, y, ang: a0 + rr(-.35, .35), size: rr(26, 40) * (b.depth >= 5 ? .9 : 1), col, shp: (R() * 3) | 0, t: Math.max(base, when), ph: R() * TAU, flip: i % 2 ? 1 : -1 });
         } }
       }
       leaves.sort((a, b) => a.t - b.t);
@@ -222,7 +222,7 @@
         W = o.clientWidth; H = o.clientHeight; DPR = Math.min(QCAP, window.devicePixelRatio || 1); DPR = Math.max(.6, Math.min(DPR, Math.sqrt(2700000 / Math.max(1, W * H)))); /* pixel budget: a wide screen never draws more than about 2.7M pixels per frame (full resolution at 1080p, so the trees stay sharp); the quality tiers step down if frames run slow */ cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
         WIDE = W >= 900 && W / H > 1.15; o.classList.toggle('narrow', !WIDE);
         RT = 58;
-        RT = WIDE ? 112 : 150; LR = 0;
+        RT = WIDE ? 196 : 170; LR = 0;   // the heading card sits above the tree: the canopy starts below it
         if (WIDE) { RB = H - 10; FIT = Math.min(W / 1500, (RB - RT) / 1060); }
         else { RB = H - 40; FIT = Math.min(W / 900, (RB - RT) / 1060); }
         labels.forEach(L => L.state = '');
@@ -246,7 +246,7 @@
       // where the tree sits on screen: centred while it grows, then (reveal 0 -> 1) scaled and slid left of the brand block
       function camAt(t, reveal) {
         const [cy, zm] = cam(t); const RW = W - LR, RH = RB - RT; let sc = FIT * zm, fx = LR + RW / 2, fy = RT + RH * .54;
-        if (WIDE) { const free = BL - LR, k = Math.min(1, free * .8 / (2 * 440 * sc)); sc *= lerp(1, k, reveal); fx = lerp(fx, LR + free / 2, reveal); }
+        if (WIDE) { const free = BL - LR, k = Math.min(1, free * .8 / (2 * 440 * sc)); sc *= lerp(1, k * .9, reveal); fx = lerp(fx, LR + free / 2, reveal); }
         else { sc *= 1 - .2 * reveal; fy -= RH * .17 * reveal; }
         return { ox: fx - EXX, oy: fy - cy * sc, sc };
       }
