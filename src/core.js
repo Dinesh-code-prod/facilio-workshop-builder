@@ -115,6 +115,7 @@
     S.ws.customModules.forEach(c => out.push(moduleView(c.name)));
     return out;
   }
+  function msaMatched(name) { try { return (doc('planner').scope || []).some(x => x.module === name && x.status === 'matched'); } catch (e) { return false; } }
   function moduleView(name) {
     const b = S.baseline && S.baseline.modules[name];
     const c = S.ws.customModules.find(x => x.name === name);
@@ -122,7 +123,7 @@
     if (!b && !c) return null;
     const base = b || { name, label: c.label, description: c.description, custom: true, fields: [], forms: [], flows: [], evidence: [], dependsOn: [], usedBy: [], priority: 'medium', priorityReasons: ['Custom module proposed in workshop'], inUse: true, score: 0 };
     const priority = w.priority || base.priority;
-    const inScope = w.inScope !== undefined ? w.inScope : (priority === 'high');
+    const inScope = w.inScope !== undefined ? w.inScope : msaMatched(name); // scope = modules matched from the MSA, or ones the user adds/toggles; never auto-added by priority
     return { name, label: (c && c.label) || base.label, description: base.description, origin: c ? 'proposed' : 'existing', system: b ? !b.custom : false, custom: base.custom,
       priority, priorityOverridden: !!w.priority && w.priority !== base.priority, basePriority: base.priority, priorityReasons: base.priorityReasons || [], inScope, inUse: base.inUse || !!c,
       evidence: base.evidence || [], dependsOn: base.dependsOn || [], usedBy: base.usedBy || [], forms: base.forms || [], flowIds: flowsForModule(name).map(f => f.id), score: base.score || 0,
