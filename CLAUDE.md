@@ -1,6 +1,6 @@
 # Facilio Delivery Studio: notes for any Claude session
 
-This project is worked on from two Claude accounts (personal and office), from the same folder (`D:\facilio\facilio-workshop-builder`) and from claude.ai/code. Nothing lives only in one account's chat: the repository on GitHub, `HANDOFF.md` and `docs/DEPLOYS.md` carry the state between sessions.
+This project is worked on from two Claude accounts (personal and office), from the same folder (`D:\facilio\facilio-workshop-builder`) and from claude.ai/code. Nothing lives only in one account's chat: the repository on GitHub, `HANDOFF.md` and `docs/operations/DEPLOYS.md` carry the state between sessions.
 
 ## Starting a session
 Run `/sync` first. It compares this folder with GitHub (`origin/main`), lists any uncommitted or unpushed work left by the other account, reads `HANDOFF.md`, and shows whether the live app is behind the code. Never discard another session's changes (no `git reset --hard`, no checkout of files) without asking.
@@ -19,7 +19,7 @@ Run `/handoff`. It commits and pushes finished work, puts half-done work on a `w
 - CSS: styles are layered in the order listed in `build.mjs`; later layers win. Overrides use `body ...:not(#_):not(#__)` with `!important`. `depthlayer.css` is the last layer.
 - Preview locally: `node build.mjs`, then `node tests/ui/devserver.mjs 4173` and open http://localhost:4173/?nointro (`?intro=1` forces the opening animation). Local data is in `tests/ui/.devdata.json` (not committed).
 - Tests: `npm test`. Also `npm run test:load` (100 projects, 100 people, AI limits) and `npm run test:scale`.
-- Deploy: `/deploy`, or see `DEPLOY.md`. The site must stay under 50 MB extracted (about 41 MB now).
+- Deploy: `/deploy`, or see `docs/operations/DEPLOY.md`. The site must stay under 50 MB extracted (about 41 MB now).
 
 ## Look and feel (the user's rules)
 - Facilio colours only: navy #1D1A5E, Facilio blue #1570EF, pink #E5197F, sky #8DB8FF. No violet or purple, no neon or glow, no heavy gradients.

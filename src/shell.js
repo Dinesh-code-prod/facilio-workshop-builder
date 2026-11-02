@@ -133,7 +133,7 @@
     { g: '6. Hypercare, Handover & Closure', sec: 'Launch and support', icon: 'shield', fi: 'g_delivery', items: [['hypercare', 'Hypercare'], ['handover', 'Handover & Closure']] },
     { g: 'Support & Tickets', sec: 'Launch and support', icon: 'mail', items: [['inbox', 'Inbox'], ['tickets', 'Tickets']] },
     { g: 'Customer View', sec: 'Share with the customer', icon: 'spark', items: [['custintro', 'Customer Introduction'], ['prepare', 'Learn & Prepare'], ['seefacilio', 'Product Tour'], ['learnlib', 'Module guides'], ['agentguide', 'Facilio AI Agents'], ['integguide', 'Connecting Your Systems'], ['guide', 'Customer User Guide'], ['dashboards', 'Dashboard Gallery'], ['explore', 'Discover more'], ['portal', 'Customer Portal']] },
-    { g: 'Help', sec: 'Integrations & admin', icon: 'book', items: [['teamhelp', 'Team Guide'], ['whatsnew', "What's new"]] },
+    { g: 'Help', sec: 'Integrations & admin', icon: 'book', items: [['teamhelp', 'Team Guide'], ['whatsnew', "What's new"], ['privacy', 'Privacy & data']] },
     { g: 'Settings', sec: 'Integrations & admin', icon: 'gear', fi: 'g_admin', items: [['settings', 'Project Settings & Exports'], ['templates', 'Templates'], ['workspace', 'Tabs & Layouts']] },
     // advanced and rarely needed pages: still there, out of the way of the delivery path
     { g: 'More tools', sec: 'Integrations & admin', icon: 'gear', fi: 'g_admin', items: [['contracts', 'Contracts & Integrations'], ['pkgan', 'Configuration Analysis'], ['orgpkg', 'Org Package Export'], ['showcase', 'Explore Facilio']] }

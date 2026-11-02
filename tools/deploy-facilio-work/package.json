@@ -1,7 +1,0 @@
-{
-  "name": "deploy-facilio-work",
-  "private": true,
-  "type": "module",
-  "description": "One-off helper that deploys the Delivery Studio zip to facilio.work through its connector, without a Claude account.",
-  "dependencies": { "@modelcontextprotocol/sdk": "^1.0.0" }
-}

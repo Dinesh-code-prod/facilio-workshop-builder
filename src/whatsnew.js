@@ -6,6 +6,11 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '2.8.7', date: '2026-11-02', kind: 'UPDATE', title: 'Privacy and data, keyboard access, repository documents', notes: [
+      'Help > Privacy & data: what is stored and who sees it, how long it is kept, cookies and browser storage, and the terms of use. You can download your data or ask for it to be deleted; the platform owner handles requests.',
+      'Keyboard: a Skip to content link and a clear blue focus ring on every control, so you always see where you are when you use Tab.',
+      'The repository documents are now six: product requirements, technical requirements, app flow, UI and UX design, backend schema and implementation plan (docs/README.md).'
+    ] },
     { v: '2.8.6', date: '2026-11-02', kind: 'UPDATE', title: 'Claude connector reads the whole project; the old extension is gone', notes: [
       'The Delivery Studio connector can now read everything in a project: requirements, transcript statements, open questions, use cases, tickets (including e-mail), actions, decisions, risks and issues, change requests, sign-offs, tasks, UAT, hypercare, handover, notes, the project documents, a search across the project and recent activity. Ask Claude to call connector_help to see what it can do and how to prepare UAT, guides, status reports and issue lists.',
       'The Claude Desktop extension (.mcpb) was removed. The connector replaces it. Pictures cannot go through the connector: use Copy the image and paste it in Claude.',

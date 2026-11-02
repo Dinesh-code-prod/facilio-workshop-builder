@@ -122,7 +122,7 @@ Confirmed issues (a fact in the records) are distinguished from potential risks 
 ## 8. AI insights
 
 `POST /api/admin/ai/briefing` goes through the shared AI service (`assist` operation; DeepSeek by default, Claude when
-configured and routed — see `docs/AI_ARCHITECTURE.md`). The prompt holds only the computed evidence: each project's health
+configured and routed — see `docs/reference/ai-architecture.md`). The prompt holds only the computed evidence: each project's health
 and reasons as [P#], each signal with its records as [E#], and health history only when two or more daily snapshots exist.
 The model is told to use only that evidence, cite it, label statements Fact or Inference, and not invent dates, people or
 numbers. A per-project explanation uses the same route. The briefing is read-only: it never changes records, assigns work,

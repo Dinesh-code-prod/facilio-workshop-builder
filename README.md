@@ -1,31 +1,39 @@
 # Facilio Delivery Studio
 
-Multi-project workshop workspace for Facilio implementation consultants: Form Builder, State Flow Builder, roles, sessions, user guide, transcripts, validation and BRD, from contract to go-live.
+The implementation team's workspace for running a customer project from contract to hand-over: workshops and requirements, use cases, solution design, the BRD with sign-off, UAT, guides, hypercare and closure, with AI drafts that a person always confirms.
 
-Hosted on **facilio.work** (Facilio's reviewed internal-app platform): https://facilio-delivery-studio.facilio.work
+Hosted on **facilio.work** (Facilio's reviewed internal-app platform): https://facilio-delivery-studio.facilio.work. Sign-in is the Facilio Microsoft account.
 
-## How it works
-- **Front end:** plain JavaScript in `src/`, bundled by `build.mjs` (esbuild) into `dist/`. No inline scripts.
-- **Backend:** one server function, `work/server/api.mjs`, served at `/api/fn/api/...`. It handles every route (projects, documents, items, files, admin). Identity comes from the platform (Microsoft sign-in, `ctx.viewer`), data is stored in the app database (`ctx.db`), file bytes in the private file store (`ctx.files`).
-- **Page connector:** `work/src/workapi.js` sends the app's `/api/*` calls to that function and moves file parts through one-time upload/download links.
-- **Reference configuration:** `data/reference-data.mjs` (sanitised baseline) is written to `reference.dat` and `reference-meta.json` at build time.
+## Read this first
+The six documents in [docs/](docs/README.md), in order:
+1. [Product requirements](docs/01-product-requirements.md)
+2. [Technical requirements](docs/02-technical-requirements.md)
+3. [App flow](docs/03-app-flow.md)
+4. [UI and UX design](docs/04-ui-ux-design.md)
+5. [Backend schema](docs/05-backend-schema.md)
+6. [Implementation plan](docs/06-implementation-plan.md)
 
-## Roles (enforced on the server)
-- **Platform owner:** `dinesh.r@facilio.com` (set in `SUPER_ADMINS` in `work/server/api.mjs`). Sees and manages every project and all admin screens.
-- **Admin / Sub admin:** granted by the platform owner under Admin, Access. Admin manages projects and users; Sub admin is read-only.
-- **Project members:** owner, editor or viewer on each project. Only Facilio (`@facilio.com`) addresses can be added.
-- Customer and guest sign-in are not available in this version.
+## Repository map
+| Path | What it is |
+|---|---|
+| `src/` | The front end: plain JavaScript views and CSS, bundled by `build.mjs` |
+| `work/server/api.mjs` | The one server function (`_ai.mjs` AI providers, `_portfolio.mjs` admin health); `work/work.json` lists the connector tools; `work/src/workapi.js` is the page-to-server link |
+| `data/` | Sanitised reference configuration written into the build |
+| `public/` | Static files copied into the site (brand, demo screens, skills ZIPs) |
+| `vendor/` | Third-party libraries (PDF, Word, PowerPoint, Excel, fonts) |
+| `skills/` | Claude skills for guides and videos, served as ZIPs |
+| `tests/` | `npm test` (server and logic) and `tests/ui/` (browser checks) |
+| `tools/` | Scripts that build assets and reference data |
+| `docs/` | The six documents, plus `operations/`, `reference/`, `reports/` |
 
 ## Build, test, deploy
-```
+```bash
 npm install
-npm test          # server function against a mock of the platform (identity, db limits, files, admin rules)
-npm run build     # writes dist/ (static files + server/ + work.json)
+node build.mjs                      # writes dist/ (empties it first)
+node tests/ui/devserver.mjs 4173    # preview at http://localhost:4173/?nointro
+npm test                            # server and logic tests against a mock of the platform
 ```
-Deploy `dist/` to the app with the facilio.work tools: `get_upload_url`, upload the zip, then `deploy_app_zip` (mode replace). After the app is approved, every deploy goes live at once.
+Deploying and the deploy log: [docs/operations/DEPLOY.md](docs/operations/DEPLOY.md), [docs/operations/DEPLOYS.md](docs/operations/DEPLOYS.md). The extracted site must stay under 50 MB.
 
-## Storage layout (ctx.db collections)
-`projects` · `usr` (people) · `grant` (admin grants) · `doc.<pid>` and `dp.<pid>` (documents and their parts) · `it.<pid>.<kind>` and `ip.<pid>.<kind>` (records) · `fl.<pid>` (files) · `au.<pid>` and `au.sys` (activity) · `gr.<pid>` (guide answers) · `fb.<pid>` (customer questions). Records over about 100 KB are gzipped and split into parts to stay under the 128 KB limit.
-
-## History
-Earlier hosting set-ups have been retired; the app now runs only on facilio.work.
+## For people and Claude sessions working here
+[CLAUDE.md](CLAUDE.md) (rules and how the project works) and [HANDOFF.md](HANDOFF.md) (state left by the last session).

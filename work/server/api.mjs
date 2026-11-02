@@ -518,6 +518,17 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   // ---- Admin dashboard layout: which widgets show, their order and width, per tab. Yours first, else the default the platform owner saved for your role.
   function layClean(raw) { const out = {}; if (!raw || typeof raw !== 'object') return out; Object.keys(raw).slice(0, 12).forEach(t => { if (!/^[a-z0-9_-]{1,30}$/.test(t)) return; const v = raw[t] || {}; const k = a => (Array.isArray(a) ? a : []).slice(0, 40).map(x => plain(x, 80)).filter(Boolean);
     const span = {}; Object.keys(v.span || {}).slice(0, 40).forEach(n => { const w = Number(v.span[n]); if ([4, 6, 8, 12].includes(w)) span[plain(n, 80)] = w; }); out[t] = { order: k(v.order), hidden: k(v.hidden), span }; }); return out; }
+  // ---------- privacy: see my data, ask for deletion ----------
+  // Access: a person downloads what the app holds about them (their account record, the projects they belong to with their role, their saved layout). Deletion: the request is recorded and the
+  // platform owner acts on it (a person is removed from projects by a project owner; their account record and requests are removed by the platform owner). Nothing is deleted automatically.
+  route('GET', '/api/me/data', async () => { const s = await me(); const u = await dbGet('usr', ekey(s.email)).catch(() => null); const ps = await readableProjects(s); const lay = await dbGet('ulay', s.id).catch(() => null);
+    await audit('sys', s.id, 'data-access', 'download'); return ok({ generatedAt: now(), account: { id: s.id, email: s.email, name: s.name, record: (u && u.value) || null }, projects: ps.map(p => ({ id: p.id, name: p.name, customer: p.customer || '', role: ((p.members || []).find(m => m.id === s.id) || {}).role || 'admin' })), layout: (lay && lay.value) || null, notes: 'Project content (requirements, records, files) belongs to the project and is not part of this file; ask a project owner for an export.' }); });
+  route('POST', '/api/me/data-request', async (b) => { const s = await me(); await limit('create', s.id); const kind = b && b.kind === 'access' ? 'access' : 'deletion'; const note = str(b && b.note, 1000, 'Note');
+    const open = (await dbList('dsr')).map(r => r.value).filter(r => r && r.by === s.id && r.status === 'open' && r.kind === kind); if (open.length) return ok({ request: open[0], duplicate: true });
+    const r = { id: rid('dsr'), kind, note, by: s.id, email: s.email, name: s.name, at: now(), status: 'open' }; await dbPut('dsr', r.id, r); await audit('sys', s.id, 'data-request', kind); return ok({ request: r, duplicate: false }, 201); });
+  route('GET', '/api/me/data-requests', async () => { const s = await me(); return ok({ requests: (await dbList('dsr')).map(r => r.value).filter(r => r && r.by === s.id).sort((a, c) => String(c.at).localeCompare(String(a.at))).slice(0, 20) }); });
+  route('GET', '/api/admin/data-requests', async () => { await requireAdmin('super'); return ok({ requests: (await dbList('dsr')).map(r => r.value).filter(Boolean).sort((a, c) => String(c.at).localeCompare(String(a.at))).slice(0, 100) }); });
+  route('POST', '/api/admin/data-requests/:id/done', async (b, P) => { const s = await requireAdmin('super'); const r = await dbGet('dsr', P.id); if (!r || !r.value) throw new HttpError(404, 'Request not found'); await dbPut('dsr', P.id, Object.assign({}, r.value, { status: 'done', doneBy: s.email, doneAt: now(), result: str(b && b.result, 500, 'Result') })); await audit('sys', s.id, 'data-request-done', P.id); return ok({ ok: true }); });
   route('GET', '/api/me/layout', async () => { const s = await requireAdmin('sub'); const mine = await dbGet('ulay', s.id); if (mine && mine.value) return ok({ layout: mine.value.layout || {}, source: 'yours' });
     const def = await dbGet('ulay', 'role.' + s.adminRole); return ok({ layout: (def && def.value && def.value.layout) || {}, source: def && def.value ? 'role' : '', role: s.adminRole }); });
   route('PUT', '/api/me/layout', async (b) => { const s = await requireAdmin('sub'); if (b && b.reset) { await dbDel('ulay', s.id).catch(() => { }); return ok({ ok: true }); } await dbPut('ulay', s.id, { layout: layClean(b && b.layout), at: now() }); return ok({ ok: true }); });
@@ -1599,7 +1610,7 @@ Example. Description: "Tenant logs a SR in the portal. Supervisor approves or re
   });
   /* ---------- Admin Command Center ----------
      Every number here comes from the projects' records through assess() in _portfolio.mjs; each one is defined in RULES and in
-     docs/ADMIN_COMMAND_CENTER.md. Archived projects are counted apart and left out of everything else. A daily snapshot of each
+     docs/reference/admin-command-centre.md. Archived projects are counted apart and left out of everything else. A daily snapshot of each
      project's health is kept (collection hsnap) so trends can be shown from the day snapshots began; nothing is reconstructed. */
   async function command() {
     const A = await loadAll(); const today = now().slice(0, 10); const live = A.rows.filter(r => !r.p.archived);

@@ -10,7 +10,7 @@ Principle: extend what exists, preserve all data, no duplicate modules and no se
 | 3 | Facilio theme, sidebar, roadmap intro | Done, deployed |
 | 4 | Templates (versioned, org + project, publish / retire) and configurable workspace | Done, deployed 24 Oct |
 | 5 | Org-package (ZIP) inventory and analysis | Done, deployed 24 Oct (Package Analysis page, AI digest) |
-| **5b** | **Customer-specific configuration inputs (below)** | **Done. Configuration Inputs page deployed 24 Oct; relationship diagram and training / support-handover reuse beyond AI drafts added 31 Oct (not deployed yet, see IMPLEMENTATION_STATUS.md section 59)** |
+| **5b** | **Customer-specific configuration inputs (below)** | **Done. Configuration Inputs page deployed 24 Oct; relationship diagram and training / support-handover reuse beyond AI drafts added 31 Oct (not deployed yet, see docs/reports/implementation-status.md section 59)** |
 | 6 | User Guide Builder, video-to-guide | Next |
 | 7 | Traceability, quality checks, version comparison, knowledge library, lessons learned, retention | After 6 |
 | 8 | Customer-facing read-only pages | After 7 |

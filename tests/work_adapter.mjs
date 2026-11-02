@@ -629,6 +629,14 @@ await t('Claude connector: find and read projects as the person, hand-off id bot
   r = await call(own, 'GET', `/api/projects/${P}/handoff/${H.id}`); assert.equal(r.data.status, 'done'); assert.match(r.data.result, /Start/, 'the page collects what Claude sent through the connector');
   r = await tool(own, 'toString', {}); assert.equal(r.status, 404, 'only the listed tools exist');
 });
+await t('Privacy: a person downloads their own data and asks for deletion once; only the platform owner sees and closes requests', async () => {
+  store.delete('rl'); const a = 'pv.one@facilio.com', b = 'pv.two@facilio.com'; let r = await call(a, 'POST', '/api/projects', { name: 'Privacy Co', customer: 'P' }); const P = r.data.project.id;
+  r = await call(a, 'GET', '/api/me/data'); assert.equal(r.status, 200); assert.equal(r.data.account.email, a); assert.deepEqual(r.data.projects.map(p => p.id), [P]); r = await call(b, 'GET', '/api/me/data'); assert.deepEqual(r.data.projects, [], 'only their own projects');
+  r = await call(a, 'POST', '/api/me/data-request', { kind: 'deletion', note: 'leaving' }); assert.equal(r.status, 201); const id = r.data.request.id; r = await call(a, 'POST', '/api/me/data-request', { kind: 'deletion' }); assert.equal(r.data.duplicate, true, 'one open request at a time');
+  r = await call(a, 'GET', '/api/me/data-requests'); assert.equal(r.data.requests.length, 1); r = await call(b, 'GET', '/api/me/data-requests'); assert.equal(r.data.requests.length, 0, 'not another person\'s');
+  r = await call(a, 'GET', '/api/admin/data-requests'); assert.equal(r.status, 403, 'not for ordinary people'); r = await call(a, 'POST', '/api/admin/data-requests/' + id + '/done', {}); assert.equal(r.status, 403);
+  r = await call(dinesh, 'GET', '/api/admin/data-requests'); assert.equal(r.status, 200); assert.ok(r.data.requests.some(x => x.id === id)); r = await call(dinesh, 'POST', '/api/admin/data-requests/' + id + '/done', { result: 'Removed' }); assert.equal(r.status, 200); r = await call(a, 'GET', '/api/me/data-requests'); assert.equal(r.data.requests[0].status, 'done');
+});
 await t('AI documents part by part: job, parts, retry, missing section marked, only the starter can use the job', async () => {
   store.delete('rl'); const sam = 'parts.owner@facilio.com', out = 'parts.other@facilio.com'; let r0 = await call(sam, 'POST', '/api/projects', { name: 'Parts', customer: 'Acme' }); const pid = r0.data.project.id;
   let r = await call(sam, 'POST', `/api/projects/${pid}/ai/job`, { task: 'wsr', instruction: 'Week 4' }); assert.equal(r.status, 201, JSON.stringify(r.data)); const job = r.data.job; const parts = r.data.parts; assert.ok(parts.length >= 4 && parts.length <= 8, 'wsr has its sections as parts'); assert.equal(r.data.provider, 'DeepSeek');

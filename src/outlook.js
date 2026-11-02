@@ -1,4 +1,4 @@
-/* Outlook hand-off. A native Outlook inbox is NOT available in this deployment (see docs/OUTLOOK_FEASIBILITY.md): the platform gives the
+/* Outlook hand-off. A native Outlook inbox is NOT available in this deployment (see docs/reference/outlook-feasibility.md): the platform gives the
    app only the signed-in email, not a Microsoft Graph token. So this opens Outlook on the web and pre-fills a draft the person reviews and
    sends themselves. Nothing is sent from here and the app never claims an email was sent. */
 (function (root) {
