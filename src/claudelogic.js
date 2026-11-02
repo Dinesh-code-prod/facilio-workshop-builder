@@ -14,6 +14,8 @@
   const fits = (dest, prompt) => enc(prompt).length <= LIMIT[dest === 'desktop' ? 'desktop' : 'web'];
   // the prompt Claude Desktop receives when the extension is installed: short, and carrying only the reference
   function refPrompt(title, ref) { return 'Delivery Studio hand-off: ' + String(title || 'task') + '\n\nUse the "Facilio Delivery Studio hand-off" tools: call get_current_task with the reference below, follow the instructions it returns (look at any pictures and documents with the tools that give them), and finish by sending the answer with submit_task_result.\n\nReference: ' + ref; }
+  // the prompt when the person has added the Delivery Studio connector in Claude: short, and carrying only the hand-off id (works in Claude on the web, the desktop app and the phone)
+  function connPrompt(title, id) { return 'Delivery Studio hand-off: ' + String(title || 'task') + '\n\nUse the "Facilio Delivery Studio" connector: call get_handoff with id ' + id + ', follow the instructions it returns, and finish by calling submit_handoff_result with the same id and your answer in the format it asks for.'; }
   // m: { project, customer, page, module, title, destination }
   function wrap(prompt, m) { m = m || {};
     const head = ['You are helping a Facilio implementation consultant in Facilio Delivery Studio.', 'Project: ' + (m.project || 'not named') + (m.customer ? ' (customer: ' + m.customer + ')' : '') + (m.page ? '. Page: ' + m.page : '') + (m.module ? '. Module: ' + m.module : '') + '.', 'Task: ' + (m.title || 'as described below') + '.',
@@ -21,6 +23,6 @@
     return head + '\n\n' + String(prompt || ''); }
   // the answer format for the tasks that return a diagram, so the extension can tell Claude exactly what to send
   const FLOW_SHAPE = { title: 'string', nodes: [{ id: 'n1', label: 'string', kind: 'start|end|state|process|decision', confidence: 'detected|inferred|uncertain' }], edges: [{ from: 'n1', to: 'n2', label: 'string', confidence: 'detected|inferred|uncertain' }], notes: 'string' };
-  const api = { LIMIT, link, fits, refPrompt, wrap, FLOW_SHAPE, enc };
+  const api = { LIMIT, link, fits, refPrompt, connPrompt, wrap, FLOW_SHAPE, enc };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBClaude = api;
 })(typeof window !== 'undefined' ? window : globalThis);

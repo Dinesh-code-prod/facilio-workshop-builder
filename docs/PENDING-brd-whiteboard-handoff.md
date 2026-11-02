@@ -41,3 +41,14 @@ Notes: Playwright's own browser is not installed on this machine; use `PW_CHANNE
 
 ## Before deploying
 Review the three commits, merge, run `npm test`, then `/deploy`. Each commit added a "What's new" entry (2.8.2 and 2.8.3 are new; the hand-off commit added none).
+
+## Claude connector (built after deploy 116, not deployed)
+What it is: 10 new tools on the existing app connector (`work/work.json`, code in `work/server/api.mjs`, section 'Claude connector'): `find_projects`, `project_overview`, `get_requirements`, `get_open_questions`, `get_use_cases`, `get_task_pack`, `get_review_pack`, `save_draft`, `get_handoff`, `submit_handoff_result`. Each runs as the signed-in person through the app's own routes. The page has a "I added the connector" box (`src/claudehand.js`) that sends a short prompt with only the hand-off id.
+
+Still to do or decide:
+- Deploy, then remove and re-add the connector in Claude once so the new tools show.
+- **Pictures** cannot travel through the connector, so image tasks (Import from image) still use the clipboard or the old extension. The extension can only be retired when that is solved (needs a tool that returns images, or uploading the picture to the app and a `get_attachment` tool).
+- Confirm that the facilio.work platform allows the new tools without a new review, and how Claude shows the `confirm` prompt for `save_draft`.
+- Write tools not built yet: add a requirement or question, create a task, add to the whiteboard, update BRD text. Each should land as a draft.
+- Test in a real Claude (web and desktop) with the connector added; only the server and the page were tested here.
+- Test: `node tests/work_adapter.mjs` (new case) and `tests/ui/claude-handoff-check.mjs`.

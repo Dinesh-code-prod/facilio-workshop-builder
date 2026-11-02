@@ -16,6 +16,10 @@ await p.click('[data-act="hoGo"][data-d="desktop"]'); await p.waitForTimeout(500
 check('Open Claude Desktop opens a claude:// link', o.includes('NAV claude://claude.ai/new'), o.join(' | '));
 await p.click('[data-act="hoGo"][data-d="copy"]'); await p.waitForTimeout(600); const clip = await p.evaluate(() => navigator.clipboard.readText());
 check('Copy Prompt and Open Claude puts the whole prompt on the clipboard and opens claude.ai', /DESCRIPTION OF THE PROCESS/.test(clip) && (await p.evaluate(() => window.__opened)).some(u => u === 'https://claude.ai/new'), clip.length + ' chars');
+// with the connector ticked, Open Claude sends a short prompt that names the connector tool and the hand-off id
+await p.check('[data-change="hoConn"]'); await p.evaluate(() => { window.__opened = []; }); await p.click('[data-act="hoGo"][data-d="web"]'); await p.waitForTimeout(1500); o = await p.evaluate(() => window.__opened);
+check('with the connector added, Open Claude Web puts a short connector prompt in the link', o.some(u => u.startsWith('https://claude.ai/new?q=') && /get_handoff/.test(decodeURIComponent(u)) && /[0-9a-f]{32}/.test(decodeURIComponent(u))), o.map(u => decodeURIComponent(u).slice(0, 120)).join(' | '));
+await p.uncheck('[data-change="hoConn"]');
 const reply = JSON.stringify({ title: 'T', nodes: [{ id: 'n1', label: 'Client raises request', kind: 'start', confidence: 'detected' }, { id: 'n2', label: 'Approved', kind: 'end', confidence: 'detected' }], edges: [{ from: 'n1', to: 'n2', label: '', confidence: 'detected' }], useFlows: [], notes: '' });
 await p.fill('#hoR', 'Here is the flow:\n```json\n' + reply + '\n```'); await p.click('[data-act="hoBack"]'); await p.waitForSelector('[data-wbn]', { timeout: 8000 });
 check("Claude's reply (with prose and a code fence around it) comes back as a checked preview", (await p.locator('[data-wbn]').count()) === 2);

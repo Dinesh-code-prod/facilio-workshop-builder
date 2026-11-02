@@ -6,6 +6,11 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '2.8.5', date: '2026-11-02', kind: 'UPDATE', title: 'Claude connector: your own Claude can read projects and send answers back', notes: [
+      'Add the Facilio Delivery Studio connector once in Claude (Settings > Connectors > Add custom connector, address https://mcp.facilio.work/facilio-delivery-studio) and sign in with your Facilio account. It works in Claude on the web, the desktop app and the phone, with nothing to download.',
+      'Claude can then find your projects, read requirements, open questions and use cases, take the same task packs as Open in Claude, and save finished drafts back as unapproved drafts. Everything runs as you, with your project access.',
+      'Open in Claude: tick "I added the connector" and the prompt becomes one short line. Claude reads the task from Delivery Studio and the answer comes back here as a preview. Remove and re-add the connector in Claude once to see the new tools.'
+    ] },
     { v: '2.8.4', date: '2026-11-02', kind: 'UPDATE', title: 'Workshops & Requirements: three pages in working order', notes: [
       'Workshops & Requirements now has three pages: Facilio Screens (run the sessions), Requirements & Use Cases (capture and confirm), and Checks & Validations (check before design).',
       'Use Cases is now a tab next to the transcripts and requirements, and MSA Scope Check is a tab of Checks & Validations. Nothing was removed, and old links still open the right tab.'

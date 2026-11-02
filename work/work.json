@@ -83,6 +83,221 @@
       "subject"
      ]
     }
+   },
+   {
+    "name": "find_projects",
+    "description": "List the Delivery Studio projects you can open, with id, customer, dates and your role. Start here when the person names a customer or project.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "query": {
+       "type": "string",
+       "description": "Part of a project or customer name"
+      }
+     },
+     "required": []
+    }
+   },
+   {
+    "name": "project_overview",
+    "description": "One project at a glance: team, requirement counts by status, open questions, use cases, sessions, BRD status and open tickets, with a link.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      }
+     },
+     "required": [
+      "project"
+     ]
+    }
+   },
+   {
+    "name": "get_requirements",
+    "description": "The project requirements (id, title, objective, status, modules, acceptance). Only Confirmed ones reach the BRD.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      },
+      "status": {
+       "type": "string",
+       "description": "Draft, Confirmed, ..."
+      },
+      "module": {
+       "type": "string"
+      },
+      "text": {
+       "type": "string",
+       "description": "Words to look for"
+      },
+      "limit": {
+       "type": "number"
+      }
+     },
+     "required": [
+      "project"
+     ]
+    }
+   },
+   {
+    "name": "get_open_questions",
+    "description": "Questions still open for the customer or the team.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      },
+      "limit": {
+       "type": "number"
+      }
+     },
+     "required": [
+      "project"
+     ]
+    }
+   },
+   {
+    "name": "get_use_cases",
+    "description": "The use cases (scenario, steps, solution, status) of the project.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      },
+      "status": {
+       "type": "string"
+      },
+      "limit": {
+       "type": "number"
+      }
+     },
+     "required": [
+      "project"
+     ]
+    }
+   },
+   {
+    "name": "get_task_pack",
+    "description": "The same prepared prompt and sources that \"Open in Claude\" gives for a deliverable. Do the task from it, then save the result with save_draft.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      },
+      "task": {
+       "type": "string",
+       "description": "brd, uat, guide, ftr, gaps, workshop, golive, hypercare, handover, wsr, monthly, config, pkg, training or closure"
+      },
+      "instruction": {
+       "type": "string",
+       "description": "Anything extra the person asked for"
+      }
+     },
+     "required": [
+      "project",
+      "task"
+     ]
+    }
+   },
+   {
+    "name": "get_review_pack",
+    "description": "The whole project as one pack, to review for gaps, contradictions and missing information.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      }
+     },
+     "required": [
+      "project"
+     ]
+    }
+   },
+   {
+    "name": "save_draft",
+    "description": "Save the finished deliverable in Delivery Studio as an UNAPPROVED draft. A person reviews it there before it is used.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      },
+      "task": {
+       "type": "string",
+       "description": "The task the pack was for, for example brd"
+      },
+      "content": {
+       "type": "string",
+       "description": "The full text in Markdown, with the [S#] citations kept"
+      }
+     },
+     "required": [
+      "project",
+      "task",
+      "content"
+     ]
+    },
+    "confirm": true
+   },
+   {
+    "name": "get_handoff",
+    "description": "Open the task Delivery Studio handed over when the person clicked Open in Claude: instructions, context, documents as text and the answer format. The prompt gives you the id.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "id": {
+       "type": "string",
+       "description": "The hand-off id from the prompt"
+      }
+     },
+     "required": [
+      "id"
+     ]
+    }
+   },
+   {
+    "name": "submit_handoff_result",
+    "description": "Send the finished answer of a hand-off back to Delivery Studio. The person sees it as a preview there and confirms it; nothing is saved until then.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "id": {
+       "type": "string"
+      },
+      "result": {
+       "type": "string",
+       "description": "The answer in the expected format"
+      }
+     },
+     "required": [
+      "id",
+      "result"
+     ]
+    }
    }
   ]
  }

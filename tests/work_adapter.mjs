@@ -601,6 +601,26 @@ await t('process described in words: on a project with many flows the relevant o
   assert.match(r.data.prompt, /serviceRequest::f1 | Service Request · Default | states: Submitted, Approved, Rejected/, 'the flow the text refers to (SR = service request) is listed with its states');
   assert.ok(r.data.prompt.length < 14000, 'the request stays short: ' + r.data.prompt.length); assert.match(r.data.prompt, /SR = service request/); assert.match(r.data.prompt, /spelling mistakes/);
 });
+await t('Claude connector: find and read projects as the person, hand-off id both ways, answers only for the person who clicked, drafts arrive unapproved', async () => {
+  store.delete('rl'); const own = 'cn.owner@facilio.com', other = 'cn.other@facilio.com'; const tool = (who, name, body) => call(who, 'POST', '/api/', body, { 'x-work-mcp': '1', 'x-work-mcp-tool': name });
+  let r = await call(own, 'POST', '/api/projects', { name: 'Connector Co', customer: 'Acme' }); const P = r.data.project.id; await call(other, 'POST', '/api/projects', { name: 'Someone Elses', customer: 'Zed' });
+  r = await tool(own, 'find_projects', {}); assert.deepEqual(r.data.projects.map(p => p.name), ['Connector Co'], 'only the projects the person can open'); assert.equal(r.data.projects[0].id, P);
+  r = await tool(own, 'project_overview', { project: 'Connector' }); assert.equal(r.status, 200, JSON.stringify(r.data)); assert.equal(r.data.project, 'Connector Co'); assert.equal(r.data.requirements.total, 0); assert.match(r.data.link, new RegExp(P));
+  r = await tool(own, 'project_overview', { project: 'Someone Elses' }); assert.equal(r.status, 404, 'another person\'s project is not found'); r = await tool(own, 'get_requirements', { project: 'nope' }); assert.equal(r.status, 404);
+  r = await tool(own, 'get_requirements', { project: 'Connector Co', status: 'Confirmed' }); assert.equal(r.status, 200); assert.equal(r.data.total, 0);
+  r = await tool(own, 'get_open_questions', { project: 'Connector Co' }); assert.equal(r.status, 200); r = await tool(own, 'get_use_cases', { project: 'Connector Co' }); assert.equal(r.status, 200);
+  r = await tool(own, 'get_task_pack', { project: 'Connector Co', task: 'gaps' }); assert.equal(r.status, 200, JSON.stringify(r.data)); assert.ok(r.data.prompt.length > 200); r = await tool(own, 'get_task_pack', { project: 'Connector Co', task: 'nonsense' }); assert.equal(r.status, 400);
+  r = await tool(own, 'save_draft', { project: 'Connector Co', task: 'gaps', content: 'too short' }); assert.equal(r.status, 400, 'a short reply is not a draft');
+  r = await tool(own, 'save_draft', { project: 'Connector Co', task: 'gaps', content: 'Gap analysis. '.repeat(30) }); assert.equal(r.status, 200, JSON.stringify(r.data)); assert.equal(r.data.status, 'draft');
+  r = await call(own, 'POST', `/api/projects/${P}/handoff`, { title: 'Describe a process', task: 'flow-text', prompt: 'Turn this description into JSON.', expect: { format: 'json' } }); const H = r.data;
+  r = await tool(other, 'get_handoff', { id: H.id }); assert.equal(r.status, 404, 'someone else cannot read it'); r = await tool(own, 'get_handoff', { id: 'x' }); assert.equal(r.status, 400);
+  r = await tool(own, 'get_handoff', { id: H.id }); assert.equal(r.status, 200); assert.equal(r.data.instructions, 'Turn this description into JSON.'); assert.equal(r.data.project.name, 'Connector Co');
+  r = await call(own, 'GET', `/api/projects/${P}/handoff/${H.id}`); assert.equal(r.data.status, 'waiting');
+  r = await tool(other, 'submit_handoff_result', { id: H.id, result: '{}' }); assert.equal(r.status, 404); r = await tool(own, 'submit_handoff_result', { id: H.id, result: '  ' }); assert.equal(r.status, 400);
+  r = await tool(own, 'submit_handoff_result', { id: H.id, result: '{"nodes":[{"id":"n1","label":"Start"}],"edges":[]}' }); assert.equal(r.status, 200); assert.equal(r.data.received, true);
+  r = await call(own, 'GET', `/api/projects/${P}/handoff/${H.id}`); assert.equal(r.data.status, 'done'); assert.match(r.data.result, /Start/, 'the page collects what Claude sent through the connector');
+  r = await tool(own, 'toString', {}); assert.equal(r.status, 404, 'only the listed tools exist');
+});
 await t('AI documents part by part: job, parts, retry, missing section marked, only the starter can use the job', async () => {
   store.delete('rl'); const sam = 'parts.owner@facilio.com', out = 'parts.other@facilio.com'; let r0 = await call(sam, 'POST', '/api/projects', { name: 'Parts', customer: 'Acme' }); const pid = r0.data.project.id;
   let r = await call(sam, 'POST', `/api/projects/${pid}/ai/job`, { task: 'wsr', instruction: 'Week 4' }); assert.equal(r.status, 201, JSON.stringify(r.data)); const job = r.data.job; const parts = r.data.parts; assert.ok(parts.length >= 4 && parts.length <= 8, 'wsr has its sections as parts'); assert.equal(r.data.provider, 'DeepSeek');
