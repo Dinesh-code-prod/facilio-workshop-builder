@@ -168,7 +168,8 @@
     <pattern id="wbGrid" width="${GRID}" height="${GRID}" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#dde3ea"/></pattern></defs>`;
   function worldSvg(forExport) {
     const ns = W.B.nodes, frames = ns.filter(n => n.t === 'frame'), imgs = ns.filter(n => n.t === 'image'), rest = ns.filter(n => n.t !== 'frame' && n.t !== 'image');
-    return imgs.map(n => nodeSvg(n, forExport)).join('') + frames.map(n => nodeSvg(n, forExport)).join('') + W.B.edges.map(e => edgeSvg(e, forExport)).join('') + rest.map(n => nodeSvg(n, forExport)).join('') + (forExport ? '' : endHandles() + delChip());
+    const sb = forExport ? '' : (() => { const s = [...W.sel].map(node).filter(n => n && !n.hidden && n.t !== 'image'); if (s.length < 2) return ''; const b = bbox(s), pd = 10; return `<rect class="wb-selbox" data-selbox="1" x="${b.x - pd}" y="${b.y - pd}" width="${b.w + pd * 2}" height="${b.h + pd * 2}" rx="8" fill="rgba(57,149,226,.05)" stroke="${C.line}" stroke-width="1.2" stroke-dasharray="6 4"/>`; })();
+    return imgs.map(n => nodeSvg(n, forExport)).join('') + frames.map(n => nodeSvg(n, forExport)).join('') + sb + W.B.edges.map(e => edgeSvg(e, forExport)).join('') + rest.map(n => nodeSvg(n, forExport)).join('') + (forExport ? '' : endHandles() + delChip());
   }
   // the two ends of a single selected connector, drawn above the shapes so they can always be grabbed
   function endHandles() {
@@ -274,6 +275,14 @@
   // ---------- coordinates & hit testing ----------
   function toWorld(ev) { const svg = document.getElementById('wbSvg'), r = svg.getBoundingClientRect(), v = W.B.view; return { x: (ev.clientX - r.left - v.x) / v.z, y: (ev.clientY - r.top - v.y) / v.z }; }
   const groupOf = id => { const n = node(id); return n && n.g ? W.B.nodes.filter(m => m.g === n.g).map(m => m.id) : [id]; };
+  // start moving whatever is selected. A selected frame carries everything that belongs to it: the nodes tagged with it (copied flows), and any node whose centre sits inside it
+  // (a frame inside it only when it fits fully inside). Connector labels are offsets from their connector, so they travel with the nodes.
+  function beginMove(p, drill) {
+    const moving = [...W.sel].map(node).filter(n => n && !n.lock); const have = new Set(moving.map(n => n.id));
+    moving.filter(n => n.t === 'frame').forEach(fr => W.B.nodes.forEach(m => { if (m === fr || have.has(m.id) || m.hidden) return; const inside = m.t === 'frame' ? m.x >= fr.x && m.y >= fr.y && m.x + m.w <= fr.x + fr.w && m.y + m.h <= fr.y + fr.h : (m.x + m.w / 2 >= fr.x && m.x + m.w / 2 <= fr.x + fr.w && m.y + m.h / 2 >= fr.y && m.y + m.h / 2 <= fr.y + fr.h);
+      if (m.fr === fr.id || inside) { moving.push(m); have.add(m.id); } }));
+    return { kind: 'move', x: p.x, y: p.y, start: moving.map(n => [n, n.x, n.y]), moved: false, drill, others: W.B.nodes.filter(n => !have.has(n.id) && !n.hidden && n.t !== 'image').slice(0, 1500) };
+  }
   function selectWithGroups(ids) { ids.forEach(id => groupOf(id).forEach(x => W.sel.add(x))); }
 
   function mount() {
@@ -293,6 +302,8 @@
       if (ehEl && !ro()) { const e = W.B.edges.find(x => x.id === ehEl.getAttribute('data-e')); const end = ehEl.getAttribute('data-eh'); const fixed = node(end === 'from' ? e.to : e.from);
         drag = { kind: 'relink', e, end }; W.link = end === 'to' ? { x0: fixed.x + fixed.w / 2, y0: fixed.y + fixed.h / 2, x1: p.x, y1: p.y } : { x0: p.x, y0: p.y, x1: fixed.x + fixed.w / 2, y1: fixed.y + fixed.h / 2, rev: true }; draw(); return; }
       if (elEl && !ro() && W.sel.has(elEl.getAttribute('data-el'))) { const e = W.B.edges.find(x => x.id === elEl.getAttribute('data-el')); const lo = e.lo || { x: 0, y: 0 }; drag = { kind: 'label', e, x: p.x, y: p.y, lx: lo.x, ly: lo.y, moved: false }; return; }
+      const sbEl = ev.target.closest && ev.target.closest('[data-selbox]');
+      if (sbEl && !nEl && !ev.shiftKey && !ro()) { drag = beginMove(p, null); return; }   // inside the dashed box round a multi-selection: move it all
       if (nEl) {
         const id = nEl.getAttribute('data-id');
         if (/^connect/.test(W.tool) && !ro()) { const n = node(id); drag = { kind: 'link', from: id }; W.link = { x0: n.x + n.w / 2, y0: n.y + n.h / 2, x1: p.x, y1: p.y }; return; }
@@ -302,15 +313,12 @@
         else if (!W.sel.has(id)) { W.sel.clear(); selectWithGroups([id]); }
         else if (grp.length > 1 && W.sel.size === grp.length && grp.every(x => W.sel.has(x))) drill = id;
         draw(); if (ro()) return;
-        const moving = [...W.sel].map(node).filter(n => n && !n.lock);
-        // a frame carries what sits inside it
-        moving.filter(n => n.t === 'frame').forEach(fr => W.B.nodes.forEach(m => { if (m !== fr && !W.sel.has(m.id) && m.x >= fr.x && m.y >= fr.y && m.x + m.w <= fr.x + fr.w && m.y + m.h <= fr.y + fr.h) moving.push(m); }));
-        const ids = new Set(moving.map(n => n.id)); drag = { kind: 'move', x: p.x, y: p.y, start: moving.map(n => [n, n.x, n.y]), moved: false, drill, others: W.B.nodes.filter(n => !ids.has(n.id) && !n.hidden && n.t !== 'image').slice(0, 1500) }; return;
+        drag = beginMove(p, drill); return;
       }
       if (eEl) { const id = eEl.getAttribute('data-e'); if (!ev.shiftKey) W.sel.clear(); W.sel.add(id); draw(); return; }
-      if (ev.shiftKey) { W.marquee = { x0: p.x, y0: p.y, x1: p.x, y1: p.y }; drag = { kind: 'marquee' }; return; }
-      if (!ev.ctrlKey && !ev.metaKey) { W.sel.clear(); }
-      drag = { kind: 'pan', sx: ev.clientX, sy: ev.clientY, vx: W.B.view.x, vy: W.B.view.y }; host.classList.add('panning'); draw();
+      if (W.space) { drag = { kind: 'pan', sx: ev.clientX, sy: ev.clientY, vx: W.B.view.x, vy: W.B.view.y }; host.classList.add('panning'); return; }
+      const add = ev.shiftKey || ev.ctrlKey || ev.metaKey; if (!add) W.sel.clear();   // a click on empty space clears the selection; a drag draws the rectangle
+      W.marquee = { x0: p.x, y0: p.y, x1: p.x, y1: p.y }; drag = { kind: 'marquee' }; draw();
     });
     svg.addEventListener('pointermove', ev => {
       if (!drag) { const t = ev.target.closest && ev.target.closest('[data-del],[data-id],[data-e]'); const h = t ? (t.getAttribute('data-del') || t.getAttribute('data-id') || t.getAttribute('data-e')) : null; if (h !== W.hover) { W.hover = h; paint(); } return; }
@@ -358,7 +366,9 @@
       draw(); changedView();
     }, { passive: false });
     svg.addEventListener('contextmenu', ev => { ev.preventDefault(); ctxOpen(ev); });
-    document.getElementById('wbHost').addEventListener('keydown', key);
+    const hostEl = document.getElementById('wbHost'); hostEl.addEventListener('keydown', key);
+    hostEl.addEventListener('keydown', e => { if (e.code === 'Space' && !W.edit && !/^(INPUT|TEXTAREA|SELECT)$/.test((e.target || {}).tagName || '')) { e.preventDefault(); if (!W.space) { W.space = true; hostEl.classList.add('spacepan'); } } });
+    hostEl.addEventListener('keyup', e => { if (e.code === 'Space') { W.space = false; hostEl.classList.remove('spacepan'); } }); hostEl.addEventListener('blur', () => { W.space = false; hostEl.classList.remove('spacepan'); });
   }
   // the canvas fills the rest of the window, whatever the toolbar wraps to, so the whole board is visible without scrolling the page
   function fitHost() { const h = document.getElementById('wbHost'); if (!h) return; const top = h.getBoundingClientRect().top + (document.querySelector('.main') || { scrollTop: 0 }).scrollTop; h.style.height = Math.max(420, Math.round(window.innerHeight - top - 16)) + 'px'; }

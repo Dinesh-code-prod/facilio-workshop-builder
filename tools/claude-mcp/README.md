@@ -4,7 +4,7 @@ A small local extension (MCP server) so that **Open in Claude Desktop** in Deliv
 
 ## Install (about one minute, once per person)
 1. Install **Claude Desktop** (Windows or macOS) and sign in with your normal Claude account.
-2. In Delivery Studio open any **Open in Claude** panel (for example Process Whiteboard > Import from image > Use My Claude) and choose **Download the extension**. You get `facilio-delivery-studio.mcpb`. (Same file: `/claude/facilio-delivery-studio.mcpb` on the app.)
+2. In Delivery Studio open **Project Settings & Exports > Claude Desktop extension** (or any Open in Claude panel, for example Process Whiteboard > Import from image > Use My Claude) and choose **Download facilio-delivery-studio.mcpb**. The file is saved in your Downloads folder. (Same file: `/claude/facilio-delivery-studio.mcpb` on the app.)
 3. Double-click the file. Claude Desktop shows the extension and its seven tools. Choose **Install**. If it asks about permissions, there is nothing to allow: it asks for no folders and no keys.
 4. Back in Delivery Studio, tick **I installed the Claude extension** in the Open in Claude panel. From now on Open in Claude Desktop sends the short hand-off prompt.
 5. Test: on any Open in Claude panel choose **Open Claude Desktop**. Claude should ask to use "Facilio Delivery Studio hand-off" tools; allow them.

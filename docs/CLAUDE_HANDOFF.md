@@ -40,7 +40,7 @@ All of them hard-coded `https://claude.ai/new` and `claude://claude.ai/new`, non
 - DeepSeek stays the default provider for every in-app AI feature; none of this calls Claude's API.
 
 ## 5. Employee installation
-See `tools/claude-mcp/README.md` (install in one minute, update, troubleshooting). In short: install Claude Desktop, download the extension from any Open in Claude panel, double-click it, tick "I installed the Claude extension".
+**Where to get it:** Project Settings and Exports > **Claude Desktop extension** (the file is `facilio-delivery-studio.mcpb`), or the **Download** and **Where and how to install it** buttons in any Open in Claude panel. **Where to install it:** in the Claude Desktop app on the own computer of each person (not a browser, not claude.ai, not the phone app): double-click the file, or drag it onto the Extensions screen of Claude Desktop (Settings > Desktop app > Manage next to Extensions in newer versions), choose Install, then tick "I installed the Claude extension" in Delivery Studio. Full steps, update and troubleshooting: `tools/claude-mcp/README.md`. The Claude Desktop menu names are taken from the Anthropic help pages and can differ by version; this was not checked on a real Claude Desktop.
 
 ## 6. Testing report
 | Test | Result |

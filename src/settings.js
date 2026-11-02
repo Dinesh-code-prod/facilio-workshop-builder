@@ -47,7 +47,7 @@
   // ================= VIEW =================
   V.settings = { html() {
     const tab = S.ui.setTab || 'project'; const owner = S.project.role === 'owner';
-    const tabs = [['project', 'Project details'], ['access', 'Members & customer access'], ['config', 'Configuration source'], ['exports', 'JSON exports'], ['audit', 'Audit trail']];
+    const tabs = [['project', 'Project details'], ['access', 'Members & customer access'], ['config', 'Configuration source'], ['exports', 'JSON exports'], ['claude', 'Claude Desktop extension'], ['audit', 'Audit trail']];
     return `<div class="page-header"><div class="t"><h1>Project Settings &amp; Exports</h1><p>Project details, who can access the project, the configuration it is based on, and structured exports.</p></div></div>
       <div class="tabs">${tabs.map(([k, l]) => `<button class="tab${tab === k ? ' active' : ''}" data-act="setTab" data-v="${k}">${esc(l)}</button>`).join('')}</div><div class="page-body">${ST[tab](owner)}</div>`;
   }, mount() { if ((S.ui.setTab || 'project') === 'audit' && !audit.loaded && !audit.loading) loadAudit(); } };
@@ -145,6 +145,7 @@
     ${[['modules', 'A. Modules & forms', 'Modules, fields, form layouts, cross-module actions, relationships, review status'], ['stateflows', 'B. Stateflows', 'States, transitions (Before / During / After), roles, approvals, notifications, workshop changes'], ['roles', 'C. Roles & permissions', 'Configured roles with decoded permissions, proposed roles and changes, permission checks, unresolved actors'], ['portals', 'D. Portal workflows', 'Portal evidence, process steps, handoffs and verification status'], ['changes', 'E. Change summary', 'Additions, modifications, removals, validation, requirements, transcript review, sessions, reviews']].map(([k, l, d]) => `<div class="list-item" style="display:flex;align-items:center;gap:10px;cursor:default"><div style="flex:1"><b>${esc(l)}</b><div class="xs muted">${esc(d)}</div></div><button class="btn sm" data-act="exportJson" data-kind="${k}">${ico('dl')}JSON</button></div>`).join('')}
     <div class="xs muted" style="margin-top:10px">Every export carries schema, schemaVersion, project, configuration source and generation time, and is checked to be valid JSON before download. All five are generated from the same data as the BRD.</div></div></div>`;
   ST.exports = () => orgCard() + exportsJson();
+  ST.claude = () => `<div class="card"><div class="card-h"><h3>Claude Desktop extension</h3></div><div class="card-b">${V.claudeExtHtml ? V.claudeExtHtml() : ''}</div></div>`;
   let audit = { loaded: false, loading: false, entries: [] };
   function loadAudit() { audit.loading = true; API.get(`/api/projects/${S.project.id}/audit`).then(r => { audit = { loaded: true, loading: false, entries: r.entries, project: S.project.id }; V.render(); }).catch(e => { audit = { loaded: true, loading: false, entries: [], error: e.message }; V.render(); }); }
   ST.audit = () => { if (audit.project && audit.project !== S.project.id) audit = { loaded: false, loading: false, entries: [] }; if (!audit.loaded) return '<div class="empty">Loading…</div>';

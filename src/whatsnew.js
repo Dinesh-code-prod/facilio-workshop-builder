@@ -6,6 +6,10 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '2.7.1', date: '2026-11-02', kind: 'UPDATE', title: 'Whiteboard: select with a rectangle and move everything together; where to get the Claude extension', notes: [
+      'Process Whiteboard: drag on empty space to draw a selection rectangle; everything inside it is selected. A dashed box shows the selection: drag from anywhere inside it to move all of it together. Hold Shift or Ctrl to add to a selection. To pan, hold Space and drag, use the hand tool, the middle mouse button or the scroll wheel.',
+      'Moving a flow frame now carries everything that belongs to it: the states and buttons of the copied flow, and anything whose centre sits inside the frame.',
+      'Claude Desktop extension: the file is facilio-delivery-studio.mcpb. Download it and see exactly where and how to install it in Project Settings and Exports, under Claude Desktop extension, or from any Open in Claude panel (Where and how to install it).'] },
     { v: '2.7.0', date: '2026-11-02', kind: 'UPDATE', title: 'Open in Claude: one hand-off for every button, and a Claude Desktop extension', notes: [
       'Every Open in Claude button in the app now uses one hand-off. Prompts say who is asking, which project, page and module, what the task is and what happens to the answer. A prompt that is too long for a link is never cut: it is copied, or sent as a hand-off.',
       'New Claude Desktop extension (download it from any Open in Claude panel, double-click it, tick the box). With it, Open Claude Desktop sends a short prompt and Claude opens your picture, PDF, Word or Excel text through the extension, then sends its answer back; the page picks it up by itself and shows a preview before anything is saved.',
