@@ -148,6 +148,30 @@
     }
    },
    {
+    "name": "get_statements",
+    "description": "Statements taken from the workshop transcripts (what the customer said), with their review status. Pending ones are waiting for a person to accept, merge, clarify or reject.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      },
+      "status": {
+       "type": "string",
+       "description": "pending, clarify, accepted, rejected, merged"
+      },
+      "limit": {
+       "type": "number"
+      }
+     },
+     "required": [
+      "project"
+     ]
+    }
+   },
+   {
     "name": "get_open_questions",
     "description": "Questions still open for the customer or the team.",
     "function": "api",
