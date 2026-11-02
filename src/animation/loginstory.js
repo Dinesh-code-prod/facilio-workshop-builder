@@ -594,7 +594,7 @@
     setBeat(Math.max(0, t));
     if (!RM.matches && !doc.hidden) raf = root.requestAnimationFrame(frame);
   }
-  const covered = () => !!doc.querySelector('.cn.ti:not(.liq):not(.leafout):not(.exit):not(.out), .ri:not(.lifting)');
+  const covered = () => !!doc.querySelector('.cn.ti:not(.liq):not(.leafout):not(.exit):not(.out), .ri:not(.lifting), .dx-ov');
   function kick() { if (!raf) raf = root.requestAnimationFrame(frame); }
   function stop() { if (raf) root.cancelAnimationFrame(raf); raf = 0; if (ro) { ro.disconnect(); ro = null; } cv = cx = art = box = null; }
   function mount() {

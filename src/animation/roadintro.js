@@ -582,8 +582,10 @@
       let raf = 0, start = 0, playing = false, leaving = false, held = 0, LASTF = 0;
       function loop(now) {
         if (!playing) return; if (!start) start = now - T * 1000;
-        if (!qdone && LASTF) { qframes.push(now - LASTF); if (qframes.length >= 90 || T > AT[0] - 1.2) { qdone = true; const q = qframes.slice(10).sort((a, b) => a - b), med = q[Math.floor(q.length / 2)] || 16;
-          if (med > 20 && DPR > .8) { QSCALE = med > 34 ? .6 : .75; resize(); } } } LASTF = now;
+        /* Smoothness guard for the whole journey (the later scenes cost more than the first): the median frame time of each 60-frame window is checked,
+           and the canvas scale steps down when it stays over budget. It only ever goes down, so the picture never flips back and forth. */
+        if (LASTF) { const dtf = now - LASTF; if (dtf < 250) qframes.push(dtf); if (qframes.length >= 60) { const q = qframes.slice(qframes.length > 60 ? 0 : 6).sort((x, y) => x - y), med = q[Math.floor(q.length / 2)] || 16; qframes = [];
+          if (med > 20 && DPR > .8) { QSCALE *= med > 34 ? .6 : .8; resize(); } } } LASTF = now;
         T = Math.min(END, (now - start) / 1000); draw(T);
         if (T >= END) { if (leaving) { raf = root.requestAnimationFrame(loop); return; } playing = false; if (opts.auto !== false) leave('end'); return; }
         raf = root.requestAnimationFrame(loop);
