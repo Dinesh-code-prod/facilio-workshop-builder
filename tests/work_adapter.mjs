@@ -566,6 +566,20 @@ await t('kick-off deck reading: model output rebuilt field by field, nothing inv
     globalThis.__LLMTEXT = 'I could not read that.'; r = await call(own, 'POST', `/api/projects/${P}/ai/kickoff`, { text: deck }); assert.equal(r.status, 502);
   } finally { delete globalThis.__LLMTEXT; }
 });
+await t('process described in words: steps and connections come back checked, only flows the project has are suggested, bad answers are refused', async () => {
+  store.delete('rl'); const own = 'ft.owner@facilio.com', vw = 'ft.viewer@facilio.com'; let r = await call(own, 'POST', '/api/projects', { name: 'Flow text', customer: 'K' }); const P = r.data.project.id; await call(own, 'POST', `/api/projects/${P}/members`, { email: vw, role: 'viewer' });
+  const flows = [{ id: 'workorder::f1', name: 'Default', moduleLabel: 'Work Order', states: ['Open', 'Closed'] }]; const body = { text: 'A request is approved by the manager and then becomes a work order that is closed.', flows };
+  try {
+    globalThis.__LLMTEXT = JSON.stringify({ title: 'Request to work order', nodes: [{ id: 'n1', label: 'Request raised', kind: 'start', confidence: 'detected' }, { id: 'n2', label: 'Manager approves?', kind: 'decision', confidence: 'detected' }, { id: 'n2', label: 'duplicate id', kind: 'state' }], edges: [{ from: 'n1', to: 'n2', label: '', confidence: 'detected' }, { from: 'n2', to: 'zz', label: 'points nowhere' }], useFlows: ['workorder::f1', 'invented::x'], notes: '' });
+    r = await call(own, 'POST', `/api/projects/${P}/ai/flow-text`, body); assert.equal(r.status, 200, JSON.stringify(r.data)); const g = r.data.graph;
+    assert.equal(g.nodes.length, 2, 'a repeated id is dropped'); assert.equal(g.edges.length, 1, 'a connection to nothing is dropped'); assert.deepEqual(r.data.useFlows.map(f => f.id), ['workorder::f1'], 'only flows the project has are suggested');
+    r = await call(own, 'POST', `/api/projects/${P}/ai/flow-text`, { text: 'short', flows }); assert.equal(r.status, 400);
+    r = await call(vw, 'POST', `/api/projects/${P}/ai/flow-text`, body); assert.equal(r.status, 403, 'viewers cannot run it');
+    r = await call(own, 'POST', `/api/projects/${P}/ai/flow-text`, Object.assign({ claudePack: true }, body)); assert.equal(r.status, 200); assert.match(r.data.prompt, /EXISTING STATE FLOWS/); assert.match(r.data.prompt, /workorder::f1/); assert.match(r.data.prompt, /A request is approved/);
+    r = await call(own, 'POST', `/api/projects/${P}/ai/flow-text`, { reply: 'Here you go: ' + globalThis.__LLMTEXT, text: body.text, flows }); assert.equal(r.status, 200); assert.equal(r.data.graph.nodes.length, 2);
+    globalThis.__LLMTEXT = 'I cannot do that.'; r = await call(own, 'POST', `/api/projects/${P}/ai/flow-text`, body); assert.ok(r.status >= 400, 'an unreadable answer is refused');
+  } finally { delete globalThis.__LLMTEXT; }
+});
 await t('AI documents part by part: job, parts, retry, missing section marked, only the starter can use the job', async () => {
   store.delete('rl'); const sam = 'parts.owner@facilio.com', out = 'parts.other@facilio.com'; let r0 = await call(sam, 'POST', '/api/projects', { name: 'Parts', customer: 'Acme' }); const pid = r0.data.project.id;
   let r = await call(sam, 'POST', `/api/projects/${pid}/ai/job`, { task: 'wsr', instruction: 'Week 4' }); assert.equal(r.status, 201, JSON.stringify(r.data)); const job = r.data.job; const parts = r.data.parts; assert.ok(parts.length >= 4 && parts.length <= 8, 'wsr has its sections as parts'); assert.equal(r.data.provider, 'DeepSeek');

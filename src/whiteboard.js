@@ -12,7 +12,8 @@
   const F = root.FWB; const { S, esc } = F; const V = root.FWBViews; const ACT = V.ACT; const API = root.FWBApi; const D = root.FWBDiagrams;
   const I = () => V.items;
   const GRID = 20, MAXZ = 3, MINZ = .15;
-  const COLORS = { note: ['#FFF4B8', '#FFE1EC', '#DDF4E4', '#E3EDFF', '#F0E6FF'], shape: '#FFFFFF' };
+  const COLORS = { note: ['#FFF4B8', '#FFE1EC', '#DDF4E4', '#E3EDFF', '#E8F1FD'], shape: '#FFFFFF' };
+  const C = D.COLORS; const FONT = 'Roboto, Helvetica, Arial, sans-serif';   // the State Flow Builder look: white boxes with a thin blue line, arrows in the same blue, coloured pill labels
   const uid = p => p + Math.random().toString(36).slice(2, 9);
   const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 
@@ -105,38 +106,38 @@
   function nodeSvg(n, forExport) {
     if (n.hidden) return '';
     const sel = !forExport && W.sel.has(n.id), id = esc(n.id), conf = n.conf && n.conf !== 'detected' ? n.conf : '';
-    const stroke = sel ? '#1570EF' : conf === 'uncertain' ? '#E5197F' : conf === 'inferred' ? '#F5A524' : n.t === 'note' ? 'rgba(16,24,40,.12)' : '#98A2B3';
-    const sw = sel ? 2.5 : 1.3, dash = conf ? ' stroke-dasharray="6 4"' : '';
+    const start = n.t === 'ellipse'; const stroke = sel ? C.active : conf === 'uncertain' ? '#E5197F' : conf === 'inferred' ? C.tbc : n.t === 'note' ? 'rgba(16,24,40,.12)' : n.stype === 'skipped' ? C.disabled : start ? C.initial : C.line;
+    const sw = sel ? 2 : start ? 2 : 1, dash = conf ? ' stroke-dasharray="6 4"' : '';
     let shape = '';
-    if (n.t === 'frame') shape = `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="14" fill="rgba(239,245,255,.55)" stroke="${sel ? '#1570EF' : '#B2CCFF'}" stroke-width="${sel ? 2.5 : 1.5}" stroke-dasharray="8 6"/><text x="${n.x + 16}" y="${n.y + 26}" font-size="15" font-weight="700" fill="#1D1A5E">${esc(n.text || '')}</text>${n.src && n.src.kind === 'flow' ? `<text x="${n.x + 16}" y="${n.y + 44}" font-size="11.5" fill="${stale(n) ? '#B54708' : '#667085'}">${stale(n) ? 'The original flow has changed since this copy was made · right-click the frame to refresh it' : `Copy of the ${esc(n.src.origin === 'proposed' ? 'proposed' : 'configured')} state flow · changes here stay on this board`}</text>` : n.src && n.src.kind === 'image' ? `<text x="${n.x + 16}" y="${n.y + 44}" font-size="11.5" fill="#667085">Read from an image by AI · check the dashed parts</text>` : ''}`;
+    if (n.t === 'frame') shape = `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="14" fill="rgba(239,245,255,.55)" stroke="${sel ? C.active : '#B2CCFF'}" stroke-width="${sel ? 2.5 : 1.5}" stroke-dasharray="8 6"/><text x="${n.x + 16}" y="${n.y + 26}" font-size="15" font-weight="700" fill="#1D1A5E">${esc(n.text || '')}</text>${n.src && n.src.kind === 'flow' ? `<text x="${n.x + 16}" y="${n.y + 44}" font-size="11.5" fill="${stale(n) ? '#B54708' : '#667085'}">${stale(n) ? 'The original flow has changed since this copy was made · right-click the frame to refresh it' : `Copy of the ${esc(n.src.origin === 'proposed' ? 'proposed' : 'configured')} state flow · changes here stay on this board`}</text>` : n.src && n.src.kind === 'image' ? `<text x="${n.x + 16}" y="${n.y + 44}" font-size="11.5" fill="#667085">Read from an image by AI · check the dashed parts</text>` : ''}`;
     else if (n.t === 'image') {
       const href = forExport ? (W.imgData && W.imgData[n.fileId]) : W.imgUrl[n.fileId];
-      shape = `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="#F8F9FC" stroke="${sel ? '#1570EF' : '#D0D5DD'}" stroke-width="${sel ? 2.5 : 1}"/>${href ? `<image href="${esc(href)}" x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" preserveAspectRatio="xMidYMid meet" opacity="${n.dim ? .45 : 1}"/>` : `<text x="${n.x + n.w / 2}" y="${n.y + n.h / 2}" text-anchor="middle" font-size="13" fill="#667085">Reference image</text>`}<text x="${n.x}" y="${n.y - 8}" font-size="11.5" fill="#667085">Reference image (original upload)</text>`;
+      shape = `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="#F8F9FC" stroke="${sel ? C.active : '#D0D5DD'}" stroke-width="${sel ? 2.5 : 1}"/>${href ? `<image href="${esc(href)}" x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" preserveAspectRatio="xMidYMid meet" opacity="${n.dim ? .45 : 1}"/>` : `<text x="${n.x + n.w / 2}" y="${n.y + n.h / 2}" text-anchor="middle" font-size="13" fill="#667085">Reference image</text>`}<text x="${n.x}" y="${n.y - 8}" font-size="11.5" fill="#667085">Reference image (original upload)</text>`;
       return `<g class="wb-n" data-id="${id}">${shape}${!forExport && sel && !ro() ? handle(n) : ''}</g>`;
     }
     else if (n.t === 'ellipse') shape = `<ellipse cx="${n.x + n.w / 2}" cy="${n.y + n.h / 2}" rx="${n.w / 2}" ry="${n.h / 2}" fill="${n.fill || '#fff'}" stroke="${stroke}" stroke-width="${sw}"${dash}/>`;
-    else if (n.t === 'diamond') shape = `<path d="M${n.x + n.w / 2} ${n.y} L${n.x + n.w} ${n.y + n.h / 2} L${n.x + n.w / 2} ${n.y + n.h} L${n.x} ${n.y + n.h / 2} Z" fill="${n.fill || '#FFF8E6'}" stroke="${stroke}" stroke-width="${sw}"${dash}/>`;
+    else if (n.t === 'diamond') shape = `<path d="M${n.x + n.w / 2} ${n.y} L${n.x + n.w} ${n.y + n.h / 2} L${n.x + n.w / 2} ${n.y + n.h} L${n.x} ${n.y + n.h / 2} Z" fill="${n.fill || '#fff'}" stroke="${stroke}" stroke-width="${sw}"${dash}/>`;
     else if (n.t === 'tri') shape = `<path d="M${n.x + n.w / 2} ${n.y} L${n.x + n.w} ${n.y + n.h} L${n.x} ${n.y + n.h} Z" fill="${n.fill || '#fff'}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"${dash}/>`;
     else if (n.t === 'para') { const k = Math.min(n.w * .18, 28); shape = `<path d="M${n.x + k} ${n.y} L${n.x + n.w} ${n.y} L${n.x + n.w - k} ${n.y + n.h} L${n.x} ${n.y + n.h} Z" fill="${n.fill || '#fff'}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"${dash}/>`; }
     else if (n.t === 'hex') { const k = Math.min(n.w * .2, 30); shape = `<path d="M${n.x + k} ${n.y} L${n.x + n.w - k} ${n.y} L${n.x + n.w} ${n.y + n.h / 2} L${n.x + n.w - k} ${n.y + n.h} L${n.x + k} ${n.y + n.h} L${n.x} ${n.y + n.h / 2} Z" fill="${n.fill || '#fff'}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"${dash}/>`; }
     else if (n.t === 'ink') { const kx = n.w / (n.pw || n.w), ky = n.h / (n.ph || n.h); const d = (n.pts || []).map((q, i) => (i ? 'L' : 'M') + (n.x + q[0] * kx).toFixed(1) + ' ' + (n.y + q[1] * ky).toFixed(1)).join(' ');
-      return `<g class="wb-n" data-id="${id}"><rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="transparent" stroke="${sel ? '#1570EF' : 'none'}" stroke-dasharray="4 3"/><path d="${d}" fill="none" stroke="${n.tc || '#1D1F3D'}" stroke-width="${n.sw || 3}" stroke-linecap="round" stroke-linejoin="round"/>${!forExport && sel && !ro() && !n.lock ? handle(n) : ''}</g>`; }
-    else if (n.t === 'text') shape = sel ? `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="none" stroke="#1570EF" stroke-width="1.5" stroke-dasharray="4 3"/>` : '';
+      return `<g class="wb-n" data-id="${id}"><rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="transparent" stroke="${sel ? C.active : 'none'}" stroke-dasharray="4 3"/><path d="${d}" fill="none" stroke="${n.tc || '#1D1F3D'}" stroke-width="${n.sw || 3}" stroke-linecap="round" stroke-linejoin="round"/>${!forExport && sel && !ro() && !n.lock ? handle(n) : ''}</g>`; }
+    else if (n.t === 'text') shape = sel ? `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="none" stroke="${C.active}" stroke-width="1.5" stroke-dasharray="4 3"/>` : '';
     else if (n.t === 'note') shape = `<rect x="${n.x + 3}" y="${n.y + 4}" width="${n.w}" height="${n.h}" rx="4" fill="rgba(16,24,40,.08)"/><rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="4" fill="${n.fill || COLORS.note[0]}" stroke="${stroke}" stroke-width="${sw}"/>`;
-    else { const rx = n.t === 'state' ? n.h / 2 : 8, fill = n.t === 'state' ? STATE_FILL[n.stype] || STATE_FILL.open : n.fill || COLORS.shape;
-      shape = `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="${rx}" fill="${fill}" stroke="${n.t === 'state' && !sel && !conf ? '#84ADFF' : stroke}" stroke-width="${sw}"${dash}/>`; }
+    else { const rx = 3, fill = n.fill || COLORS.shape;
+      shape = `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="${rx}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dash}/>`; }
     let label = '';
     if (n.t !== 'frame') {
-      const size = n.size || (n.t === 'text' ? 18 : n.t === 'state' ? 13 : 14), L = lines(n.text, n.w, size), lh = size * 1.3, top = n.y + n.h / 2 - (L.length - 1) * lh / 2 + (n.t === 'tri' ? n.h * .14 : 0);
-      const weight = n.b ? 700 : n.t === 'text' ? 700 : n.t === 'state' ? 600 : 500; const tx = n.al === 'l' ? n.x + 10 : n.al === 'r' ? n.x + n.w - 10 : n.x + n.w / 2, anc = n.al === 'l' ? 'start' : n.al === 'r' ? 'end' : 'middle';
-      label = `<text x="${tx}" text-anchor="${anc}" font-size="${size}" font-weight="${weight}" fill="${n.tc || '#101828'}">${L.map((t, i) => `<tspan x="${tx}" y="${(top + i * lh + size * .35).toFixed(1)}">${esc(t)}</tspan>`).join('')}</text>`;
+      const size = n.size || (n.t === 'text' ? 18 : n.t === 'text' ? 18 : 13), L = lines(n.text, n.w, size), lh = size * 1.3, top = n.y + n.h / 2 - (L.length - 1) * lh / 2 + (n.t === 'tri' ? n.h * .14 : 0);
+      const weight = n.b ? 700 : n.t === 'text' ? 700 : n.t === 'note' ? 500 : 400; const ink = n.tc || (n.t === 'note' || n.t === 'text' ? '#101828' : sel ? C.active : start ? C.initial : C.text); const tx = n.al === 'l' ? n.x + 10 : n.al === 'r' ? n.x + n.w - 10 : n.x + n.w / 2, anc = n.al === 'l' ? 'start' : n.al === 'r' ? 'end' : 'middle';
+      label = `<text x="${tx}" text-anchor="${anc}" font-size="${size}" font-weight="${weight}" font-family="${FONT}" fill="${ink}">${L.map((t, i) => `<tspan x="${tx}" y="${(top + i * lh + size * .35).toFixed(1)}">${esc(t)}</tspan>`).join('')}</text>`;
       if (conf && !forExport) label += `<text x="${n.x + n.w - 6}" y="${n.y - 5}" text-anchor="end" font-size="10.5" font-weight="600" fill="${conf === 'uncertain' ? '#C11574' : '#B54708'}">${conf}</text>`;
     }
     const lockIc = n.lock && !forExport ? `<g transform="translate(${n.x + n.w - 14} ${n.y + 4})" pointer-events="none"><rect width="11" height="8" y="5" rx="2" fill="#667085"/><path d="M2.5 5 V3.5 a3 3 0 0 1 6 0 V5" fill="none" stroke="#667085" stroke-width="1.6"/></g>` : '';
     return `<g class="wb-n${n.lock ? ' locked' : ''}" data-id="${id}">${shape}${label}${lockIc}${!forExport && sel && !ro() && !n.lock ? handle(n) : ''}</g>`;
   }
   function stale(n) { if (!n.src || n.src.kind !== 'flow' || !n.src.sig) return false; const f = F.flowModel && F.flowModel(n.src.flowId); return !!f && flowSig(f) !== n.src.sig; }
-  const handle = n => `<rect class="wb-h" data-h="${esc(n.id)}" x="${n.x + n.w - 6}" y="${n.y + n.h - 6}" width="12" height="12" rx="3" fill="#fff" stroke="#1570EF" stroke-width="2"/>`;
+  const handle = n => `<rect class="wb-h" data-h="${esc(n.id)}" x="${n.x + n.w - 6}" y="${n.y + n.h - 6}" width="12" height="12" rx="3" fill="#fff" stroke="${C.active}" stroke-width="2"/>`;
   // What a connector stands for. Transitions copied from a flow are configuration-backed. A line the person draws between two different
   // flows is only a drawing unless the project's relationship register (Configuration Inputs) records that link between the two modules.
   const norm = v => String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -152,19 +153,19 @@
     if (hit.length) return { k: 'proposed', t: 'Proposed in the relationship register (not confirmed yet)' };
     return { k: 'manual', t: 'Drawn by hand: no relationship between these modules is recorded in Configuration Inputs' };
   }
-  const KCOL = { confirmed: '#079455', proposed: '#DC6803', manual: '#7A5AF8' };
+  const KCOL = { confirmed: C.time, proposed: C.tbc, manual: '#8393ab' };   // links between flows: green when confirmed in the relationship register, orange when only proposed, grey when drawn by hand
   function edgeSvg(e, forExport) {
     const p = edgePts(e); if (!p) return ''; const sel = !forExport && W.sel.has(e.id), conf = e.conf && e.conf !== 'detected', K = edgeKind(e), kc = KCOL[K.k];
-    const col = sel ? '#1570EF' : conf ? (e.conf === 'uncertain' ? '#E5197F' : '#F5A524') : kc || '#475467', dashed = conf || K.k === 'manual' || K.k === 'proposed';
+    const col = sel ? C.active : conf ? (e.conf === 'uncertain' ? '#E5197F' : C.tbc) : kc || C.line, dashed = conf || K.k === 'manual' || K.k === 'proposed';
     const mk = sel ? 'S' : kc ? K.k : '';
-    let s = `<g class="wb-e wb-k-${K.k}" data-e="${esc(e.id)}">${K.t && !forExport ? `<title>${esc(K.t)}</title>` : ''}<path d="${p.d}" fill="none" stroke="transparent" stroke-width="14"/><path d="${p.d}" fill="none" stroke="${col}" stroke-width="${sel ? 2.4 : kc ? 2 : 1.6}"${dashed ? ' stroke-dasharray="6 4"' : ''} stroke-linejoin="round"${e.ah === 'none' ? '' : ` marker-end="url(#wbArr${mk})"`}${e.ah === 'both' ? ` marker-start="url(#wbArr${mk})"` : ''}/>`;
+    let s = `<g class="wb-e wb-k-${K.k}" data-e="${esc(e.id)}">${K.t && !forExport ? `<title>${esc(K.t)}</title>` : ''}<path d="${p.d}" fill="none" stroke="transparent" stroke-width="14"/><circle cx="${p.p0[0]}" cy="${p.p0[1]}" r="2.5" fill="${col}"/><path d="${p.d}" fill="none" stroke="${col}" stroke-width="${sel ? 2 : 1.4}"${dashed ? ' stroke-dasharray="6 4"' : ''} stroke-linejoin="round"${e.ah === 'none' ? '' : ` marker-end="url(#wbArr${mk})"`}${e.ah === 'both' ? ` marker-start="url(#wbArr${mk})"` : ''}/>`;
     const tagTxt = kc ? (K.k === 'confirmed' ? 'Confirmed link' : K.k === 'proposed' ? 'Proposed link' : 'Not verified') : '';
-    if (e.label || tagTxt) { const txt = e.label ? (e.label.length > 32 ? e.label.slice(0, 31) + '…' : e.label) : ''; const w = Math.min(240, 12 + Math.max(txt.length * 6.6, tagTxt ? tagTxt.length * 6 : 0)); const h = txt && tagTxt ? 32 : 20;
-      s += `<g class="wb-el" data-el="${esc(e.id)}"><rect x="${p.lx - w / 2}" y="${p.ly - h / 2}" width="${w}" height="${h}" rx="6" fill="#fff" stroke="${sel ? '#1570EF' : kc || '#EAECF0'}"/>${txt ? `<text x="${p.lx}" y="${p.ly + (tagTxt ? -2 : 4)}" text-anchor="middle" font-size="11.5" fill="#344054">${esc(txt)}</text>` : ''}${tagTxt ? `<text x="${p.lx}" y="${p.ly + (txt ? 11 : 4)}" text-anchor="middle" font-size="9.5" font-weight="700" fill="${kc}">${tagTxt}</text>` : ''}</g>`; }
+    if (e.label || tagTxt) { const fromN = node(e.from); const pill = sel ? C.active : conf ? (e.conf === 'uncertain' ? '#E5197F' : C.tbc) : fromN && fromN.t === 'diamond' ? C.cond : C.user; const txt = e.label ? (e.label.length > 28 ? e.label.slice(0, 27) + '…' : e.label) : ''; const w = Math.min(220, Math.max(60, 22 + txt.length * 7));
+      s += `<g class="wb-el" data-el="${esc(e.id)}">${txt ? `<rect x="${p.lx - w / 2}" y="${p.ly - 13}" width="${w}" height="26" rx="12.5" fill="${pill}"/><text x="${p.lx}" y="${p.ly + 4.5}" text-anchor="middle" font-size="12" font-family="${FONT}" fill="#fff">${esc(txt)}</text>` : ''}${tagTxt ? `<text x="${p.lx}" y="${p.ly + (txt ? 26 : 4)}" text-anchor="middle" font-size="10" font-weight="700" font-family="${FONT}" fill="${kc}">${tagTxt}</text>` : ''}</g>`; }
     return s + '</g>';
   }
-  const DEFS = `<defs><marker id="wbArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#475467"/></marker><marker id="wbArrS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#1570EF"/></marker>${Object.keys(KCOL).map(k => `<marker id="wbArr${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="${KCOL[k]}"/></marker>`).join('')}
-    <pattern id="wbGrid" width="${GRID}" height="${GRID}" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#D0D5DD"/></pattern></defs>`;
+  const DEFS = `<defs><marker id="wbArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="${C.line}"/></marker><marker id="wbArrS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="${C.active}"/></marker>${Object.keys(KCOL).map(k => `<marker id="wbArr${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="${KCOL[k]}"/></marker>`).join('')}
+    <pattern id="wbGrid" width="${GRID}" height="${GRID}" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#dde3ea"/></pattern></defs>`;
   function worldSvg(forExport) {
     const ns = W.B.nodes, frames = ns.filter(n => n.t === 'frame'), imgs = ns.filter(n => n.t === 'image'), rest = ns.filter(n => n.t !== 'frame' && n.t !== 'image');
     return imgs.map(n => nodeSvg(n, forExport)).join('') + frames.map(n => nodeSvg(n, forExport)).join('') + W.B.edges.map(e => edgeSvg(e, forExport)).join('') + rest.map(n => nodeSvg(n, forExport)).join('') + (forExport ? '' : endHandles() + delChip());
@@ -235,7 +236,7 @@
       <div class="wb-pop-h">Shapes</div><div class="wb-pop-g">${[['rect', IC.rect, 'Rectangle'], ['ellipse', IC.oval, 'Oval'], ['diamond', IC.rhombus, 'Decision (rhombus)'], ['tri', IC.tri, 'Triangle'], ['para', IC.para, 'Input / output'], ['hex', IC.hex, 'Hexagon'], ['frame', IC.frame, 'Frame']].map(([t, ic, l]) => `<button type="button" role="menuitem" data-act="wbTool" data-wbtool="${t}" title="${l}" aria-label="${l}">${ic}</button>`).join('')}</div></div>`;
     return head + `<div class="page-body wb-page">
       <div class="wb-tb wb-tb-slim" role="toolbar" aria-label="Board">
-        <div class="wb-grp" role="group" aria-label="Processes"><button class="btn sm" type="button" data-act="wbFlows"${dis}>${V.ico('plus')}Add State Flow</button><button class="btn sm" type="button" data-act="wbImg"${dis}>Import from image</button><button class="btn sm" type="button" data-act="wbNewFlow"${dis}>New state flow</button></div>
+        <div class="wb-grp" role="group" aria-label="Processes"><button class="btn sm" type="button" data-act="wbFlows"${dis}>${V.ico('plus')}Add State Flow</button><button class="btn sm" type="button" data-act="wbAiText"${dis} title="Describe a process in words and the AI draws it">Describe with AI</button><button class="btn sm" type="button" data-act="wbImg"${dis}>Import from image</button><button class="btn sm" type="button" data-act="wbSaveFlow"${dis} title="Save the selected flow (or the whole board) as a State Flow">Save as state flow</button><button class="btn sm" type="button" data-act="wbNewFlow"${dis}>New state flow</button></div>
         <span class="spacer"></span><span class="xs muted" id="wbSelInfo"></span><span class="wb-save" id="wbSave"></span>
         <div class="wb-grp" role="group" aria-label="Combined flows"><button class="btn sm" type="button" data-act="wbCflows">Combined flows${nCf ? ` <span class="wb-cnt">${nCf}</span>` : ''}</button>${ro() ? '' : '<button class="btn sm primary" type="button" data-act="wbCflowSave">Save as combined flow</button>'}</div>
       </div>
@@ -267,8 +268,8 @@
     grid: svgI('<path d="M4 4h16v16H4zM4 12h16M12 4v16"/>'), fit: svgI('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>'), bold: svgI('<path d="M7 5h6a3.5 3.5 0 0 1 0 7H7zM7 12h7a3.5 3.5 0 0 1 0 7H7z"/>'), lock: svgI('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'), unlock: svgI('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/>'),
     dup: svgI('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>'), trash: svgI('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'), more: svgI('<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>'),
     al: svgI('<path d="M4 6h16M4 10h10M4 14h16M4 18h10"/>'), ac: svgI('<path d="M4 6h16M7 10h10M4 14h16M7 18h10"/>'), ar: svgI('<path d="M4 6h16M10 10h10M4 14h16M10 18h10"/>'), group: svgI('<rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><path d="M11 7h4v4M13 17H9v-4"/>'), dl: svgI('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>') };
-  const FILLS = ['#FFFFFF', '#FFF4B8', '#FFE1EC', '#DDF4E4', '#E3EDFF', '#F0E6FF', '#FFE8D1', '#E4E7EC', '#1D1F3D'];
-  const TCOLS = ['#101828', '#623CF6', '#1570EF', '#079455', '#DC6803', '#D92D20', '#667085', '#FFFFFF'];
+  const FILLS = ['#FFFFFF', '#FFF4B8', '#FFE1EC', '#DDF4E4', '#E3EDFF', '#E8F1FD', '#FFE8D1', '#E4E7EC', '#1D1F3D'];
+  const TCOLS = ['#101828', '#6071DB', '#3995E2', '#079455', '#DC6803', '#D92D20', '#667085', '#FFFFFF'];
 
   // ---------- coordinates & hit testing ----------
   function toWorld(ev) { const svg = document.getElementById('wbSvg'), r = svg.getBoundingClientRect(), v = W.B.view; return { x: (ev.clientX - r.left - v.x) / v.z, y: (ev.clientY - r.top - v.y) / v.z }; }
@@ -534,16 +535,73 @@
   };
   ACT.wbNewFlow = () => { if (V.ACT.newFlowDlg) { V.go('flow'); setTimeout(() => V.ACT.newFlowDlg({ getAttribute: () => null }), 150); } else V.go('flow'); };
 
+  // ---------- describe a process in words: the AI builds it (the Miro-style AI box) ----------
+  const flowIdx = () => flowCatalogue().map(c => { const f = F.flowModel(c.id) || {}; return { id: c.id, name: c.name, moduleLabel: c.moduleLabel, states: (f.states || []).map(x => x.label).slice(0, 16) }; });
+  const aiUrl = () => `/api/projects/${S.project.id}/ai/flow-text`;
+  function aiReview(r, provider) { const g = r.graph || r; W.imp = { graph: g, text: true }; const fl = r.useFlows || g.useFlows || [];
+    const flows = fl.length ? `<h3 class="wb-rv-h">Existing state flows it suggests adding</h3><p class="xs muted">These are this project's own flows. Each is added as an editable copy in a frame; the flow itself is not changed. Untick any you do not want.</p><div class="wb-flist">${fl.map(f => `<label class="wb-fi"><input type="checkbox" data-wbf value="${esc(f.id)}" checked><span><b>${esc(f.module)}</b> · ${esc(f.name)}</span></label>`).join('')}</div>` : '';
+    return (g.nodes && g.nodes.length ? reviewHtml(g, provider) : '<p class="xs muted">The AI only suggested existing flows, no extra steps.</p>') + flows; }
+  function aiReady() { const go = document.querySelector('#drawer .drawer-f .btn.primary'); if (go) { go.textContent = 'Add to board'; go.setAttribute('data-act', 'wbAiAdd'); go.disabled = false; } }
+  ACT.wbAiText = () => { W.imp = null;
+    V.drawer('Describe a process, the AI draws it', `<p class="small muted" style="margin-top:0">Type what the process is, in plain words. The AI turns it into steps and connections, and points at your project's existing state flows that belong in it. You check the result before anything is added to the board.</p>
+      <label class="f" for="wbAiT">The process</label><textarea id="wbAiT" rows="6" maxlength="4000" placeholder="e.g. A tenant raises a request. If it is urgent it becomes a work order straight away, otherwise the manager approves it first. The work order is assigned, worked, and closed after the tenant confirms. Link the asset to the work order."></textarea>
+      <div class="xs muted" style="margin-top:4px">Use as much detail as you have. The AI uses only what you write.</div><div id="wbAiOut"></div>`,
+      `<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn" data-act="wbAiClaude" title="Send the description and a ready-made prompt to your own Claude (your subscription, no API key)">Open in Claude</button><button class="btn" data-act="wbAiClaude" data-add="1" title="Bring back the JSON Claude wrote">Add from Claude</button><button class="btn primary" data-act="wbAiBuild">Build with AI</button>`, { wide: true });
+    const t = document.getElementById('wbAiT'); if (t) t.focus(); };
+  const aiText = () => String((document.getElementById('wbAiT') || {}).value || '').trim();
+  ACT.wbAiBuild = a => V.busy(a, async () => { const text = aiText(); if (text.length < 10) { V.toast('Describe the process in a sentence or two first', 4000, true); return; }
+    const out = document.getElementById('wbAiOut'); out.innerHTML = '<p class="small muted">The AI is reading your description… this can take up to half a minute.</p>';
+    try { const r = await API.post(aiUrl(), { text, flows: flowIdx() }); out.innerHTML = aiReview(r, r.provider); aiReady(); }
+    catch (e) { out.innerHTML = `<div class="notice err">${esc(e.message || 'The description could not be turned into a flow')}</div>`; } });
+  ACT.wbAiClaude = a => { const out = document.getElementById('wbAiOut'); if (!out) return; const add = !!(a && a.getAttribute && a.getAttribute('data-add') === '1'); const text = aiText();
+    if (!add && text.length < 10) { V.toast('Describe the process first, so Claude gets it', 4000, true); return; }
+    V.claudeHandoff({ skipPack: add, title: 'Process from a description', url: aiUrl(), body: { text, flows: flowIdx() }, extra: 'Claude can reply with JSON (best), or draw a flowchart picture: save the picture and use Import from image.', into: 'wbAiOut', onReply: r => { out.innerHTML = aiReview(r, r.provider); aiReady(); } }); };
+  ACT.wbAiAdd = a => V.busy(a, async () => { const ids = [...document.querySelectorAll('[data-wbf]:checked')].map(x => x.value); const steps = document.querySelectorAll('[data-wbn]:checked').length;
+    if (!steps && !ids.length) { V.toast('Nothing is ticked', 4000, true); return; }
+    if (steps) await ACT.wbImgAdd(null); if (ids.length) { W.pick = new Set(ids); ACT.wbFlowsGo(); } else if (!steps) V.closeDrawer(); });
+
+  // ---------- save the selected flow (or the whole board) as a State Flow: replace an existing one, or add a new one ----------
+  const FLOWISH = ['state', 'rect', 'ellipse', 'diamond', 'hex', 'para'];
+  function pickFlowParts() { const sel = selNodes(); const frames = sel.filter(n => n.t === 'frame'); let ns = sel.filter(n => FLOWISH.includes(n.t) && !n.hidden);
+    frames.forEach(f => W.B.nodes.filter(n => n.fr === f.id && FLOWISH.includes(n.t) && !ns.includes(n)).forEach(n => ns.push(n)));
+    if (!ns.length) ns = W.B.nodes.filter(n => FLOWISH.includes(n.t) && !n.hidden);   // nothing selected: the whole board
+    const ids = new Set(ns.map(n => n.id)); return { ns, es: W.B.edges.filter(e => ids.has(e.from) && ids.has(e.to)), whole: !sel.length || !(sel.some(n => FLOWISH.includes(n.t)) || frames.length) }; }
+  function toFlowModel(ns, es, label) { const used = new Set(); const sid = n => { let b = 's_' + (F.slug(n.text || 'state') || 'state'), id = b, i = 2; while (used.has(id)) id = b + '_' + i++; used.add(id); return id; };
+    const ids = {}; ns.forEach(n => { ids[n.id] = sid(n); }); const minX = Math.min(...ns.map(n => n.x)), minY = Math.min(...ns.map(n => n.y)); const lab = n => String(n.text || '').replace(/\s+/g, ' ').trim().slice(0, 80) || 'State';
+    const states = ns.map(n => ({ id: ids[n.id], name: F.slug(lab(n)) || ids[n.id], label: lab(n), x: Math.round((n.x - minX) / 10) * 10 + 60, y: Math.round((n.y - minY) / 10) * 10 + 60, origin: 'proposed' }));
+    const trans = es.map(e => ({ id: F.uid('t'), name: String(e.label || '').trim().slice(0, 80) || 'Move to ' + states.find(x => x.id === ids[e.to]).label, from: ids[e.from], to: ids[e.to], type: 'user', buttonType: 0, enabled: true, actors: [{ actor: 'tbc:any', status: 'tbc', note: '' }], condition: '', conditionFields: [], commentRequired: false, approval: { required: false, approvers: [] }, actions: [], notifications: [], portals: [], notes: '', origin: 'proposed', removed: false }));
+    const first = ns.find(n => n.t === 'ellipse' && !es.some(e => e.to === n.id)) || ns.find(n => !es.some(e => e.to === n.id)) || ns[0]; return { states, transitions: trans, initial: ids[first.id] }; }
+  ACT.wbSaveFlow = () => { if (ro()) return; const { ns, es, whole } = pickFlowParts(); if (!ns.length) { V.toast('There are no states or steps on the board to save', 5000, true); return; }
+    const mods = F.allModules().filter(x => x.inUse || x.origin === 'proposed' || x.inScope).sort((p, q) => String(p.label).localeCompare(String(q.label))); W.sv = { ns, es };
+    const opt = (m) => mods.map(x => `<option value="${esc(x.name)}"${x.name === m ? ' selected' : ''}>${esc(x.label)}</option>`).join(''); const first = (flowCatalogue()[0] || {}).module || (mods[0] || {}).name || '';
+    V.drawer('Save as a state flow', `<p class="small muted" style="margin-top:0">${whole ? 'Nothing is selected, so the whole board' : 'The selected flow'} (${ns.length} step${ns.length === 1 ? '' : 's'}, ${es.length} connection${es.length === 1 ? '' : 's'}) becomes a State Flow in the State Flow Builder. Each step becomes a state and each arrow a transition (roles are marked "to be confirmed").</p>
+      <label class="f" for="sv_m">Module</label><select id="sv_m" data-change="wbSvMod">${opt(first)}</select>
+      <div class="wb-svmode" role="radiogroup" aria-label="How to save it"><label class="chk"><input type="radio" name="sv_mode" value="add" checked data-change="wbSvMode"> <span><b>Add as a separate flow</b><br><span class="xs muted">A new proposed flow; the existing flows stay as they are.</span></span></label>
+        <label class="chk"><input type="radio" name="sv_mode" value="replace" data-change="wbSvMode"> <span><b>Replace an existing flow</b><br><span class="xs muted">The chosen flow takes this drawing's states and transitions. Its name, criteria and default setting are kept. The State Flow Builder shows the difference from the configured flow.</span></span></label></div>
+      <div id="sv_add"><label class="f" for="sv_n">Name of the new flow</label><input type="text" id="sv_n" maxlength="120" value="${esc(W.B.name || 'Flow from the whiteboard')}"></div>
+      <div id="sv_rep" hidden><label class="f" for="sv_f">Flow to replace</label><select id="sv_f"></select><p class="xs muted" id="sv_w"></p></div>`,
+      `<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="wbSaveFlowGo">Save</button>`, { wide: true }); ACT.wbSvMod(document.getElementById('sv_m')); };
+  ACT.wbSvMod = el => { const m = el.value; const fs = flowCatalogue().filter(c => c.module === m); const sel = document.getElementById('sv_f'); if (sel) sel.innerHTML = fs.length ? fs.map(c => `<option value="${esc(c.id)}">${esc(c.name)} (${c.states} states)${c.origin === 'proposed' ? ' · proposed' : ''}</option>`).join('') : '<option value="">This module has no flow to replace</option>'; };
+  ACT.wbSvMode = () => { const rep = (document.querySelector('input[name=sv_mode]:checked') || {}).value === 'replace'; const a = document.getElementById('sv_add'), r = document.getElementById('sv_rep'); if (a) a.hidden = rep; if (r) { r.hidden = !rep; const w = document.getElementById('sv_w'); if (w) w.textContent = 'The flow you choose is overwritten with this drawing. You can undo it with Reset to source if it is a configured flow, or delete it if it is a proposed one.'; } };
+  ACT.wbSaveFlowGo = a => V.busy(a, async () => { const mode = (document.querySelector('input[name=sv_mode]:checked') || {}).value; const m = document.getElementById('sv_m').value; const { ns, es } = W.sv || {}; if (!ns || !ns.length || !m) return;
+    const model = toFlowModel(ns, es);
+    if (mode === 'replace') { const id = document.getElementById('sv_f').value; const cur = id && F.flowModel(id); if (!cur) { V.toast('Choose the flow to replace', 4000, true); return; }
+      if (!(await V.confirmDialog('Replace flow', 'Replace "' + (cur.name || id) + '" with this drawing (' + model.states.length + ' states, ' + model.transitions.length + ' transitions)? Its current states and transitions are overwritten.', 'Replace', true))) return;
+      const keep = F.clone(cur); const next = Object.assign({}, keep, { states: model.states, transitions: model.transitions, initial: model.initial, workshopCopy: true, layoutDir: keep.layoutDir || 'h' }); S.ws.flows[id] = next; V.closeDrawer(); F.changed('Stateflow replaced from the whiteboard', (cur.name || id)); V.toast('"' + (cur.name || id) + '" now follows this drawing'); return; }
+    const name = String((document.getElementById('sv_n') || {}).value || '').trim(); if (!name) { V.toast('Give the flow a name', 4000, true); return; }
+    const id = m + '::proposed_' + Math.random().toString(36).slice(2, 7); S.ws.flows[id] = Object.assign(model, { id, module: m, name, description: 'Drawn on the Process Whiteboard "' + (W.B.name || '') + '"', criteria: '', origin: 'proposed', enabled: true, workshopCopy: true, isDefault: false });
+    V.closeDrawer(); F.changed('Stateflow created from the whiteboard', name); V.toast('Saved as a new state flow: ' + name); });
+
   // ---------- import from image ----------
   ACT.wbImg = () => {
     W.imp = null;
-    V.drawer('Import a flow from an image', `<p class="small muted" style="margin-top:0">Upload a picture of a flowchart or state flow (PNG, JPEG or WebP, up to 8 MB). Claude reads the steps and arrows; you review the result before anything is added. Parts it is unsure about are marked and drawn dashed.</p>
+    V.drawer('Import a flow from an image', `<p class="small muted" style="margin-top:0">Upload a picture of a flowchart or state flow (PNG, JPEG or WebP, up to 8 MB). The AI reads the steps and arrows (or, if it cannot read images here, your own Claude does it: Use my Claude); you review the result before anything is added. Parts it is unsure about are marked and drawn dashed.</p>
       <div class="row"><button class="btn" data-act="wbImgPick">Choose an image</button><span class="xs muted" id="wbImgName">No file chosen</span></div>
       <div class="wb-imgprev" id="wbImgPrev" hidden></div>
       <label class="f" for="wbImgHint" style="margin-top:14px">What does it show? (optional)</label><input type="text" id="wbImgHint" maxlength="200" placeholder="e.g. Work order approval in the maintenance app">
       <label class="chk" style="margin-top:12px"><input type="checkbox" id="wbImgKeep" checked> Keep the original image on the board as a reference layer</label>
       <div id="wbImgOut"></div>`,
-      `<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn" data-act="wbImgClaude" title="Read the picture in your own Claude">Use my own Claude</button><button class="btn" data-act="wbImgClaude" data-add="1" title="Bring back the flow Claude read from the picture">Add from Claude</button><button class="btn primary" data-act="wbImgRead" id="wbImgRead" disabled>Read the diagram</button>`, { wide: true });
+      `<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn" data-act="wbImgClaude" title="Send this picture and a ready-made prompt to your own Claude (your subscription, no API key)">Use My Claude</button><button class="btn" data-act="wbImgClaude" data-add="1" title="Bring back the flow Claude read from the picture">Add from Claude</button><button class="btn primary" data-act="wbImgRead" id="wbImgRead" disabled>Read the diagram</button>`, { wide: true });
   };
   async function sniff(file) { const b = new Uint8Array(await file.slice(0, 12).arrayBuffer()); if (b[0] === 0x89 && b[1] === 0x50) return 'image/png'; if (b[0] === 0xFF && b[1] === 0xD8) return 'image/jpeg'; if (b[0] === 0x52 && b[1] === 0x49 && b[8] === 0x57 && b[9] === 0x45) return 'image/webp'; return ''; }
   ACT.wbImgPick = async () => {
@@ -553,7 +611,13 @@
     W.imp = { file: f, type }; document.getElementById('wbImgName').textContent = f.name;
     const pv = document.getElementById('wbImgPrev'); pv.hidden = false; const url = URL.createObjectURL(f); pv.innerHTML = ''; const img = new Image(); img.alt = 'Preview of ' + f.name; img.src = url; pv.appendChild(img);
     document.getElementById('wbImgRead').disabled = false; document.getElementById('wbImgOut').innerHTML = '';
+    // ready for a one-click hand-off to Claude: the picture as a PNG and the prompt, prepared now so the click itself can open Claude
+    const mine = W.imp; mine.png = null; mine.pack = '';
+    pngBlob(f).then(b => { mine.png = b; }).catch(() => { });
+    API.post(`/api/projects/${S.project.id}/ai/flow-image`, { claudePack: true }).then(r => { mine.pack = r.prompt || ''; }).catch(() => { });
   };
+  // the picture as a PNG (at most 2000 px on the long side), which is the one image type browsers let a page put on the clipboard
+  async function pngBlob(file) { const bm = await createImageBitmap(file); const k = Math.min(1, 2000 / Math.max(bm.width, bm.height)); const c = document.createElement('canvas'); c.width = Math.round(bm.width * k); c.height = Math.round(bm.height * k); const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(bm, 0, 0, c.width, c.height); bm.close && bm.close(); return new Promise((res, rej) => c.toBlob(b => (b ? res(b) : rej(new Error('png'))), 'image/png')); }
   // shrink to at most 1600 px on the long side (smaller upload, same legibility for the model)
   async function shrink(file) {
     const bm = await createImageBitmap(file); const s = Math.min(1, 1600 / Math.max(bm.width, bm.height)); const c = document.createElement('canvas'); c.width = Math.round(bm.width * s); c.height = Math.round(bm.height * s);
@@ -561,8 +625,13 @@
     const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', .9)); const buf = new Uint8Array(await blob.arrayBuffer()); let bin = ''; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
     return { data: btoa(bin), mediaType: 'image/jpeg', w: c.width, h: c.height };
   }
-  ACT.wbImgClaude = a => { const out = document.getElementById('wbImgOut'); if (!out) return; V.claudeHandoff({ skipPack: !!(a && a.getAttribute && a.getAttribute('data-add') === '1'), title: 'Flow from an image', url: `/api/projects/${S.project.id}/ai/flow-image`, body: { hint: ((document.getElementById('wbImgHint') || {}).value || '').slice(0, 200) }, extra: 'Attach the flow picture to the chat too.', into: 'wbImgOut',
-    onReply: r => { W.imp = W.imp || {}; W.imp.graph = r.graph; out.innerHTML = reviewHtml(r.graph, r.provider); const keep = document.getElementById('wbImgKeep'); if (keep && !W.imp.file) { keep.checked = false; keep.disabled = true; } const go = document.querySelector('#drawer .drawer-f .btn.primary'); if (go) { go.textContent = 'Add to board'; go.setAttribute('data-act', 'wbImgAdd'); go.disabled = false; } } }); };
+  ACT.wbImgClaude = a => { const out = document.getElementById('wbImgOut'); if (!out) return; const add = !!(a && a.getAttribute && a.getAttribute('data-add') === '1'); const hint = ((document.getElementById('wbImgHint') || {}).value || '').slice(0, 200);
+    if (!add && !(W.imp && W.imp.file)) { V.toast('Choose the picture first, so it goes to Claude together with the prompt', 5000, true); return; }
+    if (!add && !(W.imp.png && W.imp.pack)) { V.toast('The picture is still being prepared. Try again in a second.', 4000); return; }
+    const o = { skipPack: add, title: 'Flow from an image', url: `/api/projects/${S.project.id}/ai/flow-image`, body: { hint }, extra: 'Attach the flow picture to the chat too.', into: 'wbImgOut',
+      onReply: r => { W.imp = W.imp || {}; W.imp.graph = r.graph; out.innerHTML = reviewHtml(r.graph, r.provider); const keep = document.getElementById('wbImgKeep'); if (keep && !W.imp.file) { keep.checked = false; keep.disabled = true; } const go = document.querySelector('#drawer .drawer-f .btn.primary'); if (go) { go.textContent = 'Add to board'; go.setAttribute('data-act', 'wbImgAdd'); go.disabled = false; } } };
+    if (!add) Object.assign(o, { prompt: W.imp.pack + (hint ? '\n\nContext from the user: ' + hint : ''), image: W.imp.png, autoOpen: true });
+    V.claudeHandoff(o); };
   ACT.wbImgRead = a => V.busy(a, async () => {
     if (!W.imp) return; const out = document.getElementById('wbImgOut'); out.innerHTML = '<p class="small muted">Reading the diagram… this can take up to half a minute.</p>';
     try {
@@ -581,7 +650,7 @@
       <div class="tbl-wrap" style="margin-top:10px"><table class="tbl"><thead><tr><th>Use</th><th>From</th><th>To</th><th>Label</th><th>How sure</th></tr></thead><tbody>${g.edges.map((e, i) => { const f = g.nodes.find(n => n.id === e.from), t = g.nodes.find(n => n.id === e.to); return `<tr><td><input type="checkbox" data-wbe="${i}" checked aria-label="Use this connection"></td><td>${esc(f ? f.label : e.from)}</td><td>${esc(t ? t.label : e.to)}</td><td><input type="text" data-wbel="${i}" value="${esc(e.label)}" maxlength="60" aria-label="Connection label"></td><td>${badge(e.confidence)}</td></tr>`; }).join('') || '<tr><td colspan="5" class="muted">No connections were read.</td></tr>'}</tbody></table></div>`;
   }
   ACT.wbImgAdd = a => V.busy(a, async () => {
-    const g = W.imp && W.imp.graph; if (!g) return; const keep = document.getElementById('wbImgKeep').checked;
+    const g = W.imp && W.imp.graph; if (!g) return; const kEl = document.getElementById('wbImgKeep'); const keep = !!(kEl && kEl.checked && W.imp && W.imp.file);
     const nodes = g.nodes.map((n, i) => Object.assign({}, n, { use: document.querySelector(`[data-wbn="${i}"]`).checked, label: document.querySelector(`[data-wbl="${i}"]`).value.trim().slice(0, 80) || n.label, kind: document.querySelector(`[data-wbk="${i}"]`).value })).filter(n => n.use);
     const ok = new Set(nodes.map(n => n.id)); const edges = g.edges.map((e, i) => Object.assign({}, e, { use: document.querySelector(`[data-wbe="${i}"]`).checked, label: document.querySelector(`[data-wbel="${i}"]`).value.trim().slice(0, 60) })).filter(e => e.use && ok.has(e.from) && ok.has(e.to));
     if (!nodes.length) { V.toast('Nothing is ticked', 4000, true); return; }

@@ -1,0 +1,4 @@
+/* Process Whiteboard in the State Flow Builder's frame: the same white canvas with the pale dot grid, the same thin border and square-ish corners, and the same light grey toolbar.
+   The shapes, arrows and labels follow the Builder's colours in src/whiteboard.js (taken from FWBDiagrams.COLORS). */
+body .wb-host:not(#_):not(#__) { background: #fff !important; border: 1px solid var(--fc-border, #e6e2f2) !important; border-radius: 4px !important; }
+body .wb-tb:not(#_):not(#__) { background: #fafafa !important; border: 1px solid #ededed !important; border-radius: 4px !important; box-shadow: none !important; }

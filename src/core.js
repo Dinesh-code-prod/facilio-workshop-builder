@@ -294,6 +294,7 @@
   // ---------- change summary ----------
   function changeSummary() {
     const out = { additions: [], modifications: [], removals: [], decisions: [] };
+    Object.values(S.ws.flows).filter(f => f.removalProposed && f.origin !== 'proposed').forEach(f => out.removals.push({ area: 'Stateflow', module: f.module, item: f.name, detail: 'Proposed removal of the configured stateflow' }));
     Object.entries(S.ws.fieldOps).forEach(([m, o]) => {
       o.add.forEach(f => out.additions.push({ area: 'Field', module: m, item: f.label, detail: f.type + (f.required ? ', mandatory' : '') + (f.lookup ? ', lookup to ' + f.lookup : '') }));
       Object.entries(o.modify).forEach(([n, mod]) => out.modifications.push({ area: 'Field', module: m, item: fieldLabel(m, n), detail: Object.keys(mod).filter(k => k !== 'description').join(', ') }));

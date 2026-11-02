@@ -34,6 +34,20 @@ await t('capabilities: image reading needs a provider that reads images', async 
   assert.equal(llmCalls.length, 0, 'DeepSeek is never sent an image');
   assert.ok(Object.values(OPS).every(o => o.needs.includes('text')));
 });
+await t('pictures without Claude: the platform vision model is used only when the allowlist names it, gets the picture as an image_url, and a refusal is reported plainly', async () => {
+  const img = [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'AAAA' } }, { type: 'text', text: 'x' }] }]; const was = ctx.llm.models;
+  try {
+    const e = await rejects(AI.generate({ op: 'vision', messages: img, maxTokens: 10 }), 'not_configured'); assert.match(e.message, /Use My Claude/); assert.ok(!/API key|Admin/i.test(e.message), 'no demand for a Claude API key');
+    ctx.llm.models = async () => ['deepseek.v3.2', 'moonshotai.kimi-k2.5']; llmImpl = (b) => ({ model: b.model, choices: [{ message: { content: '{"nodes":[]}' } }], usage: { prompt_tokens: 3, completion_tokens: 1 } });
+    const out = await AI.generate({ op: 'vision', messages: img, maxTokens: 10 }); assert.equal(out.provider, 'the platform vision model'); assert.equal(llmCalls[0].model, 'moonshotai.kimi-k2.5');
+    const part = llmCalls[0].messages[0].content[0]; assert.equal(part.type, 'image_url'); assert.equal(part.image_url.url, 'data:image/png;base64,AAAA');
+    await rejects(AI.generate({ op: 'vision', provider: 'deepseek', messages: img, maxTokens: 10 }), 'unsupported');   // DeepSeek itself is still never sent a picture
+    llmImpl = () => { const er = new Error('image input not supported'); er.status = 400; throw er; }; const r = await rejects(AI.generate({ op: 'vision', messages: img, maxTokens: 10 }), 'unsupported'); assert.match(r.message, /Use My Claude/);
+    llmImpl = () => ({ model: 'moonshotai.kimi-k2.5', choices: [{ message: { content: 'Red' } }] }); const pr = await AI.visionProbe(); assert.equal(pr.ok, true);
+    llmImpl = () => ({ model: 'moonshotai.kimi-k2.5', choices: [{ message: { content: 'Blue' } }] }); assert.equal((await AI.visionProbe()).ok, false, 'a wrong answer is not a pass');
+    ctx.llm.models = async () => ['deepseek.v3.2']; assert.equal((await AI.visionProbe()).ok, false);
+  } finally { ctx.llm.models = was; }
+});
 await t('Anthropic request format: system apart, model from configuration, key only in the header', async () => {
   KEY = 'sk-ant-test-LAYER-0001';
   fetchImpl = (u) => u.endsWith('/models?limit=50') ? resp(200, { data: [{ id: 'claude-sonnet-5-5' }, { id: 'claude-opus-5-5' }] }) : resp(200, { model: 'claude-opus-5-5', content: [{ type: 'text', text: 'C ok' }], usage: { input_tokens: 9, output_tokens: 3 } });

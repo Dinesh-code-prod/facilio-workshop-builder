@@ -35,8 +35,8 @@ export const OPS = {
 };
 export const GROUPS = { documents: 'Documents and drafts', extraction: 'Reading documents and transcripts', analysis: 'Task assistance and classification', vision: 'Reading images' };
 export const PROVIDERS = ['deepseek', 'claude'];
-const NAMES = { deepseek: 'DeepSeek', claude: 'Claude' };
-const DEFAULT_MODEL = { deepseek: 'deepseek.v3.2', claude: 'claude-sonnet-5-5' };
+const NAMES = { deepseek: 'DeepSeek', claude: 'Claude', vision: 'the platform vision model' };
+const DEFAULT_MODEL = { deepseek: 'deepseek.v3.2', claude: 'claude-sonnet-5-5', vision: 'moonshotai.kimi-k2.5' };   // vision: a multimodal model on the platform allowlist; DeepSeek v3.2 itself reads text only
 const ANTHROPIC = 'https://api.anthropic.com/v1';
 const te = new TextEncoder();
 const b64 = u8 => Buffer.from(u8).toString('base64'), unb64 = t => new Uint8Array(Buffer.from(t, 'base64'));
@@ -135,7 +135,28 @@ export function createAI(env) {
       finally { clearTimeout(to); }
     }
   };
-  const ADAPTERS = { deepseek, claude };
+  /* vision: the facilio.work platform model call (ctx.llm) pointed at a multimodal model from the platform allowlist, used ONLY to read pictures, and only when
+     the allowlist (ctx.llm.models) names it. It needs no key. It is not in PROVIDERS (nobody picks it as the default for text); choose() reaches for it when an
+     operation needs an image and Claude is not configured. Whether the platform accepts picture input for this model is checked by Admin > AI > Check image reading,
+     and a refusal is reported as such, never hidden. */
+  const vision = {
+    id: 'vision', name: NAMES.vision, caps: { text: true, json: true, image: true, stream: false, tools: false, contextChars: 14000, maxOut: 3000 },
+    async models() { return deepseek.models(); },
+    async configured() { if (!(ctx() && typeof ctx().llm === 'function')) return false; const l = await this.models(); return !!l && l.includes(DEFAULT_MODEL.vision); },   // only when the platform allowlist names the model: an unreadable list means we cannot promise image reading
+    async generate(q) {
+      const messages = (q.system ? [{ role: 'system', content: q.system }] : []).concat(q.messages.map(m => ({ role: m.role, content: Array.isArray(m.content) ? m.content.map(x => (x && x.type === 'image' && x.source ? { type: 'image_url', image_url: { url: 'data:' + x.source.media_type + ';base64,' + x.source.data } } : { type: 'text', text: String(x && x.text || '') })) : m.content })));
+      const body = { model: q.model || DEFAULT_MODEL.vision, messages, max_tokens: Math.min(q.maxTokens, this.caps.maxOut), temperature: q.temperature == null ? 0.1 : q.temperature };
+      let r; try { r = await timeBox(ctx().llm(body), q.timeoutMs); }
+      catch (e) { if (e instanceof AIFail) throw e; const st = Number(e && (e.status || e.statusCode)) || 0; const m = String(e && e.message || e); log('vision call failed', (st || '') + ' ' + m.slice(0, 160));
+        if (st === 429 || /rate|limit|quota|cap/i.test(m)) throw new AIFail('rate_limited', 'You have reached the AI limit for now. Wait a minute and try again.');
+        if (st === 400 || st === 404 || st === 415 || st === 422) throw new AIFail('unsupported', 'The platform image model did not accept this picture. Use My Claude instead: it sends the picture and the prompt to your own Claude.');
+        throw new AIFail('unavailable', 'The image model could not be reached. Try again, or use My Claude.'); }
+      const text = r && r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content; const t = typeof text === 'string' ? text : Array.isArray(text) ? text.map(x => x && x.text || '').join('') : '';
+      if (!t) throw new AIFail('empty', 'The image model returned no text');
+      return { text: t, model: r.model || body.model, usage: r.usage ? { in: r.usage.prompt_tokens || r.usage.input_tokens, out: r.usage.completion_tokens || r.usage.output_tokens } : null };
+    }
+  };
+  const ADAPTERS = { deepseek, claude, vision };
 
   // ---------- provider choice ----------
   // asked: an explicit provider from the person (honoured exactly, or refused with a reason); otherwise the route for the
@@ -157,7 +178,8 @@ export function createAI(env) {
     const wantReady = await ADAPTERS[want].configured();
     for (const p of PROVIDERS) if (p !== want && await can(p)) return { provider: p, model: modelFor(cfg, p), explicit: false, cfg, why: 'capable', moved: wantReady ? { from: want } : null };
     const needImage = O.needs.includes('image');
-    throw new AIFail(needImage ? 'not_configured' : 'unavailable', needImage ? 'Reading images needs Claude, which reads images. Ask an admin to add the Claude key under Admin › AI provider. DeepSeek, the default provider here, reads text only.' : 'No AI provider is available.');
+    if (needImage && await can('vision')) return { provider: 'vision', model: DEFAULT_MODEL.vision, explicit: false, cfg, why: 'capable', moved: null };
+    throw new AIFail(needImage ? 'not_configured' : 'unavailable', needImage ? 'No image-reading model is available to the app right now (DeepSeek, the default here, reads text only). Use My Claude: it sends the picture and a ready-made prompt to your own Claude, using your existing subscription.' : 'No AI provider is available.');
   }
 
   /* generate: one model call with the shared rules.
@@ -229,5 +251,11 @@ export function createAI(env) {
   // when the Claude key goes away, nothing may keep pointing at Claude
   async function dropClaude(by) { const c = await config(); if (await claude.configured()) return; const routes = Object.fromEntries(Object.entries(c.routes).map(([g, v]) => [g, v === 'claude' ? 'default' : v])); await env.db.put('ai', 'cfg', { defaultProvider: 'deepseek', fallback: c.fallback, models: c.models, routes, by, at: now() }); }
 
-  return { choose, generate, generateJSON, status, config, saveConfig, dropClaude, usage, keySource, claudeKey, sealKey, masterKey, verifyClaude: k => claude.verify(k), adapters: ADAPTERS, names: NAMES, defaultModel: DEFAULT_MODEL };
+  // Admin check: does the platform accept a picture for the vision model? A solid red square is sent; the answer must say red.
+  async function visionProbe() { const RED = 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAFklEQVR4nGO4IyJCEmIY1TCqYfhqAAACcQQQFwFJQgAAAABJRU5ErkJggg=='; const t0 = Date.now();
+    if (!(await vision.configured())) return { ok: false, model: DEFAULT_MODEL.vision, message: 'The platform model list does not include ' + DEFAULT_MODEL.vision + ', so images cannot be read in the app. Use My Claude is the way to read pictures.' };
+    try { const out = await vision.generate({ system: 'Answer with one word.', messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: 'image/png', data: RED } }, { type: 'text', text: 'What colour is the square in this picture? One word.' }] }], maxTokens: 12, timeoutMs: 20000 });
+      const red = /red/i.test(out.text); return { ok: red, model: out.model, ms: Date.now() - t0, message: red ? 'The platform accepted a picture and described it correctly (' + out.model + '). "Read the diagram" can use it.' : 'The model answered, but not correctly ("' + String(out.text).slice(0, 40) + '"), so it cannot be trusted to read diagrams. Use My Claude.' };
+    } catch (e) { return { ok: false, model: DEFAULT_MODEL.vision, message: e instanceof AIFail ? e.message : 'The check failed' }; } }
+  return { visionProbe, choose, generate, generateJSON, status, config, saveConfig, dropClaude, usage, keySource, claudeKey, sealKey, masterKey, verifyClaude: k => claude.verify(k), adapters: ADAPTERS, names: NAMES, defaultModel: DEFAULT_MODEL };
 }

@@ -594,7 +594,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     if (j.nodes.length > 80 || j.edges.length > 160) dropped.push('the diagram was larger than 80 steps or 160 connections; the rest was left out');
     return { title: plain(j.title, 80), nodes, edges, dropped: [...new Set(dropped)], notes: plain(j.notes, 400) };
   }
-  const FLOW_PROMPT = `You read flowcharts and state flow diagrams from images and return their structure. Answer with JSON only, no prose, in exactly this shape:
+  const FLOW_PROMPT = `You read flowcharts and state flow diagrams from images and return their structure for Delivery Studio's Process Whiteboard. Analyse the uploaded diagram: identify every node (shape and label), every decision, and every connection with its arrow direction; work out the order of the flow, its branches and conditional paths (a decision's outgoing arrows carry their condition as the connection label); keep the relationships between components exactly as drawn, so the logical meaning of the diagram is preserved. Do not merge or reorder steps, and do not connect things the picture does not connect. Answer with JSON only, no prose, no markdown fence, in exactly this shape:
 {"title": string, "nodes": [{"id": "n1", "label": string, "kind": "start"|"end"|"state"|"process"|"decision", "confidence": "detected"|"inferred"|"uncertain"}],
  "edges": [{"from": "n1", "to": "n2", "label": string, "confidence": "detected"|"inferred"|"uncertain"}], "notes": string}
 Rules: copy labels exactly as written; "detected" means you can read it clearly, "inferred" means it is implied (for example an arrowhead you cannot see clearly),
@@ -615,6 +615,27 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     if (!graph.nodes.length) throw new HttpError(422, 'No flow steps could be read from this image');
     await audit(P.id, s.id, 'ai-flow-image', graph.nodes.length + ' steps via ' + out.provider);
     return ok({ graph, provider: out.provider, model: out.model });
+  });
+  // ---------- Process Whiteboard: describe a process in words and the AI builds it (the Miro-style AI box) ----------
+  // The person types what the process is. The model returns the steps and connections in the same shape as the image reader, and names which of THIS project's
+  // existing state flows (sent by the page as a short index) belong in it. Nothing is added to the board here: the page shows a review and the person decides.
+  const FLOWTXT_PROMPT = `You turn a plain-language description of a business process into a flow for Delivery Studio's Process Whiteboard. Use ONLY what the description says: do not invent steps, approvals, roles or conditions. Break it into short steps in order; mark a step "decision" when the description asks a question or branches, and put each branch's condition on the connection label ("Yes", "Rejected", ...). Keep the order and every branch as described; do not connect steps the description does not connect. If the description names or clearly refers to one of the EXISTING STATE FLOWS listed, add its id to "useFlows" (at most 6, ids exactly as listed) instead of re-drawing that flow's internal states; steps that connect those flows to each other still go in "nodes" and "edges". Answer with JSON only, no prose, no markdown fence, in exactly this shape:
+{"title": string, "nodes": [{"id": "n1", "label": string, "kind": "start"|"end"|"state"|"process"|"decision", "confidence": "detected"|"inferred"|"uncertain"}], "edges": [{"from": "n1", "to": "n2", "label": string, "confidence": "detected"|"inferred"|"uncertain"}], "useFlows": [string], "notes": string}
+Use "detected" for something the description states, "inferred" for something it only implies, "uncertain" for a guess. Short ids (n1, n2, ...). Put anything you could not place in "notes".`;
+  function flowIndex(arr) { const known = new Map(); (Array.isArray(arr) ? arr : []).slice(0, 80).forEach(f => { const id = plain(f && f.id, 120); if (id) known.set(id, { id, name: plain(f.name, 80), module: plain(f.moduleLabel || f.module, 60), states: (Array.isArray(f.states) ? f.states : []).slice(0, 16).map(x => plain(x, 40)).filter(Boolean) }); }); return known; }
+  const flowIndexText = known => (known.size ? [...known.values()].map(f => '- ' + f.id + ' | ' + f.module + ' · ' + f.name + (f.states.length ? ' | states: ' + f.states.join(', ') : '')).join('\n') : '(none)');
+  const validFlowText = known => raw => { const j = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {}; const g = validFlowGraph({ title: j.title, nodes: Array.isArray(j.nodes) ? j.nodes : [], edges: Array.isArray(j.edges) ? j.edges : [], notes: j.notes });
+    const use = (Array.isArray(j.useFlows) ? j.useFlows : []).map(x => plain(x, 120)).filter(x => known.has(x)); return Object.assign(g, { useFlows: [...new Set(use)].slice(0, 6).map(id => known.get(id)) }); };
+  route('POST', '/api/projects/:id/ai/flow-text', async (b, P) => {
+    const s = await me(); await projectAccess(s, P.id, 'edit'); const text = plain(b && b.text, 4000); const known = flowIndex(b && b.flows);
+    if (b && b.claudePack) { if (text.length < 10) throw new HttpError(400, 'Describe the process first'); return ok({ title: 'Process from a description', prompt: FLOWTXT_PROMPT + '\n\nEXISTING STATE FLOWS (id | module · name | states):\n' + flowIndexText(known) + '\n\nDESCRIPTION OF THE PROCESS:\n' + text + '\n\nReply with JSON only. If you would rather draw it, draw a clear flowchart image instead and say so: the team can import the image into the whiteboard.' }); }
+    if (b && b.reply) { const g = validFlowText(known)(jsonFrom(b.reply)); if (!g.nodes.length && !g.useFlows.length) throw new HttpError(422, 'No flow steps were found in the reply'); await audit(P.id, s.id, 'ai-flow-text', g.nodes.length + ' steps via Claude (manual)'); return ok({ graph: g, useFlows: g.useFlows, provider: 'Claude (manual)', model: 'claude.ai' }); }
+    if (text.length < 10) throw new HttpError(400, 'Describe the process in a sentence or two first');
+    await limit('ai', s.id);
+    const out = await aiJSON({ op: 'extract', provider: String(b && b.provider || ''), system: FLOWTXT_PROMPT, messages: [{ role: 'user', content: 'EXISTING STATE FLOWS (id | module · name | states):\n' + flowIndexText(known) + '\n\nDESCRIPTION OF THE PROCESS:\n' + text }], maxTokens: 2200, budget: 21000 }, validFlowText(known));
+    const g = out.data; if (!g.nodes.length && !g.useFlows.length) throw new HttpError(422, 'The AI found no process steps in that description. Add more detail and try again.');
+    await audit(P.id, s.id, 'ai-flow-text', g.nodes.length + ' steps, ' + g.useFlows.length + ' flows via ' + out.provider);
+    return ok({ graph: g, useFlows: g.useFlows, provider: out.provider, model: out.model });
   });
   // ---------- kick-off deck: read the team and the key facts out of the deck's text ----------
   // The page extracts the slide text (and table rows) from the uploaded .pptx or PDF and sends it here; the model returns JSON that is rebuilt
@@ -702,6 +723,7 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     } catch (e) { res.message = e instanceof HttpError ? e.message : 'The check failed'; }
     return ok(res);
   });
+  route('POST', '/api/admin/ai/probe-vision', async () => { const s = await requireAdmin('admin'); await limit('ai-admin', s.id); return ok(await AI.visionProbe()); });
   const KICK_PROMPT = 'You read the text of a Facilio implementation kick-off presentation and return ONLY a JSON object with these keys: '
     + '"facilioTeam": [{"name","role","email"}] (people from Facilio, the implementation vendor), "customerTeam": [{"name","role","email"}] (people from the customer organisation), '
     + '"cadence": one of "weekly","fortnightly","monthly","quarterly" or "" (steering / status meeting rhythm), "meetings": [strings] (governance meetings with their rhythm and attendees), '
