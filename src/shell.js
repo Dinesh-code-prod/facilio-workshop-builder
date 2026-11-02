@@ -456,6 +456,7 @@ function projectsHtml() {
       const r = bundle || await API.get('/api/projects/' + id); S.project = r.project; S.members = r.members || []; S.readonly = S.project.role === 'viewer' || S.project.role === 'customer';
       if (V.items) V.items.reset();
       await F.loadProjectDocs(id, wanted, bundle && bundle.docs);
+      if (V.keepRestore) V.keepRestore(id);   // put back what was typed before a sign-out (src/session.js)
       if (bundle && V.items && V.items.prime) V.items.prime(bundle.items, bundle.kinds);
       if (S.user.kind === 'consultant') {
         const p = S.ws.project; if (!p.client) p.client = S.project.customer; if (!p.consultant) p.consultant = S.user.name;
@@ -486,7 +487,7 @@ function projectsHtml() {
   V.refreshProjectMeta = async () => { const r = await API.get('/api/projects/' + S.project.id); S.project = r.project; S.members = r.members || []; render(); };
 
   root.FWBShell = {
-    sessionExpired() { if (mode === 'auth') return; if (V.office()) { location.reload(); return; } S.user = null; mode = 'auth'; authMsg = 'Your session has ended. Please sign in again.'; render(); },
+    sessionExpired(msg) { if (mode === 'auth') return; if (V.office()) { location.reload(); return; } S.user = null; mode = 'auth'; authMsg = msg || 'Your session has ended. Please sign in again.'; render(); },
     async conflict(section) {
       const ok = await confirmDialog('Changes conflict', `Someone else saved "${section}" while you were editing. Reload the latest version? Your unsaved changes in this section will be lost; other sections are kept.`, 'Reload latest');
       if (ok) await F.reloadSection(section);

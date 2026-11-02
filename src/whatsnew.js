@@ -6,6 +6,12 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '2.8.8', date: '2026-11-02', kind: 'UPDATE', title: 'Idle sign-out, nothing typed is lost, larger Claude answers', notes: [
+      'After 30 minutes without activity you are signed out of the app (a warning appears two minutes before). Unsaved changes are saved first, or kept in your browser.',
+      'If your session ends while you are typing, what you typed is kept for 24 hours. After you sign in and open the project again, unsaved changes to documents are put back and saved, and text from open forms is shown with a Copy button.',
+      'Answers sent back from Claude through the connector can now be as long as 2 MB (before, anything over about 100 KB was refused).',
+      'Final check report: docs/reports/qa-2026-11-02.md.'
+    ] },
     { v: '2.8.7', date: '2026-11-02', kind: 'UPDATE', title: 'Privacy and data, keyboard access, repository documents', notes: [
       'Help > Privacy & data: what is stored and who sees it, how long it is kept, cookies and browser storage, and the terms of use. You can download your data or ask for it to be deleted; the platform owner handles requests.',
       'Keyboard: a Skip to content link and a clear blue focus ring on every control, so you always see where you are when you use Tab.',

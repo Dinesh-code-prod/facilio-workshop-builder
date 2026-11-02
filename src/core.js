@@ -77,9 +77,9 @@
     if (!dirty.length) { saveState.status = 'saved'; paintSave(); return; }
     saveState.status = 'saving'; paintSave();
     for (const k of dirty) {
-      const d = S.docs[k]; d.dirty = false;
-      try { const r = await root.FWBApi.put(`/api/projects/${S.project.id}/docs/${k}`, { data: k === 'workshop' ? S.ws : d.data, baseVersion: d.version }); d.version = r.version; }
-      catch (e) { d.dirty = true; saveState.status = 'error'; saveState.error = e.message; saveState.conflict = e.status === 409 ? k : null; paintSave(); if (e.status !== 409) { clearTimeout(saveTimer); saveTimer = setTimeout(flush, 5000); } else if (root.FWBShell) root.FWBShell.conflict(k, e.data); return; }
+      const d = S.docs[k]; d.dirty = false; d.inflight = true;   // inflight: being saved right now (src/session.js keeps it if the save is refused because the session ended)
+      try { const r = await root.FWBApi.put(`/api/projects/${S.project.id}/docs/${k}`, { data: k === 'workshop' ? S.ws : d.data, baseVersion: d.version }); d.version = r.version; d.inflight = false; }
+      catch (e) { d.inflight = false; d.dirty = true; saveState.status = 'error'; saveState.error = e.message; saveState.conflict = e.status === 409 ? k : null; paintSave(); if (e.status !== 409) { clearTimeout(saveTimer); saveTimer = setTimeout(flush, 5000); } else if (root.FWBShell) root.FWBShell.conflict(k, e.data); return; }
     }
     saveState.status = Object.keys(S.docs).some(k => S.docs[k].dirty) ? 'dirty' : 'saved'; saveState.at = new Date(); saveState.error = null; saveState.conflict = null; paintSave();
   }

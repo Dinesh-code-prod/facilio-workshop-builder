@@ -48,7 +48,8 @@ Where the product stands, how it is delivered, and what is next. Earlier phase n
 |---|---|
 | Server and logic (mock platform) | `npm test` (work adapter, AI layer, portfolio, guide intelligence, org package, UAT, MSA, life cycle, Claude launch) |
 | Browser checks | `node tests/ui/<name>.mjs http://localhost:<port>` after `node build.mjs` and `node tests/ui/devserver.mjs <port>` (BRD editing, whiteboard align, workshops hubs, Claude hand-off, settings, project guide, intro on small windows and more) |
-| Load and scale | `npm run test:load`, `npm run test:scale` |
+| Load and scale | `npm run test:load`, `npm run test:scale`, `npm run test:qa` (100 people: notes, links, 3 MB documents, uploads, connector, large answers) |
+| Final check | The findings and what passed: [reports/qa-2026-11-02.md](reports/qa-2026-11-02.md). Run browser checks in Edge with `node --import ./tests/ui/use-edge.mjs tests/ui/<check>.mjs <url>` |
 | Exports | `npm run test:exports` |
 | Security | `npm run test:security`, `npm run test:csp` |
 

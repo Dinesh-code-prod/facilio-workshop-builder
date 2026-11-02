@@ -652,12 +652,12 @@ Use short ids (n1, n2, ...). Put anything you could not place in "notes".`;
     await audit(P.id, s.id, 'claude-handoff', pkg.task + ' · ' + pkg.title.slice(0, 60) + ' · ' + files.length + ' file(s)');
     return ok({ id, expires: exp, reference: u.url, files: files.length });
   });
-  async function hoGone(r) { try { await CTX.files.delete(r.pkg, { private: true }); } catch (e) { } try { await CTX.files.delete(r.res, { private: true }); } catch (e) { } try { await dbDel('ho', r.id); } catch (e) { } }
+  async function hoGone(r) { try { if (r.resFile) await CTX.files.delete(r.resFile, { private: true }); } catch (e) { } try { await CTX.files.delete(r.pkg, { private: true }); } catch (e) { } try { await CTX.files.delete(r.res, { private: true }); } catch (e) { } try { await dbDel('ho', r.id); } catch (e) { } }
   route('GET', '/api/projects/:id/handoff/:hid', async (b, P) => {
     const s = await me(); await projectAccess(s, P.id, 'edit'); const row = await dbGet('ho', P.hid); const r = row && row.value;
     if (!r || r.project !== P.id || r.user !== s.id) throw new HttpError(404, 'That hand-off was not found');   // another person's or another project's hand-off looks the same as a missing one
     if (Date.parse(r.exp) < Date.now()) { await hoGone(r); throw new HttpError(410, 'This hand-off has expired. Open Claude again from the page to make a new one.'); }
-    let text = r.result || ''; if (!text) { try { const g = await CTX.files.get(r.res, { private: true }); text = String(await g.text() || ''); } catch (e) { } }
+    let text = r.result || ''; if (!text && r.resFile) { try { const g = await CTX.files.get(r.resFile, { private: true }); text = String(await g.text() || ''); } catch (e) { } } if (!text) { try { const g = await CTX.files.get(r.res, { private: true }); text = String(await g.text() || ''); } catch (e) { } }
     return ok(text.trim() ? { status: 'done', result: text.slice(0, 2000000) } : { status: 'waiting', expires: r.exp });
   });
   route('DELETE', '/api/projects/:id/handoff/:hid', async (b, P) => { const s = await me(); await projectAccess(s, P.id, 'edit'); const row = await dbGet('ho', P.hid); const r = row && row.value; if (!r || r.project !== P.id || r.user !== s.id) throw new HttpError(404, 'That hand-off was not found'); await hoGone(r); await audit(P.id, s.id, 'claude-handoff-closed', P.hid.slice(0, 8)); return ok({ ok: true }); });
@@ -1313,7 +1313,9 @@ Example. Description: "Tenant logs a SR in the portal. Supervisor approves or re
       return { title: pkg.title, task: pkg.task, project: pkg.project, module: pkg.module, instructions: pkg.instructions, context: pkg.context, expectedAnswer: pkg.expect, documents: (pkg.files || []).filter(f => f.text).map(f => ({ name: f.name, text: String(f.text).slice(0, 60000) })), pictures: (pkg.files || []).filter(f => /^image\//.test(f.mime)).length, next: 'Do the task, then call submit_handoff_result with this id and your answer in the expected format.', expires: r.exp }; },
     async submit_handoff_result(s, b) { const id = String(b.id || ''); if (!/^[0-9a-f]{32}$/.test(id)) throw new HttpError(400, 'That hand-off id is not valid'); const text = String(b.result || ''); if (!text.trim()) throw new HttpError(400, 'The answer is empty'); if (text.length > 2000000) throw new HttpError(413, 'The answer is too large');
       const row = await dbGet('ho', id); const r = row && row.value; if (!r || r.user !== s.id) throw new HttpError(404, 'That hand-off was not found'); if (Date.parse(r.exp) < Date.now()) throw new HttpError(410, 'This hand-off has expired');
-      await dbPut('ho', id, Object.assign({}, r, { result: text })); await audit(r.project, s.id, 'claude-handoff-result', 'connector · ' + text.length + ' chars'); return { received: true, message: 'Delivery Studio has your answer. The person sees it as a preview and confirms it there; nothing is saved until then.' }; }
+      let keep = { result: text }; if (text.length > 60000) { const put = await CTX.files.put({ filename: 'handoff-' + id + '-answer.txt', body: text, content_type: 'text/plain', private: true }); keep = { result: '', resFile: put.file_id }; }   // a database value holds about 128 KB
+      if (r.resFile) { try { await CTX.files.delete(r.resFile, { private: true }); } catch (e) { } }
+      await dbPut('ho', id, Object.assign({}, r, { result: '', resFile: '' }, keep)); await audit(r.project, s.id, 'claude-handoff-result', 'connector · ' + text.length + ' chars'); return { received: true, message: 'Delivery Studio has your answer. The person sees it as a preview and confirms it there; nothing is saved until then.' }; }
   };
   route('POST', '/api/', async (b) => {
     const tool = String(HDR['x-work-mcp-tool'] || ''); const s = await me(); b = b || {};

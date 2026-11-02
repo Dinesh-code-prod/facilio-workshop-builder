@@ -18,6 +18,7 @@
     "test:taskboard": "node tests/ui/taskboard-check.mjs",
     "test:scale": "node tests/scale.mjs",
     "test:load": "node tests/load_ai.mjs",
+    "test:qa": "node tests/qa_stress.mjs",
     "test:welcome": "node tests/ui/welcome-check.mjs",
     "test:tree-motion": "node tests/ui/tree-slide.mjs http://localhost:4173 1440 full",
     "test:road-motion": "node tests/ui/road-smooth.mjs"
