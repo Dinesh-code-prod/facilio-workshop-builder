@@ -10,3 +10,4 @@ tests/ui/out-exports/
 tests/ui/.devdata.json
 release/
 *.exe
+tests/ui/.devdata*.json
