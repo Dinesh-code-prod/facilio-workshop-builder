@@ -1,4 +1,4 @@
-/* Discover more: scroll devices (src/explorefx.js). Facilio colours only; no glow. Motion is for people who have not asked for less of it. */
+/* Discover more: scroll devices (src/animation/explorefx.js). Facilio colours only; no glow. Motion is for people who have not asked for less of it. */
 body .dxfx-rail { position: sticky; top: 62px; z-index: 40; height: 3px; margin: 0 0 10px; background: rgba(21, 112, 239, .12); border-radius: 3px; overflow: hidden; }
 body .dxfx-rail i { display: block; height: 100%; background: #1570EF; transform-origin: left center; transform: scaleX(var(--k, 0)); }
 @media (prefers-reduced-motion: no-preference) {

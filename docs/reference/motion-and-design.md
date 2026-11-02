@@ -7,7 +7,7 @@
 - Figma connector: connected (account dinesh.r, team plan). No design file or FDS library link has been given yet.
 - FDS tokens: the kit only names alias tokens (`--colors-textMain`, `--colors-backgroundPrimaryDefault`, `--spacing-containerLarge`, `--border-large`, ...). Their VALUES are not in the kit, so none are defined in the app yet. The kit's literal hex values (#1570EF, #101828, #E4E7EC, #EEF4FF, #667085, #1D2939) differ from the app's current brand blue (#0a7aff).
 
-## Applied (src/motion.js + end of styles.css)
+## Applied (src/animation/motion.js + end of styles.css)
 | Kit id | Component in the app | Notes |
 |---|---|---|
 | intro | first 10 blocks of every page, project cards on the project list | plays on route change (and on a re-render within 0.9 s of it) |

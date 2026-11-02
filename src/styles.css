@@ -1763,7 +1763,7 @@ input[type=checkbox]:not([role=switch]):not(.sr):focus-visible { outline: 0; box
 .iso-intro { overflow-x: hidden; } .iso-intro .eco-core { max-width: min(320px, 38vh); margin-inline: auto; } .iso-intro .eco-core .eco-plat { max-height: 38vh; }
 [aria-busy="true"][data-act] { cursor: progress; opacity: .7; pointer-events: none; }
 
-/* opening page (src/intro.js): branding, one-line introduction, lifecycle strip, animated platform and ecosystem, Get started. Grid/flow layout, nothing absolutely positioned. */
+/* opening page (src/animation/intro.js): branding, one-line introduction, lifecycle strip, animated platform and ecosystem, Get started. Grid/flow layout, nothing absolutely positioned. */
 .intro.v6 { position: fixed; inset: 0; z-index: 9999; background: var(--surface-2, #F9FAFB); display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; transition: opacity .5s ease; }
 .intro.v6.out { opacity: 0; pointer-events: none; }
 .iv6-top { display: flex; align-items: center; gap: 10px; padding: 14px 24px; border-bottom: 1px solid var(--ws-line, #e6e2f2); background: #fff; flex: none; }
@@ -1777,7 +1777,7 @@ input[type=checkbox]:not([role=switch]):not(.sr):focus-visible { outline: 0; box
 .ribbon .grp { flex-wrap: wrap; max-width: 100%; }
 .intro.v6 { align-items: stretch; justify-content: flex-start; cursor: auto; z-index: 10000; }
 
-/* ===== Cinematic introduction (opening page and roadmap after sign-in): src/cinema.js ===== */
+/* ===== Cinematic introduction (opening page and roadmap after sign-in): src/animation/cinema.js ===== */
 body.cn-on { overflow: hidden; }
 .cn { --cn-c0: #1570EF; --cn-c1: #E5197F; --cn-c2: #2EC9C4; --cn-c3: #8DB8FF; position: fixed; inset: 0; z-index: 10000; color: #fff; font-family: Inter, Roboto, system-ui, sans-serif; overflow: hidden; background: linear-gradient(160deg, #1D1A5E 0%, #17154E 55%, #100E3C 100%); transition: opacity .6s ease, transform .6s ease; }
 .cn.out { opacity: 0; transform: scale(1.02); pointer-events: none; }
@@ -2482,7 +2482,7 @@ label.f, .lbl { font-weight: 600; color: var(--fx); }
 .crumb i { font-style: normal; color: #C5CCD8; } .crumb b { color: #0A36D8; font-weight: 600; } .crumb-p { color: #4B5565; font-weight: 500; }
 .crumb + .page .page-header { margin-top: 10px !important; }
 
-/* ---- Tree-growth introduction (src/treeintro.js). Scoped under .cn.ti; the classic intro styles are untouched. ---- */
+/* ---- Tree-growth introduction (src/animation/treeintro.js). Scoped under .cn.ti; the classic intro styles are untouched. ---- */
 .cn.ti{--navy:#1D1A5E;--deep:#0A0930;--blue:#1570EF;--sky:#8DB8FF;--pink:#E5197F;--teal:#2EC9C4;--ink:#F4F7FF;background:#0A0930;color:#F4F7FF;overflow:hidden;opacity:1;transition:opacity .6s}
 .cn.ti.out{opacity:0;pointer-events:none}
 .cn.ti .ti-liq{position:absolute;inset:0;width:100%;height:100%;z-index:60;pointer-events:none}
@@ -2735,7 +2735,7 @@ body .page-header .btn:not(.primary):not(.ghost):not(.link):not(.danger):not(.rg
 body .page-header .btn.ghost, body .page-header .btn.link { background: transparent !important; border-color: transparent !important; color: #475467 !important; }
 body .page-header .btn.danger { background: #fff !important; color: #B42318 !important; border: 1px solid #FDA29B !important; }
 
-/* ===== Sign-in illustration: four-scene delivery story (src/loginstory.js). Resting state = finished picture; animations only play under .ls.run ===== */
+/* ===== Sign-in illustration: four-scene delivery story (src/animation/loginstory.js). Resting state = finished picture; animations only play under .ls.run ===== */
 .av-iso .ls { position: relative; width: min(100%, 720px, calc((100vh - 350px) * 1.19)); aspect-ratio: 100 / 84; container-type: inline-size; margin: 0; overflow: visible; font-family: var(--font, Roboto, system-ui, sans-serif); }
 .ls > * { position: absolute; } .ls * { box-sizing: border-box; }
 .ls-plat { left: 22cqw; top: 12cqw; width: 56cqw; } .ls-plat svg { display: block; width: 100%; height: auto; }
@@ -2938,11 +2938,11 @@ body .pp-journey { background: linear-gradient(180deg, #F3F7FF, #fff 70%) !impor
 @keyframes mcIn { from { opacity: 0; transform: translateY(1.6cqw) scale(.94); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .ls-mod { display: none; } }
 
-/* ---- Road intro (src/roadintro.js): customer introduction shown before the customer sign-in. Everything is scoped under .ri. ---- */
+/* ---- Road intro (src/animation/roadintro.js): customer introduction shown before the customer sign-in. Everything is scoped under .ri. ---- */
 .ri { --ri-night: #0A0930; --ri-navy: #1D1A5E; --ri-blue: #1570EF; --ri-sky: #8DB8FF; --ri-teal: #2EC9C4; --ri-pink: #E5197F; --ri-ink: #F4F7FF; --ri-soft: rgba(220, 230, 255, .8);
   position: fixed; inset: 0; z-index: 10000; overflow: hidden; background: var(--ri-night); color: var(--ri-ink); font-family: Inter, Roboto, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
   -webkit-font-smoothing: antialiased; transform: translate3d(0, 0, 0); opacity: 1; }
-/* the exit (drawn in src/roadintro.js): while lifting, the layer's own background is removed so only the rising elements cover the sign-in page beneath */
+/* the exit (drawn in src/animation/roadintro.js): while lifting, the layer's own background is removed so only the rising elements cover the sign-in page beneath */
 .ri.lifting { background: transparent; pointer-events: none; }
 .ri.lifting .ri-cap, .ri.lifting .ri-open { transition: none; opacity: 0; }
 .ri.fade { opacity: 0; pointer-events: none; transition: opacity 320ms linear; }
@@ -3010,7 +3010,7 @@ body .pp-journey { background: linear-gradient(180deg, #F3F7FF, #fff 70%) !impor
 @media (prefers-reduced-motion: reduce) { .ri .ri-cap, .ri .ri-chip, .ri .ri-end, .ri .ri-open, .ri .ri-route span, .ri .ri-route i { transition: none; } }
 /* ---- end road intro ---- */
 
-/* ===== Sign-in stories (src/loginstory.js): canvas behind the left column, Facilio colours. Replaces the earlier .ls CSS story. ===== */
+/* ===== Sign-in stories (src/animation/loginstory.js): canvas behind the left column, Facilio colours. Replaces the earlier .ls CSS story. ===== */
 .auth-art .auth-brand { position: relative; z-index: 2; }
 .lsx-eb { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #8DB8FF; font-weight: 700; }
 .lsx-eb::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #E5197F; }

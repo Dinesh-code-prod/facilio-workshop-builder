@@ -104,7 +104,7 @@ New sidebar entry **Contract & Workshop Planning** (`src/msaflow.js`), six steps
 
 ## #24 Facilio-style sign-in page and opening animation
 - Sign-in page restyled (dark navy panel, wordmark, headline, skyline illustration, rounded white card). Sign-in methods are unchanged: guest access, email and password, create account, customer access. No Apple, Google or Microsoft buttons.
-- Opening screen (`src/intro.js`): plays `public/brand/intro.mp4` (logo wipe), then tagline, loading line and drifting brand squares, then wipes up to the sign-in page. Once per browser session; skipped for reduced-motion and automated browsers (`?intro=1` forces it, `?nointro` disables it). Falls back to an animated still logo if the video cannot play.
+- Opening screen (`src/animation/intro.js`): plays `public/brand/intro.mp4` (logo wipe), then tagline, loading line and drifting brand squares, then wipes up to the sign-in page. Once per browser session; skipped for reduced-motion and automated browsers (`?intro=1` forces it, `?nointro` disables it). Falls back to an animated still logo if the video cannot play.
 
 ## #25 UX polish, sign-out, AI-FM style animation
 - Sidebar footer **Sign out** button (works in no-login mode too: shows the sign-in page, with "Continue to the office workspace" to go back).
@@ -196,7 +196,7 @@ brddoc.list registers BRDs (main plus typed BRDs: core, service desk, ERP, agent
 - Tests: 10 server checks pass; verified live (describe a module, add a relationship, package previews 12 relationships and 17 apps, 38 checks); test records removed.
 
 ## 45. Motion Kit, FDS tokens and phase 7 (24 Oct)
-- Motion Kit (docs/motionkit/animations.json; llms.txt/map.html/components.html read from fds-motion-kit.facilio.run): `src/motion.js` applies kit ids intro, list, drawer, modal. See docs/reference/motion-and-design.md.
+- Motion Kit (docs/motionkit/animations.json; llms.txt/map.html/components.html read from fds-motion-kit.facilio.run): `src/animation/motion.js` applies kit ids intro, list, drawer, modal. See docs/reference/motion-and-design.md.
 - FDS: 13 values verified from the kit gallery (text, border, link/primary #1570EF) now drive the app's variables (end of styles.css); old brand blues #0a7aff / #0a5fe8 replaced by #1570EF. Other FDS aliases (backgrounds, spacing) have no published values yet.
 - icons.facilio.run is an icon catalogue (static SVG at icons.facilio.com, 10 animated Lottie), not an animator.
 - Phase 7 (partial): `src/traceability.js` — Traceability & Quality view (requirement → use case → module → build → UAT matrix with CSV export; completeness checks; lessons learned, kind `lesson`, also a source for the handover AI task). Verified live.
@@ -212,7 +212,7 @@ Server `GET /api/knowledge` returns only lessons marked reusable from projects t
 User Guide Builder: created a guide, added a section, exported Word (10.8 KB) and PDF (19 KB), approval flow not exercised. Video to Guide: generated 3-second test video, loaded it, captured 2 frames, saved 2 screenshots + 2 transcript lines, AI draft returned grounded steps with the frame tags and listed missing information. All test records and uploaded frames were deleted.
 
 ## 49. Customer Introduction (24 Oct)
-`src/custintro.js` (Administration): optional customer-safe introduction (welcome, objectives, modules in scope, 12-stage roadmap with recorded status, approved guide titles) with tick-to-include, live preview and export as one standalone HTML file. facilio.work only admits Facilio staff, so customers receive the exported file. Stored as project section `custintro`. Verified live (export 3.4 KB, no internal content).
+`src/animation/custintro.js` (Administration): optional customer-safe introduction (welcome, objectives, modules in scope, 12-stage roadmap with recorded status, approved guide titles) with tick-to-include, live preview and export as one standalone HTML file. facilio.work only admits Facilio staff, so customers receive the exported file. Stored as project section `custintro`. Verified live (export 3.4 KB, no internal content).
 
 ## 50. Template version comparison (24 Oct)
 Templates drawer: "compare with v(n-1)" shows a line diff of two versions (added/removed lines). Verified live with a temporary template (removed).
@@ -237,14 +237,14 @@ Templates drawer: "compare with v(n-1)" shows a line diff of two versions (added
 
 ## 53. Opening page, ecosystem animation, rename, write lock (build 39)
 - App renamed to facilio-delivery-studio (https://facilio-delivery-studio.facilio.work).
-- New opening page (src/intro.js, `.intro.v6`): branding, one-line intro, 12-stage lifecycle strip, isometric book + 8-module SaaS ecosystem + AI strip, Get started. Checked live at phone width: 8 panels, 0 overlaps, Get started closes it and reaches the welcome screen.
+- New opening page (src/animation/intro.js, `.intro.v6`): branding, one-line intro, 12-stage lifecycle strip, isometric book + 8-module SaaS ecosystem + AI strip, Get started. Checked live at phone width: 8 panels, 0 overlaps, Get started closes it and reaches the welcome screen.
 - Same ecosystem stage on login / invitation / roadmap intro (src/ecosystem.js).
 - Per-record write lock on the server (withLock) plus concurrency test; rapid-click guard in the dispatcher.
 - Customer preview (read-only) for consultants (src/custpreview.js).
 - Not verified: real guest/customer sign-in (impossible on facilio.work), cross-instance write races, reduced-motion in a browser.
 
 ## 54. Builds 40-44 (cinema, Lottie, home, admin theme, Outlook, AI providers)
-- Cinematic opening and post-login roadmap (src/cinema.js), original Lottie illustrations (tools/make-lottie.mjs, tools/make-scenes.mjs), isometric journey moved to the Project Roadmap page.
+- Cinematic opening and post-login roadmap (src/animation/cinema.js), original Lottie illustrations (tools/make-lottie.mjs, tools/make-scenes.mjs), isometric journey moved to the Project Roadmap page.
 - Home redesigned (wider layout, projects first, Facilio-styled search); Admin themed in every tab; control consistency (fonts, backgrounds, heights).
 - Get started now sweeps three brand panels, then the sign-in page assembles. Journey scene rebuilt: tilt-in cards, a spotlight walks card to card with a one-line description, connectors fill.
 - Outlook (docs/reference/outlook-feasibility.md): a native inbox is NOT available (no per-user Graph token on facilio.work). Built Compose in Outlook and Open Outlook (src/outlook.js) on the weekly digest and reports; existing mailto/.eml/copy kept; never sends.
@@ -293,7 +293,7 @@ Branch `delivery-studio-lifecycle-whiteboard`, based on `project-inbox-wip` (mai
 - Follow-up (27 Oct): Explore Facilio interest requests now post a Teams notice to the channel set under Tickets › Support mailbox (same switch as client-email notices) and send a direct message to the project owners (members only). Only new requests notify; updates do not. Email notices are not possible (the mailbox connection is read-only). Server test extended; `showcase-check` 17/17 with the local Teams stand-in (`FAKE_GRAPH=1`), 16/16 without.
 
 ## 59. Phase 5b finished: relationship diagram, configuration reuse in training and handover, task board fixes (31 Oct 2026)
-Branch `claude/sweet-babbage-nteyrw`, based on `main`. Not merged or deployed. `src/homeclay.css`, `src/loginstory.js`, `src/polish.css` and `build.mjs` are untouched (the owner has local changes there); no new source file, so nothing new to register.
+Branch `claude/sweet-babbage-nteyrw`, based on `main`. Not merged or deployed. `src/homeclay.css`, `src/animation/loginstory.js`, `src/polish.css` and `build.mjs` are untouched (the owner has local changes there); no new source file, so nothing new to register.
 - Check before building: there was no relationship diagram (the whiteboard only colours connectors from `cfgrel`). The user guide already reused the inputs (User Guide Builder "from configuration" and guided drafting), and every AI task already lists `cmodx`, `cfgrel`, `capp`, including `training` and `handover`. The gap was outside the AI drafts: the Handover & Closure page and the Guides & Video Studio briefs did not read the three registers.
 - Relationship diagram (roadmap P3), Configuration Inputs › Module relationships, under the table. Read only, drawn from the `cfgrel` records with the existing diagram helper (`FWBDiagrams.flowSvg`, State Flow Builder look). Each line carries the type (Creates, Parent / child, Lookup, Triggers, Depends on, Other) and its status: solid = confirmed, dashed = manual or imported and not confirmed, dashed teal with ◆ = from the package and not confirmed. Tooltips give both modules, type, status, trigger and expected outcome. Modules not in the package, the workshop modules or the custom module list get an orange dashed box and a notice; rows with an empty From or To are counted and left out, not drawn. An empty register shows a message. The drawing is cropped to its content, scrolls inside its own box (the page does not scroll sideways at 390 px) and has a text list for small screens and screen readers. No editing handles; no record is changed.
 - Training reuse (roadmap "Role-based path"): the Guides & Video Studio shows what Configuration Inputs records for the chosen module (purpose, who can do what, app tabs, relationships). Walkthrough, video and step-guide briefs carry the same lines, with unconfirmed relationships marked "[proposed, to confirm]". The Training outline option shows the role-based path (which tabs each role sees and what each does, plus tabs with no role recorded) with a copy button. It still uses the existing `training` AI task.

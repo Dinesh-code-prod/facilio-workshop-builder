@@ -1,4 +1,4 @@
-/* "See how Delivery Studio helps": plays the road-to-go-live journey (src/roadintro.js, V.roadIntro) over the sign-in page.
+/* "See how Delivery Studio helps": plays the road-to-go-live journey (src/animation/roadintro.js, V.roadIntro) over the sign-in page.
    The same highlighted button sits on the Facilio team sign-in and on the customer invitation sign-in (#/c/<project>), and #/welcome opens it directly
    (a link that can be shared). On a customer invitation link the address is left alone, so the customer stays on their own sign-in afterwards.
    When the journey ends or is skipped it leaves through the shared liquid reveal and the sign-in page underneath is ready to use.

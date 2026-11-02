@@ -219,7 +219,7 @@
       leaves.forEach((L, i) => { L.ix = i; });
       let ECOST = 0, EDT = 0; let W = 0, H = 0, DPR = 1, FIT = 1, QCAP = 1.5, QTIER = 0, slow = 0, WIDE = true, LR = 0, RT = 58, RB = 0, BL = 0, IDLE = 0;
       function resize() {
-        W = o.clientWidth; H = o.clientHeight; DPR = Math.min(QCAP, window.devicePixelRatio || 1); DPR = Math.max(.6, Math.min(DPR, Math.sqrt(1500000 / Math.max(1, W * H)))); /* pixel budget: a wide screen never draws more than about 1.5M pixels per frame, which keeps the intro smooth on ordinary GPUs */ cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+        W = o.clientWidth; H = o.clientHeight; DPR = Math.min(QCAP, window.devicePixelRatio || 1); DPR = Math.max(.6, Math.min(DPR, Math.sqrt(2700000 / Math.max(1, W * H)))); /* pixel budget: a wide screen never draws more than about 2.7M pixels per frame (full resolution at 1080p, so the trees stay sharp); the quality tiers step down if frames run slow */ cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
         WIDE = W >= 900 && W / H > 1.15; o.classList.toggle('narrow', !WIDE);
         RT = 58;
         RT = WIDE ? 112 : 150; LR = 0;
@@ -643,7 +643,7 @@
       }
       /* The leaves open the page: every leaf swells (rim in its own colour) and erases the night scene inside itself, so the sign-in page shows through the leaves
          and the merged leaves become the whole screen. Subset of leaves + a final widening ring guarantee full coverage. */
-      const LDUR = 1.9, LEND = 3.0;
+      const LDUR = 1.9, LEND = 3.0; let SHS = 1, SHC = 0;
       let cv2 = null, g2 = null;
       function ensureCv2() {
         if (!cv2) { cv2 = doc.createElement('canvas'); cv2.className = 'ti-sh'; cv2.setAttribute('aria-hidden', 'true'); cv.after(cv2); g2 = cv2.getContext('2d'); }
@@ -664,7 +664,7 @@
           g.fillStyle = gr; g.fillRect(0, 0, W2, H2); g.restore();
         }
         for (const L of leaves) {
-          const q = L.sh; if (!q || L.ix % LSTEP[QTIER]) continue; const dk = LO - q.d, p = clamp(dk / LDUR);
+          const q = L.sh; if (!q || L.ix % LSTEP[QTIER]) continue; const dk = LO - q.d, p = clamp(dk / LDUR); if (SHS > 1 && p > .4 && L.ix % SHS) continue;   // fading leaves are thinned when frames run slow
           const zs = L.size / 56 * LGK[QTIER]; let th = L.ang + Math.sin(ta * 1.3 + L.ph) * .05, lx = L.x + SK * L.y, ly = L.y, al = .9, kx = zs, ky = zs;
           if (dk > 0) {
             const e = p * p * (3 - 2 * p), w = WIND * Math.pow(dk, 1.25);   // eased in and out: leaves lift gently, glide, then settle; one shared breeze carries them all the same way
@@ -840,6 +840,7 @@
            at stage 1 can drop frames at stage 7 (the stutter as stages appear). Both the drawing cost and the real frame interval are tracked as
            running averages; when either stays over budget the next quality tier is used (fewer leaf sprites drawn, slightly larger, then a lower
            canvas scale). Tiers only ever go down during one intro, so the picture never flips back and forth. */
+        if (LO >= 0) { SHC = SHC * .85 + cost * .15; SHS = SHC > 12 ? 3 : SHC > 8 ? 2 : 1; }
         if (LO < 0 && T > .3 && QTIER < QT.length - 1) { ECOST = ECOST ? ECOST * .9 + cost * .1 : cost; EDT = EDT ? EDT * .9 + dt * 1000 * .1 : dt * 1000;
           slow = ECOST > 9 || EDT > 21 ? slow + 1 : Math.max(0, slow - 2);
           if (slow > 20) { QTIER++; slow = 0; ECOST = 0; EDT = 0; if (QT[QTIER] < QCAP) { QCAP = QT[QTIER]; resize(); } } }

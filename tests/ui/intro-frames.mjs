@@ -1,4 +1,4 @@
-// Frame-pacing check for the opening tree animation (src/treeintro.js), from start until "Get started" shows.
+// Frame-pacing check for the opening tree animation (src/animation/treeintro.js), from start until "Get started" shows.
 // Records every animation frame: real time, the intro's own timeline position, canvas size changes and long frames,
 // then reports what a viewer perceives as stutter: frames over 50 ms, jumps in the timeline, sudden speed changes and canvas
 // re-allocations. Usage: node tests/ui/intro-frames.mjs [baseUrl] [cpuSlowdown]

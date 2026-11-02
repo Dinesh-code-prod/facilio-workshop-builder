@@ -16,7 +16,7 @@ The six documents in [docs/](docs/README.md), in order:
 ## Repository map
 | Path | What it is |
 |---|---|
-| `src/` | The front end: plain JavaScript views and CSS, bundled by `build.mjs` |
+| `src/` | The front end: plain JavaScript views and CSS, bundled by `build.mjs`. `src/animation/` holds every opening and scroll animation (tree intro, road intro, sign-in story, Discover more effects) |
 | `work/server/api.mjs` | The one server function (`_ai.mjs` AI providers, `_portfolio.mjs` admin health); `work/work.json` lists the connector tools; `work/src/workapi.js` is the page-to-server link |
 | `data/` | Sanitised reference configuration written into the build |
 | `public/` | Static files copied into the site (brand, demo screens, skills ZIPs) |
