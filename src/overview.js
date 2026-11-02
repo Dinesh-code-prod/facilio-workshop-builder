@@ -27,7 +27,7 @@
 
   // timeline filter for the project overview: narrows the session, requirement and activity figures to a period; PDF exports what is shown
   const OV = () => (S.ui.ovr = S.ui.ovr || { period: 'all' });
-  V.range.hooks.ov = { state: OV, change: () => V.render(), pdf: () => { const el = document.querySelector('.page-body'); V.range.pdf({ title: (S.project.name || 'Project') + ' · Overview', sub: S.project.customer + ' · Timeline: ' + V.range.label(OV()), html: el ? el.innerHTML : '' }); } };
+  V.range.hooks.ov = { state: OV, change: () => V.render(), pdf: () => { const el = document.querySelector('.page-body'); if (el) { V.range.printLive(el, (S.project.name || 'Project') + ' · Overview'); return; } V.range.pdf({ title: (S.project.name || 'Project') + ' · Overview', sub: S.project.customer + ' · Timeline: ' + V.range.label(OV()), html: el ? el.innerHTML : '' }); } };
   V.overview = { html() {
     const p = S.project; const sp = V.range.span(OV()), inR = d => V.range.inRange(d, sp), RG = sp[0] || sp[1]; const ppl = F.doc('people'); const ins = F.allModules().filter(m => m.inScope); const ses = (F.doc('planner').sessions || []).filter(s => !RG || inR(s.date)).slice().sort((a, b) => (a.date || '9').localeCompare(b.date || '9') || a.no - b.no);
     const r = V.brdReadiness ? V.brdReadiness() : { blocking: 0, warning: 0 }; const reqs = S.ws.requirements.filter(x => !RG || inR(x.created)); const done = ins.filter(m => ['completed', 'reviewed_no_change', 'reviewed_changes'].includes(V.moduleStatus(m.name))).length;

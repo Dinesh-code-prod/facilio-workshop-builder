@@ -37,6 +37,8 @@ Last updated: 1 Nov 2026, personal account, local session. Everything below is p
 
 - Page guides (2 Nov 2026): src/pageguide.js (V.pageGuide, V.aiPanel, V.trainTop), src/tracequal.css, Traceability & Quality rewrite, UAT/Go-live sub-tabs in src/delivery.js. BRD sections now fail one at a time (src/brd.js, src/brdview.js). Not done: DeepSeek script for videos (videos still go through the brief and Claude); the live BRD error was not reproduced locally.
 
+- 2 Nov 2026 (deploy 113): BRD crash fixed (self-loop connector, src/whiteboard.js edgePts), Configuration Hub + nav order, admin clone/delete/integrations/prefetch, printLive PDF. NOT done: phase-by-phase team dashboards with widgets and flow diagrams (kick-off to closure); admin UI redesign to match the team theme (only integrations and project actions changed); DeepSeek script for videos.
+
 ## Next steps, in order
 1. The user checks the live app after deploy 90 (sign-in skyline, admin tabs, Facilio screens, Status Reports button, one AI action).
 2. Otto (the facilio.work Teams bot): build project-aware tools in `work/server/api.mjs` and `work/work.json`: my projects, who is on a project's team, my tasks, overdue, project status (counts), a "current project" setting, and add/update task with `confirm: true`. Scope every tool to projects the person is a member of, even for admins (today `editableProjects` lets admins see all).

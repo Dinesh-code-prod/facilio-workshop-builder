@@ -56,5 +56,16 @@
     const go = () => { try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch (e) { V.toast && V.toast('Could not open the print dialog: ' + e.message, 4000, true); } setTimeout(() => fr.remove(), 60000); };
     let fired = false; const once = () => { if (fired) return; fired = true; setTimeout(go, 350); }; fr.onload = once; setTimeout(once, 1800);
   }
-  V.range = { PERIODS, span, inRange, label, bar, pdf, hooks };
+  // Print the page exactly as it is on screen: everything else is hidden for the print, the page's own scroll boxes are opened up, and nothing is copied
+  // into a separate document (the old copy lost the page's layout, so tiles and charts came out uneven). The browser's "Save as PDF" makes the file.
+  function printLive(el, title) {
+    if (!el) return; const kept = [];
+    for (let n = el.parentElement; n && n !== document.documentElement; n = n.parentElement) { kept.push([n, n.getAttribute('style')]); n.style.setProperty('overflow', 'visible', 'important'); n.style.setProperty('height', 'auto', 'important'); n.style.setProperty('max-height', 'none', 'important'); n.style.setProperty('transform', 'none', 'important'); }
+    const st = document.createElement('style');
+    st.textContent = '@page{size:A4 landscape;margin:8mm}@media print{body.is-printing *{visibility:hidden!important}body.is-printing .print-root,body.is-printing .print-root *{visibility:visible!important}body.is-printing .print-root{position:absolute!important;left:0!important;top:0!important;width:100%!important;margin:0!important;padding:0 6px!important}body.is-printing{background:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}body.is-printing .print-root .rgbar,body.is-printing .print-root .dtabs,body.is-printing .print-root .adm-hero-a,body.is-printing .print-root .no-print{display:none!important}body.is-printing .print-root .si-item,body.is-printing .print-root .ll-row{opacity:1!important;transform:none!important}body.is-printing .print-root .kpi,body.is-printing .print-root .adm-card,body.is-printing .print-root .card,body.is-printing .print-root .bn-t{break-inside:avoid}}';
+    const prev = document.title; document.title = title || prev; document.body.classList.add('is-printing'); el.classList.add('print-root'); document.head.appendChild(st);
+    const done = () => { window.removeEventListener('afterprint', done); document.title = prev; document.body.classList.remove('is-printing'); el.classList.remove('print-root'); st.remove(); kept.forEach(([n, s]) => { if (s == null) n.removeAttribute('style'); else n.setAttribute('style', s); }); };
+    window.addEventListener('afterprint', done); setTimeout(() => { try { window.print(); } catch (e) { done(); } }, 200);
+  }
+  V.range = { PERIODS, span, inRange, label, bar, pdf, printLive, hooks };
 })(typeof window !== 'undefined' ? window : globalThis);

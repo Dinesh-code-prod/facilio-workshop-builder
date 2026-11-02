@@ -9,8 +9,8 @@
 
   // key: [what it is for, steps, what comes next]
   const PG = {
-    cfginputs: ['Where you write down what is special about this customer\'s setup. The AI and the documents read it, so what you write here makes the guides, test plans and handover more accurate.',
-      ['Custom modules: describe each module that is not standard Facilio, in a few words.', 'Module relationships: say how modules connect (for example a work order creates a purchase request).', 'Connected apps and tabs: list the apps and the tabs each role sees.', 'Checks: fix anything flagged as unclear or missing.', 'Then use the Draft documents panel to turn it into a guide, UAT plan, training outline or handover.'], 'Next: Training & Guides and UAT use these inputs.'],
+    cfginputs: ['The Configuration Hub keeps everything configured for this customer in one place, and is the last step before the BRD. What you write here also feeds guides, test plans and handover.',
+      ['Overview: see system modules, custom modules, relationships, connected apps and what still needs work.', 'Modules: describe each custom module in a few words. System modules are listed so nothing is missed.', 'Module relationships: say how modules connect (for example a work order creates a purchase request).', 'Connected apps and tabs: list the apps and the tabs each role sees.', 'Checks: fix anything flagged as unclear or missing.', 'Then use the Draft documents panel to turn it into a guide, UAT plan, training outline or handover.'], 'Next: write the BRD Draft. Training & Guides and UAT use the same inputs.'],
     vstudio: ['Plan and brief a user guide, training outline or video for one module. It reads the configuration, the BRD draft, Configuration Inputs and the org package, so the story matches what was built.',
       ['Check the sources panel: BRD, Configuration Inputs, org package and logos.', 'Pick the module, what to make, who it is for, and the length.', 'Review what the project knows, then draft with DeepSeek, or open it in Claude for a polished result.', 'Bring the reply back and review it before it is used.'], 'Next: write the full written guide in the User Guide Builder.'],
     guidebuilder: ['Write the customer\'s written guide, section by section, from the project\'s records. You review every section before it counts.',
@@ -53,7 +53,7 @@
     const can = !V.isCustomer() && !S.readonly;
     return `<div class="card tp-srcs"><div class="card-h"><h3>What the drafts read</h3><span class="small muted">The more of these are filled in, the closer the guide or video is to your customer\'s real setup.</span></div><div class="tp-grid">
       ${item(brd === 'signed', 'BRD draft', brd === 'signed' ? 'Signed off. The guide follows the agreed requirements.' : 'Not signed off yet. Drafts will mark anything unconfirmed.', '<button class="btn sm" data-act="nav" data-view="brd">Open BRD</button>')}
-      ${item(n ? n.mods + n.rels + n.apps > 0 : false, 'Configuration Inputs', n ? (n.mods + n.rels + n.apps) + ' custom module, relationship and app records.' : 'Custom modules, relationships and apps with their tabs.', '<button class="btn sm" data-act="nav" data-view="cfginputs">Open</button>')}
+      ${item(n ? n.mods + n.rels + n.apps > 0 : false, 'Configuration Hub', n ? (n.mods + n.rels + n.apps) + ' custom module, relationship and app records.' : 'Custom modules, relationships and apps with their tabs.', '<button class="btn sm" data-act="nav" data-view="cfginputs">Open</button>')}
       ${item(nmod > 0 && cf.source === 'imported', 'Org package', cf.source === 'imported' ? 'Loaded: ' + esc((cf.importedMeta || {}).sourceName || 'package') + ' (' + nmod + ' modules). The AI can see the real flows.' : 'Using the reference setup. Load the customer\'s own package so the flows match their organisation.', can ? '<button class="btn sm" data-act="importConfig">Load org package (.zip)</button>' : '')}
       ${item(lg.facilio && lg.customer, 'Logos', (lg.facilio ? 'Facilio logo added. ' : 'Facilio logo missing. ') + (lg.customer ? 'Customer logo added.' : 'Customer logo missing.') + ' Used on the cover and header of exported guides.', can ? '<button class="btn sm" data-act="brdLogos">Add logos</button>' : '')}</div></div>`;
   }
@@ -61,6 +61,9 @@
 
   // put the strips at the top of the page body without touching each page's own code
   const wrap = (name, key, fn) => { const o = V[name]; if (!o || !o.html || o._pg) return; const h = o.html; o._pg = 1; o.html = function () { const out = h.apply(this, arguments); const add = fn(); return typeof out === 'string' && add ? out.replace('<div class="page-body">', () => '<div class="page-body">' + add) : out; }; };
+  // the team project dashboard had no export: a bar above it prints the whole page as it looks
+  ACT.pdPrint = () => V.range.printLive(document.querySelector('.page-body'), ((S.project && S.project.name) || 'Project') + ' · Dashboard');
+  wrap('projdash', 'projdash', () => (V.isCustomer() ? '' : '<div class="row no-print" style="justify-content:flex-end;margin:0 0 10px"><button class="btn sm" data-act="pdPrint" title="Print the whole dashboard, or save it as a PDF">Export dashboard as PDF</button></div>'));
   const train = k => () => V.pageGuide(k) + V.trainTop(k);
   wrap('vstudio', 'vstudio', train('vstudio')); wrap('guidebuilder', 'guidebuilder', train('guidebuilder')); wrap('vidguide', 'vidguide', train('vidguide')); wrap('resources', 'resources', train('resources'));
   wrap('cfginputs', 'cfginputs', () => V.pageGuide('cfginputs')); wrap('agenttest', 'agenttest', () => V.pageGuide('agenttest')); wrap('ftr', 'ftr', () => V.pageGuide('ftr')); wrap('kpi', 'kpi', () => V.pageGuide('kpi'));

@@ -6,6 +6,11 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '2.8.1', date: '2026-11-02', kind: 'UPDATE', title: 'BRD fix, Configuration Hub, admin clone and delete, PDF export', notes: [
+      'BRD Draft: fixed a crash that blanked the page when a combined flow contained a state with a transition back to itself (for example Inactive to Inactive).',
+      'Solution Design & Configuration now follows the working order: build the solution, set up access, alerts and data, record all configuration in the Configuration Hub, then write the BRD last. Configuration Inputs became the Configuration Hub: an overview of system modules, custom modules, relationships and connected apps. Templates, documents and tools held as modules in the Facilio org (PDF templates, VBA files, the BRD document) are listed apart and left out of the checks.',
+      'Admin: Clone project and Delete for good (platform owner only, archived projects only, name typed to confirm). The Integrations page now lists every connection with what it is for, who needs it and its status. Sections open at once because their data is fetched quietly after the first screen.',
+      'Export PDF on the admin dashboard and project overview now prints the page exactly as shown. The project dashboard has an Export dashboard as PDF button.'] },
     { v: '2.8.0', date: '2026-11-02', kind: 'UPDATE', title: 'Clearer pages: Traceability & Quality, AI panels, Training & Guides, UAT & Go-live', notes: [
       'Traceability & Quality now starts with what it is for. It follows each requirement through use cases, module, build and testing, lists the gaps with why they matter and where to fix them (Open button), and keeps the lessons learned. It moved to Project control and shows a count in the menu.',
       'Rows of blue AI, Open in Claude and Add from Claude buttons are now one panel that explains the three ways to draft a document (Configuration Inputs, UAT, Go-live, Training and Guides).',

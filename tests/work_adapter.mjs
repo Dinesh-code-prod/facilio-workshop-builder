@@ -395,6 +395,19 @@ await t('authorization matrix: cross-project ids, viewers, sub-admins, privilege
   r = await call(subby, 'POST', '/api/admin/ai/config', { defaultProvider: 'deepseek' }); assert.equal(r.status, 403);
   r = await call(subby, 'POST', '/api/admin/access', { email: subby, role: 'admin' }); assert.equal(r.status, 403);
   r = await call(subby, 'POST', `/api/admin/projects/${A}/members`, { email: subby, role: 'owner' }); assert.equal(r.status, 403);
+  // admin: clone a project, and delete one for good (platform owner only, archived first, name typed back)
+  r = await call(subby, 'POST', `/api/admin/projects/${A}/clone`, {}); assert.equal(r.status, 403, 'sub admins cannot clone');
+  r = await call(alice, 'POST', `/api/admin/projects/${A}/clone`, {}); assert.equal(r.status, 403, 'project members who are not admins cannot clone');
+  r = await call(dinesh, 'POST', `/api/admin/projects/${A}/clone`, { name: 'Clone of A' }); assert.equal(r.status, 201); const CL = r.data.project.id; assert.notEqual(CL, A);
+  r = await call(dinesh, 'GET', `/api/projects/${CL}/docs/planner`); assert.equal(r.status, 200, 'documents are copied');
+  r = await call(dinesh, 'GET', `/api/projects/${CL}/items?kinds=tkt`); assert.equal(r.data.items.length, 0, 'tickets are not copied');
+  r = await call(alice, 'GET', `/api/projects/${CL}`); assert.ok(r.status >= 403, 'members of the original are not members of the copy');
+  r = await call(dinesh, 'POST', `/api/admin/projects/${CL}/delete`, { confirm: 'Clone of A' }); assert.equal(r.status, 400, 'archive first');
+  r = await call(dinesh, 'PATCH', `/api/admin/projects/${CL}`, { archived: true });
+  r = await call(dinesh, 'POST', `/api/admin/projects/${CL}/delete`, { confirm: 'wrong' }); assert.equal(r.status, 400, 'the name must match');
+  r = await call(subby, 'POST', `/api/admin/projects/${CL}/delete`, { confirm: 'Clone of A' }); assert.equal(r.status, 403, 'only the platform owner deletes');
+  r = await call(dinesh, 'POST', `/api/admin/projects/${CL}/delete`, { confirm: 'Clone of A' }); assert.equal(r.status, 200); assert.ok(r.data.removed > 0);
+  r = await call(dinesh, 'GET', `/api/admin/projects/${CL}/members`); assert.equal(r.status, 404, 'the project is gone');
   r = await call(subby, 'PUT', `/api/projects/${A}/items/note/n_s1`, { data: { title: 'x' } }); assert.equal(r.status, 403, 'sub admins cannot write into projects');
   r = await call(dinesh, 'POST', '/api/templates', { name: 'Org BRD', kind: 'brd', scope: 'org', data: { body: 'v1' } }); const tpl = r.data.item.id;
   r = await call(subby, 'POST', `/api/templates/${tpl}/status`, { action: 'publish' }); assert.equal(r.status, 403, 'sub admin cannot publish an org template');

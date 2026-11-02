@@ -86,7 +86,7 @@
   }
   function edgePts(e) {
     const a = node(e.from), b = node(e.to); if (!a || !b || a.hidden || b.hidden) return null;
-    if (a === b) { const x = a.x + a.w, y = a.y + a.h / 2; return { self: true, d: `M${x} ${y - 8} C ${x + 46} ${y - 40}, ${x + 46} ${y + 40}, ${x} ${y + 8}`, lx: x + 40, ly: y }; }
+    if (a === b) { const x = a.x + a.w, y = a.y + a.h / 2; return { self: true, d: `M${x} ${y - 8} C ${x + 46} ${y - 40}, ${x + 46} ${y + 40}, ${x} ${y + 8}`, lx: x + 40, ly: y, p0: [x, y - 8], p1: [x, y + 8] }; }   // p0 and p1 are what the connector drawing and its end handles read
     const lo = e.lo || { x: 0, y: 0 }; let out;
     if ((e.route || W.B.route) === 'elbow') {
       // right-angle route: leave from the side facing the other box, turn once half way

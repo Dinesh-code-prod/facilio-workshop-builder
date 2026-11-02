@@ -1613,6 +1613,23 @@ Use "detected" for something the description states, "inferred" for something it
     if (b.archived !== undefined) { await patchProject(p.id, x => { x.archived = !!b.archived; }); await audit(p.id, s.id, b.archived ? 'admin_archive_project' : 'admin_restore_project', p.name); }
     ADM = null; return ok({ ok: true });
   });
+  // Admin: copy a whole project (setup, documents and records; not tickets, uploaded files, feedback or activity) and delete one for good.
+  // Delete is for the platform owner only, only after archiving, and needs the project name typed back.
+  const pcols = (pid, deep) => ['doc.' + pid, 'dp.' + pid].concat(KINDS.filter(k => deep || k !== 'tkt').flatMap(k => ['it.' + pid + '.' + k, 'ip.' + pid + '.' + k]));
+  route('POST', '/api/admin/projects/:id/clone', async (b, P) => {
+    const s = await requireAdmin('admin'); const r = await dbGet('projects', P.id); if (!r) throw new HttpError(404, 'Project not found'); await limit('create', s.id);
+    const src = r.value; const id = rid('p'); const t = now(); const name = str(b.name || 'Copy of ' + src.name, 160, 'Project name', true);
+    const p = Object.assign({}, src, { id, name, archived: false, createdBy: s.id, createdAt: t, updatedAt: t, customerAccessEnabled: false, members: [{ id: s.id, email: s.email, name: s.name, role: 'owner' }], deliveryStatus: 'active', deliveryStatusHistory: [], clonedFrom: src.id });
+    let n = 0; for (const col of pcols(P.id, false)) { const rows = await dbList(col); await pmap(rows, 8, async x => { await dbPut(col.replace(P.id, id), x.key, x.value); n++; }); }
+    await dbPut('projects', id, p); await audit(id, s.id, 'admin_clone_project', 'from ' + src.name); ADM = null; return ok({ project: { id, name }, copied: n }, 201);
+  });
+  route('POST', '/api/admin/projects/:id/delete', async (b, P) => {
+    const s = await requireAdmin('super'); const r = await dbGet('projects', P.id); if (!r) throw new HttpError(404, 'Project not found'); const p = r.value;
+    if (!p.archived) throw new HttpError(400, 'Archive the project first. Only an archived project can be deleted for good.');
+    if (String(b.confirm || '') !== p.name) throw new HttpError(400, 'Type the project name exactly to confirm');
+    let n = 0; for (const col of pcols(P.id, true).concat(['au.' + P.id, 'fl.' + P.id, 'fb.' + P.id])) { const rows = await dbList(col); await pmap(rows, 8, async x => { await dbDel(col, x.key); n++; }); }
+    await dbDel('projects', P.id); await audit('sys', s.id, 'admin_delete_project', p.name + ' (' + P.id + ')'); ADM = null; return ok({ ok: true, removed: n });
+  });
   route('GET', '/api/admin/projects/:id/members', async (b, P) => { await requireAdmin('sub'); const r = await dbGet('projects', P.id); if (!r) throw new HttpError(404, 'Project not found'); return ok({ members: (r.value.members || []).map(m => Object.assign(memberOut(m), { addedAt: null })) }); });
   route('POST', '/api/admin/projects/:id/members', async (b, P) => {
     const s = await requireAdmin('admin'); const r = await dbGet('projects', P.id); if (!r) throw new HttpError(404, 'Project not found'); const p = r.value;
