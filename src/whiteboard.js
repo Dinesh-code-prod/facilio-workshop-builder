@@ -509,7 +509,7 @@
     const minx = Math.min(...f.states.map(s => s.x || 0)), miny = Math.min(...ys); void xs;
     const ids = {}; const nodes = f.states.map(s => { const b = D.boxSize(s.label, true); const id = uid('n'); ids[s.id] = id;
       const typ = s.typeCode === 2 ? 'closed' : s.typeCode === 6 ? 'skipped' : 'open'; return { id, t: 'state', stype: typ, fr, x: snapV(ox + 30 + ((s.x || 0) - minx) * .9), y: snapV(oy + 70 + ((s.y || 0) - miny) * .9), w: Math.max(120, b.w), h: 40, text: s.label || s.name || 'State', ref: { flow: fid, state: s.id } }; });
-    const edges = (f.transitions || []).filter(t => !t.removed && ids[t.from] && ids[t.to]).map(t => ({ id: uid('e'), from: ids[t.from], to: ids[t.to], label: t.name || '', fr, route: 'elbow', ref: { flow: fid, transition: t.id } }));
+    const edges = (f.transitions || []).filter(t => !t.removed && ids[t.from] && ids[t.to]).map(t => ({ id: uid('e'), from: ids[t.from], to: ids[t.to], label: t.name || '', fr, route: 'straight', ref: { flow: fid, transition: t.id } }));
     const bb = bbox(nodes); const mv = F.moduleView ? F.moduleView(f.module) : null;
     const frame = { id: fr, t: 'frame', x: snapV(ox), y: snapV(oy), w: snapV(bb.x + bb.w - ox + 50), h: snapV(bb.y + bb.h - oy + 40), text: `${(mv && (mv.label || mv.displayName)) || f.module} · ${f.name || 'State flow'}`, src: { kind: 'flow', flowId: fid, module: f.module, origin: f.origin || 'existing', sig: flowSig(f) } };
     return { nodes: [frame].concat(nodes), edges, frame };

@@ -29,8 +29,11 @@
     return out;
   }
 
-  const all = () => V.bellItems().concat(assistant());
-  const GROUPS = [['rem', 'Needs you', 'Reminders and things waiting on someone'], ['ai', 'Delivery assistant', 'What the project cycle says is missing or late'], ['act', 'Activity', 'Changes made by the other side in the last 14 days']];
+  // new entries the admin published to this project's Discover more (read from the server once per project; the read / unread mark is the same one the other notices use)
+  const LIB = { pid: '', items: [] };
+  function libItems() { const id = S.project && S.project.id; if (!id) return []; if (LIB.pid !== id) { LIB.pid = id; LIB.items = []; root.FWBApi.get('/api/projects/' + id + '/discover').then(r => { LIB.items = (r.items || []).slice(0, 8); V.render(); }).catch(() => { }); } return LIB.items.map(e => ({ id: 'dm-' + e.id, kind: 'new', text: 'New in Discover more: ' + e.title, view: cust() ? 'explore' : 'showcase' })); }
+  const all = () => V.bellItems().concat(libItems(), assistant());
+  const GROUPS = [['rem', 'Needs you', 'Reminders and things waiting on someone'], ['new', 'New from Facilio', 'Product updates published for this project'], ['ai', 'Delivery assistant', 'What the project cycle says is missing or late'], ['act', 'Activity', 'Changes made by the other side in the last 14 days']];
   const dot = x => (x.tone === 'late' ? 'late' : x.kind === 'ai' ? 'ai' : x.kind === 'act' ? 'act' : 'rem');
 
   function count() { return all().filter(x => !readSet().has(x.id)).length; }

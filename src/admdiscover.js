@@ -6,7 +6,7 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT; const API = root.FWBApi;
   const { drawer, closeDrawer, toast, confirmDialog, tag } = V;
   const X = { items: null }; const val = id => { const e = document.getElementById(id); return e ? String(e.value || '') : ''; };
-  const PH = { draft: ['low', 'Draft'], scheduled: ['blue', 'Scheduled'], live: ['green', 'Live'], ended: ['tbc', 'Ended'] };
+  const PH = { draft: ['low', 'Draft'], scheduled: ['blue', 'Scheduled'], live: ['green', 'Live'], ended: ['tbc', 'Ended'], archived: ['low', 'Archived'] };
   const lines = s => String(s || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean);
   const day = d => (d ? V.fmtDate(d) : '');
   const projects = () => ((V.admData && V.admData()) || {}).projects || [];
@@ -36,7 +36,7 @@
       <label class="f" for="dm_c">What it does (one per line)</label><textarea id="dm_c" rows="3">${esc((e.capabilities || []).join('\n'))}</textarea>
       <label class="f" for="dm_u">Where it helps (one per line)</label><textarea id="dm_u" rows="2">${esc((e.useCases || []).join('\n'))}</textarea>
       <label class="f" for="dm_src">Source of this wording</label><input id="dm_src" maxlength="300" value="${esc(e.source || '')}" placeholder="e.g. Release notes, product sheet name">
-      <div class="grid g3"><div><label class="f" for="dm_st">Status</label><select id="dm_st"><option value="draft"${e.status !== 'published' ? ' selected' : ''}>Draft (hidden)</option><option value="published"${e.status === 'published' ? ' selected' : ''}>Published</option></select></div><div><label class="f" for="dm_f">Show from</label><input id="dm_f" type="date" value="${esc(e.from || '')}"></div><div><label class="f" for="dm_e">Show until</label><input id="dm_e" type="date" value="${esc(e.until || '')}"></div></div>
+      <div class="grid g3"><div><label class="f" for="dm_st">Status</label><select id="dm_st"><option value="draft"${e.status !== 'published' ? ' selected' : ''}>Draft (hidden)</option><option value="published"${e.status === 'published' ? ' selected' : ''}>Published</option><option value="archived"${e.status === 'archived' ? ' selected' : ''}>Archived (kept, not shown)</option></select></div><div><label class="f" for="dm_f">Show from</label><input id="dm_f" type="date" value="${esc(e.from || '')}"></div><div><label class="f" for="dm_e">Show until</label><input id="dm_e" type="date" value="${esc(e.until || '')}"></div></div>
       <label class="f" for="dm_aud">Shown to</label><select id="dm_aud" data-change="dmAud"><option value="all"${e.audience !== 'projects' ? ' selected' : ''}>Every project</option><option value="projects"${e.audience === 'projects' ? ' selected' : ''}>Chosen projects only</option></select>
       <div id="dm_pl" style="${e.audience === 'projects' ? '' : 'display:none;'}max-height:170px;overflow:auto;margin-top:8px;border:1px solid #E4E7EC;border-radius:10px;padding:8px">${projects().filter(p => !p.archived).map(p => `<label class="chk" style="display:flex;gap:8px;padding:3px 0"><input type="checkbox" class="dm_pj" value="${esc(p.id)}"${sel.has(p.id) ? ' checked' : ''}> <span>${esc(p.name)}${p.customer ? ' <span class="xs muted">' + esc(p.customer) + '</span>' : ''}</span></label>`).join('') || '<span class="muted small">No projects.</span>'}</div>
       <div class="xs muted" style="margin-top:8px">Dates are optional. With no dates the entry is live while it is published. The end date is the last day it shows.</div>`;

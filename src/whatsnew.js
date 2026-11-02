@@ -6,6 +6,14 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '2.6.0', date: '2026-11-02', kind: 'UPDATE', title: 'Whiteboard AI and Claude hand-off, state flow delete, calmer calendar', notes: [
+      'Process Whiteboard now looks like the State Flow Builder: white boxes with a thin blue line, coloured pill labels, the same arrows and canvas. Export follows the same look.',
+      'Describe with AI: type a process in words and the AI draws the steps and connections and points at the existing state flows of your project that belong in it. You check it before it is added.',
+      'Import from image sends the picture to Claude with a ready-made prompt: Use My Claude, Open Claude Web or Desktop, or Copy Prompt. The prompt goes in the link and the picture is put on your clipboard; paste it into the chat with Ctrl+V (a web page cannot attach a file for you). Reading pictures inside the app works only if the platform accepts them: Admin > AI > Check image reading tells you.',
+      'Save as state flow: turn a whiteboard flow into a new state flow, or replace an existing one.',
+      'State flows can be deleted from the list and the editor. A flow proposed in a workshop is deleted; a configured flow is marked as a proposed removal, which you can take back.',
+      'BRD diagram resizing (Fit page width, Full page, Landscape page, + and −, drag) no longer re-draws the whole document, so it is smooth.',
+      'Calendar: four calm phase colours instead of twelve, a phase strip instead of the crowded bar, the project blue gradient in the header band, softer cells. Archive for Discover more entries, and new entries now show in the notification bell.'] },
     { v: '2.5.2', date: '2026-11-01', kind: 'UPDATE', title: 'A calmer calendar: jump to any month or year', notes: [
       'Click the month and year in the calendar title to jump straight to any month or year: pick a year, then a month, and it opens. There is also a Go to a date box.',
       'The side panel, the mini calendar and the Up next list are gone, so the calendar has the whole width. Which plan steps show is now one Filter menu instead of a long list.',

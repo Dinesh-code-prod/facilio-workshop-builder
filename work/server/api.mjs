@@ -497,13 +497,13 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     const from = dmDay(b.from), until = dmDay(b.until); if (from && until && until < from) throw new HttpError(400, 'The end date is before the start date');
     const audience = b.audience === 'projects' ? 'projects' : 'all'; const projects = audience === 'projects' ? list(b.projects, 200, 80) : [];
     if (audience === 'projects' && !projects.length) throw new HttpError(400, 'Choose at least one project, or show it to every project');
-    const st = ['draft', 'published'].includes(b.status) ? b.status : 'draft';
+    const st = ['draft', 'published', 'archived'].includes(b.status) ? b.status : 'draft';
     return { id, title: str(b.title, 160, 'Title', true), module: str(b.module || '', 80, 'Module'), problem: str(b.problem || '', 1200, 'Problem'), summary: str(b.summary || '', 2000, 'Summary'), capabilities: list(b.capabilities, 12, 300), useCases: list(b.useCases, 8, 300),
       availability: ['enabled', 'optional', 'discuss'].includes(b.availability) ? b.availability : 'discuss', source: str(b.source || '', 300, 'Source'), status: st, from, until, audience, projects,
       createdBy: (cur && cur.createdBy) || s.email, createdAt: (cur && cur.createdAt) || now(), updatedBy: s.email, updatedAt: now(), publishedAt: st === 'published' ? ((cur && cur.publishedAt) || now()) : null };
   }
   route('GET', '/api/admin/discover', async () => { await requireAdmin('admin'); const today = now().slice(0, 10); const rows = (await dbList('dm')).map(r => r.value).filter(Boolean).sort((a, c) => String(c.updatedAt).localeCompare(String(a.updatedAt)));
-    return ok({ items: rows.map(e => Object.assign({}, e, { live: dmLive(Object.assign({}, e, { audience: 'all' }), '', today), phase: e.status !== 'published' ? 'draft' : e.from && e.from > today ? 'scheduled' : e.until && e.until < today ? 'ended' : 'live' })) }); });
+    return ok({ items: rows.map(e => Object.assign({}, e, { live: dmLive(Object.assign({}, e, { audience: 'all' }), '', today), phase: e.status === 'archived' ? 'archived' : e.status !== 'published' ? 'draft' : e.from && e.from > today ? 'scheduled' : e.until && e.until < today ? 'ended' : 'live' })) }); });
   route('PUT', '/api/admin/discover/:id', async (b, P) => { const s = await requireAdmin('admin'); if (!/^dm_[A-Za-z0-9_-]{4,40}$/.test(P.id)) throw new HttpError(400, 'Bad id');
     const cur = await dbGet('dm', P.id); const data = dmClean(b || {}, P.id, cur && cur.value, s); await dbPut('dm', P.id, data); await audit('admin', s.id, 'discover-saved', P.id + ' ' + data.status + ' ' + data.title.slice(0, 60)); return ok({ item: data }); });
   route('DELETE', '/api/admin/discover/:id', async (b, P) => { const s = await requireAdmin('admin'); await dbDel('dm', P.id); await audit('admin', s.id, 'discover-deleted', P.id); return ok({ ok: true }); });
