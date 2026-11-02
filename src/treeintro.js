@@ -6,7 +6,7 @@
 (function (root) {
   'use strict';
   const doc = root.document; if (!doc) return;
-  if (root.CanvasRenderingContext2D && !root.CanvasRenderingContext2D.prototype.__arcSafe) { const P = root.CanvasRenderingContext2D.prototype, arc = P.arc, ell = P.ellipse; P.arc = function (x, y, r, ...a) { return arc.call(this, x, y, r < 0 ? 0 : r, ...a); }; P.ellipse = function (x, y, rx, ry, ...a) { return ell.call(this, x, y, rx < 0 ? 0 : rx, ry < 0 ? 0 : ry, ...a); }; P.__arcSafe = true; }
+  if (root.CanvasRenderingContext2D && !root.CanvasRenderingContext2D.prototype.__arcSafe) { const P = root.CanvasRenderingContext2D.prototype, arc = P.arc, ell = P.ellipse; P.arc = function (x, y, r, ...a) { return arc.call(this, x, y, r < 0 ? 0 : r, ...a); }; P.ellipse = function (x, y, rx, ry, ...a) { return ell.call(this, x, y, rx < 0 ? 0 : rx, ry < 0 ? 0 : ry, ...a); }; const rg = P.createRadialGradient; P.createRadialGradient = function (x0, y0, r0, x1, y1, r1) { return rg.call(this, x0, y0, r0 < 0 ? 0 : r0, x1, y1, r1 < 0 ? 0 : r1); }; P.__arcSafe = true; }
   const V = root.FWBViews; const F = root.FWB; const esc = F.esc;
   const reduceMotion = () => !!(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches);
   V.treeIntro = function (opts) {
