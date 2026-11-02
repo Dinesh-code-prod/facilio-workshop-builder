@@ -354,8 +354,11 @@
       const CLOUDS = Array.from({ length: 6 }, (_, i) => ({ x: R(), y: .08 + R() * .3, w: .16 + R() * .16, v: .004 + R() * .006, a: .1 + R() * .08, ph: R() * TAU }));
       const CITY = (() => { const out = []; let x = 0; while (x < 1.05) { const w = rr(.012, .03), h = rr(.03, .13); const wins = []; const cols = Math.max(1, Math.floor(w / .006)), rows = Math.max(2, Math.floor(h / .012)); for (let c = 0; c < cols; c++) for (let r = 0; r < rows; r++) if (R() < .5) wins.push({ c, r, on: rr(4, 36), ph: R() * TAU }); out.push({ x, w, h, cols, rows, wins }); x += w + rr(.002, .012); } return out; })();
       const FLIES = Array.from({ length: 30 }, () => ({ x: R(), y: .62 + R() * .3, ph: R() * TAU, sp: .15 + R() * .35, r: 18 + R() * 40, on: rr(5, 22) }));
-      const GRASS = Array.from({ length: 90 }, () => ({ x: rr(-340, 340), h: rr(14, 46), l: rr(-.5, .5), ph: R() * TAU, d: R() * 5, c: R() }));
-      const FLOWERS = Array.from({ length: 16 }, () => ({ x: rr(-300, 300), h: rr(22, 54), ph: R() * TAU, d: R() * 6, c: R() < .5 ? '#E5197F' : R() < .5 ? '#8DB8FF' : '#ffffff', r: rr(3.2, 5.2) }));
+      const GX = () => rr(-2700, 2700), GD = x => Math.abs(x) / 900 + R() * 3;   // ground cover spreads across the whole ground, outward from the trunk
+      const GRASS = Array.from({ length: 560 }, () => { const x = GX(); return { x, h: rr(14, 46), l: rr(-.5, .5), ph: R() * TAU, d: GD(x), c: R() }; });
+      const BUSHES = Array.from({ length: 34 }, () => { const x = GX(); return { x, r: rr(16, 34), ph: R() * TAU, d: GD(x), c: R() }; });
+      const SPROUTS = Array.from({ length: 84 }, () => { const x = GX(); return { x, h: rr(16, 34), ph: R() * TAU, d: GD(x), s: R() < .5 ? -1 : 1 }; });
+      const FLOWERS = Array.from({ length: 120 }, () => { const x = GX(); return ({ x, h: rr(22, 54), ph: R() * TAU, d: GD(x) + 1, c: R() < .5 ? '#E5197F' : R() < .5 ? '#8DB8FF' : '#ffffff', r: rr(3.2, 5.2) }); });
       const PETALS = Array.from({ length: 38 }, () => ({ x: rr(-380, 380), y0: rr(.35, 1), sp: rr(.025, .06), ph: R() * TAU, c: R() < .35 ? '#E5197F' : R() < .5 ? '#8DB8FF' : '#6AA6FF', r: rr(2.6, 4.6) }));
       function drawScenery(t, ta, ox, oy, zm, mature) {
         const tw = rm ? 1 : 1;
@@ -575,8 +578,23 @@
           }
         }
         { // grass tufts and wildflowers sprout around the base once the roots take hold, and sway in the breeze
-          g.lineCap = 'round'; for (const bl of GRASS) { const k = sm((t - S[1] - bl.d) / 4); if (k <= 0) continue; const h = bl.h * k, sway = Math.sin(ta * 1.4 + bl.ph) * (rm ? 0 : 4) * k; g.strokeStyle = bl.c < .4 ? 'rgba(46,201,196,.55)' : bl.c < .75 ? 'rgba(47,123,255,.6)' : 'rgba(141,184,255,.5)'; g.lineWidth = 1.7; g.beginPath(); g.moveTo(bl.x, 2); g.quadraticCurveTo(bl.x + bl.l * h * .4, -h * .55, bl.x + bl.l * h + sway, -h); g.stroke(); }
-          for (const fl of FLOWERS) { const k = sm((t - S[4] - fl.d) / 4); if (k <= 0) continue; const h = fl.h * k, sway = Math.sin(ta * 1.2 + fl.ph) * (rm ? 0 : 3) * k, fx = fl.x + sway; g.strokeStyle = 'rgba(46,201,196,.7)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(fl.x, 2); g.quadraticCurveTo(fl.x + sway * .4, -h * .5, fx, -h); g.stroke(); g.fillStyle = fl.c; for (let q = 0; q < 5; q++) { const an = q / 5 * TAU + ta * .2 * 0; g.beginPath(); g.arc(fx + Math.cos(an) * fl.r * k, -h + Math.sin(an) * fl.r * k, fl.r * .62 * k, 0, TAU); g.fill(); } g.fillStyle = '#FFE9A8'; g.beginPath(); g.arc(fx, -h, fl.r * .45 * k, 0, TAU); g.fill(); }
+          for (const bu of BUSHES) { const k = sm((t - S[1] - bu.d) / 4); if (k <= 0) continue; const r = bu.r * k, sw = Math.sin(ta * .9 + bu.ph) * (rm ? 0 : 1.6) * k;
+            g.fillStyle = bu.c < .5 ? 'rgba(46,201,196,.34)' : 'rgba(47,123,255,.4)'; g.beginPath(); g.ellipse(bu.x - r * .55 + sw, 1 - r * .38, r * .62, r * .5, 0, 0, TAU); g.ellipse(bu.x + r * .5 + sw, 1 - r * .34, r * .58, r * .46, 0, 0, TAU); g.ellipse(bu.x + sw * 1.4, 1 - r * .72, r * .6, r * .52, 0, 0, TAU); g.fill();
+            g.fillStyle = 'rgba(141,184,255,.28)'; g.beginPath(); g.ellipse(bu.x + sw * 1.4 - r * .1, 1 - r * .86, r * .34, r * .26, 0, 0, TAU); g.fill(); }
+          for (const sp of SPROUTS) { const k = sm((t - S[2] - sp.d) / 4); if (k <= 0) continue; const h = sp.h * k, sw = Math.sin(ta * 1.1 + sp.ph) * (rm ? 0 : 2.5) * k, tx = sp.x + sw;
+            g.strokeStyle = 'rgba(46,201,196,.7)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(sp.x, 2); g.quadraticCurveTo(sp.x + sw * .4, -h * .5, tx, -h); g.stroke();
+            g.fillStyle = 'rgba(46,201,196,.6)'; for (const sd of [-1, 1]) { g.beginPath(); g.ellipse(tx + sd * h * .26, -h * .9, h * .3, h * .13, sd * -.55, 0, TAU); g.fill(); } }
+          // blades and flowers are drawn in a few batched paths (one stroke per colour), and anything off screen is skipped
+          const vx0 = -EX / S0 - 80, vx1 = (cv.width - EX) / S0 + 80;
+          g.lineCap = 'round'; g.lineWidth = 1.7;
+          for (let cl = 0; cl < 3; cl++) { g.strokeStyle = cl === 0 ? 'rgba(46,201,196,.55)' : cl === 1 ? 'rgba(47,123,255,.6)' : 'rgba(141,184,255,.5)'; g.beginPath(); let any = false;
+            for (const bl of GRASS) { if (bl.x < vx0 || bl.x > vx1 || (bl.c < .4 ? 0 : bl.c < .75 ? 1 : 2) !== cl) continue; const k = sm((t - S[1] - bl.d) / 4); if (k <= 0) continue; const h = bl.h * k, sway = Math.sin(ta * 1.4 + bl.ph) * (rm ? 0 : 4) * k; g.moveTo(bl.x, 2); g.quadraticCurveTo(bl.x + bl.l * h * .4, -h * .55, bl.x + bl.l * h + sway, -h); any = true; }
+            if (any) g.stroke(); }
+          const fls = []; g.strokeStyle = 'rgba(46,201,196,.7)'; g.lineWidth = 1.5; g.beginPath();
+          for (const fl of FLOWERS) { if (fl.x < vx0 || fl.x > vx1) continue; const k = sm((t - S[4] - fl.d) / 4); if (k <= 0) continue; const h = fl.h * k, sway = Math.sin(ta * 1.2 + fl.ph) * (rm ? 0 : 3) * k, fx = fl.x + sway; g.moveTo(fl.x, 2); g.quadraticCurveTo(fl.x + sway * .4, -h * .5, fx, -h); fls.push([fl, k, h, fx]); }
+          g.stroke();
+          for (const col of ['#E5197F', '#8DB8FF', '#ffffff']) { g.fillStyle = col; g.beginPath(); for (const [fl, k, h, fx] of fls) { if (fl.c !== col) continue; for (let q = 0; q < 5; q++) { const an = q / 5 * TAU, px = fx + Math.cos(an) * fl.r * k, py = -h + Math.sin(an) * fl.r * k; g.moveTo(px + fl.r * .62 * k, py); g.arc(px, py, fl.r * .62 * k, 0, TAU); } } g.fill(); }
+          g.fillStyle = '#FFE9A8'; g.beginPath(); for (const [fl, k, h, fx] of fls) { g.moveTo(fx + fl.r * .45 * k, -h); g.arc(fx, -h, fl.r * .45 * k, 0, TAU); } g.fill();
         }
         for (const b of branches) tipGlow(b, t, TIP_B);
         for (const b of roots) tipGlow(b, t, TIP_T);
