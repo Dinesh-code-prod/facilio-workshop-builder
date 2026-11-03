@@ -3,8 +3,8 @@
 // and semantics checks in tests/ui/checks.js, and writes a JSON report plus screenshots.
 // Usage: node tests/ui/audit.mjs <outDir> [baseUrl]   (start tests/ui/devserver.mjs first)
 import { chromium } from 'playwright';
-import fs from 'node:fs'; import path from 'node:path';
-const here = path.dirname(new URL(import.meta.url).pathname);
+import fs from 'node:fs'; import path from 'node:path'; import { fileURLToPath } from 'node:url';
+const here = path.dirname(fileURLToPath(import.meta.url));   // not new URL(...).pathname: that gives /D:/... on Windows
 const OUT = process.argv[2] || path.join(here, 'out'); const BASE = process.argv[3] || 'http://localhost:4173';
 const ONLY = process.env.UI_VIEWPORTS ? process.env.UI_VIEWPORTS.split(',').map(Number) : null;
 const VIEWPORTS = [{ n: 'desktop', w: 1440, h: 900 }, { n: 'laptop', w: 1280, h: 800 }, { n: 'tablet', w: 768, h: 1024 }, { n: 'mobile', w: 390, h: 844 }].filter(v => !ONLY || ONLY.includes(v.w));
