@@ -16,7 +16,7 @@ const tool = (name, body) => call('POST', '/api/', body, { 'x-work-mcp': '1', 'x
 let n = 0; const t = async (name, fn) => { await fn(); n++; console.log('  ok  ' + name); };
 
 const pid = (await call('POST', '/api/projects', { name: 'Skills Test', customer: 'Acme Facilities' })).data.project.id;
-await call('PUT', `/api/projects/${pid}/docs/workshop`, { data: { project: { orgId: '400000077', region: 'US' }, requirements: [], flows: {} }, baseVersion: 0 });
+await call('PUT', `/api/projects/${pid}/docs/workshop`, { data: { project: { orgId: '400000077', region: 'US', orgFolder: 'us/400000077-Acme' }, requirements: [], flows: {} }, baseVersion: 0 });
 const put = (kind, id, data) => call('PUT', `/api/projects/${pid}/items/${kind}/${id}`, { data });
 await put('task', 't1', { title: 'Late one', status: 'To Do', due: '2020-01-01' }); await put('task', 't2', { title: 'Done one', status: 'Done', due: '2020-01-01' }); await put('task', 't3', { title: 'Open, no date', status: 'In Progress' });
 await put('raid', 'r1', { title: 'Risk', status: 'Open' }); await put('raid', 'r2', { title: 'Old risk', status: 'Closed' }); await put('utc', 'u1', { title: 'Case 1', status: 'Passed' }); await put('utc', 'u2', { title: 'Case 2', status: 'Failed' });
@@ -26,7 +26,7 @@ await t('project_overview says where the project stands', async () => {
   const r = await tool('project_overview', { project: pid }); assert.equal(r.status, 200); const g = r.data.progress;
   assert.equal(g.tasks.total, 3); assert.equal(g.tasks.open, 2); assert.equal(g.tasks.overdue, 1, 'only the open task with a past date is overdue');
   assert.equal(g.risksAndIssues.open, 1); assert.equal(g.uatTestCases.total, 2); assert.equal(g.uatTestCases.byStatus.Failed, 1);
-  assert.equal(r.data.projectId, pid); assert.deepEqual([r.data.organisation.orgId, r.data.organisation.region], ['400000077', 'US']);
+  assert.equal(r.data.projectId, pid); assert.deepEqual([r.data.organisation.orgId, r.data.organisation.region, r.data.organisation.configFolder], ['400000077', 'US', 'us/400000077-Acme']);
 });
 await t('using a tool leaves a note that the connector works', async () => { const r = await call('GET', '/api/me/connector'); assert.ok(r.data.seen && !Number.isNaN(Date.parse(r.data.seen))); });
 await t('get_impl_skills lists the toolbox and tells Claude how to start one', async () => {
