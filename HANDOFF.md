@@ -2,6 +2,11 @@
 
 Last updated: 2 Nov 2026 (evening), Claude Code session `vigilant-euclid`. Pushed to `main` and `feat/simpler-studio`. Deploys 116 to 120 are live; the commit after that (connector upgrade, extension removal, Keeping the project, Privacy & data, six repo documents, repo tidy) is pushed and NOT deployed yet.
 
+## Slice 1 of the Settings, email, Inbox and Tickets work (3 Nov 2026)
+- Done: Project Settings tidy (`src/settingstidy.css`, `.st-page` wrapper in `src/settings.js`); Customer emails card in Project details (`cmSave`, `cmFind`); server routes `GET/PUT /api/projects/:id/mail/senders` and `POST /api/projects/:id/mail/backfill`, sender routing in `syncMailbox` (`work/server/api.mjs`, store `cfg/mailsenders`); tests `tests/customer_mail.mjs` (in `npm test`) and `tests/ui/customer-mail-check.mjs`.
+- Not tried against real Microsoft: the mailbox search was tested with a mock only. Mail receiving still needs the owner to check `graph_mail`, `support_mailbox` at secrets.facilio.work and press Sync now in Admin.
+- Next slices: Inbox like Outlook and Tickets like a ticketing tool (slice 2), tickets linked to Tasks with AI suggestions (slice 3), and a full-app UI consistency sweep the user asked for on 3 Nov.
+
 ## Pushed but not deployed (3 Nov 2026)
 - Discover more got two new Apple-style scroll effects in one folder, `src/animation/discover/` (`core.js`, `login-scroll.*` for the sign-in page, `project-scroll.*` for the project tab). They replace `src/animation/explorefx.*`. Pushed as 34fb96c (`discover-login-check` 9/9, `explore-scroll-check` 11/11, `npm test` passes); the live deploy is still waiting.
 

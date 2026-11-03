@@ -49,7 +49,7 @@
     const tab = S.ui.setTab || 'project'; const owner = S.project.role === 'owner';
     const tabs = [['project', 'Project details'], ['keep', 'Keeping the project'], ['access', 'Members & customer access'], ['config', 'Configuration source'], ['exports', 'JSON exports'], ['claude', 'Claude connection'], ['audit', 'Audit trail']];
     return `<div class="page-header"><div class="t"><h1>Project Settings &amp; Exports</h1><p>Project details, who can access the project, the configuration it is based on, and structured exports.</p></div></div>
-      <div class="tabs">${tabs.map(([k, l]) => `<button class="tab${tab === k ? ' active' : ''}" data-act="setTab" data-v="${k}">${esc(l)}</button>`).join('')}</div><div class="page-body">${ST[tab](owner)}</div>`;
+      <div class="tabs">${tabs.map(([k, l]) => `<button class="tab${tab === k ? ' active' : ''}" data-act="setTab" data-v="${k}">${esc(l)}</button>`).join('')}</div><div class="page-body st-page">${ST[tab](owner)}</div>`;
   }, mount() { if ((S.ui.setTab || 'project') === 'audit' && !audit.loaded && !audit.loading) loadAudit(); } };
   ACT.setTab = a => { S.ui.setTab = a.getAttribute('data-v'); V.render(); };
   const ST = {};
@@ -67,6 +67,7 @@
         <div><label class="f">Number of sites / buildings</label>${V.inp('project.sites', 'e.g. 12 buildings')}</div><div><label class="f">Facilio products / licences</label>${V.inp('project.products', 'e.g. CAFM, Vendor Portal, Tenant Portal')}</div></div></div>
       <div class="card" style="margin-top:16px"><div class="card-h"><h3>Implementation team</h3></div><div class="card-b">${people('team', ppl.team || [])}<div class="xs muted" style="margin-top:6px">"Give access" adds a teammate who has an account to this project as an editor. Guests can be added after they save a full account.</div></div></div>
       <div class="card" style="margin-top:16px"><div class="card-h"><h3>Customer stakeholders</h3></div><div class="card-b">${people('stakeholders', ppl.stakeholders || [])}<div class="xs muted" style="margin-top:6px">Stakeholder emails are used for session attendees in the planner. Customer sign-in uses the access code under Members &amp; customer access.</div></div></div>
+      ${customerEmails(ro)}
       <div class="card" style="margin-top:16px"><div class="card-h"><h3>Background &amp; objectives</h3><span class="xs muted">Used in the BRD introduction</span></div><div class="card-b fgrid"><div class="full"><label class="f">Project background</label>${V.ta('project.background', 'Who the customer is and why they are implementing Facilio', 4)}</div><div class="full"><label class="f">Business objectives</label>${V.ta('project.objective', 'What the customer wants to achieve', 4)}</div><div class="full"><label class="f">Scope notes</label>${V.ta('project.scopeNotes', 'In / out of scope notes, assumptions', 3)}</div></div></div>
       ${p.role === 'owner' ? `<div class="card" style="margin-top:16px"><div class="card-h"><h3>Archive project</h3></div><div class="card-b small">Archiving hides the project from everyone's project list. Data and files are kept on the server and can be restored by an administrator. <div style="margin-top:10px"><button class="btn danger" data-act="archiveProject">Archive project</button></div></div></div>` : ''}</div>`; };
   ACT.grantAccess = async a => { try { await API.post(`/api/projects/${S.project.id}/members`, { email: a.getAttribute('data-email'), role: 'editor' }); toast('Access given'); await V.refreshProjectMeta(); } catch (e) { toast(e.status === 404 ? 'They need an account first — share the site link and invitation code, then try again' : e.message, 6000, true); } };
@@ -76,6 +77,34 @@
     return `<div class="notice small" style="margin-bottom:12px">People listed here appear in the overview, session attendees and the BRD. This is separate from app access (Members).</div><div class="pink-label" style="margin-top:0">Implementation team</div>${rows('team', ppl.team || [])}<div class="pink-label">Customer stakeholders</div>${rows('stakeholders', ppl.stakeholders || [])}`; };
   ACT.addPerson = a => { const ppl = F.doc('people'); const k = a.getAttribute('data-k'); (ppl[k] = ppl[k] || []).push({ name: '', role: '', email: '', phone: '' }); F.changed('Person added', k, { section: 'people' }); };
   ACT.rmPerson = a => { const ppl = F.doc('people'); ppl[a.getAttribute('data-k')].splice(+a.getAttribute('data-i'), 1); F.changed('Person removed', a.getAttribute('data-k'), { section: 'people' }); };
+  // Customer emails: the addresses (and an optional company domain) this customer writes from. Mail from them is filed in this project's Inbox and becomes a ticket;
+  // it gives them no access. Saved on the server (route /api/projects/:id/mail/senders); "Find earlier emails" searches the support mailbox for those addresses.
+  const cm = { pid: null, loading: false, emails: [], domains: [], msg: '' };
+  const stakeholderEmails = () => ((F.doc('people').stakeholders) || []).map(x => String(x.email || '').trim().toLowerCase()).filter(Boolean);
+  const cmMsg = t => { cm.msg = t; const el = document.getElementById('cm_msg'); if (el) el.textContent = t; };
+  function customerEmails(ro) {
+    const p = S.project;
+    if (cm.pid !== p.id) { cm.pid = p.id; cm.loading = true; cm.emails = []; cm.domains = []; cm.msg = ''; API.get(`/api/projects/${p.id}/mail/senders`).then(r => { if (cm.pid !== p.id) return; cm.emails = r.emails || []; cm.domains = r.domains || []; cm.loading = false; V.render(); }).catch(() => { cm.loading = false; V.render(); }); }
+    const st = stakeholderEmails(); const dis = ro ? 'disabled' : '';
+    return `<div class="card" style="margin-top:16px"><div class="card-h"><h3>Customer emails</h3><span class="xs muted">Used to find their emails in Support &amp; Tickets</span></div><div class="card-b fgrid">
+      <div class="full small muted">Add the addresses this customer writes from. Emails they send to the support mailbox are filed in this project's Inbox and become tickets. This gives them no access to the app.</div>
+      <div class="full"><label class="f" for="cm_emails">Customer email addresses (one per line)</label><textarea id="cm_emails" rows="4" placeholder="priya@customer.com" ${dis}>${esc(cm.emails.join('\n'))}</textarea>${st.length ? `<div class="xs muted" style="margin-top:4px">Also used: the ${st.length} stakeholder email${st.length === 1 ? '' : 's'} listed above (${esc(st.slice(0, 3).join(', '))}${st.length > 3 ? ' and more' : ''}).</div>` : ''}</div>
+      <div class="full"><label class="f" for="cm_domain">Company domain (optional)</label><input type="text" id="cm_domain" value="${esc(cm.domains.join(', '))}" placeholder="customer.com" ${dis}><div class="xs muted" style="margin-top:4px">Anyone writing from this domain counts. Shared providers such as gmail.com are not accepted.</div></div>
+      ${ro ? '' : `<div class="full row st-actions"><button class="btn primary" data-act="cmSave">Save customer emails</button><span class="spacer"></span><label class="xs muted" for="cm_days">Look back</label><select id="cm_days" style="width:120px"><option value="30">30 days</option><option value="90" selected>90 days</option><option value="180">180 days</option><option value="365">1 year</option></select><button class="btn" data-act="cmFind">Find earlier emails</button></div>`}
+      <div class="full small" id="cm_msg" role="status" aria-live="polite">${cm.loading ? '<span class="muted">Loading…</span>' : esc(cm.msg)}</div></div></div>`;
+  }
+  ACT.cmSave = async () => {
+    const lines = document.getElementById('cm_emails').value.split(/[\s,;]+/).map(x => x.trim().toLowerCase()).filter(Boolean); const domains = document.getElementById('cm_domain').value.split(/[\s,;]+/).map(x => x.trim()).filter(Boolean);
+    try { const r = await API.put(`/api/projects/${S.project.id}/mail/senders`, { emails: [...new Set(lines.concat(stakeholderEmails()))], domains }); cm.emails = lines; cm.domains = r.domains || []; cmMsg('Saved. New emails from these addresses are filed in this project.' + (r.claimed ? ' ' + r.claimed + ' earlier email' + (r.claimed === 1 ? '' : 's') + ' waiting for a project moved into the Inbox.' : '')); return true; }
+    catch (e) { cmMsg(e.message || 'Could not save'); return false; }
+  };
+  ACT.cmFind = async () => {
+    const days = Number(document.getElementById('cm_days').value) || 90; if (!(await ACT.cmSave())) return;   // search what is on screen, not an older saved list
+    cmMsg('Searching the mailbox. This can take a little while…');
+    try { const r = await API.post(`/api/projects/${S.project.id}/mail/backfill`, { days }); const x = r.result;
+      cmMsg(r.skipped ? 'A mailbox check is already running. Try again in a minute.' : x ? `Searched ${r.addresses} address${r.addresses === 1 ? '' : 'es'} over ${r.days} days: ${x.filed} filed, ${x.tickets} new ticket${x.tickets === 1 ? '' : 's'}, ${x.duplicates} already here.${x.errors && x.errors.length ? ' Some emails failed: ' + x.errors[0] : ''}` : 'Done.'); }
+    catch (e) { cmMsg(e.message || 'The mailbox could not be searched'); }
+  };
   ST.access = owner => { const p = S.project; const link = location.origin + location.pathname + '#/c/' + p.id;
     if (V.office && V.office()) return '';
     return `<div class="grid g2"><div class="card"><div class="card-h"><h3>Project members</h3></div><div class="card-b small muted">Consultants with an account. Owners manage members; editors change project data; viewers have read-only access.</div><div class="tbl-wrap" style="border:0;border-radius:0"><table class="tbl"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th></th></tr></thead><tbody>${(S.members || []).map(m => `<tr><td>${esc(m.name)}</td><td class="small">${esc(m.email)}</td><td>${owner ? sel('', [{ v: 'owner', l: 'Owner' }, { v: 'editor', l: 'Editor' }, { v: 'viewer', l: 'Viewer' }], m.role, `data-change="memberRole" data-email="${esc(m.email)}" style="width:110px;height:28px"`) : tag('low', humanize(m.role))}</td><td>${owner && m.id !== S.user.id ? `<button class="btn sm ghost" data-act="rmMember" data-id="${esc(m.id)}" aria-label="Remove">${ico('x')}</button>` : ''}</td></tr>`).join('')}</tbody></table></div>

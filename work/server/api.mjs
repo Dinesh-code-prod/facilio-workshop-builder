@@ -1122,6 +1122,19 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   const domOf = e => String(e || '').toLowerCase().split('@')[1] || '';
   async function mailboxAddress() { let m = ''; try { m = String(await CTX.secrets.get('support_mailbox') || '').trim(); } catch (e) { } return m; }
   // Mailbox settings (admins): routing rules, Teams notices, ticket creation, how far back the first sync reads, how long emails are kept.
+  // Customer emails (Project Settings): who writes for each project. cfg "mailsenders" = { [projectId]: { emails: [], domains: [] } }.
+  // An exact address always counts; a company domain counts only when it is not a shared provider such as gmail.com.
+  const sendersCfg = async () => { const r = await dbGet('cfg', 'mailsenders'); return (r && r.value) || {}; };
+  const SENDER_RE = /^[a-z0-9._%+-]{1,64}@[a-z0-9.-]{1,190}\.[a-z]{2,}$/;   // strict on purpose: these go into a Graph filter
+  const cleanSenders = b => {
+    const list = x => (Array.isArray(x) ? x : []).map(v => String(v || '').toLowerCase().trim()).filter(Boolean);
+    const emails = [...new Set(list(b && b.emails))].slice(0, 100), domains = [...new Set(list(b && b.domains).map(d => d.replace(/^@/, '')))].slice(0, 10);
+    for (const e of emails) if (!SENDER_RE.test(e)) throw new HttpError(400, '"' + e.slice(0, 80) + '" is not a valid email address');
+    for (const d of domains) { if (!/^[a-z0-9.-]{1,190}\.[a-z]{2,}$/.test(d)) throw new HttpError(400, '"' + d.slice(0, 80) + '" is not a valid domain'); if (PUBLIC_MAIL.has(d)) throw new HttpError(400, d + ' is a shared mail provider, so a domain match would catch strangers. Add the exact addresses instead'); }
+    return { emails, domains };
+  };
+  const senderTarget = (map, email) => { const dom = domOf(email); const ids = Object.keys(map);
+    return ids.find(id => (map[id].emails || []).includes(email)) || (PUBLIC_MAIL.has(dom) ? null : ids.find(id => (map[id].domains || []).includes(dom))) || null; };
   const MAIL_DEFAULTS = { rules: [], last: null, teamsOn: false, teamsChannel: '', autoTicket: true, firstSyncDays: 7, retentionDays: 0 };
   const mailSettings = c => ({ teamsOn: !!c.teamsOn, teamsChannel: c.teamsChannel || '', autoTicket: c.autoTicket !== false, firstSyncDays: c.firstSyncDays || 7, retentionDays: c.retentionDays || 0 });
   route('GET', '/api/mail/status', async () => {
@@ -1141,6 +1154,29 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     if (b.firstSyncDays !== undefined) { const n = Number(b.firstSyncDays); if (!(n >= 1 && n <= 90)) throw new HttpError(400, 'The first sync can read 1 to 90 days back'); c.firstSyncDays = Math.round(n); }
     if (b.retentionDays !== undefined) { const n = Number(b.retentionDays); if (!(n === 0 || (n >= 30 && n <= 3650))) throw new HttpError(400, 'Keep emails for 30 to 3650 days, or 0 to keep them while the project exists'); c.retentionDays = Math.round(n); }
     await dbPut('cfg', 'mail', c); await audit('mailbox', s.id, 'mail-settings', JSON.stringify(mailSettings(c))); return ok({ settings: mailSettings(c) });
+  });
+  // customer emails for one project (Project Settings > Project details): save them, and look for what they already sent
+  route('GET', '/api/projects/:id/mail/senders', async (b, P) => {
+    const s = await me(); await inboxAccess(s, P.id, 'read'); const v = (await sendersCfg())[P.id] || {}; return ok({ emails: v.emails || [], domains: v.domains || [] });
+  });
+  route('PUT', '/api/projects/:id/mail/senders', async (b, P) => {
+    const s = await me(); const { project } = await inboxAccess(s, P.id, 'edit'); const v = cleanSenders(b); const map = await sendersCfg();
+    for (const pid of Object.keys(map)) { if (pid === P.id) continue; const hit = v.emails.find(e => (map[pid].emails || []).includes(e)) || v.domains.find(d => (map[pid].domains || []).includes(d));
+      if (hit) { const o = await dbGet('projects', pid); throw new HttpError(409, hit + ' already belongs to the project "' + ((o && o.value.name) || 'another project') + '". One customer address can only route to one project'); } }
+    if (v.emails.length || v.domains.length) map[P.id] = v; else delete map[P.id];
+    await dbPut('cfg', 'mailsenders', map); await audit(P.id, s.id, 'mail-senders', v.emails.length + ' emails, ' + v.domains.length + ' domains');
+    // mail from these senders that arrived before and sits unplaced in the admin review inbox moves into this project now
+    let claimed = 0; const c = Object.assign({}, MAIL_DEFAULTS, await mailCfg());
+    for (const row of (await dbList('inbox')).slice(0, 500)) { const m = row.value; const em = String(m && m.from && m.from.email || '').toLowerCase(); if (!m || !m.mail || senderTarget({ [P.id]: v }, em) !== P.id) continue;
+      try { const r = await fileMail(s, project, m.mail, 'customer email', c); await dbDel('inbox', row.id || m.id); if (!r.duplicate) claimed++; } catch (e) { /* leave it in the review inbox */ } }
+    return ok(Object.assign({ claimed }, v));
+  });
+  route('POST', '/api/projects/:id/mail/backfill', async (b, P) => {
+    const s = await me(); await inboxAccess(s, P.id, 'edit'); await limit('mail', s.id); const v = (await sendersCfg())[P.id]; const emails = (v && v.emails) || [];
+    if (!emails.length) throw new HttpError(400, 'Add at least one customer email address first');
+    const days = Math.max(1, Math.min(365, Math.round(Number(b && b.days) || 90)));
+    let r; try { r = await syncMailbox(s, { force: true, senders: emails.slice(0, 20), days }); } catch (e) { if (e instanceof HttpError) throw e; throw new HttpError(502, 'The mailbox could not be searched just now'); }
+    return ok({ days, addresses: Math.min(emails.length, 20), skipped: r.skipped || null, result: r.result || null });
   });
   route('GET', '/api/mail/inbox', async () => { const s = await me(); await mailAdmin(s); const rows = (await dbList('inbox')).map(r => r.value); rows.sort((a, c) => String(c.receivedAt).localeCompare(String(a.receivedAt))); return ok({ items: rows.slice(0, 200) }); });
   route('POST', '/api/mail/inbox/:mid/dismiss', async (b, P) => { const s = await me(); await mailAdmin(s); await dbDel('inbox', P.mid); return ok({ ok: true }); });
@@ -1188,15 +1224,15 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     const fin = async err => { c.lease = null; c.last = { at: t0, by: s.email, ok: !err, error: err || '', stats: res }; await dbPut('cfg', 'mail', c); await audit('mailbox', s.id, 'mail-sync', err ? 'failed' : 'ok'); };
     if (!CTX.fetch) { await fin('This platform build has no credential proxy'); throw new HttpError(503, 'Mailbox sync is not available here'); }
     const box = await mailboxAddress(); const base = box ? 'https://graph.microsoft.com/v1.0/users/' + encodeURIComponent(box) : 'https://graph.microsoft.com/v1.0/me';
-    const since = new Date(c.watermark ? Date.parse(c.watermark) - 10 * 60e3 : Date.now() - c.firstSyncDays * 864e5).toISOString();
-    let url = base + '/mailFolders/inbox/messages?$top=50&$orderby=receivedDateTime asc&$filter=' + encodeURIComponent('receivedDateTime ge ' + since) + '&$select=id,conversationId,subject,from,toRecipients,ccRecipients,body,bodyPreview,receivedDateTime,hasAttachments,isDraft,webLink';
+    const since = new Date(opts.senders ? Date.now() - opts.days * 864e5 : c.watermark ? Date.parse(c.watermark) - 10 * 60e3 : Date.now() - c.firstSyncDays * 864e5).toISOString();   // a customer-email search looks back N days and leaves the sync watermark alone
+    let url = base + '/mailFolders/inbox/messages?$top=50&$orderby=receivedDateTime asc&$filter=' + encodeURIComponent('receivedDateTime ge ' + since + (opts.senders ? ' and (' + opts.senders.map(a => "from/emailAddress/address eq '" + a + "'").join(' or ') + ')' : '')) + '&$select=id,conversationId,subject,from,toRecipients,ccRecipients,body,bodyPreview,receivedDateTime,hasAttachments,isDraft,webLink';
     const msgs = [];
-    for (let page = 0; url && page < 4; page++) {
+    for (let page = 0; url && page < (opts.senders ? 10 : 4); page++) {
       let r; try { r = await CTX.fetch(MAIL_CRED, url, { method: 'GET', headers: { Prefer: 'outlook.body-content-type="text"' } }); } catch (e) { await fin('Credential ' + MAIL_CRED + ' is missing or not granted to this app'); throw new HttpError(424, 'The mailbox credential (' + MAIL_CRED + ') is missing or not granted to this app. The app owner adds it at secrets.facilio.work.'); }
       if (!r.ok) { const why = r.status === 401 || r.status === 403 ? 'Microsoft refused access (' + r.status + '). The credential needs Mail.Read (or Mail.Read.Shared for a shared mailbox) and admin consent.' : r.status === 429 ? 'Microsoft is throttling requests. Try again in a minute.' : 'Microsoft returned ' + r.status; await fin(why); throw new HttpError(r.status === 429 ? 429 : 502, why); }
       const j = await r.json(); msgs.push(...(j.value || [])); url = j['@odata.nextLink'] && /^https:\/\/graph\.microsoft\.com\//.test(j['@odata.nextLink']) ? j['@odata.nextLink'] : null;
     }
-    res.fetched = msgs.length; let newest = c.watermark || null;
+    res.fetched = msgs.length; let newest = c.watermark || null; const smap = await sendersCfg();
     const projects = (await dbList('projects')).map(x => x.value).filter(x => x && !x.archived); const byId = Object.fromEntries(projects.map(p => [p.id, p]));
     for (const m of msgs.filter(m => !m.isDraft)) {
       try {
@@ -1212,6 +1248,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
         if (toRule && byId[toRule.projectId]) { target = byId[toRule.projectId]; how = 'sent to the project address'; }
         if (!target) { const cv = await dbGet('mlconv', await mkey(mail.conversationId)); if (cv && byId[cv.value.projectId]) { target = byId[cv.value.projectId]; how = 'same conversation'; } }
         if (!target) { const rule = (c.rules || []).find(x => x.on !== 'to' && (x.match === email || x.match === domOf(email))); if (rule && byId[rule.projectId]) { target = byId[rule.projectId]; how = 'sender rule'; } }
+        if (!target) { const pid = senderTarget(smap, email); if (pid && byId[pid]) { target = byId[pid]; how = 'customer email'; } }   // Project Settings > Customer emails
         const tag = /\[TKT-(\d+)\]/i.exec(mail.subject);
         if (target && tag) { const hit = (await itemsOf(target.id, 'tkt')).find(x => String(x.data.n) === tag[1]); const req = hit && String(hit.data.requester && hit.data.requester.email || '').toLowerCase(); if (hit && (req === email || how === 'sender rule' || how === 'sent to the project address' || (req && domOf(req) === domOf(email) && !PUBLIC_MAIL.has(domOf(email))))) mail._tid = hit.id; }   // a reply quoting a ticket joins that ticket
         if (!target && tag) { const dom = domOf(email); const ruled = new Set((c.rules || []).filter(x => x.on !== 'to' && (x.match === email || x.match === dom)).map(x => x.projectId));
@@ -1225,7 +1262,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
         if (res.notices < 20 && await mailNotice(c, target, out.rec)) res.notices++;
       } catch (e) { res.errors.push(String(e && e.message || e).slice(0, 160)); }
     }
-    if (newest) c.watermark = newest; await fin(res.errors.length && !res.filed && !res.unrouted ? res.errors[0] : ''); return { result: res };
+    if (newest && !opts.senders) c.watermark = newest; await fin(res.errors.length && !res.filed && !res.unrouted ? res.errors[0] : ''); return { result: res };
   }
   route('POST', '/api/mail/sync', async () => { const s = await me(); await mailAdmin(s); await limit('mail', s.id); const r = await syncMailbox(s, { force: true }); return ok(r); });
 
