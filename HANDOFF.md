@@ -2,6 +2,12 @@
 
 Last updated: 3 Nov 2026 (evening), Claude Code. Deploy 133 is live (be87b3a). Stage 1 of the menu restructure is committed, pushed and deployed after that (see DEPLOYS.md).
 
+## 3 Nov 2026 (night): Asana-style timeline (deploy 140)
+- Project Plan > Timeline & planning now has task dependencies: `src/tldepslogic.js` (rules: loops, finish-to-start rescheduling, conflicts, critical path), `src/tldeps.js` (SVG lines drawn from the real bar positions, dots on bars, link by drag, click a line to remove, toolbar toggles), `src/tldeps.css`. Rows in `plan_struct` carry `dep: [ids]`. Hooks in `src/timeline.js`: `V.tlApi`, `V.tlDeps.follow` in `applyDrag`, a "Waits for" list in the task editor. Compact table is the default (`S.ui.tlCompact`).
+- Tests: `tests/tl_deps.mjs` (in npm test), `tests/ui/timeline-deps-check.mjs` (13 checks; wait about 2.5 s after the timeline appears before dragging, the page re-renders while data loads).
+- Not done: milestones have no link dots (link them from the other task, or use Waits for in the editor); dependencies are finish-to-start only (no lag days); the Calendar tab (plancal) was not changed; customers see the lines but cannot edit.
+- The old `smoke` and `whiteboard-check` failures are probably the sticky top bar covering the element Playwright scrolls to the top edge (the same thing happened in the new check until it centred elements); not confirmed.
+
 ## 3 Nov 2026 (late): core review and fixes (deploy 135)
 - Menu stage 2 done: hubs for Contract (Agreement, Scope check, Terms & integrations), Reports & quality (Status reports, Traceability) and Configuration & org package (Hub, Analysis, Export); Notes & Links moved to Project. Done in `src/workshubs.js` (HUBS list) and `src/shell.js`.
 - Two read-only reviews were run (AI layer; Open in Claude and connector). Fixed: AI timeout wording, rate-limit guess, provider choice for JSON tasks, JSON repair, cut-off flags, sources that did not fit, per-call log line (look for `"ai":1` lines in the app logs), daily AI ceiling, data markers; connector recent_activity and get_records order, open/overdue/offset, search minimum, task validation, ambiguous names, hand-off lifetime; screens with their own reply box always use the full prompt.
