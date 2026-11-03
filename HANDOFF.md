@@ -1,5 +1,15 @@
 # Handoff
 
+Last updated: 3 Nov 2026 (evening), Claude Code. Deploy 133 is live (be87b3a). Stage 1 of the menu restructure is committed, pushed and deployed after that (see DEPLOYS.md).
+
+## 3 Nov 2026: what was built and what is open
+- **Claude setup page** (Help group, `src/claudesetup.js`, `src/implskills.js`): Connect, Facilio skills guide, How it works. The Claude tabs left Project Settings. Connector tool `get_impl_skills` (catalog in `work/server/_skills.mjs`, rebuilt with `node scripts/build-impl-skills.mjs` after fetching facilio-impl-ai-skills). `project_overview` now has a progress block, the org id and the org folder. `GET /api/me/connector` says when a person's Claude last used the connector. Open in Claude prompts name the project and page; `get_handoff` returns `start` guidance.
+- **Bring your project in** (`src/transition.js`, `src/transitionlogic.js`): classify in the browser, review, send one file at a time. Server limits: 1,000 MB of files per project, 6 unfinished uploads per person, unfinished uploads cleaned after a day. Not tested on the real platform with many people at once.
+- **Org folder link** (`src/orglink.js`, `src/orglogic.js`): Project details, picks `repo_index.json` from facilio-config-data, compares with the org id and the imported package.
+- **Menu restructure, Stage 1 (menu only):** new groups Reports & quality, Configuration & org package and Show Facilio; More tools removed; Project Settings tabs are Project details, People & access, Org package & exports, Keeping the project, History (old tab names still resolve). Report with the full crawl: `docs/reports/menu-restructure-2026-11-03.md`. Crawl tool: `tests/ui/nav-inventory.mjs`.
+- **Not done:** Stage 2 page merges (Contract hub, Reports hub, Requirements register and Open questions as their own tabs, one Checks list, Customer Portal rules into Settings > People & access, Notes & Links out of the Training tab bar). One org with several projects: see `docs/reports/org-phases-proposal-2026-11-03.md`. Mail receiving is still blocked by the Microsoft 403 (see HANDOFF-NEXT.md). The UI sweep session's branch (`claude/ui-sweep-consistency`) was not merged; it also edits `src/shell.js` and `build.mjs`.
+- **Known failing check, not caused by this work:** `tests/ui/showcase-check.mjs` "the customer sees only published entries" fails on the build before the menu change too. Run it with `node --import ./tests/ui/use-edge.mjs`.
+
 Last updated: 2 Nov 2026 (evening), Claude Code session `vigilant-euclid`. Pushed to `main` and `feat/simpler-studio`. Deploys 116 to 120 are live; the commit after that (connector upgrade, extension removal, Keeping the project, Privacy & data, six repo documents, repo tidy) is pushed and NOT deployed yet.
 
 ## Slice 1 of the Settings, email, Inbox and Tickets work (3 Nov 2026)

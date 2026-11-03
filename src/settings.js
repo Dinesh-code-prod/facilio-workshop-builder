@@ -46,13 +46,13 @@
 
   // ================= VIEW =================
   V.settings = { html() {
-    const tab = ST[S.ui.setTab] ? S.ui.setTab : 'project'; const owner = S.project.role === 'owner';
-    const tabs = [['project', 'Project details'], ['keep', 'Keeping the project'], ['access', 'Members & customer access'], ['config', 'Configuration source'], ['exports', 'JSON exports'], ['audit', 'Audit trail']];
+    const tab = ST[TAB_OF[S.ui.setTab] || S.ui.setTab] ? (TAB_OF[S.ui.setTab] || S.ui.setTab) : 'project'; const owner = S.project.role === 'owner';
+    const tabs = [['project', 'Project details'], ['access', 'People & access'], ['orgx', 'Org package & exports'], ['keep', 'Keeping the project'], ['audit', 'History']];
     return `<div class="page-header"><div class="t"><h1>Project Settings &amp; Exports</h1><p>Project details, who can access the project, the configuration it is based on, and structured exports.</p></div></div>
       <div class="tabs">${tabs.map(([k, l]) => `<button class="tab${tab === k ? ' active' : ''}" data-act="setTab" data-v="${k}">${esc(l)}</button>`).join('')}</div><div class="page-body st-page">${ST[tab](owner)}</div>`;
   }, mount() { const t = S.ui.setTab || 'project'; if (t === 'audit' && !audit.loaded && !audit.loading) loadAudit(); } };
   ACT.setTab = a => { S.ui.setTab = a.getAttribute('data-v'); V.render(); };
-  const ST = {};
+  const ST = {}; const TAB_OF = { config: 'orgx', exports: 'orgx' };   // the two tabs that became one keep working for any saved or linked tab name
   ST.project = () => { const p = S.project; const ro = S.readonly; const dis = ro ? 'disabled' : ''; const ppl = F.doc('people'); const w = S.ws.project;
     const phases = ['Planning', 'Requirement workshops', 'BRD sign-off', 'Configuration', 'UAT', 'Go-live', 'Hypercare', 'Closed'];
     const people = (k, list, cols) => `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Name</th><th>${k === 'team' ? 'Role' : 'Role / department'}</th><th>Email</th><th>Phone</th>${k === 'stakeholders' ? '<th>Decision maker</th>' : '<th>App access</th>'}<th></th></tr></thead><tbody>${list.map((x, i) => { const base = '@people:' + k + '.' + i + '.'; const member = k === 'team' && x.email && (S.members || []).some(m => m.email === String(x.email).toLowerCase());
@@ -174,6 +174,7 @@
     ${[['modules', 'A. Modules & forms', 'Modules, fields, form layouts, cross-module actions, relationships, review status'], ['stateflows', 'B. Stateflows', 'States, transitions (Before / During / After), roles, approvals, notifications, workshop changes'], ['roles', 'C. Roles & permissions', 'Configured roles with decoded permissions, proposed roles and changes, permission checks, unresolved actors'], ['portals', 'D. Portal workflows', 'Portal evidence, process steps, handoffs and verification status'], ['changes', 'E. Change summary', 'Additions, modifications, removals, validation, requirements, transcript review, sessions, reviews']].map(([k, l, d]) => `<div class="list-item" style="display:flex;align-items:center;gap:10px;cursor:default"><div style="flex:1"><b>${esc(l)}</b><div class="xs muted">${esc(d)}</div></div><button class="btn sm" data-act="exportJson" data-kind="${k}">${ico('dl')}JSON</button></div>`).join('')}
     <div class="xs muted" style="margin-top:10px">Every export carries schema, schemaVersion, project, configuration source and generation time, and is checked to be valid JSON before download. All five are generated from the same data as the BRD.</div></div></div>`;
   ST.exports = () => orgCard() + exportsJson();
+  ST.orgx = () => ST.config() + ST.exports();   // load, look at and export the org configuration on one tab
   ST.keep = () => (V.projectKeepHtml ? V.projectKeepHtml() : '');
   let audit = { loaded: false, loading: false, entries: [] };
   function loadAudit() { audit.loading = true; API.get(`/api/projects/${S.project.id}/audit`).then(r => { audit = { loaded: true, loading: false, entries: r.entries, project: S.project.id }; V.render(); }).catch(e => { audit = { loaded: true, loading: false, entries: [], error: e.message }; V.render(); }); }
