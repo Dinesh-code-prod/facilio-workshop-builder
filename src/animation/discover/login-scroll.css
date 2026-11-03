@@ -1,0 +1,36 @@
+/* Sign-in page "Discover more": pinned scenes (src/animation/discover/login-scroll.js). Facilio colours only; no glow.
+   JS writes four numbers (0 to 1) per scene: --in arriving, --wp words lit, --out leaving; and --hp on the hero. CSS turns them into motion.
+   Only on large screens with motion allowed; otherwise the plain stacked page from explore2.css is shown. */
+@media (prefers-reduced-motion: no-preference) and (min-width: 900px) and (min-height: 600px) {
+  body .dx-ov.dxl-on .dxl-scene { position: relative; height: 185vh; }
+  body .dx-ov.dxl-on .dxl-pin { position: sticky; top: var(--dxl-top, 56px); height: calc(100vh - var(--dxl-top, 56px) - 28px); display: flex; align-items: center; }
+  body .dx-ov.dxl-on .dxl-pin .dx-lc { width: 100%; margin: 0; min-height: min(520px, 100%); box-sizing: border-box; border-radius: 30px; padding: 46px 50px; background: #fff; border: 1px solid #e3e8f2; box-shadow: 0 1px 0 rgba(255, 255, 255, .8) inset, 0 18px 40px -26px rgba(29, 26, 94, .35);
+    transform: scale(calc(.9 + .1 * var(--in, 1) - .05 * var(--out, 0))); opacity: calc(.2 + .8 * var(--in, 1) - .6 * var(--out, 0)); will-change: transform, opacity; }
+  body .dx-ov.dxl-on .dx-lc.flip { --dir: -1; }
+  body .dx-ov.dxl-on .dxl-scene:nth-child(even) .dx-lc { background: #0D0B36; border-color: #0D0B36; box-shadow: 0 24px 50px -28px rgba(13, 11, 54, .7); }
+  body .dx-ov.dxl-on .dxl-scene:nth-child(even) .dx-lc-t h3 { color: #fff; }
+  body .dx-ov.dxl-on .dxl-scene:nth-child(even) .dx-lc-t p { color: #c3cbe6; }
+  body .dx-ov.dxl-on .dxl-scene:nth-child(even) .dx-no { color: transparent; -webkit-text-stroke: 1.2px #8DB8FF; }
+  body .dx-ov.dxl-on .dxl-scene:nth-child(even) .dx-pill.dark { background: rgba(141, 184, 255, .16); color: #8DB8FF; }
+  body .dx-ov.dxl-on .dxl-scene:nth-child(even) .dx-lc-chips span { background: rgba(255, 255, 255, .08); border-color: rgba(141, 184, 255, .35); color: #EAF2FF; }
+  /* bigger, bolder type: this is the marketing page */
+  body .dx-ov.dxl-on .dx-lc-t h3 { font-size: clamp(38px, min(4.8vw, 7.2vh), 72px); }
+  body .dx-ov.dxl-on .dx-hero { min-height: min(620px, 74vh); }
+  body .dx-ov.dxl-on .dx-hero h2 { font-size: clamp(46px, 6.2vw, 92px); }
+  /* the page's own reveal-on-entry is replaced by the scene numbers */
+  body .dx-ov.dxl-on .dx-lc-t, body .dx-ov.dxl-on .dx-lc-a, body .dx-ov.dxl-on .dx-cta { animation: none; }
+  body .dx-ov.dxl-on .dx-lc-t .dx-no { opacity: var(--in, 1); transform: translate3d(calc((1 - var(--in, 1)) * -60px), 0, 0); }
+  body .dx-ov.dxl-on .dx-lc-a { transform: translate3d(calc((1 - var(--in, 1)) * 70px * var(--dir, 1)), 0, 0) scale(calc(.62 + .38 * var(--in, 1) + .05 * var(--wp, 0))); transform-origin: 50% 55%; will-change: transform; }
+  body .dx-ov.dxl-on .dx-lc-s.s1 { transform: translate3d(0, calc((1 - var(--in, 1)) * 90px - var(--wp, 0) * 14px), 0); }
+  body .dx-ov.dxl-on .dx-lc-s.s2 { transform: translate3d(0, calc((1 - var(--in, 1)) * -90px + var(--wp, 0) * 10px), 0); }
+  /* words light up with the scroll (the same running count covers the heading, then the description) */
+  body .dx-ov.dxl-on .dx-lc .dxfx-w { opacity: calc(.16 + .84 * clamp(0, var(--wp, 1) * var(--n, 1) - var(--i, 0), 1)); }
+  /* chips appear one after another over the last half of the scene */
+  body .dx-ov.dxl-on .dx-lc-chips span { --cv: clamp(0, (var(--wp, 1) - .45 - var(--c, 0) * .05) * 5, 1); opacity: var(--cv); transform: translate3d(0, calc((1 - var(--cv)) * 14px), 0); }
+  /* hero: the headline lifts away, the stack turns and its slabs fan apart */
+  body .dx-ov.dxl-on .dx-hero-l { transform: translate3d(0, calc(var(--hp, 0) * -50px), 0) scale(calc(1 - .06 * var(--hp, 0))); opacity: calc(1 - .75 * var(--hp, 0)); transform-origin: 0 40%; }
+  body .dx-ov.dxl-on .dx-stack { transform: rotate(calc(var(--hp, 0) * -9deg)) scale(calc(1 + .3 * var(--hp, 0))); }
+  body .dx-ov.dxl-on .dx-lay.l3 { bottom: calc(56% + var(--hp, 0) * 16%); }
+  body .dx-ov.dxl-on .dx-lay.l1 { bottom: calc(0% - var(--hp, 0) * 8%); }
+  body .dx-ov.dxl-on .dx-cta { opacity: calc(.15 + .85 * var(--in, 1)); transform: scale(calc(.9 + .1 * var(--in, 1))); }
+}

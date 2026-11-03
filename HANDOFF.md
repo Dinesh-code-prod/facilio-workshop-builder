@@ -2,6 +2,9 @@
 
 Last updated: 2 Nov 2026 (evening), Claude Code session `vigilant-euclid`. Pushed to `main` and `feat/simpler-studio`. Deploys 116 to 120 are live; the commit after that (connector upgrade, extension removal, Keeping the project, Privacy & data, six repo documents, repo tidy) is pushed and NOT deployed yet.
 
+## Not pushed yet (3 Nov 2026)
+- Discover more got two new Apple-style scroll effects in one folder, `src/animation/discover/` (`core.js`, `login-scroll.*` for the sign-in page, `project-scroll.*` for the project tab). They replace `src/animation/explorefx.*`. Built and tested on localhost:4173 only (`discover-login-check` 9/9, `explore-scroll-check` 11/11, `npm test` passes); waiting for the user's look before commit, push and deploy.
+
 ## Read first
 - Repository documents: `docs/README.md` (six documents: product, technical, app flow, UI/UX, backend schema, implementation plan). Deploy steps and log: `docs/operations/`. Open items and questions: `docs/reports/pending-2026-11-02.md`.
 - The Claude connector (`https://mcp.facilio.work/facilio-delivery-studio`) replaced the Claude Desktop extension (removed). Tools: `work/work.json`; see `docs/reference/claude-connector.md`.

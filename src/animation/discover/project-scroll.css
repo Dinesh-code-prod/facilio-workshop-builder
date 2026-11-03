@@ -1,0 +1,40 @@
+/* Discover more tab inside a project: pinned sideways galleries (src/animation/discover/project-scroll.js). Facilio colours only; no glow.
+   JS writes --k (0 to 1, how far through the chapter) on each pinned chapter and --f (0 to 1, how much in focus) on each card.
+   Only on large screens with motion allowed; otherwise the plain grid from explore2.css is shown. */
+@media (prefers-reduced-motion: no-preference) and (min-width: 900px) and (min-height: 600px) {
+  /* hero: bigger, the headline assembles word by word */
+  body .dxp-on .dx-hero { min-height: min(620px, 74vh); }
+  body .dxp-on .dx-hero h2 { font-size: clamp(46px, 6.2vw, 92px); }
+  body .dxp-on .dxfx-w { display: inline-block; opacity: 0; transform: translate3d(0, .6em, 0); filter: blur(8px); animation: dxpWord .9s cubic-bezier(.2, .7, .2, 1) forwards; animation-delay: calc(var(--i, 0) * 80ms + 150ms); }
+  @keyframes dxpWord { to { opacity: 1; transform: none; filter: blur(0); } }
+  /* a pinned chapter: a dark stage that stays while the cards slide through it */
+  body .dxp-on .dxp-pan { position: relative; }
+  body .dxp-on .dxp-pin { position: sticky; top: var(--dxp-top, 72px); padding: 30px 34px 24px; border-radius: 28px; overflow: hidden; color: #fff; background: var(--dx-dots), var(--dx-ink); box-shadow: 0 30px 60px -30px rgba(10, 12, 36, .6); }
+  body .dxp-on .dxp-pin .dx-chh { margin-bottom: 14px; }
+  body .dxp-on .dxp-pin .dx-cht h3 { color: #fff; font-size: clamp(34px, min(4.2vw, 6.4vh), 62px); }
+  body .dxp-on .dxp-pin .dx-cht p { color: #c3cbe6; }
+  body .dxp-on .dxp-pin .dx-no { opacity: 1; -webkit-text-stroke: 1.4px #8DB8FF; transform: translate3d(calc(var(--k, 0) * -28px), 0, 0); }
+  body .dxp-on .dxp-pin .dx-pill.dark { background: rgba(141, 184, 255, .16); border-color: rgba(141, 184, 255, .35); color: #8DB8FF; }
+  body .dxp-on .dxp-vp { overflow: hidden; padding: 16px 0 6px; margin: 0 -34px; padding-left: 34px; }
+  body .dxp-on .dxp-track { display: flex !important; flex-wrap: nowrap; width: max-content; gap: 20px; will-change: transform; }
+  body .dxp-on .dxp-card { flex: 0 0 clamp(270px, 25vw, 340px); display: flex; transform-origin: 50% 70%;
+    transform: translate3d(0, calc((1 - var(--f, 1)) * 22px), 0) scale(calc(.88 + .12 * var(--f, 1))); opacity: calc(.3 + .7 * var(--f, 1)); will-change: transform, opacity; }
+  body .dxp-on .dxp-card > .dx-tile { width: 100%; }
+  body .dxp-on .dxp-bar { height: 3px; margin-top: 14px; border-radius: 3px; overflow: hidden; background: rgba(255, 255, 255, .14); }
+  body .dxp-on .dxp-bar i { display: block; height: 100%; background: #8DB8FF; transform-origin: left center; transform: scaleX(var(--k, 0)); }
+  /* a chapter with too few cards, or too tall for the window, stays the plain grid */
+  body .dxp-on .dxp-pan.off { height: auto !important; }
+  body .dxp-on .dxp-pan.off .dxp-pin { position: static; }
+  body .dxp-on .dxp-pan.off .dxp-vp { overflow: visible; }
+  body .dxp-on .dxp-pan.off .dxp-track { display: grid !important; width: auto; transform: none !important; }
+  body .dxp-on .dxp-pan.off .dxp-card { transform: none; opacity: 1; }
+  body .dxp-on .dxp-pan.off .dxp-bar { display: none; }
+  @supports (animation-timeline: view()) {
+    body .dxp-on .dx-hero-l { animation: dxpLeave linear both; animation-timeline: view(); animation-range: exit 5% exit 80%; }
+    @keyframes dxpLeave { to { opacity: .1; transform: translate3d(0, -56px, 0) scale(.95); } }
+    body .dxp-on .dx-stack { animation: dxpStack linear both; animation-timeline: view(); animation-range: exit 0% exit 100%; }
+    @keyframes dxpStack { to { transform: rotate(-11deg) scale(.78); } }
+    body .dxp-on .dx-cta { animation: dxpCta linear both; animation-timeline: view(); animation-range: entry 0% entry 70%; }
+    @keyframes dxpCta { from { opacity: 0; transform: scale(.93) translate3d(0, 44px, 0); } to { opacity: 1; transform: none; } }
+  }
+}

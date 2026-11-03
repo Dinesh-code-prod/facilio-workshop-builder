@@ -22,7 +22,7 @@
       <div data-dx-stage></div><div class="dx-lcs" id="dx-lcs">${chapters}</div>
       <section class="dx-cta dx-rv"><div class="dx-cta-art" aria-hidden="true">${K.slab('#1570EF', { cells: 3 })}</div><div><h2>Ready to open your workspace?</h2><p>Sign in with your Facilio account, or use your customer invitation, to see your own project.</p>${K.arrowBtn('dxOvClose', 'Back to sign in')}</div></section></div>`;
     o.addEventListener('click', e => { const b = e.target.closest('[data-dx-close],[data-act="dxOvClose"]'); if (b) { close(); return; } if (e.target.closest('[data-act="dxOvGo"]')) { const t = o.querySelector('#dx-lcs'); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
-    doc.body.appendChild(o); doc.body.style.overflow = 'hidden'; if (V.explorefxOverlay) V.explorefxOverlay(o); root.addEventListener('keydown', onKey); el = o;
+    doc.body.appendChild(o); doc.body.style.overflow = 'hidden'; if (V.discoverLoginFx) V.discoverLoginFx(o); root.addEventListener('keydown', onKey); el = o;
     K.stageLoad(() => { const h = o.querySelector('[data-dx-stage]'); if (h && el === o) h.outerHTML = K.stage(); });
     const x = o.querySelector('.dx-ov-x'); if (x) x.focus({ preventScroll: true });
   }

@@ -43,7 +43,7 @@ Real buttons and inputs, labelled fields, `role="tablist"` on tab bars with `ari
 ## Motion
 The opening animation (tree growth) and small transitions use the Facilio Motion Kit (`docs/motionkit/animations.json`). Motion must be reduced or off when the browser asks for it, and must never block the page: the animation clamps sizes so a tiny window cannot stop it.
 
-Discover more uses the scroll-craft idea of a different device per chapter (`src/animation/explorefx.js`, `src/animation/explorefx.css`): kinetic headline, progress rail, a pinned strip that pans sideways, scale and blur reveals. It is switched off for reduced motion and on phones and tablets.
+Discover more has two different Apple-style scroll effects, both in `src/animation/discover/`. The sign-in page (`login-scroll.*`): every solution area is a pinned scene that zooms in, its words light up with the scroll, then it shrinks away. Inside a project (`project-scroll.*`): every chapter is a dark pinned stage whose cards slide sideways while the card in focus grows. Both are switched off for reduced motion and on phones, tablets and short windows.
 
 ## Customer view
 A separate, calmer menu for the customer (introduction, prepare, product tour, guides, portal). Only tabs the team has switched on show. Team-only records never appear there.
