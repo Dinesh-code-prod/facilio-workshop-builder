@@ -16,7 +16,7 @@
       'The customer has seen the scope and plan, and the plan has dates.', 'Plan dates drive every reminder. A plan with no dates means nothing is ever "late".'],
     ['2', 'Workshops & Requirements', 'Run the sessions, turn what was said into requirements the customer has confirmed, and check them before design.', [
       ['demokit', 'Facilio Screens', 'Show the customer real Facilio screens during the session so they can say what fits and what does not.', 'Run the sessions'],
-      ['transcripts', 'Requirements & Use Cases', 'Two tabs. Transcripts & requirements: paste or upload each transcript and confirm the drafts that come out. Use cases: group confirmed requirements into scenarios the customer recognises.', 'Capture and confirm'],
+      ['transcripts', 'Requirements & Data Onboarding', 'Three tabs. Data onboarding: the first session explains the onboarding sheet and the data the customer has to fill (open it in a new tab to show it full screen). Transcripts & requirements: paste or upload each transcript and confirm the drafts that come out. Use cases: group confirmed requirements into scenarios the customer recognises.', 'Show the data sheet, capture and confirm'],
       ['checks', 'Checks & Validations', 'Two tabs. Validations & readiness: fix conflicts, gaps and missing sources. MSA scope check: compare what was asked with what was sold.', 'Check before design']],
       'Every requirement is Confirmed or Rejected. Nothing stays Draft.', 'A requirement with no source is a guess. Keep the transcript link on each one.'],
     ['3', 'Solution Design & Configuration', 'Design and build from confirmed requirements, record all of it in the Configuration Hub, then write the BRD last and get it signed.', [
@@ -25,7 +25,6 @@
       ['whiteboard', 'Process Whiteboard', 'Draw the process with the customer so the flows have a picture behind them.', 'Build the solution'],
       ['roles', 'Roles & Access Permissions', 'Map people to roles and what each role can see and do.', 'Set up access, alerts and data'],
       ['notifications', 'Notifications', 'Say who is told what and when. Email rules are written into the package.', 'Set up access, alerts and data'],
-      ['onboarding', 'Data Onboarding', 'Send data sheets, validate what comes back, ask for fixes.', 'Set up access, alerts and data'],
       ['agents', 'Agent Setup', 'Agent projects only: choose and set up the Facilio AI agents.', 'Agents'],
       ['agentdata', 'Connection & Data', 'Agent projects only: what each agent connects to and reads.', 'Agents'],
       ['agentrules', 'Rules & Guardrails', 'Agent projects only: what each agent may and may not do.', 'Agents'],

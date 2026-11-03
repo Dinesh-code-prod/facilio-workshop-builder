@@ -683,8 +683,9 @@ a:hover .gl-thumb .t-play { transform: translate(-50%, -50%) scale(1.08); }
 /* Excel Data Onboarding opened in its own tab: full-width workspace, no sidebar */
 .shell:has(.ob-focus-page) .sidebar { display: none; }
 .shell:has(.ob-focus-page) { grid-template-columns: 1fr; }
-.ob-focus-page { padding: 8px 16px 0; }
-.ob-focus-page .ob-frame { height: calc(100vh - 100px); border-radius: 6px; }
+.ob-focus-page { padding: 0; height: 100vh; background: #fff; }
+.ob-focus-page .ob-frame { height: 100vh; border-radius: 0; border: 0; }
+.ob-focus-page .ob-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
 
 
 /* ============ Colour & depth update #20 (Facilio blue + pink, depth, type) — appended so it is easy to review or revert ============ */

@@ -45,6 +45,11 @@
   }
   // a plain-words line about a batch, so a person sees the size before anything is sent
   const size = b => (b >= 1e6 ? (b / 1e6).toFixed(b >= 1e8 ? 0 : 1) + ' MB' : Math.max(1, Math.round(b / 1e3)) + ' KB');
-  const api = { classify, WHERE: W, ALLOWED, size };
+  // The boxes on the page: each takes one kind of file. A file dropped in a box goes where the box says, if its type can be stored there (the "Drop anything" box has no category and uses classify).
+  const ZONES = [['msa', 'Contract or MSA'], ['plan', 'Project plan'], ['kickoff', 'Kick-off deck'], ['transcript', 'Workshop transcripts'], ['onboarding_files', 'Customer data'], ['config_package', 'Org package'],
+    ['uat_source', 'UAT tracker'], ['ftr_workbook', 'FTR report'], ['kpi_workbook', 'KPI workbook'], ['brd_export', 'BRD document'], ['email', 'E-mails'], ['screenshot', 'Pictures']];
+  const okFor = (category, name) => category === 'email' ? /^(eml|msg)$/.test(ext(name)) : (ALLOWED[category] || '').split(' ').includes(ext(name));
+  function fit(category, name) { return okFor(category, name) ? make(category, 'high', 'You dropped it in the "' + W[category][0] + '" box.') : null; }
+  const api = { classify, fit, ZONES, WHERE: W, ALLOWED, size };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBTransition = api;
 })(typeof window !== 'undefined' ? window : globalThis);

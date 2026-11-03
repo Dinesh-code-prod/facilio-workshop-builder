@@ -1,0 +1,7 @@
+/* Bring your project in: one box per kind of file, and a last box that takes anything. */
+.tr-zones { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+body .tr-zone:not(#_) { display: flex; flex-direction: column; gap: 4px; justify-content: center; min-height: 92px; padding: 14px 16px; border: 1.5px dashed #c9d6ef; border-radius: 12px; background: #fff; cursor: pointer; text-align: left; transition: background .15s, border-color .15s; }
+body .tr-zone:not(#_) b { color: #1D1A5E; font-size: 14px; }
+body .tr-zone:not(#_):hover, body .tr-zone:not(#_):focus-within, body .tr-zone.over:not(#_) { background: #f3f7ff; border-color: #1570EF; }
+body .tr-zone.wide:not(#_) { grid-column: 1 / -1; min-height: 110px; align-items: center; text-align: center; border-color: #8DB8FF; background: #f7faff; }
+body .tr-zone.wide:not(#_) b { font-size: 16px; }

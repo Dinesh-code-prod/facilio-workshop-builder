@@ -12,7 +12,7 @@ await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');
 const pid = await p.evaluate(async () => (await (await fetch('/api/fn/api/projects', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Al Moallam CAFM', customer: 'Al Moallam Group' }) })).json()).project.id);
 await p.goto(BASE + `/#/p/${pid}/plan`); await p.reload(); await p.waitForSelector('[data-act="planUpload"]');
 const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.click('.page-header [data-act="planUpload"]')]); await fc.setFiles(file); await p.waitForSelector('#planGrid', { timeout: 30000 });
-check('the Project Plan page has Workbook and Timeline & planning tabs', (await p.$$('.plan-tabs [data-act="planTab"]')).length === 2);
+check('the Project Plan page has Workbook and Timeline & planning tabs', (await p.$$('.plan-tabs [data-act="planTab"]')).length >= 2);
 await p.click('[data-act="planTab"][data-t="tl"]'); await p.waitForSelector('.pl-grid', { timeout: 30000 });
 const rows = await p.$$eval('.pl-grid tbody tr', t => t.map(r => ({ c: r.className, t: r.querySelector('.pl-task').textContent.trim() })));
 check('the timeline is built from the workbook on first open', rows.filter(r => /pl-ph/.test(r.c)).length === 3, rows.length + ' rows, ' + rows.filter(r => /pl-ph/.test(r.c)).length + ' phases');

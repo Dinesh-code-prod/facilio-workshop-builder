@@ -79,6 +79,7 @@
   function excelBody() {
     if (!I().ready(['onbws'])) return '<div class="page-body"><div class="empty">Loading…</div></div>'; prepareWs(); const rec = I().get('onbws', 'main');
     const rows = rec ? Object.values(rec.rows || {}).reduce((a, b) => a + b, 0) : 0;
+    if (FOCUS()) return `<div class="ob-frame"><iframe id="onbFrame" title="Excel Data Onboarding" src="onboarding-tool/index.html?p=${encodeURIComponent(S.project.id)}"></iframe></div>`;
     return `<div class="ob-xl-note">${FOCUS() ? '' : `<button class="btn sm" style="float:right;margin:-6px 0 0 12px" data-act="onbPop">${ico('plus')}Open in new tab</button>`}Your work is saved to this project as you go${rec ? ` · last saved ${esc(new Date(rec.savedAt || rec._at).toLocaleString())}${rows ? ' · ' + rows + ' row(s) prepared' : ''}` : ''}. It is prepared data: nothing is imported into Facilio until the implementation team loads it.</div><div class="ob-frame"><iframe id="onbFrame" title="Excel Data Onboarding" src="onboarding-tool/index.html?p=${encodeURIComponent(S.project.id)}"></iframe></div>`;
   }
   V.onboarding = { html() {

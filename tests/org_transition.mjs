@@ -53,4 +53,6 @@ await t('the project file space is limited, and the message says how much is use
   const col = store.get('fl.' + pid); for (let i = 0; i < 9; i++) col.set('f_ready' + i, JSON.stringify({ id: 'f_ready' + i, status: 'ready', size: 100e6, createdBy: 'x', createdAt: new Date().toISOString(), deletedAt: null }));   // 900 MB kept + 1 MB in progress
   const ok = await start('a.pdf', 90e6); assert.equal(ok.status, 201); const r = await start('b.pdf', 20e6); assert.equal(r.status, 413); assert.match(r.data.error, /already holds \d+ MB of files \(the limit is 1000 MB\)/);
 });
+await t('a file dropped in its own box goes where the box says, if the box can take that type', () => { assert.equal(T.fit('msa', 'agreement.PDF').category, 'msa'); assert.equal(T.fit('transcript', 'call.vtt').category, 'transcript'); assert.equal(T.fit('email', 'note.eml').category, 'email'); assert.equal(T.fit('msa', 'plan.xlsx'), null); assert.equal(T.fit('screenshot', 'a.pdf'), null); });
+await t('every box on the page is a stored category, and the boxes cover each kind once', () => { const ks = T.ZONES.map(z => z[0]); assert.equal(new Set(ks).size, ks.length); ks.forEach(k => assert.ok(T.WHERE[k], k)); });
 console.log(`${n} org link, classification and upload limit checks passed`);

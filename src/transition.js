@@ -34,9 +34,9 @@
     return out;
   }
   // ---- the queue ----
-  async function add(files) {
+  async function add(files, zone) {
     files = [...files]; if (!files.length) return; if (Q.length + files.length > MAX_FILES) { toast('Up to ' + MAX_FILES + ' files at a time. Send these first, then add more.', 6000, true); files = files.slice(0, Math.max(0, MAX_FILES - Q.length)); }
-    for (const f of files) { const pk = await peek(f); const c = T().classify(f.name, f.size, pk); Q.push({ id: 'q' + (++seq), file: f, size: f.size, cls: c, category: c.category, state: c.category === 'email' ? 'inbox' : c.category ? 'ready' : 'skipped', pct: 0, msg: '' }); }
+    for (const f of files) { const pk = await peek(f); let c = zone ? T().fit(zone, f.name) : null; let note = ''; if (zone && !c) { c = T().classify(f.name, f.size, pk); note = 'A .' + ext(f.name) + ' file cannot go in the "' + T().WHERE[zone][0] + '" box. ' ; c.reason = note + c.reason; } else if (!c) c = T().classify(f.name, f.size, pk); Q.push({ id: 'q' + (++seq), file: f, size: f.size, cls: c, category: c.category, state: c.category === 'email' ? 'inbox' : c.category ? 'ready' : 'skipped', pct: 0, msg: '' }); }
     V.render();
   }
   async function loadUsed() { if (!S.project || usedFor === S.project.id) return; usedFor = S.project.id; try { const r = await API.get(`/api/projects/${S.project.id}/files?versions=1`); used = (r.files || []).reduce((n, f) => n + (Number(f.size) || 0), 0); } catch (e) { used = null; } V.render(); }
@@ -49,6 +49,8 @@
     const by = {}; Q.filter(x => x.state === 'done').forEach(x => { const w = T().WHERE[x.category]; (by[w[1]] = by[w[1]] || { label: w[0], n: 0 }).n++; }); const keys = Object.keys(by); if (!keys.length) return '';
     return `<div class="card" style="margin-top:14px"><div class="card-h"><h3>Next: open each area and use its importer</h3></div><div class="card-b"><p class="small muted" style="margin-top:0">The files are stored. Each area reads its own files: open it and press its Analyse or Import button.</p>${keys.map(v => `<div class="row" style="gap:8px;padding:6px 0;align-items:center"><div style="flex:1"><b>${esc(by[v].label)}</b> <span class="xs muted">${by[v].n} file${by[v].n > 1 ? 's' : ''}</span></div><button class="btn sm" data-act="nav" data-view="${esc(v)}">Open</button></div>`).join('')}</div></div>`;
   }
+  const ext1 = k => k === 'email' ? '.eml' : '.' + (T().ALLOWED[k] || '').split(' ').join(' .');
+  const zoneHtml = (k, name, hint, wide) => `<label class="tr-zone${wide ? ' wide' : ''}" data-zone="${k}"><input type="file" data-change="trPick" data-cat="${k}" multiple hidden><b>${esc(name)}</b><span class="xs muted">${esc(hint)}</span></label>`;
   V.transition = {
     html() {
       if (!S.project) return `<div class="page-header"><div class="t"><h1>Bring your project in</h1><p>Open a project first.</p></div></div>`;
@@ -57,16 +59,17 @@
       const table = Q.length ? `<div class="card" style="margin-top:14px"><div class="card-h"><h3>${Q.length} file${Q.length > 1 ? 's' : ''}</h3><span class="small muted">${t.length} to send (${T().size(tot)}). Change where a file goes if the guess is wrong.</span></div><div class="card-b" style="overflow:auto"><table class="tbl small"><thead><tr><th>File</th><th>Goes to</th><th>Status</th><th></th></tr></thead><tbody>${Q.map(rowHtml).join('')}</tbody></table>
         ${over ? `<div class="notice warn small" style="margin-top:10px">These files are larger than the space left in this project (${T().size(left)}). Remove some, or ask an admin.</div>` : ''}<div class="row" style="gap:8px;margin-top:12px"><button class="btn primary" data-act="trSend"${t.length && !busy && !over ? '' : ' disabled'}>${busy ? 'Sending…' : 'Send ' + t.length + ' file' + (t.length === 1 ? '' : 's')}</button><button class="btn" data-act="trClear"${busy ? ' disabled' : ''}>Clear the list</button><span class="spacer"></span><span class="xs muted">${esc(sp)}</span></div></div></div>` : '';
       return `<div class="page-header"><div class="t"><h1>Bring your project in</h1><p>Moving a project to this team, or starting one that already has documents? Drop them all here. Delivery Studio suggests where each belongs and waits for your OK. Nothing is sent until you press Send.</p></div></div>
-        <div class="page-body"><label id="trZone" class="card" style="display:block;padding:28px;text-align:center;border:2px dashed #c9d6ef;cursor:pointer"><input type="file" id="trFile" data-change="trPick" multiple hidden><b>Drop files here, or click to choose them</b><div class="small muted" style="margin-top:6px">Contracts, plans, transcripts, decks, UAT and FTR workbooks, customer data, org packages, e-mails (.eml), pictures. Up to ${MAX_FILES} at a time.</div></label>
+        <div class="page-body"><div class="tr-zones">${T().ZONES.map(([k, n]) => zoneHtml(k, n, ext1(k))).join('')}${zoneHtml('', 'Drop anything', 'Anything else, or a mix of files. Delivery Studio guesses where each goes and you check it below. Up to ' + MAX_FILES + ' at a time.', true)}</div>
         <div class="small muted" style="margin:10px 2px">Big files are fine: only the name and a small peek of each file are read here, and files are sent one at a time straight to storage in 16 MB parts. A project keeps up to ${T().size(SPACE)} of files; each file type has its own size limit.</div>${table}${nextSteps()}</div>`;
     },
     mount() {
-      const z = document.getElementById('trZone'); if (!z) return; const stop = e => { e.preventDefault(); e.stopPropagation(); };
-      ['dragenter', 'dragover'].forEach(n => z.addEventListener(n, e => { stop(e); z.style.background = '#f3f7ff'; })); z.addEventListener('dragleave', e => { stop(e); z.style.background = ''; });
-      z.addEventListener('drop', e => { stop(e); z.style.background = ''; if (!S.readonly) add(e.dataTransfer.files); });
+      const stop = e => { e.preventDefault(); e.stopPropagation(); };
+      document.querySelectorAll('.tr-zone').forEach(z => { const k = z.getAttribute('data-zone');
+        ['dragenter', 'dragover'].forEach(n => z.addEventListener(n, e => { stop(e); z.classList.add('over'); })); z.addEventListener('dragleave', e => { stop(e); z.classList.remove('over'); });
+        z.addEventListener('drop', e => { stop(e); z.classList.remove('over'); if (!S.readonly) add(e.dataTransfer.files, k); }); });
     }
   };
-  ACT.trPick = el => { if (S.readonly) return; const f = [...el.files]; el.value = ''; return add(f); };
+  ACT.trPick = el => { if (S.readonly) return; const f = [...el.files]; el.value = ''; return add(f, el.getAttribute('data-cat')); };
   ACT.trCat = el => { const x = Q.find(q => q.id === el.getAttribute('data-id')); if (!x) return; x.category = el.value; x.state = el.value === 'email' ? 'inbox' : el.value ? 'ready' : 'skipped'; V.render(); };
   ACT.trDrop = a => { Q = Q.filter(q => q.id !== a.getAttribute('data-id')); V.render(); };
   ACT.trClear = () => { if (!busy) { Q = []; V.render(); } };
