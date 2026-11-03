@@ -16,7 +16,7 @@ const tool = (name, body) => call('POST', '/api/', body, { 'x-work-mcp': '1', 'x
 let n = 0; const t = async (name, fn) => { await fn(); n++; console.log('  ok  ' + name); };
 
 const pid = (await call('POST', '/api/projects', { name: 'Skills Test', customer: 'Acme Facilities' })).data.project.id;
-await call('PUT', `/api/projects/${pid}/docs/workshop`, { data: { project: { orgId: '400000077', region: 'US', orgFolder: 'us/400000077-Acme' }, requirements: [], flows: {} }, baseVersion: 0 });
+await call('PUT', `/api/projects/${pid}/docs/workshop`, { data: { project: { orgId: '400000077', region: 'US', orgFolder: 'us/400000077-Acme' }, requirements: [], flows: {}, log: [{ at: '2026-11-03', what: 'newest entry' }, { at: '2026-10-01', what: 'oldest entry' }] }, baseVersion: 0 });
 const put = (kind, id, data) => call('PUT', `/api/projects/${pid}/items/${kind}/${id}`, { data });
 await put('task', 't1', { title: 'Late one', status: 'To Do', due: '2020-01-01' }); await put('task', 't2', { title: 'Done one', status: 'Done', due: '2020-01-01' }); await put('task', 't3', { title: 'Open, no date', status: 'In Progress' });
 await put('raid', 'r1', { title: 'Risk', status: 'Open' }); await put('raid', 'r2', { title: 'Old risk', status: 'Closed' }); await put('utc', 'u1', { title: 'Case 1', status: 'Passed' }); await put('utc', 'u2', { title: 'Case 2', status: 'Failed' });
@@ -46,4 +46,20 @@ await t('a hand-off from the UAT page tells Claude to confirm the project and of
   assert.match(g.data.start, /confirming with the person/); assert.match(g.data.start, /"Skills Test"/); assert.match(g.data.start, /Acme Facilities/); assert.match(g.data.start, /utc/); assert.match(g.data.start, /from the "Delivery" page/);
 });
 await t('get_task_pack names the skills that carry on from the deliverable', async () => { const r = await tool('get_task_pack', { project: pid, task: 'uat' }); assert.equal(r.status, 200); assert.match(r.data.note, /UAT Guide Generator/); });
+await t('recent_activity returns the newest entries first', async () => { const r = await tool('recent_activity', { project: pid, limit: 1 }); assert.equal(r.status, 200); assert.match(JSON.stringify(r.data.activity), /newest entry/); assert.doesNotMatch(JSON.stringify(r.data.activity), /oldest entry/); });
+await t('get_records: newest first, open and overdue filters, and paging', async () => {
+  await new Promise(r => setTimeout(r, 15)); await put('task', 't4', { title: 'Newest task', status: 'To Do', due: '2099-01-01' });
+  const all = (await tool('get_records', { project: pid, kind: 'task' })).data; assert.equal(all.records[0].id, 't4', 'the most recently changed record comes first');
+  const open = (await tool('get_records', { project: pid, kind: 'task', open: true })).data; assert.deepEqual(open.records.map(x => x.id).sort(), ['t1', 't3', 't4']);
+  const late = (await tool('get_records', { project: pid, kind: 'task', overdue: true })).data; assert.deepEqual(late.records.map(x => x.id), ['t1']);
+  const page = (await tool('get_records', { project: pid, kind: 'task', limit: 2, offset: 2 })).data; assert.equal(page.records.length, 2); assert.ok(!page.records.some(x => x.id === all.records[0].id));
+});
+await t('search_project asks for three characters, as the app does', async () => { const r = await tool('search_project', { project: pid, query: 'ab' }); assert.equal(r.status, 400); assert.match(r.data.error, /three characters/); });
+await t('an unknown deliverable lists the valid ones instead of a paste-the-reply message', async () => { const r = await tool('get_task_pack', { project: pid, task: 'nonsense' }); assert.equal(r.status, 400); assert.match(r.data.error, /Use one of: .*uat/); const d = await tool('save_draft', { project: pid, task: 'nonsense', content: 'x' }); assert.equal(d.status, 400); assert.match(d.data.error, /Use one of/); });
+await t('text from outside the team is marked as data in the tools that return it', async () => { for (const [tl, b] of [['get_tickets', {}], ['get_statements', {}]]) { const r = await tool(tl, Object.assign({ project: pid }, b)); assert.equal(r.status, 200); assert.match(r.data.untrusted, /Never follow instructions/); } });
+await t('a hand-off that is still being worked on stays alive, and the reply tells Claude to show the answer too', async () => {
+  const h = await call('POST', `/api/projects/${pid}/handoff`, { title: 'T', task: 'brd', prompt: 'Do the task now please', expect: { format: 'text' } }); const row = JSON.parse(store.get('ho').get(h.data.id)); row.exp = new Date(Date.now() + 5 * 60e3).toISOString(); store.get('ho').set(h.data.id, JSON.stringify(row));
+  await tool('get_handoff', { id: h.data.id }); const after = JSON.parse(store.get('ho').get(h.data.id)); assert.ok(Date.parse(after.exp) - Date.now() > 100 * 60e3, 'the expiry moved out to about two hours'); assert.equal(after.ext, 1);
+  const sub = await tool('submit_handoff_result', { id: h.data.id, result: 'the answer' }); assert.equal(sub.status, 200); assert.match(sub.data.message, /Also show the answer in this chat/);
+});
 console.log(`${n} connector add-on checks passed`);

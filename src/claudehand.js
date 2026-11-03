@@ -30,7 +30,7 @@
   async function prepare(o, dest) {
     const full = L.wrap(o.prompt, meta(o));
     // with the connector added in Claude, the prompt only carries the hand-off id (pictures cannot travel through the connector, so a task with a picture uses the extension or the clipboard)
-    if (hasConn() && dest !== 'copy' && !(o.files || []).some(f => /^image\//.test(f.mime))) { try { const r = await makePackage(o, full); return { full, ref: r.id, id: r.id, expires: r.expires, conn: true }; } catch (e) { toast((e.message || 'The hand-off could not be prepared') + ' Falling back to a copied prompt.', 7000, true); return { full, ref: '', id: '', failed: true }; } }
+    if (hasConn() && dest !== 'copy' && !o.noConn && !(o.files || []).some(f => /^image\//.test(f.mime))) { try { const r = await makePackage(o, full); return { full, ref: r.id, id: r.id, expires: r.expires, conn: true }; } catch (e) { toast((e.message || 'The hand-off could not be prepared') + ' Falling back to a copied prompt.', 7000, true); return { full, ref: '', id: '', failed: true }; } }
     return { full, ref: '', id: '' };
   }
 
@@ -49,7 +49,7 @@
     return { ok: true, prefilled: lk.prefilled, copied, ref: '', said };
   };
   // the simple case for the buttons that only need the prompt opened: copy it, open Claude with it where it fits, say what happened
-  V.claudeOpenSimple = async (prompt, o) => { o = Object.assign({ title: 'Task' }, o || {}); const r = await V.claudeLaunch(Object.assign({}, o, { prompt }), o.dest || 'web'); return r; };
+  V.claudeOpenSimple = async (prompt, o) => { o = Object.assign({ title: 'Task' }, o || {}); const r = await V.claudeLaunch(Object.assign({}, o, { prompt, noConn: true }), o.dest || 'web'); return r; };
 
   let HO = null; let poll = null;
   const stopPoll = () => { if (poll) { clearInterval(poll); poll = null; } };
@@ -93,7 +93,7 @@
   // the same three ways to open Claude for the screens that keep their own reply box (the prompt is set by the screen before it draws these)
   V.claudeQuick = null;
   V.claudeQuickLinks = () => '<button type="button" class="btn sm primary" data-act="clqGo" data-d="web">Open Claude Web</button><button type="button" class="btn sm" data-act="clqGo" data-d="desktop">Open Claude Desktop</button><button type="button" class="btn sm" data-act="clqGo" data-d="copy">Copy Prompt and Open Claude</button>';
-  ACT.clqGo = a => { const q = V.claudeQuick; if (!q || !q.prompt) return; V.claudeLaunch({ title: q.title || 'Task', task: q.task || 'task', prompt: q.prompt, expect: { format: 'text' } }, a.getAttribute('data-d')).then(r => toast(r.said, 8000)); };
+  ACT.clqGo = a => { const q = V.claudeQuick; if (!q || !q.prompt) return; V.claudeLaunch({ title: q.title || 'Task', task: q.task || 'task', prompt: q.prompt, expect: { format: 'text' }, noConn: true }, a.getAttribute('data-d')).then(r => toast(r.said, 8000)); };
   // the server notes when this person's Claude last used the connector: that, not the tick box, shows whether it is really added (a seen connector also turns the tick on)
   V.claudeConnCheck = async () => { try { const r = await API.get('/api/me/connector'); if (r.seen) ls.set('fwb_claude_conn', '1'); const el = document.getElementById('hoConnSt'); if (el) el.innerHTML = r.seen ? '&#10003; Your Claude used the connector on ' + esc(new Date(r.seen).toLocaleDateString()) + '.' : '<b>Not seen yet.</b> Add the connector first (Help &gt; Claude setup). Until then Open Claude copies the full prompt.'; return !!r.seen; } catch (e) { return null; } };
   ACT.hoConn = el => { ls.set('fwb_claude_conn', el.checked ? '1' : '0'); toast(el.checked ? 'Open Claude will now send the short connector prompt' : 'Open Claude will send the full prompt', 4000); };

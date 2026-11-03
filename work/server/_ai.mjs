@@ -42,7 +42,7 @@ const te = new TextEncoder();
 const b64 = u8 => Buffer.from(u8).toString('base64'), unb64 = t => new Uint8Array(Buffer.from(t, 'base64'));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 // a promise with a hard time limit (the platform model call has no abort signal)
-const timeBox = (p, ms) => { let t; return Promise.race([p, new Promise((_, rej) => { t = setTimeout(() => rej(new AIFail('timeout', 'time box')), ms); })]).finally(() => clearTimeout(t)); };
+const timeBox = (p, ms) => { let t; return Promise.race([p, new Promise((_, rej) => { t = setTimeout(() => rej(new AIFail('timeout', 'The AI took too long to answer. Try again, or ask for a smaller part.')), ms); })]).finally(() => clearTimeout(t)); };
 const textOf = c => (typeof c === 'string' ? c : Array.isArray(c) ? c.filter(x => x && x.type === 'text').map(x => x.text).join('\n') : '');
 const hasImage = msgs => msgs.some(m => Array.isArray(m.content) && m.content.some(x => x && x.type === 'image'));
 
@@ -93,12 +93,12 @@ export function createAI(env) {
       let r; try { r = await timeBox(ctx().llm(body), q.timeoutMs); }
       catch (e) { if (e instanceof AIFail) throw e; const st = Number(e && (e.status || e.statusCode)) || 0; const m = String(e && e.message || e);
         log('deepseek call failed', (st || '') + ' ' + m.slice(0, 160));   // the reason only, never the prompt or the answer
-        if (st === 429 || /rate|limit|quota|cap/i.test(m)) throw new AIFail('rate_limited', 'You have reached the AI limit for now (about 20 requests a minute for each person, plus a daily allowance). Wait a minute and try again. If it keeps happening, the daily allowance may be used up: it resets tomorrow, or an admin can add the organisation Claude key under Admin › AI provider.');
+        if (st === 429 || /\b(rate.?limit\w*|too many requests|throttl\w*|quota)\b/i.test(m)) throw new AIFail('rate_limited', 'You have reached the AI limit for now (about 20 requests a minute for each person, plus a daily allowance). Wait a minute and try again. If it keeps happening, the daily allowance may be used up: it resets tomorrow, or an admin can add the organisation Claude key under Admin › AI provider.');
         if (st === 400 || st === 404 || /model/i.test(m) && st >= 400 && st < 500) throw new AIFail('bad_request', 'The platform model refused the request' + (body.model ? ' (check the model "' + body.model + '" in Admin › AI provider)' : '') + '.');
         throw new AIFail('unavailable', 'The AI service could not be reached. Try again.'); }
       const text = r && r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content;
       if (!text) throw new AIFail('empty', 'The AI returned no text');
-      return { text, model: r.model || q.model || DEFAULT_MODEL.deepseek, usage: r.usage ? { in: r.usage.prompt_tokens || r.usage.input_tokens, out: r.usage.completion_tokens || r.usage.output_tokens } : null };
+      return { text, truncated: r.choices[0].finish_reason === 'length' || undefined, model: r.model || q.model || DEFAULT_MODEL.deepseek, usage: r.usage ? { in: r.usage.prompt_tokens || r.usage.input_tokens, out: r.usage.completion_tokens || r.usage.output_tokens } : null };
     }
   };
   const claude = {
@@ -132,7 +132,7 @@ export function createAI(env) {
         }
         const text = (j.content || []).filter(c => c && c.type !== 'thinking').map(c => c.text || '').join('');
         if (!text) throw new AIFail('empty', 'Claude returned no text');
-        return { text, model: j.model || q.model, usage: j.usage ? { in: j.usage.input_tokens, out: j.usage.output_tokens } : null, stop: j.stop_reason };
+        return { text, model: j.model || q.model, usage: j.usage ? { in: j.usage.input_tokens, out: j.usage.output_tokens } : null, stop: j.stop_reason, truncated: j.stop_reason === 'max_tokens' || undefined };
       } catch (e) { if (e instanceof AIFail) throw e; throw e && e.name === 'AbortError' ? new AIFail('timeout', 'Claude took too long. Try a narrower request.') : new AIFail('unavailable', 'Claude could not be reached. Try again.'); }
       finally { clearTimeout(to); }
     }
@@ -150,7 +150,7 @@ export function createAI(env) {
       const body = { model: q.model || DEFAULT_MODEL.vision, messages, max_tokens: Math.min(q.maxTokens, this.caps.maxOut), temperature: q.temperature == null ? 0.1 : q.temperature };
       let r; try { r = await timeBox(ctx().llm(body), q.timeoutMs); }
       catch (e) { if (e instanceof AIFail) throw e; const st = Number(e && (e.status || e.statusCode)) || 0; const m = String(e && e.message || e); log('vision call failed', (st || '') + ' ' + m.slice(0, 160));
-        if (st === 429 || /rate|limit|quota|cap/i.test(m)) throw new AIFail('rate_limited', 'You have reached the AI limit for now. Wait a minute and try again.');
+        if (st === 429 || /\b(rate.?limit\w*|too many requests|throttl\w*|quota)\b/i.test(m)) throw new AIFail('rate_limited', 'You have reached the AI limit for now. Wait a minute and try again.');
         if (st === 400 || st === 404 || st === 415 || st === 422) throw new AIFail('unsupported', 'The platform image model did not accept this picture. Use My Claude instead: it sends the picture and the prompt to your own Claude.');
         throw new AIFail('unavailable', 'The image model could not be reached. Try again, or use My Claude.'); }
       const text = r && r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content; const t = typeof text === 'string' ? text : Array.isArray(text) ? text.map(x => x && x.text || '').join('') : '';
@@ -197,8 +197,8 @@ export function createAI(env) {
     const once = async (adapter, model, req, retried) => {
       const br = BREAKER[adapter.id] || (BREAKER[adapter.id] = { fails: 0, until: 0 });
       if (br.until > Date.now() && !(env.noBreaker && env.noBreaker())) { const e = new AIFail('unavailable', NAMES[adapter.id] + ' is not answering, so it is paused for a short while. Try again in half a minute.'); e.retryable = false; e.retryAfter = Math.ceil((br.until - Date.now()) / 1000); throw e; }
-      try { const out = await adapter.generate(Object.assign({ model, timeoutMs: Math.max(4000, Math.min(21000, left() - 1000)) }, req)); br.fails = 0; await note(adapter.id, true, out.usage, null, retried); return Object.assign(out, { provider: adapter.name, providerId: adapter.id }); }
-      catch (e) { const f = e instanceof AIFail ? e : new AIFail('unavailable', 'The AI service failed.'); if (['unavailable', 'timeout', 'empty'].includes(f.code) && ++br.fails >= 6) { br.until = Date.now() + 30000; br.fails = 0; } await note(adapter.id, false, null, f.code, retried); throw f; }
+      const t1 = Date.now(); try { const out = await adapter.generate(Object.assign({ model, timeoutMs: Math.max(4000, Math.min(21000, left() - 1000)) }, req)); br.fails = 0; await note(adapter.id, true, out.usage, null, retried); console.log(JSON.stringify({ ai: 1, p: adapter.id, ms: Date.now() - t1, ok: true, retried: !!retried, trunc: !!out.truncated, in: out.usage && out.usage.in, out: out.usage && out.usage.out })); return Object.assign(out, { provider: adapter.name, providerId: adapter.id }); }
+      catch (e) { const f = e instanceof AIFail ? e : new AIFail('unavailable', 'The AI service failed.'); if (['unavailable', 'timeout', 'empty'].includes(f.code) && ++br.fails >= 6) { br.until = Date.now() + 30000; br.fails = 0; } await note(adapter.id, false, null, f.code, retried); console.log(JSON.stringify({ ai: 1, p: adapter.id, ms: Date.now() - t1, ok: false, code: f.code, retried: !!retried })); throw f; }
     };
     const run = async (adapter, model, req) => {
       try { return await once(adapter, model, req, false); }
@@ -221,11 +221,12 @@ export function createAI(env) {
   /* generateJSON: generate, then parse and validate. validate(obj) returns the cleaned object or throws. One repair attempt when the answer is
      not valid and time allows; never returns an unvalidated answer and never fills a missing field with a guess. */
   async function generateJSON(q, validate) {
-    const t0 = Date.now(); const budget = q.budget || 21000; const pv = await choose(q.op, q.provider);
-    const parse = text => { const m = String(text || '').match(/[[{][\s\S]*[\]}]/); if (!m) throw new AIFail('invalid_output', 'The AI answer was not in the expected format.'); let j; try { j = JSON.parse(m[0]); } catch (e) { throw new AIFail('invalid_output', 'The AI answer was not valid JSON.'); } return validate(j); };
+    const t0 = Date.now(); const budget = q.budget || 21000; const pv = q.pv || await choose(q.op, q.provider);
+    const parse = text => { const m = String(text || '').replace(/```(?:json)?/gi, '').match(/[[{][\s\S]*[\]}]/); if (!m) throw new AIFail('invalid_output', 'The AI answer was not in the expected format.'); let j; try { j = JSON.parse(m[0]); } catch (e) { throw new AIFail('invalid_output', 'The AI answer was not valid JSON.'); } try { return validate(j); } catch (e) { throw e instanceof AIFail ? e : new AIFail('invalid_output', (e && e.message) || 'The AI answer did not match what was asked.'); } };
     const out = await generate(Object.assign({}, q, { pv, budget }));
     try { return Object.assign({}, out, { data: parse(out.text) }); }
     catch (e) {
+      if (out.truncated) throw new AIFail('invalid_output', 'The AI answer was cut off before it finished. Send a smaller part.');
       if (!(e instanceof AIFail) || Date.now() - t0 > budget - 9000) throw e instanceof AIFail ? e : new AIFail('invalid_output', 'The AI answer did not match what was asked.');
       const again = await generate(Object.assign({}, q, { pv, budget: budget - (Date.now() - t0), messages: q.messages.concat([{ role: 'assistant', content: String(out.text).slice(0, 4000) }, { role: 'user', content: 'That answer could not be used (' + e.message + '). Reply again with only the JSON object in the required shape, nothing else.' }]) }));
       return Object.assign({}, again, { data: parse(again.text), repaired: true });

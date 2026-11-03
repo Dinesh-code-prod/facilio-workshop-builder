@@ -376,7 +376,7 @@
    },
    {
     "name": "get_records",
-    "description": "Read the records of one kind (use list_record_kinds for the kinds). Short view by default; filter by status or words; pass detail \"full\" to read records in depth.",
+    "description": "Read the records of one kind (use list_record_kinds for the kinds). Short view by default; filter by status or words; pass detail \"full\" to read records in depth. Newest first; use offset to page, open or overdue to narrow.",
     "function": "api",
     "input_schema": {
      "type": "object",
@@ -403,6 +403,18 @@
       "limit": {
        "type": "number",
        "description": "How many to return (default shown in the answer)"
+      },
+      "open": {
+       "type": "boolean",
+       "description": "Only records that are not finished (not Done, Closed, Resolved, Approved, Passed ...)"
+      },
+      "overdue": {
+       "type": "boolean",
+       "description": "Only unfinished records whose due date has passed"
+      },
+      "offset": {
+       "type": "number",
+       "description": "Skip this many records (newest first) to read the next page"
       }
      },
      "required": [

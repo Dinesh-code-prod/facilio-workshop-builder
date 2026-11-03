@@ -110,4 +110,23 @@ await t('after six failures in a row the provider is paused and the next call fa
   llmCalls = []; await rejects(AI.generate({ op: 'document', messages: msg, maxTokens: 10 }), 'unavailable');
   assert.equal(llmCalls.length, 0, 'a paused provider is not called');
 });
+await t('a DeepSeek call that takes too long says so in plain words', async () => {
+  llmImpl = () => new Promise(() => { });
+  const e = await rejects(AI.generate({ op: 'document', messages: msg, maxTokens: 10, budget: 5000 }), 'timeout'); assert.match(e.message, /took too long/); assert.doesNotMatch(e.message, /time box/);
+});
+await t('an error that only contains the letters of rate or limit is not reported as a rate limit', async () => {
+  llmImpl = () => { const e = new Error('failed to generate: context length exceeded, separate capacity'); e.status = 500; throw e; };
+  const e = await rejects(AI.generate({ op: 'document', messages: msg, maxTokens: 10 }), 'unavailable'); assert.doesNotMatch(e.message, /AI limit/);
+  llmImpl = () => { const e = new Error('Too many requests, slow down'); e.status = 500; throw e; }; await rejects(AI.generate({ op: 'document', messages: msg, maxTokens: 10 }), 'rate_limited');
+});
+await t('structured output: a code fence is tolerated, a validator that throws a plain error is repaired once, a cut-off answer says so', async () => {
+  llmImpl = () => ({ choices: [{ message: { content: 'Here:\n```json\n{"a": 1}\n```' } }] }); assert.deepEqual((await AI.generateJSON({ op: 'classify', messages: msg, maxTokens: 50 }, j => j)).data, { a: 1 });
+  let k = 0; llmImpl = () => ({ choices: [{ message: { content: ++k === 1 ? '{"x": 1}' : '{"a": 1}' } }] });
+  const out = await AI.generateJSON({ op: 'classify', messages: msg, maxTokens: 50 }, j => { if (!j.a) throw new Error('a is missing'); return j; }); assert.equal(out.repaired, true); assert.equal(k, 2);
+  llmImpl = () => ({ choices: [{ message: { content: '{"items": [1, 2' }, finish_reason: 'length' }] }); const e = await rejects(AI.generateJSON({ op: 'classify', messages: msg, maxTokens: 50 }, j => j), 'invalid_output'); assert.match(e.message, /cut off/);
+});
+await t('a plain answer that stopped at the length limit is marked as cut off', async () => {
+  llmImpl = () => ({ choices: [{ message: { content: 'half a sentence' }, finish_reason: 'length' }] }); assert.equal((await AI.generate({ op: 'document', messages: msg, maxTokens: 10 })).truncated, true);
+  llmImpl = () => ({ choices: [{ message: { content: 'done' }, finish_reason: 'stop' }] }); assert.equal((await AI.generate({ op: 'document', messages: msg, maxTokens: 10 })).truncated, undefined);
+});
 globalThis.fetch = real; console.log(`\n${n} AI layer checks passed`);
