@@ -46,11 +46,11 @@
 
   // ================= VIEW =================
   V.settings = { html() {
-    const tab = S.ui.setTab || 'project'; const owner = S.project.role === 'owner';
-    const tabs = [['project', 'Project details'], ['keep', 'Keeping the project'], ['access', 'Members & customer access'], ['config', 'Configuration source'], ['exports', 'JSON exports'], ['claude', 'Claude connection'], ['audit', 'Audit trail']];
+    const tab = ST[S.ui.setTab] ? S.ui.setTab : 'project'; const owner = S.project.role === 'owner';
+    const tabs = [['project', 'Project details'], ['keep', 'Keeping the project'], ['access', 'Members & customer access'], ['config', 'Configuration source'], ['exports', 'JSON exports'], ['audit', 'Audit trail']];
     return `<div class="page-header"><div class="t"><h1>Project Settings &amp; Exports</h1><p>Project details, who can access the project, the configuration it is based on, and structured exports.</p></div></div>
       <div class="tabs">${tabs.map(([k, l]) => `<button class="tab${tab === k ? ' active' : ''}" data-act="setTab" data-v="${k}">${esc(l)}</button>`).join('')}</div><div class="page-body st-page">${ST[tab](owner)}</div>`;
-  }, mount() { if ((S.ui.setTab || 'project') === 'audit' && !audit.loaded && !audit.loading) loadAudit(); } };
+  }, mount() { const t = S.ui.setTab || 'project'; if (t === 'audit' && !audit.loaded && !audit.loading) loadAudit(); } };
   ACT.setTab = a => { S.ui.setTab = a.getAttribute('data-v'); V.render(); };
   const ST = {};
   ST.project = () => { const p = S.project; const ro = S.readonly; const dis = ro ? 'disabled' : ''; const ppl = F.doc('people'); const w = S.ws.project;
@@ -175,7 +175,6 @@
     <div class="xs muted" style="margin-top:10px">Every export carries schema, schemaVersion, project, configuration source and generation time, and is checked to be valid JSON before download. All five are generated from the same data as the BRD.</div></div></div>`;
   ST.exports = () => orgCard() + exportsJson();
   ST.keep = () => (V.projectKeepHtml ? V.projectKeepHtml() : '');
-  ST.claude = () => `<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Claude connection for this project</h3></div><div class="card-b">${V.claudeProjectHtml ? V.claudeProjectHtml() : ''}</div></div>`;
   let audit = { loaded: false, loading: false, entries: [] };
   function loadAudit() { audit.loading = true; API.get(`/api/projects/${S.project.id}/audit`).then(r => { audit = { loaded: true, loading: false, entries: r.entries, project: S.project.id }; V.render(); }).catch(e => { audit = { loaded: true, loading: false, entries: [], error: e.message }; V.render(); }); }
   ST.audit = () => { if (audit.project && audit.project !== S.project.id) audit = { loaded: false, loading: false, entries: [] }; if (!audit.loaded) return '<div class="empty">Loading…</div>';

@@ -1,0 +1,32 @@
+/* Project Settings > Implementation skills: the setup guide for the Facilio Implementation Toolbox (the facilio-impl-ai-skills repository), so a team member can install it
+   without the Word guide. The repository login is never written here: the platform team hands it out. Which skill carries on from which deliverable is served to Claude by
+   the connector's get_impl_skills tool (work/server/_skills.mjs, rebuilt with scripts/build-impl-skills.mjs). */
+(function (root) {
+  'use strict';
+  const V = root.FWBViews; const { esc } = root.FWB;
+  const HUB = 'https://impl-ai-hub.facilio.run';
+  const steps = l => `<ol class="small" style="line-height:1.7;margin:6px 0 0 18px">${l.map(x => `<li>${x}</li>`).join('')}</ol>`;
+  const card = (h, b) => `<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>${h}</h3></div><div class="card-b">${b}</div></div>`;
+  const row = (a, b, c) => `<tr><td><b>${esc(a)}</b></td><td>${esc(b)}</td><td>${esc(c)}</td></tr>`;
+  V.implSkillsHtml = () => [
+    card('The Facilio Implementation Toolbox', `<p class="small" style="margin-top:0">One skill, <code>/facilio-impl-toolbox</code>, opens a menu of every implementation tool (FTR Generator, UAT Guide Generator, Configuration Builder, Script Builder, Dashboard Builder and more) and hands you to the one you pick. You install it once. New tools appear in the menu by themselves.</p>
+      <p class="small">What each tool does, with sample prompts: <a href="${HUB}" target="_blank" rel="noopener">${HUB}</a> (sign in with your Facilio account).</p>
+      <p class="small" style="margin-bottom:0"><b>How it fits with this app:</b> the Delivery Studio connector gives your Claude this project's facts (requirements, UAT, tickets, org id). The toolbox gives it the tools. Ask Claude <i>"which Facilio skill fits UAT for this project?"</i> and it uses the connector's <code>get_impl_skills</code> to answer, then starts the skill for you.</p>`),
+    card('Where each tool runs', `<table class="tbl small"><thead><tr><th>Tool</th><th>Runs in</th><th>What it needs</th></tr></thead><tbody>
+      ${row('FTR Generator', 'Cowork', 'The BRD or an org package')}${row('FTR Executor', 'Cowork', 'The FTR report and Claude in Chrome')}${row('Org Configuration Assistant', 'Cowork', 'facilio-config-data or a package')}${row('Configuration Builder', 'Cowork or Claude Code', 'A BRD or a plain request, and the Facilio MCP')}
+      ${row('Connected App Builder, Script Builder, Dashboard Builder, Code Reviewer', 'Cowork', 'The Facilio MCP')}${row('Rules Optimizer, Script Optimizer', 'Cowork', 'A package or facilio-config-data')}${row('UAT Guide Generator', 'Cowork', 'The FTR or BRD, or a session recording, plus the package')}
+      ${row('Data Onboarding, Spreadsheet Transformer, Import Runner', 'Claude Code', 'The input sheet; Import Runner also needs the Facilio MCP import connection')}</tbody></table>`),
+    card('Set up once on your computer', `${steps([
+      'Install GitHub Desktop from <b>desktop.github.com</b>. Skip its GitHub sign-in: the repositories are on Bitbucket.',
+      'Clone two repositories (File &gt; Clone repository &gt; URL tab): <code>https://bitbucket.org/facilio/facilio-impl-ai-skills.git</code> (the skills) and <code>https://bitbucket.org/facilio/facilio-config-data.git</code> (the customer org packages, by region). When asked to sign in, use the implementation Bitbucket login: <b>ask the implementation platform team for it</b>. It is never kept in Delivery Studio. Check that the repository name, the branch <code>main</code> and the <b>Fetch origin</b> button show.',
+      'Before you run a skill, open GitHub Desktop, choose each repository in turn and press <b>Fetch origin</b> (press <b>Pull origin</b> if it changes to that). Otherwise the skill uses yesterday\'s logic or package.',
+      'If the customer is not in <code>facilio-config-data</code>, download the package from the org (<code>app.facilio.com/componentPackage/download</code>) and drag the .zip into the chat. Report the missing org to the platform team.'])}`),
+    card('Install it in Claude', `<h4 style="margin:0 0 4px">Claude Cowork</h4>${steps(['Claude &gt; Customize &gt; Skills &gt; <b>+ Add skill</b> &gt; <b>Browse skills</b> &gt; the <b>Shared</b> tab &gt; <code>facilio-impl-toolbox</code> &gt; <b>+ Add</b>. Add only the toolbox, not each tool.', 'New task &gt; <b>Add folder</b> &gt; <code>facilio-impl-ai-skills</code>, then <b>Add folder</b> &gt; <code>facilio-config-data</code> &gt; Start task.', 'Type <code>/facilio-impl-toolbox</code>, ask it to show the tools, and pick one.'])}
+      <h4 style="margin:12px 0 4px">Claude Code (Data Onboarding, Spreadsheet Transformer, Import Runner, or Configuration Builder if you prefer it)</h4>${steps(['Open the <code>facilio-impl-ai-skills</code> folder itself in a new Claude Code chat and restart Claude once. Add the <code>facilio-config-data</code> folder.', 'Type <code>/facilio-impl-toolbox</code>. The tool shows when you start typing: that confirms it is ready.'])}`),
+    card('If something does not work', `<table class="tbl small"><thead><tr><th>You see</th><th>Do this</th></tr></thead><tbody>
+      <tr><td>A tool uses old logic or an old package</td><td>Fetch both repositories in GitHub Desktop, then run it again.</td></tr><tr><td>A command is missing from the list (Claude Code)</td><td>Open the <code>facilio-impl-ai-skills</code> folder itself in Claude Code and restart once.</td></tr>
+      <tr><td>"Python not found"</td><td>Install Python 3 from python.org once, then continue in the same chat.</td></tr><tr><td>The first run pauses to set things up</td><td>Normal. It happens once.</td></tr>
+      <tr><td>It asks for the org package</td><td>Fetch <code>facilio-config-data</code>, or upload the package .zip in the chat.</td></tr><tr><td>Import Runner says the import connection is not available</td><td>Connect the primary Facilio MCP, not a regional one, and run it again.</td></tr></tbody></table>
+      <p class="xs muted" style="margin-bottom:0">Still failing? Send the exact error text and what you were running to the maintainer (jamal@facilio.com).</p>`)
+  ].join('');
+})(typeof window !== 'undefined' ? window : globalThis);

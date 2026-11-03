@@ -339,6 +339,25 @@
     }
    },
    {
+    "name": "get_impl_skills",
+    "description": "The Facilio implementation skills (FTR Generator, UAT Guide Generator, Configuration Builder and the rest of the toolbox): what each does, where it runs and what it needs. Pass a task (brd, ftr, uat, guide, training, config, pkg, golive, hypercare, handover, onboarding) to get the ones that carry on from a Delivery Studio deliverable. These run in the person's own Claude from their local copy of the skills repository; this tool says which fits and how to start it.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "task": {
+       "type": "string",
+       "description": "A Delivery Studio deliverable: brd, ftr, uat, guide, training, config, pkg, golive, hypercare, handover, onboarding"
+      },
+      "query": {
+       "type": "string",
+       "description": "Words to look for in a skill name or description"
+      }
+     },
+     "required": []
+    }
+   },
+   {
     "name": "list_record_kinds",
     "description": "Every kind of record this project holds (actions, decisions, risks and issues, change requests, sign-offs, tasks, UAT, hypercare, handover, guides, notes ...) with how many of each, plus the project documents you can read.",
     "function": "api",
