@@ -262,6 +262,10 @@
       "project": {
        "type": "string",
        "description": "Project name or id"
+      },
+      "maxChars": {
+       "type": "number",
+       "description": "Largest size of the pack in characters (default 80000, at most 200000)"
       }
      },
      "required": [

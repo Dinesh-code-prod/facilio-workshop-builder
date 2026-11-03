@@ -66,7 +66,7 @@ export function createAI(env) {
   async function config() {
     const v = (await dbGet('cfg')) || {}; const m = v.models || {}; const r = v.routes || {};
     const pick = x => (PROVIDERS.includes(x) ? x : 'default');
-    return { defaultProvider: v.defaultProvider === 'claude' ? 'claude' : 'deepseek', fallback: v.fallback === 'deepseek' ? 'deepseek' : 'none',
+    return { defaultProvider: v.defaultProvider === 'claude' ? 'claude' : 'deepseek', fallback: v.fallback === 'deepseek' || v.fallback === 'claude' ? v.fallback : 'none',
       models: { deepseek: typeof m.deepseek === 'string' && m.deepseek ? m.deepseek : '', claude: typeof m.claude === 'string' && m.claude ? m.claude : '' },
       routes: Object.fromEntries(Object.keys(GROUPS).map(g => [g, pick(r[g])])), by: v.by || null, at: v.at || null };
   }
@@ -213,6 +213,8 @@ export function createAI(env) {
     try { const out = await run(A, pv.model, req); if (pv.moved) out.notice = NAMES[pv.moved.from] + ' cannot do this here, so ' + A.name + ' did it.'; return out; }
     catch (e) {
       const may = pv.provider === 'claude' && pv.cfg.fallback === 'deepseek' && !OPS[q.op].needs.includes('image') && e.code !== 'bad_request' && left() > 6000;
+      const mayC = pv.provider === 'deepseek' && pv.cfg.fallback === 'claude' && !OPS[q.op].needs.includes('image') && e.code !== 'bad_request' && left() > 6000 && await claude.configured();
+      if (mayC) { const o2 = await once(claude, modelFor(pv.cfg, 'claude'), req, false); o2.notice = 'DeepSeek was not available (' + e.message + ') so Claude produced this, as the organisation fallback setting allows.'; o2.fellBack = true; return o2; }
       if (!may) throw e;
       const small = q.smaller ? await q.smaller() : req; const out = await once(deepseek, modelFor(pv.cfg, 'deepseek'), Object.assign({}, req, small), false);
       out.notice = 'Claude was not available (' + e.message + ') so DeepSeek produced this, as the organisation fallback setting allows.'; out.fellBack = true; return out;
@@ -244,7 +246,7 @@ export function createAI(env) {
     for (const k of Object.keys(BREAKER)) delete BREAKER[k];   // an admin changing the setup clears any pause
     const cur = await config(); b = b || {};
     const dp = b.defaultProvider === undefined ? cur.defaultProvider : String(b.defaultProvider); if (!PROVIDERS.includes(dp)) throw new AIFail('bad_request', 'Choose DeepSeek or Claude');
-    const fb = b.fallback === undefined ? cur.fallback : String(b.fallback); if (!['none', 'deepseek'].includes(fb)) throw new AIFail('bad_request', 'Choose a fallback option');
+    const fb = b.fallback === undefined ? cur.fallback : String(b.fallback); if (!['none', 'deepseek', 'claude'].includes(fb)) throw new AIFail('bad_request', 'Choose a fallback option');
     const routes = Object.assign({}, cur.routes); if (b.routes && typeof b.routes === 'object') for (const g of Object.keys(GROUPS)) if (b.routes[g] !== undefined) { const v = String(b.routes[g]); if (v !== 'default' && !PROVIDERS.includes(v)) throw new AIFail('bad_request', 'Unknown provider for ' + GROUPS[g]); routes[g] = v; }
     const needClaude = dp === 'claude' || Object.values(routes).includes('claude');
     if (needClaude && !(await claude.configured())) throw new AIFail('not_configured', 'Claude is not configured yet, so it cannot be used by default or for a group. Add the key first.');

@@ -119,7 +119,9 @@
       const withc = `<section class="tg2-box" id="tg2-with"><h2>Working with the customer</h2><div class="tg2-grid">${WITH.map(w => `<${w[2] ? 'button type="button" data-act="tgGo" data-view="' + w[2] + '"' : 'div'} class="tg2-tile"><b>${esc(w[0])}</b><span>${esc(w[1])}</span></${w[2] ? 'button' : 'div'}>`).join('')}</div></section>`;
       const map = `<section class="tg2-box" id="tg2-map"><h2>The menu at a glance</h2><p class="tg2-sub">Four levels: Part, Stage, Sub-heading, Page. This is the standard menu as it is today; your team's Tabs &amp; Layouts can rename or reorder it per project.</p><div class="tg2-map">${menuMap()}</div></section>`;
       const rules = `<section class="tg2-box" id="tg2-rules"><h2>Working rules</h2><div class="tg2-rules">${RULES.map(r => `<div class="tg2-rule ${r[0] === 'Do' ? 'do' : 'dont'}"><h3>${r[0]}</h3><ul>${r[1].map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')}</div></section>`;
-      return head + `<div class="page-body tg2">${prog}${chips}${first}${setup}${PHASES.map(stage).join('')}${run}${withc}${map}${rules}</div>`;
+      const inDemo = !!(S.project && S.project.demo);
+      const demoBox = `<section class="tg2-box" id="tg2-demo"><h2>Walk through a demo project</h2><p class="tg2-sub">A practice project called <b>Demo: Riverside Towers</b> with example data in every section: requirements, workshops, transcripts, tasks, risks, UAT, use cases, minutes and more. Open any page to see what good looks like and what to enter. Nothing in it is real, and it is yours alone, so edit it freely.</p><div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn primary" data-act="demoOpen">Open my demo project</button><button type="button" class="btn" data-act="demoOpen" data-reset="1">Reset it to a clean copy</button></div>${inDemo ? '<div class="xs muted" style="margin-top:8px">You are in the demo project now. Every step below opens a page that already has example data.</div>' : ''}</section>`;
+      return head + `<div class="page-body tg2">${prog}${chips}${first}${demoBox}${setup}${PHASES.map(stage).join('')}${run}${withc}${map}${rules}</div>`;
     }
   };
   ACT.tgTick = el => { const s = getDone(); const k = el.getAttribute('data-k'); el.checked ? s.add(k) : s.delete(k); setDone(s); V.render(); };
@@ -127,6 +129,7 @@
   ACT.tgJump = a => { const e = document.getElementById(a.getAttribute('data-id')); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
   ACT.tgCopy = async a => { try { await navigator.clipboard.writeText(a.getAttribute('data-text') || ''); V.toast('Copied'); } catch (e) { V.toast('Copy was blocked. Select the text and copy it by hand.', 4000); } };
   // inside a project the guide is a page. On the projects home (no project open) the same guide shows in place of the project list, with a way back.
+  ACT.demoOpen = a => V.busy(a, async () => { const reset = a.getAttribute('data-reset') === '1'; if (reset && !window.confirm('Replace your demo project with a clean copy? Your changes in it are removed.')) return; const r = await root.FWBApi.post('/api/demo-project', { reset }); if (V.closeDrawer) V.closeDrawer(); ACT.openProject({ getAttribute: () => r.id }); });
   const drawerGo = ACT.tgGo;
   V.homeGuideHtml = () => `<main class="main"><div class="page"><div style="margin:0 0 10px"><button type="button" class="btn sm" data-act="tgBack">&larr; Back to projects</button></div>${V.teamhelp.html()}</div></main>`;
   ACT.tgBack = () => { S.ui.homeGuide = false; V.render(); };

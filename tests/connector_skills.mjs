@@ -81,4 +81,19 @@ await t('save_minutes refuses a second copy for the same transcript and marks th
   const rec = (await tool('get_records', { project: pid, kind: 'minutes', detail: 'full' })).data.records[0].data; assert.equal(rec.needsReview, true); assert.equal(rec.transcriptId, 'tr1');
   const again = (await tool('save_minutes', { project: pid, title: 'Kick-off call', summary: 'We agreed the scope.', transcriptId: 'tr1' })); assert.equal(again.data.saved, false); assert.equal(again.data.duplicate, true); assert.equal((await tool('get_records', { project: pid, kind: 'minutes' })).data.total, 1);
 });
+await t('a project id finds its project directly, and a person who is not on it is refused', async () => {
+  const other = await call('POST', '/api/projects', { name: 'Someone Elses', customer: 'X' }); assert.equal(other.status, 201);
+  const mine = await tool('project_overview', { project: pid }); assert.equal(mine.status, 200);
+  const r = await handler({ method: 'POST', path: '/', query: '', headers: { 'x-work-mcp': '1', 'x-work-mcp-tool': 'project_overview' }, text: async () => JSON.stringify({ project: other.data.project.id }) }, mkctx('stranger@facilio.com')); const d = await r.json(); assert.ok(r.status === 404 || r.status === 403, 'status ' + r.status + ' ' + JSON.stringify(d));
+});
+await t('get_review_pack reports its size and can be cut smaller', async () => { const r = await tool('get_review_pack', { project: pid, maxChars: 20000 }); assert.equal(r.status, 200); assert.equal(typeof r.data.characters, 'number'); assert.equal(r.data.cut, r.data.characters > 20000); assert.ok(r.data.prompt.length <= 20000 + 200); });
+await t('save_draft: the same text twice is one draft', async () => {
+  const text = '## Gap check\n' + 'A finding that is long enough to be a real draft. '.repeat(8); const a1 = await tool('save_draft', { project: pid, task: 'gaps', content: text }); assert.equal(a1.status, 200); assert.equal(a1.data.saved, true); assert.ok(!a1.data.duplicate);
+  const a2 = await tool('save_draft', { project: pid, task: 'gaps', content: text }); assert.equal(a2.data.duplicate, true); assert.equal(a2.data.draftId, a1.data.draftId);
+});
+await t('a Claude answer that arrived while the page was closed is listed and kept for a day', async () => {
+  const h = await call('POST', `/api/projects/${pid}/handoff`, { title: 'Late answer', task: 'guide', prompt: 'Do the task now please', expect: { format: 'text' } }); await tool('submit_handoff_result', { id: h.data.id, result: 'The finished guide text' });
+  const l = await call('GET', `/api/projects/${pid}/handoffs`); assert.equal(l.status, 200); const row = l.data.answers.find(x => x.id === h.data.id); assert.ok(row && row.title === 'Late answer'); assert.ok(Date.parse(row.until) - Date.now() > 20 * 3600e3, 'kept about a day');
+  const g = await call('GET', `/api/projects/${pid}/handoff/${h.data.id}`); assert.equal(g.data.status, 'done'); assert.equal(g.data.result, 'The finished guide text');
+});
 console.log(`${n} connector add-on checks passed`);

@@ -129,4 +129,11 @@ await t('a plain answer that stopped at the length limit is marked as cut off', 
   llmImpl = () => ({ choices: [{ message: { content: 'half a sentence' }, finish_reason: 'length' }] }); assert.equal((await AI.generate({ op: 'document', messages: msg, maxTokens: 10 })).truncated, true);
   llmImpl = () => ({ choices: [{ message: { content: 'done' }, finish_reason: 'stop' }] }); assert.equal((await AI.generate({ op: 'document', messages: msg, maxTokens: 10 })).truncated, undefined);
 });
+await t('opt-in fallback: when DeepSeek fails and the organisation chose Claude, Claude answers and the draft says so', async () => {
+  KEY = 'sk-test-key'; await AI.saveConfig({ fallback: 'claude' }, 'a');
+  llmImpl = () => { const e = new Error('service down'); e.status = 503; throw e; }; fetchImpl = () => resp(200, { content: [{ type: 'text', text: 'Claude wrote this' }], model: 'claude-x', usage: { input_tokens: 3, output_tokens: 4 }, stop_reason: 'end_turn' });
+  const out = await AI.generate({ op: 'document', messages: msg, maxTokens: 50 }); assert.equal(out.provider, 'Claude'); assert.equal(out.fellBack, true); assert.match(out.notice, /DeepSeek was not available/);
+  await AI.saveConfig({ fallback: 'none' }, 'a'); await rejects(AI.generate({ op: 'document', messages: msg, maxTokens: 50 }), 'unavailable');
+  await AI.saveConfig({ fallback: 'claude' }, 'a'); KEY = ''; AI.resetBreaker(); await rejects(AI.generate({ op: 'document', messages: msg, maxTokens: 50 }), 'unavailable');   // no Claude key: the fallback is silent and the original error stays
+});
 globalThis.fetch = real; console.log(`\n${n} AI layer checks passed`);

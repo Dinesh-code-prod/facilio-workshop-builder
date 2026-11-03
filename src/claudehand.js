@@ -109,5 +109,5 @@
       <h4 style="margin:14px 0 6px">Start a chat about this project</h4>${cp('Paste this as your first message, then say what you need', start)}
       <label class="chk" style="display:flex;gap:8px;margin:12px 0 0"><input type="checkbox" data-change="hoConn"${hasConn() ? ' checked' : ''}> <span>I added the connector. Open in Claude then sends one short line instead of the whole prompt.</span></label><div id="hoConnSt" class="xs muted" style="margin:6px 0 0"></div>`; };
   ACT.hoCopyVal = async a => toast((await copyText(a.getAttribute('data-val') || '')) ? 'Copied' : 'Copy was blocked by the browser', 2500);
-  V.claudeExtOn = hasConn;
+  V.claudeExtOn = hasConn; V.claudeCopy = copyText;
 })(typeof window !== 'undefined' ? window : globalThis);
