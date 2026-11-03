@@ -1,0 +1,31 @@
+/* Plan timeline: dependency lines, link dots, critical path, and the compact table (src/tldeps.js). Facilio colours: blue links, pink for the critical path and for a task that starts too early. */
+body .pl-wrap { position: relative; }
+svg.pl-dep { position: absolute; left: 0; top: 0; z-index: 2; overflow: visible; pointer-events: none; }
+svg.pl-dep .pl-lk-p { fill: none; stroke: #5B6B99; stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; transition: stroke .15s, stroke-width .15s; }
+svg.pl-dep .pl-lk-p.crit { stroke: #E5197F; stroke-width: 2.4; }
+svg.pl-dep .pl-lk-p.bad { stroke: #E5197F; stroke-dasharray: 5 4; }
+svg.pl-dep .pl-lk-p.sel { stroke: #1570EF; stroke-width: 3; stroke-dasharray: none; }
+svg.pl-dep .hit { fill: none; stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: pointer; }
+svg.pl-dep .hit:hover + .pl-lk-p, svg.pl-dep .pl-lk-p:has(+ .hit:hover) { stroke: #1570EF; stroke-width: 2.6; }
+svg.pl-dep .pl-lk-temp { fill: none; stroke: #1570EF; stroke-width: 2; stroke-dasharray: 6 4; stroke-linejoin: round; pointer-events: none; }
+/* the dots at each end of a bar */
+body .pl-bar:not(.ph):not(.sum) { overflow: visible; }
+.pl-lk { position: absolute; top: 50%; width: 13px; height: 13px; margin-top: -6.5px; border-radius: 50%; background: #fff; border: 2px solid #1570EF; box-sizing: border-box; opacity: 0; transform: scale(.7); transition: opacity .12s, transform .12s; cursor: crosshair; z-index: 5; touch-action: none; }
+.pl-lk.l { left: -8px; } .pl-lk.r { right: -8px; }
+.pl-ms .pl-lk { display: none; }
+.pl-bar:hover .pl-lk, .pl-bar:focus-within .pl-lk, .pl-bar.lk-target .pl-lk { opacity: 1; transform: scale(1); }
+.pl-lk:hover { background: #1570EF; }
+.pl-bar.lk-target, .pl-ms.lk-target { outline: 2px solid #1570EF; outline-offset: 3px; }
+body .pl-bar.crit { box-shadow: 0 0 0 2px #E5197F; } body .pl-ms.crit { box-shadow: 0 0 0 3px rgba(229, 25, 127, .55); }
+/* what appears when a line is clicked */
+.pl-lkpop { position: absolute; z-index: 6; transform: translateX(-50%); display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 12px; background: #fff; border: 1px solid #dfe5f3; box-shadow: 0 10px 24px -10px rgba(29, 26, 94, .35); font-size: 12.5px; white-space: nowrap; }
+.pl-dep-tools { display: inline-flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.tdp-list { display: grid; gap: 4px; max-height: 190px; overflow: auto; padding: 8px 10px; border: 1px solid #e3e9f5; border-radius: 10px; }
+/* compact table: only the task and the timeline, so the timeline gets the room (the full table is one click away) */
+body .pl-wrap.pl-compact .pl-grid { min-width: 0; }
+body .pl-wrap.pl-compact .pl-grid th:not(:first-child):not(.pl-tl), body .pl-wrap.pl-compact .pl-grid td:not(.pl-task):not(.pl-tl) { display: none; }
+body .pl-wrap.pl-compact .pl-grid td.pl-task { min-width: 250px; max-width: 290px; }
+body .pl-wrap.pl-compact .pl-grid td { padding-top: 5px; padding-bottom: 5px; }
+body .pl-wrap.pl-compact .pl-grid td.pl-task { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body .pl-wrap.pl-compact .pl-grid tr.pl-kid td.pl-task { padding-left: 36px; }
+@media (prefers-reduced-motion: reduce) { .pl-lk, svg.pl-dep .pl-lk-p { transition: none; } }
