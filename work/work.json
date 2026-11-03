@@ -164,6 +164,18 @@
       },
       "limit": {
        "type": "number"
+      },
+      "text": {
+       "type": "string",
+       "description": "Words to look for in the statement"
+      },
+      "module": {
+       "type": "string",
+       "description": "Module name"
+      },
+      "speaker": {
+       "type": "string",
+       "description": "Part of the speaker name"
       }
      },
      "required": [
@@ -667,6 +679,10 @@
        "items": {
         "type": "string"
        }
+      },
+      "transcriptId": {
+       "type": "string",
+       "description": "The transcript id the minutes come from. A second save for the same transcript is refused as a duplicate."
       }
      },
      "required": [
@@ -675,6 +691,122 @@
      ]
     },
     "confirm": true
+   },
+   {
+    "name": "portfolio_status",
+    "description": "One row per project you can open: customer, type, dates, open tasks, overdue tasks, open risks and issues, failed UAT cases. Use it for 'where are we on all my projects'. Counts only.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "query": {
+       "type": "string",
+       "description": "Part of a project or customer name"
+      }
+     },
+     "required": []
+    }
+   },
+   {
+    "name": "list_overdue",
+    "description": "The actual overdue items of one project (tasks, actions, risks and issues, change requests, hypercare issues) with owner and due date, oldest first.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      },
+      "kinds": {
+       "type": "string",
+       "description": "Optional, comma separated: task, action, raid, cr, hc, tkt ..."
+      },
+      "owner": {
+       "type": "string",
+       "description": "Part of an owner name"
+      },
+      "limit": {
+       "type": "number",
+       "description": "Most items to return"
+      }
+     },
+     "required": [
+      "project"
+     ]
+    }
+   },
+   {
+    "name": "project_changes",
+    "description": "What changed in a project since a date (default: the last 7 days): records by kind, newest first. Use it for 'what changed this week'.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      },
+      "since": {
+       "type": "string",
+       "description": "A date like 2026-11-01 or a full timestamp"
+      }
+     },
+     "required": [
+      "project"
+     ]
+    }
+   },
+   {
+    "name": "search_transcripts",
+    "description": "Search what the customer said: the statements taken from the workshop transcripts, by words and optionally a module, with the speaker and review status.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      },
+      "query": {
+       "type": "string",
+       "description": "At least three characters"
+      },
+      "module": {
+       "type": "string",
+       "description": "Optional module name"
+      },
+      "limit": {
+       "type": "number",
+       "description": "Most matches to return"
+      }
+     },
+     "required": [
+      "project",
+      "query"
+     ]
+    }
+   },
+   {
+    "name": "uat_summary",
+    "description": "UAT test cases counted by status and module, with the failed and blocked cases and their notes.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      },
+      "module": {
+       "type": "string",
+       "description": "Optional module name"
+      }
+     },
+     "required": [
+      "project"
+     ]
+    }
    }
   ]
  }

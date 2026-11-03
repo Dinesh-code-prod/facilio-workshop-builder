@@ -15,8 +15,8 @@ Lets a team member's own Claude read the projects they can open and prepare deli
 | Group | Tools |
 |---|---|
 | Help | `connector_help` (what it can do, recipes for UAT, guides, issue tracking, status reports, gap checks) |
-| Find | `find_projects`, `project_overview` |
-| Read | `get_requirements`, `get_statements`, `get_open_questions`, `get_use_cases`, `get_tickets`, `list_record_kinds`, `get_records`, `get_document`, `search_project`, `recent_activity` |
+| Find | `find_projects`, `project_overview` (with progress, org id and org folder), `portfolio_status` (all your projects, counts), `get_impl_skills` (the Facilio implementation skills) |
+| Read | `get_requirements`, `get_statements`, `get_open_questions`, `get_use_cases`, `get_tickets`, `list_record_kinds`, `get_records`, `get_document`, `search_project`, `recent_activity`, `list_overdue`, `project_changes` (since a date), `search_transcripts`, `uat_summary`. `get_records` returns the newest first and takes `open`, `overdue` and `offset`. |
 | Prepare | `get_task_pack` (brd, uat, guide, ftr, gaps, workshop, golive, hypercare, handover, wsr, monthly, config, pkg, training, closure), `get_review_pack` |
 | Write | `save_draft` (always an unapproved draft in Deliverables and AI) |
 | Hand-off | `get_handoff`, `submit_handoff_result` (used by the Open in Claude buttons) |
@@ -25,7 +25,7 @@ Lets a team member's own Claude read the projects they can open and prepare deli
 ## Rules
 - Every tool runs as the signed-in person through the app's own routes (project access, roles, limits); nothing is read that the person could not open in the app.
 - Reads are compact and capped; use `detail: "full"` on one record when needed.
-- Nothing written is final: drafts arrive unapproved; a hand-off answer is shown as a preview that the person confirms.
+- Writes: `save_draft` makes an unapproved draft and a hand-off answer is shown as a preview that the person confirms. `save_minutes` makes a meeting-minutes record marked as needing review (a second save for the same transcript is refused). `create_ticket` (Teams) makes a real ticket after the person confirms in Claude. Text written by customers or other outsiders is marked `untrusted` in the answers that carry it.
 - Pictures cannot go through the connector; the page offers Copy the image.
 - Rate limit: 600 connector calls per person per 10 minutes.
 
