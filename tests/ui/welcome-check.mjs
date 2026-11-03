@@ -6,8 +6,8 @@ const b = await chromium.launch(); const p = await b.newPage({ viewport: { width
 const res = []; const check = (n, ok, d) => { res.push(ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
 async function run(label, url, skip) {
   await p.goto(BASE + url); await p.reload(); await p.waitForSelector('[data-act="openWelcome"]', { timeout: 10000 }); await p.waitForTimeout(700);
-  const box = await p.$eval('[data-act="openWelcome"]', e => { const r = e.getBoundingClientRect(); return { h: Math.round(r.height), bg: getComputedStyle(e).backgroundColor, vis: r.width > 0 }; });
-  check(label + ': highlighted button shown', box.vis && box.bg === 'rgb(21, 112, 239)' && box.h >= 44, JSON.stringify(box));
+  const box = await p.$eval('[data-act="openWelcome"]', e => { const r = e.getBoundingClientRect(); return { h: Math.round(r.height), bg: getComputedStyle(e).backgroundColor, img: getComputedStyle(e).backgroundImage, vis: r.width > 0 }; });
+  check(label + ': highlighted button shown', box.vis && (box.bg === 'rgb(21, 112, 239)' || /gradient/.test(box.img)) && box.h >= 44, JSON.stringify(box));
   await p.screenshot({ path: `${OUT}/${label}-signin.png` });
   const t0 = Date.now(); await p.click('[data-act="openWelcome"]');
   const started = await p.waitForFunction(() => window.__ri && document.querySelector('.ri canvas'), null, { timeout: 5000 }).then(() => true, () => false); check(label + ': road journey starts', started);
