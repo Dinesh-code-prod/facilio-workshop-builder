@@ -1,15 +1,16 @@
-/* Workshops & Requirements hubs (team only). The menu used to list five pages that overlapped: Transcripts & Requirement Confirmation, Use Cases,
-   Checks & Validations, MSA Scope Check and Facilio Screens. They are now three, in the order the work runs:
-     Facilio Screens (run the sessions) > Requirements & Use Cases (capture and confirm) > Checks & Validations (check before design).
-   "Requirements & Use Cases" holds the transcripts, requirements and use cases pages as two tabs; "Checks & Validations" holds the validation page and the
-   MSA scope check as two tabs. Each tab shows the existing page unchanged (the same way as the Project Overview hub), so nothing was rewritten.
+/* Page hubs (team only). Overlapping pages became hubs in the 3 Nov 2026 menu restructure; each tab shows an existing page unchanged, so nothing was rewritten:
+     Requirements (transcripts, use cases) · Contract (agreement, MSA scope check, terms & integrations) · Reports & quality (status reports, traceability) ·
+     Configuration & org package (the Configuration Hub, the package analysis, the org package export).
+   Each tab shows the existing page unchanged (the same way as the Project Overview hub), so nothing was rewritten.
    Old links (#/p/<id>/usecases, #/p/<id>/msafind, buttons that go to those pages) land in the right tab through V.hubRoute. */
 (function (root) {
   'use strict';
   const F = root.FWB; const { S } = F; const V = root.FWBViews; const ACT = V.ACT;
   const HUBS = [
-    { view: 'transcripts', key: 'reqTab', tabs: [['transcripts', 'Transcripts & requirements'], ['usecases', 'Use cases']] },
-    { view: 'checks', key: 'chkHub', tabs: [['checks', 'Validations & readiness'], ['msafind', 'MSA scope check']] }
+    { view: 'transcripts', key: 'reqTab', label: 'Requirements', tabs: [['transcripts', 'Transcripts & requirements'], ['usecases', 'Use cases']] },
+    { view: 'msaflow', key: 'ctrHub', label: 'Contract', tabs: [['msaflow', 'Agreement'], ['msafind', 'Scope check'], ['contracts', 'Terms & integrations']] },
+    { view: 'reports', key: 'rptHub', label: 'Reports and quality', tabs: [['reports', 'Status reports'], ['trace', 'Traceability & quality']] },
+    { view: 'cfginputs', key: 'cfgHub', label: 'Configuration and org package', tabs: [['cfginputs', 'Configuration Hub'], ['pkgan', 'Analysis'], ['orgpkg', 'Export']] }
   ];
   const base = {}; HUBS.forEach(h => h.tabs.forEach(([k]) => { base[k] = V[k]; }));
   const hubOf = view => HUBS.find(h => h.tabs.some(t => t[0] === view));
@@ -20,7 +21,7 @@
     const cur = () => (base[S.ui[h.key]] && h.tabs.some(t => t[0] === S.ui[h.key]) ? S.ui[h.key] : h.view);
     V[h.view] = {
       html() {
-        const t = cur(); const bar = `<div class="tabs hub-tabs" role="tablist" aria-label="${h.view === 'checks' ? 'Checks' : 'Requirements'}" style="margin-bottom:14px">${h.tabs.filter(([k]) => base[k]).map(([k, l]) => `<button class="tab${t === k ? ' active' : ''}" role="tab" aria-selected="${t === k}" data-act="hubTab" data-key="${h.key}" data-v="${k}">${l}${badge(k)}</button>`).join('')}</div>`;
+        const t = cur(); const bar = `<div class="tabs hub-tabs" role="tablist" aria-label="${h.label}" style="margin-bottom:14px">${h.tabs.filter(([k]) => base[k]).map(([k, l]) => `<button class="tab${t === k ? ' active' : ''}" role="tab" aria-selected="${t === k}" data-act="hubTab" data-key="${h.key}" data-v="${k}">${l}${badge(k)}</button>`).join('')}</div>`;
         const html = base[t].html(); const at = ['<div class="tabs"', '<div class="page-body">'].map(m => html.indexOf(m)).filter(i => i >= 0).sort((x, y) => x - y)[0];   // the hub tabs sit above the page's own tabs
         return at === undefined ? bar + html : html.slice(0, at) + bar + html.slice(at);
       },

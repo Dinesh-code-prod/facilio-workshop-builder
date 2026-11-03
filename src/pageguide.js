@@ -45,7 +45,7 @@
 
   // ---------- Training & Guides: the path and the sources ----------
   // the four pages are four separate tabs: [page, name, what only this tab does, icon]
-  const TABS = [['vstudio', 'Guides & Video Studio', 'Briefs for videos, walkthroughs and training outlines', 'spark'], ['guidebuilder', 'User Guide Builder', 'The customer\'s written guide, Word or PDF', 'book'], ['vidguide', 'Video to Guide', 'Guide steps from a recording you already have', 'mic'], ['resources', 'Notes & Links', 'Notes and links kept with the project', 'dash']];
+  const TABS = [['vstudio', 'Guides & Video Studio', 'Briefs for videos, walkthroughs and training outlines', 'spark'], ['guidebuilder', 'User Guide Builder', 'The customer\'s written guide, Word or PDF', 'book'], ['vidguide', 'Video to Guide', 'Guide steps from a recording you already have', 'mic']];
   const count = k => { try { const n = k === 'guidebuilder' ? I().list('ugd').length : k === 'resources' ? I().list('pnote').length + I().list('res').length : 0; return n ? `<em>${n}</em>` : ''; } catch (e) { return ''; } };
   const logoState = () => { const d = F.doc('brddoc'); const l = (d && d.logos) || {}; return { facilio: !!(l.facilio && l.facilio.fileId), customer: !!(l.customer && l.customer.fileId) }; };
   function sources() {
@@ -68,6 +68,6 @@
   ACT.pdPrint = () => V.range.printLive(document.querySelector('.page-body'), ((S.project && S.project.name) || 'Project') + ' · Dashboard');
   wrap('projdash', 'projdash', () => (V.isCustomer() ? '' : '<div class="row no-print" style="justify-content:flex-end;margin:0 0 10px"><button class="btn sm" data-act="pdPrint" title="Print the whole dashboard, or save it as a PDF">Export dashboard as PDF</button></div>'));
   const train = k => () => V.trainTop(k) + V.pageGuide(k) + (k === 'guidebuilder' ? V.trainSources() : '');
-  wrap('vstudio', 'vstudio', train('vstudio')); wrap('guidebuilder', 'guidebuilder', train('guidebuilder')); wrap('vidguide', 'vidguide', train('vidguide')); wrap('resources', 'resources', train('resources'));
+  wrap('vstudio', 'vstudio', train('vstudio')); wrap('guidebuilder', 'guidebuilder', train('guidebuilder')); wrap('vidguide', 'vidguide', train('vidguide'));
   wrap('cfginputs', 'cfginputs', () => V.pageGuide('cfginputs')); wrap('agenttest', 'agenttest', () => V.pageGuide('agenttest')); wrap('ftr', 'ftr', () => V.pageGuide('ftr')); wrap('kpi', 'kpi', () => V.pageGuide('kpi'));
 })(typeof window !== 'undefined' ? window : globalThis);

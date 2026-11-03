@@ -1,6 +1,6 @@
 # One org, more than one project: a proposal (3 Nov 2026)
 
-Status: **proposal only, nothing built.** Raised by the owner on 3 Nov: a customer org (for example Mansions) goes live, then comes back with new scope (AI agents, new integrations, more sites) that needs its own kick-off, workshops, requirements and state flows.
+Status: **proposal only, nothing built.** Raised by the owner on 3 Nov: a customer org goes live, then comes back with new scope (AI agents, new integrations, more sites) that needs its own kick-off, workshops, requirements and state flows.
 
 ## What already exists
 - Org id and (now) org package folder are stored per project (Project details).

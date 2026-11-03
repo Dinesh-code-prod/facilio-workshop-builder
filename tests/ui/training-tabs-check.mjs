@@ -8,16 +8,16 @@ const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } }); cons
 await p.goto(BASE + '/?nointro'); await p.waitForSelector('[data-act]', { state: 'attached' });
 const pid = await p.evaluate(async () => (await (await fetch('/api/fn/api/projects', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Tabs', customer: 'T Co' }) })).json()).project.id);
 const open = async v => { await p.goto(BASE + `/?nointro#/p/${pid}/${v}`); await p.reload(); await p.waitForSelector('.page-header', { timeout: 30000 }); await p.waitForTimeout(1500); };
-const VIEWS = ['vstudio', 'guidebuilder', 'vidguide', 'resources'];
+const VIEWS = ['vstudio', 'guidebuilder', 'vidguide'];
 for (const v of VIEWS) {
   await open(v); if (OUT) await p.screenshot({ path: `${OUT}/train-${v}.png` });
   const s = await p.evaluate(() => { const body = document.querySelector('.page-body'); const bar = body.querySelector('.tp-tabs'); const rest = body.cloneNode(true); rest.querySelector('.tp-tabs') && rest.querySelector('.tp-tabs').remove(); return { n: body.querySelectorAll('.tp-tabs').length, tabs: [...bar.querySelectorAll('.tp-tab')].map(t => t.getAttribute('data-view')), on: [...bar.querySelectorAll('.tp-tab.on')].map(t => t.getAttribute('data-view')), sources: !!body.querySelector('.tp-srcs'), links: [...rest.querySelectorAll('[data-act="nav"]')].map(x => x.getAttribute('data-view')).filter(x => ['vstudio', 'guidebuilder', 'vidguide', 'resources'].includes(x)) }; });
-  check(v + ': one tab bar with the four tabs, this one open', s.n === 1 && s.tabs.join() === VIEWS.join() && s.on.join() === v, s.on.join());
+  check(v + ': one tab bar with the three tabs, this one open', s.n === 1 && s.tabs.join() === VIEWS.join() && s.on.join() === v, s.on.join());
   check(v + ': no button pointing at another Training tab inside the page', s.links.filter(x => x !== v).length === 0, s.links.join());
   check(v + ': the "What the drafts read" panel is only on the User Guide Builder', s.sources === (v === 'guidebuilder'));
 }
-await open('vstudio'); await p.click('.tp-tab[data-view="resources"]'); await p.waitForTimeout(800);
-check('clicking a tab opens that page', (await p.evaluate(() => location.hash)).endsWith('/resources'));
+await open('vstudio'); await p.click('.tp-tab[data-view="vidguide"]'); await p.waitForTimeout(800);
+check('clicking a tab opens that page', (await p.evaluate(() => location.hash)).endsWith('/vidguide'));
 await open('vstudio'); check('the studio "What to make" list has no Document guide', !(await p.locator('select[data-k="out"] option', { hasText: 'Document guide' }).count()));
 // Team Guide
 await open('teamhelp'); if (OUT) await p.screenshot({ path: `${OUT}/teamguide.png`, fullPage: true });

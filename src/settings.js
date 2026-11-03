@@ -49,9 +49,10 @@
     const tab = ST[TAB_OF[S.ui.setTab] || S.ui.setTab] ? (TAB_OF[S.ui.setTab] || S.ui.setTab) : 'project'; const owner = S.project.role === 'owner';
     const tabs = [['project', 'Project details'], ['access', 'People & access'], ['orgx', 'Org package & exports'], ['keep', 'Keeping the project'], ['audit', 'History']];
     return `<div class="page-header"><div class="t"><h1>Project Settings &amp; Exports</h1><p>Project details, who can access the project, the configuration it is based on, and structured exports.</p></div></div>
-      <div class="tabs">${tabs.map(([k, l]) => `<button class="tab${tab === k ? ' active' : ''}" data-act="setTab" data-v="${k}">${esc(l)}</button>`).join('')}</div><div class="page-body st-page">${ST[tab](owner)}</div>`;
+      <div class="tabs">${tabs.map(([k, l]) => `<button class="tab${tab === k ? ' active' : ''}" data-act="setTab" data-v="${k}">${esc(l)}</button>`).join('')}</div><div class="page-body st-page">${ST[tab](owner)}${tab === 'access' ? portalCard() : ''}</div>`;
   }, mount() { const t = S.ui.setTab || 'project'; if (t === 'audit' && !audit.loaded && !audit.loading) loadAudit(); } };
   ACT.setTab = a => { S.ui.setTab = a.getAttribute('data-v'); V.render(); };
+  const portalCard = () => `<div class="card" style="margin-top:14px"><div class="card-h"><h3>What the customer can see and do</h3></div><div class="card-b"><p class="small" style="margin-top:0">The customer menu, the sensitive content that is hidden from them and what they may do are set on the Customer Portal page.</p><button class="btn" data-act="nav" data-view="portal">Open Customer Portal rules</button></div></div>`;
   const ST = {}; const TAB_OF = { config: 'orgx', exports: 'orgx' };   // the two tabs that became one keep working for any saved or linked tab name
   ST.project = () => { const p = S.project; const ro = S.readonly; const dis = ro ? 'disabled' : ''; const ppl = F.doc('people'); const w = S.ws.project;
     const phases = ['Planning', 'Requirement workshops', 'BRD sign-off', 'Configuration', 'UAT', 'Go-live', 'Hypercare', 'Closed'];
