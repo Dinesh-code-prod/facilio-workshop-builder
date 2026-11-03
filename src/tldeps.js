@@ -28,7 +28,7 @@
     rows.forEach(s => (s.dep || []).forEach(p => {
       if (!els[p] || !els[s.id]) return; const k = p + '>' + s.id; const d = elbow(pt(els[p], t, 'r'), pt(els[s.id], t, 'l')); const isCrit = crit && crit.links.has(k), isBad = bad.has(k), isSel = sel === k;
       const cls = 'pl-lk-p' + (isCrit ? ' crit' : '') + (isBad ? ' bad' : '') + (isSel ? ' sel' : ''); const mk = isSel ? 's' : isCrit || isBad ? 'c' : 'a';
-      out += `<path class="${cls}" d="${d}" marker-end="url(#tlArr-${mk})"/><path class="hit" data-k="${esc(k)}" d="${d}"><title>${esc(nameOf(p))} then ${esc(nameOf(s.id))}${isBad ? ' (starts too early)' : ''}. Click to remove the link.</title></path>`;
+      out += `<path class="${cls}" d="${d}" marker-end="url(#tlArr-${mk})"/><path class="hit" data-k="${esc(k)}" d="${d}" tabindex="0" role="button" aria-label="Link: ${esc(nameOf(s.id))} waits for ${esc(nameOf(p))}${isBad ? ', starts too early' : ''}. Press Delete to remove it."><title>${esc(nameOf(p))} then ${esc(nameOf(s.id))}${isBad ? ' (starts too early)' : ''}. Click it, or Tab to it and press Delete, to remove the link.</title></path>`;
     }));
     svg.innerHTML = out;
   }
@@ -58,11 +58,22 @@
     document.addEventListener('pointermove', move); document.addEventListener('pointerup', done); document.addEventListener('keydown', esc1); move(e);
   }
 
+  // keyboard linking: focus a bar, press L (this task is first) or Shift+L (this task waits), choose the other task with the arrow keys, Enter to link, Escape to cancel
+  let kl = null; const live = msg => { const el = document.getElementById('plDepLive'); if (el) el.textContent = msg; };
+  const barsList = t => [...t.querySelectorAll('.pl-bar[data-id]:not(.ph):not(.sum), .pl-ms[data-id]')];
+  function klShow(t) { t.querySelectorAll('.lk-target').forEach(x => x.classList.remove('lk-target')); const el = kl.list[kl.i]; if (!el) return; el.classList.add('lk-target'); el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); live((kl.rev ? 'Choose the task that ' + nameOf(kl.id) + ' waits for: ' : 'Choose the task that waits for ' + nameOf(kl.id) + ': ') + nameOf(el.dataset.id) + '. Enter to link, Escape to cancel.'); }
+  function klEnd(t, ok) { const k = kl; kl = null; t.querySelectorAll('.lk-target').forEach(x => x.classList.remove('lk-target')); if (ok && k.list[k.i]) { const o = k.list[k.i].dataset.id; k.rev ? link(o, k.id) : link(k.id, o); } else live('Linking cancelled.'); }
+  function barKeys(e, t) {
+    const el = e.target.closest && e.target.closest(BAR); if (!el) return; const edit = A().canEdit();
+    if (kl) { if (e.key === 'Escape') { e.preventDefault(); klEnd(t, false); } else if (e.key === 'Enter') { e.preventDefault(); klEnd(t, true); } else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); kl.i = (kl.i + 1) % kl.list.length; klShow(t); } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); kl.i = (kl.i - 1 + kl.list.length) % kl.list.length; klShow(t); } return; }
+    if (edit && (e.key === 'l' || e.key === 'L') && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); const all = barsList(t); const me = all.indexOf(el); const list = all.filter(x => x !== el); if (!list.length) return; kl = { id: el.dataset.id, rev: e.shiftKey, list, i: Math.min(Math.max(me, 0), list.length - 1) }; klShow(t); }
+  }
+
   // the extra controls sit in the timeline's own toolbar
   function toolbar() {
     const bar = document.querySelector('.pl-tools'); if (!bar || bar.querySelector('.pl-dep-tools')) return; const edit = A().canEdit();
     const box = document.createElement('div'); box.className = 'pl-dep-tools';
-    box.innerHTML = `<label class="chk small"><input type="checkbox" data-change="tlCrit"${S.ui.tlCrit ? ' checked' : ''}> Critical path</label>${edit ? `<label class="chk small" title="When a task moves later, the tasks that wait for it move too"><input type="checkbox" data-change="tlFollow"${S.ui.tlFollow === false ? '' : ' checked'}> Move dependent tasks</label>` : ''}<button type="button" class="btn sm" data-act="tlCompact" aria-pressed="${S.ui.tlCompact !== false}">${S.ui.tlCompact !== false ? 'Show all columns' : 'Timeline only'}</button>${edit ? '<span class="xs muted">Link tasks: hover a bar, then drag the dot at its end onto another bar.</span>' : ''}`;
+    box.innerHTML = `<label class="chk small"><input type="checkbox" data-change="tlCrit"${S.ui.tlCrit ? ' checked' : ''}> Critical path</label>${edit ? `<label class="chk small" title="When a task moves later, the tasks that wait for it move too"><input type="checkbox" data-change="tlFollow"${S.ui.tlFollow === false ? '' : ' checked'}> Move dependent tasks</label>` : ''}<button type="button" class="btn sm" data-act="tlCompact" aria-pressed="${S.ui.tlCompact !== false}">${S.ui.tlCompact !== false ? 'Show all columns' : 'Timeline only'}</button>${edit ? '<span class="xs muted">Link tasks: drag the dot at the end of a bar onto another bar. Keyboard: focus a bar and press L, choose with the arrow keys, Enter to link. Tab to a line and press Delete to remove it.</span>' : ''}<span id="plDepLive" class="sr-only" role="status" aria-live="polite"></span>`;
     bar.appendChild(box);
   }
 
@@ -70,11 +81,13 @@
   V.planGanttMount = function () {
     if (prev) prev.apply(this, arguments); const wrap = document.querySelector('.pl-wrap'), t = document.querySelector('.pl-grid'); if (!wrap || !t || !A()) return;
     wrap.classList.toggle('pl-compact', S.ui.tlCompact !== false); toolbar();
-    if (A().canEdit()) t.querySelectorAll(BAR).forEach(e => { if (!e.querySelector('.pl-lk')) e.insertAdjacentHTML('beforeend', '<s class="pl-lk l" data-side="l" title="Drag to another task to link"></s><s class="pl-lk r" data-side="r" title="Drag to another task to link"></s>'); });
+    t.querySelectorAll(BAR).forEach(e => { e.setAttribute('tabindex', '0'); e.setAttribute('role', 'button'); e.setAttribute('aria-label', (e.getAttribute('title') || '') + (A().canEdit() ? '. Press L to link this task to another.' : '')); });
+    if (A().canEdit()) t.querySelectorAll(BAR).forEach(e => { if (!e.querySelector('.pl-lk')) e.insertAdjacentHTML('beforeend', '<s class="pl-lk l" data-side="l" aria-hidden="true" title="Drag to another task to link"></s><s class="pl-lk r" data-side="r" aria-hidden="true" title="Drag to another task to link"></s>'); });
+    t.addEventListener('keydown', e => barKeys(e, t));
     draw(); const svg = wrap.querySelector('svg.pl-dep');
     if (A().canEdit()) t.addEventListener('pointerdown', e => { if (e.button === 0 && e.target.closest('.pl-lk')) startLink(e, t, svg); }, true);
     svg.addEventListener('click', e => { const h = e.target.closest('.hit'); if (!h) return; sel = h.dataset.k; draw(); const b = wrap.getBoundingClientRect(); popover(sel, e.clientX - b.left + wrap.scrollLeft, e.clientY - b.top + 10); });
-    svg.style.pointerEvents = 'none'; svg.querySelectorAll('.hit').forEach(h => { h.style.pointerEvents = 'stroke'; });
+    svg.addEventListener('keydown', e => { const h = e.target.closest && e.target.closest('.hit'); if (!h || !A().canEdit()) return; if (e.key === 'Delete' || e.key === 'Backspace' || e.key === 'u' || e.key === 'U') { e.preventDefault(); unlink(h.dataset.k); live('Link removed.'); } else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sel = h.dataset.k; draw(); } });
     wrap.addEventListener('scroll', () => popover(null), { passive: true }); requestAnimationFrame(draw);
   };
   document.addEventListener('keydown', e => { if ((e.key === 'Delete' || e.key === 'Backspace') && sel && A() && A().canEdit() && !/INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '')) { e.preventDefault(); unlink(sel); } if (e.key === 'Escape' && sel) { sel = null; popover(null); draw(); } });

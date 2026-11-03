@@ -1,19 +1,23 @@
 /* Plan timeline: dependency lines, link dots, critical path, and the compact table (src/tldeps.js). Facilio colours: blue links, pink for the critical path and for a task that starts too early. */
 body .pl-wrap { position: relative; }
-svg.pl-dep { position: absolute; left: 0; top: 0; z-index: 2; overflow: visible; pointer-events: none; }
+body .pl-wrap .pl-today { z-index: 0; }   /* the today line also stays under the sticky task column */
+svg.pl-dep { position: absolute; left: 0; top: 0; z-index: 0; overflow: visible; pointer-events: none; }   /* under the sticky task column (z-index 1) and the header, so a line never crosses the task names */
 svg.pl-dep .pl-lk-p { fill: none; stroke: #5B6B99; stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; transition: stroke .15s, stroke-width .15s; }
 svg.pl-dep .pl-lk-p.crit { stroke: #E5197F; stroke-width: 2.4; }
 svg.pl-dep .pl-lk-p.bad { stroke: #E5197F; stroke-dasharray: 5 4; }
 svg.pl-dep .pl-lk-p.sel { stroke: #1570EF; stroke-width: 3; stroke-dasharray: none; }
-svg.pl-dep .hit { fill: none; stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: pointer; }
+svg.pl-dep .hit { fill: none; stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: pointer; outline: none; }
+svg.pl-dep .hit:focus-visible { stroke: rgba(21, 112, 239, .28); }
+body .pl-bar:focus-visible, body .pl-ms:focus-visible { outline: 2px solid #1570EF; outline-offset: 3px; }
 svg.pl-dep .hit:hover + .pl-lk-p, svg.pl-dep .pl-lk-p:has(+ .hit:hover) { stroke: #1570EF; stroke-width: 2.6; }
 svg.pl-dep .pl-lk-temp { fill: none; stroke: #1570EF; stroke-width: 2; stroke-dasharray: 6 4; stroke-linejoin: round; pointer-events: none; }
 /* the dots at each end of a bar */
 body .pl-bar:not(.ph):not(.sum) { overflow: visible; }
-.pl-lk { position: absolute; top: 50%; width: 13px; height: 13px; margin-top: -6.5px; border-radius: 50%; background: #fff; border: 2px solid #1570EF; box-sizing: border-box; opacity: 0; transform: scale(.7); transition: opacity .12s, transform .12s; cursor: crosshair; z-index: 5; touch-action: none; }
-.pl-lk.l { left: -8px; } .pl-lk.r { right: -8px; }
-.pl-ms .pl-lk { display: none; }
-.pl-bar:hover .pl-lk, .pl-bar:focus-within .pl-lk, .pl-bar.lk-target .pl-lk { opacity: 1; transform: scale(1); }
+.pl-lk { position: absolute; top: 50%; width: 13px; height: 13px; margin-top: -6.5px; border-radius: 50%; background: #fff; border: 2px solid #1570EF; box-sizing: border-box; opacity: 0; transform: scale(.7); transition: opacity .12s, transform .12s; cursor: crosshair; touch-action: none; }
+.pl-lk.l { left: -6px; } .pl-lk.r { right: -6px; }   /* half on the bar, half off it: attached, not floating */
+/* a milestone is a diamond (a square turned 45 degrees): its left and right points are the square's bottom-left and top-right corners */
+.pl-ms .pl-lk.l { left: 0; top: 100%; right: auto; margin: -6.5px 0 0 -6.5px; } .pl-ms .pl-lk.r { left: 100%; top: 0; right: auto; margin: -6.5px 0 0 -6.5px; }
+.pl-bar:hover .pl-lk, .pl-bar:focus-visible .pl-lk, .pl-bar.lk-target .pl-lk, .pl-ms:hover .pl-lk, .pl-ms:focus-visible .pl-lk, .pl-ms.lk-target .pl-lk { opacity: 1; transform: scale(1); }
 .pl-lk:hover { background: #1570EF; }
 .pl-bar.lk-target, .pl-ms.lk-target { outline: 2px solid #1570EF; outline-offset: 3px; }
 body .pl-bar.crit { box-shadow: 0 0 0 2px #E5197F; } body .pl-ms.crit { box-shadow: 0 0 0 3px rgba(229, 25, 127, .55); }
