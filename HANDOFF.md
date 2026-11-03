@@ -2,8 +2,11 @@
 
 Last updated: 2 Nov 2026 (evening), Claude Code session `vigilant-euclid`. Pushed to `main` and `feat/simpler-studio`. Deploys 116 to 120 are live; the commit after that (connector upgrade, extension removal, Keeping the project, Privacy & data, six repo documents, repo tidy) is pushed and NOT deployed yet.
 
-## Not pushed yet (3 Nov 2026)
-- Discover more got two new Apple-style scroll effects in one folder, `src/animation/discover/` (`core.js`, `login-scroll.*` for the sign-in page, `project-scroll.*` for the project tab). They replace `src/animation/explorefx.*`. Built and tested on localhost:4173 only (`discover-login-check` 9/9, `explore-scroll-check` 11/11, `npm test` passes); waiting for the user's look before commit, push and deploy.
+## Pushed but not deployed (3 Nov 2026)
+- Discover more got two new Apple-style scroll effects in one folder, `src/animation/discover/` (`core.js`, `login-scroll.*` for the sign-in page, `project-scroll.*` for the project tab). They replace `src/animation/explorefx.*`. Pushed as 34fb96c (`discover-login-check` 9/9, `explore-scroll-check` 11/11, `npm test` passes); the live deploy is still waiting.
+
+- Training & Guides revamp and Team Guide update (3 Nov 2026), also not pushed: the four pages are separate tabs with their own content (`src/pageguide.js`, `src/studio.js`, `src/tracequal.css`); Team Guide rebuilt on the menu levels with a live menu map and a "Set up your Claude" section (`src/teamhelp.js`, `src/teamhelp.css`, recoloured from violet to Facilio blue). New check: `tests/ui/training-tabs-check.mjs` (19/19). The Document guide option was removed from the Studio (the User Guide Builder covers it); the Training outline stays there.
+- Deploy 130 is the last live one. The deploy of 34fb96c was blocked by the permission check and still needs the user's approval.
 
 ## Read first
 - Repository documents: `docs/README.md` (six documents: product, technical, app flow, UI/UX, backend schema, implementation plan). Deploy steps and log: `docs/operations/`. Open items and questions: `docs/reports/pending-2026-11-02.md`.

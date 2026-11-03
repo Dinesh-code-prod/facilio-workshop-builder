@@ -45,6 +45,10 @@ The opening animation (tree growth) and small transitions use the Facilio Motion
 
 Discover more has two different Apple-style scroll effects, both in `src/animation/discover/`. The sign-in page (`login-scroll.*`): every solution area is a pinned scene that zooms in, its words light up with the scroll, then it shrinks away. Inside a project (`project-scroll.*`): every chapter is a dark pinned stage whose cards slide sideways while the card in focus grows. Both are switched off for reduced motion and on phones, tablets and short windows.
 
+## Tab groups and the Team Guide
+- **5. Training & Guides** is four separate tabs under one bar (`V.trainTop` in `src/pageguide.js`): Guides & Video Studio (briefs for videos, walkthroughs, step-by-step guides and training outlines), User Guide Builder (the written guide, Word or PDF), Video to Guide (steps from an existing recording), Notes & Links. Each page shows only its own work: no button points at another tab, and the "What the drafts read" panel appears on the User Guide Builder only. Checked by `tests/ui/training-tabs-check.mjs`.
+- **Team Guide** (`src/teamhelp.js`) follows the menu's four levels: Part, Stage, Sub-heading, Page. Steps sit under the menu's sub-headings, and "The menu at a glance" is drawn from the live menu, so every page of the menu appears there. It also has "Set up your Claude": the Facilio Delivery Studio connector, the skills, and that no plugin is needed (the old Claude Desktop extension was removed on 2 Nov 2026).
+
 ## Customer view
 A separate, calmer menu for the customer (introduction, prepare, product tour, guides, portal). Only tabs the team has switched on show. Team-only records never appear there.
 

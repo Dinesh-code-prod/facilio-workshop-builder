@@ -1,5 +1,5 @@
 /* Plain-language help on the pages that confused people: a short "what is this page for" strip (V.pageGuide), an explained AI panel that replaces
-   rows of blue / Open in Claude / Add from Claude buttons (V.aiPanel), and for Training & Guides the four-step path and the sources the drafts read (V.trainTop).
+   rows of blue / Open in Claude / Add from Claude buttons (V.aiPanel), and for Training & Guides the bar of four separate tabs (V.trainTop) and, on the User Guide Builder only, the sources the drafts read (V.trainSources).
    Nothing here changes data: it reads what other pages keep and links to them. */
 (function (root) {
   'use strict';
@@ -11,13 +11,13 @@
   const PG = {
     cfginputs: ['The Configuration Hub keeps everything configured for this customer in one place, and is the last step before the BRD. What you write here also feeds guides, test plans and handover.',
       ['Overview: see system modules, custom modules, relationships, connected apps and what still needs work.', 'Modules: describe each custom module in a few words. System modules are listed so nothing is missed.', 'Module relationships: say how modules connect (for example a work order creates a purchase request).', 'Connected apps and tabs: list the apps and the tabs each role sees.', 'Checks: fix anything flagged as unclear or missing.', 'Then use the Draft documents panel to turn it into a guide, UAT plan, training outline or handover.'], 'Next: write the BRD Draft. Training & Guides and UAT use the same inputs.'],
-    vstudio: ['Plan and brief a user guide, training outline or video for one module. It reads the configuration, the BRD draft, Configuration Inputs and the org package, so the story matches what was built.',
-      ['Check the sources panel: BRD, Configuration Inputs, org package and logos.', 'Pick the module, what to make, who it is for, and the length.', 'Review what the project knows, then draft with DeepSeek, or open it in Claude for a polished result.', 'Bring the reply back and review it before it is used.'], 'Next: write the full written guide in the User Guide Builder.'],
-    guidebuilder: ['Write the customer\'s written guide, section by section, from the project\'s records. You review every section before it counts.',
-      ['Start a guide and choose the modules and the readers.', 'Let the AI draft each section, or write it yourself.', 'Edit, then approve each section.', 'Add logos and export to Word or PDF.'], 'Tip: a video you already have can become guide steps in Video to Guide.'],
-    vidguide: ['Turn a recorded walkthrough into draft guide steps. The video stays on this computer.',
-      ['Open the video and capture the screens you need.', 'Paste or load the transcript.', 'Keep only the screenshots you want.', 'Let the AI draft the steps, then review them.'], 'The result goes into a user guide draft.'],
-    resources: ['A shared shelf for notes and links the team wants to keep with the project: training links, recordings, reference documents.', ['Add a note or link.', 'Give it a category so it is easy to find.', 'Everyone on the project can open it.'], ''],
+    vstudio: ['Write the brief for a video, a click-through walkthrough, a step-by-step guide or a training outline about one module. It reads the module\'s own fields and state flow, so the story matches what was built.',
+      ['Create: pick the module, what to make, who it is for and the length.', 'Review what the project knows about that module.', 'Copy the brief into your own Claude, or draft it here.', 'Product Tour and Story ideas: find the real screens and story ideas to show.'], ''],
+    guidebuilder: ['Write the customer\'s written user guide, section by section, from the project\'s records. You review every section before it counts.',
+      ['Start a guide and choose the modules and the readers.', 'Let the AI draft each section, or write it yourself.', 'Edit, then approve each section.', 'Add logos and export to Word or PDF.'], ''],
+    vidguide: ['Turn a screen recording you already have into draft guide steps. The video stays on this computer.',
+      ['Open the video and capture the screens you need.', 'Paste or load the transcript.', 'Keep only the screenshots you want.', 'Let the AI draft the steps, then review them.'], ''],
+    resources: ['A shared shelf for the notes and links the team keeps with the project: training links, recordings, reference documents.', ['Notes: write down what was said or decided.', 'Links & resources: save a link or a file with a category.', 'Everyone on the project can open them.'], ''],
     dl_build: ['Tracks whether each in-scope module has been configured and tested by the Facilio team. It is the team\'s own status, before the customer tests.',
       ['Set each module to Not started, In progress, Ready for testing or Completed.', 'Check the build tasks from the plan for dates that have passed.', 'When all modules are Completed, move on to UAT.'], 'Next: UAT.'],
     dl_uat: ['User acceptance testing: the customer\'s own people try the system and confirm it does what they asked for. This page runs the whole thing, from writing the tests to closing the issues.',
@@ -44,27 +44,30 @@
   };
 
   // ---------- Training & Guides: the path and the sources ----------
-  const STEPS = [['vstudio', 'Guides & Video Studio', 'Plan and brief a guide, training outline or video for one module.'], ['guidebuilder', 'User Guide Builder', 'Write the full written guide and export it to Word or PDF.'], ['vidguide', 'Video to Guide', 'Turn a recorded walkthrough into guide steps.'], ['resources', 'Notes & Links', 'Keep links and notes with the project.']];
+  // the four pages are four separate tabs: [page, name, what only this tab does, icon]
+  const TABS = [['vstudio', 'Guides & Video Studio', 'Briefs for videos, walkthroughs and training outlines', 'spark'], ['guidebuilder', 'User Guide Builder', 'The customer\'s written guide, Word or PDF', 'book'], ['vidguide', 'Video to Guide', 'Guide steps from a recording you already have', 'mic'], ['resources', 'Notes & Links', 'Notes and links kept with the project', 'dash']];
+  const count = k => { try { const n = k === 'guidebuilder' ? I().list('ugd').length : k === 'resources' ? I().list('pnote').length + I().list('res').length : 0; return n ? `<em>${n}</em>` : ''; } catch (e) { return ''; } };
   const logoState = () => { const d = F.doc('brddoc'); const l = (d && d.logos) || {}; return { facilio: !!(l.facilio && l.facilio.fileId), customer: !!(l.customer && l.customer.fileId) }; };
   function sources() {
     const C = V.cfgInputs; const n = C && C.counts ? C.counts() : null; const cf = F.doc('config') || {}; const lg = logoState();
     const brd = V.signoffStatus ? V.signoffStatus('brd').status : 'notdue'; const nmod = Object.keys((S.baseline || {}).modules || {}).length;
     const item = (ok, title, text, btn) => `<div class="tp-src ${ok ? 'ok' : 'todo'}"><i>${ok ? '✓' : '!'}</i><div><b>${esc(title)}</b><div class="xs muted">${text}</div></div>${btn || ''}</div>`;
     const can = !V.isCustomer() && !S.readonly;
-    return `<div class="card tp-srcs"><div class="card-h"><h3>What the drafts read</h3><span class="small muted">The more of these are filled in, the closer the guide or video is to your customer\'s real setup.</span></div><div class="tp-grid">
+    return `<div class="card tp-srcs"><div class="card-h"><h3>What the drafts read</h3><span class="small muted">The more of these are filled in, the closer the guide is to your customer\'s real setup.</span></div><div class="tp-grid">
       ${item(brd === 'signed', 'BRD draft', brd === 'signed' ? 'Signed off. The guide follows the agreed requirements.' : 'Not signed off yet. Drafts will mark anything unconfirmed.', '<button class="btn sm" data-act="nav" data-view="brd">Open BRD</button>')}
       ${item(n ? n.mods + n.rels + n.apps > 0 : false, 'Configuration Hub', n ? (n.mods + n.rels + n.apps) + ' custom module, relationship and app records.' : 'Custom modules, relationships and apps with their tabs.', '<button class="btn sm" data-act="nav" data-view="cfginputs">Open</button>')}
       ${item(nmod > 0 && cf.source === 'imported', 'Org package', cf.source === 'imported' ? 'Loaded: ' + esc((cf.importedMeta || {}).sourceName || 'package') + ' (' + nmod + ' modules). The AI can see the real flows.' : 'Using the reference setup. Load the customer\'s own package so the flows match their organisation.', can ? '<button class="btn sm" data-act="importConfig">Load org package (.zip)</button>' : '')}
       ${item(lg.facilio && lg.customer, 'Logos', (lg.facilio ? 'Facilio logo added. ' : 'Facilio logo missing. ') + (lg.customer ? 'Customer logo added.' : 'Customer logo missing.') + ' Used on the cover and header of exported guides.', can ? '<button class="btn sm" data-act="brdLogos">Add logos</button>' : '')}</div></div>`;
   }
-  V.trainTop = cur => `<div class="tp-path">${STEPS.map((s, i) => `<button type="button" class="tp-step${s[0] === cur ? ' on' : ''}" data-act="nav" data-view="${s[0]}"><i>${i + 1}</i><b>${esc(s[1])}</b><span>${esc(s[2])}</span></button>`).join('')}</div>${cur === 'vstudio' || cur === 'guidebuilder' ? sources() : ''}`;
+  V.trainTop = cur => `<nav class="tp-tabs" role="tablist" aria-label="Training &amp; Guides">${TABS.map(s => `<button type="button" role="tab" aria-selected="${s[0] === cur}" class="tp-tab${s[0] === cur ? ' on' : ''}" data-act="nav" data-view="${s[0]}"><span class="tp-ic">${V.ico ? V.ico(s[3]) : ''}</span><span class="tp-tx"><b>${esc(s[1])}${count(s[0])}</b><span>${esc(s[2])}</span></span></button>`).join('')}</nav>`;
+  V.trainSources = sources;   // only the User Guide Builder reads these, so only that tab shows them
 
   // put the strips at the top of the page body without touching each page's own code
   const wrap = (name, key, fn) => { const o = V[name]; if (!o || !o.html || o._pg) return; const h = o.html; o._pg = 1; o.html = function () { const out = h.apply(this, arguments); const add = fn(); return typeof out === 'string' && add ? out.replace('<div class="page-body">', () => '<div class="page-body">' + add) : out; }; };
   // the team project dashboard had no export: a bar above it prints the whole page as it looks
   ACT.pdPrint = () => V.range.printLive(document.querySelector('.page-body'), ((S.project && S.project.name) || 'Project') + ' · Dashboard');
   wrap('projdash', 'projdash', () => (V.isCustomer() ? '' : '<div class="row no-print" style="justify-content:flex-end;margin:0 0 10px"><button class="btn sm" data-act="pdPrint" title="Print the whole dashboard, or save it as a PDF">Export dashboard as PDF</button></div>'));
-  const train = k => () => V.pageGuide(k) + V.trainTop(k);
+  const train = k => () => V.trainTop(k) + V.pageGuide(k) + (k === 'guidebuilder' ? V.trainSources() : '');
   wrap('vstudio', 'vstudio', train('vstudio')); wrap('guidebuilder', 'guidebuilder', train('guidebuilder')); wrap('vidguide', 'vidguide', train('vidguide')); wrap('resources', 'resources', train('resources'));
   wrap('cfginputs', 'cfginputs', () => V.pageGuide('cfginputs')); wrap('agenttest', 'agenttest', () => V.pageGuide('agenttest')); wrap('ftr', 'ftr', () => V.pageGuide('ftr')); wrap('kpi', 'kpi', () => V.pageGuide('kpi'));
 })(typeof window !== 'undefined' ? window : globalThis);
