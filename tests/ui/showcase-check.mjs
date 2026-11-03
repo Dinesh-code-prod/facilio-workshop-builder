@@ -32,9 +32,9 @@ check('published after confirming', await p.evaluate(() => window.FWBViews.items
 await p.click('.page-header [data-act="xfEdit"]'); await p.waitForSelector('#sc_t'); await p.fill('#sc_t', 'Draft only entry'); await p.click('[data-act="xfSave"]'); await p.waitForTimeout(500);
 await p.waitForTimeout(800); await p.screenshot({ path: `${OUT}/showcase-team.png` });
 // the customer's view (the page is switched to the customer mode inside this browser; the server still applies the project rules)
-await p.evaluate(() => { window.__k = window.FWB.S.user.kind; window.FWB.S.user.kind = 'customer'; window.FWBViews.render(); }); await p.waitForTimeout(400);
-const custCards = await p.$$eval('.sc-card h3', e => e.map(x => x.textContent));
-check('the customer sees only published entries', custCards.length === 1 && /Mobile inspections/.test(custCards[0]), custCards.join(' | '));
+await p.evaluate(() => { window.__k = window.FWB.S.user.kind; window.FWB.S.user.kind = 'customer'; window.FWBViews.go('explore'); }); await p.waitForTimeout(1500);   // the customer's page is Discover more (the scroll story), which shows published entries only
+const custText = await p.evaluate(() => document.querySelector('main').innerText);
+check('the customer sees the published entry and not the draft one', /Mobile inspections/.test(custText) && !/Draft only entry/.test(custText), custText.replace(/\s+/g, ' ').slice(0, 120));
 const teamsOn = await fetch(BASE + '/__teams').then(r => r.ok && /json/.test(r.headers.get('content-type') || ''), () => false); if (teamsOn) await p.evaluate(async () => fetch('/api/fn/api/mail/settings', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ teamsOn: true, teamsChannel: 'delivery-sales' }) }));
 await p.click('[data-act="xfOpen"]'); await p.waitForSelector('#drawer .sc-ul'); check('details show the capabilities, not the internal source', /Offline checklists/.test(await p.textContent('#drawer')) && !/product notes/.test(await p.textContent('#drawer')));
 await p.click('#drawer [data-act="xfAsk"]'); await p.waitForSelector('#sc_note'); await p.fill('#sc_note', 'Demo for the maintenance team please'); await p.click('[data-act="xfAskGo"]'); await p.waitForTimeout(800);
