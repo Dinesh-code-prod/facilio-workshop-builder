@@ -35,4 +35,12 @@ t('nothing linked means no critical path; a bad link to a missing task is ignore
 t('a loop that got into the data does not hang the critical path or the rescheduling', () => {
   const rows = [row('a', '2026-01-01', '2026-01-02', ['b']), row('b', '2026-01-03', '2026-01-04', ['a'])]; D.critical(rows); D.reschedule(rows, 'a'); assert.ok(true);
 });
+t('lag days: a task waits the extra days after its predecessor ends, and a negative lag lets it overlap', () => {
+  const a = row('a', '2026-01-01', '2026-01-10'), b = Object.assign(row('b', '2026-01-02', '2026-01-03', ['a']), { lag: { a: 2 } }), c = Object.assign(row('c', '2026-01-02', '2026-01-03', ['a']), { lag: { a: -3 } });
+  D.reschedule([a, b, c], 'a'); assert.deepEqual([b.start, b.end], ['2026-01-13', '2026-01-14'], 'ends 10th, next day 11th, plus 2 days'); assert.deepEqual([c.start, c.end], ['2026-01-08', '2026-01-09'], 'starts 3 days before the next day');
+});
+t('lag changes what counts as a conflict and how long the critical chain is', () => {
+  const a = row('a', '2026-01-01', '2026-01-05'), b = Object.assign(row('b', '2026-01-07', '2026-01-08', ['a']), { lag: { a: 3 } }); assert.deepEqual([...D.conflicts([a, b])], ['a>b'], 'the 6th is the next day, but a 3-day lag means the 9th');
+  b.lag.a = 0; assert.equal(D.conflicts([a, b]).size, 0); const c1 = D.critical([a, b]).days; b.lag.a = 4; assert.equal(D.critical([a, b]).days, c1 + 4);
+});
 console.log(`${n} dependency checks passed`);

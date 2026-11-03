@@ -10,6 +10,7 @@ svg.pl-dep .hit { fill: none; stroke: transparent; stroke-width: 14; pointer-eve
 svg.pl-dep .hit:focus-visible { stroke: rgba(21, 112, 239, .28); }
 body .pl-bar:focus-visible, body .pl-ms:focus-visible { outline: 2px solid #1570EF; outline-offset: 3px; }
 svg.pl-dep .hit:hover + .pl-lk-p, svg.pl-dep .pl-lk-p:has(+ .hit:hover) { stroke: #1570EF; stroke-width: 2.6; }
+svg.pl-dep .pl-lk-lag { font: 600 10.5px Inter, Arial, sans-serif; fill: #1D1A5E; paint-order: stroke; stroke: #fff; stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
 svg.pl-dep .pl-lk-temp { fill: none; stroke: #1570EF; stroke-width: 2; stroke-dasharray: 6 4; stroke-linejoin: round; pointer-events: none; }
 /* the dots at each end of a bar */
 body .pl-bar:not(.ph):not(.sum) { overflow: visible; }
@@ -22,7 +23,7 @@ body .pl-bar:not(.ph):not(.sum) { overflow: visible; }
 .pl-bar.lk-target, .pl-ms.lk-target { outline: 2px solid #1570EF; outline-offset: 3px; }
 body .pl-bar.crit { box-shadow: 0 0 0 2px #E5197F; } body .pl-ms.crit { box-shadow: 0 0 0 3px rgba(229, 25, 127, .55); }
 /* what appears when a line is clicked */
-.pl-lkpop { position: absolute; z-index: 6; transform: translateX(-50%); display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 12px; background: #fff; border: 1px solid #dfe5f3; box-shadow: 0 10px 24px -10px rgba(29, 26, 94, .35); font-size: 12.5px; white-space: nowrap; }
+.pl-lkpop { position: fixed; z-index: 700; display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 12px; background: #fff; border: 1px solid #dfe5f3; box-shadow: 0 10px 24px -10px rgba(29, 26, 94, .35); font-size: 12.5px; white-space: nowrap; }
 .pl-dep-tools { display: inline-flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
 .tdp-list { display: grid; gap: 4px; max-height: 190px; overflow: auto; padding: 8px 10px; border: 1px solid #e3e9f5; border-radius: 10px; }
 /* compact table: only the task and the timeline, so the timeline gets the room (the full table is one click away) */

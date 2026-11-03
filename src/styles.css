@@ -141,7 +141,7 @@ table.tbl { width: 100%; border-collapse: separate; border-spacing: 0; }
 .sev { width: 8px; height: 8px; border-radius: 50%; display: inline-block; } .sev.high, .sev.blocking { background: var(--fc-danger); } .sev.medium, .sev.warning { background: var(--fc-warning); } .sev.low { background: #e0c341; } .sev.info { background: #b8c4d0; }
 
 /* ---------- drawers & dialogs (fc-right-side-dialog, _dialog.scss) ---------- */
-.scrim { position: fixed; inset: 0; background: rgba(0, 0, 0, .42); z-index: 60; display: flex; justify-content: flex-end; }
+.scrim { position: fixed; inset: 0; background: rgba(0, 0, 0, .42); z-index: 600; display: flex; justify-content: flex-end; }
 .drawer { width: min(40vw, 640px); min-width: min(480px, 100vw); height: 100%; background: #fff; display: flex; flex-direction: column; box-shadow: var(--shadow-2); animation: slidein .18s ease-out; }
 .drawer.wide { width: min(70vw, 1100px); }
 @keyframes slidein { from { transform: translateX(40px); opacity: .6; } to { transform: none; opacity: 1; } }

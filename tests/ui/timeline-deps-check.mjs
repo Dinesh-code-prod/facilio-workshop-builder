@@ -37,10 +37,13 @@ await p.mouse.move(c8.x, c8.y); await p.mouse.down(); await p.mouse.move(c8.x + 
 const after = await start('pl_9'); check('moving a task later moves the tasks that wait for it', after > before, before + ' -> ' + after);
 check('and no link starts too early afterwards', (await p.locator('svg.pl-dep .pl-lk-p.bad').count()) === 0);
 
-const n0 = await links(); await p.locator('svg.pl-dep .hit').first().click({ force: true }); await p.waitForSelector('.pl-lkpop [data-lkdel]', { timeout: 5000 });
+const n0 = await links(); await p.locator('svg.pl-dep .hit').first().focus(); await p.keyboard.press('Enter'); await p.waitForSelector('.pl-lkpop [data-lkdel]', { timeout: 5000 });
 check('clicking a line offers to remove it', /waits for/.test(await p.textContent('.pl-lkpop')));
 await p.click('.pl-lkpop [data-lkdel]'); await p.waitForTimeout(900); check('removing a link takes its line away', (await links()) === n0 - 1, n0 + ' -> ' + (await links()));
 
+await p.locator('svg.pl-dep .hit').first().focus(); await p.keyboard.press('Enter'); await p.waitForSelector('.pl-lkpop [data-lklag]'); await p.fill('.pl-lkpop [data-lklag]', '3'); await p.locator('.pl-lkpop [data-lklag]').dispatchEvent('change'); await p.waitForSelector('svg.pl-dep .pl-lk-lag', { timeout: 8000 }).catch(() => {});
+check('a link can carry lag days, shown on the line', (await p.locator('svg.pl-dep .pl-lk-lag').count()) >= 1 && /\+3d/.test(await p.textContent('svg.pl-dep')));
+check('the top bar no longer covers the drawer', await (async () => { await p.evaluate(() => document.querySelector('a[data-act="tlRow"][data-id]').click()); await p.waitForSelector('#drawer .drawer'); await p.waitForTimeout(700); const ok = await p.evaluate(() => { const x = document.querySelector('#drawer .drawer-h .btn'); const r = x.getBoundingClientRect(); const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return top === x || x.contains(top); }); await p.evaluate(() => document.querySelector('[data-act="closeDrawer"]').click()); await p.waitForTimeout(500); return ok; })());
 await p.evaluate(() => document.querySelector('[data-change="tlCrit"]').click()); await p.waitForTimeout(700);
 check('the critical path lights up the longest chain', (await p.locator('svg.pl-dep .pl-lk-p.crit').count()) >= 3 && (await p.locator('.pl-bar.crit, .pl-ms.crit').count()) >= 3);
 if (OUT) await p.screenshot({ path: `${OUT}/timeline-critical.png` });

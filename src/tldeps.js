@@ -6,7 +6,7 @@
   'use strict';
   const F = root.FWB; const { S, esc } = F; const V = root.FWBViews; const ACT = V.ACT; const L = () => root.FWBTlDeps; const A = () => V.tlApi; const toast = (...a) => V.toast && V.toast(...a);
   const NS = 'http://www.w3.org/2000/svg'; const BAR = '.pl-bar[data-id], .pl-ms[data-id]'; let sel = null;
-  const copyRows = () => A().TD().rows.map(r => Object.assign({}, r, r.dep ? { dep: r.dep.slice() } : {}));
+  const copyRows = () => A().TD().rows.map(r => Object.assign({}, r, r.dep ? { dep: r.dep.slice() } : {}, r.lag ? { lag: Object.assign({}, r.lag) } : {}));
   const nameOf = id => ((A().TD().rows.find(r => r.id === id) || {}).title || 'task');
 
   // a point on a bar, measured from the table's top-left corner
@@ -19,6 +19,7 @@
   const defs = '<defs>' + [['a', '#5B6B99'], ['c', '#E5197F'], ['s', '#1570EF']].map(([k, c]) => `<marker id="tlArr-${k}" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="${c}"/></marker>`).join('') + '</defs>';
 
   function draw() {
+    document.querySelectorAll('.pl-lkpop').forEach(e => e.remove());   // the link box lives on the page body, so a redraw must not leave a box for a link that changed
     const wrap = document.querySelector('.pl-wrap'), t = document.querySelector('.pl-grid'); if (!wrap || !t) return;
     let svg = wrap.querySelector('svg.pl-dep'); if (!svg) { svg = document.createElementNS(NS, 'svg'); svg.setAttribute('class', 'pl-dep'); svg.setAttribute('aria-hidden', 'true'); wrap.appendChild(svg); }
     svg.style.width = t.offsetWidth + 'px'; svg.style.height = t.offsetHeight + 'px';
@@ -27,8 +28,9 @@
     if (crit) crit.nodes.forEach(id => { if (els[id]) els[id].classList.add('crit'); });
     rows.forEach(s => (s.dep || []).forEach(p => {
       if (!els[p] || !els[s.id]) return; const k = p + '>' + s.id; const d = elbow(pt(els[p], t, 'r'), pt(els[s.id], t, 'l')); const isCrit = crit && crit.links.has(k), isBad = bad.has(k), isSel = sel === k;
+      const lag = L().lagOf(s, p); const aa = pt(els[p], t, 'r'), bb = pt(els[s.id], t, 'l'); const lab = lag ? `<text class="pl-lk-lag" x="${aa.x + 13}" y="${(aa.y + bb.y) / 2 - 4}">${lag > 0 ? '+' : ''}${lag}d</text>` : '';
       const cls = 'pl-lk-p' + (isCrit ? ' crit' : '') + (isBad ? ' bad' : '') + (isSel ? ' sel' : ''); const mk = isSel ? 's' : isCrit || isBad ? 'c' : 'a';
-      out += `<path class="${cls}" d="${d}" marker-end="url(#tlArr-${mk})"/><path class="hit" data-k="${esc(k)}" d="${d}" tabindex="0" role="button" aria-label="Link: ${esc(nameOf(s.id))} waits for ${esc(nameOf(p))}${isBad ? ', starts too early' : ''}. Press Delete to remove it."><title>${esc(nameOf(p))} then ${esc(nameOf(s.id))}${isBad ? ' (starts too early)' : ''}. Click it, or Tab to it and press Delete, to remove the link.</title></path>`;
+      out += `<path class="${cls}" d="${d}" marker-end="url(#tlArr-${mk})"/><path class="hit" data-k="${esc(k)}" d="${d}" tabindex="0" role="button" aria-label="Link: ${esc(nameOf(s.id))} waits for ${esc(nameOf(p))}${isBad ? ', starts too early' : ''}. Press Delete to remove it."><title>${esc(nameOf(p))} then ${esc(nameOf(s.id))}${isBad ? ' (starts too early)' : ''}. Click it, or Tab to it and press Delete, to remove the link.</title></path>${lab}`;
     }));
     svg.innerHTML = out;
   }
@@ -39,13 +41,20 @@
     s.dep = (s.dep || []).concat(pred); const moved = S.ui.tlFollow === false ? [] : L().reschedule(rows, pred);
     A().saveRows(rows, 'Linked: ' + nameOf(pred) + ' then ' + nameOf(succ)); V.render(); toast(moved.length ? 'Linked. ' + moved.length + ' task' + (moved.length > 1 ? 's' : '') + ' moved to start after ' + nameOf(pred) + '.' : 'Linked: ' + nameOf(succ) + ' now waits for ' + nameOf(pred) + '.', 4500);
   }
-  function unlink(k) { const [p, s] = k.split('>'); const rows = copyRows(); const r = rows.find(x => x.id === s); if (!r) return; r.dep = (r.dep || []).filter(x => x !== p); if (!r.dep.length) delete r.dep; sel = null; A().saveRows(rows, 'Link removed: ' + nameOf(p) + ' then ' + nameOf(s)); V.render(); toast('Link removed. The task keeps its dates.', 3500); }
+  function setLag(p, s, n) {
+    const rows = copyRows(); const r = rows.find(x => x.id === s); if (!r) return; r.lag = Object.assign({}, r.lag); if (n) r.lag[p] = n; else delete r.lag[p]; if (!Object.keys(r.lag).length) delete r.lag;
+    const moved = S.ui.tlFollow === false ? [] : L().reschedule(rows, p); A().saveRows(rows, 'Lag set: ' + nameOf(p) + ' then ' + nameOf(s) + ' (' + n + ' d)'); V.render(); toast(moved.length ? 'Lag set to ' + n + ' days. ' + moved.length + ' task' + (moved.length > 1 ? 's' : '') + ' moved.' : 'Lag set to ' + n + ' days.', 4000);
+  }
+  function unlink(k) { const [p, s] = k.split('>'); const rows = copyRows(); const r = rows.find(x => x.id === s); if (!r) return; r.dep = (r.dep || []).filter(x => x !== p); if (!r.dep.length) delete r.dep; if (r.lag) { delete r.lag[p]; if (!Object.keys(r.lag).length) delete r.lag; } sel = null; A().saveRows(rows, 'Link removed: ' + nameOf(p) + ' then ' + nameOf(s)); V.render(); toast('Link removed. The task keeps its dates.', 3500); }
 
   function popover(k, x, y) {
-    const wrap = document.querySelector('.pl-wrap'); if (!wrap) return; wrap.querySelectorAll('.pl-lkpop').forEach(e => e.remove()); if (!k) return; const [p, s] = k.split('>');
-    const d = document.createElement('div'); d.className = 'pl-lkpop'; d.style.left = x + 'px'; d.style.top = y + 'px';
-    d.innerHTML = `<span><b>${esc(nameOf(s))}</b> waits for <b>${esc(nameOf(p))}</b></span>${A().canEdit() ? '<button type="button" class="btn sm danger" data-lkdel>Remove link</button>' : ''}`; wrap.appendChild(d);
+    document.querySelectorAll('.pl-lkpop').forEach(e => e.remove()); if (!k) return; const [p, s] = k.split('>');
+    const d = document.createElement('div'); d.className = 'pl-lkpop';
+    const lag = L().lagOf(A().TD().rows.find(r => r.id === s) || {}, p);
+    d.innerHTML = `<span><b>${esc(nameOf(s))}</b> waits for <b>${esc(nameOf(p))}</b></span>${A().canEdit() ? `<label class="xs" style="display:flex;gap:6px;align-items:center">Lag <input type="number" data-lklag min="-60" max="365" value="${lag}" aria-label="Lag in days after ${esc(nameOf(p))} ends" style="width:62px"> days</label><button type="button" class="btn sm danger" data-lkdel>Remove link</button>` : ''}`; document.body.appendChild(d);
+    const r = d.getBoundingClientRect(); d.style.left = Math.max(8, Math.min(innerWidth - r.width - 8, x - r.width / 2)) + 'px'; d.style.top = Math.max(8, Math.min(innerHeight - r.height - 8, y + 14)) + 'px';
     const b = d.querySelector('[data-lkdel]'); if (b) b.addEventListener('click', () => unlink(k));
+    const g = d.querySelector('[data-lklag]'); if (g) g.addEventListener('change', () => setLag(p, s, Math.max(-60, Math.min(365, Math.round(Number(g.value) || 0)))));
   }
 
   function startLink(e, t, svg) {
@@ -86,9 +95,9 @@
     t.addEventListener('keydown', e => barKeys(e, t));
     draw(); const svg = wrap.querySelector('svg.pl-dep');
     if (A().canEdit()) t.addEventListener('pointerdown', e => { if (e.button === 0 && e.target.closest('.pl-lk')) startLink(e, t, svg); }, true);
-    svg.addEventListener('click', e => { const h = e.target.closest('.hit'); if (!h) return; sel = h.dataset.k; draw(); const b = wrap.getBoundingClientRect(); popover(sel, e.clientX - b.left + wrap.scrollLeft, e.clientY - b.top + 10); });
-    svg.addEventListener('keydown', e => { const h = e.target.closest && e.target.closest('.hit'); if (!h || !A().canEdit()) return; if (e.key === 'Delete' || e.key === 'Backspace' || e.key === 'u' || e.key === 'U') { e.preventDefault(); unlink(h.dataset.k); live('Link removed.'); } else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sel = h.dataset.k; draw(); } });
-    wrap.addEventListener('scroll', () => popover(null), { passive: true }); requestAnimationFrame(draw);
+    svg.addEventListener('click', e => { const h = e.target.closest('.hit'); if (!h) return; sel = h.dataset.k; draw(); popover(sel, e.clientX, e.clientY); });
+    svg.addEventListener('keydown', e => { const h = e.target.closest && e.target.closest('.hit'); if (!h || !A().canEdit()) return; if (e.key === 'Delete' || e.key === 'Backspace' || e.key === 'u' || e.key === 'U') { e.preventDefault(); unlink(h.dataset.k); live('Link removed.'); } else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sel = h.dataset.k; draw(); const bb = h.getBoundingClientRect(); popover(sel, bb.left + bb.width / 2, bb.top + bb.height / 2); const g = document.querySelector('.pl-lkpop [data-lklag]'); if (g) g.focus(); } });
+    wrap.addEventListener('scroll', () => popover(null), { passive: true }); if (!window.__plLkScroll) { window.__plLkScroll = 1; window.addEventListener('scroll', () => popover(null), { passive: true }); } requestAnimationFrame(draw);
   };
   document.addEventListener('keydown', e => { if ((e.key === 'Delete' || e.key === 'Backspace') && sel && A() && A().canEdit() && !/INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '')) { e.preventDefault(); unlink(sel); } if (e.key === 'Escape' && sel) { sel = null; popover(null); draw(); } });
 

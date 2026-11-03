@@ -7,6 +7,7 @@
   const addDays = (d, n) => new Date(ms(d) + n * DAY).toISOString().slice(0, 10);
   const diff = (a, b) => Math.round((ms(b) - ms(a)) / DAY);
   const endOf = r => r.end || r.start;
+  const lagOf = (r, p) => Number((r.lag || {})[p]) || 0;   // extra days between the end of p and the start of r (negative = overlap)
   const kidsOf = rows => { const k = {}; rows.forEach(r => (r.dep || []).forEach(p => (k[p] = k[p] || []).push(r.id))); return k; };
 
   // would "succ waits for pred" make a loop (pred already waits, however indirectly, for succ)?
@@ -16,6 +17,7 @@
     return false;
   }
 
+  // Lag: a task may carry lag: { predId: days }. Zero means it starts the day after the other task ends.
   // Move tasks forward (never back) so that each starts after all its predecessors end, starting from the task that changed; keeps each task's length.
   // Changes the rows in place and returns the ids that moved.
   function reschedule(rows, fromId) {
@@ -24,7 +26,7 @@
       const id = q.shift();
       (kids[id] || []).forEach(k => {
         const s = byId[k]; if (!s || !s.start) return;
-        const need = (s.dep || []).map(p => byId[p]).filter(p => p && p.start).map(p => addDays(endOf(p), 1)).reduce((m, x) => (x > m ? x : m), '');
+        const need = (s.dep || []).map(p => byId[p]).filter(p => p && p.start).map(p => addDays(endOf(p), 1 + lagOf(s, p.id))).reduce((m, x) => (x > m ? x : m), '');
         if (need && s.start < need) { const d = diff(s.start, need); const e = endOf(s); s.start = need; s.end = addDays(e, d); if (!moved.includes(k)) moved.push(k); q.push(k); }
       });
     }
@@ -34,7 +36,7 @@
   // links whose task starts before its predecessor has finished: "predId>succId"
   function conflicts(rows) {
     const byId = {}; rows.forEach(r => { byId[r.id] = r; }); const out = new Set();
-    rows.forEach(s => (s.dep || []).forEach(p => { const a = byId[p]; if (a && a.start && s.start && s.start <= endOf(a)) out.add(p + '>' + s.id); }));
+    rows.forEach(s => (s.dep || []).forEach(p => { const a = byId[p]; if (a && a.start && s.start && s.start <= addDays(endOf(a), lagOf(s, p))) out.add(p + '>' + s.id); }));
     return out;
   }
 
@@ -43,7 +45,7 @@
     const byId = {}; rows.forEach(r => { byId[r.id] = r; }); const dur = r => (r && r.start ? diff(r.start, endOf(r)) + 1 : 1); const memo = {}; const best = {}; const busy = new Set();
     const len = id => {
       if (memo[id] != null) return memo[id]; if (busy.has(id)) return 0; busy.add(id); const r = byId[id]; let m = 0, who = null;
-      ((r && r.dep) || []).forEach(p => { if (!byId[p]) return; const v = len(p); if (v > m) { m = v; who = p; } });
+      ((r && r.dep) || []).forEach(p => { if (!byId[p]) return; const v = len(p) + Math.max(0, lagOf(r, p)); if (v > m) { m = v; who = p; } });
       busy.delete(id); best[id] = who; return (memo[id] = dur(r) + m);
     };
     const linked = new Set(); rows.forEach(r => (r.dep || []).forEach(p => { if (byId[p]) { linked.add(r.id); linked.add(p); } }));
@@ -52,6 +54,6 @@
     return { nodes, links, days: topLen };
   }
 
-  const api = { wouldLoop, reschedule, conflicts, critical, addDays, diff };
+  const api = { wouldLoop, reschedule, conflicts, critical, addDays, diff, lagOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBTlDeps = api;
 })(typeof window !== 'undefined' ? window : globalThis);
