@@ -24,7 +24,8 @@ await t('every section has data: requirements, questions, sessions, statements, 
   assert.equal(ov.requirements.total, 6); assert.equal(ov.requirements.byStatus.Confirmed, 3); assert.equal(ov.openQuestions, 3); assert.equal(ov.sessions.total, 5); assert.equal(ov.transcripts.uploaded, 2); assert.equal(ov.transcripts.statements, 6); assert.equal(ov.transcripts.toReview, 3);
   assert.equal(ov.useCases.total, 2); assert.equal(ov.progress.tasks.total, 8); assert.ok(ov.progress.tasks.overdue >= 2, 'some tasks are late on purpose'); assert.equal(ov.progress.risksAndIssues.total, 4); assert.equal(ov.progress.risksAndIssues.open, 3); assert.equal(ov.progress.changeRequests.total, 2);
   assert.equal(ov.progress.uatTestCases.total, 8); assert.equal(ov.progress.uatTestCases.byStatus.Failed, 1); assert.ok(ov.progress.stagesRecordedByTeam.some(x => x.stage === 'kickoff'));
-  const kinds = (await tool(sam, 'list_record_kinds', { project: demoId })).data.kinds.map(k => k.kind); for (const k of ['action', 'decision', 'minutes', 'pnote', 'res', 'raid', 'cr', 'task', 'utc', 'usecase', 'signoff']) assert.ok(kinds.includes(k), 'kind ' + k);
+  const kinds = (await tool(sam, 'list_record_kinds', { project: demoId })).data.kinds.map(k => k.kind); for (const k of ['action', 'decision', 'minutes', 'pnote', 'res', 'raid', 'cr', 'task', 'utc', 'usecase', 'signoff', 'hc', 'lesson', 'ho', 'checklist', 'rep', 'cal']) assert.ok(kinds.includes(k), 'kind ' + k);
+  assert.equal(ov.progress.hypercareIssues.total, 3); assert.equal(ov.progress.hypercareIssues.open, 2);
 });
 await t('the demo reads like a real project to the connector: overdue items, UAT summary, what the customer said', async () => {
   const od = (await tool(sam, 'list_overdue', { project: demoId })).data; assert.ok(od.total >= 3); const u = (await tool(sam, 'uat_summary', { project: demoId })).data; assert.equal(u.failedOrBlocked.length, 2);
