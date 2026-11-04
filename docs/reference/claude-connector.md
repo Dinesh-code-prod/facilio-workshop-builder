@@ -21,6 +21,7 @@ Lets a team member's own Claude read the projects they can open and prepare deli
 | Write | `save_draft` (always an unapproved draft in Deliverables and AI) |
 | Hand-off | `get_handoff`, `submit_handoff_result` (used by the Open in Claude buttons) |
 | Teams | `list_projects`, `suggest_ticket`, `create_ticket` |
+| Tasks and reminders (4 Nov 2026, roadmap E12) | `my_tasks` (your own pending tasks across projects), `send_task_digest` (a Teams direct message with pending tasks to you, or with `to: team` and a project to each member who has some; asks for confirmation; one per person per day; sends nothing while the secret `teams_notify` is not `on`, and counts only messages Teams accepted). Saving a task with a new owner also sends that person one direct message (same secret). Rules: `work/server/_taskwatch.mjs`, test: `tests/task_watch.mjs`. Not checked: a real Otto or Teams delivery. |
 
 ## Rules
 - Every tool runs as the signed-in person through the app's own routes (project access, roles, limits); nothing is read that the person could not open in the app.
