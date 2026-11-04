@@ -41,7 +41,7 @@ await tryIt('Create', 'Shapes menu: diamond, triangle, input/output, hexagon', a
 await tryIt('Create', 'Frame (F), dragged out', async () => { await tool('f'); await dragAt(700, 150, 1000, 380); await p.keyboard.press('Escape'); return (await S()).nodes.some(n => n.t === 'frame'); });
 // a click elsewhere commits the text; Escape would cancel it
 await tryIt('Create', 'Text (T): click, type', async () => { await tool('t'); await clickAt(1000, 450); await p.waitForTimeout(400); await p.keyboard.type('hello'); await clickAt(900, 500); await p.waitForTimeout(300); return (await S()).nodes.some(n => n.t === 'text'); });
-await tryIt('Create', 'Pen (P): freehand stroke', async () => { const n0 = await nodeCount(); await tool('p'); await dragAt(800, 420, 950, 480, 14); await p.keyboard.press('Escape'); return (await nodeCount()) > n0; });
+await tryIt('Create', 'Pen (P): freehand stroke', async () => { await p.keyboard.press('Escape'); await p.waitForTimeout(400); const n0 = await nodeCount(); await tool('p'); await dragAt(800, 420, 950, 480, 14); await p.keyboard.press('Escape'); return (await nodeCount()) > n0; });
 await tryIt('Create', 'Eraser tool', async () => (await has('[data-wbtool="eraser"]')) ? true : 'MISSING');
 await tryIt('Create', 'Highlighter', async () => (await has('[data-wbtool="highlighter"]')) ? true : 'MISSING');
 await tryIt('Create', 'Icons or emoji stamps', async () => (await has('[data-wbtool="icon"], [data-wbtool="stamp"]')) ? true : 'MISSING');
