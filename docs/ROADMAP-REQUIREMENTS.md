@@ -215,6 +215,15 @@ Goal: a Facilio Vibe app (an app built and hosted on facilio.work, like Delivery
 - [ ] Safety: never store or show passwords, keys or tokens in these records; link to where the secret lives instead.
 - [ ] Test: add a Connected App record for a real Vibe app (for example Delivery Studio itself), see it in the Configuration tab, the BRD and the export, and say what was not checked.
 
+### C2. Microsoft 365 connector guide for Claude (e-mail and access), in the Team Guide (added 4 Nov 2026)
+Goal: a short, plain guide so each team member can add the Microsoft 365 connector to their own Claude and read e-mail, calendar, Teams and SharePoint from Claude more easily, and a clear place in Delivery Studio that tells them how.
+- [ ] Find out the real steps first (do not guess): where in Claude it is added (Settings > Connectors), who must allow it (the Microsoft 365 admin for Facilio office accounts; the earlier note says Facilio's developers or admins must allow the connector for Office accounts), what each permission gives (mail, calendar, Teams chats and channels, SharePoint files), which sign-in the user sees, and what to do when Microsoft returns 403 or "needs admin approval". Test on a real office account and write down what was tested.
+- [ ] Write the guide in plain words with numbered steps and the common errors (account mismatch between browser and desktop, admin approval needed, 403), for both Claude on the web and Claude Desktop. Say what it is for: finding project e-mails, meeting notes and shared documents, and bringing them into Delivery Studio through the Inbox or Bring your project in.
+- [ ] Place it in the **Team Guide**, in the "set up your own Claude" list (`src/teamhelp.js`, next to "Connector: Facilio Delivery Studio" and "One Claude account"), as a new row "Microsoft 365 connector: for e-mail and files". Also link it from the **Claude setup** page (`src/claudesetup.js`), and from the Inbox page where mail receiving is explained, so people find it where they need it.
+- [ ] Keep the privacy line: Claude reads only what the user's own Microsoft account allows; nothing is stored in Delivery Studio unless the user saves it; never put passwords or tokens in the guide.
+- [ ] Note the link with the postponed mail work (A3: Microsoft returns 403 when receiving mail): this guide covers the user's own Claude only, it does not fix server-side mail receiving.
+- [ ] Test: the new row shows in the Team Guide and on Claude setup, the copy and links work, and the wording matches what really happens on a test account.
+
 ---
 
 ## Progress log (add a line each time something is finished)
