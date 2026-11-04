@@ -20,6 +20,15 @@ Live is deploy 142 (3 Nov 2026). Commits: `b5acdbf`, `df9039a`.
 - [ ] Calendar tab of the Project Plan (`src/plancal.js`): not reviewed after the timeline work.
 - [ ] Customers see the timeline lines but cannot edit them (decide: stay read-only, or allow).
 
+### A1b. Open Claude and Analyse with Claude buttons: still to investigate (added 4 Nov 2026, same work as Part 13)
+Find out, by reading the code and then testing on real Claude Desktop and Claude on the web (not assuming), for every "Open Claude", "Open in Claude" and "Analyse with Claude" button:
+- [ ] What opens: Claude Desktop (deep link), the browser (claude.ai), or nothing when the link is blocked. Which button uses which, and what happens when Desktop is not installed or the browser blocks the pop-up.
+- [ ] How the prompt reaches Claude: put in the link, copied to the clipboard for Ctrl+V, or fetched by the connector. What the length limit is (about 6,500 characters encoded today) and what happens above it (copy only). Whether the right task text arrives, so Claude gives the output the page expects.
+- [ ] Whether Claude uses the connector by itself or needs to be told to call its tools; what context (project, requirements, documents, images) it can actually read; what it cannot.
+- [ ] How the result comes back: pasted reply or connector write-back, and that it lands as a draft in the right place for approval.
+- [ ] How the work lands directly inside the Claude **Project** (the Claude projects folder the team uses): can a link or the connector start the chat inside a chosen Claude Project (with that project's instructions and files) instead of a loose new chat? If a link cannot choose the project, say so and write down the smallest workable step (for example the project's own link, or a prompt line telling the user which project to open). Check what is possible on a normal subscription, with no API key and no extra hosting.
+- [ ] Write the findings in `docs/reference/CLAUDE-HANDOFF-FINDINGS.md` (what was tested, on which app and version, result), then fix the buttons so each one opens the right place with the right prompt and says clearly what the user must do next.
+
 ### A2. Known leftovers
 - [ ] Violet still in other pages (count of violet colour values per file: `theme.css` 85, `styles.css` 47, `polish.css` 21, `taskboard.css` 11, `teamhelp.css` 9, `guidestyle.css` 9, `bell.css` 6, `clay-buttons.css` 5, `explore.css` 5, `tourplayer.css` 5, others smaller). Only the Customer User Guide was fixed (`src/guidefix.css`). Do a Facilio-palette pass.
 - [ ] `tests/ui/tabs-layouts-check.mjs` still expects the old menu names (4 checks fail, before and after the 3 Nov change). Update it to the current menu.
