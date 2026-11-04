@@ -7,6 +7,7 @@ import { IMPL_SKILLS } from './_skills.mjs';
 import { installTransfer } from './_transferapi.mjs';
 import { installMsaExtract } from './_msaapi.mjs';
 import { installQuestions } from './_questionsapi.mjs';
+import { installTaskTracking } from './_tasksapi.mjs';
 import { pendingFor, digestMessage, digestKey, assignKey, assignGate, assignmentNotice, BASE_URL as TW_BASE } from './_taskwatch.mjs';
 let FWB = null; // this copy of the server's own dispatcher (not looked up through a global, so two copies in one process cannot mix)
 let CTX = null, HDR = {};   // set at the start of every request (a Lambda handles one request at a time)
@@ -2029,7 +2030,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     const s = await requireAdmin('super'); const r = await dbGet('projects', P.id); if (!r) throw new HttpError(404, 'Project not found'); const p = r.value;
     if (!p.archived) throw new HttpError(400, 'Archive the project first. Only an archived project can be deleted for good.');
     if (String(b.confirm || '') !== p.name) throw new HttpError(400, 'Type the project name exactly to confirm');
-    let n = 0; for (const col of pcols(P.id, true).concat(['au.' + P.id, 'fl.' + P.id, 'fb.' + P.id, 'xf.' + P.id, 'xfd.' + P.id, 'xfdp.' + P.id])) { const rows = await dbList(col); await pmap(rows, 8, async x => { await dbDel(col, x.key); n++; }); }
+    let n = 0; for (const col of pcols(P.id, true).concat(['au.' + P.id, 'fl.' + P.id, 'fb.' + P.id, 'xf.' + P.id, 'xfd.' + P.id, 'xfdp.' + P.id, 'tsg.' + P.id])) { const rows = await dbList(col); await pmap(rows, 8, async x => { await dbDel(col, x.key); n++; }); }
     await dbDel('projects', P.id); await audit('sys', s.id, 'admin_delete_project', p.name + ' (' + P.id + ')'); ADM = null; return ok({ ok: true, removed: n });
   });
   route('GET', '/api/admin/projects/:id/members', async (b, P) => { await requireAdmin('sub'); const r = await dbGet('projects', P.id); if (!r) throw new HttpError(404, 'Project not found'); return ok({ members: (r.value.members || []).map(m => Object.assign(memberOut(m), { addedAt: null })) }); });
@@ -2086,6 +2087,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   const TRANSFER = installTransfer({ route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbList, save, unpack, withLock, audit, pickProject, limit, CONNECTOR });   // push and pull engine: routes and connector tools (_transferapi.mjs)
   installMsaExtract({ HttpError, dbGet, dbPut, withLock, audit, viaApp, CONNECTOR }, TRANSFER);   // MSA extraction tools: msa_extraction_save, create_project_from_msa (_msaapi.mjs)
   installQuestions({ HttpError, projectAccess, pickProject, docRead, CONNECTOR });   // prepared questions for a workshop and live_ask (_questionsapi.mjs)
+  installTaskTracking({ route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, itemsOf, withLock, audit, viaApp, CONNECTOR, DONE_RE, cut, rid });   // task suggestions from Claude: routes and tools (_tasksapi.mjs)
   async function dispatch(method, path, query, body) {
     const u = new URL(path, 'https://app.local'); u.search = query || '';
     for (const r of routes) {

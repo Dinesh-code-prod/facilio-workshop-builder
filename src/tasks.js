@@ -102,6 +102,27 @@
   const groupsOf = (sh, list) => { const g = sh.group; if (!g) return [['', list]]; const m = new Map(); list.forEach(t => { const k = String(val(t, g) || '—'); if (!m.has(k)) m.set(k, []); m.get(k).push(t); }); return [...m.entries()]; };
 
   // ---------- the page ----------
+  // ---------- Claude suggestions (roadmap E12 slice 2): changes Claude proposed from transcripts, minutes, UAT and sign-offs, waiting for a person ----------
+  // Nothing here changes a task by itself. Accept sends the suggestion to the server, which saves it through the normal task save (so its checks, history and assignment message apply); Dismiss keeps it out for good.
+  const SG_ACT = { update: 'Change', create: 'New task', close: 'Close' };
+  function sgLoad(force) {
+    const st = S.ui.tkSg; const pid = S.project && S.project.id; if (!canEdit() || !pid) return; if (!force && st && st.pid === pid && (st.loading || (st.at && Date.now() - st.at < 30000))) return;
+    S.ui.tkSg = { pid, loading: true, list: st && st.pid === pid ? st.list : [], at: st && st.pid === pid ? st.at : 0 };
+    API.get(`/api/projects/${pid}/task-suggestions`).then(r => { S.ui.tkSg = { pid, list: r.suggestions || [], at: Date.now() }; V.render(); }).catch(() => { S.ui.tkSg = { pid, list: [], at: Date.now() }; });
+  }
+  const sgField = f => (COLS[f] && COLS[f].l) || (f === 'desc' ? 'Description' : f === 'completion' ? 'Completion note' : f);
+  const sgRow = x => { const tk = x.task ? `<b>${esc('T-' + (x.task.n || '?'))}</b> ${esc(x.task.title)}` : x.action === 'create' ? '' : '<span class="muted">(task not found)</span>';
+    const ch = (x.changes || []).map(c => `<div class="small">${esc(sgField(c.field))}: ${c.from ? `<s class="muted">${esc(c.from)}</s> → ` : ''}<b>${esc(c.to)}</b></div>`).join('');
+    const s = x.source || {};
+    return `<div class="pt-sg-row" style="padding:10px 0;border-top:1px solid #eef1f7"><div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">${tag(x.action === 'close' ? 'green' : x.action === 'create' ? 'blue' : 'tbc', SG_ACT[x.action] || x.action)}<span>${tk}</span>${x.missing ? tag('red', 'Task no longer exists') : ''}<span class="spacer"></span>
+      <button class="btn sm primary" data-act="tkSgAccept" data-id="${esc(x.id)}"${x.missing ? ' disabled' : ''}>Accept</button><button class="btn sm ghost" data-act="tkSgDismiss" data-id="${esc(x.id)}">Dismiss</button></div>
+      <div style="margin-top:4px">${ch}</div><div class="small muted" style="margin-top:2px">Why: ${esc(x.reason)}</div><div class="xs muted">Source: ${esc(s.type || '')} ${esc(s.ref || '')}${s.quote ? ' &ldquo;' + esc(s.quote) + '&rdquo;' : ''}</div></div>`; };
+  function sgPanel() { const st = S.ui.tkSg; if (!canEdit() || !st || st.pid !== (S.project && S.project.id) || !(st.list || []).length) return '';
+    return `<div class="card pt-sg" role="region" aria-label="Claude suggestions" style="margin-bottom:12px"><div class="card-h"><h3>Claude suggestions</h3><span class="small muted">${st.list.length} waiting. Nothing changes until you accept it.</span></div><div class="card-b">${st.list.map(sgRow).join('')}</div></div>`; }
+  const sgDecide = (a, verb, done) => V.busy(a, async () => { const id = a.getAttribute('data-id'); await API.post(`/api/projects/${S.project.id}/task-suggestions/${encodeURIComponent(id)}/${verb}`, {}); if (verb === 'accept') await I().load(['task'], true); toast(done, 3000); sgLoad(true); });
+  ACT.tkSgAccept = a => sgDecide(a, 'accept', 'Accepted: the task was saved');
+  ACT.tkSgDismiss = a => sgDecide(a, 'dismiss', 'Dismissed');
+
   V.tasks = {
     html() {
       const d = doc(); const sh = sheet(); S.ui.tkSheet = sh.id; const can = canEdit(); const board = viewMode() === 'board'; const all = tasks(); const list = rows(sh, false, true); const sel = S.ui.tkSel = S.ui.tkSel || new Set();
@@ -131,11 +152,11 @@
       const body = groupsOf(sh, list).map(([g, ts]) => (sh.group ? `<tr class="pt-g"><td colspan="${cols.length + (can ? 1 : 0)}">${esc(COLS[sh.group].l)}: <b>${esc(g)}</b> <span class="muted">${ts.length}</span></td></tr>` : '') + ts.map(t => `<tr class="${CLOSED.includes(t.status) ? 'done' : ''}${sel.has(t.id) ? ' sel' : ''}" data-id="${esc(t.id)}">${can ? `<td class="pt-ck"><input type="checkbox" data-change="tkSel" data-id="${esc(t.id)}" aria-label="Select ${esc(tid(t))}"${sel.has(t.id) ? ' checked' : ''}></td>` : ''}${cols.map(c => cell(t, c)).join('')}</tr>`).join('')).join('');
       const add = can ? `<div class="pt-add"><input type="text" id="tkAdd" placeholder="Add a task to this sheet and press Enter" aria-label="Quick add a task" maxlength="300"></div>` : '';
       const empty = !all.length ? `<div class="empty"><h3>No tasks yet</h3><p class="muted">Create a task, import an Excel tracker, pull tasks out of a meeting transcript, or bring in this project's existing actions and workshop questions.</p>${can ? `<div class="row" style="justify-content:center;gap:8px;margin-top:10px"><button class="btn" data-act="tkBringIn">Bring in existing actions and questions</button><button class="btn primary" data-act="tkNew">${ico('plus')}New task</button></div>` : ''}</div>` : '';
-      return head + `<div class="page-body pt-page">${kpis}${tabs}${bar}${qf}${board ? '' : bulk}${empty || (all.length && !list.length ? V.ui.noResults('tasks', qfCount() ? 'tkQfClear' : S.ui.tkQ ? 'tkClearQ' : '', qfCount() || S.ui.tkQ ? '' : 'No task fits this sheet yet. Pick another sheet, or add a task.') : board ? boardHtml(sh, list, can) : `<div class="pt-wrap"><table class="tbl pt-grid" style="min-width:${cols.reduce((s, c) => s + W(c), can ? 44 : 0)}px"><colgroup>${can ? '<col style="width:44px">' : ''}${cols.map(c => `<col style="width:${W(c)}px">`).join('')}</colgroup><thead>${th}</thead><tbody>${body || `<tr><td colspan="${cols.length + 1}" class="muted" style="padding:18px">No task matches this sheet${S.ui.tkQ ? ' and search' : ''}.</td></tr>`}</tbody></table></div>${add}`)}
+      return head + `<div class="page-body pt-page">${kpis}${sgPanel()}${tabs}${bar}${qf}${board ? '' : bulk}${empty || (all.length && !list.length ? V.ui.noResults('tasks', qfCount() ? 'tkQfClear' : S.ui.tkQ ? 'tkClearQ' : '', qfCount() || S.ui.tkQ ? '' : 'No task fits this sheet yet. Pick another sheet, or add a task.') : board ? boardHtml(sh, list, can) : `<div class="pt-wrap"><table class="tbl pt-grid" style="min-width:${cols.reduce((s, c) => s + W(c), can ? 44 : 0)}px"><colgroup>${can ? '<col style="width:44px">' : ''}${cols.map(c => `<col style="width:${W(c)}px">`).join('')}</colgroup><thead>${th}</thead><tbody>${body || `<tr><td colspan="${cols.length + 1}" class="muted" style="padding:18px">No task matches this sheet${S.ui.tkQ ? ' and search' : ''}.</td></tr>`}</tbody></table></div>${add}`)}
         ${all.length && can && !board ? '<p class="xs muted" style="margin-top:10px">Click a cell to edit it. Click an ID to open the task, its comments, customer response and the AI Task Assistant. <button class="btn link sm" data-act="tkBringIn">Bring in existing actions and questions</button></p>' : ''}</div>`;
     },
     mount() {
-      mountBoard();
+      mountBoard(); sgLoad();
       // opened from the Admin Command Center or My work: open that task once
       if (S.ui.tkOpenOnce) { const id = S.ui.tkOpenOnce; S.ui.tkOpenOnce = null; const t = I().get('task', id); if (t) setTimeout(() => taskForm(t), 0); }
       const q = document.getElementById('tkQ'); if (q) q.addEventListener('input', () => { S.ui.tkQ = q.value; const p = q.selectionStart; V.render(); const n = document.getElementById('tkQ'); if (n) { n.focus(); n.setSelectionRange(p, p); } });
