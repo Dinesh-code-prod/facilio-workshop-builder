@@ -203,6 +203,20 @@ Goal: one connected lifecycle. Customer Discussion → Requirement → Analysis 
 
 ---
 
+## Part C. Added requirements (after the master prompt)
+
+### C1. Facilio Vibe apps connected to Delivery Studio, as Connected Apps (added 4 Nov 2026)
+Goal: a Facilio Vibe app (an app built and hosted on facilio.work, like Delivery Studio itself) can be linked to a Delivery Studio project, created as a Facilio Connected App for the customer's org, and described in the project's Configuration tab so the team and the BRD know what it is.
+- [ ] Investigate first (read, then test; do not assume): how a Vibe app becomes a Facilio Connected App (what the Vibe platform and its connected-app and connection features really do; start from the installed `facilio-vibe` skills such as `vibe-connectedapp`, `vibe-connection`, `vibe-connections`, `vibe-accounts`, and `platform_docs` of the facilio.work connector). Write the findings, with what is supported and what is not, in `docs/reference/VIBE-CONNECTED-APP-FINDINGS.md`.
+- [ ] Decide the link: how a Delivery Studio project points to a Vibe app (app name and URL, owner, the Facilio org it is connected to), and whether Delivery Studio can create the Connected App itself or only prepare the details for a person to create it (do not claim anything is created unless it is confirmed).
+- [ ] Connected App record in the Configuration tab (area 16, "Connected Apps", and Part 7 and Part 8 of Part B): name; what it does; purpose and business reason; the requirement and solution it serves; the Vibe app it links to (name, URL, owner); the Facilio org and modules it touches; who uses it (roles); how it signs in or connects (authentication type, no secrets stored); triggers and data it reads or writes; API or connection dependencies; error handling; status (idea, designed, built, connected, tested, live); BRD section; export mapping.
+- [ ] Show the same record in the BRD (Connected Apps section) and in the documentation package for Claude, so one entry feeds all of them.
+- [ ] Reuse what exists: check what the Configuration Hub (`src/cfginputs.js`) already records about connected apps and tabs, and extend that instead of adding a second place.
+- [ ] Safety: never store or show passwords, keys or tokens in these records; link to where the secret lives instead.
+- [ ] Test: add a Connected App record for a real Vibe app (for example Delivery Studio itself), see it in the Configuration tab, the BRD and the export, and say what was not checked.
+
+---
+
 ## Progress log (add a line each time something is finished)
 | Date | Item | Deploy | Not checked |
 |---|---|---|---|
