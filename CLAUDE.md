@@ -11,6 +11,7 @@ Open `docs/ROADMAP-REQUIREMENTS.md`: Part A is the pending and not-checked list,
 ## While working
 - Finish a change, run `npm test`, commit, and push to `main` and `feat/simpler-studio` (`git push origin main`, then `git push origin main:feat/simpler-studio`). If the user said to wait until they have tested, commit locally and write "not pushed yet" in `HANDOFF.md`.
 - Do not run two sessions on the same folder at the same time.
+- **Keep the Claude integration in step.** Whenever a feature is added or changed, update the Claude side in the same piece of work: the connector tools (`work/work.json`, the tool object in `work/server/api.mjs`), the hand-off prompts (`src/claudelogic.js`, `src/claudehand.js`), the Open in Claude buttons on that page, the AI tasks, the skills text (`work/server/_skills.mjs`) and the Team Guide and Claude setup pages. A new page or record type needs a way for Claude to read it through the connector and a button that opens Claude with the short connector prompt. Run `node tests/claude_launch.mjs`, `tests/connector_skills.mjs` and `tests/ui/claude-handoff-check.mjs` afterwards. Never claim a real Claude app result without testing it there.
 - Git has no identity on this machine. Commit with `git -c user.name="Dinesh R" -c user.email="dinesh.r@facilio.com" commit ...` and end commit messages with the Co-Authored-By trailer the session gives.
 
 ## Ending a session, or when tokens are running low
