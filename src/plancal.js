@@ -14,8 +14,8 @@
   const monday = d => add(d, -dow(d)); const addMonths = (d, n) => { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(1); x.setUTCMonth(x.getUTCMonth() + n); return x.toISOString().slice(0, 10); };
   const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   // four phases (the same grouping the portfolio health uses): an accent for the edge and a soft tint for the fill, both from the Facilio palette
-  const PHASES = [['Discover and define', 0, 4, '#3995E2', '#DBEBFA'], ['Build and validate', 4, 7, '#6071DB', '#E2E6F9'], ['Launch', 7, 10, '#E5197F', '#FBE2EE'], ['Hand over', 10, 12, '#3FA765', '#DEF2E5']];   // the State Flow Builder's own blue, user violet-blue and time green, plus Facilio pink
-  const OTHER = { a: '#8393AB', t: '#ECF0F6' };
+  const PHASES = [['Discover and define', 0, 4, '#1570EF', '#EAF2FF'], ['Build and validate', 4, 7, '#1D1A5E', '#E8EBF6'], ['Launch', 7, 10, '#E5197F', '#FDEAF3'], ['Hand over', 10, 12, '#8DB8FF', '#F0F6FF']];   // the four Facilio colours: blue, navy, pink and sky, each with a pale tint
+  const OTHER = { a: '#5B6B99', t: '#EEF2F8' };
   const phaseOf = i => PHASES.findIndex(p => i >= p[1] && i < p[2]);
   const SO_STEP = { brd: 2, uat: 8, golive: 11 };
   const st = () => { const c = S.ui.cal = S.ui.cal || { mode: 'month', date: V.today(), hide: [], q: '' }; return c; };

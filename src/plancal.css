@@ -1,10 +1,10 @@
-/* Project calendar (src/plancal.js). Flat and matte, in the project's own colours: the navy-to-blue gradient of the page headers is used ONLY in the calendar's header band;
-   the body is a soft blue-grey with softly tinted cells; colour on items means the delivery phase (four calm tints with an accent edge). Motion is transform and opacity
+/* Project calendar (src/plancal.js). Flat and matte, in the Facilio colours only (navy, blue, pink, sky): a flat navy header band, a soft blue-grey body with softly tinted cells;
+   colour on items means the delivery phase (blue, navy, pink and sky, each a pale tint with an accent edge). No gradients, no violet, no green. Motion is transform and opacity
    only and is off under prefers-reduced-motion. The app's global button and input styles are strong, so button rules carry body .cal and !important on what they set. */
 .cal { --ink: #1D1A5E; --blue: #1570EF; --pink: #E5197F; --sky: #8DB8FF; --line: #D4DEEF; --mut: #56657F; --soft: #EEF3FB; --cell: #F8FAFE; display: block; }
 .cal-main { background: var(--soft); border: 1px solid #C9D6EC; border-radius: 16px; overflow: visible; min-width: 0; }
-/* header band: the project's gradient, used here and nowhere else in the calendar */
-.cal-hd { background: linear-gradient(115deg, #1D1A5E 0%, #1B3DA8 58%, #1570EF 100%); border-radius: 15px 15px 0 0; padding: 14px 18px; color: #fff; }
+/* header band: flat Facilio navy */
+.cal-hd { background: #1D1A5E; border-radius: 15px 15px 0 0; padding: 14px 18px; color: #fff; }
 .cal-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .cal-gap { flex: 1; }
 .cal-tw { position: relative; min-width: 0; } .cal-bar > .cal-tw:first-of-type, .cal-bar .cal-tw:nth-of-type(1) { flex: 0 1 auto; }
 .cal-nav, .cal-seg { display: inline-flex; background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .2); border-radius: 11px; padding: 2px; gap: 2px; }
@@ -42,7 +42,7 @@ body .cal .cal-add { opacity: .85; order: -1; border: 0 !important; background: 
 body .cal .cal-ev { border: 0 !important; border-left: 3px solid var(--a) !important; margin: 1px 2px; padding: 0 9px !important; font: inherit; font-size: 12px; font-weight: 650; border-radius: 6px !important; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; min-width: 0; line-height: 24px; height: 24px; background: var(--t) !important; color: var(--ink) !important; box-shadow: none !important; transition: background .15s ease; }
 body .cal .cal-ev:hover, body .cal .cal-chip:hover { background: color-mix(in srgb, var(--a) 16%, var(--t)) !important; } body .cal .cal-ev:focus-visible, body .cal .cal-chip:focus-visible, body .cal button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 body .cal .cal-ev.cl { margin-left: -3px; border-left: 0 !important; border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; } body .cal .cal-ev.cr { margin-right: -3px; border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; }
-body .cal .cal-ev.done, body .cal .cal-chip.done { opacity: .6; } body .cal .cal-ev.late, body .cal .cal-chip.late { box-shadow: inset 0 0 0 1.5px #D92D20 !important; }
+body .cal .cal-ev.done, body .cal .cal-chip.done { opacity: .6; } body .cal .cal-ev.late, body .cal .cal-chip.late { box-shadow: inset 0 0 0 1.5px #E5197F !important; }
 body .cal .k-ghost { background: #fff !important; border: 1px solid #A9C3F2 !important; border-left: 3px solid var(--blue) !important; line-height: 22px; } body .cal .k-mine { background: #fff !important; border: 1px solid #D5DBEA !important; border-left: 4px solid var(--pink) !important; line-height: 22px; }
 body .cal .cal-more { border: 0 !important; background: none !important; box-shadow: none !important; font: inherit; font-size: 11.5px; font-weight: 700; color: var(--blue) !important; text-align: left; padding: 0 8px !important; cursor: pointer; }
 /* week */
@@ -54,7 +54,7 @@ body .cal .cal-chip { border: 0 !important; border-left: 3px solid var(--a) !imp
 /* day */
 .cal-dayv { max-width: 760px; display: grid; gap: 10px; } .cal-dayv h3 { margin: 0 0 2px; font-size: 19px; color: var(--ink); } .cal-pill { display: inline-block; vertical-align: middle; font-size: 11px; font-weight: 700; color: #fff; background: var(--blue); border-radius: 999px; padding: 2px 9px; margin-left: 6px; }
 body .cal .cal-row { display: flex; align-items: stretch; text-align: left; border: 1px solid var(--line) !important; background: var(--cell) !important; border-radius: 12px !important; padding: 0 !important; cursor: pointer; font: inherit; overflow: hidden; box-shadow: none !important; transition: border-color .15s ease; } body .cal .cal-row:hover { border-color: var(--sky) !important; } body .cal .cal-row.done { opacity: .65; }
-.cal-bar-c { width: 6px; flex: none; background: var(--a); } .cal-rb { padding: 12px 14px; display: grid; gap: 3px; flex: 1; min-width: 0; } .cal-rb b { font-size: 14.5px; color: var(--ink); } .cal-rb small { color: var(--mut); font-size: 12.5px; } .cal-late { font-style: normal; font-size: 11px; font-weight: 700; color: #B42318; background: #FDE7E4; border-radius: 6px; padding: 1px 7px; }
+.cal-bar-c { width: 6px; flex: none; background: var(--a); } .cal-rb { padding: 12px 14px; display: grid; gap: 3px; flex: 1; min-width: 0; } .cal-rb b { font-size: 14.5px; color: var(--ink); } .cal-rb small { color: var(--mut); font-size: 12.5px; } .cal-late { font-style: normal; font-size: 11px; font-weight: 700; color: #B80F63; background: #FDEAF3; border-radius: 6px; padding: 1px 7px; }
 .cal-prog { display: block; height: 6px; background: #DDE6F4; border-radius: 4px; overflow: hidden; margin-top: 5px; } .cal-prog i { display: block; height: 100%; background: var(--a); border-radius: 4px; }
 /* year */
 .cal-year { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; } .cal-year .cal-mini { background: var(--cell); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
