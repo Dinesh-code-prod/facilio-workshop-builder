@@ -6,6 +6,7 @@ import { assess, docsOf, workload, RULES as HRULES, HEALTH_LABEL, MANUAL } from 
 import { IMPL_SKILLS } from './_skills.mjs';
 import { installTransfer } from './_transferapi.mjs';
 import { installMsaExtract } from './_msaapi.mjs';
+import { installQuestions } from './_questionsapi.mjs';
 import { pendingFor, digestMessage, digestKey, assignKey, assignGate, assignmentNotice, BASE_URL as TW_BASE } from './_taskwatch.mjs';
 let FWB = null; // this copy of the server's own dispatcher (not looked up through a global, so two copies in one process cannot mix)
 let CTX = null, HDR = {};   // set at the start of every request (a Lambda handles one request at a time)
@@ -2084,6 +2085,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
 
   const TRANSFER = installTransfer({ route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbList, save, unpack, withLock, audit, pickProject, limit, CONNECTOR });   // push and pull engine: routes and connector tools (_transferapi.mjs)
   installMsaExtract({ HttpError, dbGet, dbPut, withLock, audit, viaApp, CONNECTOR }, TRANSFER);   // MSA extraction tools: msa_extraction_save, create_project_from_msa (_msaapi.mjs)
+  installQuestions({ HttpError, projectAccess, pickProject, docRead, CONNECTOR });   // prepared questions for a workshop and live_ask (_questionsapi.mjs)
   async function dispatch(method, path, query, body) {
     const u = new URL(path, 'https://app.local'); u.search = query || '';
     for (const r of routes) {

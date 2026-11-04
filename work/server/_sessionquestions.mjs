@@ -1,4 +1,5 @@
-/* Questions to ask in a workshop (pure code, also run by tests/session_questions.mjs; no DOM, no network, no model).
+/* ONE copy of these rules, used in two places: build.mjs adds this file to the browser bundle (a plain script: it sets window.FWBSessionQuestions) and the server and the tests
+   import it as a module (it sets globalThis.FWBSessionQuestions, read by work/server/_questionsapi.mjs). It lives under work/server so that build.mjs copies it to dist/server. Questions to ask in a workshop: pure code (no DOM, no network, no model), run by tests/session_questions.mjs.
    prepareQuestions(input): from what the Studio already holds (scope items, requirements, open questions, MSA exclusion sentences, planned sessions, optional earlier
    transcript statements) it works out which questions a consultant should put to the customer before and during a workshop. Every question names the data that
    triggered it (sources) and says why it is asked. Nothing is invented: no data, no question. The wording of a question may be rephrased by a person or by Claude later;
@@ -105,5 +106,5 @@
   }
 
   const api = { prepareQuestions, liveAsk, agendaText, words, LIKELY, POSSIBLE };
-  if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBSessionQuestions = api;
+  root.FWBSessionQuestions = api; if (typeof module !== 'undefined' && module.exports) module.exports = api;   // the global is always set: a module import has no other way to hand the rules over
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -1261,6 +1261,60 @@
       "confirm"
      ]
     }
+   },
+   {
+    "name": "get_prepared_questions",
+    "description": "The questions to put to the customer in a workshop, worked out by fixed rules from the project's scope, requirements, open questions, pending decisions, MSA exclusions, planned sessions and earlier transcript lines. Each question has a priority (must, should, could), a reason and the sources it rests on, and nothing is invented. Rephrase them as an agenda if asked, but keep the set. Nothing is saved.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      },
+      "module": {
+       "type": "string",
+       "description": "Optional: one module (its name or label) to see only its questions"
+      },
+      "limit": {
+       "type": "number",
+       "description": "Most questions to return (default 60, up to 200)"
+      }
+     },
+     "required": [
+      "project"
+     ]
+    }
+   },
+   {
+    "name": "live_ask",
+    "description": "During a live call: give the last pieces of the transcript (oldest first, up to 500 per call) and get back which prepared questions now look answered (likely or possible, with the words that suggest it) and up to three to ask next. It is a hint for a person, never a decision, and nothing is saved or changed in the project.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      },
+      "chunks": {
+       "type": "array",
+       "description": "Pieces of the call so far, oldest first: [{ speaker, at, text }]. Only the last 500 are used.",
+       "items": {
+        "type": "object"
+       }
+      },
+      "module": {
+       "type": "string",
+       "description": "Optional: follow one module's questions only (its name or label)"
+      }
+     },
+     "required": [
+      "project",
+      "chunks"
+     ]
+    }
    }
   ]
  }

@@ -1,4 +1,4 @@
-/* Requirements > Prepare questions (team only): the questions to ask in a workshop, worked out by the rules in src/sessionquestions.js from the project's scope,
+/* Requirements > Prepare questions (team only): the questions to ask in a workshop, worked out by the rules in work/server/_sessionquestions.mjs from the project's scope,
    requirements, open questions, MSA exclusions, planned sessions and earlier transcript lines. Every question shows why it is asked and what it rests on.
    Nothing is saved here; the list is worked out again each time. Copy gives a plain-text agenda; Send to Claude opens Claude with the agenda to rephrase (the set stays the same). */
 (function (root) {
