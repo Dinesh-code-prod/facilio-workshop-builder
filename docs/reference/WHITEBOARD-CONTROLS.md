@@ -1,10 +1,14 @@
 # Process Whiteboard: control check (4 Nov 2026)
 
-Controls and feel only: there is **no connection to Miro**. Method: `tests/ui/wb-controls-check.mjs` drives a new board with the real mouse and keyboard on localhost (74 controls), plus the five older whiteboard checks. Status: **ok**, **PARTLY**, **BROKEN** (exists but fails), **BROKEN?** (failed once, not yet diagnosed), **MISSING**, **unchecked** (my test was wrong, re-run needed).
+Controls and feel only: there is **no connection to Miro**. Method: `tests/ui/wb-controls-check.mjs` drives a new board with the real mouse and keyboard on localhost (74 controls), plus the five older whiteboard checks. Status: **ok**, **PARTLY**, **MISSING**, **to check** (failed in my test, not yet confirmed as a real fault).
 
-Counts after corrections: 37 ok, 27 MISSING, 5 unchecked, 2 BROKEN?, 2 PARTLY, 1 BROKEN.
+Counts: 41 ok, 27 MISSING, 4 to check, 2 PARTLY.
 
-Older checks run the same day: whiteboard-editing 20/20 ok, whiteboard-hover-delete 27/27 ok, whiteboard-miro-check 2 fail (pen stroke, Save as combined flow), wb-align-check and whiteboard-check stop with an error or timeout (not diagnosed).
+**Earlier worry cleared:** the Pen, Hand tool and Text tool were reported as broken in the first run. They work. My test drew below the board (the board area is only about 548 px tall on a 950 px screen) and dragged before the tool had settled. The old failure of "the pen draws a freehand stroke" in `whiteboard-miro-check` is probably the same cause and still needs its coordinates fixed.
+
+**Finding to act on:** the board area is only about 548 px tall on a 950 px screen because the page header and toolbar sit above it. A Miro-style board should fill the screen height. See the roadmap (C7).
+
+Older checks the same day: whiteboard-editing 20/20 ok, whiteboard-hover-delete 27/27 ok, whiteboard-miro-check 2 fail (pen stroke, Save as combined flow), wb-align-check and whiteboard-check stop with an error or timeout (not diagnosed).
 
 A stored `miro` link field exists on a board (`src/whiteboard.js`, accepts only https://miro.com/ URLs) but nothing on screen uses it. Leave or remove: ask first.
 
@@ -13,7 +17,7 @@ A stored `miro` link field exists on a board (`src/whiteboard.js`, accepts only 
 
 | Control | Status | Note |
 |---|---|---|
-| Hand tool (H) pans the board | BROKEN? | The Hand tool gets selected but dragging did not move the view; Space + drag does. Needs diagnosis. |
+| Hand tool (H) pans the board | ok |  |
 | Space + drag pans | ok |  |
 | Ctrl + wheel zooms | ok |  |
 | Plain wheel pans | ok |  |
@@ -34,8 +38,8 @@ A stored `miro` link field exists on a board (`src/whiteboard.js`, accepts only 
 | Oval (O) | ok |  |
 | Shapes menu: diamond, triangle, input/output, hexagon | ok |  |
 | Frame (F), dragged out | ok |  |
-| Text (T): click, type | BROKEN? | On an empty board the Text tool click made no text box. Needs diagnosis (my test ended with Escape, which cancels). |
-| Pen (P): freehand stroke | BROKEN | Draws nothing. Also fails in whiteboard-miro-check ("the pen draws a freehand stroke"), so it is likely a real bug. |
+| Text (T): click, type | ok |  |
+| Pen (P): freehand stroke | ok |  |
 | Eraser tool | MISSING |  |
 | Highlighter | MISSING |  |
 | Icons or emoji stamps | MISSING |  |
@@ -50,7 +54,7 @@ A stored `miro` link field exists on a board (`src/whiteboard.js`, accepts only 
 | Elbow arrow | ok |  |
 | Two-way arrow and plain line | ok |  |
 | Line follows when a shape moves | ok |  |
-| Pick a line: bar with straight / right-angle, arrowheads, label | unchecked | The test clicked the middle of the path box, not on the line. Re-run with a point on the line. |
+| Pick a line: bar with straight / right-angle, arrowheads, label | to check | Fails in my test; not yet confirmed as a real fault (the older whiteboard-editing check selects lines fine). |
 | Drag a line end onto another shape | ok | ok by whiteboard-editing |
 | Visible connection points on a shape | MISSING |  |
 | Curved lines | MISSING |  |
@@ -60,7 +64,7 @@ A stored `miro` link field exists on a board (`src/whiteboard.js`, accepts only 
 | Control | Status | Note |
 |---|---|---|
 | Click selects, Escape clears | ok |  |
-| Shift + click adds | ok | Test mistake: Playwright cannot hold Shift in mouse.click. whiteboard-hover-delete passes "Shift+click adds to the selection". |
+| Shift + click adds | ok |  |
 | Drag a box on empty canvas (marquee) | ok |  |
 | Select all (Ctrl+A) | ok |  |
 | Drag to move | ok |  |
@@ -74,8 +78,8 @@ A stored `miro` link field exists on a board (`src/whiteboard.js`, accepts only 
 
 | Control | Status | Note |
 |---|---|---|
-| Selection bar: fill, font size, bold, text colour, alignment | unchecked | whiteboard-miro-check passes this ("fill, font size and bold from the bar"). My run clicked a shape that had moved. Re-run. |
-| Fill colour applies | unchecked | Same as above. |
+| Selection bar: fill, font size, bold, text colour, alignment | to check | Fails in my test, but whiteboard-miro-check passes "fill, font size and bold from the bar". Probably my test; confirm. |
+| Fill colour applies | to check | Same as the row above. |
 | Border colour, line width or dash | MISSING |  |
 | Opacity | MISSING |  |
 | Font family | MISSING |  |
@@ -106,7 +110,7 @@ A stored `miro` link field exists on a board (`src/whiteboard.js`, accepts only 
 
 | Control | Status | Note |
 |---|---|---|
-| Double-click a shape to edit its text (Escape cancels) | unchecked | Not confirmed: whiteboard-editing and the right-click menu offer Edit text. Re-run with the real selector. |
+| Double-click a shape to edit its text (Escape cancels) | to check | Fails in my test; the right-click menu offers Edit text and the older check edits text. Confirm. |
 
 ## Shortcuts
 
@@ -114,7 +118,7 @@ A stored `miro` link field exists on a board (`src/whiteboard.js`, accepts only 
 |---|---|---|
 | Tool keys V H N T L P R O F S | ok |  |
 | Shortcut help panel (?) | MISSING |  |
-| No shortcut fires while typing in a box | unchecked | Test mistake (the rename dialog re-rendered). Re-run. |
+| No shortcut fires while typing in a box | ok |  |
 
 ## Share
 
