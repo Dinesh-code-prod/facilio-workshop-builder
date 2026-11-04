@@ -16,9 +16,12 @@ body .cal .cal-title:hover { background: rgba(255, 255, 255, .12) !important; } 
 body .cal .cal-today, body .cal .cal-fb { background: rgba(255, 255, 255, .12) !important; border: 1px solid rgba(255, 255, 255, .22) !important; box-shadow: none !important; color: #fff !important; font: inherit; font-size: 13px; font-weight: 650; min-height: 36px; padding: 0 14px !important; border-radius: 10px !important; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
 body .cal .cal-today:hover, body .cal .cal-fb:hover { background: rgba(255, 255, 255, .2) !important; } body .cal .cal-fb.on { border-color: #fff !important; } .cal-fb span { font-size: 12px; }
 body .cal .cal-q { width: 160px !important; flex: none; border: 1px solid rgba(255, 255, 255, .22) !important; background: rgba(255, 255, 255, .12) !important; color: #fff !important; border-radius: 10px !important; padding: 0 12px !important; min-height: 36px; font: inherit; font-size: 13px; } body .cal .cal-q::placeholder { color: #C9DAFA; }
+/* a later layer paints the box white, so the text and hint must be dark: the light hint was hard to read */
+body .cal .cal-q:not(#_):not(#__) { background: #fff !important; color: #1D1A5E !important; border-color: #c9d6ef !important; }
+body .cal .cal-q:not(#_):not(#__)::placeholder { color: #5B6B99; opacity: 1; }
 body .cal .cal-new { background: #fff !important; color: var(--ink) !important; border: 0 !important; box-shadow: none !important; font: inherit; font-size: 13px; font-weight: 750; min-height: 36px; padding: 0 14px !important; border-radius: 10px !important; cursor: pointer; } body .cal .cal-new:hover { background: #E8F0FF !important; }
 /* body: soft, with a phase strip and the grid */
-.cal-in-wrap { padding: 16px 18px 18px; display: grid; gap: 14px; }
+.cal-in-wrap { padding: 16px 18px 18px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }   /* minmax(0,..): the month grid's seven day columns made the whole calendar wider than a phone */
 .cal-note { background: #E1ECFF; color: var(--ink); border-radius: 10px; padding: 8px 12px; font-size: 13px; }
 .cal-phs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 body .cal .cal-ph { text-align: left; background: var(--t) !important; border: 1px solid color-mix(in srgb, var(--a) 22%, transparent) !important; border-left: 4px solid var(--a) !important; border-radius: 10px !important; box-shadow: none !important; padding: 9px 12px !important; display: grid; gap: 1px; cursor: pointer; font: inherit; color: var(--ink) !important; min-width: 0; transition: background .15s ease; }
@@ -27,10 +30,10 @@ body .cal .cal-ph:hover:not(:disabled) { background: color-mix(in srgb, var(--a)
 .cal-body.cal-in { animation: cal-in .2s cubic-bezier(.2, .7, .3, 1); } @keyframes cal-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 /* month grid */
 .cal-head { display: grid; grid-template-columns: repeat(7, 1fr); font-size: 11.5px; font-weight: 700; color: var(--mut); text-transform: uppercase; letter-spacing: .5px; padding: 0 0 6px; } .cal-head span { text-align: right; padding-right: 10px; }
-.cal-wk { position: relative; border-top: 1px solid var(--line); min-height: 140px; } .cal-bg { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(7, 1fr); }
+.cal-wk { position: relative; border-top: 1px solid var(--line); min-height: 140px; } .cal-bg { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .cal-c { background: var(--cell); border-left: 1px solid var(--line); } .cal-c:first-child { border-left: 0; } .cal-c.we { background: #F1F5FB; } .cal-c.out { background: #E9EFF8; } .cal-c.today { background: #DEEAFF; box-shadow: inset 0 3px 0 var(--blue); } .cal-c.sel { box-shadow: inset 0 0 0 2px var(--sky); }
 .cal-month-wrap { }
-.cal-fg { position: relative; display: grid; grid-template-columns: repeat(7, 1fr); padding: 0 3px 4px; }
+.cal-fg { position: relative; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); padding: 0 3px 4px; }
 .cal-n { display: flex; justify-content: flex-end; align-items: flex-start; gap: 4px; padding: 5px 4px 0 0; }
 body .cal .cal-n > button:first-child { background: none !important; border: 0 !important; box-shadow: none !important; font: inherit; font-size: 13px; font-weight: 650; color: #3D4C69 !important; min-width: 26px; height: 26px; border-radius: 13px !important; cursor: pointer; padding: 0 7px !important; }
 body .cal .cal-n > button.today { background: var(--blue) !important; color: #fff !important; }
@@ -75,5 +78,5 @@ body .cal .cal-link { background: none !important; border: 0 !important; box-sha
 .cal-dh { display: flex; align-items: center; gap: 10px; font-weight: 650; margin: 0 0 12px; color: var(--ink); } .cal-dh i { width: 14px; height: 14px; border-radius: 5px; background: var(--a); }
 .cal-dl { display: grid; gap: 10px; margin: 0 0 12px; } .cal-dl div { display: grid; gap: 1px; } .cal-dl dt { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--mut); font-weight: 700; } .cal-dl dd { margin: 0; font-size: 14.5px; font-weight: 600; }
 @media (max-width: 900px) { .cal-phs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 760px) { .cal-weekv { grid-template-columns: 1fr; } .cal-col { min-height: 0; border-left: 0; border-top: 1px solid var(--line); } body .cal .cal-q { width: 100% !important; } body .cal .cal-nav button, body .cal .cal-seg button { min-height: 40px; } .cal-title { font-size: 20px !important; } .cal-pop { width: min(300px, calc(100vw - 48px)); } .cal-fi { min-height: 44px; } .cal-phs { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .cal-weekv { grid-template-columns: 1fr; } .cal-col { min-height: 0; border-left: 0; border-top: 1px solid var(--line); } body .cal .cal-q { width: 100% !important; } body .cal .cal-nav button, body .cal .cal-seg button { min-height: 40px; } .cal-title { font-size: 20px !important; } .cal-pop { width: min(300px, calc(100vw - 48px)); } .cal-fi { min-height: 44px; } .cal-phs { grid-template-columns: minmax(0, 1fr); min-width: 0; } .cal-ph { min-width: 0; } }   /* min-width 0: the card row sits in a grid, which otherwise keeps it as wide as its widest card */
 @media (prefers-reduced-motion: reduce) { .cal-body.cal-in, .cal-pop { animation: none; } body .cal * { transition: none !important; } }
