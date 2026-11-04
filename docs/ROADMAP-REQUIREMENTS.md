@@ -13,7 +13,7 @@ Live is deploy 142 (3 Nov 2026). Commits: `b5acdbf`, `df9039a`.
 ## Part A. Pending and not checked
 
 ### A1. Not checked yet (3 Nov 2026 sessions)
-- [ ] Customer's own view of the Customer User Guide (needs a published guide; only the team view was checked after the colour fix).
+- [x] Customer's own view of the Customer User Guide: checked 4 Nov 2026 on localhost (guide published, previewed as the customer): module list, section links and answers strip are in Facilio colours, no overlapping names, no page errors (`tests/ui/guide-customer-check.mjs`, 5 of 5). Not checked on live. Small leftover: the "What your team will see" picture frame has a pale lilac tint (goes with the violet pass in A2).
 - [ ] Live check that a file dropped in a box is really sent and stored (deploy 142 checked only that the 13 boxes and the menu entry show).
 - [ ] Live check of lag days on a timeline link (checked only on localhost).
 - [ ] Data onboarding sheet rules: `tests/onboarding_rules.mjs` covers the Site sheet, a missing sheet and a building pointing at a missing site. Not yet covered: Floors, Spaces, Asset, Users and the PM sheets, near-duplicate names, dates and e-mails, import value rules.
