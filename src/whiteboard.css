@@ -13,3 +13,8 @@ body .wb-help:not(#_) { position: absolute; right: 14px; bottom: 64px; z-index: 
 .wb-help[hidden] { display: none; } .wb-help-h { display: flex; justify-content: space-between; align-items: center; color: #1D1A5E; margin-bottom: 8px; }
 .wb-help-g { display: grid; grid-template-columns: 70px 1fr; gap: 8px 12px; font-size: 13px; line-height: 1.5; } .wb-help-g b { color: #1570EF; } .wb-help-g span { color: #1D1A5E; }
 body .wb-zsel:not(#_) { font-size: 12px; font-weight: 700; padding: 0 8px; width: auto; }
+
+/* resize handles point the way they pull; the round handle above a shape rotates it */
+body .wb-host .wb-h[data-hd="nw"], body .wb-host .wb-h[data-hd="se"] { cursor: nwse-resize; } body .wb-host .wb-h[data-hd="ne"], body .wb-host .wb-h[data-hd="sw"] { cursor: nesw-resize; }
+body .wb-host .wb-h[data-hd="n"], body .wb-host .wb-h[data-hd="s"] { cursor: ns-resize; } body .wb-host .wb-h[data-hd="e"], body .wb-host .wb-h[data-hd="w"] { cursor: ew-resize; }
+body .wb-host .wb-rot { cursor: grab; } body .wb-host .wb-rot:active { cursor: grabbing; }

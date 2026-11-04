@@ -34,7 +34,7 @@
       x: num(n.x, 0, -1e6, 1e6), y: num(n.y, 0, -1e6, 1e6), w: num(n.w, 160, 8, 2e4), h: num(n.h, 64, 8, 2e4), text: str(n.text, 4000),
       fill: HEXC.test(n.fill) ? n.fill : undefined, size: n.size === undefined ? undefined : num(n.size, 18, 8, 96), stype: ['open', 'closed', 'skipped'].includes(n.stype) ? n.stype : 'open',
       conf: ['inferred', 'uncertain'].includes(n.conf) ? n.conf : undefined, g: ID.test(n.g) ? n.g : undefined, fileId: ID.test(n.fileId) ? n.fileId : undefined, hidden: !!n.hidden,
-      b: n.b ? true : undefined, al: ['l', 'r'].includes(n.al) ? n.al : undefined, tc: HEXC.test(n.tc) ? n.tc : undefined, lock: n.lock ? true : undefined,
+      b: n.b ? true : undefined, rot: num(n.rot, 0, -360, 360) || undefined, op: n.op === undefined || Number(n.op) >= 1 ? undefined : num(n.op, 1, .1, 1), bc: HEXC.test(n.bc) ? n.bc : undefined, bw: n.bw === undefined ? undefined : num(n.bw, 1, 0, 12), bd: ['dash', 'dot'].includes(n.bd) ? n.bd : undefined, al: ['l', 'r'].includes(n.al) ? n.al : undefined, tc: HEXC.test(n.tc) ? n.tc : undefined, lock: n.lock ? true : undefined,
       pts: n.t === 'ink' ? (Array.isArray(n.pts) ? n.pts : []).slice(0, 4000).map(q => Array.isArray(q) ? [num(q[0], 0, -1e5, 1e5), num(q[1], 0, -1e5, 1e5)] : [0, 0]) : undefined, pw: n.t === 'ink' ? num(n.pw, n.w, 1, 2e4) : undefined, ph: n.t === 'ink' ? num(n.ph, n.h, 1, 2e4) : undefined, sw: n.t === 'ink' ? num(n.sw, 3, 1, 24) : undefined }));
     B.edges = (Array.isArray(B.edges) ? B.edges : []).filter(e => e && typeof e === 'object' && ID.test(e.id) && seen.has(e.from) && seen.has(e.to)).slice(0, 6000).map(e => Object.assign(e, {
       label: str(e.label, 200), conf: ['inferred', 'uncertain'].includes(e.conf) ? e.conf : undefined, g: ID.test(e.g) ? e.g : undefined,
@@ -106,8 +106,9 @@
   function nodeSvg(n, forExport) {
     if (n.hidden) return '';
     const sel = !forExport && W.sel.has(n.id), id = esc(n.id), conf = n.conf && n.conf !== 'detected' ? n.conf : '';
-    const start = n.t === 'ellipse'; const stroke = sel ? C.active : conf === 'uncertain' ? '#E5197F' : conf === 'inferred' ? C.tbc : n.t === 'note' ? 'rgba(16,24,40,.12)' : n.stype === 'skipped' ? C.disabled : start ? C.initial : C.line;
-    const sw = sel ? 2 : start ? 2 : 1, dash = conf ? ' stroke-dasharray="6 4"' : '';
+    const start = n.t === 'ellipse'; let stroke = sel ? C.active : conf === 'uncertain' ? '#E5197F' : conf === 'inferred' ? C.tbc : n.t === 'note' ? 'rgba(16,24,40,.12)' : n.stype === 'skipped' ? C.disabled : start ? C.initial : C.line;
+    let sw = sel ? 2 : start ? 2 : 1, dash = conf ? ' stroke-dasharray="6 4"' : '';
+    if (!sel && n.bc) stroke = n.bc; if (n.bw !== undefined) sw = n.bw; if (n.bd) dash = ` stroke-dasharray="${n.bd === 'dot' ? '2 4' : '8 5'}"`;   // the person's own border: colour, width, dashed or dotted
     let shape = '';
     if (n.t === 'frame') shape = `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="14" fill="rgba(239,245,255,.55)" stroke="${sel ? C.active : '#B2CCFF'}" stroke-width="${sel ? 2.5 : 1.5}" stroke-dasharray="8 6"/><text x="${n.x + 16}" y="${n.y + 26}" font-size="15" font-weight="700" fill="#1D1A5E">${esc(n.text || '')}</text>${n.src && n.src.kind === 'flow' ? `<text x="${n.x + 16}" y="${n.y + 44}" font-size="11.5" fill="${stale(n) ? '#B54708' : '#667085'}">${stale(n) ? 'The original flow has changed since this copy was made · right-click the frame to refresh it' : `Copy of the ${esc(n.src.origin === 'proposed' ? 'proposed' : 'configured')} state flow · changes here stay on this board`}</text>` : n.src && n.src.kind === 'image' ? `<text x="${n.x + 16}" y="${n.y + 44}" font-size="11.5" fill="#667085">Read from an image by AI · check the dashed parts</text>` : ''}`;
     else if (n.t === 'image') {
@@ -134,10 +135,13 @@
       if (conf && !forExport) label += `<text x="${n.x + n.w - 6}" y="${n.y - 5}" text-anchor="end" font-size="10.5" font-weight="600" fill="${conf === 'uncertain' ? '#C11574' : '#B54708'}">${conf}</text>`;
     }
     const lockIc = n.lock && !forExport ? `<g transform="translate(${n.x + n.w - 14} ${n.y + 4})" pointer-events="none"><rect width="11" height="8" y="5" rx="2" fill="#667085"/><path d="M2.5 5 V3.5 a3 3 0 0 1 6 0 V5" fill="none" stroke="#667085" stroke-width="1.6"/></g>` : '';
-    return `<g class="wb-n${n.lock ? ' locked' : ''}" data-id="${id}">${shape}${label}${lockIc}${!forExport && sel && !ro() && !n.lock ? handle(n) : ''}</g>`;
+    return `<g class="wb-n${n.lock ? ' locked' : ''}" data-id="${id}"${n.rot ? ` transform="rotate(${n.rot} ${n.x + n.w / 2} ${n.y + n.h / 2})"` : ''}${n.op && n.op < 1 ? ` opacity="${n.op}"` : ''}>${shape}${label}${lockIc}${!forExport && sel && !ro() && !n.lock ? handle(n) : ''}</g>`;
   }
   function stale(n) { if (!n.src || n.src.kind !== 'flow' || !n.src.sig) return false; const f = F.flowModel && F.flowModel(n.src.flowId); return !!f && flowSig(f) !== n.src.sig; }
-  const handle = n => `<rect class="wb-h" data-h="${esc(n.id)}" x="${n.x + n.w - 6}" y="${n.y + n.h - 6}" width="12" height="12" rx="3" fill="#fff" stroke="${C.active}" stroke-width="2"/>`;
+  const handle = n => { const x0 = n.x, y0 = n.y, x1 = n.x + n.w, y1 = n.y + n.h, cx = n.x + n.w / 2, cy = n.y + n.h / 2;
+    const H = (hd, x, y) => `<rect class="wb-h" data-h="${esc(n.id)}" data-hd="${hd}" x="${x - 6}" y="${y - 6}" width="12" height="12" rx="3" fill="#fff" stroke="${C.active}" stroke-width="2"/>`;
+    return [['nw', x0, y0], ['n', cx, y0], ['ne', x1, y0], ['e', x1, cy], ['se', x1, y1], ['s', cx, y1], ['sw', x0, y1], ['w', x0, cy]].map(q => H(...q)).join('')
+      + `<line x1="${cx}" y1="${y0}" x2="${cx}" y2="${y0 - 22}" stroke="${C.active}" stroke-width="1.5" pointer-events="none"/><circle class="wb-rot" data-rot="${esc(n.id)}" cx="${cx}" cy="${y0 - 28}" r="7" fill="#fff" stroke="${C.active}" stroke-width="2"/>`; };   // corners and sides resize (Shift keeps the proportions); the round handle above rotates (Shift snaps to 15 degrees)
   // What a connector stands for. Transitions copied from a flow are configuration-backed. A line the person draws between two different
   // flows is only a drawing unless the project's relationship register (Configuration Inputs) records that link between the two modules.
   const norm = v => String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -304,7 +308,8 @@
       if (W.tool === 'hand' || ev.button === 1) { drag = { kind: 'pan', sx: ev.clientX, sy: ev.clientY, vx: W.B.view.x, vy: W.B.view.y }; host.classList.add('panning'); W.dragging = true; return; }
       if (PLACE_TOOLS.includes(W.tool) && !ro()) { ev.preventDefault(); const t = W.tool, [w, h] = SIZES[t]; if (!ev.shiftKey) W.tool = 'select'; svg.releasePointerCapture && svg.releasePointerCapture(ev.pointerId); addNode(t, p.x - w / 2, p.y - h / 2, false); const n = W.B.nodes[W.B.nodes.length - 1]; if (t === 'note' || t === 'text') setTimeout(() => { if (W.edit) return; startEdit(n); }, 30); return; }
       if (W.tool === 'pen' && !ro()) { W.ink = [[p.x, p.y]]; drag = { kind: 'ink' }; W.dragging = true; return; }
-      if (hEl && !ro() && !(node(hEl.getAttribute('data-h')) || {}).lock) { const n = node(hEl.getAttribute('data-h')); pushUndo(); drag = { kind: 'resize', n, x: p.x, y: p.y, w: n.w, h: n.h }; return; }
+      const rEl = ev.target.closest('[data-rot]'); if (rEl && !ro()) { const n = node(rEl.getAttribute('data-rot')); if (n && !n.lock) { pushUndo(); drag = { kind: 'rotate', n }; W.dragging = true; return; } }
+      if (hEl && !ro() && !(node(hEl.getAttribute('data-h')) || {}).lock) { const n = node(hEl.getAttribute('data-h')); pushUndo(); drag = { kind: 'resize', n, x: p.x, y: p.y, w: n.w, h: n.h, nx: n.x, ny: n.y, hd: hEl.getAttribute('data-hd') || 'se', k: n.w / n.h }; return; }
       if (ehEl && !ro()) { const e = W.B.edges.find(x => x.id === ehEl.getAttribute('data-e')); const end = ehEl.getAttribute('data-eh'); const fixed = node(end === 'from' ? e.to : e.from);
         drag = { kind: 'relink', e, end }; W.link = end === 'to' ? { x0: fixed.x + fixed.w / 2, y0: fixed.y + fixed.h / 2, x1: p.x, y1: p.y } : { x0: p.x, y0: p.y, x1: fixed.x + fixed.w / 2, y1: fixed.y + fixed.h / 2, rev: true }; draw(); return; }
       if (elEl && !ro() && W.sel.has(elEl.getAttribute('data-el'))) { const e = W.B.edges.find(x => x.id === elEl.getAttribute('data-el')); const lo = e.lo || { x: 0, y: 0 }; drag = { kind: 'label', e, x: p.x, y: p.y, lx: lo.x, ly: lo.y, moved: false }; return; }
@@ -337,7 +342,11 @@
         moveWithGuides(drag, dx, dy); paint(); }
       else if (drag.kind === 'label') { if (!drag.moved) { pushUndo(); drag.moved = true; } drag.e.lo = { x: Math.round(drag.lx + p.x - drag.x), y: Math.round(drag.ly + p.y - drag.y) }; paint(); }
       else if (drag.kind === 'relink') { if (W.link.rev) { W.link.x0 = p.x; W.link.y0 = p.y; } else { W.link.x1 = p.x; W.link.y1 = p.y; } paint(); }
-      else if (drag.kind === 'resize') { drag.n.w = Math.max(40, snapV(drag.w + p.x - drag.x)); drag.n.h = Math.max(24, snapV(drag.h + p.y - drag.y)); paint(); }
+      else if (drag.kind === 'resize') { const n = drag.n, hd = drag.hd; let dx = p.x - drag.x, dy = p.y - drag.y; if (n.rot) { const a = -n.rot * Math.PI / 180, c = Math.cos(a), s2 = Math.sin(a); [dx, dy] = [dx * c - dy * s2, dx * s2 + dy * c]; }   // a rotated shape is resized along its own sides
+        let w = drag.w, h = drag.h; if (hd.includes('e')) w = drag.w + dx; if (hd.includes('w')) w = drag.w - dx; if (hd.includes('s')) h = drag.h + dy; if (hd.includes('n')) h = drag.h - dy;
+        if (ev.shiftKey && hd.length === 2) { if (Math.abs(w - drag.w) / drag.w > Math.abs(h - drag.h) / drag.h) h = w / drag.k; else w = h * drag.k; }
+        w = Math.max(40, snapV(w)); h = Math.max(24, snapV(h)); n.w = w; n.h = h; n.x = hd.includes('w') ? drag.nx + drag.w - w : drag.nx; n.y = hd.includes('n') ? drag.ny + drag.h - h : drag.ny; paint(); }
+      else if (drag.kind === 'rotate') { const n = drag.n; let a = Math.atan2(p.y - (n.y + n.h / 2), p.x - (n.x + n.w / 2)) * 180 / Math.PI + 90; if (ev.shiftKey) a = Math.round(a / 15) * 15; a = ((Math.round(a) % 360) + 360) % 360; if (a) n.rot = a; else delete n.rot; paint(); }
       else if (drag.kind === 'marquee') { W.marquee.x1 = p.x; W.marquee.y1 = p.y; paint(); }
       else if (drag.kind === 'link') { W.link.x1 = p.x; W.link.y1 = p.y; paint(); }
     });
@@ -352,7 +361,7 @@
       else if (d.kind === 'relink') { const hit = document.elementFromPoint(ev.clientX, ev.clientY), t = hit && hit.closest && hit.closest('#wbSvg [data-id]'); W.link = null;
         if (t && t.getAttribute('data-id') !== d.e[d.end]) { const to = node(t.getAttribute('data-id')); if (to && to.t !== 'frame') { pushUndo(); d.e[d.end] = to.id; if (d.e.ref) { delete d.e.ref; V.toast('This connector was a copied transition; it is now a drawing only. The state flow itself is unchanged.', 5000); } changed(); } }
         draw(); }
-      else if (d.kind === 'resize') changed();
+      else if (d.kind === 'resize' || d.kind === 'rotate') { changed(); draw(); }   // draw again so the selection bar comes back
       else if (d.kind === 'marquee') { const m = W.marquee, x0 = Math.min(m.x0, m.x1), x1 = Math.max(m.x0, m.x1), y0 = Math.min(m.y0, m.y1), y1 = Math.max(m.y0, m.y1);
         selectWithGroups(W.B.nodes.filter(n => !n.hidden && n.t !== 'image' && n.x >= x0 && n.y >= y0 && n.x + n.w <= x1 && n.y + n.h <= y1).map(n => n.id)); W.marquee = null; draw(); }
       else if (d.kind === 'link') { const hit = document.elementFromPoint(ev.clientX, ev.clientY), t = hit && hit.closest && hit.closest('#wbSvg [data-id]'); W.link = null;   // pointer capture makes ev.target the canvas, so look up what is under the pointer
@@ -739,12 +748,12 @@
     const bar = document.getElementById('wbCtxBar'); if (!bar || !W.B) return;
     const ns = selNodes(), es = selEdges();
     if (ro() || (!ns.length && !es.length) || W.dragging || W.edit || W.link) { bar.hidden = true; return; }
-    const sig = [...W.sel].sort().join(',') + JSON.stringify(ns.map(n => [n.fill, n.size, n.b, n.al, n.tc, n.lock, n.g, n.t])) + JSON.stringify(es.map(e => [e.route, e.ah]));
+    const sig = [...W.sel].sort().join(',') + JSON.stringify(ns.map(n => [n.fill, n.size, n.b, n.al, n.tc, n.lock, n.g, n.t, n.bc, n.bw, n.bd, n.op])) + JSON.stringify(es.map(e => [e.route, e.ah]));
     if (bar._sig !== sig) { bar._sig = sig; bar.innerHTML = ctxBarHtml(ns, es); }
     bar.hidden = false; const host = document.getElementById('wbHost'), v = W.B.view; let b = ns.length ? bbox(ns) : null;
     if (!b) { const p = edgePts(es[0]); if (!p) { bar.hidden = true; return; } b = { x: p.lx - 20, y: p.ly - 12, w: 40, h: 24 }; }
     const bw = bar.offsetWidth, bh = bar.offsetHeight, W0 = host.clientWidth, H0 = host.clientHeight;
-    let left = v.x + (b.x + b.w / 2) * v.z - bw / 2, top = v.y + b.y * v.z - bh - 14; if (top < 8) top = v.y + (b.y + b.h) * v.z + 14;
+    let left = v.x + (b.x + b.w / 2) * v.z - bw / 2, top = v.y + b.y * v.z - bh - 46; if (top < 8) top = v.y + (b.y + b.h) * v.z + 14;
     left = clamp(left, 64, Math.max(64, W0 - bw - 8)); top = clamp(top, 8, Math.max(8, H0 - bh - 56)); bar.style.transform = `translate(${Math.round(left)}px, ${Math.round(top)}px)`;
   }
   function ctxBarHtml(ns, es) {
@@ -757,6 +766,8 @@
         + B('wbBold', IC.bold, 'Bold', '', ns.every(x => x.b)) + B('wbAlignT', al === 'l' ? IC.al : al === 'r' ? IC.ar : IC.ac, 'Text alignment')
         + `<div class="wb-cwrap"><button type="button" class="wb-cb wb-tcol" data-act="wbPopT" data-p="tcol" title="Text colour" aria-label="Text colour"><b>A</b><i style="background:${esc(n.tc || '#101828')}"></i></button><div class="wb-pop wb-swatches" id="wbPop_tcol" hidden>${TCOLS.map(c => `<button type="button" data-act="wbTColor" data-c="${c}" style="background:${c}" aria-label="Text ${c}"></button>`).join('')}</div></div>`;
       if (!txt && ns.some(x => x.t === 'ink')) h += `<div class="wb-cwrap"><button type="button" class="wb-cb wb-tcol" data-act="wbPopT" data-p="tcol" title="Pen colour" aria-label="Pen colour"><i style="background:${esc(n.tc || '#1D1F3D')}"></i></button><div class="wb-pop wb-swatches" id="wbPop_tcol" hidden>${TCOLS.map(c => `<button type="button" data-act="wbTColor" data-c="${c}" style="background:${c}" aria-label="Pen ${c}"></button>`).join('')}</div></div>`;
+      if (ns.some(x => !['image', 'ink', 'text', 'frame'].includes(x.t))) h += `<div class="wb-cwrap"><button type="button" class="wb-cb wb-tcol" data-act="wbPopT" data-p="bc" title="Border colour" aria-label="Border colour"><b>▢</b><i style="background:${esc(n.bc || '#98A2B3')}"></i></button><div class="wb-pop wb-swatches" id="wbPop_bc" hidden>${TCOLS.map(c => `<button type="button" data-act="wbBColor" data-c="${c}" style="background:${c}" aria-label="Border ${c}"></button>`).join('')}</div></div><select class="wb-csel" data-change="wbBorder" aria-label="Border width and style" title="Border width and style">${[['', 'Border'], ['0', 'No border'], ['1', 'Thin'], ['2', 'Medium'], ['4', 'Thick'], ['dash', 'Dashed'], ['dot', 'Dotted']].map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select>`;
+      h += `<select class="wb-csel" data-change="wbOpacity" aria-label="Opacity" title="Opacity">${[[1, '100%'], [.75, '75%'], [.5, '50%'], [.25, '25%']].map(([v, l]) => `<option value="${v}"${(n.op || 1) === v ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
       h += sep;
       if (ns.length > 1) h += `<select class="wb-csel" data-change="wbAlign" aria-label="Align selected"><option value="">Align</option><option value="l">Left edges</option><option value="c">Centres</option><option value="r">Right edges</option><option value="t">Top edges</option><option value="m">Middles</option><option value="b">Bottom edges</option><option value="dh">Distribute across</option><option value="dv">Distribute down</option></select>` + B('wbGroup', IC.group, 'Group (Ctrl+G)');
       else if (n.g) h += B('wbUngroup', IC.group, 'Ungroup (Ctrl+Shift+G)', '', true);
@@ -772,6 +783,9 @@
   ACT.wbTColor = a => edit('tc', () => selNodes().forEach(n => { n.tc = a.getAttribute('data-c'); }));
   ACT.wbFont = el => edit('size', () => selNodes().forEach(n => { n.size = clamp(Number(el.value) || 14, 8, 96); }));
   ACT.wbBold = () => { const on = !selNodes().every(n => n.b); edit('b', () => selNodes().forEach(n => { if (on) n.b = true; else delete n.b; })); };
+  ACT.wbBColor = a => edit('bc', () => selNodes().forEach(n => { if (!['image', 'ink', 'text', 'frame'].includes(n.t)) n.bc = a.getAttribute('data-c'); }));
+  ACT.wbBorder = el => { const v = el.value; if (v === '') return; edit('bw', () => selNodes().forEach(n => { if (['image', 'ink', 'text', 'frame'].includes(n.t)) return; if (v === 'dash' || v === 'dot') { n.bd = v; if (n.bw === 0) delete n.bw; } else { n.bw = Number(v); delete n.bd; } })); };
+  ACT.wbOpacity = el => edit('op', () => selNodes().forEach(n => { const o = Number(el.value); if (o >= 1) delete n.op; else n.op = Math.max(.1, o); }));
   ACT.wbAlignT = () => { const cur = (selNodes()[0] || {}).al || 'c'; const nx = cur === 'c' ? 'l' : cur === 'l' ? 'r' : 'c'; edit('al', () => selNodes().forEach(n => { if (nx === 'c') delete n.al; else n.al = nx; })); };
   ACT.wbLock = () => { const on = !selNodes().every(n => n.lock); edit('lock', () => selNodes().forEach(n => { if (on) n.lock = true; else delete n.lock; })); V.toast(on ? 'Locked: it stays in place until unlocked' : 'Unlocked'); };
   ACT.wbDupB = () => duplicate();
