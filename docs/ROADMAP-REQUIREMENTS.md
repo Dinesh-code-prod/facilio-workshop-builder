@@ -224,6 +224,25 @@ Goal: a short, plain guide so each team member can add the Microsoft 365 connect
 - [ ] Note the link with the postponed mail work (A3: Microsoft returns 403 when receiving mail): this guide covers the user's own Claude only, it does not fix server-side mail receiving.
 - [ ] Test: the new row shows in the Team Guide and on Claude setup, the copy and links work, and the wording matches what really happens on a test account.
 
+### C3. Use the Microsoft 365 connector to help Delivery Studio, and connect the two (added 4 Nov 2026)
+Goal: beyond the how-to guide (C2), find the best way for the Microsoft 365 connector (Outlook mail and calendar, Teams chats and meetings, SharePoint and OneDrive files) to feed and support Delivery Studio projects, and build the chosen way.
+- [ ] Compare the ways before building, and write the result in `docs/reference/M365-INTEGRATION-OPTIONS.md`:
+  1. **In Claude, with both connectors on** (Microsoft 365 plus Facilio Delivery Studio): the person asks Claude, Claude reads Microsoft 365 with the person's own permissions and saves the result into the project as a draft through the Delivery Studio connector. No new hosting, no API key, uses the existing Claude subscription. Check that the Delivery Studio connector's write tools are enough, and add the missing ones.
+  2. **Delivery Studio calling Microsoft itself** (Microsoft Graph with a server sign-in): needs Microsoft admin consent and a stored credential, and ties to the postponed mail-receiving work that returns 403 (A3). Describe what it would need and why it is harder; do not start it unless asked.
+  3. **Manual**: download from Microsoft and use Bring your project in or Inbox. This is the fallback that already works.
+  Recommend one; the first looks most likely, but confirm it.
+- [ ] Candidate uses to check for real, one by one (build only the ones that work and are worth it):
+  - Customer e-mails in a project's mailbox or folder → Inbox records, then requirements or actions (as drafts).
+  - Teams meeting recordings and transcripts → workshop transcripts in Requirements (Part 3), ready for requirement extraction.
+  - Outlook calendar → the Workshop Schedule and workshop sessions (dates, attendees); and booking or proposing slots only as a draft the person confirms.
+  - SharePoint and OneDrive files (contracts, plans, decks, data sheets) → the right drop box in Bring your project in.
+  - Weekly status report and monthly report (A1c): draft the covering e-mail in Outlook for the person to review and send; never send automatically.
+  - Find who is who: use people search to fill project contacts and attendees.
+- [ ] Rules: every item arrives as a draft with its source (mail subject and date, meeting, file path) kept; the person approves before it becomes a requirement or goes to the customer; nothing is sent from the person's mailbox without their own action; Claude reads only what that person's Microsoft account can already open; no credentials or tokens stored in Delivery Studio.
+- [ ] Add a "Use with Microsoft 365" action or prompt to the relevant pages (Inbox, Workshops, Bring your project in, Reports) through the one Claude handoff engine (Part 13), so the right prompt and project context are ready, and tell the person to turn on the Microsoft 365 connector first (link to the C2 guide).
+- [ ] Show in the Claude setup page and Team Guide which connectors a person needs for which job (Delivery Studio: always; Microsoft 365: mail, meetings, files).
+- [ ] Test on a real office account with both connectors on: one e-mail, one meeting transcript, one calendar event and one SharePoint file each reach the project as a draft with its source; say what was not checked.
+
 ---
 
 ## Progress log (add a line each time something is finished)
