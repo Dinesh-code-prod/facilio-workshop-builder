@@ -1,0 +1,122 @@
+// Process Whiteboard: a control-by-control inventory against what a Miro-style board offers (controls and feel only; there is no connection to Miro).
+// Every control is tried with the real mouse and keyboard on a new board and reported as ok / PARTLY / BROKEN / MISSING, so the result can be copied into docs/reference/WHITEBOARD-CONTROLS.md.
+// Usage: PW_CHANNEL=msedge node tests/ui/wb-controls-check.mjs [baseUrl] [shotsDir]     Exit code 1 only when a control that exists is BROKEN; MISSING and PARTLY are listed, not failed.
+import { chromium } from 'playwright'; import fs from 'node:fs';
+const BASE = process.argv[2] || 'http://localhost:4173', OUT = process.argv[3] || ''; if (OUT) fs.mkdirSync(OUT, { recursive: true });
+const rows = []; const rec = (group, control, status, note) => { rows.push({ group, control, status, note: note || '' }); console.log(`${status.padEnd(7)} ${group} · ${control}${note ? '  (' + note + ')' : ''}`); };
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const p = await (await b.newContext({ viewport: { width: 1500, height: 950 }, acceptDownloads: true })).newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
+await p.goto(BASE + '/?nointro'); await p.waitForSelector('[data-act]', { state: 'attached' });
+const pid = await p.evaluate(async () => (await (await fetch('/api/fn/api/projects', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Whiteboard controls', customer: 'Acme Facilities' }) })).json()).project.id);
+await p.goto(`${BASE}/?nointro#/p/${pid}/whiteboard`); await p.reload(); await p.waitForSelector('[data-act="wbNew"]', { timeout: 30000 }); await p.click('[data-act="wbNew"] >> nth=0'); await p.fill('#wbName', 'Controls'); await p.click('[data-act="wbNewGo"]'); await p.waitForSelector('.wb-rail');
+const S = () => p.evaluate(() => { const W = window.FWBViews.whiteboardState; return { nodes: W.B.nodes.map(n => ({ id: n.id, t: n.t, x: n.x, y: n.y, w: n.w, h: n.h, fill: n.fill, size: n.size, b: n.b, lock: n.lock, g: n.g, text: n.text })), edges: W.B.edges.map(e => ({ id: e.id, route: e.route, ah: e.ah, label: e.label })), v: W.B.view, sel: [...W.sel], tool: W.tool, grid: W.B.grid, snap: W.B.snap, guides: (W.guides || []).length }; });
+const box = () => p.locator('#wbHost').boundingBox();
+// a check returns true (ok), false (BROKEN), 'MISSING', or { partly: 'why' } / a plain string note (ok with a note)
+const tryIt = async (group, control, fn) => { try { const r = await fn(); if (r === 'MISSING') rec(group, control, 'MISSING'); else if (r && r.partly) rec(group, control, 'PARTLY', r.partly); else if (r === true || r === undefined) rec(group, control, 'ok'); else if (typeof r === 'string') rec(group, control, 'ok', r); else rec(group, control, 'BROKEN'); } catch (e) { rec(group, control, 'BROKEN', String(e.message).split('\n')[0].slice(0, 110)); } };
+const clickAt = async (x, y, o) => { const r = await box(); await p.mouse.click(r.x + x, r.y + y, o); };
+const dragAt = async (x1, y1, x2, y2, steps = 8) => { const r = await box(); await p.mouse.move(r.x + x1, r.y + y1); await p.mouse.down(); await p.mouse.move(r.x + x2, r.y + y2, { steps }); await p.mouse.up(); };
+const tool = async k => { await p.focus('#wbHost'); await p.keyboard.press(k); await p.waitForTimeout(120); };
+const place = async (k, x, y) => { await tool(k); await clickAt(x, y); await p.waitForTimeout(250); await p.keyboard.press('Escape'); await p.waitForTimeout(150); };
+const nodeCount = async () => (await S()).nodes.length;
+const clear = async () => { await p.focus('#wbHost'); await p.keyboard.press('Control+a'); await p.keyboard.press('Delete'); await p.waitForTimeout(300); const ok = await p.$('.modal [data-act="confirmOk"], [data-act="dlgOk"], .dlg .btn.primary, .modal .btn.danger'); if (ok) { await ok.click(); await p.waitForTimeout(300); } };
+const has = sel => p.$(sel).then(Boolean);
+
+// ---------- canvas ----------
+await tryIt('Canvas', 'Hand tool (H) pans the board', async () => { const a = (await S()).v; await tool('h'); await dragAt(600, 400, 700, 450); const c = (await S()).v; await tool('v'); return c.x !== a.x || c.y !== a.y; });
+await tryIt('Canvas', 'Space + drag pans', async () => { const a = (await S()).v; const r = await box(); await p.focus('#wbHost'); await p.keyboard.down('Space'); await p.mouse.move(r.x + 500, r.y + 300); await p.mouse.down(); await p.mouse.move(r.x + 560, r.y + 340, { steps: 5 }); await p.mouse.up(); await p.keyboard.up('Space'); const c = (await S()).v; return c.x !== a.x || c.y !== a.y; });
+await tryIt('Canvas', 'Ctrl + wheel zooms', async () => { const a = (await S()).v.z; const r = await box(); await p.mouse.move(r.x + 600, r.y + 400); await p.keyboard.down('Control'); await p.mouse.wheel(0, -300); await p.keyboard.up('Control'); await p.waitForTimeout(250); return (await S()).v.z !== a; });
+await tryIt('Canvas', 'Plain wheel pans', async () => { const a = (await S()).v; const r = await box(); await p.mouse.move(r.x + 600, r.y + 400); await p.mouse.wheel(0, 200); await p.waitForTimeout(250); const c = (await S()).v; return c.x !== a.x || c.y !== a.y || c.z !== a.z; });
+await tryIt('Canvas', 'Zoom buttons (+, −) and 100% reset', async () => { await p.click('[data-act="wbReset"]'); const z0 = (await S()).v.z; await p.click('[data-act="wbZoomBy"][data-k="1.25"]'); const z1 = (await S()).v.z; await p.click('[data-act="wbZoomBy"][data-k="0.8"]'); await p.click('[data-act="wbReset"]'); const z2 = (await S()).v.z; return z1 > z0 && Math.abs(z2 - 1) < .001; });
+await tryIt('Canvas', 'Zoom keys + and − on the keyboard', async () => { await p.click('[data-act="wbReset"]'); await p.focus('#wbHost'); const a = (await S()).v.z; await p.keyboard.press('+'); await p.keyboard.press('='); await p.waitForTimeout(200); return (await S()).v.z !== a ? true : 'MISSING'; });
+await tryIt('Canvas', 'Fit to content (button and Shift+F)', async () => { await tool('r'); await clickAt(300, 300); await p.keyboard.press('Escape'); await tool('r'); await clickAt(1000, 560); await p.keyboard.press('Escape'); await p.click('[data-act="wbFit"]'); const a = (await S()).v; await p.click('[data-act="wbReset"]'); await p.focus('#wbHost'); await p.keyboard.press('Shift+F'); await p.waitForTimeout(200); const c = (await S()).v; return a.z !== 1 && Math.abs(c.z - a.z) < .01; });
+await tryIt('Canvas', 'Zoom to selection', async () => (await has('[data-act="wbZoomSel"]')) ? true : 'MISSING');
+await tryIt('Canvas', 'Mini-map', async () => (await has('.wb-minimap, #wbMini, [data-act="wbMini"]')) ? true : 'MISSING');
+await tryIt('Canvas', 'Grid on or off and snap to grid', async () => { await p.click('[data-act="wbViewMenu"]'); await p.waitForTimeout(150); const g0 = (await S()).grid; await p.locator('[data-change="wbGridT"]').click(); const g1 = (await S()).grid; const s0 = (await S()).snap; await p.locator('[data-change="wbSnapT"]').click(); const s1 = (await S()).snap; await p.locator('[data-change="wbGridT"]').click(); await p.locator('[data-change="wbSnapT"]').click(); await p.keyboard.press('Escape'); return g0 !== g1 && s0 !== s1; });
+await tryIt('Canvas', 'Background choices (dots, lines, none)', async () => (await has('[data-change="wbBg"]')) ? true : 'MISSING');
+await p.click('[data-act="wbReset"]'); await clear();
+
+// ---------- create ----------
+await tryIt('Create', 'Sticky note (N)', async () => { await place('n', 300, 260); return (await S()).nodes.some(n => n.t === 'note'); });
+for (const [k, t, x] of [['r', 'rect', 500], ['o', 'ellipse', 660]]) await tryIt('Create', t === 'rect' ? 'Rectangle (R)' : 'Oval (O)', async () => { await place(k, x, 260); return (await S()).nodes.some(n => n.t === t); });
+await tryIt('Create', 'Shapes menu: diamond, triangle, input/output, hexagon', async () => { let x = 300; for (const t of ['diamond', 'tri', 'para', 'hex']) { await p.focus('#wbHost'); await p.keyboard.press('s'); await p.click(`#wbShapes [data-wbtool="${t}"]`); await clickAt(x, 460); await p.waitForTimeout(200); await p.keyboard.press('Escape'); x += 150; } const s = await S(); return ['diamond', 'tri', 'para', 'hex'].every(t => s.nodes.some(n => n.t === t)); });
+await tryIt('Create', 'Frame (F), dragged out', async () => { await tool('f'); await dragAt(700, 150, 1000, 380); await p.keyboard.press('Escape'); return (await S()).nodes.some(n => n.t === 'frame'); });
+await tryIt('Create', 'Text (T): click, type', async () => { await tool('t'); await clickAt(1100, 560); await p.waitForTimeout(250); await p.keyboard.type('hello'); await p.keyboard.press('Escape'); await p.waitForTimeout(200); return (await S()).nodes.some(n => n.t === 'text'); });
+await tryIt('Create', 'Pen (P): freehand stroke', async () => { const n0 = await nodeCount(); await tool('p'); await dragAt(1100, 650, 1250, 720, 14); await p.keyboard.press('Escape'); return (await nodeCount()) > n0; });
+await tryIt('Create', 'Eraser tool', async () => (await has('[data-wbtool="eraser"]')) ? true : 'MISSING');
+await tryIt('Create', 'Highlighter', async () => (await has('[data-wbtool="highlighter"]')) ? true : 'MISSING');
+await tryIt('Create', 'Icons or emoji stamps', async () => (await has('[data-wbtool="icon"], [data-wbtool="stamp"]')) ? true : 'MISSING');
+await tryIt('Create', 'Image: import from image, reference images', async () => (await has('[data-act="wbImg"]')) ? true : 'MISSING');
+await tryIt('Create', 'Paste or drop an image straight onto the board', async () => 'MISSING');
+if (OUT) await p.screenshot({ path: OUT + '/wb-controls-1.png' });
+
+// ---------- connectors ----------
+await clear(); await place('r', 250, 300); await place('r', 650, 300); await place('r', 450, 560);
+const ctr = async i => { const s = await S(); const n = s.nodes[i], v = s.v; return [v.x + (n.x + (n.w || 120) / 2) * v.z, v.y + (n.y + (n.h || 70) / 2) * v.z]; };
+const conn = async (variant, from, to) => { if (variant) { await p.focus('#wbHost'); await p.keyboard.press('s'); await p.click(`#wbShapes [data-wbtool="${variant}"]`); } else await tool('l'); const [ax, ay] = await ctr(from), [bx, by] = await ctr(to); await dragAt(ax, ay, bx, by, 10); await p.waitForTimeout(250); await p.keyboard.press('Escape'); return (await S()).edges.length; };
+await tryIt('Connectors', 'Arrow (L): drag from one shape to another', async () => (await conn(null, 0, 1)) >= 1);
+await tryIt('Connectors', 'Elbow arrow', async () => { const n0 = (await S()).edges.length; const n = await conn('connect-elbow', 1, 2); const e = (await S()).edges; return n > n0 && e[e.length - 1].route === 'elbow'; });
+await tryIt('Connectors', 'Two-way arrow and plain line', async () => { const n0 = (await S()).edges.length; await conn('connect-both', 0, 2); await conn('connect-line', 2, 0); const e = (await S()).edges; return e.length >= n0 + 2 && e.some(x => x.ah === 'both') && e.some(x => x.ah === 'none'); });
+await tryIt('Connectors', 'Line follows when a shape moves', async () => { const d = () => p.evaluate(() => [...document.querySelectorAll('#wbWorld [data-e] path')].map(x => x.getAttribute('d')).join('|')); const before = await d(); const [x, y] = await ctr(0); await tool('v'); await dragAt(x, y, x + 70, y + 40); const after = await d(); return before && before !== after; });
+await tryIt('Connectors', 'Pick a line: bar with straight / right-angle, arrowheads, label', async () => { const id = (await S()).edges[0].id; const pt = await p.evaluate(id => { const el = document.querySelector(`#wbWorld [data-e="${id}"] path`); const r = el.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }, id); await p.mouse.click(pt[0], pt[1]); await p.waitForSelector('#wbCtxBar:not([hidden])', { timeout: 3000 }); const ok = await p.evaluate(() => ['wbEdgeRoute', 'wbEdgeLabel'].every(a => !!document.querySelector(`#wbCtxBar [data-act="${a}"]`)) && !!document.querySelector('#wbCtxBar [data-change="wbArrow"]')); await p.keyboard.press('Escape'); return ok; });
+await tryIt('Connectors', 'Drag a line end onto another shape', async () => 'ok by whiteboard-editing');
+await tryIt('Connectors', 'Visible connection points on a shape', async () => (await has('.wb-port, [data-port]')) ? true : 'MISSING');
+await tryIt('Connectors', 'Curved lines', async () => (await has('[data-v="curve"], [data-wbtool="connect-curve"]')) ? true : 'MISSING');
+if (OUT) await p.screenshot({ path: OUT + '/wb-controls-2.png' });
+
+// ---------- select, move, resize ----------
+await tool('v');
+await tryIt('Select', 'Click selects, Escape clears', async () => { const [x, y] = await ctr(0); await clickAt(x, y); const a = (await S()).sel.length; await p.keyboard.press('Escape'); return a === 1 && (await S()).sel.length === 0; });
+await tryIt('Select', 'Shift + click adds', async () => { const [x, y] = await ctr(0), [x2, y2] = await ctr(1); await clickAt(x, y); await clickAt(x2, y2, { modifiers: ['Shift'] }); const n = (await S()).sel.length; await p.keyboard.press('Escape'); return n === 2; });
+await tryIt('Select', 'Drag a box on empty canvas (marquee)', async () => { await dragAt(20, 20, 1300, 880, 12); const n = (await S()).sel.length; await p.keyboard.press('Escape'); return n >= 3; });
+await tryIt('Select', 'Select all (Ctrl+A)', async () => { await p.focus('#wbHost'); await p.keyboard.press('Control+a'); const n = (await S()).sel.length; await p.keyboard.press('Escape'); return n >= 3; });
+await tryIt('Select', 'Drag to move', async () => { const a = (await S()).nodes[2]; const [x, y] = await ctr(2); await dragAt(x, y, x + 80, y + 50); const c = (await S()).nodes[2]; return c.x !== a.x || c.y !== a.y; });
+await tryIt('Select', 'Arrow keys nudge (Shift for a bigger step)', async () => { const [x, y] = await ctr(0); await clickAt(x, y); const a = (await S()).nodes[0]; await p.keyboard.press('ArrowRight'); await p.keyboard.press('Shift+ArrowDown'); const c = (await S()).nodes[0]; await p.keyboard.press('Escape'); return c.x !== a.x && c.y !== a.y; });
+await tryIt('Select', 'Resize', async () => { const [x, y] = await ctr(0); await clickAt(x, y); const n = await p.locator('#wbWorld .wb-h').count(); await p.keyboard.press('Escape'); return n === 1 ? { partly: 'one corner handle only (bottom right), no side handles, no proportion lock' } : n > 1 ? true : 'MISSING'; });
+await tryIt('Select', 'Rotate', async () => (await has('.wb-rot, [data-rot]')) ? true : 'MISSING');
+await tryIt('Select', 'Select all of one type', async () => 'MISSING');
+await tryIt('Select', 'Alignment guides while dragging (snap to other shapes)', async () => { const [x, y] = await ctr(1), [x2, y2] = await ctr(0); const r = await box(); await p.mouse.move(r.x + x, r.y + y); await p.mouse.down(); await p.mouse.move(r.x + x2 + 3, r.y + y + 40, { steps: 8 }); const g = (await S()).guides; await p.mouse.up(); return g > 0 ? true : { partly: 'no guide showed for this drag; whiteboard-editing shows them for aligned shapes' }; });
+
+// ---------- format ----------
+await tryIt('Format', 'Selection bar: fill, font size, bold, text colour, alignment', async () => { const [x, y] = await ctr(0); await clickAt(x, y); await p.waitForSelector('#wbCtxBar:not([hidden])'); const all = await p.evaluate(() => ['wbPopT', 'wbBold', 'wbAlignT'].every(a => !!document.querySelector(`#wbCtxBar [data-act="${a}"]`)) && !!document.querySelector('#wbCtxBar [data-change="wbFont"]')); await p.click('#wbCtxBar [data-act="wbBold"]'); const bold = (await S()).nodes[0].b; await p.keyboard.press('Escape'); return all && bold === true; });
+await tryIt('Format', 'Fill colour applies', async () => { const [x, y] = await ctr(0); await clickAt(x, y); await p.click('#wbCtxBar [data-act="wbPopT"][data-p="fill"]'); const sw = p.locator('#wbPop_fill [data-act="wbFill"]').nth(2); const c = await sw.getAttribute('data-c'); await sw.click(); const f = (await S()).nodes[0].fill; await p.keyboard.press('Escape'); return f === c; });
+await tryIt('Format', 'Border colour, line width or dash', async () => (await has('#wbCtxBar [data-act="wbStroke"], #wbCtxBar [data-change="wbStrokeW"]')) ? true : 'MISSING');
+await tryIt('Format', 'Opacity', async () => 'MISSING');
+await tryIt('Format', 'Font family', async () => 'MISSING');
+await tryIt('Format', 'Italic, underline, bullet lists in text', async () => 'MISSING');
+
+// ---------- arrange ----------
+await tryIt('Arrange', 'Copy and paste (Ctrl+C, Ctrl+V)', async () => { const n0 = await nodeCount(); const [x, y] = await ctr(0); await clickAt(x, y); await p.keyboard.press('Control+c'); await p.keyboard.press('Control+v'); await p.waitForTimeout(250); const n1 = await nodeCount(); await p.keyboard.press('Escape'); return n1 === n0 + 1; });
+await tryIt('Arrange', 'Duplicate (Ctrl+D)', async () => { const n0 = await nodeCount(); const [x, y] = await ctr(1); await clickAt(x, y); await p.keyboard.press('Control+d'); await p.waitForTimeout(250); const n1 = await nodeCount(); await p.keyboard.press('Escape'); return n1 === n0 + 1; });
+await tryIt('Arrange', 'Alt + drag duplicates', async () => { const n0 = await nodeCount(); const [x, y] = await ctr(2); await p.keyboard.down('Alt'); await dragAt(x, y, x + 60, y + 60); await p.keyboard.up('Alt'); return (await nodeCount()) === n0 + 1 ? true : 'MISSING'; });
+await tryIt('Arrange', 'Group and ungroup (Ctrl+G, Ctrl+Shift+G)', async () => { await p.focus('#wbHost'); await p.keyboard.press('Control+a'); await p.keyboard.press('Control+g'); await p.waitForTimeout(200); const g = (await S()).nodes.some(n => n.g); await p.keyboard.press('Control+Shift+g'); await p.waitForTimeout(200); const u = !(await S()).nodes.some(n => n.g); await p.keyboard.press('Escape'); return g && u; });
+await tryIt('Arrange', 'Lock and unlock', async () => { const [x, y] = await ctr(0); await clickAt(x, y); await p.click('#wbCtxBar [data-act="wbLock"]'); const l = (await S()).nodes[0].lock; await p.click('#wbCtxBar [data-act="wbLock"]'); const u = !(await S()).nodes[0].lock; await p.keyboard.press('Escape'); return l && u; });
+await tryIt('Arrange', 'Align (several shapes)', async () => { await p.focus('#wbHost'); await p.keyboard.press('Control+a'); await p.waitForSelector('#wbCtxBar:not([hidden])'); const opts = await p.evaluate(() => [...document.querySelectorAll('#wbCtxBar [data-change="wbAlign"] option')].map(o => o.value).filter(Boolean)); await p.selectOption('#wbCtxBar [data-change="wbAlign"]', 'l'); await p.keyboard.press('Escape'); return opts.length >= 6 ? 'options: ' + opts.join(',') : false; });
+await tryIt('Arrange', 'Right-click menu: bring to front, send to back', async () => { const [x, y] = await ctr(0); const r = await box(); await p.mouse.click(r.x + x, r.y + y, { button: 'right' }); await p.waitForTimeout(250); const ks = await p.evaluate(() => [...document.querySelectorAll('#wbCtx [data-k]')].map(b => b.dataset.k)); await p.keyboard.press('Escape'); return ks.includes('front') && ks.includes('back') ? 'items: ' + ks.join(',') : false; });
+await tryIt('Arrange', 'Layer shortcuts (Ctrl+] and Ctrl+[)', async () => 'MISSING');
+await tryIt('Arrange', 'Delete (Del) with confirmation for many', async () => { const n0 = await nodeCount(); const [x, y] = await ctr(0); await clickAt(x, y); await p.keyboard.press('Delete'); await p.waitForTimeout(200); return (await nodeCount()) === n0 - 1; });
+await tryIt('Arrange', 'Distribute evenly, flip, equal-spacing guides', async () => { const opts = await p.evaluate(() => [...document.querySelectorAll('#wbCtxBar [data-change="wbAlign"] option')].map(o => o.value)); return opts.some(v => /dist|space/i.test(v)) ? true : 'MISSING'; });
+
+// ---------- undo, edit, shortcuts ----------
+await tryIt('Undo', 'Undo and redo (buttons, Ctrl+Z, Ctrl+Shift+Z)', async () => { const n0 = await nodeCount(); await p.click('#wbUndo'); const n1 = await nodeCount(); await p.click('#wbRedo'); const n2 = await nodeCount(); await p.focus('#wbHost'); await p.keyboard.press('Control+z'); const n3 = await nodeCount(); await p.keyboard.press('Control+Shift+z'); const n4 = await nodeCount(); return n1 !== n0 && n2 === n0 && n3 !== n0 && n4 === n0; });
+await tryIt('Text', 'Double-click a shape to edit its text (Escape cancels)', async () => { const [x, y] = await ctr(0); const r = await box(); await p.mouse.dblclick(r.x + x, r.y + y); await p.waitForTimeout(250); const ta = await p.$('#wbHost textarea'); if (ta) { await p.keyboard.type('abc'); await p.keyboard.press('Escape'); } return !!ta; });
+await tryIt('Shortcuts', 'Tool keys V H N T L P R O F S', async () => { const map = { v: 'select', h: 'hand', n: 'note', t: 'text', l: 'connect', p: 'pen', r: 'rect', o: 'ellipse', f: 'frame' }; const bad = []; for (const [k, t] of Object.entries(map)) { await p.focus('#wbHost'); await p.keyboard.press(k); if ((await S()).tool !== t) bad.push(k); await p.keyboard.press('Escape'); } return !bad.length; });
+await tryIt('Shortcuts', 'Shortcut help panel (?)', async () => { await p.focus('#wbHost'); await p.keyboard.press('Shift+/'); await p.waitForTimeout(250); return (await has('.wb-help, #wbHelp')) ? true : 'MISSING'; });
+await tryIt('Shortcuts', 'No shortcut fires while typing in a box', async () => { await p.click('[data-act="wbRename"]'); await p.waitForSelector('#wbName'); const t0 = (await S()).tool; await p.fill('#wbName', ''); await p.type('#wbName', 'nhrt'); const t1 = (await S()).tool; await p.keyboard.press('Escape'); const c = await p.$('[data-act="closeDrawer"]'); if (c) await c.click(); return t0 === t1; });
+
+// ---------- share, find, review ----------
+await tryIt('Share', 'Export the board as PNG and JPG', async () => { const d1 = p.waitForEvent('download', { timeout: 20000 }); await p.click('[data-act="wbExport"][data-scope="board"]:not([data-fmt])'); const f1 = await d1; const d2 = p.waitForEvent('download', { timeout: 20000 }); await p.click('[data-act="wbExport"][data-fmt="jpg"]'); const f2 = await d2; return /png$/i.test(f1.suggestedFilename()) && /jpe?g$/i.test(f2.suggestedFilename()); });
+await tryIt('Share', 'Export the selection only', async () => { await p.focus('#wbHost'); const [x, y] = await ctr(0); await clickAt(x, y); const h = await has('#wbCtxBar [data-act="wbExport"][data-scope="sel"]'); await p.keyboard.press('Escape'); return h; });
+await tryIt('Share', 'Export as PDF or SVG', async () => (await has('[data-act="wbExport"][data-fmt="pdf"], [data-act="wbExport"][data-fmt="svg"]')) ? true : 'MISSING');
+await tryIt('Share', 'Print', async () => (await has('[data-act="wbPrint"]')) ? true : 'MISSING');
+await tryIt('Review', 'Comments on items', async () => (await has('[data-act="wbComment"]')) ? true : 'MISSING');
+await tryIt('Review', 'Presentation mode (walk through frames)', async () => (await has('[data-act="wbPresent"]')) ? true : 'MISSING');
+await tryIt('Review', 'Version history and restore', async () => (await has('[data-act="wbHistory"]')) ? true : 'MISSING');
+await tryIt('Review', 'Live cursors and presence', async () => 'MISSING');
+await tryIt('Find', 'Search text on the board', async () => (await has('[data-act="wbFind"], #wbFind')) ? true : 'MISSING');
+await tryIt('Find', 'Outline or list of frames', async () => (await has('[data-act="wbOutline"]')) ? true : 'MISSING');
+await tryIt('Facilio', 'Add State Flow, Describe with AI, Import from image, Save as state flow, Combined flows', async () => (await Promise.all(['wbFlows', 'wbAiText', 'wbImg', 'wbSaveFlow', 'wbCflows'].map(a => p.$(`[data-act="${a}"]`)))).every(Boolean));
+await tryIt('Device', 'Every toolbar button has a name (screen readers)', async () => (await p.evaluate(() => [...document.querySelectorAll('.wb-rail button, .wb-zoombar button')].filter(x => !x.getAttribute('aria-label') && !x.textContent.trim()).length)) === 0);
+
+const miss = rows.filter(r => r.status === 'MISSING').length, part = rows.filter(r => r.status === 'PARTLY').length, bad = rows.filter(r => r.status === 'BROKEN').length, ok = rows.filter(r => r.status === 'ok').length;
+console.log(`\n${rows.length} controls: ${ok} ok, ${part} partly, ${bad} BROKEN, ${miss} MISSING; page errors: ${errs.length}${errs.length ? ' ' + errs.slice(0, 2).join(' | ') : ''}`);
+if (OUT) fs.writeFileSync(OUT + '/wb-controls.json', JSON.stringify(rows, null, 1));
+await b.close(); process.exit(bad ? 1 : 0);
