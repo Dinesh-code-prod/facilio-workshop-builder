@@ -256,6 +256,19 @@ What the reference deck is (read 4 Nov 2026): one self-contained HTML file, 16 s
 - [ ] Rules: Facilio colours and fonts only, no violet; the deck is a draft until the person publishes it; keep what the team edits when data is refreshed (never overwrite edited text without asking).
 - [ ] Test: a demo project builds a deck from its data, a slide is edited, reordered and presented, the .pptx opens correctly in PowerPoint (checked by a person) and the HTML and PDF match; say what was not checked.
 
+### C5. Digital HTML output for every document, not only the kick-off deck (added 4 Nov 2026)
+Reason: some clients will ask for their documents in a digital form, not only as Word or PDF. The kick-off deck HTML (C4) shows the form: one self-contained file that opens in any browser. Build this once as a shared "digital output" engine and let every document use it, instead of one-off exporters.
+Documents to cover (confirm the list in the audit): kick-off deck (C4), Customer User Guide and the finished user guides from User Guide Builder and Video to Guide, module guides and learn pages, BRD, solution document (Claude solution document, Part 10), configuration and org package summary, status reports, WSR and monthly reports (A1c), UAT and FTR reports, KPI workbook summaries, handover and closure documents, executive and admin reports (Part 17), and the project documentation package (Part 10).
+- [ ] Audit first: list every document the app can export today and how (Word, PDF, Excel, Markdown, images) and where each is built (`src/brd*.js`, guide and learn pages, `src/dashreport.js`, reports, the Word and PDF libraries in `vendor/`); note what is already an HTML view and what is not. Reuse the content each document already builds; do not write the text twice.
+- [ ] One shared engine that takes a document (title, sections, tables, pictures, diagrams, state-flow and process SVGs, KPI blocks) and produces a single self-contained `.html` file: Facilio theme, fonts embedded or a safe fallback, pictures inline, works offline, opens by double-click.
+- [ ] Two shapes: a **document** shape (scrolling page with a side contents list, anchor links, search, collapsible sections, print to PDF, dark and light) for guides, BRD, solution and reports; and a **slide** shape (16:9 slides, arrow keys, full screen) for decks and presentations.
+- [ ] Per-document layout rules so the output looks right: BRD (numbered headings, tables, requirement and KPI tables, diagrams, screenshots), user guides (steps with screenshots and videos linked), reports (summary on top, charts and tables), solution documents (requirement to solution to configuration trace).
+- [ ] Safety and privacy like the reference file: no outside calls or tracking, no scripts that fetch data, no secrets or internal notes, only the published or approved content; show the user what is included before the file is made; the customer gets only what the team publishes.
+- [ ] Choices on each document's Export menu: "Digital HTML" next to Word, PDF and Excel; the option to include or leave out comments, drafts and internal sections; a filename that carries the customer, document and version; version and date shown inside the file.
+- [ ] Optional: a published, view-only link inside Delivery Studio for the customer (same content), and the file attached to the project's documents.
+- [ ] Accessibility and quality: headings in order, keyboard use, readable contrast, works on a phone and when printed; text stays selectable.
+- [ ] Test: build the HTML for the demo project's BRD, a guide, a report and the kick-off deck; open each offline in a normal browser and print to PDF; check pictures, tables, diagrams and links; say what was not checked.
+
 ---
 
 ## Progress log (add a line each time something is finished)
