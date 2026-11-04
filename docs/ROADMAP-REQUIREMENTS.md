@@ -373,6 +373,17 @@ Source: the user's "Delivery Studio master product requirements and architecture
 ### D-H. Quality bar for every phase
 Consistent UX; reusable components; sound data structures and relationships; role-based permissions; audit history; attachment and document integrity; validation; versioning; error handling; security; performance on large projects and documents; responsive behaviour; backward compatibility; safe data migrations; automated and manual regression tests after each phase.
 
+### C9. After the org is configured: tell the customer and team to add the org connectors in Claude (added 4 Nov 2026)
+Goal: once an org is configured and the implementation cycle is over, the people who will use it after go-live (customer admins, support, the Facilio team on hypercare and handover) are told, in the product and in the handover documents, to add two connectors to their own Claude so Claude can fetch live information instead of guessing:
+1. **The Facilio MCP connector for their org's region**, to fetch org data (modules, records, configuration) from the live org. The address depends on the org's region (the region list already used for the org folder link: for example US, AE and AZURE in the `facilio-config-data` index, `src/orglogic.js`), so the guide must pick the right one from the project's stored org id and region.
+2. **The "Kenny code assist" connector** (the user's name for it), for any workflow, script or information issue: Claude fetches the answer from the live org instead of from the exported documents.
+- [ ] Find out the real names, addresses and sign-in steps first and record them in `docs/reference/ORG-CONNECTORS.md`: what each connector is, who may add it, which region address goes with which org, what it can read, what it cannot do. Do not invent names or URLs. (Tools already seen in this Claude session that look related, not yet verified for this purpose: a Facilio connector with module records, work orders and asset overview tools; a code and org-config connector with code search, org config and repo list.) Confirm "Kenny code assist" with the user.
+- [ ] Say where the org id and region live in the project (Project Settings, the org folder link) and show them next to the instructions, so the right region is chosen without guessing.
+- [ ] Put the instruction where people will see it: Handover & Closure and Hypercare pages, the Support handover pack and the closure report (generated text and templates), the Customer User Guide and the customer portal after go-live, the Team Guide and Claude setup pages (next to "Connector: Facilio Delivery Studio" and the Microsoft 365 guide in C2), and the Open in Claude prompts for support tasks ("use the org connector for your region to read the live org; if it is not added, say so and give the steps").
+- [ ] Wording in plain steps for Claude on the web and Claude Desktop, for customers and for the team (different text, as with the sign-out page); say that Claude reads only what that person's own access allows, and never store credentials in Delivery Studio.
+- [ ] Keep the connector list in step with the Claude integration rule in `CLAUDE.md` (a new connector means updating the hand-off prompts, the skills text and the guides together).
+- [ ] Test: the right regional instruction shows for an org in each region, the handover pack and closure report carry it, and the text is checked by a person; say what was not checked (real connector sign-in).
+
 ---
 
 ## Progress log (add a line each time something is finished)
