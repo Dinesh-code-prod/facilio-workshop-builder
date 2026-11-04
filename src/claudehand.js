@@ -11,7 +11,7 @@
   'use strict';
   const F = root.FWB; const { S, esc } = F; const V = root.FWBViews; const ACT = V.ACT; const API = root.FWBApi; const L = root.FWBClaude; const { drawer, closeDrawer, toast } = V;
   const ls = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { } } };
-  const hasConn = () => ls.get('fwb_claude_conn') === '1';
+  const hasConn = () => ls.get('fwb_claude_conn') !== '0';   // on unless the person turned it off: every Open Claude button tells Claude to use the Delivery Studio connector and fetch what it needs itself
   const CONN_URL = 'https://mcp.facilio.work/facilio-delivery-studio';
   const copyText = async t => { try { await navigator.clipboard.writeText(t); return true; } catch (e) { try { const a = document.createElement('textarea'); a.value = t; a.setAttribute('readonly', ''); a.style.cssText = 'position:fixed;top:0;left:0;opacity:0'; document.body.appendChild(a); a.select(); const ok = document.execCommand('copy'); a.remove(); return !!ok; } catch (e2) { return false; } } };
   const copyImg = blob => (blob && navigator.clipboard && window.ClipboardItem ? navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(() => true, () => false) : Promise.resolve(false));
@@ -49,7 +49,7 @@
     return { ok: true, prefilled: lk.prefilled, copied, ref: '', said };
   };
   // the simple case for the buttons that only need the prompt opened: copy it, open Claude with it where it fits, say what happened
-  V.claudeOpenSimple = async (prompt, o) => { o = Object.assign({ title: 'Task' }, o || {}); const r = await V.claudeLaunch(Object.assign({}, o, { prompt, noConn: true }), o.dest || 'web'); return r; };
+  V.claudeOpenSimple = async (prompt, o) => { o = Object.assign({ title: 'Task' }, o || {}); const r = await V.claudeLaunch(Object.assign({}, o, { prompt }), o.dest || 'web'); return r; };
 
   let HO = null; let poll = null;
   const stopPoll = () => { if (poll) { clearInterval(poll); poll = null; } };
@@ -94,7 +94,7 @@
   // the same three ways to open Claude for the screens that keep their own reply box (the prompt is set by the screen before it draws these)
   V.claudeQuick = null;
   V.claudeQuickLinks = () => '<button type="button" class="btn sm primary" data-act="clqGo" data-d="web">Open Claude Web</button><button type="button" class="btn sm" data-act="clqGo" data-d="desktop">Open Claude Desktop</button><button type="button" class="btn sm" data-act="clqGo" data-d="copy">Copy Prompt and Open Claude</button>';
-  ACT.clqGo = a => { const q = V.claudeQuick; if (!q || !q.prompt) return; V.claudeLaunch({ title: q.title || 'Task', task: q.task || 'task', prompt: q.prompt, expect: { format: 'text' }, noConn: true }, a.getAttribute('data-d')).then(r => toast(r.said, 8000)); };
+  ACT.clqGo = a => { const q = V.claudeQuick; if (!q || !q.prompt) return; V.claudeLaunch({ title: q.title || 'Task', task: q.task || 'task', prompt: q.prompt, expect: { format: 'text' } }, a.getAttribute('data-d')).then(r => toast(r.said, 8000)); };
   // the server notes when this person's Claude last used the connector: that, not the tick box, shows whether it is really added (a seen connector also turns the tick on)
   V.claudeConnCheck = async () => { try { const r = await API.get('/api/me/connector'); S.ui.connSeen = !!r.seen; if (r.seen) ls.set('fwb_claude_conn', '1'); const el = document.getElementById('hoConnSt'); if (el) el.innerHTML = r.seen ? '&#10003; Your Claude used the connector on ' + esc(new Date(r.seen).toLocaleDateString()) + '.' : '<b>Not seen yet.</b> Add the connector first (Help &gt; Claude setup). Until then Open Claude copies the full prompt.'; return !!r.seen; } catch (e) { return null; } };
   ACT.hoConn = el => { ls.set('fwb_claude_conn', el.checked ? '1' : '0'); toast(el.checked ? 'Open Claude will now send the short connector prompt' : 'Open Claude will send the full prompt', 4000); };

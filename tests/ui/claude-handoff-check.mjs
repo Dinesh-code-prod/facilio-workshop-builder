@@ -5,11 +5,14 @@ const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m
 await p.goto(BASE + '/?nointro'); await p.waitForSelector('[data-act]');
 const pid = await p.evaluate(async () => (await (await fetch('/api/fn/api/projects', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Handoff', customer: 'H' }) })).json()).project.id);
 await p.goto(BASE + `/?nointro#/p/${pid}/whiteboard`); await p.reload(); await p.waitForSelector('main.main', { state: 'attached' }); await p.waitForTimeout(1200);
+await p.route('**/me/connector', r => r.fulfill({ contentType: 'application/json', body: '{"seen":null}' })); await p.evaluate(() => localStorage.setItem('fwb_claude_conn', '0'));   // the connector is the default for every button: these first checks are about the full-prompt path, so it is turned off here
 await p.click('[data-act="wbNew"]'); await p.fill('#wbName', 'Handoff'); await p.click('#drawer .btn.primary'); await p.waitForSelector('#wbSvg'); await p.waitForTimeout(400);
 await p.click('[data-act="wbAiText"]'); await p.fill('#wbAiT', 'A client raises a request, the approver approves or rejects it, approved becomes a work order.');
 await p.evaluate(() => { window.__opened = []; window.open = (u) => { window.__opened.push(String(u)); return null; }; window.FWBViews.claudeNav = u => window.__opened.push('NAV ' + u); });
 await p.click('#drawer [data-act="wbAiClaude"]:not([data-add])'); await p.waitForSelector('[data-act="hoGo"]', { timeout: 8000 });
 check('the Open in Claude panel shows the three open buttons and the reply box', (await p.locator('[data-act="hoGo"]').count()) === 3 && (await p.locator('#hoR').count()) === 1);
+await p.evaluate(() => { localStorage.removeItem('fwb_claude_conn'); window.__opened = []; }); await p.click('[data-act="hoGo"][data-d="web"]'); await p.waitForTimeout(1800); { const od = await p.evaluate(() => window.__opened.map(u => { try { return decodeURIComponent(u); } catch (e) { return u; } })); check('by default (connector not turned off) Open Claude Web sends the short prompt that tells Claude to use the connector and fetch everything itself', od.some(u => /get_handoff/.test(u) && /fetch everything/.test(u) && u.length < 1500), od.map(u => u.length).join(',')); }
+await p.evaluate(() => { localStorage.setItem('fwb_claude_conn', '0'); window.__opened = []; });
 await p.click('[data-act="hoGo"][data-d="web"]'); await p.waitForTimeout(500); let o = await p.evaluate(() => window.__opened);
 check('Open Claude Web opens claude.ai and, as the prompt is too long for a link, copies it and says so', o.includes('https://claude.ai/new') && /DESCRIPTION OF THE PROCESS/.test(await p.evaluate(() => navigator.clipboard.readText())) && /Ctrl\+V/.test(await p.evaluate(() => document.body.innerText)));
 await p.click('[data-act="hoGo"][data-d="desktop"]'); await p.waitForTimeout(500); o = await p.evaluate(() => window.__opened);
