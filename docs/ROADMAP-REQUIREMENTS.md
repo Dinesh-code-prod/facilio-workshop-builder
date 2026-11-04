@@ -320,7 +320,7 @@ Goal: before kick-off, Facilio builds a **tentative project plan** in Delivery S
 - [ ] Tentative status: a plan can be marked tentative (shown with a "Tentative" tag and lighter bars) and confirmed after kick-off; confirming copies it into the project plan (`plan_struct`) and the timeline, calendar and reports use it.
 - [ ] Feeds the kick-off deck: the how-we-deliver, milestones and plan-on-one-page slides read from this plan.
 - [ ] AI help (DeepSeek, Open in Claude): propose a plan from the scope, modules in scope and dates; check it for missing steps, overloaded weeks and unrealistic dates; always a draft the person approves.
-- [ ] Export: Excel (round trip with the existing import), PDF, and an image of the Gantt for the deck.
+- [ ] **Excel export of the project plan (asked 4 Nov 2026):** an Export to Excel button on the Project Plan page and in the creator: a workbook with the phases, tasks and milestones (outline levels kept), start, end, duration, % done, owner, status, predecessors with lag, notes and the tentative or confirmed mark, with the Facilio look (header colours, frozen header row, column widths, date cells as real dates). It must round-trip with the existing plan import (export, change in Excel, import again, nothing lost). Also PDF and an image of the Gantt for the deck.
 - [ ] Test: build a plan from the template, change dates, add dependencies, confirm it, see it in the Project Plan, the Calendar and the kick-off deck; say what was not checked.
 
 ---
