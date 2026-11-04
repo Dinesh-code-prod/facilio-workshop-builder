@@ -37,7 +37,7 @@ Wherever the project makes a report or a report-like document (weekly status rep
 - [ ] Test each report: the button shows, the prompt holds the right project data, a pasted or returned reply fills the report, and the export still works.
 
 ### A2. Known leftovers
-- [ ] Violet still in other pages (count of violet colour values per file: `theme.css` 85, `styles.css` 47, `polish.css` 21, `taskboard.css` 11, `teamhelp.css` 9, `guidestyle.css` 9, `bell.css` 6, `clay-buttons.css` 5, `explore.css` 5, `tourplayer.css` 5, others smaller). Only the Customer User Guide was fixed (`src/guidefix.css`). Do a Facilio-palette pass.
+- [ ] **Postponed by the user on 4 Nov 2026 ("the current UI is fine, check this later"): violet colour pass.** Notes for later: an inventory of the CSS found about 312 violet hex uses (53 distinct; most are `#e6e2f2`, `#f1ecff`, `#6a3df0`, `#f4f0ff`, `#f6f4fb`, `#ebe8f5`, `#623cf6`; by file: `styles.css` 188, `polish.css` 24, `taskboard.css` 17, `guidestyle.css` 15, `teamhelp.css` 15, `bell.css` 12, `tourplayer.css` 8, `public/onboarding-tool/app.css` 8, `uistate.css` 7, `dashboards.css` 6), about 69 violet `rgba()` values (mostly `rgba(60,40,140,..)`), 13 inline colours in JS (`shell.js`, `timeline.js`, `dashboards.js`, `brd.js`, `flowbuilder.js`), and indigo-ish ones such as `#6b4ee6` (26 uses) that need a decision. Idea: strong violets to Facilio blue `#1570EF`, dark ones to navy `#1D1A5E`, light tints to blue tints (`#eef4ff`, `#dbe6fb`), lavender greys to cool greys (`#e3e9f5`, `#f6f8fd`), then screenshot the main pages. Only the Customer User Guide is done (`src/guidefix.css`). The lilac frame under "What your team will see" in the guide belongs here.
 - [ ] `tests/ui/tabs-layouts-check.mjs` still expects the old menu names (4 checks fail, before and after the 3 Nov change). Update it to the current menu.
 - [ ] `tests/ui/smoke.mjs` and `tests/ui/whiteboard-check.mjs` already failed before (probably clicks hidden by the sticky top bar). Centre the element before clicking, then confirm.
 - [ ] `tests/ui/kickoff-check.mjs` needs a fixture that is missing (`D:\tmp\claude-0\fx\kickoff.pptx`). Add a fixture in `tests/fixtures/`.
@@ -48,6 +48,7 @@ Wherever the project makes a report or a report-like document (weekly status rep
 ### A3. Postponed by the user (do not start unless asked)
 - [ ] Mail receiving (Microsoft returns 403).
 - [ ] The full UI sweep session.
+- [ ] The violet colour pass (see A2).
 
 ### A4. Carried over from `docs/reports/pending-2026-11-02.md` (status unknown: confirm each one, some may be done since)
 - [ ] BRD: Word and PDF exports opened in real Word and a PDF viewer (only the XML was checked); import of PDF, Markdown and text files (only Word was tested; scanned PDFs have no text); phone width of the BRD toolbar; the "Fix this" banner links.
