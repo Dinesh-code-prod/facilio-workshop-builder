@@ -7,7 +7,7 @@
   'use strict';
   const F = root.FWB; const { S } = F; const V = root.FWBViews; const ACT = V.ACT;
   const HUBS = [
-    { view: 'transcripts', key: 'reqTab', label: 'Requirements', tabs: [['onboarding', 'Data onboarding'], ['transcripts', 'Transcripts & requirements'], ['usecases', 'Use cases']] },
+    { view: 'transcripts', key: 'reqTab', label: 'Requirements', tabs: [['onboarding', 'Data onboarding'], ['transcripts', 'Transcripts & requirements'], ['prepq', 'Prepare questions'], ['usecases', 'Use cases']] },
     { view: 'msaflow', key: 'ctrHub', label: 'Contract', tabs: [['msaflow', 'Agreement'], ['msafind', 'Scope check'], ['contracts', 'Terms & integrations']] },
     { view: 'reports', key: 'rptHub', label: 'Reports and quality', tabs: [['reports', 'Status reports'], ['trace', 'Traceability & quality']] },
     { view: 'cfginputs', key: 'cfgHub', label: 'Configuration and org package', tabs: [['cfginputs', 'Configuration Hub'], ['pkgan', 'Analysis'], ['orgpkg', 'Export']] }
