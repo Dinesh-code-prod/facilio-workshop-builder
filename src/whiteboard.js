@@ -256,10 +256,11 @@
           ${shapesMenu}
         </div>
         <div class="wb-ctxbar" id="wbCtxBar" hidden role="toolbar" aria-label="Selection"></div>
+        <div class="wb-help" id="wbHelp" hidden role="dialog" aria-label="Keyboard shortcuts"><div class="wb-help-h"><b>Keyboard shortcuts</b><button type="button" class="wb-zb" data-act="wbHelp" aria-label="Close">×</button></div><div class="wb-help-g"><b>Tools</b><span>V select · H hand · N sticky note · T text · L connector · P pen · R rectangle · O oval · F frame · S shapes menu</span><b>Edit</b><span>Ctrl+Z undo · Ctrl+Shift+Z redo · Ctrl+C / X / V copy, cut, paste · Ctrl+D or Alt + drag duplicate · Ctrl+G group · Ctrl+Shift+G ungroup · Del delete · Ctrl+A select all</span><b>Move</b><span>Arrow keys nudge · Shift + arrows bigger step · Space + drag pans · Ctrl + wheel zooms</span><b>Layers</b><span>Ctrl+] bring to front · Ctrl+[ send to back</span><b>View</b><span>+ / − zoom · Shift+1 fit all · Shift+2 zoom to selection · Shift+F fit · Ctrl+Shift+F full screen · Esc clear or leave</span><b>Help</b><span>? opens and closes this list</span></div></div>
         ${W.full ? '<button class="wb-exitfull" type="button" data-act="wbFull" title="Leave full screen (Esc)">Exit full screen</button>' : ''}
         <div class="wb-zoombar" role="group" aria-label="View">
           <button class="wb-zb" type="button" data-act="wbViewMenu" title="Grid, snap and images" aria-label="Board settings">${IC.grid}</button><span class="wb-zsep"></span>
-          <button class="wb-zb" type="button" data-act="wbFit" title="Fit to screen (Shift+F)" aria-label="Fit to screen">${IC.fit}</button>
+          <button class="wb-zb" type="button" data-act="wbFit" title="Fit to screen (Shift+F)" aria-label="Fit to screen">${IC.fit}</button><button class="wb-zb wb-zsel" type="button" data-act="wbZoomSel" title="Zoom to the selection (Shift+2)" aria-label="Zoom to selection">Sel</button><button class="wb-zb" type="button" data-act="wbHelp" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
           <button class="wb-zb" type="button" data-act="wbZoomBy" data-k="0.8" title="Zoom out" aria-label="Zoom out">−</button><button class="wb-zp" type="button" data-act="wbReset" id="wbZoom" title="Back to 100%">100%</button><button class="wb-zb" type="button" data-act="wbZoomBy" data-k="1.25" title="Zoom in" aria-label="Zoom in">+</button>
           <div class="wb-pop wb-viewpop" id="wbViewPop" hidden><label class="chk"><input type="checkbox" data-change="wbGridT"${B.grid ? ' checked' : ''}> Grid</label><label class="chk"><input type="checkbox" data-change="wbSnapT"${B.snap ? ' checked' : ''}> Snap to grid</label>${B.nodes.some(n => n.t === 'image') ? `<label class="chk"><input type="checkbox" data-change="wbImgT"${B.nodes.some(n => n.t === 'image' && !n.hidden) ? ' checked' : ''}> Reference images</label>` : ''}<label class="f" style="margin-top:6px">New connectors</label><select data-change="wbRoute" aria-label="Connector style"${dis}><option value="straight"${B.route !== 'elbow' ? ' selected' : ''}>Straight</option><option value="elbow"${B.route === 'elbow' ? ' selected' : ''}>Right-angle</option></select></div>
         </div>
@@ -318,6 +319,7 @@
         else if (!W.sel.has(id)) { W.sel.clear(); selectWithGroups([id]); }
         else if (grp.length > 1 && W.sel.size === grp.length && grp.every(x => W.sel.has(x))) drill = id;
         draw(); if (ro()) return;
+        if (ev.altKey) duplicate();   // Alt + drag: the copy is what moves
         drag = beginMove(p, drill); return;
       }
       if (eEl) { const id = eEl.getAttribute('data-e'); if (!ev.shiftKey) W.sel.clear(); W.sel.add(id); draw(); return; }
@@ -359,7 +361,8 @@
     };
     svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end); svg.addEventListener('pointerleave', () => { if (!drag && W.hover) { W.hover = null; paint(); } });
     svg.addEventListener('dblclick', ev => {
-      if (ro()) return; const nEl = ev.target.closest('[data-id]'), eEl = ev.target.closest('[data-e]');
+      if (ro()) return; const under = ev.target.closest('[data-id],[data-e]') ? ev.target : (document.elementFromPoint(ev.clientX, ev.clientY) || ev.target);   // pointer capture can make the double-click land on the canvas, so look at what is under the pointer
+      const nEl = under.closest && under.closest('[data-id]'), eEl = under.closest && under.closest('[data-e]');
       if (nEl) { const n = node(nEl.getAttribute('data-id')); if (n.t !== 'image' && n.t !== 'ink' && !n.lock) startEdit(n); return; }
       if (eEl) { startEdit(W.B.edges.find(e => e.id === eEl.getAttribute('data-e')), true); return; }
       const p = toWorld(ev); addNode('note', p.x - 80, p.y - 50, true);
@@ -383,6 +386,13 @@
     if (W.edit || /^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName) && ev.target.id !== 'wbHost') return;
     const mod = ev.ctrlKey || ev.metaKey, k = ev.key.toLowerCase();
     if (mod && ev.shiftKey && k === 'f') { ev.preventDefault(); ACT.wbFull(); return; }
+    if ((ev.key === 'Enter' || ev.key === 'F2') && !mod && W.sel.size === 1 && !ro()) { const n = node([...W.sel][0]); if (n && n.t !== 'image' && n.t !== 'ink' && !n.lock) { ev.preventDefault(); startEdit(n); return; } }
+    if (ev.key === '?' || (ev.key === '/' && ev.shiftKey)) { ev.preventDefault(); ACT.wbHelp(); return; }
+    if (!mod && (ev.key === '+' || ev.key === '=')) { ev.preventDefault(); ACT.wbZoomBy({ getAttribute: () => '1.25' }); return; }
+    if (!mod && (ev.key === '-' || ev.key === '_')) { ev.preventDefault(); ACT.wbZoomBy({ getAttribute: () => '0.8' }); return; }
+    if (!mod && ev.shiftKey && ev.code === 'Digit1') { ev.preventDefault(); fit(); return; }
+    if (!mod && ev.shiftKey && ev.code === 'Digit2') { ev.preventDefault(); ACT.wbZoomSel(); return; }
+    if (mod && (ev.key === ']' || ev.key === '[') && !ro() && W.sel.size) { ev.preventDefault(); ACT.wbCtx({ getAttribute: n => n === 'data-k' ? (ev.key === ']' ? 'front' : 'back') : null }); return; }
     if (ev.key === 'Escape' && W.full && !W.sel.size && W.tool === 'select' && !W.link) { ev.preventDefault(); ACT.wbFull(); return; }
     if (mod && k === 'z') { ev.preventDefault(); ev.shiftKey ? ACT.wbRedo() : ACT.wbUndo(); return; }
     if (mod && k === 'y') { ev.preventDefault(); ACT.wbRedo(); return; }
@@ -428,8 +438,8 @@
     [...W.sel].map(node).filter(Boolean).forEach(n => { const c = JSON.parse(JSON.stringify(n)); c.id = uid('n'); c.x += GRID * 2; c.y += GRID * 2; if (c.g) c.g = gmap[c.g] = gmap[c.g] || uid('g'); map[n.id] = c.id; W.B.nodes.push(c); });
     W.B.edges.filter(e => map[e.from] && map[e.to]).forEach(e => W.B.edges.push(Object.assign({}, e, { id: uid('e'), from: map[e.from], to: map[e.to] })));
     W.sel = new Set(Object.values(map)); changed(); draw(); }
-  function fit() {
-    const svg = document.getElementById('wbSvg'); if (!svg) return; const list = W.B.nodes.filter(n => !n.hidden), b = bbox(list), r = svg.getBoundingClientRect();
+  function fit(only) {
+    const svg = document.getElementById('wbSvg'); if (!svg) return; const list = only && only.length ? only : W.B.nodes.filter(n => !n.hidden), b = bbox(list), r = svg.getBoundingClientRect();
     if (!list.length) { W.B.view = { x: 40, y: 40, z: 1 }; draw(); return; }
     const z = clamp(Math.min((r.width - 80) / b.w, (r.height - 80) / b.h), MINZ, 1.5); W.B.view = { z, x: (r.width - b.w * z) / 2 - b.x * z, y: (r.height - b.h * z) / 2 - b.y * z }; draw(); changedView();
   }
@@ -819,6 +829,8 @@
   ACT.wbAdd = a => { const c = centre(), t = a.getAttribute('data-t'), [w, h] = SIZES[t]; addNode(t, c.x - w / 2 + (W.B.nodes.length % 5) * 12, c.y - h / 2 + (W.B.nodes.length % 5) * 12); };
   ACT.wbDel = async () => { if (ro() || !W.sel.size) return; const many = [...W.sel].filter(id => node(id)).length; if (many >= 8 && !(await V.confirmDialog('Delete ' + many + ' elements', 'Delete the ' + many + ' selected elements and their connectors? You can undo this with Ctrl+Z.', 'Delete', true))) return; if ([...W.sel].some(id => (node(id) || {}).lock)) { W.sel = new Set([...W.sel].filter(id => !(node(id) || {}).lock)); if (!W.sel.size) { V.toast('Unlock it first to delete it'); draw(); return; } } pushUndo(); const ids = W.sel; W.B.nodes = W.B.nodes.filter(n => !ids.has(n.id)); W.B.edges = W.B.edges.filter(e => !ids.has(e.id) && !ids.has(e.from) && !ids.has(e.to)); W.sel = new Set(); changed(); draw(); };
   ACT.wbPop = () => { const x = window.open(location.pathname + '?focus=whiteboard&board=' + encodeURIComponent(W.boardId || '') + '#/p/' + encodeURIComponent(S.project.id) + '/whiteboard', '_blank'); if (!x) V.toast('Your browser blocked the new tab. Allow pop-ups for this site and try again.'); else V.toast('Opened in a new tab. Work in one tab at a time so saves do not overwrite each other.', 5000); };
+  ACT.wbHelp = () => { const h = document.getElementById('wbHelp'); if (h) h.hidden = !h.hidden; };
+  ACT.wbZoomSel = () => { const l = [...W.sel].map(node).filter(Boolean); if (!l.length) { V.toast('Select something first, then zoom to it.'); return; } fit(l); };
   ACT.wbFull = () => { W.full = !W.full; V.render(); };
   ACT.wbUndo = () => { if (ro() || !W.undo.length) return; W.redo.push(snapshot()); const s = JSON.parse(W.undo.pop()); W.B.nodes = s.nodes; W.B.edges = s.edges; W.sel = new Set(); changed(); draw(); };
   ACT.wbRedo = () => { if (ro() || !W.redo.length) return; W.undo.push(snapshot()); const s = JSON.parse(W.redo.pop()); W.B.nodes = s.nodes; W.B.edges = s.edges; W.sel = new Set(); changed(); draw(); };

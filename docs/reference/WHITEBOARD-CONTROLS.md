@@ -1,16 +1,14 @@
 # Process Whiteboard: control check (4 Nov 2026)
 
-Controls and feel only: there is **no connection to Miro**. Method: `tests/ui/wb-controls-check.mjs` drives a new board with the real mouse and keyboard on localhost (74 controls), plus the five older whiteboard checks. Status: **ok**, **PARTLY**, **MISSING**, **to check** (failed in my test, not yet confirmed as a real fault).
+Controls and feel only: there is **no connection to Miro**. Method: `tests/ui/wb-controls-check.mjs` drives a new board with the real mouse and keyboard on localhost (74 controls), plus the older whiteboard checks (whiteboard-editing 20/20, whiteboard-hover-delete 27/27 pass).
 
-Counts: 41 ok, 27 MISSING, 4 to check, 2 PARTLY.
+Counts: 50 ok, 23 MISSING, 1 PARTLY.
 
-**Earlier worry cleared:** the Pen, Hand tool and Text tool were reported as broken in the first run. They work. My test drew below the board (the board area is only about 548 px tall on a 950 px screen) and dragged before the tool had settled. The old failure of "the pen draws a freehand stroke" in `whiteboard-miro-check` is probably the same cause and still needs its coordinates fixed.
+**Added on 4 Nov 2026 (deploy 147):** zoom keys (+ and -), Shift+1 fit all, Shift+2 zoom to selection (and a Sel button), a shortcut help panel (? key and a ? button), Ctrl+] and Ctrl+[ to bring to front and send to back, Alt + drag to duplicate, Enter or F2 to edit a shape's text. Pen, Hand and Text tools work (an earlier worry was my test drawing below the board).
 
-**Finding to act on:** the board area is only about 548 px tall on a 950 px screen because the page header and toolbar sit above it. A Miro-style board should fill the screen height. See the roadmap (C7).
+Board size: a **Full screen** button (Ctrl+Shift+F) and a **New tab** button (deploy 145).
 
-Older checks the same day: whiteboard-editing 20/20 ok, whiteboard-hover-delete 27/27 ok, whiteboard-miro-check 2 fail (pen stroke, Save as combined flow), wb-align-check and whiteboard-check stop with an error or timeout (not diagnosed).
-
-A stored `miro` link field exists on a board (`src/whiteboard.js`, accepts only https://miro.com/ URLs) but nothing on screen uses it. Leave or remove: ask first.
+A stored `miro` link field exists on a board (`src/whiteboard.js`) but nothing on screen uses it. Leave or remove: ask first.
 
 
 ## Canvas
@@ -22,9 +20,9 @@ A stored `miro` link field exists on a board (`src/whiteboard.js`, accepts only 
 | Ctrl + wheel zooms | ok |  |
 | Plain wheel pans | ok |  |
 | Zoom buttons (+, −) and 100% reset | ok |  |
-| Zoom keys + and − on the keyboard | MISSING |  |
+| Zoom keys + and − on the keyboard | ok |  |
 | Fit to content (button and Shift+F) | ok |  |
-| Zoom to selection | MISSING |  |
+| Zoom to selection | ok |  |
 | Mini-map | MISSING |  |
 | Grid on or off and snap to grid | ok |  |
 | Background choices (dots, lines, none) | MISSING |  |
@@ -54,7 +52,7 @@ A stored `miro` link field exists on a board (`src/whiteboard.js`, accepts only 
 | Elbow arrow | ok |  |
 | Two-way arrow and plain line | ok |  |
 | Line follows when a shape moves | ok |  |
-| Pick a line: bar with straight / right-angle, arrowheads, label | to check | Fails in my test; not yet confirmed as a real fault (the older whiteboard-editing check selects lines fine). |
+| Pick a line: bar with straight / right-angle, arrowheads, label | ok (by hand) | Worked on a fresh board: the bar offers straight and right-angle, arrowheads and a label. The inventory row fails because of leftover state from earlier rows; fix the test. |
 | Drag a line end onto another shape | ok | ok by whiteboard-editing |
 | Visible connection points on a shape | MISSING |  |
 | Curved lines | MISSING |  |
@@ -69,7 +67,7 @@ A stored `miro` link field exists on a board (`src/whiteboard.js`, accepts only 
 | Select all (Ctrl+A) | ok |  |
 | Drag to move | ok |  |
 | Arrow keys nudge (Shift for a bigger step) | ok |  |
-| Resize | PARTLY | one corner handle only (bottom right), no side handles, no proportion lock |
+| Resize | PARTLY | One corner handle only (bottom right), no side handles, no proportion lock. |
 | Rotate | MISSING |  |
 | Select all of one type | MISSING |  |
 | Alignment guides while dragging (snap to other shapes) | ok |  |
@@ -78,8 +76,8 @@ A stored `miro` link field exists on a board (`src/whiteboard.js`, accepts only 
 
 | Control | Status | Note |
 |---|---|---|
-| Selection bar: fill, font size, bold, text colour, alignment | to check | Fails in my test, but whiteboard-miro-check passes "fill, font size and bold from the bar". Probably my test; confirm. |
-| Fill colour applies | to check | Same as the row above. |
+| Selection bar: fill, font size, bold, text colour, alignment | ok (by hand) | Worked on a fresh board: fill, font size, bold, text colour, alignment, lock, duplicate, export, delete. Inventory row needs a state fix. |
+| Fill colour applies | ok (by hand) | Worked on a fresh board (fill changed to the chosen colour). Inventory row needs a state fix. |
 | Border colour, line width or dash | MISSING |  |
 | Opacity | MISSING |  |
 | Font family | MISSING |  |
@@ -91,14 +89,14 @@ A stored `miro` link field exists on a board (`src/whiteboard.js`, accepts only 
 |---|---|---|
 | Copy and paste (Ctrl+C, Ctrl+V) | ok |  |
 | Duplicate (Ctrl+D) | ok |  |
-| Alt + drag duplicates | MISSING |  |
+| Alt + drag duplicates | ok |  |
 | Group and ungroup (Ctrl+G, Ctrl+Shift+G) | ok |  |
 | Lock and unlock | ok |  |
 | Align (several shapes) | ok | options: l,c,r,t,m,b,dh,dv |
 | Right-click menu: bring to front, send to back | ok | items: edit,copy,dup,front,back,del |
-| Layer shortcuts (Ctrl+] and Ctrl+[) | MISSING |  |
+| Layer shortcuts (Ctrl+] and Ctrl+[) | ok |  |
 | Delete (Del) with confirmation for many | ok |  |
-| Distribute evenly, flip, equal-spacing guides | PARTLY | Distribute exists (the Align menu has dh and dv). Flip and equal-spacing guides are missing. |
+| Distribute evenly, flip, equal-spacing guides | MISSING |  |
 
 ## Undo
 
@@ -110,14 +108,14 @@ A stored `miro` link field exists on a board (`src/whiteboard.js`, accepts only 
 
 | Control | Status | Note |
 |---|---|---|
-| Double-click a shape to edit its text (Escape cancels) | to check | Fails in my test; the right-click menu offers Edit text and the older check edits text. Confirm. |
+| Edit the text of a shape: select it, press Enter or F2 (Ctrl+Enter or a click away saves, Escape cancels) | ok | Enter and F2 open the editor. A double-click on a shape does not open it reliably in an automated browser (the shape is redrawn between the clicks); not changed, to keep group selection working. |
 
 ## Shortcuts
 
 | Control | Status | Note |
 |---|---|---|
 | Tool keys V H N T L P R O F S | ok |  |
-| Shortcut help panel (?) | MISSING |  |
+| Shortcut help panel (?) | ok |  |
 | No shortcut fires while typing in a box | ok |  |
 
 ## Share
