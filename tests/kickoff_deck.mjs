@@ -1,0 +1,13 @@
+// Digital kick-off deck (src/kickoffhtml.js): built only from the data it is given, empty slides are left out and named, text is escaped, the file asks for nothing from outside.
+import assert from 'node:assert/strict'; import { createRequire } from 'node:module';
+const K = createRequire(import.meta.url)('../src/kickoffhtml.js'); let n = 0; const t = (name, fn) => { fn(); n++; console.log('  ok  ' + name); };
+const full = { customer: 'Acme', project: 'CAFM roll-out', date: '2026-11-04', team: [{ name: 'Asha', role: 'Project Manager' }], customerTeam: [{ name: 'Ravi', role: 'Sponsor' }], objectives: ['Agree one plan'], scope: ['Four modules'],
+  keyDates: [{ date: '2026-11-23', label: 'BRD sign-off' }], plan: [{ title: 'Understand', start: '2026-11-04', end: '2026-11-23', isPhase: true }, { title: 'Build', start: '2026-11-24', end: '2026-12-18', isPhase: true }, { title: 'Go-live', start: '2027-01-20', ms: true }],
+  governance: ['Weekly status call'], risks: ['Data arrives late'], nextSteps: [{ action: 'Share the plan', owner: 'Facilio', date: '2026-11-05' }] };
+t('a full project makes every slide, in the reference order', () => { const r = K.build(full); assert.deepEqual(r.slides, ['Cover', 'Goals of the meeting', 'Meet the team', 'How we deliver', 'Scope', 'Milestones', 'The plan on one page', 'Governance', 'Risks', 'Next steps', 'Thank you']); assert.equal(r.skipped.length, 0); });
+t('a slide with nothing to show is left out and named, never filled with made-up text', () => { const r = K.build({ customer: 'Acme', project: 'P', objectives: ['x'] }); assert.deepEqual(r.slides, ['Cover', 'Goals of the meeting', 'Thank you']); assert.ok(r.skipped.includes('Meet the team') && r.skipped.includes('Risks')); assert.ok(!/Lorem|TBC/.test(r.html)); });
+t('milestones come from the plan and the kick-off facts, in date order', () => { const h = K.build(full).html; assert.ok(h.indexOf('BRD sign-off') < h.indexOf('Go-live')); });
+t('text from records is escaped', () => { const h = K.build({ customer: '<img src=x onerror=alert(1)>', project: 'A & B', objectives: ['<script>alert(1)</script>'] }).html; assert.ok(!/<img src=x/.test(h) && !/<script>alert/.test(h)); assert.ok(h.includes('A &amp; B')); });
+t('the file asks for nothing from outside and has present mode', () => { const h = K.build(full).html; assert.ok(/default-src 'none'/.test(h)); assert.ok(!/https?:\/\//.test(h.replace(/xmlns="[^"]*"/g, ''))); assert.ok(/ArrowRight/.test(h) && /requestFullscreen/.test(h) && /@media print/.test(h)); });
+t('dates use the formatter it is given', () => { assert.ok(K.build(full, { fmt: d => 'D:' + d }).html.includes('D:2026-11-23')); });
+console.log(`${n} kick-off deck checks passed`);
