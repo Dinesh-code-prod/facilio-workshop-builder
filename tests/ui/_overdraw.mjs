@@ -1,0 +1,11 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1920, height: 1080 } }); const p = await ctx.newPage();
+await p.addInitScript(() => { const P = CanvasRenderingContext2D.prototype; window.__ov = { frames: [], cur: { fr: 0, im: 0, st: 0, fl: 0, n: 0, grad: 0 } }; const area = (ctx, w, h) => { const m = ctx.getTransform(); const a = Math.abs((m.a * m.d - m.b * m.c)) * Math.abs(w * h); return Math.min(a, ctx.canvas.width * ctx.canvas.height * 1.0) / (ctx.canvas.width * ctx.canvas.height); };
+  const fr = P.fillRect; P.fillRect = function (x, y, w, h) { if (this.canvas.width > 800) { __ov.cur.fr += area(this, w, h); __ov.cur.n++; } return fr.apply(this, arguments); };
+  const di = P.drawImage; P.drawImage = function (img, ...a) { if (this.canvas.width > 800) { const w = a.length >= 4 ? a[a.length - 2] : (img.width || 0), h = a.length >= 4 ? a[a.length - 1] : (img.height || 0); __ov.cur.im += area(this, w, h); __ov.cur.n++; } return di.apply(this, arguments); };
+  const cg = P.createRadialGradient; P.createRadialGradient = function () { __ov.cur.grad++; return cg.apply(this, arguments); }; const cl = P.createLinearGradient; P.createLinearGradient = function () { __ov.cur.grad++; return cl.apply(this, arguments); };
+  const st = P.stroke; P.stroke = function () { if (this.canvas.width > 800) __ov.cur.st++; return st.apply(this, arguments); }; const fl = P.fill; P.fill = function () { if (this.canvas.width > 800) __ov.cur.fl++; return fl.apply(this, arguments); };
+  const loop = () => { __ov.frames.push(__ov.cur); __ov.cur = { fr: 0, im: 0, st: 0, fl: 0, n: 0, grad: 0 }; requestAnimationFrame(loop); }; requestAnimationFrame(loop); });
+await p.goto(process.argv[2] + '/' + (process.argv[3] || '?intro=1'));
+for (const s of [3, 8, 14, 22]) { await p.waitForTimeout(s === 3 ? 3000 : (s - (s === 8 ? 3 : s === 14 ? 8 : 14)) * 1000); const r = await p.evaluate(() => { const f = __ov.frames.slice(-20); const avg = k => f.reduce((a, c) => a + c[k], 0) / f.length; return { fillRectScreens: avg('fr').toFixed(2), imageScreens: avg('im').toFixed(2), strokes: avg('st').toFixed(0), fills: avg('fl').toFixed(0), gradients: avg('grad').toFixed(0), drawCalls: avg('n').toFixed(0) }; }); console.log('t≈' + s + 's', JSON.stringify(r)); }
+await b.close();

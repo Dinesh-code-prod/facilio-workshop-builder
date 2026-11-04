@@ -1,0 +1,9 @@
+// Frame pacing of the opening tree animation: records every animation frame for the first seconds and reports the median, 95th, 99th percentile and slowest frame time, how many frames were over 33 ms, and the canvas scale (device pixels per CSS pixel).
+// Usage: node --import ./tests/ui/use-edge.mjs tests/ui/intro-perf.mjs [baseUrl] [seconds] [width] [height] [dpr]
+import { chromium } from 'playwright';
+const BASE = process.argv[2] || 'http://localhost:4173', SEC = +process.argv[3] || 22, W = +process.argv[4] || 1920, H = +process.argv[5] || 1080, DPR = +process.argv[6] || 1;
+const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: DPR }); const p = await ctx.newPage();
+await p.addInitScript(() => { window.__fr = []; let last = performance.now(); const loop = t => { window.__fr.push(t - last); last = t; requestAnimationFrame(loop); }; requestAnimationFrame(loop); });
+await p.goto(BASE + '/?intro=1'); await p.waitForTimeout(SEC * 1000);
+const r = await p.evaluate(() => { const f = window.__fr.slice(5); const s = f.slice().sort((a, b) => a - b); const q = k => s[Math.min(s.length - 1, Math.floor(s.length * k))]; const cv = document.querySelector('canvas'); return { frames: f.length, median: q(.5), p95: q(.95), p99: q(.99), max: s[s.length - 1], over33: f.filter(x => x > 33).length, over50: f.filter(x => x > 50).length, canvas: cv ? cv.width + 'x' + cv.height : 'none', css: cv ? cv.clientWidth + 'x' + cv.clientHeight : '' }; });
+console.log(`${W}x${H} @${DPR}: ${r.frames} frames, median ${r.median.toFixed(1)} ms, 95th ${r.p95.toFixed(1)}, 99th ${r.p99.toFixed(1)}, slowest ${r.max.toFixed(0)} ms, over 33 ms: ${r.over33}, over 50 ms: ${r.over50}, canvas ${r.canvas} for ${r.css} CSS pixels = scale ${(parseInt(r.canvas) / parseInt(r.css)).toFixed(2)}`); await b.close();

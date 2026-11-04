@@ -26,6 +26,12 @@ await p.click('.cal-title'); await p.waitForTimeout(400); check('the month and y
 await p.click('.cal-fb'); await p.waitForTimeout(400); check('Filter opens', !!(await p.$('.cal-fp'))); await p.keyboard.press('Escape'); await p.waitForTimeout(300);
 await mode(p, 'week'); const first = await p.$('[data-act="calOpen"]'); if (first) { await first.scrollIntoViewIfNeeded(); await first.click(); await p.waitForTimeout(900); }
 check('clicking an item opens it', await p.evaluate(() => !!document.querySelector('#drawer .drawer, .modal, [role="dialog"]:not(.cal-pop)')));
+await p.evaluate(() => document.querySelector('[data-act="calAi"]').click()); await p.waitForTimeout(400);
+check('the AI menu offers a DeepSeek draft and Open in Claude', !!(await p.$('[data-act="calAiRun"]')) && !!(await p.$('[data-act="calAiClaude"]')));
+await p.keyboard.press('Escape'); await p.waitForTimeout(300); check('Escape closes the AI menu', !(await p.$('[data-act="calAiRun"]')));
+await p.evaluate(() => document.querySelector('[data-act="calAi"]').click()); await p.waitForTimeout(300); await p.evaluate(() => document.querySelector('[data-act="calAiRun"]').click());
+let draft = false; for (let i = 0; i < 40 && !draft; i++) { await p.waitForTimeout(1000); draft = await p.evaluate(() => /Calendar briefing/.test((document.querySelector('#drawer .drawer') || {}).innerText || '')); }
+check('the DeepSeek briefing opens as a draft for review', draft);
 await p.close();
 // measures the calendar itself: the top bar spilling sideways at tablet width is a separate, page-wide matter (see the roadmap)
 for (const w of [390, 768, 1500]) { const q = await open(w, 900); const bad = []; for (const m of ['month', 'week', 'day', 'year']) { await mode(q, m); if (await q.evaluate(() => { const c = document.querySelector('.cal'); return c.getBoundingClientRect().right > innerWidth + 1 || c.scrollWidth > c.clientWidth + 1; })) bad.push(m); } check(`the calendar fits the screen at ${w}px in every view`, !bad.length, bad.join(', ')); await q.close(); }

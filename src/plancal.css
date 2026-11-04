@@ -94,3 +94,7 @@ body .cal .cal-mini > button.t span { background: linear-gradient(135deg, #1570E
 .cal-bar-c { background: linear-gradient(180deg, var(--a), var(--g)) !important; }
 .cal-prog i { background: linear-gradient(90deg, var(--a), var(--g)) !important; }
 body .cal .cal-new:not(#_):not(#__) { background: linear-gradient(180deg, #fff, #E8F0FF) !important; }
+
+/* the AI menu reuses the Filter menu's look; its two actions are plain rows */
+body .cal .cal-aib:not(#_):not(#__) { width: 100%; display: flex; align-items: center; gap: 8px; border: 1px solid #DCE4F3 !important; border-radius: 10px !important; background: #fff !important; color: #1D1A5E !important; font: inherit; font-weight: 650; padding: 10px 12px !important; margin-top: 6px; cursor: pointer; text-align: left; box-shadow: none !important; }
+body .cal .cal-aib:not(#_):not(#__):hover { background: #EAF2FF !important; border-color: #8DB8FF !important; }
