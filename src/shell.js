@@ -489,7 +489,7 @@ function projectsHtml() {
   V.refreshProjectMeta = async () => { const r = await API.get('/api/projects/' + S.project.id); S.project = r.project; S.members = r.members || []; render(); };
 
   root.FWBShell = {
-    sessionExpired(msg) { if (mode === 'auth') return; if (V.office()) { location.reload(); return; } S.user = null; mode = 'auth'; authMsg = msg || 'Your session has ended. Please sign in again.'; render(); },
+    sessionExpired(msg) { if (mode === 'auth') return; if (V.office()) { location.reload(); return; } const cust = S.user && S.user.kind === 'customer'; S.user = null; mode = 'auth'; authMsg = msg || (cust ? 'For your security your session has ended. Please sign in again to carry on.' : 'Your session has ended. Please sign in again.'); render(); },
     async conflict(section) {
       const ok = await confirmDialog('Changes conflict', `Someone else saved "${section}" while you were editing. Reload the latest version? Your unsaved changes in this section will be lost; other sections are kept.`, 'Reload latest');
       if (ok) await F.reloadSection(section);

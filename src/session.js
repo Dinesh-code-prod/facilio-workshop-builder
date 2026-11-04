@@ -40,7 +40,7 @@
   }
   function check(now) {
     if (!S.user || locked) return; const idle = (now || Date.now()) - last;
-    if (idle >= IDLE_MS) { lock('You were signed out after 30 minutes without activity. Anything you had not saved is kept in this browser. Sign in again to carry on.'); warned = false; return; }
+    if (idle >= IDLE_MS) { lock(S.user.kind === 'customer' ? 'For your security you were signed out after 30 minutes without activity. Anything you were typing is saved on this device. Sign in again to pick up where you left off.' : 'You were signed out after 30 minutes without activity. Anything you had not saved is kept in this browser. Sign in again to carry on.'); warned = false; return; }   // two audiences: the project team, and the customer
     if (idle >= WARN_MS && !warned) { warned = true; V.toast('You will be signed out in about two minutes because there has been no activity. Click anywhere to stay signed in.', 12000); }
   }
   V.session = { IDLE_MS, check, touch() { last = Date.now(); warned = false; } };
