@@ -281,10 +281,62 @@
     const checks = [[m.k === 'ok' || m.k === 'review', 'MSA processed' + (m.k === 'review' ? ' (some pages need review)' : '')], [!!cx && Object.values(cx.fields).some(f => f.status === 'verified'), 'Contract details reviewed (at least one field verified)'], [unconf === 0, unconf ? unconf + ' scope item(s) still need review' : 'No scope items waiting for review'], [!un.length, un.length ? un.length + ' in-scope module(s) have no session' : 'All in-scope modules have a session'], [act.length > 0 && act.every(s => s.date), act.length ? (act.filter(s => !s.date).length ? act.filter(s => !s.date).length + ' session(s) have no date' : 'Every session has a date') : 'No sessions'], [!act.some(s => s.proposed), act.some(s => s.proposed) ? act.filter(s => s.proposed).length + ' session(s) are still marked Proposed' : 'No proposed sessions waiting for confirmation']];
     return `${stale()}<div class="card"><div class="card-h"><h3>Before you finalise</h3>${d.final ? tag('green', 'Finalised ' + V.fmtDate(d.final.at)) : tag('tbc', 'Not finalised')}</div><div class="card-b small">${checks.map(([ok, t]) => `<div style="margin-bottom:6px">${ok ? '<span style="color:var(--fc-success)">✓</span>' : '<span style="color:var(--fc-warning)">!</span>'} ${esc(t)}</div>`).join('')}
       <div class="row" style="margin-top:14px">${ro() ? '' : (d.final ? `<button class="btn" data-act="mfReopen">Reopen schedule</button>` : `<button class="btn primary" data-act="mfFinalise">Finalise schedule</button>`)}<button class="btn" data-act="exportPlan">${ico('dl')}Download Excel</button>${ro() ? '' : `<button class="btn" data-act="publishSchedule">Publish schedule to customer</button>`}<button class="btn" data-act="mfStep" data-v="schedule">Back to the schedule</button></div>
+      <div class="row" style="margin-top:8px"><button class="btn" data-act="mfPlanDraft">Draft project plan from this contract</button><button class="btn" data-act="mfWsPrep">Workshop preparation (HTML)</button></div>
       <div class="xs muted" style="margin-top:8px">Finalising records the schedule and the confirmed scope it was built from. If the MSA or scope changes later, the finalised schedule is not overwritten; you are warned and decide what to change.</div></div></div>`;
   }
   ACT.mfFinalise = async () => { const d = P(); const act = active(); const warn = act.some(s => !s.date) || act.some(s => s.proposed); if (warn && !(await confirmDialog('Finalise with open items', 'Some sessions have no date or are still marked Proposed. Finalise anyway?', 'Finalise'))) return; act.forEach(s => { if (s.proposed) s.proposed = false; }); d.final = { at: new Date().toISOString(), by: S.user.name, sig: scopeSig(), sessions: act.length }; F.changed('Workshop schedule finalised', act.length + ' sessions', { section: 'planner' }); };
   ACT.mfReopen = async () => { if (!(await confirmDialog('Reopen the schedule', 'Reopen the finalised schedule for changes?', 'Reopen'))) return; delete P().final; F.changed('Workshop schedule reopened', '', { section: 'planner' }); };
+
+  // ---------- project plan and workshop preparation drafted from the contract (pure rules: src/planfrommsa.js, src/workshopprep.js; tests/plan_from_msa.mjs, tests/workshop_prep.mjs) ----------
+  // Only what the contract records hold goes in; anything missing is listed as an assumption or a gap. Nothing is written to the project until "Use this plan".
+  const kept = a => (a || []).filter(o => !o.rejected);
+  const msaSrc = o => (o.page ? 'MSA p.' + o.page + (o.section ? ' §' + o.section : '') : o.section ? 'MSA §' + o.section : 'MSA');
+  function planInput() {
+    const cx = P().contractX || { fields: {}, scopeX: {} }, sx = cx.scopeX || {}, fv = k => { const f = (cx.fields || {})[k]; return f && ['extracted', 'verified'].includes(f.status) ? f.value : ''; };
+    // the project's own dates first; the contract end date is the service term, not the implementation, so it is not used as the project end
+    const commitments = (Array.isArray(fv('obligations')) ? fv('obligations').filter(o => o.side === 'Facilio') : []).concat(kept(sx.deliverables)).map(o => ({ text: o.text, date: V.parseAnyDate(o.text) || '', source: msaSrc(o) }));
+    return { start: (S.project && S.project.startDate) || fv('effective') || '', end: (S.project && S.project.endDate) || '', commitments, modules: [...new Set(confirmedScope().map(x => mod(x.module)))], customerResponsibilities: kept(sx.responsibilities).map(o => o.text), exclusions: kept(sx.exclusions).map(o => o.text) };
+  }
+  let draft = null, draftWs = null;
+  const OR = { contract: ['green', 'Contract'], interpreted: ['blue', 'Interpreted'], assumed: ['tbc', 'Assumed'] };
+  const notes = (title, a, cls) => a.length ? `<div class="notice ${cls}" style="margin:0 0 10px"><span><b>${esc(title)}</b><ul style="margin:4px 0 0;padding-left:18px">${a.map(x => `<li>${esc(x)}</li>`).join('')}</ul></span></div>` : '';
+  ACT.mfPlanDraft = () => {
+    const r = draft = root.FWBPlanFromMsa.buildPlan(planInput(), { today: V.today() }); const nm = id => (r.milestones.find(x => x.id === id) || {}).name;
+    const rows = r.milestones.map(m => `<tr><td><b>${esc(m.name)}</b><div class="xs muted">${esc(m.description)}</div><details><summary class="xs muted">Deliverables, outcome, completion</summary><div class="xs"><b>Deliverables:</b> ${esc(m.deliverables.join('; '))}<br><b>Outcome:</b> ${esc(m.outcome)}<br><b>Done when:</b> ${esc(m.completionCriteria.join('; '))}</div></details></td><td class="small">${esc(V.fmtDate(m.start))}${m.end !== m.start ? ' to ' + esc(V.fmtDate(m.end)) : ''}<div class="xs muted">${m.durationDays} working day(s)</div></td><td class="xs">${esc(m.dependsOn.map(nm).join(', ') || '—')}</td><td class="xs">${esc(m.responsible)}</td><td>${tag(OR[m.origin][0], OR[m.origin][1])}</td></tr>`).join('');
+    drawer('Draft project plan from this contract', `${notes('Conflicts: a date in the contract cannot be met', r.conflicts.map(c => c.message), 'err')}${notes('Gaps: not in the contract', r.gaps, 'warn')}${notes('Assumptions made by this draft', r.assumptions, '')}
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th style="width:38%">Milestone</th><th>Dates</th><th>Waits for</th><th>Who</th><th>Basis</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="xs muted" style="margin-top:8px">Contract = a dated commitment fixed the date. Interpreted = a commitment matched this phase but gave no date. Assumed = Facilio's suggestion. Review it, then use it; you can edit every row afterwards in Project Plan > Timeline.</div>`,
+      `<button class="btn" data-act="closeDrawer">Close</button><span class="spacer"></span>${ro() ? '' : '<button class="btn primary" data-act="mfPlanUse">Use this plan</button>'}`, { wide: true });
+  };
+  ACT.mfPlanUse = async () => {
+    const A = V.tlApi; if (!draft || ro() || !A) { toast('The plan cannot be saved here'); return; } const rows = root.FWBPlanFromMsa.toPlanStruct(draft.milestones), td = A.TD(), have = td.rows.length;
+    if (have && !(await confirmDialog('Replace the existing project plan', 'The project plan already has ' + have + ' row(s). They are replaced by the ' + rows.length + ' drafted milestones. The earlier rows stay in the plan version list.', 'Replace plan', true))) return;
+    td.draftNotes = { at: new Date().toISOString(), by: (S.user && S.user.name) || '', assumptions: draft.assumptions, gaps: draft.gaps, conflicts: draft.conflicts.map(c => c.message) };
+    A.saveRows(rows, 'Drafted from the contract'); closeDrawer(); toast('Project plan saved (' + rows.length + ' milestones). Review the dates in Project Plan > Timeline.', 7000);
+  };
+  const slug2 = x => String(x || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'project';
+  function wsInput() {
+    const by = {}; confirmedScope().forEach(x => (by[x.module] = by[x.module] || []).push({ text: x.text, page: x.page, section: x.section }));
+    return { project: { customer: S.project.customer, name: S.project.name }, modules: Object.keys(by).map(m => ({ name: mod(m), scopeItems: by[m], openQuestions: [] })), sessions: active().map(s => ({ title: s.title, modules: (s.modules || []).map(mod), date: s.date, start: s.start, minutes: V.sessionMinutes(s), participants: s.participants })) };
+  }
+  const wsPrep = () => P().workshopPrep || (draftWs = draftWs || root.FWBWorkshopPrep.buildWorkshopPrep(wsInput()));
+  const WSL = () => Object.fromEntries(root.FWBWorkshopPrep.BLOCKS); const lines = a => (a || []).map(x => x.text).join('\n');
+  function wsDrawer() {
+    const p = wsPrep(), L = WSL(); const ses = p.sessions.map((s, i) => `<details style="margin-bottom:8px"><summary><b>${esc(s.title)}</b> <span class="xs muted">${esc(s.module)}</span></summary><label class="f">Session title</label><input type="text" value="${esc(s.title)}" data-change="mfWsEdit" data-i="${i}" data-k="title" style="width:100%">${Object.keys(L).map(k => `<label class="f" style="margin-top:6px">${esc(L[k])} (one per line)</label><textarea rows="3" data-change="mfWsEdit" data-i="${i}" data-k="${k}" style="width:100%">${esc(lines(s[k]))}</textarea>`).join('')}</details>`).join('');
+    drawer('Workshop preparation', `${notes('Gaps: not in the contract', p.gaps, 'warn')}${notes('Assumptions', p.assumptions, '')}<div class="xs muted" style="margin-bottom:8px">${p.sessions.length} session proposal(s), one per module. Edit the text below before you share it; the customer gets a read-only page. Lines you change are marked as Facilio suggestions. Topics and questions come only from the confirmed scope.</div>
+      <label class="f">Introduction</label><textarea rows="2" data-change="mfWsEdit" data-i="-1" data-k="intro" style="width:100%">${esc(p.intro.text)}</textarea><div style="margin-top:10px">${ses || '<div class="empty">No confirmed scope yet, so there are no sessions. Confirm scope in step 3.</div>'}</div>`,
+      `<button class="btn" data-act="closeDrawer">Close</button>${ro() ? '' : '<button class="btn" data-act="mfWsRebuild">Rebuild from scope</button>'}<span class="spacer"></span><button class="btn" data-act="mfWsPreview">Preview</button><button class="btn primary" data-act="mfWsDownload">${ico('dl')}Download HTML</button>`, { wide: true });
+  }
+  ACT.mfWsPrep = () => wsDrawer();
+  ACT.mfWsEdit = el => {
+    if (ro()) return; const d = P(), p = wsPrep(), i = +el.getAttribute('data-i'), k = el.getAttribute('data-k'); const keep = (old, text) => text.split('\n').map(x => x.trim()).filter(Boolean).map(t => (old || []).find(o => o.text === t) || { text: t, origin: 'assumed' });
+    if (i === -1) p.intro.text = el.value.trim(); else if (p.sessions[i]) { if (k === 'title') p.sessions[i].title = el.value.trim() || p.sessions[i].title; else if (WSL()[k]) p.sessions[i][k] = keep(p.sessions[i][k], el.value); }
+    d.workshopPrep = p; F.changed('Workshop preparation edited', k, { section: 'planner', render: false });
+  };
+  ACT.mfWsRebuild = async () => { const d = P(); if (d.workshopPrep && !(await confirmDialog('Rebuild from the scope', 'Your edits to the workshop preparation are replaced by a new draft from the confirmed scope.', 'Rebuild', true))) return; draftWs = null; d.workshopPrep = root.FWBWorkshopPrep.buildWorkshopPrep(wsInput()); F.changed('Workshop preparation rebuilt from scope', '', { section: 'planner', render: false }); wsDrawer(); };
+  const wsBlob = () => new Blob([root.FWBWorkshopPrep.workshopPrepHtml(wsPrep())], { type: 'text/html' });
+  ACT.mfWsPreview = () => { const u = URL.createObjectURL(wsBlob()); if (!window.open(u, '_blank')) toast('Allow pop-ups to preview, or use Download', 6000); setTimeout(() => URL.revokeObjectURL(u), 60000); };
+  ACT.mfWsDownload = () => { V.download(slug2(S.project.customer) + '-' + slug2(S.project.name) + '-workshop-preparation.html', wsBlob()); F.log('Workshop preparation exported', 'HTML'); toast('Workshop preparation saved as an HTML file'); };
 
   // ---------- page ----------
   V.msaflow = {
