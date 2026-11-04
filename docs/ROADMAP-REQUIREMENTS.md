@@ -269,6 +269,22 @@ Documents to cover (confirm the list in the audit): kick-off deck (C4), Customer
 - [ ] Accessibility and quality: headings in order, keyboard use, readable contrast, works on a phone and when printed; text stays selectable.
 - [ ] Test: build the HTML for the demo project's BRD, a guide, a report and the kick-off deck; open each offline in a normal browser and print to PDF; check pictures, tables, diagrams and links; say what was not checked.
 
+### C6. Kick-off deck import: connect it to the digital deck, and read it from several formats (added 4 Nov 2026)
+Goal: the Import step of the Kick-off Deck page and the digital deck (C4) work as one. Whatever the team brings (a deck made elsewhere as HTML, a PowerPoint, a PDF, a Word document or pictures of slides) is turned into the same slide records and project fields, or, when that is not wanted, simply attached as the file. Several extraction methods are needed because one method does not fit every format.
+- [ ] Two ways to bring a deck in, on one page: **Import and read** (the file is read, slides and facts are extracted, the team reviews, then saves) and **Attach only** (the original .pptx, .pdf, .docx or .html is kept as a file card with no reading, as today).
+- [ ] Extraction methods by format (build and test each one separately; the first four need no AI):
+  1. **HTML deck** (like the reference file): read the page structure in the browser or on the server: each `.slide` (or section) becomes a slide; headings, text, tables, lists, pictures and speaker notes are taken from the markup. Exact and free.
+  2. **PowerPoint (.pptx, .ppt)**: open the .pptx as a zip and read each slide's XML (text boxes, tables, notes, pictures, order). Older .ppt files cannot be read this way: say so and ask for .pptx or PDF.
+  3. **PDF**: read the text layer per page (the app already ships a PDF reader library); keep page order; flag pages that are only pictures.
+  4. **Word (.docx)**: read headings and paragraphs (the app already ships a Word reader library) and treat each top heading as a slide.
+  5. **Pictures and scanned pages**: text recognition (the app already ships an OCR library) and, where the AI model supports pictures, a picture reading step; flag low confidence. First check whether the configured DeepSeek model can read images (Part 22); do not assume.
+  6. **AI mapping** (DeepSeek, Open Claude as the alternative): from the extracted slides decide which slide is which (team, phases, milestones, scope in and out, plan, customer needs, governance, risks, next steps) and fill the project fields. The AI never replaces the extraction; it only labels and fills, and shows what it was unsure about.
+- [ ] Output is always a draft in the same slide records as C4, with the original file kept and a link from each slide back to its source page or slide number, so the team can compare with the original.
+- [ ] Review screen before saving: the slides found, what each was mapped to, what was left out, and what could not be read; the team accepts, changes or drops each item. Existing edited slides are never overwritten without asking (same rule as C4).
+- [ ] Limits and safety: large files are read in parts (the page already reads only the tail or head of big files); HTML import ignores scripts and outside links and never runs the file; size and slide-count limits with a clear message.
+- [ ] Round trip: an imported deck can be exported again as HTML, .pptx and PDF from C4 and C5, so a deck from another tool can be cleaned up and re-issued.
+- [ ] Test with real examples of each format (the reference HTML deck, a .pptx, a PDF, a Word file, a screenshot of a slide): slides found, fields filled, unreadable parts flagged, original kept; say what was not checked.
+
 ---
 
 ## Progress log (add a line each time something is finished)
