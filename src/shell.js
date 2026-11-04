@@ -131,10 +131,10 @@
     { g: '4. UAT & Go-Live', sec: 'Design and build', icon: 'check', fi: 'delivery', items: [['delivery', 'Build, UAT & Go-Live'], ['agenttest', 'Agent Testing'], ['ftr', 'FTR Report (Excel)'], ['kpi', 'KPI Workbooks']] },
     { g: '5. Training & Guides', sec: 'Launch and support', icon: 'book', fi: 'guide', items: [['vstudio', 'Guides & Video Studio'], ['guidebuilder', 'User Guide Builder'], ['vidguide', 'Video to Guide']] },
     { g: '6. Hypercare, Handover & Closure', sec: 'Launch and support', icon: 'shield', fi: 'g_delivery', items: [['hypercare', 'Hypercare'], ['handover', 'Handover & Closure']] },
-    { g: 'Support & Tickets', sec: 'Launch and support', icon: 'mail', items: [['inbox', 'Inbox'], ['tickets', 'Tickets']] },
+    { g: 'Support & Tickets', sec: 'Launch and support', icon: 'mail', items: [['supportdesk', 'Support Desk']] },
     { g: 'Show Facilio', sec: 'Share with the customer', icon: 'spark', items: [['demokit', 'Facilio Screens'], ['seefacilio', 'Product Tour'], ['dashboards', 'Dashboard Gallery'], ['explore', 'Discover more'], ['showcase', 'Discover more entries']] },   // every page that shows the customer what Facilio can do
     { g: 'Customer View', sec: 'Share with the customer', icon: 'spark', items: [['custintro', 'Customer Introduction'], ['prepare', 'Learn & Prepare'], ['learnlib', 'Module guides'], ['agentguide', 'Facilio AI Agents'], ['integguide', 'Connecting Your Systems'], ['guide', 'Customer User Guide'], ['portal', 'Customer Portal']] },
-    { g: 'Help', sec: 'Integrations & admin', icon: 'book', items: [['claudesetup', 'Claude setup'], ['teamhelp', 'Team Guide'], ['whatsnew', "What's new"], ['privacy', 'Privacy & data']] },
+    { g: 'Help', sec: 'Integrations & admin', icon: 'book', items: [['claudesetup', 'Claude setup'], ['teamhelp', 'Team Guide'], ['webframe', 'Facilio tools'], ['whatsnew', "What's new"], ['privacy', 'Privacy & data']] },
     { g: 'Settings', sec: 'Integrations & admin', icon: 'gear', fi: 'g_admin', items: [['settings', 'Project Settings'], ['templates', 'Templates'], ['workspace', 'Tabs & Layouts']] }
   ];
   // group names used before 28 Oct 2026, so layouts saved against them land in the matching group of the menu above
@@ -183,6 +183,7 @@
     if (mode === 'admin') { app.innerHTML = navbarHtml(false) + (V.adminHtml ? V.adminHtml() : ''); if (V.adminPost) V.adminPost(); return; }
     if (mode !== 'workspace') return;
     if ((S.ui.view === 'onboarding' || (S.ui.view === 'transcripts' && S.ui.reqTab === 'onboarding')) && S.ui.onbTab === 'excel' && document.getElementById('onbFrame')) return; // keep the embedded tool alive: re-rendering would reload it
+    if (V.wfKeep && V.wfKeep()) { const sb = document.querySelector('.sidebar'); if (sb) sb.innerHTML = sidebarHtml(); return; } // a Facilio tools frame is open on the same site: re-rendering would reload it
     const main = document.querySelector('.main'); const scroll = main ? main.scrollTop : 0;
     const active = document.activeElement; const activeBind = active && active.getAttribute && active.getAttribute('data-bind'); const caret = active && active.selectionStart;
     const key = ALIAS[S.ui.view] && !V[S.ui.view] ? ALIAS[S.ui.view] : S.ui.view; const view = V[key] || (/^cx_/.test(key) && V.customPage) || V.overview;
