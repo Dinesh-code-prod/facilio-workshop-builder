@@ -4,6 +4,7 @@
 import { createAI, AIFail } from './_ai.mjs';
 import { assess, docsOf, workload, RULES as HRULES, HEALTH_LABEL, MANUAL } from './_portfolio.mjs';
 import { IMPL_SKILLS } from './_skills.mjs';
+import { installTransfer } from './_transferapi.mjs';
 import { pendingFor, digestMessage, digestKey, assignKey, assignGate, assignmentNotice, BASE_URL as TW_BASE } from './_taskwatch.mjs';
 let FWB = null; // this copy of the server's own dispatcher (not looked up through a global, so two copies in one process cannot mix)
 let CTX = null, HDR = {};   // set at the start of every request (a Lambda handles one request at a time)
@@ -2026,7 +2027,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     const s = await requireAdmin('super'); const r = await dbGet('projects', P.id); if (!r) throw new HttpError(404, 'Project not found'); const p = r.value;
     if (!p.archived) throw new HttpError(400, 'Archive the project first. Only an archived project can be deleted for good.');
     if (String(b.confirm || '') !== p.name) throw new HttpError(400, 'Type the project name exactly to confirm');
-    let n = 0; for (const col of pcols(P.id, true).concat(['au.' + P.id, 'fl.' + P.id, 'fb.' + P.id])) { const rows = await dbList(col); await pmap(rows, 8, async x => { await dbDel(col, x.key); n++; }); }
+    let n = 0; for (const col of pcols(P.id, true).concat(['au.' + P.id, 'fl.' + P.id, 'fb.' + P.id, 'xf.' + P.id, 'xfd.' + P.id, 'xfdp.' + P.id])) { const rows = await dbList(col); await pmap(rows, 8, async x => { await dbDel(col, x.key); n++; }); }
     await dbDel('projects', P.id); await audit('sys', s.id, 'admin_delete_project', p.name + ' (' + P.id + ')'); ADM = null; return ok({ ok: true, removed: n });
   });
   route('GET', '/api/admin/projects/:id/members', async (b, P) => { await requireAdmin('sub'); const r = await dbGet('projects', P.id); if (!r) throw new HttpError(404, 'Project not found'); return ok({ members: (r.value.members || []).map(m => Object.assign(memberOut(m), { addedAt: null })) }); });
@@ -2080,6 +2081,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   // customer and password sign-in do not exist in this version
   ['login', 'signup', 'guest', 'guest-login', 'upgrade', 'customer', 'password'].forEach(n => route('POST', '/api/auth/' + n, async () => { throw new HttpError(403, 'Sign-in is handled by your Facilio Microsoft account'); }));
 
+  installTransfer({ route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbList, save, unpack, withLock, audit, pickProject, limit, CONNECTOR });   // push and pull engine: routes and connector tools (_transferapi.mjs)
   async function dispatch(method, path, query, body) {
     const u = new URL(path, 'https://app.local'); u.search = query || '';
     for (const r of routes) {
