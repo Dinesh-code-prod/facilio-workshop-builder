@@ -14,7 +14,7 @@ Live is deploy 142 (3 Nov 2026). Commits: `b5acdbf`, `df9039a`.
 
 ### A1. Not checked yet (3 Nov 2026 sessions)
 - [x] Customer's own view of the Customer User Guide: checked 4 Nov 2026 on localhost (guide published, previewed as the customer): module list, section links and answers strip are in Facilio colours, no overlapping names, no page errors (`tests/ui/guide-customer-check.mjs`, 5 of 5). Not checked on live. Small leftover: the "What your team will see" picture frame has a pale lilac tint (goes with the violet pass in A2).
-- [ ] Live check that a file dropped in a box is really sent and stored (deploy 142 checked only that the 13 boxes and the menu entry show).
+- [x] Live check that a file dropped in a box is really sent and stored: checked 4 Nov 2026 on facilio.work (deploy 142), test project "ZZ Walkthrough Test": a 68-byte file `live-upload-check.txt` put in the Workshop transcripts box went to category `transcript`, was sent with Send, showed "Stored", and the project's file list returned it. Not checked: a large file (16 MB parts), an e-mail (.eml) or the "Drop anything" guess on live. The test file is still in that project (delete it there if you want it gone).
 - [ ] Live check of lag days on a timeline link (checked only on localhost).
 - [ ] Data onboarding sheet rules: `tests/onboarding_rules.mjs` covers the Site sheet, a missing sheet and a building pointing at a missing site. Not yet covered: Floors, Spaces, Asset, Users and the PM sheets, near-duplicate names, dates and e-mails, import value rules.
 - [ ] Calendar tab of the Project Plan (`src/plancal.js`): not reviewed after the timeline work.
