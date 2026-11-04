@@ -1196,6 +1196,71 @@
       "sha"
      ]
     }
+   },
+   {
+    "name": "msa_extraction_save",
+    "description": "Save the extraction of an MSA that you read yourself with the Microsoft 365 connector (SharePoint or OneDrive). Delivery Studio cannot read Microsoft 365. It is validated, stored as an unapproved transfer version (kind msa) and submitted for review; a person must approve it in Delivery Studio, Claude cannot. Give a project to keep it there, or leave project out to keep it in your own holding space until a project is created from it. Label every item: origin contract (the MSA says so, with page, section or quote), interpreted (your reading) or assumed. Nothing is invented: leave a value out when the MSA does not give it.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Optional. Project name or id to keep the extraction in. Leave out for no project yet (your holding space)."
+      },
+      "source": {
+       "type": "object",
+       "description": "Where you read the MSA: { system: \"sharepoint\" or \"onedrive\", ref: the file reference exactly as the Microsoft 365 connector gave it, label: file name (optional), etag: the file version or etag (optional) }"
+      },
+      "extraction": {
+       "type": "object",
+       "description": "{ customer, projectName, contract: { start: \"YYYY-MM-DD\", end: \"YYYY-MM-DD\", durationDays, term }, scope: [{ text, status: \"confirmed\"|\"excluded\"|\"unclear\", origin: \"contract\"|\"interpreted\"|\"assumed\", source: { page, section, quote } }], modules: [{ name, origin, source }], commitments: [{ text, date, origin, source }], deliverables, customerResponsibilities, facilioResponsibilities, exclusions, dependencies, commercialConstraints, training, supportAndHandover: [{ text, origin, source }], attachments: [{ name, ref, note }] }. Other keys are dropped."
+      },
+      "baseVersion": {
+       "type": "number",
+       "description": "The version you built on; 409 if it is no longer the newest"
+      },
+      "submit": {
+       "type": "boolean",
+       "description": "false to keep it as retrieved without submitting for review"
+      },
+      "note": {
+       "type": "string",
+       "description": "A short note for the log"
+      }
+     },
+     "required": [
+      "source",
+      "extraction"
+     ]
+    }
+   },
+   {
+    "name": "create_project_from_msa",
+    "description": "Create a NEW project from an MSA extraction that a person has APPROVED in Delivery Studio (status Approved). Ask the person to confirm first, then pass confirm true. It writes the customer, name, dates, scope items and contract fields into the Contract workspace and Know Your Contract. Safe to repeat: a second call returns the project already made. It never changes an existing project. Use project \"holding\" or leave project out when the extraction is in your holding space.",
+    "function": "api",
+    "confirm": true,
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id where the extraction is kept, or leave out (or \"holding\") for your holding space"
+      },
+      "id": {
+       "type": "string",
+       "description": "Transfer id (x-...) from msa_extraction_save"
+      },
+      "confirm": {
+       "type": "boolean",
+       "description": "Must be true, after the person confirmed"
+      }
+     },
+     "required": [
+      "id",
+      "confirm"
+     ]
+    }
    }
   ]
  }

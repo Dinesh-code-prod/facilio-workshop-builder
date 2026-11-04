@@ -5,6 +5,7 @@ import { createAI, AIFail } from './_ai.mjs';
 import { assess, docsOf, workload, RULES as HRULES, HEALTH_LABEL, MANUAL } from './_portfolio.mjs';
 import { IMPL_SKILLS } from './_skills.mjs';
 import { installTransfer } from './_transferapi.mjs';
+import { installMsaExtract } from './_msaapi.mjs';
 import { pendingFor, digestMessage, digestKey, assignKey, assignGate, assignmentNotice, BASE_URL as TW_BASE } from './_taskwatch.mjs';
 let FWB = null; // this copy of the server's own dispatcher (not looked up through a global, so two copies in one process cannot mix)
 let CTX = null, HDR = {};   // set at the start of every request (a Lambda handles one request at a time)
@@ -2081,7 +2082,8 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   // customer and password sign-in do not exist in this version
   ['login', 'signup', 'guest', 'guest-login', 'upgrade', 'customer', 'password'].forEach(n => route('POST', '/api/auth/' + n, async () => { throw new HttpError(403, 'Sign-in is handled by your Facilio Microsoft account'); }));
 
-  installTransfer({ route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbList, save, unpack, withLock, audit, pickProject, limit, CONNECTOR });   // push and pull engine: routes and connector tools (_transferapi.mjs)
+  const TRANSFER = installTransfer({ route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbList, save, unpack, withLock, audit, pickProject, limit, CONNECTOR });   // push and pull engine: routes and connector tools (_transferapi.mjs)
+  installMsaExtract({ HttpError, dbGet, dbPut, withLock, audit, viaApp, CONNECTOR }, TRANSFER);   // MSA extraction tools: msa_extraction_save, create_project_from_msa (_msaapi.mjs)
   async function dispatch(method, path, query, body) {
     const u = new URL(path, 'https://app.local'); u.search = query || '';
     for (const r of routes) {
