@@ -1,5 +1,7 @@
 # Handoff
 
+**Work list: [docs/ROADMAP-REQUIREMENTS.md](docs/ROADMAP-REQUIREMENTS.md)** holds everything pending and not checked (Part A) and the master product requirement (Part B), to be built one item at a time. Tick items there as they finish.
+
 Last updated: 3 Nov 2026 (evening), Claude Code. Deploy 133 is live (be87b3a). Stage 1 of the menu restructure is committed, pushed and deployed after that (see DEPLOYS.md).
 
 ## 3 Nov 2026 (night): Asana-style timeline (deploy 140)

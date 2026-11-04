@@ -5,6 +5,9 @@ This project is worked on from two Claude accounts (personal and office), from t
 ## Starting a session
 Run `/sync` first. It compares this folder with GitHub (`origin/main`), lists any uncommitted or unpushed work left by the other account, reads `HANDOFF.md`, and shows whether the live app is behind the code. Never discard another session's changes (no `git reset --hard`, no checkout of files) without asking.
 
+## What to build next
+Open `docs/ROADMAP-REQUIREMENTS.md`: Part A is the pending and not-checked list, Part B the master requirement in build order. Take one item at a time, tick it when done, and log the deploy number there.
+
 ## While working
 - Finish a change, run `npm test`, commit, and push to `main` and `feat/simpler-studio` (`git push origin main`, then `git push origin main:feat/simpler-studio`). If the user said to wait until they have tested, commit locally and write "not pushed yet" in `HANDOFF.md`.
 - Do not run two sessions on the same folder at the same time.
