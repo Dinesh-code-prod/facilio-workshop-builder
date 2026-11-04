@@ -111,6 +111,7 @@ App status seen today through the Facilio Work Apps connector (`list_apps`): `fa
 - **Login.** Opened signed in through platform sign-on. The page is "Facilio Run, internal site directory".
 - **What it is:** a directory of internal sites hosted on the Facilio platform (names such as support-desk, si-health, customers, run-index, with owners, deploy counts and sizes). It is the same hosting family as facilio.work.
 - **What it is not.** It is **not** a catalogue of "connected applications and MCP tools for project retrieval, document generation or result submission" as E3 assumed. Connected Apps in the Facilio product are listed by the connections MCP (section 5); the Facilio Run connector (section 6) manages these hosted sites.
+- **How to use it (user, 4 Nov 2026):** link to the useful sites from Delivery Studio so people can open them; no integration is needed. The same applies to Meteor and Comet.
 - **Not checked:** each site's contents; whether any site already offers an MSA, UAT or onboarding capability (`fife-brd-workshops` exists, purpose unknown); search inside the directory.
 
 ## 11. Other things Part E asked to verify

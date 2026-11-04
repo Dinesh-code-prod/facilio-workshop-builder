@@ -458,10 +458,22 @@ Inspect the skill environment before building: list installed Claude skills and 
 10. **UI/UX revamp last (E6).**
 Acceptance tests E8 run per stage and once for the whole lifecycle.
 
+### E11. Revised roadmap, APPROVED by the user on 4 Nov 2026 (after the audit)
+Source: `docs/reference/AUDIT-2026-11-04.md` and `CONNECTORS-2026-11-04.md`. The order of E10 stands, with these changes from what the audit found:
+- **Step 0 decisions.** Data onboarding return: self-contained HTML that downloads a JSON package, returned by a project upload link and checked by the rules in `tests/onboarding_rules.mjs` before it touches records (approved with the roadmap). Still open, to settle before the step that needs them: Meteor and Comet as Claude connectors or only links; which org and region the Facilio connections connector answers for and the other regions' addresses (C9); Clari connector turned on and tested; whether SharePoint search across other people's folders is acceptable for the MSA pick-list and how long a pulled MSA is kept.
+- **Step 1 push and pull engine:** transfer record (source, destination, user, time, scope, version, status, validation, error), the ten E4 statuses, duplicate guard, explicit confirmation, plus the new Delivery Studio connector tools it needs. Put it in its own server module, not further into `api.mjs`.
+- **Step 2 MSA pull** is Claude-driven: the M365 connector lists and reads the file in the person's own Claude session, the Delivery Studio connector stores the extraction as a draft with source references; the server itself cannot read Microsoft 365.
+- **Step 5 modules and fields** come from the Facilio connections connector and Kenny `org_config`, with hand entry as fallback. Meteor is not a module catalogue; it stays a reference for the visual mockup only.
+- **Step 8 UAT** stays in the Studio. Comet is a video and walkthrough studio, not a UAT guide tool; link to it for videos only. FTR becomes an HTML checklist.
+- **Transcripts (step 4):** Teams meeting transcripts through the M365 connector now; Clari when its connector is confirmed.
+- **Link-outs (user, 4 Nov 2026):** facilio.run is a directory of internal sites that help people; Meteor, Comet and facilio.com are separate Facilio tools. Delivery Studio links to them (a "Useful tools" place in Help or the E5 facilio.com link; each opens the site in a new tab, the person signs in there) instead of building or integrating them. No data is sent to them. Which sites to list is the user's call, chosen from the facilio.run directory.
+- **Before step 1:** get a trusted test baseline (run `npm test` and note the stale UI checks), since E8 test 12 needs one.
+
 ---
 
 ## Progress log (add a line each time something is finished)
 | Date | Item | Deploy | Not checked |
 |---|---|---|---|
 | 3 Nov 2026 | Timeline lag days, drawer above top bar, drop boxes plus Drop anything, Data Onboarding in Workshops, full-page sheet, guide colours | 142 | see Part A |
+| 4 Nov 2026 | Revised roadmap (E11) approved by the user; nothing built yet | none | the open step 0 decisions listed in E11 |
 | 4 Nov 2026 | Part E step 0: audit and connector discovery (`docs/reference/AUDIT-2026-11-04.md`, `CONNECTORS-2026-11-04.md`); findings only | none | Clari transcripts, Meteor and Comet connectors, M365 file read and Teams transcript read, a real Claude session against the live app, `npm test` |
