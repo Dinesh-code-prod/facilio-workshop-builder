@@ -1,6 +1,6 @@
-// Questions-to-ask engine (src/sessionquestions.js): each rule fires on crafted input and cites its sources, nothing is made up, ids are stable, liveAsk is careful.
-import assert from 'node:assert/strict'; import { createRequire } from 'node:module';
-const require = createRequire(import.meta.url); const Q = require('../src/sessionquestions.js');
+// Questions-to-ask engine (work/server/_sessionquestions.mjs): each rule fires on crafted input and cites its sources, nothing is made up, ids are stable, liveAsk is careful.
+import assert from 'node:assert/strict'; import '../work/server/_sessionquestions.mjs';
+const Q = globalThis.FWBSessionQuestions;   // the one copy of the rules; it sets this global when it is loaded as a module
 let n = 0; const t = (name, fn) => { fn(); n++; console.log('  ok  ' + name); };
 const all = p => [].concat(...p.byModule.map(g => g.questions));
 const kind = (p, k) => all(p).filter(q => q.kind === k);
