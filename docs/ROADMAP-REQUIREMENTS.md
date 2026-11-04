@@ -464,3 +464,4 @@ Acceptance tests E8 run per stage and once for the whole lifecycle.
 | Date | Item | Deploy | Not checked |
 |---|---|---|---|
 | 3 Nov 2026 | Timeline lag days, drawer above top bar, drop boxes plus Drop anything, Data Onboarding in Workshops, full-page sheet, guide colours | 142 | see Part A |
+| 4 Nov 2026 | Part E step 0: audit and connector discovery (`docs/reference/AUDIT-2026-11-04.md`, `CONNECTORS-2026-11-04.md`); findings only | none | Clari transcripts, Meteor and Comet connectors, M365 file read and Teams transcript read, a real Claude session against the live app, `npm test` |
