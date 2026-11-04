@@ -133,3 +133,32 @@ App status seen today through the Facilio Work Apps connector (`list_apps`): `fa
 2. Decide whether Delivery Studio should add a **Meteor** and **Comet** connector to the Claude setup page, or only link to the websites.
 3. Confirm which **org and region** the Facilio connections connector answers for, and where the other regions' addresses are (C9).
 4. Confirm that SharePoint search across other people's folders is acceptable for the MSA pick-list, and how long a pulled MSA may be kept.
+
+## 13. What facilio.work itself already gives us (read from the platform contract, `platform_docs`, 4 Nov 2026)
+
+Checked because the user shared MCP server templates and docs (remote-mcp-oauth-template, streamable-mcp-server-template, MCP-STARTER-KIT, the MCP TypeScript SDK, the MCP build-server guide, Claude's custom-connector article and the API MCP connector page).
+
+**The templates are not needed.** On facilio.work every app can declare tools in `work.json` and the platform serves them as its own MCP server at `https://mcp.facilio.work/<app>`, with Entra sign-in; tools run as the signed-in person (`ctx.viewer`), so the app's own role checks apply. Delivery Studio already works this way (31 tools). Hosting a separate MCP server elsewhere would mean new hosting and our own OAuth, which the roadmap rules out.
+- remote-mcp-oauth-template: MIT, Node/Express, own OAuth 2.1 with dynamic registration, in-memory state, 2 commits: a reference for the OAuth shape only, not for deployment.
+- streamable-mcp-server-template: MIT, TypeScript on Bun or Cloudflare Workers, 148 stars, active (last commit 5 Oct 2026): the better reference if a standalone server were ever needed.
+- MCP-STARTER-KIT: the link returned 404; not reviewed.
+- TypeScript SDK: v2 packages `@modelcontextprotocol/server` and `/client`; v1 `@modelcontextprotocol/sdk` still receives fixes. Not used by us (the platform builds the server).
+- Claude custom connectors (from the help article): on Team plans only owners can add them; the server must be reachable from Anthropic's cloud. The API-side MCP connector is a different feature that needs an Anthropic API key, so it is **out** under the no-API-key rule. Not stated in the pages read: result size limits, timeouts, Claude Code support (our own docs already use `claude mcp add --transport http` for Claude Code; not re-tested).
+
+**What the platform offers that Part E can use** (from the contract; none of it called today except `list_apps`):
+| Capability | Use for Part E | Limit |
+|---|---|---|
+| Tools in `work.json`, with `"confirm": true` for writes | New push, pull and project tools. Writes show as destructive in Claude and ask for a Confirm click in Teams through Otto: the "explicit confirmation" of E4 | A changed tool list needs the connector removed and re-added in Claude |
+| Several server functions per app (`server/<name>.js`) | Put the push and pull engine in its own function instead of growing the 349 KB `api.mjs` | 5 MB for all of `server/`; no npm install, bundle into one file |
+| `ctx.db` | Transfer records, statuses, audit | 128 KB per value (already handled by gzip and splitting) |
+| `ctx.files`: `put` (up to 4 MB), `uploadUrl` (presigned PUT), `url` (signed download, 1 min to 1 h) | **Binary files without the browser:** a connector tool can return a presigned upload URL and Claude Code can PUT the file to it; a tool can return a signed download URL for the folder mirror. Untested; needs a shell (Claude Code), not Claude web | the URL is the permission, return it only to allowed viewers |
+| `ctx.fetch` with the **owner's** stored credential (OAuth2 incl. device-code), `ctx.fetchJob` (about 5 minutes) | A server-side Microsoft Graph file read is possible only with a credential the owner stores and grants, and then **everything is read as the owner**, not as the viewer: a privacy risk for the MSA pick-list, so the Claude-driven route stays the default | 18 s per call, 3 MB body |
+| Work tokens (`workToken: true`) | Call Facilio services **as the viewer**, if the target service accepts the app id; could be the proper way to read a customer org server-side | Needs the service owners to allow our app; only facilio.* hosts; not available in `fetchJob` |
+| `ctx.sql` (read-only SQL Lab per cloud) and `ctx.search` (read-only OpenSearch per region, product records) | Candidate for FTR approach B (read what is really in an org). Not verified that configuration tables are reachable | 10 queries/min, 1,000 rows; 20 searches/min; viewer is logged |
+| `ctx.teams.send`, Otto | Notify the team when a pull or push needs review or failed | 30 sends/min per app; people can mute |
+| `ctx.broadcast` and WebSocket | Live status of a transfer | budgets per minute and per day |
+| `ctx.llm` | Existing AI route (DeepSeek and other open models on Bedrock, no key) | about 20 requests/min per viewer; **no Claude on the server**, so Claude work stays in the person's own session |
+
+**Platform limits that matter.** 25 s per call (29 s round trip), response up to 5.5 MB, 512 MB memory; a person can own or collaborate on at most 3 unpublished apps (Delivery Studio is still "pending"); only approved apps are open to everyone; approvers, not tools, approve. facilio.run is for prototypes and needs no review; Delivery Studio belongs on facilio.work because it holds customer data and credentials.
+
+**Not tested:** a presigned upload from Claude Code; work tokens against a Facilio service; SQL Lab or OpenSearch for configuration data; a Graph credential; whether tool results can carry large payloads to Claude.
