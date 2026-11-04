@@ -14,8 +14,8 @@
   const monday = d => add(d, -dow(d)); const addMonths = (d, n) => { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(1); x.setUTCMonth(x.getUTCMonth() + n); return x.toISOString().slice(0, 10); };
   const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   // four phases (the same grouping the portfolio health uses): an accent for the edge and a soft tint for the fill, both from the Facilio palette
-  const PHASES = [['Discover and define', 0, 4, '#1570EF', '#EAF2FF'], ['Build and validate', 4, 7, '#1D1A5E', '#E8EBF6'], ['Launch', 7, 10, '#E5197F', '#FDEAF3'], ['Hand over', 10, 12, '#8DB8FF', '#F0F6FF']];   // the four Facilio colours: blue, navy, pink and sky, each with a pale tint
-  const OTHER = { a: '#5B6B99', t: '#EEF2F8' };
+  const PHASES = [['Discover and define', 0, 4, '#1570EF', '#EAF2FF', '#5FA0F7'], ['Build and validate', 4, 7, '#1D1A5E', '#E8EBF6', '#1570EF'], ['Launch', 7, 10, '#E5197F', '#FDEAF3', '#FF6FAE'], ['Hand over', 10, 12, '#8DB8FF', '#F0F6FF', '#C3D9FF']];   // the four Facilio colours: blue, navy, pink and sky; each with a pale tint and a second stop for the few gradients (edge, progress)
+  const OTHER = { a: '#5B6B99', t: '#EEF2F8', g: '#8C9AC2' };
   const phaseOf = i => PHASES.findIndex(p => i >= p[1] && i < p[2]);
   const SO_STEP = { brd: 2, uat: 8, golive: 11 };
   const st = () => { const c = S.ui.cal = S.ui.cal || { mode: 'month', date: V.today(), hide: [], q: '' }; return c; };
@@ -23,7 +23,7 @@
 
   function events() {
     const out = []; const c = st(); const td = F.doc('plan_struct') || {}; const meet = new Set(); steps = V.planSteps ? V.planSteps() : [];
-    const mk = e => { const p = e.step >= 0 ? phaseOf(e.step) : -1; const col = p >= 0 ? { a: PHASES[p][3], t: PHASES[p][4] } : OTHER; e.ph = p; e.a = col.a; e.t = col.t; e.key = e.kind === 'ghost' ? 'action' : e.kind === 'mine' ? 'mine' : p >= 0 ? 'p' + p : 'other'; out.push(e); };
+    const mk = e => { const p = e.step >= 0 ? phaseOf(e.step) : -1; const col = p >= 0 ? { a: PHASES[p][3], t: PHASES[p][4], g: PHASES[p][5] } : OTHER; e.g = col.g; e.ph = p; e.a = col.a; e.t = col.t; e.key = e.kind === 'ghost' ? 'action' : e.kind === 'mine' ? 'mine' : p >= 0 ? 'p' + p : 'other'; out.push(e); };
     (td.rows || []).filter(r => !r.isPhase && D(r.start)).forEach((r, i) => { const end = D(r.end) && r.end >= r.start ? r.end : r.start; const step = V.planStepOf ? V.planStepOf(r) : -1; if (step === 1) meet.add(r.start); mk({ id: 'p' + i, src: 'plan', step, grp: String(r.phase || '').trim(), title: r.title || 'Task', start: r.start, end, done: r.status === 'Done', late: r.status !== 'Done' && end < V.today(), r }); });
     const sess = cust() ? ((F.doc('schedule_published') || {}).sessions || []) : ((F.doc('planner') || {}).sessions || []);
     sess.forEach((s, i) => { if (D(s.date) && s.status !== 'cancelled' && !meet.has(s.date)) mk({ id: 's' + i, src: 'session', step: 1, title: 'Workshop: ' + (s.title || 'Session ' + (s.no || '')), start: s.date, end: s.date, done: s.status === 'completed', time: s.time || '' }); });
@@ -34,7 +34,7 @@
     cache = {}; list.forEach(e => { cache[e.id] = e; }); return list.sort((a, b) => a.start.localeCompare(b.start) || (b.end > b.start) - (a.end > a.start) || (a.time || '99').localeCompare(b.time || '99') || a.title.localeCompare(b.title));
   }
   const on = (evs, d) => evs.filter(e => e.start <= d && e.end >= d);
-  const sty = e => `--a:${e.a};--t:${e.t};`;
+  const sty = e => `--a:${e.a};--t:${e.t};--g:${e.g || e.a};`;
   const label = e => (e.mark || '') + (e.time ? e.time + ' ' : '') + e.title;
   const phaseName = e => (e.ph >= 0 ? PHASES[e.ph][0] : e.grp || (e.kind === 'ghost' ? 'Action due' : e.kind === 'mine' ? 'Your reminder' : 'Plan'));
   const stepName = e => (e.step >= 0 && steps[e.step] ? 'Step ' + (e.step + 1) + ' · ' + steps[e.step].title : phaseName(e));
@@ -67,7 +67,7 @@
   // the plan in four phases: each card is one phase with its dates and how many plan items it holds; click to jump there. No overlapping bars, no twelve colours.
   function phaseStrip() { const cur = V.phaseNow ? V.phaseNow().cur : -1; const curP = cur >= 0 ? phaseOf(cur) : -1; const td = F.doc('plan_struct') || {}; const rows = (td.rows || []).filter(r => !r.isPhase && D(r.start));
     const cards = PHASES.map((p, k) => { const ss = steps.filter(x => x.i >= p[1] && x.i < p[2] && x.start); const a = ss.reduce((m, x) => (!m || x.start < m ? x.start : m), ''); const z = ss.reduce((m, x) => { const e = x.end || x.start; return !m || e > m ? e : m; }, ''); const n = rows.filter(r => { const s = V.planStepOf ? V.planStepOf(r) : -1; return s >= p[1] && s < p[2]; }).length;
-      return `<button type="button" class="cal-ph${k === curP ? ' cur' : ''}${a ? '' : ' none'}" style="--a:${p[3]};--t:${p[4]}" ${a ? `data-act="calJump" data-d="${a}"` : 'disabled'} title="${esc(p[0])}${a ? ': ' + esc(V.fmtDate(a)) + (z > a ? ' to ' + esc(V.fmtDate(z)) : '') : ': no dated plan items'}"><span class="cal-pn">${esc(p[0])}</span><span class="cal-pd">${a ? esc(V.fmtDate(a)) + (z > a ? ' – ' + esc(V.fmtDate(z)) : '') : 'No dates yet'}</span><span class="cal-pc">${n} plan item${n === 1 ? '' : 's'}${k === curP ? ' · now' : ''}</span></button>`; });
+      return `<button type="button" class="cal-ph${k === curP ? ' cur' : ''}${a ? '' : ' none'}" style="--a:${p[3]};--t:${p[4]};--g:${p[5]}" ${a ? `data-act="calJump" data-d="${a}"` : 'disabled'} title="${esc(p[0])}${a ? ': ' + esc(V.fmtDate(a)) + (z > a ? ' to ' + esc(V.fmtDate(z)) : '') : ': no dated plan items'}"><span class="cal-pn">${esc(p[0])}</span><span class="cal-pd">${a ? esc(V.fmtDate(a)) + (z > a ? ' – ' + esc(V.fmtDate(z)) : '') : 'No dates yet'}</span><span class="cal-pc">${n} plan item${n === 1 ? '' : 's'}${k === curP ? ' · now' : ''}</span></button>`; });
     return `<div class="cal-phs" role="group" aria-label="Plan phases">${cards.join('')}</div>`; }
   function picker(c) { const y = c.pickYear || +c.date.slice(0, 4); const cm = +c.date.slice(5, 7), cy = +c.date.slice(0, 4);
     return `<div class="cal-pop" role="dialog" aria-label="Go to a month or year"><div class="cal-py"><button type="button" data-act="calPickYear" data-s="-1" aria-label="Previous year">‹</button><b>${y}</b><button type="button" data-act="calPickYear" data-s="1" aria-label="Next year">›</button></div>

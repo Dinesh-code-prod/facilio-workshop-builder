@@ -1,10 +1,10 @@
-/* Project calendar (src/plancal.js). Flat and matte, in the Facilio colours only (navy, blue, pink, sky): a flat navy header band, a soft blue-grey body with softly tinted cells;
-   colour on items means the delivery phase (blue, navy, pink and sky, each a pale tint with an accent edge). No gradients, no violet, no green. Motion is transform and opacity
+/* Project calendar (src/plancal.js). Matte, in the Facilio colours only (navy, blue, pink, sky): gradients are kept for the focal points (header band, the current phase card, today, progress bars, the accent edge of a phase);
+   the body, the cells and the item text stay flat so text keeps its contrast. Colour on items means the delivery phase (blue, navy, pink and sky, each a pale tint with an accent edge). No violet, no green, no glow. Motion is transform and opacity
    only and is off under prefers-reduced-motion. The app's global button and input styles are strong, so button rules carry body .cal and !important on what they set. */
 .cal { --ink: #1D1A5E; --blue: #1570EF; --pink: #E5197F; --sky: #8DB8FF; --line: #D4DEEF; --mut: #56657F; --soft: #EEF3FB; --cell: #F8FAFE; display: block; }
 .cal-main { background: var(--soft); border: 1px solid #C9D6EC; border-radius: 16px; overflow: visible; min-width: 0; }
-/* header band: flat Facilio navy */
-.cal-hd { background: #1D1A5E; border-radius: 15px 15px 0 0; padding: 14px 18px; color: #fff; }
+/* header band: the one big gradient, Facilio navy into Facilio blue */
+.cal-hd { background: linear-gradient(115deg, #1D1A5E 0%, #1B3FA6 62%, #1570EF 100%); border-radius: 15px 15px 0 0; padding: 14px 18px; color: #fff; }
 .cal-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .cal-gap { flex: 1; }
 .cal-tw { position: relative; min-width: 0; } .cal-bar > .cal-tw:first-of-type, .cal-bar .cal-tw:nth-of-type(1) { flex: 0 1 auto; }
 .cal-nav, .cal-seg { display: inline-flex; background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .2); border-radius: 11px; padding: 2px; gap: 2px; }
@@ -80,3 +80,17 @@ body .cal .cal-link { background: none !important; border: 0 !important; box-sha
 @media (max-width: 900px) { .cal-phs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 760px) { .cal-weekv { grid-template-columns: 1fr; } .cal-col { min-height: 0; border-left: 0; border-top: 1px solid var(--line); } body .cal .cal-q { width: 100% !important; } body .cal .cal-nav button, body .cal .cal-seg button { min-height: 40px; } .cal-title { font-size: 20px !important; } .cal-pop { width: min(300px, calc(100vw - 48px)); } .cal-fi { min-height: 44px; } .cal-phs { grid-template-columns: minmax(0, 1fr); min-width: 0; } .cal-ph { min-width: 0; } }   /* min-width 0: the card row sits in a grid, which otherwise keeps it as wide as its widest card */
 @media (prefers-reduced-motion: reduce) { .cal-body.cal-in, .cal-pop { animation: none; } body .cal * { transition: none !important; } }
+
+/* gradients, only where they mark something: phase cards fade from their tint to white, the current phase and today are lifted, edges and progress run from the phase colour to a lighter stop */
+body .cal .cal-ph:not(#_):not(#__) { background: linear-gradient(100deg, var(--t) 0%, #fff 130%) !important; border-left: 0 !important; position: relative; padding-left: 16px !important; }
+body .cal .cal-ph:not(#_):not(#__)::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 10px 0 0 10px; background: linear-gradient(180deg, var(--a), var(--g)); }
+body .cal .cal-ph.cur:not(#_):not(#__) { background: linear-gradient(120deg, color-mix(in srgb, var(--a) 16%, var(--t)) 0%, var(--t) 70%, #fff 130%) !important; }
+body .cal .cal-ph:hover:not(:disabled):not(#_):not(#__) { background: linear-gradient(100deg, color-mix(in srgb, var(--a) 14%, var(--t)) 0%, #fff 130%) !important; }
+.cal-c.today, .cal-col.today { background: linear-gradient(180deg, #D3E3FF 0%, #E9F1FF 45%, #F5F9FF 100%) !important; box-shadow: inset 0 3px 0 var(--blue); }
+.cal-col.today { background: linear-gradient(180deg, #D3E3FF 0%, #E9F1FF 45%, #F5F9FF 100%) !important; }
+body .cal .cal-n > button.today, body .cal-mini > button.t span { background: linear-gradient(135deg, #1570EF, #1D1A5E) !important; color: #fff !important; }
+body .cal .cal-mini > button.t span { background: linear-gradient(135deg, #1570EF, #1D1A5E) !important; }
+.cal-pill { background: linear-gradient(135deg, #1570EF, #1D1A5E) !important; }
+.cal-bar-c { background: linear-gradient(180deg, var(--a), var(--g)) !important; }
+.cal-prog i { background: linear-gradient(90deg, var(--a), var(--g)) !important; }
+body .cal .cal-new:not(#_):not(#__) { background: linear-gradient(180deg, #fff, #E8F0FF) !important; }
