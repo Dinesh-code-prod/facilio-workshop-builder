@@ -123,4 +123,8 @@ await t('a bulk owner change sends at most three messages to that person', async
 await t('a Teams failure never stops the task from being saved', async () => {
   teamsOn = true; teamsReply = () => { throw new Error('Teams is down'); }; const r = await put(SAM, pid, 't8', { title: 'Saved anyway', status: 'To Do', owner: KIM }); assert.equal(r.status, 200); teamsReply = () => ({ delivered: 1, muted: 0, failed: 0 });
 });
+await t('the public action tools reach the same code, and a wrong action is refused', async () => {
+  const a = await tool(SAM, 'task_tracking', { project: pid, action: 'evidence' }); assert.equal(a.status, 200); assert.equal((await tool(SAM, 'task_tracking', { project: pid, action: 'nope' })).status, 400);
+  assert.equal((await tool(SAM, 'transfer_read', { project: pid, action: 'list' })).status, 200); assert.equal((await tool(SAM, 'transfer_read', { project: pid })).status, 400, 'no action given');
+});
 console.log(n + ' task reminder checks passed');
