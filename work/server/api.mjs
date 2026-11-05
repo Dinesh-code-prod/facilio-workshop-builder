@@ -2085,7 +2085,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   ['login', 'signup', 'guest', 'guest-login', 'upgrade', 'customer', 'password'].forEach(n => route('POST', '/api/auth/' + n, async () => { throw new HttpError(403, 'Sign-in is handled by your Facilio Microsoft account'); }));
 
   const TRANSFER = installTransfer({ route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbList, save, unpack, withLock, audit, pickProject, limit, CONNECTOR });   // push and pull engine: routes and connector tools (_transferapi.mjs)
-  installMsaExtract({ route, ok, me, HttpError, dbGet, dbPut, withLock, audit, viaApp, CONNECTOR }, TRANSFER);   // MSA extraction tools: msa_extraction_save, create_project_from_msa (_msaapi.mjs)
+  installMsaExtract({ route, ok, me, HttpError, dbGet, dbPut, dbList, withLock, audit, viaApp, projectAccess, CONNECTOR }, TRANSFER);   // MSA extraction tools: msa_extraction_save, create_project_from_msa (_msaapi.mjs)
   installQuestions({ HttpError, projectAccess, pickProject, docRead, CONNECTOR });   // prepared questions for a workshop and live_ask (_questionsapi.mjs)
   installTaskTracking({ route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, itemsOf, withLock, audit, viaApp, CONNECTOR, DONE_RE, cut, rid });   // task suggestions from Claude: routes and tools (_tasksapi.mjs)
   // The platform allows at most 40 MCP tools per app, so related tools share one public entry with an `action`; the old tool names stay as the implementations.

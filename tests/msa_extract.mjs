@@ -10,7 +10,7 @@ let n = 0; const t = async (name, fn) => { await fn(); n++; console.log('  ok  '
 
 // ---------- pure rules ----------
 const GOOD = () => ({
-  customer: 'Acme Facilities', projectName: 'Acme CMMS rollout', contract: { start: '2026-12-01', end: '2027-02-28', durationDays: 90, term: '24 months' },
+  customer: 'Acme Facilities', projectName: 'Acme CMMS rollout', contract: { start: '2026-12-01', end: '2027-02-28', durationDays: 90, term: '24 months', origin: 'contract' },
   scope: [{ text: 'Work order management', status: 'confirmed', origin: 'contract', source: { page: 4, section: '2.1', quote: 'Supplier shall provide Work Order management' } },
     { text: 'Mobile app for technicians', status: 'unclear', origin: 'interpreted', source: { page: 5 } }, { text: 'Payroll integration', status: 'excluded', origin: 'contract', source: { section: '9.2' } }, { text: 'Visitor management', status: 'confirmed', origin: 'assumed' }],
   modules: [{ name: 'Work Orders', origin: 'contract', source: { page: 4 } }], commitments: [{ text: 'Go-live within 90 days of kick-off', date: '2027-02-28', origin: 'contract', source: { page: 6, section: '3.4' } }],
@@ -23,7 +23,7 @@ const KEYS = ['customer', 'projectName', 'contract', 'scope', 'modules', 'commit
 await t('a good extraction keeps its labels, its sources and a fixed key order', () => {
   const v = validateExtraction(GOOD()); assert.equal(v.ok, true); assert.deepEqual(Object.keys(v.extraction), KEYS); const x = v.extraction;
   assert.deepEqual(x.scope.map(s => [s.status, s.origin]), [['confirmed', 'contract'], ['unclear', 'interpreted'], ['excluded', 'contract'], ['confirmed', 'assumed']]);
-  assert.deepEqual(x.scope[0].source, { page: 4, section: '2.1', quote: 'Supplier shall provide Work Order management' }); assert.deepEqual(x.contract, { start: '2026-12-01', end: '2027-02-28', durationDays: 90, term: '24 months' });
+  assert.deepEqual(x.scope[0].source, { page: 4, section: '2.1', quote: 'Supplier shall provide Work Order management' }); assert.deepEqual(x.contract, { start: '2026-12-01', end: '2027-02-28', durationDays: 90, term: '24 months', origin: 'contract', source: {} });
   assert.equal(x.commitments[0].date, '2027-02-28'); assert.equal(JSON.stringify(validateExtraction(JSON.parse(JSON.stringify(x))).extraction), JSON.stringify(x), 'cleaning twice changes nothing, so the same content has the same hash');
 });
 await t('hostile input: wrong types, unknown keys, huge text and lists, odd values and polluted keys are cleaned and never throw', () => {
@@ -33,7 +33,7 @@ await t('hostile input: wrong types, unknown keys, huge text and lists, odd valu
     + '"scope":[null,5,"a bare string",{"text":{}},{"text":"' + 'x'.repeat(5000) + '","status":"CONFIRMED","origin":"Contract","evil":1,"source":{"page":"abc","section":"' + 'z'.repeat(500) + '","quote":["no"],"__proto__":{"p":1}}},{"text":"ok","status":"maybe","origin":"guess"}],'
     + '"modules":[{"name":""},{"name":"Assets","origin":"x"}],"commitments":[{"text":"c","date":"tomorrow"}],"attachments":[{"name":"","ref":""},{"ref":"r"}],"training":"not a list"}');
   const v = validateExtraction(hostile); assert.equal(v.ok, true); const x = v.extraction; assert.deepEqual(Object.keys(x), KEYS); assert.equal(({}).polluted, undefined); assert.equal(Object.prototype.hasOwnProperty.call(x, 'evil'), false);
-  assert.equal(x.customer, 'Acme Co'); assert.equal(x.projectName.length, LIMITS.name); assert.deepEqual(x.contract, { start: '', end: '', durationDays: null, term: '' });
+  assert.equal(x.customer, 'Acme Co'); assert.equal(x.projectName.length, LIMITS.name); assert.deepEqual(x.contract, { start: '', end: '', durationDays: null, term: '', origin: '', source: {} });
   assert.equal(x.scope.length, 3, 'null, 5 and {text:{}} are dropped; the bare string is kept as assumed'); assert.deepEqual(x.scope.map(s => s.origin), ['assumed', 'contract', 'assumed']); assert.equal(x.scope[0].status, 'unclear');
   assert.equal(x.scope[1].text.length, LIMITS.text); assert.equal(x.scope[1].status, 'confirmed'); assert.deepEqual(Object.keys(x.scope[1]).sort(), ['origin', 'source', 'status', 'text']); assert.equal(x.scope[1].source.page, undefined); assert.equal(x.scope[1].source.section.length, 60); assert.equal(x.scope[1].source.quote, undefined);
   assert.equal(x.scope[2].status, 'unclear'); assert.equal(x.scope[2].origin, 'assumed'); assert.deepEqual(x.modules, [{ name: 'Assets', origin: 'assumed', source: {} }]); assert.equal(x.commitments[0].date, ''); assert.deepEqual(x.attachments, [{ name: 'r', ref: 'r', note: '' }]); assert.deepEqual(x.training, []);
@@ -52,7 +52,7 @@ await t('holdingId is the same for one person, different for two, and safe in a 
 });
 await t('planFromExtraction only uses what was given, labels what is not contract text, and keeps the records within their size limits', () => {
   const x = validateExtraction(GOOD()).extraction; const p = planFromExtraction(x, { now: '2026-11-05T00:00:00.000Z', source: { system: 'sharepoint', ref: 'sites/acme/MSA signed.pdf' }, transferId: 'x-abc', version: 2 });
-  assert.deepEqual(p.project, { name: 'Acme CMMS rollout', customer: 'Acme Facilities', description: p.project.description, startDate: '2026-12-01', endDate: '2027-02-28', type: 'cmms' }); assert.match(p.project.description, /x-abc/);
+  assert.deepEqual(p.project, { name: 'Acme CMMS rollout', customer: 'Acme Facilities', description: p.project.description, startDate: '2026-12-01', endDate: '2027-02-28' }); assert.equal(p.project.type, undefined, 'no hard-coded type'); assert.match(p.project.description, /x-abc/);
   assert.deepEqual(p.planner.scope.map(s => [s.status, s.origin, s.source]), [['matched', 'contract', 'msa'], ['uncertain', 'interpreted', 'msa'], ['excluded', 'contract', 'msa'], ['uncertain', 'assumed', 'msa']]); assert.equal(p.planner.scope[0].page, 4); assert.equal(p.planner.scope[0].section, '2.1'); assert.match(p.planner.scope[0].ctx, /Work Order/);
   assert.equal(p.planner.msa.name, 'MSA signed.pdf'); assert.equal(p.planner.msa.fileId, undefined, 'no file is claimed'); assert.deepEqual(p.planner.msa.external, { system: 'sharepoint', ref: 'sites/acme/MSA signed.pdf', transferId: 'x-abc', version: 2 });
   const f = p.planner.contractX.fields; assert.deepEqual(Object.keys(f).sort(), ['effective', 'endDate', 'obligations', 'termMonths']); assert.equal(f.effective.value, '2026-12-01'); assert.equal(f.termMonths.value, 24); assert.equal(f.effective.status, 'extracted'); assert.equal(f.obligations.value.length, 2);
@@ -164,7 +164,7 @@ await t('in a project: editors save, approval is the owner\'s in the app and nev
   assert.equal((await save(VIC, { project: pid })).status, 403, 'a viewer cannot save'); assert.equal((await create(VIC, { project: pid, id })).status, 403, 'a viewer cannot create');
   for (const r of [await save(CUS, { project: pid }), await create(CUS, { project: pid, id }), await tool(CUS, 'transfer_get', { project: pid, id })]) assert.ok(r.status === 403 || r.status === 404, 'a customer gets nothing: ' + r.status);
   assert.equal((await save(SAM, { project: 'no such project' })).status >= 400, true); assert.equal((await mv(pid, SAM, id, { to: 'Approved', ver: 1 })).status, 200);
-  const c = await create(KIM, { project: pid, id }); assert.equal(c.status, 200); assert.equal(c.data.created, true); const again = await create(SAM, { project: pid, id }); assert.equal(again.data.project.id, c.data.project.id); assert.equal(again.data.created, false);
+  const c = await create(KIM, { project: pid, id }); assert.equal(c.status, 200); assert.equal(c.data.created, true); const again = await create(SAM, { project: pid, id }); assert.equal(again.data.project, null, 'Sam is not a member of the new project: not shown'); assert.equal(again.data.created, false);
   assert.deepEqual((await as(KIM, 'GET', '/api/projects/' + c.data.project.id)).data.members.map(m => [m.email, m.role]), [[KIM, 'owner']], 'the person who created it owns it');
   const rec = JSON.parse(store.get('xf.' + pid).get(id)); assert.equal(rec.projectId, c.data.project.id);
 });

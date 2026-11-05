@@ -29,7 +29,8 @@ export function validateExtraction(x) {
   const out = { customer: txt(x.customer, LIMITS.name), projectName: txt(x.projectName, LIMITS.name) };
   if (!out.customer) warnings.push('No customer name was found; a project cannot be created without one.'); if (!out.projectName) warnings.push('No project name was found; a project cannot be created without one.');
   const c = isObj(x.contract) ? x.contract : {}; const dd = Number(c.durationDays);
-  out.contract = { start: day(c.start), end: day(c.end), durationDays: Number.isInteger(dd) && dd >= 1 && dd <= 3650 ? dd : null, term: txt(c.term, 100) };
+  out.contract = { start: day(c.start), end: day(c.end), durationDays: Number.isInteger(dd) && dd >= 1 && dd <= 3650 ? dd : null, term: txt(c.term, 100), origin: '', source: source(c.source) };
+  if (out.contract.start || out.contract.end || out.contract.durationDays || out.contract.term) { const o = typeof c.origin === 'string' ? c.origin.trim().toLowerCase() : ''; out.contract.origin = ORIGINS.includes(o) ? o : 'assumed'; if (!ORIGINS.includes(o)) warnings.push('contract: the dates and term had no valid origin (contract, interpreted or assumed) and were marked assumed.'); }
   if (txt(c.start, 20) && !out.contract.start) warnings.push('The contract start date is not a real date (use YYYY-MM-DD) and was left out.');
   if (txt(c.end, 20) && !out.contract.end) warnings.push('The contract end date is not a real date (use YYYY-MM-DD) and was left out.');
   if (out.contract.start && out.contract.end && out.contract.end < out.contract.start) { out.contract.end = ''; warnings.push('The contract end date is before the start date and was left out.'); }
@@ -65,9 +66,11 @@ export function planFromExtraction(ex, o = {}) {
   const snippet = txt('Extracted by Claude from the MSA file ' + (src.ref || '') + (o.transferId ? ' (transfer ' + o.transferId + ')' : ''), 320);
   const scope = ex.scope.map((s, i) => ({ id: 'sc_m' + (i + 1), text: s.text, module: '', confidence: s.origin === 'contract' ? 'medium' : 'low', status: s.status === 'excluded' ? 'excluded' : s.status === 'confirmed' && s.origin === 'contract' ? 'matched' : 'uncertain',
     source: 'msa', page: s.source.page || null, section: s.source.section || '', ctx: s.source.quote || '', read: 'text', ocrConf: null, origin: s.origin, from: 'claude' }));
-  const fields = {}; const put = (k, label, value, extra) => { fields[k] = Object.assign({ k, label, value, page: null, section: '', snippet, status: 'extracted', from: 'claude' }, extra); };
-  const tm = /(\d{1,3})\s*(year|month)/i.exec(ex.contract.term); const months = tm ? (tm[2].toLowerCase() === 'year' ? Number(tm[1]) * 12 : Number(tm[1])) : null;
-  if (ex.contract.start) put('effective', 'Effective / start date', ex.contract.start); if (ex.contract.end) put('endDate', 'End date', ex.contract.end); if (months) put('termMonths', 'Contract duration (months)', months);
+  const fields = {}; const sure = ex.contract.origin === 'contract';   // a date or term that is only interpreted or assumed is marked uncertain and never applied as a contract fact
+  const put = (k, label, value, extra) => { fields[k] = Object.assign({ k, label, value, page: null, section: '', snippet, status: 'extracted', from: 'claude' }, extra); };
+  const dateX = { origin: ex.contract.origin, uncertain: !sure, page: ex.contract.source.page || null, section: ex.contract.source.section || '' };
+  const tm = /^(\d{1,3})[\s-]*(year|month)s?$/i.exec(ex.contract.term); const months = tm ? (tm[2].toLowerCase() === 'year' ? Number(tm[1]) * 12 : Number(tm[1])) : null;   // the WHOLE string must match: "2 years 6 months" is not read as 24
+  if (ex.contract.start) put('effective', 'Effective / start date', ex.contract.start, dateX); if (ex.contract.end) put('endDate', 'End date', ex.contract.end, dateX); if (months) put('termMonths', 'Contract duration (months)', months, dateX);
   const obligations = ex.facilioResponsibilities.map(r => ({ side: 'Facilio', text: r.text.slice(0, 260), by: '', page: r.source.page || null, section: r.source.section || '', origin: r.origin })).concat(ex.customerResponsibilities.map(r => ({ side: 'Customer', text: r.text.slice(0, 260), by: '', page: r.source.page || null, section: r.source.section || '', origin: r.origin }))).slice(0, 30);
   if (obligations.length) put('obligations', 'Obligations and deliverables', obligations, { snippet: obligations.length + ' obligation(s) extracted by Claude', rows: true });
   const sx = l => l.map(r => ({ text: r.text.slice(0, 300), page: r.source.page || null, section: r.source.section || '', uncertain: r.origin !== 'contract', origin: r.origin }));
@@ -75,13 +78,13 @@ export function planFromExtraction(ex, o = {}) {
   const exclusions = ex.exclusions.concat(ex.scope.filter(s => s.status === 'excluded'));
   const scopeX = { exclusions: sx(exclusions), deliverables: sx(ex.deliverables), responsibilities: sx(ex.customerResponsibilities), assumptions: sx(assumed) };
   const planner = { scope, sessions: [], attendees: {}, msa: { name: fileName(src.label, src.ref), size: 0, uploadedAt: at, chars: 0, pages: null, ocr: null, external: { system: src.system || '', ref: src.ref || '', transferId: o.transferId || '', version: o.version || null }, by }, contractX: { at, fields, scopeX, from: fileName(src.label, src.ref) } };
-  const core = {}; if (ex.contract.start) { core.startDate = ex.contract.start; core.startRule = 'date'; fields.effective.applied = at; } if (months) { core.termMonths = months; fields.termMonths.applied = at; }
+  const core = {}; if (sure && ex.contract.start) { core.startDate = ex.contract.start; core.startRule = 'date'; fields.effective.applied = at; } if (sure && months) { core.termMonths = months; fields.termMonths.applied = at; }
   if (obligations.length) { core.obligations = obligations.map(r => ({ side: r.side, text: r.text, by: '' })); fields.obligations.applied = at; }
   const lines = (arr, f) => arr.slice(0, LIMITS.lines).map(f).map(l => l.slice(0, LIMITS.line + 40));
   const line = r => r.text.slice(0, LIMITS.line) + ref(r.source) + tag(r.origin);
   const page = { inclusions: lines(ex.scope.filter(s => s.status === 'confirmed' && s.origin === 'contract'), line), exclusions: lines(exclusions, line), deliverables: lines(ex.deliverables, line), responsibilities: lines(ex.customerResponsibilities, line), assumptions: lines(assumed, line) };
   const pageHas = Object.values(page).some(a => a.length);
   const desc = txt('Created from the MSA ' + fileName(src.label, src.ref) + ' by Claude, after a person approved the extraction (transfer ' + (o.transferId || '') + ').', 400);
-  return { project: { name: ex.projectName, customer: ex.customer, description: desc, startDate: ex.contract.start || undefined, endDate: ex.contract.end || undefined, type: 'cmms' }, planner, ctrcore: Object.keys(core).length ? core : null, scope: pageHas ? page : null,
+  return { project: { name: ex.projectName, customer: ex.customer, description: desc, startDate: sure && ex.contract.start || undefined, endDate: sure && ex.contract.end || undefined }, planner, ctrcore: Object.keys(core).length ? core : null, scope: pageHas ? page : null,
     counts: { scopeItems: scope.length, contractFields: Object.keys(fields).length, obligations: obligations.length, scopeLines: Object.values(page).reduce((n, a) => n + a.length, 0) } };
 }

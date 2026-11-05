@@ -9,13 +9,19 @@ import { SYSTEMS, validateExtraction, planFromExtraction, txt, holdingId } from 
 const URL_BASE = 'https://facilio-delivery-studio.facilio.work/#/p/';
 
 export function installMsaExtract(d, transfer) {
-  const { route, ok, me, HttpError, dbGet, dbPut, withLock, audit, viaApp, CONNECTOR } = d; const { ops, load, access, pidOf } = transfer;
+  const { route, ok, me, HttpError, dbGet, dbPut, dbList, withLock, audit, viaApp, projectAccess, CONNECTOR } = d; const { ops, load, access, pidOf } = transfer;
   const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
   const compact = t => ({ id: t.id, status: t.status, ver: t.ver, approvedVer: t.approvedVer, next: t.next, source: t.source, projectId: t.projectId || '' });
-  const existing = async (rec, pid) => { const row = await dbGet('projects', rec.projectId); const p = row && row.value; return { created: false, project: { id: rec.projectId, name: p ? p.name : '', archived: !!(p && p.archived), url: URL_BASE + rec.projectId }, transferId: rec.id, complete: rec.projectComplete !== false, note: 'A project was already created from this transfer; nothing was changed.' }; };
+  const projectRow = async id => { const r = await dbGet('projects', id); return r && r.value ? r.value : null; };
+  // the project's id, name and link are shown only to a person who can open it (a member, or an admin)
+  const canSee = async (s, p) => (p.members || []).some(m => m.id === s.id) || projectAccess(s, p.id, 'read').then(() => true, () => false);
+  const existing = async (rec, s, p) => { const seen = await canSee(s, p); return { created: false, project: seen ? { id: p.id, name: p.name, archived: !!p.archived, url: URL_BASE + p.id } : null, transferId: rec.id, complete: rec.projectComplete !== false,
+    note: seen ? 'A project was already created from this transfer; nothing was changed.' : 'A project was already created from this transfer by someone else. You have no access to it, so it is not shown. Ask its owner.' }; };
   /** records the project on the transfer's head record (and its log) under the transfer's own lock */
   const link = (pid, id, s, patch, note) => withLock('xf.' + pid + '.' + id, async () => { const row = await dbGet('xf.' + pid, id); const r = row.value; Object.assign(r, patch); const at = new Date().toISOString(); r.updatedAt = at; r.log.push({ at, by: s.email, from: r.status, to: r.status, note }); if (r.log.length > 40) r.log.splice(0, r.log.length - 40); await dbPut('xf.' + pid, id, r); });
-
+  const CLAIM_MS = 120000;   // a claim younger than this means another call is (probably) still creating the project
+  /** writes one project document or record; safe to repeat (a retry after a partly finished fill writes over its own earlier write) */
+  const putDoc = async (base, section, data) => { const cur = await viaApp('GET', base + '/docs/' + section); await viaApp('PUT', base + '/docs/' + section, '', { baseVersion: cur.version || 0, data }); };
   const tools = {
     /** validates and stores an MSA extraction as a transfer version, then submits it for review; project optional (no project: the person's holding space) */
     async msa_extraction_save(s, b) {
@@ -29,30 +35,43 @@ export function installMsaExtract(d, transfer) {
       return { space, transfer: compact(r.transfer), version: r.version || r.transfer.ver, duplicate: !!r.duplicate, warnings: v.warnings,
         note: 'Saved as an unapproved extraction (' + (space === 'holding' ? 'in your holding space; use project "holding" with the transfer tools' : 'in the project') + '). A person must approve it in Delivery Studio; Claude cannot approve it. Only then can create_project_from_msa make the project.' };
     },
-    /** a NEW project from an APPROVED msa transfer; idempotent (a second call returns the project already made); never touches an existing project */
+    /** a NEW project from an APPROVED msa transfer; idempotent (a second call returns the project already made); never touches an existing project.
+        A claim is written before the project is made; a failure after that reports the project id, and a retry RESUMES the fill of that project instead of answering "already created". */
     async create_project_from_msa(s, b) {
       if (b.confirm !== true) throw new HttpError(400, 'Ask the person to confirm creating the project, then call again with "confirm": true.');
       const id = String(b.id || ''); const pid = await pidOf(s, { project: String(b.project || '').trim() || 'holding' }); await access(s, pid, 'edit');
-      const first = await load(pid, id); if (first.kind !== 'msa' || first.dir !== 'pull') throw new HttpError(400, 'That transfer is not an MSA extraction.'); if (first.projectId) return existing(first, pid);
+      const first = await load(pid, id); if (first.kind !== 'msa' || first.dir !== 'pull') throw new HttpError(400, 'That transfer is not an MSA extraction.');
+      if (first.projectId && first.projectComplete !== false) { const p = await projectRow(first.projectId); if (p) return existing(first, s, p); }   // a deleted project falls through to the lock
       return withLock('msaproj.' + pid + '.' + id, async () => {
-        const cur = await load(pid, id); if (cur.projectId) return existing(cur, pid);
+        let cur = await load(pid, id); let np = cur.projectId || '', p = np ? await projectRow(np) : null;
+        if (np && !p) { await link(pid, id, s, { projectId: '', projectComplete: false, projectClaim: null }, 'Project ' + np + ' no longer exists; the link was cleared'); cur = await load(pid, id); np = ''; }
+        if (np && cur.projectComplete !== false) return existing(cur, s, p);
         if (cur.status !== 'Approved' || cur.approvedVer == null) throw new HttpError(409, 'The extraction is ' + cur.status + '. A person must approve it in Delivery Studio before a project can be created from it.');
         const got = await ops.get(s, pid, id, String(cur.approvedVer)); if (!got.intact) throw new HttpError(409, 'The stored extraction does not match its recorded checksum. Save it again.');
         let parsed; try { parsed = JSON.parse(got.content); } catch (e) { parsed = null; } const v = validateExtraction(parsed); if (!v.ok) throw new HttpError(422, 'The approved extraction is not valid: ' + v.errors.join(' '));
         if (!v.extraction.customer || !v.extraction.projectName) throw new HttpError(422, 'The approved extraction has no ' + (!v.extraction.customer ? 'customer' : 'project name') + '. Save a new version with it and have it approved.');
-        const plan = planFromExtraction(v.extraction, { now: new Date().toISOString(), source: cur.source, transferId: id, version: cur.approvedVer });
-        const made = await viaApp('POST', '/api/projects', '', plan.project); const np = made.project.id;   // the normal creation path: limits, owner, people record, audit
-        await link(pid, id, s, { projectId: np, projectCreatedAt: new Date().toISOString(), projectComplete: false }, 'Project ' + np + ' created from version ' + cur.approvedVer);
+        const plan = planFromExtraction(v.extraction, { now: new Date().toISOString(), source: cur.source, transferId: id, version: cur.approvedVer }); let resumed = !!np;
+        if (!np) {
+          const claim = cur.projectClaim;
+          if (claim) { const mine = (await dbList('projects')).map(r => r.value).find(x => x && x.createdBy === s.id && String(x.createdAt) >= claim.at && String(x.description || '').includes('(transfer ' + id + ')')); if (mine) { np = mine.id; p = mine; resumed = true; } }   // an earlier call died between making the project and recording it
+          if (!np && claim && claim.at && Date.now() - Date.parse(claim.at) < CLAIM_MS) throw new HttpError(409, 'A project is being created from this transfer right now. Wait a minute and call again; nothing was changed.');
+        }
+        if (!np) {
+          await link(pid, id, s, { projectClaim: { at: new Date().toISOString(), by: s.id, state: 'creating' }, projectComplete: false }, 'Creating a project from version ' + cur.approvedVer);   // the claim comes first
+          const made = await viaApp('POST', '/api/projects', '', plan.project); np = made.project.id;   // the normal creation path: limits, owner, people record, audit
+        }
+        try { await link(pid, id, s, { projectId: np, projectCreatedAt: new Date().toISOString(), projectComplete: false, projectClaim: null }, 'Project ' + np + ' ' + (resumed ? 'fill resumed' : 'created') + ' from version ' + cur.approvedVer); }
+        catch (e) { throw new HttpError(500, 'The project was created (id ' + np + ') but it could not be recorded on the transfer: ' + e.message + '. Call create_project_from_msa again; it will finish the project.', { projectId: np, resume: true }); }
         await audit(np, s.id, 'project-from-msa', id + ' v' + cur.approvedVer); await audit(pid, s.id, 'transfer-project', id + ' ' + np);
         const base = '/api/projects/' + np; let step = 'planner';
         try {
-          await viaApp('PUT', base + '/docs/planner', '', { baseVersion: 0, data: plan.planner });
+          await putDoc(base, 'planner', plan.planner);
           if (plan.ctrcore) { step = 'ctrcore'; await viaApp('PUT', base + '/items/ctrcore/main', '', { data: plan.ctrcore }); }
           if (plan.scope) { step = 'scope'; await viaApp('PUT', base + '/items/scope/main', '', { data: plan.scope }); }
-        } catch (e) { throw new HttpError(e.status || 500, 'The project was created (id ' + np + ') but writing the ' + step + ' record failed: ' + e.message + '. Open the project and add the rest by hand.', { projectId: np }); }
+        } catch (e) { throw new HttpError(e.status || 500, 'The project was created (id ' + np + ') but writing the ' + step + ' record failed: ' + e.message + '. Call create_project_from_msa again with the same id to finish it.', { projectId: np, resume: true, step }); }
         await link(pid, id, s, { projectComplete: true }, 'Project ' + np + ' filled from the extraction');
-        return { created: true, project: { id: np, name: plan.project.name, url: URL_BASE + np }, transferId: id, complete: true, written: plan.counts, warnings: v.warnings,
-          note: 'The project was created. The contract dates, obligations and scope items are in the Contract workspace and in Know Your Contract; items that are not confirmed contract text are marked uncertain for a person to review. Modules, commitments, dependencies, commercial constraints, training and support stay in the approved extraction (transfer_read, action get).' };
+        return { created: !resumed, resumed, project: { id: np, name: plan.project.name, url: URL_BASE + np }, transferId: id, complete: true, written: plan.counts, warnings: v.warnings,
+          note: 'The project was ' + (resumed ? 'finished' : 'created') + '. The contract dates, obligations and scope items are in the Contract workspace and in Know Your Contract; items that are not confirmed contract text are marked uncertain for a person to review. Modules, commitments, dependencies, commercial constraints, training and support stay in the approved extraction (transfer_read, action get).' };
       });
     }
   };

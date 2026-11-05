@@ -21,7 +21,7 @@ const pid = (await as(SAM, 'POST', '/api/projects', { name: 'Route Intake', cust
 for (const [e, role] of [[KIM, 'editor'], [VIC, 'viewer'], [CUS, 'viewer']]) assert.equal((await as(SAM, 'POST', `/api/projects/${pid}/members`, { email: e, role })).status, 201);
 { const row = JSON.parse(store.get('projects').get(pid)); row.members.find(m => m.email === CUS).role = 'customer'; store.get('projects').set(pid, JSON.stringify(row)); }
 const hid = e => holdingId(globalThis.__fwb.ekey(e));
-const EXT = name => ({ customer: 'Route Co', projectName: name, contract: { start: '2026-12-01', end: '2027-02-28', durationDays: 90, term: '24 months' }, scope: [{ text: 'Work order management', status: 'confirmed', origin: 'contract', source: { page: 4 } }] });
+const EXT = name => ({ customer: 'Route Co', projectName: name, contract: { start: '2026-12-01', end: '2027-02-28', durationDays: 90, term: '24 months', origin: 'contract' }, scope: [{ text: 'Work order management', status: 'confirmed', origin: 'contract', source: { page: 4 } }] });
 const save = (who, ref, name, body) => tool(who, 'msa_extraction_save', Object.assign({ source: { system: 'sharepoint', ref, label: 'x.pdf' }, extraction: EXT(name) }, body));
 const mv = (space, who, id, body) => as(who, 'POST', `/api/projects/${space}/transfers/${id}/transition`, body);
 const start = (who, space, id) => as(who, 'POST', `/api/projects/${space}/transfers/${id}/start-project`, {});
@@ -54,7 +54,7 @@ await t('in a project: the owner approves, a viewer and a customer are refused, 
   const pr = (await save(SAM, 'sites/acme/b.pdf', 'In project', { project: pid })).data.transfer.id;
   assert.equal((await start(KIM, pid, pr)).status, 409); assert.equal((await mv(pid, SAM, pr, { to: 'Approved', ver: 1 })).status, 200);
   assert.equal((await start(VIC, pid, pr)).status, 403); assert.ok([403, 404].includes((await start(CUS, pid, pr)).status));
-  const c = await start(KIM, pid, pr); assert.equal(c.status, 200); assert.equal(c.data.created, true); const again = await start(SAM, pid, pr); assert.equal(again.data.created, false); assert.equal(again.data.project.id, c.data.project.id);
+  const c = await start(KIM, pid, pr); assert.equal(c.status, 200); assert.equal(c.data.created, true); const again = await start(SAM, pid, pr); assert.equal(again.data.created, false); assert.equal(again.data.project, null, 'Sam owns the intake project but is not a member of the new one: its id is not shown to him');
   assert.equal((await as(SAM, 'GET', '/api/projects/' + pid)).data.project.name, 'Route Intake', 'the existing project is untouched');
 });
 await t('a transfer that is not an MSA extraction is refused (400)', async () => {
