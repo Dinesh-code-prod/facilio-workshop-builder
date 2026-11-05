@@ -53,6 +53,7 @@
     ['projdash', 'Dashboard', 'How the project stands today, in numbers.', 'Where are we?'],
     ['overview', 'Project Overview', 'Current phase, what is due next, the lifecycle and roadmap.', 'Where are we?'],
     ['tasks', 'Tasks', 'One register for everything to do. List view or Board view: drag a card to change its status.', 'Run the project'],
+    ['transfers', 'Transfers', 'What your Claude read from or sent to other systems, and what waits for you to approve. Claude cannot approve. Pushed and Synchronized are what Claude reported, not something this app can see.', 'Run the project'],
     ['governance', 'Governance & RAID', 'Sign-offs, risks, decisions, actions and minutes, shared with the customer.', 'Run the project'],
     ['changes', 'Change Requests', 'Anything outside the signed scope. Never change scope silently.', 'Run the project'],
     ['aiwork', 'Deliverables & AI', 'Draft documents with AI, or with Open in Claude on your own account. Drafts are never final until reviewed.', 'Run the project'],
@@ -76,6 +77,7 @@
   // job -> what to use
   const JOBS = [
     ['Draft the BRD, UAT plan, guides, reports, handover or closure pack', 'Connector', 'Use the Open in Claude buttons, or ask Claude for a task pack (brd, uat, guide, ftr, gaps, workshop, golive, hypercare, handover, wsr, monthly, config, pkg, training, closure). Drafts arrive unapproved.'],
+    ['Start a project from a signed contract', 'Connector, then Transfers', 'Ask Claude to read the contract with the Microsoft 365 connector and save the extraction. Open Transfers > Holding, check it and press Approve, then press Start project from this contract. Nothing is created until you do, and an existing project is never changed.'],
     ['Ask what is open on a project, or find one', 'Connector', 'Ask Claude for a project overview, the open questions, the requirements or the latest activity.'],
     ['See where a project stands: tasks, overdue, UAT, risks, org id', 'Connector', 'Ask Claude for the project overview. It now includes task and overdue counts, UAT test cases, risks and issues, change requests, sign-offs and the org id.'],
     ['Carry on a deliverable with the Facilio tools (FTR, UAT guide, configuration)', 'Skills: Facilio toolbox', 'Ask Claude "which Facilio skill fits this?". It asks the connector (get_impl_skills), then you start it with /facilio-impl-toolbox. Needs the one-time setup in Project Settings > Implementation skills.'],
