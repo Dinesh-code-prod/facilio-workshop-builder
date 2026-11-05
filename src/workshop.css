@@ -1,0 +1,39 @@
+/* Workshop room (src/workshop.js). Facilio colours only: navy #1D1A5E, blue #1570EF, pink #E5197F, sky #8DB8FF. No glow, no violet. Full screen copies the whiteboard's idea: the room fills the window below the top bar. */
+.ws-room { display: block; }
+.ws-room.ws-full { position: fixed; top: 62px; left: 0; right: 0; bottom: 0; z-index: 450; overflow: auto; background: #fff; padding: 10px 18px 24px; }
+.ws-room.ws-focus { padding: 8px 14px 24px; }
+.ws-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; padding: 8px 12px; margin-bottom: 12px; background: #F4F7FD; border: 1px solid #DCE4F3; border-radius: 12px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9), 0 1px 3px rgba(29, 26, 94, .08); }
+.ws-timer { display: flex; align-items: center; gap: 8px; }
+.ws-clock { font: 700 20px/1 Inter, "Segoe UI", system-ui, sans-serif; font-variant-numeric: tabular-nums; color: #1D1A5E; min-width: 64px; }
+.ws-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr); gap: 14px; align-items: start; }
+.ws-right { position: sticky; top: 0; }
+.ws-room.ws-full .ws-right { top: 0; }
+@media (max-width: 1000px) { .ws-grid { grid-template-columns: minmax(0, 1fr); } .ws-right { position: static; } }
+.ws-card { margin-bottom: 12px; }
+.ws-sum { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; font-size: 13px; color: #1D1A5E; }
+.ws-sum span { color: #55608a; } .ws-sum .ws-hint { color: #1570EF; font-weight: 600; }
+.ws-mod select { margin-left: 6px; }
+.ws-q { padding: 12px 0; border-top: 1px solid #eef1f7; }
+.ws-q:first-child { border-top: 0; padding-top: 2px; }
+.ws-q.ws-st-answered, .ws-q.ws-st-skipped { opacity: .72; }
+.ws-qt { margin: 4px 0; font-weight: 600; color: #1D1A5E; }
+.ws-ev { margin: 8px 0; padding: 8px 10px; border-radius: 10px; border: 1px solid #8DB8FF; background: #EAF2FF; font-size: 13px; }
+.ws-ev-likely { border-color: #1570EF; }
+.ws-ev .btn { margin-top: 6px; }
+.ws-segs { display: flex; flex-wrap: wrap; gap: 0; margin: 8px 0 6px; }
+.ws-seg { font: inherit; font-size: 13px; font-weight: 600; padding: 6px 12px; border: 1px solid #c9d6ef; background: #fff; color: #1D1A5E; cursor: pointer; margin-left: -1px; }
+.ws-seg:first-child { border-radius: 8px 0 0 8px; margin-left: 0; } .ws-seg:last-child { border-radius: 0 8px 8px 0; }
+.ws-seg:hover:not(:disabled) { background: #EAF2FF; }
+.ws-seg.on { background: #1570EF; border-color: #1570EF; color: #fff; position: relative; }
+.ws-seg:focus-visible { outline: 2px solid #1570EF; outline-offset: 2px; z-index: 1; position: relative; }
+.ws-seg:disabled { cursor: not-allowed; opacity: .6; }
+.ws-note { width: 100%; box-sizing: border-box; resize: vertical; min-height: 54px; font: inherit; font-size: 13px; padding: 8px 10px; border: 1px solid #c9d6ef; border-radius: 10px; margin: 2px 0 8px; }
+.ws-mk { margin-top: 2px; }
+.ws-made { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: #EAF2FF; color: #1D1A5E; border: 1px solid #8DB8FF; }
+.ws-live { width: 100%; box-sizing: border-box; resize: vertical; font: 13px/1.45 Inter, "Segoe UI", system-ui, sans-serif; padding: 8px 10px; border: 1px solid #c9d6ef; border-radius: 10px; }
+.ws-h { margin: 14px 0 4px; color: #1D1A5E; font-size: 14px; }
+.ws-next { margin: 0; padding-left: 20px; font-size: 13px; } .ws-next li { margin-bottom: 8px; }
+.ws-aglist { list-style: none; margin: 0; padding: 0; }
+.ws-ag { padding: 10px 0; border-top: 1px solid #eef1f7; } .ws-ag:first-child { border-top: 0; padding-top: 0; }
+.ws-ag.on { box-shadow: inset 3px 0 0 #E5197F; padding-left: 10px; }
+.ws-ag .btn { margin-top: 6px; }

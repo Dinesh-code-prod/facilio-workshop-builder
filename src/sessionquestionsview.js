@@ -16,6 +16,7 @@
     return { modules: Object.values(by), exclusions: ((d.contractX || {}).scopeX || {}).exclusions || [], sessions: (d.sessions || []).map(s => ({ id: s.id, modules: s.modules || [], status: s.status })),
       statements: (T.candidates || []).map(c => ({ speaker: c.speaker, at: c.line ? 'line ' + c.line : '', text: c.text, ref: (c.transcriptId || '') + ':' + (c.line || '') })) };
   }
+  V.prepqInput = input;   // the Workshop room (src/workshop.js) asks the same questions from the same data
   const get = () => Q().prepareQuestions(input());
   const title = () => 'Workshop questions: ' + ((S.project && S.project.name) || 'project');
   const row = q => `<div style="padding:10px 0;border-top:1px solid #eef1f7"><div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">${tag(PC[q.priority], esc(q.priority))}<span class="xs muted">${esc(KIND[q.kind] || q.kind)}</span></div><div style="margin:4px 0;font-weight:600">${esc(q.text)}</div><div class="small muted">Why: ${esc(q.why)}</div>${q.sources.map(s => `<div class="xs muted">${s.type === 'statement' ? 'Said earlier' + (s.speaker ? ' by ' + esc(s.speaker) : '') + (s.at ? ' (' + esc(s.at) + ')' : '') : 'Source: ' + esc(s.type) + ' ' + esc(s.ref)}${s.quote ? ': &ldquo;' + esc(s.quote) + '&rdquo;' : ''}</div>`).join('')}</div>`;

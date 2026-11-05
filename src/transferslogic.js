@@ -44,6 +44,8 @@
   }
   /** an extraction that a person approved and nobody has turned into a project yet (the server still decides: it answers 409 or "already created") */
   const canStart = t => !!t && t.kind === 'msa' && t.dir === 'pull' && t.status === 'Approved' && t.approvedVer != null;
+  /** an approved transcript can be imported into Transcripts (src/transcriptimport.js decides again, and shows the existing record when this version was imported before) */
+  const canImport = t => !!t && t.kind === 'transcript' && t.status === 'Approved' && t.approvedVer != null;
   const projectHref = id => (/^[A-Za-z0-9_-]{1,60}$/.test(String(id || '')) ? '#/p/' + id : '');
 
   /** the short task for Open in Claude: Claude reads the transfer through the connector and carries on */
@@ -103,7 +105,7 @@
       ${t.approvedVer != null ? `<p class="small">Approved: version ${esc(t.approvedVer)}${t.approvedBy ? ' by ' + esc(who(t.approvedBy)) : ''}${t.approvedAt ? ' on ' + esc(when(t.approvedAt)) : ''}.</p>` : ''}
       <section class="xf-act" aria-label="What you can do"><h4>What you can do</h4>
         ${needNote ? `<label class="f" for="xfNote">Note (needed for Request changes, Resolve and Mark attention)</label><textarea id="xfNote" rows="2" maxlength="200" data-change="xfNote">${esc(o.note || '')}</textarea>` : ''}
-        <div class="xf-btns">${btns}${start}<button type="button" class="btn sm" data-act="xfClaude">Open in Claude</button></div>
+        <div class="xf-btns">${btns}${start}${canImport(t) && o.tab !== 'holding' ? '<button type="button" class="btn sm primary" data-act="xfImport" title="Reads the approved version and adds it to Transcripts. A statement is never made a requirement.">Import into Transcripts</button>' : ''}<button type="button" class="btn sm" data-act="xfClaude">Open in Claude</button></div>
         ${acts.length || start ? '' : '<p class="small muted">Nothing is open for you on this transfer right now. Claude does the next step, or someone with the right access does.</p>'}
         <div id="xfMsg" class="xf-msg" role="alert">${o.msg ? note(o.msg.bad ? 'err' : 'ok', o.msg.text) : ''}</div>${linked}${startedHtml(o.started)}
         <p class="small muted">Claude cannot approve. Pushed and Synchronized are reported by Claude, with a receipt; Delivery Studio cannot see the destination itself.</p></section>
@@ -123,6 +125,6 @@
     return `<div class="page-header"><div class="t"><h1>Transfers</h1><p>What was read from, or sent to, other systems, and what waits for a person to approve it.</p></div></div>
       <div class="page-body xf">${tabs}${intro}${startedHtml(s.started)}${body}</div>`;
   }
-  const api = { STATUSES, esc, statusClass, statusText, chip, isBad, rowOf, filterRows, kindsOf, countBy, waiting, holdingOrder, actionsFor, canStart, projectHref, claudePrompt, tableHtml, drawerHtml, pageHtml, contentParts, partsHtml, startedHtml };
+  const api = { STATUSES, esc, statusClass, statusText, chip, isBad, rowOf, filterRows, kindsOf, countBy, waiting, holdingOrder, actionsFor, canStart, canImport, projectHref, claudePrompt, tableHtml, drawerHtml, pageHtml, contentParts, partsHtml, startedHtml };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBTransfers = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -57,6 +57,12 @@
     catch (e) { say(e.message || 'The project could not be created', true); toast(e.message || 'The project could not be created', 7000, true); }
     paint(); V.render(); loadAll(true);
   });
+  ACT.xfImport = a => V.busy(a, async () => {   // an approved transcript becomes a transcript record (src/transcriptimport.js); the same version is never imported twice
+    const o = X().open; if (!o || !o.transfer || !V.trImportTransfer) return;
+    try { const r = await V.trImportTransfer(o.transfer, async n => { const x = await API.get(url(o.space, o.id, '?ver=' + encodeURIComponent(n))); return { version: x.version, content: x.content, intact: x.intact }; });
+      toast(r.existing ? 'Already imported: showing that transcript' : 'Transcript imported. Review the suggested statements.', 5000); V.closeDrawer(); V.go('transcripts', { reqTab: 'transcripts', trTab: 'review', trFilter: { transcript: r.item.id } });
+    } catch (e) { say(e.message || 'The transcript could not be imported', true); toast(e.message || 'The transcript could not be imported', 6000, true); }
+  });
   ACT.xfClaude = async () => { const o = X().open; if (!o || !o.transfer) return; const r = await V.claudeOpenSimple(T.claudePrompt(o.transfer, o.tab === 'holding' ? 'holding' : o.space), { title: 'Continue a transfer', task: 'transfer', module: 'Transfers', destination: 'Claude reads and stores through the connector; a person approves in Delivery Studio' }); toast(r.said, 8000); };
 
   // ---------- page ----------
