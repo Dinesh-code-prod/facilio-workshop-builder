@@ -36,8 +36,9 @@ const ev = (extra) => Object.assign({ project: pid, outcome: 'pushed', receipt: 
 
 await t('the eight tools are in work.json (the three that change a destination ask for confirmation) and there is no approve tool', async () => {
   const raw = fs.readFileSync(new URL('../work/work.json', import.meta.url), 'utf8'); const all = JSON.parse(raw).mcp.tools; const names = all.map(x => x.name);
-  const want = ['transfer_list', 'transfer_get', 'transfer_begin', 'transfer_store', 'transfer_submit', 'transfer_push_begin', 'transfer_report', 'transfer_verify']; for (const w of want) assert.ok(names.includes(w), w); assert.equal(new Set(names).size, names.length, 'no duplicate tool names');
-  assert.deepEqual(all.filter(x => /^transfer_/.test(x.name) && x.confirm).map(x => x.name), ['transfer_push_begin', 'transfer_report', 'transfer_verify']); assert.ok(!names.some(x => /approv/i.test(x)), 'no approve tool for Claude');
+  const want = ['transfer_read', 'transfer_write', 'transfer_push']; for (const w of want) assert.ok(names.includes(w), w); assert.equal(new Set(names).size, names.length, 'no duplicate tool names'); assert.ok(names.length <= 40, 'the platform allows at most 40 tools per app: ' + names.length);
+  assert.deepEqual(all.find(x => x.name === 'transfer_push').input_schema.properties.action.enum, ['push_begin', 'report', 'verify']); assert.deepEqual(all.find(x => x.name === 'transfer_write').input_schema.properties.action.enum, ['begin', 'store', 'submit']); assert.deepEqual(all.find(x => x.name === 'transfer_read').input_schema.properties.action.enum, ['list', 'get']);
+  assert.deepEqual(all.filter(x => /^transfer_/.test(x.name) && x.confirm).map(x => x.name), ['transfer_push']); assert.ok(!names.some(x => /approv/i.test(x)), 'no approve tool for Claude');
   assert.ok(raw.includes('\r\n') && !/[^\r]\n/.test(raw), 'CRLF kept'); assert.equal(JSON.stringify(JSON.parse(raw), null, 1).replace(/\n/g, '\r\n') + '\r\n', raw, 'the 1-space layout is kept');
   for (const x of all.filter(y => /^transfer_/.test(y.name))) assert.ok(x.input_schema.required.includes('project'), x.name + ' needs a project');
   assert.ok((await tool(SAM, 'transfer_approve', { project: pid, id: 'x' })).status >= 400, 'a made-up approve tool is not served');
@@ -119,7 +120,7 @@ await t('the audit trail names each step', async () => {
   const acts = new Set([...store.get('au.' + pid).values()].map(v => JSON.parse(v).action)); for (const a of ['transfer-begin', 'transfer-version', 'transfer-move', 'transfer-push-intent', 'transfer-pushed', 'transfer-synchronized', 'transfer-verify-failed', 'transfer-push-failed', 'transfer-attention']) assert.ok(acts.has(a), a);
 });
 await t('CONNECTOR_HELP lists the transfer tools and a recipe', async () => {
-  const h = (await tool(KIM, 'connector_help', {})).data; const all = JSON.stringify(h.tools); for (const name of ['transfer_list', 'transfer_store', 'transfer_push_begin', 'transfer_report', 'transfer_verify']) assert.ok(all.includes(name), name);
-  const r = (await tool(KIM, 'connector_help', { topic: 'push' })).data; assert.equal(r.recipe, 'Push and pull'); assert.match(r.steps, /transfer_push_begin/);
+  const h = (await tool(KIM, 'connector_help', {})).data; const all = JSON.stringify(h.tools); for (const name of ['transfer_read', 'transfer_write', 'transfer_push']) assert.ok(all.includes(name), name);
+  const r = (await tool(KIM, 'connector_help', { topic: 'push' })).data; assert.equal(r.recipe, 'Push and pull'); assert.match(r.steps, /transfer_push \(action push_begin\)/);
 });
 console.log(n + ' transfer tool checks passed');

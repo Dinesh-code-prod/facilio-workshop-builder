@@ -97,8 +97,8 @@ await t('a Claude answer that arrived while the page was closed is listed and ke
   const g = await call('GET', `/api/projects/${pid}/handoff/${h.data.id}`); assert.equal(g.data.status, 'done'); assert.equal(g.data.result, 'The finished guide text');
 });
 await t('connector_help lists the MSA, prepared question and task tracking tools, each with a recipe', async () => {
-  const h = (await tool('connector_help', {})).data; const all = JSON.stringify(h.tools); for (const name of ['msa_extraction_save', 'create_project_from_msa', 'get_prepared_questions', 'live_ask', 'task_evidence', 'save_task_suggestions']) assert.ok(all.includes(name), name + ' is in the tool groups');
-  for (const [topic, recipe, step] of [['msa', 'MSA to project', /msa_extraction_save[\s\S]*create_project_from_msa/], ['prepared questions', 'Prepared questions', /get_prepared_questions[\s\S]*live_ask/], ['track tasks', 'Track tasks', /task_evidence[\s\S]*save_task_suggestions/]]) { const r = (await tool('connector_help', { topic })).data; assert.equal(r.recipe, recipe); assert.match(r.steps, step); }
+  const h = (await tool('connector_help', {})).data; const all = JSON.stringify(h.tools); for (const name of ['msa_extraction_save', 'create_project_from_msa', 'session_questions', 'task_tracking']) assert.ok(all.includes(name), name + ' is in the tool groups');
+  for (const [topic, recipe, step] of [['msa', 'MSA to project', /msa_extraction_save[\s\S]*create_project_from_msa/], ['prepared questions', 'Prepared questions', /session_questions \(action prepare\)[\s\S]*session_questions \(action live\)/], ['track tasks', 'Track tasks', /task_tracking \(action evidence\)[\s\S]*task_tracking \(action save\)/]]) { const r = (await tool('connector_help', { topic })).data; assert.equal(r.recipe, recipe); assert.match(r.steps, step); }
   assert.match(JSON.stringify(h.tools), /approved the extraction in Delivery Studio/); assert.match(h.recipes['Track tasks'], /never say a task was changed/);
 });
 console.log(`${n} connector add-on checks passed`);
