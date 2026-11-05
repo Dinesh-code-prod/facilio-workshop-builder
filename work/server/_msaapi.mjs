@@ -52,7 +52,7 @@ export function installMsaExtract(d, transfer) {
         } catch (e) { throw new HttpError(e.status || 500, 'The project was created (id ' + np + ') but writing the ' + step + ' record failed: ' + e.message + '. Open the project and add the rest by hand.', { projectId: np }); }
         await link(pid, id, s, { projectComplete: true }, 'Project ' + np + ' filled from the extraction');
         return { created: true, project: { id: np, name: plan.project.name, url: URL_BASE + np }, transferId: id, complete: true, written: plan.counts, warnings: v.warnings,
-          note: 'The project was created. The contract dates, obligations and scope items are in the Contract workspace and in Know Your Contract; items that are not confirmed contract text are marked uncertain for a person to review. Modules, commitments, dependencies, commercial constraints, training and support stay in the approved extraction (transfer_get).' };
+          note: 'The project was created. The contract dates, obligations and scope items are in the Contract workspace and in Know Your Contract; items that are not confirmed contract text are marked uncertain for a person to review. Modules, commitments, dependencies, commercial constraints, training and support stay in the approved extraction (transfer_read, action get).' };
       });
     }
   };

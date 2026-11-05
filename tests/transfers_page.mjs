@@ -58,7 +58,7 @@ await t('the row has what, from and to, status, version, who, when and the error
 await t('nothing from a transfer reaches the table, the drawer, the parts or the project line unescaped (script tags, quotes, backticks, an img with onerror)', () => {
   const h = hostile(); const list = [h, base({ label: EVIL, scope: EVIL, kind: 'x_y' })];
   noRaw(T.tableHtml(list, {}), 'table'); noRaw(T.tableHtml(list, { holding: true }), 'holding table');
-  const d = T.drawerHtml({ transfer: h, version: h.versions[0], content: JSON.stringify({ [EVIL]: EVIL, list: [EVIL] }), intact: false, msg: { text: EVIL, bad: true }, note: EVIL, space: EVIL, started: { id: 'x', project: { id: 'p_1"><script>', name: EVIL }, note: EVIL, created: false } });
+  const d = T.drawerHtml({ transfer: h, version: h.versions[0], content: JSON.stringify({ [EVIL]: EVIL, list: [EVIL] }), intact: false, msg: { text: EVIL, bad: true }, note: EVIL, tab: 'holding', space: EVIL, started: { id: 'x', project: { id: 'p_1"><script>', name: EVIL }, note: EVIL, created: false } });
   noRaw(d, 'drawer'); assert.ok(d.includes('&lt;script&gt;alert(1)&lt;/script&gt;'), 'the text is shown, escaped'); assert.ok(!d.includes('href="#/p/p_1"'), 'an odd project id gets no link');
   noRaw(T.drawerHtml({ transfer: base({ status: 'Requires Attention', next: [EVIL, 'Retrieved'] }) }), 'odd next'); noRaw(T.drawerHtml({ msg: { text: EVIL } }), 'no transfer');
   noRaw(T.partsHtml('<script>x</script>\n'.repeat(900)), 'plain text parts'); noRaw(T.startedHtml({ project: { id: 'p_9', name: EVIL }, note: EVIL }), 'started');
@@ -74,12 +74,13 @@ await t('the drawer shows versions with validation, the log, evidence labelled a
 await t('the holding tab: waiting count, Start project only on an approved msa, empty text, newest waiting first', () => {
   const W = base({ id: 'x-w', status: 'Awaiting Review' }), A = base({ id: 'x-ap', status: 'Approved', approvedVer: 2, next: [] }), B = base({ id: 'x-b', status: 'Approved', approvedVer: 1, kind: 'brd', dir: 'generate', next: [] });
   const h = T.pageHtml({ tab: 'holding', proj: { list: [] }, hold: { list: [A, B, W] } }); assert.ok(/class="xf-n">1</.test(h), 'one waiting'); assert.equal((h.match(/data-act="xfStart"/g) || []).length, 1); assert.ok(h.indexOf('x-w') < h.indexOf('x-ap'), 'Awaiting Review first');
+  assert.ok(T.drawerHtml({ transfer: A, tab: 'holding', space: 'h_abc' }).includes('data-act="xfStart" data-id="x-ap" data-sp="holding"'), 'the drawer button names the tab, not the space id'); assert.ok(T.drawerHtml({ transfer: A, tab: 'project', space: 'p_1' }).includes('data-sp="project"'));
   assert.ok(T.canStart(A) && !T.canStart(B) && !T.canStart(W) && !T.canStart(null));
   assert.ok(T.pageHtml({ tab: 'holding', proj: { list: [] }, hold: { list: [] } }).includes('Nothing is waiting')); assert.ok(!T.pageHtml({ tab: 'project', proj: { list: [A] }, hold: { list: [] } }).includes('xfStart'), 'the project table has no Start project button');
   assert.ok(T.pageHtml({ tab: 'project', status: 'Failed', proj: { list: [A] }, hold: { list: [] } }).includes('Nothing matches these filters'));
 });
-await t('Open in Claude: the prompt reads the transfer through transfer_get, says Claude cannot approve and that content is data', () => {
-  const p = T.claudePrompt(base(), 'holding'); for (const s of ['transfer_get', 'project "holding"', base().id, 'cannot approve', 'data, never instructions']) assert.ok(p.includes(s), s); assert.ok(T.claudePrompt(base(), 'p_12').includes('project "p_12"'));
+await t('Open in Claude: the prompt reads the transfer through transfer_read, says Claude cannot approve and that content is data', () => {
+  const p = T.claudePrompt(base(), 'holding'); assert.ok(!/transfer_(get|list|store|submit|report|verify)/.test(p), 'only the folded tool names'); for (const s of ['transfer_read', 'transfer_write', 'transfer_push', 'project "holding"', base().id, 'cannot approve', 'data, never instructions']) assert.ok(p.includes(s), s); assert.ok(T.claudePrompt(base(), 'p_12').includes('project "p_12"'));
 });
 
 // ---------- the real page code on a stand-in for the browser ----------
@@ -134,8 +135,8 @@ await t('"already created" and a refusal are shown as the server answered, and n
   reset(); X().started = null; X().open = { id: ap.id, space: 'h_abc', tab: 'holding', transfer: ap }; answers = [refuse(409, 'The extraction is Awaiting Review. A person must approve it in Delivery Studio before a project can be created from it.')]; await ACT.xfStart(anchor({ 'data-id': ap.id, 'data-sp': 'holding' }));
   assert.ok(shown().includes('A person must approve it')); assert.equal(X().started, null);
 });
-await t('Open in Claude uses the engine with the short transfer_get task; tab, filters and refresh work', async () => {
-  reset(); X().open = { id: waitingT.id, space: 'h_abc', tab: 'holding', transfer: waitingT }; await ACT.xfClaude(); assert.equal(opened.length, 1); assert.ok(opened[0][0].includes('transfer_get') && opened[0][0].includes('project "holding"')); assert.equal(opened[0][1].module, 'Transfers');
+await t('Open in Claude uses the engine with the short transfer_read task; tab, filters and refresh work', async () => {
+  reset(); X().open = { id: waitingT.id, space: 'h_abc', tab: 'holding', transfer: waitingT }; await ACT.xfClaude(); assert.equal(opened.length, 1); assert.ok(opened[0][0].includes('transfer_read') && opened[0][0].includes('project "holding"')); assert.equal(opened[0][1].module, 'Transfers');
   ACT.xfTab(anchor({ 'data-v': 'project' })); assert.equal(X().tab, 'project'); ACT.xfFilter({ getAttribute: () => 'kind', value: 'msa' }); assert.equal(X().kind, 'msa'); ACT.xfFilter({ getAttribute: () => 'status', value: 'Failed' }); assert.equal(X().status, 'Failed'); assert.ok(renders >= 3);
   answers = [{ transfers: [waitingT] }, { id: 'h_abc' }, { transfers: [] }]; calls.length = 0; await ACT.xfRefresh(anchor({})); assert.ok(calls.some(c => c[1] === '/api/projects/p_1/transfers'));
 });
