@@ -1,0 +1,19 @@
+// The team menu shows only the tabs built in the Part E revamp (EXPOSED in src/shell.js). This checks the list against the real menu source:
+// every exposed id is a real menu entry, the filter is wired into navBase, customers are not filtered, and the start view does not land on a hidden tab.
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const src = fs.readFileSync(new URL('../src/shell.js', import.meta.url), 'utf8'); let n = 0; const t = (name, fn) => { fn(); n++; console.log('  ok  ' + name); };
+const exposed = [...(/const EXPOSED = new Set\(\[([^\]]*)\]\)/.exec(src) || [, ''])[1].matchAll(/'([a-z0-9_]+)'/g)].map(m => m[1]);
+const navBlock = src.slice(src.indexOf('const NAV = ['), src.indexOf('const CUSTOMER_NAV')); const navIds = [...navBlock.matchAll(/\['([a-z0-9_]+)', '[^']+'\]/g)].map(m => m[1]);
+t('the exposed list is found and has no duplicates', () => { assert.ok(exposed.length >= 10, 'found ' + exposed.length); assert.equal(new Set(exposed).size, exposed.length); });
+t('every exposed id is a real entry of the team menu', () => { for (const id of exposed) assert.ok(navIds.includes(id), id + ' is not in NAV'); });
+t('the revamp tabs are exposed and unfinished tabs are hidden', () => {
+  for (const id of ['transfers', 'workshop', 'supportdesk', 'msaflow', 'tasks']) assert.ok(exposed.includes(id), id);
+  for (const id of ['whiteboard', 'flow', 'modules', 'tickets', 'inbox', 'demokit', 'explore', 'hypercare', 'governance']) assert.ok(!exposed.includes(id), id + ' should stay hidden for now');
+  assert.ok(navIds.length - exposed.length >= 20, 'most of the menu is hidden');
+});
+t('navBase applies the filter to the team menu only, and the start view avoids a hidden tab', () => {
+  assert.match(src, /V\[id\] && \(cust \|\| tabOn\(id\)\)/); assert.match(src, /tabOn\('overview'\) \? 'overview' : 'projdash'/); assert.ok(exposed.includes('projdash'));
+  assert.match(src, /alltabs=1/);
+});
+console.log(n + ' menu exposure checks passed');

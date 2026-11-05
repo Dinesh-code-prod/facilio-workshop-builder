@@ -153,7 +153,13 @@
   const AGENT_ONLY = ['agentdata', 'agentrules', 'agenttest', 'agentguide'];
   const AGENT_HIDE = ['modules', 'flow', 'whiteboard', 'cfginputs', 'onboarding', 'ftr', 'kpi', 'learnlib', 'seefacilio', 'explore', 'vstudio', 'guidebuilder', 'vidguide', 'pkgan', 'trace', 'orgpkg', 'templates'];
   V.isAgentProject = () => !!(S.project && S.project.type === 'agents');
-  function navBase() { const cust = S.user.kind === 'customer'; const ag = V.isAgentProject(); const ctl = V.controls ? V.controls() : { tabs: {} }; return (cust ? CUSTOMER_NAV : NAV).map(g => Object.assign({}, g, { items: g.items.filter(([id, , tab]) => V[id] && !(ag && AGENT_HIDE.includes(id)) && !(!ag && AGENT_ONLY.includes(id)) && !(V.office() && id === 'roles') && (!cust || ctl.tabs[tab] !== false)).map(it => (g.subs && g.subs[it[0]] ? [it[0], it[1], it[2], g.subs[it[0]]] : it)) })).filter(g => g.items.length); }
+  // REVAMP: the team menu shows only the tabs that have been built or rebuilt in the Part E revamp; every other tab stays hidden (its code, routes and data are untouched)
+  // until it is rebuilt. To show a tab, add its view id to EXPOSED. Adding `alltabs=1` to the address (before the #) shows every tab again for this browser tab (for developers).
+  const EXPOSED = new Set(['projdash', 'tasks', 'transfers', 'msaflow', 'plan', 'transcripts', 'workshop', 'brd', 'cfginputs', 'delivery', 'ftr', 'supportdesk', 'webframe', 'claudesetup', 'teamhelp', 'settings']);
+  const showAllTabs = () => { try { if (/[?&]alltabs=1\b/.test(location.search)) sessionStorage.setItem('fwb_alltabs', '1'); else if (/[?&]alltabs=0\b/.test(location.search)) sessionStorage.removeItem('fwb_alltabs'); return sessionStorage.getItem('fwb_alltabs') === '1'; } catch (e) { return /[?&]alltabs=1\b/.test(location.search); } };
+  const tabOn = id => EXPOSED.has(id) || showAllTabs();
+  V.NAV_EXPOSED = EXPOSED;
+  function navBase() { const cust = S.user.kind === 'customer'; const ag = V.isAgentProject(); const ctl = V.controls ? V.controls() : { tabs: {} }; return (cust ? CUSTOMER_NAV : NAV).map(g => Object.assign({}, g, { items: g.items.filter(([id, , tab]) => V[id] && (cust || tabOn(id)) && !(ag && AGENT_HIDE.includes(id)) && !(!ag && AGENT_ONLY.includes(id)) && !(V.office() && id === 'roles') && (!cust || ctl.tabs[tab] !== false)).map(it => (g.subs && g.subs[it[0]] ? [it[0], it[1], it[2], g.subs[it[0]]] : it)) })).filter(g => g.items.length); }
   function navFor() { const base = navBase(); return S.user.kind !== 'customer' && V.wsApply ? V.wsApply(base) : base; }
   V.navBase = navBase;
   V.navFor = navFor;
@@ -472,7 +478,7 @@ function projectsHtml() {
       mode = 'workspace';
       const h = (location.hash.match(/#\/p\/[^/]+\/([a-z0-9_]+)(?:\/(.+))?/) || []);
       const custViews = navFor().flatMap(g => g.items.map(i => i[0]));
-      const startView = S.user.kind === 'customer' ? (h[1] && custViews.includes(h[1]) ? h[1] : (custViews[0] || 'cust_home')) : (h[1] && V[h[1]] ? h[1] : 'overview');
+      const startView = S.user.kind === 'customer' ? (h[1] && custViews.includes(h[1]) ? h[1] : (custViews[0] || 'cust_home')) : (h[1] && V[h[1]] ? h[1] : (tabOn('overview') ? 'overview' : 'projdash'));
       go(startView, h[2] ? { module: decodeURIComponent(h[2]) } : {});
     } finally { loading(false); }
   }
