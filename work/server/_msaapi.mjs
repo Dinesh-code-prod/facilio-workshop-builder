@@ -4,12 +4,12 @@
    onedrive with the file reference as given, destination studio), so it has a status, versions, an audit trail and a review step. A person approves it in Delivery Studio (Claude cannot).
    Only then does create_project_from_msa make a NEW project from the approved version. With no project the transfer lives in the person's own holding space (the engine's collections under
    the id _msaextract.holdingId(person)): the same code and the same routes as a project's transfers, reachable by that person alone. */
-import { SYSTEMS, validateExtraction, planFromExtraction, txt } from './_msaextract.mjs';
+import { SYSTEMS, validateExtraction, planFromExtraction, txt, holdingId } from './_msaextract.mjs';
 
 const URL_BASE = 'https://facilio-delivery-studio.facilio.work/#/p/';
 
 export function installMsaExtract(d, transfer) {
-  const { HttpError, dbGet, dbPut, withLock, audit, viaApp, CONNECTOR } = d; const { ops, load, access, pidOf } = transfer;
+  const { route, ok, me, HttpError, dbGet, dbPut, withLock, audit, viaApp, CONNECTOR } = d; const { ops, load, access, pidOf } = transfer;
   const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
   const compact = t => ({ id: t.id, status: t.status, ver: t.ver, approvedVer: t.approvedVer, next: t.next, source: t.source, projectId: t.projectId || '' });
   const existing = async (rec, pid) => { const row = await dbGet('projects', rec.projectId); const p = row && row.value; return { created: false, project: { id: rec.projectId, name: p ? p.name : '', archived: !!(p && p.archived), url: URL_BASE + rec.projectId }, transferId: rec.id, complete: rec.projectComplete !== false, note: 'A project was already created from this transfer; nothing was changed.' }; };
@@ -56,6 +56,11 @@ export function installMsaExtract(d, transfer) {
       });
     }
   };
+  // ---------- routes for the Transfers page (the person's own click is the confirmation) ----------
+  // The page reaches the holding space through the ordinary transfer routes under this id; only the id's owner can use them (_transferapi access).
+  route('GET', '/api/me/holding', async () => { const s = await me(); return ok({ id: holdingId(s.id) }); });
+  // the same code path as the connector tool; :id is a project id, or the person's own holding id. Idempotent: a second call returns the project already made (created: false).
+  route('POST', '/api/projects/:id/transfers/:tid/start-project', async (b, G) => { const s = await me(); return ok(await tools.create_project_from_msa(s, { project: G.id === holdingId(s.id) ? 'holding' : G.id, id: G.tid, confirm: true })); });
   for (const [name, fn] of Object.entries(tools)) { if (Object.prototype.hasOwnProperty.call(CONNECTOR, name)) throw new Error('connector tool already exists: ' + name); CONNECTOR[name] = fn; }
   return { tools };
 }
