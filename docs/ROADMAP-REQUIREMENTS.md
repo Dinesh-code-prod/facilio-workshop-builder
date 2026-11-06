@@ -467,6 +467,8 @@ Idea: a Facilio-branded bot that joins customer calls, records live transcripts,
 
 **E23. Stages 5 to 8 plan (user, 7 Nov 2026): `docs/reference/STAGES5-8-PLAN-2026-11-07.md`.** Direction: take the information the older tabs hold (records, results, links) into rebuilt pages, not their typed checklists. Step 0 done (stage 4 and 5 tabs shown in the menu); Go-live page, Hypercare and Handover from the data, Stage 5 tidy are planned, not built; three decisions for the user.
 
+**E24. Tasks automation plan (user, 7 Nov 2026): `docs/reference/TASKS-AUTOMATION-PLAN-2026-11-07.md`.** Support and Tickets left the menu; Tasks is the one tracking tab. Plan: an engine that creates and resolves tasks from the facts the Studio holds (no duplicates, never touches a task a person made), a Kanban board with an Auto badge, and Otto in Teams (deadline message, reply from the owner updates the task). Not built; five decisions and one real Teams test needed from the user.
+
 ## Progress log (add a line each time something is finished)
 | Date | Item | Deploy | Not checked |
 |---|---|---|---|
