@@ -11,7 +11,7 @@
 .tg2-first ol { margin: 0 0 14px; padding-left: 20px; line-height: 1.7; font-size: 14.5px; color: #2b3350; }
 .tg2-sub { margin: 0 0 12px; color: #66708c; font-size: 14px; }
 .tg2-ph { border-radius: 16px; background: #fff; border: 1px solid #e3e8f2; box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(40, 40, 90, .06), 0 12px 22px -18px rgba(29, 26, 94, .4); overflow: hidden; scroll-margin-top: 12px; }
-.tg2-ph > header { display: flex; gap: 14px; align-items: center; padding: 16px 20px; background: linear-gradient(120deg, #EEF4FF, #fbfdff); border-bottom: 1px solid #e3e8f2; }
+.tg2-ph > header, .tg2-ph > summary { display: flex; gap: 14px; align-items: center; padding: 16px 20px; background: linear-gradient(120deg, #EEF4FF, #fbfdff); border-bottom: 1px solid #e3e8f2; }
 .tg2-ph h2 { margin: 0; font-size: 18px; }
 .tg2-ph header p { margin: 3px 0 0; font-size: 14px; color: #55607e; }
 .tg2-n { flex: none; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: #fff; background: linear-gradient(135deg, #1570EF, #1D1A5E); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 6px 12px -6px rgba(29, 26, 94, .6); }
@@ -94,3 +94,18 @@ button.tg2-tile:hover { transform: translateY(-2px); box-shadow: inset 0 1px 0 #
 .ci-found { margin-bottom: 8px; font-size: 14px; }
 .ci-prev { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: #faf9fe; border: 1px solid #ebe8f5; } .ci-prev pre { margin: 6px 0 0; white-space: pre-wrap; font: inherit; font-size: 12.5px; line-height: 1.5; color: #3b3657; max-height: 220px; overflow: auto; }
 .pt-claude { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: #faf9fe; border: 1px dashed #cbbdf5; } .pt-claude select { height: 30px; font-size: 13px; }
+
+/* Team Guide tidy: stages and long parts fold away; only the heading shows until opened */
+.tg2-ph > summary { cursor: pointer; list-style: none; } .tg2-ph > summary::-webkit-details-marker, .tg2-fold > summary::-webkit-details-marker { display: none; }
+.tg2-ph > summary::after, .tg2-fold > summary::after { content: '+'; margin-left: auto; font-size: 22px; line-height: 1; color: #1570EF; }
+.tg2-ph[open] > summary::after, .tg2-fold[open] > summary::after { content: '−'; }
+.tg2-ph:not([open]) > summary { border-bottom: 0; }
+.tg2-fold > summary { cursor: pointer; list-style: none; display: flex; align-items: center; } .tg2-fold > summary h2 { margin: 0; }
+.tg2-fold[open] > summary { margin-bottom: 10px; }
+.tg2-jobwrap { margin-top: 14px; } .tg2-jobwrap > summary { cursor: pointer; font-weight: 700; color: #1D1A5E; }
+.tg2-ph > summary:focus-visible, .tg2-fold > summary:focus-visible, .tg2-jobwrap > summary:focus-visible { outline: 2px solid #1570EF; outline-offset: 2px; }
+
+/* Help pages (Claude setup, Privacy): long cards fold away, the heading stays */
+details.pv-fold > summary.card-h { cursor: pointer; list-style: none; display: flex; align-items: center; } details.pv-fold > summary::-webkit-details-marker { display: none; }
+details.pv-fold > summary.card-h::after { content: '+'; margin-left: auto; font-size: 22px; line-height: 1; color: #1570EF; } details.pv-fold[open] > summary.card-h::after { content: '−'; }
+details.pv-fold > summary:focus-visible { outline: 2px solid #1570EF; outline-offset: 2px; } details.pv-fold { margin-bottom: 14px; }
