@@ -70,4 +70,11 @@ t('statusBoard: per module counts, open issues and walkthrough coverage', () => 
   assert.deepEqual(b.rows[0], { name: 'wo', label: 'Work Order', cases: 4, run: 3, passed: 1, failed: 1, blocked: 1, openIssues: 1, scenarios: 2, videos: 1 }); assert.equal(b.rows[1].openIssues, 1); assert.equal(b.totals.cases, 4);
   assert.equal(U.statusBoard(null, null, null, null).totals.cases, 0);
 });
+t('recording to test case: a prompt for Claude (also for a silent recording) and numbered steps back into one draft case, once', () => {
+  const p = U.videoPrompt('Raise WO', ['00:01 open the menu'], ['Menu']); assert.ok(p.includes('00:01 open the menu') && p.includes('1. Menu') && p.includes('Expected:'));
+  assert.ok(U.videoPrompt('Silent', [], []).includes('no speech') && !U.videoPrompt('Silent', [], []).includes('Captions'));
+  const r = U.fromSteps({ text: '1. Open Work Orders\n2) Press New\n- Save\nExpected: the order is listed', mod: 'wo', label: 'Work Order', title: 'Raise WO' }, []);
+  assert.equal(r.steps, '1. Open Work Orders\n2. Press New\n3. Save'); assert.equal(r.expected, 'the order is listed'); assert.equal(r.status, 'Not Started'); assert.equal(r.src.from, 'recording');
+  assert.equal(U.fromSteps({ text: '1. a', mod: 'wo', title: 'raise wo' }, [{ mod: 'wo', title: 'Raise WO' }]), null); assert.equal(U.fromSteps({ text: '', mod: 'wo', title: 'x' }, []), null); assert.equal(U.fromSteps(null, null), null);
+});
 console.log(`\n${n} UAT checks passed`);

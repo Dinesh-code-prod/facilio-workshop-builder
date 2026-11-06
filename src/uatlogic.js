@@ -129,6 +129,20 @@
         openIssues: is.filter(i => (i.module === m.name || i.module === m.label) && i.status !== 'Closed' && i.status !== 'Deferred').length, scenarios: sc.size, videos: [...sc].filter(k => w[k]).length }; });
     const sum = k => rows.reduce((n, r) => n + r[k], 0); return { rows, totals: { cases: sum('cases'), run: sum('run'), passed: sum('passed'), failed: sum('failed'), blocked: sum('blocked'), openIssues: sum('openIssues'), scenarios: sum('scenarios'), videos: sum('videos') } };
   }
-  const api = { statusBoard, walkthroughs, walkFramable, coverage, fromSolution, STATUS, ISSUE_ST, SEVERITY, TASK_OF, isUatIssue, issueStatus, FIXED, issueFilter, chartData, FIELDS, suggestMap, findHeaderRow, normStatus, nextId, readRows, summarize, keysOf };
+  /** A recorded walkthrough turned into material for Claude and back. videoPrompt: what the person pastes into their own Claude (screenshots are attached there). Works for a silent recording: with no transcript it asks Claude to read the steps from the screenshots. */
+  function videoPrompt(title, lines, captions) {
+    const nl = String.fromCharCode(10); const tr = (Array.isArray(lines) ? lines : []).filter(Boolean).join(nl); const cap = (Array.isArray(captions) ? captions : []).filter(Boolean).map((c, i) => (i + 1) + '. ' + c).join(nl);
+    return ['I recorded a walkthrough of a process in Facilio: "' + (title || 'walkthrough') + '". Write the steps a tester would follow.', '', 'Rules: one step per line, numbered, plain words, use only what the screenshots and notes show, invent nothing. After the steps add one line starting with "Expected:" saying what the tester should see at the end.', '',
+      tr ? 'What was said in the recording:' + nl + tr : 'The recording has no speech: read the steps from the screenshots I attach, in order.', cap ? nl + 'Captions of the screenshots:' + nl + cap : ''].join(nl).trim().slice(0, 12000);
+  }
+  /** Claude's numbered steps (pasted) into one draft test case. Returns null when there are no steps. A case with the same title in the same module is not added twice. */
+  function fromSteps(o, existing) {
+    const raw = String(o && o.text || '').split(/\r?\n/); const steps = []; let expected = '';
+    raw.forEach(l => { const t = l.trim(); if (!t) return; const e = t.match(/^expected\s*(?:result)?\s*:\s*(.*)/i); if (e) { expected = e[1].trim(); return; } const s = t.replace(/^(?:step\s*)?\d+[.)\-:]\s*/i, '').replace(/^[-*]\s+/, '').trim(); if (s) steps.push(s); });
+    const title = String(o && o.title || '').trim(); const mod = o && o.mod; if (!steps.length || !title || !mod) return null; const have = Array.isArray(existing) ? existing : []; const label = o.label || mod;
+    if (have.some(c => (c.mod || c.module) === mod && String(c.title || '').trim().toLowerCase() === title.toLowerCase())) return null;
+    return { mod, tcid: nextId(label, have), scenario: title, title, req: '', pre: 'A tester with access to ' + label + ' and test data.', steps: steps.map((s, i) => (i + 1) + '. ' + s).join(String.fromCharCode(10)), expected: expected || 'The process ends as shown in the recording.', actual: '', status: 'Not Started', tester: '', date: '', src: { from: 'recording', key: 'rec:' + mod + ':' + title.toLowerCase() } };
+  }
+  const api = { videoPrompt, fromSteps, statusBoard, walkthroughs, walkFramable, coverage, fromSolution, STATUS, ISSUE_ST, SEVERITY, TASK_OF, isUatIssue, issueStatus, FIXED, issueFilter, chartData, FIELDS, suggestMap, findHeaderRow, normStatus, nextId, readRows, summarize, keysOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBUat = api;
 })(typeof window !== 'undefined' ? window : globalThis);
