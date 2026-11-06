@@ -45,4 +45,9 @@ S.ws.modules.workorder.agreedAutomation = '   '; bl = globalThis.FWBBrd.buildBlo
   assert.ok(hd.some(x => /General Requirements/.test(x)) && JSON.stringify(b3.filter(b => b.rows).map(b => b.rows)).includes('REQ-GEN-001'), 'a general requirement has its own section');
   const cv = b3.find(b => b.t === 'cover'); assert.equal(cv.title, 'Facilio CAFM'); assert.equal(cv.subtitle, 'Business Requirement Document For');
 }
-console.log('9 BRD scope and format checks passed');
+{ // a style saved earlier that is only the old built-in look does not override the new default; a real custom style does
+  S.ws = F.newWorkshop(); S.ws.modules.workorder = { inScope: true }; const B = globalThis.FWBBrd; assert.equal(B.profile().font, 'Cambria'); assert.equal(B.profile().tableHeaderFill, 'D9D2E9');
+  S.ws.brd.template = { font: 'Calibri', tableHeaderFill: '8DB3E2', h1: { color: '351C75', size: 32, font: '' } }; assert.equal(B.profile().font, 'Cambria', 'the old defaults saved in a project are ignored');
+  S.ws.brd.template = { font: 'Arial', tableHeaderFill: 'FFFFFF', h1: { color: '123456', size: 30, font: '' } }; assert.equal(B.profile().font, 'Arial', 'a custom style is kept'); S.ws.brd.template = null;
+}
+console.log('10 BRD scope and format checks passed');

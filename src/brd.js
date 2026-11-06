@@ -51,7 +51,9 @@
     if (!HEX.test(P.tableHeaderFill)) P.tableHeaderFill = D.tableHeaderFill; if (!HEX.test(P.tableHeaderColor)) P.tableHeaderColor = D.tableHeaderColor; P.page = P.page && typeof P.page === 'object' ? P.page : JSON.parse(JSON.stringify(D.page));
     Object.keys(D.page).forEach(k => { P.page[k] = Number(P.page[k]) > 0 ? Number(P.page[k]) : D.page[k]; }); return P;
   }
-  function profile() { return cleanProfile(Object.assign(JSON.parse(JSON.stringify(DEFAULT_PROFILE)), BD().profile || root_().profile || S.ws.brd.template || {})); }
+  // a style saved earlier that is just the old built-in look (Calibri, blue table headers, purple headings) is not a customised style: the new default applies
+  const oldDefault = p => !!p && p.font === 'Calibri' && p.tableHeaderFill === '8DB3E2' && p.h1 && p.h1.color === '351C75';
+  function profile() { const saved = BD().profile || root_().profile || S.ws.brd.template || {}; return cleanProfile(Object.assign(JSON.parse(JSON.stringify(DEFAULT_PROFILE)), oldDefault(saved) ? {} : saved)); }
   function sectionOrder() { const saved = S.ws.brd.sections; if (saved && saved.length) { const out = saved.filter(s => SECTIONS.some(x => x[0] === s.id)).map(s => Object.assign({}, s)); SECTIONS.forEach((s, i) => { if (out.some(o => o.id === s[0])) return; const prev = SECTIONS[i - 1] && out.findIndex(o => o.id === SECTIONS[i - 1][0]); out.splice(prev >= 0 ? prev + 1 : out.length, 0, { id: s[0], on: !APPENDIX_OFF.includes(s[0]) }); }); return out; } return SECTIONS.map(s => ({ id: s[0], on: !APPENDIX_OFF.includes(s[0]) })); }
 
   // ---------- sample BRD profile (.docx) ----------
