@@ -67,6 +67,15 @@ await t('the owner cannot approve a kick-off nobody has reviewed: every section 
   assert.equal((await put(SAM, 'kickoff_pack', Object.assign(pack('approved'), { review: Object.assign({}, REV, { sessions: undefined }) }))).status, 409);
   assert.equal((await put(SAM, 'kickoff_pack', Object.assign(pack('draft'), { review: REV }))).status, 200); assert.equal((await put(SAM, 'kickoff_pack', pack('approved'))).status, 200);
 });
+await t('Claude saves design proposals through session_questions; they are team only, open until a person decides, and a decided one survives a second save', async () => {
+  const sq = (who, body) => tool(who, 'session_questions', Object.assign({ project: pid }, body));
+  const fl = { kind: 'flow', module: 'Work Order', name: 'WO flow', basedOn: 'changed', states: ['Open', 'Approved', 'Closed'], transitions: [{ from: 'Open', to: 'Approved', name: 'Approve' }, { from: 'Approved', to: 'Closed', name: 'Close' }], why: 'session 3', quote: 'needs approval' };
+  const r = (await sq(KIM, { action: 'save_design', proposals: [fl, { kind: 'crosslink', from: 'Service Request', to: 'Work Order', name: 'Create the work order' }, { kind: 'bogus' }] })).data; assert.equal(r.added, 2); assert.equal(r.skipped, 1);
+  const doc = (await as(KIM, 'GET', `/api/projects/${pid}/docs/design_proposals`)).data; assert.ok(doc.data.items.every(x => x.status === 'open'));
+  const decided = doc.data.items.map(x => (x.kind === 'flow' ? Object.assign({}, x, { status: 'applied', by: 'kim.r@facilio.com' }) : x)); assert.equal((await as(KIM, 'PUT', `/api/projects/${pid}/docs/design_proposals`, { data: { items: decided }, baseVersion: doc.version })).status, 200);
+  assert.equal((await sq(KIM, { action: 'save_design', proposals: [fl] })).data.added, 0, 'the applied flow is not added again'); assert.equal((await sq(KIM, { action: 'save_design' })).status, 400);
+  assert.equal((await as(CUS, 'GET', `/api/projects/${pid}/docs/design_proposals`)).status, 403); assert.ok([403, 404].includes((await sq(CUS, { action: 'save_design', proposals: [fl] })).status), 'a customer cannot save design proposals');
+});
 await t('Claude saves transcripts and findings through session_questions; they are team only, readable page by page, and decided findings survive a second save', async () => {
   const sq = (who, body) => tool(who, 'session_questions', Object.assign({ project: pid }, body));
   const r1 = (await sq(KIM, { action: 'save_transcript', title: 'Session 1', date: '2026-10-26', source: 'clari', ref: 'clari:1', text: 'Asha: welcome everybody to the first requirement session. Ravi: we need Arabic labels on the portal.' })).data; assert.equal(r1.transcriptId, 'tr_1');

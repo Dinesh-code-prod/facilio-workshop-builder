@@ -1249,9 +1249,17 @@
         "prepare",
         "live",
         "save_transcript",
-        "save_findings"
+        "save_findings",
+        "save_design"
        ],
        "description": "Which step: prepare, live"
+      },
+      "proposals": {
+       "type": "array",
+       "description": "Only for save_design: [{ kind: flow, module, name, description, basedOn: default|changed|new, states: [labels], transitions: [{ from, to, name }], why, quote, source } or { kind: crosslink, from, to (module names), name, linkKind: create_record|update_record|notify|block, condition, why, quote, source }]. Saved as open proposals; a person applies them.",
+       "items": {
+        "type": "object"
+       }
       }
      },
      "required": [

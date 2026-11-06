@@ -1,0 +1,13 @@
+// What Apply builds from a proposal (src/design.js): a state flow in the shape the flow builder keeps, and the panel's text is escaped. Fixed ids, no browser.
+import assert from 'node:assert/strict'; import { createRequire } from 'node:module';
+const slug = s => String(s || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, ''); const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let doc = { items: [{ id: 'dp_1', kind: 'flow', module: 'Work Order', name: 'WO <b>flow</b>', basedOn: 'changed', states: ['Open', 'Approved'], transitions: [{ from: 'Open', to: 'Approved', name: 'Approve' }], why: 'why', quote: 'q', source: 's', status: 'open' }] };
+globalThis.FWB = { S: { user: { kind: 'consultant', email: 'a@x.com' }, project: { id: 'p1' }, ws: { flows: {}, crossLinks: {} }, ui: {}, docs: {} }, esc, slug, uid: p => p + '_x', doc: () => doc, allModules: () => [], autoLayout() { } };
+globalThis.FWBViews = { ACT: {}, toast() { }, studioJobs: { K: () => ({ jobs: [] }) }, isCustomer: () => false };
+createRequire(import.meta.url)('../src/design.js'); const V = globalThis.FWBViews;
+const p = doc.items[0]; const f = V.designLogic.flowFromProposal(p, 'workorder', (x) => x + '_1', null);
+assert.equal(f.module, 'workorder'); assert.equal(f.origin, 'proposed'); assert.deepEqual(f.states.map(s => s.id), ['s_open', 's_approved']); assert.equal(f.initial, 's_open'); assert.equal(f.transitions[0].from, 's_open'); assert.equal(f.transitions[0].to, 's_approved'); assert.equal(f.transitions[0].approval.required, true); assert.equal(f.fromProposal, 'dp_1');
+assert.ok(f.states.every(s => Number.isFinite(s.x) && Number.isFinite(s.y)), 'every state has a position'); assert.ok(f.transitions.every(t => t.removed === false && Array.isArray(t.actors) && Array.isArray(t.validations)), 'transition fields the screens read exist');
+const html = V.designPanel(); assert.ok(html.includes('data-act="dsApply"') && html.includes('data-act="dsDismiss"') && html.includes('data-act="dsDefaults"') && html.includes('data-act="dsAsk"')); assert.ok(!html.includes('<b>flow</b>') && html.includes('&lt;b&gt;flow&lt;/b&gt;'), 'text from Claude is escaped');
+doc = { items: [] }; assert.ok(V.designPanel().includes('No proposals yet')); globalThis.FWB.S.user.kind = 'customer'; assert.equal(V.designPanel(), '', 'customers never see it');
+console.log('3 design apply checks passed');
