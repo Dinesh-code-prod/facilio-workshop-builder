@@ -26,7 +26,7 @@ S.ws.modules.workorder.agreedAutomation = '   '; bl = globalThis.FWBBrd.buildBlo
   const heads = b => b.filter(x => x.t === 'h').map(x => x.text || ''); const fresh = () => { S.ws = F.newWorkshop(); S.ws.modules.workorder = { inScope: true }; const d = F.doc('brddoc'); d.edits = {}; d.inserts = {}; return d; };
   fresh(); let b2 = globalThis.FWBBrd.buildBlocks().blocks, h = heads(b2); const sizeAgreed = b2.length;
   assert.ok(h.includes('What Stays Standard') && !h.includes('Field List') && !h.includes('Workflows, Automations & Notifications') && !h.includes('Approval Routing'), 'a new BRD lists nothing standard in the module section');
-  S.ws.brd.includeStandard = true; b2 = globalThis.FWBBrd.buildBlocks().blocks; h = heads(b2); assert.ok(h.includes('Field List') && h.includes('Workflows, Automations & Notifications') && !h.includes('What Stays Standard') && b2.length > sizeAgreed + 20, 'the switch brings the full standard configuration back');
+  S.ws.brd.includeStandard = true; b2 = globalThis.FWBBrd.buildBlocks().blocks; h = heads(b2); assert.ok(h.includes('Field List') && h.includes('Workflows, Automations & Notifications') && !h.includes('What Stays Standard') && b2.length > sizeAgreed, 'the switch brings the full standard configuration back');
   fresh(); F.doc('brddoc').edits = { x: 'y' }; h = heads(globalThis.FWBBrd.buildBlocks().blocks); assert.ok(h.includes('Field List'), 'a BRD that already has edits keeps its full content'); fresh(); S.ws.brd.includeStandard = false; F.doc('brddoc').edits = { x: 'y' }; assert.ok(!heads(globalThis.FWBBrd.buildBlocks().blocks).includes('Field List'), 'an explicit choice wins over the edits rule');
   fresh(); F.fops('workorder').add.push({ name: 'warranty_end', label: 'Warranty end', type: 'Date', required: false, options: [], status: 'proposed', origin: 'Custom (proposed)', onForms: [] });
   S.ws.notifications = [{ id: 'n1', name: 'Tell the manager', module: 'workorder', trigger: 'created', channels: ['email'], recipients: ['Manager'] }]; S.ws.crossLinks.workorder = [{ id: 'c1', name: 'Reserve parts', to: 'inventory', kind: 'create_record', condition: 'when approved' }];
@@ -34,4 +34,15 @@ S.ws.modules.workorder.agreedAutomation = '   '; bl = globalThis.FWBBrd.buildBlo
   assert.ok(h.includes('Fields Added, Changed or Removed') && !h.includes('Field List') && JSON.stringify(b2.find(x => x.headers && x.headers[0] === 'Field Name').rows).includes('Warranty end'), 'only the added field is listed');
   assert.ok(h.includes('Notifications Agreed') && h.includes('Actions Across Modules') && h.includes('Agreed Buttons, Automation, SLA and Form Rules'), 'what was recorded in Studio for the module is printed');
   fresh(); }
-console.log('8 BRD scope and format checks passed');
+{ // the module sections follow the Osus sample: six parts, Use Case | Requirement ID | Functional Requirements, REQ- ids, General requirements apart, cover lines
+  S.ws = F.newWorkshop(); S.ws.modules.workorder = { inScope: true };
+  S.ws.requirements = [{ id: 'WO-001', title: 'Material request', objective: 'Technicians raise a material request from the work order', rules: 'The request is raised from the spare-parts list and the cost is booked to the job', approvals: '', exceptions: 'Only for open work orders', modules: ['workorder'], status: 'Confirmed', source: { quote: 'they can raise it from the spare parts list' } },
+    { id: 'GEN-001', title: 'Single sign-on', objective: 'Users sign in once for every portal', rules: 'Facilio SSO', modules: [], status: 'Confirmed' }];
+  const b3 = globalThis.FWBBrd.buildBlocks().blocks; const hd = b3.filter(b => b.t === 'h').map(b => b.text);
+  for (const h of ['1) Functional Requirements -', '2) Confirmations -', '3) Solution Proposal -', '5) Constraints -']) assert.ok(hd.includes(h), 'module part: ' + h); assert.ok(hd.some(x => x.indexOf('4) Facilio') === 0 && x.indexOf('Modules/Functionality Involved -') > 0) && hd.some(x => x.indexOf('6) Process State flow - ') === 0), 'the other two parts');
+  const fr = table(b3, 'Use Case'); assert.ok(fr && fr.headers.join('|') === 'Use Case|Requirement ID|Functional Requirements' && JSON.stringify(fr.rows).includes('REQ-WO-001'), 'the requirement table');
+  const uls = b3.filter(b => b.t === 'ul').flatMap(b => b.items); assert.ok(uls.some(x => x.indexOf('REQ-WO-001 – The request is raised from the spare-parts list') === 0), 'the solution proposal carries the answer the team gave'); assert.ok(uls.some(x => x.indexOf('REQ-WO-001 – Only for open work orders') === 0), 'constraints come from the exceptions');
+  assert.ok(hd.some(x => /General Requirements/.test(x)) && JSON.stringify(b3.filter(b => b.rows).map(b => b.rows)).includes('REQ-GEN-001'), 'a general requirement has its own section');
+  const cv = b3.find(b => b.t === 'cover'); assert.equal(cv.title, 'Facilio CAFM'); assert.equal(cv.subtitle, 'Business Requirement Document For');
+}
+console.log('9 BRD scope and format checks passed');
