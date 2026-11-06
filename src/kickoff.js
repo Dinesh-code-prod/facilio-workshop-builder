@@ -89,7 +89,7 @@
     const D = root.FWBKickoffDeck; if (!D) return '';
     const r = D.build(p.deck, { fmt: dt });
     return `<section class="card ko-card" aria-label="Kick-off deck"><div class="card-h"><b>Kick-off deck preview</b><span class="xs muted">${r.slides.length} slides${r.skipped.length ? '. Left out because nothing to show: ' + esc(r.skipped.join(', ')) : ''}</span></div>
-      <div class="card-b"><div class="ko-deck"><iframe title="Kick-off deck preview" sandbox="allow-scripts" srcdoc="${esc(r.html)}"></iframe></div><p class="xs muted">Click the right half to go forward. Press F for full screen.</p></div></section>`;
+      <div class="card-b"><div class="ko-deck"><iframe title="Kick-off deck preview" sandbox="allow-scripts" srcdoc="${esc(r.html)}"></iframe></div><div class="row ko-btns"><button type="button" class="btn sm primary" data-act="koDlDeck">Download kick-off deck (HTML)</button><button type="button" class="btn sm" data-act="koDlPlan">Download project plan (HTML)</button></div><p class="xs muted">Click the right half of the preview to go forward. Press F for full screen. The files work offline and are marked draft until approved.</p></div></section>`;
   }
   function approveBar(p) {
     const a = L().approvalCheck(p, owner(), crDoc()); const dis = ro() ? ' disabled' : '';
@@ -114,6 +114,10 @@
   // ---------- actions ----------
   const guard = () => { if (ro()) { toast('This project is read-only for you.', 4000, true); return true; } return false; };
   const post = async (path, body) => { const r = await API.post(base() + path, body); K().at = 0; await load(true); return r; };
+  const slug = x => String(x || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'project';
+  const file = kind => `${slug(S.project.customer)}-${slug(S.project.name)}-${kind}${(F.doc('kickoff_pack') || {}).status === 'approved' ? '' : '-draft'}.html`;
+  ACT.koDlDeck = () => { const p = pack(); if (!p) return; V.download(file('kickoff'), new Blob([root.FWBKickoffDeck.build(p.deck, { fmt: dt }).html], { type: 'text/html' })); };
+  ACT.koDlPlan = () => { const p = pack(); if (!p) return; V.download(file('project-plan'), new Blob([root.FWBPlanHtml.build(F.doc('kickoff_pack'), { customer: S.project.customer, project: S.project.name, fmt: dt })], { type: 'text/html' })); };
   ACT.koRefresh = () => load(true);
   ACT.koPull = a => V.busy(a, async () => {
     if (guard()) return; const r = await post('/jobs', L().pullRequest(S.project.customer, S.project.name));
