@@ -6,13 +6,14 @@
   'use strict';
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const arr = x => (Array.isArray(x) ? x : []);
-  const WHO = { you: 'You', claude: 'C', sys: 'S', bad: '!' };
+  const WHO = { you: 'You', claude: 'C', sys: 'S', bad: '!', other: '' };
   const attrs = a => Object.keys(a || {}).filter(k => /^[a-z][a-z0-9-]*$/.test(k)).map(k => ' data-' + k + '="' + esc(a[k]) + '"').join('');
   const btn = b => '<button type="button" class="btn sm' + (b.primary ? ' primary' : '') + (b.danger ? ' danger' : '') + '" data-act="' + esc(b.act) + '"' + attrs(b.attrs) + '>' + esc(b.label) + '</button>';
   function message(m) {
     const who = Object.prototype.hasOwnProperty.call(WHO, m.who) ? m.who : 'claude';
     const reply = m.reply ? '<div class="ki-reply">' + arr(m.reply.fields).map(f => '<textarea rows="2" maxlength="600" placeholder="Your answer"' + attrs(f.attrs) + '>' + esc(f.value) + '</textarea>').join('') + (m.reply.send ? btn(Object.assign({ primary: true }, m.reply.send)) : '') + '</div>' : '';
-    return '<div class="ki-row ' + who + '"><div class="ki-av" aria-hidden="true">' + esc(WHO[who]) + '</div><div class="ki-body"><div class="ki-bub">' + esc(m.text) + (m.typing ? '<span class="ko-typing" aria-hidden="true"><i></i><i></i><i></i></span>' : '') + reply
+    const av = who === 'other' ? esc(String(m.name || '?').split(' ').map(x => x[0]).join('').slice(0, 2).toUpperCase()) : esc(WHO[who]);   // a teammate's message shows their initials and name
+    return '<div class="ki-row ' + who + '"><div class="ki-av" aria-hidden="true">' + av + '</div><div class="ki-body">' + (who === 'other' && m.name ? '<div class="ki-name">' + esc(m.name) + '</div>' : '') + '<div class="ki-bub">' + esc(m.text) + (m.typing ? '<span class="ko-typing" aria-hidden="true"><i></i><i></i><i></i></span>' : '') + reply
       + (arr(m.actions).length ? '<div class="ki-acts">' + arr(m.actions).map(btn).join('') + '</div>' : '') + '</div>' + (m.at ? '<div class="ki-time">' + esc(m.at) + '</div>' : '') + '</div></div>';
   }
   const STATE = { todo: 'Waiting', now: 'Preparing…', done: 'Ready', bad: 'Needs attention' };

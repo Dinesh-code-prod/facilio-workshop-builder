@@ -74,3 +74,4 @@ body.asst-open #app{margin-right:var(--aw)}
 #asst .ki-row{max-width:92%}#asst .ki-bub,#asst .ki-msg{font-size:14.5px;line-height:1.5}
 @media(max-width:900px){:root{--aw:100vw}}
 .as-comp{display:flex;gap:8px;align-items:flex-end;padding:10px 12px;border-top:1px solid #DCE4F3;background:#F7FAFF}.as-comp textarea{flex:1;resize:none;box-sizing:border-box;padding:9px 12px;border:1px solid #DCE4F3;border-radius:12px;font:inherit;font-size:14.5px;line-height:1.4;color:#1D1A5E}.as-comp textarea:focus{outline:2px solid #1570EF}
+.ki-row.other .ki-av{background:#8DB8FF;color:#1D1A5E}.ki-row.other .ki-bub{background:#EAF2FF;border:1px solid #CFE0FF;color:#1D1A5E}.ki-name{font-size:12px;font-weight:600;color:#4A5784;margin:0 0 2px 4px}

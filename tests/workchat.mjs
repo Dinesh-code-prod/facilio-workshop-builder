@@ -21,4 +21,5 @@ t('the panel feed is just the messages; the lighter tab card keeps only the ques
   const h = W.html({ lite: true, title: 'Drafts', messages: m, tiles: [{ label: 'Plan', state: 'done' }], composer: '<b>c</b>' }); assert.ok(h.includes('ki-lite') && h.includes('Approve?') && !h.includes('Asked') && !h.includes('Reading page 3')); assert.ok(h.includes('ki-tile done') && h.includes('<b>c</b>'));
   assert.ok(!W.html({ lite: true, messages: [{ who: 'you', text: 'x' }] }).includes('ki-asks'), 'no questions, no empty feed');
 });
+t('a teammate message shows their name and initials', () => { const h = W.feed([{ who: 'other', name: 'Asha Rao', text: 'Which assets were discussed?' }]); assert.ok(h.includes('ki-name') && h.includes('Asha Rao') && h.includes('>AR<')); });
 console.log(n + ' work chat checks passed');
