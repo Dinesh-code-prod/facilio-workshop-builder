@@ -57,6 +57,22 @@
     if (jobRows(jobs).some(j => j.open && j.kind === 'pull_msa')) return 'pulling';
     return hasMsa ? 'extract' : 'start';
   }
-  const api = { originLabel, packOf, itemsOf, openCount, addChange, dismissChange, approvalCheck, setStatus, jobRows, pullRequest, changeRequest, stage, ORIGIN, PACK_STATUS, JOB_STATUS, MAX_TEXT };
+  /** Requirement sessions drafted from the stored pack: one per module in scope, on working days (Monday to Friday, as the plan assumes) inside the "Requirements workshops" phase,
+      two a day (10:00 and 14:00) when there are more modules than days. Everything here is a suggestion (status proposed); a module that does not fit is still listed, dated after the phase, and named in notes.
+      Returns { sessions, notes }. No people, no questions and no module keys are invented: participants stay empty. */
+  function sessionPlan(raw) {
+    const p = packOf(raw); const out = { sessions: [], notes: [] }; if (!p) return out; const ph = p.milestones.find(m => m.id === 'workshops');
+    if (!ph || !/^\d{4}-\d{2}-\d{2}$/.test(String(ph.start || ''))) { out.notes.push('The plan has no dated requirements workshops phase, so no sessions were drafted.'); return out; }
+    if (!p.modules.length) { out.notes.push('The contract names no modules, so no sessions were drafted. Add the modules in scope first.'); return out; }
+    const DAY = 864e5, t = s => Date.parse(s + 'T00:00:00Z'), iso = ms => new Date(ms).toISOString().slice(0, 10); const end = /^[0-9]{4}-/.test(String(ph.end || '')) ? t(ph.end) : t(ph.start);
+    const days = []; for (let d = t(ph.start); days.length < 400; d += DAY) { const wd = new Date(d).getUTCDay(); if (wd !== 0 && wd !== 6) days.push(d); }   // working days from the phase start, running on past its end when needed
+    const room = days.filter(d => d <= end).length, perDay = p.modules.length > room ? 2 : 1;
+    p.modules.forEach((m, i) => { const slot = i % perDay; out.sessions.push({ no: i + 1, title: m + ': requirements session', module: m, date: iso(days[Math.floor(i / perDay)]), start: slot ? '14:00' : '10:00', end: slot ? '15:30' : '11:30', minutes: 90, status: 'proposed', participants: '', topics: 'Standard agenda: current process, forms and mandatory data, workflow and approvals, reports.' }); });
+    const lastIn = iso(end); const over = out.sessions.filter(x => x.date > lastIn).length;
+    if (over) out.notes.push(over + ' session' + (over === 1 ? '' : 's') + ' fall after the requirements workshops phase (which ends ' + ph.end + '): there are more modules than the phase has room for. Ask Claude to shorten the sessions, or move the phase.');
+    out.notes.push('Dates are Facilio suggestions: nothing in the contract fixes them. Attendees are not known yet.');
+    return out;
+  }
+  const api = { sessionPlan, originLabel, packOf, itemsOf, openCount, addChange, dismissChange, approvalCheck, setStatus, jobRows, pullRequest, changeRequest, stage, ORIGIN, PACK_STATUS, JOB_STATUS, MAX_TEXT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBKickoffLogic = api;
 })(typeof window !== 'undefined' ? window : globalThis);

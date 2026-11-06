@@ -123,7 +123,7 @@
   const NAV = [
     { g: 'Project', sec: 'Projects & delivery', icon: 'dash', fi: 'g_project', items: [['projdash', 'Dashboard'], ['overview', 'Project Overview'], ['tasks', 'Tasks'], ['transfers', 'Transfers'], ['governance', 'Governance & RAID'], ['changes', 'Change Requests'], ['aiwork', 'Deliverables & AI'], ['reports', 'Reports & quality'], ['resources', 'Notes & Links']],   // one group: where we are, then what runs the project
       subs: { projdash: 'Where are we?', overview: 'Where are we?', tasks: 'Run the project', transfers: 'Run the project', governance: 'Run the project', changes: 'Run the project', aiwork: 'Run the project', reports: 'Run the project', resources: 'Run the project' } },
-    { g: '1. Kick-off', sec: 'Discover and define', icon: 'flag', fi: 'kickoff', items: [['transition', 'Bring your project in'], ['msaflow', 'Contract'], ['kickoff', 'Kick-off'], ['plan', 'Project Plan']] },
+    { g: '1. Kick-off', sec: 'Discover and define', icon: 'flag', fi: 'kickoff', items: [['transition', 'Bring your project in'], ['msaflow', 'Contract'], ['msaintake', 'Contract intake'], ['kickoff', 'Kick-off'], ['plan', 'Project Plan']] },
     { g: '2. Requirement sessions', sec: 'Discover and define', icon: 'mic', fi: 'transcripts', items: [['transcripts', 'Requirements & Data Onboarding'], ['workshop', 'Workshop room'], ['checks', 'Checks & Validations']],   // in the order the work runs; Data Onboarding (the sheet shown in the first session), Transcripts and Use Cases are tabs inside the first entry (src/workshubs.js)
       subs: { transcripts: 'Run the sessions', workshop: 'Run the sessions', checks: 'Check before design' } },
     { g: '3. Mockup & BRD', sec: 'Design and build', icon: 'modules', fi: 'g_config', items: [['modules', 'System Modules & Form Builder'], ['flow', 'State Flow Builder'], ['whiteboard', 'Process Whiteboard'], ['roles', 'Roles & Access Permissions'], ['notifications', 'Notifications'], ['agents', 'Agent Setup'], ['agentdata', 'Connection & Data'], ['agentrules', 'Rules & Guardrails'], ['cfginputs', 'Configuration & org package'], ['brd', 'BRD Draft']],   // in working order: build, set up, then write the BRD from all of it (the BRD is always last)
@@ -158,7 +158,7 @@
   V.isAgentProject = () => !!(S.project && S.project.type === 'agents');
   // REVAMP: the team menu shows only the tabs that have been built or rebuilt in the Part E revamp; every other tab stays hidden (its code, routes and data are untouched)
   // until it is rebuilt. To show a tab, add its view id to EXPOSED. Adding `alltabs=1` to the address (before the #) shows every tab again for this browser tab (for developers).
-  const EXPOSED = new Set(['projdash', 'kickoff', 'plan', 'claudesetup', 'teamhelp', 'settings']);
+  const EXPOSED = new Set(['projdash', 'msaintake', 'kickoff', 'plan', 'claudesetup', 'teamhelp', 'settings']);
   const showAllTabs = () => { try { if (/[?&]alltabs=1\b/.test(location.search)) sessionStorage.setItem('fwb_alltabs', '1'); else if (/[?&]alltabs=0\b/.test(location.search)) sessionStorage.removeItem('fwb_alltabs'); return sessionStorage.getItem('fwb_alltabs') === '1'; } catch (e) { return /[?&]alltabs=1\b/.test(location.search); } };
   const HIDE_UNBUILT_TABS = true;   // 6 Nov 2026: the earlier show-all was a demo for the developer; only the built tabs show again (Stage 1: Kick-off and Project Plan, plus Transfers where the extraction is approved and Contract for a manual upload)
   const tabOn = id => !HIDE_UNBUILT_TABS || EXPOSED.has(id) || showAllTabs();
@@ -430,7 +430,7 @@ function projectsHtml() {
   ACT.pjMore = () => { S.ui.pjLimit = (S.ui.pjLimit || (pjViewOf() === 'list' ? 40 : 24)) + (pjViewOf() === 'list' ? 40 : 24); render(); };
   ACT.openProject = a => openProject(a.getAttribute('data-id'));
   ACT.editProjectCard = async (a, e) => { if (e) e.stopPropagation(); await openProject(a.getAttribute('data-id')); S.ui.setTab = 'project'; go('settings'); };
-  ACT.newProject = () => { npZipFile = null;
+  ACT.newProject = () => { npZipFile = null; npMsaFile = null;
     const person = (k, i) => `<div class="row" style="margin-bottom:6px" data-person="${k}"><input type="text" placeholder="Name" style="flex:1" data-p="name"><input type="text" placeholder="${k === 'team' ? 'Role (e.g. Implementation Consultant)' : 'Role / department'}" style="flex:1" data-p="role"><input type="email" placeholder="Email" style="flex:1" data-p="email"></div>`;
     drawer('New project', `<div class="fgrid"><div class="full"><label class="f">Project name <span class="req">*</span></label><input type="text" id="np_name" placeholder="e.g. Facilio CAFM Implementation"></div>
       <div class="full"><label class="f">Customer / organisation <span class="req">*</span></label><input type="text" id="np_cust"></div>
@@ -438,6 +438,7 @@ function projectsHtml() {
       <div class="full"><label class="f">Description</label><textarea id="np_desc" rows="3"></textarea></div>
       <div class="full"><label class="chk" style="display:flex;gap:8px"><input type="checkbox" id="np_bring"> <span><b>This project already has documents</b> (a handover from another team, or work started earlier). After creating it, open Bring your project in to add them.</span></label></div>
       <div><label class="f">Start date</label><input type="date" id="np_start"></div><div><label class="f">Target go-live</label><input type="date" id="np_end"></div></div>
+      <div class="pink-label">Contract (MSA)</div><div id="np_msadrop" class="np-drop" role="button" tabindex="0" data-act="npMsa"><b>Drop your MSA here</b> <span class="small muted">or click to choose it (.pdf, .docx or .txt)</span><div id="np_msaname" class="small" style="margin-top:4px"></div></div><div class="xs muted" style="margin-top:4px">Optional. Claude reads it in the background and drafts the project plan, the requirement session plan and the kick-off deck. You only review and approve.</div>
       <div class="pink-label">Facilio org package (optional)</div><div class="row"><button class="btn sm" data-act="npZip" type="button">${ico('upl')}Choose package (.zip)</button><span id="np_zipname" class="small muted">None — the bundled reference configuration is used</span></div><div class="xs muted" style="margin-top:4px">Builds the project's modules, forms, state flows, roles and rules from the customer's own org package. It is read in your browser; contact details are removed before anything is saved.</div>
       <div class="pink-label">Implementation team</div><div id="np_team">${person('team')}${person('team')}</div><button class="btn sm" data-act="npAddPerson" data-k="team">${ico('plus')}Member</button>
       <div class="pink-label">Customer stakeholders</div><div id="np_stake">${person('stake')}${person('stake')}</div><button class="btn sm" data-act="npAddPerson" data-k="stake">${ico('plus')}Stakeholder</button>
@@ -446,13 +447,17 @@ function projectsHtml() {
     if (V.office()) { const c = document.getElementById('np_code'); if (c) [c.previousElementSibling, c.previousElementSibling && c.previousElementSibling.previousElementSibling, c.nextElementSibling, c].forEach(e => e && (e.style.display = 'none')); }
   };
   ACT.npAddPerson = a => { const k = a.getAttribute('data-k'); const host = document.getElementById(k === 'team' ? 'np_team' : 'np_stake'); const div = document.createElement('div'); div.innerHTML = host.firstElementChild.outerHTML; div.firstElementChild.querySelectorAll('input').forEach(i => i.value = ''); host.appendChild(div.firstElementChild); };
-  let npZipFile = null;
+  let npZipFile = null, npMsaFile = null;
+  const npSetMsa = f => { if (!f) return; if (!/\.(pdf|docx|txt)$/i.test(f.name)) { toast('The MSA must be a PDF, Word (.docx) or text file.', 5000, true); return; } if (f.size > 40 * 1024 * 1024) { toast('The MSA is larger than 40 MB.', 5000, true); return; } npMsaFile = f; const n = document.getElementById('np_msaname'); if (n) n.textContent = f.name + ' (' + Math.round(f.size / 1024).toLocaleString() + ' KB). It is uploaded when you create the project.'; };
+  ACT.npMsa = async () => { const f = (await V.pickFile('.pdf,.docx,.txt'))[0]; npSetMsa(f); };
+  document.addEventListener('dragover', e => { if (e.target && e.target.closest && e.target.closest('#np_msadrop')) e.preventDefault(); });
+  document.addEventListener('drop', e => { const z = e.target && e.target.closest && e.target.closest('#np_msadrop'); if (!z) return; e.preventDefault(); npSetMsa(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]); });
   ACT.npZip = async () => { const f = (await V.pickFile('.zip'))[0]; if (!f) return; npZipFile = f; const n = document.getElementById('np_zipname'); if (n) n.textContent = f.name + ' (' + Math.round(f.size / 1024).toLocaleString() + ' KB)'; };
   ACT.createProject = async () => {
     const people = sel => Array.from(document.querySelectorAll(sel + ' [data-person]')).map(r => ({ name: r.querySelector('[data-p=name]').value.trim(), role: r.querySelector('[data-p=role]').value.trim(), email: r.querySelector('[data-p=email]').value.trim() })).filter(p => p.name);
     const body = { type: val('np_type') || 'cmms', name: val('np_name'), customer: val('np_cust'), description: val('np_desc'), startDate: val('np_start'), endDate: val('np_end'), team: people('#np_team'), stakeholders: people('#np_stake'), accessCode: val('np_code') || undefined };
     const bring = !!(document.getElementById('np_bring') || {}).checked;
-    try { loading(true, 'Creating project…'); const r = await API.post('/api/projects', body); closeDrawer(); const zip = npZipFile; npZipFile = null; await openProject(r.project.id, true); if (zip && V.loadOrgPackage) { const done = await V.loadOrgPackage(zip); if (!done) toast('The project was created, but the package was not loaded. You can load it again in Project Settings → Configuration source.', 9000, true); } if (bring) go('transition'); }
+    try { loading(true, 'Creating project…'); const r = await API.post('/api/projects', body); closeDrawer(); const zip = npZipFile; npZipFile = null; await openProject(r.project.id, true); if (zip && V.loadOrgPackage) { const done = await V.loadOrgPackage(zip); if (!done) toast('The project was created, but the package was not loaded. You can load it again in Project Settings → Configuration source.', 9000, true); } const msa = npMsaFile; npMsaFile = null; if (msa && V.msaIngest) { try { await V.msaIngest(msa); } catch (e2) { toast('The project was created, but the MSA could not be uploaded: ' + (e2.message || 'try again on Contract intake'), 9000, true); } go('msaintake'); } else if (bring) go('transition'); }
     catch (e) { toast(e.message, 5000, true); } finally { loading(false); }
   };
 

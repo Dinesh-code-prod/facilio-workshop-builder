@@ -8,6 +8,7 @@
   (V.extraSections = V.extraSections || []).push('kickoff_pack', 'kickoff_cr');
   const FRESH_MS = 20000, POLL_MS = 15000;
   const K = () => S.ui.ko || (S.ui.ko = { pid: '', jobs: null, at: 0, err: '', msa: null, answers: {}, cr: '', busy: '' });
+  const ours = () => S.ui.view === 'kickoff' || S.ui.view === 'msaintake';
   const pid = () => (S.project && S.project.id) || '';
   const team = () => !V.isCustomer();
   const ro = () => !!S.readonly || (S.project && S.project.role === 'viewer');
@@ -37,11 +38,11 @@
       if (changed || paint) repaint();
     } catch (e) { if (mine !== pid()) return; k.err = e.message || 'The job list could not be loaded'; k.at = Date.now(); k.loading = false; k.jobs = k.jobs || []; repaint(); }
   }
-  function repaint() { if (S.ui.view !== 'kickoff') return; const a = document.activeElement; if (a && a.tagName === 'TEXTAREA' && a.closest('.ko')) { K().sig = ''; return; } V.render(); }   // skipped while typing: the next poll paints it
+  function repaint() { if (!ours()) return; const a = document.activeElement; if (a && a.tagName === 'TEXTAREA' && a.closest('.ko')) { K().sig = ''; return; } V.render(); }   // skipped while typing: the next poll paints it
 
   function poll() {
     if (timer) return;
-    timer = setInterval(() => { if (S.ui.view !== 'kickoff' || document.hidden) { if (S.ui.view !== 'kickoff') { clearInterval(timer); timer = 0; } return; } const k = K(); if (k.jobs && k.jobs.some(j => ['waiting', 'claimed', 'needs_input'].includes(j.status))) load(true); }, POLL_MS);
+    timer = setInterval(() => { if (!ours() || document.hidden) { if (!ours()) { clearInterval(timer); timer = 0; } return; } const k = K(); if (k.jobs && k.jobs.some(j => ['waiting', 'claimed', 'needs_input'].includes(j.status))) load(true); }, POLL_MS);
   }
 
   // ---------- panels ----------
@@ -107,8 +108,6 @@
     return `<section class="card ko-card" aria-label="Scope and modules"><div class="card-h"><b>Scope and modules</b></div><div class="card-b">
         ${p.modules.length ? `<div class="ko-chips">${p.modules.map(m => `<span class="ko-chip">${esc(m)}</span>`).join('')}</div>` : '<p class="muted small">No modules were listed in the contract.</p>'}
         ${list(p.scope) || '<p class="muted small">No confirmed scope items yet.</p>'}</div></section>
-      <section class="card ko-card" aria-label="Project plan"><div class="card-h"><b>Drafted plan</b><span class="xs muted">${esc(dt(p.window.start))} to ${esc(dt(p.window.end))}</span></div><div class="card-b"><div class="tw"><table><thead><tr><th>Phase</th><th>Dates</th><th>Who</th><th>Where it comes from</th></tr></thead><tbody>${ms}</tbody></table></div>
-        <p class="xs muted">Only dates written in the contract are treated as fixed. Everything else is Facilio's suggestion until a person confirms it.</p></div></section>
       ${attn ? `<section class="card ko-card" aria-label="Needs attention"><div class="card-h"><b>Needs your attention</b></div><div class="card-b">
         ${p.conflicts.length ? `<h4 class="ko-h ko-bad">Conflicts</h4>${list(p.conflicts, 'bad')}` : ''}${p.gaps.length ? `<h4 class="ko-h">Missing from the contract</h4>${list(p.gaps)}` : ''}${p.assumptions.length ? `<h4 class="ko-h">Assumptions made</h4>${list(p.assumptions)}` : ''}</div></section>` : ''}`;
   }
@@ -140,15 +139,22 @@
     return `<div class="ko-bar"><span class="xs muted">${a.ok || !a.why ? 'Review the contract data, then approve.' : esc(a.why)}</span><span class="spacer"></span>
       <button type="button" class="btn primary" data-act="koApprove"${a.ok ? '' : ' disabled'}>Approve kick-off</button></div>`;
   }
-  function page() {
-    const head = `<div class="page-header"><div class="t"><h1>Kick-off</h1><p>The contract, the kick-off deck and the project plan, drafted together by Claude. You review and approve once.</p></div></div>`;
-    const k = K(); if (k.pid !== pid()) reset(k);
-    const p = pack(); const hasFile = !!((V.plannerDoc && V.plannerDoc() || {}).msa);
-    return `${head}<div class="page-body ko">${strip(L().stage(hasFile || !!k.msa, p, k.jobs))}
-      ${p && p.status === 'discarded' ? '<div class="notice small">This draft was discarded. Ask Claude to build it again from the contract with Pull MSA, or approve nothing.</div>' : ''}
-      ${chatCard(p)}<div class="ko-grid">${msaCard(p, hasFile)}${jobsCard()}</div>
-      ${p ? packCards(p) + crCard() + safeDeck(p) + approveBar(p) : '<div class="empty">The kick-off pack appears here after Claude has read the contract and you have approved the extraction and started the project from it.</div>'}</div>`;
+  // Two tabs: Contract intake (upload, Claude's progress, the jobs) and Kick-off (only the output: scope, deck, change requests, approval).
+  function intakePage() {
+    const head = '<div class="page-header"><div class="t"><h1>Contract intake</h1><p>Upload the signed MSA. Claude reads it in the background and drafts the project plan, the requirement session plan and the kick-off deck. You do not need to do anything else here.</p></div></div>';
+    const k = K(); if (k.pid !== pid()) reset(k); const p = pack(); const hasFile = !!((V.plannerDoc && V.plannerDoc() || {}).msa);
+    return head + '<div class="page-body ko">' + strip(L().stage(hasFile || !!k.msa, p, k.jobs))
+      + (p && p.status === 'discarded' ? '<div class="notice small">This draft was discarded. Upload the MSA again and Claude will draft it again.</div>' : '')
+      + chatCard(p) + '<div class="ko-grid">' + msaCard(p, hasFile) + jobsCard() + '</div>'
+      + (p ? '<div class="card ko-card"><div class="card-b row ko-btns" style="align-items:center"><b>Your drafts are ready.</b><span class="spacer"></span><button type="button" class="btn sm primary" data-act="nav" data-view="kickoff">Open the kick-off</button><button type="button" class="btn sm" data-act="nav" data-view="plan">Open the project plan</button></div></div>' : '') + '</div>';
   }
+  function page() {
+    const head = '<div class="page-header"><div class="t"><h1>Kick-off</h1><p>What the contract produced for the kick-off: scope, the deck, your change requests. You review and approve once.</p></div></div>';
+    const k = K(); if (k.pid !== pid()) reset(k); const p = pack();
+    if (!p) return head + '<div class="page-body ko"><div class="card ko-card"><div class="card-b"><p>Nothing to show yet. Upload the MSA on the Contract intake tab; Claude drafts the kick-off from it.</p><div class="row ko-btns"><button type="button" class="btn sm primary" data-act="nav" data-view="msaintake">Go to Contract intake</button></div></div></div></div>';
+    return head + '<div class="page-body ko">' + (p.status === 'discarded' ? '<div class="notice small">This draft was discarded. Upload the MSA again on the Contract intake tab.</div>' : '') + packCards(p) + crCard() + safeDeck(p) + approveBar(p) + '</div>';
+  }
+  V.msaintake = { html() { return V.isCustomer() ? '' : intakePage(); }, mount() { if (V.isCustomer()) return; load(false); poll(); syncStruct(); syncSessions(); syncWorkbook(); } };
   // The team gets this page; customers keep the older Kick-off Deck viewer.
   const old = V.kickoff;
   V.kickoff = Object.assign({}, old, { html() { return V.isCustomer() ? old.html.apply(this, arguments) : page(); }, mount() { if (V.isCustomer()) return old.mount && old.mount.apply(this, arguments); load(false); poll(); fitDeck(); if (!fitBound) { fitBound = true; addEventListener('resize', fitDeck); } } });
@@ -247,6 +253,19 @@
       d.versions.unshift({ fileId: rec.id, name: f.name, size: f.size, uploadedAt: new Date().toISOString(), by: 'Claude (kick-off)', source: 'kickoff', fromPack: raw.builtAt }); d.current = rec.id; d.view = d.view || {}; d.view.sheet = 0; F.changed('Project plan workbook made from the kick-off', f.name, { section: 'plan' });
     } catch (e) { toast('The project plan workbook could not be made: ' + (e.message || 'error'), 7000, true); } finally { planBusy = false; }
   }
-  const oldPlan = V.plan; if (oldPlan) V.plan = Object.assign({}, oldPlan, { html() { syncStruct(); return oldPlan.html.apply(this, arguments); }, mount() { syncWorkbook(); return oldPlan.mount && oldPlan.mount.apply(this, arguments); } });
-  const kickMount = V.kickoff.mount; V.kickoff.mount = function () { if (!V.isCustomer()) { syncStruct(); syncWorkbook(); } return kickMount && kickMount.apply(this, arguments); };
+  // Requirement sessions: made from the pack into planner.sessions (the Requirement Session Planner's own list), only while there are none that a person made.
+  function syncSessions() {
+    const raw = packRaw(); if (!raw) return; F.doc('planner'); let d = S.docs.planner.data; if (!d || typeof d !== 'object') d = S.docs.planner.data = {}; if (!Array.isArray(d.sessions)) d.sessions = [];
+    const mine = d.sessions.some(x => !x.fromPack); if (mine) return; if (d.sessions.length && d.sessions[0].fromPack === raw.builtAt) return;
+    const r = L().sessionPlan(raw); d.sessions = r.sessions.map(x => Object.assign({ id: F.uid('ses'), mode: (d.settings || {}).mode || 'online', notes: '', prep: '', modules: [], fromPack: raw.builtAt }, x)); d.sessionNotes = r.notes; F.changed(null, null, { section: 'planner', render: false });
+  }
+  V.planSessions = { html() {
+    syncSessions(); const d = F.doc('planner') || {}; const ss = (d.sessions || []).slice().sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.start).localeCompare(String(b.start))); const notes = Array.isArray(d.sessionNotes) ? d.sessionNotes : [];
+    if (!ss.length) return '<div class="card empty"><h3>No requirement sessions yet</h3><p>' + esc(notes[0] || 'They are drafted from the approved kick-off: one session per module in scope, inside the requirements workshops phase.') + '</p></div>';
+    const rows = ss.map(x => '<tr><td>' + esc(x.no) + '</td><td>' + esc(x.title) + '</td><td>' + esc(dt(x.date)) + '</td><td>' + esc((x.start || '') + (x.end ? ' to ' + x.end : '')) + '</td><td>' + esc(x.participants || 'To be named') + '</td><td>' + tag(x.status === 'proposed' ? 'tbc' : 'low', x.status === 'proposed' ? 'Proposed' : String(x.status || '')) + '</td></tr>').join('');
+    return '<section class="card ko-card"><div class="card-h"><b>Requirement session plan</b><span class="xs muted">' + ss.length + ' session' + (ss.length === 1 ? '' : 's') + ', drafted from the kick-off</span></div><div class="card-b"><div class="tw"><table><thead><tr><th>No</th><th>Session</th><th>Date</th><th>Time</th><th>Customer attendees</th><th>Status</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+      + notes.map(n => '<p class="xs muted">' + esc(n) + '</p>').join('') + '</div></section>';
+  } };
+  const oldPlan = V.plan; if (oldPlan) V.plan = Object.assign({}, oldPlan, { html() { syncStruct(); syncSessions(); return oldPlan.html.apply(this, arguments); }, mount() { syncWorkbook(); return oldPlan.mount && oldPlan.mount.apply(this, arguments); } });
+  const kickMount = V.kickoff.mount; V.kickoff.mount = function () { if (!V.isCustomer()) { syncStruct(); syncSessions(); syncWorkbook(); } return kickMount && kickMount.apply(this, arguments); };
 })(typeof window !== 'undefined' ? window : globalThis);

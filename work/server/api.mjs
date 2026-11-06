@@ -2039,9 +2039,10 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   });
   route('POST', '/api/admin/projects/:id/delete', async (b, P) => {
     const s = await requireAdmin('super'); const r = await dbGet('projects', P.id); if (!r) throw new HttpError(404, 'Project not found'); const p = r.value;
-    if (!p.archived) throw new HttpError(400, 'Archive the project first. Only an archived project can be deleted for good.');
+    if (!p.archived && b.direct !== true) throw new HttpError(400, 'Archive the project first. Only an archived project can be deleted for good.');   // direct: the platform owner deletes from the project's own settings
     if (String(b.confirm || '') !== p.name) throw new HttpError(400, 'Type the project name exactly to confirm');
-    let n = 0; for (const col of pcols(P.id, true).concat(['au.' + P.id, 'fl.' + P.id, 'fb.' + P.id, 'xf.' + P.id, 'xfd.' + P.id, 'xfdp.' + P.id, 'tsg.' + P.id, 'jb.' + P.id])) { const rows = await dbList(col); await pmap(rows, 8, async x => { await dbDel(col, x.key); n++; }); }
+    let n = 0; for (const f of (await dbList('fl.' + P.id)).map(x => x.value).filter(Boolean)) { for (const u of (f.urls || []).concat(Object.values(f.mint || {}))) { try { await CTX.files.delete(u, { private: true }); } catch (e) { /* already gone */ } } }   // the stored files themselves, not only their list
+    for (const col of pcols(P.id, true).concat(['au.' + P.id, 'fl.' + P.id, 'fb.' + P.id, 'xf.' + P.id, 'xfd.' + P.id, 'xfdp.' + P.id, 'tsg.' + P.id, 'jb.' + P.id])) { const rows = await dbList(col); await pmap(rows, 8, async x => { await dbDel(col, x.key); n++; }); }
     await dbDel('projects', P.id); await audit('sys', s.id, 'admin_delete_project', p.name + ' (' + P.id + ')'); ADM = null; return ok({ ok: true, removed: n });
   });
   route('GET', '/api/admin/projects/:id/members', async (b, P) => { await requireAdmin('sub'); const r = await dbGet('projects', P.id); if (!r) throw new HttpError(404, 'Project not found'); return ok({ members: (r.value.members || []).map(m => Object.assign(memberOut(m), { addedAt: null })) }); });
