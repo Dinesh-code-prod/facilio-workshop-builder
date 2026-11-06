@@ -73,3 +73,4 @@ body.asst-open #app{margin-right:var(--aw)}
 .as-feed{max-height:none!important;overflow:visible!important;padding:4px 0!important}
 #asst .ki-row{max-width:92%}#asst .ki-bub,#asst .ki-msg{font-size:14.5px;line-height:1.5}
 @media(max-width:900px){:root{--aw:100vw}}
+.as-comp{display:flex;gap:8px;align-items:flex-end;padding:10px 12px;border-top:1px solid #DCE4F3;background:#F7FAFF}.as-comp textarea{flex:1;resize:none;box-sizing:border-box;padding:9px 12px;border:1px solid #DCE4F3;border-radius:12px;font:inherit;font-size:14.5px;line-height:1.4;color:#1D1A5E}.as-comp textarea:focus{outline:2px solid #1570EF}

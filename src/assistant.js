@@ -17,7 +17,7 @@
   }
   const key = j => j.id + ':' + (j.status === 'needs_input' ? 'q' : 'c') + ':' + (j.claimedAt || '');
   function runMsgs(j, k) {
-    const when = J().when, who = String(j.claimedBy || '').split('@')[0], out = []; out.push({ who: 'you', text: 'I asked: ' + j.label + '.', at: when(j.at) });
+    const when = J().when, who = String(j.claimedBy || '').split('@')[0], out = []; out.push({ who: 'you', text: j.kind === 'chat' ? j.note : 'I asked: ' + j.label + '.', at: when(j.at) });
     if (j.status === 'waiting') out.push({ who: 'sys', text: 'Queued. Claude checks for new work every 5 minutes while your Claude app is open.' });
     if (j.claimedAt) out.push({ who: 'claude', text: 'Claude has started' + (who ? ' (on ' + who + "'s computer)" : '') + '.', at: when(j.claimedAt) });
     const act = j.activity.slice(-12); act.forEach((a, i, all) => out.push({ who: 'claude', text: a.text, at: when(a.at), typing: j.status === 'claimed' && i === all.length - 1 }));
@@ -33,19 +33,24 @@
     const a = st(); if (a.init !== S.project.id) { a.init = S.project.id; a.seen = {}; a.open = false; jobs.forEach(j => { if (j.status !== 'claimed' && j.status !== 'needs_input') a.seen[key(j)] = 1; }); }   // finished work does not pop the panel; work still running when the project opens does
     jobs.forEach(j => { if ((j.status === 'claimed' || j.status === 'needs_input') && !a.seen[key(j)]) { a.seen[key(j)] = 1; a.open = true; } });
     document.body.classList.toggle('asst-open', !!a.open); tab.className = open.length ? 'on' : ''; tab.innerHTML = '<span>Assistant</span>' + (ask ? '<i class="as-b">' + ask + '</i>' : open.length ? '<i class="as-p"></i>' : '');
-    const sig = JSON.stringify([S.project.id, a.open, a.q || '', jobs.map(j => [j.id, j.status, j.progressAt, j.activity.length, j.finishedAt])]) + JSON.stringify(k ? k.answers : {}); const typing = document.activeElement && panel.contains(document.activeElement) && document.activeElement.tagName === 'TEXTAREA';
+    const sig = JSON.stringify([S.project.id, a.open, a.q || '', jobs.map(j => [j.id, j.status, j.progressAt, j.activity.length, j.finishedAt])]) + JSON.stringify(k ? k.answers : {}); const typing = document.activeElement && panel.contains(document.activeElement) && document.activeElement.tagName === 'TEXTAREA' && document.activeElement.id !== 'asM';
     if (sig === a.sig || typing) return; a.sig = sig;
     const q = String(a.q || '').trim().toLowerCase(), has = m => String(m.text || '').toLowerCase().includes(q);   // search: a run whose title matches shows whole, otherwise only the lines that match
-    const runs = jobs.slice().reverse().map(j => { let m = runMsgs(j, k); if (q && !(j.label + ' ' + (STAGE[j.stage] || '')).toLowerCase().includes(q)) { m = m.filter(has); if (!m.length) return ''; } return '<section class="as-run"><div class="as-topic"><b>' + esc(j.label) + '</b><span>' + esc((STAGE[j.stage] || STAGE.other) + ' · ' + j.statusLabel) + '</span></div><div class="ki-feed as-feed">' + W().feed(m) + '</div></section>'; }).join('');   // ONE thread, oldest at the top and newest at the bottom; each run starts with a heading that says what the chat is about
+    const runs = jobs.slice().reverse().map(j => { let m = runMsgs(j, k); if (q && !(j.label + ' ' + (STAGE[j.stage] || '')).toLowerCase().includes(q)) { m = m.filter(has); if (!m.length) return ''; } return '<section class="as-run"><div class="as-topic"><b>' + esc(j.kind === 'chat' ? 'Your message: ' + j.note.slice(0, 50) + (j.note.length > 50 ? '…' : '') : j.label) + '</b><span>' + esc((STAGE[j.stage] || STAGE.other) + ' · ' + j.statusLabel) + '</span></div><div class="ki-feed as-feed">' + W().feed(m) + '</div></section>'; }).join('');   // ONE thread, oldest at the top and newest at the bottom; each run starts with a heading that says what the chat is about
     const now = jobs.find(j => j.status === 'claimed'), ask1 = jobs.find(j => j.status === 'needs_input'), wait = jobs.find(j => j.status === 'waiting');   // one line at the top that says what is happening right now
     const nowTxt = ask1 ? 'Claude has a question for you: ' + (ask1.questions[0] || '') : now ? 'Claude is working: ' + (((now.activity[now.activity.length - 1] || {}).text) || now.progress || now.label) : wait ? 'Waiting for Claude to pick up: ' + wait.label + '. Claude checks every 5 minutes while the scheduled task is switched on.' : 'Nothing is running.';
     const strip = '<div class="as-now ' + (now ? 'run' : ask1 ? 'ask' : wait ? 'wait' : 'idle') + '"><i></i><span>' + esc(nowTxt) + '</span></div>';
     const body = strip + (runs ||'<p class="as-empty">' + (q ? 'Nothing matches “' + esc(a.q) + '”.' : 'Nothing is running. When you ask for something Claude helps with (reading a contract, pulling transcripts), its progress appears here, whatever tab you are on.') + '</p>'); const bodyEl = panel.querySelector('.as-body');
     if (bodyEl) { const atEnd = bodyEl.scrollHeight - bodyEl.scrollTop - bodyEl.clientHeight < 90; bodyEl.innerHTML = body; if (atEnd) bodyEl.scrollTop = bodyEl.scrollHeight; return; }   // the search box stays as it is while you type; each run shows its newest line
     panel.innerHTML = '<div class="as-head"><div><b>Your project assistant</b><span>Prepared with Claude\'s help, on your own computer. You review and decide.</span></div><button type="button" class="btn sm" data-act="asstToggle" aria-label="Close the assistant">Close</button></div>'
-      + '<div class="as-search"><input type="search" id="asQ" placeholder="Search the chat" aria-label="Search the assistant chat" value="' + esc(a.q || '') + '"></div><div class="as-body">' + body + '</div>';
+      + '<div class="as-search"><input type="search" id="asQ" placeholder="Search the chat" aria-label="Search the assistant chat" value="' + esc(a.q || '') + '"></div><div class="as-body">' + body + '</div><div class="as-comp"><textarea id="asM" rows="2" maxlength="580" placeholder="Write to Claude about this project. Enter sends, Shift+Enter makes a new line." aria-label="Message to Claude"></textarea><button type="button" class="btn pri" data-act="asstSend">Send</button></div>';
     const b0 = panel.querySelector('.as-body'); if (b0) b0.scrollTop = b0.scrollHeight;   // opens at the newest message
   }
+  V.ACT.asstSend = a => V.busy(a, async () => {
+    const box = document.getElementById('asM'), note = box ? box.value.trim() : ''; if (!note) { V.toast('Write your message first.', 3000, true); return; } if (J().guard()) return;
+    await J().post('/jobs', { kind: 'chat', note, ref: String(Date.now()), section: String(S.view || '') }); box.value = ''; const a2 = st(); a2.open = true; a2.sig = ''; J().load(true); V.toast('Sent. Claude answers here when it picks it up.', 4000);
+  });
+  document.addEventListener('keydown', e => { if (e.target && e.target.id === 'asM' && e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); const b = document.querySelector('#asst [data-act=asstSend]'); if (b) b.click(); } });
   V.ACT.asstToggle =() => { const a = st(); a.open = !a.open; a.sig = ''; paint(); };
   document.addEventListener('input', e => { if (e.target && e.target.id === 'asQ') { st().q = e.target.value; st().sig = ''; paint(); } });
   V.assistantPaint = paint;

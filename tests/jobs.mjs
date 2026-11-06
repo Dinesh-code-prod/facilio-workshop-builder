@@ -101,3 +101,4 @@ await t('setting up the project workspace is a job of the intake stage that read
   const a = cleanRequest({ kind: 'setup_workspace' }), b = cleanRequest({ kind: 'setup_workspace' }); assert.ok(a.ok && a.key === b.key, 'the same request is the same job');
 });
 console.log('\n' + n + ' job-queue checks passed');
+{ const { cleanRequest, KINDS: K2 } = await import('../work/server/_jobs.mjs'); const r = cleanRequest({ kind: 'chat', note: 'Which assets were discussed?', ref: '1', section: 'rschecks' }); if (!r.ok || r.params.section !== 'rschecks' || K2.chat.stage !== 'other') throw new Error('chat job request'); console.log('  ok  a chat message is a job with the note and the tab it was written on'); }
