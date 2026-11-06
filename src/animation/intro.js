@@ -7,6 +7,8 @@
   const seen = /#\/p\//.test(root.location.hash);
   const forced = /[?&]intro=1\b/.test(root.location.search); const automated = !!(root.navigator && root.navigator.webdriver);
   if (!forced && (seen || automated || /[?&]nointro\b|#\/welcome/.test(root.location.search + root.location.hash))) return;
+  // the tree intro plays ONCE per browser, the first time the link is opened; after that the sign-in page shows straight away (?intro=1 still forces it). Customer invite links keep their journey.
+  if (!forced && !/#\/c\/[A-Za-z0-9_-]+/.test(root.location.hash)) { try { if (localStorage.getItem('fwb_intro_seen') === '1') return; localStorage.setItem('fwb_intro_seen', '1'); } catch (e) { /* storage blocked: play it as before */ } }
   try { sessionStorage.setItem('fwb_intro', '1'); } catch (e) { }
   // the rest of the app is bundled after this file, so start on the next tick
   // customer invite links (#/c/<project>) open on the customer journey (src/animation/roadintro.js), which rises away to reveal the customer sign-in;

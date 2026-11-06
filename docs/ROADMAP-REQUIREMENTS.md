@@ -457,6 +457,8 @@ Idea: a Facilio-branded bot that joins customer calls, records live transcripts,
 
 
 **E18. Daily follow-up: Today board and Teams replies (planned 6 Nov 2026, not built).** Extends E12. The manager gets one Today board; people get one Teams nudge a day and answer with buttons or text; a task changes only through the assignee's own click or confirmed reply, or a manager's decision. Slices, data, safety rules and open questions (including whether Otto can pass replies to the Studio) are in [TASKS-TODAY-PLAN-2026-11-06](reference/TASKS-TODAY-PLAN-2026-11-06.md).
+**E19. Animations and UI polish are the LAST stage (user, 6 Nov 2026).** Build the core first (all stages working end to end). At the very end, revamp every animation (the opening tree intro, the customer journey intro, the 12-stage walk-through, the sign-in story) so it matches the app as it is then, and finish the UI polish together with E6 (assistant panel look, chat styling, spacing). Until then only small fixes: the tree intro already plays once per browser (the first visit), later visits go straight to the sign-in page; customer invite links keep their own journey.
+
 ## Progress log (add a line each time something is finished)
 | Date | Item | Deploy | Not checked |
 |---|---|---|---|
