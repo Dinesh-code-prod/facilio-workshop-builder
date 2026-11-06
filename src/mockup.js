@@ -29,7 +29,26 @@
     const counts = { modules: mods.length, flows: mods.reduce((n, m) => n + m.flows.length, 0), fields: mods.reduce((n, m) => n + m.fields.length, 0), forms: mods.reduce((n, m) => n + m.forms.length, 0), crosslinks: arr(d.crosslinks).length, apps: arr(d.apps).length, requirements: mods.reduce((n, m) => n + m.requirements.length, 0) };
     return { text: out.join('\n').trim() + '\n', counts, empty: !mods.length && !counts.crosslinks && !counts.apps };
   }
-  V.mockupLogic = { build };
+  /** pure: the same brief as one self-contained HTML page (Facilio colours, no outside files); it prints cleanly, so the browser's Print can save it as a PDF */
+  function toHtml(d) {
+    const mods = arr(d.modules).filter(m => m.requirements.length || m.flows.length || m.fields.length || m.forms.length); const e = esc; const li = a => '<ul>' + a.map(x => '<li>' + x + '</li>').join('') + '</ul>';
+    const body = [];
+    mods.forEach(m => {
+      body.push('<section><h2>' + e(m.label) + '</h2>');
+      if (m.requirements.length) body.push('<h3>Confirmed requirements</h3>' + li(m.requirements.map(r => '<b>' + e(r.id) + '</b> ' + e(r.title) + (r.objective ? ': ' + e(r.objective) : ''))));
+      m.flows.forEach(f => body.push('<h3>State flow: ' + e(f.name) + '</h3><p class="st">' + f.states.map(s => '<span>' + e(s) + '</span>').join('<i>›</i>') + '</p>' + li(f.transitions.map(t => '<b>' + e(t.name) + '</b>: ' + e(t.from) + ' → ' + e(t.to)))));
+      if (m.fields.length) body.push('<h3>Custom fields</h3>' + li(m.fields.map(x => '<b>' + e(x.label) + '</b> (' + e(x.type) + (x.required ? ', required' : '') + (x.options && x.options.length ? ': ' + e(list(x.options)) : '') + ')')));
+      m.forms.forEach(f => body.push('<h3>Form: ' + e(f.label) + '</h3>' + li(f.sections.map(s => '<b>' + e(s.name) + '</b>: ' + e(list(s.fields))))));
+      body.push('</section>');
+    });
+    if (arr(d.crosslinks).length) body.push('<section><h2>Flows across modules</h2>' + li(d.crosslinks.map(c => e(c.from) + ' → ' + e(c.to) + ': <b>' + e(c.name) + '</b>' + (c.condition ? ' (when ' + e(c.condition) + ')' : ''))) + '</section>');
+    if (arr(d.apps).length) body.push('<section><h2>Connected apps</h2>' + li(d.apps.map(a => '<b>' + e(a.name) + '</b> (' + e(a.module) + '): opens from the ' + e((a.triggerLabel ? a.triggerLabel + ' ' : '') + a.trigger) + '. ' + e(a.purpose) + (a.shows ? ' It shows: ' + e(a.shows) : '') + (a.users && a.users.length ? ' Used by: ' + e(list(a.users)) + '.' : ''))) + '</section>');
+    const title = (d.customer ? d.customer + ' · ' : '') + (d.project || 'Facilio project');
+    return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Prototype brief: ' + e(title) + '</title><style>'
+      + 'body{margin:0;background:#F7FAFF;color:#1D1A5E;font:16px/1.55 system-ui,Segoe UI,Arial,sans-serif}main{max-width:860px;margin:0 auto;padding:32px 20px}h1{font-size:28px;margin:0 0 6px}.lead{color:#4A5784;margin:0 0 24px}section{background:#fff;border:1px solid #DCE4F3;border-radius:14px;padding:18px 22px;margin:0 0 16px;break-inside:avoid}h2{margin:0 0 8px;font-size:20px;border-bottom:2px solid #1570EF;padding-bottom:6px}h3{margin:14px 0 4px;font-size:16px;color:#1570EF}ul{margin:4px 0 0;padding-left:20px}.st{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}.st span{padding:2px 10px;border-radius:999px;background:#EAF2FF;border:1px solid #CFE0FF}.st i{font-style:normal;color:#E5197F}@media print{body{background:#fff}section{border-color:#ccc}}'
+      + '</style></head><body><main><h1>Prototype brief</h1><p class="lead">' + e(title) + '. Made only from what the delivery team has confirmed or applied.</p>' + body.join('') + '</main></body></html>';
+  }
+  V.mockupLogic = { build, toHtml };
 
   /** the project's applied design as plain data */
   function gather() {
@@ -52,11 +71,12 @@
     const chip = (n, w) => '<span class="mk-c"><b>' + n + '</b> ' + w + '</span>';
     return '<div class="page-header"><div class="t"><h1>Mockup</h1><p>The brief for the prototype, built only from what your team has confirmed or applied. Take it to Meteor to get a clickable prototype and a walkthrough you can show the customer.</p></div></div>'
       + '<div class="page-body"><section class="mk"><div class="mk-top"><div class="mk-chips">' + chip(c.modules, 'modules') + chip(c.requirements, 'confirmed requirements') + chip(c.flows, 'state flows') + chip(c.fields, 'custom fields') + chip(c.forms, 'forms') + chip(c.crosslinks, 'flows across modules') + chip(c.apps, 'connected apps') + '</div>'
-      + '<div class="mk-acts"><button class="btn sm primary" data-act="mkCopy"' + (r.empty ? ' disabled' : '') + '>Copy the brief</button><button class="btn sm" data-act="mkMeteor">Open Meteor</button><button class="btn sm" data-act="mkDownload"' + (r.empty ? ' disabled' : '') + '>Download</button></div></div>'
+      + '<div class="mk-acts"><button class="btn sm primary" data-act="mkCopy"' + (r.empty ? ' disabled' : '') + '>Copy the brief</button><button class="btn sm" data-act="mkMeteor">Open Meteor</button><button class="btn sm" data-act="mkDownload"' + (r.empty ? ' disabled' : '') + '>Download (text)</button><button class="btn sm" data-act="mkHtml"' + (r.empty ? ' disabled' : '') + ' title="One web page you can open, share or print to PDF">Export HTML</button></div></div>'
       + (r.empty ? '<p class="small muted">Nothing is applied yet. Apply the proposed flows, fields, forms and connected apps and confirm the requirements (Requirement sessions, System modules, BRD tabs), then come back.</p>' : '<ol class="small mk-how"><li>Press <b>Copy the brief</b>.</li><li>Press <b>Open Meteor</b>, choose <b>From a PRD</b> and paste it. Choose <b>Connected App</b> for a connected app on its own.</li><li>Check the prototype against the customer’s words before you show it.</li></ol><pre class="mk-pre">' + esc(r.text) + '</pre>')
       + '<p class="xs muted">Only modules in scope, confirmed requirements and applied changes are included. The standard Facilio screens are not listed: Meteor builds those from the CMMS Demo Kit.</p></section></div>';
   } };
   ACT.mkCopy = async () => { const r = spec(); if (r.empty) return; let ok = false; try { await navigator.clipboard.writeText(r.text); ok = true; } catch (e) { /* blocked: the brief is on the page to select */ } toast(ok ? 'The brief is copied. Open Meteor, choose From a PRD and paste it.' : 'Your browser blocked copying. Select the brief on the page and copy it.', 6000, !ok); };
   ACT.mkMeteor = () => { window.open('https://meteor.facilio.work/#/new', '_blank', 'noopener'); };
+  ACT.mkHtml = () => { const d = gather(); if (build(d).empty) return; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([V.mockupLogic.toHtml(d)], { type: 'text/html' })); a.download = ((S.project && S.project.name) || 'project').replace(/[^A-Za-z0-9 _-]+/g, ' ').trim().replace(/\s+/g, '-') + '-prototype-brief.html'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); toast('Saved as an HTML page. To get a PDF, open it and use Print, then Save as PDF.', 7000); };
   ACT.mkDownload = () => { const r = spec(); if (r.empty) return; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([r.text], { type: 'text/markdown' })); a.download = ((S.project && S.project.name) || 'project').replace(/[^A-Za-z0-9 _-]+/g, ' ').trim().replace(/\s+/g, '-') + '-prototype-brief.md'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); };
 })(typeof window !== 'undefined' ? window : globalThis);

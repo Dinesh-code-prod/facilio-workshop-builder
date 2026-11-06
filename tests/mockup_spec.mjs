@@ -16,4 +16,6 @@ for (const s of ['# Prototype brief: Al Moallam · Rollout', '## Work Order', '-
   assert.ok(r.text.includes(s), 'the brief has: ' + s);
 assert.ok(!r.text.includes('## Asset'), 'a module with nothing applied is left out'); assert.ok(r.text.includes('do not invent'), 'it tells Meteor not to invent'); assert.ok(r.text.endsWith('\n'));
 const only = build({ customer: '', project: 'P', modules: [], crosslinks: [], apps: [d.apps[0]] }); assert.equal(only.empty, false, 'a connected app alone is enough'); assert.ok(only.text.startsWith('# Prototype brief: P'));
-console.log('4 mockup brief checks passed');
+const h = globalThis.FWBViews.mockupLogic.toHtml(Object.assign({}, d, { project: 'Rollout <b>x</b>' })); assert.ok(h.startsWith('<!doctype html>') && h.includes('<h2>Work Order</h2>') && h.includes('Approve</b>: Open → Approved') && h.includes('Warranty end</b> (Date, required)') && h.includes('<h2>Flows across modules</h2>') && h.includes('<h2>Connected apps</h2>'));
+assert.ok(!h.includes('<h2>Asset</h2>') && !h.includes('Rollout <b>x</b>') && h.includes('Rollout &lt;b&gt;x&lt;/b&gt;'), 'empty modules left out, text escaped'); assert.ok(!/(src|href)=/.test(h) && !h.includes('http'), 'self-contained: no outside files');
+console.log('5 mockup brief checks passed');
