@@ -54,7 +54,7 @@
     if (!team() || !I().ready(['utc'])) return ''; const mods = scoped(); if (!mods.length || !cases().length) return '';
     const iss = (I().ready(['task']) ? issues() : []).map(t => ({ module: t.module, status: U().issueStatus(t) })); const b = U().statusBoard(mods, cases(), iss, walkLinks()); const t = b.totals;
     return '<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Stage 4 status</h3><span class="small muted">' + t.passed + ' of ' + t.cases + ' test cases passed, ' + t.openIssues + ' open issue' + (t.openIssues === 1 ? '' : 's') + '</span></div><div class="card-b"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Module</th><th class="num">Test cases</th><th class="num">Run</th><th class="num">Passed</th><th class="num">Failed</th><th class="num">Blocked</th><th class="num">Open issues</th><th class="num">Walkthroughs</th></tr></thead><tbody>'
-      + b.rows.filter(r => r.cases || r.openIssues).map(r => '<tr><td><b>' + esc(r.label) + '</b></td><td class="num">' + r.cases + '</td><td class="num">' + r.run + '</td><td class="num">' + r.passed + '</td><td class="num">' + r.failed + '</td><td class="num">' + r.blocked + '</td><td class="num">' + r.openIssues + '</td><td class="num">' + r.videos + ' of ' + r.scenarios + '</td></tr>').join('') + '</tbody></table></div><p class="xs muted" style="margin:8px 0 0">Read only. Run means a test case that is no longer Not Started, Ready for Testing or Deferred. FTR checks are kept in the FTR results file, not here.</p></div></div>';
+      + b.rows.filter(r => r.cases || r.openIssues).map(r => '<tr><td><b>' + esc(r.label) + '</b></td><td class="num">' + r.cases + '</td><td class="num">' + r.run + '</td><td class="num">' + r.passed + '</td><td class="num">' + r.failed + '</td><td class="num">' + r.blocked + '</td><td class="num">' + r.openIssues + '</td><td class="num">' + r.videos + ' of ' + r.scenarios + '</td></tr>').join('') + '</tbody></table></div><p class="xs muted" style="margin:8px 0 0">' + (cases().filter(c => c.src && c.src.from === 'solution').length ? cases().filter(c => c.src && c.src.from === 'solution').length + ' of these were drafted from the BRD. ' : '') + 'New confirmed requirements get draft test cases on their own. Read only. Run means a test case that is no longer Not Started, Ready for Testing or Deferred. FTR checks are kept in the FTR results file, not here.</p></div></div>';
   }
   /** read only: which confirmed requirements have a test case */
   function coverageCard() {
@@ -108,6 +108,13 @@
       crosslinks: scoped().flatMap(m => ((S.ws.crossLinks || {})[m.name] || []).map(x => ({ from: m.label, fromName: m.name, to: (F.moduleView(x.to) || {}).label || x.to, name: x.name, condition: x.condition || '' }))),
       apps: props.filter(p => p.kind === 'connectedapp' && p.status === 'applied').map(p => ({ id: p.id, name: p.name, module: p.module, moduleName: nameOf(p.module), trigger: p.trigger, triggerLabel: p.triggerLabel, purpose: p.purpose, shows: p.shows })).filter(a => a.moduleName) };
   }
+  /** automatic: draft test cases from the solution for anything not drafted before; returns how many were added. Each source key is drafted once (S.ws.uatDrafted), so a draft a person deleted does not come back. */
+  async function autoDraft() {
+    if (V.isCustomer() || S.readonly) return 0; I().load(['utc']); for (let i = 0; i < 20 && !I().ready(['utc']); i++) await new Promise(r => setTimeout(r, 250)); if (!I().ready(['utc'])) return 0;
+    const done = Object.assign({}, S.ws.uatDrafted || {}); const r = U().fromSolution(solutionData(), cases()); const fresh = r.drafts.filter(d => d.src && d.src.key && !done[d.src.key]); if (!fresh.length) return 0;
+    for (const d of fresh) { await I().put('utc', I().uid('tc'), d); done[d.src.key] = 1; } S.ws.uatDrafted = done; F.changed('UAT test cases drafted from the BRD', String(fresh.length)); return fresh.length;
+  }
+  V.uatAuto = autoDraft;
   ACT.utcFromSolution = a => V.busy(a, async () => {
     if (!can()) return; const r = U().fromSolution(solutionData(), cases());
     if (!r.drafts.length) { toast(r.skipped ? 'Nothing new: every confirmed requirement, changed flow, connected app and flow across modules already has a test case.' : 'Nothing is recorded in the solution yet for the modules in scope (confirmed requirements, changed flows, connected apps). Add some, or write test cases by hand.', 6000); return; }
