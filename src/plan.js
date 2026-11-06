@@ -15,8 +15,7 @@
     const d = PD(); const cur = d.versions.find(v => v.fileId === d.current) || d.versions[0]; const ro = S.readonly;
     const head = `<div class="page-header"><div class="t"><h1>Project Plan</h1><p>The customer's implementation project plan, imported from Excel and shown as in the workbook. The original file is kept unchanged; any edits made here are stored separately.</p></div>
       <div class="row">${cur ? `<button class="btn" data-act="dlFile" data-id="${esc(cur.fileId)}" data-name="${esc(cur.name)}">${ico('dl')}Download${d.versions.length > 1 ? ' this version' : ' original'}</button>` : ''}${ro || !cur || /\.xls$/i.test(cur.name) || S.ui.planEditor ? '' : `<button class="btn" data-act="planOpenEditor">${ico('edit')}Edit workbook</button>`}${ro ? '' : `<button class="btn primary" data-act="planUpload">${ico('upl')}${cur ? 'Import new version' : 'Import plan'}</button>`}</div></div>`;
-    const pt = S.ui.planTab === 'tl' || S.ui.planTab === 'cal' || S.ui.planTab === 'rs' ? S.ui.planTab : 'wb'; const tabs = `<div class="plan-tabs" role="tablist">${[['wb', 'Workbook'], ['tl', 'Timeline &amp; planning'], ['cal', 'Calendar'], ['rs', 'Requirement session plan']].map(([k, l]) => `<button role="tab" class="${pt === k ? 'on' : ''}" aria-selected="${pt === k}" data-act="planTab" data-t="${k}">${l}</button>`).join('')}</div>`;
-    if (pt === 'rs' && V.planSessions) return head + `<div class="page-body pl-page">${tabs}${V.planSessions.html()}</div>`;
+    const pt = S.ui.planTab === 'tl' || S.ui.planTab === 'cal' ? S.ui.planTab : 'wb'; const tabs = `<div class="plan-tabs" role="tablist">${[['wb', 'Workbook'], ['tl', 'Timeline &amp; planning'], ['cal', 'Calendar']].map(([k, l]) => `<button role="tab" class="${pt === k ? 'on' : ''}" aria-selected="${pt === k}" data-act="planTab" data-t="${k}">${l}</button>`).join('')}</div>`;
     if (pt === 'cal' && V.planCalendar) return head + `<div class="page-body pl-page">${tabs}${V.planCalendar.html()}</div>`;
     if (S.ui.planTab === 'tl' && !S.ui.planEditor && V.timelinePanel) { const td = F.doc('plan_struct') || {}; const stale = cur && td.sourceFile && td.sourceFile !== cur.fileId && !ro;
       return head + `<div class="page-body pl-page">${tabs}${stale ? `<div class="notice small" style="margin-bottom:10px"><span>The timeline was built from an earlier plan version. <button class="btn sm" data-act="tlImport">Update from ${esc(cur.name)}</button></span></div>` : ''}${V.timelinePanel(false)}</div>`; }
@@ -65,7 +64,7 @@
     finally { loadingSet.delete(v.fileId); }
   }
   ACT.planSheet = a => { PD().view.sheet = Number(a.getAttribute('data-i')); F.changed(null, null, { section: 'plan', render: true }); };
-  ACT.planTab = a => { const t = a.getAttribute('data-t'); S.ui.planTab = t === 'tl' || t === 'cal' || t === 'rs' ? t : 'wb'; V.render(); };
+  ACT.planTab = a => { const t = a.getAttribute('data-t'); S.ui.planTab = t === 'tl' || t === 'cal' ? t : 'wb'; V.render(); };
   ACT.planZoom = a => { const d = PD(); const x = Number(a.getAttribute('data-d')); d.view.zoom = x === 0 ? 100 : Math.max(30, Math.min(200, (d.view.zoom || 100) + x)); F.changed(null, null, { section: 'plan' }); };
   ACT.planFull = () => { const w = document.getElementById('planWrap'); if (document.fullscreenElement) document.exitFullscreen(); else if (w && w.requestFullscreen) w.requestFullscreen(); };
   ACT.planVersion = el => { PD().current = el.value; PD().view.sheet = 0; F.changed('Project plan version selected', el.value, { section: 'plan' }); };

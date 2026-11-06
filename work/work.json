@@ -1212,11 +1212,44 @@
         "type": "object"
        }
       },
+      "title": {
+       "type": "string",
+       "description": "Only for save_transcript: the title of the session recording"
+      },
+      "date": {
+       "type": "string",
+       "description": "Only for save_transcript: the session date, YYYY-MM-DD"
+      },
+      "source": {
+       "type": "string",
+       "description": "Only for save_transcript: clari or upload"
+      },
+      "ref": {
+       "type": "string",
+       "description": "Only for save_transcript: the Clari id or link, so saving again replaces it"
+      },
+      "text": {
+       "type": "string",
+       "description": "Only for save_transcript: the full transcript text, with speakers and times"
+      },
+      "transcriptId": {
+       "type": "string",
+       "description": "Only for save_findings: the id returned by save_transcript (tr_1 ...)"
+      },
+      "findings": {
+       "type": "array",
+       "description": "Only for save_findings: [{ kind: promise|ask|usecase|custom_usecase|additional|decision|risk, text, quote, speaker, at }]",
+       "items": {
+        "type": "object"
+       }
+      },
       "action": {
        "type": "string",
        "enum": [
         "prepare",
-        "live"
+        "live",
+        "save_transcript",
+        "save_findings"
        ],
        "description": "Which step: prepare, live"
       }

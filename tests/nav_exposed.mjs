@@ -8,7 +8,7 @@ const navBlock = src.slice(src.indexOf('const NAV = ['), src.indexOf('const CUST
 t('the exposed list is found and has no duplicates', () => { assert.ok(exposed.length >= 6, 'found ' + exposed.length); assert.equal(new Set(exposed).size, exposed.length); });
 t('every exposed id is a real entry of the team menu', () => { for (const id of exposed) assert.ok(navIds.includes(id), id + ' is not in NAV'); });
 t('the revamp tabs are exposed and unfinished tabs are hidden', () => {
-  for (const id of ['kickoff', 'plan', 'projdash']) assert.ok(exposed.includes(id), id);
+  for (const id of ['kickoff', 'plan', 'projdash', 'rsplan', 'rstrans', 'rschecks']) assert.ok(exposed.includes(id), id); assert.ok(!navIds.includes('workshop') || !exposed.includes('workshop'), 'the old Workshop room stays out of the menu');
   for (const id of ['transfers', 'msaflow', 'tasks', 'workshop', 'supportdesk', 'whiteboard', 'flow', 'modules', 'tickets', 'inbox', 'demokit', 'explore', 'hypercare', 'governance']) assert.ok(!exposed.includes(id), id + ' should stay hidden for now');
   assert.ok(navIds.length - exposed.length >= 20, 'most of the menu is hidden');
 });

@@ -67,4 +67,19 @@ await t('the owner cannot approve a kick-off nobody has reviewed: every section 
   assert.equal((await put(SAM, 'kickoff_pack', Object.assign(pack('approved'), { review: Object.assign({}, REV, { sessions: undefined }) }))).status, 409);
   assert.equal((await put(SAM, 'kickoff_pack', Object.assign(pack('draft'), { review: REV }))).status, 200); assert.equal((await put(SAM, 'kickoff_pack', pack('approved'))).status, 200);
 });
+await t('Claude saves transcripts and findings through session_questions; they are team only, readable page by page, and decided findings survive a second save', async () => {
+  const sq = (who, body) => tool(who, 'session_questions', Object.assign({ project: pid }, body));
+  const r1 = (await sq(KIM, { action: 'save_transcript', title: 'Session 1', date: '2026-10-26', source: 'clari', ref: 'clari:1', text: 'Asha: welcome everybody to the first requirement session. Ravi: we need Arabic labels on the portal.' })).data; assert.equal(r1.transcriptId, 'tr_1');
+  assert.equal((await sq(KIM, { action: 'save_transcript', title: 'Session 1', source: 'clari', ref: 'clari:1', text: 'Asha: welcome back everybody to the first session.' })).data.replaced, true, 'the same ref replaces');
+  const f1 = (await sq(KIM, { action: 'save_findings', transcriptId: 'tr_1', findings: [{ kind: 'ask', text: 'Arabic labels on the portal', quote: 'we need Arabic labels', speaker: 'Ravi', at: '00:01:10' }, { kind: 'bogus', text: 'x' }, { kind: 'promise', text: 'Weekly status call' }] })).data; assert.equal(f1.added, 2);
+  assert.equal((await sq(KIM, { action: 'save_findings', transcriptId: 'tr_9', findings: [] })).status, 404); assert.equal((await sq(KIM, { action: 'save_findings', transcriptId: 'tr_1' })).status, 400);
+  const doc = (await as(KIM, 'GET', `/api/projects/${pid}/docs/rs_findings`)).data; const items = doc.data.items; assert.equal(items.length, 2); assert.ok(items.every(x => x.status === 'open'));
+  const decided = items.map(x => (x.kind === 'promise' ? Object.assign({}, x, { status: 'confirmed', by: 'kim.r@facilio.com' }) : x)); assert.equal((await as(KIM, 'PUT', `/api/projects/${pid}/docs/rs_findings`, { data: { items: decided }, baseVersion: doc.version })).status, 200);
+  const f2 = (await sq(KIM, { action: 'save_findings', transcriptId: 'tr_1', findings: [{ kind: 'usecase', text: 'Check-in flow' }, { kind: 'promise', text: 'Weekly status call' }] })).data; assert.equal(f2.added, 1); assert.equal(f2.keptDecided, 1);
+  const after = (await as(KIM, 'GET', `/api/projects/${pid}/docs/rs_findings`)).data.data.items.map(x => x.kind + ':' + x.status).sort(); assert.deepEqual(after, ['promise:confirmed', 'usecase:open']);
+  for (const sec of ['rs_transcripts', 'rs_findings']) { assert.equal((await as(CUS, 'GET', `/api/projects/${pid}/docs/${sec}`)).status, 403); assert.equal((await put(CUS, sec, {})).status, 403); }
+  assert.ok([403, 404].includes((await sq(CUS, { action: 'save_transcript', text: 'Asha: a customer must not be able to save this.' })).status), 'a customer cannot save a transcript');
+  const list = (await tool(SAM, 'get_document', { project: pid, section: 'rs_transcripts' })).data; assert.equal(list.transcripts, 1); assert.equal(list.parts[0].part, 't1');
+  const page = (await tool(SAM, 'get_document', { project: pid, section: 'rs_transcripts', part: 't1' })).data; assert.ok(page.text.includes('welcome back everybody')); assert.equal(page.pages, 1); assert.equal((await tool(SAM, 'get_document', { project: pid, section: 'rs_transcripts', part: 't7' })).status, 404);
+});
 console.log(`${n} kick-off document checks passed`);

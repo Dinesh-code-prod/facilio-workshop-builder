@@ -8,7 +8,7 @@
   (V.extraSections = V.extraSections || []).push('kickoff_pack', 'kickoff_cr');
   const FRESH_MS = 20000, POLL_MS = 15000;
   const K = () => S.ui.ko || (S.ui.ko = { pid: '', jobs: null, at: 0, err: '', msa: null, answers: {}, cr: '', busy: '' });
-  const ours = () => S.ui.view === 'kickoff' || S.ui.view === 'msaintake';
+  const ours = () => ['kickoff', 'msaintake', 'rstrans', 'rschecks'].includes(S.ui.view);
   const pid = () => (S.project && S.project.id) || '';
   const team = () => !V.isCustomer();
   const ro = () => !!S.readonly || (S.project && S.project.role === 'viewer');
@@ -33,7 +33,7 @@
       if (mine !== pid()) return;
       const sig = JSON.stringify(j.jobs.map(a => [a.id, a.status, (a.result || {}).summary, (a.progress || {}).text])); const changed = sig !== k.sig; k.sig = sig; k.jobs = j.jobs; k.err = '';
       k.msa = x && Array.isArray(x.transfers) ? x.transfers.slice().sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))[0] || null : k.msa; k.at = Date.now(); k.loading = false;
-      if (changed) for (const sec of ['kickoff_cr', 'kickoff_pack']) if (S.docs[sec] && !S.docs[sec].dirty && !S.docs[sec].inflight) { try { await F.reloadSection(sec); } catch (e) { /* the page keeps the copy it has; Refresh tries again */ } }
+      if (changed) for (const sec of ['kickoff_cr', 'kickoff_pack', 'rs_transcripts', 'rs_findings']) if (S.docs[sec] && !S.docs[sec].dirty && !S.docs[sec].inflight) { try { await F.reloadSection(sec); } catch (e) { /* the page keeps the copy it has; Refresh tries again */ } }
       if (mine !== pid()) return;
       if (changed || paint) repaint();
     } catch (e) { if (mine !== pid()) return; k.err = e.message || 'The job list could not be loaded'; k.at = Date.now(); k.loading = false; k.jobs = k.jobs || []; repaint(); }
@@ -293,4 +293,6 @@
   } };
   const oldPlan = V.plan; if (oldPlan) V.plan = Object.assign({}, oldPlan, { html() { syncStruct(); syncSessions(); return oldPlan.html.apply(this, arguments); }, mount() { syncWorkbook(); return oldPlan.mount && oldPlan.mount.apply(this, arguments); } });
   const kickMount = V.kickoff.mount; V.kickoff.mount = function () { if (!V.isCustomer()) { syncStruct(); syncSessions(); syncWorkbook(); } return kickMount && kickMount.apply(this, arguments); };
+  // shared with the Requirement sessions tabs (src/requirements.js): the jobs list, its polling and the save helpers
+  V.studioJobs = { K, load, poll, post, guard, saved, setDoc, when, dt };
 })(typeof window !== 'undefined' ? window : globalThis);
