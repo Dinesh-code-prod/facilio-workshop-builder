@@ -463,6 +463,8 @@ Idea: a Facilio-branded bot that joins customer calls, records live transcripts,
 
 **E21. Stage 3 core plan (user, 6 Nov 2026): `docs/reference/STAGE3-CORE-PLAN-2026-11-06.md`.** Found: the BRD generator describes a whole organisation package and ignores module scope in roles, role matrix, portfolio, portals and the appendices; what was agreed is mixed with standard behaviour; notifications, roles, buttons and SLA have no place that records what was agreed. Plan: scope, then solution per module, then a BRD generated only from that, with editing, review, mockup after. Six build steps listed there; none started; three open questions for the user.
 
+**E22. Stage 4 plan, UAT guide, FTR and Comet (user, 7 Nov 2026): `docs/reference/STAGE4-UAT-FTR-PLAN-2026-11-07.md`.** Found: UAT test cases, the UAT guide HTML, the FTR checklist and workbooks and delivery readiness already exist, but nothing starts test cases from the stage 3 solution, nothing links requirement to test case to FTR check, and Comet is not used. Plan, manual first: test cases started from the solution (no Claude), a coverage view, FTR from the same data, optional Comet cards (a link per key scenario, shown inside Studio), a stage 4 status board. Six steps; none started; three decisions for the user.
+
 ## Progress log (add a line each time something is finished)
 | Date | Item | Deploy | Not checked |
 |---|---|---|---|
