@@ -51,23 +51,23 @@
     return `<ol class="ko-steps" aria-label="Progress">${STEPS.map((s, n) => `<li class="${n < i ? 'done' : n === i ? 'on' : ''}"${n === i ? ' aria-current="step"' : ''}><span>${n + 1}</span>${esc(s[1])}</li>`).join('')}</ol>`;
   }
   function msaCard(p, hasFile) {
-    const k = K(); const x = k.msa; const dis = ro() ? ' disabled' : ''; const open = L().jobRows(k.jobs).some(j => j.open && j.kind === 'pull_msa');
-    const status = p ? `The project was started from the contract${p.transferId ? ' (extraction ' + esc(p.transferId) + ')' : ''}.`
-      : x ? `Latest extraction: <b>${esc(x.status)}</b>${x.ver ? ' (version ' + esc(x.ver) + ')' : ''}. ${x.status === 'Approved' ? 'Start the project from it on the Transfers page.' : 'Approve it on the Transfers page to build the kick-off.'}`
-      : hasFile ? 'A contract file is uploaded. Read it in the Contract tab.' : 'No contract yet. Ask Claude to find it in your OneDrive or SharePoint, or upload it yourself.';
-    return `<section class="card ko-card" aria-label="Contract"><div class="card-h"><b>Contract (MSA)</b></div><div class="card-b"><p>${status}</p>
-      <div class="row ko-btns"><button type="button" class="btn sm primary" data-act="koPull"${dis}${open ? ' disabled' : ''}>${open ? 'Waiting for Claude…' : 'Pull MSA from My Drive'}</button>
-      <button type="button" class="btn sm" data-act="nav" data-view="msaflow">Upload an MSA myself</button>${x ? '<button type="button" class="btn sm" data-act="nav" data-view="transfers">Open Transfers</button>' : ''}</div></div></section>`;
+    const k = K(); const dis = ro() ? ' disabled' : ''; const jr = L().jobRows(k.jobs); const open = jr.find(j => j.open && j.kind === 'pull_msa'); const asking = jr.find(j => j.status === 'needs_input' && j.kind === 'pull_msa');
+    const status = p ? 'Claude drafted the kick-off below from the contract. Review it and approve once.'
+      : asking ? 'Claude needs one answer from you (see Claude jobs).'
+      : open ? 'Claude is reading the contract. This page fills in by itself; you do not need to press anything.'
+      : hasFile || k.msa ? 'The contract is uploaded. Claude reads it by itself within a few minutes.' : 'Upload the signed MSA. Claude reads it and drafts the kick-off deck and the project plan by itself.';
+    return `<section class="card ko-card" aria-label="Contract"><div class="card-h"><b>Contract (MSA)</b></div><div class="card-b"><p>${esc(status)}</p>
+      <div class="row ko-btns"><button type="button" class="btn sm primary" data-act="uploadMsa"${dis}>${p || hasFile ? 'Upload a different MSA' : 'Upload the MSA'}</button></div></div></section>`;
   }
   function jobsCard() {
     const k = K(); const rows = L().jobRows(k.jobs); const dis = ro() ? ' disabled' : '';
     const list = rows.slice(0, 8).map(j => `<div class="ko-job ko-${esc(j.status)}"><div class="row"><b>${esc(j.label)}</b>${tag(j.status === 'done' ? 'ok' : j.status === 'failed' ? 'red' : j.open ? 'tbc' : 'low', j.statusLabel)}<span class="xs muted">${esc(when(j.at))}</span>
-        ${j.open && j.status !== 'needs_input' ? `<button type="button" class="btn sm" data-act="koCancel" data-id="${esc(j.id)}"${dis}>Cancel</button>` : ''}</div>
+</div>
         ${j.summary ? `<div class="small muted">${esc(j.summary)}</div>` : ''}
         ${j.questions.length ? `<div class="ko-ask">${j.questions.map((q, i) => `<label class="f">${esc(q)}<textarea rows="2" maxlength="600" data-change="koAns" data-id="${esc(j.id)}" data-i="${i}"${dis}>${esc(((k.answers[j.id] || [])[i]) || '')}</textarea></label>`).join('')}
           <button type="button" class="btn sm primary" data-act="koSend" data-id="${esc(j.id)}" data-n="${j.questions.length}"${dis}>Send my answer to Claude</button></div>` : ''}</div>`).join('');
     const hint = rows.some(j => j.open) ? 'Claude picks these up in your own Claude session through the Facilio Delivery Studio connector. Ask Claude there: "check the Studio job queue".' : '';
-    return `<section class="card ko-card" aria-label="Claude jobs"><div class="card-h"><b>Claude jobs</b><button type="button" class="btn sm" data-act="koRefresh">Refresh</button></div><div class="card-b">
+    return `<section class="card ko-card" aria-label="Claude jobs"><div class="card-h"><b>Claude jobs</b></div><div class="card-b">
       ${k.err ? `<div class="notice err small">${esc(k.err)}</div>` : ''}${k.jobs === null ? '<div class="empty">Loading…</div>' : list || '<div class="empty small">No jobs yet. A job appears here when you press a button that needs Claude.</div>'}${hint ? `<p class="xs muted">${esc(hint)}</p>` : ''}</div></section>`;
   }
   const list = (items, cls) => items.length ? `<ul class="ko-list ${cls || ''}">${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : '';
@@ -108,7 +108,6 @@
     const a = L().approvalCheck(p, owner(), crDoc()); const dis = ro() ? ' disabled' : '';
     if (p.status === 'approved') return `<div class="ko-bar"><span>${tag('ok', 'Approved')} by ${esc(p.approvedBy)} ${esc(when(p.approvedAt))}</span></div>`;
     return `<div class="ko-bar"><span class="xs muted">${a.ok || !a.why ? 'Review the contract data, then approve.' : esc(a.why)}</span><span class="spacer"></span>
-      <button type="button" class="btn sm" data-act="koSave"${dis}>Save</button><button type="button" class="btn sm" data-act="koDiscard"${dis}${p.status === 'discarded' || !owner() ? ' disabled' : ''}>Discard draft</button>
       <button type="button" class="btn primary" data-act="koApprove"${a.ok ? '' : ' disabled'}>Approve kick-off</button></div>`;
   }
   function page() {
@@ -137,8 +136,14 @@
   ACT.koDlPlan = () => { const p = pack(); if (!p) return; try { V.download(file('project-plan'), new Blob([root.FWBPlanHtml.build(F.doc('kickoff_pack'), { customer: S.project.customer, project: S.project.name, fmt: dt })], { type: 'text/html' })); } catch (e) { toast('The plan could not be built: ' + (e.message || 'unknown error'), 6000, true); } };
   ACT.koSlide = a => { const p = pack(); if (!p) return; const k = K(); const d = deckHtml(p, (k.slide || 0) + (+a.getAttribute('data-d') || 0)); k.slide = d.k - 1; const fr = document.querySelector('.ko-deck iframe'); if (fr) fr.srcdoc = d.html; const no = document.getElementById('koSlideNo'); if (no) no.textContent = 'Slide ' + d.k + ' of ' + d.n; };
   // Called after an MSA file is stored (Bring in, Contract tab): asks Claude to read it, so the kick-off is drafted without another click. The same request twice is one job.
-  V.koAutoPull = async fileName => {
-    if (!team() || ro()) return; try { await API.post(base() + '/jobs', L().pullRequest(S.project.customer, S.project.name, fileName)); K().at = 0; toast('MSA stored. A job for Claude was created: ask Claude in your own session to "check the Studio job queue". Follow it on the Kick-off page.', 9000); }
+  V.koAutoPull = async (fileName, file, x) => {
+    if (!team() || ro()) return; let kept = false;
+    try {
+      if (!x && file && V.extractDocPages) x = await V.extractDocPages(file);   // Bring in has not read the file yet
+      const pages = x ? (x.pages ? x.pages.map(p => ({ n: p.n, text: String(p.text || '').slice(0, 20000) })) : [{ n: 1, text: String(x.text || '').slice(0, 20000) }]) : [];
+      if (pages.some(p => p.text.trim())) { await API.put(base() + '/docs/msa_text', { data: { name: fileName, at: new Date().toISOString(), pages }, baseVersion: -1 }); kept = true; }
+    } catch (e) { /* not kept: the job below then asks Claude to look in Microsoft 365 */ }
+    try { await API.post(base() + '/jobs', L().pullRequest(S.project.customer, S.project.name, fileName + (kept ? ' (text kept in the Studio: get_document msa_text)' : ''))); K().at = 0; load(true, true); toast(kept ? 'MSA stored and read. A job for Claude was created; the scheduled Claude task picks it up. Follow it on the Kick-off page.' : 'MSA stored, but its text could not be read here, so Claude will look for it in OneDrive or SharePoint. Follow it on the Kick-off page.', 9000); }
     catch (e) { toast('MSA stored, but the Claude job could not be created: ' + (e.message || 'open Kick-off and press Pull MSA'), 8000, true); }
   };
   ACT.koRefresh = () => load(true, true);

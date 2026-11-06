@@ -78,7 +78,7 @@
     for (const x of todo()) {
       if (stop) { x.msg = stop; x.state = 'error'; continue; }
       x.state = 'uploading'; x.pct = 0; V.render();
-      try { await API.uploadFile(S.project.id, x.file, x.category, { source: 'bring-in' }, null, p => { x.pct = p; const el = document.querySelector(`[data-change="trCat"][data-id="${x.id}"]`); if (!el) V.render(); }); x.state = 'done'; used = (used || 0) + x.size; if (x.category === 'msa' && V.koAutoPull) V.koAutoPull(x.file.name); }
+      try { await API.uploadFile(S.project.id, x.file, x.category, { source: 'bring-in' }, null, p => { x.pct = p; const el = document.querySelector(`[data-change="trCat"][data-id="${x.id}"]`); if (!el) V.render(); }); x.state = 'done'; used = (used || 0) + x.size; if (x.category === 'msa' && V.koAutoPull) { x.msg = 'Reading the contract text…'; V.render(); await V.koAutoPull(x.file.name, x.file); x.msg = ''; } }
       catch (e) { x.state = 'error'; x.msg = e.message || 'The upload failed'; if (e.status === 413 || e.status === 429) stop = 'Not sent: ' + x.msg; }   // a full project or too many unfinished uploads: stop instead of failing every file
     }
     busy = false; usedFor = ''; V.render(); const ok = Q.filter(x => x.state === 'done').length; toast(ok + ' file' + (ok === 1 ? '' : 's') + ' stored' + (Q.some(x => x.state === 'error') ? '. Some were not sent: see the list.' : '.'), 5000, Q.some(x => x.state === 'error'));

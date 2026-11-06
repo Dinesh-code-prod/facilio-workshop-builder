@@ -18,6 +18,18 @@ export function installMsaExtract(d, transfer) {
   const canSee = async (s, p) => (p.members || []).some(m => m.id === s.id) || projectAccess(s, p.id, 'read').then(() => true, () => false);
   const existing = async (rec, s, p) => { const seen = await canSee(s, p); return { created: false, project: seen ? { id: p.id, name: p.name, archived: !!p.archived, url: URL_BASE + p.id } : null, transferId: rec.id, complete: rec.projectComplete !== false,
     note: seen ? 'A project was already created from this transfer; nothing was changed.' : 'A project was already created from this transfer by someone else. You have no access to it, so it is not shown. Ask its owner.' }; };
+  /** Zero-click path: the project already exists (the person made it and uploaded the MSA), so the extraction fills THAT project's kick-off pack as a draft. The planner records are written only when the project has none yet,
+      and an approved pack is never replaced. A failure here never loses the saved extraction: it is reported in the answer. */
+  async function fillExisting(s, pid, id, extraction, version, source) {
+    try {
+      const base = '/api/projects/' + pid; const old = await viaApp('GET', base + '/docs/kickoff_pack'); if (old && old.data && old.data.status === 'approved') return { filled: false, why: 'The kick-off was already approved, so it was not changed.' };
+      if (!extraction.customer || !extraction.projectName) return { filled: false, why: 'The extraction has no ' + (!extraction.customer ? 'customer' : 'project name') + ', so no kick-off was drafted. Save a new version with it.' };
+      const plan = planFromExtraction(extraction, { now: new Date().toISOString(), source, transferId: id, version });
+      const pl = await viaApp('GET', base + '/docs/planner'); if (!pl || !pl.data || !Object.keys(pl.data).length) { await putDoc(base, 'planner', plan.planner); if (plan.ctrcore) await viaApp('PUT', base + '/items/ctrcore/main', '', { data: plan.ctrcore }); if (plan.scope) await viaApp('PUT', base + '/items/scope/main', '', { data: plan.scope }); }
+      await putDoc(base, 'kickoff_pack', buildKickoffPack(extraction, { now: new Date().toISOString(), transferId: id, version })); await audit(pid, s.id, 'kickoff-drafted', id + ' v' + version);
+      return { filled: true };
+    } catch (e) { return { filled: false, why: 'The extraction was saved but the kick-off could not be drafted: ' + (e.message || 'error') }; }
+  }
   /** records the project on the transfer's head record (and its log) under the transfer's own lock */
   const link = (pid, id, s, patch, note) => withLock('xf.' + pid + '.' + id, async () => { const row = await dbGet('xf.' + pid, id); const r = row.value; Object.assign(r, patch); const at = new Date().toISOString(); r.updatedAt = at; r.log.push({ at, by: s.email, from: r.status, to: r.status, note }); if (r.log.length > 40) r.log.splice(0, r.log.length - 40); await dbPut('xf.' + pid, id, r); });
   const CLAIM_MS = 120000;   // a claim younger than this means another call is (probably) still creating the project
@@ -33,7 +45,9 @@ export function installMsaExtract(d, transfer) {
       const begun = await CONNECTOR.transfer_begin(s, { project, dir: 'pull', kind: 'msa', source: { system, ref, label: src.label, etag: src.etag }, dest: { system: 'studio', ref: 'msa-extraction' }, scope: '' }); const id = begun.transfer.id;
       let r = await CONNECTOR.transfer_store(s, { project, id, content: JSON.stringify(v.extraction), baseVersion: b.baseVersion, sourceEtag: src.etag, validation: { ok: true, checked: 'extraction structure', warnings: v.warnings.slice(0, 2) }, note: txt(b.note, 200) || 'MSA extraction saved by Claude' });
       if (b.submit !== false && ['Retrieved', 'Draft Generated'].includes(r.transfer.status)) r = await CONNECTOR.transfer_submit(s, { project, id, note: 'Extraction submitted for review by Claude' });
-      return { space, transfer: compact(r.transfer), version: r.version || r.transfer.ver, duplicate: !!r.duplicate, warnings: v.warnings,
+      const drafted = space === 'project' && !r.duplicate ? await fillExisting(s, await pidOf(s, { project }), id, v.extraction, r.version || r.transfer.ver, begun.transfer.source) : null;
+      if (drafted && drafted.filled) return { space, transfer: compact(r.transfer), version: r.version || r.transfer.ver, warnings: v.warnings, kickoffDrafted: true, note: 'Saved, and the kick-off deck and project plan were drafted in the project. Nothing else to do: the person reviews and approves once on the Kick-off page. Do not call create_project_from_msa for this project.' };
+      return { space, transfer: compact(r.transfer), version: r.version || r.transfer.ver, duplicate: !!r.duplicate, warnings: v.warnings, kickoffDrafted: false, draftNote: drafted ? drafted.why : '',
         note: 'Saved as an unapproved extraction (' + (space === 'holding' ? 'in your holding space; use project "holding" with the transfer tools' : 'in the project') + '). A person must approve it in Delivery Studio; Claude cannot approve it. Only then can create_project_from_msa make the project.' };
     },
     /** a NEW project from an APPROVED msa transfer; idempotent (a second call returns the project already made); never touches an existing project.

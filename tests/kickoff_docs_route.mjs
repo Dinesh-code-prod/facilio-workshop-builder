@@ -20,6 +20,7 @@ for (const [e, role] of [[KIM, 'editor'], [VIC, 'viewer'], [CUS, 'viewer']]) ass
 // Kick-off documents on the server (work/server/api.mjs PUT/GET docs): approval is the owner's, an approved pack cannot be changed by an editor,
 // open change requests block approval, and customers can neither read nor write the drafts. Stand-in platform as in tests/msa_project_route.mjs.
 const put = (who, sec, data) => as(who, 'PUT', `/api/projects/${pid}/docs/${sec}`, { data });
+const put2 = (who, p, sec, data) => as(who, 'PUT', `/api/projects/${p}/docs/${sec}`, { data });
 const pack = status => ({ status, plan: { milestones: [] }, deck: {} });
 await t('an editor can save a draft but not approve, discard or forge an approver', async () => {
   assert.equal((await put(SAM, 'kickoff_pack', pack('draft'))).status, 200);
@@ -41,5 +42,22 @@ await t('customers can neither read nor write the kick-off drafts, and the bundl
   for (const sec of ['kickoff_pack', 'kickoff_cr']) { assert.equal((await as(CUS, 'GET', `/api/projects/${pid}/docs/${sec}`)).status, 403); assert.equal((await put(CUS, sec, {})).status, 403); }
   const b = await as(CUS, 'GET', `/api/projects/${pid}/open?sections=kickoff_pack,kickoff_cr&kinds=`); const d = JSON.stringify(b.data || {}); assert.ok(!d.includes('"status":"draft"') || !d.includes('kickoff_pack'), 'the draft pack is not in the bundle');
   assert.equal((await as(KIM, 'GET', `/api/projects/${pid}/docs/kickoff_pack`)).status, 200);
+});
+await t('the MSA text kept at upload is team only and Claude reads it page by page', async () => {
+  assert.equal((await put(KIM, 'msa_text', { name: 'a.pdf', at: 'x', pages: [{ n: 1, text: 'First page' }, { n: 2, text: 'Second page' }] })).status, 200);
+  assert.equal((await put(KIM, 'msa_text', { name: 'a.pdf', at: 'y', pages: [{ n: 1, text: 'First page v2' }] })).status, 200, 'a second upload replaces it');
+  assert.equal((await as(CUS, 'GET', `/api/projects/${pid}/docs/msa_text`)).status, 403); assert.equal((await put(CUS, 'msa_text', {})).status, 403);
+  const list = (await tool(SAM, 'get_document', { project: pid, section: 'msa_text' })).data; assert.equal(list.pages, 1); assert.deepEqual(list.parts, ['p1']);
+  assert.equal((await tool(SAM, 'get_document', { project: pid, section: 'msa_text', part: 'p1' })).data.text, 'First page v2');
+  assert.equal((await tool(SAM, 'get_document', { project: pid, section: 'msa_text', part: 'p9' })).status, 404);
+});
+await t('an extraction saved for an existing project drafts its kick-off at once, and never replaces an approved one', async () => {
+  const pid2 = (await as(SAM, 'POST', '/api/projects', { name: 'Auto Kick', customer: 'Auto Co' })).data.project.id;
+  const EXT = { customer: 'Auto Co', projectName: 'Auto Kick', contract: { start: '2026-12-01', end: '2027-02-28', durationDays: 90, term: '24 months', origin: 'contract' }, scope: [{ text: 'Work order management', status: 'confirmed', origin: 'contract', source: { page: 4 } }] };
+  const r = (await tool(SAM, 'msa_extraction_save', { project: pid2, source: { system: 'studio', ref: 'uploaded.pdf', label: 'uploaded.pdf' }, extraction: EXT })).data;
+  assert.equal(r.kickoffDrafted, true, JSON.stringify(r).slice(0, 300)); const pk = await as(SAM, 'GET', `/api/projects/${pid2}/docs/kickoff_pack`); assert.equal(pk.data.data.status, 'draft'); assert.ok(pk.data.data.plan.milestones.length > 3);
+  assert.equal((await put2(SAM, pid2, 'kickoff_pack', Object.assign({}, pk.data.data, { status: 'approved' }))).status, 200);
+  const again = (await tool(SAM, 'msa_extraction_save', { project: pid2, source: { system: 'studio', ref: 'uploaded2.pdf' }, extraction: EXT })).data; assert.equal(again.kickoffDrafted, false); assert.match(again.draftNote, /already approved/);
+  assert.equal((await as(SAM, 'GET', `/api/projects/${pid2}/docs/kickoff_pack`)).data.data.status, 'approved');
 });
 console.log(`${n} kick-off document checks passed`);

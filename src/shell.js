@@ -158,7 +158,7 @@
   V.isAgentProject = () => !!(S.project && S.project.type === 'agents');
   // REVAMP: the team menu shows only the tabs that have been built or rebuilt in the Part E revamp; every other tab stays hidden (its code, routes and data are untouched)
   // until it is rebuilt. To show a tab, add its view id to EXPOSED. Adding `alltabs=1` to the address (before the #) shows every tab again for this browser tab (for developers).
-  const EXPOSED = new Set(['projdash', 'kickoff', 'plan', 'transfers', 'msaflow', 'claudesetup', 'teamhelp', 'settings']);
+  const EXPOSED = new Set(['projdash', 'kickoff', 'plan', 'claudesetup', 'teamhelp', 'settings']);
   const showAllTabs = () => { try { if (/[?&]alltabs=1\b/.test(location.search)) sessionStorage.setItem('fwb_alltabs', '1'); else if (/[?&]alltabs=0\b/.test(location.search)) sessionStorage.removeItem('fwb_alltabs'); return sessionStorage.getItem('fwb_alltabs') === '1'; } catch (e) { return /[?&]alltabs=1\b/.test(location.search); } };
   const HIDE_UNBUILT_TABS = true;   // 6 Nov 2026: the earlier show-all was a demo for the developer; only the built tabs show again (Stage 1: Kick-off and Project Plan, plus Transfers where the extraction is approved and Contract for a manual upload)
   const tabOn = id => !HIDE_UNBUILT_TABS || EXPOSED.has(id) || showAllTabs();

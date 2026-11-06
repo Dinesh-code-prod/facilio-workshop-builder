@@ -8,7 +8,7 @@ import { createHash } from 'node:crypto';
 export const ORIGINS = ['contract', 'interpreted', 'assumed'];
 export const SCOPE_STATUS = ['confirmed', 'excluded', 'unclear'];
 export const LIMITS = { items: 200, scope: 300, text: 600, quote: 400, name: 160, bytes: 400000, lines: 35, line: 220 };
-export const SYSTEMS = ['sharepoint', 'onedrive'];
+export const SYSTEMS = ['sharepoint', 'onedrive', 'studio'];   // studio: the file the person uploaded to the project (its text is the project document msa_text)
 const LISTS = ['deliverables', 'customerResponsibilities', 'facilioResponsibilities', 'exclusions', 'dependencies', 'commercialConstraints', 'training', 'supportAndHandover'];
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 export const txt = (v, max) => (typeof v === 'string' || (typeof v === 'number' && isFinite(v)) ? String(v).replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max) : '');
