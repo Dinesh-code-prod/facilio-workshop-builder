@@ -35,6 +35,7 @@
       k.msa = x && Array.isArray(x.transfers) ? x.transfers.slice().sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))[0] || null : k.msa; k.at = Date.now(); k.loading = false;
       if (changed) for (const sec of ['kickoff_cr', 'kickoff_pack', 'rs_transcripts', 'rs_findings']) if (S.docs[sec] && !S.docs[sec].dirty && !S.docs[sec].inflight) { try { await F.reloadSection(sec); } catch (e) { /* the page keeps the copy it has; Refresh tries again */ } }
       if (mine !== pid()) return;
+      if (V.assistantPaint) V.assistantPaint();
       if (changed || paint) repaint();
     } catch (e) { if (mine !== pid()) return; k.err = e.message || 'The job list could not be loaded'; k.at = Date.now(); k.loading = false; k.jobs = k.jobs || []; repaint(); }
   }
@@ -85,7 +86,7 @@
     const dis = ro() ? ' disabled' : '';
     const composer = file || j || p ? '<span class="ki-file" title="' + esc(file) + '">' + esc(file || 'MSA') + '</span><span class="spacer"></span><button type="button" class="btn sm" data-act="koReplaceMsa"' + dis + '>Replace MSA</button><button type="button" class="btn sm danger" data-act="koRemoveMsa"' + dis + '>Remove MSA</button>'
       : '<button type="button" class="btn primary" data-act="uploadMsa"' + dis + '>Upload the MSA</button><span class="xs muted">PDF, Word or text</span>';
-    return root.FWBWorkChat.html({ title: 'Your project assistant', hint: j && j.claimedAt ? "Prepared with Claude's help, on " + (who ? who + "'s" : 'your') + ' computer (scheduled task "Delivery Studio job queue"). ' + (j.progressAt ? 'Last update ' + when(j.progressAt) + '.' : '') : "Drafts are prepared for you with Claude's help, on your own computer. You can leave this page; you review and decide.", messages: msgs, tiles, tilesTitle: 'Draft documents for your review', composer });
+    return root.FWBWorkChat.html({ lite: true, title: 'Your drafts', hint: j && j.claimedAt ? "Prepared with Claude's help, on " + (who ? who + "'s" : 'your') + ' computer (scheduled task "Delivery Studio job queue"). ' + (j.progressAt ? 'Last update ' + when(j.progressAt) + '.' : '') : "Drafts are prepared for you with Claude's help, on your own computer. You can leave this page; you review and decide.", messages: msgs, tiles, tilesTitle: 'Draft documents for your review', composer });
   }
   const list = (items, cls) => items.length ? `<ul class="ko-list ${cls || ''}">${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : '';
   function packCards(p) {

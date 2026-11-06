@@ -15,4 +15,10 @@ t('unknown senders and states fall back, attribute names are limited, all text i
   assert.ok(!h.includes('<img src=x') && !h.includes('<script>1') && !h.includes('onclick="x') && !h.includes('onclick="y') && !h.includes('<i>')); assert.ok(h.includes('ki-row claude'));
 });
 t('the composer is placed under the feed; an empty chat does not break', () => { assert.ok(W.html({ composer: '<b>c</b>' }).includes('<div class="ki-comp"><b>c</b></div>')); assert.ok(W.html({}).includes('Claude is working')); });
+t('the panel feed is just the messages; the lighter tab card keeps only the questions, the tiles and the buttons', () => {
+  const m = [{ who: 'you', text: 'Asked' }, { who: 'claude', text: 'Reading page 3', typing: true }, { who: 'claude', text: 'Approve?', actions: [{ label: 'Yes', act: 'a' }] }];
+  const f = W.feed(m); assert.ok(f.includes('Asked') && f.includes('Reading page 3') && f.includes('Approve?') && !f.includes('ki-chat'));
+  const h = W.html({ lite: true, title: 'Drafts', messages: m, tiles: [{ label: 'Plan', state: 'done' }], composer: '<b>c</b>' }); assert.ok(h.includes('ki-lite') && h.includes('Approve?') && !h.includes('Asked') && !h.includes('Reading page 3')); assert.ok(h.includes('ki-tile done') && h.includes('<b>c</b>'));
+  assert.ok(!W.html({ lite: true, messages: [{ who: 'you', text: 'x' }] }).includes('ki-asks'), 'no questions, no empty feed');
+});
 console.log(n + ' work chat checks passed');

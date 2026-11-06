@@ -20,11 +20,15 @@
     const st = Object.prototype.hasOwnProperty.call(STATE, x.state) ? x.state : 'todo';
     return '<div class="ki-tile ' + st + '"><div class="ki-tic" aria-hidden="true"></div><div class="ki-tx"><b>' + esc(x.label) + '</b><span>' + esc(x.detail || STATE[st]) + '</span></div><div class="ki-tr">' + (x.badge ? '<em>' + esc(x.badge) + '</em>' : '') + (x.open && st === 'done' ? btn(Object.assign({}, x.open)) : '') + '</div></div>';
   }
+  const feed = msgs => arr(msgs).map(message).join('');
   function html(o) {
+    if (o.lite) { const asks = arr(o.messages).filter(m => arr(m.actions).length || m.reply);
+      return '<section class="ki-chat ki-lite" aria-label="' + esc(o.title || 'Drafts') + '"><div class="ki-head"><div><b>' + esc(o.title || 'Drafts') + '</b>' + (o.hint ? '<span>' + esc(o.hint) + '</span>' : '') + '</div></div>' + (asks.length ? '<div class="ki-feed ki-asks" role="log" aria-live="polite">' + feed(asks) + '</div>' : '')
+        + '<div class="ki-side ki-tiles"><div class="ki-st">' + esc(o.tilesTitle || 'What is prepared') + '</div>' + arr(o.tiles).map(tile).join('') + '</div>' + (o.composer ? '<div class="ki-comp">' + o.composer + '</div>' : '') + '</section>'; }
     return '<section class="ki-chat" aria-label="' + esc(o.title || 'Conversation with Claude') + '"><div class="ki-head"><div><b>' + esc(o.title || 'Claude is working') + '</b>' + (o.hint ? '<span>' + esc(o.hint) + '</span>' : '') + '</div></div><div class="ki-grid">'
       + '<div class="ki-feed-wrap"><div class="ki-feed" role="log" aria-live="polite">' + arr(o.messages).map(message).join('') + '</div>' + (o.composer ? '<div class="ki-comp">' + o.composer + '</div>' : '') + '</div>'
       + '<div class="ki-side"><div class="ki-st">' + esc(o.tilesTitle || 'What Claude prepares') + '</div>' + arr(o.tiles).map(tile).join('') + '</div></div></section>';
   }
-  const api = { html };
+  const api = { html, feed };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBWorkChat = api;
 })(typeof window !== 'undefined' ? window : globalThis);

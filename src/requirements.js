@@ -41,7 +41,7 @@
     const dis = ro() ? ' disabled' : ''; const busy = jobs.some(x => x.open);
     const composer = '<button type="button" class="btn" data-act="rsAddFile"' + dis + '>Add a transcript file</button><button type="button" class="btn" data-act="rsPaste"' + dis + '>Paste a transcript</button><span class="spacer"></span>'
       + (T.length && !busy ? '<button type="button" class="btn" data-act="rsFind"' + dis + '>Find the promises and asks</button>' : '') + '<button type="button" class="btn primary" data-act="rsPull"' + dis + (busy ? ' disabled' : '') + '>' + (busy ? 'Working…' : 'Pull my Clari transcripts') + '</button>';
-    return root.FWBWorkChat.html({ title: 'Your project assistant', hint: j && j.claimedAt ? "Prepared with Claude's help, on " + (who ? who + "'s" : 'your') + ' computer. ' + (j.progressAt ? 'Last update ' + when(j.progressAt) + '.' : '') : "You can add transcripts yourself, or have them pulled for you with Claude's help. You review and decide.", messages: msgs, tiles, tilesTitle: 'From your transcripts', composer });
+    return root.FWBWorkChat.html({ lite: true, title: 'Your transcripts', hint: j && j.claimedAt ? "Prepared with Claude's help, on " + (who ? who + "'s" : 'your') + ' computer. ' + (j.progressAt ? 'Last update ' + when(j.progressAt) + '.' : '') : "You can add transcripts yourself, or have them pulled for you with Claude's help. You review and decide.", messages: msgs, tiles, tilesTitle: 'From your transcripts', composer });
   }
   function list() {
     const T = trs(), Fd = fds(), dt = J().dt; if (!T.length) return '';
