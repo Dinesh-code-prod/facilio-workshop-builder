@@ -58,4 +58,11 @@ t('requirement sessions follow the workshop plan sheet: related modules share a 
   const many = L.sessionPlan(mk(Array.from({ length: 40 }, (_, k) => 'Module ' + (k + 1)), 120)); assert.ok(many.sessions.length > 10); assert.ok(many.notes.some(n => /fall after the requirements workshops phase/.test(n)), JSON.stringify(many.notes));
   assert.deepEqual(L.sessionPlan(null), { sessions: [], notes: [], planNotes: [] }); assert.match(L.sessionPlan(mk([])).notes[0], /no modules/);
 });
+t('review checklist: ticked sections record who and when, approval waits for all of them, unticking works, unknown ids are ignored', () => {
+  let d = JSON.parse(JSON.stringify(stored)); let p = L.packOf(d); assert.equal(p.review.length, 5); assert.ok(p.review.every(x => !x.done));
+  assert.equal(L.approvalCheck(p, true, null).ok, true, 'without the review rule (old callers) approval is unchanged'); assert.match(L.approvalCheck(p, true, null, true).why, /5 left/);
+  for (const id of ['scope', 'dates', 'gaps', 'deck']) d = L.setReview(d, id, true, ' Asha@x.com ', '2026-11-06T10:00:00Z'); p = L.packOf(d); assert.match(L.approvalCheck(p, true, null, true).why, /1 left/); assert.equal(p.review[0].by, 'Asha@x.com'); assert.equal(p.review[0].at, '2026-11-06T10:00:00Z');
+  d = L.setReview(d, 'sessions', true, 'asha@x.com', 'n'); assert.equal(L.approvalCheck(L.packOf(d), true, null, true).ok, true); assert.equal(L.approvalCheck(L.packOf(d), false, null, true).ok, false, 'still the owner only');
+  d = L.setReview(d, 'deck', false, 'x', 'n'); assert.match(L.approvalCheck(L.packOf(d), true, null, true).why, /1 left/); assert.deepEqual(L.setReview(d, 'nope', true, 'x', 'n'), d); assert.equal(L.packOf(L.setStatus(d, 'approved', 'o', 'n')).review[0].done, true, 'the record stays after approval');
+});
 console.log(n + ' kick-off page rule checks passed');

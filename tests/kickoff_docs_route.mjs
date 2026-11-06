@@ -21,7 +21,8 @@ for (const [e, role] of [[KIM, 'editor'], [VIC, 'viewer'], [CUS, 'viewer']]) ass
 // open change requests block approval, and customers can neither read nor write the drafts. Stand-in platform as in tests/msa_project_route.mjs.
 const put = (who, sec, data) => as(who, 'PUT', `/api/projects/${pid}/docs/${sec}`, { data });
 const put2 = (who, p, sec, data) => as(who, 'PUT', `/api/projects/${p}/docs/${sec}`, { data });
-const pack = status => ({ status, plan: { milestones: [] }, deck: {} });
+const REV = { scope: { by: 'a@x.com', at: 'n' }, dates: { by: 'a@x.com', at: 'n' }, gaps: { by: 'a@x.com', at: 'n' }, deck: { by: 'a@x.com', at: 'n' }, sessions: { by: 'a@x.com', at: 'n' } };
+const pack = status => ({ status, plan: { milestones: [] }, deck: {}, review: REV });
 await t('an editor can save a draft but not approve, discard or forge an approver', async () => {
   assert.equal((await put(SAM, 'kickoff_pack', pack('draft'))).status, 200);
   assert.equal((await put(KIM, 'kickoff_pack', Object.assign(pack('draft'), { builtAt: 'x' }))).status, 200);
@@ -56,8 +57,14 @@ await t('an extraction saved for an existing project drafts its kick-off at once
   const EXT = { customer: 'Auto Co', projectName: 'Auto Kick', contract: { start: '2026-12-01', end: '2027-02-28', durationDays: 90, term: '24 months', origin: 'contract' }, scope: [{ text: 'Work order management', status: 'confirmed', origin: 'contract', source: { page: 4 } }] };
   const r = (await tool(SAM, 'msa_extraction_save', { project: pid2, source: { system: 'studio', ref: 'uploaded.pdf', label: 'uploaded.pdf' }, extraction: EXT })).data;
   assert.equal(r.kickoffDrafted, true, JSON.stringify(r).slice(0, 300)); const pk = await as(SAM, 'GET', `/api/projects/${pid2}/docs/kickoff_pack`); assert.equal(pk.data.data.status, 'draft'); assert.ok(pk.data.data.plan.milestones.length > 3);
-  assert.equal((await put2(SAM, pid2, 'kickoff_pack', Object.assign({}, pk.data.data, { status: 'approved' }))).status, 200);
+  assert.equal((await put2(SAM, pid2, 'kickoff_pack', Object.assign({}, pk.data.data, { status: 'approved', review: REV }))).status, 200);
   const again = (await tool(SAM, 'msa_extraction_save', { project: pid2, source: { system: 'studio', ref: 'uploaded2.pdf' }, extraction: EXT })).data; assert.equal(again.kickoffDrafted, false); assert.match(again.draftNote, /already approved/);
   assert.equal((await as(SAM, 'GET', `/api/projects/${pid2}/docs/kickoff_pack`)).data.data.status, 'approved');
+});
+await t('the owner cannot approve a kick-off nobody has reviewed: every section must be ticked off with a name', async () => {
+  assert.equal((await put(SAM, 'kickoff_pack', Object.assign(pack('draft'), { review: {} }))).status, 200);
+  assert.equal((await put(SAM, 'kickoff_pack', Object.assign(pack('approved'), { review: {} }))).status, 409);
+  assert.equal((await put(SAM, 'kickoff_pack', Object.assign(pack('approved'), { review: Object.assign({}, REV, { sessions: undefined }) }))).status, 409);
+  assert.equal((await put(SAM, 'kickoff_pack', Object.assign(pack('draft'), { review: REV }))).status, 200); assert.equal((await put(SAM, 'kickoff_pack', pack('approved'))).status, 200);
 });
 console.log(`${n} kick-off document checks passed`);

@@ -18,9 +18,13 @@
     const mods = [...new Set(arr(p.milestones).flatMap(m => arr(m.deliverables)).map(x => /^Modules in scope:\s*(.+)$/.exec(String(x))).filter(Boolean).flatMap(m => m[1].split(/,\s*/)))];
     return { status: st, statusLabel: PACK_STATUS[st], builtAt: d.builtAt || '', approvedBy: d.approvedBy || '', approvedAt: d.approvedAt || '', transferId: d.from && d.from.transferId || '', window: p.window || {}, deck: d.deck,
       milestones: arr(p.milestones).map(m => ({ id: m.id, name: m.name, start: m.start, end: m.end, origin: m.origin, label: originLabel(m.origin), responsible: m.responsible || '' })),
-      rows: arr(d.rows), assumptions: arr(p.assumptions), gaps: arr(p.gaps), conflicts: arr(p.conflicts).map(c => (c && c.message) || String(c)), scope: arr(d.deck.scope), modules: mods };
+      review: reviewOf(d), rows: arr(d.rows), assumptions: arr(p.assumptions), gaps: arr(p.gaps), conflicts: arr(p.conflicts).map(c => (c && c.message) || String(c)), scope: arr(d.deck.scope), modules: mods };
   }
 
+  /** The review the consultant does before approving: one line per section. Whoever ticks a line is recorded with the time. */
+  const REVIEW = [['scope', 'Scope and modules match the contract'], ['dates', 'Plan dates and assumptions are right'], ['gaps', 'I have looked at the gaps and conflicts'], ['deck', 'The kick-off deck reads correctly'], ['sessions', 'The requirement sessions and attendee roles make sense']];
+  const reviewOf = d => { const r = d && d.review && typeof d.review === 'object' ? d.review : {}; return REVIEW.map(([id, label]) => ({ id, label, by: (r[id] && r[id].by) || '', at: (r[id] && r[id].at) || '', done: !!(r[id] && r[id].by) })); };
+  const setReview = (stored, id, on, by, now) => { if (!REVIEW.some(x => x[0] === id)) return stored; const r = Object.assign({}, stored.review || {}); if (on) r[id] = { by: clean(by, 120), at: now }; else delete r[id]; return Object.assign({}, stored, { review: r }); };
   const itemsOf = d => arr(d && d.items).filter(x => x && x.id && x.text).map(x => ({ id: String(x.id), text: clean(x.text, MAX_TEXT), by: x.by || '', at: x.at || '', status: ['open', 'applied', 'dismissed'].includes(x.status) ? x.status : 'open' }));
   const openCount = d => itemsOf(d).filter(x => x.status === 'open').length;
 
@@ -35,12 +39,13 @@
   const dismissChange = (d, id) => ({ items: itemsOf(d).map(x => x.id === id && x.status === 'open' ? Object.assign({}, x, { status: 'dismissed' }) : x) });
 
   /** can this person approve now? Only the project owner; never while change requests are open (Claude has not applied them) or there is no pack. */
-  function approvalCheck(pack, isOwner, crDoc) {
+  function approvalCheck(pack, isOwner, crDoc, needReview) {
     if (!pack) return { ok: false, why: 'There is no kick-off pack yet.' };
     if (pack.status === 'approved') return { ok: false, why: 'Already approved' + (pack.approvedBy ? ' by ' + pack.approvedBy : '') + '.' };
     if (pack.status === 'discarded') return { ok: false, why: 'This draft was discarded.' };
     if (!isOwner) return { ok: false, why: 'Only the project owner or an admin can approve.' };
     const n = openCount(crDoc); if (n) return { ok: false, why: n + ' change request' + (n === 1 ? ' is' : 's are') + ' still open. Wait until Claude has applied them, or dismiss them.' };
+    if (needReview) { const left = pack.review.filter(x => !x.done).length; if (left) return { ok: false, why: 'Go through each section of your review first and tick it off (' + left + ' left). Then you can approve.' }; }
     return { ok: true, why: '' };
   }
   /** the stored pack with the new status; the plan and deck are untouched */
@@ -118,6 +123,6 @@
     ];
     return out;
   }
-  const api = { sessionPlan, originLabel, packOf, itemsOf, openCount, addChange, dismissChange, approvalCheck, setStatus, jobRows, pullRequest, changeRequest, stage, ORIGIN, PACK_STATUS, JOB_STATUS, MAX_TEXT };
+  const api = { REVIEW, reviewOf, setReview, sessionPlan, originLabel, packOf, itemsOf, openCount, addChange, dismissChange, approvalCheck, setStatus, jobRows, pullRequest, changeRequest, stage, ORIGIN, PACK_STATUS, JOB_STATUS, MAX_TEXT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBKickoffLogic = api;
 })(typeof window !== 'undefined' ? window : globalThis);

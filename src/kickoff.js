@@ -79,8 +79,8 @@
       if (sessDone) msgs.push({ who: 'claude', text: nSess ? 'The requirement session plan is ready: ' + tiles[2].detail + '.' : 'No requirement sessions could be drafted: ' + sessNote }); else msgs.push({ who: 'claude', text: 'I am preparing the requirement sessions now…', typing: true });
       if (book) msgs.push({ who: 'claude', text: 'The project plan workbook and timeline are ready in the Project Plan tab.' }); else if (bookFailed) msgs.push({ who: 'bad', text: 'The project plan workbook could not be made. Open the Project Plan tab to try again.' }); else if (sessDone) msgs.push({ who: 'claude', text: 'I am making the project plan workbook and the timeline now…', typing: true });
       if (approved) { msgs.push({ who: 'you', text: 'I approve the kick-off.', at: when(p.approvedAt) }); msgs.push({ who: 'claude', text: 'Thank you' + (p.approvedBy ? ', ' + String(p.approvedBy).split('@')[0] : '') + '. The kick-off and the plan are approved. You can open and download them any time.', actions: [{ label: 'Open the kick-off', act: 'koOpen', attrs: { view: 'kickoff' } }, { label: 'Open the project plan', act: 'koOpen', attrs: { view: 'plan', t: 'wb' } }] }); }
-      else if (p.status === 'draft' && sessDone && book) { const c = L().approvalCheck(p, owner(), crDoc());
-        msgs.push({ who: 'claude', text: c.ok ? 'Everything is drafted. Do you want to approve the kick-off and the plan now?' : 'Everything is drafted. ' + c.why, actions: c.ok ? [{ label: 'Yes, approve', act: 'koApproveIntake', primary: true }, { label: 'Not yet, let me review', act: 'koOpen', attrs: { view: 'kickoff' } }] : [{ label: 'Review the kick-off', act: 'koOpen', attrs: { view: 'kickoff' } }] }); }
+      else if (p.status === 'draft' && sessDone && book) { const c = L().approvalCheck(p, owner(), crDoc(), true);
+        msgs.push({ who: 'claude', text: c.ok ? 'Everything is drafted for your review. You have checked every section; do you want to approve the kick-off and the plan now?' : 'Everything is drafted. ' + c.why, actions: c.ok ? [{ label: 'Yes, approve', act: 'koApproveIntake', primary: true }, { label: 'Not yet, let me review', act: 'koOpen', attrs: { view: 'kickoff' } }] : [{ label: 'Review the kick-off', act: 'koOpen', attrs: { view: 'kickoff' } }] }); }
     }
     const dis = ro() ? ' disabled' : '';
     const composer = file || j || p ? '<span class="ki-file" title="' + esc(file) + '">' + esc(file || 'MSA') + '</span><span class="spacer"></span><button type="button" class="btn sm" data-act="koReplaceMsa"' + dis + '>Replace MSA</button><button type="button" class="btn sm danger" data-act="koRemoveMsa"' + dis + '>Remove MSA</button>'
@@ -119,8 +119,15 @@
   const fitDeck = () => { const box = document.querySelector('.ko-deck'), fr = box && box.querySelector('iframe'); if (fr && box.clientWidth) fr.style.transform = 'scale(' + (box.clientWidth / 1920) + ')'; };
   let fitBound = false;
   const safeDeck = p => { try { return deckCard(p); } catch (e) { return '<div class="notice err small">The deck preview could not be built: ' + esc(e.message || 'unknown error') + '</div>'; } };
+  // The consultant's own review: each section is ticked off by a person, with their name and the time, before the kick-off can be approved.
+  function reviewCard(p) {
+    const dis = ro() || p.status !== 'draft' ? ' disabled' : ''; const left = p.review.filter(x => !x.done).length;
+    return '<section class="card ko-card" aria-label="Your review"><div class="card-h"><b>Your review</b><span class="xs muted">' + (p.status === 'approved' ? 'Reviewed and approved' : left ? left + ' of ' + p.review.length + ' sections left to check' : 'All sections checked') + '</span></div><div class="card-b ko-review">'
+      + p.review.map(x => '<label class="ko-rv' + (x.done ? ' on' : '') + '"><input type="checkbox" data-change="koReview" data-id="' + esc(x.id) + '"' + (x.done ? ' checked' : '') + dis + '><span>' + esc(x.label) + '</span>' + (x.done ? '<em class="xs muted">' + esc(String(x.by).split('@')[0]) + ', ' + esc(when(x.at)) + '</em>' : '') + '</label>').join('')
+      + '<p class="xs muted">These drafts are a starting point. Check them against the contract and with the customer before you approve; correct anything that is wrong.</p></div></section>';
+  }
   function approveBar(p) {
-    const a = L().approvalCheck(p, owner(), crDoc()); const dis = ro() ? ' disabled' : '';
+    const a = L().approvalCheck(p, owner(), crDoc(), true); const dis = ro() ? ' disabled' : '';
     if (p.status === 'approved') return `<div class="ko-bar"><span>${tag('ok', 'Approved')} by ${esc(p.approvedBy)} ${esc(when(p.approvedAt))}</span></div>`;
     return `<div class="ko-bar"><span class="xs muted">${a.ok || !a.why ? 'Review the contract data, then approve.' : esc(a.why)}</span><span class="spacer"></span>
       <button type="button" class="btn primary" data-act="koApprove"${a.ok ? '' : ' disabled'}>Approve kick-off</button></div>`;
@@ -134,7 +141,7 @@
     const head = '<div class="page-header"><div class="t"><h1>Project introduction</h1><p>What the contract produced for the kick-off: scope, the deck, your change requests. You review and approve once.</p></div></div>';
     const k = K(); if (k.pid !== pid()) reset(k); const p = pack();
     if (!p) return head + '<div class="page-body ko"><div class="card ko-card"><div class="card-b"><p>Nothing to show yet. Upload the MSA on the Contract intake tab; Claude drafts the kick-off from it.</p><div class="row ko-btns"><button type="button" class="btn sm primary" data-act="nav" data-view="msaintake">Go to Contract intake</button></div></div></div></div>';
-    return head + '<div class="page-body ko">' + (p.status === 'discarded' ? '<div class="notice small">This draft was discarded. Upload the MSA again on the Contract intake tab.</div>' : '') + packCards(p) + crCard() + safeDeck(p) + approveBar(p) + '</div>';
+    return head + '<div class="page-body ko">' + (p.status === 'discarded' ? '<div class="notice small">This draft was discarded. Upload the MSA again on the Contract intake tab.</div>' : '') + packCards(p) + crCard() + safeDeck(p) + reviewCard(p) + approveBar(p) + '</div>';
   }
   V.msaintake = { html() { return V.isCustomer() ? '' : intakePage(); }, mount() { if (V.isCustomer()) return; load(false); poll(); syncStruct(); syncSessions(); syncWorkbook(); } };
   // The team gets this page; customers keep the older Kick-off Deck viewer.
@@ -164,6 +171,7 @@
     try { await API.post(base() + '/jobs', L().pullRequest(S.project.customer, S.project.name, fileName + (kept ? ' (text kept in the Studio: get_document msa_text)' : ''))); K().at = 0; load(true, true); toast(kept ? 'MSA stored and read. A job for Claude was created; the scheduled Claude task picks it up. Follow it on the Kick-off page.' : 'MSA stored, but its text could not be read here, so Claude will look for it in OneDrive or SharePoint. Follow it on the Kick-off page.', 9000); }
     catch (e) { toast('MSA stored, but the Claude job could not be created: ' + (e.message || 'open Kick-off and press Pull MSA'), 8000, true); }
   };
+  ACT.koReview = el => { if (guard()) return; const p = pack(); if (!p || p.status !== 'draft') return; setDoc('kickoff_pack', L().setReview(F.doc('kickoff_pack'), el.getAttribute('data-id'), !!el.checked, S.user.email, new Date().toISOString())); F.changed(null, null, { section: 'kickoff_pack' }); };
   ACT.koRefresh = () => load(true, true);
   ACT.koPull = a => V.busy(a, async () => {
     if (guard()) return; const r = await post('/jobs', L().pullRequest(S.project.customer, S.project.name));
@@ -193,7 +201,7 @@
   };
   ACT.koOpen = a => { const t = a.getAttribute('data-t'); if (t) S.ui.planTab = t; ACT.nav(a); };
   ACT.koApproveIntake = a => V.busy(a, async () => {
-    const p = pack(); const c = L().approvalCheck(p, owner(), crDoc()); if (!c.ok) { toast(c.why, 6000, true); return; }
+    const p = pack(); const c = L().approvalCheck(p, owner(), crDoc(), true); if (!c.ok) { toast(c.why, 6000, true); return; }
     const prev = F.doc('kickoff_pack'); setDoc('kickoff_pack', L().setStatus(prev, 'approved', S.user.email, new Date().toISOString())); F.changed('Kick-off approved', null, { section: 'kickoff_pack' });
     if (!(await saved('kickoff_pack'))) { undo('kickoff_pack', prev); toast(NOT_SAVED, 8000, true); return; } toast('Kick-off approved.', 4000);
   });
@@ -227,7 +235,7 @@
     await V.msaIngest(f);
   };
   ACT.koApprove = a => V.busy(a, async () => {
-    const p = pack(); const c = L().approvalCheck(p, owner(), crDoc()); if (!c.ok) { toast(c.why, 6000, true); return; }
+    const p = pack(); const c = L().approvalCheck(p, owner(), crDoc(), true); if (!c.ok) { toast(c.why, 6000, true); return; }
     if (!(await V.confirmDialog('Approve kick-off', 'Approve the kick-off deck and the project plan as they are shown? Open items stay open and are listed in the plan.', 'Approve'))) return;
     const prev = F.doc('kickoff_pack'); setDoc('kickoff_pack', L().setStatus(prev, 'approved', S.user.email, new Date().toISOString())); F.changed('Kick-off approved', null, { section: 'kickoff_pack' });
     if (!(await saved('kickoff_pack'))) { undo('kickoff_pack', prev); toast(NOT_SAVED, 8000, true); return; }
