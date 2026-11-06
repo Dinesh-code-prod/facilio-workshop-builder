@@ -31,6 +31,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     uat_source: { ext: ['xlsx', 'xlsm', 'xls', 'csv', 'txt'], max: 20e6 },   // the original UAT tracker a team imported from (team only)
     ftr_workbook: { ext: ['xlsx', 'xlsm'], max: 40e6 }, kpi_workbook: { ext: ['xlsx', 'xlsm'], max: 40e6 },
     config_evidence: { ext: ['pdf', 'xlsx', 'csv', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'txt'], max: 20e6 },
+    solution_doc: { ext: ['docx', 'pdf'], max: 60e6 },   // the Solution Document Claude built from the org package (team only)
     mockup_html: { ext: ['html', 'htm'], max: 25e6 },   // the self-contained page Meteor made for a mockup card (team only)
     guide_media: { ext: ['png', 'jpg', 'jpeg'], max: 8e6 }, flow_image: { ext: ['png', 'jpg', 'jpeg', 'webp'], max: 8e6 }, showcase_image: { ext: ['png', 'jpg', 'jpeg', 'webp'], max: 5e6 },
     ticket_attachment: { ext: ['pdf', 'xlsx', 'xls', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'csv', 'txt', 'msg', 'eml'], max: 20e6 },
@@ -1835,7 +1836,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     if (['txt', 'csv', 'vtt', 'srt', 'json', 'eml'].includes(ext)) return !b.includes(0) && !starts(b, SIG.zip) && !starts(b, SIG.ole);  // text: no NUL bytes, not a binary package
     return null;
   }
-  const TEAM_FILES = new Set(['uat_source', 'uat_evidence', 'mockup_html']);   // file categories customers cannot open
+  const TEAM_FILES = new Set(['uat_source', 'uat_evidence', 'mockup_html', 'solution_doc']);   // file categories customers cannot open
   const fileForRead = async (s, P) => { const acc = await projectAccess(s, P.id, 'read'); const r = await dbGet('fl.' + P.id, P.fid); if (!r || r.value.deletedAt || r.value.status !== 'ready') throw new HttpError(404, 'File not found'); if (acc.role === 'customer' && TEAM_FILES.has(r.value.category)) throw new HttpError(404, 'File not found'); return r.value; };
   route('GET', '/api/projects/:id/files/:fid', async (b, P) => { const s = await me(); return ok({ file: fileOut(await fileForRead(s, P)), chunkSize: CHUNK }); });
   route('GET', '/api/projects/:id/files/:fid/chunks/:n', async (b, P) => {
@@ -2125,7 +2126,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   installTaskTracking({ route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, itemsOf, withLock, audit, viaApp, CONNECTOR, DONE_RE, cut, rid });   // task suggestions from Claude: routes and tools (_tasksapi.mjs)
   installJobs({ route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, withLock, audit, CONNECTOR, rid, CTX });   // job queue: Studio buttons write jobs, Claude in the person's own session claims and finishes them (_jobsapi.mjs)
   // The platform allows at most 40 MCP tools per app, so related tools share one public entry with an `action`; the old tool names stay as the implementations.
-  const ACTION_TOOLS = { transfer_read: { list: 'transfer_list', get: 'transfer_get' }, transfer_write: { begin: 'transfer_begin', store: 'transfer_store', submit: 'transfer_submit' }, transfer_push: { push_begin: 'transfer_push_begin', report: 'transfer_report', verify: 'transfer_verify' }, session_questions: { prepare: 'get_prepared_questions', live: 'live_ask', save_transcript: 'rs_save_transcript', save_findings: 'rs_save_findings', save_design: 'design_save_proposals', save_mockup: 'mockup_save_page' }, task_tracking: { evidence: 'task_evidence', save: 'save_task_suggestions' }, project_jobs: { list: 'jobs_list', claim: 'jobs_claim', progress: 'jobs_progress', finish: 'jobs_finish', handoff_get: 'get_handoff', file_urls: 'jobs_file_urls', handoff_submit: 'submit_handoff_result' } };
+  const ACTION_TOOLS = { transfer_read: { list: 'transfer_list', get: 'transfer_get' }, transfer_write: { begin: 'transfer_begin', store: 'transfer_store', submit: 'transfer_submit' }, transfer_push: { push_begin: 'transfer_push_begin', report: 'transfer_report', verify: 'transfer_verify' }, session_questions: { prepare: 'get_prepared_questions', live: 'live_ask', save_transcript: 'rs_save_transcript', save_findings: 'rs_save_findings', save_design: 'design_save_proposals', save_mockup: 'mockup_save_page' }, task_tracking: { evidence: 'task_evidence', save: 'save_task_suggestions' }, project_jobs: { list: 'jobs_list', claim: 'jobs_claim', progress: 'jobs_progress', finish: 'jobs_finish', handoff_get: 'get_handoff', file_urls: 'jobs_file_urls', file_put_begin: 'jobs_file_put_begin', file_put_done: 'jobs_file_put_done', handoff_submit: 'submit_handoff_result' } };
   for (const [name, acts] of Object.entries(ACTION_TOOLS)) CONNECTOR[name] = async (s, b) => { const impl = Object.prototype.hasOwnProperty.call(acts, String((b || {}).action)) ? acts[b.action] : null; if (!impl) throw new HttpError(400, 'action must be one of: ' + Object.keys(acts).join(', ')); return CONNECTOR[impl](s, b); };
   async function dispatch(method, path, query, body) {
     const u = new URL(path, 'https://app.local'); u.search = query || '';

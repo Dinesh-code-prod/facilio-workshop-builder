@@ -57,6 +57,20 @@ export function installJobs(d) {
       if (f.category !== 'config_package') throw new HttpError(403, 'Only an org package file can be fetched this way'); const parts = []; for (const id of (f.urls || [])) { const u = await CTX.files.url(id, { private: true, expires: 3600 }); parts.push(u.url); }
       await audit(p.id, s.id, 'package-fetched', f.name); return { name: f.name, size: f.size, mime: f.mime, parts, note: 'Download every part in order and join them (cat part1 part2 > package.zip). A file with one part needs no joining. The links last one hour.' };
     },
+    /** step 1 of sending a finished document to the project: a one-time link to put the bytes to (docx or pdf, up to 16 MB), nothing passes through this function */
+    async jobs_file_put_begin(s, b) {
+      const p = await pickProject(s, b.project); await access(s, p.id); const name = String(b.fileName || '').replace(/[^A-Za-z0-9._ ()-]/g, ' ').trim().slice(0, 120); const ext = (name.split('.').pop() || '').toLowerCase(); const size = Number(b.fileSize);
+      if (!name || !['docx', 'pdf'].includes(ext)) throw new HttpError(415, 'fileName must be a .docx or .pdf file name'); if (!(size > 0) || size > 16e6) throw new HttpError(413, 'fileSize must be the size in bytes, up to 16 MB');
+      const fid = rid('f'); const u = await CTX.files.uploadUrl(fid + '-0.bin', { private: true }); const now = new Date().toISOString();
+      await dbPut('fl.' + p.id, fid, { id: fid, category: 'solution_doc', name, mime: ext === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size, chunks: 1, status: 'uploading', meta: { job: String(b.id || '').slice(0, 40), from: 'claude' }, replaces: null, supersededBy: null, createdBy: s.id, createdAt: now, deletedAt: null, urls: [], mint: { 0: u.file_id } });
+      return { fileId: fid, uploadUrl: u.url, next: 'PUT the file bytes to uploadUrl (curl -X PUT --upload-file "<path>" "<uploadUrl>"), then call project_jobs with action file_put_done and this fileId.' };
+    },
+    /** step 2: the bytes are in storage; the file becomes a ready project file, listed on the Handover page */
+    async jobs_file_put_done(s, b) {
+      const p = await pickProject(s, b.project); await access(s, p.id); const r = await dbGet('fl.' + p.id, String(b.fileId || '')); const f = r && r.value; if (!f || f.category !== 'solution_doc' || f.status !== 'uploading' || f.createdBy !== s.id) throw new HttpError(404, 'No upload in progress for that fileId');
+      if (!f.mint || !f.mint[0]) throw new HttpError(400, 'The upload link was never issued'); f.urls = [f.mint[0]]; f.status = 'ready'; f.contentCheck = 'unchecked'; await dbPut('fl.' + p.id, f.id, f); await audit(p.id, s.id, 'file-uploaded', 'solution_doc: ' + f.name);
+      return { name: f.name, note: 'Saved to the project. It shows on the Handover page under Solution document.' };
+    },
     async jobs_progress(s, b) { const p = await pickProject(s, b.project); const j = await ops.progress(s, p.id, String(b.id || ''), b.summary); return { job: view(j), note: 'Shown to the person in Delivery Studio. Keep going.' }; },
     async jobs_finish(s, b) {
       const p = await pickProject(s, b.project); const j = await ops.finish(s, p.id, String(b.id || ''), { status: b.status, summary: b.summary, transferId: b.transferId, questions: b.questions });

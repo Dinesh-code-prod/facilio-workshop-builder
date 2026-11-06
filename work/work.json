@@ -317,7 +317,9 @@
         "progress",
         "handoff_get",
         "handoff_submit",
-        "file_urls"
+        "file_urls",
+        "file_put_begin",
+        "file_put_done"
        ],
        "description": "Which step"
       },
@@ -359,6 +361,14 @@
       "fileId": {
        "type": "string",
        "description": "Only for file_urls: the project file id of an org package (the ref of a build_solution_doc job)"
+      },
+      "fileName": {
+       "type": "string",
+       "description": "Only for file_put_begin: the .docx or .pdf file name to keep"
+      },
+      "fileSize": {
+       "type": "number",
+       "description": "Only for file_put_begin: the file size in bytes (up to 16 MB)"
       }
      },
      "required": [
