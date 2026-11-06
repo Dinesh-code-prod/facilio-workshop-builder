@@ -16,8 +16,9 @@
       var out = [], seen = {}; (m.fields || []).forEach(function (f) { if (!seen[f.label]) { seen[f.label] = 1; out.push(f); } });
       (m.forms || []).forEach(function (fm) { (fm.sections || []).forEach(function (s) { (s.fields || []).forEach(function (n) { if (n && !seen[n]) { seen[n] = 1; out.push({ label: n, type: 'text', options: [] }); } }); }); }); return out;
     }
-    function ordered(mods) { var order = { Portfolio: 0, Assets: 1, Operations: 2 }; return (mods || []).slice().sort(function (a, b) { var ga = order[group(a.label)], gb = order[group(b.label)]; return ga - gb || String(a.label).localeCompare(String(b.label)); }); }
+    function ordered(mods) { var order = { Portfolio: 0, Assets: 1, Operations: 2 }; return (mods || []).slice().sort(function (a, b) { var ga = order[group(a.label)], gb = order[group(b.label)]; return (b.pseudo ? 1 : 0) - (a.pseudo ? 1 : 0) || ga - gb || String(a.label).localeCompare(String(b.label)); }); }
     function seed(m) {
+      if (m.pseudo) return [];
       var fl = m.flows && m.flows[0], fs = fieldList(m), out = [];
       for (var i = 0; i < 3; i++) { var v = {}; fs.forEach(function (f) { v[f.label] = sample(f, i); }); out.push({ id: m.name + '-' + (1001 + i), title: m.label + ' #' + (1001 + i), status: fl && fl.states && fl.states.length ? fl.states[i === 1 && fl.states.length > 1 ? 1 : 0] : '', values: v, log: [] }); }
       return out;
@@ -28,14 +29,18 @@
 
     var recs = {}, st = { mod: '', view: 'list', id: '', tab: 'details', app: -1 }, mods = ordered(DATA.modules); mods.forEach(function (m) { recs[m.name] = seed(m); }); if (mods.length) st.mod = mods[0].name;
     var app = doc.getElementById('app'), note = '';
+    function fillProto() { var f = doc.querySelector('iframe.px'); var m = modOf(st.mod); if (f && m && m.proto) f.srcdoc = m.proto; }
     function e(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
     function modOf(name) { return mods.filter(function (m) { return m.name === name || m.label === name; })[0]; }
     function render() {
       var m = modOf(st.mod), fl = m && m.flows && m.flows[0], groups = {}; mods.forEach(function (x) { (groups[group(x.label)] = groups[group(x.label)] || []).push(x); });
       var nav = ['Portfolio', 'Assets', 'Operations'].filter(function (g) { return groups[g]; }).map(function (g) { return '<div class="gh">' + g + '</div>' + groups[g].map(function (x) { return '<button class="ni' + (x.name === st.mod ? ' on' : '') + '" data-a="mod" data-m="' + e(x.name) + '">' + e(x.label) + '</button>'; }).join(''); }).join('');
-      var body = !m ? '<p class="muted">No module is in scope yet.</p>' : st.view === 'list' ? list(m) : st.view === 'new' ? form(m) : record(m, fl);
+      var body = !m ? '<p class="muted">No module is in scope yet.</p>' : m.proto && st.view === 'list' && !st.data ? protoView(m) : st.view === 'list' ? (m.proto ? protoTabs(m, 'data') : '') + list(m) : st.view === 'new' ? form(m) : record(m, fl);
       app.innerHTML = '<header><b>' + e(DATA.customer || DATA.project || 'Facilio') + '</b><span>Interactive mockup with sample data</span></header><div class="wrap"><nav>' + nav + '</nav><main>' + body + '</main></div>' + (note ? '<div class="toast">' + e(note) + '</div>' : '') + (st.app >= 0 ? appModal(m) : '');
+      fillProto();
     }
+    function protoTabs(m, on) { return '<div class="tabs"><button class="tb' + (on === 'proto' ? ' on' : '') + '" data-a="showproto">Prototype</button>' + (m.pseudo ? '' : '<button class="tb' + (on === 'data' ? ' on' : '') + '" data-a="showdata">Records</button>') + '</div>'; }
+    function protoView(m) { return '<div class="bar"><h1>' + e(m.label) + '</h1></div>' + protoTabs(m, 'proto') + '<iframe class="px" sandbox="allow-scripts" title="' + e(m.label) + '" style="width:100%;height:78vh;border:1px solid #DCE4F3;border-radius:12px;background:#fff"></iframe>'; }
     function chip(s) { return s ? '<span class="chip s' + (String(s).length % 5) + '">' + e(s) + '</span>' : ''; }
     function list(m) {
       var fs = fieldList(m).slice(0, 3), rows = recs[m.name] || [];
@@ -66,7 +71,7 @@
     doc.addEventListener('click', function (ev) {
       var t = ev.target.closest && ev.target.closest('[data-a]'); if (!t) return; var a = t.getAttribute('data-a'), m = modOf(st.mod), r = m && (recs[m.name] || []).filter(function (x) { return x.id === st.id; })[0];
       function later(ms) { doc.defaultView.setTimeout(function () { note = ''; render(); }, ms); }
-      if (a === 'mod') { st.mod = t.getAttribute('data-m'); st.view = 'list'; st.id = ''; } else if (a === 'open') { st.id = t.getAttribute('data-id'); st.view = 'record'; st.tab = 'details'; } else if (a === 'back') { st.view = 'list'; st.id = ''; }
+      if (a === 'mod') { st.mod = t.getAttribute('data-m'); st.view = 'list'; st.id = ''; st.data = false; } else if (a === 'showdata') { st.data = true; } else if (a === 'showproto') { st.data = false; } else if (a === 'open') { st.id = t.getAttribute('data-id'); st.view = 'record'; st.tab = 'details'; } else if (a === 'back') { st.view = 'list'; st.id = ''; }
       else if (a === 'new') { st.view = 'new'; } else if (a === 'tab') { st.tab = t.getAttribute('data-t'); } else if (a === 'closeapp') { st.app = -1; } else if (a === 'app') { st.app = Number(t.getAttribute('data-i')); }
       else if (a === 'save' && m) { var vals = {}; doc.querySelectorAll('[data-n]').forEach(function (x) { vals[x.getAttribute('data-n')] = x.value || ''; }); var fl = m.flows && m.flows[0], n = (recs[m.name] || []).length; recs[m.name].push({ id: m.name + '-' + (1001 + n), title: (doc.getElementById('f_title') || {}).value || (m.label + ' #' + (1001 + n)), status: fl && fl.states.length ? fl.states[0] : '', values: vals, log: ['Created'] }); st.view = 'list'; note = 'Saved'; later(2000); }
       else if (a === 'move' && r) { var mv = nextMoves(m.flows && m.flows[0], r.status)[Number(t.getAttribute('data-i'))]; if (mv && (!isApproval(mv) || doc.defaultView.confirm(mv.name + ' this record?'))) { r.log.push(r.status + ' → ' + mv.to + ' (' + mv.name + ', Sample User)'); r.status = mv.to; note = r.title + ' is now ' + mv.to; later(2600); } }
@@ -84,6 +89,8 @@
     return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mockup: ' + t + '</title><style>' + CSS + '</style></head><body><div id="app"></div><script>(' + runtime.toString() + ')(' + safe(data) + ', document);</script></body></html>';
   }
   const ACT = V.ACT || (V.ACT = {});
-  ACT.mkClient = () => { const g = V.mockupLogic && (V.mockupLogic.gatherClient || V.mockupLogic.gather); if (!g) return; const d = g(); if (!d.modules.length) { V.toast('No module is in scope yet, so there is nothing to show.', 5000, true); return; } const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([toClientHtml(d)], { type: 'text/html' })); a.download = ((d.customer || d.project || 'project') + ' - client mockup.html').replace(/[\\/:*?"<>|]/g, ' '); document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); V.toast('The client mockup is saved. Open it in any browser or e-mail it.', 6000); };
+  ACT.mkClient = async () => { const g = V.mockupLogic && (V.mockupLogic.gatherClient || V.mockupLogic.gather); if (!g) return; const d = g(); const pg = V.mockupLogic.pages ? V.mockupLogic.pages() : []; let total = 0, skipped = 0;
+    for (const p of pg) { try { const txt = await (await V.mockupLogic.pageBlob(p.file)).text(); if (total + txt.length > 14e6) { skipped++; continue; } total += txt.length; if (p.key === 'portfolio:all') d.modules.unshift({ name: '__portfolio', label: 'Portfolio', pseudo: true, proto: txt, flows: [], fields: [], forms: [], requirements: [] }); else { const m = d.modules.find(x => p.key.indexOf(':' + x.name + ':') > 0 || p.key === 'module:' + x.name); if (m) m.proto = txt; else skipped++; } } catch (e) { skipped++; } }
+    if (!d.modules.length) { V.toast('No module is in scope yet, so there is nothing to show.', 5000, true); return; } const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([toClientHtml(d)], { type: 'text/html' })); a.download = ((d.customer || d.project || 'project') + ' - client mockup.html').replace(/[\\/:*?"<>|]/g, ' '); document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); V.toast('The client mockup is saved. Open it in any browser or e-mail it.' + (pg.length ? ' ' + (pg.length - skipped) + ' Meteor page' + (pg.length - skipped === 1 ? '' : 's') + ' inside.' : '') + (skipped ? ' ' + skipped + ' not added (too large or no matching module).' : ''), 7000); };
   V.mockupClient = { toClientHtml, runtime };
 })(typeof window !== 'undefined' ? window : globalThis);

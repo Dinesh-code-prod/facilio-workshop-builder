@@ -31,6 +31,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     uat_source: { ext: ['xlsx', 'xlsm', 'xls', 'csv', 'txt'], max: 20e6 },   // the original UAT tracker a team imported from (team only)
     ftr_workbook: { ext: ['xlsx', 'xlsm'], max: 40e6 }, kpi_workbook: { ext: ['xlsx', 'xlsm'], max: 40e6 },
     config_evidence: { ext: ['pdf', 'xlsx', 'csv', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'txt'], max: 20e6 },
+    mockup_html: { ext: ['html', 'htm'], max: 25e6 },   // the self-contained page Meteor made for a mockup card (team only)
     guide_media: { ext: ['png', 'jpg', 'jpeg'], max: 8e6 }, flow_image: { ext: ['png', 'jpg', 'jpeg', 'webp'], max: 8e6 }, showcase_image: { ext: ['png', 'jpg', 'jpeg', 'webp'], max: 5e6 },
     ticket_attachment: { ext: ['pdf', 'xlsx', 'xls', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'csv', 'txt', 'msg', 'eml'], max: 20e6 },
     report_attachment: { ext: ['pdf', 'xlsx', 'xls', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'csv', 'txt'], max: 20e6 },
@@ -1834,7 +1835,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     if (['txt', 'csv', 'vtt', 'srt', 'json', 'eml'].includes(ext)) return !b.includes(0) && !starts(b, SIG.zip) && !starts(b, SIG.ole);  // text: no NUL bytes, not a binary package
     return null;
   }
-  const TEAM_FILES = new Set(['uat_source', 'uat_evidence']);   // file categories customers cannot open
+  const TEAM_FILES = new Set(['uat_source', 'uat_evidence', 'mockup_html']);   // file categories customers cannot open
   const fileForRead = async (s, P) => { const acc = await projectAccess(s, P.id, 'read'); const r = await dbGet('fl.' + P.id, P.fid); if (!r || r.value.deletedAt || r.value.status !== 'ready') throw new HttpError(404, 'File not found'); if (acc.role === 'customer' && TEAM_FILES.has(r.value.category)) throw new HttpError(404, 'File not found'); return r.value; };
   route('GET', '/api/projects/:id/files/:fid', async (b, P) => { const s = await me(); return ok({ file: fileOut(await fileForRead(s, P)), chunkSize: CHUNK }); });
   route('GET', '/api/projects/:id/files/:fid/chunks/:n', async (b, P) => {
