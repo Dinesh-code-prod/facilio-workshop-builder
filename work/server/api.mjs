@@ -163,6 +163,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     const changed = kind === 'close' ? ['closedAt', 'closedBy', 'exitAt', 'exitBy'].some(f => String((cur || {})[f] || '') !== String((next || {})[f] || '')) : decided(kind, cur) !== decided(kind, next) || (decided(kind, cur) && String((cur || {}).status) !== String((next || {}).status));
     if (changed) throw new HttpError(403, DECISION_MSG[kind]);
   }
+  const BRD_REVIEW = ['intro', 'requirements', 'flows', 'fields', 'apps', 'contract'];   // the parts a person ticks off before a BRD can be approved (src/brdreview.js)
   const brdApprovals = d => { d = d || {}; const out = { main: d.status || 'draft' }; for (const [k, v] of Object.entries(d.docs && typeof d.docs === 'object' ? d.docs : {})) out[k] = (v && v.status) || 'draft'; return out; };
   function patchProject(pid, fn) { return withLock('proj.' + pid, async () => { const r = await dbGet('projects', pid); if (!r || !r.value) throw new HttpError(404, 'Project not found'); const p = r.value; await fn(p); await saveProject(p); return p; }); }
   function touchProject(pid) { return withLock('proj.' + pid, async () => { const r = await dbGet('projects', pid); const p = r && r.value; if (!p || Date.now() - Date.parse(p.updatedAt || 0) < 30e3) return; await saveProject(p); }); }
@@ -341,6 +342,10 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     if (!b || b.data === undefined) throw new HttpError(400, 'data is required');
     if (P.section === 'brddoc' && role !== 'owner') { const was = brdApprovals((await docRead(P.id, 'brddoc') || {}).data), now_ = brdApprovals(b.data);
       for (const k of new Set([...Object.keys(was), ...Object.keys(now_)])) if ((was[k] === 'approved') !== (now_[k] === 'approved')) throw new HttpError(403, 'Only a project owner or an admin can approve a BRD or reopen an approved one.'); }
+    if (P.section === 'brddoc' && b.data && typeof b.data === 'object') {   // approving a BRD needs every part ticked off by a person, with a name
+      const wasA = brdApprovals((await docRead(P.id, 'brddoc') || {}).data), nowA = brdApprovals(b.data);
+      for (const k of Object.keys(nowA)) if (nowA[k] === 'approved' && wasA[k] !== 'approved') { const rec = k === 'main' ? b.data : (b.data.docs && b.data.docs[k]) || {}; const rv = (rec && rec.review) || {}; if (BRD_REVIEW.some(id => !(rv[id] && rv[id].by))) throw new HttpError(409, 'Review every part of the BRD (and tick it off) before approving it.'); }
+    }
     if (TEAM_DOCS.has(P.section) && role === 'customer') throw new HttpError(403, 'Not permitted');
     if (P.section === 'kickoff_pack') {   // approving, discarding or changing an approved kick-off is the owner's; the owner cannot approve while change requests are open
       const stOf = d => (d && typeof d === 'object' && d.status) || 'draft'; const prev = ((await docRead(P.id, 'kickoff_pack')) || {}).data; const was = stOf(prev), now_ = stOf(b.data);

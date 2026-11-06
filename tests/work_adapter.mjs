@@ -503,7 +503,8 @@ await t('sign-offs and approvals: recorded, undone or deleted only by owners and
   r = await call(ed, 'PUT', `/api/projects/${P}/docs/brddoc`, { data: { status: 'review' }, baseVersion: 0 }); assert.equal(r.status, 200, 'editor can move the BRD to review');
   r = await call(ed, 'PUT', `/api/projects/${P}/docs/brddoc`, { data: { status: 'approved' }, baseVersion: 1 }); assert.equal(r.status, 403, 'editor cannot approve the BRD');
   r = await call(ed, 'PUT', `/api/projects/${P}/docs/brddoc`, { data: { status: 'review', docs: { b2: { status: 'approved' } } }, baseVersion: 1 }); assert.equal(r.status, 403, 'nor a secondary BRD');
-  r = await call(own, 'PUT', `/api/projects/${P}/docs/brddoc`, { data: { status: 'approved' }, baseVersion: 1 }); assert.equal(r.status, 200);
+  r = await call(own, 'PUT', `/api/projects/${P}/docs/brddoc`, { data: { status: 'approved' }, baseVersion: 1 }); assert.equal(r.status, 409, 'the owner cannot approve a BRD nobody reviewed');
+  r = await call(own, 'PUT', `/api/projects/${P}/docs/brddoc`, { data: { status: 'approved', review: { intro: { by: 'o', at: 'x' }, requirements: { by: 'o', at: 'x' }, flows: { by: 'o', at: 'x' }, fields: { by: 'o', at: 'x' }, apps: { by: 'o', at: 'x' }, contract: { by: 'o', at: 'x' } } }, baseVersion: 1 }); assert.equal(r.status, 200);
   r = await call(ed, 'PUT', `/api/projects/${P}/docs/brddoc`, { data: { status: 'draft' }, baseVersion: 2 }); assert.equal(r.status, 403, 'editor cannot reopen an approved BRD');
   r = await call(dinesh, 'PUT', `/api/projects/${P}/docs/brddoc`, { data: { status: 'draft' }, baseVersion: 2 }); assert.equal(r.status, 200, 'admins can');
 });
