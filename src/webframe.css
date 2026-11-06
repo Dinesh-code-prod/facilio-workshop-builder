@@ -9,3 +9,7 @@
 .wf-frame{display:block;width:100%;height:calc(100vh - 290px);min-height:480px;border:1px solid #d7dfee;border-radius:0 0 12px 12px;background:#fff}
 .wf-bar a:focus-visible,.wf-bar button:focus-visible{outline:2px solid #1570EF;outline-offset:2px}
 @media (max-width:700px){.wf-actions{margin-left:0}.wf-frame{height:calc(100vh - 340px)}}
+.wf.wf-big{position:fixed;inset:0;z-index:80;background:#fff;padding:10px 14px;display:flex;flex-direction:column;overflow:hidden}
+.wf.wf-big .wf-frame{flex:1;height:auto;min-height:0}
+.wf.wf-big .wf-help{flex:none}
+body.wf-lock{overflow:hidden}

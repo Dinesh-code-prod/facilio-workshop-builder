@@ -12,7 +12,7 @@
     const site = current(view);
     const tabs = `<div class="tabs wf-tabs" role="tablist" aria-label="Facilio tools">${W.SITES.map(s => `<button class="tab${s.id === site.id ? ' active' : ''}" role="tab" aria-selected="${s.id === site.id}" data-act="wfTab" data-v="${esc(s.id)}">${esc(s.title)}</button>`).join('')}</div>`;
     const ok = W.isAllowed(site.url);
-    const bar = `<div class="wf-bar"><b class="wf-title">${esc(site.title)}</b><span class="wf-note">${esc(site.note)}</span><span class="wf-actions"><button type="button" class="btn" data-act="wfReload">Reload</button><a class="btn primary" href="${esc(site.url)}" target="_blank" rel="noopener noreferrer">Open in a new tab</a></span></div>`;
+    const bar = `<div class="wf-bar"><b class="wf-title">${esc(site.title)}</b><span class="wf-note">${esc(site.note)}</span><span class="wf-actions"><button type="button" class="btn" data-act="wfBig" id="wfBigBtn" aria-pressed="false">Bigger view</button><button type="button" class="btn" data-act="wfReload">Reload</button><a class="btn primary" href="${esc(site.url)}" target="_blank" rel="noopener noreferrer">Open in a new tab</a></span></div>`;
     const frame = ok
       ? `<iframe id="wfFrame" class="wf-frame" title="${esc(site.title)}" src="${esc(site.url)}" data-site="${esc(site.id)}" data-view="${esc(view)}" referrerpolicy="no-referrer" sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-downloads" allow=""></iframe>`
       : '<div class="notice err">This address is not on the allowed list, so it is not shown here.</div>';
@@ -26,5 +26,9 @@
   // the shell rebuilds the whole page on every render, which would reload the frame; the shell skips that while the same site is open (see render in shell.js)
   V.wfKeep = () => { const f = document.getElementById('wfFrame'); return !!f && f.getAttribute('data-view') === S.ui.view && f.getAttribute('data-site') === current(S.ui.view).id; };
   ACT.wfTab = a => { const id = a.getAttribute('data-v'); if (S.ui.view === 'supportdesk') V.go('webframe', { wfSite: id }); else { S.ui.wfSite = id; V.render(); } };
-  ACT.wfReload = () => { const f = document.getElementById('wfFrame'); if (!f) return; f.src = f.getAttribute('src'); const h = document.getElementById('wfHelp'); if (h) h.hidden = true; mount(); };
+  // bigger view: the page area covers the whole window (a class only, so the frame is not reloaded); Esc or the same button goes back
+  const big = on => { const w = document.querySelector('.wf'); if (!w) return; const x = on === undefined ? !w.classList.contains('wf-big') : on; w.classList.toggle('wf-big', x); document.body.classList.toggle('wf-lock', x); const b = document.getElementById('wfBigBtn'); if (b) { b.textContent = x ? 'Back to normal size' : 'Bigger view'; b.setAttribute('aria-pressed', String(x)); } };
+  ACT.wfBig = () => big();
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.querySelector('.wf.wf-big')) big(false); });
+  ACT.wfReload =() => { const f = document.getElementById('wfFrame'); if (!f) return; f.src = f.getAttribute('src'); const h = document.getElementById('wfHelp'); if (h) h.hidden = true; mount(); };
 })(typeof window !== 'undefined' ? window : globalThis);
