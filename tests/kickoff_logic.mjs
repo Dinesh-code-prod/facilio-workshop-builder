@@ -39,7 +39,7 @@ t('job rows show a plain status and the questions only while Claude waits for an
   assert.deepEqual(r[0].questions, ['Which file?']); assert.equal(r[0].statusLabel, 'Claude needs your answer'); assert.equal(r[0].open, true); assert.deepEqual(r[1].questions, []); assert.equal(r[1].open, false); assert.equal(r[1].label, 'apply_change');
   assert.deepEqual(L.jobRows(null), []);
 });
-t('requests are shaped for the job queue', () => { assert.deepEqual(L.pullRequest('Acme', 'FM'), { kind: 'pull_msa', note: 'Acme / FM' }); assert.deepEqual(L.changeRequest(), { kind: 'apply_change', section: 'kickoff_cr' }); });
+t('requests are shaped for the job queue', () => { assert.deepEqual(L.pullRequest('Acme', 'FM'), { kind: 'pull_msa', note: 'Acme / FM' }); assert.equal(L.pullRequest('Acme', 'FM', 'A MSA.pdf').note, 'Acme / FM / uploaded file: A MSA.pdf'); assert.deepEqual(L.changeRequest(), { kind: 'apply_change', section: 'kickoff_cr' }); });
 t('the step strip', () => {
   const p = L.packOf(stored); assert.equal(L.stage(false, null, []), 'start'); assert.equal(L.stage(true, null, []), 'extract'); assert.equal(L.stage(false, null, [{ kind: 'pull_msa', status: 'waiting' }]), 'pulling');
   assert.equal(L.stage(true, p, []), 'review'); assert.equal(L.stage(true, L.packOf(L.setStatus(stored, 'approved', 'o', 'n')), []), 'approved');

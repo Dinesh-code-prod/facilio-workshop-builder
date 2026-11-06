@@ -136,6 +136,11 @@
   ACT.koDlDeck = () => { const p = pack(); if (!p) return; try { V.download(file('kickoff'), new Blob([root.FWBKickoffDeck.build(p.deck, { fmt: dt }).html], { type: 'text/html' })); } catch (e) { toast('The deck could not be built: ' + (e.message || 'unknown error'), 6000, true); } };
   ACT.koDlPlan = () => { const p = pack(); if (!p) return; try { V.download(file('project-plan'), new Blob([root.FWBPlanHtml.build(F.doc('kickoff_pack'), { customer: S.project.customer, project: S.project.name, fmt: dt })], { type: 'text/html' })); } catch (e) { toast('The plan could not be built: ' + (e.message || 'unknown error'), 6000, true); } };
   ACT.koSlide = a => { const p = pack(); if (!p) return; const k = K(); const d = deckHtml(p, (k.slide || 0) + (+a.getAttribute('data-d') || 0)); k.slide = d.k - 1; const fr = document.querySelector('.ko-deck iframe'); if (fr) fr.srcdoc = d.html; const no = document.getElementById('koSlideNo'); if (no) no.textContent = 'Slide ' + d.k + ' of ' + d.n; };
+  // Called after an MSA file is stored (Bring in, Contract tab): asks Claude to read it, so the kick-off is drafted without another click. The same request twice is one job.
+  V.koAutoPull = async fileName => {
+    if (!team() || ro()) return; try { await API.post(base() + '/jobs', L().pullRequest(S.project.customer, S.project.name, fileName)); K().at = 0; toast('MSA stored. A job for Claude was created: ask Claude in your own session to "check the Studio job queue". Follow it on the Kick-off page.', 9000); }
+    catch (e) { toast('MSA stored, but the Claude job could not be created: ' + (e.message || 'open Kick-off and press Pull MSA'), 8000, true); }
+  };
   ACT.koRefresh = () => load(true, true);
   ACT.koPull = a => V.busy(a, async () => {
     if (guard()) return; const r = await post('/jobs', L().pullRequest(S.project.customer, S.project.name));
