@@ -83,7 +83,7 @@
     return ['# Walkthrough video brief: ' + (L || 'prototype'), '', 'Make a short walkthrough video of the finished prototype below, for ' + (project ? 'the customer "' + project + '"' : 'the customer') + '. Show the screens in order, say what each step does, and use fictional sample data only.', '',
       mod ? 'Module (model): ' + mod : '', 'Flow or part shown: ' + what, url ? 'Prototype (Meteor): ' + url : 'Prototype: the Meteor prototype for this flow (the link will be pasted in).', '', 'Purpose: Customer demo.'].filter((x, k, a) => x !== '' || a[k - 1] !== '').join(nl).trim();
   }
-  V.mockupLogic = { gather, houseGuide, cometBrief, build, toHtml, buildItems, framable };
+  V.mockupLogic = { gatherClient, gather, houseGuide, cometBrief, build, toHtml, buildItems, framable };
 
   /** the project's applied design as plain data */
   function gather() {
@@ -97,6 +97,20 @@
     });
     const crosslinks = []; Object.entries(S.ws.crossLinks || {}).forEach(([from, l]) => arr(l).forEach(x => crosslinks.push({ from: label(from), to: label(x.to), name: x.name, condition: x.condition || '' })));
     return { customer: (S.project && S.project.customer) || '', project: (S.project && S.project.name) || '', modules, crosslinks, apps: props.filter(p => p.kind === 'connectedapp' && p.status === 'applied') };
+  }
+  /** Data for the client mockup: every module in scope with its default state flow, its fields (agreed or changed first, then the standard ones, up to 16 more), its first form, confirmed requirements, flows across modules and applied connected apps. */
+  function gatherClient() {
+    const base = gather(); const mk = (F.allModules() || []).filter(m => m.inScope);
+    const modules = mk.map(m => {
+      const g = base.modules.find(x => x.name === m.name) || { requirements: [] };
+      const fl = F.flowsForModule(m.name).filter(f => f.enabled !== false).sort((a, b) => (b.origin === 'proposed') - (a.origin === 'proposed') || (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0));
+      const flows = fl.slice(0, 1).map(f => { const fm = F.flowModel(f.id); if (!fm) return null; const lab = id => (fm.states.find(s => s.id === id) || {}).label || id; return { id: f.id, name: f.name, states: fm.states.map(s => s.label), transitions: fm.transitions.filter(t => !t.removed && t.enabled !== false).map(t => ({ name: t.name, from: lab(t.from), to: lab(t.to) })) }; }).filter(Boolean);
+      const all = F.effFields(m.name).filter(x => x.status !== 'removed'); const agreed = all.filter(x => x.status === 'proposed' || x.status === 'modified'), std = all.filter(x => !(x.status === 'proposed' || x.status === 'modified')).slice(0, 16);
+      const fields = agreed.concat(std).map(x => ({ label: x.label || x.name, type: typeof x.type === 'string' ? x.type : '', required: !!x.required, options: x.options || [] }));
+      const fm = F.formsForModule(m.name); const form = fm.find(f => f && f.proposed) || fm[0]; const forms = form ? [{ label: form.label || form.name, sections: (form.sections || []).map(s => ({ name: s.name, fields: (s.fields || []).filter(x => !x.hidden).map(x => x.label || F.fieldLabel(m.name, x.field)).slice(0, 12) })).filter(s => s.fields.length) }] : [];
+      return { name: m.name, label: m.label || m.name, flows, fields, forms, requirements: g.requirements };
+    });
+    return Object.assign({}, base, { modules });
   }
   const spec = () => build(gather());
 
