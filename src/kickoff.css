@@ -1,0 +1,28 @@
+/* Kick-off page (src/kickoff.js). Facilio colours only, flat cards, no glow. */
+.ko{display:grid;gap:16px;max-width:1100px}
+.ko-steps{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:0;padding:0}
+.ko-steps li{display:flex;align-items:center;gap:8px;padding:6px 14px 6px 6px;border:1px solid #DCE4F3;border-radius:999px;color:#4A5784;background:#fff;font-size:13px}
+.ko-steps li span{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#EAF2FF;color:#1570EF;font-weight:700;font-size:12px}
+.ko-steps li.on{border-color:#1570EF;color:#1D1A5E;font-weight:600}
+.ko-steps li.on span{background:#1570EF;color:#fff}
+.ko-steps li.done span{background:#1D1A5E;color:#fff}
+.ko-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start}
+.ko-card .card-h{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.ko-btns{gap:8px;flex-wrap:wrap;margin-top:10px}
+.ko-job{padding:10px 0;border-bottom:1px solid #E3E9F5}.ko-job:last-child{border-bottom:0}
+.ko-job .row{gap:8px;align-items:center;flex-wrap:wrap}
+.ko-ask{display:grid;gap:8px;margin-top:8px;padding:10px;border-left:4px solid #E5197F;background:#FFF5FA;border-radius:8px}
+.ko-ask textarea,#koCr{width:100%;font:inherit}
+.ko-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.ko-chip{padding:3px 10px;border-radius:999px;background:#EAF2FF;color:#1D1A5E;font-size:13px}
+.ko-list{margin:6px 0 0;padding-left:20px}.ko-list li{margin-bottom:4px}
+.ko-list.bad li,.ko-bad{color:#E5197F}
+.ko-h{font-size:12px;letter-spacing:.06em;text-transform:uppercase;margin:12px 0 2px;color:#1D1A5E}
+.ko-or{font-size:12px;padding:2px 8px;border-radius:999px;white-space:nowrap;background:#EAF2FF;color:#1D1A5E}
+.ko-or-contract{background:#1D1A5E;color:#fff}
+.ko-or-assumed{background:#F1F5FB;color:#4A5784}
+.ko-cr{padding:8px 0;border-bottom:1px solid #E3E9F5}.ko-cr .row{gap:8px;align-items:center;flex-wrap:wrap}
+.ko-deck{position:relative;width:100%;aspect-ratio:16/9;border:1px solid #DCE4F3;border-radius:10px;overflow:hidden;background:#0e0c33}
+.ko-deck iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.ko-bar{position:sticky;bottom:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 16px;background:#fff;border:1px solid #DCE4F3;border-radius:12px;box-shadow:0 -2px 8px rgba(0,0,0,.06)}
+.ko-bar .spacer{flex:1}

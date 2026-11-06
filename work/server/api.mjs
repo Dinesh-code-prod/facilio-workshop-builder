@@ -338,6 +338,8 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     if (!b || b.data === undefined) throw new HttpError(400, 'data is required');
     if (P.section === 'brddoc' && role !== 'owner') { const was = brdApprovals((await docRead(P.id, 'brddoc') || {}).data), now_ = brdApprovals(b.data);
       for (const k of new Set([...Object.keys(was), ...Object.keys(now_)])) if ((was[k] === 'approved') !== (now_[k] === 'approved')) throw new HttpError(403, 'Only a project owner or an admin can approve a BRD or reopen an approved one.'); }
+    if (P.section === 'kickoff_pack' && role !== 'owner') { const st = d => (d && typeof d === 'object' && d.status) || ''; const was = st((await docRead(P.id, 'kickoff_pack') || {}).data), now_ = st(b.data);   // approving the kick-off, or reopening an approved one, is the owner's
+      if ((was === 'approved') !== (now_ === 'approved')) throw new HttpError(403, 'Only a project owner or an admin can approve the kick-off or reopen an approved one.'); }
     const v = await docWrite(s, P.id, P.section, b.data, Number.isInteger(b.baseVersion) ? b.baseVersion : -1); await touchProject(P.id); return ok({ version: v });
   });
 
