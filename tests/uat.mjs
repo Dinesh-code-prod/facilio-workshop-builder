@@ -50,4 +50,11 @@ t('test cases start from the solution: one per requirement, changed transition, 
   const typed = U.fromSolution(data, [{ tcid: 'X-1', module: 'workorder', title: 'Requirement WO-001: Weekly report' }]); assert.equal(typed.drafts.length, 4, 'a test case the person already wrote with the same title is left alone'); assert.equal(typed.skipped, 1);
   assert.deepEqual(U.fromSolution({ modules: [], crosslinks: [], apps: [] }, []), { drafts: [], skipped: 0 }); assert.deepEqual(U.fromSolution({}, null), { drafts: [], skipped: 0 });
 });
+t('coverage: a confirmed requirement is covered when a test case names its ID, by hand or by the Start from the solution button', () => {
+  const mods = [{ name: 'workorder', label: 'Work Order', requirements: [{ id: 'WO-001', title: 'Weekly report' }, { id: 'WO-002', title: 'Approval' }, { id: 'WO-003', title: 'Costs' }] }, { name: 'asset', label: 'Asset', requirements: [{ id: 'AS-001', title: 'Tags' }] }, { name: 'site', label: 'Site', requirements: [] }];
+  const cs = [{ tcid: 'A', req: 'wo-001' }, { tcid: 'B', req: 'WO-002, AS-001' }, { tcid: 'C', src: { key: 'req:WO-003' } }, { tcid: 'D', req: 'XX-9' }, null];
+  const c = U.coverage(mods, cs); assert.equal(c.total, 4); assert.equal(c.covered, 4); assert.deepEqual(c.rows.map(r => r.label + ':' + r.covered + '/' + r.total), ['Work Order:3/3', 'Asset:1/1'], 'a module with no requirement is left out');
+  const part = U.coverage(mods, [{ req: 'WO-001' }]); assert.equal(part.covered, 1); assert.deepEqual(part.rows[0].missing.map(x => x.id), ['WO-002', 'WO-003']); assert.deepEqual(part.rows[1].missing, [{ id: 'AS-001', title: 'Tags' }]);
+  assert.deepEqual(U.coverage(mods, []).covered, 0); assert.deepEqual(U.coverage(null, null), { rows: [], total: 0, covered: 0 });
+});
 console.log(`\n${n} UAT checks passed`);

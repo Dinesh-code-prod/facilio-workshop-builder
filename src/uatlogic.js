@@ -102,6 +102,13 @@
       ['In ' + c.from + ', do what starts "' + c.name + '"' + (c.condition ? ' (' + c.condition + ')' : '') + '.', 'Open ' + c.to + ' and look for the result.'], 'The action "' + c.name + '" has its effect in ' + c.to + '.'));
     return { drafts: out, skipped };
   }
-  const api = { fromSolution, STATUS, ISSUE_ST, SEVERITY, TASK_OF, isUatIssue, issueStatus, FIXED, issueFilter, chartData, FIELDS, suggestMap, findHeaderRow, normStatus, nextId, readRows, summarize, keysOf };
+  /** Which confirmed requirements have a test case (read only). modules: [{ name, label, requirements: [{ id, title }] }]; cases: saved test cases (req text such as "WO-001, WO-002", or a source key req:WO-001).
+      Returns { rows: [{ name, label, total, covered, missing: [{ id, title }] }], total, covered }. */
+  function coverage(modules, cases) {
+    const have = new Set(); (Array.isArray(cases) ? cases : []).forEach(c => { if (!c) return; String(c.req || '').split(/[\s,;]+/).filter(Boolean).forEach(x => have.add(x.toLowerCase())); const k = c.src && c.src.key; if (typeof k === 'string' && k.indexOf('req:') === 0) have.add(k.slice(4).toLowerCase()); });
+    const rows = (Array.isArray(modules) ? modules : []).map(m => { const reqs = Array.isArray(m.requirements) ? m.requirements : []; const missing = reqs.filter(r => !have.has(String(r.id).toLowerCase())).map(r => ({ id: r.id, title: r.title })); return { name: m.name, label: m.label || m.name, total: reqs.length, covered: reqs.length - missing.length, missing }; }).filter(r => r.total);
+    return { rows, total: rows.reduce((n, r) => n + r.total, 0), covered: rows.reduce((n, r) => n + r.covered, 0) };
+  }
+  const api = { coverage, fromSolution, STATUS, ISSUE_ST, SEVERITY, TASK_OF, isUatIssue, issueStatus, FIXED, issueFilter, chartData, FIELDS, suggestMap, findHeaderRow, normStatus, nextId, readRows, summarize, keysOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBUat = api;
 })(typeof window !== 'undefined' ? window : globalThis);
