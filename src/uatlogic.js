@@ -78,6 +78,30 @@
     if (type === 'issues') { const by = {}; ISSUE_ST.forEach(k => { by[k] = 0; }); issues.forEach(t => { by[issueStatus(t)]++; }); return { title: 'UAT issues by status', unit: 'issues', rows: ISSUE_ST.filter(k => by[k]).map(k => ({ label: k, value: by[k] })) }; }
     const s = summarize(cases, []); return { title: 'UAT progress by module', unit: 'test cases', stacked: true, rows: Object.entries(s.perModule).filter(([, m]) => m.total).map(([k, m]) => ({ label: labelOf ? labelOf(k) : k, parts: [['Passed', m.passed], ['Failed', m.failed], ['Blocked', m.blocked], ['Not run', m.notRun], ['In progress or retesting', m.open]], value: m.total })).sort((a, b) => b.value - a.value) };
   }
-  const api = { STATUS, ISSUE_ST, SEVERITY, TASK_OF, isUatIssue, issueStatus, FIXED, issueFilter, chartData, FIELDS, suggestMap, findHeaderRow, normStatus, nextId, readRows, summarize, keysOf };
+  /** Draft test cases from what the project recorded (stage 3), no Claude: one per confirmed requirement, one per changed or new transition of a state flow, one per connected app, one per flow across modules.
+      data: { modules: [{ name, label, requirements: [{ id, title, objective, rules, approvals, exceptions }], flows: [{ id, name, transitions: [{ id, name, from, to, actors: [] }] }] }], crosslinks: [{ from, fromName, to, name, condition }], apps: [{ id, name, module, moduleName, trigger, triggerLabel, purpose, shows }] }.
+      A draft is skipped when a test case with the same source key (or the same title in the same module) already exists, so pressing the button again adds nothing twice. Returns { drafts, skipped }. */
+  function fromSolution(data, existing) {
+    const have = Array.isArray(existing) ? existing.slice() : []; const keys = new Set(have.map(c => c && c.src && c.src.key).filter(Boolean)); const titles = new Set(have.map(c => norm(c.module || c.mod) + '|' + norm(c.title)));
+    const out = []; let skipped = 0; const modLabel = {}; (data.modules || []).forEach(m => { modLabel[m.name] = m.label || m.name; });
+    const add = (key, mod, label, scenario, title, req, steps, expected, pre) => {
+      if (keys.has(key) || titles.has(norm(mod) + '|' + norm(title))) { skipped++; return; } keys.add(key); titles.add(norm(mod) + '|' + norm(title));
+      const tcid = nextId(label, have); const rec = { mod, tcid, scenario, title, req: req || '', pre: pre || ('A tester with access to ' + label + ' and test data.'), steps: steps.map((s, i) => (i + 1) + '. ' + s).join(String.fromCharCode(10)), expected, actual: '', status: 'Not Started', tester: '', date: '', src: { from: 'solution', key } };
+      have.push({ tcid, module: mod, title }); out.push(rec);
+    };
+    (data.modules || []).forEach(m => {
+      const label = m.label || m.name;
+      (m.requirements || []).forEach(r => add('req:' + r.id, m.name, label, r.title, 'Requirement ' + r.id + ': ' + r.title, r.id,
+        ['Sign in as a user who works with ' + label + '.', 'Carry out the process described in the requirement: ' + r.objective].concat(r.rules ? ['Check the rule: ' + r.rules] : [], r.approvals ? ['Check the approvals and notifications: ' + r.approvals] : [], r.exceptions ? ['Try the exception: ' + r.exceptions] : []), r.objective));
+      (m.flows || []).forEach(f => (f.transitions || []).forEach(t => add('tr:' + f.id + ':' + t.id, m.name, label, f.name, f.name + ': ' + t.name + ' (' + t.from + ' to ' + t.to + ')', '',
+        ['Open a ' + label + ' record in the state "' + t.from + '".', (t.actors && t.actors.length ? 'As ' + t.actors.join(' or ') + ', p' : 'P') + 'erform "' + t.name + '".'], 'The record moves to the state "' + t.to + '".')));
+    });
+    (data.apps || []).forEach(a => add('app:' + a.id, a.moduleName || a.module, modLabel[a.moduleName || a.module] || a.module, 'Connected app: ' + a.name, 'Connected app: ' + a.name, '',
+      ['Open a ' + a.module + ' record.', 'Use the ' + (a.triggerLabel ? a.triggerLabel + ' ' : '') + a.trigger + '.', 'Check that the app opens' + (a.shows ? ' and shows: ' + a.shows : '') + '.'], a.purpose));
+    (data.crosslinks || []).forEach(c => add('link:' + c.from + '>' + c.to + ':' + c.name, c.fromName || c.from, modLabel[c.fromName || c.from] || c.from, c.from + ' to ' + c.to, c.from + ' to ' + c.to + ': ' + c.name, '',
+      ['In ' + c.from + ', do what starts "' + c.name + '"' + (c.condition ? ' (' + c.condition + ')' : '') + '.', 'Open ' + c.to + ' and look for the result.'], 'The action "' + c.name + '" has its effect in ' + c.to + '.'));
+    return { drafts: out, skipped };
+  }
+  const api = { fromSolution, STATUS, ISSUE_ST, SEVERITY, TASK_OF, isUatIssue, issueStatus, FIXED, issueFilter, chartData, FIELDS, suggestMap, findHeaderRow, normStatus, nextId, readRows, summarize, keysOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBUat = api;
 })(typeof window !== 'undefined' ? window : globalThis);
