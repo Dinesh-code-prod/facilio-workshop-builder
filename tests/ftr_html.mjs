@@ -11,7 +11,7 @@ const input = {
   modules: [
     { name: 'Work Orders', forms: ['Work order form'], fields: [{ name: 'Priority', type: 'Picklist', required: true }, 'Due date'], roles: [{ name: 'Technician', permissions: ['Create', 'Edit'] }, 'Supervisor'],
       workflows: [{ name: 'Auto assign', trigger: 'Work order created' }, { name: 'Close approval', approval: true }], statuses: [{ name: 'Open', to: ['In Progress'] }, 'In Progress', 'Closed'],
-      notifications: [{ name: 'Assigned mail', trigger: 'Assigned', recipients: ['Technician'] }], integrations: ['SAP sync'], reports: ['Open work orders'], dependsOn: ['Assets'], portals: ['Technician app'], requirements: [{ id: 'WO-001', title: 'Weekly report', objective: 'A report goes out every week.', rules: 'Sent on Monday' }], apps: [{ name: 'Multi-technician view', trigger: 'button', triggerLabel: 'Assign', purpose: 'Assign several technicians', shows: 'a calendar' }] },
+      notifications: [{ name: 'Assigned mail', trigger: 'Assigned', recipients: ['Technician'] }], integrations: ['SAP sync'], reports: ['Open work orders'], dependsOn: ['Assets'], portals: ['Technician app'], slas: [{ id: 's1', priority: 'Critical', response: '30 minutes', resolution: '4 hours', hours: '24x7', esc: [{ after: '30 min', to: 'Supervisor' }] }], kpis: [{ id: 'k1', name: 'Closed on time', source: 'Work orders', freq: 'Monthly', target: '90', solution: 'A dashboard widget' }], requirements: [{ id: 'WO-001', title: 'Weekly report', objective: 'A report goes out every week.', rules: 'Sent on Monday' }], apps: [{ name: 'Multi-technician view', trigger: 'button', triggerLabel: 'Assign', purpose: 'Assign several technicians', shows: 'a calendar' }] },
     { name: 'Assets' }],
   config: { portals: ['Tenant portal'], roles: ['Admin'], integrations: ['Email gateway'], notifications: ['Welcome mail'] }
 };
@@ -24,7 +24,7 @@ t('every item carries the fields the roadmap asks for, with empty result, eviden
     assert.equal(i.result, ''); assert.equal(i.evidence, ''); assert.equal(i.by, ''); assert.equal(i.at, ''); });
   assert.ok(sec('configuration').length && sec('functional').length); });
 t('all sixteen check types can appear, and only because the data names something', () => {
-  const types = new Set(list.items.map(i => i.type)); Object.keys(H.TYPES).forEach(k => assert.ok(types.has(k), 'type ' + k)); assert.equal(Object.keys(H.TYPES).length, 16); });
+  const types = new Set(list.items.map(i => i.type)); Object.keys(H.TYPES).forEach(k => assert.ok(types.has(k), 'type ' + k)); assert.equal(Object.keys(H.TYPES).length, 18); });
 t('nothing is invented: no data, no items; a module with only a name gets only its configuration validation and names its gaps', () => {
   assert.deepEqual(H.buildFtrChecklist({}).items, []); assert.deepEqual(H.buildFtrChecklist(null).items, []); assert.deepEqual(H.buildFtrChecklist({ modules: [{ name: '  ' }, {}, null, 5] }).items.map(i => i.type), ['validation']);
   const only = H.buildFtrChecklist({ modules: [{ name: 'Assets' }] }); assert.equal(only.items.length, 1); assert.equal(only.items[0].section, 'configuration'); assert.equal(only.items[0].type, 'validation'); assert.ok(only.gaps.some(g => /Assets: no workflows listed/.test(g)));

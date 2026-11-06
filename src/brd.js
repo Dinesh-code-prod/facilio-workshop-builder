@@ -14,7 +14,7 @@
   const SECTIONS = [
     ['control', 'Document control (version history & approvals)'], ['toc', 'Table of contents'], ['project', 'Project information'], ['intro', 'Introduction, background & modules in scope'],
     ['conventions', 'Document conventions'], ['roles', 'User roles & responsibilities'], ['portfolio', 'Portfolio hierarchy & module dependencies'], ['modules', 'Module sections'], ['general', 'General requirements'],
-    ['processes', 'End-to-end business processes'], ['usecases', 'Customer-specific use cases'], ['portals', 'Portal & cross-module mapping'], ['integration', 'Integration scope & interface specification'], ['agentops', 'Operating model: agents & rules'], ['sla', 'SLA & notifications'], ['matrix', 'Role matrix — module access'],
+    ['processes', 'End-to-end business processes'], ['usecases', 'Customer-specific use cases'], ['portals', 'Portal & cross-module mapping'], ['integration', 'Integration scope & interface specification'], ['agentops', 'Operating model: agents & rules'], ['sla', 'SLA & notifications'], ['slamatrix', 'SLA matrix'], ['kpis', 'KPIs and reporting'], ['matrix', 'Role matrix — module access'],
     ['trace', 'Requirement traceability matrix'], ['changes', 'Proposed configuration changes'], ['questions', 'Open questions & items to be confirmed'], ['validation', 'Appendix — validation summary'], ['sources', 'Appendix — configuration source']];
   // New BRDs list, for each module, only what is agreed or changed; a BRD that already has edits keeps its full content (edits are tied to blocks), and the BRD settings can switch the full standard configuration on.
   const includeStd = () => { const v = S.ws.brd.includeStandard; if (v === true || v === false) return v; const d = root_(); return Object.keys(d.edits || {}).length > 0 || Object.keys(d.inserts || {}).length > 0; };
@@ -219,6 +219,15 @@
         TB(['Module', 'Action', 'Creates / affects', 'Shown when', 'Status'], cx, [1.3, 1.8, 1.4, 2, 1.5], 'cross', { empty: 'No cross-module actions for the modules in scope.' });
         H(2, 'Records Created and Updated Across Modules', 'h2r'); const rows = []; inScope.forEach(m => (B.workflowRules || []).filter(r => r.module === m.name && r.enabled).forEach(r => rows.push([m.label, r.name, r.eventLabel, F.actionsText(r.actions).join('; ')])));
         TB(['Module', 'Automation', 'Trigger', 'Effect'], rows, [1.3, 1.6, 1.5, 3], 'auto', { empty: 'No cross-module automation found for modules in scope.' });
+      }
+      else if (sid === 'slamatrix') {
+        const ml = n => (!n || n === '*' ? 'General (all modules)' : ((F.moduleView(n) || {}).label || n)); const rows = (S.ws.slaMatrix || []).filter(r => !r.module || scopeNames.has(r.module));
+        if (rows.length) { H(1, ++secNo + '. SLA Matrix', 'h'); P('The service levels agreed for this customer, by module and priority.', 'note'); TB(['Module', 'Priority', 'Response within', 'Resolution within', 'Business hours'], rows.map(r => [ml(r.module), r.priority, r.response, r.resolution, r.hours || '']), [1.6, 1.1, 1.3, 1.3, 1.6], 'slam');
+          const es = rows.flatMap(r => (r.esc || []).filter(e => e && (e.after || e.to)).map((e, i) => [ml(r.module) + ' / ' + r.priority, 'Level ' + (i + 1), e.after || '', e.to || ''])); if (es.length) { H(2, 'Escalation Matrix', 'h2em'); TB(['Module / priority', 'Level', 'Duration', 'Role'], es, [2.2, 1, 1.3, 2], 'slaesc'); } }
+      }
+      else if (sid === 'kpis') {
+        const ks = (root.FWBViews.items ? root.FWBViews.items.list('kpi') : []).filter(k => !k.module || scopeNames.has(k.module)); const ml = n => (!n ? 'General' : ((F.moduleView(n) || {}).label || n));
+        if (ks.length) { H(1, ++secNo + '. KPIs and Reporting', 'h'); P('The measures agreed to be tracked, and how Facilio delivers each one.', 'note'); TB(['KPI', 'Module', 'What it measures', 'Source data', 'Frequency', 'Target', 'How Facilio delivers it'], ks.map(k => [{ text: k.name, bold: true }, ml(k.module), k.description || '', k.source || '', k.freq || '', (k.target === undefined || k.target === null ? '' : String(k.target)) + (k.unit ? ' ' + k.unit : ''), k.solution || TBC]), [1.4, 1, 1.5, 1.2, 0.8, 0.8, 1.8], 'kpitbl'); }
       }
       else if (sid === 'sla' && B) {
         H(1, ++secNo + '. SLA & Notifications', 'h'); H(2, 'SLA Policies', 'h2s');

@@ -50,4 +50,11 @@ S.ws.modules.workorder.agreedAutomation = '   '; bl = globalThis.FWBBrd.buildBlo
   S.ws.brd.template = { font: 'Calibri', tableHeaderFill: '8DB3E2', h1: { color: '351C75', size: 32, font: '' } }; assert.equal(B.profile().font, 'Cambria', 'the old defaults saved in a project are ignored');
   S.ws.brd.template = { font: 'Arial', tableHeaderFill: 'FFFFFF', h1: { color: '123456', size: 30, font: '' } }; assert.equal(B.profile().font, 'Arial', 'a custom style is kept'); S.ws.brd.template = null;
 }
-console.log('10 BRD scope and format checks passed');
+{ // the SLA matrix and the KPIs are BRD sections of their own
+  S.ws = F.newWorkshop(); S.ws.modules.workorder = { inScope: true }; S.ws.slaMatrix = [{ id: 's1', module: 'workorder', priority: 'Critical', response: '30 minutes', resolution: '4 hours', hours: '24x7', esc: [{ after: '30 min', to: 'Supervisor' }, { after: '1 hour', to: 'Manager' }] }];
+  globalThis.FWBViews.items = { ready: () => true, load() { }, get: () => null, list: k => (k === 'kpi' ? [{ id: 'k1', name: 'Closed on time', module: 'workorder', description: 'Share closed within SLA', source: 'Work orders', freq: 'Monthly', target: '90', unit: '%', solution: 'A dashboard widget' }] : []) };
+  const b4 = globalThis.FWBBrd.buildBlocks().blocks; const hd = b4.filter(x => x.t === 'h').map(x => x.text); assert.ok(hd.some(x => x.indexOf('SLA Matrix') > 0) && hd.includes('Escalation Matrix') && hd.some(x => x.indexOf('KPIs and Reporting') > 0), 'both sections');
+  const sm = b4.find(x => x.headers && x.headers[1] === 'Priority'); assert.ok(sm && sm.rows.length === 1 && sm.rows[0][1] === 'Critical' && sm.rows[0][3] === '4 hours'); const em = table(b4, 'Module / priority'); assert.ok(em && em.rows.length === 2 && em.rows[1][1] === 'Level 2'); const kp = table(b4, 'KPI'); assert.ok(kp && JSON.stringify(kp.rows).includes('A dashboard widget'));
+  S.ws.slaMatrix = []; globalThis.FWBViews.items = { ready: () => true, load() { }, get: () => null, list: () => [] }; const b5 = globalThis.FWBBrd.buildBlocks().blocks; assert.ok(!b5.some(x => x.t === 'h' && /SLA Matrix|KPIs and Reporting/.test(x.text || '')), 'nothing recorded, no section');
+}
+console.log('11 BRD scope and format checks passed');

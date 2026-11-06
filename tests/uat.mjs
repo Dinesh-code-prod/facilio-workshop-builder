@@ -90,4 +90,9 @@ t('hypercare starts from what is open: open UAT issues and failed cases without 
   const r = U.hypercareFromOpen(tasks, cases, []); assert.deepEqual(r.map(x => x.src.key), ['task:t1', 'utc:c1']); assert.equal(r[0].severity, 'Critical'); assert.equal(r[0].status, 'Open'); assert.equal(r[1].title, 'WO-01 Approve (test case failed)');
   assert.deepEqual(U.hypercareFromOpen(tasks, cases, ['task:t1']).map(x => x.src.key), ['utc:c1']); assert.deepEqual(U.hypercareFromOpen(tasks, cases, r.map(x => x.src.key)), []); assert.deepEqual(U.hypercareFromOpen(null, null, null), []);
 });
+t('SLA rows and KPIs become draft test cases (General when no module), once each', () => {
+  const data = { modules: [{ name: 'workorder', label: 'Work Order', requirements: [], flows: [] }], slas: [{ id: 's1', module: 'workorder', priority: 'Critical', response: '30 minutes', resolution: '4 hours', hours: '24x7', esc: [{ after: '30 min', to: 'Supervisor' }] }], kpis: [{ id: 'k1', name: 'Closed on time', module: '', source: 'Work orders', freq: 'Monthly', target: '90', unit: '%', solution: 'a dashboard widget' }], crosslinks: [], apps: [] };
+  const r = U.fromSolution(data, []); const s = r.drafts.find(d => d.src.key === 'sla:s1'), k = r.drafts.find(d => d.src.key === 'kpi:k1');
+  assert.ok(s && s.mod === 'workorder' && s.title.includes('SLA Critical') && s.steps.includes('30 minutes') && s.steps.includes('escalates (level 1) to Supervisor')); assert.ok(k && k.mod === '__general' && k.steps.includes('a dashboard widget') && k.steps.includes('target 90 %')); assert.equal(U.fromSolution(data, r.drafts.map(d => Object.assign({}, d))).drafts.length, 0);
+});
 console.log(`\n${n} UAT checks passed`);
