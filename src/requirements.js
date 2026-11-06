@@ -41,9 +41,12 @@
       { label: 'Transcripts', detail: T.length ? T.length + ' in the project' : '', state: T.length ? 'done' : working ? 'now' : 'todo' },
       { label: 'What was promised and asked', detail: Fd.length ? Fd.length + ' listed, ' + open + ' to review' : '', state: Fd.length ? 'done' : working && T.length ? 'now' : 'todo', open: { label: 'Review', act: 'koOpen', attrs: { view: 'rschecks' } } }
     ];
-    const dis = ro() ? ' disabled' : ''; const busy = jobs.some(x => x.open);
+    const dis = ro() ? ' disabled' : ''; const busy = jobs.some(x => x.open); const pulling = jobs.some(x => x.open && x.kind === 'pull_clari');
+    if (pulling) msgs.push({ who: 'sys', text: 'Wait here while Claude pulls them: nothing else is needed. If this keeps on working for a long time, the Clari connector may not be added in your Claude. Press Cancel, add the transcripts yourself (file or paste), then press Read my transcripts.' });
     const composer = '<button type="button" class="btn" data-act="rsAddFile"' + dis + '>Add a transcript file</button><button type="button" class="btn" data-act="rsPaste"' + dis + '>Paste a transcript</button><span class="spacer"></span>'
-      + (T.length && !busy ? '<button type="button" class="btn" data-act="rsFind"' + dis + '>Find the promises and asks</button>' : '') + '<button type="button" class="btn primary" data-act="rsPull"' + dis + (busy ? ' disabled' : '') + '>' + (busy ? 'Working…' : 'Pull my Clari transcripts') + '</button>';
+      + (T.length && !busy ? '<button type="button" class="btn primary" data-act="rsFind"' + dis + ' title="Claude reads the transcripts you added and lists what was promised and asked">Read my transcripts</button>' : '')
+      + (busy ? (jobs.find(x => x.open) ? '<button type="button" class="btn" data-act="koCancel" data-id="' + esc(jobs.find(x => x.open).id) + '"' + dis + '>Cancel</button>' : '') + (pulling && T.length ? '<button type="button" class="btn primary" data-act="rsReadMine"' + dis + ' title="Stops the Clari pull and has Claude read the transcripts you added">Stop the pull and read mine</button>' : '') : '')
+      + '<button type="button" class="btn' + (T.length ? '' : ' primary') + '" data-act="rsPull"' + dis + (busy ? ' disabled' : '') + '>' + (busy ? 'Working…' : 'Pull my Clari transcripts') + '</button>';
     return root.FWBWorkChat.html({ lite: true, title: 'Your transcripts', hint: j && j.claimedAt ? "Prepared with Claude's help, on " + (who ? who + "'s" : 'your') + ' computer. ' + (j.progressAt ? 'Last update ' + when(j.progressAt) + '.' : '') : "You can add transcripts yourself, or have them pulled for you with Claude's help. You review and decide.", messages: msgs, tiles, tilesTitle: 'From your transcripts', composer });
   }
   function list() {
@@ -56,6 +59,10 @@
 
   // ---------- actions: Claude's way ----------
   ACT.rsPull = a => V.busy(a, async () => { if (J().guard()) return; const r = await J().post('/jobs', { kind: 'pull_clari', note: [S.project.customer, S.project.name].filter(Boolean).join(' / ').slice(0, 200) }); toast(r.duplicate ? 'A request to pull your transcripts is already waiting.' : 'Requested. Claude picks it up at its next check; follow it here.', 6000); });
+  ACT.rsReadMine = a => V.busy(a, async () => {   // the pull is stuck or not wanted: stop it, then have Claude read what the person added
+    if (J().guard()) return; const stuck = jobsOf().filter(x => x.open && x.kind === 'pull_clari'); for (const x of stuck) await J().post('/jobs/' + encodeURIComponent(x.id) + '/cancel', {});
+    const r = await J().post('/jobs', { kind: 'extract_findings' }); toast(r.duplicate ? 'That request is already waiting.' : 'The pull is stopped. Claude will read your transcripts; follow it here.', 6000); J().load(true);
+  });
   ACT.rsFind = a => V.busy(a, async () => { if (J().guard()) return; const r = await J().post('/jobs', { kind: 'extract_findings' }); toast(r.duplicate ? 'That request is already waiting.' : 'Requested. Follow it here.', 5000); });
 
   // ---------- actions: the person's own way ----------
