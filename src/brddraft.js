@@ -8,8 +8,9 @@
   const KEEP = ['promise', 'ask', 'usecase', 'custom_usecase', 'additional', 'decision'];
   const arr = v => (Array.isArray(v) ? v : []);
   const esc = s => String(s || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const hits = (text, m) => { const names = [m.label, m.name].filter(Boolean).map(x => String(x).toLowerCase().replace(/([a-z])([A-Z])/g, '$1 $2')); const t = String(text || '').toLowerCase();
-    return names.some(n => { const b = n.replace(/s$/, ''); return b.length >= 3 && new RegExp('(^|[^a-z])' + esc(b) + '(s|es)?([^a-z]|$)', 'i').test(t); }); };
+  const hits = (text, m) => { const names = [m.label, m.name].filter(Boolean).map(x => String(x).replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase()); const t = String(text || '').toLowerCase();
+    const words = String(m.label || '').toLowerCase().split(/[^a-z]+/).filter(Boolean); if (words.length > 1 && words.length < 4) names.push(words.map(w => w[0]).join('')); if (names.some(n => n === 'asset')) names.push('equipment');
+    return names.some(n => { const b = n.replace(/s$/, ''); return b.length >= 2 && new RegExp('(^|[^a-z])' + esc(b) + '(s|es)?([^a-z]|$)', 'i').test(t); }); };
   const title = t => { const s = String(t || '').replace(/\s+/g, ' ').trim(); return s.length > 90 ? s.slice(0, 87).replace(/\s+\S*$/, '') + '...' : s; };
   /** findings: rs_findings items; reqs: the current requirements; mods: [{ name, label, prefix }] (in scope). Returns { add: [requirement], update: [{ id, patch }], n } */
   function drafts(findings, reqs, mods, now, by) {

@@ -12,8 +12,12 @@
   const CLS = { Passed: 'green', Approved: 'green', Failed: 'red', Blocked: 'red', 'In Progress': 'blue', 'Ready for Testing': 'blue', Retesting: 'tbc', Deferred: 'low', 'Not Started': 'low' };
   const BAR = { Passed: '#12A35B', Approved: '#0b7a41', Failed: '#D92D20', Blocked: '#B54708', Retesting: '#E8690B', 'In Progress': '#1570EF', 'Ready for Testing': '#8DB8FF', Deferred: '#98A2B3', 'Not Started': '#d7dfee' };
   const cases = () => I().list('utc');
-  const modLabel = n => { try { return (F.moduleView(n) || {}).label || n; } catch (e) { return n; } };
-  const scoped = () => F.allModules().filter(m => m.inScope).sort((a, b) => String(a.label).localeCompare(String(b.label)));
+  const GEN = '__general';   // requirements that belong to no single module are General: a bucket of their own, not a module
+  const modLabel = n => { if (n === GEN) return 'General requirements'; try { return (F.moduleView(n) || {}).label || n; } catch (e) { return n; } };
+  const generalReqs = () => (S.ws.requirements || []).filter(r => r.status === 'Confirmed' && !(r.modules && r.modules.length));
+  const scoped = () => F.allModules().filter(m => m.inScope).sort((a, b) => String(a.label).localeCompare(String(b.label))).concat(generalReqs().length || (I().ready(['utc']) && cases().some(c => c.mod === GEN)) ? [{ name: GEN, label: 'General requirements', inScope: true }] : []);
+  const reqsOf = m => (S.ws.requirements || []).filter(r => r.status === 'Confirmed' && (m.name === GEN ? !(r.modules && r.modules.length) : (r.modules || []).includes(m.name)));
+  const standardOf = m => { if (m.name === GEN) return null; const fl = F.flowsForModule(m.name).filter(f => f.enabled !== false).sort((a, b) => (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0))[0]; const fm = fl && F.flowModel(fl.id); return { flow: fl ? fl.name : '', states: fm ? fm.states.map(s => s.label) : [] }; };
   const resolveMod = txt => { const t = String(txt || '').trim().toLowerCase(); if (!t) return ''; const m = F.allModules().find(x => String(x.label).toLowerCase() === t || String(x.name).toLowerCase() === t); return m ? m.name : ''; };
   const today = () => V.today();
   const taskOf = c => (c.issue ? I().get('task', c.issue) : null);
@@ -48,7 +52,7 @@
   ACT.utrSave = a => V.busy(a, async () => { const id = a.getAttribute('data-id'); const x = I().get('utr', id); if (!x) return; const g = k => String((document.getElementById(k + id) || {}).value || '').trim(); const result = g('ur_r_'); const actual = g('ur_a_'); const link = g('ur_l_');
     if ((result === 'Failed' || result === 'Blocked') && !actual) { toast('Say briefly what happened, so the team can fix it', 5000, true); return; } if (link && !/^https?:\/\//i.test(link)) { toast('The link must start with https://', 5000, true); return; }
     try { await I().put('utr', id, Object.assign({}, x, { result, actual, link })); toast('Saved. Thank you.'); V.render(); } catch (e) { toast(e.message || 'Could not save', 6000, true); } });
-  V.uatCases = () => uatCasesCore() + statusCard() + coverageCard() + walkthroughCard();
+  V.uatCases = () => { if (team() && can() && S.ui.uatAutoRan !== S.project.id) { S.ui.uatAutoRan = S.project.id; setTimeout(() => { if (V.uatAuto) V.uatAuto().then(k => { if (k) { toast(k + ' draft test case' + (k === 1 ? '' : 's') + ' drafted from the modules and the BRD.', 5000); V.render(); } }); }, 600); } return uatCasesCore() + statusCard() + coverageCard() + walkthroughCard(); };
   /** read only: where each module stands in stage 4 */
   function statusCard() {
     if (!team() || !I().ready(['utc'])) return ''; const mods = scoped(); if (!mods.length || !cases().length) return '';
@@ -58,7 +62,7 @@
   }
   /** read only: which confirmed requirements have a test case */
   function coverageCard() {
-    if (!team() || !I().ready(['utc'])) return ''; const data = scoped().map(m => ({ name: m.name, label: m.label, requirements: (S.ws.requirements || []).filter(r => r.status === 'Confirmed' && (r.modules || []).includes(m.name)).map(r => ({ id: r.id, title: r.title })) }));
+    if (!team() || !I().ready(['utc'])) return ''; const data = scoped().map(m => ({ name: m.name, label: m.label, requirements: reqsOf(m).map(r => ({ id: r.id, title: r.title })) }));
     const c = U().coverage(data, cases()); const head = '<div class="card-h"><h3>Coverage of the confirmed requirements</h3><span class="small muted">' + (c.total ? c.covered + ' of ' + c.total + ' have a test case' : '') + '</span></div>';
     if (!c.total) return '<div class="card" style="margin-bottom:14px">' + head + '<div class="card-b small muted">No confirmed requirement yet for the modules in scope, so there is nothing to cover. Confirmed requirements appear here with the test cases that name them.</div></div>';
     return '<div class="card" style="margin-bottom:14px">' + head + '<div class="card-b"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Module</th><th class="num">Requirements</th><th class="num">With a test case</th><th>Without a test case yet</th></tr></thead><tbody>' + c.rows.map(r => '<tr><td><b>' + esc(r.label) + '</b></td><td class="num">' + r.total + '</td><td class="num">' + r.covered + '</td><td class="small">' + (r.missing.length ? r.missing.map(x => '<span class="mono">' + esc(x.id) + '</span> ' + esc(x.title)).join('<br>') : '<span class="muted">All covered</span>') + '</td></tr>').join('') + '</tbody></table></div><p class="xs muted" style="margin:8px 0 0">A requirement counts as covered when a test case names its ID. “Start from the solution” does this for you.</p></div></div>';
@@ -101,8 +105,8 @@
   /** the project's recorded solution as plain data for U().fromSolution */
   function solutionData() {
     const props = (F.doc('design_proposals') || {}).items || []; const mods = scoped(); const nameOf = x => { const k = String(x || '').trim().toLowerCase(); const m = F.allModules().find(z => String(z.name).toLowerCase() === k || String(z.label || '').toLowerCase() === k); return m ? m.name : ''; };
-    return { modules: mods.map(m => ({ name: m.name, label: m.label,
-      requirements: (S.ws.requirements || []).filter(r => r.status === 'Confirmed' && (r.modules || []).includes(m.name)).map(r => ({ id: r.id, title: r.title, objective: r.objective || r.title, rules: r.rules, approvals: r.approvals, exceptions: r.exceptions })),
+    return { modules: mods.map(m => ({ name: m.name, label: m.label, standard: standardOf(m),
+      requirements: reqsOf(m).map(r => ({ id: r.id, title: r.title, objective: r.objective || r.title, rules: r.rules, approvals: r.approvals, exceptions: r.exceptions })),
       flows: Object.values(S.ws.flows || {}).filter(f => f.module === m.name && f.enabled !== false).map(f => { const d = F.flowDiff ? F.flowDiff(f.id) : null; const st = x => (f.states.find(s => s.id === x) || {}).label || x; const changed = new Set(((d && d.changes) || []).filter(c => c.what === 'Transition' && c.kind !== 'removed').map(c => c.name));
         return { id: f.id, name: f.name, transitions: f.transitions.filter(t => !t.removed && t.enabled !== false && (f.origin === 'proposed' || (d && d.proposedFlow) || changed.has(t.name))).map(t => ({ id: t.id, name: t.name, from: st(t.from), to: st(t.to), actors: (t.actors || []).map(a => F.actorLabel(a.actor)) })) }; }).filter(f => f.transitions.length) })),
       crosslinks: scoped().flatMap(m => ((S.ws.crossLinks || {})[m.name] || []).map(x => ({ from: m.label, fromName: m.name, to: (F.moduleView(x.to) || {}).label || x.to, name: x.name, condition: x.condition || '' }))),

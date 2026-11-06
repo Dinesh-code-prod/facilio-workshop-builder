@@ -77,4 +77,11 @@ t('recording to test case: a prompt for Claude (also for a silent recording) and
   assert.equal(r.steps, '1. Open Work Orders\n2. Press New\n3. Save'); assert.equal(r.expected, 'the order is listed'); assert.equal(r.status, 'Not Started'); assert.equal(r.src.from, 'recording');
   assert.equal(U.fromSteps({ text: '1. a', mod: 'wo', title: 'raise wo' }, [{ mod: 'wo', title: 'Raise WO' }]), null); assert.equal(U.fromSteps({ text: '', mod: 'wo', title: 'x' }, []), null); assert.equal(U.fromSteps(null, null), null);
 });
+t('standard behaviour: every module with a standard flow gets a create case and a state-flow case even with no requirement; General requirements are their own bucket', () => {
+  const data = { modules: [{ name: 'workorder', label: 'Work Order', requirements: [], flows: [], standard: { flow: 'WO flow', states: ['Submitted', 'Assigned', 'Closed'] } }, { name: 'asset', label: 'Asset', requirements: [], flows: [], standard: { flow: '', states: [] } },
+    { name: '__general', label: 'General requirements', requirements: [{ id: 'GEN-001', title: 'Single sign-on', objective: 'Users sign in once' }], flows: [] }], crosslinks: [], apps: [] };
+  const r = U.fromSolution(data, []); const titles = r.drafts.map(d => d.title);
+  assert.ok(titles.includes('Create a Work Order record') && titles.includes('Work Order: standard state flow (Submitted to Closed)') && titles.includes('Create a Asset record')); assert.ok(!titles.some(x => /Asset: standard state flow/.test(x)), 'no flow, no flow case');
+  const g = r.drafts.find(d => d.mod === '__general'); assert.ok(g && g.req === 'GEN-001'); const f = r.drafts.find(d => /standard state flow/.test(d.title)); assert.match(f.steps, /Move the record to "Assigned"/); assert.equal(U.fromSolution(data, r.drafts.map(d => Object.assign({}, d))).drafts.length, 0, 'a second press adds nothing');
+});
 console.log(`\n${n} UAT checks passed`);

@@ -13,7 +13,7 @@
     tableHeaderFill: '8DB3E2', tableHeaderColor: '000000', page: { w: 11906, h: 16838, top: 1134, right: 1134, bottom: 1134, left: 1134 }, headerText: '', footerText: '', headings: [] };
   const SECTIONS = [
     ['control', 'Document control (version history & approvals)'], ['toc', 'Table of contents'], ['project', 'Project information'], ['intro', 'Introduction, background & modules in scope'],
-    ['conventions', 'Document conventions'], ['roles', 'User roles & responsibilities'], ['portfolio', 'Portfolio hierarchy & module dependencies'], ['modules', 'Module sections'],
+    ['conventions', 'Document conventions'], ['roles', 'User roles & responsibilities'], ['portfolio', 'Portfolio hierarchy & module dependencies'], ['modules', 'Module sections'], ['general', 'General requirements'],
     ['processes', 'End-to-end business processes'], ['usecases', 'Customer-specific use cases'], ['portals', 'Portal & cross-module mapping'], ['integration', 'Integration scope & interface specification'], ['agentops', 'Operating model: agents & rules'], ['sla', 'SLA & notifications'], ['matrix', 'Role matrix — module access'],
     ['trace', 'Requirement traceability matrix'], ['changes', 'Proposed configuration changes'], ['questions', 'Open questions & items to be confirmed'], ['validation', 'Appendix — validation summary'], ['sources', 'Appendix — configuration source']];
   // New BRDs list, for each module, only what is agreed or changed; a BRD that already has edits keeps its full content (edits are tied to blocks), and the BRD settings can switch the full standard configuration on.
@@ -143,6 +143,10 @@
         H(2, 'Module Dependencies', 'h2d'); TB(['Module', 'Looks up (depends on)', 'Referenced by (in scope)'], inScope.map(m => { const deps = [...new Set(F.effFields(m.name).filter(f => f.lookup && f.status !== 'removed').filter(f => inScope.some(x => x.name === f.lookup)).map(f => (F.moduleView(f.lookup) || {}).label || f.lookup))]; return [m.label, deps.slice(0, 20).join(', ') + (deps.length > 20 ? ' …' : ''), m.usedBy.filter(u => F.moduleView(u) && F.moduleView(u).inScope).map(u => F.moduleView(u).label).join(', ')]; }), [1.3, 3, 2.2], 'deps');
       }
       else if (sid === 'modules') { inScope.forEach(m => { ctx = 'mod:' + m.name; moduleSection(m); }); }
+      else if (sid === 'general') {
+        const gen = confirmed.filter(r => !(r.modules && r.modules.length)); if (gen.length) { H(1, ++secNo + '. General Requirements', 'h'); P('Requirements agreed in the sessions that apply across the solution, not to one module.', 'note');
+          TB(['ID', 'Requirement', 'Agreed answer or rules', 'Said in the sessions'], gen.map(r => [{ text: r.id, bold: true }, r.title + (r.objective && r.objective !== r.title ? ': ' + r.objective : ''), r.rules || '', r.source && r.source.quote ? String.fromCharCode(8220) + r.source.quote + String.fromCharCode(8221) : '']), [0.8, 2.6, 2.4, 2.2], 'gen'); }
+      }
       else if (sid === 'processes') {
         const CF = (V.items && V.items.ready(['cflow']) && V.cflowSvg) ? V.items.list('cflow').filter(c => c.inBrd).sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''))) : [];
         H(1, ++secNo + '. End-to-End Business Processes', 'h'); if (!S.ws.processes.length && !CF.length) P('No end-to-end process has been mapped yet. ' + TBC, 'none');
