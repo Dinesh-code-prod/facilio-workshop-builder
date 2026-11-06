@@ -13,7 +13,7 @@
 .wf.wf-big .wf-frame{flex:1;height:auto;min-height:0}
 .wf.wf-big .wf-help{flex:none}
 body.wf-lock{overflow:hidden}
-.wf-refuse{display:flex;flex-direction:column;gap:6px;padding:28px 20px;background:#f6f9ff;border:1px solid #d7dfee;border-radius:0 0 12px 12px;color:#1D1A5E;font-size:13.5px}.wf-refuse span{color:#5b6b86}
+.wf-refuse{display:flex;align-items:center;gap:12px 16px;flex-wrap:wrap;padding:18px 16px;background:#f6f9ff;border:1px solid #d7dfee;border-radius:0 0 12px 12px;color:#1D1A5E;font-size:13.5px}.wf-refuse>span:first-child{flex:1;min-width:220px}.wf-refuse .btn{text-decoration:none}
 .wf-dock{position:fixed;top:60px;right:0;bottom:0;width:min(46vw,640px);z-index:70;display:flex;flex-direction:column;background:#fff;border-left:1px solid #d7dfee;box-shadow:-6px 0 18px rgba(0,0,0,.12)}
 .wf-dock-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid #d7dfee;background:#f6f9ff}.wf-dock-h b{color:#1D1A5E;font-size:14px}.wf-dock-h .wf-note{flex:1;min-width:120px}.wf-dock-h .btn{text-decoration:none}
 .wf-dock-frame{flex:1;width:100%;border:0;background:#fff}

@@ -1,0 +1,81 @@
+/* Fluent 2 layer (roadmap E19, user direction 7 Nov 2026): the whole UI follows Microsoft Fluent 2 (https://fluent2.microsoft.design/), read from its foundations pages:
+   type ramp (Segoe UI; Body 1 14/20, Subtitle 2 16/22, Subtitle 1 20/26, Title 2 28/36, semibold headings, sentence case), 4px spacing ramp, corner radius (4 controls, 8 cards, 12 popovers),
+   shadow ramp (4, 8, 16, 28, 64 as a sharp key shadow plus a soft ambient one), neutral greys for surfaces/text/strokes, states (rest, hover darker, pressed darkest, focus = a thicker stroke),
+   motion (100 to 200 ms, ease-out, no motion when the person asks for none). Facilio navy #1D1A5E, blue #1570EF and pink #E5197F stay as brand accents only: blue for the primary action, links and focus; navy for strong text
+   and focus; pink only for rare highlights. No violet, no glow, no gradients, no clay (light top edge) effects.
+   This is the LAST style layer: it retunes the theme tokens (so every older component follows) and then overrides the few shapes the older layers forced. Take it out of build.mjs to go back. */
+:root {
+  --fl-fg1: #242424; --fl-fg2: #424242; --fl-fg3: #616161; --fl-fg4: #707070; --fl-fg-dis: #bdbdbd;
+  --fl-bg1: #ffffff; --fl-bg2: #fafafa; --fl-bg3: #f5f5f5; --fl-bg4: #f0f0f0; --fl-bg5: #ebebeb; --fl-bg6: #e0e0e0;
+  --fl-st1: #d1d1d1; --fl-st2: #e0e0e0; --fl-st3: #f0f0f0; --fl-st-acc: #616161;
+  --fl-brand: #1570EF; --fl-brand-h: #115cc0; --fl-brand-p: #0e4a9a; --fl-brand-soft: #eaf2ff; --fl-navy: #1D1A5E; --fl-pink: #E5197F; --fl-sky: #8DB8FF;
+  --fl-danger: #b10e1c; --fl-danger-soft: #fdf3f4; --fl-success: #107c10; --fl-success-soft: #f1faf1; --fl-warn: #bc4b09; --fl-warn-soft: #fff9f5;
+  --fl-font: "Segoe UI", "Segoe UI Web (West European)", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif;
+  --fl-sh4: 0 0 2px rgba(0, 0, 0, .12), 0 2px 4px rgba(0, 0, 0, .14); --fl-sh8: 0 0 2px rgba(0, 0, 0, .12), 0 4px 8px rgba(0, 0, 0, .14); --fl-sh16: 0 0 2px rgba(0, 0, 0, .12), 0 8px 16px rgba(0, 0, 0, .14);
+  --fl-sh28: 0 0 8px rgba(0, 0, 0, .20), 0 14px 28px rgba(0, 0, 0, .24); --fl-sh64: 0 0 8px rgba(0, 0, 0, .20), 0 32px 64px rgba(0, 0, 0, .24);
+  --fl-ease: cubic-bezier(.33, 0, .67, 1); --fl-out: cubic-bezier(.33, 0, .1, 1); --fl-fast: 100ms; --fl-normal: 200ms;
+  /* the theme tokens every older component reads */
+  --th-ink: var(--fl-fg1); --th-text: var(--fl-fg2); --th-muted: var(--fl-fg3); --th-faint: var(--fl-fg4); --th-line: var(--fl-st2); --th-line-2: var(--fl-st1); --th-soft: var(--fl-bg2); --th-soft-2: var(--fl-bg3);
+  --th-violet: var(--fl-brand); --th-violet-2: var(--fl-brand-h); --th-violet-soft: var(--fl-brand-soft); --th-blue: var(--fl-brand); --th-blue-soft: var(--fl-brand-soft);
+  --th-green: var(--fl-success); --th-green-soft: var(--fl-success-soft); --th-red: var(--fl-danger); --th-red-soft: var(--fl-danger-soft); --th-amber: var(--fl-warn); --th-amber-soft: var(--fl-warn-soft); --th-orange: var(--fl-warn); --th-orange-soft: var(--fl-warn-soft);
+  --th-pink: var(--fl-pink); --th-grad: none; --th-font: var(--fl-font); --th-display: var(--fl-font);
+  --th-r-sm: 4px; --th-r-md: 4px; --th-r-lg: 8px; --th-r-xl: 12px; --th-sh-2: var(--fl-sh8); --r: 4px; --shadow: var(--fl-sh4); --shadow-2: var(--fl-sh16); --grad: none;
+  --dp-sh: var(--fl-sh4); --dp-sh-hi: var(--fl-sh8); --dp-sh-sm: var(--fl-sh4);
+}
+html body, body { font: 400 14px/20px var(--fl-font); color: var(--fl-fg1); background: var(--fl-bg2); -webkit-font-smoothing: auto; }
+
+/* ---- type ramp: Title 2 for a page, Subtitle 1 / 2 for sections, semibold, sentence case, no tight tracking ---- */
+body h1:not(#_):not(#__), body .page-header h1:not(#_):not(#__) { font: 600 28px/36px var(--fl-font) !important; letter-spacing: 0 !important; color: var(--fl-fg1) !important; }
+body h2:not(#_):not(#__) { font-weight: 600 !important; letter-spacing: 0 !important; }
+body h3:not(#_):not(#__), body .card-h h3:not(#_):not(#__) { font: 600 16px/22px var(--fl-font) !important; letter-spacing: 0 !important; color: var(--fl-fg1) !important; }
+body .page-header p:not(#_):not(#__) { font-size: 14px !important; line-height: 20px !important; color: var(--fl-fg3) !important; }
+body .small:not(#_):not(#__) { font-size: 12px; line-height: 16px; } body .xs:not(#_):not(#__) { font-size: 12px; line-height: 16px; } body .muted:not(#_):not(#__) { color: var(--fl-fg3); }
+body .pink-label:not(#_):not(#__), body .sec-k p:not(#_):not(#__) { font: 600 12px/16px var(--fl-font) !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--fl-fg3) !important; }
+
+/* ---- buttons: 32 px (24 px small), radius 4, Body 1 semibold; rest, hover darker, pressed darkest; primary = Facilio blue ---- */
+body .btn:not(.icon):not(.link):not(#_):not(#__) { border-radius: 4px !important; min-height: 32px; padding: 0 12px !important; font: 600 14px/20px var(--fl-font) !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--fl-fg1) !important; background: var(--fl-bg1) !important; background-image: none !important; border: 1px solid var(--fl-st1) !important; box-shadow: none !important; transform: none !important; transition: background-color var(--fl-fast) var(--fl-ease), border-color var(--fl-fast) var(--fl-ease), color var(--fl-fast) var(--fl-ease); }
+body .btn.sm:not(.icon):not(.link):not(#_):not(#__) { min-height: 24px; padding: 0 8px !important; font-size: 12px !important; line-height: 16px !important; }
+body .btn:not(.icon):not(.link):not([disabled]):not(#_):not(#__):hover { background: var(--fl-bg3) !important; border-color: #c7c7c7 !important; }
+body .btn:not(.icon):not(.link):not([disabled]):not(#_):not(#__):active { background: var(--fl-bg5) !important; border-color: #bdbdbd !important; }
+body .btn.primary:not(.icon):not(#_):not(#__) { background: var(--fl-brand) !important; border-color: transparent !important; color: #fff !important; }
+body .btn.primary:not(.icon):not([disabled]):not(#_):not(#__):hover { background: var(--fl-brand-h) !important; border-color: transparent !important; }
+body .btn.primary:not(.icon):not([disabled]):not(#_):not(#__):active { background: var(--fl-brand-p) !important; }
+body .btn.danger:not(.icon):not(#_):not(#__) { color: var(--fl-danger) !important; background: var(--fl-bg1) !important; border-color: var(--fl-st1) !important; }
+body .btn.danger:not(.icon):not([disabled]):not(#_):not(#__):hover { background: var(--fl-danger-soft) !important; }
+body .btn.ghost:not(.icon):not(#_):not(#__) { background: transparent !important; border-color: transparent !important; }
+body .btn.ghost:not(.icon):not([disabled]):not(#_):not(#__):hover { background: var(--fl-bg3) !important; }
+body .btn.link:not(#_):not(#__) { background: transparent !important; border: 0 !important; box-shadow: none !important; color: var(--fl-brand) !important; font-weight: 400 !important; padding: 0 4px !important; min-height: 0; }
+body .btn.link:not([disabled]):not(#_):not(#__):hover { color: var(--fl-brand-h) !important; text-decoration: underline; }
+body .btn[disabled]:not(#_):not(#__) { background: var(--fl-bg4) !important; color: var(--fl-fg-dis) !important; border-color: var(--fl-st2) !important; cursor: not-allowed; }
+
+/* ---- form fields: 32 px, radius 4, 1 px stroke with a darker bottom edge; focus = the bottom edge becomes 2 px brand ---- */
+body input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="hidden"]):not(#_):not(#__), body select:not(#_):not(#__), body textarea:not(#_):not(#__) { font: 400 14px/20px var(--fl-font) !important; color: var(--fl-fg1); background: var(--fl-bg1); border: 1px solid var(--fl-st1) !important; border-bottom-color: var(--fl-st-acc) !important; border-radius: 4px !important; box-shadow: none !important; transition: border-color var(--fl-fast) var(--fl-ease); }
+body input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="hidden"]):not(#_):not(#__), body select:not(#_):not(#__) { min-height: 32px; }
+body input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(#_):not(#__):hover, body select:not(#_):not(#__):hover, body textarea:not(#_):not(#__):hover { border-color: #c7c7c7 !important; border-bottom-color: var(--fl-fg1) !important; }
+body input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(#_):not(#__):focus, body select:not(#_):not(#__):focus, body textarea:not(#_):not(#__):focus { outline: none !important; border-bottom-color: var(--fl-brand) !important; box-shadow: inset 0 -1px 0 var(--fl-brand) !important; }
+body label.f:not(#_):not(#__) { font: 600 14px/20px var(--fl-font); color: var(--fl-fg1); }
+
+/* ---- surfaces: cards and tiles are white, 8 px radius, 1 px stroke, shadow 4 (shadow 8 when you can click them); no gradient, no light top edge ---- */
+body .card:not(.dark):not([class*="night"]):not(#_):not(#__), body .proj-card:not(#_):not(#__), body .kpi:not(#_):not(#__), body .adm-card:not(#_):not(#__), body .tbl-wrap:not(#_):not(#__), body .list-item:not(#_):not(#__), body .gl-q:not(#_):not(#__), body .gl-box:not(#_):not(#__), body .tg2-tile:not(#_):not(#__), body .tg2-box:not(#_):not(#__), body .mf-step:not(#_):not(#__), body .dk-card:not(#_):not(#__), body .empty:not(#_):not(#__) { border-radius: 8px !important; background: var(--fl-bg1) !important; background-image: none !important; border: 1px solid var(--fl-st2) !important; box-shadow: var(--fl-sh4) !important; transition: box-shadow var(--fl-normal) var(--fl-out); }
+body .card.click:not(#_):not(#__):hover, body .proj-card:not(#_):not(#__):hover, body .tg2-tile:not(#_):not(#__):hover, body .dk-card:not(#_):not(#__):hover { box-shadow: var(--fl-sh8) !important; }
+body .card-h:not(#_):not(#__), body .adm-h:not(#_):not(#__) { border-bottom: 1px solid var(--fl-st3) !important; }
+body .tag:not(#_):not(#__), body .chip:not(#_):not(#__) { font: 600 12px/16px var(--fl-font) !important; letter-spacing: 0 !important; box-shadow: none !important; }
+body .seg:not(#_):not(#__) { border-radius: 4px !important; box-shadow: none !important; }
+body .seg button:not(#_):not(#__) { border-radius: 4px !important; }
+
+/* ---- tables (data grid): semibold header on a light grey, 1 px row lines, a grey hover ---- */
+body .tbl th:not(#_):not(#__) { font: 600 12px/16px var(--fl-font) !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--fl-fg2) !important; background: var(--fl-bg2) !important; border-bottom: 1px solid var(--fl-st2) !important; }
+body .tbl td:not(#_):not(#__) { border-bottom: 1px solid var(--fl-st3) !important; }
+body .tbl tbody tr:not(#_):not(#__):hover td { background: var(--fl-bg3) !important; }
+
+/* ---- popovers and dialogs: drawer and toast use the high shadows ---- */
+body .drawer:not(#_):not(#__) { box-shadow: var(--fl-sh28) !important; } body .toast:not(#_):not(#__) { border-radius: 4px !important; box-shadow: var(--fl-sh16) !important; }
+
+/* ---- the top bar is flat: a 1 px stroke, no shadow ---- */
+body .navbar:not(#_):not(#__) { background: var(--fl-bg1) !important; border-bottom: 1px solid var(--fl-st2) !important; box-shadow: none !important; }
+
+/* ---- focus is a thicker stroke, never a colour change; keyboard only ---- */
+body :focus-visible:not(#_):not(#__) { outline: 2px solid var(--fl-navy) !important; outline-offset: 1px !important; border-radius: 4px; }
+
+/* ---- motion: quick, ease-out; none at all when the person asks for none ---- */
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
