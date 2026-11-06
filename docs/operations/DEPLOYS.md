@@ -91,3 +91,4 @@ One line per deploy: date and time (UTC), commit, deploy number, who ran it, not
 | 2026-11-06 16:20 | 6fc71ab | 177 | dinesh.r@facilio.com (Claude Code) | Wake Claude button in the project top bar (opens Claude with a short instruction to work this project job queue; no idle cost). | 278 files, 43.4 MB |
 | 2026-11-06 16:45 | 370236c | 178 | dinesh.r@facilio.com (Claude Code) | Tree intro plays once per browser (first visit); later visits go straight to the sign-in page. Roadmap E19: animations and UI polish last. | 278 files, 43.4 MB |
 | 2026-11-06 17:00 | 206bd63 | 179 | dinesh.r@facilio.com (Claude Code) | Wake Claude button removed (user: Claude must work on its own). | 278 files, 43.4 MB |
+| 2026-11-06 18:00 | c750ee2 | 180 | dinesh.r@facilio.com (Claude Code) | Multi-user chat: teammate messages show name, Claude answers the person who wrote, panel shows last Claude activity when a job waits. | 278 files, 43.4 MB |
