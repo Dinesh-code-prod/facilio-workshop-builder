@@ -36,3 +36,5 @@ modules (forms and fields), flows (state flows per module), crossLinks (combined
 - DONE 6 Nov: Mockup tab (src/mockup.js). Meteor Create has three starts (Feature idea, Connected App, From a PRD); From a PRD takes a pasted spec of any length. The tab compiles the brief only from modules in scope, confirmed requirements, applied flows, custom fields, forms, flows across modules and applied connected apps; buttons Copy the brief, Open Meteor, Download. Nothing is sent to Meteor automatically. Not checked: a real prototype built in Meteor from a real brief.
 
 - DONE 6 Nov: BRD review checklist (step 6). Six parts ticked by a person before approval; server enforces. Stage 3 build list is complete except what is marked not checked.
+
+- Test script for all of the above: docs/reference/STAGE3-TEST-SCRIPT-2026-11-06.md (run it once on a throwaway project before trusting stage 3).
