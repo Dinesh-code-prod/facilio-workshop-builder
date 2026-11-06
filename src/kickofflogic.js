@@ -124,9 +124,10 @@
     return out;
   }
   /** Bulk decision on findings: items with an id in ids become status ('confirmed' | 'dismissed' | 'open'), stamped with who and when. Others are untouched. Returns { items, n } where n is how many changed. */
-  function decideMany(items, ids, status, by, at) {
+  function decideMany(items, ids, status, by, at, note) {
     if (!['confirmed', 'dismissed', 'open'].includes(status)) return { items: arr(items), n: 0 }; const want = new Set(arr(ids)); let n = 0;
-    const out = arr(items).map(x => { if (!x || !want.has(x.id) || x.status === status) return x; n++; return Object.assign({}, x, { status, by: status === 'open' ? '' : by || '', byAt: status === 'open' ? '' : at || '' }); }); return { items: out, n };
+    const sol = String(note || '').trim().slice(0, 1500);
+    const out = arr(items).map(x => { if (!x || !want.has(x.id) || (x.status === status && !sol)) return x; n++; return Object.assign({}, x, { status, by: status === 'open' ? '' : by || '', byAt: status === 'open' ? '' : at || '' }, sol ? { solution: sol } : {}); }); return { items: out, n };
   }
   const api = { decideMany, REVIEW, reviewOf, setReview, sessionPlan, originLabel, packOf, itemsOf, openCount, addChange, dismissChange, approvalCheck, setStatus, jobRows, pullRequest, changeRequest, stage, ORIGIN, PACK_STATUS, JOB_STATUS, MAX_TEXT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBKickoffLogic = api;

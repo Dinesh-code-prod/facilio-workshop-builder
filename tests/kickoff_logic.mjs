@@ -74,4 +74,8 @@ t('bulk decision: only the named findings change, already-decided ones are skipp
   assert.equal(r.n, 1); assert.deepEqual(r.items[0], { id: 'a', status: 'confirmed', by: 'me@x.com', byAt: '2026-11-07' }); assert.equal(r.items[1].status, 'open'); assert.equal(r.items[2].by, 'x');
   assert.equal(L.decideMany(r.items, ['a'], 'open', 'me', 't').items[0].by, ''); assert.equal(L.decideMany(items, ['a'], 'bogus', 'm', 't').n, 0); assert.equal(L.decideMany(null, null, 'confirmed').n, 0);
 });
+t('bulk decision keeps the team answer as the solution; an answer re-saves an item already in that state', () => {
+  const items = [{ id: 'a', status: 'open' }, { id: 'b', status: 'confirmed', solution: 'old' }]; const r = L.decideMany(items, ['a', 'b'], 'confirmed', 'me', 't', '  New answer  ');
+  assert.equal(r.n, 2); assert.equal(r.items[0].solution, 'New answer'); assert.equal(r.items[1].solution, 'New answer'); assert.equal(L.decideMany(items, ['b'], 'confirmed', 'me', 't', '').n, 0, 'no answer and no change means nothing'); assert.equal(L.decideMany(items, ['a'], 'confirmed', 'me', 't', 'x'.repeat(2000)).items[0].solution.length, 1500);
+});
 console.log(n + ' kick-off page rule checks passed');

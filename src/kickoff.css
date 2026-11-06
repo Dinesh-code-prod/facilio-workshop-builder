@@ -119,3 +119,4 @@ body.dragging-files [data-act].drop-ready{outline:2px dashed #1570EF;outline-off
 .rs-pick{display:inline-flex;align-items:center;padding:0 8px 0 0;cursor:pointer}.rs-pick input{width:18px;height:18px;accent-color:#1570EF}.rs-f .rs-pick{float:left;margin-top:2px}.rs-bulk{margin:8px 0 12px;padding:8px 12px;border:1px solid #DCE4F3;border-radius:12px;background:#F7FAFF}.card-h .rs-pick{padding-right:10px}
 .rs-f{position:relative;padding-left:34px}.rs-f .rs-pick{position:absolute;left:4px;top:10px;float:none;margin:0;padding:0}.card-h .rs-pick+b{flex:1;text-align:left}
 .rs-bulk{position:sticky;top:64px;z-index:5;box-shadow:0 4px 12px rgba(29,26,94,.08)}
+.rs-sol{margin:8px 0;padding:8px 12px;border-left:3px solid #1570EF;background:#EAF2FF;border-radius:0 10px 10px 0;color:#1D1A5E;font-size:14px;white-space:pre-wrap}.rs-sol b{display:block;font-size:12px;color:#4A5784;margin-bottom:2px}
