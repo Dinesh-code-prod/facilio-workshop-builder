@@ -314,6 +314,7 @@
         "list",
         "claim",
         "finish",
+        "progress",
         "handoff_get",
         "handoff_submit"
        ],

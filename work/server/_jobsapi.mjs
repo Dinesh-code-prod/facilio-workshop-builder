@@ -13,11 +13,11 @@ export function installJobs(d) {
   const all = async pid => (await dbList(col(pid))).map(r => r.value).filter(r => r && r.id);
   /** a claimed job whose lease ran out goes back to waiting (stored, so every reader sees the same) */
   async function fresh(pid, j) { const now = new Date().toISOString(); if (!leaseExpired(j, now)) return j; return withLock(col(pid) + '.' + j.id, async () => { const cur = (await dbGet(col(pid), j.id)).value; const nx = step(cur, 'expire', 'system', now); if (nx !== cur && nx.status !== cur.status) await dbPut(col(pid), j.id, nx); return nx; }); }
-  const view = j => ({ id: j.id, kind: j.kind, label: KINDS[j.kind] ? KINDS[j.kind].label : j.kind, params: j.params, status: j.status, requestedBy: j.requestedBy, requestedAt: j.requestedAt, claimedBy: j.claimedBy, leaseUntil: j.leaseUntil, result: j.result, finishedAt: j.finishedAt });
+  const view = j => ({ id: j.id, kind: j.kind, label: KINDS[j.kind] ? KINDS[j.kind].label : j.kind, params: j.params, status: j.status, requestedBy: j.requestedBy, requestedAt: j.requestedAt, claimedBy: j.claimedBy, leaseUntil: j.leaseUntil, result: j.result, finishedAt: j.finishedAt, claimedAt: j.claimedAt, progress: j.progress || null });
   const mine = async (pid, id) => { if (!JID.test(String(id))) throw new HttpError(404, 'Job not found'); const r = await dbGet(col(pid), id); if (!r || !r.value) throw new HttpError(404, 'Job not found'); return fresh(pid, r.value); };
   const change = (s, pid, id, ev, data, auditText) => withLock(col(pid) + '.' + id, async () => {
     const cur = (await dbGet(col(pid), id)); if (!cur || !cur.value) throw new HttpError(404, 'Job not found'); const now = new Date().toISOString();
-    const base = step(cur.value, 'expire', 'system', now); const nx = wrap(() => step(base, ev, s.email, now, data)); await dbPut(col(pid), id, nx); await audit(pid, s.id, auditText, id + ' ' + nx.kind + ' ' + nx.status); return nx;
+    const base = step(cur.value, 'expire', 'system', now); const nx = wrap(() => step(base, ev, s.email, now, data)); await dbPut(col(pid), id, nx); if (auditText) await audit(pid, s.id, auditText, id + ' ' + nx.kind + ' ' + nx.status); return nx;
   });
 
   const ops = {
@@ -37,6 +37,7 @@ export function installJobs(d) {
     },
     async claim(s, pid, id) { await access(s, pid); await mine(pid, id); const j = await change(s, pid, id, 'claim', {}, 'job-claimed'); return j; },
     async finish(s, pid, id, data) { await access(s, pid); await mine(pid, id); return change(s, pid, id, 'finish', data || {}, 'job-finished'); },
+    async progress(s, pid, id, text) { await access(s, pid); await mine(pid, id); return change(s, pid, id, 'progress', { text }, ''); },   // no audit line: it is only a status note
     async cancel(s, pid, id) { await access(s, pid); await mine(pid, id); return change(s, pid, id, 'cancel', {}, 'job-cancelled'); },
     async answer(s, pid, id, answers) { await access(s, pid); await mine(pid, id); return change(s, pid, id, 'answer', { answers }, 'job-answered'); }
   };
@@ -51,6 +52,7 @@ export function installJobs(d) {
   const tools = {
     async jobs_list(s, b) { const p = await pickProject(s, b.project); const r = await ops.list(s, p.id, String(b.status || '')); return { project: p.name, projectId: p.id, open: r.open, jobs: r.jobs, note: 'Claim one with action claim and its id. Only waiting jobs can be claimed.' }; },
     async jobs_claim(s, b) { const p = await pickProject(s, b.project); const j = await ops.claim(s, p.id, String(b.id || '')); return brief(j, { id: p.id, name: p.name, customer: p.customer || '' }); },
+    async jobs_progress(s, b) { const p = await pickProject(s, b.project); const j = await ops.progress(s, p.id, String(b.id || ''), b.summary); return { job: view(j), note: 'Shown to the person in Delivery Studio. Keep going.' }; },
     async jobs_finish(s, b) {
       const p = await pickProject(s, b.project); const j = await ops.finish(s, p.id, String(b.id || ''), { status: b.status, summary: b.summary, transferId: b.transferId, questions: b.questions });
       return { job: view(j), note: j.status === 'needs_input' ? 'The questions are shown to the person in Delivery Studio; the job waits for their answer.' : 'Recorded. Anything you stored as a transfer waits for a person to approve it in Delivery Studio.' };

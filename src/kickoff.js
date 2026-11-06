@@ -30,7 +30,7 @@
     try {
       const [j, x] = await Promise.all([API.get(base() + '/jobs?status=all'), API.get(base() + '/transfers?kind=msa').catch(() => null)]);
       if (mine !== pid()) return;
-      const sig = JSON.stringify(j.jobs.map(a => [a.id, a.status, (a.result || {}).summary])); const changed = sig !== k.sig; k.sig = sig; k.jobs = j.jobs; k.err = '';
+      const sig = JSON.stringify(j.jobs.map(a => [a.id, a.status, (a.result || {}).summary, (a.progress || {}).text])); const changed = sig !== k.sig; k.sig = sig; k.jobs = j.jobs; k.err = '';
       k.msa = x && Array.isArray(x.transfers) ? x.transfers.slice().sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))[0] || null : k.msa; k.at = Date.now(); k.loading = false;
       if (changed) for (const sec of ['kickoff_cr', 'kickoff_pack']) if (S.docs[sec] && !S.docs[sec].dirty && !S.docs[sec].inflight) { try { await F.reloadSection(sec); } catch (e) { /* the page keeps the copy it has; Refresh tries again */ } }
       if (mine !== pid()) return;
@@ -63,6 +63,7 @@
     const k = K(); const rows = L().jobRows(k.jobs); const dis = ro() ? ' disabled' : '';
     const list = rows.slice(0, 8).map(j => `<div class="ko-job ko-${esc(j.status)}"><div class="row"><b>${esc(j.label)}</b>${tag(j.status === 'done' ? 'ok' : j.status === 'failed' ? 'red' : j.open ? 'tbc' : 'low', j.statusLabel)}<span class="xs muted">${esc(when(j.at))}</span>
 </div>
+        ${j.status === 'claimed' ? `<div class="ko-work"><span class="ko-dot" aria-hidden="true"></span><span>${esc(j.progress || 'Claude has started. Reading a contract takes a few minutes.')}</span> <span class="xs muted">started ${esc(when(j.claimedAt))}</span></div>` : j.status === 'waiting' ? '<div class="small muted">Waiting for Claude to pick it up. Claude checks every 5 minutes while your Claude app is open.</div>' : ''}
         ${j.summary ? `<div class="small muted">${esc(j.summary)}</div>` : ''}
         ${j.questions.length ? `<div class="ko-ask">${j.questions.map((q, i) => `<label class="f">${esc(q)}<textarea rows="2" maxlength="600" data-change="koAns" data-id="${esc(j.id)}" data-i="${i}"${dis}>${esc(((k.answers[j.id] || [])[i]) || '')}</textarea></label>`).join('')}
           <button type="button" class="btn sm primary" data-act="koSend" data-id="${esc(j.id)}" data-n="${j.questions.length}"${dis}>Send my answer to Claude</button></div>` : ''}</div>`).join('');

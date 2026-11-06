@@ -83,4 +83,11 @@ await t('an expired lease puts the job back in the queue for the next reader', a
 await t('the connector has at most 40 tools and project_jobs replaced the two hand-off tools', () => {
   const w = JSON.parse(fs.readFileSync(new URL('../work/work.json', import.meta.url), 'utf8')).mcp.tools; assert.ok(w.length <= 40, 'tools: ' + w.length); assert.ok(w.some(x => x.name === 'project_jobs')); assert.ok(!w.some(x => x.name === 'get_handoff'));
 });
+await t('a progress note shows what Claude is doing and keeps the claim alive; only the claimant on a claimed job can send one', () => {
+  const w = newJob('jb_000000000000000009', cleanRequest({ kind: 'pull_msa' }), 'a@x.com', NOW); assert.throws(() => step(w, 'progress', 'a@x.com', NOW, { text: 'x' }), /cannot be reported/);
+  const c = step(w, 'claim', 'a@x.com', NOW); const later = new Date(Date.parse(NOW) + 20 * 60 * 1000).toISOString(); const p = step(c, 'progress', 'a@x.com', later, { text: '  Reading page 12 of 40  ' });
+  assert.equal(p.progress.text, 'Reading page 12 of 40'); assert.ok(Date.parse(p.leaseUntil) > Date.parse(c.leaseUntil), 'the lease restarts'); assert.equal(p.status, 'claimed'); assert.equal(p.log.length, c.log.length, 'no log line per note');
+  assert.throws(() => step(c, 'progress', 'b@x.com', NOW, { text: 'x' }), /Only the person who claimed/); assert.throws(() => step(c, 'progress', 'a@x.com', NOW, { text: '   ' }), /few words/);
+  assert.equal(step(c, 'progress', 'a@x.com', NOW, { text: 'y'.repeat(500) }).progress.text.length, 160);
+});
 console.log('\n' + n + ' job-queue checks passed');
