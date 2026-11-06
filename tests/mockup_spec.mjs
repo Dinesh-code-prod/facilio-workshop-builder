@@ -26,4 +26,9 @@ assert.ok(!h.includes('<h2>Asset</h2>') && !h.includes('Rollout <b>x</b>') && h.
   assert.ok(it[3].text.includes('Service Request → Work Order') && !it[3].text.includes('## Work Order'), 'a flow across modules is its own brief'); assert.ok(it.every(x => x.text.startsWith('# Prototype brief: Al Moallam · Rollout')));
   assert.equal(framable('https://meteor.facilio.work/#/p/abc'), true); assert.equal(framable('https://comet.facilio.work/x'), true); assert.equal(framable('http://meteor.facilio.work/x'), false, 'http is refused'); assert.equal(framable('https://evil.example.com/meteor.facilio.work'), false); assert.equal(framable('https://meteor.facilio.work.evil.com/'), false); assert.equal(framable('javascript:alert(1)'), false); assert.equal(framable(''), false);
 }
-console.log('7 mockup brief checks passed');
+{ // comet brief names the module, the flow and the prototype link, with fictional data only
+  const { cometBrief } = globalThis.FWBViews.mockupLogic; const b = cometBrief('Work Order: Approve request', 'https://meteor.facilio.work/s/abc', 'Al Moallam');
+  assert.ok(b.includes('Module (model): Work Order') && b.includes('Flow or part shown: Approve request') && b.includes('Prototype (Meteor): https://meteor.facilio.work/s/abc') && b.includes('fictional sample data only') && b.includes('Al Moallam'));
+  const n = cometBrief('Tools', '', ''); assert.ok(!n.includes('Module (model)') && n.includes('the link will be pasted in')); assert.ok(cometBrief('', '', '').startsWith('# Walkthrough video brief'));
+}
+console.log('8 mockup brief checks passed');
