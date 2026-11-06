@@ -117,3 +117,5 @@ body.dragging-files [data-act].drop-ready{outline:2px dashed #1570EF;outline-off
 #asst .as-send{flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#1570EF;color:#fff;display:grid;place-items:center;cursor:pointer}#asst .as-send:hover{background:#0F57BD}
 @media (prefers-reduced-motion:reduce){#asst .as-body{scroll-behavior:auto}}
 .rs-pick{display:inline-flex;align-items:center;padding:0 8px 0 0;cursor:pointer}.rs-pick input{width:18px;height:18px;accent-color:#1570EF}.rs-f .rs-pick{float:left;margin-top:2px}.rs-bulk{margin:8px 0 12px;padding:8px 12px;border:1px solid #DCE4F3;border-radius:12px;background:#F7FAFF}.card-h .rs-pick{padding-right:10px}
+.rs-f{position:relative;padding-left:34px}.rs-f .rs-pick{position:absolute;left:4px;top:10px;float:none;margin:0;padding:0}.card-h .rs-pick+b{flex:1;text-align:left}
+.rs-bulk{position:sticky;top:64px;z-index:5;box-shadow:0 4px 12px rgba(29,26,94,.08)}
