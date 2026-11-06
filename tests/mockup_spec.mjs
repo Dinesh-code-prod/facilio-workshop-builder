@@ -31,4 +31,9 @@ assert.ok(!h.includes('<h2>Asset</h2>') && !h.includes('Rollout <b>x</b>') && h.
   assert.ok(b.includes('Module (model): Work Order') && b.includes('Flow or part shown: Approve request') && b.includes('Prototype (Meteor): https://meteor.facilio.work/s/abc') && b.includes('fictional sample data only') && b.includes('Al Moallam'));
   const n = cometBrief('Tools', '', ''); assert.ok(!n.includes('Module (model)') && n.includes('the link will be pasted in')); assert.ok(cometBrief('', '', '').startsWith('# Walkthrough video brief'));
 }
-console.log('8 mockup brief checks passed');
+{ // every brief ends with the Facilio way of building it, by kind; a location or asset module gets the hierarchy lines
+  const { houseGuide, buildItems } = globalThis.FWBViews.mockupLogic; const g = houseGuide('flow', 'Work Order: Approve'); assert.ok(g.includes('How to build it (the Facilio way)') && g.includes('walk the whole state flow') && g.includes('#1D1A5E') && !g.includes('hierarchy'));
+  assert.ok(houseGuide('module', 'Asset: fields and forms').includes('New record form') && houseGuide('module', 'Asset: fields and forms').includes('hierarchy')); assert.ok(houseGuide('link', 'A to B: x').includes('side by side')); assert.ok(houseGuide('app', 'Connected app: X').includes('own screen')); assert.ok(houseGuide('zzz', 'x').includes('Facilio'));
+  const its = buildItems(d); assert.ok(its.length && its.every(x => x.text.includes('How to build it (the Facilio way)')) && its.every(x => x.text.indexOf('# Prototype brief') < x.text.indexOf('How to build it')), 'each item brief carries the guide after the content');
+}
+console.log('9 mockup brief checks passed');
