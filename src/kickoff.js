@@ -70,6 +70,24 @@
     ];
     return '<ol class="ko-flow" aria-label="Steps of this job">' + steps.map(x => '<li class="' + x[2] + '"><b>' + esc(x[0]) + '</b>' + (x[1] ? ' <span class="xs muted">' + esc(x[1]) + '</span>' : '') + '</li>').join('') + '</ol>';
   }
+  // A chat-style panel for the latest "pull MSA" job: what the person did, what Claude is doing, and what will come out. Built only from the job record; nothing is invented.
+  function chatCard(p) {
+    const k = K(); const j = L().jobRows(k.jobs).filter(x => x.kind === 'pull_msa' && x.status !== 'cancelled')[0]; if (!j) return '';
+    const raw = (k.jobs || []).find(x => x.id === j.id) || {}; const file = (/uploaded file: (.+?)(?: \(text kept|$)/.exec((raw.params || {}).note || '') || [])[1] || 'the MSA';
+    const who = String(j.claimedBy || '').split('@')[0]; const msgs = [['you', 'You uploaded ' + file + '.', j.at]];
+    if (j.status === 'waiting') msgs.push(['sys', "Waiting for Claude's next check. It looks every 5 minutes, so this takes up to 5 minutes to start.", '']);
+    if (j.claimedAt) msgs.push(['claude', 'I have your contract' + (who ? ' (working on ' + who + "'s computer)" : '') + '. I will read it page by page.', j.claimedAt]);
+    if (j.status === 'claimed') msgs.push(['claude', j.progress || 'Reading the contract…', '', true]);
+    if (j.status === 'needs_input') msgs.push(['claude', 'I need one answer from you: ' + j.questions.join(' '), j.finishedAt]);
+    if (j.status === 'failed') msgs.push(['bad', 'I could not finish: ' + (j.summary || 'unknown reason'), j.finishedAt]);
+    if (j.status === 'done') msgs.push(['claude', 'Done. ' + (p ? 'The extraction, the project plan and the kick-off deck are drafted below. Please review them and approve once.' : (j.summary || 'The extraction is saved.')), j.finishedAt]);
+    const working = j.status === 'claimed' ? 'now' : j.status === 'done' || p ? 'done' : 'todo';
+    const outs = [['Extraction of the MSA', 'scope, modules, dates, customer duties'], ['Project plan', 'timeline, Gantt and milestones, in the Project Plan tab too'], ['Kick-off deck', 'the customer presentation, with speaker notes']].map(o => '<li class="' + working + '"><b>' + esc(o[0]) + '</b> <span class="xs muted">' + esc(o[1]) + '</span></li>').join('')
+      + '<li class="later"><b>Requirement session schedule</b> <span class="xs muted">comes in the next stage, from the approved scope</span></li>';
+    return '<section class="card ko-card ko-chat" aria-label="What Claude is doing"><div class="card-h"><b>Claude is preparing your project</b>' + (j.open ? '<span class="xs muted">You can leave this page. It keeps working.</span>' : '') + '</div><div class="card-b ko-chat-grid">'
+      + '<div class="ko-msgs" role="log" aria-live="polite">' + msgs.map(m => '<div class="ko-msg ' + m[0] + '"><div class="ko-bub">' + esc(m[1]) + (m[3] ? '<span class="ko-typing" aria-hidden="true"><i></i><i></i><i></i></span>' : '') + '</div>' + (m[2] ? '<div class="xs muted">' + esc(when(m[2])) + '</div>' : '') + '</div>').join('') + '</div>'
+      + '<div><div class="xs muted" style="margin-bottom:6px">What you will get</div><ul class="ko-outs">' + outs + '</ul></div></div></section>';
+  }
   function jobsCard() {
     const k = K(); const rows = L().jobRows(k.jobs); const dis = ro() ? ' disabled' : '';
     const list = rows.slice(0, 8).map(j => `<div class="ko-job ko-${esc(j.status)}"><div class="row"><b>${esc(j.label)}</b>${tag(j.status === 'done' ? 'ok' : j.status === 'failed' ? 'red' : j.open ? 'tbc' : 'low', j.statusLabel)}<span class="xs muted">${esc(when(j.at))}</span>
@@ -128,7 +146,7 @@
     const p = pack(); const hasFile = !!((V.plannerDoc && V.plannerDoc() || {}).msa);
     return `${head}<div class="page-body ko">${strip(L().stage(hasFile || !!k.msa, p, k.jobs))}
       ${p && p.status === 'discarded' ? '<div class="notice small">This draft was discarded. Ask Claude to build it again from the contract with Pull MSA, or approve nothing.</div>' : ''}
-      <div class="ko-grid">${msaCard(p, hasFile)}${jobsCard()}</div>
+      ${chatCard(p)}<div class="ko-grid">${msaCard(p, hasFile)}${jobsCard()}</div>
       ${p ? packCards(p) + crCard() + safeDeck(p) + approveBar(p) : '<div class="empty">The kick-off pack appears here after Claude has read the contract and you have approved the extraction and started the project from it.</div>'}</div>`;
   }
   // The team gets this page; customers keep the older Kick-off Deck viewer.
