@@ -2046,6 +2046,11 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     if (String(b.confirm || '') !== p.name) throw new HttpError(400, 'Type the project name exactly to confirm');
     let n = 0; for (const f of (await dbList('fl.' + P.id)).map(x => x.value).filter(Boolean)) { for (const u of (f.urls || []).concat(Object.values(f.mint || {}))) { try { await CTX.files.delete(u, { private: true }); } catch (e) { /* already gone */ } } }   // the stored files themselves, not only their list
     for (const col of pcols(P.id, true).concat(['au.' + P.id, 'fl.' + P.id, 'fb.' + P.id, 'xf.' + P.id, 'xfd.' + P.id, 'xfdp.' + P.id, 'tsg.' + P.id, 'jb.' + P.id])) { const rows = await dbList(col); await pmap(rows, 8, async x => { await dbDel(col, x.key); n++; }); }
+    // what lives outside the per-project collections: the discovery record, AI drafting jobs and their parts (keyed by project id), Claude hand-offs with their stored files, mail conversations
+    try { if (await dbGet('dm', P.id)) { await dbDel('dm', P.id); n++; } } catch (e) { /* none */ }
+    for (const col of ['aj', 'ajp']) { const rows = (await dbList(col)).filter(x => String(x.key).startsWith(P.id + '.')); await pmap(rows, 8, async x => { await dbDel(col, x.key); n++; }); }
+    for (const x of (await dbList('ho')).filter(x => x.value && x.value.project === P.id)) { await hoGone(x.value); await dbDel('ho', x.key); n++; }
+    for (const x of (await dbList('mlconv')).filter(x => x.value && x.value.projectId === P.id)) { await dbDel('mlconv', x.key); n++; }
     await dbDel('projects', P.id); await audit('sys', s.id, 'admin_delete_project', p.name + ' (' + P.id + ')'); ADM = null; return ok({ ok: true, removed: n });
   });
   route('GET', '/api/admin/projects/:id/members', async (b, P) => { await requireAdmin('sub'); const r = await dbGet('projects', P.id); if (!r) throw new HttpError(404, 'Project not found'); return ok({ members: (r.value.members || []).map(m => Object.assign(memberOut(m), { addedAt: null })) }); });
