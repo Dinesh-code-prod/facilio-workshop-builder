@@ -119,6 +119,16 @@
   }
   /** a walkthrough link is shown inside Studio only when it is https on Comet (the page already allows framing exactly that host) */
   function walkFramable(url) { try { const u = new URL(String(url || '').trim()); return u.protocol === 'https:' && u.hostname === 'comet.facilio.work'; } catch (e) { return false; } }
-  const api = { walkthroughs, walkFramable, coverage, fromSolution, STATUS, ISSUE_ST, SEVERITY, TASK_OF, isUatIssue, issueStatus, FIXED, issueFilter, chartData, FIELDS, suggestMap, findHeaderRow, normStatus, nextId, readRows, summarize, keysOf };
+  /** Stage 4 status per module (read only). modules: [{ name, label }]; cases: test cases (mod); issues: [{ module (label or name), status }] already mapped to UAT status; walks: { scenarioKey: url }.
+      Returns { rows: [{ name, label, cases, run, passed, failed, blocked, openIssues, scenarios, videos }], totals }. Run = anything past Not Started / Ready for Testing / Deferred. */
+  function statusBoard(modules, cases, issues, walks) {
+    const mods = Array.isArray(modules) ? modules : []; const cs = Array.isArray(cases) ? cases.filter(Boolean) : []; const is = Array.isArray(issues) ? issues.filter(Boolean) : []; const w = walks && typeof walks === 'object' ? walks : {};
+    const of = m => cs.filter(c => (c.mod || c.module) === m.name); const idle = ['Not Started', 'Ready for Testing', 'Deferred', ''];
+    const rows = mods.map(m => { const l = of(m); const sc = new Set(l.map(c => String(c.scenario || c.title || '').replace(/\s+/g, ' ').trim().toLowerCase()).filter(Boolean));
+      return { name: m.name, label: m.label || m.name, cases: l.length, run: l.filter(c => !idle.includes(c.status || '')).length, passed: l.filter(c => c.status === 'Passed' || c.status === 'Approved').length, failed: l.filter(c => c.status === 'Failed').length, blocked: l.filter(c => c.status === 'Blocked').length,
+        openIssues: is.filter(i => (i.module === m.name || i.module === m.label) && i.status !== 'Closed' && i.status !== 'Deferred').length, scenarios: sc.size, videos: [...sc].filter(k => w[k]).length }; });
+    const sum = k => rows.reduce((n, r) => n + r[k], 0); return { rows, totals: { cases: sum('cases'), run: sum('run'), passed: sum('passed'), failed: sum('failed'), blocked: sum('blocked'), openIssues: sum('openIssues'), scenarios: sum('scenarios'), videos: sum('videos') } };
+  }
+  const api = { statusBoard, walkthroughs, walkFramable, coverage, fromSolution, STATUS, ISSUE_ST, SEVERITY, TASK_OF, isUatIssue, issueStatus, FIXED, issueFilter, chartData, FIELDS, suggestMap, findHeaderRow, normStatus, nextId, readRows, summarize, keysOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBUat = api;
 })(typeof window !== 'undefined' ? window : globalThis);

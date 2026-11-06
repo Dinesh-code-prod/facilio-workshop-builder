@@ -48,7 +48,14 @@
   ACT.utrSave = a => V.busy(a, async () => { const id = a.getAttribute('data-id'); const x = I().get('utr', id); if (!x) return; const g = k => String((document.getElementById(k + id) || {}).value || '').trim(); const result = g('ur_r_'); const actual = g('ur_a_'); const link = g('ur_l_');
     if ((result === 'Failed' || result === 'Blocked') && !actual) { toast('Say briefly what happened, so the team can fix it', 5000, true); return; } if (link && !/^https?:\/\//i.test(link)) { toast('The link must start with https://', 5000, true); return; }
     try { await I().put('utr', id, Object.assign({}, x, { result, actual, link })); toast('Saved. Thank you.'); V.render(); } catch (e) { toast(e.message || 'Could not save', 6000, true); } });
-  V.uatCases = () => uatCasesCore() + coverageCard() + walkthroughCard();
+  V.uatCases = () => uatCasesCore() + statusCard() + coverageCard() + walkthroughCard();
+  /** read only: where each module stands in stage 4 */
+  function statusCard() {
+    if (!team() || !I().ready(['utc'])) return ''; const mods = scoped(); if (!mods.length || !cases().length) return '';
+    const iss = (I().ready(['task']) ? issues() : []).map(t => ({ module: t.module, status: U().issueStatus(t) })); const b = U().statusBoard(mods, cases(), iss, walkLinks()); const t = b.totals;
+    return '<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Stage 4 status</h3><span class="small muted">' + t.passed + ' of ' + t.cases + ' test cases passed, ' + t.openIssues + ' open issue' + (t.openIssues === 1 ? '' : 's') + '</span></div><div class="card-b"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Module</th><th class="num">Test cases</th><th class="num">Run</th><th class="num">Passed</th><th class="num">Failed</th><th class="num">Blocked</th><th class="num">Open issues</th><th class="num">Walkthroughs</th></tr></thead><tbody>'
+      + b.rows.filter(r => r.cases || r.openIssues).map(r => '<tr><td><b>' + esc(r.label) + '</b></td><td class="num">' + r.cases + '</td><td class="num">' + r.run + '</td><td class="num">' + r.passed + '</td><td class="num">' + r.failed + '</td><td class="num">' + r.blocked + '</td><td class="num">' + r.openIssues + '</td><td class="num">' + r.videos + ' of ' + r.scenarios + '</td></tr>').join('') + '</tbody></table></div><p class="xs muted" style="margin:8px 0 0">Read only. Run means a test case that is no longer Not Started, Ready for Testing or Deferred. FTR checks are kept in the FTR results file, not here.</p></div></div>';
+  }
   /** read only: which confirmed requirements have a test case */
   function coverageCard() {
     if (!team() || !I().ready(['utc'])) return ''; const data = scoped().map(m => ({ name: m.name, label: m.label, requirements: (S.ws.requirements || []).filter(r => r.status === 'Confirmed' && (r.modules || []).includes(m.name)).map(r => ({ id: r.id, title: r.title })) }));

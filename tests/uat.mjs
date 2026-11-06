@@ -64,4 +64,10 @@ t('walkthroughs: one per scenario (or per title when there is no scenario), a br
   assert.ok(!w[1].brief.includes('Steps:') && !w[1].brief.includes('Expected:'), 'nothing is invented for a case with no steps'); assert.ok(w[0].brief.length <= 6000); assert.deepEqual(U.walkthroughs(null), []);
   assert.equal(U.walkFramable('https://comet.facilio.work/#/v/abc'), true); assert.equal(U.walkFramable('https://meteor.facilio.work/x'), false); assert.equal(U.walkFramable('http://comet.facilio.work/x'), false); assert.equal(U.walkFramable('https://comet.facilio.work.evil.com/'), false); assert.equal(U.walkFramable('javascript:alert(1)'), false); assert.equal(U.walkFramable(''), false);
 });
+t('statusBoard: per module counts, open issues and walkthrough coverage', () => {
+  const mods = [{ name: 'wo', label: 'Work Order' }, { name: 'as', label: 'Asset' }]; const cs = [{ mod: 'wo', status: 'Passed', scenario: 'Raise' }, { mod: 'wo', status: 'Failed', scenario: 'Raise' }, { mod: 'wo', status: 'Not Started', title: 'Close' }, { mod: 'wo', status: 'Blocked', title: 'Close' }];
+  const b = U.statusBoard(mods, cs, [{ module: 'Work Order', status: 'Open' }, { module: 'wo', status: 'Closed' }, { module: 'Asset', status: 'New' }], { raise: 'https://x' });
+  assert.deepEqual(b.rows[0], { name: 'wo', label: 'Work Order', cases: 4, run: 3, passed: 1, failed: 1, blocked: 1, openIssues: 1, scenarios: 2, videos: 1 }); assert.equal(b.rows[1].openIssues, 1); assert.equal(b.totals.cases, 4);
+  assert.equal(U.statusBoard(null, null, null, null).totals.cases, 0);
+});
 console.log(`\n${n} UAT checks passed`);
