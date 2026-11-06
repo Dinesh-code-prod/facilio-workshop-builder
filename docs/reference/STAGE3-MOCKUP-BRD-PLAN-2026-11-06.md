@@ -23,3 +23,8 @@ modules (forms and fields), flows (state flows per module), crossLinks (combined
 - Meteor hand-off format (how the build spec reaches Meteor). Check Meteor's own page before building step 5.
 - Which fields of a form Claude may fill without asking (all, or only those named in the contract or a session).
 - Not tested anywhere: a real Claude run for any step above.
+
+## Added 6 Nov 2026 (user): form builder changes by Claude, custom buttons, connected apps (not built)
+- The System modules and Form builder tab stays (internal only, never shown to customers). Claude should be able to change forms and fields there and the change must show in the BRD and the process diagram. Today Claude proposes custom fields and forms (done); custom buttons are not covered yet.
+- Connected or custom apps: a customer may ask, for one flow, for a special view (for example a multi-technician view when someone clicks Assign, shown as a connected app). Capture each as a proposal (module, state or button that opens it, what the app shows, who uses it, why) that flows into the BRD and the mockup. Facilio builds connected apps in Vibe (vibe.facilio.com): check how an app is created and linked to a button before building the hand-off.
+- To decide with the user first: what a connected-app proposal must contain, whether Claude only describes the app (BRD and mockup) or also prepares the Vibe build, and how the mockup (Meteor) shows it.
