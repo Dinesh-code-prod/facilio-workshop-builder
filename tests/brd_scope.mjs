@@ -19,4 +19,7 @@ assert.ok([...rows.rows].every(r => /Actions:|No stateflow action/.test(JSON.str
 const matrix = bl.filter(b => b.rows && b.headers && b.headers[0] === 'Module').flatMap(b => b.headers.slice(1)); assert.ok(uniq.every(a => !matrix.includes(a.label)), 'the role matrix leaves those roles out');
 bl = build(['workorder', 'asset', 'site', 'building']); assert.ok(table(bl, 'Level'), 'the location hierarchy appears when a location module is in scope');
 bl = build([]); assert.ok(!table(bl, 'Portal') || table(bl, 'Portal').rows.length === 0, 'nothing in scope, no portals');
-console.log('5 BRD scope checks passed');
+S.ws = F.newWorkshop(); S.ws.modules.workorder = { inScope: true, agreedAutomation: 'A Reject button after approval' }; bl = globalThis.FWBBrd.buildBlocks().blocks;
+assert.ok(bl.some(b => b.t === 'h' && /Agreed Buttons, Automation, SLA and Form Rules/.test(b.text || '')) && bl.some(b => /A Reject button after approval/.test(b.text || '')), 'what the team agreed for buttons and automation is printed in the module section');
+S.ws.modules.workorder.agreedAutomation = '   '; bl = globalThis.FWBBrd.buildBlocks().blocks; assert.ok(!bl.some(b => /Agreed Buttons, Automation/.test(b.text || '')), 'an empty box prints nothing');
+console.log('7 BRD scope checks passed');
