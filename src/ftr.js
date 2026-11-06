@@ -96,9 +96,19 @@
     ed.si = ed.wb.worksheets.indexOf(ws); ed.dirty = true; ed.render(); ed.sheetTabs(); closeDrawer(); toast(pick.length + ' row(s) added. Review them, then Save as new version.'); };
 
   // ---------- FTR checklist as HTML, and the results file that comes back (E2 workspace 6; src/ftrhtml.js and src/ftrresult.js) ----------
-  const ftrInput = () => ({ project: { id: S.project.id, name: S.project.name, customer: S.project.customer || '' },
-    modules: F.allModules().filter(m => m.inScope).map(m => ({ name: m.label, forms: F.formsForModule(m.name).map(f => f.label || f.name), fields: F.effFields(m.name).filter(f => f.status !== 'removed').map(f => ({ name: f.label || f.name, type: typeof f.type === 'string' ? f.type : '', required: f.required === true })), workflows: F.flowsForModule(m.name).map(f => f.name),
-      notifications: (S.ws.notifications || []).filter(x => x.module === m.name).map(x => ({ name: x.name, trigger: x.trigger, recipients: x.recipients })) })), config: { roles: (S.ws.roles || []).map(r => r.label) } });
+  const ftrInput = () => {
+    const std = root.FWBBrd && root.FWBBrd.includeStd ? root.FWBBrd.includeStd() : false; const props = (F.doc('design_proposals') || {}).items || []; const norm = x => String(x || '').trim().toLowerCase();
+    return { project: { id: S.project.id, name: S.project.name, customer: S.project.customer || '' }, modules: F.allModules().filter(m => m.inScope).map(m => {
+      const flows = F.flowsForModule(m.name).filter(f => std || f.origin === 'proposed' || (((F.flowDiff ? F.flowDiff(f.id) : null) || { changes: [] }).changes || []).length); const wf = flows.map(f => F.flowModel(f.id)).filter(Boolean);
+      const statuses = std ? [] : wf.flatMap(f => f.states.map(s => ({ name: s.label, to: f.transitions.filter(t => !t.removed && t.enabled !== false && t.from === s.id).map(t => (f.states.find(x => x.id === t.to) || {}).label).filter(Boolean) })));
+      const approvals = std ? [] : wf.flatMap(f => f.transitions.filter(t => !t.removed && t.approval && t.approval.required).map(t => ({ name: t.name })));
+      const roles = []; const seen = new Set(); const addR = rid => { if (seen.has(rid)) return; seen.add(rid); const p = V.proposedPerm ? V.proposedPerm(rid, m.name) : null; if (p) roles.push({ name: F.actorLabel(rid), permissions: [F.permText(p, m.name)] }); }; Object.keys(S.ws.rolePermOps || {}).forEach(addR); (S.ws.roles || []).forEach(r => addR(r.id));
+      const forms = F.formsForModule(m.name).filter(f => std || f.proposed); const fields = F.effFields(m.name).filter(f => f.status !== 'removed' && (std || f.status === 'proposed' || f.status === 'modified'));
+      return { name: m.label, forms: forms.map(f => f.label || f.name), fields: fields.map(f => ({ name: f.label || f.name, type: typeof f.type === 'string' ? f.type : '', required: f.required === true })), workflows: flows.map(f => f.name), statuses, approvals, roles,
+        notifications: (S.ws.notifications || []).filter(x => x.module === m.name).map(x => ({ name: x.name, trigger: x.trigger, recipients: x.recipients })),
+        requirements: (S.ws.requirements || []).filter(r => r.status === 'Confirmed' && (r.modules || []).includes(m.name)).map(r => ({ id: r.id, title: r.title, objective: r.objective, rules: r.rules })),
+        apps: props.filter(p => p.kind === 'connectedapp' && p.status === 'applied' && [m.name, m.label].some(x => norm(x) === norm(p.module))).map(p => ({ name: p.name, trigger: p.trigger, triggerLabel: p.triggerLabel, purpose: p.purpose, shows: p.shows })) }; }), config: { roles: (S.ws.roles || []).map(r => r.label) } };
+  };
   ACT.ftrHtml = () => { const H = root.FWBFtrHtml, list = H.buildFtrChecklist(ftrInput()); if (!list.items.length) toast('No module is in scope yet, so the checklist has no checks. It is saved anyway; switch modules on and make it again.', 6000);
     V.download((S.project.name || 'project').replace(/[^\w.-]+/g, '-').slice(0, 40) + '-FTR-checklist.html', H.ftrChecklistHtml(list), 'text/html'); toast(list.items.length + ' checks in the file'); };
   ACT.ftrLoadRes = async () => { const f = (await V.pickFile('.json'))[0]; if (!f) return; if (f.size > 1e6) { toast('The file is larger than 1 MB, so it was not read.', 6000, true); return; }

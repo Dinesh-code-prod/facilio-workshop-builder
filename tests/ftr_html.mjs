@@ -11,7 +11,7 @@ const input = {
   modules: [
     { name: 'Work Orders', forms: ['Work order form'], fields: [{ name: 'Priority', type: 'Picklist', required: true }, 'Due date'], roles: [{ name: 'Technician', permissions: ['Create', 'Edit'] }, 'Supervisor'],
       workflows: [{ name: 'Auto assign', trigger: 'Work order created' }, { name: 'Close approval', approval: true }], statuses: [{ name: 'Open', to: ['In Progress'] }, 'In Progress', 'Closed'],
-      notifications: [{ name: 'Assigned mail', trigger: 'Assigned', recipients: ['Technician'] }], integrations: ['SAP sync'], reports: ['Open work orders'], dependsOn: ['Assets'], portals: ['Technician app'] },
+      notifications: [{ name: 'Assigned mail', trigger: 'Assigned', recipients: ['Technician'] }], integrations: ['SAP sync'], reports: ['Open work orders'], dependsOn: ['Assets'], portals: ['Technician app'], requirements: [{ id: 'WO-001', title: 'Weekly report', objective: 'A report goes out every week.', rules: 'Sent on Monday' }], apps: [{ name: 'Multi-technician view', trigger: 'button', triggerLabel: 'Assign', purpose: 'Assign several technicians', shows: 'a calendar' }] },
     { name: 'Assets' }],
   config: { portals: ['Tenant portal'], roles: ['Admin'], integrations: ['Email gateway'], notifications: ['Welcome mail'] }
 };
@@ -23,14 +23,14 @@ t('every item carries the fields the roadmap asks for, with empty result, eviden
   list.items.forEach(i => { ['id', 'section', 'type', 'module', 'title', 'what', 'expected', 'source'].forEach(k => assert.ok(typeof i[k] === 'string' && (k === 'module' || i[k]), k + ' on ' + i.id)); assert.ok(['configuration', 'functional'].includes(i.section)); assert.ok(H.TYPES[i.type], i.type);
     assert.equal(i.result, ''); assert.equal(i.evidence, ''); assert.equal(i.by, ''); assert.equal(i.at, ''); });
   assert.ok(sec('configuration').length && sec('functional').length); });
-t('all fourteen check types can appear, and only because the data names something', () => {
-  const types = new Set(list.items.map(i => i.type)); Object.keys(H.TYPES).forEach(k => assert.ok(types.has(k), 'type ' + k)); assert.equal(Object.keys(H.TYPES).length, 14); });
+t('all sixteen check types can appear, and only because the data names something', () => {
+  const types = new Set(list.items.map(i => i.type)); Object.keys(H.TYPES).forEach(k => assert.ok(types.has(k), 'type ' + k)); assert.equal(Object.keys(H.TYPES).length, 16); });
 t('nothing is invented: no data, no items; a module with only a name gets only its configuration validation and names its gaps', () => {
   assert.deepEqual(H.buildFtrChecklist({}).items, []); assert.deepEqual(H.buildFtrChecklist(null).items, []); assert.deepEqual(H.buildFtrChecklist({ modules: [{ name: '  ' }, {}, null, 5] }).items.map(i => i.type), ['validation']);
   const only = H.buildFtrChecklist({ modules: [{ name: 'Assets' }] }); assert.equal(only.items.length, 1); assert.equal(only.items[0].section, 'configuration'); assert.equal(only.items[0].type, 'validation'); assert.ok(only.gaps.some(g => /Assets: no workflows listed/.test(g)));
   const forms = H.buildFtrChecklist({ modules: [{ name: 'Assets', forms: ['Asset form'] }] }); assert.ok(!forms.items.some(i => ['workflow', 'notification', 'integration', 'report', 'approval', 'transition', 'process', 'role', 'access'].includes(i.type))); });
 t('every name in an item comes from the input (each item mentions its module, a listed thing, or the project data it was built from)', () => {
-  const known = ['Work Orders', 'Assets', 'Work order form', 'Priority', 'Due date', 'Technician', 'Supervisor', 'Auto assign', 'Close approval', 'Open', 'In Progress', 'Closed', 'Assigned mail', 'SAP sync', 'Open work orders', 'Technician app', 'Tenant portal', 'Admin', 'Email gateway', 'Welcome mail'];
+  const known = ['Work Orders', 'Assets', 'Work order form', 'Priority', 'Due date', 'Technician', 'Supervisor', 'Auto assign', 'Close approval', 'Open', 'In Progress', 'Closed', 'Assigned mail', 'SAP sync', 'Open work orders', 'Technician app', 'Tenant portal', 'Admin', 'Email gateway', 'Welcome mail', 'WO-001', 'Multi-technician view'];
   list.items.forEach(i => assert.ok(known.some(k => (i.title + ' ' + i.what).includes(k)), i.id + ': ' + i.title));
   assert.ok(!list.items.some(i => /Unknown|Lorem|TBD/.test(i.title + i.what + i.expected))); });
 t('permissions are checked only for roles whose permissions are listed; the others are named as a gap', () => {
@@ -144,4 +144,9 @@ t('the pass rate of a section counts only the checks that were run, N/A is left 
   const rs = [{ id: cfg1, result: 'Pass' }, { id: cfg2, result: 'Fail' }, { id: sec('configuration')[2].id, result: 'N/A' }]; const s = R.summarise(list, rs); assert.equal(s.configuration.passRate, 50); assert.equal(s.configuration.na, 1); assert.equal(s.functional.passRate, null);
   const e = R.summarise(list, []); assert.equal(e.configuration.passRate, null); assert.equal(e.configuration.notRun, e.configuration.total); assert.deepEqual(e.failed, []); const z = R.summarise(null, null); assert.equal(z.configuration.total, 0); });
 t('results for ids the checklist does not hold, repeated ids and bad result words are ignored by the summary', () => { const s = R.summarise(list, [{ id: 'FTR-NOPE', result: 'Fail' }, { id: cfg1, result: 'Pass' }, { id: cfg1, result: 'Fail' }, { id: cfg2, result: 'Great' }]); assert.equal(s.configuration.pass, 1); assert.equal(s.configuration.fail, 0); assert.equal(s.failed.length, 0); });
+t('a confirmed requirement is a functional test only; a connected app has a configuration check and a functional test, apart', () => {
+  const r = H.buildFtrChecklist({ modules: [{ name: 'Work Orders', requirements: [{ id: 'WO-001', title: 'Weekly report', objective: 'A report goes out every week.', rules: 'Sent on Monday' }, { id: '', title: 'No id' }], apps: [{ name: 'Multi-technician view', trigger: 'button', triggerLabel: 'Assign', purpose: 'Assign several technicians', shows: 'a calendar' }] }] });
+  const q = r.items.filter(i => i.type === 'requirement'); assert.equal(q.length, 1, 'one per requirement that has an id and a title'); assert.equal(q[0].section, 'functional'); assert.ok(q[0].what.includes('Check the rule: Sent on Monday') && q[0].expected === 'A report goes out every week.' && q[0].source === 'Confirmed requirement WO-001');
+  const a = r.items.filter(i => i.type === 'app'); assert.deepEqual(a.map(i => i.section).sort(), ['configuration', 'functional']); assert.ok(a.every(i => i.what.includes('the Assign button of "Work Orders"')) && a.find(i => i.section === 'functional').what.includes('it should show a calendar'));
+  assert.equal(new Set(r.items.map(i => i.id)).size, r.items.length, 'ids stay unique'); });
 console.log(`\n${n} FTR checklist checks passed`);
