@@ -46,7 +46,7 @@
       'Customers have the guides they need and training dates are set.', 'AI drafts need a human read. Check every screen name against the real configuration.'],
     ['6', 'Hypercare, Handover & Closure', 'Stay close after launch, then hand over cleanly.', [
       ['hypercare', 'Hypercare', 'Log issues raised after launch and their fixes. Share the status.'],
-      ['handover', 'Handover & Closure', 'Record who owns what, hand over to support, review lessons learned, close the project.']],
+      ['handover', 'Handover & Closure', 'Record who owns what, hand over to support, review lessons learned, close the project. Drop the org package here and Claude builds the Solution Document.']],
       'Support owns the steady state and the project is formally closed.', 'Closing with open actions loses the history. Close or move every open item first.']
   ];
   // the Project group of the menu: [page, label, what it is for, sub-heading]
