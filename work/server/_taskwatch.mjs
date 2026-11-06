@@ -32,7 +32,7 @@ export function digestMessage(pending, today, { maxLines = 8 } = {}) {
   if (pending.items.length > maxLines) lines.push('… and ' + (pending.items.length - maxLines) + ' more');
   return { title: 'Your pending tasks · ' + c.open + ' open' + (c.overdue ? ', ' + c.overdue + ' overdue' : ''), text: lines.join('\n'),
     facts: [{ title: 'Open', value: String(c.open) }, { title: 'Overdue', value: String(c.overdue) }, { title: 'Due in 3 days', value: String(c.soon) }, { title: 'Blocked', value: String(c.blocked) }],
-    actions: [{ title: 'Open Delivery Studio', url: projects.length === 1 ? BASE_URL + '#/p/' + projects[0] + '/tasks' : BASE_URL }] };
+    actions: [{ title: 'Open Delivery Studio', url: projects.length === 1 ? BASE_URL + '#/p/' + projects[0] + '/tasks' : BASE_URL }].concat(pending.items.filter(x => (x.overdue || x.soon) && x.id).slice(0, 3).map(x => ({ title: 'Done: ' + (x.n ? 'T-' + x.n : oneLine(x.title, 20)), fn: 'api', data: { tool: 'task_reply', project: x.project, taskId: x.id, status: 'Done', text: 'Marked done by the owner from the Teams message.', via: 'teams' } }))) };
 }
 
 /** The key under which the server remembers a digest (scope = a project id, or 'all' for a person's own digest) or the assignment count of a person.

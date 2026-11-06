@@ -157,7 +157,7 @@
         ${all.length && can && !board ? '<p class="xs muted" style="margin-top:10px">Click a cell to edit it. Click an ID to open the task, its comments, customer response and the AI Task Assistant. <button class="btn link sm" data-act="tkBringIn">Bring in existing actions and questions</button></p>' : ''}</div>`;
     },
     mount() {
-      mountBoard(); sgLoad();
+      mountBoard(); sgLoad(); if (V.taskEngine) V.taskEngine.run();
       // opened from the Admin Command Center or My work: open that task once
       if (S.ui.tkOpenOnce) { const id = S.ui.tkOpenOnce; S.ui.tkOpenOnce = null; const t = I().get('task', id); if (t) setTimeout(() => taskForm(t), 0); }
       const q = document.getElementById('tkQ'); if (q) q.addEventListener('input', () => { S.ui.tkQ = q.value; const p = q.selectionStart; V.render(); const n = document.getElementById('tkQ'); if (n) { n.focus(); n.setSelectionRange(p, p); } });
@@ -178,7 +178,7 @@
     const card = t => { const ini = initials(t.owner); const q = t.question && !['Answered', 'Closed'].includes(t.question.status);
       return `<article class="kb-card p-${prank(t)}${late(t) ? ' late' : ''}${CLOSED.includes(t.status) ? ' done' : ''}" ${can ? 'draggable="true"' : ''} tabindex="0" role="button" data-act="tkOpen" data-id="${esc(t.id)}" data-status="${esc(t.status)}" aria-label="${esc(tid(t) + ': ' + t.title + ', ' + t.status)}">
         <div class="kb-t">${esc(t.title)}</div>
-        <div class="kb-m"><span class="kb-ty">${esc(t.type)}</span>${t.blocker && t.blocker.trim() ? '<span class="kb-fl" title="' + esc(t.blocker) + '">Blocker</span>' : ''}${q ? '<span class="kb-fl q" title="Customer question awaiting an answer">Question</span>' : ''}</div>
+        <div class="kb-m"><span class="kb-ty">${esc(t.type)}</span>${t.auto ? '<span class="kb-fl" title="Made by the Studio from the project facts. It resolves itself when this is no longer true.">Auto</span>' : ''}${t.blocker && t.blocker.trim() ? '<span class="kb-fl" title="' + esc(t.blocker) + '">Blocker</span>' : ''}${q ? '<span class="kb-fl q" title="Customer question awaiting an answer">Question</span>' : ''}</div>
         <div class="kb-f"><span class="kb-id">${esc(tid(t))}</span>${t.priority ? '<span class="pt-pr p-' + PRIO.indexOf(t.priority) + '">' + esc(t.priority) + '</span>' : ''}${t.due || t.eta ? '<span class="kb-d' + (late(t) ? ' late' : '') + '">' + esc(V.fmtDate ? V.fmtDate(t.due || t.eta) : (t.due || t.eta)) + '</span>' : ''}<span class="spacer"></span>${ini ? '<span class="kb-av" title="' + esc(who(t.owner)) + '">' + esc(ini) + '</span>' : '<span class="kb-av none" title="Unassigned"></span>'}</div>
         ${can ? '<select class="kb-mv" data-change="tkMoveSel" data-id="' + esc(t.id) + '" aria-label="Move ' + esc(tid(t)) + ' to">' + opt(STATUS, t.status) + '</select>' : ''}</article>`; };
     const lane = (title, ts) => `<div class="kb-lane">${title ? '<h3 class="kb-lh">' + esc(title) + ' <span>' + ts.length + '</span></h3>' : ''}<div class="kb-cols">${STATUS.map(st => { const c = ts.filter(t => t.status === st).sort((a, b) => prank(a) - prank(b) || (a.n || 0) - (b.n || 0));

@@ -57,7 +57,7 @@ const rows = id => [...(store.get('tsg.' + pid) || new Map()).values()].map(x =>
 
 await t('the two tools are in work.json, need a project, and nothing in work.json applies a suggestion', () => {
   const raw = fs.readFileSync(new URL('../work/work.json', import.meta.url), 'utf8'); const all = JSON.parse(raw).mcp.tools; const names = all.map(x => x.name); assert.equal(new Set(names).size, names.length);
-  const x = all.find(y => y.name === 'task_tracking'); assert.ok(x, 'task_tracking'); assert.deepEqual(x.input_schema.required, ['action', 'project']); assert.deepEqual(x.input_schema.properties.action.enum, ['evidence', 'save']); assert.ok(x.input_schema.properties.suggestions, 'save takes suggestions'); assert.ok(!x.confirm);
+  const x = all.find(y => y.name === 'task_tracking'); assert.ok(x, 'task_tracking'); assert.deepEqual(x.input_schema.required, ['action', 'project']); assert.deepEqual(x.input_schema.properties.action.enum, ['evidence', 'save', 'reply']); assert.ok(x.input_schema.properties.suggestions, 'save takes suggestions'); assert.ok(!x.confirm);
   assert.ok(!names.some(x => /(accept|apply).*suggest|suggest.*(accept|apply)/i.test(x)), 'there is no tool that accepts a suggestion'); assert.equal(JSON.stringify(JSON.parse(raw), null, 1).replace(/\n/g, '\r\n') + '\r\n', raw, 'the 1-space CRLF layout is kept');
 });
 await t('task_evidence: open tasks with their ids, overdue first, plus changes, UAT, minutes and sign-offs, all marked as data', async () => {
@@ -135,5 +135,19 @@ await t('a project holds at most 100 waiting suggestions; accepted and dismissed
 await t('deleting a project for good removes its suggestions too', async () => {
   const p3 = (await as(SAM, 'POST', '/api/projects', { name: 'To delete', customer: 'Acme' })).data.project.id; await tool(SAM, 'save_task_suggestions', { project: p3, suggestions: [{ action: 'create', fields: { title: 'x' }, reason: 'r', source: SRC }] }); assert.equal(store.get('tsg.' + p3).size, 1);
   const src = fs.readFileSync(new URL('../work/server/api.mjs', import.meta.url), 'utf8'); assert.ok(src.includes("'tsg.' + P.id"), 'the delete list names tsg.<project>'); assert.ok(!/KINDS = \[[^\]]*'tsg'/.test(src), 'tsg is not an item kind');
+});
+await t('task_tracking reply (Otto in Teams): only the task owner answers, approvals stay in the Studio, a Teams button runs as the clicker, and the auto block survives', async () => {
+  const mk = (id, data) => as(SAM, 'PUT', `/api/projects/${pid}/items/task/${id}`, { data: Object.assign({ status: 'To Do', owner: KIM, type: 'UAT Task' }, data) });
+  for (const [id, d] of [['r1', { title: 'Send the asset file' }], ['r2', { title: 'Approve the BRD', type: 'BRD Task' }], ['r3', { title: 'Check the report' }], ['r4', { title: 'Write test cases', src: { type: 'auto', ref: 'cover:wo' }, auto: { key: 'cover:wo', rule: 'cover', view: 'delivery', at: 'x' } }]]) assert.equal((await mk(id, d)).status, 200, id);
+  assert.deepEqual([(await taskData_('r4')).auto.key, (await taskData_('r4')).src.type], ['cover:wo', 'auto'], 'the auto block and source survive the normal save');
+  const reply = (who, body, headers) => as(who, 'POST', '/api/', body, headers || { 'x-work-mcp': '1', 'x-work-mcp-tool': 'task_tracking' });
+  const other = await reply(SAM, { action: 'reply', project: pid, taskId: 'r1', status: 'Done', text: 'sent' }); assert.equal(other.status, 403); assert.match(other.data.error, /Only the owner/); assert.equal((await taskData_('r1')).status, 'To Do');
+  assert.equal((await reply(KIM, { action: 'reply', project: pid, taskId: 'r1', status: 'Blocked' })).status, 400, 'blocked needs words');
+  const ok = await reply(KIM, { action: 'reply', project: pid, taskId: 'T-' + (await taskData_('r1')).n, status: 'Done', text: 'File sent to the customer' }); assert.equal(ok.status, 200, JSON.stringify(ok.data)); const r1 = await taskData_('r1'); assert.deepEqual([r1.status, r1.completion], ['Done', 'File sent to the customer']); assert.match(r1.comments.at(-1).text, /Reply from .*Done.*File sent/);
+  assert.equal((await reply(KIM, { action: 'reply', project: pid, taskId: 'r1', status: 'Done', text: 'again' })).status, 409);
+  const appr = await reply(KIM, { action: 'reply', project: pid, taskId: 'r2', status: 'Done', text: 'ok' }); assert.equal(appr.data.needsStudio, true); assert.equal((await taskData_('r2')).status, 'To Do');
+  const btn = await as(KIM, 'POST', '/api/', { tool: 'task_reply', project: pid, taskId: 'r3', status: 'Done', text: 'Marked done', via: 'teams' }, { 'x-work-teams-action': '1' }); assert.equal(btn.status, 200, JSON.stringify(btn.data)); assert.match(btn.data.text, /is now Done/); assert.equal((await taskData_('r3')).status, 'Done');
+  assert.ok((await as(KIM, 'POST', '/api/', { tool: 'create_ticket', project: pid, subject: 'x' }, { 'x-work-teams-action': '1' })).status >= 400, 'a button can run task_reply only');
+  assert.equal((await reply(KIM, { action: 'reply', project: pid, taskId: 'r4', status: 'Done', text: 'written' })).status, 200); assert.equal((await taskData_('r4')).auto.resolvedBy, 'person', 'a task closed by its owner is never reopened by the engine');
 });
 console.log(n + ' task suggestion checks passed');

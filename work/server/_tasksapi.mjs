@@ -83,6 +83,19 @@ export function installTaskTracking(d) {
         pendingSuggestions: sug.filter(r => r.value && r.value.status === 'pending').length,
         note: 'Propose changes with save_task_suggestions: each one needs a reason and a source (type, ref, quote). They are stored unapproved; a person accepts or dismisses each on the Tasks page. A statement made in a call never closes a task by itself. Tasks marked suggestionWaiting already have a proposal; do not repeat it.' };
     },
+    /** the owner of a task answers it: Done, Blocked or In Progress, with their words kept as a comment. Only the owner can (the identity comes from Teams or Claude sign-in, never from the text). Approvals and sign-offs are never closed this way. */
+    async task_reply(s, b) {
+      const p = await pickProject(s, b.project); await access(s, p.id); const want = String(b.taskId || b.task || '').trim(); const num = /^t?-?(\d{1,6})$/i.exec(want); const all = (await itemsOf(p.id, 'task').catch(() => [])).filter(live);
+      const cur = all.find(r => r.id === want) || (num && all.find(r => Number((r.data || {}).n) === Number(num[1]))); if (!cur) throw new HttpError(404, 'There is no task ' + cut(want, 40) + ' in this project.');
+      const d = cur.data || {}; const label = 'T-' + (d.n || '?'); if (String(d.owner || '').trim().toLowerCase() !== String(s.email || '').trim().toLowerCase()) throw new HttpError(403, 'Only the owner of a task can answer for it. ' + label + ' belongs to ' + (d.owner || 'nobody') + '.');
+      if (DONE_RE.test(String(d.status || ''))) throw new HttpError(409, label + ' is already ' + d.status + '.');
+      const st = String(b.status || '').trim(); if (st && !['Done', 'Blocked', 'In Progress'].includes(st)) throw new HttpError(400, 'status must be Done, Blocked or In Progress (or leave it out to only add a note).'); const words = cut(String(b.text || '').replace(/\s+/g, ' ').trim(), 600);
+      if (st === 'Blocked' && !words) throw new HttpError(400, 'Say what is blocking it.'); if (!st && !words) throw new HttpError(400, 'Give a status or some words.');
+      if (st === 'Done' && /approv|sign-?off|go-?live|handover/i.test(String(d.type || '') + ' ' + String(d.title || ''))) return { task: label, status: d.status, message: label + ' is an approval or sign-off, so it is closed in Delivery Studio only. Your words were not saved as a closure.', needsStudio: true };
+      const next = Object.assign({}, d, st ? { status: st } : {}, st === 'Done' ? { completion: words || 'Reported done by the owner in Teams.' } : {}, st === 'Blocked' ? { blocker: words } : {}, { comments: (Array.isArray(d.comments) ? d.comments : []).concat([{ text: 'Reply from ' + (b.via === 'teams' ? 'Teams' : 'Otto or Claude') + (st ? ' (' + st + ')' : '') + ': ' + (words || 'no words'), internal: true }]) });
+      await viaApp('PUT', '/api/projects/' + p.id + '/items/task/' + cur.id, '', Object.assign({ data: next }, Number.isInteger(cur.version) ? { baseVersion: cur.version } : {})); await audit(p.id, s.id, 'task-reply', label + ' ' + (st || 'note'));
+      return { task: label, status: st || d.status, message: label + (st ? ' is now ' + st + '.' : ': note saved.') + ' Delivery Studio is updated.' };
+    },
     async save_task_suggestions(s, b) {
       const p = await pickProject(s, b.project); const r = await ops.save(s, p.id, b.suggestions);
       return { project: p.name, stored: r.stored, results: r.results, note: 'Stored unapproved. A person accepts or dismisses each on the Tasks page in Delivery Studio (Claude suggestions); nothing was changed in the task register. A duplicate of an earlier suggestion, or one a person dismissed, is not stored again.' };
