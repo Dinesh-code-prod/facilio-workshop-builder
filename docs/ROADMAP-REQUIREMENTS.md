@@ -465,6 +465,8 @@ Idea: a Facilio-branded bot that joins customer calls, records live transcripts,
 
 **E22. Stage 4 plan, UAT guide, FTR and Comet (user, 7 Nov 2026): `docs/reference/STAGE4-UAT-FTR-PLAN-2026-11-07.md`.** Found: UAT test cases, the UAT guide HTML, the FTR checklist and workbooks and delivery readiness already exist, but nothing starts test cases from the stage 3 solution, nothing links requirement to test case to FTR check, and Comet is not used. Plan, manual first: test cases started from the solution (no Claude), a coverage view, FTR from the same data, optional Comet cards (a link per key scenario, shown inside Studio), a stage 4 status board. Six steps; none started; three decisions for the user.
 
+**E23. Stages 5 to 8 plan (user, 7 Nov 2026): `docs/reference/STAGES5-8-PLAN-2026-11-07.md`.** Direction: take the information the older tabs hold (records, results, links) into rebuilt pages, not their typed checklists. Step 0 done (stage 4 and 5 tabs shown in the menu); Go-live page, Hypercare and Handover from the data, Stage 5 tidy are planned, not built; three decisions for the user.
+
 ## Progress log (add a line each time something is finished)
 | Date | Item | Deploy | Not checked |
 |---|---|---|---|
