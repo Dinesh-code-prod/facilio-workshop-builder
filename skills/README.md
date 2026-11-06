@@ -5,6 +5,7 @@ Small add-ons for the team's own Claude (Claude Desktop or claude.ai). Delivery 
 | Skill | What it does |
 |---|---|
 | facilio-solution-document-builder | Builds the client-ready Solution Document (Word) of a Facilio org from its package ZIP, checking that every configured item is covered. Made by Dinesh R. Needs Graphviz, LibreOffice and poppler on the computer |
+| guidebook-builder | Writes a paired User Guide and Admin Guide for any product feature in a fixed structure and tone (it carries Facilio product patterns, a question bank, templates and a tone guide) |
 | video-to-user-guide | Turns a recorded walkthrough (and what was said) into accurate step-by-step guide text |
 | demo-video | Plans and builds a product demo video |
 | ui-mockup-video | Builds an animated product screen from screenshots and renders it |

@@ -18,5 +18,6 @@ await t('the connector declares the action, the skill ships as a folder and a zi
   const j = JSON.parse(fs.readFileSync(new URL('../work/work.json', import.meta.url), 'utf8')); const pj = j.mcp.tools.find(x => x.name === 'project_jobs').input_schema.properties; assert.ok(pj.action.enum.includes('file_urls') && pj.fileId); assert.ok(j.mcp.tools.length <= 40);
   assert.ok(fs.existsSync(new URL('../skills/facilio-solution-document-builder/SKILL.md', import.meta.url)) && fs.existsSync(new URL('../skills/facilio-solution-document-builder/scripts/extract_package.py', import.meta.url))); assert.ok(fs.statSync(new URL('../public/skills/facilio-solution-document-builder.zip', import.meta.url)).size > 10000);
   assert.match(fs.readFileSync(new URL('../src/claudeskills.js', import.meta.url), 'utf8'), /'facilio-solution-document-builder'/);
+  assert.ok(fs.existsSync(new URL('../skills/guidebook-builder/SKILL.md', import.meta.url)) && fs.statSync(new URL('../public/skills/guidebook-builder.zip', import.meta.url)).size > 5000); assert.match(fs.readFileSync(new URL('../src/claudeskills.js', import.meta.url), 'utf8'), /'guidebook-builder'/);
 });
 console.log(n + ' solution document checks passed');

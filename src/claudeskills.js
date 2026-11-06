@@ -8,6 +8,7 @@
   // [name, what it does, where it comes from (empty = made for this team)]
   const SKILLS = [
     ['facilio-solution-document-builder', 'Builds the client-ready Solution Document (Word) of a Facilio org from its package ZIP: every module explained, with flows, fields, automations and role access, and a check that nothing is missed. Used on the Handover page.', ''],
+    ['guidebook-builder', 'Writes a paired User Guide and Admin Guide for any product feature, in a fixed structure and tone, from your notes, a Notion page or a description.', ''],
     ['video-to-user-guide', 'Turns a recorded walkthrough (and what was said in it) into accurate step-by-step guide text.', ''],
     ['demo-video', 'Plans and builds a product demo video: scenes, screen recordings, voice-over and final render.', 'https://github.com/Leihyn/claude-demo-video-skill'],
     ['ui-mockup-video', 'Builds an animated product screen from screenshots, with cursor moves, typing and clicks, and renders it as a video.', ''],
@@ -21,7 +22,7 @@
     ['brag', 'Turns a project website into a short, shareable launch video.', 'https://github.com/latent-spaces/brag']
   ];
   // the line added to every prompt that asks Claude for something (the server adds the same line to every Claude prompt it builds)
-  V.skillsPromptLine = 'SKILLS (optional): if your Claude has these skills installed, use them where they fit: facilio-solution-document-builder (the Solution Document of an org from its package ZIP), excel-analysis (spreadsheets and .xlsx files), video-to-user-guide (steps from a recorded walkthrough), demo-video, ui-mockup-video, video-editing and the remotion skills (building and rendering a video), brag (a short launch video of a project website), graphify (how a codebase or a set of documents fits together). If a skill is not installed, carry on without it. Whatever you use, keep the reply format this prompt asks for.';
+  V.skillsPromptLine = 'SKILLS (optional): if your Claude has these skills installed, use them where they fit: facilio-solution-document-builder (the Solution Document of an org from its package ZIP), guidebook-builder (a User Guide and an Admin Guide for a feature), excel-analysis (spreadsheets and .xlsx files), video-to-user-guide (steps from a recorded walkthrough), demo-video, ui-mockup-video, video-editing and the remotion skills (building and rendering a video), brag (a short launch video of a project website), graphify (how a codebase or a set of documents fits together). If a skill is not installed, carry on without it. Whatever you use, keep the reply format this prompt asks for.';
   V.skillsNote = () => `<div class="notice" style="margin:10px 0"><span><b>Tip:</b> add a few skills to your Claude and it does better work here. <button type="button" class="btn sm" data-act="skillsHelp">Install the skills</button></span></div>`;
 
   const base = () => new URL('skills/', root.location.href).href;
