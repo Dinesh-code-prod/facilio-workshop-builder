@@ -36,3 +36,9 @@ What the team menu shows, what is hidden on purpose, and what left the menu. Not
 | Discover more entries (`showcase`) | `['showcase', 'Discover more entries']` in group Show Facilio | Discover more (`explore`), same label |
 
 To restore one: put its line back in the `items` list of its group in `NAV`, and add the id to `EXPOSED` if it should show.
+
+## Later on 7 Nov 2026 (user decision): deleted, not only hidden
+- **Deleted with their code:** Agent Setup, Connection & Data, Rules & Guardrails and Agent Testing (the four agent tabs; `src/agents.js` now keeps only the agent catalogue that the customer guides read), Guides & Video Studio (`src/studio.js`) and Bring your project in (`src/transition.js`, `src/transitionlogic.js`, `tests/org_transition.mjs`). The customer-view page "Facilio AI Agents" also left both menus. They can be recovered from the git history before commit "Delete the agent, video studio and bring-your-project-in tabs".
+- **Now shown:** Templates (`templates`), Tabs & Layouts (`workspace`), Facilio tools (`webframe`), Privacy & data (`privacy`), with Claude setup and Team Guide: the whole Help and Settings area.
+- **Templates and Tabs & Layouts updated to the current setup:** the BRD, UAT, go-live, hypercare and handover outlines follow the Osus-style BRD, the readiness checks, the carry-over from UAT and the Solution Document; the layout presets are now "Full 8-stage workspace", "Design focus" and "Launch and handover".
+- **Still hidden:** the Show Facilio group (Facilio Screens, Product Tour, Dashboard Gallery, Discover more).

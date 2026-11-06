@@ -55,8 +55,6 @@
       tiles.push(list('Needs attention', c.open.filter(c.late).slice(0, 3).map(a => row('governance', 'Overdue: ' + (a.text || 'action'), fd(a.due), 'bad')).concat(att.map(a => row(a.view || 'governance', a.t))).concat(lateT.slice(0, 2).map(t => row('tasks', t.title, 'overdue', 'bad'))).slice(0, 6), 'Nothing needs attention right now.'));
       tiles.push(list('Next 14 days', ev.slice(0, 6).map(e => row(e.view === 'overview' ? 'governance' : e.view, e.title, fd(e.date))), 'Nothing scheduled in the next 14 days.'));
       tiles.push(box(`<h3 class="bn-h">Sign-offs</h3><div class="bn-so">${[['brd', 'BRD'], ['uat', 'UAT'], ['golive', 'Go-live']].map(([id, l]) => `<div><b>${esc(l)}</b><em class="${soTone(c.sg(id).status)}">${esc(SO[c.sg(id).status] || 'Not due')}</em></div>`).join('')}</div><span class="bn-s">${c.crs.filter(x => ['Requested', 'Proposed'].includes(x.status)).length} change request(s) waiting</span>`, 'bn-w4'));
-      if (V.isAgentProject && V.isAgentProject()) { const d = F.doc('agentscope') || {}; const sel = d.sel || {}; const on = Object.values(sel).filter(x => x && x.on); const tests = on.flatMap(x => x.tests || []); const pass = tests.filter(t => t.result === 'Pass').length;
-        tiles.push(go('agents', `<span class="bn-l">AI agents</span><b class="bn-v">${on.length}</b><span class="bn-s">in scope · ${tests.length ? pass + ' of ' + tests.length + ' tests passed' : 'no tests yet'}</span>`, 'bn-k bn-w4')); }
     }
     return head + `<div class="page-body"><div class="bn">${tiles.join('')}</div></div>`; } };
 

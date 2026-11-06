@@ -11,8 +11,6 @@
   const PG = {
     cfginputs: ['The Configuration Hub keeps everything configured for this customer in one place, and is the last step before the BRD. What you write here also feeds guides, test plans and handover.',
       ['Overview: see system modules, custom modules, relationships, connected apps and what still needs work.', 'Modules: describe each custom module in a few words. System modules are listed so nothing is missed.', 'Module relationships: say how modules connect (for example a work order creates a purchase request).', 'Connected apps and tabs: list the apps and the tabs each role sees.', 'Checks: fix anything flagged as unclear or missing.', 'Then use the Draft documents panel to turn it into a guide, UAT plan, training outline or handover.'], 'Next: write the BRD Draft. Training & Guides and UAT use the same inputs.'],
-    vstudio: ['Write the brief for a video, a click-through walkthrough, a step-by-step guide or a training outline about one module. It reads the module\'s own fields and state flow, so the story matches what was built.',
-      ['Create: pick the module, what to make, who it is for and the length.', 'Review what the project knows about that module.', 'Copy the brief into your own Claude, or draft it here.', 'Product Tour and Story ideas: find the real screens and story ideas to show.'], ''],
     guidebuilder: ['Write the customer\'s written user guide, section by section, from the project\'s records. You review every section before it counts.',
       ['Start a guide and choose the modules and the readers.', 'Let the AI draft each section, or write it yourself.', 'Edit, then approve each section.', 'Add logos and export to Word or PDF.'], ''],
     vidguide: ['Turn a screen recording you already have into draft guide steps. The video stays on this computer.',
@@ -24,7 +22,6 @@
       ['Prepare the tester guide, so people know what to do.', 'Write or generate the test cases for each module.', 'Run them and log every problem on the Issues board.', 'Fix, retest and close the issues.', 'Tick the readiness checklist and get the UAT sign-off.'], 'Next: Go-live.'],
     dl_golive: ['Answers one question: are we ready to switch on? It counts what is still open (sign-offs, tests, issues, risks, checklist) and tells you plainly.',
       ['Read the Readiness verdict and its open points.', 'Work through the Go-live checklist.', 'Close the go-live actions.', 'When the verdict says Ready, go live.'], 'Next: Hypercare and handover.'],
-    agenttest: ['Checks the Facilio AI agents against questions you expect real users to ask, before they go live.', ['Pick an agent.', 'Run its test questions.', 'Mark each answer as acceptable or not.', 'Fix the agent and run again.'], ''],
     ftr: ['The FTR (first-time-right) report in Excel: a scenario list the customer\'s testers run, with results, kept together in one workbook.', ['Add or import the scenarios.', 'Run them and record results.', 'Export the workbook for sign-off.'], ''],
     kpi: ['KPI workbooks: the measures the customer will track once the system is live.', ['Choose the KPIs that matter.', 'Fill in the definitions and targets.', 'Export for the customer.'], '']
   };
@@ -45,7 +42,7 @@
 
   // ---------- Training & Guides: the path and the sources ----------
   // the four pages are four separate tabs: [page, name, what only this tab does, icon]
-  const TABS = [['vstudio', 'Guides & Video Studio', 'Briefs for videos, walkthroughs and training outlines', 'spark'], ['guidebuilder', 'User Guide Builder', 'The customer\'s written guide, Word or PDF', 'book'], ['vidguide', 'Video to Guide', 'Guide steps from a recording you already have', 'mic']];
+  const TABS = [['guidebuilder', 'User Guide Builder', 'The customer\'s written guide, Word or PDF', 'book'], ['vidguide', 'Video to Guide', 'Guide steps from a recording you already have', 'mic']];
   const count = k => { try { const n = k === 'guidebuilder' ? I().list('ugd').length : k === 'resources' ? I().list('pnote').length + I().list('res').length : 0; return n ? `<em>${n}</em>` : ''; } catch (e) { return ''; } };
   const logoState = () => { const d = F.doc('brddoc'); const l = (d && d.logos) || {}; return { facilio: !!(l.facilio && l.facilio.fileId), customer: !!(l.customer && l.customer.fileId) }; };
   function sources() {
@@ -68,6 +65,6 @@
   ACT.pdPrint = () => V.range.printLive(document.querySelector('.page-body'), ((S.project && S.project.name) || 'Project') + ' · Dashboard');
   wrap('projdash', 'projdash', () => (V.isCustomer() ? '' : '<div class="row no-print" style="justify-content:flex-end;margin:0 0 10px"><button class="btn sm" data-act="pdPrint" title="Print the whole dashboard, or save it as a PDF">Export dashboard as PDF</button></div>'));
   const train = k => () => V.trainTop(k) + V.pageGuide(k) + (k === 'guidebuilder' ? V.trainSources() : '');
-  wrap('vstudio', 'vstudio', train('vstudio')); wrap('guidebuilder', 'guidebuilder', train('guidebuilder')); wrap('vidguide', 'vidguide', train('vidguide'));
-  wrap('cfginputs', 'cfginputs', () => V.pageGuide('cfginputs')); wrap('agenttest', 'agenttest', () => V.pageGuide('agenttest')); wrap('ftr', 'ftr', () => V.pageGuide('ftr')); wrap('kpi', 'kpi', () => V.pageGuide('kpi'));
+  wrap('guidebuilder', 'guidebuilder', train('guidebuilder')); wrap('vidguide', 'vidguide', train('vidguide'));
+  wrap('cfginputs', 'cfginputs', () => V.pageGuide('cfginputs')); wrap('ftr', 'ftr', () => V.pageGuide('ftr')); wrap('kpi', 'kpi', () => V.pageGuide('kpi'));
 })(typeof window !== 'undefined' ? window : globalThis);

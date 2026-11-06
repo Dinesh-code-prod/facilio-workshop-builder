@@ -9,12 +9,12 @@
   const KIND = { workspace: 'Workspace layout', ftr: 'FTR workbook', kpi: 'KPI definitions', brd: 'BRD structure', uat: 'UAT plan', guide: 'User guide', golive: 'Go-live review', hypercare: 'Hypercare report', handover: 'Handover pack', closure: 'Closure report', wsr: 'Weekly status report', monthly: 'Monthly report', other: 'Other document' };
   const TEXT = ['brd', 'uat', 'guide', 'golive', 'hypercare', 'handover', 'closure', 'wsr', 'monthly', 'other'];
   const SKEL = {
-    brd: '# 1. Purpose and background\n# 2. Scope (in / out)\n# 3. Business processes and requirements\n# 4. Roles and permissions\n# 5. Integrations and data migration\n# 6. Assumptions, risks and open points\n# 7. Sign-off',
-    uat: '# 1. Objectives and scope\n# 2. Entry criteria\n# 3. Test scenarios by module\n# 4. Roles and test data\n# 5. Defect handling\n# 6. Exit criteria and sign-off',
+    brd: '# Version history and document approvals\n# 1. Introduction\n# 2. Project overview\n# 3. Project scope (platform capabilities, portals and mobile apps, key documents, stakeholders)\n# 4. Data onboarding scope and licence\n# 5. Functional modules (per module: 1 Functional requirements, 2 Confirmations, 3 Solution proposal, 4 Facilio modules involved, 5 Constraints, 6 Process state flow)\n# 6. General requirements\n# 7. KPIs and the SLA matrix\n# 8. Types of users and role matrix\n# 9. Field list\n# 10. Reports and dashboards\n# 11. Feature availability in the mobile application\n# 12. Conclusion',
+    uat: '# 1. Objectives and scope\n# 2. Entry criteria\n# 3. Test scenarios by module (drafted from the BRD requirements, flows, KPIs and SLA matrix)\n# 4. General requirements\n# 5. Roles and test data\n# 6. Defect handling\n# 7. Exit criteria and sign-off',
     guide: '# 1. Introduction\n# 2. Getting started\n# 3. Module guides (steps, screens, tips)\n# 4. Roles and what each can do\n# 5. Frequently asked questions',
-    golive: '# 1. Readiness summary\n# 2. Configuration and data checks\n# 3. UAT and defect status\n# 4. Training and communication\n# 5. Cut-over plan\n# 6. Risks and rollback\n# 7. Go / no-go decision',
-    hypercare: '# 1. Period and contacts\n# 2. Issues raised and status\n# 3. Fixes and changes\n# 4. Open items\n# 5. Exit criteria',
-    handover: '# 1. Delivered scope\n# 2. Configuration summary\n# 3. Known issues\n# 4. Support model and contacts\n# 5. Documents and access\n# 6. Acceptance',
+    golive: '# 1. Readiness summary (requirement coverage, test results, open issues, BRD review, guides)\n# 2. Configuration and data checks\n# 3. UAT and defect status\n# 4. Training and communication\n# 5. Cut-over plan\n# 6. Risks and rollback\n# 7. Go / no-go decision',
+    hypercare: '# 1. Period and contacts\n# 2. Carried over from UAT (open issues and failed test cases)\n# 3. Issues raised and status\n# 4. Fixes and changes\n# 5. Exit criteria',
+    handover: '# 1. Delivered scope\n# 2. Solution document (built from the org package)\n# 3. Configuration summary\n# 4. Known issues\n# 5. Support model and contacts\n# 6. Documents and access\n# 7. Acceptance',
     closure: '# 1. Objectives and outcome\n# 2. Delivered versus planned\n# 3. Lessons learned\n# 4. Open items and ownership\n# 5. Customer feedback',
     wsr: '# Progress this week\n# Planned next week\n# Risks and issues\n# Decisions needed\n# Dependencies',
     monthly: '# Summary\n# Milestones\n# Progress by workstream\n# Risks, issues and changes\n# Next month', other: '# Section 1\n# Section 2'
@@ -169,7 +169,7 @@
       return `<div class="page-header"><div class="t"><h1>${esc(c.label)}</h1></div><div class="row">${canEdit() ? `<button class="btn" data-act="wsEditPage" data-id="${esc(id)}">${ico('edit') || ''}Edit page</button>` : ''}</div></div><div class="page-body"><div class="card" style="padding:18px">${V.md ? V.md(c.body || '') : esc(c.body || '')}${c.body ? '' : '<span class="muted">This page is empty. Use Edit page to add content.</span>'}</div></div>`;
     }
   };
-  const PRESETS = { full: ['Full workspace (everything)', []], lean: ['Lean delivery (hide planning extras)', ['dashreport', 'contracts', 'kickoff', 'dashboards', 'timeline']], report: ['Reporting and handover (hide configuration and requirements)', ['modules', 'flow', 'roles', 'transcripts', 'usecases', 'checks', 'brd']] };
+  const PRESETS = { full: ['Full 8-stage workspace (everything shown)', []], design: ['Design focus (hide launch and support stages)', ['guides', 'guidebuilder', 'vidguide', 'hypercare', 'handover', 'golive']], launch: ['Launch and handover (hide requirement and design work)', ['rsplan', 'rstrans', 'whiteboard', 'rschecks', 'solution', 'modules', 'flow', 'mockup', 'roles', 'notifications', 'cfginputs', 'brd']] };
   const gIcon = g => (V.navIcon ? V.navIcon(g.ik) : ico(g.icon || 'flag'));
   const grip = '<span class="tl-grip" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>';
   function layout() { return compute(V.navBase(), ws(), true, { mobile: false }); }
