@@ -1,0 +1,21 @@
+// Solution status (src/solution.js): what is recorded per module in scope, which parts are missing, an empty project says what to do, customers see nothing, text is escaped.
+import assert from 'node:assert/strict'; import { createRequire } from 'node:module';
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let mods = []; let cust = false;
+globalThis.FWB = { S: { ws: { requirements: [], rolePermOps: {}, roles: [], flows: {}, crossLinks: {}, notifications: [], questions: [] } }, esc, doc: () => ({ items: [] }), allModules: () => mods, effFields: () => [], formsForModule: () => [] };
+globalThis.FWBViews = { isCustomer: () => cust };
+createRequire(import.meta.url)('../src/solution.js'); const V = globalThis.FWBViews; const { status, PARTS } = V.solutionLogic;
+assert.deepEqual(PARTS.map(p => p[0]), ['requirements', 'fields', 'forms', 'flows', 'actions', 'notifications', 'access', 'apps', 'open']);
+const full = { name: 'workorder', label: 'Work Order', requirements: { confirmed: 2, draft: 1 }, fields: 3, forms: 1, flows: 1, actions: 2, notifications: 4, access: 1, apps: 1, open: 2 };
+const none = { name: 'asset', label: 'Asset <b>X</b>', requirements: { confirmed: 0, draft: 0 }, fields: 0, forms: 0, flows: 0, actions: 0, notifications: 0, access: 0, apps: 0, open: 0 };
+const [a, b] = status([full, none]);
+assert.deepEqual(a.missing, [], 'nothing is missing when everything is recorded'); assert.equal(a.text.requirements, '2 confirmed, 1 draft'); assert.equal(a.text.access, '1 role'); assert.equal(a.text.open, '2 open');
+assert.deepEqual(b.missing, ['requirements', 'fields', 'forms', 'flows', 'actions', 'notifications', 'access', 'apps'], 'open points never count as missing'); assert.equal(b.text.fields, '');
+assert.equal(status([{ name: 'm', label: 'M', requirements: { confirmed: 0, draft: 2 }, fields: 0, forms: 0, flows: 0, actions: 0, notifications: 0, access: 0, apps: 0, open: 0 }])[0].done.requirements, false, 'a draft requirement is not a confirmed one');
+assert.deepEqual(status(null), []);
+mods = []; assert.ok(V.solution.html().includes('No module is in scope yet') && V.solution.html().includes('data-view="modules"'), 'an empty project says what to do');
+mods = [{ name: 'asset', label: 'Asset <b>X</b>', inScope: true }, { name: 'out', label: 'Out', inScope: false }]; const h = V.solution.html();
+assert.ok(h.includes('0/1') && h.includes('Asset &lt;b&gt;X&lt;/b&gt;') && !h.includes('<b>X</b>') && !h.includes('>Out<'), 'only modules in scope, escaped, with counts');
+assert.ok(h.includes('8 of 8 parts missing'));
+cust = true; assert.equal(V.solution.html(), '', 'customers never see it');
+console.log('6 solution status checks passed');

@@ -36,3 +36,5 @@ Scope (modules in scope, confirmed) → Solution per module (requirements, forms
 
 ## Direction update (7 Nov 2026): keep it light
 The way the team works today is: collect the requirements, put the transcripts into Claude, ask it to draft the BRD, then edit. Stage 3 follows that: manual capture first, one simple "ask Claude" step, a person edits everything, no long process. So: step 3 above (agreed records for buttons, notifications, SLA and permissions) is MANUAL FIRST (plain forms the team fills), with at most a prompt the team can open in Claude when they want help; no more per-item proposal jobs are added. Existing proposal jobs stay but are optional. A scope confirmation tick was NOT added to the BRD checklist, to avoid more process.
+
+- DONE 7 Nov: step 2, Solution status page (src/solution.js), read only, first item of "3. Mockup & BRD"; per module in scope: requirements, fields, forms, state flow, across modules, notifications, access, connected apps, open points.
