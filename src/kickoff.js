@@ -46,60 +46,45 @@
   }
 
   // ---------- panels ----------
-  const STEPS = [['start', 'Find the contract'], ['extract', 'Check the extraction'], ['review', 'Review the kick-off'], ['approved', 'Approved']];
-  function strip(st) {
-    const i = Math.max(0, STEPS.findIndex(s => s[0] === (st === 'pulling' ? 'start' : st)));
-    return `<ol class="ko-steps" aria-label="Progress">${STEPS.map((s, n) => `<li class="${n < i ? 'done' : n === i ? 'on' : ''}"${n === i ? ' aria-current="step"' : ''}><span>${n + 1}</span>${esc(s[1])}</li>`).join('')}</ol>`;
-  }
-  function msaCard(p, hasFile) {
-    const k = K(); const dis = ro() ? ' disabled' : ''; const jr = L().jobRows(k.jobs); const open = jr.find(j => j.open && j.kind === 'pull_msa'); const asking = jr.find(j => j.status === 'needs_input' && j.kind === 'pull_msa');
-    const status = p ? 'Claude drafted the kick-off below from the contract. Review it and approve once.'
-      : asking ? 'Claude needs one answer from you (see Claude jobs).'
-      : open ? 'Claude is reading the contract. This page fills in by itself; you do not need to press anything.'
-      : hasFile || k.msa ? 'The contract is uploaded. Claude reads it by itself within a few minutes.' : 'Upload the signed MSA. Claude reads it and drafts the kick-off deck and the project plan by itself.';
-    return `<section class="card ko-card" aria-label="Contract"><div class="card-h"><b>Contract (MSA)</b></div><div class="card-b"><p>${esc(status)}</p>
-      <div class="row ko-btns"><button type="button" class="btn sm primary" data-act="uploadMsa"${dis}>${p || hasFile ? 'Upload a different MSA' : 'Upload the MSA'}</button></div></div></section>`;
-  }
-  // The steps of one job, in plain words, with who and when, so nobody has to guess where Claude is: it works on a person's own computer, not in a chat.
-  function flowHtml(j) {
-    if (j.status === 'cancelled') return ''; const who = String(j.claimedBy || '').split('@')[0]; const fin = ['done', 'needs_input', 'failed'].includes(j.status); const pull = j.kind === 'pull_msa';
-    const steps = [
-      ['Request sent', when(j.at), 'done'],
-      ['Claude picks it up', j.claimedAt ? when(j.claimedAt) + (who ? ', on ' + who + "'s computer" : '') : 'within 5 minutes, at Claude\'s next check', j.claimedAt ? 'done' : 'now'],
-      [pull ? 'Claude reads the contract and drafts the kick-off' : 'Claude applies your change', j.status === 'claimed' ? (j.progress || 'working now…') : fin ? '' : 'not started', j.status === 'claimed' ? 'now' : fin ? 'done' : 'todo'],
-      [j.status === 'done' ? 'Draft ready: review and approve below' : j.status === 'needs_input' ? 'Claude needs your answer' : j.status === 'failed' ? 'Claude could not finish' : 'Draft ready for your approval', j.status === 'done' ? when(j.finishedAt) : j.status === 'failed' ? j.summary : '', j.status === 'done' ? 'done' : j.status === 'needs_input' ? 'now' : j.status === 'failed' ? 'bad' : 'todo']
-    ];
-    return '<ol class="ko-flow" aria-label="Steps of this job">' + steps.map(x => '<li class="' + x[2] + '"><b>' + esc(x[0]) + '</b>' + (x[1] ? ' <span class="xs muted">' + esc(x[1]) + '</span>' : '') + '</li>').join('') + '</ol>';
-  }
-  // A chat-style panel for the latest "pull MSA" job: what the person did, what Claude is doing, and what will come out. Built only from the job record; nothing is invented.
+  // ---------- Contract intake: one conversation (Studio, Claude and the person) and the four things Claude prepares ----------
+  const msaFile = () => { const m = (V.plannerDoc && V.plannerDoc() || {}).msa; return m && m.name ? m.name : ''; };
   function chatCard(p) {
-    const k = K(); const j = L().jobRows(k.jobs).filter(x => x.kind === 'pull_msa' && x.status !== 'cancelled')[0]; if (!j) return '';
-    const raw = (k.jobs || []).find(x => x.id === j.id) || {}; const file = (/uploaded file: (.+?)(?: \(text kept|$)/.exec((raw.params || {}).note || '') || [])[1] || 'the MSA';
-    const who = String(j.claimedBy || '').split('@')[0]; const msgs = [['you', 'You uploaded ' + file + '.', j.at]];
-    if (j.status === 'waiting') msgs.push(['sys', "Waiting for Claude's next check. It looks every 5 minutes, so this takes up to 5 minutes to start.", '']);
-    if (j.claimedAt) msgs.push(['claude', 'I have your contract' + (who ? ' (working on ' + who + "'s computer)" : '') + '. I will read it page by page.', j.claimedAt]);
-    if (j.status === 'claimed') msgs.push(['claude', j.progress || 'Reading the contract…', '', true]);
-    if (j.status === 'needs_input') msgs.push(['claude', 'I need one answer from you: ' + j.questions.join(' '), j.finishedAt]);
-    if (j.status === 'failed') msgs.push(['bad', 'I could not finish: ' + (j.summary || 'unknown reason'), j.finishedAt]);
-    if (j.status === 'done') msgs.push(['claude', 'Done. ' + (p ? 'The extraction, the project plan and the kick-off deck are drafted below. Please review them and approve once.' : (j.summary || 'The extraction is saved.')), j.finishedAt]);
-    const working = j.status === 'claimed' ? 'now' : j.status === 'done' || p ? 'done' : 'todo';
-    const outs = [['Extraction of the MSA', 'scope, modules, dates, customer duties'], ['Project plan', 'timeline, Gantt and milestones, in the Project Plan tab too'], ['Kick-off deck', 'the customer presentation, with speaker notes']].map(o => '<li class="' + working + '"><b>' + esc(o[0]) + '</b> <span class="xs muted">' + esc(o[1]) + '</span></li>').join('')
-      + '<li class="later"><b>Requirement session schedule</b> <span class="xs muted">comes in the next stage, from the approved scope</span></li>';
-    return '<section class="card ko-card ko-chat" aria-label="What Claude is doing"><div class="card-h"><b>Claude is preparing your project</b>' + (j.open ? '<span class="xs muted">You can leave this page. It keeps working.</span>' : '') + '</div><div class="card-b ko-chat-grid">'
-      + '<div class="ko-msgs" role="log" aria-live="polite">' + msgs.map(m => '<div class="ko-msg ' + m[0] + '"><div class="ko-bub">' + esc(m[1]) + (m[3] ? '<span class="ko-typing" aria-hidden="true"><i></i><i></i><i></i></span>' : '') + '</div>' + (m[2] ? '<div class="xs muted">' + esc(when(m[2])) + '</div>' : '') + '</div>').join('') + '</div>'
-      + '<div><div class="xs muted" style="margin-bottom:6px">What you will get</div><ul class="ko-outs">' + outs + '</ul></div></div></section>';
-  }
-  function jobsCard() {
-    const k = K(); const rows = L().jobRows(k.jobs); const dis = ro() ? ' disabled' : '';
-    const list = rows.slice(0, 8).map(j => `<div class="ko-job ko-${esc(j.status)}"><div class="row"><b>${esc(j.label)}</b>${tag(j.status === 'done' ? 'ok' : j.status === 'failed' ? 'red' : j.open ? 'tbc' : 'low', j.statusLabel)}<span class="xs muted">${esc(when(j.at))}</span>
-</div>
-        ${flowHtml(j)}
-        ${j.summary ? `<div class="small muted">${esc(j.summary)}</div>` : ''}
-        ${j.questions.length ? `<div class="ko-ask">${j.questions.map((q, i) => `<label class="f">${esc(q)}<textarea rows="2" maxlength="600" data-change="koAns" data-id="${esc(j.id)}" data-i="${i}"${dis}>${esc(((k.answers[j.id] || [])[i]) || '')}</textarea></label>`).join('')}
-          <button type="button" class="btn sm primary" data-act="koSend" data-id="${esc(j.id)}" data-n="${j.questions.length}"${dis}>Send my answer to Claude</button></div>` : ''}</div>`).join('');
-    const hint = 'Where is Claude? On your own computer, in the Claude app: open Scheduled, then Delivery Studio job queue, and look at its latest run. It checks this list every 5 minutes and it does not show up as a chat. The result appears on this page by itself.';
-    return `<section class="card ko-card" aria-label="Claude jobs"><div class="card-h"><b>Claude jobs</b></div><div class="card-b">
-      ${k.err ? `<div class="notice err small">${esc(k.err)}</div>` : ''}${k.jobs === null ? '<div class="empty">Loading…</div>' : list || '<div class="empty small">No jobs yet. A job appears here when you press a button that needs Claude.</div>'}${hint ? `<p class="xs muted">${esc(hint)}</p>` : ''}</div></section>`;
+    const k = K(); const j = L().jobRows(k.jobs).filter(x => x.kind === 'pull_msa' && x.status !== 'cancelled')[0]; const raw = j ? (k.jobs || []).find(x => x.id === j.id) || {} : {};
+    const file = (j && (/uploaded file: (.+?)(?: \(text kept|$)/.exec((raw.params || {}).note || '') || [])[1]) || msaFile() || ''; const who = j ? String(j.claimedBy || '').split('@')[0] : '';
+    const pk = F.doc('kickoff_pack'); const built = p && pk ? pk.builtAt : ''; const pl = F.doc('planner') || {}; const nSess = (pl.sessions || []).filter(x => x.fromPack === built && x.status !== 'optional').length; const sessNote = !nSess && p && Array.isArray(pl.sessionNotes) && pl.sessionNotes.length ? pl.sessionNotes[0] : '';
+    const pv = ((F.doc('plan') || {}).versions || [])[0]; const book = !!(pv && pv.source === 'kickoff' && pv.fromPack === built); const bookFailed = !!p && !book && S.ui.koPlanTried === built && !planBusy;
+    const slides = p && root.FWBKickoffDeck ? root.FWBKickoffDeck.build(p.deck, { fmt: dt }).slides.length : 0;
+    const extracted = !!p || (!!j && j.status === 'done'); const reading = !!j && j.status === 'claimed' && !extracted; const sessDone = nSess > 0 || !!sessNote; const approved = !!p && p.status === 'approved';
+    const st = (done, now) => done ? 'done' : now ? 'now' : 'todo'; const badge = approved ? 'Approved' : p ? 'Draft' : '';
+    const tiles = [
+      { label: 'Project plan', detail: p ? p.milestones.length + ' phases, ' + dt(p.window.start) + ' to ' + dt(p.window.end) : '', state: st(!!p, extracted && !p), badge, open: { label: 'Open', act: 'koOpen', attrs: { view: 'plan', t: 'wb' } } },
+      { label: 'Kick-off deck', detail: p ? slides + ' slides with speaker notes' : '', state: st(!!p, extracted && !p), badge, open: { label: 'Open', act: 'koOpen', attrs: { view: 'kickoff' } } },
+      { label: 'Requirement sessions', detail: nSess ? nSess + ' session' + (nSess === 1 ? '' : 's') + ', grouped by module' : sessNote, state: st(sessDone, !!p && !sessDone), badge: sessDone ? badge : '', open: { label: 'Open', act: 'koOpen', attrs: { view: 'plan', t: 'rs' } } },
+      { label: 'Plan workbook and timeline', detail: book ? 'in the Project Plan tab' : bookFailed ? 'could not be made, open Project Plan to retry' : '', state: book ? 'done' : bookFailed ? 'bad' : st(false, !!p), badge: book ? badge : '', open: { label: 'Open', act: 'koOpen', attrs: { view: 'plan', t: 'wb' } } }
+    ];
+    const msgs = [];
+    if (!j && !p && !file) msgs.push({ who: 'sys', text: 'Welcome. Upload the signed MSA below. Claude, running on your computer, reads it and prepares the project plan, the kick-off deck and the requirement sessions. You only review and approve.' });
+    if (file) msgs.push({ who: 'you', text: 'I uploaded ' + file + '.', at: j ? when(j.at) : '' });
+    if (j && j.status === 'waiting') msgs.push({ who: 'sys', text: 'Sent to Claude. It looks for new work every 5 minutes while your Claude app is open, so it can take up to 5 minutes to start.' });
+    if (j && j.claimedAt) msgs.push({ who: 'claude', text: 'I have your contract' + (who ? ' (working on ' + who + "'s computer)" : '') + '. I will read it page by page.', at: when(j.claimedAt) });
+    if (j && j.activity.length) j.activity.forEach((a, i, all) => msgs.push({ who: 'claude', text: a.text, at: when(a.at), typing: reading && i === all.length - 1 })); else if (reading) msgs.push({ who: 'claude', text: j.progress || 'Reading the contract…', typing: true });
+    if (j && j.status === 'needs_input') { const kk = K(); msgs.push({ who: 'claude', text: 'I need your help with one thing: ' + j.questions.join(' '), at: when(j.finishedAt), reply: { fields: j.questions.map((q, i) => ({ value: ((kk.answers[j.id] || [])[i]) || '', attrs: { change: 'koAns', id: j.id, i } })), send: { label: 'Send my answer', act: 'koSend', attrs: { id: j.id, n: j.questions.length } } } }); }
+    if (j && j.status === 'failed') msgs.push({ who: 'bad', text: 'I could not finish: ' + (j.summary || 'unknown reason') + ' Replace the MSA or upload it again to retry.', at: when(j.finishedAt) });
+    if (j && j.status === 'done' && !p) msgs.push({ who: 'claude', text: 'I finished reading the contract. Now I am preparing the project plan, the kick-off deck and the requirement sessions…', typing: true });
+    if (p) {
+      msgs.push({ who: 'claude', text: 'I finished reading the contract.', at: j ? when(j.finishedAt) : '' });
+      msgs.push({ who: 'claude', text: 'The project plan is ready: ' + tiles[0].detail + '.' });
+      msgs.push({ who: 'claude', text: 'The kick-off deck is prepared: ' + tiles[1].detail + '.' });
+      if (sessDone) msgs.push({ who: 'claude', text: nSess ? 'The requirement session plan is ready: ' + tiles[2].detail + '.' : 'No requirement sessions could be drafted: ' + sessNote }); else msgs.push({ who: 'claude', text: 'I am preparing the requirement sessions now…', typing: true });
+      if (book) msgs.push({ who: 'claude', text: 'The project plan workbook and timeline are ready in the Project Plan tab.' }); else if (bookFailed) msgs.push({ who: 'bad', text: 'The project plan workbook could not be made. Open the Project Plan tab to try again.' }); else if (sessDone) msgs.push({ who: 'claude', text: 'I am making the project plan workbook and the timeline now…', typing: true });
+      if (approved) { msgs.push({ who: 'you', text: 'I approve the kick-off.', at: when(p.approvedAt) }); msgs.push({ who: 'claude', text: 'Thank you' + (p.approvedBy ? ', ' + String(p.approvedBy).split('@')[0] : '') + '. The kick-off and the plan are approved. You can open and download them any time.', actions: [{ label: 'Open the kick-off', act: 'koOpen', attrs: { view: 'kickoff' } }, { label: 'Open the project plan', act: 'koOpen', attrs: { view: 'plan', t: 'wb' } }] }); }
+      else if (p.status === 'draft' && sessDone && book) { const c = L().approvalCheck(p, owner(), crDoc());
+        msgs.push({ who: 'claude', text: c.ok ? 'Everything is drafted. Do you want to approve the kick-off and the plan now?' : 'Everything is drafted. ' + c.why, actions: c.ok ? [{ label: 'Yes, approve', act: 'koApproveIntake', primary: true }, { label: 'Not yet, let me review', act: 'koOpen', attrs: { view: 'kickoff' } }] : [{ label: 'Review the kick-off', act: 'koOpen', attrs: { view: 'kickoff' } }] }); }
+    }
+    const dis = ro() ? ' disabled' : '';
+    const composer = file || j || p ? '<span class="ki-file" title="' + esc(file) + '">' + esc(file || 'MSA') + '</span><span class="spacer"></span><button type="button" class="btn sm" data-act="koReplaceMsa"' + dis + '>Replace MSA</button><button type="button" class="btn sm danger" data-act="koRemoveMsa"' + dis + '>Remove MSA</button>'
+      : '<button type="button" class="btn primary" data-act="uploadMsa"' + dis + '>Upload the MSA</button><span class="xs muted">PDF, Word or text</span>';
+    return root.FWBWorkChat.html({ title: 'Claude and Delivery Studio', hint: j && j.claimedAt ? 'Run by your scheduled Claude task "Delivery Studio job queue" on ' + (who ? who + "'s" : 'your') + ' computer. ' + (j.progressAt ? 'Last update ' + when(j.progressAt) + '.' : '') : 'Claude works on your own computer, as a scheduled task. You can leave this page; it keeps going.', messages: msgs, tiles, tilesTitle: 'What Claude prepares', composer });
   }
   const list = (items, cls) => items.length ? `<ul class="ko-list ${cls || ''}">${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : '';
   function packCards(p) {
@@ -141,15 +126,11 @@
   }
   // Two tabs: Contract intake (upload, Claude's progress, the jobs) and Kick-off (only the output: scope, deck, change requests, approval).
   function intakePage() {
-    const head = '<div class="page-header"><div class="t"><h1>Contract intake</h1><p>Upload the signed MSA. Claude reads it in the background and drafts the project plan, the requirement session plan and the kick-off deck. You do not need to do anything else here.</p></div></div>';
-    const k = K(); if (k.pid !== pid()) reset(k); const p = pack(); const hasFile = !!((V.plannerDoc && V.plannerDoc() || {}).msa);
-    return head + '<div class="page-body ko">' + strip(L().stage(hasFile || !!k.msa, p, k.jobs))
-      + (p && p.status === 'discarded' ? '<div class="notice small">This draft was discarded. Upload the MSA again and Claude will draft it again.</div>' : '')
-      + chatCard(p) + '<div class="ko-grid">' + msaCard(p, hasFile) + jobsCard() + '</div>'
-      + (p ? '<div class="card ko-card"><div class="card-b row ko-btns" style="align-items:center"><b>Your drafts are ready.</b><span class="spacer"></span><button type="button" class="btn sm primary" data-act="nav" data-view="kickoff">Open the kick-off</button><button type="button" class="btn sm" data-act="nav" data-view="plan">Open the project plan</button></div></div>' : '') + '</div>';
+    const head = '<div class="page-header"><div class="t"><h1>Contract intake</h1><p>Upload the signed MSA. Claude reads it in the background and prepares the project plan, the requirement sessions and the kick-off deck. You review and approve once.</p></div></div>';
+    const k = K(); if (k.pid !== pid()) reset(k); return head + '<div class="page-body ko">' + chatCard(pack()) + '</div>';
   }
   function page() {
-    const head = '<div class="page-header"><div class="t"><h1>Kick-off</h1><p>What the contract produced for the kick-off: scope, the deck, your change requests. You review and approve once.</p></div></div>';
+    const head = '<div class="page-header"><div class="t"><h1>Project introduction</h1><p>What the contract produced for the kick-off: scope, the deck, your change requests. You review and approve once.</p></div></div>';
     const k = K(); if (k.pid !== pid()) reset(k); const p = pack();
     if (!p) return head + '<div class="page-body ko"><div class="card ko-card"><div class="card-b"><p>Nothing to show yet. Upload the MSA on the Contract intake tab; Claude drafts the kick-off from it.</p><div class="row ko-btns"><button type="button" class="btn sm primary" data-act="nav" data-view="msaintake">Go to Contract intake</button></div></div></div></div>';
     return head + '<div class="page-body ko">' + (p.status === 'discarded' ? '<div class="notice small">This draft was discarded. Upload the MSA again on the Contract intake tab.</div>' : '') + packCards(p) + crCard() + safeDeck(p) + approveBar(p) + '</div>';
@@ -209,6 +190,41 @@
     const prev = F.doc('kickoff_pack'); setDoc('kickoff_pack', L().setStatus(prev, 'discarded', S.user.email, new Date().toISOString())); F.changed('Kick-off draft discarded', null, { section: 'kickoff_pack' });
     if (!(await saved('kickoff_pack'))) { undo('kickoff_pack', prev); toast(NOT_SAVED, 8000, true); }
   };
+  ACT.koOpen = a => { const t = a.getAttribute('data-t'); if (t) S.ui.planTab = t; ACT.nav(a); };
+  ACT.koApproveIntake = a => V.busy(a, async () => {
+    const p = pack(); const c = L().approvalCheck(p, owner(), crDoc()); if (!c.ok) { toast(c.why, 6000, true); return; }
+    const prev = F.doc('kickoff_pack'); setDoc('kickoff_pack', L().setStatus(prev, 'approved', S.user.email, new Date().toISOString())); F.changed('Kick-off approved', null, { section: 'kickoff_pack' });
+    if (!(await saved('kickoff_pack'))) { undo('kickoff_pack', prev); toast(NOT_SAVED, 8000, true); return; } toast('Kick-off approved.', 4000);
+  });
+  // Remove or replace the MSA: everything drafted from it is wiped, so nothing wrong is left behind anywhere
+  async function wipeMsa() {
+    const b = base(), problems = []; const put = async (sec, data) => { const r = await API.put(b + '/docs/' + sec, { data, baseVersion: -1 }); S.docs[sec] = { data, version: (r && r.version) || 0, dirty: false }; };
+    const run = async (what, fn) => { try { await fn(); } catch (e) { problems.push(what + ' (' + (e.message || 'failed') + ')'); } };
+    const extracted = !!(((F.doc('planner') || {}).msa || {}).external); await load(true);
+    for (const j of (K().jobs || []).filter(x => x.kind === 'pull_msa' && ['waiting', 'claimed', 'needs_input'].includes(x.status))) await run('a waiting Claude job', () => API.post(b + '/jobs/' + encodeURIComponent(j.id) + '/cancel', {}));
+    await run('the contract text', () => put('msa_text', null)); await run('the kick-off', () => put('kickoff_pack', null)); await run('the change requests', () => put('kickoff_cr', null));
+    await run('the project plan rows', async () => { const d = F.doc('plan_struct') || {}; if (d.fromPack) await put('plan_struct', { rows: [], versions: d.versions || [] }); });
+    await run('the requirement sessions', async () => { F.doc('planner'); const d = S.docs.planner.data = S.docs.planner.data || {}; d.sessions = (d.sessions || []).filter(x => !x.fromPack); delete d.sessionNotes; delete d.sessionPlanNotes;
+      if (d.msa) { d.msa = null; d.contractX = null; delete d.msaFail; d.scope = (d.scope || []).filter(x => !/^sc_m[0-9]/.test(String(x.id))); } F.changed(null, null, { section: 'planner', render: false }); await saved('planner'); });
+    await run('the plan workbook', async () => { const d = (S.docs.plan && S.docs.plan.data) || null; if (!d || !Array.isArray(d.versions)) return; const mine = d.versions.filter(v => v.source === 'kickoff');
+      for (const v of mine) { try { await API.del(b + '/files/' + encodeURIComponent(v.fileId)); } catch (e) { /* already gone */ } } d.versions = d.versions.filter(v => v.source !== 'kickoff'); if (mine.some(v => v.fileId === d.current)) d.current = (d.versions[0] || {}).fileId || ''; F.changed(null, null, { section: 'plan', render: false }); await saved('plan'); });
+    await run('the contract file', async () => { const r = await API.get(b + '/files?category=msa'); for (const f of (r.files || [])) await API.del(b + '/files/' + encodeURIComponent(f.id)); });
+    if (extracted) await run('the contract records', async () => { for (const kind of ['ctrcore', 'scope']) { try { await API.del(b + '/items/' + kind + '/main'); } catch (e) { if (e.status !== 404) throw e; } } });
+    S.ui.koPlanTried = ''; K().at = 0; K().sig = ''; V.invalidateFiles && V.invalidateFiles('msa'); await load(true, true); return problems;
+  }
+  const blocked = () => { const p = pack(); if (p && p.status === 'approved' && !owner()) { toast('This kick-off is approved. Only the project owner can remove or replace the MSA.', 6000, true); return true; } return false; };
+  ACT.koRemoveMsa = async () => {
+    if (guard() || blocked()) return; const name = msaFile() || 'the MSA';
+    if (!(await V.confirmDialog('Remove the MSA', 'Are you sure you want to remove ' + name + '? Everything Claude drafted from it will be wiped for good: the project plan, the kick-off deck, the requirement sessions, the plan workbook, your change requests and the stored contract text. Nothing is kept. You can upload the correct MSA afterwards.', 'Remove MSA and wipe everything', true))) return;
+    V.loading(true, 'Removing the MSA and everything drafted from it…'); try { const pr = await wipeMsa(); toast(pr.length ? 'Removed, but some parts could not be cleared: ' + pr.join('; ') + '. Try again.' : 'The MSA and everything drafted from it were removed.', pr.length ? 9000 : 5000, !!pr.length); } finally { V.loading(false); }
+  };
+  ACT.koReplaceMsa = async () => {
+    if (guard() || blocked()) return; const f = (await V.pickFile('.pdf,.docx,.txt'))[0]; if (!f) return;
+    if (!(await V.confirmDialog('Replace the MSA', 'Replace ' + (msaFile() || 'the current MSA') + ' with ' + f.name + '? Everything Claude drafted from the current MSA (project plan, kick-off deck, requirement sessions, plan workbook, change requests) will be wiped, and Claude will draft it again from the new one.', 'Replace and wipe', true))) return;
+    V.loading(true, 'Clearing what was drafted from the old MSA…'); let pr = []; try { pr = await wipeMsa(); } finally { V.loading(false); }
+    if (pr.length) { toast('The old MSA could not be fully cleared (' + pr.join('; ') + '), so the new one was not uploaded. Try again.', 9000, true); return; }
+    await V.msaIngest(f);
+  };
   ACT.koApprove = a => V.busy(a, async () => {
     const p = pack(); const c = L().approvalCheck(p, owner(), crDoc()); if (!c.ok) { toast(c.why, 6000, true); return; }
     if (!(await V.confirmDialog('Approve kick-off', 'Approve the kick-off deck and the project plan as they are shown? Open items stay open and are listed in the plan.', 'Approve'))) return;
@@ -257,14 +273,14 @@
   function syncSessions() {
     const raw = packRaw(); if (!raw) return; F.doc('planner'); let d = S.docs.planner.data; if (!d || typeof d !== 'object') d = S.docs.planner.data = {}; if (!Array.isArray(d.sessions)) d.sessions = [];
     const mine = d.sessions.some(x => !x.fromPack); if (mine) return; if (d.sessions.length && d.sessions[0].fromPack === raw.builtAt) return;
-    const r = L().sessionPlan(raw); d.sessions = r.sessions.map(x => Object.assign({ id: F.uid('ses'), mode: (d.settings || {}).mode || 'online', notes: '', prep: '', modules: [], fromPack: raw.builtAt }, x)); d.sessionNotes = r.notes; F.changed(null, null, { section: 'planner', render: false });
+    const r = L().sessionPlan(raw); d.sessions = r.sessions.map(x => Object.assign({ id: F.uid('ses'), mode: (d.settings || {}).mode || 'online', notes: '', prep: '', modules: [], fromPack: raw.builtAt }, x)); d.sessionNotes = r.notes; d.sessionPlanNotes = r.planNotes; F.changed(null, null, { section: 'planner', render: false });
   }
+  const sessData = () => { const d = F.doc('planner') || {}; const p = L().packOf(F.doc('kickoff_pack')); return { customer: S.project.customer, project: S.project.name, status: p ? p.status : 'draft', sessions: d.sessions || [], planNotes: d.sessionPlanNotes || [], notes: Array.isArray(d.sessionNotes) ? d.sessionNotes : [], fmt: dt }; };
+  ACT.koSessView = () => { try { const w = window.open(URL.createObjectURL(new Blob([root.FWBSessionHtml.build(sessData())], { type: 'text/html' })), '_blank'); if (!w) toast('The browser blocked the new tab. Allow pop-ups for this site, or use Download.', 6000, true); } catch (e) { toast('The plan could not be opened: ' + (e.message || 'error'), 6000, true); } };
+  ACT.koSessDl = () => { try { V.download('requirement-session-plan-' + slug(S.project.customer) + '-' + slug(S.project.name) + '.html', new Blob([root.FWBSessionHtml.build(sessData())], { type: 'text/html' })); } catch (e) { toast('The plan could not be built: ' + (e.message || 'error'), 6000, true); } };
   V.planSessions = { html() {
-    syncSessions(); const d = F.doc('planner') || {}; const ss = (d.sessions || []).slice().sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.start).localeCompare(String(b.start))); const notes = Array.isArray(d.sessionNotes) ? d.sessionNotes : [];
-    if (!ss.length) return '<div class="card empty"><h3>No requirement sessions yet</h3><p>' + esc(notes[0] || 'They are drafted from the approved kick-off: one session per module in scope, inside the requirements workshops phase.') + '</p></div>';
-    const rows = ss.map(x => '<tr><td>' + esc(x.no) + '</td><td>' + esc(x.title) + '</td><td>' + esc(dt(x.date)) + '</td><td>' + esc((x.start || '') + (x.end ? ' to ' + x.end : '')) + '</td><td>' + esc(x.participants || 'To be named') + '</td><td>' + tag(x.status === 'proposed' ? 'tbc' : 'low', x.status === 'proposed' ? 'Proposed' : String(x.status || '')) + '</td></tr>').join('');
-    return '<section class="card ko-card"><div class="card-h"><b>Requirement session plan</b><span class="xs muted">' + ss.length + ' session' + (ss.length === 1 ? '' : 's') + ', drafted from the kick-off</span></div><div class="card-b"><div class="tw"><table><thead><tr><th>No</th><th>Session</th><th>Date</th><th>Time</th><th>Customer attendees</th><th>Status</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
-      + notes.map(n => '<p class="xs muted">' + esc(n) + '</p>').join('') + '</div></section>';
+    syncSessions(); const d = sessData(); if (!d.sessions.length) return '<div class="card empty"><h3>No requirement sessions yet</h3><p>' + esc(d.notes[0] || 'They are drafted from the approved kick-off: sessions that group the modules in scope, inside the requirements workshops phase.') + '</p></div>';
+    return '<div class="row ko-btns" style="justify-content:flex-end"><button type="button" class="btn sm" data-act="koSessView">View as HTML</button><button type="button" class="btn sm primary" data-act="koSessDl">Download HTML</button></div><style>' + root.FWBSessionHtml.css + '</style>' + root.FWBSessionHtml.body(d);
   } };
   const oldPlan = V.plan; if (oldPlan) V.plan = Object.assign({}, oldPlan, { html() { syncStruct(); syncSessions(); return oldPlan.html.apply(this, arguments); }, mount() { syncWorkbook(); return oldPlan.mount && oldPlan.mount.apply(this, arguments); } });
   const kickMount = V.kickoff.mount; V.kickoff.mount = function () { if (!V.isCustomer()) { syncStruct(); syncSessions(); syncWorkbook(); } return kickMount && kickMount.apply(this, arguments); };

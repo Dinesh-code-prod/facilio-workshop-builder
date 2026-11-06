@@ -44,12 +44,18 @@ t('the step strip', () => {
   const p = L.packOf(stored); assert.equal(L.stage(false, null, []), 'start'); assert.equal(L.stage(true, null, []), 'extract'); assert.equal(L.stage(false, null, [{ kind: 'pull_msa', status: 'waiting' }]), 'pulling');
   assert.equal(L.stage(true, p, []), 'review'); assert.equal(L.stage(true, L.packOf(L.setStatus(stored, 'approved', 'o', 'n')), []), 'approved');
 });
-t('requirement sessions: one per module, on weekdays, inside the workshops phase; overflow is dated after it and named; nothing invented', () => {
-  const mk = (names, days) => buildKickoffPack(Object.assign({}, ex, { commitments: [], contract: Object.assign({}, ex.contract, { durationDays: days || 120 }), modules: names.map(name => ({ name })) }), { now: '2026-11-06T10:00:00Z' });
-  const r = L.sessionPlan(mk(['Work Orders', 'Assets', 'Preventive Maintenance'], 400)); assert.equal(r.sessions.length, 3); assert.deepEqual(r.sessions.map(x => x.module), ['Work Orders', 'Assets', 'Preventive Maintenance']);
-  const ph = L.packOf(mk(['A', 'B', 'C'], 400)).milestones.find(m => m.id === 'workshops'); for (const x of r.sessions) { const wd = new Date(x.date + 'T00:00:00Z').getUTCDay(); assert.ok(wd !== 0 && wd !== 6, x.date + ' is a weekend'); assert.ok(x.date >= ph.start && x.date <= ph.end, x.date + ' outside the phase'); assert.equal(x.status, 'proposed'); assert.equal(x.participants, ''); }
-  assert.equal(new Set(r.sessions.map(x => x.date)).size, 3, 'one a day when there is room'); assert.ok(r.notes.some(n => /suggestions/.test(n)));
-  const many = L.sessionPlan(mk(Array.from({ length: 40 }, (_, k) => 'Module ' + (k + 1)))); assert.equal(many.sessions.length, 40); assert.ok(many.notes.some(n => /fall after the requirements workshops phase/.test(n)), JSON.stringify(many.notes)); assert.ok(many.sessions.some(x => x.start === '14:00'), 'two a day when short of room');
-  assert.deepEqual(L.sessionPlan(null), { sessions: [], notes: [] }); assert.match(L.sessionPlan(mk([])).notes[0], /no modules/);
+t('requirement sessions follow the workshop plan sheet: related modules share a session, agenda per module, roles, one session a day inside the phase, optional follow-up, planning notes', () => {
+  const MODS = ['Portfolio Management', 'Client Management', 'Asset Management', 'Reactive Maintenance', 'Centralised Help Desk (Service Requests)', 'Client Portal (Web & Mobile)', 'Planned Maintenance', 'Building Inspections and Compliance', 'Process Automation - State flows', 'Dashboards', 'Inventory Management and Requests'];
+  const mk = (names, days) => buildKickoffPack(Object.assign({}, ex, { commitments: [], contract: Object.assign({}, ex.contract, { durationDays: days || 400 }), modules: names.map(name => ({ name })) }), { now: '2026-11-06T10:00:00Z' });
+  const r = L.sessionPlan(mk(MODS)); const planned = r.sessions.filter(x => x.status === 'proposed'); const opt = r.sessions.filter(x => x.status === 'optional');
+  assert.deepEqual(planned.slice(0, 5).map(x => x.items), [['Portfolio Management', 'Client Management'], ['Asset Management'], ['Centralised Help Desk (Service Requests)', 'Client Portal (Web & Mobile)', 'Reactive Maintenance'], ['Planned Maintenance', 'Building Inspections and Compliance'], ['Process Automation - State flows', 'Dashboards']]);
+  assert.equal(planned.length, 6, 'an unknown module (inventory) gets its own session'); assert.equal(opt.length, 1); assert.equal(opt[0].date, '');
+  const ph = L.packOf(mk(MODS)).milestones.find(m => m.id === 'workshops'); for (const x of planned) { const wd = new Date(x.date + 'T00:00:00Z').getUTCDay(); assert.ok(wd !== 0 && wd !== 6, x.date + ' is a weekend'); assert.ok(x.date >= ph.start && x.date <= ph.end, x.date + ' outside the phase'); assert.equal(x.duration, '2 hours (proposed)'); assert.equal(x.participants, ''); assert.ok(x.stakeholders.includes('System Administrator') && x.stakeholders.includes('Project POC')); }
+  assert.equal(new Set(planned.map(x => x.date)).size, planned.length, 'one a day');
+  const s1 = planned[0]; assert.deepEqual(s1.details.map(g => g.heading), ['PORTFOLIO MANAGEMENT', 'CLIENT MANAGEMENT', 'WORKSHOP OUTPUTS']); assert.ok(s1.details[0].points.length >= 4); assert.ok(planned[5].details[0].points.length === 4, 'generic agenda for an unknown module');
+  assert.ok(planned[planned.length - 1].details.some(g => g.heading === 'CROSS-MODULE CLOSEOUT'));
+  assert.deepEqual(r.planNotes.map(n => n.item), ['Schedule', 'Timing', 'Scope basis', 'Scope validation', 'Workshop outputs', 'Preparation requested', 'Optional follow-up session']); assert.ok(r.planNotes[0].text.includes('6 proposed sessions')); assert.ok(r.notes.some(n => /suggestions/.test(n)));
+  const many = L.sessionPlan(mk(Array.from({ length: 40 }, (_, k) => 'Module ' + (k + 1)), 120)); assert.ok(many.sessions.length > 10); assert.ok(many.notes.some(n => /fall after the requirements workshops phase/.test(n)), JSON.stringify(many.notes));
+  assert.deepEqual(L.sessionPlan(null), { sessions: [], notes: [], planNotes: [] }); assert.match(L.sessionPlan(mk([])).notes[0], /no modules/);
 });
 console.log(n + ' kick-off page rule checks passed');

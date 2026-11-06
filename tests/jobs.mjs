@@ -90,4 +90,10 @@ await t('a progress note shows what Claude is doing and keeps the claim alive; o
   assert.throws(() => step(c, 'progress', 'b@x.com', NOW, { text: 'x' }), /Only the person who claimed/); assert.throws(() => step(c, 'progress', 'a@x.com', NOW, { text: '   ' }), /few words/);
   assert.equal(step(c, 'progress', 'a@x.com', NOW, { text: 'y'.repeat(500) }).progress.text.length, 160);
 });
+await t('every job kind has a stage and allowed documents; the brief carries them; progress notes are kept in order, capped at 30', async () => {
+  const J = await import('../work/server/_jobs.mjs'); for (const [k, v] of Object.entries(J.KINDS)) { assert.ok(v.stage, k + ' has a stage'); assert.ok(Array.isArray(v.docs), k + ' has docs'); }
+  assert.equal(J.KINDS.pull_msa.stage, 'intake'); assert.ok(J.KINDS.pull_msa.docs.includes('msa_text')); assert.ok(J.STAGES.includes('intake') && J.STAGES.includes('brd'));
+  let c = step(newJob('jb_00000000000000000a', cleanRequest({ kind: 'pull_msa' }), 'a@x.com', NOW), 'claim', 'a@x.com', NOW); const b = J.brief(c, { id: 'p1', name: 'P' }); assert.equal(b.stage, 'intake'); assert.deepEqual(b.allowedDocs, J.KINDS.pull_msa.docs); assert.match(b.scope, /Stay inside the stage/);
+  for (let n = 1; n <= 35; n++) c = step(c, 'progress', 'a@x.com', NOW, { text: 'note ' + n }); assert.equal(c.activity.length, 30); assert.equal(c.activity[0].text, 'note 6'); assert.equal(c.activity[29].text, 'note 35'); assert.equal(c.progress.text, 'note 35');
+});
 console.log('\n' + n + ' job-queue checks passed');

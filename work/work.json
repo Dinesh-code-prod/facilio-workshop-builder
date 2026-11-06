@@ -328,6 +328,10 @@
        "type": "string",
        "description": "Job id (or the hand-off id)"
       },
+      "stage": {
+       "type": "string",
+       "description": "Only for list: the main tab whose jobs you want (intake, requirements, brd, configuration, uat, hypercare)"
+      },
       "status": {
        "type": "string",
        "description": "finish: done, needs_input or failed"

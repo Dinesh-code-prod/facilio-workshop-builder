@@ -13,7 +13,7 @@ export function installJobs(d) {
   const all = async pid => (await dbList(col(pid))).map(r => r.value).filter(r => r && r.id);
   /** a claimed job whose lease ran out goes back to waiting (stored, so every reader sees the same) */
   async function fresh(pid, j) { const now = new Date().toISOString(); if (!leaseExpired(j, now)) return j; return withLock(col(pid) + '.' + j.id, async () => { const cur = (await dbGet(col(pid), j.id)).value; const nx = step(cur, 'expire', 'system', now); if (nx !== cur && nx.status !== cur.status) await dbPut(col(pid), j.id, nx); return nx; }); }
-  const view = j => ({ id: j.id, kind: j.kind, label: KINDS[j.kind] ? KINDS[j.kind].label : j.kind, params: j.params, status: j.status, requestedBy: j.requestedBy, requestedAt: j.requestedAt, claimedBy: j.claimedBy, leaseUntil: j.leaseUntil, result: j.result, finishedAt: j.finishedAt, claimedAt: j.claimedAt, progress: j.progress || null });
+  const view = j => ({ id: j.id, kind: j.kind, label: KINDS[j.kind] ? KINDS[j.kind].label : j.kind, params: j.params, status: j.status, requestedBy: j.requestedBy, requestedAt: j.requestedAt, claimedBy: j.claimedBy, leaseUntil: j.leaseUntil, result: j.result, finishedAt: j.finishedAt, claimedAt: j.claimedAt, progress: j.progress || null, activity: j.activity || [], stage: (KINDS[j.kind] || {}).stage || 'other' });
   const mine = async (pid, id) => { if (!JID.test(String(id))) throw new HttpError(404, 'Job not found'); const r = await dbGet(col(pid), id); if (!r || !r.value) throw new HttpError(404, 'Job not found'); return fresh(pid, r.value); };
   const change = (s, pid, id, ev, data, auditText) => withLock(col(pid) + '.' + id, async () => {
     const cur = (await dbGet(col(pid), id)); if (!cur || !cur.value) throw new HttpError(404, 'Job not found'); const now = new Date().toISOString();
@@ -21,9 +21,9 @@ export function installJobs(d) {
   });
 
   const ops = {
-    async list(s, pid, status) {
+    async list(s, pid, status, stage) {
       await access(s, pid); const rows = []; for (const j of await all(pid)) rows.push(await fresh(pid, j)); const want = status === 'all' ? null : status && !OPEN.includes(status) ? [status] : OPEN;
-      const out = rows.filter(j => !want || want.includes(j.status)).sort((a, b) => String(b.requestedAt).localeCompare(String(a.requestedAt))).slice(0, 100);
+      const out = rows.filter(j => (!stage || (KINDS[j.kind] || {}).stage === stage) && (!want || want.includes(j.status))).sort((a, b) => String(b.requestedAt).localeCompare(String(a.requestedAt))).slice(0, 100);
       return { jobs: out.map(view), open: rows.filter(j => OPEN.includes(j.status)).length, kinds: Object.fromEntries(Object.entries(KINDS).map(([k, v]) => [k, v.label])) };
     },
     /** one job per identical open request; a second click returns the job already waiting */
@@ -43,14 +43,14 @@ export function installJobs(d) {
   };
 
   const P = '/api/projects/:id/jobs';
-  route('GET', P, async (b, G, q) => { const s = await me(); return ok(await ops.list(s, G.id, String(q.get('status') || ''))); });
+  route('GET', P, async (b, G, q) => { const s = await me(); return ok(await ops.list(s, G.id, String(q.get('status') || ''), String(q.get('stage') || ''))); });
   route('POST', P, async (b, G) => { const s = await me(); const r = await ops.create(s, G.id, b); return ok(r, r.duplicate ? 200 : 201); });
   route('POST', P + '/:jid/cancel', async (b, G) => { const s = await me(); return ok({ job: view(await ops.cancel(s, G.id, G.jid)) }); });
   route('POST', P + '/:jid/answer', async (b, G) => { const s = await me(); return ok({ job: view(await ops.answer(s, G.id, G.jid, b && b.answers)) }); });
 
   // ---------- Claude connector tools (public entry: project_jobs, with an action) ----------
   const tools = {
-    async jobs_list(s, b) { const p = await pickProject(s, b.project); const r = await ops.list(s, p.id, String(b.status || '')); return { project: p.name, projectId: p.id, open: r.open, jobs: r.jobs, note: 'Claim one with action claim and its id. Only waiting jobs can be claimed.' }; },
+    async jobs_list(s, b) { const p = await pickProject(s, b.project); const r = await ops.list(s, p.id, String(b.status || ''), String(b.stage || '').toLowerCase()); return { project: p.name, projectId: p.id, open: r.open, jobs: r.jobs, note: 'Claim one with action claim and its id. Only waiting jobs can be claimed.' }; },
     async jobs_claim(s, b) { const p = await pickProject(s, b.project); const j = await ops.claim(s, p.id, String(b.id || '')); return brief(j, { id: p.id, name: p.name, customer: p.customer || '' }); },
     async jobs_progress(s, b) { const p = await pickProject(s, b.project); const j = await ops.progress(s, p.id, String(b.id || ''), b.summary); return { job: view(j), note: 'Shown to the person in Delivery Studio. Keep going.' }; },
     async jobs_finish(s, b) {
