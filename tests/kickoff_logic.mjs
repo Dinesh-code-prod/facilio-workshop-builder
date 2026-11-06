@@ -65,4 +65,8 @@ t('review checklist: ticked sections record who and when, approval waits for all
   d = L.setReview(d, 'sessions', true, 'asha@x.com', 'n'); assert.equal(L.approvalCheck(L.packOf(d), true, null, true).ok, true); assert.equal(L.approvalCheck(L.packOf(d), false, null, true).ok, false, 'still the owner only');
   d = L.setReview(d, 'deck', false, 'x', 'n'); assert.match(L.approvalCheck(L.packOf(d), true, null, true).why, /1 left/); assert.deepEqual(L.setReview(d, 'nope', true, 'x', 'n'), d); assert.equal(L.packOf(L.setStatus(d, 'approved', 'o', 'n')).review[0].done, true, 'the record stays after approval');
 });
+t('job rows keep the questions Claude asked and the answers given, so the chat can show them in order', () => {
+  const r = L.jobRows([{ id: 'j1', kind: 'chat', status: 'waiting', requestedAt: '2026-11-07T10:00:00Z', result: { questions: ['Which file?'], answers: ['The Clari one'] } }, { id: 'j2', kind: 'chat', status: 'needs_input', result: { questions: ['Which?'] } }])
+  assert.deepEqual(r[0].asked, ['Which file?']); assert.deepEqual(r[0].answers, ['The Clari one']); assert.deepEqual(r[0].questions, []); assert.deepEqual(r[1].questions, ['Which?']); assert.deepEqual(L.jobRows([{ id: 'x' }])[0].answers, []);
+});
 console.log(n + ' kick-off page rule checks passed');

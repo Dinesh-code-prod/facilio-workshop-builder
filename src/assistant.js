@@ -20,6 +20,7 @@
   const ago = ts => { const m = Math.round((Date.now() - Date.parse(ts)) / 6e4); return m < 2 ? 'just now' : m < 60 ? m + ' minutes ago' : m < 1440 ? Math.round(m / 60) + ' hours ago' : Math.round(m / 1440) + ' days ago'; };
   function runMsgs(j, k) {
     const when = J().when, who = String(j.claimedBy || '').split('@')[0], out = []; const mine = !j.by || !S.user || String(j.by).toLowerCase() === String(S.user.email || '').toLowerCase(), nm = nice(j.by); if (j.kind === 'chat') out.push(mine ? { who: 'you', text: j.note, at: when(j.at) } : { who: 'other', name: nm, text: j.note, at: when(j.at) }); else out.push({ who: 'sys', text: (mine ? 'You asked' : nm.split(' ')[0] + ' asked') + ' for this, ' + when(j.at) + '.' });   // a request is a quiet line, not a chat bubble
+    if (j.status !== 'needs_input' && j.answers && j.answers.length) { (j.asked || []).forEach(q => out.push({ who: 'claude', text: q })); j.answers.forEach(x => out.push(mine ? { who: 'you', text: x } : { who: 'other', name: nm, text: x })); }   // the earlier question and your answer, above whatever Claude says next
     if (j.status === 'waiting') out.push({ who: 'sys', text: 'Queued. Claude checks for new work every 5 minutes while your Claude app is open.' });
     if (j.claimedAt && j.kind !== 'chat') out.push({ who: 'claude', text: 'Claude has started' + (who ? ' (on ' + who + "'s computer)" : '') + '.', at: when(j.claimedAt) });
     const act = j.activity.slice(-12); act.forEach((a, i, all) => out.push({ who: 'claude', text: a.text, at: when(a.at), typing: j.status === 'claimed' && i === all.length - 1 }));
@@ -31,7 +32,7 @@
   }
   function paint() {
     ensure(); const show = team(); panel.hidden = tab.hidden = !show; if (!show) { document.body.classList.remove('asst-open'); return; }
-    const k = J() && J().K(); const jobs = k && Array.isArray(k.jobs) && k.pid === S.project.id ? L().jobRows(k.jobs) : []; const open = jobs.filter(j => j.open), ask = jobs.filter(j => j.status === 'needs_input').length;
+    const k = J() && J().K(); const jobs = k && Array.isArray(k.jobs) && k.pid === S.project.id ? L().jobRows(k.jobs).sort((x, y) => Date.parse(y.at || 0) - Date.parse(x.at || 0)) : [];   // newest first here; the thread below reverses it, so the newest chat is at the bottom const open = jobs.filter(j => j.open), ask = jobs.filter(j => j.status === 'needs_input').length;
     const a = st(); if (a.init !== S.project.id) { a.init = S.project.id; a.seen = {}; a.open = false; jobs.forEach(j => { if (j.status !== 'claimed' && j.status !== 'needs_input') a.seen[key(j)] = 1; }); }   // finished work does not pop the panel; work still running when the project opens does
     jobs.forEach(j => { if ((j.status === 'claimed' || j.status === 'needs_input') && !a.seen[key(j)]) { a.seen[key(j)] = 1; a.open = true; } });
     document.body.classList.toggle('asst-open', !!a.open); tab.className = open.length ? 'on' : ''; tab.innerHTML = '<span>Assistant</span>' + (ask ? '<i class="as-b">' + ask + '</i>' : open.length ? '<i class="as-p"></i>' : '');

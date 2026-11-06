@@ -259,6 +259,24 @@
     } catch (err) { console.error(err); toast(err.message, 5000, true); }
   });
   const inflight = new Set();
+  // ---------- drop a file on any import button or area (7 Nov 2026) ----------
+  // Every action that asks for a file (V.pickFile) can also take a file dropped on its button, or anywhere in the card or window that holds exactly one such button.
+  // The dropped file is handed to the same action, so the same checks and the same saving apply. A file that does not match the accepted types is refused with a message.
+  const DROP_ACTS = new Set('brdImportFile brdLogoUp brdSampleUp ciFileAdd ciImport ctUpload dashPick dmFile drLogoUp fiOpen ftrLoadRes ftrImport kpiImport guPick importConfig koReplaceMsa npMsa npZip onbCheck onbFileUp onbPkg opkValidateZip planUpload repAtt rsAddDoc rsAddFile sesImport soPickEv tkAttach tkNewFile trPick ugImgAdd ugLogo uploadDeck uploadMsa utcAttach vgPick vgTr wbImgPick wsLoadFile xfImg'.split(' '));
+  V.DROP_ACTS = DROP_ACTS;
+  const dropBtn = t => { const el = t && t.closest && t.closest('[data-act]'); if (el && DROP_ACTS.has(el.getAttribute('data-act'))) return el; const box = t && t.closest && t.closest('.card, .drawer, .modal, .dlg'); if (!box) return null; const b = Array.from(box.querySelectorAll('[data-act]')).filter(x => DROP_ACTS.has(x.getAttribute('data-act')) && !x.disabled); return b.length === 1 ? b[0] : null; };
+  const hasFiles = e => e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
+  const okType = (f, accept) => { const a = String(accept || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean); if (!a.length) return true; const n = f.name.toLowerCase(), t = (f.type || '').toLowerCase(); return a.some(x => x[0] === '.' ? n.endsWith(x) : x.endsWith('/*') ? t.startsWith(x.slice(0, -1)) : t === x); };
+  let dropEl = null; const dropOff = () => { if (dropEl) dropEl.classList.remove('drop-ready'); dropEl = null; document.body.classList.remove('dragging-files'); };
+  document.addEventListener('dragenter', e => { if (hasFiles(e)) document.body.classList.add('dragging-files'); });
+  document.addEventListener('dragover', e => { if (!hasFiles(e)) return; if (e.target.closest && e.target.closest('#np_msadrop, #guDrop, [data-drop-zone]')) return; e.preventDefault(); const b = dropBtn(e.target); if (b !== dropEl) { if (dropEl) dropEl.classList.remove('drop-ready'); dropEl = b; if (b) b.classList.add('drop-ready'); } if (e.dataTransfer) e.dataTransfer.dropEffect = b ? 'copy' : 'none'; });
+  document.addEventListener('dragleave', e => { if (!e.relatedTarget) dropOff(); });
+  document.addEventListener('drop', async e => {
+    if (!hasFiles(e)) return; if (e.target.closest && e.target.closest('#np_msadrop, #guDrop, [data-drop-zone]')) { dropOff(); return; } e.preventDefault(); const b = dropBtn(e.target); dropOff(); if (!b) return;
+    const files = Array.from(e.dataTransfer.files || []); if (!files.length) return; const fn = ACT[b.getAttribute('data-act')]; if (!fn) return;
+    const orig = V.pickFile; let asked = false; V.pickFile = async (accept, multiple) => { asked = true; const ok = files.filter(f => okType(f, accept)); if (!ok.length) { toast('That file type is not accepted here. Accepted: ' + (accept || 'any') + '.', 6000, true); return []; } return multiple ? ok : ok.slice(0, 1); };
+    try { const r = fn(b, e); if (r && r.then) await r; } catch (err) { console.error(err); toast(err.message, 5000, true); } finally { V.pickFile = orig; }
+  });
   document.addEventListener('input', e => {
     const el = e.target;
     if (el.id === 'navq') { S.ui.navq = el.value; const nav = document.querySelector('.sidebar'); if (nav) { nav.innerHTML = sidebarHtml(); const n = document.getElementById('navq'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); } return; }
