@@ -31,3 +31,5 @@ Scope (modules in scope, confirmed) → Solution per module (requirements, forms
 - Is the list of modules in scope the contract's modules only, or also what the sessions add? (Suggested: both, confirmed by a person in 3.1.)
 - Should the BRD for a customer ever describe the full standard configuration (the old format)? (Suggested: no, only as an optional appendix.)
 - Who may change the scope list? (Suggested: any editor; the owner approves the BRD.)
+
+- The exact hierarchy of stage 3 (what hangs from what, and what each BRD section reads): docs/reference/STAGE3-HIERARCHY-2026-11-06.md.
