@@ -45,7 +45,7 @@ body .btn.danger:not(.icon):not(#_):not(#__) { color: var(--fl-danger) !importan
 body .btn.danger:not(.icon):not([disabled]):not(#_):not(#__):hover { background: var(--fl-danger-soft) !important; }
 body .btn.ghost:not(.icon):not(#_):not(#__) { background: transparent !important; border-color: transparent !important; }
 body .btn.ghost:not(.icon):not([disabled]):not(#_):not(#__):hover { background: var(--fl-bg3) !important; }
-body .btn.link:not(#_):not(#__) { background: transparent !important; border: 0 !important; box-shadow: none !important; color: var(--fl-brand) !important; font-weight: 400 !important; padding: 0 4px !important; min-height: 0; }
+body .btn.link:not(#_):not(#__) { background: transparent !important; border: 0 !important; box-shadow: none !important; color: #1262D8 !important; font-weight: 400 !important; padding: 0 4px !important; min-height: 0; }
 body .btn.link:not([disabled]):not(#_):not(#__):hover { color: var(--fl-brand-h) !important; text-decoration: underline; }
 body .btn[disabled]:not(#_):not(#__) { background: var(--fl-bg4) !important; color: var(--fl-fg-dis) !important; border-color: var(--fl-st2) !important; cursor: not-allowed; }
 
@@ -127,3 +127,10 @@ body .tag.low:not(#_):not(#__), body .tag.system:not(#_):not(#__) { color: var(-
 
 /* old colour tokens (the --fc family) pointed at light greys and tinted blues; they now read the Fluent values, so no text can end up pale on a pale background */
 :root { --fc-muted: #616161; --fc-caption: #616161; --fc-text: #242424; --fc-text-strong: #242424; --fc-border: #e0e0e0; --fc-border-2: #e0e0e0; --fc-border-3: #d1d1d1; --fc-head-bg: #fafafa; --fc-hover: #f5f5f5; --fc-page: #fafafa; --fc-danger: #b10e1c; --fc-indigo: #1262D8; --fc-link-hover: #0e4a9a; --fc-avatar: #115cc0; --fc-indigo-grad: none; --fl-brand-text: #1262D8; --th-violet: #1262D8; --th-violet-2: #0e4a9a; --th-blue: #1262D8; --th-muted: #616161; --th-faint: #616161; }
+body .page-header small:not(#_):not(#__), body .page-header .muted:not(#_):not(#__), body .page-header .row small:not(#_):not(#__) { color: var(--fl-fg3) !important; }
+body .sb h3:not(#_):not(#__) { color: #c8126a !important; }
+body .brd-ban em:not(#_):not(#__), body .brd-ban a:not(#_):not(#__) { color: #1262D8 !important; }
+body .tg2-lvl:not(#_):not(#__) { color: #1262D8 !important; }
+body .screen__url:not(#_):not(#__), body .s-sub:not(#_):not(#__) { color: var(--fl-fg3) !important; }
+/* the state-flow colours of the module guides: every chip carries white text, so every colour is dark enough for it (4.5:1 or more) */
+:root { --sf-line: #0f6cbd; --sf-active: #c4314b; --sf-user: #1262D8; --sf-cond: #0e7a85; --sf-time: #107c10; --sf-initial: #2f7f7c; }
