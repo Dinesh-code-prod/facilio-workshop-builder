@@ -28,16 +28,22 @@
     const missing = []; const sections = p.sections.map((s, i) => ({ name: s.name, link: F.slug(s.name) || 'details', seq: i + 1, fields: s.fields.map(x => { const n = resolve(x.field); if (!n.name) { missing.push(x.field); return null; } return { field: n.name, label: n.label, required: !!x.required, hidden: !!x.hidden, default: '', span: 12 }; }).filter(Boolean) }));
     const key = module + '::' + (F.slug(p.name) || 'form'); return { missing, form: { key, name: F.slug(p.name) || 'form', module, label: p.name, app: 'maintenance', description: p.description || '', sections, fromProposal: p.id } };
   }
-  V.designLogic = { flowFromProposal, fieldFromProposal, formFromProposal };
+  /** pure: the requirement a proposal describes, as a Draft (only Confirmed requirements reach the BRD, and only a person confirms) */
+  const requirementFromProposal = (p, modules, id, now, by) => ({ id, created: now, title: p.name, objective: p.objective, rules: p.rules || '', approvals: p.approvals || '', exceptions: p.exceptions || '', modules, classification: p.classification || 'change', status: 'Draft', fields: [], transitions: [], brdSection: 'module', source: { proposal: p.id, quote: p.quote || '', session: p.source || '' }, history: [{ at: now, by, change: 'Drafted by Claude, applied by a person' }] });
+  /** pure: which of the three BRD introduction texts can be filled: only the ones the project left empty */
+  const introFill = (p, project) => { const out = {}; if (p.background && !String(project.background || '').trim()) out.background = p.background; if (p.objectives && !String(project.objective || '').trim()) out.objective = p.objectives; if (p.scopeNotes && !String(project.scopeNotes || '').trim()) out.scopeNotes = p.scopeNotes; return out; };
+  V.designLogic = { flowFromProposal, fieldFromProposal, formFromProposal, requirementFromProposal, introFill };
 
   function summary(p) {
     if (p.kind === 'flow') return '<div class="ds-st">' + p.states.map(s => '<span>' + esc(s) + '</span>').join('<i>›</i>') + '</div><div class="xs muted">' + p.transitions.length + ' transitions: ' + esc(p.transitions.slice(0, 6).map(t => t.name).join(', ')) + (p.transitions.length > 6 ? ', …' : '') + '</div>';
     if (p.kind === 'field') return '<div class="ds-st"><span>' + esc(p.fieldType) + '</span>' + (p.required ? '<span>Required</span>' : '') + '</div><div class="xs muted">' + (p.options && p.options.length ? 'Options: ' + esc(p.options.join(', ')) : '') + (p.lookup ? ' Lookup: ' + esc(p.lookup) : '') + (p.description ? ' ' + esc(p.description) : '') + '</div>';
+    if (p.kind === 'requirement') return '<div class="ds-st"><span>' + esc(p.classification) + '</span>' + (p.modules || []).map(m => '<span>' + esc(m) + '</span>').join('') + '</div><div class="xs muted">' + esc(p.objective) + '</div>';
+    if (p.kind === 'brdintro') return '<div class="xs muted">' + [p.background && 'Background', p.objectives && 'Business objectives', p.scopeNotes && 'Scope notes'].filter(Boolean).join(', ') + '</div><p class="small">' + esc([p.background, p.objectives, p.scopeNotes].filter(Boolean).join(' ').slice(0, 280)) + '…</p>';
     if (p.kind === 'form') return '<div class="ds-st">' + p.sections.map(s => '<span>' + esc(s.name) + ' (' + s.fields.length + ')</span>').join('') + '</div><div class="xs muted">' + esc(p.sections.flatMap(s => s.fields.map(x => x.field)).slice(0, 10).join(', ')) + '</div>';
     return '<div class="ds-st"><span>' + esc(p.from) + '</span><i>›</i><span>' + esc(p.to) + '</span></div><div class="xs muted">' + esc(p.name) + (p.condition ? ' · when ' + esc(p.condition) : '') + '</div>';
   }
   function card(p) {
-    const title = p.kind === 'crosslink' ? 'Across modules: ' + esc(p.name) : esc(p.module) + ': ' + esc(p.name); const tag = p.kind === 'flow' ? BASIS[p.basedOn] || BASIS.new : p.kind === 'field' ? 'A custom field' : p.kind === 'form' ? 'A form' : 'Flow across modules';
+    const title = p.kind === 'crosslink' ? 'Across modules: ' + esc(p.name) : p.kind === 'requirement' ? esc(p.name) : p.kind === 'brdintro' ? 'Background, objectives and scope notes' : esc(p.module) + ': ' + esc(p.name); const tag = p.kind === 'requirement' ? 'A requirement (Draft)' : p.kind === 'brdintro' ? 'BRD introduction' : p.kind === 'flow' ? BASIS[p.basedOn] || BASIS.new : p.kind === 'field' ? 'A custom field' : p.kind === 'form' ? 'A form' : 'Flow across modules';
     return '<article class="ds-p"><div class="ds-h"><b>' + title + '</b><span class="tag">' + esc(tag) + '</span></div>' + summary(p)
       + (p.why ? '<p class="small">' + esc(p.why) + '</p>' : '') + (p.quote ? '<blockquote class="ds-q">' + esc(p.quote) + (p.source ? '<cite>' + esc(p.source) + '</cite>' : '') + '</blockquote>' : '')
       + '<div class="ds-b"><button class="btn sm primary" data-act="dsApply" data-id="' + esc(p.id) + '">Apply</button><button class="btn sm" data-act="dsDismiss" data-id="' + esc(p.id) + '">Dismiss</button></div></article>';
@@ -47,13 +53,14 @@
     if (!team() || /[?&]focus=whiteboard/.test(root.location ? root.location.search : '')) return ''; const all = items(), open = all.filter(p => p.status === 'open'), done = all.length - open.length;
     const j = J() && J().K() && Array.isArray(J().K().jobs) ? J().K().jobs.filter(x => x.kind === 'capture_flows' && ['waiting', 'claimed', 'needs_input'].includes(x.status)).length : 0;
     const jf = J() && J().K() && Array.isArray(J().K().jobs) ? J().K().jobs.filter(x => x.kind === 'fill_forms' && ['waiting', 'claimed', 'needs_input'].includes(x.status)).length : 0;
+    const jb = J() && J().K() && Array.isArray(J().K().jobs) ? J().K().jobs.filter(x => x.kind === 'draft_brd' && ['waiting', 'claimed', 'needs_input'].includes(x.status)).length : 0;
     return '<section class="ds-panel"><div class="ds-top"><div><b>Proposals for the design</b><span>Claude reads the sessions and proposes flows, fields and forms. You look at each one and apply or dismiss it.</span></div><div class="ds-acts">'
       + '<button class="btn sm" data-act="dsDefaults" title="Saves the project copy of the standard state flow for every module in scope that has none">Save the standard flows</button>'
-      + '<button class="btn sm primary" data-act="dsAsk"' + (j ? ' disabled' : '') + '>' + (j ? 'Claude is on it' : 'Ask Claude to capture the flows') + '</button><button class="btn sm primary" data-act="dsAskForms"' + (jf ? ' disabled' : '') + '>' + (jf ? 'Claude is on it' : 'Ask Claude for fields and forms') + '</button></div></div>'
+      + '<button class="btn sm primary" data-act="dsAsk"' + (j ? ' disabled' : '') + '>' + (j ? 'Claude is on it' : 'Ask Claude to capture the flows') + '</button><button class="btn sm primary" data-act="dsAskForms"' + (jf ? ' disabled' : '') + '>' + (jf ? 'Claude is on it' : 'Ask Claude for fields and forms') + '</button><button class="btn sm primary" data-act="dsAskBrd"' + (jb ? ' disabled' : '') + '>' + (jb ? 'Claude is on it' : 'Ask Claude to draft the BRD') + '</button></div></div>'
       + (open.length ? '<div class="ds-list">' + open.map(card).join('') + '</div>' : '<p class="small muted">' + (all.length ? 'No open proposals.' : 'No proposals yet. Press “Ask Claude to capture the flows” after the sessions, or “Save the standard flows” to store the standard flow of every module in scope.') + '</p>')
       + (done ? '<p class="xs muted">' + done + ' proposal' + (done === 1 ? '' : 's') + ' already applied or dismissed.</p>' : '') + '</section>';
   };
-  [['whiteboard'], ['flow'], ['modules']].forEach(([id]) => { const v = V[id]; if (!v || typeof v.html !== 'function') return; const h = v.html; v.html = function () { const out = h.apply(this, arguments); return typeof out === 'string' ? V.designPanel() + out : out; }; });
+  [['whiteboard'], ['flow'], ['modules'], ['brd']].forEach(([id]) => { const v = V[id]; if (!v || typeof v.html !== 'function') return; const h = v.html; v.html = function () { const out = h.apply(this, arguments); return typeof out === 'string' ? V.designPanel() + out : out; }; });
 
   const decide = async (id, status, apply) => {
     if (J().guard()) return; const prev = JSON.parse(JSON.stringify(F.doc('design_proposals') || { items: [] })); const p = items().find(x => x.id === id); if (!p || p.status !== 'open') return;
@@ -69,6 +76,13 @@
         const m = modKey(p.module); if (!m) return 'This project has no module called “' + p.module + '”. Dismiss it, or add the module first.';
         const f = V.designLogic.flowFromProposal(p, m, F.uid, F.autoLayout); S.ws.flows[f.id] = f; undo = () => { delete S.ws.flows[f.id]; };
         F.changed('State flow applied', modLabel(m) + ' › ' + p.name); return '';
+      }
+      if (p.kind === 'brdintro') {
+        const fill = V.designLogic.introFill(p, S.ws.project); const ks = Object.keys(fill); if (!ks.length) return 'The BRD introduction already has text in every part this covers. Edit it by hand in Project Settings, or dismiss this.'; Object.assign(S.ws.project, fill); F.changed('BRD introduction filled', ks.join(', ')); return '';
+      }
+      if (p.kind === 'requirement') {
+        const ms = (p.modules || []).map(modKey); if (ms.some(x => !x)) return 'A module of this requirement (“' + p.modules[ms.indexOf('')] + '”) is not in this project.'; const now = new Date().toISOString();
+        const rec = V.designLogic.requirementFromProposal(p, ms, F.nextReqId(ms[0] ? F.modulePrefix(ms[0]) : 'GEN'), now, S.user.name || S.user.email); S.ws.requirements.push(rec); undo = () => { S.ws.requirements = S.ws.requirements.filter(r => r.id !== rec.id); }; F.changed('Requirement drafted', rec.id + ' ' + rec.title); return '';
       }
       if (p.kind === 'field') {
         const m = modKey(p.module); if (!m) return 'This project has no module called “' + p.module + '”.'; const have = F.effFields(m).find(x => x.name === F.slug(p.name) || String(x.label).toLowerCase() === p.name.toLowerCase()); if (have) return 'The ' + modLabel(m) + ' module already has a field “' + have.label + '”. Dismiss this one.';
@@ -86,6 +100,7 @@
     if (ok === false && undo) undo(); if (ok) toast('Applied. It is now part of the design.', 3500); V.render();
   };
   ACT.dsAskForms = a => V.busy(a, async () => { if (J().guard()) return; const r = await J().post('/jobs', { kind: 'fill_forms' }); toast(r && r.duplicate ? 'Claude already has this request.' : 'Sent. Claude’s progress shows in the assistant panel.', 5000); const st = S.ui.asst; if (st) { st.open = true; st.sig = ''; } J().load(true); });
+  ACT.dsAskBrd = a => V.busy(a, async () => { if (J().guard()) return; const r = await J().post('/jobs', { kind: 'draft_brd' }); toast(r && r.duplicate ? 'Claude already has this request.' : 'Sent. Claude’s progress shows in the assistant panel.', 5000); const st = S.ui.asst; if (st) { st.open = true; st.sig = ''; } J().load(true); });
   ACT.dsDismiss = async a => { if (await decide(a.getAttribute('data-id'), 'dismissed', null)) V.render(); };
   ACT.dsAsk = a => V.busy(a, async () => { if (J().guard()) return; const r = await J().post('/jobs', { kind: 'capture_flows' }); toast(r && r.duplicate ? 'Claude already has this request.' : 'Sent. Claude’s progress shows in the assistant panel.', 5000); const st = S.ui.asst; if (st) { st.open = true; st.sig = ''; } J().load(true); });
   ACT.dsDefaults = a => V.busy(a, async () => {

@@ -29,4 +29,10 @@ t('a field and a form are cleaned: type must be a known one, a form needs sectio
   assert.equal(cleanProposal({ kind: 'form', module: 'Asset', name: 'F', sections: [] }), null);
   const a = mergeProposals([], [{ kind: 'field', module: 'Asset', label: 'Warranty end' }, { kind: 'form', module: 'Asset', name: 'Quick add', sections: [{ name: 'D', fields: ['Name'] }] }], NOW); assert.equal(a.added, 2);
 });
+t('a requirement and the BRD introduction are cleaned', () => {
+  const r = cleanProposal({ kind: 'requirement', title: 'Weekly status report', objective: 'The customer gets a status report every week.', modules: ['Work Order', ''], classification: 'weird', rules: 'Sent on Monday' }); assert.equal(r.name, 'Weekly status report'); assert.equal(r.classification, 'change'); assert.deepEqual(r.modules, ['Work Order']); assert.equal(r.module, 'Work Order');
+  assert.equal(cleanProposal({ kind: 'requirement', title: 'No objective' }), null); assert.equal(cleanProposal({ kind: 'requirement', objective: 'No title' }), null);
+  const i = cleanProposal({ kind: 'brdintro', background: 'Al Moallam runs hotels.' }); assert.equal(i.name, 'BRD introduction'); assert.equal(cleanProposal({ kind: 'brdintro' }), null);
+  const a = mergeProposals([], [{ kind: 'requirement', title: 'A', objective: 'o' }, { kind: 'requirement', title: 'A', objective: 'o2' }, i], NOW); assert.equal(a.added, 2, 'the same requirement twice is one');
+});
 console.log(n + ' design proposal checks passed');
