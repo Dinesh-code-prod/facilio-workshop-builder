@@ -47,6 +47,7 @@
     return head + '<div class="page-body"><div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Readiness</h3><span class="small muted">' + esc(r.verdict) + '</span></div><div class="card-b">' + rows + '<p class="xs muted" style="margin:8px 0 0">Green is done, amber is in progress, pink is missing. The FTR report is kept in its own results file and is not counted here.</p></div></div>'
       + '<div class="card"><div class="card-h"><h3>Go-live decision</h3></div><div class="card-b">' + decided + box + '</div></div></div>';
   }, mount() { I().load(['utc', 'task', 'close', 'ugd']); } };
+  V.goliveLogic.rows = () => readiness(gather()).rows;
   V.ACT.glDecide = a => V.busy(a, async () => {
     if (!can()) return; const go = a.getAttribute('data-go') === '1'; const note = (document.getElementById('gl_note') || {}).value || '';
     if (!(await V.confirmDialog(go ? 'Record go-live' : 'Record hold', 'This is saved with your name and today' + String.fromCharCode(39) + 's date. You can record a different decision later.', go ? 'Record go-live' : 'Record hold', false))) return;

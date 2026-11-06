@@ -84,4 +84,10 @@ t('standard behaviour: every module with a standard flow gets a create case and 
   assert.ok(titles.includes('Create a Work Order record') && titles.includes('Work Order: standard state flow (Submitted to Closed)') && titles.includes('Create a Asset record')); assert.ok(!titles.some(x => /Asset: standard state flow/.test(x)), 'no flow, no flow case');
   const g = r.drafts.find(d => d.mod === '__general'); assert.ok(g && g.req === 'GEN-001'); const f = r.drafts.find(d => /standard state flow/.test(d.title)); assert.match(f.steps, /Move the record to "Assigned"/); assert.equal(U.fromSolution(data, r.drafts.map(d => Object.assign({}, d))).drafts.length, 0, 'a second press adds nothing');
 });
+t('hypercare starts from what is open: open UAT issues and failed cases without an issue, once each', () => {
+  const tasks = [{ id: 't1', n: 3, title: 'Wrong total', severity: 'Critical', owner: 'a@x.com', status: 'Open' }, { id: 't2', n: 4, title: 'Typo', severity: 'Trivial', status: 'Closed' }, { id: 't3', n: 5, title: 'Slow', severity: 'Major', status: 'Deferred' }];
+  const cases = [{ id: 'c1', tcid: 'WO-01', title: 'Approve', status: 'Failed' }, { id: 'c2', tcid: 'WO-02', title: 'Close', status: 'Blocked', issue: 't9' }, { id: 'c3', tcid: 'WO-03', title: 'Create', status: 'Passed' }];
+  const r = U.hypercareFromOpen(tasks, cases, []); assert.deepEqual(r.map(x => x.src.key), ['task:t1', 'utc:c1']); assert.equal(r[0].severity, 'Critical'); assert.equal(r[0].status, 'Open'); assert.equal(r[1].title, 'WO-01 Approve (test case failed)');
+  assert.deepEqual(U.hypercareFromOpen(tasks, cases, ['task:t1']).map(x => x.src.key), ['utc:c1']); assert.deepEqual(U.hypercareFromOpen(tasks, cases, r.map(x => x.src.key)), []); assert.deepEqual(U.hypercareFromOpen(null, null, null), []);
+});
 console.log(`\n${n} UAT checks passed`);

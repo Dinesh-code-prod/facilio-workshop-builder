@@ -145,6 +145,14 @@
     if (have.some(c => (c.mod || c.module) === mod && String(c.title || '').trim().toLowerCase() === title.toLowerCase())) return null;
     return { mod, tcid: nextId(label, have), scenario: title, title, req: '', pre: 'A tester with access to ' + label + ' and test data.', steps: steps.map((s, i) => (i + 1) + '. ' + s).join(String.fromCharCode(10)), expected: expected || 'The process ends as shown in the recording.', actual: '', status: 'Not Started', tester: '', date: '', src: { from: 'recording', key: 'rec:' + mod + ':' + title.toLowerCase() } };
   }
-  const api = { videoPrompt, fromSteps, statusBoard, walkthroughs, walkFramable, coverage, fromSolution, STATUS, ISSUE_ST, SEVERITY, TASK_OF, isUatIssue, issueStatus, FIXED, issueFilter, chartData, FIELDS, suggestMap, findHeaderRow, normStatus, nextId, readRows, summarize, keysOf };
+  /** Hypercare starts from what is still open: open UAT issues and failed or blocked test cases that have no issue. tasks: [{ id, n, title, severity, owner, status }] (status = UAT issue status); cases: [{ id, tcid, title, status, issue }]; have: keys already taken.
+      Returns hypercare issue records ({ title, severity, status, owner, target, workaround, notes, src: { key } }) for the ones not taken yet. */
+  function hypercareFromOpen(tasks, cases, have) {
+    const taken = new Set(Array.isArray(have) ? have : []); const sev = s => (/crit|block/i.test(String(s)) ? 'Critical' : /high|major/i.test(String(s)) ? 'High' : /low|minor|trivial/i.test(String(s)) ? 'Low' : 'Medium'); const out = [];
+    (Array.isArray(tasks) ? tasks : []).forEach(t => { if (!t || ['Closed', 'Deferred'].includes(t.status)) return; const key = 'task:' + t.id; if (!taken.has(key)) { taken.add(key); out.push({ title: t.title || 'UAT issue', severity: sev(t.severity), status: 'Open', owner: t.owner || '', target: '', workaround: '', notes: 'Carried over from UAT issue T-' + (t.n || ''), src: { key, from: 'uat-issue' } }); } });
+    (Array.isArray(cases) ? cases : []).forEach(c => { if (!c || c.issue || !['Failed', 'Blocked'].includes(c.status)) return; const key = 'utc:' + c.id; if (!taken.has(key)) { taken.add(key); out.push({ title: ((c.tcid || '') + ' ' + (c.title || '')).trim() + ' (test case ' + String(c.status).toLowerCase() + ')', severity: 'Medium', status: 'Open', owner: '', target: '', workaround: '', notes: 'Carried over from the UAT test cases', src: { key, from: 'test-case' } }); } });
+    return out;
+  }
+  const api = { hypercareFromOpen, videoPrompt, fromSteps, statusBoard, walkthroughs, walkFramable, coverage, fromSolution, STATUS, ISSUE_ST, SEVERITY, TASK_OF, isUatIssue, issueStatus, FIXED, issueFilter, chartData, FIELDS, suggestMap, findHeaderRow, normStatus, nextId, readRows, summarize, keysOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBUat = api;
 })(typeof window !== 'undefined' ? window : globalThis);
