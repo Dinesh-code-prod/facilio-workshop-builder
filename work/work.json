@@ -316,7 +316,8 @@
         "finish",
         "progress",
         "handoff_get",
-        "handoff_submit"
+        "handoff_submit",
+        "file_urls"
        ],
        "description": "Which step"
       },
@@ -354,6 +355,10 @@
       "result": {
        "type": "string",
        "description": "handoff_submit: the answer"
+      },
+      "fileId": {
+       "type": "string",
+       "description": "Only for file_urls: the project file id of an org package (the ref of a build_solution_doc job)"
       }
      },
      "required": [

@@ -5,7 +5,7 @@
 import { OPEN, LIMITS, KINDS, cleanRequest, newJob, step, brief, leaseExpired } from './_jobs.mjs';
 
 export function installJobs(d) {
-  const { route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, withLock, audit, CONNECTOR, rid } = d;
+  const { route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, withLock, audit, CONNECTOR, rid, CTX } = d;
   const col = pid => 'jb.' + pid, JID = /^jb_[0-9a-f]{18}$/;
   /** team members with edit access only: customers and viewers are refused */
   async function access(s, pid) { const a = await projectAccess(s, pid, 'edit'); if (a.role === 'customer') throw new HttpError(403, 'The job queue is for the project team'); return a; }
@@ -52,6 +52,11 @@ export function installJobs(d) {
   const tools = {
     async jobs_list(s, b) { const p = await pickProject(s, b.project); const r = await ops.list(s, p.id, String(b.status || ''), String(b.stage || '').toLowerCase()); return { project: p.name, projectId: p.id, open: r.open, jobs: r.jobs, note: 'Claim one with action claim and its id. Only waiting jobs can be claimed.' }; },
     async jobs_claim(s, b) { const p = await pickProject(s, b.project); const j = await ops.claim(s, p.id, String(b.id || '')); return brief(j, { id: p.id, name: p.name, customer: p.customer || '' }); },
+    async jobs_file_urls(s, b) {
+      const p = await pickProject(s, b.project); await access(s, p.id); const r = await dbGet('fl.' + p.id, String(b.fileId || '')); const f = r && r.value; if (!f || f.deletedAt || f.status !== 'ready') throw new HttpError(404, 'That project file was not found');
+      if (f.category !== 'config_package') throw new HttpError(403, 'Only an org package file can be fetched this way'); const parts = []; for (const id of (f.urls || [])) { const u = await CTX.files.url(id, { private: true, expires: 3600 }); parts.push(u.url); }
+      await audit(p.id, s.id, 'package-fetched', f.name); return { name: f.name, size: f.size, mime: f.mime, parts, note: 'Download every part in order and join them (cat part1 part2 > package.zip). A file with one part needs no joining. The links last one hour.' };
+    },
     async jobs_progress(s, b) { const p = await pickProject(s, b.project); const j = await ops.progress(s, p.id, String(b.id || ''), b.summary); return { job: view(j), note: 'Shown to the person in Delivery Studio. Keep going.' }; },
     async jobs_finish(s, b) {
       const p = await pickProject(s, b.project); const j = await ops.finish(s, p.id, String(b.id || ''), { status: b.status, summary: b.summary, transferId: b.transferId, questions: b.questions });
