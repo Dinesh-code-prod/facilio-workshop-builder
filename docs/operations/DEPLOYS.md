@@ -86,3 +86,4 @@ One line per deploy: date and time (UTC), commit, deploy number, who ran it, not
 | 2026-11-06 14:40 | HOTFIX | 172 | dinesh.r@facilio.com (Claude Code) | Fix for deploy 171: a stray apostrophe in the assistant search box blanked the whole app. Added tests/src_syntax.mjs to npm test. | 278 files, 43.4 MB |
 | 2026-11-06 15:00 | 6b49ce1 | 173 | dinesh.r@facilio.com (Claude Code) | Assistant panel: scrolls inside its own height, one live status line on top, older runs fold up, newest line shown. | 278 files, 43.4 MB |
 | 2026-11-06 15:25 | aca4d2c | 174 | dinesh.r@facilio.com (Claude Code) | Assistant panel: one single thread with a heading per topic; wider panel. | 278 files, 43.4 MB |
+| 2026-11-06 15:40 | e6d8569 | 175 | dinesh.r@facilio.com (Claude Code) | Assistant panel: message box; Claude reads what the team writes (job kind chat, carries the tab). Answers only; no data changed by a chat. | 278 files, 43.4 MB |
