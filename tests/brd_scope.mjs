@@ -22,4 +22,16 @@ bl = build([]); assert.ok(!table(bl, 'Portal') || table(bl, 'Portal').rows.lengt
 S.ws = F.newWorkshop(); S.ws.modules.workorder = { inScope: true, agreedAutomation: 'A Reject button after approval' }; bl = globalThis.FWBBrd.buildBlocks().blocks;
 assert.ok(bl.some(b => b.t === 'h' && /Agreed Buttons, Automation, SLA and Form Rules/.test(b.text || '')) && bl.some(b => /A Reject button after approval/.test(b.text || '')), 'what the team agreed for buttons and automation is printed in the module section');
 S.ws.modules.workorder.agreedAutomation = '   '; bl = globalThis.FWBBrd.buildBlocks().blocks; assert.ok(!bl.some(b => /Agreed Buttons, Automation/.test(b.text || '')), 'an empty box prints nothing');
-console.log('7 BRD scope checks passed');
+{ // the module section lists only what is agreed or changed, unless the full standard configuration is switched on or the BRD already has edits
+  const heads = b => b.filter(x => x.t === 'h').map(x => x.text || ''); const fresh = () => { S.ws = F.newWorkshop(); S.ws.modules.workorder = { inScope: true }; const d = F.doc('brddoc'); d.edits = {}; d.inserts = {}; return d; };
+  fresh(); let b2 = globalThis.FWBBrd.buildBlocks().blocks, h = heads(b2); const sizeAgreed = b2.length;
+  assert.ok(h.includes('What Stays Standard') && !h.includes('Field List') && !h.includes('Workflows, Automations & Notifications') && !h.includes('Approval Routing'), 'a new BRD lists nothing standard in the module section');
+  S.ws.brd.includeStandard = true; b2 = globalThis.FWBBrd.buildBlocks().blocks; h = heads(b2); assert.ok(h.includes('Field List') && h.includes('Workflows, Automations & Notifications') && !h.includes('What Stays Standard') && b2.length > sizeAgreed + 20, 'the switch brings the full standard configuration back');
+  fresh(); F.doc('brddoc').edits = { x: 'y' }; h = heads(globalThis.FWBBrd.buildBlocks().blocks); assert.ok(h.includes('Field List'), 'a BRD that already has edits keeps its full content'); fresh(); S.ws.brd.includeStandard = false; F.doc('brddoc').edits = { x: 'y' }; assert.ok(!heads(globalThis.FWBBrd.buildBlocks().blocks).includes('Field List'), 'an explicit choice wins over the edits rule');
+  fresh(); F.fops('workorder').add.push({ name: 'warranty_end', label: 'Warranty end', type: 'Date', required: false, options: [], status: 'proposed', origin: 'Custom (proposed)', onForms: [] });
+  S.ws.notifications = [{ id: 'n1', name: 'Tell the manager', module: 'workorder', trigger: 'created', channels: ['email'], recipients: ['Manager'] }]; S.ws.crossLinks.workorder = [{ id: 'c1', name: 'Reserve parts', to: 'inventory', kind: 'create_record', condition: 'when approved' }];
+  S.ws.modules.workorder.agreedAutomation = 'A Reject button after approval'; b2 = globalThis.FWBBrd.buildBlocks().blocks; h = heads(b2);
+  assert.ok(h.includes('Fields Added, Changed or Removed') && !h.includes('Field List') && JSON.stringify(b2.find(x => x.headers && x.headers[0] === 'Field Name').rows).includes('Warranty end'), 'only the added field is listed');
+  assert.ok(h.includes('Notifications Agreed') && h.includes('Actions Across Modules') && h.includes('Agreed Buttons, Automation, SLA and Form Rules'), 'what was recorded in Studio for the module is printed');
+  fresh(); }
+console.log('8 BRD scope and format checks passed');
