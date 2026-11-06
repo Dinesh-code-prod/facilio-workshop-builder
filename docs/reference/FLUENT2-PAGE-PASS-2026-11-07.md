@@ -10,7 +10,7 @@ Legacy audit total (gradients / large radii / shadows): start 193 / 251 / 606.
 | Page | State | Checked |
 |---|---|---|
 | Projects home and list | done | tiles and list view at about 1366 and 800 wide; contrast 0 failures (skip link fixed); `npm test` passes; audit 170 / 242 / 546. Banner kept; stat tiles, search/sort bar, view switch, project cards and the list (now a data grid) are Fluent; clay/glass/pastel rules and the white-circle icon on primary buttons deleted |
-| Project dashboard | not done | |
+| Project dashboard | not done | next: `V.projdash` in `src/dashboards.js` (line ~31) and the `bn-` rules in `src/dashboards.css`; the dark "Delivery progress" tile, pastel tiles and boxed lists become Fluent stat cards and sections. Preview: `node tests/ui/devserver.mjs 4181`, then open a project from the list |
 | Tasks (list, board) | not done | |
 | Stage 1: MSA intake, Kick-off, Plan | not done | |
 | Stage 2: Workshop plan, Transcripts, Whiteboard, Checks | not done | |
