@@ -42,3 +42,5 @@ To restore one: put its line back in the `items` list of its group in `NAV`, and
 - **Now shown:** Templates (`templates`), Tabs & Layouts (`workspace`), Facilio tools (`webframe`), Privacy & data (`privacy`), with Claude setup and Team Guide: the whole Help and Settings area.
 - **Templates and Tabs & Layouts updated to the current setup:** the BRD, UAT, go-live, hypercare and handover outlines follow the Osus-style BRD, the readiness checks, the carry-over from UAT and the Solution Document; the layout presets are now "Full 8-stage workspace", "Design focus" and "Launch and handover".
 - **Still hidden:** the Show Facilio group (Facilio Screens, Product Tour, Dashboard Gallery, Discover more).
+
+- **Support and tickets (user decision, 7 Nov 2026):** the Support group (Support Desk, `supportdesk`) left the menu and is no longer shown. The page code (`src/tickets.js`) and the ticket records are still in the project, only unreachable from the menu. Tasks is the one tab that tracks work.

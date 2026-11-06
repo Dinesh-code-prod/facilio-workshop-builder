@@ -37,7 +37,7 @@ t('the page policy lists exactly those hosts in frame-src and child-src, and kee
 t('the menu: Inbox and Tickets are out of NAV, Support Desk and Facilio tools are in', () => {
   const src = read('src/shell.js'); const nav = src.slice(src.indexOf('const NAV = ['), src.indexOf('V.NAV_ALIAS'));
   assert.ok(!/\['inbox'/.test(nav) && !/\['tickets'/.test(nav), 'inbox and tickets are not menu entries');
-  assert.match(nav, /g: 'Support'[^\n]*items: \[\['supportdesk', 'Support Desk'\]\]/); assert.match(nav, /g: 'Help'[^\n]*\['webframe', 'Facilio tools'\]/);
+  assert.ok(!nav.includes("g: 'Support'"), 'the Support group is gone from the menu');assert.match(nav, /g: 'Help'[^\n]*\['webframe', 'Facilio tools'\]/);
   assert.match(src, /V\.NAV_ALIAS = \{/); assert.match(src, /'Support & Tickets': 'Support & AI'/);
   assert.match(read('src/tickets.js'), /V\.tickets\s*=/); assert.match(read('src/inbox.js'), /V\.inbox\s*=/, 'the old pages still exist, so old links resolve');
 });
