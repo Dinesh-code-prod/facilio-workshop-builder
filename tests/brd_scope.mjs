@@ -1,0 +1,22 @@
+// The BRD follows the modules in scope (src/brd.js): roles, role matrix, portals and the location hierarchy show only what touches a module in scope, and the appendices are off by default.
+import assert from 'node:assert/strict'; import { createRequire } from 'node:module'; import zlib from 'node:zlib'; import { REFERENCE_GZ_B64 } from '../data/reference-data.mjs';
+const req = createRequire(import.meta.url); globalThis.FWBParser = req('../src/parser.js'); req('../src/core.js'); const F = globalThis.FWB; const S = F.S;
+globalThis.FWBViews = { ACT: {}, toast() { }, isCustomer: () => false, ui: {}, extraSections: [], loadingMsg() { }, ico: () => '', crossLinks: () => [] };
+req('../src/textgen.js'); req('../src/diagrams.js'); req('../src/roles.js'); req('../src/brd.js');
+S.baseline = JSON.parse(zlib.gunzipSync(Buffer.from(REFERENCE_GZ_B64, 'base64')).toString()); S.project = { id: 'p1', name: 'T', customer: 'C' }; S.user = { name: 'A', email: 'a@x.com' };
+const build = scope => { S.ws = F.newWorkshop(); scope.forEach(m => { S.ws.modules[m] = { inScope: true }; }); return globalThis.FWBBrd.buildBlocks().blocks; };
+const table = (bl, first) => bl.find(b => b.rows && b.headers && b.headers[0] === first);
+const V = globalThis.FWBViews;
+let bl = build(['workorder', 'asset']);
+const portals = table(bl, 'Portal'), want = S.baseline.portalEvidence.filter(p => p.tabs.some(t => (t.modules || []).some(x => ['workorder', 'asset'].includes(x))));
+assert.equal(portals ? portals.rows.length : 0, want.length, 'only the portals that reach a module in scope'); assert.ok(want.length < S.baseline.portalEvidence.length, 'the reference has portals that do not (so the filter does something)');
+assert.ok(!table(bl, 'Level'), 'no location hierarchy when no location module is in scope'); assert.ok(!bl.some(b => b.t === 'h' && /^Appendix/.test(b.text || '')), 'the appendices are off by default');
+const rows = table(bl, 'Role / Actor'); const names = new Set((rows ? rows.rows : []).map(r => String((r[0] && r[0].text) || r[0])));
+const noAccess = F.allActors().filter(a => a.roleName && !a.privileged && a.origin !== 'proposed' && !V.existingPerm(a, 'workorder') && !V.existingPerm(a, 'asset') && !V.proposedPerm(a.id, 'workorder') && !V.proposedPerm(a.id, 'asset'));
+assert.ok(noAccess.length > 0, 'the reference has roles with no access to these two modules'); const uniq = noAccess.filter(a => F.allActors().filter(x => x.label === a.label).length === 1); const rowOf = l => (rows.rows.find(r => ((r[0] && r[0].text) || r[0]) === l) || []);
+assert.ok(uniq.every(a => !names.has(a.label) || /Actions:/.test(JSON.stringify(rowOf(a.label)))), 'a role with no access in these modules is listed only when it acts in a flow of these modules');
+assert.ok([...rows.rows].every(r => /Actions:|No stateflow action/.test(JSON.stringify(r))), 'sanity: every row says what the role does here');
+const matrix = bl.filter(b => b.rows && b.headers && b.headers[0] === 'Module').flatMap(b => b.headers.slice(1)); assert.ok(uniq.every(a => !matrix.includes(a.label)), 'the role matrix leaves those roles out');
+bl = build(['workorder', 'asset', 'site', 'building']); assert.ok(table(bl, 'Level'), 'the location hierarchy appears when a location module is in scope');
+bl = build([]); assert.ok(!table(bl, 'Portal') || table(bl, 'Portal').rows.length === 0, 'nothing in scope, no portals');
+console.log('5 BRD scope checks passed');

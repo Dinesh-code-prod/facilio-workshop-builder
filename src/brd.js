@@ -16,6 +16,7 @@
     ['conventions', 'Document conventions'], ['roles', 'User roles & responsibilities'], ['portfolio', 'Portfolio hierarchy & module dependencies'], ['modules', 'Module sections'],
     ['processes', 'End-to-end business processes'], ['usecases', 'Customer-specific use cases'], ['portals', 'Portal & cross-module mapping'], ['integration', 'Integration scope & interface specification'], ['agentops', 'Operating model: agents & rules'], ['sla', 'SLA & notifications'], ['matrix', 'Role matrix — module access'],
     ['trace', 'Requirement traceability matrix'], ['changes', 'Proposed configuration changes'], ['questions', 'Open questions & items to be confirmed'], ['validation', 'Appendix — validation summary'], ['sources', 'Appendix — configuration source']];
+  const APPENDIX_OFF = ['validation', 'sources'];   // describe the whole package or the tool, not the customer's solution: off by default, a person can switch them on
   // ---------- several BRDs per project ----------
   // brddoc.list is the register of BRDs ('main' is the original one, whose edits/status/exports stay at the top level so older projects keep working).
   // Every other BRD keeps its own edits, inserted paragraphs, hidden blocks, status and exports under brddoc.docs[id]. Logos are shared by all BRDs of a project.
@@ -49,7 +50,7 @@
     Object.keys(D.page).forEach(k => { P.page[k] = Number(P.page[k]) > 0 ? Number(P.page[k]) : D.page[k]; }); return P;
   }
   function profile() { return cleanProfile(Object.assign(JSON.parse(JSON.stringify(DEFAULT_PROFILE)), BD().profile || root_().profile || S.ws.brd.template || {})); }
-  function sectionOrder() { const saved = S.ws.brd.sections; if (saved && saved.length) { const out = saved.filter(s => SECTIONS.some(x => x[0] === s.id)).map(s => Object.assign({}, s)); SECTIONS.forEach((s, i) => { if (out.some(o => o.id === s[0])) return; const prev = SECTIONS[i - 1] && out.findIndex(o => o.id === SECTIONS[i - 1][0]); out.splice(prev >= 0 ? prev + 1 : out.length, 0, { id: s[0], on: true }); }); return out; } return SECTIONS.map(s => ({ id: s[0], on: true })); }
+  function sectionOrder() { const saved = S.ws.brd.sections; if (saved && saved.length) { const out = saved.filter(s => SECTIONS.some(x => x[0] === s.id)).map(s => Object.assign({}, s)); SECTIONS.forEach((s, i) => { if (out.some(o => o.id === s[0])) return; const prev = SECTIONS[i - 1] && out.findIndex(o => o.id === SECTIONS[i - 1][0]); out.splice(prev >= 0 ? prev + 1 : out.length, 0, { id: s[0], on: !APPENDIX_OFF.includes(s[0]) }); }); return out; } return SECTIONS.map(s => ({ id: s[0], on: !APPENDIX_OFF.includes(s[0]) })); }
 
   // ---------- sample BRD profile (.docx) ----------
   async function profileTemplate(file) {
@@ -98,6 +99,8 @@
     const rank = m => { const i = CHAIN.indexOf(m.name); return i < 0 ? 100 + { high: 0, medium: 1, low: 2 }[m.priority] : i; };
     const rec = activeRec(); if (rec.imported) return { blocks: [{ id: 'imp:title', t: 'h', lvl: 1, text: rec.name }], stats: { modules: 0, questions: 0, confirmed: 0, pending: 0 } }; const scope = scopeSet(); const ty = TYPES[rec.type] || TYPES.core; const integ = ty.integ && rec.type !== 'core';
     const inScope = F.allModules().filter(m => m.inScope && (!scope || scope.has(m.name))).sort((a, b) => rank(a) - rank(b) || a.label.localeCompare(b.label));
+    const scopeNames = new Set(inScope.map(m => m.name));   // every section below may show only what touches these modules
+    const accessInScope = a => inScope.some(m => { try { return !!(root.FWBViews.existingPerm(a, m.name) || root.FWBViews.proposedPerm(a.id, m.name)); } catch (e) { return false; } });   // the role has some permission on a module in scope
     const inBrd = r => !scope || !(r.modules && r.modules.length) || r.modules.some(x => scope.has(x)); const confirmed = S.ws.requirements.filter(r => r.status === 'Confirmed' && inBrd(r)); const pending = S.ws.requirements.filter(r => r.status !== 'Confirmed' && r.status !== 'Rejected' && inBrd(r));
     const allQuestions = []; const addQ = (area, text) => { if (text && !allQuestions.find(x => x.text === text)) allQuestions.push({ area, text }); };
     const imported = (F.doc('config').source === 'imported'); const cfgName = imported ? ((S.baselineMeta && (S.baselineMeta.label || S.baselineMeta.sourceName)) || 'Customer configuration package') : 'Facilio reference configuration (not the customer\'s live org)';
@@ -123,15 +126,18 @@
         H(1, ++secNo + '. User Roles & Responsibilities', 'h'); P('The table lists every participant in the processes covered by this document: configured internal roles, portal users, roles proposed in the workshop and actions whose responsible user is still to be confirmed.', 'intro');
         const rows = []; const resp = {};
         F.allFlows().forEach(fid => { const f = F.flowModel(fid); const m = F.moduleView(f.module); if (!m || !m.inScope || f.enabled === false) return; f.transitions.filter(t => !t.removed && t.enabled !== false).forEach(t => (t.actors || []).forEach(a => { (resp[a.actor] = resp[a.actor] || []).push(m.label + ': ' + q(t.name)); })); });
-        F.allActors().filter(a => resp[a.id] || a.origin === 'proposed' || (a.roleName && !a.privileged && (a.category !== 'internal' || (a.apps || []).indexOf('maintenance') >= 0))).sort((a, b) => F.CATEGORY_ORDER.indexOf(a.category) - F.CATEGORY_ORDER.indexOf(b.category) || a.label.localeCompare(b.label)).forEach(a => { const r = resp[a.id] || []; rows.push([{ text: a.label, bold: true }, F.CATEGORY_LABEL[a.category] || a.category, a.source === 'tbc' ? 'To be confirmed' : a.origin === 'proposed' ? 'Proposed' : 'Configured', [a.description && a.description !== a.label ? a.description : ''].concat(r.length ? ['Actions: ' + r.slice(0, 12).join('; ') + (r.length > 12 ? '; and ' + (r.length - 12) + ' more' : '')] : (a.roleName ? ['No stateflow action assigned in the modules in scope'] : [])).filter(Boolean)]); });
+        F.allActors().filter(a => resp[a.id] || a.origin === 'proposed' || (a.roleName && !a.privileged && accessInScope(a))).sort((a, b) => F.CATEGORY_ORDER.indexOf(a.category) - F.CATEGORY_ORDER.indexOf(b.category) || a.label.localeCompare(b.label)).forEach(a => { const r = resp[a.id] || []; rows.push([{ text: a.label, bold: true }, F.CATEGORY_LABEL[a.category] || a.category, a.source === 'tbc' ? 'To be confirmed' : a.origin === 'proposed' ? 'Proposed' : 'Configured', [a.description && a.description !== a.label ? a.description : ''].concat(r.length ? ['Actions: ' + r.slice(0, 12).join('; ') + (r.length > 12 ? '; and ' + (r.length - 12) + ' more' : '')] : (a.roleName ? ['No stateflow action assigned in the modules in scope'] : [])).filter(Boolean)]); });
         TB(['Role / Actor', 'Category', 'Source', 'Responsibilities in the system'], rows, [1.6, 1.3, 0.9, 4.2], 'roles');
         const priv = F.allActors().filter(a => a.privileged).map(a => a.label); if (priv.length) P('Privileged roles with full access (not listed individually): ' + priv.join(', ') + '.', 'priv');
       }
       else if (sid === 'portfolio' && B) {
-        H(1, ++secNo + '. Portfolio Hierarchy & Module Dependencies', 'h'); H(2, 'Portfolio Hierarchy', 'h2');
-        P('Facilio organises the customer\'s portfolio as Site → Building → Floor → Space → Subspace. Assets and operational records (work orders, requests, inspections, planned maintenance) are linked to a location in this hierarchy.', 'p1');
-        TB(['Level', 'Module', 'Parent link', 'Evidence'], B.portfolio.map((n, i) => [String(i + 1), n.label, n.parent ? humanize(n.parent) : '—', n.status]), [0.5, 1.2, 1.2, 4], 'hier');
-        P('Assets link to the hierarchy through: ' + (B.assetLinks.length ? B.assetLinks.map(l => l.field + ' (' + humanize(l.target) + ')').join(', ') : TBC) + '.', 'assets');
+        H(1, ++secNo + '. Portfolio Hierarchy & Module Dependencies', 'h');
+        if (B.portfolio.some(n => scopeNames.has(n.module))) {   // the location hierarchy only when Site, Building, Floor, Space or similar is in scope
+          H(2, 'Portfolio Hierarchy', 'h2');
+          P('Facilio organises the customer\'s portfolio as Site → Building → Floor → Space → Subspace. Assets and operational records (work orders, requests, inspections, planned maintenance) are linked to a location in this hierarchy.', 'p1');
+          TB(['Level', 'Module', 'Parent link', 'Evidence'], B.portfolio.map((n, i) => [String(i + 1), n.label, n.parent ? humanize(n.parent) : '—', n.status]), [0.5, 1.2, 1.2, 4], 'hier');
+          P('Assets link to the hierarchy through: ' + (B.assetLinks.length ? B.assetLinks.map(l => l.field + ' (' + humanize(l.target) + ')').join(', ') : TBC) + '.', 'assets');
+        }
         H(2, 'Module Dependencies', 'h2d'); TB(['Module', 'Looks up (depends on)', 'Referenced by (in scope)'], inScope.map(m => { const deps = [...new Set(F.effFields(m.name).filter(f => f.lookup && f.status !== 'removed').filter(f => inScope.some(x => x.name === f.lookup)).map(f => (F.moduleView(f.lookup) || {}).label || f.lookup))]; return [m.label, deps.slice(0, 20).join(', ') + (deps.length > 20 ? ' …' : ''), m.usedBy.filter(u => F.moduleView(u) && F.moduleView(u).inScope).map(u => F.moduleView(u).label).join(', ')]; }), [1.3, 3, 2.2], 'deps');
       }
       else if (sid === 'modules') { inScope.forEach(m => { ctx = 'mod:' + m.name; moduleSection(m); }); }
@@ -200,7 +206,7 @@
       else if (sid === 'portals' && B) {
         H(1, ++secNo + '. Portal & Cross-Module Mapping', 'h');
         P('Portal access is read from the portal applications, their menu tabs, portal forms (a form in a portal shows the capability is configured, not that it is used), portal roles and the “Display this transition in other apps” setting on stateflow transitions. Portal screen layouts and record sharing rules are not part of the configuration and are marked for confirmation.', 'p');
-        TB(['Portal', 'Status', 'Roles', 'Modules accessible (tabs)', 'Portal forms for', 'Transitions shown in portal'], B.portalEvidence.map(p => { const ts = p.transitions.map(x => B.transitions.find(t => t.id === x)).filter(Boolean); return [p.name, p.enabled ? 'Enabled' : 'Disabled', p.roles.join(', ') || TBC, [...new Set(p.tabs.flatMap(t => t.modules))].map(x => (F.moduleView(x) || {}).label || x).join(', '), [...new Set(p.forms.map(f => (F.moduleView(f.module) || {}).label || f.module))].join(', '), ts.slice(0, 30).map(t => q(t.name) + ' (' + ((F.moduleView(t.module) || {}).label || t.module) + ')').join(', ') || 'None flagged']; }), [1.2, 0.7, 1.2, 2, 1.6, 2], 'portals');
+        TB(['Portal', 'Status', 'Roles', 'Modules accessible (tabs)', 'Portal forms for', 'Transitions shown in portal'], B.portalEvidence.filter(p => p.tabs.some(t => (t.modules || []).some(x => scopeNames.has(x)))).map(p => { const ts = p.transitions.map(x => B.transitions.find(t => t.id === x)).filter(Boolean); return [p.name, p.enabled ? 'Enabled' : 'Disabled', p.roles.join(', ') || TBC, [...new Set(p.tabs.flatMap(t => t.modules))].map(x => (F.moduleView(x) || {}).label || x).join(', '), [...new Set(p.forms.map(f => (F.moduleView(f.module) || {}).label || f.module))].join(', '), ts.slice(0, 30).map(t => q(t.name) + ' (' + ((F.moduleView(t.module) || {}).label || t.module) + ')').join(', ') || 'None flagged']; }), [1.2, 0.7, 1.2, 2, 1.6, 2], 'portals');
         H(2, 'Cross-Module Actions', 'h2x'); const cx = []; inScope.forEach(m => (root.FWBViews.crossLinks ? root.FWBViews.crossLinks(m.name) : []).filter(r => r.from === m.name).forEach(r => cx.push([m.label, r.name, r.toLabel || (F.moduleView(r.to) || {}).label || TBC, r.condition || '—', r.source === 'configuration' ? 'Configured' + (r.enabled === false ? ' (disabled)' : '') : r.source === 'requested' ? 'Not in configuration — ' + TBC : 'Proposed (' + humanize(r.status || 'proposed') + ')'])));
         TB(['Module', 'Action', 'Creates / affects', 'Shown when', 'Status'], cx, [1.3, 1.8, 1.4, 2, 1.5], 'cross', { empty: 'No cross-module actions for the modules in scope.' });
         H(2, 'Records Created and Updated Across Modules', 'h2r'); const rows = []; inScope.forEach(m => (B.workflowRules || []).filter(r => r.module === m.name && r.enabled).forEach(r => rows.push([m.label, r.name, r.eventLabel, F.actionsText(r.actions).join('; ')])));
@@ -214,7 +220,7 @@
       }
       else if (sid === 'matrix') {
         H(1, ++secNo + '. Role Matrix — Module Access', 'h'); P('Access is decoded from each role\'s tab permissions. Values marked “(proposed)” were agreed in the workshop; ⚠ marks values with settings that must be confirmed in Facilio setup. Privileged roles have full access and are not shown.', 'p');
-        const acts = F.allActors().filter(a => (a.roleName && !a.privileged && (a.category !== 'internal' || (a.apps || []).some(x => x === 'maintenance'))) || a.origin === 'proposed');
+        const acts = F.allActors().filter(a => (a.roleName && !a.privileged && accessInScope(a)) || a.origin === 'proposed');
         for (let i = 0; i < acts.length; i += 6) { const grp = acts.slice(i, i + 6); TB(['Module'].concat(grp.map(a => a.label)), inScope.map(m => [m.label].concat(grp.map(a => { const e = root.FWBViews.existingPerm(a, m.name); const p = root.FWBViews.proposedPerm(a.id, m.name); return [e ? e.text + (e.unknown ? ' ⚠' : '') : '—'].concat(p ? [{ text: F.permText(p, m.name) + ' (proposed)', color: '0A5FCC' }] : []); }))), [1.6].concat(grp.map(() => 1)), 'm' + i); }
       }
       else if (sid === 'trace') {
