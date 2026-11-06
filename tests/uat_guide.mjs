@@ -55,4 +55,10 @@ t('the file asks for nothing from outside, uses the shared frame, and keeps to t
   assert.ok(!/https?:\/\//i.test(html)); assert.ok(!/<(iframe|form|link|img|embed|object)\b/i.test(html)); assert.ok(!/\bsrc=|\bhref="(?!#)/i.test(html)); assert.match(html, /Content-Security-Policy" content="default-src 'none'/); assert.ok(!/fetch\(|XMLHttpRequest|sendBeacon|WebSocket|eval\(|innerHTML/.test(html));
   assert.ok(!/purple|violet|glow|#7c3aed|#8b5cf6/i.test(html)); ['#1D1A5E', '#1570EF', '#E5197F', '#8DB8FF'].forEach(c => assert.ok(html.includes(c), c)); assert.ok(/name="viewport"/.test(html) && /@media print/.test(html) && /lang="en"/.test(html)); });
 t('the print script parses and is the only script', () => { const s = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(x => x[1]); assert.equal(s.length, 1); assert.doesNotThrow(() => new vm.Script(s[0], { filename: 'guide.js' })); });
+t('a walkthrough link appears beside its scenario, only when it is an https link', () => {
+  const cs = [{ tcid: 'W-1', mod: 'workorder', module: 'Work Order', scenario: 'Raise a work order', title: 'Create a work order', steps: '1. Open', expected: 'Created' }, { tcid: 'W-2', mod: 'asset', module: 'Asset', scenario: 'Tag an asset', title: 'Tag it', steps: '1. Open', expected: 'Tagged' }];
+  const g = G.buildUatGuide({ project, modules, testCases: cs, roles: [], walkthroughs: { 'raise a work order': 'https://comet.facilio.work/#/v/abc"x', 'tag an asset': 'javascript:alert(1)' } }); const h = G.uatGuideHtml(g);
+  assert.ok(h.includes('Watch the walkthrough') && h.includes('href="https://comet.facilio.work/#/v/abc&quot;x"'), 'the link is there and escaped'); assert.equal((h.match(/Watch the walkthrough/g) || []).length, 1, 'only the https link; the javascript: one is dropped');
+  const none = G.uatGuideHtml(G.buildUatGuide({ project, modules, testCases: cs, roles: [] })); assert.ok(!none.includes('Watch the walkthrough'), 'no link, no row');
+});
 console.log(`\n${n} UAT guide checks passed`);

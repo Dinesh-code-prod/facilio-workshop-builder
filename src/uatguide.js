@@ -35,7 +35,7 @@
       const e = { id: str(c.tcid, 60), scenario, objective: str(c.objective, 400) || title || scenario, preconditions: text(c.pre || c.preconditions, 1500), steps: stepsOf(c.steps), expected: text(c.expected, 1500),
         roles: strList(c.roles || c.role || extraOf(c, /^(user )?roles?$/i)), testData: text(c.testData || c.data || extraOf(c, /^test ?data$/i), 1500), evidence: text(c.evidence || extraOf(c, /^evidence( expected)?$/i), 1000), requirement: str(c.req, 200), modules: hit.map(m => m.label) };
       if (!scenario) { gaps.push('A test case has no title or scenario, so it was left out of the guide.'); return; }
-      const ref = e.id || scenario;
+      const ref = e.id || scenario; { const wt = inp.walkthroughs && typeof inp.walkthroughs === 'object' ? String(inp.walkthroughs[String(scenario).replace(/\s+/g, ' ').trim().toLowerCase()] || '') : ''; if (/^https:\/\//i.test(wt)) e.walkthrough = wt.slice(0, 600); }
       if (!e.steps.length) gaps.push('The test case "' + ref + '" has no steps yet.');
       if (!e.expected) gaps.push('The test case "' + ref + '" has no expected result yet.');
       if (hit.length > 1) { cross.push(e); hit.forEach(m => { m.covered = true; }); }
@@ -57,7 +57,7 @@
   function entryHtml(e, showMods) {
     const row = (k, v) => v ? `<dt>${k}</dt><dd>${v}</dd>` : '';
     return `<article class="tc"><h3>${esc(e.scenario)}${e.id ? ` <span class="id">${esc(e.id)}</span>` : ''}</h3>${showMods && e.modules.length ? `<div>${e.modules.map(m => `<span class="pill x">${esc(m)}</span>`).join(' ')}</div>` : ''}
-<dl>${row('Objective', esc(e.objective))}${row('Roles', esc(e.roles.join(', ')))}${row('Preconditions', esc(e.preconditions))}${row('Test data', esc(e.testData))}${e.steps.length ? `<dt>Steps</dt><dd><ol>${e.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol></dd>` : ''}${row('Expected result', esc(e.expected))}${row('Evidence expected', esc(e.evidence))}${row('Requirement', esc(e.requirement))}</dl></article>`;
+<dl>${row('Objective', esc(e.objective))}${e.walkthrough ? row('Walkthrough', '<a href="' + esc(e.walkthrough) + '" rel="noopener">Watch the walkthrough</a>') : ''}${row('Roles', esc(e.roles.join(', ')))}${row('Preconditions', esc(e.preconditions))}${row('Test data', esc(e.testData))}${e.steps.length ? `<dt>Steps</dt><dd><ol>${e.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol></dd>` : ''}${row('Expected result', esc(e.expected))}${row('Evidence expected', esc(e.evidence))}${row('Requirement', esc(e.requirement))}</dl></article>`;
   }
   const slug = s => String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30);
 

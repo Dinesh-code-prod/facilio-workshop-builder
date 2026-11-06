@@ -109,6 +109,16 @@
     const rows = (Array.isArray(modules) ? modules : []).map(m => { const reqs = Array.isArray(m.requirements) ? m.requirements : []; const missing = reqs.filter(r => !have.has(String(r.id).toLowerCase())).map(r => ({ id: r.id, title: r.title })); return { name: m.name, label: m.label || m.name, total: reqs.length, covered: reqs.length - missing.length, missing }; }).filter(r => r.total);
     return { rows, total: rows.reduce((n, r) => n + r.total, 0), covered: rows.reduce((n, r) => n + r.covered, 0) };
   }
-  const api = { coverage, fromSolution, STATUS, ISSUE_ST, SEVERITY, TASK_OF, isUatIssue, issueStatus, FIXED, issueFilter, chartData, FIELDS, suggestMap, findHeaderRow, normStatus, nextId, readRows, summarize, keysOf };
+  /** One walkthrough (a short guided video) per SCENARIO, not per test case: cases with the same scenario (or the same title when there is none) are one walkthrough. Returns [{ key, label, mod, count, brief }].
+      The brief is what the person pastes into Comet (Comet makes the video in their own Claude): fictional data only, every step shown, what to expect said. */
+  function walkthroughs(cases, modLabel) {
+    const by = new Map(); (Array.isArray(cases) ? cases : []).forEach(c => { if (!c) return; const label = String(c.scenario || c.title || '').replace(/\s+/g, ' ').trim(); if (!label) return; const key = label.toLowerCase(); if (!by.has(key)) by.set(key, { key, label, mod: c.mod || c.module || '', list: [] }); by.get(key).list.push(c); });
+    return [...by.values()].map(w => { const ml = typeof modLabel === 'function' ? modLabel(w.mod) : w.mod; const lines = ['# Walkthrough brief: ' + w.label, '', 'Make a short guided walkthrough (a video that plays by itself) of this test scenario in Facilio, for the testers of the customer. Use fictional sample data only. Show every step on screen and say what the tester should expect.', '', 'Scenario: ' + w.label + (ml ? ' (' + ml + ')' : ''), ''];
+      w.list.forEach(c => { lines.push('Test case ' + (c.tcid || '') + ': ' + (c.title || w.label)); if (c.pre) lines.push('Before you start: ' + c.pre); if (c.steps) lines.push('Steps:', String(c.steps)); if (c.expected) lines.push('Expected: ' + c.expected); lines.push(''); });
+      return { key: w.key, label: w.label, mod: w.mod, count: w.list.length, brief: lines.join(String.fromCharCode(10)).slice(0, 6000) }; });
+  }
+  /** a walkthrough link is shown inside Studio only when it is https on Comet (the page already allows framing exactly that host) */
+  function walkFramable(url) { try { const u = new URL(String(url || '').trim()); return u.protocol === 'https:' && u.hostname === 'comet.facilio.work'; } catch (e) { return false; } }
+  const api = { walkthroughs, walkFramable, coverage, fromSolution, STATUS, ISSUE_ST, SEVERITY, TASK_OF, isUatIssue, issueStatus, FIXED, issueFilter, chartData, FIELDS, suggestMap, findHeaderRow, normStatus, nextId, readRows, summarize, keysOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBUat = api;
 })(typeof window !== 'undefined' ? window : globalThis);
