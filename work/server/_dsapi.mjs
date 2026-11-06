@@ -67,13 +67,26 @@ export function mergeProposals(existing, incoming, now) {
 }
 
 export function installDs(d) {
-  const { HttpError, projectAccess, pickProject, viaApp, audit, CONNECTOR } = d;
+  const { HttpError, projectAccess, pickProject, viaApp, audit, CONNECTOR, storeServerFile } = d;
   const get = async (pid, sec) => { const cur = await viaApp('GET', '/api/projects/' + pid + '/docs/' + sec); return { data: (cur && cur.data && typeof cur.data === 'object') ? cur.data : {}, version: (cur && cur.version) || 0 }; };
   const update = async (pid, sec, fn) => {
     for (let i = 0; i < 3; i++) { const { data, version } = await get(pid, sec); const out = fn(data); try { await viaApp('PUT', '/api/projects/' + pid + '/docs/' + sec, '', { baseVersion: version, data: out.doc }); return out; } catch (e) { if (e && e.status === 409) continue; throw e; } }
     throw new HttpError(409, 'The ' + sec + ' document was changed by someone else at the same moment. Try again.');
   };
   const tools = {
+    /** Claude brings the finished Meteor page (the index.html of a prototype) into the Studio. url is the one-hour file link Meteor gives (get_prototype with files); only that storage host is fetched. */
+    async mockup_save_page(s, b) {
+      const p = await pickProject(s, b.project); const { role } = await projectAccess(s, p.id, 'edit'); if (role === 'customer') throw new HttpError(403, 'Mockup pages are for the project team');
+      const key = String(b.pageKey || '').trim().slice(0, 300); if (!/^(portfolio:all|flow:|module:|link:|app:)/.test(key)) throw new HttpError(400, 'pageKey must be the key of a mockup card: portfolio:all, or flow:/module:/link:/app: followed by the card name (the Mockup tab lists them).');
+      let u; try { u = new URL(String(b.pageUrl || '')); } catch (e) { throw new HttpError(400, 'pageUrl must be the file link Meteor gave for index.html'); }
+      if (u.protocol !== 'https:' || !/^facilio-work-sites[.]s3[.][a-z0-9-]+[.]amazonaws[.]com$/.test(u.hostname)) throw new HttpError(400, 'pageUrl must be a Meteor file link (the one-hour link from get_prototype with files)');
+      let r; try { r = await fetch(u.href); } catch (e) { throw new HttpError(502, 'The Meteor file could not be fetched. Ask for a fresh link (they last one hour) and try again.'); } if (!r.ok) throw new HttpError(502, 'The Meteor file link did not open (status ' + r.status + '). Ask for a fresh link and try again.');
+      const text = await r.text(); const size = Buffer.byteLength(text, 'utf8'); if (!size || size > 25e6) throw new HttpError(413, 'The file is empty or over 25 MB.'); if (!/<!doctype html|<html/i.test(text.slice(0, 600))) throw new HttpError(415, 'That file is not an HTML page. Send the index.html of the prototype.');
+      const name = (String(b.pageName || 'index.html').replace(/[^A-Za-z0-9._ -]/g, ' ').trim() || 'index.html').replace(/([.]html?)?$/i, '.html').slice(0, 120);
+      const file = await storeServerFile(p.id, s.id, { category: 'mockup_html', name, mime: 'text/html', text, meta: { key, from: 'meteor', by: 'claude' } }); const now = new Date().toISOString();
+      await update(p.id, 'mockup_pages', doc => { const items = Object.assign({}, doc.items); items[key] = { file: { id: file.id, name: file.name, size: file.size }, by: (s.name || s.email || '') + ' (Claude)', at: now }; return { doc: { items } }; });
+      await audit(p.id, s.id, 'mockup-page', key + ' · ' + name + ' · ' + Math.round(size / 1000) + ' KB'); return { project: p.name, key, size, note: 'Saved. It shows on the card in the Mockup tab and inside the client mockup. Nothing else to do.' };
+    },
     async design_save_proposals(s, b) {
       const p = await pickProject(s, b.project); const { role } = await projectAccess(s, p.id, 'edit'); if (role === 'customer') throw new HttpError(403, 'Design proposals are for the project team');
       if (typeof b.proposals === 'string') { try { b.proposals = JSON.parse(b.proposals); } catch (e) { /* falls through to the clear error below */ } }   // a Claude with an older tool list sends the list as text

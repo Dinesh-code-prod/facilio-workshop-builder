@@ -1250,9 +1250,10 @@
         "live",
         "save_transcript",
         "save_findings",
-        "save_design"
+        "save_design",
+        "save_mockup"
        ],
-       "description": "Which step: prepare, live"
+       "description": "Which step: prepare, live, save_transcript, save_findings, save_design (flow proposals), save_mockup (a finished Meteor page)"
       },
       "proposals": {
        "type": "array",
@@ -1260,6 +1261,18 @@
        "items": {
         "type": "object"
        }
+      },
+      "pageKey": {
+       "type": "string",
+       "description": "Only for save_mockup: the mockup card key, for example portfolio:all, or flow:<module>:<flow id>, module:<module>, link:..., app:... (the Mockup tab lists them)"
+      },
+      "pageUrl": {
+       "type": "string",
+       "description": "Only for save_mockup: the one-hour file link of the prototype index.html (Meteor get_prototype with files true)"
+      },
+      "pageName": {
+       "type": "string",
+       "description": "Only for save_mockup: the file name to keep, default index.html"
       }
      },
      "required": [
