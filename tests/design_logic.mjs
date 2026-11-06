@@ -22,4 +22,11 @@ t('limits: per call and in total', () => {
   const many = Array.from({ length: 100 }, (_, i) => flow({ name: 'F' + i })); assert.equal(mergeProposals([], many, NOW).added, LIMITS.perCall);
   const full = Array.from({ length: LIMITS.total }, (_, i) => ({ id: 'dp_' + (i + 1), kind: 'flow', module: 'M', name: 'n' + i, status: 'applied' })); assert.throws(() => mergeProposals(full, [flow()], NOW), /design proposals already/);
 });
+t('a field and a form are cleaned: type must be a known one, a form needs sections with fields', () => {
+  const f = cleanProposal({ kind: 'field', module: 'Asset', label: ' Warranty end ', fieldType: 'date', required: true, options: ['a', ''], why: 'asked' }); assert.equal(f.name, 'Warranty end'); assert.equal(f.fieldType, 'Date'); assert.equal(f.required, true); assert.deepEqual(f.options, ['a']);
+  assert.equal(cleanProposal({ kind: 'field', module: 'Asset', label: 'X', fieldType: 'weird' }).fieldType, 'Single Line Text'); assert.equal(cleanProposal({ kind: 'field', module: '', label: 'X' }), null);
+  const o = cleanProposal({ kind: 'form', module: 'Asset', name: 'Quick add', sections: [{ name: 'Details', fields: ['Name', { field: 'Warranty end', required: true }, ''] }, { name: 'Empty', fields: [] }] }); assert.equal(o.sections.length, 1); assert.deepEqual(o.sections[0].fields.map(x => x.field), ['Name', 'Warranty end']); assert.equal(o.sections[0].fields[1].required, true);
+  assert.equal(cleanProposal({ kind: 'form', module: 'Asset', name: 'F', sections: [] }), null);
+  const a = mergeProposals([], [{ kind: 'field', module: 'Asset', label: 'Warranty end' }, { kind: 'form', module: 'Asset', name: 'Quick add', sections: [{ name: 'D', fields: ['Name'] }] }], NOW); assert.equal(a.added, 2);
+});
 console.log(n + ' design proposal checks passed');

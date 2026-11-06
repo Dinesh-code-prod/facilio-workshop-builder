@@ -21,29 +21,39 @@
     if (layout) { try { layout(states, trans, states[0].id); } catch (e) { /* the grid positions above stay */ } }
     return { id: module + '::proposed_' + uid('f').slice(2), module, name: p.name, description: p.description || p.why || '', criteria: '', initial: states[0].id, states, transitions: trans, origin: 'proposed', enabled: true, workshopCopy: true, isDefault: false, fromProposal: p.id };
   }
-  V.designLogic = { flowFromProposal };
+  /** pure: the custom field a proposal describes (the shape the module builder keeps in fieldOps.add) */
+  const fieldFromProposal = p => ({ name: F.slug(p.name), label: p.name, type: p.fieldType || 'Single Line Text', required: !!p.required, options: p.options || [], lookup: p.lookup || '', validation: p.validation || '', description: p.description || '', status: 'proposed', origin: 'Custom (proposed)', onForms: [], fromProposal: p.id });
+  /** pure: the form a proposal describes (the shape the form builder keeps in formOps); resolve turns a field label or name into the module's field name, or '' when the module has no such field */
+  function formFromProposal(p, module, resolve) {
+    const missing = []; const sections = p.sections.map((s, i) => ({ name: s.name, link: F.slug(s.name) || 'details', seq: i + 1, fields: s.fields.map(x => { const n = resolve(x.field); if (!n.name) { missing.push(x.field); return null; } return { field: n.name, label: n.label, required: !!x.required, hidden: !!x.hidden, default: '', span: 12 }; }).filter(Boolean) }));
+    const key = module + '::' + (F.slug(p.name) || 'form'); return { missing, form: { key, name: F.slug(p.name) || 'form', module, label: p.name, app: 'maintenance', description: p.description || '', sections, fromProposal: p.id } };
+  }
+  V.designLogic = { flowFromProposal, fieldFromProposal, formFromProposal };
 
   function summary(p) {
     if (p.kind === 'flow') return '<div class="ds-st">' + p.states.map(s => '<span>' + esc(s) + '</span>').join('<i>›</i>') + '</div><div class="xs muted">' + p.transitions.length + ' transitions: ' + esc(p.transitions.slice(0, 6).map(t => t.name).join(', ')) + (p.transitions.length > 6 ? ', …' : '') + '</div>';
+    if (p.kind === 'field') return '<div class="ds-st"><span>' + esc(p.fieldType) + '</span>' + (p.required ? '<span>Required</span>' : '') + '</div><div class="xs muted">' + (p.options && p.options.length ? 'Options: ' + esc(p.options.join(', ')) : '') + (p.lookup ? ' Lookup: ' + esc(p.lookup) : '') + (p.description ? ' ' + esc(p.description) : '') + '</div>';
+    if (p.kind === 'form') return '<div class="ds-st">' + p.sections.map(s => '<span>' + esc(s.name) + ' (' + s.fields.length + ')</span>').join('') + '</div><div class="xs muted">' + esc(p.sections.flatMap(s => s.fields.map(x => x.field)).slice(0, 10).join(', ')) + '</div>';
     return '<div class="ds-st"><span>' + esc(p.from) + '</span><i>›</i><span>' + esc(p.to) + '</span></div><div class="xs muted">' + esc(p.name) + (p.condition ? ' · when ' + esc(p.condition) : '') + '</div>';
   }
   function card(p) {
-    const title = p.kind === 'flow' ? esc(p.module) + ': ' + esc(p.name) : 'Across modules: ' + esc(p.name);
-    return '<article class="ds-p"><div class="ds-h"><b>' + title + '</b><span class="tag">' + (p.kind === 'flow' ? esc(BASIS[p.basedOn] || BASIS.new) : 'Flow across modules') + '</span></div>' + summary(p)
+    const title = p.kind === 'crosslink' ? 'Across modules: ' + esc(p.name) : esc(p.module) + ': ' + esc(p.name); const tag = p.kind === 'flow' ? BASIS[p.basedOn] || BASIS.new : p.kind === 'field' ? 'A custom field' : p.kind === 'form' ? 'A form' : 'Flow across modules';
+    return '<article class="ds-p"><div class="ds-h"><b>' + title + '</b><span class="tag">' + esc(tag) + '</span></div>' + summary(p)
       + (p.why ? '<p class="small">' + esc(p.why) + '</p>' : '') + (p.quote ? '<blockquote class="ds-q">' + esc(p.quote) + (p.source ? '<cite>' + esc(p.source) + '</cite>' : '') + '</blockquote>' : '')
       + '<div class="ds-b"><button class="btn sm primary" data-act="dsApply" data-id="' + esc(p.id) + '">Apply</button><button class="btn sm" data-act="dsDismiss" data-id="' + esc(p.id) + '">Dismiss</button></div></article>';
   }
   /** the panel shown above the whiteboard and the state flow builder */
   V.designPanel = () => {
-    if (!team()) return ''; const all = items(), open = all.filter(p => p.status === 'open'), done = all.length - open.length;
+    if (!team() || /[?&]focus=whiteboard/.test(root.location ? root.location.search : '')) return ''; const all = items(), open = all.filter(p => p.status === 'open'), done = all.length - open.length;
     const j = J() && J().K() && Array.isArray(J().K().jobs) ? J().K().jobs.filter(x => x.kind === 'capture_flows' && ['waiting', 'claimed', 'needs_input'].includes(x.status)).length : 0;
-    return '<section class="ds-panel"><div class="ds-top"><div><b>Flows for the design</b><span>Claude reads the sessions and proposes the flows. You look at each one and apply or dismiss it.</span></div><div class="ds-acts">'
+    const jf = J() && J().K() && Array.isArray(J().K().jobs) ? J().K().jobs.filter(x => x.kind === 'fill_forms' && ['waiting', 'claimed', 'needs_input'].includes(x.status)).length : 0;
+    return '<section class="ds-panel"><div class="ds-top"><div><b>Proposals for the design</b><span>Claude reads the sessions and proposes flows, fields and forms. You look at each one and apply or dismiss it.</span></div><div class="ds-acts">'
       + '<button class="btn sm" data-act="dsDefaults" title="Saves the project copy of the standard state flow for every module in scope that has none">Save the standard flows</button>'
-      + '<button class="btn sm primary" data-act="dsAsk"' + (j ? ' disabled' : '') + '>' + (j ? 'Claude is on it' : 'Ask Claude to capture the flows') + '</button></div></div>'
+      + '<button class="btn sm primary" data-act="dsAsk"' + (j ? ' disabled' : '') + '>' + (j ? 'Claude is on it' : 'Ask Claude to capture the flows') + '</button><button class="btn sm primary" data-act="dsAskForms"' + (jf ? ' disabled' : '') + '>' + (jf ? 'Claude is on it' : 'Ask Claude for fields and forms') + '</button></div></div>'
       + (open.length ? '<div class="ds-list">' + open.map(card).join('') + '</div>' : '<p class="small muted">' + (all.length ? 'No open proposals.' : 'No proposals yet. Press “Ask Claude to capture the flows” after the sessions, or “Save the standard flows” to store the standard flow of every module in scope.') + '</p>')
       + (done ? '<p class="xs muted">' + done + ' proposal' + (done === 1 ? '' : 's') + ' already applied or dismissed.</p>' : '') + '</section>';
   };
-  [['whiteboard'], ['flow']].forEach(([id]) => { const v = V[id]; if (!v || typeof v.html !== 'function') return; const h = v.html; v.html = function () { const out = h.apply(this, arguments); return typeof out === 'string' ? V.designPanel() + out : out; }; });
+  [['whiteboard'], ['flow'], ['modules']].forEach(([id]) => { const v = V[id]; if (!v || typeof v.html !== 'function') return; const h = v.html; v.html = function () { const out = h.apply(this, arguments); return typeof out === 'string' ? V.designPanel() + out : out; }; });
 
   const decide = async (id, status, apply) => {
     if (J().guard()) return; const prev = JSON.parse(JSON.stringify(F.doc('design_proposals') || { items: [] })); const p = items().find(x => x.id === id); if (!p || p.status !== 'open') return;
@@ -60,12 +70,22 @@
         const f = V.designLogic.flowFromProposal(p, m, F.uid, F.autoLayout); S.ws.flows[f.id] = f; undo = () => { delete S.ws.flows[f.id]; };
         F.changed('State flow applied', modLabel(m) + ' › ' + p.name); return '';
       }
+      if (p.kind === 'field') {
+        const m = modKey(p.module); if (!m) return 'This project has no module called “' + p.module + '”.'; const have = F.effFields(m).find(x => x.name === F.slug(p.name) || String(x.label).toLowerCase() === p.name.toLowerCase()); if (have) return 'The ' + modLabel(m) + ' module already has a field “' + have.label + '”. Dismiss this one.';
+        F.fops(m).add.push(V.designLogic.fieldFromProposal(p)); F.changed('Field applied', modLabel(m) + ' › ' + p.name); return '';
+      }
+      if (p.kind === 'form') {
+        const m = modKey(p.module); if (!m) return 'This project has no module called “' + p.module + '”.'; const fs = F.effFields(m); const r = V.designLogic.formFromProposal(p, m, ref => { const x = fs.find(z => z.name === ref || String(z.label).toLowerCase() === String(ref).toLowerCase() || z.name === F.slug(ref)); return x ? { name: x.name, label: x.label } : { name: '' }; });
+        if (r.missing.length) return 'These fields are not on the ' + modLabel(m) + ' module yet: ' + r.missing.join(', ') + '. Apply the field proposals first, or dismiss this form.'; if (S.ws.formOps[r.form.key] || (S.baseline && S.baseline.forms[r.form.key])) return 'A form called “' + p.name + '” already exists on ' + modLabel(m) + '. Dismiss this one.';
+        S.ws.formOps[r.form.key] = r.form; undo = () => { delete S.ws.formOps[r.form.key]; }; F.changed('Form applied', modLabel(m) + ' › ' + p.name); return '';
+      }
       const from = modKey(p.from), to = modKey(p.to); if (!from || !to) return 'A module in this flow (“' + (from ? p.to : p.from) + '”) is not in this project.';
       const rec = { id: F.uid('cx'), name: p.name, to, kind: p.linkKind || 'create_record', condition: p.condition || '', who: [], source: 'proposed', verified: false, fromProposal: p.id };
       (S.ws.crossLinks[from] = S.ws.crossLinks[from] || []).push(rec); undo = () => { S.ws.crossLinks[from] = (S.ws.crossLinks[from] || []).filter(z => z.id !== rec.id); }; F.changed('Cross-module action applied', modLabel(from) + ' › ' + p.name); return '';
     });
     if (ok === false && undo) undo(); if (ok) toast('Applied. It is now part of the design.', 3500); V.render();
   };
+  ACT.dsAskForms = a => V.busy(a, async () => { if (J().guard()) return; const r = await J().post('/jobs', { kind: 'fill_forms' }); toast(r && r.duplicate ? 'Claude already has this request.' : 'Sent. Claude’s progress shows in the assistant panel.', 5000); const st = S.ui.asst; if (st) { st.open = true; st.sig = ''; } J().load(true); });
   ACT.dsDismiss = async a => { if (await decide(a.getAttribute('data-id'), 'dismissed', null)) V.render(); };
   ACT.dsAsk = a => V.busy(a, async () => { if (J().guard()) return; const r = await J().post('/jobs', { kind: 'capture_flows' }); toast(r && r.duplicate ? 'Claude already has this request.' : 'Sent. Claude’s progress shows in the assistant panel.', 5000); const st = S.ui.asst; if (st) { st.open = true; st.sig = ''; } J().load(true); });
   ACT.dsDefaults = a => V.busy(a, async () => {

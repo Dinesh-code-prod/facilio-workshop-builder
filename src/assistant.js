@@ -6,7 +6,7 @@
   'use strict';
   const F = root.FWB; const { S, esc } = F; const V = root.FWBViews;
   const STAGE = { intake: 'Contract and kick-off', requirements: 'Requirement sessions', brd: 'BRD', configuration: 'Configuration', uat: 'UAT', hypercare: 'Hypercare', other: 'Project' };
-  const OPEN = { pull_msa: ['kickoff', 'Review the kick-off'], apply_change: ['kickoff', 'Review the kick-off'], pull_clari: ['rschecks', 'Review the checks'], extract_findings: ['rschecks', 'Review the checks'], check_brd: ['rschecks', 'Review the checks'], check_msa: ['rschecks', 'Review the checks'], capture_flows: ['whiteboard', 'Review the proposed flows'] };
+  const OPEN = { pull_msa: ['kickoff', 'Review the kick-off'], apply_change: ['kickoff', 'Review the kick-off'], pull_clari: ['rschecks', 'Review the checks'], extract_findings: ['rschecks', 'Review the checks'], check_brd: ['rschecks', 'Review the checks'], check_msa: ['rschecks', 'Review the checks'], capture_flows: ['whiteboard', 'Review the proposed flows'], fill_forms: ['modules', 'Review the proposed fields and forms'] };
   const st = () => S.ui.asst || (S.ui.asst = { open: false, seen: {}, init: '', sig: '' });
   const L = () => root.FWBKickoffLogic, W = () => root.FWBWorkChat, J = () => V.studioJobs;
   const team = () => !!(S.user && S.user.kind !== 'customer' && S.project && S.project.id && (!V.isCustomer || !V.isCustomer()));
