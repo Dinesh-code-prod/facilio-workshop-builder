@@ -30,16 +30,20 @@
   function paint() {
     ensure(); const show = team(); panel.hidden = tab.hidden = !show; if (!show) { document.body.classList.remove('asst-open'); return; }
     const k = J() && J().K(); const jobs = k && Array.isArray(k.jobs) && k.pid === S.project.id ? L().jobRows(k.jobs) : []; const open = jobs.filter(j => j.open), ask = jobs.filter(j => j.status === 'needs_input').length;
-    const a = st(); if (a.init !== S.project.id) { a.init = S.project.id; a.seen = {}; jobs.forEach(j => { a.seen[key(j)] = 1; }); }   // what was already running when the project opened does not pop the panel
-    else jobs.forEach(j => { if ((j.status === 'claimed' || j.status === 'needs_input') && !a.seen[key(j)]) { a.seen[key(j)] = 1; a.open = true; } });
+    const a = st(); if (a.init !== S.project.id) { a.init = S.project.id; a.seen = {}; a.open = false; jobs.forEach(j => { if (j.status !== 'claimed' && j.status !== 'needs_input') a.seen[key(j)] = 1; }); }   // finished work does not pop the panel; work still running when the project opens does
+    jobs.forEach(j => { if ((j.status === 'claimed' || j.status === 'needs_input') && !a.seen[key(j)]) { a.seen[key(j)] = 1; a.open = true; } });
     document.body.classList.toggle('asst-open', !!a.open); tab.className = open.length ? 'on' : ''; tab.innerHTML = '<span>Assistant</span>' + (ask ? '<i class="as-b">' + ask + '</i>' : open.length ? '<i class="as-p"></i>' : '');
-    const sig = JSON.stringify([S.project.id, a.open, jobs.map(j => [j.id, j.status, j.progressAt, j.activity.length, j.finishedAt])]) + JSON.stringify(k ? k.answers : {}); const typing = document.activeElement && panel.contains(document.activeElement) && document.activeElement.tagName === 'TEXTAREA';
+    const sig = JSON.stringify([S.project.id, a.open, a.q || '', jobs.map(j => [j.id, j.status, j.progressAt, j.activity.length, j.finishedAt])]) + JSON.stringify(k ? k.answers : {}); const typing = document.activeElement && panel.contains(document.activeElement) && document.activeElement.tagName === 'TEXTAREA';
     if (sig === a.sig || typing) return; a.sig = sig;
-    const runs = jobs.slice(0, 6).map(j => '<section class="as-run"><div class="as-rh"><b>' + esc(j.label) + '</b><span>' + esc((STAGE[j.stage] || STAGE.other) + ' · ' + j.statusLabel) + '</span></div><div class="ki-feed as-feed">' + W().feed(runMsgs(j, k)) + '</div></section>').join('');
+    const q = String(a.q || '').trim().toLowerCase(), has = m => String(m.text || '').toLowerCase().includes(q);   // search: a run whose title matches shows whole, otherwise only the lines that match
+    const runs = jobs.map(j => { let m = runMsgs(j, k); if (q && !(j.label + ' ' + (STAGE[j.stage] || '')).toLowerCase().includes(q)) { m = m.filter(has); if (!m.length) return ''; } return '<section class="as-run"><div class="as-rh"><b>' + esc(j.label) + '</b><span>' + esc((STAGE[j.stage] || STAGE.other) + ' · ' + j.statusLabel) + '</span></div><div class="ki-feed as-feed">' + W().feed(m) + '</div></section>'; }).join('');
+    const body = (runs || '<p class="as-empty">' + (q ? 'Nothing matches “' + esc(a.q) + '”.' : 'Nothing is running. When you ask for something Claude helps with (reading a contract, pulling transcripts), its progress appears here, whatever tab you are on.') + '</p>'); const bodyEl = panel.querySelector('.as-body');
+    if (bodyEl) { bodyEl.innerHTML = body; return; }   // the search box stays as it is while you type
     panel.innerHTML = '<div class="as-head"><div><b>Your project assistant</b><span>Prepared with Claude\'s help, on your own computer. You review and decide.</span></div><button type="button" class="btn sm" data-act="asstToggle" aria-label="Close the assistant">Close</button></div>'
-      + '<div class="as-body">' + (runs || '<p class="as-empty">Nothing is running. When you ask for something Claude helps with (reading a contract, pulling transcripts), its progress appears here, whatever tab you are on.</p>') + '</div>';
+      + '<div class="as-search"><input type="search" id="asQ" placeholder="Search this project's chat" aria-label="Search the assistant chat" value="' + esc(a.q || '') + '"></div><div class="as-body">' + body + '</div>';
   }
   V.ACT.asstToggle = () => { const a = st(); a.open = !a.open; a.sig = ''; paint(); };
+  document.addEventListener('input', e => { if (e.target && e.target.id === 'asQ') { st().q = e.target.value; st().sig = ''; paint(); } });
   V.assistantPaint = paint;
   setInterval(() => {   // every two seconds: keep the panel in step with the project that is open; ask for the jobs list now and then
     try { ticks++; if (team() && J()) { const k = J().K(); if (k.pid !== S.project.id || !k.jobs) J().load(false); else if (ticks % 7 === 0 && (st().open || k.jobs.some(j => ['waiting', 'claimed', 'needs_input'].includes(j.status)))) J().load(true); } paint(); } catch (e) { /* the panel is optional: never break a page */ }
