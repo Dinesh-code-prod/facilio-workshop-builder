@@ -15,7 +15,7 @@
       'Build a clickable Facilio prototype of the solution below. It is made only from what the delivery team has confirmed. Use standard Facilio screens and behaviour wherever this brief is silent, and do not invent states, fields or steps.', ''];
     mods.forEach(m => {
       out.push('## ' + m.label, '');
-      if (m.requirements.length) { out.push('Confirmed requirements:'); m.requirements.forEach(r => out.push('- ' + r.id + ' ' + r.title + (r.objective ? ': ' + r.objective : ''))); out.push(''); }
+      if (m.requirements.length) { out.push('Confirmed requirements:'); m.requirements.forEach(r => out.push('- ' + r.id + ' ' + r.title + (r.objective ? ': ' + r.objective : '') + (r.rules ? ' Agreed answer: ' + r.rules : ''))); out.push(''); }
       m.flows.forEach(f => { out.push('State flow “' + f.name + '”: ' + list(f.states) + '.'); f.transitions.forEach(t => out.push('- ' + t.name + ': ' + t.from + ' → ' + t.to)); out.push(''); });
       if (m.fields.length) { out.push('Custom fields:'); m.fields.forEach(x => out.push('- ' + x.label + ' (' + x.type + (x.required ? ', required' : '') + (x.options && x.options.length ? ': ' + list(x.options) : '') + ')')); out.push(''); }
       m.forms.forEach(f => { out.push('Form “' + f.label + '”:'); f.sections.forEach(s => out.push('- ' + s.name + ': ' + list(s.fields))); out.push(''); });
@@ -93,7 +93,7 @@
       const flows = Object.values(S.ws.flows || {}).filter(f => f.module === m.name && f.enabled !== false).map(f => { const lab = id => (f.states.find(s => s.id === id) || {}).label || id; return { id: f.id, name: f.name, states: f.states.map(s => s.label), transitions: f.transitions.filter(t => !t.removed && t.enabled !== false).map(t => ({ name: t.name, from: lab(t.from), to: lab(t.to) })) }; });
       const fields = F.effFields(m.name).filter(x => x.status === 'proposed' || x.status === 'modified').map(x => ({ label: x.label, type: x.type, required: !!x.required, options: x.options || [] }));
       const forms = F.formsForModule(m.name).filter(f => f && f.proposed).map(f => ({ label: f.label || f.name, sections: (f.sections || []).map(s => ({ name: s.name, fields: (s.fields || []).filter(x => !x.hidden).map(x => x.label || F.fieldLabel(m.name, x.field)) })) }));
-      const requirements = (S.ws.requirements || []).filter(r => r.status === 'Confirmed' && (r.modules || []).includes(m.name)).map(r => ({ id: r.id, title: r.title, objective: r.objective }));
+      const requirements = (S.ws.requirements || []).filter(r => r.status === 'Confirmed' && (r.modules || []).includes(m.name)).map(r => ({ id: r.id, title: r.title, objective: r.objective, rules: r.rules || '' }));
       return { name: m.name, label: m.label || m.name, flows, fields, forms, requirements };
     });
     const crosslinks = []; Object.entries(S.ws.crossLinks || {}).forEach(([from, l]) => arr(l).forEach(x => crosslinks.push({ from: label(from), to: label(x.to), name: x.name, condition: x.condition || '' })));

@@ -36,4 +36,9 @@ assert.ok(!h.includes('<h2>Asset</h2>') && !h.includes('Rollout <b>x</b>') && h.
   assert.ok(houseGuide('module', 'Asset: fields and forms').includes('New record form') && houseGuide('module', 'Asset: fields and forms').includes('hierarchy')); assert.ok(houseGuide('link', 'A to B: x').includes('side by side')); assert.ok(houseGuide('app', 'Connected app: X').includes('own screen')); assert.ok(houseGuide('zzz', 'x').includes('Facilio'));
   const its = buildItems(d); assert.ok(its.length && its.every(x => x.text.includes('How to build it (the Facilio way)')) && its.every(x => x.text.indexOf('# Prototype brief') < x.text.indexOf('How to build it')), 'each item brief carries the guide after the content');
 }
-console.log('9 mockup brief checks passed');
+{ // the answer the team typed when confirming goes into the prompt
+  const r = build({ customer: 'A', project: 'P', modules: [{ label: 'Work Order', requirements: [{ id: 'WO-001', title: 'Material request', objective: 'Raise it from the spare-parts list', rules: 'Cost is booked to the job on approval' }], flows: [{ name: 'f', states: ['New', 'Done'], transitions: [{ name: 'Finish', from: 'New', to: 'Done' }] }], fields: [], forms: [] }], crosslinks: [], apps: [] });
+  assert.ok(r.text.includes('WO-001 Material request: Raise it from the spare-parts list Agreed answer: Cost is booked to the job on approval'));
+  assert.ok(!build({ customer: 'A', project: 'P', modules: [{ label: 'Work Order', requirements: [{ id: 'WO-002', title: 'x', objective: 'y' }], flows: [], fields: [], forms: [{ label: 'f', sections: [{ name: 's', fields: ['a'] }] }] }], crosslinks: [], apps: [] }).text.includes('Agreed answer'));
+}
+console.log('10 mockup brief checks passed');
