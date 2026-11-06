@@ -53,14 +53,6 @@
   document.addEventListener('keydown', e => { if (e.target && e.target.id === 'asM' && e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); const b = document.querySelector('#asst [data-act=asstSend]'); if (b) b.click(); } });
   V.ACT.asstToggle =() => { const a = st(); a.open = !a.open; a.sig = ''; paint(); };
   document.addEventListener('input', e => { if (e.target && e.target.id === 'asQ') { st().q = e.target.value; st().sig = ''; paint(); } });
-  // "Wake Claude": opens Claude on this computer with a short instruction to work through this project's job queue, so nothing has to run on a schedule while you are idle
-  V.wakeButton = () => '<button class="btn sm" data-act="wakeClaude" title="Open Claude and let it work through everything waiting for this project">Wake Claude</button>';
-  V.ACT.wakeClaude = () => {
-    const p = S.project || {}, text = 'Work through the Delivery Studio job queue for the project "' + (p.name || '') + '" (customer ' + (p.customer || '') + '). Call project_jobs with action list for this project; claim each waiting job, do what its recipe says, send short progress notes with project_jobs action progress, and finish each job with its summary. If a job needs an answer from me, ask with project_jobs action needs_input. Stop when nothing is waiting.';
-    const lk = root.FWBClaude.link('desktop', text); if (lk.prefilled) V.claudeNav(lk.href); else { try { navigator.clipboard.writeText(text); } catch (e) { /* the prompt is shown in the toast */ } V.claudeNav(lk.href); }
-    V.toast(lk.prefilled ? 'Claude is opening with the instruction. Progress shows in the assistant panel.' : 'Claude is opening. Click its message box and press Ctrl+V: the instruction is copied.', 7000);
-    const a = st(); a.open = true; a.sig = ''; paint();
-  };
   V.assistantPaint = paint;
   setInterval(() => {   // every two seconds: keep the panel in step with the project that is open; ask for the jobs list now and then
     try { ticks++; if (team() && J()) { const k = J().K(); if (k.pid !== S.project.id || !k.jobs) J().load(false); else if (ticks % 7 === 0 && (st().open || k.jobs.some(j => ['waiting', 'claimed', 'needs_input'].includes(j.status)))) J().load(true); } paint(); } catch (e) { /* the panel is optional: never break a page */ }
