@@ -48,7 +48,7 @@
 
   /** the job list as the page shows it, with the questions of a job that waits for an answer */
   const jobRows = jobs => arr(jobs).map(j => ({ id: j.id, kind: j.kind, label: j.label || j.kind, status: j.status, statusLabel: JOB_STATUS[j.status] || j.status, at: j.requestedAt || '', by: j.requestedBy || '',
-    claimedAt: j.claimedAt || '', progress: j.progress && j.progress.text || '', summary: j.result && j.result.summary || '', transferId: j.result && j.result.transferId || '', questions: j.status === 'needs_input' ? arr(j.result && j.result.questions) : [], open: ['waiting', 'claimed', 'needs_input'].includes(j.status) }));
+    claimedAt: j.claimedAt || '', finishedAt: j.finishedAt || '', claimedBy: j.claimedBy || '', progress: j.progress && j.progress.text || '', summary: j.result && j.result.summary || '', transferId: j.result && j.result.transferId || '', questions: j.status === 'needs_input' ? arr(j.result && j.result.questions) : [], open: ['waiting', 'claimed', 'needs_input'].includes(j.status) }));
   const pullRequest = (customer, project, file) => ({ kind: 'pull_msa', note: clean([customer, project].filter(Boolean).join(' / ') + (file ? ' / uploaded file: ' + file : ''), 300) });
   const changeRequest = () => ({ kind: 'apply_change', section: 'kickoff_cr' });
   /** which step the person is on, for the strip at the top */

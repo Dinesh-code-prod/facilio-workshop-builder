@@ -59,15 +59,26 @@
     return `<section class="card ko-card" aria-label="Contract"><div class="card-h"><b>Contract (MSA)</b></div><div class="card-b"><p>${esc(status)}</p>
       <div class="row ko-btns"><button type="button" class="btn sm primary" data-act="uploadMsa"${dis}>${p || hasFile ? 'Upload a different MSA' : 'Upload the MSA'}</button></div></div></section>`;
   }
+  // The steps of one job, in plain words, with who and when, so nobody has to guess where Claude is: it works on a person's own computer, not in a chat.
+  function flowHtml(j) {
+    if (j.status === 'cancelled') return ''; const who = String(j.claimedBy || '').split('@')[0]; const fin = ['done', 'needs_input', 'failed'].includes(j.status); const pull = j.kind === 'pull_msa';
+    const steps = [
+      ['Request sent', when(j.at), 'done'],
+      ['Claude picks it up', j.claimedAt ? when(j.claimedAt) + (who ? ', on ' + who + "'s computer" : '') : 'within 5 minutes, at Claude\'s next check', j.claimedAt ? 'done' : 'now'],
+      [pull ? 'Claude reads the contract and drafts the kick-off' : 'Claude applies your change', j.status === 'claimed' ? (j.progress || 'working now…') : fin ? '' : 'not started', j.status === 'claimed' ? 'now' : fin ? 'done' : 'todo'],
+      [j.status === 'done' ? 'Draft ready: review and approve below' : j.status === 'needs_input' ? 'Claude needs your answer' : j.status === 'failed' ? 'Claude could not finish' : 'Draft ready for your approval', j.status === 'done' ? when(j.finishedAt) : j.status === 'failed' ? j.summary : '', j.status === 'done' ? 'done' : j.status === 'needs_input' ? 'now' : j.status === 'failed' ? 'bad' : 'todo']
+    ];
+    return '<ol class="ko-flow" aria-label="Steps of this job">' + steps.map(x => '<li class="' + x[2] + '"><b>' + esc(x[0]) + '</b>' + (x[1] ? ' <span class="xs muted">' + esc(x[1]) + '</span>' : '') + '</li>').join('') + '</ol>';
+  }
   function jobsCard() {
     const k = K(); const rows = L().jobRows(k.jobs); const dis = ro() ? ' disabled' : '';
     const list = rows.slice(0, 8).map(j => `<div class="ko-job ko-${esc(j.status)}"><div class="row"><b>${esc(j.label)}</b>${tag(j.status === 'done' ? 'ok' : j.status === 'failed' ? 'red' : j.open ? 'tbc' : 'low', j.statusLabel)}<span class="xs muted">${esc(when(j.at))}</span>
 </div>
-        ${j.status === 'claimed' ? `<div class="ko-work"><span class="ko-dot" aria-hidden="true"></span><span>${esc(j.progress || 'Claude has started. Reading a contract takes a few minutes.')}</span> <span class="xs muted">started ${esc(when(j.claimedAt))}</span></div>` : j.status === 'waiting' ? '<div class="small muted">Waiting for Claude to pick it up. Claude checks every 5 minutes while your Claude app is open.</div>' : ''}
+        ${flowHtml(j)}
         ${j.summary ? `<div class="small muted">${esc(j.summary)}</div>` : ''}
         ${j.questions.length ? `<div class="ko-ask">${j.questions.map((q, i) => `<label class="f">${esc(q)}<textarea rows="2" maxlength="600" data-change="koAns" data-id="${esc(j.id)}" data-i="${i}"${dis}>${esc(((k.answers[j.id] || [])[i]) || '')}</textarea></label>`).join('')}
           <button type="button" class="btn sm primary" data-act="koSend" data-id="${esc(j.id)}" data-n="${j.questions.length}"${dis}>Send my answer to Claude</button></div>` : ''}</div>`).join('');
-    const hint = rows.some(j => j.open) ? 'Claude picks these up in your own Claude session through the Facilio Delivery Studio connector. Ask Claude there: "check the Studio job queue".' : '';
+    const hint = 'Where is Claude? On your own computer, in the Claude app: open Scheduled, then Delivery Studio job queue, and look at its latest run. It checks this list every 5 minutes and it does not show up as a chat. The result appears on this page by itself.';
     return `<section class="card ko-card" aria-label="Claude jobs"><div class="card-h"><b>Claude jobs</b></div><div class="card-b">
       ${k.err ? `<div class="notice err small">${esc(k.err)}</div>` : ''}${k.jobs === null ? '<div class="empty">Loading…</div>' : list || '<div class="empty small">No jobs yet. A job appears here when you press a button that needs Claude.</div>'}${hint ? `<p class="xs muted">${esc(hint)}</p>` : ''}</div></section>`;
   }
@@ -181,4 +192,43 @@
     if (!(await saved('kickoff_pack'))) { undo('kickoff_pack', prev); toast(NOT_SAVED, 8000, true); return; }
     toast('Kick-off approved.', 4000);
   });
+
+  // ---------- the Project Plan tab (Workbook, Timeline and planning, Calendar) is filled from the same pack ----------
+  // Timeline and Calendar read the document plan_struct (rows); the Workbook tab shows an Excel file. Both are made from the pack's rows, but only
+  // when the project has no plan of its own: a plan someone imported or edited is never replaced. A new pack (after change requests) refreshes only what was made from the pack.
+  let planBusy = false;
+  const planName = () => 'Project plan - ' + [S.project.customer, S.project.name].filter(Boolean).join(' - ').replace(/[\\/:*?"<>|]+/g, ' ') + '.xlsx';
+  const packRaw = () => { const r = F.doc('kickoff_pack'); return r && Array.isArray(r.rows) && r.rows.length && r.status !== 'discarded' && !ro() && !V.isCustomer() ? r : null; };
+  function syncStruct() {
+    const raw = packRaw(); if (!raw) return; const d = F.doc('plan_struct') || {}; const own = d.fromPack;
+    if ((d.rows || []).length && (!own || own === raw.builtAt)) return;
+    setDoc('plan_struct', { rows: raw.rows.map(r => Object.assign({}, r)), versions: d.versions || [], fromPack: raw.builtAt }); F.changed(null, null, { section: 'plan_struct', render: false });
+  }
+  async function planBook(raw) {
+    const E = await V.loadExcelJS(); const wb = new E.Workbook(); const ws = wb.addWorksheet('Project plan', { views: [{ state: 'frozen', xSplit: 5, ySplit: 3 }] });
+    const rows = raw.rows.slice().sort((a, b) => String(a.start).localeCompare(String(b.start))); const day = x => new Date(x + 'T00:00:00Z'); const DAY = 864e5;
+    const t0 = day(rows[0].start); const t1 = rows.reduce((m, r) => { const e = day(r.end || r.start); return e > m ? e : m; }, t0); const weeks = Math.max(1, Math.min(60, Math.ceil(((t1 - t0) / DAY + 1) / 7)));
+    ws.addRow([(S.project.customer || '') + ' × Facilio: ' + (S.project.name || '') + ' - Project plan']).font = { bold: true, size: 14, color: { argb: 'FF1D1A5E' } };
+    ws.addRow(['Status: ' + (raw.status === 'approved' ? 'Approved' : 'Draft, not yet approved') + '. Dates that are not written in the contract are Facilio suggestions.']).font = { italic: true, color: { argb: 'FF4A5784' } };
+    const head = ['Phase', 'Start', 'End', 'Owner', 'Where it comes from']; for (let w = 0; w < weeks; w++) head.push(new Date(t0.getTime() + w * 7 * DAY));
+    ws.addRow(head).eachCell((c, n) => { c.font = { bold: true, color: { argb: 'FFFFFFFF' } }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1D1A5E' } }; c.alignment = { horizontal: 'center' }; if (n > 5) c.numFmt = 'dd/mm'; });
+    rows.forEach(r => { const a0 = day(r.start), e0 = day(r.end || r.start); const row = ws.addRow([r.title, a0, e0, r.owner || '', L().originLabel(r.origin)]); row.getCell(2).numFmt = 'dd/mm/yyyy'; row.getCell(3).numFmt = 'dd/mm/yyyy';
+      for (let w = 0; w < weeks; w++) { const a = t0.getTime() + w * 7 * DAY, b = a + 7 * DAY; if (a0.getTime() < b && e0.getTime() + DAY > a) row.getCell(6 + w).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: r.origin === 'contract' ? 'FF1D1A5E' : 'FF1570EF' } }; } });
+    [34, 12, 12, 11, 28].forEach((w, n) => { ws.getColumn(n + 1).width = w; }); for (let w = 0; w < weeks; w++) ws.getColumn(6 + w).width = 6;
+    const n2 = wb.addWorksheet('Assumptions and gaps'); n2.getColumn(1).width = 22; n2.getColumn(2).width = 120; n2.addRow(['Type', 'Note']).font = { bold: true };
+    const pl = raw.plan || {}; (pl.conflicts || []).forEach(x => n2.addRow(['Conflict', (x && x.message) || String(x)])); (pl.gaps || []).forEach(x => n2.addRow(['Missing from the contract', x])); (pl.assumptions || []).forEach(x => n2.addRow(['Assumption', x]));
+    return wb.xlsx.writeBuffer();
+  }
+  async function syncWorkbook() {
+    const raw = packRaw(); if (planBusy || !raw || !V.loadExcelJS || S.ui.koPlanTried === raw.builtAt) return;
+    F.doc('plan'); let d = S.docs.plan.data; if (!d || typeof d !== 'object') d = S.docs.plan.data = {}; d.versions = d.versions || [];
+    const cur = d.versions.find(v => v.fileId === d.current) || d.versions[0]; if (cur && !(cur.source === 'kickoff' && cur.fromPack !== raw.builtAt)) return;
+    planBusy = true; S.ui.koPlanTried = raw.builtAt;   // one try per version of the pack in this session: a failure does not repeat on every render
+    try {
+      const f = new File([await planBook(raw)], planName(), { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }); const rec = await API.uploadFile(S.project.id, f, 'plan', { source: 'kickoff' }, cur ? cur.fileId : null);
+      d.versions.unshift({ fileId: rec.id, name: f.name, size: f.size, uploadedAt: new Date().toISOString(), by: 'Claude (kick-off)', source: 'kickoff', fromPack: raw.builtAt }); d.current = rec.id; d.view = d.view || {}; d.view.sheet = 0; F.changed('Project plan workbook made from the kick-off', f.name, { section: 'plan' });
+    } catch (e) { toast('The project plan workbook could not be made: ' + (e.message || 'error'), 7000, true); } finally { planBusy = false; }
+  }
+  const oldPlan = V.plan; if (oldPlan) V.plan = Object.assign({}, oldPlan, { html() { syncStruct(); return oldPlan.html.apply(this, arguments); }, mount() { syncWorkbook(); return oldPlan.mount && oldPlan.mount.apply(this, arguments); } });
+  const kickMount = V.kickoff.mount; V.kickoff.mount = function () { if (!V.isCustomer()) { syncStruct(); syncWorkbook(); } return kickMount && kickMount.apply(this, arguments); };
 })(typeof window !== 'undefined' ? window : globalThis);
