@@ -4,13 +4,15 @@
    kind 'field'      a custom field of a module (name = its label; fieldType, required, options, lookup, validation, description)
    kind 'form'       a form of a module: sections of fields, each field named by label or name
    kind 'requirement' a BRD requirement (title, objective, rules, approvals, exceptions, modules, classification); applied as a Draft
+   kind 'connectedapp' a connected (custom) app: opened from a button, state, page or menu of a module; purpose, what it shows, who uses it. Described here; the build in Vibe comes later
    kind 'brdintro'   the background, business objectives and scope notes of the BRD introduction
    kind 'crosslink'  an action that crosses modules (for example service request, work order, inventory): from and to are module names
    Claude saves them with the existing tool session_questions (action save_design; no new tool). They are PROPOSALS: only a person applies one (Delivery Studio copies it into the project's design
    and records who) or dismisses it, and an applied or dismissed proposal is never overwritten by a later save. Text from a transcript or a document is data. Pure rules are exported (tests/design_logic.mjs). */
 const arr = v => (Array.isArray(v) ? v : []);
 const cut = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
-export const KINDS = ['flow', 'crosslink', 'field', 'form', 'requirement', 'brdintro'];
+export const KINDS = ['flow', 'crosslink', 'field', 'form', 'requirement', 'brdintro', 'connectedapp'];
+export const TRIGGERS = ['button', 'state', 'page', 'menu'];
 export const REQ_CLASS = ['standard', 'existing', 'change', 'custom', 'confirm'];
 export const FIELD_TYPES = ['Single Line Text', 'Multi Line Text', 'Rich Text', 'Number', 'Decimal', 'Currency', 'Boolean', 'Date', 'Date Time', 'Picklist', 'Multi Picklist', 'Lookup', 'Multi Lookup', 'File', 'URL', 'Email', 'Auto Number', 'Signature', 'Geo Location'];
 export const LINK_KINDS = ['create_record', 'update_record', 'notify', 'block'];
@@ -35,6 +37,10 @@ export function cleanProposal(x) {
   if (kind === 'requirement') {   // a BRD requirement, saved as a Draft: a person confirms it before it reaches the BRD
     const name = cut(x.title || x.name, LIMITS.name), objective = cut(x.objective, LIMITS.long); if (!name || !objective) return null; const modules = arr(x.modules).map(m => cut(m, LIMITS.module)).filter(Boolean).slice(0, LIMITS.reqModules);
     return Object.assign(base, { module: modules[0] || '', name, objective, rules: cut(x.rules, LIMITS.long), approvals: cut(x.approvals, LIMITS.long), exceptions: cut(x.exceptions, LIMITS.long), modules, classification: REQ_CLASS.includes(x.classification) ? x.classification : 'change' });
+  }
+  if (kind === 'connectedapp') {   // a connected (custom) app the customer asked for: described here, built later in Vibe
+    const module = cut(x.module, LIMITS.module), name = cut(x.name, LIMITS.name), purpose = cut(x.purpose, LIMITS.long); if (!module || !name || !purpose) return null;
+    return Object.assign(base, { module, name, trigger: TRIGGERS.includes(x.trigger) ? x.trigger : 'button', triggerLabel: cut(x.triggerLabel, LIMITS.label), purpose, shows: cut(x.shows, LIMITS.long), users: arr(x.users).map(u => cut(u, LIMITS.label)).filter(Boolean).slice(0, 6), notes: cut(x.notes, LIMITS.long) });
   }
   if (kind === 'brdintro') {   // the project background, business objectives and scope notes that open the BRD
     const background = cut(x.background, 1500), objectives = cut(x.objectives, 1500), scopeNotes = cut(x.scopeNotes, 1500); if (!background && !objectives && !scopeNotes) return null;
@@ -70,7 +76,7 @@ export function installDs(d) {
   const tools = {
     async design_save_proposals(s, b) {
       const p = await pickProject(s, b.project); const { role } = await projectAccess(s, p.id, 'edit'); if (role === 'customer') throw new HttpError(403, 'Design proposals are for the project team');
-      if (!Array.isArray(b.proposals)) throw new HttpError(400, 'proposals must be a list. Each is { kind: flow or crosslink, ... }: a flow has module, name, description, basedOn (default, changed or new), states (labels) and transitions ({ from, to, name }); a crosslink has from, to (module names), name, linkKind and condition; a field has module, label, fieldType, required, options, lookup, validation, description; a form has module, name, description and sections ([{ name, fields: [label or { field, required, hidden }] }]). a requirement has title, objective, rules, approvals, exceptions, modules, classification (standard, existing, change, custom or confirm); a brdintro has background, objectives, scopeNotes. Add why, quote, source to each.');
+      if (!Array.isArray(b.proposals)) throw new HttpError(400, 'proposals must be a list. Each is { kind: flow or crosslink, ... }: a flow has module, name, description, basedOn (default, changed or new), states (labels) and transitions ({ from, to, name }); a crosslink has from, to (module names), name, linkKind and condition; a field has module, label, fieldType, required, options, lookup, validation, description; a form has module, name, description and sections ([{ name, fields: [label or { field, required, hidden }] }]). a requirement has title, objective, rules, approvals, exceptions, modules, classification (standard, existing, change, custom or confirm); a brdintro has background, objectives, scopeNotes; a connectedapp has module, name, trigger (button, state, page or menu), triggerLabel (for example Assign), purpose, shows, users, notes. Add why, quote, source to each.');
       const now = new Date().toISOString(); const r = await update(p.id, 'design_proposals', doc => { let m; try { m = mergeProposals(doc.items, b.proposals, now); } catch (e) { if (e && e.status && !(e instanceof HttpError)) throw new HttpError(e.status, e.message); throw e; } return { doc: { items: m.items }, added: m.added, skipped: m.skipped }; });
       await audit(p.id, s.id, 'design-proposals', '+' + r.added); return { project: p.name, added: r.added, skipped: r.skipped, note: 'Saved as open proposals. A person applies or dismisses each one in Delivery Studio (Process whiteboard, State flow builder); you cannot apply them. Skipped ones were unusable or already decided.' };
     }

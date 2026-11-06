@@ -35,4 +35,8 @@ t('a requirement and the BRD introduction are cleaned', () => {
   const i = cleanProposal({ kind: 'brdintro', background: 'Al Moallam runs hotels.' }); assert.equal(i.name, 'BRD introduction'); assert.equal(cleanProposal({ kind: 'brdintro' }), null);
   const a = mergeProposals([], [{ kind: 'requirement', title: 'A', objective: 'o' }, { kind: 'requirement', title: 'A', objective: 'o2' }, i], NOW); assert.equal(a.added, 2, 'the same requirement twice is one');
 });
+t('a connected app needs a module, a name and a purpose; the trigger must be a known one', () => {
+  const a = cleanProposal({ kind: 'connectedapp', module: 'Work Order', name: 'Multi-technician view', trigger: 'button', triggerLabel: 'Assign', purpose: 'Assign several technicians at once', shows: 'Calendar of technicians', users: ['Dispatcher', ''] }); assert.equal(a.trigger, 'button'); assert.equal(a.triggerLabel, 'Assign'); assert.deepEqual(a.users, ['Dispatcher']);
+  assert.equal(cleanProposal({ kind: 'connectedapp', module: 'Work Order', name: 'X', trigger: 'weird', purpose: 'p' }).trigger, 'button'); assert.equal(cleanProposal({ kind: 'connectedapp', module: 'Work Order', name: 'X' }), null); assert.equal(cleanProposal({ kind: 'connectedapp', name: 'X', purpose: 'p' }), null);
+});
 console.log(n + ' design proposal checks passed');
