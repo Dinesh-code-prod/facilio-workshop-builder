@@ -40,7 +40,7 @@
     const body = (runs || '<p class="as-empty">' + (q ? 'Nothing matches “' + esc(a.q) + '”.' : 'Nothing is running. When you ask for something Claude helps with (reading a contract, pulling transcripts), its progress appears here, whatever tab you are on.') + '</p>'); const bodyEl = panel.querySelector('.as-body');
     if (bodyEl) { bodyEl.innerHTML = body; return; }   // the search box stays as it is while you type
     panel.innerHTML = '<div class="as-head"><div><b>Your project assistant</b><span>Prepared with Claude\'s help, on your own computer. You review and decide.</span></div><button type="button" class="btn sm" data-act="asstToggle" aria-label="Close the assistant">Close</button></div>'
-      + '<div class="as-search"><input type="search" id="asQ" placeholder="Search this project's chat" aria-label="Search the assistant chat" value="' + esc(a.q || '') + '"></div><div class="as-body">' + body + '</div>';
+      + '<div class="as-search"><input type="search" id="asQ" placeholder="Search the chat" aria-label="Search the assistant chat" value="' + esc(a.q || '') + '"></div><div class="as-body">' + body + '</div>';
   }
   V.ACT.asstToggle = () => { const a = st(); a.open = !a.open; a.sig = ''; paint(); };
   document.addEventListener('input', e => { if (e.target && e.target.id === 'asQ') { st().q = e.target.value; st().sig = ''; paint(); } });
