@@ -92,3 +92,27 @@ body.asst-open #app{margin-right:var(--aw)}
 .mk-items{display:grid;gap:12px;margin:12px 0}.mk-it{border:1px solid #DCE4F3;border-radius:12px;padding:12px 14px;background:#F7FAFF}.mk-ith{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}.mk-ith b{color:#1D1A5E}.mk-itb{display:flex;gap:8px}.mk-link{display:flex;gap:8px;margin-top:8px;align-items:center}.mk-link input{flex:1;box-sizing:border-box;padding:8px 12px;border:1px solid #DCE4F3;border-radius:10px;font:inherit;font-size:14px;color:#1D1A5E;background:#fff}.mk-frame{width:100%;height:520px;border:1px solid #DCE4F3;border-radius:10px;margin-top:10px;background:#fff}.mk-d summary{cursor:pointer;color:#1570EF;margin-top:8px;font-size:13px}
 .wt{border:1px solid #DCE4F3;border-radius:10px;padding:8px 12px;margin:0 0 8px;background:#F7FAFF}.wt summary{cursor:pointer;color:#1D1A5E}.wt-b{margin-top:8px}
 body.dragging-files [data-act].drop-ready{outline:2px dashed #1570EF;outline-offset:3px;background:#EAF2FF}
+
+/* assistant panel, simple chat look (7 Nov 2026): plain header, bubbles (you right, Claude left), one quiet status line, a message box with a round send button */
+#asst{background:#fff;box-shadow:-6px 0 24px rgba(29,26,94,.08)}
+#asst .as-head{display:flex!important;align-items:center;justify-content:space-between;padding:12px 14px!important;background:#fff!important;color:#1D1A5E!important;border-bottom:1px solid #E3E9F5}
+#asst .as-t{display:flex;align-items:center;gap:10px}#asst .as-t b{display:block;font-size:16px;font-weight:600;color:#1D1A5E}
+#asst .as-logo{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#1570EF;color:#fff;font:700 14px/1 system-ui,sans-serif;font-style:normal}
+#asst .as-hb{display:flex;gap:4px}#asst .as-ib{width:36px;height:36px;border:0;border-radius:10px;background:transparent;color:#4A5784;display:grid;place-items:center;cursor:pointer}#asst .as-ib:hover{background:#EAF2FF;color:#1570EF}#asst .as-ib:focus-visible,#asst .as-send:focus-visible{outline:2px solid #1570EF;outline-offset:2px}
+#asst .as-search{padding:8px 14px;background:#fff}#asst .as-search[hidden]{display:none}
+#asst .as-body{padding:0 14px 16px!important;background:#fff!important;scroll-behavior:smooth}
+#asst .as-body .as-now{position:sticky;top:0;margin:0 -14px 6px!important;padding:8px 14px;border:0;border-bottom:1px solid #EEF2FA;border-radius:0;background:rgba(255,255,255,.96);font-size:12.5px;color:#4A5784;box-shadow:none}
+#asst .as-now i{width:8px;height:8px;margin-top:5px}
+#asst .as-topic{display:flex;align-items:center;gap:10px;margin:18px 0 8px;padding:0;border:0}#asst .as-topic:before,#asst .as-topic:after{content:"";flex:1;height:1px;background:#E3E9F5}#asst .as-topic span{font-size:12px;color:#7A86AB;font-weight:600;white-space:nowrap;max-width:70%;overflow:hidden;text-overflow:ellipsis}
+#asst .as-feed{display:grid;gap:8px;padding:0!important}
+#asst .ki-row{max-width:88%;gap:0;align-items:flex-start}#asst .ki-row.you{margin-left:auto}#asst .ki-av{display:none}
+#asst .ki-bub{padding:9px 13px;border-radius:18px;border:0;background:#F1F4FA;color:#1D1A5E;font-size:14.5px;line-height:1.5;white-space:pre-wrap;border-bottom-left-radius:6px}
+#asst .ki-row.you .ki-bub{background:#1570EF;color:#fff;border-bottom-left-radius:18px;border-bottom-right-radius:6px}
+#asst .ki-row.other .ki-bub{background:#E6EEFF;color:#1D1A5E}#asst .ki-row.bad .ki-bub{background:#FFF0F7;color:#8A1244}
+#asst .ki-time{font-size:11px;color:#9AA4C2;padding:2px 6px 0}#asst .ki-name{margin:0 0 2px 6px}
+#asst .ki-acts{margin-top:8px}
+#asst .as-comp{padding:10px 14px 14px!important;border-top:0!important;background:#fff!important}
+#asst .as-crow{display:flex;align-items:flex-end;gap:6px;padding:6px 6px 6px 14px;border:1px solid #CBD6EE;border-radius:24px;background:#fff}#asst .as-crow:focus-within{border-color:#1570EF;box-shadow:0 0 0 3px rgba(21,112,239,.15)}
+#asst .as-comp textarea{border:0!important;outline:0!important;box-shadow:none!important;padding:8px 0!important;border-radius:0!important;max-height:140px;background:transparent!important;font-size:14.5px}
+#asst .as-send{flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#1570EF;color:#fff;display:grid;place-items:center;cursor:pointer}#asst .as-send:hover{background:#0F57BD}
+@media (prefers-reduced-motion:reduce){#asst .as-body{scroll-behavior:auto}}
