@@ -488,7 +488,7 @@ function projectsHtml() {
     try {
       const refP = (S.user.kind === 'consultant' && !refCache) ? API.reference().catch(() => null) : null; // start the reference download now, in parallel with the project data
       const consultantSections = ['workshop', 'people', 'planner', 'reviews', 'transcripts', 'dashboards', 'brddoc', 'plan', 'config', 'guide_published', 'schedule_published', 'portal_controls', 'portal_published', 'onboarding_published', 'plan_struct', 'ftr_wb', 'kpi_wb', 'workspace', 'config_digest'].concat(V.extraSections || []);
-      const wanted = S.user.kind === 'customer' ? ['guide_published', 'schedule_published', 'dashboards', 'portal_controls', 'portal_published', 'onboarding_published', 'plan_struct'] : consultantSections;
+      const wanted = S.user.kind === 'customer' ? ['guide_published', 'schedule_published', 'dashboards', 'portal_controls', 'portal_published', 'onboarding_published', 'plan_struct', 'contract_prep'] : consultantSections.concat(['contract_prep']);
       // one request for project + members + documents + records (was ~18); falls back to the separate requests if it fails
       let bundle = null; try { bundle = await API.get('/api/projects/' + id + '/open?sections=' + wanted.join(',') + '&kinds=all'); } catch (e) { if (e.status === 404 || e.status === 403 || e.status === 401) throw e; }
       const r = bundle || await API.get('/api/projects/' + id); S.project = r.project; S.members = r.members || []; S.readonly = S.project.role === 'viewer' || S.project.role === 'customer';

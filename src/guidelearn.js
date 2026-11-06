@@ -20,7 +20,7 @@
   let R = { project: null, map: {}, loaded: false, loading: false, error: null, polled: 0 };
   const timers = {}; const pending = {};
   function rState() {
-    const pid = S.project && S.project.id;
+    const pid = S.project && S.project.id; if (V.msaQuestions) V.msaQuestions.apply();
     if (R.project !== pid) { R = { project: pid, map: {}, loaded: false, loading: false, error: null, polled: 0 }; }
     if (pid && !R.loaded && !R.loading && !R.error) rLoad(true);
     return R;

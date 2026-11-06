@@ -60,6 +60,7 @@
             <div class="row" style="gap:10px;flex-wrap:wrap;margin-top:8px">${go('schedule', 'See the session schedule')}</div></div>
           <div class="card" style="padding:18px"><div class="sec-k"><p>It saves time</p><h2>What to bring</h2></div><ul class="small" style="padding-left:18px;line-height:1.7">${BRING.map(b => `<li><b>${esc(b[0])}</b>: ${esc(b[1])}</li>`).join('')}</ul></div>
         </div>
+        ${V.msaQuestions ? V.msaQuestions.card() : ''}
         <div class="sec-k" style="margin-top:22px"><p>No jargon</p><h2>Words you will hear</h2></div>
         <div class="grid g2">${WORDS.map(w => `<div class="card" style="padding:12px 14px"><b>${esc(w[0])}</b><div class="small muted">${esc(w[1])}</div></div>`).join('')}</div>
         <div class="card" style="padding:16px;margin-top:22px"><b>Questions at any time?</b> <span class="small">Ask your Facilio consultant. Anything you are unsure of is a good thing to raise in the next session.</span>
