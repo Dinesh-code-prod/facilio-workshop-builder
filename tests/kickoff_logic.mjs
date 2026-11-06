@@ -69,4 +69,9 @@ t('job rows keep the questions Claude asked and the answers given, so the chat c
   const r = L.jobRows([{ id: 'j1', kind: 'chat', status: 'waiting', requestedAt: '2026-11-07T10:00:00Z', result: { questions: ['Which file?'], answers: ['The Clari one'] } }, { id: 'j2', kind: 'chat', status: 'needs_input', result: { questions: ['Which?'] } }])
   assert.deepEqual(r[0].asked, ['Which file?']); assert.deepEqual(r[0].answers, ['The Clari one']); assert.deepEqual(r[0].questions, []); assert.deepEqual(r[1].questions, ['Which?']); assert.deepEqual(L.jobRows([{ id: 'x' }])[0].answers, []);
 });
+t('bulk decision: only the named findings change, already-decided ones are skipped, open clears who and when', () => {
+  const items = [{ id: 'a', status: 'open' }, { id: 'b', status: 'open' }, { id: 'c', status: 'confirmed', by: 'x' }]; const r = L.decideMany(items, ['a', 'c'], 'confirmed', 'me@x.com', '2026-11-07');
+  assert.equal(r.n, 1); assert.deepEqual(r.items[0], { id: 'a', status: 'confirmed', by: 'me@x.com', byAt: '2026-11-07' }); assert.equal(r.items[1].status, 'open'); assert.equal(r.items[2].by, 'x');
+  assert.equal(L.decideMany(r.items, ['a'], 'open', 'me', 't').items[0].by, ''); assert.equal(L.decideMany(items, ['a'], 'bogus', 'm', 't').n, 0); assert.equal(L.decideMany(null, null, 'confirmed').n, 0);
+});
 console.log(n + ' kick-off page rule checks passed');
