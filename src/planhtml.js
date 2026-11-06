@@ -16,7 +16,8 @@
   /** pack: the stored kickoff_pack. o: { customer, project, fmt } */
   function build(pack, o) {
     const D = K(), esc = D.esc, p = pack && pack.plan || {}, w = p.window || {}, fmt = (o && o.fmt) || (x => x); const f = d => (day(d) ? esc(fmt(d)) : 'Date to confirm');
-    const rows = arr(p.milestones).filter(m => m && day(m.start)).sort((a, b) => a.start.localeCompare(b.start));
+    const rows = arr(p.milestones).filter(m => m && day(m.start)).map(m => Object.assign({}, m, { end: day(m.end) && m.end >= m.start ? m.end : m.start })).sort((a, b) => a.start.localeCompare(b.start));
+    const undated = arr(p.milestones).filter(m => m && !day(m.start)).map(m => m.name || m.id).filter(Boolean);   // never dropped without a word
     const t0 = rows.length ? rows[0].start : '', t1 = rows.length ? rows.map(m => day(m.end) || m.start).sort().slice(-1)[0] : '', span = t0 ? Math.max(1, (ms(t1) - ms(t0)) / 864e5 + 1) : 1;
     const orLabel = x => `<span class="or ${esc(x || 'assumed')}">${esc(ORIGIN[x] || ORIGIN.assumed)}</span>`;
     const timeline = rows.map(m => `<div class="ti"><div class="d">${f(m.start)}${day(m.end) && m.end !== m.start ? '<br>to ' + f(m.end) : ''}</div><div><b>${esc(m.name)}</b>${m.outcome ? `<div>${esc(m.outcome)}</div>` : ''}${orLabel(m.origin)}</div></div>`).join('');
@@ -28,7 +29,7 @@
     const body = `<main><header class="hd"><h1>Project plan</h1><div class="meta">${esc((o && o.customer) || 'Customer')} × Facilio · ${esc((o && o.project) || '')}</div><div class="meta">${f(w.start)} to ${f(w.end)}${w.workingDays ? ' · ' + esc(w.workingDays) + ' working days' : ''}</div><span class="st">${status}</span></header>`
       + (rows.length ? `<section><h2>Timeline</h2><div class="tlw">${timeline}</div></section><section><h2>Gantt chart</h2><p class="note">${f(t0)} to ${f(t1)}</p><div class="gw">${gantt}</div><div class="leg"><span><i style="background:#1D1A5E"></i>Date in the contract</span><span><i style="background:#1570EF"></i>Facilio assumption</span><span><i style="background:#8DB8FF"></i>Interpreted from the contract</span></div></section>`
         + `<section><h2>Milestones</h2><div class="tw"><table><thead><tr><th>Phase</th><th>Dates</th><th>Who</th><th>Deliverables</th><th>Where it comes from</th></tr></thead><tbody>${table}</tbody></table></div></section>` : '<section><h2>No dated plan</h2><p>The plan has no dated phases yet.</p></section>')
-      + list('Conflicts', p.conflicts, 'bad') + list('Missing from the contract', p.gaps) + list('Assumptions', p.assumptions)
+      + list('Dates to confirm', undated.map(n => n + ': no valid date yet')) + list('Conflicts', p.conflicts, 'bad') + list('Missing from the contract', p.gaps) + list('Assumptions', p.assumptions)
       + '<p class="note">Only dates written in the contract are fixed. Everything else is Facilio’s suggestion until the customer confirms it.</p></main>';
     return D.pageShell({ title: ((o && o.customer) || 'Customer') + ' × Facilio: Project plan', css: CSS, body });
   }

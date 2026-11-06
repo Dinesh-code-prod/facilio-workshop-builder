@@ -22,4 +22,8 @@ t('draft and approved are told apart; an empty plan does not break', () => {
   assert.ok(P.build(pack, {}).includes('Draft, not yet approved')); assert.ok(P.build(Object.assign({}, pack, { status: 'approved', approvedAt: '2026-11-06T09:00:00Z' }), {}).includes('Approved 2026-11-06'));
   assert.ok(P.build(null, {}).includes('No dated plan')); assert.ok(P.build({ plan: { milestones: [{ name: 'x', start: 'bad' }] } }, {}).includes('No dated plan'));
 });
+t('a phase without a valid date is named, and an end before the start does not break the Gantt', () => {
+  const h = P.build({ plan: { milestones: [{ name: 'Lost phase', start: 'bad' }, { name: 'Odd', start: '2026-12-10', end: '2026-12-01' }, { name: 'Fine', start: '2026-12-02', end: '2026-12-05' }] } }, {});
+  assert.ok(h.includes('<h2>Dates to confirm</h2>') && h.includes('Lost phase: no valid date yet')); assert.ok(!/width:-/.test(h)); assert.equal((h.match(/class="gr"/g) || []).length, 2);
+});
 console.log(n + ' plan export checks passed');

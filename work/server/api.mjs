@@ -37,6 +37,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   // record kinds the team can store (customer-only rules come with the customer page)
   const KINDS = ['action', 'decision', 'raid', 'signoff', 'cr', 'onb', 'onbsub', 'onbfile', 'onbws', 'owner', 'agreement', 'minutes', 'checklist', 'build', 'uat', 'digest', 'ctrcore', 'ctrfees', 'ctrlegal', 'ctrrates', 'scope', 'modbrief', 'fieldreq', 'note', 'ctrwatch', 'usecase', 'discrepancy', 'brdrev', 'ai', 'hc', 'hcrep', 'ho', 'close', 'rep', 'kpi', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'lesson', 'tkt', 'res', 'ugv', 'ugu', 'pnote', 'wb', 'news', 'interest', 'cflow', 'task', 'utc', 'mfind', 'lcstage', 'cal', 'utr', 'trtext'];   // utr: a UAT test case the team shared with the customer, and the customer's result on it   // mfind: the team's decision on an MSA scope finding (status and note; team only). utc: UAT test cases (module-wise scenarios, steps, expected and actual results, status; team only)
   const TEAM_KINDS = new Set(['utc', 'mfind', 'lcstage', 'cal', 'trtext']);   // kinds customers can neither list nor change   // task: Project Tasks (one register; sheets are saved views in the tasksheets document)   // cflow: combined flows saved from a whiteboard (a snapshot the BRD can include); wb: process whiteboards; news: Explore Facilio entries; interest: customer requests for more information
+  const TEAM_DOCS = new Set(['kickoff_pack', 'kickoff_cr']);   // drafts and change requests: the team only
   const DOC_SECTIONS = /^[a-z][a-z0-9_]{1,40}$/, ITEM_ID_RE = /^[A-Za-z0-9_-]{1,80}$/, GR_KEY = /^[a-z]{2,8}:[afbxw]:[A-Za-z0-9_-]{1,64}$/;
 
   class HttpError extends Error { constructor(status, msg, extra) { super(msg); this.status = status; this.extra = extra; } }
@@ -330,7 +331,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     return ok({ sections: rows.map(r => ({ section: r.key, version: r.value.v, updated_at: r.value.at, updated_by: r.value.by })) });
   });
   route('GET', '/api/projects/:id/docs/:section', async (b, P) => {
-    const s = await me(); await projectAccess(s, P.id, 'read'); if (!DOC_SECTIONS.test(P.section)) throw new HttpError(403, 'Not permitted');
+    const s = await me(); const { role: dRole } = await projectAccess(s, P.id, 'read'); if (!DOC_SECTIONS.test(P.section) || (dRole === 'customer' && TEAM_DOCS.has(P.section))) throw new HttpError(403, 'Not permitted');
     const r = await docRead(P.id, P.section); return ok(r ? { data: r.data, version: r.head.v, updatedAt: r.head.at, updatedBy: r.head.by } : { data: null, version: 0 });
   });
   route('PUT', '/api/projects/:id/docs/:section', async (b, P) => {
@@ -338,8 +339,12 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     if (!b || b.data === undefined) throw new HttpError(400, 'data is required');
     if (P.section === 'brddoc' && role !== 'owner') { const was = brdApprovals((await docRead(P.id, 'brddoc') || {}).data), now_ = brdApprovals(b.data);
       for (const k of new Set([...Object.keys(was), ...Object.keys(now_)])) if ((was[k] === 'approved') !== (now_[k] === 'approved')) throw new HttpError(403, 'Only a project owner or an admin can approve a BRD or reopen an approved one.'); }
-    if (P.section === 'kickoff_pack' && role !== 'owner') { const st = d => (d && typeof d === 'object' && d.status) || ''; const was = st((await docRead(P.id, 'kickoff_pack') || {}).data), now_ = st(b.data);   // approving the kick-off, or reopening an approved one, is the owner's
-      if ((was === 'approved') !== (now_ === 'approved')) throw new HttpError(403, 'Only a project owner or an admin can approve the kick-off or reopen an approved one.'); }
+    if (TEAM_DOCS.has(P.section) && role === 'customer') throw new HttpError(403, 'Not permitted');
+    if (P.section === 'kickoff_pack') {   // approving, discarding or changing an approved kick-off is the owner's; the owner cannot approve while change requests are open
+      const stOf = d => (d && typeof d === 'object' && d.status) || 'draft'; const prev = ((await docRead(P.id, 'kickoff_pack')) || {}).data; const was = stOf(prev), now_ = stOf(b.data);
+      if (role !== 'owner') { if (was === 'approved' || now_ !== was || (b.data && typeof b.data === 'object' && (b.data.approvedBy || b.data.approvedAt))) throw new HttpError(403, 'Only a project owner or an admin can approve or discard the kick-off, or change an approved one.'); }
+      else if (now_ === 'approved' && was !== 'approved') { const cr = ((await docRead(P.id, 'kickoff_cr')) || {}).data; if (cr && Array.isArray(cr.items) && cr.items.some(x => x && x.status === 'open')) throw new HttpError(409, 'There are open change requests. Let Claude apply them or dismiss them first.'); }
+    }
     const v = await docWrite(s, P.id, P.section, b.data, Number.isInteger(b.baseVersion) ? b.baseVersion : -1); await touchProject(P.id); return ok({ version: v });
   });
 
@@ -1654,7 +1659,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   route('GET', '/api/projects/:id/items', async (b, P, Q) => { const s = await me(); await projectAccess(s, P.id, 'read'); const { role } = await projectAccess(s, P.id, 'read'); const kinds = kindList(Q.get('kinds')).filter(k => !(role === 'customer' && TEAM_KINDS.has(k))); if (!kinds.length) throw new HttpError(400, 'Name the kinds to load'); return ok({ items: await itemsFor(P.id, kinds) }); });
   route('GET', '/api/projects/:id/open', async (b, P, Q) => {
     const s = await me(); const { project, role } = await projectAccess(s, P.id, 'read');
-    const secs = String(Q.get('sections') || '').split(',').filter(k => k && DOC_SECTIONS.test(k)).slice(0, 40); const kq = String(Q.get('kinds') || ''); const kinds = (kq === 'all' ? KINDS : kindList(kq)).filter(k => !(role === 'customer' && TEAM_KINDS.has(k)));
+    const secs = String(Q.get('sections') || '').split(',').filter(k => k && DOC_SECTIONS.test(k) && !(role === 'customer' && TEAM_DOCS.has(k))).slice(0, 40); const kq = String(Q.get('kinds') || ''); const kinds = (kq === 'all' ? KINDS : kindList(kq)).filter(k => !(role === 'customer' && TEAM_KINDS.has(k)));
     const [docRows, items] = await Promise.all([Promise.all(secs.map(k => docRead(P.id, k))), itemsFor(P.id, kinds)]);
     const docs = {}; secs.forEach((k, i) => { docs[k] = docRows[i] ? { data: docRows[i].data, version: docRows[i].head.v } : { data: null, version: 0 }; });
     return ok({ project: projectOut(project, role), members: (project.members || []).map(memberOut), docs, items, kinds });

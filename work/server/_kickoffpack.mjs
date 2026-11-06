@@ -24,6 +24,8 @@ export function buildKickoffPack(ex, o = {}) {
     objectives: arr(ex.deliverables).slice(0, 6).map(x => x.text),
     scope: arr(ex.scope).filter(s => s.status === 'confirmed').slice(0, 30).map(s => s.text), keyDates: arr(ex.commitments).filter(m => m.date).map(m => ({ date: m.date, label: m.text })),
     plan: rows.map(r => ({ title: r.title, start: r.start, end: r.end, isPhase: true, ms: false })),
+    outOfScope: arr(ex.exclusions).map(x => x.text).filter(Boolean).slice(0, 8),
+    customerAsks: arr(ex.customerResponsibilities).filter(x => x && x.text).slice(0, 8).map(x => ({ text: x.text, date: x.origin === 'contract' && x.date ? x.date : '' })),   // a date only when the contract gives it
     governance: arr(ex.supportAndHandover).slice(0, 8).map(x => x.text),
     risks: plan.conflicts.map(x => x.message).concat(arr(ex.dependencies).slice(0, 6).map(x => 'Dependency: ' + x.text)).slice(0, 10),
     nextSteps: plan.gaps.slice(0, 3).map(g => ({ action: 'Resolve: ' + g, owner: 'Facilio' }))

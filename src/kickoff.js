@@ -19,21 +19,26 @@
   const setDoc = (section, data) => { F.doc(section); S.docs[section].data = data; };   // the document may not exist yet
   const base = () => `/api/projects/${encodeURIComponent(pid())}`;
   let timer = 0;
+  const reset = k => Object.assign(k, { pid: pid(), jobs: null, at: 0, err: '', msa: null, answers: {}, cr: '', slide: 0, sig: '', loading: false });
 
   // ---------- data ----------
-  async function load(force) {
+  async function load(force, paint) {
     const k = K(); if (!pid() || !team()) return;
-    if (k.pid !== pid()) Object.assign(k, { pid: pid(), jobs: null, at: 0, err: '', msa: null, answers: {} });
+    if (k.pid !== pid()) reset(k);
     if (!force && k.loading || (!force && k.at && Date.now() - k.at < FRESH_MS)) return;
-    k.loading = true;
+    k.loading = true; const mine = pid();
     try {
       const [j, x] = await Promise.all([API.get(base() + '/jobs?status=all'), API.get(base() + '/transfers?kind=msa').catch(() => null)]);
+      if (mine !== pid()) return;
       const sig = JSON.stringify(j.jobs.map(a => [a.id, a.status, (a.result || {}).summary])); const changed = sig !== k.sig; k.sig = sig; k.jobs = j.jobs; k.err = '';
       k.msa = x && Array.isArray(x.transfers) ? x.transfers.slice().sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))[0] || null : k.msa; k.at = Date.now(); k.loading = false;
-      if (changed || force) repaint();
-    } catch (e) { k.err = e.message || 'The job list could not be loaded'; k.at = Date.now(); k.loading = false; k.jobs = k.jobs || []; repaint(); }
+      if (changed) for (const sec of ['kickoff_cr', 'kickoff_pack']) if (S.docs[sec] && !S.docs[sec].dirty && !S.docs[sec].inflight) { try { await F.reloadSection(sec); } catch (e) { /* the page keeps the copy it has; Refresh tries again */ } }
+      if (mine !== pid()) return;
+      if (changed || paint) repaint();
+    } catch (e) { if (mine !== pid()) return; k.err = e.message || 'The job list could not be loaded'; k.at = Date.now(); k.loading = false; k.jobs = k.jobs || []; repaint(); }
   }
-  function repaint() { if (S.ui.view !== 'kickoff') return; const a = document.activeElement; if (a && a.tagName === 'TEXTAREA' && a.closest('.ko')) return; V.render(); }
+  function repaint() { if (S.ui.view !== 'kickoff') return; const a = document.activeElement; if (a && a.tagName === 'TEXTAREA' && a.closest('.ko')) { K().sig = ''; return; } V.render(); }   // skipped while typing: the next poll paints it
+
   function poll() {
     if (timer) return;
     timer = setInterval(() => { if (S.ui.view !== 'kickoff' || document.hidden) { if (S.ui.view !== 'kickoff') { clearInterval(timer); timer = 0; } return; } const k = K(); if (k.jobs && k.jobs.some(j => ['waiting', 'claimed', 'needs_input'].includes(j.status))) load(true); }, POLL_MS);
@@ -98,21 +103,22 @@
   }
   const fitDeck = () => { const box = document.querySelector('.ko-deck'), fr = box && box.querySelector('iframe'); if (fr && box.clientWidth) fr.style.transform = 'scale(' + (box.clientWidth / 1920) + ')'; };
   let fitBound = false;
+  const safeDeck = p => { try { return deckCard(p); } catch (e) { return '<div class="notice err small">The deck preview could not be built: ' + esc(e.message || 'unknown error') + '</div>'; } };
   function approveBar(p) {
     const a = L().approvalCheck(p, owner(), crDoc()); const dis = ro() ? ' disabled' : '';
     if (p.status === 'approved') return `<div class="ko-bar"><span>${tag('ok', 'Approved')} by ${esc(p.approvedBy)} ${esc(when(p.approvedAt))}</span></div>`;
     return `<div class="ko-bar"><span class="xs muted">${a.ok || !a.why ? 'Review the contract data, then approve.' : esc(a.why)}</span><span class="spacer"></span>
-      <button type="button" class="btn sm" data-act="koSave"${dis}>Save</button><button type="button" class="btn sm" data-act="koDiscard"${dis}${p.status === 'discarded' ? ' disabled' : ''}>Discard draft</button>
+      <button type="button" class="btn sm" data-act="koSave"${dis}>Save</button><button type="button" class="btn sm" data-act="koDiscard"${dis}${p.status === 'discarded' || !owner() ? ' disabled' : ''}>Discard draft</button>
       <button type="button" class="btn primary" data-act="koApprove"${a.ok ? '' : ' disabled'}>Approve kick-off</button></div>`;
   }
   function page() {
     const head = `<div class="page-header"><div class="t"><h1>Kick-off</h1><p>The contract, the kick-off deck and the project plan, drafted together by Claude. You review and approve once.</p></div></div>`;
-    const k = K(); if (k.pid !== pid()) Object.assign(k, { pid: pid(), jobs: null, at: 0, err: '', msa: null, answers: {} });
+    const k = K(); if (k.pid !== pid()) reset(k);
     const p = pack(); const hasFile = !!((V.plannerDoc && V.plannerDoc() || {}).msa);
     return `${head}<div class="page-body ko">${strip(L().stage(hasFile || !!k.msa, p, k.jobs))}
       ${p && p.status === 'discarded' ? '<div class="notice small">This draft was discarded. Ask Claude to build it again from the contract with Pull MSA, or approve nothing.</div>' : ''}
       <div class="ko-grid">${msaCard(p, hasFile)}${jobsCard()}</div>
-      ${p ? packCards(p) + crCard() + deckCard(p) + approveBar(p) : '<div class="empty">The kick-off pack appears here after Claude has read the contract and you have approved the extraction and started the project from it.</div>'}</div>`;
+      ${p ? packCards(p) + crCard() + safeDeck(p) + approveBar(p) : '<div class="empty">The kick-off pack appears here after Claude has read the contract and you have approved the extraction and started the project from it.</div>'}</div>`;
   }
   // The team gets this page; customers keep the older Kick-off Deck viewer.
   const old = V.kickoff;
@@ -120,13 +126,17 @@
 
   // ---------- actions ----------
   const guard = () => { if (ro()) { toast('This project is read-only for you.', 4000, true); return true; } return false; };
-  const post = async (path, body) => { const r = await API.post(base() + path, body); K().at = 0; await load(true); return r; };
+  const post = async (path, body) => { const r = await API.post(base() + path, body); K().at = 0; await load(true, true); return r; };
+  // F.flush never throws: a failed save only leaves the document dirty. So look at the document after the flush, before saying it was saved.
+  const saved = async sec => { for (let i = 0; i < 3 && S.docs[sec] && (S.docs[sec].dirty || S.docs[sec].inflight); i++) await F.flush(); return !!S.docs[sec] && !S.docs[sec].dirty && !S.docs[sec].inflight; };
+  const NOT_SAVED = 'Not saved: the server refused it or the connection failed. Nothing was changed. See the save indicator at the top.';
+  const undo = (sec, prev) => { setDoc(sec, prev); S.docs[sec].dirty = false; V.render(); };
   const slug = x => String(x || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'project';
   const file = kind => `${slug(S.project.customer)}-${slug(S.project.name)}-${kind}${(F.doc('kickoff_pack') || {}).status === 'approved' ? '' : '-draft'}.html`;
-  ACT.koDlDeck = () => { const p = pack(); if (!p) return; V.download(file('kickoff'), new Blob([root.FWBKickoffDeck.build(p.deck, { fmt: dt }).html], { type: 'text/html' })); };
-  ACT.koDlPlan = () => { const p = pack(); if (!p) return; V.download(file('project-plan'), new Blob([root.FWBPlanHtml.build(F.doc('kickoff_pack'), { customer: S.project.customer, project: S.project.name, fmt: dt })], { type: 'text/html' })); };
+  ACT.koDlDeck = () => { const p = pack(); if (!p) return; try { V.download(file('kickoff'), new Blob([root.FWBKickoffDeck.build(p.deck, { fmt: dt }).html], { type: 'text/html' })); } catch (e) { toast('The deck could not be built: ' + (e.message || 'unknown error'), 6000, true); } };
+  ACT.koDlPlan = () => { const p = pack(); if (!p) return; try { V.download(file('project-plan'), new Blob([root.FWBPlanHtml.build(F.doc('kickoff_pack'), { customer: S.project.customer, project: S.project.name, fmt: dt })], { type: 'text/html' })); } catch (e) { toast('The plan could not be built: ' + (e.message || 'unknown error'), 6000, true); } };
   ACT.koSlide = a => { const p = pack(); if (!p) return; const k = K(); const d = deckHtml(p, (k.slide || 0) + (+a.getAttribute('data-d') || 0)); k.slide = d.k - 1; const fr = document.querySelector('.ko-deck iframe'); if (fr) fr.srcdoc = d.html; const no = document.getElementById('koSlideNo'); if (no) no.textContent = 'Slide ' + d.k + ' of ' + d.n; };
-  ACT.koRefresh = () => load(true);
+  ACT.koRefresh = () => load(true, true);
   ACT.koPull = a => V.busy(a, async () => {
     if (guard()) return; const r = await post('/jobs', L().pullRequest(S.project.customer, S.project.name));
     toast(r.duplicate ? 'A request to pull the MSA is already waiting for Claude.' : 'Requested. Ask Claude in your own session: "check the Studio job queue".', 6000);
@@ -142,19 +152,22 @@
   ACT.koCrSend = a => V.busy(a, async () => {
     if (guard()) return; const k = K(); k.cr = (document.getElementById('koCr') || {}).value || k.cr; const r = L().addChange(crDoc(), k.cr, S.user.email, new Date().toISOString());
     if (!r.ok) { toast(r.error, 5000, true); return; }
-    setDoc('kickoff_cr', r.doc); k.cr = ''; F.changed(null, null, { section: 'kickoff_cr' }); await F.flush();
-    try { await post('/jobs', L().changeRequest()); toast('Saved and sent to Claude.', 4000); } catch (e) { toast('Saved, but the job could not be created: ' + (e.message || 'try again'), 7000, true); }
+    const prev = crDoc(), text = k.cr; setDoc('kickoff_cr', r.doc); k.cr = ''; F.changed(null, null, { section: 'kickoff_cr' });
+    if (!(await saved('kickoff_cr'))) { undo('kickoff_cr', prev); k.cr = text; V.render(); toast(NOT_SAVED + ' Your text is kept.', 8000, true); return; }   // no job is made for a request the server does not have
+    try { const j = await post('/jobs', L().changeRequest()); toast(j.duplicate && j.job && j.job.status === 'claimed' ? 'Saved. Claude is already working on the last request; send another request when it has finished so it is not missed.' : 'Saved and sent to Claude.', 6000); } catch (e) { toast('Saved, but the job could not be created: ' + (e.message || 'try again'), 7000, true); }
   });
   ACT.koDismiss = a => { if (guard()) return; setDoc('kickoff_cr', L().dismissChange(crDoc(), a.getAttribute('data-id'))); F.changed(null, null, { section: 'kickoff_cr' }); };
-  ACT.koSave = a => V.busy(a, async () => { if (guard()) return; await F.flush(); toast('Saved.', 2500); });
+  ACT.koSave = a => V.busy(a, async () => { if (guard()) return; await saved('kickoff_pack'); await saved('kickoff_cr'); const ok = !(S.docs.kickoff_pack && S.docs.kickoff_pack.dirty) && !(S.docs.kickoff_cr && S.docs.kickoff_cr.dirty); toast(ok ? 'Saved.' : 'Not saved yet. The server refused it or the connection failed. See the save indicator at the top.', ok ? 2500 : 7000, !ok); });
   ACT.koDiscard = async () => {
-    if (guard() || !pack()) return; if (!(await V.confirmDialog('Discard draft', 'Mark this kick-off draft as discarded? The contract data stays; Claude can build a new draft from a new Pull MSA.', 'Discard', true))) return;
-    setDoc('kickoff_pack', L().setStatus(F.doc('kickoff_pack'), 'discarded', S.user.email, new Date().toISOString())); F.changed('Kick-off draft discarded', null, { section: 'kickoff_pack' }); await F.flush();
+    if (guard() || !pack()) return; if (!owner()) { toast('Only the project owner or an admin can discard the kick-off.', 5000, true); return; } if (!(await V.confirmDialog('Discard draft', 'Mark this kick-off draft as discarded? The contract data stays; Claude can build a new draft from a new Pull MSA.', 'Discard', true))) return;
+    const prev = F.doc('kickoff_pack'); setDoc('kickoff_pack', L().setStatus(prev, 'discarded', S.user.email, new Date().toISOString())); F.changed('Kick-off draft discarded', null, { section: 'kickoff_pack' });
+    if (!(await saved('kickoff_pack'))) { undo('kickoff_pack', prev); toast(NOT_SAVED, 8000, true); }
   };
   ACT.koApprove = a => V.busy(a, async () => {
     const p = pack(); const c = L().approvalCheck(p, owner(), crDoc()); if (!c.ok) { toast(c.why, 6000, true); return; }
     if (!(await V.confirmDialog('Approve kick-off', 'Approve the kick-off deck and the project plan as they are shown? Open items stay open and are listed in the plan.', 'Approve'))) return;
-    setDoc('kickoff_pack', L().setStatus(F.doc('kickoff_pack'), 'approved', S.user.email, new Date().toISOString())); F.changed('Kick-off approved', null, { section: 'kickoff_pack' }); await F.flush();
-    toast(S.docs.kickoff_pack.dirty ? 'Approval could not be saved yet. Try Save.' : 'Kick-off approved.', 4000);
+    const prev = F.doc('kickoff_pack'); setDoc('kickoff_pack', L().setStatus(prev, 'approved', S.user.email, new Date().toISOString())); F.changed('Kick-off approved', null, { section: 'kickoff_pack' });
+    if (!(await saved('kickoff_pack'))) { undo('kickoff_pack', prev); toast(NOT_SAVED, 8000, true); return; }
+    toast('Kick-off approved.', 4000);
   });
 })(typeof window !== 'undefined' ? window : globalThis);
