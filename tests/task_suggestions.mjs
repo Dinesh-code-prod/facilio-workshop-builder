@@ -134,6 +134,6 @@ await t('a project holds at most 100 waiting suggestions; accepted and dismissed
 });
 await t('deleting a project for good removes its suggestions too', async () => {
   const p3 = (await as(SAM, 'POST', '/api/projects', { name: 'To delete', customer: 'Acme' })).data.project.id; await tool(SAM, 'save_task_suggestions', { project: p3, suggestions: [{ action: 'create', fields: { title: 'x' }, reason: 'r', source: SRC }] }); assert.equal(store.get('tsg.' + p3).size, 1);
-  const src = fs.readFileSync(new URL('../work/server/api.mjs', import.meta.url), 'utf8'); assert.ok(src.includes("'tsg.' + P.id])"), 'the delete list names tsg.<project>'); assert.ok(!/KINDS = \[[^\]]*'tsg'/.test(src), 'tsg is not an item kind');
+  const src = fs.readFileSync(new URL('../work/server/api.mjs', import.meta.url), 'utf8'); assert.ok(src.includes("'tsg.' + P.id"), 'the delete list names tsg.<project>'); assert.ok(!/KINDS = \[[^\]]*'tsg'/.test(src), 'tsg is not an item kind');
 });
 console.log(n + ' task suggestion checks passed');

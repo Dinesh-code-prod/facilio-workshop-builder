@@ -302,40 +302,57 @@
     "confirm": true
    },
    {
-    "name": "get_handoff",
-    "description": "Open the task Delivery Studio handed over when the person clicked Open in Claude: instructions, context, documents as text and the answer format. The prompt gives you the id.",
+    "name": "project_jobs",
+    "description": "The job queue: work Delivery Studio asks Claude to do (pull the MSA, apply kick-off change requests, fetch feedback or org status). action list: waiting jobs of a project. action claim (id): take one job; you get fixed instructions for it. action finish (id, status done|needs_input|failed, summary, transferId, questions): report the result; anything you stored waits for a person to approve it. Legacy Open in Claude hand-offs: action handoff_get (id) and handoff_submit (id, result).",
     "function": "api",
     "input_schema": {
      "type": "object",
      "properties": {
+      "action": {
+       "type": "string",
+       "enum": [
+        "list",
+        "claim",
+        "finish",
+        "handoff_get",
+        "handoff_submit"
+       ],
+       "description": "Which step"
+      },
+      "project": {
+       "type": "string",
+       "description": "Project name or id (not needed for handoff_*)"
+      },
       "id": {
        "type": "string",
-       "description": "The hand-off id from the prompt"
-      }
-     },
-     "required": [
-      "id"
-     ]
-    }
-   },
-   {
-    "name": "submit_handoff_result",
-    "description": "Send the finished answer of a hand-off back to Delivery Studio. The person sees it as a preview there and confirms it; nothing is saved until then.",
-    "function": "api",
-    "input_schema": {
-     "type": "object",
-     "properties": {
-      "id": {
-       "type": "string"
+       "description": "Job id (or the hand-off id)"
+      },
+      "status": {
+       "type": "string",
+       "description": "finish: done, needs_input or failed"
+      },
+      "summary": {
+       "type": "string",
+       "description": "finish: what you did, in plain words"
+      },
+      "transferId": {
+       "type": "string",
+       "description": "finish: the transfer you stored, if any"
+      },
+      "questions": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "description": "finish with needs_input: what you need from the person"
       },
       "result": {
        "type": "string",
-       "description": "The answer in the expected format"
+       "description": "handoff_submit: the answer"
       }
      },
      "required": [
-      "id",
-      "result"
+      "action"
      ]
     }
    },

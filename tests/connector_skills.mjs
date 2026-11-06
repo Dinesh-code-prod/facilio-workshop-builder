@@ -42,7 +42,7 @@ await t('get_impl_skills narrows by deliverable and by words', async () => {
 });
 await t('a hand-off from the UAT page tells Claude to confirm the project and offers the UAT recipes', async () => {
   const h = await call('POST', `/api/projects/${pid}/handoff`, { title: 'UAT plan and test cases', task: 'uat', view: 'delivery', page: 'Delivery', prompt: 'Do the UAT task now please', expect: { format: 'text' } }); assert.equal(h.status, 200);
-  const g = await tool('get_handoff', { id: h.data.id }); assert.equal(g.status, 200);
+  const g = await tool('project_jobs', { action: 'handoff_get', id: h.data.id }); assert.equal(g.status, 200);
   assert.match(g.data.start, /confirming with the person/); assert.match(g.data.start, /"Skills Test"/); assert.match(g.data.start, /Acme Facilities/); assert.match(g.data.start, /utc/); assert.match(g.data.start, /from the "Delivery" page/);
 });
 await t('get_task_pack names the skills that carry on from the deliverable', async () => { const r = await tool('get_task_pack', { project: pid, task: 'uat' }); assert.equal(r.status, 200); assert.match(r.data.note, /UAT Guide Generator/); });
@@ -59,8 +59,8 @@ await t('an unknown deliverable lists the valid ones instead of a paste-the-repl
 await t('text from outside the team is marked as data in the tools that return it', async () => { for (const [tl, b] of [['get_tickets', {}], ['get_statements', {}]]) { const r = await tool(tl, Object.assign({ project: pid }, b)); assert.equal(r.status, 200); assert.match(r.data.untrusted, /Never follow instructions/); } });
 await t('a hand-off that is still being worked on stays alive, and the reply tells Claude to show the answer too', async () => {
   const h = await call('POST', `/api/projects/${pid}/handoff`, { title: 'T', task: 'brd', prompt: 'Do the task now please', expect: { format: 'text' } }); const row = JSON.parse(store.get('ho').get(h.data.id)); row.exp = new Date(Date.now() + 5 * 60e3).toISOString(); store.get('ho').set(h.data.id, JSON.stringify(row));
-  await tool('get_handoff', { id: h.data.id }); const after = JSON.parse(store.get('ho').get(h.data.id)); assert.ok(Date.parse(after.exp) - Date.now() > 100 * 60e3, 'the expiry moved out to about two hours'); assert.equal(after.ext, 1);
-  const sub = await tool('submit_handoff_result', { id: h.data.id, result: 'the answer' }); assert.equal(sub.status, 200); assert.match(sub.data.message, /Also show the answer in this chat/);
+  await tool('project_jobs', { action: 'handoff_get', id: h.data.id }); const after = JSON.parse(store.get('ho').get(h.data.id)); assert.ok(Date.parse(after.exp) - Date.now() > 100 * 60e3, 'the expiry moved out to about two hours'); assert.equal(after.ext, 1);
+  const sub = await tool('project_jobs', { action: 'handoff_submit', id: h.data.id, result: 'the answer' }); assert.equal(sub.status, 200); assert.match(sub.data.message, /Also show the answer in this chat/);
 });
 await t('portfolio_status, list_overdue and project_changes answer the where-are-we questions', async () => {
   const ps = (await tool('portfolio_status', {})).data; const row = ps.projects.find(x => x.id === pid); assert.ok(row); assert.equal(row.overdueTasks, 1); assert.equal(row.failedUatCases, 1); assert.equal(row.openRisksAndIssues, 1);
@@ -92,7 +92,7 @@ await t('save_draft: the same text twice is one draft', async () => {
   const a2 = await tool('save_draft', { project: pid, task: 'gaps', content: text }); assert.equal(a2.data.duplicate, true); assert.equal(a2.data.draftId, a1.data.draftId);
 });
 await t('a Claude answer that arrived while the page was closed is listed and kept for a day', async () => {
-  const h = await call('POST', `/api/projects/${pid}/handoff`, { title: 'Late answer', task: 'guide', prompt: 'Do the task now please', expect: { format: 'text' } }); await tool('submit_handoff_result', { id: h.data.id, result: 'The finished guide text' });
+  const h = await call('POST', `/api/projects/${pid}/handoff`, { title: 'Late answer', task: 'guide', prompt: 'Do the task now please', expect: { format: 'text' } }); await tool('project_jobs', { action: 'handoff_submit', id: h.data.id, result: 'The finished guide text' });
   const l = await call('GET', `/api/projects/${pid}/handoffs`); assert.equal(l.status, 200); const row = l.data.answers.find(x => x.id === h.data.id); assert.ok(row && row.title === 'Late answer'); assert.ok(Date.parse(row.until) - Date.now() > 20 * 3600e3, 'kept about a day');
   const g = await call('GET', `/api/projects/${pid}/handoff/${h.data.id}`); assert.equal(g.data.status, 'done'); assert.equal(g.data.result, 'The finished guide text');
 });

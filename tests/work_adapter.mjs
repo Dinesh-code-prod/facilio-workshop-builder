@@ -622,11 +622,11 @@ await t('Claude connector: find and read projects as the person, hand-off id bot
   r = await tool(own, 'save_draft', { project: 'Connector Co', task: 'gaps', content: 'too short' }); assert.equal(r.status, 400, 'a short reply is not a draft');
   r = await tool(own, 'save_draft', { project: 'Connector Co', task: 'gaps', content: 'Gap analysis. '.repeat(30) }); assert.equal(r.status, 200, JSON.stringify(r.data)); assert.equal(r.data.status, 'draft');
   r = await call(own, 'POST', `/api/projects/${P}/handoff`, { title: 'Describe a process', task: 'flow-text', prompt: 'Turn this description into JSON.', expect: { format: 'json' } }); const H = r.data;
-  r = await tool(other, 'get_handoff', { id: H.id }); assert.equal(r.status, 404, 'someone else cannot read it'); r = await tool(own, 'get_handoff', { id: 'x' }); assert.equal(r.status, 400);
-  r = await tool(own, 'get_handoff', { id: H.id }); assert.equal(r.status, 200); assert.equal(r.data.instructions, 'Turn this description into JSON.'); assert.equal(r.data.project.name, 'Connector Co');
+  r = await tool(other, 'project_jobs', { action: 'handoff_get', id: H.id }); assert.equal(r.status, 404, 'someone else cannot read it'); r = await tool(own, 'project_jobs', { action: 'handoff_get', id: 'x' }); assert.equal(r.status, 400);
+  r = await tool(own, 'project_jobs', { action: 'handoff_get', id: H.id }); assert.equal(r.status, 200); assert.equal(r.data.instructions, 'Turn this description into JSON.'); assert.equal(r.data.project.name, 'Connector Co');
   r = await call(own, 'GET', `/api/projects/${P}/handoff/${H.id}`); assert.equal(r.data.status, 'waiting');
-  r = await tool(other, 'submit_handoff_result', { id: H.id, result: '{}' }); assert.equal(r.status, 404); r = await tool(own, 'submit_handoff_result', { id: H.id, result: '  ' }); assert.equal(r.status, 400);
-  r = await tool(own, 'submit_handoff_result', { id: H.id, result: '{"nodes":[{"id":"n1","label":"Start"}],"edges":[]}' }); assert.equal(r.status, 200); assert.equal(r.data.received, true);
+  r = await tool(other, 'project_jobs', { action: 'handoff_submit', id: H.id, result: '{}' }); assert.equal(r.status, 404); r = await tool(own, 'project_jobs', { action: 'handoff_submit', id: H.id, result: '  ' }); assert.equal(r.status, 400);
+  r = await tool(own, 'project_jobs', { action: 'handoff_submit', id: H.id, result: '{"nodes":[{"id":"n1","label":"Start"}],"edges":[]}' }); assert.equal(r.status, 200); assert.equal(r.data.received, true);
   r = await call(own, 'GET', `/api/projects/${P}/handoff/${H.id}`); assert.equal(r.data.status, 'done'); assert.match(r.data.result, /Start/, 'the page collects what Claude sent through the connector');
   r = await tool(own, 'toString', {}); assert.equal(r.status, 404, 'only the listed tools exist');
 });

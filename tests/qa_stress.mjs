@@ -50,7 +50,7 @@ const r1 = await tool(people[0], 'get_records', { project: ids[0], kind: 'pnote'
 
 sec('6. Hand-off answers: small and large (a BRD section is about 60 KB, a long draft over 200 KB)');
 const ho = await call(people[50], 'POST', `/api/projects/${ids[50]}/handoff`, { title: 'T', task: 'brd', prompt: 'Do the task now please', expect: { format: 'text' } }); const hid = ho.data.id;
-for (const size of [20000, 90000, 300000, 1500000]) { const r = await tool(people[50], 'submit_handoff_result', { id: hid, result: 'a'.repeat(size) }); const g = await call(people[50], 'GET', `/api/projects/${ids[50]}/handoff/${hid}`); must(r.status === 200 && g.data.status === 'done' && g.data.result.length === size, 'a ' + (size / 1000) + ' KB answer arrives intact (submit ' + r.status + ', read ' + g.status + ', got ' + (g.data.result || '').length + ' of ' + size + ')'); }
+for (const size of [20000, 90000, 300000, 1500000]) { const r = await tool(people[50], 'project_jobs', { action: 'handoff_submit', id: hid, result: 'a'.repeat(size) }); const g = await call(people[50], 'GET', `/api/projects/${ids[50]}/handoff/${hid}`); must(r.status === 200 && g.data.status === 'done' && g.data.result.length === size, 'a ' + (size / 1000) + ' KB answer arrives intact (submit ' + r.status + ', read ' + g.status + ', got ' + (g.data.result || '').length + ' of ' + size + ')'); }
 
 sec('7. Many people at once across everything: opening a project');
 const mix = await Promise.all(people.map((em, i) => call(em, 'GET', `/api/projects/${ids[i]}/open?sections=workshop&kinds=pnote,res`))); stat('open project', mix); must(Math.max(...mix.map(x => x.ms)) < 5000 && mix.every(x => x.status === 200), 'opening a project with 3 MB documents and 50 records stays fast and works for everyone');
