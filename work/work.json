@@ -1222,7 +1222,7 @@
       },
       "source": {
        "type": "string",
-       "description": "Only for save_transcript: clari or upload"
+       "description": "Only for save_transcript: clari, upload or document"
       },
       "ref": {
        "type": "string",
@@ -1234,11 +1234,11 @@
       },
       "transcriptId": {
        "type": "string",
-       "description": "Only for save_findings: the id returned by save_transcript (tr_1 ...)"
+       "description": "Only for save_findings: the id returned by save_transcript (tr_1 ...), or brd or msa for checks of the BRD or of the contract against the sessions"
       },
       "findings": {
        "type": "array",
-       "description": "Only for save_findings: [{ kind: promise|ask|usecase|custom_usecase|additional|decision|risk, text, quote, speaker, at }]",
+       "description": "Only for save_findings: [{ kind: promise|ask|usecase|custom_usecase|additional|decision|risk|gap|conflict|unsupported|outside_contract|contract_conflict|not_discussed, text, quote, speaker, at, ref }]. gap, conflict and unsupported compare the BRD with the sessions (transcriptId brd); outside_contract, contract_conflict and not_discussed compare the contract with the sessions (transcriptId msa); ref is the BRD requirement or the contract page or section.",
        "items": {
         "type": "object"
        }
