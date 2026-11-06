@@ -27,8 +27,9 @@ Run `/handoff`. It commits and pushes finished work, puts half-done work on a `w
 - Deploy: `/deploy`, or see `docs/operations/DEPLOY.md`. The site must stay under 50 MB extracted (about 41 MB now).
 
 ## Look and feel (the user's rules)
-- Facilio colours only: navy #1D1A5E, Facilio blue #1570EF, pink #E5197F, sky #8DB8FF. No violet or purple, no neon or glow, no heavy gradients.
-- Slight clay and glass: a light top edge, a faint bottom shade, a soft black shadow. Flat white KPI tiles on the home page. The admin pages are flat and matte.
+- **Fluent 2 is the core of the UI** (user, 7 Nov 2026; https://fluent2.microsoft.design/). The dictionary is `docs/reference/FLUENT2-SPEC-2026-11-07.md` and the code is `src/fluent.css` (the last style layer; it retunes the `--th-*` tokens). New UI uses Fluent type (Segoe UI, Body 1 14/20, semibold headings, sentence case), radius 4/8/12, shadows 4/8/16/28/64, neutral greys, 32 px controls, focus as a thicker stroke, motion 100 to 200 ms. Do not add new gradients, clay edges or custom shadows; use the `--fl-*` tokens.
+- Facilio navy #1D1A5E, blue #1570EF, pink #E5197F and sky #8DB8FF are brand accents only (blue = primary action, links, focus; navy = strong text; pink rare). No violet or purple, no neon or glow.
+- Old decoration is being removed file by file (`node tests/ui/css-legacy-audit.mjs` shows what is left). Never bring back the clay and depth layers.
 - Everything the customer and the team see must look neat and uncrowded. Keep answers short and in plain words; say what was not checked.
 
 ## Things that go wrong here

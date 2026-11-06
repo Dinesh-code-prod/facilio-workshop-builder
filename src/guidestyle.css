@@ -1,33 +1,33 @@
 /* Module guides: the same content, dressed in the app's violet, ink and soft clay look. A list rail with a clear active module, a night progress band,
    sections as soft cards, and tidier video, question and step tiles. Layout and wording are untouched. */
 body .wb-side:not(#_) { background: transparent; }
-body .wb-nav:not(#_) { padding: 10px; border-radius: 16px; background: linear-gradient(180deg, #fff, #fbfaff); border: 1px solid #ebe8f5; box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(40, 40, 90, .06), 0 12px 22px -18px rgba(60, 40, 140, .4); }
-body .wb-cap:not(#_) { margin: 12px 8px 4px; font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #6a3df0; }
+body .wb-nav:not(#_) { padding: 10px; border-radius: 8px; background: #fff; border: 1px solid #ebe8f5; box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(40, 40, 90, .06), 0 12px 22px -18px rgba(60, 40, 140, .4); }
+body .wb-cap:not(#_) { margin: 12px 8px 4px; font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: none; color: #1570EF; }
 body .wb-mod:not(#_) { display: block; width: 100%; text-align: left; border: 0; border-radius: 10px; padding: 9px 12px; margin: 2px 0; background: transparent; color: #33304a; font-weight: 600; font-size: 13.5px; cursor: pointer; transition: background .15s, transform .15s, box-shadow .15s; }
 body .wb-mod:not(#_):hover { background: #f4f0ff; transform: translateX(2px); }
-body .wb-mod.on:not(#_) { background: linear-gradient(135deg, #6a3df0, #3b1fa8); color: #fff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), 0 8px 14px -8px rgba(60, 40, 140, .7); }
+body .wb-mod.on:not(#_) { background: #1570EF; color: #fff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), 0 8px 14px -8px rgba(60, 40, 140, .7); }
 body .wb-body:not(#_) { display: grid; gap: 16px; align-content: start; }
 
-body .gl-strip:not(#_) { position: relative; overflow: hidden; border: 0; border-radius: 16px; padding: 16px 20px; color: #fff; background: radial-gradient(420px 160px at 100% 0%, rgba(72, 11, 203, .6), transparent 70%), radial-gradient(320px 140px at 85% 130%, rgba(219, 0, 0, .25), transparent 70%), linear-gradient(120deg, #0E0B1F, #1A1446); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 14px 24px -16px rgba(14, 11, 31, .6); }
+body .gl-strip:not(#_) { position: relative; overflow: hidden; border: 0; border-radius: 8px; padding: 16px 20px; color: #fff; background: radial-gradient(420px 160px at 100% 0%, rgba(72, 11, 203, .6), transparent 70%), radial-gradient(320px 140px at 85% 130%, rgba(219, 0, 0, .25), transparent 70%), linear-gradient(120deg, #0E0B1F, #1A1446); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 14px 24px -16px rgba(14, 11, 31, .6); }
 body .gl-strip:not(#_) .gl-meter, body .gl-strip:not(#_) .gl-meter b, body .gl-strip:not(#_) .gl-save { color: rgba(255, 255, 255, .85); }
 body .gl-strip:not(#_) .gl-meter b { color: #fff; }
-body .gl-strip:not(#_) .gl-bar { background: rgba(255, 255, 255, .18); height: 8px; border-radius: 99px; }
-body .gl-bar i:not(#_) { background: linear-gradient(90deg, #8f6bff, #7CF3C6); border-radius: 99px; }
+body .gl-strip:not(#_) .gl-bar { background: rgba(255, 255, 255, .18); height: 8px; border-radius: 12px; }
+body .gl-bar i:not(#_) { background: #1570EF; border-radius: 12px; }
 body .gl-tagline:not(#_) { font-size: 15px; line-height: 1.55; color: #5d5878; }
 
-body .gl-sec:not(#_) { padding: 20px 22px; border: 1px solid #ebe8f5; border-radius: 16px; background: linear-gradient(180deg, #fff, #fbfaff); box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(40, 40, 90, .06), 0 12px 22px -18px rgba(60, 40, 140, .4); }
+body .gl-sec:not(#_) { padding: 20px 22px; border: 1px solid #ebe8f5; border-radius: 8px; background: #fff; box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(40, 40, 90, .06), 0 12px 22px -18px rgba(60, 40, 140, .4); }
 body .gl-sec:not(#_):last-child { border: 1px solid #ebe8f5; }
 body .gl-h:not(#_) h2, body .gl-h:not(#_) h3 { font-size: 19px; letter-spacing: -.01em; color: #1b1630; }
 body .gl-lead:not(#_) { color: #5d5878; font-size: 14.5px; line-height: 1.6; }
 body .gl-jump:not(#_) { display: flex; flex-wrap: wrap; gap: 6px; }
-body .gl-jump:not(#_) button { border: 0; border-radius: 999px; padding: 6px 13px; background: #f1ecff; color: #4b2bb8; font-weight: 600; font-size: 13px; cursor: pointer; }
-body .gl-jump:not(#_) button:hover, body .gl-jump:not(#_) button.on { background: #6a3df0; color: #fff; }
+body .gl-jump:not(#_) button { border: 0; border-radius: 999px; padding: 6px 13px; background: #f1ecff; color: #1D1A5E; font-weight: 600; font-size: 13px; cursor: pointer; }
+body .gl-jump:not(#_) button:hover, body .gl-jump:not(#_) button.on { background: #1570EF; color: #fff; }
 
-body .gl-screen:not(#_) { border-radius: 14px; border: 1px solid #ebe8f5; overflow: hidden; box-shadow: 0 18px 30px -20px rgba(40, 30, 100, .55); background: #fff; }
-body .gl-vcard:not(#_), body .gl-solve:not(#_), body .gl-state:not(#_), body .gl-stage:not(#_), body .gl-q:not(#_), body .gl-box:not(#_), body .gl-vfeat:not(#_) { border-radius: 14px; border: 1px solid #ebe8f5; background: linear-gradient(180deg, #fff, #faf9fe); box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(40, 40, 90, .05); }
+body .gl-screen:not(#_) { border-radius: 8px; border: 1px solid #ebe8f5; overflow: hidden; box-shadow: 0 18px 30px -20px rgba(40, 30, 100, .55); background: #fff; }
+body .gl-vcard:not(#_), body .gl-solve:not(#_), body .gl-state:not(#_), body .gl-stage:not(#_), body .gl-q:not(#_), body .gl-box:not(#_), body .gl-vfeat:not(#_) { border-radius: 8px; border: 1px solid #ebe8f5; background: #fff; box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(40, 40, 90, .05); }
 body .gl-vcard:not(#_), body .gl-mod:not(#_) { transition: transform .18s ease, box-shadow .18s ease; }
 body .gl-vcard:not(#_):hover, body .gl-mod:not(#_):hover { transform: translateY(-3px); box-shadow: inset 0 1px 0 #fff, 0 3px 6px rgba(40, 40, 90, .08), 0 16px 26px -14px rgba(60, 40, 140, .4); }
-body .gl-mod:not(#_) { border-radius: 14px; border: 1px solid #ebe8f5; background: linear-gradient(180deg, #fff, #faf9fe); }
-body .gl-how:not(#_) li { border-radius: 14px; border: 1px solid #ebe8f5; background: linear-gradient(180deg, #fff, #faf9fe); box-shadow: inset 0 1px 0 #fff; }
+body .gl-mod:not(#_) { border-radius: 8px; border: 1px solid #ebe8f5; background: #fff; }
+body .gl-how:not(#_) li { border-radius: 8px; border: 1px solid #ebe8f5; background: #fff; box-shadow: inset 0 1px 0 #fff; }
 body .gl-opt:not(#_) { border-radius: 10px; }
 body .gl-dots:not(#_) button, body .gl-dots:not(#_) i { border-radius: 99px; }

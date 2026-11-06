@@ -10,7 +10,7 @@ body .mnu { position: relative; }
 body .mnu > summary { list-style: none; cursor: pointer; } body .mnu > summary::-webkit-details-marker { display: none; }
 body .mnu > summary::after { content: ' ▾'; font-size: 10px; }
 body .mnu-list { position: absolute; right: 0; top: calc(100% + 4px); z-index: 80; min-width: 230px; background: #fff; border: 1px solid #d6e0f3; border-radius: 10px; box-shadow: 0 6px 18px rgba(0, 0, 0, .12); padding: 6px; }
-body .mnu-h { padding: 8px 10px 3px; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: #5b6785; }
+body .mnu-h { padding: 8px 10px 3px; font-size: 10.5px; letter-spacing: .06em; text-transform: none; color: #5b6785; }
 body .mnu-i { display: block; width: 100%; text-align: left; padding: 7px 10px; border: 0; border-radius: 6px; background: none; font: inherit; font-size: 13px; color: #1D1A5E; cursor: pointer; }
 body .mnu-i:hover { background: #eaf1fe; }
 body .brd-ban { margin: 10px 14px 0; border-radius: 10px; border: 1px solid #e3e9f5; background: #f7f9fe; font-size: 13px; }

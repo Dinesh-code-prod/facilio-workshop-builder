@@ -79,3 +79,18 @@ body :focus-visible:not(#_):not(#__) { outline: 2px solid var(--fl-navy) !import
 
 /* ---- motion: quick, ease-out; none at all when the person asks for none ---- */
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
+
+/* ---- canvas: Fluent pages sit on one flat neutral (bg 2); cards are white on top; no tinted page gradients or coloured card top bars ---- */
+html body:not(#_):not(#__), body .shell:not(#_):not(#__), body .main:not(#_):not(#__), body .projects-page:not(#_):not(#__) { background: var(--fl-bg2) !important; background-image: none !important; }
+body .card-h:not(#_):not(#__), body .card.stat:not(#_):not(#__) { background-image: none !important; }
+body .hm .proj-card:not(#_):not(#__)::before { display: none !important; }
+
+/* ---- page header: flat white with a 1 px stroke under it (no dark gradient band, no shine) ---- */
+body .page-header:not(#_):not(#__) { background: var(--fl-bg1) !important; background-image: none !important; border: 0 !important; border-bottom: 1px solid var(--fl-st2) !important; border-radius: 0 !important; box-shadow: none !important; color: var(--fl-fg2) !important; padding: 20px 24px 16px !important; }
+body .page-header:not(#_):not(#__)::before, body .page-header:not(#_):not(#__)::after { display: none !important; }
+body .page-header .t:not(#_):not(#__), body .page-header .t *:not(.btn):not(.tag):not(#_):not(#__) { color: var(--fl-fg2); }
+body .page-header h1:not(#_):not(#__) { color: var(--fl-fg1) !important; }
+body .main > .page > .page-header:not(#_):not(#__), body .adm-main > .adm-hero:not(#_):not(#__) { background: var(--fl-bg1) !important; background-color: var(--fl-bg1) !important; background-image: none !important; border: 0 !important; border-bottom: 1px solid var(--fl-st2) !important; border-radius: 0 !important; box-shadow: none !important; color: var(--fl-fg2) !important; }
+body .main > .page > .page-header:not(#_):not(#__)::before, body .main > .page > .page-header:not(#_):not(#__)::after, body .adm-main > .adm-hero:not(#_):not(#__)::before, body .adm-main > .adm-hero:not(#_):not(#__)::after { display: none !important; }
+body .main > .page > .page-header .t h1:not(#_):not(#__), body .adm-main > .adm-hero h1:not(#_):not(#__) { color: var(--fl-fg1) !important; }
+body .main > .page > .page-header .t p:not(#_):not(#__), body .adm-main > .adm-hero p:not(#_):not(#__) { color: var(--fl-fg3) !important; }

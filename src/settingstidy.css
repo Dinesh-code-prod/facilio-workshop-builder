@@ -13,7 +13,7 @@ body .st-page .grid.g2:not(#_):not(#__) { align-items: start; }
 /* tables: a light header instead of a black bar, quiet row lines, inputs the same height as everywhere else */
 body .st-page .tbl-wrap:not(#_):not(#__) { border: 1px solid #e3e8f2; border-radius: 12px; overflow: auto; box-shadow: none; background: #fff; }
 body .st-page .card .tbl-wrap:not(#_):not(#__) { border-left: 0; border-right: 0; border-radius: 0; }
-body .st-page .tbl thead th:not(#_):not(#__) { background: #eef3fb !important; color: #1D1A5E !important; font-size: 11.5px; letter-spacing: .05em; text-transform: uppercase; padding: 10px 14px; }
+body .st-page .tbl thead th:not(#_):not(#__) { background: #eef3fb !important; color: #1D1A5E !important; font-size: 11.5px; letter-spacing: .05em; text-transform: none; padding: 10px 14px; }
 body .st-page .tbl td:not(#_):not(#__) { padding: 8px 14px; border-top: 1px solid #eef2fb; vertical-align: middle; }
 body .st-page .tbl td input:not(#_):not(#__), body .st-page .tbl td select:not(#_):not(#__) { height: 34px; width: 100%; }
 /* forms: label above field, consistent gaps, one action row at the foot of a card */

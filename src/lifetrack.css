@@ -6,7 +6,7 @@ body .lc-badge.st-delayed { background: #FDE7F1 !important; color: #E5197F !impo
 body .lc-badge.st-upcoming, body .lc-badge.st-na { background: #F2F4F7 !important; color: #475467 !important; }
 body .lc-stage.st-blocked { box-shadow: inset 4px 0 0 #B42318; } body .lc-stage.st-delayed { box-shadow: inset 4px 0 0 #E5197F; } body .lc-stage.st-na { opacity: .78; }
 body .lc-meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 12px 0; }
-body .lc-meta dt { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: #667085; margin: 0 0 2px; } body .lc-meta dd { margin: 0; font-size: 14px; font-weight: 600; }
+body .lc-meta dt { font-size: 11px; text-transform: none; letter-spacing: .6px; color: #667085; margin: 0 0 2px; } body .lc-meta dd { margin: 0; font-size: 14px; font-weight: 600; }
 body .lc-warn { margin: 0 0 10px; padding: 8px 12px; border-radius: 10px; background: #FFF6E5; color: #7A4B00; font-size: 13px; }
 body .lc-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin: 12px 0; }
 body .lc-4 h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font-size: 13px; font-weight: 700; }

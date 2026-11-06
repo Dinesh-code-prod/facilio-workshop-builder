@@ -8,42 +8,42 @@ body .kb-seg button.on:not(#_) { background: #fff; color: #1b1630; box-shadow: 0
 .kb-lh { margin: 0 0 8px; font-size: 13px; font-weight: 700; color: #1b1630; }
 .kb-lh span { color: #8b86a3; font-weight: 600; }
 .kb-cols { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(236px, 1fr); gap: 12px; align-items: start; min-width: max-content; }
-.kb-col { display: flex; flex-direction: column; min-width: 236px; border-radius: 14px; background: #f6f4fb; border: 1px solid #ebe8f5; padding: 10px; transition: background .15s, box-shadow .15s; }
-.kb-col header { display: flex; align-items: center; gap: 8px; padding: 2px 4px 10px; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: #5a557a; }
+.kb-col { display: flex; flex-direction: column; min-width: 236px; border-radius: 8px; background: #f6f4fb; border: 1px solid #ebe8f5; padding: 10px; transition: background .15s, box-shadow .15s; }
+.kb-col header { display: flex; align-items: center; gap: 8px; padding: 2px 4px 10px; font-size: 11.5px; letter-spacing: .06em; text-transform: none; color: #5a557a; }
 .kb-col header::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #9b95bd; }
-.kb-col.k1 header::before { background: #6a3df0; } .kb-col.k2 header::before { background: #e0457b; } .kb-col.k3 header::before, .kb-col.k4 header::before { background: #e8a317; }
+.kb-col.k1 header::before { background: #1570EF; } .kb-col.k2 header::before { background: #e0457b; } .kb-col.k3 header::before, .kb-col.k4 header::before { background: #e8a317; }
 .kb-col.k5 header::before { background: #38a9d7; } .kb-col.k6 header::before { background: #2aa889; } .kb-col.k7 header::before { background: #b3aecb; }
 .kb-col header span { margin-left: auto; font-size: 12px; font-weight: 700; color: #6b6685; background: #fff; border-radius: 999px; padding: 1px 9px; box-shadow: inset 0 0 0 1px #e6e2f2; }
 .kb-col.over { background: #ede7ff; box-shadow: inset 0 0 0 2px #b9a4fb; }
 .kb-drop { display: flex; flex-direction: column; gap: 8px; min-height: 56px; }
 .kb-none { font-size: 12px; color: #a29cbd; text-align: center; padding: 14px 0; }
-.kb-card { position: relative; border-radius: 12px; padding: 10px 11px 9px; background: linear-gradient(180deg, #fff, #fbfaff); border: 1px solid #ebe8f5; box-shadow: inset 0 1px 0 #fff, inset 0 -2px 4px rgba(98, 80, 160, .05), 0 1px 2px rgba(40, 40, 90, .07), 0 8px 14px -12px rgba(60, 40, 140, .35); cursor: grab; transition: transform .15s ease, box-shadow .15s ease; }
+.kb-card { position: relative; border-radius: 12px; padding: 10px 11px 9px; background: #fff; border: 1px solid #ebe8f5; box-shadow: inset 0 1px 0 #fff, inset 0 -2px 4px rgba(98, 80, 160, .05), 0 1px 2px rgba(40, 40, 90, .07), 0 8px 14px -12px rgba(60, 40, 140, .35); cursor: grab; transition: transform .15s ease, box-shadow .15s ease; }
 .kb-card::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: #d9d6e8; }
-.kb-card.p-0::before { background: #e0457b; } .kb-card.p-1::before { background: #f08a24; } .kb-card.p-2::before { background: #6a3df0; }
+.kb-card.p-0::before { background: #e0457b; } .kb-card.p-1::before { background: #f08a24; } .kb-card.p-2::before { background: #1570EF; }
 .kb-card:hover, .kb-card:focus-visible { transform: translateY(-2px); box-shadow: inset 0 1px 0 #fff, inset 0 -2px 4px rgba(98, 80, 160, .06), 0 3px 6px rgba(40, 40, 90, .09), 0 14px 22px -12px rgba(60, 40, 140, .45); outline: none; }
-.kb-card:focus-visible { box-shadow: 0 0 0 2px #6a3df0, 0 10px 18px -10px rgba(60, 40, 140, .4); }
+.kb-card:focus-visible { box-shadow: 0 0 0 2px #1570EF, 0 10px 18px -10px rgba(60, 40, 140, .4); }
 .kb-card.dragging { opacity: .45; cursor: grabbing; }
 .kb-card.done .kb-t { color: #8b86a3; text-decoration: line-through; text-decoration-color: #c9c4de; }
 .kb-card.late { box-shadow: inset 0 0 0 1px #f3b9cb, 0 1px 2px rgba(40, 40, 90, .07), 0 8px 14px -12px rgba(224, 69, 123, .4); }
 .kb-t { font-size: 13.5px; font-weight: 600; line-height: 1.35; color: #1b1630; overflow-wrap: anywhere; }
 .kb-m { display: flex; flex-wrap: wrap; gap: 5px; margin: 7px 0 8px; }
-.kb-ty { font-size: 11px; font-weight: 600; color: #4b2bb8; background: #f1ecff; border-radius: 6px; padding: 2px 7px; }
+.kb-ty { font-size: 11px; font-weight: 600; color: #1D1A5E; background: #f1ecff; border-radius: 6px; padding: 2px 7px; }
 .kb-fl { font-size: 11px; font-weight: 700; color: #b4234f; background: #fde8ef; border-radius: 6px; padding: 2px 7px; }
 .kb-fl.q { color: #8a5a00; background: #fff3d6; }
 .kb-f { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: #6b6685; }
 .kb-id { font-weight: 700; color: #4a4568; }
 .kb-d.late { color: #b4234f; font-weight: 700; }
-.kb-av { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 10.5px; font-weight: 700; color: #fff; background: linear-gradient(135deg, #6a3df0, #3b1fa8); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 1px 3px rgba(60, 40, 140, .3); }
+.kb-av { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 10.5px; font-weight: 700; color: #fff; background: #1570EF; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 1px 3px rgba(60, 40, 140, .3); }
 .kb-av.none { background: #fff; box-shadow: inset 0 0 0 1.5px #d9d6e8; }
 .kb-mv { display: block; width: 100%; margin-top: 8px; height: 28px; font-size: 12px; }   /* the move menu is always visible */
-.kb-new { margin-top: 8px; border: 1px dashed #cbc4ea; background: transparent; border-radius: 10px; padding: 8px; font: inherit; font-size: 12.5px; font-weight: 600; color: #6a3df0; cursor: pointer; }
+.kb-new { margin-top: 8px; border: 1px dashed #cbc4ea; background: transparent; border-radius: 10px; padding: 8px; font: inherit; font-size: 12.5px; font-weight: 600; color: #1570EF; cursor: pointer; }
 .kb-new:hover { background: #fff; }
 @media (prefers-reduced-motion: reduce) { .kb-card, .kb-col { transition: none; } .kb-card:hover { transform: none; } }
 
 /* Quick filters on Tasks */
-.pt-qfbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; margin: 0 0 12px; padding: 10px 12px; border-radius: 14px; background: linear-gradient(180deg, #fff, #faf9fe); border: 1px solid #ebe8f5; box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(40, 40, 90, .05); }
-.pt-qf { display: grid; gap: 3px; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #6b6685; } .pt-qf select { height: 32px; min-width: 130px; max-width: 200px; font-size: 13px; font-weight: 500; letter-spacing: 0; text-transform: none; color: #1b1630; }
-.pt-qc { display: inline-flex; align-items: center; gap: 6px; height: 32px; font-size: 13px; color: #33304a; cursor: pointer; } .pt-qc input { accent-color: #6a3df0; width: 16px; height: 16px; }
+.pt-qfbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; margin: 0 0 12px; padding: 10px 12px; border-radius: 8px; background: #fff; border: 1px solid #ebe8f5; box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(40, 40, 90, .05); }
+.pt-qf { display: grid; gap: 3px; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: none; color: #6b6685; } .pt-qf select { height: 32px; min-width: 130px; max-width: 200px; font-size: 13px; font-weight: 500; letter-spacing: 0; text-transform: none; color: #1b1630; }
+.pt-qc { display: inline-flex; align-items: center; gap: 6px; height: 32px; font-size: 13px; color: #33304a; cursor: pointer; } .pt-qc input { accent-color: #1570EF; width: 16px; height: 16px; }
 /* Board on touch screens and phones: drag and drop does not work with touch, so the status menu on each card stays visible,
    a tap on it never opens the task, and columns snap one at a time when swiped. */
 @media (hover: none), (pointer: coarse) { .kb-mv { display: block; } }
