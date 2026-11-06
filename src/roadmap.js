@@ -1,6 +1,6 @@
 /* Product roadmap introduction: a short animated story shown right after sign-in (before the home page). Conceptual only: it never reads or shows project data.
    V.roadmap({ replay }) resolves when the person skips, finishes or continues. Persistence: "Don't show again" is a per-browser flag (localStorage);
-   otherwise it appears after each fresh sign-in, never on refresh, and can be replayed from the account menu and the projects page. */
+   otherwise it appears once per browser (first visit only, never again after sign-out or sign-in), and can be replayed from the account menu and the projects page. */
 (function (root) {
   'use strict';
   const doc = root.document; if (!doc) return;
@@ -13,6 +13,8 @@
   // should the roadmap run after this sign-in?
   V.roadmapDue = function (opts) {
     if (automated()) return false; if (get('localStorage', OFF) === '1') return false;
+    // the tree plays once per browser: not again after sign-in if the opening page already showed it (fwb_intro_seen) or this one did (fwb_roadmap_seen); ?intro=1 and the account-menu replay still play it
+    if (get('localStorage', 'fwb_intro_seen') === '1' || get('localStorage', SEEN) === '1') return false;
     if (opts && opts.once && get('sessionStorage', SEEN) === '1') return false; return true;
   };
   const isClient = () => !!(F.S && F.S.user && F.S.user.kind === 'customer');
@@ -21,7 +23,7 @@
     opts = opts || {}; await waitIntro();
     const cl = isClient(); const u = F.S && F.S.user; const nm = u && u.name && !u.guest ? u.name : '';
     const r = await V.cinema({ aud: cl ? 'customer' : 'team', name: nm, off: true, cta: cl ? 'Continue to your project' : 'Continue to Workspace' });
-    if (r.off) set('localStorage', OFF, '1'); set('sessionStorage', SEEN, '1'); return r.how;
+    if (r.off) set('localStorage', OFF, '1'); set('sessionStorage', SEEN, '1'); set('localStorage', SEEN, '1'); return r.how;
   };
   // replay on request (ignores the "don't show again" flag)
   V.ACT.replayRoadmap = async () => { const p = doc.getElementById('userPop'); if (p) p.remove(); await V.roadmap({ replay: true }); };

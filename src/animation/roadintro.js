@@ -1,6 +1,6 @@
-/* "Your road to go-live": the Delivery Studio story told along a road. A car drives through a mountain valley at dawn; at each of six milestones the camera
+/* "Your road to go-live": the Delivery Studio story told along a road. A car drives through a mountain valley at dawn; at each of seven milestones the camera
    settles beside a roadside post whose sign names a real customer challenge and what Delivery Studio does about it (workspace, workshops to BRD,
-   configuration explained, AI drafts that people review, tracking and tickets, go-live and handover). The closing view says how it relates to Facilio:
+   mockups and the BRD, UAT and FTR, AI-drafted guides, hypercare and handover). The closing view says how it relates to Facilio:
    Delivery Studio organises the implementation, Facilio is the platform the customer's teams use every day.
    Played on customer invitation links and by "See how Delivery Studio helps" on both sign-in pages. When the journey ends (or Skip / Esc) it leaves
    through the shared liquid reveal (src/liquid.js), the same exit as the tree intro's Get started, and uncovers the sign-in page underneath.
@@ -14,17 +14,19 @@
   /* ---------------- the customer's journey: the challenge at each stage, and how Facilio helps ---------------- */
   // Each stage names a real Delivery Studio capability (see the in-app menu); Facilio is the platform the customer runs on afterwards.
   const STEPS = [
-    { h: 'Everything in one place', c: 'The contract, workshop notes and files are spread across emails and folders.', f: 'Delivery Studio keeps the contract, kick-off, workshop transcripts, notes and links in one project workspace.' },
-    { h: 'From workshops to a signed BRD', c: 'What was agreed in a workshop is lost before it reaches the document.', f: 'Workshop requirements are confirmed one by one and flow into use cases and the BRD, exported to Word or PDF for sign-off.' },
-    { h: 'Your configuration, explained', c: 'Modules, state flows and roles are hard to follow.', f: 'Your Facilio configuration is read and laid out as modules, state flows, roles and plain-language user guides.' },
-    { h: 'AI drafts, people decide', c: 'Writing UAT plans, guides and reports takes days.', f: 'AI drafts them from what is recorded in your project. Every draft cites its sources and is reviewed before anyone uses it.' },
-    { h: 'Progress and issues you can follow', c: 'It is unclear what is done, what is blocked and who owns it.', f: 'Actions, risks, UAT, FTR checks and your support tickets each have a status and an owner.' },
-    { h: 'Go live and hand over', c: 'Launch day and the handover feel uncertain.', f: 'Go-live readiness, hypercare and the handover pack are tracked, so your team runs day to day in Facilio with confidence.' }
+    { h: 'Project introduction', c: 'The contract, kick-off notes and files are spread across emails and folders, and nobody is sure who does what next.', f: 'The contract is read into one project, the kick-off and plan are set, and tasks create themselves from what is recorded, each with an owner.' },
+    { h: 'Requirement sessions', c: 'What was agreed in a workshop is lost before it reaches the document.', f: 'Workshops are planned, transcripts are captured and requirements are confirmed one by one, with checks on what was said.' },
+    { h: 'Mockup & BRD', c: 'Modules, forms and state flows are hard to picture until they are built.', f: 'Modules, state flows, roles and the KPIs & SLA matrix are laid out, mockups show the screens, and the BRD is written from all of it.' },
+    { h: 'UAT & FTR', c: 'It is unclear what passed, what is blocked and whether the go-live is safe.', f: 'UAT cases and issues, the FTR report and KPI workbooks each have a status and an owner, and go-live readiness is checked in one list.' },
+    { h: 'Training guides', c: 'Writing user guides takes days and goes out of date.', f: 'AI drafts guides from what is recorded in your project. Every draft cites its sources and is reviewed before anyone uses it.' },
+    { h: 'Hypercare', c: 'The first weeks after launch are when small problems pile up.', f: 'Hypercare issues are tracked with a status and an owner until the exit is recorded.' },
+    { h: 'Project handover', c: 'Handover and closure feel uncertain.', f: 'The handover pack and the Solution Document are ready, so your team runs day to day in Facilio with confidence.' }
   ];
   const N = STEPS.length;
+  const NUM = [1, 2, 3, 4, 5, 7, 8];   // the app's stage numbers (stage 6, go-live, has no page of its own: its checklist is inside UAT & FTR)
   // timing: a short opening, then each milestone gets a settled view (the sign is read here) followed by a brief pan to the next
-  // paced to be read: 11 seconds per milestone (both texts on the sign), so the whole journey runs about 77 seconds; the car drives a little faster to keep to the posts
-  const T0 = 5, STEP = 11, PAN = 2.2;   // T0: the opening shot holds long enough to read the title and see the first milestone
+  // paced to be read: 10 seconds per milestone (both texts on the sign), so the whole journey runs about 70 seconds; the car drives a little faster to keep to the posts
+  const T0 = 5, STEP = 10, PAN = 2.2;   // T0: the opening shot holds long enough to read the title and see the first milestone
   const AT = STEPS.map((_, i) => T0 + i * STEP);            // the camera arrives at milestone i
   const DWE = AT.map(a => a + STEP - PAN);                  // ... and leaves it
   const MID = AT.map((a, i) => (a + DWE[i]) / 2);            // the car passes the post here
@@ -98,11 +100,11 @@
       o.innerHTML = `<canvas aria-hidden="true"></canvas>
         <div class="ri-bar"><img src="${logo}" alt="Facilio" width="87" height="24"><span class="ri-sep"></span><span class="ri-prod">Delivery Studio</span><span class="ri-sp"></span><button class="ri-btn" type="button" data-r="skip">Skip</button></div>
         <div class="ri-open"><h1>Your road to go-live</h1><p>How Delivery Studio keeps your Facilio implementation organised, from kick-off to handover</p></div>
-        <div class="ri-caps">${STEPS.map((s, i) => `<div class="ri-cap"><div class="ri-k">Step ${i + 1} of ${N}</div><h2>${s.h}</h2><dl><div class="ri-c"><dt>The challenge</dt><dd>${s.c}</dd></div><div class="ri-f"><dt>How Delivery Studio helps</dt><dd>${s.f}</dd></div></dl></div>`).join('')}</div>
-        <div class="ri-chips">${STEPS.map((s, i) => `<div class="ri-chip"><b>${i + 1}</b>${s.h}</div>`).join('')}</div>
+        <div class="ri-caps">${STEPS.map((s, i) => `<div class="ri-cap"><div class="ri-k">Stage ${NUM[i]}</div><h2>${s.h}</h2><dl><div class="ri-c"><dt>The challenge</dt><dd>${s.c}</dd></div><div class="ri-f"><dt>How Delivery Studio helps</dt><dd>${s.f}</dd></div></dl></div>`).join('')}</div>
+        <div class="ri-chips">${STEPS.map((s, i) => `<div class="ri-chip"><b>${NUM[i]}</b>${s.h}</div>`).join('')}</div>
         <div class="ri-end"><img src="${logo}" alt="Facilio" width="220" height="61"><div class="ri-ds">Delivery Studio</div><h2>One clear road from kick-off to go-live</h2><p class="ri-rel">Delivery Studio organises the implementation work. Facilio is the platform your teams use every day for work orders, service requests, assets and more.</p></div>
         <div class="ri-route" aria-hidden="true" style="--n:${N}"><i></i>${STEPS.map(() => '<span></span>').join('')}</div>
-        <div class="ri-still" hidden><ol>${STEPS.map((s, i) => `<li><b><i>${i + 1}</i>${s.h}</b><p>${s.c} ${s.f}</p></li>`).join('')}</ol><button class="ri-btn solid" type="button" data-r="end">Continue</button></div>
+        <div class="ri-still" hidden><ol>${STEPS.map((s, i) => `<li><b><i>${NUM[i]}</i>${s.h}</b><p>${s.c} ${s.f}</p></li>`).join('')}</ol><button class="ri-btn solid" type="button" data-r="end">Continue</button></div>
         <div class="ri-note">Illustrative</div><div class="ri-sr" aria-live="polite"></div>`;
       const $ = s => o.querySelector(s);
       const cv = $('canvas'), g = cv.getContext('2d');
@@ -386,7 +388,7 @@
         g.save(); g.globalAlpha = a;
         const glow = g.createRadialGradient(cx, cy, 0, cx, cy, 80 * k); glow.addColorStop(0, 'rgba(141,184,255,.26)'); glow.addColorStop(1, 'rgba(141,184,255,0)');
         g.fillStyle = glow; g.beginPath(); g.arc(cx, cy, 80 * k, 0, TAU); g.fill();
-        const K = [0, 1, 2, 9, 3, 4][i];   // which illustration each stage uses (9: the AI draft)
+        const K = [0, 1, 2, 3, 9, 3, 4][i];   // which illustration each stage uses (9: the AI draft; 3: the checklist with a task card)
         if (K === 0) {
           const SP = [[-50, -24, -.5], [46, -30, .45], [-34, 28, .3], [40, 26, -.35]];
           SP.forEach((s0, j) => { const u = ease((e - .1 - j * .2) / 1); paper(cx + s0[0] * k * (1 - u), cy + s0[1] * k * (1 - u) - j * 2.4 * k * u, 32 * k, 42 * k, s0[2] * (1 - u) + (j - 1.5) * .04 * u); });
@@ -436,7 +438,7 @@
           }
           const pr = ease(clamp((e - 1.7) / 1)); g.fillStyle = 'rgba(255,255,255,.18)'; g.beginPath(); g.roundRect(cx - 39 * k, cy + 30 * k, 78 * k, 6 * k, 3 * k); g.fill();
           const pg = g.createLinearGradient(cx - 39 * k, 0, cx + 39 * k, 0); pg.addColorStop(0, '#1570EF'); pg.addColorStop(1, '#8DB8FF'); g.fillStyle = pg; g.beginPath(); g.roundRect(cx - 39 * k, cy + 30 * k, 78 * k * Math.max(.02, pr), 6 * k, 3 * k); g.fill();
-          // a support ticket with a status and an owner, moving from open to resolved
+          // a task card with a status and an owner, moving from open to done
           const tv = ease(clamp((e - .6) / .5)); if (tv > 0) { const tx = cx + 58 * k, ty = cy - 30 * k + 8 * k * (1 - tv); g.globalAlpha = a * tv;
             g.fillStyle = 'rgba(14,13,62,.94)'; g.strokeStyle = 'rgba(141,184,255,.55)'; g.lineWidth = 1; g.beginPath(); g.roundRect(tx, ty, 62 * k, 44 * k, 7 * k); g.fill(); g.stroke();
             g.fillStyle = '#B9C6E8'; g.fillRect(tx + 8 * k, ty + 9 * k, 28 * k, 3 * k); g.fillRect(tx + 8 * k, ty + 16 * k, 40 * k, 3 * k);
@@ -574,7 +576,7 @@
         const done = lastDone(t);
         { const w = ((100 - 100 / N) * (t >= CRANE ? 1 : Math.max(0, Math.max(a, done) / (N - 1)))) + '%'; if (fillEl._w !== w) { fillEl._w = w; fillEl.style.width = w; } }
         dots.forEach((d, i) => { const c = t >= CRANE || i <= done && i !== a ? 'done' : i === a ? 'now' : i < a ? 'done' : ''; if (d.className !== c) d.className = c; });
-        if (a !== lastA && a >= 0) { lastA = a; sr.textContent = `Step ${a + 1} of ${N}: ${STEPS[a].h}. The challenge: ${STEPS[a].c} How Delivery Studio helps: ${STEPS[a].f}`; }
+        if (a !== lastA && a >= 0) { lastA = a; sr.textContent = `Stage ${NUM[a]}: ${STEPS[a].h}. The challenge: ${STEPS[a].c} How Delivery Studio helps: ${STEPS[a].f}`; }
         if (t >= CRANE && lastA !== 9) { lastA = 9; sr.textContent = 'The journey is complete.'; }
       }
 
