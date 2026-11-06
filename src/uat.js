@@ -70,7 +70,7 @@
   };
   // the UAT guide for the customer (src/uatguide.js): built only from the modules in scope and the saved test cases, no status or tester is included
   ACT.utcGuide = () => { const G = root.FWBUatGuide; const g = G.buildUatGuide({ project: { id: S.project.id, name: S.project.name, customer: S.project.customer || '' }, modules: scoped().map(m => ({ name: m.name, label: m.label })), testCases: cases(), roles: (S.ws.roles || []).map(r => r.label) });
-    if (!g.counts.testCases) { toast('There are no test cases yet, so there is no guide to make.', 5000, true); return; } V.download((S.project.name || 'project').replace(/[^\w.-]+/g, '-').slice(0, 40) + '-UAT-guide.html', G.uatGuideHtml(g), 'text/html'); toast('UAT guide downloaded' + (g.gaps.length ? ' (' + g.gaps.length + ' gap' + (g.gaps.length === 1 ? '' : 's') + ' listed in it)' : '')); };
+    V.download((S.project.name || 'project').replace(/[^\w.-]+/g, '-').slice(0, 40) + '-UAT-guide.html', G.uatGuideHtml(g), 'text/html'); toast('UAT guide downloaded. Open it and press Print to save it as a PDF.' + (g.gaps.length ? ' It lists ' + g.gaps.length + ' gap' + (g.gaps.length === 1 ? '' : 's') + ' still to prepare.' : '')); };
   ACT.utcMod = a => { S.ui.uatMod = a.getAttribute('data-m') === S.ui.uatMod ? '' : a.getAttribute('data-m'); V.render(); };
   ACT.utcFilter = el => { S.ui.uatSt = el.value; V.render(); };
   ACT.utcStatus = el => V.busy(null, async () => { const c = I().get('utc', el.getAttribute('data-id')); if (!c) return; const s = el.value; const prev = c.status; const run = ['Passed', 'Failed', 'Blocked', 'Approved', 'Retesting'].includes(s);

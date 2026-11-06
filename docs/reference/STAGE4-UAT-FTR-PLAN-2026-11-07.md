@@ -32,3 +32,9 @@ UAT guide HTML, the Excel tracker import, the issue register links, the FTR resu
 - Comet for UAT: the earlier "no Comet step" note is replaced by the optional cards in step 4 (a link per scenario, never required). Is that what you want?
 - Test cases from the solution (step 1) are created without Claude. Right, or should Claude write the steps?
 - Which scenarios get a walkthrough: only the main ones the team picks, not every test case?
+
+## Added 7 Nov 2026 (user): exports, freedom, recordings
+- **Freedom rule for every guide tool:** nothing may stop or lecture the person. No "BRD not signed off", no "no test cases yet so no guide", no "nothing to export". A guide, a UAT guide or an FTR file is always made; what is missing is listed inside it as a gap, at most a quiet note. DONE 7 Nov for the UAT guide download, the FTR checklist and the guide builder export. The go-live readiness card on Delivery is a separate read of what is open and stays.
+- **Exports that exist:** UAT guide: HTML download (its page has Print, which saves a PDF) and, from the User Guide Builder, Word and PDF. FTR: Excel workbook and the HTML checklist. Not built: a one-click PDF button on the test-cases page.
+- **Comet for video:** same card pattern as the Mockup tab (step 4 above): one card per key scenario, copy the prompt, Open Comet, paste the link of the video, shown inside the card.
+- **A recorded process turned into a document (not built):** Studio already has Video to Guide (the video stays on the computer, screenshots are captured, a transcript .vtt or .srt is added, steps are drafted). It makes user-guide steps only, it has no speech recognition, and it drafts through the old server AI path. Plan: (1) draft through Claude with the existing hand-off (the person attaches the screenshots in Claude), (2) the same steps can become draft UAT test cases or FTR rows with one button each, (3) a silent recording works from screenshots alone. No dependency on Comet.

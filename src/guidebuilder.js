@@ -192,7 +192,7 @@
   const dateStr = () => new Date().toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
   // a guide with no written steps or screenshots would export as a cover page only, so say so instead of producing it
   const hasContent = () => (W.sections || []).some(sec => (sec.blocks || []).some(b => b.t === 'img' ? !!b.fileId : String(b.text || '').trim()));
-  const emptyGuide = () => { if (hasContent()) return false; toast('This guide has no steps or screenshots yet, so there is nothing to export. Add content on the Content tab first.', 6000, true); return true; };
+  const emptyGuide = () => { if (!hasContent()) toast('This guide has no steps or screenshots yet, so the file holds the outline only.', 5000); return false; };
   ACT.ugDocx = a => V.busy(a, async () => {
     if (emptyGuide()) return; await flush(); V.loading(true, 'Writing the Word document…');
     try {
