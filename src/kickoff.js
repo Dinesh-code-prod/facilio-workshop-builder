@@ -62,7 +62,8 @@
       { label: 'Requirement sessions', detail: nSess ? nSess + ' session' + (nSess === 1 ? '' : 's') + ', grouped by module' : sessNote, state: st(sessDone, !!p && !sessDone), badge: sessDone ? badge : '', open: { label: 'Open', act: 'koOpen', attrs: { view: 'plan', t: 'rs' } } },
       { label: 'Plan workbook and timeline', detail: book ? 'in the Project Plan tab' : bookFailed ? 'could not be made, open Project Plan to retry' : '', state: book ? 'done' : bookFailed ? 'bad' : st(false, !!p), badge: book ? badge : '', open: { label: 'Open', act: 'koOpen', attrs: { view: 'plan', t: 'wb' } } }
     ];
-    const msgs = [];
+    const msgs = []; const sw = L().jobRows(k.jobs).filter(x => x.kind === 'setup_workspace' && x.status !== 'cancelled')[0];
+    if (sw) { msgs.push({ who: 'sys', text: 'A project folder and a chat are being set up for this project in your Claude app.', at: when(sw.at) }); if (sw.status === 'done') msgs.push({ who: 'claude', text: 'Your project workspace is ready. ' + (sw.summary || ''), at: when(sw.finishedAt) }); else if (sw.status === 'failed') msgs.push({ who: 'bad', text: 'I could not set up the workspace: ' + (sw.summary || 'unknown reason') }); else if (sw.status === 'claimed') msgs.push({ who: 'claude', text: sw.progress || 'Setting up the folder…', typing: true }); }
     if (!j && !p && !file) msgs.push({ who: 'sys', text: 'Welcome. Upload the signed MSA below. Claude, running on your computer, reads it and prepares the project plan, the kick-off deck and the requirement sessions. You only review and approve.' });
     if (file) msgs.push({ who: 'you', text: 'I uploaded ' + file + '.', at: j ? when(j.at) : '' });
     if (j && j.status === 'waiting') msgs.push({ who: 'sys', text: 'Sent to Claude. It looks for new work every 5 minutes while your Claude app is open, so it can take up to 5 minutes to start.' });

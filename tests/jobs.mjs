@@ -96,4 +96,8 @@ await t('every job kind has a stage and allowed documents; the brief carries the
   let c = step(newJob('jb_00000000000000000a', cleanRequest({ kind: 'pull_msa' }), 'a@x.com', NOW), 'claim', 'a@x.com', NOW); const b = J.brief(c, { id: 'p1', name: 'P' }); assert.equal(b.stage, 'intake'); assert.deepEqual(b.allowedDocs, J.KINDS.pull_msa.docs); assert.match(b.scope, /Stay inside the stage/);
   for (let n = 1; n <= 35; n++) c = step(c, 'progress', 'a@x.com', NOW, { text: 'note ' + n }); assert.equal(c.activity.length, 30); assert.equal(c.activity[0].text, 'note 6'); assert.equal(c.activity[29].text, 'note 35'); assert.equal(c.progress.text, 'note 35');
 });
+await t('setting up the project workspace is a job of the intake stage that reads no project documents, and it is one job per project', async () => {
+  const J = await import('../work/server/_jobs.mjs'); assert.equal(J.KINDS.setup_workspace.stage, 'intake'); assert.deepEqual(J.KINDS.setup_workspace.docs, []); assert.match(J.KINDS.setup_workspace.recipe, /CLAUDE\.md/);
+  const a = cleanRequest({ kind: 'setup_workspace' }), b = cleanRequest({ kind: 'setup_workspace' }); assert.ok(a.ok && a.key === b.key, 'the same request is the same job');
+});
 console.log('\n' + n + ' job-queue checks passed');
