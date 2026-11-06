@@ -85,12 +85,19 @@
       <textarea id="koCr" rows="3" maxlength="${L().MAX_TEXT}" placeholder="For example: move the go-live milestone to April, or add the data migration risk." aria-label="Change request for Claude" data-change="koCrText"${dis}>${esc(k.cr)}</textarea>
       <div class="row ko-btns"><button type="button" class="btn sm primary" data-act="koCrSend"${dis}>Send to Claude</button></div>${rows}</div></section>`;
   }
+  // The preview shows one slide at a time with no script: the page's policy (script-src 'self') would stop the deck's own inline script, so the slide is chosen here and the file is only styled.
+  const deckHtml = (p, n) => { const r = root.FWBKickoffDeck.build(p.deck, { fmt: dt }); const k = Math.max(0, Math.min(r.slides.length - 1, n)) + 1;
+    return { n: r.slides.length, k, skipped: r.skipped, html: r.html.replace('</head>', `<style>html,body{overflow:hidden}#stage{transform:none!important;left:0!important;top:0!important}#bar{display:none}.slide{display:none!important}.slide:nth-child(${k}){display:block!important}.slide.cover:nth-child(${k}){display:flex!important}</style></head>`) }; };
   function deckCard(p) {
-    const D = root.FWBKickoffDeck; if (!D) return '';
-    const r = D.build(p.deck, { fmt: dt });
-    return `<section class="card ko-card" aria-label="Kick-off deck"><div class="card-h"><b>Kick-off deck preview</b><span class="xs muted">${r.slides.length} slides${r.skipped.length ? '. Left out because nothing to show: ' + esc(r.skipped.join(', ')) : ''}</span></div>
-      <div class="card-b"><div class="ko-deck"><iframe title="Kick-off deck preview" sandbox="allow-scripts" srcdoc="${esc(r.html)}"></iframe></div><div class="row ko-btns"><button type="button" class="btn sm primary" data-act="koDlDeck">Download kick-off deck (HTML)</button><button type="button" class="btn sm" data-act="koDlPlan">Download project plan (HTML)</button></div><p class="xs muted">Click the right half of the preview to go forward. Press F for full screen. The files work offline and are marked draft until approved.</p></div></section>`;
+    if (!root.FWBKickoffDeck) return ''; const k = K(); const d = deckHtml(p, k.slide || 0);
+    return `<section class="card ko-card" aria-label="Kick-off deck"><div class="card-h"><b>Kick-off deck preview</b><span class="xs muted">${d.n} slides${d.skipped.length ? '. Left out because nothing to show: ' + esc(d.skipped.join(', ')) : ''}</span></div>
+      <div class="card-b"><div class="ko-deck"><iframe title="Kick-off deck preview" sandbox="" srcdoc="${esc(d.html)}"></iframe></div>
+      <div class="row ko-btns"><button type="button" class="btn sm" data-act="koSlide" data-d="-1">Previous slide</button><span class="xs muted" id="koSlideNo">Slide ${d.k} of ${d.n}</span><button type="button" class="btn sm" data-act="koSlide" data-d="1">Next slide</button><span class="spacer"></span>
+      <button type="button" class="btn sm primary" data-act="koDlDeck">Download kick-off deck (HTML)</button><button type="button" class="btn sm" data-act="koDlPlan">Download project plan (HTML)</button></div>
+      <p class="xs muted">The downloaded deck has all slides, arrow keys and full screen, works offline, and is marked draft until approved.</p></div></section>`;
   }
+  const fitDeck = () => { const box = document.querySelector('.ko-deck'), fr = box && box.querySelector('iframe'); if (fr && box.clientWidth) fr.style.transform = 'scale(' + (box.clientWidth / 1920) + ')'; };
+  let fitBound = false;
   function approveBar(p) {
     const a = L().approvalCheck(p, owner(), crDoc()); const dis = ro() ? ' disabled' : '';
     if (p.status === 'approved') return `<div class="ko-bar"><span>${tag('ok', 'Approved')} by ${esc(p.approvedBy)} ${esc(when(p.approvedAt))}</span></div>`;
@@ -109,7 +116,7 @@
   }
   // The team gets this page; customers keep the older Kick-off Deck viewer.
   const old = V.kickoff;
-  V.kickoff = Object.assign({}, old, { html() { return V.isCustomer() ? old.html.apply(this, arguments) : page(); }, mount() { if (V.isCustomer()) return old.mount && old.mount.apply(this, arguments); load(false); poll(); } });
+  V.kickoff = Object.assign({}, old, { html() { return V.isCustomer() ? old.html.apply(this, arguments) : page(); }, mount() { if (V.isCustomer()) return old.mount && old.mount.apply(this, arguments); load(false); poll(); fitDeck(); if (!fitBound) { fitBound = true; addEventListener('resize', fitDeck); } } });
 
   // ---------- actions ----------
   const guard = () => { if (ro()) { toast('This project is read-only for you.', 4000, true); return true; } return false; };
@@ -118,6 +125,7 @@
   const file = kind => `${slug(S.project.customer)}-${slug(S.project.name)}-${kind}${(F.doc('kickoff_pack') || {}).status === 'approved' ? '' : '-draft'}.html`;
   ACT.koDlDeck = () => { const p = pack(); if (!p) return; V.download(file('kickoff'), new Blob([root.FWBKickoffDeck.build(p.deck, { fmt: dt }).html], { type: 'text/html' })); };
   ACT.koDlPlan = () => { const p = pack(); if (!p) return; V.download(file('project-plan'), new Blob([root.FWBPlanHtml.build(F.doc('kickoff_pack'), { customer: S.project.customer, project: S.project.name, fmt: dt })], { type: 'text/html' })); };
+  ACT.koSlide = a => { const p = pack(); if (!p) return; const k = K(); const d = deckHtml(p, (k.slide || 0) + (+a.getAttribute('data-d') || 0)); k.slide = d.k - 1; const fr = document.querySelector('.ko-deck iframe'); if (fr) fr.srcdoc = d.html; const no = document.getElementById('koSlideNo'); if (no) no.textContent = 'Slide ' + d.k + ' of ' + d.n; };
   ACT.koRefresh = () => load(true);
   ACT.koPull = a => V.busy(a, async () => {
     if (guard()) return; const r = await post('/jobs', L().pullRequest(S.project.customer, S.project.name));
