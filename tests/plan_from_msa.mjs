@@ -1,7 +1,7 @@
-// Project plan drafted from the contract (src/planfrommsa.js): 90-day default, weekends skipped, commitments pinned, conflicts reported not hidden,
+// Project plan drafted from the contract (work/server/_planfrommsa.mjs): 90-day default, weekends skipped, commitments pinned, conflicts reported not hidden,
 // dependencies respected, nothing invented, and the rows work with the existing timeline dependency code (src/tldepslogic.js).
 import assert from 'node:assert/strict'; import { createRequire } from 'node:module';
-const require = createRequire(import.meta.url); const P = require('../src/planfrommsa.js'); const D = require('../src/tldepslogic.js');
+import '../work/server/_planfrommsa.mjs'; const require = createRequire(import.meta.url); const P = globalThis.FWBPlanFromMsa; const D = require('../src/tldepslogic.js');
 let n = 0; const t = (name, fn) => { fn(); n++; console.log('  ok  ' + name); };
 const FIELDS = ['id', 'name', 'description', 'start', 'end', 'durationDays', 'dependsOn', 'deliverables', 'responsible', 'outcome', 'completionCriteria', 'origin'];
 const NAMES = ['Kick-off', 'Introduction', 'Scope confirmation', 'Customer preparation', 'Data onboarding', 'Requirements workshops', 'Solution design', 'BRD preparation and approval', 'Configuration', 'Internal validation', 'UAT preparation and execution', 'FTR', 'Training', 'Go-live preparation', 'Handover'];
@@ -69,4 +69,29 @@ t('hostile or broken input does not throw and still returns a plan', () => {
   assert.deepEqual(P.toPlanStruct(null), []); assert.deepEqual(P.toPlanStruct([null, { id: 'a' }, { id: 'b', start: 'zz' }]), []);
 });
 t('the same input always gives the same plan', () => { assert.deepEqual(P.buildPlan(base), P.buildPlan(JSON.parse(JSON.stringify(base)))); });
+
+// ---- review of 5 Nov 2026, finding 3 and 4 ----
+const pinned = (text, date) => { const r = P.buildPlan(Object.assign({}, base, { commitments: [{ text, date }] })); return r.milestones.filter(m => m.commitments.length).map(m => m.id); };
+t('a commitment goes to the best phase: the phase named first is the subject, a phase after "subject to" is only a condition', () => {
+  assert.deepEqual(pinned('Go-live by 30 June 2027 subject to UAT sign-off', '2026-12-18'), ['golive']);
+  assert.deepEqual(pinned('UAT complete before go-live', '2026-12-18'), ['uat']);
+  assert.deepEqual(pinned('Training of super users once go-live preparation is done', '2026-12-18'), ['training']);
+  assert.deepEqual(pinned('Handover to support after go-live', '2026-12-18'), ['handover']);
+  assert.deepEqual(pinned('Subject to UAT, go-live is planned', '2026-12-18'), ['golive']);
+});
+t('"train" inside "constraint" and "readiness" inside another word do not match a phase', () => {
+  assert.deepEqual(pinned('Budget constraint for the whole contract', '2026-12-18'), []); assert.deepEqual(pinned('Unreadiness of the site is a risk', ''), []);
+  assert.deepEqual(pinned('Customer readiness confirmed', ''), ['custprep']); assert.deepEqual(pinned('Training of admins', ''), ['training']); assert.deepEqual(pinned('Users are trained', ''), ['training']);
+});
+t('today is the IST date when no start date is given (00:00 to 05:30 IST is still yesterday in UTC)', () => {
+  const real = Date.now; try { Date.now = () => Date.parse('2026-11-05T20:00:00Z'); assert.equal(P.buildPlan({ commitments: [] }).window.start, '2026-11-06', 'Friday 6 Nov in IST'); Date.now = () => Date.parse('2026-11-05T17:00:00Z'); assert.equal(P.buildPlan({ commitments: [] }).window.start, '2026-11-05'); } finally { Date.now = real; }
+  assert.equal(P.buildPlan({ commitments: [] }, { today: '2026-11-09' }).window.start, '2026-11-09');
+});
+t('a date whose origin is not contract is never labelled contract; the working week (Friday and Saturday) is respected', () => {
+  const at = o => P.buildPlan(Object.assign({}, base, { commitments: [{ text: 'Go-live preparation', date: '2027-01-29', origin: o }] })).milestones.find(m => m.id === 'golive');
+  assert.equal(at('contract').origin, 'contract'); assert.equal(at(undefined).origin, 'contract'); assert.equal(at('interpreted').origin, 'interpreted'); assert.equal(at('assumed').origin, 'assumed');
+  assert.ok(P.buildPlan(Object.assign({}, base, { commitments: [{ text: 'Go-live preparation', date: '2027-01-29', origin: 'interpreted' }] })).assumptions.some(a => /not given as contract text/.test(a)));
+  const gulf = P.buildPlan(Object.assign({}, base, { weekend: [5, 6] })); for (const m of gulf.milestones) { assert.ok(![5, 6].includes(new Date(m.start + 'T00:00:00Z').getUTCDay()), m.id + ' starts on a weekend day'); assert.ok(![5, 6].includes(new Date(m.end + 'T00:00:00Z').getUTCDay())); }
+  assert.ok(gulf.assumptions.some(a => /Friday and Saturday are non-working/.test(a)));
+});
 console.log(`\n${n} plan-from-MSA checks passed`);
