@@ -109,12 +109,17 @@
 
   // ---------- selectors: modules ----------
   function wsMod(name) { return S.ws.modules[name] || (S.ws.modules[name] = {}); }
+  /** Only System modules and Custom modules are Facilio modules. A custom module that has no state flow and (almost) no fields of its own, or that is named like a PDF template or a settings store, is not a business module:
+      it only keeps files or settings for something else (for example the Custom PDF Builder connected app). Those are listed apart as 'support'. A person can overrule the guess per module (S.ws.modules[name].kind = 'module' or 'support'). */
+  function supportGuess(b) { if (!b || !b.custom) return false; if (b.stateflowEnabled) return false; const own = (b.fields || []).filter(f => !/^System/.test(f.origin || '')).length; return own < 3 || /pdf|template|settings|builder/i.test(b.name + ' ' + (b.label || '')); }
+  function isSupportModule(name) { const w = S.ws.modules[name] || {}; if (w.kind === 'module') return false; if (w.kind === 'support') return !S.ws.customModules.some(c => c.name === name); return !S.ws.customModules.some(c => c.name === name) && supportGuess(S.baseline && S.baseline.modules[name]); }
   function allModules() {
     const out = [];
-    if (S.baseline) Object.values(S.baseline.modules).forEach(m => out.push(moduleView(m.name)));
+    if (S.baseline) Object.values(S.baseline.modules).forEach(m => { if (!isSupportModule(m.name)) out.push(moduleView(m.name)); });
     S.ws.customModules.forEach(c => out.push(moduleView(c.name)));
     return out;
   }
+  function supportModules() { return S.baseline ? Object.values(S.baseline.modules).filter(m => isSupportModule(m.name)).map(m => moduleView(m.name)) : []; }
   function msaMatched(name) { try { return (doc('planner').scope || []).some(x => x.module === name && x.status === 'matched'); } catch (e) { return false; } }
   function moduleView(name) {
     const b = S.baseline && S.baseline.modules[name];
@@ -371,6 +376,6 @@
 
   root.FWB = { S, P, esc, safeUrl, csvText, uid, clone, slug, humanize, secs, CATEGORY_LABEL, CATEGORY_ORDER, ACTOR_STATUS, VERIFICATION, REQ_CLASS, FIELD_TYPES_EDIT, PERMS, permText,
     newWorkshop, log, changed, on, emit, setBaseline, doc, flush, hasUnsaved, loadProjectDocs, reloadSection, paintSave, markDirty, SECTION_DEFAULTS, deepFreeze,
-    wsMod, allModules, moduleView, fops, effFields, fieldLabel, effForm, formsForModule, formCatalog, formRole, flowModel, editableFlow, flowsForModule, allFlows, flowDiff, baselineFlowModel, autoLayout, statusLabelOf, actionsText,
+    wsMod, allModules, supportModules, isSupportModule, supportGuess, moduleView, fops, effFields, fieldLabel, effForm, formsForModule, formCatalog, formRole, flowModel, editableFlow, flowsForModule, allFlows, flowDiff, baselineFlowModel, autoLayout, statusLabelOf, actionsText,
     allActors, actor, actorLabel, isTbc, businessRank, CHAIN, nextReqId, modulePrefix, changeSummary, validate };
 })(typeof window !== 'undefined' ? window : globalThis);

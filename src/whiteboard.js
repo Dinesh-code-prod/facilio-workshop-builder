@@ -243,13 +243,15 @@
     const shapesMenu = `<div class="wb-pop wb-shapes" id="wbShapes" hidden role="menu" aria-label="Shapes and lines"><div class="wb-pop-h">Lines</div><div class="wb-pop-g">${[['connect', IC.arrow, 'Arrow'], ['connect-elbow', IC.elbow, 'Elbow arrow'], ['connect-both', IC.both, 'Two-way arrow'], ['connect-line', IC.line, 'Line']].map(([t, ic, l]) => `<button type="button" role="menuitem" data-act="wbTool" data-wbtool="${t}" title="${l}" aria-label="${l}">${ic}</button>`).join('')}</div>
       <div class="wb-pop-h">Shapes</div><div class="wb-pop-g">${[['rect', IC.rect, 'Rectangle'], ['ellipse', IC.oval, 'Oval'], ['diamond', IC.rhombus, 'Decision (rhombus)'], ['tri', IC.tri, 'Triangle'], ['para', IC.para, 'Input / output'], ['hex', IC.hex, 'Hexagon'], ['frame', IC.frame, 'Frame']].map(([t, ic, l]) => `<button type="button" role="menuitem" data-act="wbTool" data-wbtool="${t}" title="${l}" aria-label="${l}">${ic}</button>`).join('')}</div></div>`;
     const slim = `<div class="wb-focus-bar"><b>${esc(B.name || 'Process board')}</b><span class="xs muted">${esc((S.project && S.project.name) || '')}</span>${list.length > 1 ? `<select data-change="wbPick" aria-label="Board">${list.map(b => `<option value="${esc(b.id)}"${b.id === W.boardId ? ' selected' : ''}>${esc(b.name || 'Untitled board')}</option>`).join('')}</select>` : ''}</div>`;
-    return (FOCUS() ? '<div class="wb-focus-page">' + slim : head) + `<div class="page-body wb-page">
-      <div class="wb-tb wb-tb-slim" role="toolbar" aria-label="Board">
+    const TB = `      <div class="wb-tb wb-tb-slim" role="toolbar" aria-label="Board">
         <div class="wb-grp" role="group" aria-label="Processes"><button class="btn sm" type="button" data-act="wbFlows"${dis}>${V.ico('plus')}Add State Flow</button><button class="btn sm" type="button" data-act="wbAiText"${dis} title="Describe a process in words and the AI draws it">Describe with AI</button><button class="btn sm" type="button" data-act="wbImg"${dis}>Import from image</button><button class="btn sm" type="button" data-act="wbSaveFlow"${dis} title="Save the selected flow (or the whole board) as a State Flow">Save as state flow</button><button class="btn sm" type="button" data-act="wbNewFlow"${dis}>New state flow</button></div>
         <span class="spacer"></span><span class="xs muted" id="wbSelInfo"></span><span class="wb-save" id="wbSave"></span>
-        <div class="wb-grp" role="group" aria-label="Combined flows"><button class="btn sm" type="button" data-act="wbFull" title="Fill the whole window with the board (Ctrl+Shift+F)">Full screen</button>${FOCUS() ? '' : '<button class="btn sm" type="button" data-act="wbPop" title="Open this board in its own browser tab">New tab</button>'}<button class="btn sm" type="button" data-act="wbCflows">Combined flows${nCf ? ` <span class="wb-cnt">${nCf}</span>` : ''}</button>${ro() ? '' : '<button class="btn sm primary" type="button" data-act="wbCflowSave">Save as combined flow</button>'}</div>
-      </div>
+        <div class="wb-grp" role="group" aria-label="Combined flows"><button class="btn sm" type="button" data-act="wbFull" title="${W.full ? 'Leave full screen (Esc)' : 'Fill the whole window with the board (Ctrl+Shift+F)'}">${W.full ? 'Exit full screen' : 'Full screen'}</button>${FOCUS() ? '' : '<button class="btn sm" type="button" data-act="wbPop" title="Open this board in its own browser tab">New tab</button>'}<button class="btn sm" type="button" data-act="wbCflows">Combined flows${nCf ? ` <span class="wb-cnt">${nCf}</span>` : ''}</button>${ro() ? '' : '<button class="btn sm primary" type="button" data-act="wbCflowSave">Save as combined flow</button>'}</div>
+      </div>`;   // in full screen the toolbar moves INTO the board, so its buttons are not hidden behind it
+    return (FOCUS() ? '<div class="wb-focus-page">' + slim : head) + `<div class="page-body wb-page">
+      ${W.full ? '' : TB}
       <div class="wb-host${W.full ? ' wb-full' : ''}" id="wbHost" tabindex="0" aria-label="Whiteboard canvas. Pick a tool on the left, drag to pan, Ctrl and scroll to zoom, double-click to add or edit text.">
+        ${W.full ? TB : ''}
         <svg id="wbSvg" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Roboto, Arial, sans-serif">${DEFS}<rect id="wbGridR" x="-10000" y="-10000" width="20000" height="20000" fill="url(#wbGrid)" pointer-events="none"/><g id="wbWorld"></g></svg>
         <div class="wb-rail" role="toolbar" aria-orientation="vertical" aria-label="Tools">
           ${RB('select', IC.cursor, 'Select', 'V')}${RB('hand', IC.hand, 'Hand: move the board', 'H')}${RB('note', IC.note, 'Sticky note', 'N')}
@@ -261,7 +263,6 @@
         </div>
         <div class="wb-ctxbar" id="wbCtxBar" hidden role="toolbar" aria-label="Selection"></div>
         <div class="wb-help" id="wbHelp" hidden role="dialog" aria-label="Keyboard shortcuts"><div class="wb-help-h"><b>Keyboard shortcuts</b><button type="button" class="wb-zb" data-act="wbHelp" aria-label="Close">×</button></div><div class="wb-help-g"><b>Tools</b><span>V select · H hand · N sticky note · T text · L connector · P pen · R rectangle · O oval · F frame · S shapes menu</span><b>Edit</b><span>Ctrl+Z undo · Ctrl+Shift+Z redo · Ctrl+C / X / V copy, cut, paste · Ctrl+D or Alt + drag duplicate · Ctrl+G group · Ctrl+Shift+G ungroup · Del delete · Ctrl+A select all</span><b>Move</b><span>Arrow keys nudge · Shift + arrows bigger step · Space + drag pans · Ctrl + wheel zooms</span><b>Layers</b><span>Ctrl+] bring to front · Ctrl+[ send to back</span><b>View</b><span>+ / − zoom · Shift+1 fit all · Shift+2 zoom to selection · Shift+F fit · Ctrl+Shift+F full screen · Esc clear or leave</span><b>Help</b><span>? opens and closes this list</span></div></div>
-        ${W.full ? '<button class="wb-exitfull" type="button" data-act="wbFull" title="Leave full screen (Esc)">Exit full screen</button>' : ''}
         <div class="wb-zoombar" role="group" aria-label="View">
           <button class="wb-zb" type="button" data-act="wbViewMenu" title="Grid, snap and images" aria-label="Board settings">${IC.grid}</button><span class="wb-zsep"></span>
           <button class="wb-zb" type="button" data-act="wbFit" title="Fit to screen (Shift+F)" aria-label="Fit to screen">${IC.fit}</button><button class="wb-zb wb-zsel" type="button" data-act="wbZoomSel" title="Zoom to the selection (Shift+2)" aria-label="Zoom to selection">Sel</button><button class="wb-zb" type="button" data-act="wbHelp" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
@@ -297,6 +298,7 @@
 
   function mount() {
     const svg = document.getElementById('wbSvg'); if (!svg || !current()) { paintState(); return; }
+    { const hh = document.getElementById('wbHost'), nb = document.querySelector('header.navbar'); if (hh && W.full && nb) hh.style.top = Math.round(nb.getBoundingClientRect().bottom) + 'px'; }   // start exactly under the top bar, so nothing of the page shows through
     fitHost(); loadImages(); draw(); paintState();
     let drag = null;
     svg.addEventListener('pointerdown', ev => {

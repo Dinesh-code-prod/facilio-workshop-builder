@@ -18,3 +18,6 @@ body .wb-zsel:not(#_) { font-size: 12px; font-weight: 700; padding: 0 8px; width
 body .wb-host .wb-h[data-hd="nw"], body .wb-host .wb-h[data-hd="se"] { cursor: nwse-resize; } body .wb-host .wb-h[data-hd="ne"], body .wb-host .wb-h[data-hd="sw"] { cursor: nesw-resize; }
 body .wb-host .wb-h[data-hd="n"], body .wb-host .wb-h[data-hd="s"] { cursor: ns-resize; } body .wb-host .wb-h[data-hd="e"], body .wb-host .wb-h[data-hd="w"] { cursor: ew-resize; }
 body .wb-host .wb-rot { cursor: grab; } body .wb-host .wb-rot:active { cursor: grabbing; }
+/* full screen: the toolbar sits at the top of the board */
+body .wb-host.wb-full:not(#_) .wb-tb { position: absolute; top: 0; left: 0; right: 0; z-index: 6; margin: 0; border-radius: 0; border-left: 0; border-right: 0; border-top: 0; box-shadow: 0 2px 6px rgba(29, 26, 94, .08); }
+body .wb-host.wb-full:not(#_) .wb-rail { top: calc(50% + 28px); }
