@@ -38,3 +38,5 @@ modules (forms and fields), flows (state flows per module), crossLinks (combined
 - DONE 6 Nov: BRD review checklist (step 6). Six parts ticked by a person before approval; server enforces. Stage 3 build list is complete except what is marked not checked.
 
 - Test script for all of the above: docs/reference/STAGE3-TEST-SCRIPT-2026-11-06.md (run it once on a throwaway project before trusting stage 3).
+
+- Core plan for scope, solution and a scope-driven BRD: docs/reference/STAGE3-CORE-PLAN-2026-11-06.md (read this before building more of stage 3).

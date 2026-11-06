@@ -461,6 +461,8 @@ Idea: a Facilio-branded bot that joins customer calls, records live transcripts,
 
 **E20. Stage 3, Mockup and BRD (user, 6 Nov 2026): the plan is in `docs/reference/STAGE3-MOCKUP-BRD-PLAN-2026-11-06.md`.** Process whiteboard lives in Requirement sessions and saves every flow (default flow for in-scope modules, changed flows, combined cross-module flows); Claude proposes forms, fields and flows, a person applies them; mockup via Meteor, BRD from the applied design. Stage 4 (UAT guide, FTR, Comet) waits. Step 1 (menu) done; steps 2 to 6 not built.
 
+**E21. Stage 3 core plan (user, 6 Nov 2026): `docs/reference/STAGE3-CORE-PLAN-2026-11-06.md`.** Found: the BRD generator describes a whole organisation package and ignores module scope in roles, role matrix, portfolio, portals and the appendices; what was agreed is mixed with standard behaviour; notifications, roles, buttons and SLA have no place that records what was agreed. Plan: scope, then solution per module, then a BRD generated only from that, with editing, review, mockup after. Six build steps listed there; none started; three open questions for the user.
+
 ## Progress log (add a line each time something is finished)
 | Date | Item | Deploy | Not checked |
 |---|---|---|---|
