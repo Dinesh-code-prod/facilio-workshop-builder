@@ -5,6 +5,7 @@
    Only then does create_project_from_msa make a NEW project from the approved version. With no project the transfer lives in the person's own holding space (the engine's collections under
    the id _msaextract.holdingId(person)): the same code and the same routes as a project's transfers, reachable by that person alone. */
 import { SYSTEMS, validateExtraction, planFromExtraction, txt, holdingId } from './_msaextract.mjs';
+import { buildKickoffPack } from './_kickoffpack.mjs';
 
 const URL_BASE = 'https://facilio-delivery-studio.facilio.work/#/p/';
 
@@ -68,6 +69,7 @@ export function installMsaExtract(d, transfer) {
           await putDoc(base, 'planner', plan.planner);
           if (plan.ctrcore) { step = 'ctrcore'; await viaApp('PUT', base + '/items/ctrcore/main', '', { data: plan.ctrcore }); }
           if (plan.scope) { step = 'scope'; await viaApp('PUT', base + '/items/scope/main', '', { data: plan.scope }); }
+          step = 'kickoff_pack'; await putDoc(base, 'kickoff_pack', buildKickoffPack(v.extraction, { now: new Date().toISOString(), transferId: id, version: cur.approvedVer }));   // the kick-off deck data and the drafted plan, a draft for a person to approve
         } catch (e) { throw new HttpError(e.status || 500, 'The project was created (id ' + np + ') but writing the ' + step + ' record failed: ' + e.message + '. Call create_project_from_msa again with the same id to finish it.', { projectId: np, resume: true, step }); }
         await link(pid, id, s, { projectComplete: true }, 'Project ' + np + ' filled from the extraction');
         return { created: !resumed, resumed, project: { id: np, name: plan.project.name, url: URL_BASE + np }, transferId: id, complete: true, written: plan.counts, warnings: v.warnings,

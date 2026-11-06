@@ -44,6 +44,7 @@ await t('after approval start-project makes a NEW project and answers with its i
   assert.equal((await mv(hid(SAM), SAM, id, { to: 'Approved', ver: 1, baseVersion: 1 })).status, 200);
   const r = await start(SAM, hid(SAM), id); assert.equal(r.status, 200, JSON.stringify(r.data)); assert.equal(r.data.created, true); assert.equal(r.data.complete, true); made = r.data.project.id; assert.match(made, /^p_/); assert.notEqual(made, pid); assert.match(r.data.project.url, /#\/p\/p_/);
   assert.equal((await as(SAM, 'GET', '/api/projects/' + made)).data.project.name, 'Route project');
+  const kp = (await as(SAM, 'GET', '/api/projects/' + made + '/docs/kickoff_pack')).data.data; assert.ok(kp && kp.status === 'draft' && kp.from.transferId === id && kp.rows.length === 15, 'the kick-off pack is written as a draft');
 });
 await t('a second call (and two at once) return the same project, created: false, nothing new', async () => {
   const before = projects().length; const rs = [await start(SAM, hid(SAM), id), ...(await Promise.all([start(SAM, hid(SAM), id), start(SAM, hid(SAM), id)]))];
