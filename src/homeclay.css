@@ -1,9 +1,9 @@
 /* Projects home: soft clay gradients. Pastel violet, mint, rose and peach tints on rounded, slightly raised surfaces (light top edge, gentle shade underneath).
    No glow, no neon. Scoped to the projects home only (.projects-page.hm). */
-body .projects-page.hm:not(#_):not(#__) { background: linear-gradient(180deg, #f5f8ff 0%, #fbfaff 40%, #ffffff 100%); }
+body .projects-page.hm:not(#_):not(#__) { background: #f5f8ff; }
 
 /* hero: the same dark band, softened into a smooth violet gradient with a clay edge */
-body .projects-page.hm .hm-hero:not(#_):not(#__) { border: 0 !important; background: linear-gradient(135deg, #1d1747 0%, #2c2166 55%, #3a2a85 100%) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), inset 0 -6px 14px rgba(8, 6, 30, .35), 0 18px 30px -20px rgba(44, 33, 102, .6) !important; }
+body .projects-page.hm .hm-hero:not(#_):not(#__) { border: 0 !important; background: #1d1747 !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), inset 0 -6px 14px rgba(8, 6, 30, .35), 0 18px 30px -20px rgba(44, 33, 102, .6) !important; }
 body .projects-page.hm .hm-hi:not(#_):not(#__) { color: #8DB8FF !important; }
 body .projects-page.hm .hm-sub:not(#_):not(#__) { color: rgba(255, 255, 255, .82) !important; }
 body .projects-page.hm .hm-btn.ghost:not(#_):not(#__) { background: linear-gradient(180deg, rgba(255, 255, 255, .14), rgba(255, 255, 255, .06)) !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, .22) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2), 0 6px 12px -8px rgba(0, 0, 0, .5) !important; }
@@ -18,17 +18,17 @@ body .projects-page.hm .pp-icon:not(#_):not(#__) { background: linear-gradient(1
 body .projects-page.hm .pp-value:not(#_):not(#__) { color: #1b1630 !important; }
 
 /* portfolio health and My work: a soft violet-to-mint wash on a clay panel */
-body .projects-page.hm .hm-port:not(#_):not(#__), body .projects-page.hm .hm-mywork:not(#_):not(#__) { border: 1px solid rgba(255, 255, 255, .9) !important; background: linear-gradient(145deg, #eaf2ff 0%, #fbfaff 55%, #eaf8f5 100%) !important; box-shadow: inset 0 1px 0 #fff, inset 0 -4px 10px rgba(40, 80, 150, .06), 0 1px 2px rgba(40, 40, 90, .06), 0 14px 26px -20px rgba(40, 80, 150, .45) !important; }
-body .projects-page.hm .cmd-m:not(#_):not(#__) { background: linear-gradient(160deg, #ffffff, #eef4ff) !important; }
+body .projects-page.hm .hm-port:not(#_):not(#__), body .projects-page.hm .hm-mywork:not(#_):not(#__) { border: 1px solid rgba(255, 255, 255, .9) !important; background: #eaf2ff !important; box-shadow: inset 0 1px 0 #fff, inset 0 -4px 10px rgba(40, 80, 150, .06), 0 1px 2px rgba(40, 40, 90, .06), 0 14px 26px -20px rgba(40, 80, 150, .45) !important; }
+body .projects-page.hm .cmd-m:not(#_):not(#__) { background: #ffffff !important; }
 
 /* project cards: pastel gradient clay, gentle lift */
 body .projects-page.hm .proj-card:not(#_):not(#__) { border: 1px solid rgba(255, 255, 255, .9) !important; background: linear-gradient(150deg, var(--c1, #e6f0ff), #ffffff 55%, var(--c3, #eaf8f5)) !important; box-shadow: inset 0 1px 0 #fff, inset 0 -4px 8px rgba(40, 80, 150, .06), 0 1px 2px rgba(40, 40, 90, .07), 0 14px 24px -18px rgba(40, 80, 150, .45) !important; transition: transform .2s ease, box-shadow .2s ease !important; }
 body .projects-page.hm .proj-grid > .proj-card:nth-child(3n+2) { --c1: #e2f6f2; --c3: #eaf2ff; }
 body .projects-page.hm .proj-grid > .proj-card:nth-child(3n) { --c1: #ffeadb; --c3: #fde8ef; }
 body .projects-page.hm .proj-card:not(#_):not(#__):hover { transform: translateY(-3px); box-shadow: inset 0 1px 0 #fff, inset 0 -4px 8px rgba(40, 80, 150, .08), 0 3px 6px rgba(40, 40, 90, .08), 0 20px 30px -16px rgba(40, 80, 150, .5) !important; }
-body .projects-page.hm .proj-av:not(#_):not(#__) { background: linear-gradient(145deg, #4b9bff, #1570EF) !important; color: #fff !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 -3px 6px rgba(8, 50, 130, .25), 0 5px 10px -4px rgba(21, 112, 239, .55) !important; }
-body .projects-page.hm .proj-grid > .proj-card:nth-child(3n+2) .proj-av { background: linear-gradient(145deg, #5fd3c0, #14a898) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 -3px 6px rgba(8, 90, 80, .25), 0 5px 10px -4px rgba(20, 168, 152, .55) !important; }
-body .projects-page.hm .proj-grid > .proj-card:nth-child(3n) .proj-av { background: linear-gradient(145deg, #ffa56b, #f06a2c) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 -3px 6px rgba(150, 50, 10, .25), 0 5px 10px -4px rgba(240, 106, 44, .55) !important; }
+body .projects-page.hm .proj-av:not(#_):not(#__) { background: #4b9bff !important; color: #fff !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 -3px 6px rgba(8, 50, 130, .25), 0 5px 10px -4px rgba(21, 112, 239, .55) !important; }
+body .projects-page.hm .proj-grid > .proj-card:nth-child(3n+2) .proj-av { background: #5fd3c0 !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 -3px 6px rgba(8, 90, 80, .25), 0 5px 10px -4px rgba(20, 168, 152, .55) !important; }
+body .projects-page.hm .proj-grid > .proj-card:nth-child(3n) .proj-av { background: #ffa56b !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 -3px 6px rgba(150, 50, 10, .25), 0 5px 10px -4px rgba(240, 106, 44, .55) !important; }
 @media (prefers-reduced-motion: reduce) { body .projects-page.hm .proj-card:not(#_):not(#__) { transition: none !important; } }
 
 
@@ -52,13 +52,13 @@ body .projects-page.hm .proj-av[style], body .projects-page.hm .proj-grid > .pro
 /* tiles or list, sort, and "show more" so a long list of projects stays easy to scan */
 .hm-bar { flex-wrap: wrap; gap: 12px; } .hm-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-left: auto; }
 .pj-sort select { height: 40px; padding: 0 12px; border: 1px solid #d6dff0; border-radius: 10px; background: #fff; color: #0f1d3a; font: inherit; font-size: 13.5px; }
-.pj-view { display: inline-flex; border: 1px solid #d6dff0; border-radius: 10px; overflow: hidden; background: #fff; } .pj-view button { width: 40px; height: 38px; border: 0; background: transparent; color: #5a6c87; cursor: pointer; display: grid; place-items: center; } .pj-view button.on { background: #1D1A5E; color: #fff; } .pj-view button:focus-visible { outline: 2px solid #1570EF; outline-offset: -2px; }
+.pj-view { display: inline-flex; border: 1px solid #d6dff0; border-radius: 10px; overflow: hidden; background: #fff; } .pj-view button { width: 40px; height: 38px; border: 0; background: transparent; color: #424242; cursor: pointer; display: grid; place-items: center; } .pj-view button.on { background: #1D1A5E; color: #fff; } .pj-view button:focus-visible { outline: 2px solid #1570EF; outline-offset: -2px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.pj-list { display: grid; background: #fff; border: 1px solid #dfe6f3; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 2px rgba(16, 40, 90, .05), 0 12px 24px -18px rgba(16, 40, 90, .25); }
+.pj-list { display: grid; background: #fff; border: 1px solid #dfe6f3; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 2px rgba(16, 40, 90, .05), 0 12px 24px -18px rgba(16, 40, 90, .25); }
 .pj-h, .pj-r { display: grid; grid-template-columns: minmax(220px, 2.2fr) minmax(130px, 1.2fr) 100px 120px 120px 90px; align-items: center; gap: 14px; padding: 11px 16px; }
-.pj-h { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #6b7a94; background: #f6f9fe; border-bottom: 1px solid #e6edf8; }
+.pj-h { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: none; color: #424242; background: #f6f9fe; border-bottom: 1px solid #e6edf8; }
 .pj-r { border-top: 1px solid #edf1f8; cursor: pointer; font-size: 13.5px; color: #0f1d3a; } .pj-h + .pj-r { border-top: 0; } .pj-r:hover, .pj-r:focus-visible { background: #f3f7fe; outline: none; }
-.pj-n { display: flex; align-items: center; gap: 12px; min-width: 0; } .pj-n b { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .pj-c { color: #44546f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .pj-d { color: #5a6c87; font-size: 13px; }
+.pj-n { display: flex; align-items: center; gap: 12px; min-width: 0; } .pj-n b { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .pj-c { color: #44546f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .pj-d { color: #424242; font-size: 13px; }
 .proj-av.sm { width: 32px; height: 32px; min-width: 32px; border-radius: 10px; font-size: 12px; display: grid; place-items: center; font-weight: 700; flex: none; }
 .pj-more { display: flex; justify-content: center; margin: 16px 0 4px; }
 @media (max-width: 860px) { .pj-h, .pj-r { grid-template-columns: minmax(0, 1fr) 90px 90px; } .pj-h span:nth-child(2), .pj-r > :nth-child(2), .pj-h span:nth-child(4), .pj-r > :nth-child(4), .pj-h span:nth-child(6) { display: none; } .hm-tools { margin-left: 0; width: 100%; } }

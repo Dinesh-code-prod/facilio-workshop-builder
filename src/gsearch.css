@@ -2,13 +2,13 @@
 .gs-btn{display:inline-flex;align-items:center;gap:6px}
 .gs-in{width:100%;padding:12px 14px;border:1px solid #d7dfee;border-radius: 12px;font-size:15px;background:#fff}
 .gs-out{margin-top:12px}
-.gs-h{font-size:11px;text-transform: none;letter-spacing:.08em;color:#6b7694;margin:14px 2px 6px}
+.gs-h{font-size:11px;text-transform: none;letter-spacing:.08em;color: #424242;margin:14px 2px 6px}
 .gs-r{display:grid;gap:3px;width:100%;text-align:left;padding:11px 13px;margin-bottom:8px;border:1px solid #e3e8f2;border-radius: 12px;background:#fff;cursor:pointer;font:inherit;color:inherit}
 .gs-r:hover{border-color:#9fc0f7;background:#f7faff}
 .gs-k{font-size:11px;font-weight:700;color:#0b4fbf}
 .gs-r b{font-size:14px;color:#1D1A5E}
 .gs-x{font-size:12.5px;color:#46506f;line-height:1.5}
-.gs-w{font-size:11px;color:#8a93ad}
+.gs-w{font-size:11px;color: #616161}
 .gs-r mark{background:#fde9a8;color:inherit;border-radius: 3px;padding:0 1px}
 @media(max-width:700px){.gs-t{display:none}}
 /* priority markers in the menu (src/overview.js navCounts) */

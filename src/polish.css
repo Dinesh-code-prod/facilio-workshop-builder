@@ -60,7 +60,7 @@ body .main > .page > .page-header:not(#_):not(#__), body .adm-main > .adm-hero:n
 /* Other number tiles (Package Analysis: modules, fields, relationships, apps, tabs...) get the same clay depth and hover as the KPI tiles. */
 body .stat:not(.card):not(#_) { position: relative; overflow: hidden; padding: 12px 14px; border-radius: 14px; border: 1px solid #ebe8f5; background: #fff; background-color: #fff; box-shadow: inset 0 1px 0 #fff, inset 0 -3px 6px rgba(98, 80, 160, .06), 0 1px 2px rgba(40, 40, 90, .07), 0 10px 20px -14px rgba(60, 40, 140, .32) !important; transition: transform .2s ease, box-shadow .2s ease !important; }
 body .stat:not(.card) .n:not(#_) { font-size: 26px; font-weight: 800; letter-spacing: -.5px; color: #1b1630; line-height: 1.1; }
-body .stat:not(.card) .l:not(#_) { margin-top: 4px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: none; color: #6b6685; }
+body .stat:not(.card) .l:not(#_) { margin-top: 4px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: none; color: #424242; }
 body .stat:not(.card)::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .25s ease, background-position .7s ease; background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, .75) 48%, transparent 66%); background-size: 220% 100%; background-position: 120% 0; }
 body .stat:not(.card):hover::before { opacity: .55; background-position: -20% 0; }
 body .stat:not(.card):not(#_):hover { transform: translateY(-3px); box-shadow: inset 0 1px 0 #fff, inset 0 -3px 6px rgba(98, 80, 160, .08), 0 3px 6px rgba(40, 40, 90, .09), 0 18px 28px -14px rgba(60, 40, 140, .42) !important; }
