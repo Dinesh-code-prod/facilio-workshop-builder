@@ -102,10 +102,6 @@ body .btn.primary:not(#_) { background: var(--th-violet) !important; border-colo
 body .btn.primary.sm:not(#_) { font-size: 11.5px !important; }
 /* the sign-in and welcome screens keep their own button lettering */
 body .auth .btn.primary:not(#_) { font-family: var(--th-font) !important; text-transform: none; font-size: 15px !important; letter-spacing: -.1px !important; }
-body .btn.primary:not(.icon):not(#_):has(> svg:first-child) { padding-right: 5px !important; gap: 10px !important; }
-body .btn.primary:not(.icon):not(#_) > svg:first-child { order: 2; box-sizing: border-box; width: 26px !important; height: 26px !important; padding: 5px; border-radius: 50%; background: #fff; color: var(--th-violet); transition: transform .2s; }
-body .btn.primary.sm:not(.icon):not(#_) > svg:first-child { width: 22px !important; height: 22px !important; padding: 4px; }
-body .btn.primary:not(.icon):hover > svg:first-child { transform: rotate(90deg); }
 body .btn.primary:hover:not([disabled]) { background: var(--th-violet-2) !important; border-color: var(--th-violet-2) !important; }
 body .btn.danger:not(#_) { background: #fff !important; color: var(--th-red) !important; border-color: #F4B9B3 !important; }
 body .btn.danger:not(#_):hover { background: var(--th-red-soft) !important; }
@@ -258,7 +254,6 @@ body .lc-pages { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
 /* ---------- remaining fixed blues outside the Form and State Flow builders ---------- */
 body .switch input:checked + span { background: var(--th-violet) !important; }
 body .ib-dot.new:not(#_) { background: var(--th-violet); } body .ib-row:not(#_):focus-visible { outline-color: var(--th-violet); }
-body .projects-page .pp-stat .pp-icon:not(#_) { background: var(--th-violet-soft) !important; color: var(--th-violet) !important; }
 body .page-body a:not(.btn):not(.tag):not([class*="tile"]) { color: var(--th-violet); }
 
 /* =====================================================================================================

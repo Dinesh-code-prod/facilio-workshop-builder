@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "studio-dev", "runtimeExecutable": "node", "runtimeArgs": ["tests/ui/devserver.mjs", "4181"], "port": 4181 }
+  ]
+}

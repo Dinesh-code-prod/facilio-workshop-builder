@@ -12,7 +12,6 @@ body .auth .aw-ok:not(#_):not(#__) { background: rgba(124, 243, 198, .14) !impor
 
 /* projects home: the inner header bars of the two panels sit on the panel, not as white boxes inside it */
 body .projects-page.hm .hm-port-top:not(#_):not(#__), body .projects-page.hm .hm-bar:not(#_):not(#__) { background: transparent !important; box-shadow: none !important; border-bottom: 1px solid rgba(98, 80, 160, .12) !important; }
-body .projects-page.hm .hm-search svg:not(#_):not(#__), body .projects-page.hm .hm-search .fi:not(#_):not(#__) { color: #7a739a !important; }
 
 /* Layout: the two halves fill the whole page. The story, logo and note sit in the left half; sign-in is the right half. */
 @media (min-width: 1100px) {
@@ -24,7 +23,6 @@ body .projects-page.hm .hm-search svg:not(#_):not(#__), body .projects-page.hm .
   body .auth:has(.auth-form.night) .auth-art:not(#_):not(#__) { background: transparent !important; }
   body .auth:has(.auth-form.night) .auth-box:not(#_):not(#__) { width: min(480px, 100%); }
 }
-
 
 /* the night mountains and forest from the product animation, quiet, behind the whole team sign-in page (the customer view already draws its own city) */
 body .auth:has(.lsx[data-aud="team"]):not(#_):not(#__) { position: relative; isolation: isolate; }

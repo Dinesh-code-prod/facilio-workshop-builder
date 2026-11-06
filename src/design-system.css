@@ -343,14 +343,6 @@ body .projects-page .hm-hero.night::before { opacity: .45 !important; animation:
 body .projects-page .hm-btn:not(#_) { height: 40px !important; border-radius: var(--ds-r) !important; box-shadow: none !important; font-weight: 600 !important; }
 body .projects-page .hm-btn.ghost:not(#_) { background: rgba(255,255,255,.06) !important; color: #E8EDFA !important; border: 1px solid rgba(255,255,255,.24) !important; }
 body .projects-page .hm-btn.primary:not(#_) { background: var(--ds-blue) !important; border-color: var(--ds-blue) !important; }
-body .projects-page .pp-stat:not(#_), body .projects-page.hm .hm-stats .pp-stat:nth-child(n):not(#_) { background: #fff !important; background-image: none !important; border: 1px solid var(--ds-line) !important; border-left: 1px solid var(--ds-line) !important; border-radius: var(--ds-r-lg) !important; box-shadow: var(--ds-sh) !important; }
-body .projects-page .pp-stat .pp-icon:not(#_) { background: var(--ds-soft) !important; color: var(--ds-ink-3) !important; }
-body .projects-page .pp-value { color: var(--ds-ink) !important; font-weight: 600 !important; }
-body .projects-page .pp-label { color: var(--ds-muted) !important; }
-body .projects-page .proj-card:not(#_), body .projects-page.hm .proj-card:nth-child(n):not(#_) { background: #fff !important; background-image: none !important; border: 1px solid var(--ds-line) !important; border-radius: var(--ds-r-lg) !important; box-shadow: var(--ds-sh) !important; }
-body .projects-page .proj-card:not(#_):hover { border-color: var(--ds-line-2) !important; box-shadow: 0 4px 8px -2px rgba(16,24,40,.08) !important; transform: none !important; }
-body .projects-page .proj-av:not(#_) { background: var(--ds-navy-50) !important; color: var(--ds-navy) !important; box-shadow: inset 0 0 0 1px var(--ds-navy-100) !important; border-radius: var(--ds-r) !important; }
-body .projects-page .hm-search:not(#_) { border-radius: var(--ds-r) !important; box-shadow: var(--ds-sh) !important; }
 
 /* ---------------- Final pass ---------------- */
 /* admin section headings: plain headings, no coloured bar */
@@ -390,15 +382,6 @@ body .sidebar .sb-foot { position: sticky !important; bottom: -24px !important; 
 
 /* ---- Projects home: fuller grid, clearer cards ---- */
 body .projects-page .proj-grid:not(#_) { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)) !important; gap: 18px !important; }
-body .projects-page .proj-card:not(#_) { position: relative; padding: 20px 20px 16px !important; min-height: 168px; box-shadow: 0 1px 2px rgba(16,24,40,.05) !important; transition: box-shadow .18s, border-color .18s !important; }
-body .projects-page .proj-card:not(#_)::before { content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 4px; border-radius: 0 4px 4px 0; background: var(--tone, #1570EF); transform: none !important; opacity: 1 !important; height: auto !important; right: auto !important; }
-body .projects-page .proj-card:not(#_):hover { border-color: var(--tone, #1570EF) !important; box-shadow: 0 10px 26px rgba(21,112,239,.14) !important; }
-body .projects-page .proj-av:not(#_) { background: color-mix(in srgb, var(--tone, #1570EF) 14%, #fff) !important; color: var(--tone, #1570EF) !important; font-weight: 700; }
-body .projects-page .pp-stat .pp-icon:not(#_) { background: #e8f1ff !important; color: #1570EF !important; }
-body .projects-page .pp-stat .pp-icon.teal:not(#_) { background: #dff6f4 !important; color: #0e8f8a !important; }
-body .projects-page .pp-stat .pp-icon.pink:not(#_) { background: #fde8f3 !important; color: #c8126a !important; }
-body .projects-page .pp-stat .pp-icon.navy:not(#_) { background: #e9e8fb !important; color: #2b2780 !important; }
-body .projects-page .hm-stats .pp-icon:not(#_) svg { stroke: currentColor !important; }
 
 /* ---------------- Build 80: alignment fixes found by the browser audit ---------------- */
 /* menu items without their own icon keep the same text column as items with one (dot centred in the 16px icon slot) */
@@ -426,7 +409,6 @@ body .dr-filters .btn:not(#_) { justify-self: start; align-self: end; margin-bot
 body :is(.drawer-b, .dialog-b, .card-b) > * + label.f, body :is(.drawer-b, .dialog-b, .card-b) > * + .pink-label { margin-top: 18px !important; }
 /* stat tiles: values never squeeze into tight lines */
 body .pp-value, body .stat .v, body .kpi .kpi-v { line-height: 1.2 !important; overflow-wrap: anywhere; }
-@media (max-width: 480px) { body .projects-page .hm-stats:not(#_) { grid-template-columns: minmax(0, 1fr) !important; } body .pp-value { font-size: 20px !important; } }
 /* segmented filters wrap as whole buttons */
 body .seg { flex-wrap: wrap; max-width: 100%; } body .seg button { white-space: nowrap; }
 /* selects and inputs inside action rows shrink with the row instead of pushing it wider than the screen */
