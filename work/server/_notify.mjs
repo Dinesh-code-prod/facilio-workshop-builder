@@ -10,6 +10,7 @@ import { createHash } from 'node:crypto';
 export const EVENTS = {
   task_assigned: { label: 'A task is assigned to you', def: { inapp: true, browser: false, teams: true } },
   task_due: { label: 'A task is due soon or overdue', def: { inapp: true, browser: false, teams: true } },
+  approval_requested: { label: 'Something waits for your approval', def: { inapp: true, browser: true, teams: true } },
   stage_ready: { label: 'A stage is ready to close', def: { inapp: true, browser: false, teams: true } },
   stage_closed: { label: 'A stage was closed', def: { inapp: true, browser: false, teams: true } },
   customer_signoff: { label: 'The customer signed off or raised a concern', def: { inapp: true, browser: true, teams: true } },
