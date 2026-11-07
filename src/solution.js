@@ -54,7 +54,21 @@
   const ro = () => !!S.readonly || (S.project && S.project.role === 'viewer');
   const guard = () => { if (ro()) { toast('This project is read-only for you.', 4000, true); return true; } return false; };
   const ui = () => S.ui.sol || (S.ui.sol = { key: '', draft: null });
-  const mods = () => (F.allModules() || []).filter(m => m.inScope).map(m => ({ name: m.name, label: m.label || m.name })).sort((a, b) => a.label.localeCompare(b.label));
+  const catalogue = () => (F.allModules() || []).map(m => ({ name: m.name, label: m.label || m.name }));
+  /** what the contract documents say about the modules (cached while the documents and the catalogue are the same) */
+  const empty = { strong: [], weak: [], excluded: [], docs: 0 };
+  function ctr() {
+    const docs = V.contractDocs ? V.contractDocs() : []; if (!docs.length || !root.FWBContractMods) return empty; const cat = catalogue(); const fp = docs.map(d => d.name + ':' + d.pages.reduce((n, p) => n + p.text.length, 0)).join('|') + '#' + cat.length; const u = S.ui;
+    if (!u.cm || u.cm.fp !== fp) u.cm = { fp, res: Object.assign(root.FWBContractMods.find(cat, docs), { docs: docs.length }) }; return u.cm.res;
+  }
+  /** the modules that get an area: the ones the contract delivers (strong evidence), the ones a person added from the weaker mentions, and any module that already has a written solution (written work is never hidden);
+      with no contract text at all, the modules switched on in the project (the old behaviour) */
+  const mods = () => {
+    const c = ctr(), cat = catalogue(), by = new Map(cat.map(m => [m.name, m])); const names = new Set(); const d = doc();
+    if (c.docs) { c.strong.forEach(x => names.add(x.name)); arr(d.addedModules).forEach(n => names.add(n)); } else (F.allModules() || []).filter(m => m.inScope).forEach(m => names.add(m.name));
+    Object.keys(L().itemsOf(d)).forEach(k => { if (/^module:/.test(k) && L().hasContent(d, k)) names.add(k.slice(7)); });
+    return [...names].map(n => by.get(n) || { name: n, label: n }).sort((a, b) => a.label.localeCompare(b.label));
+  };
   const areas = () => L().areasFor(mods(), doc());
   const doc = () => F.doc('solutions') || { items: {} };
   const props = () => ((F.doc('design_proposals') || {}).items) || [];
@@ -68,7 +82,7 @@
 
   function nav() {
     const d = doc(), u = cur(), ps = props();
-    return L().GROUPS.map(g => { const as = areas().filter(a => a.group === g); if (!as.length) return ''; return '<div class="cs-sol-g"><h3>' + esc(g) + '</h3>' + as.map(a => { const n = L().proposalsFor(ps, a.key).length;
+    return ctrPanel() + L().GROUPS.map(g => { const as = areas().filter(a => a.group === g); if (!as.length) return ''; return '<div class="cs-sol-g"><h3>' + esc(g) + '</h3>' + as.map(a => { const n = L().proposalsFor(ps, a.key).length;
       return '<button type="button" class="cs-sol-i' + (u && a.key === u.key ? ' on' : '') + '" data-act="solPick" data-key="' + esc(a.key) + '"><span>' + esc(a.label) + '</span>' + (n ? '<em>' + n + ' proposed</em>' : chip(L().statusOf(d, a.key))) + '</button>'; }).join('') + '</div>'; }).join('');
   }
   /** one line that tells the person what Claude reads for the area (the same sources as the server context pack, work/server/_solctx.mjs) */
@@ -110,11 +124,27 @@
     return '<div class="cs-sol-tw"><table class="cs-sol-tbl">' + cg + '<thead>' + head + '</thead><tbody>' + (body || '<tr><td colspan="' + (cols.length + 2) + '" class="cs-none">No rows yet. Add the first one, or start from the list below.</td></tr>') + '</tbody></table></div>'
       + (ro_ ? '' : '<div class="cs-cmd"><button type="button" class="btn sm primary" data-act="solRowAdd">+ Add row</button>' + (kind === 'module' ? '<button type="button" class="btn sm" data-act="solTopics">Add the standard topics</button>' : '') + (kind === 'apps' && props_ ? '<button type="button" class="btn sm" data-act="solFromApps">Fill from the ' + props_ + ' connected app' + (props_ === 1 ? '' : 's') + ' captured in the sessions</button>' : '') + '</div>');
   }
+  /** where the contract says it (document, page, the words), or why a module is here without it */
+  function evidence(a) {
+    if (!a.key.startsWith('module:')) return ''; const c = ctr(); if (!c.docs) return ''; const n = a.key.slice(7), e = c.strong.find(x => x.name === n), w = c.weak.find(x => x.name === n), x = c.excluded.find(y => y.name === n); const hits = (e || w || x || { hits: [] }).hits;
+    const li = hits.slice(0, 6).map(h => '<li><b>' + esc(h.doc) + ', page ' + esc(h.page) + '</b>' + (h.excluded ? ' <span class="xs muted">(excluded)</span>' : '') + ': “' + esc(h.quote) + '”</li>').join('');
+    if (e) return '<details class="fl-sol-r"><summary>In the contract (' + e.hits.filter(h => h.strong).length + ' place' + (e.hits.filter(h => h.strong).length === 1 ? '' : 's') + ')</summary><ul>' + li + '</ul></details>';
+    return '<p class="xs muted">' + (hits.length ? 'The contract only mentions this module in passing or excludes it; it is here because someone added it.' : 'The contract documents do not mention this module; it is here because it was switched on or added by hand.') + '</p>' + (li ? '<details class="fl-sol-r"><summary>What the contract says (' + hits.length + ')</summary><ul>' + li + '</ul></details>' : '');
+  }
+  /** the panel above the list: how many documents were read, which modules were found, which are only mentioned, which the contract excludes, and the switch-on button */
+  function ctrPanel() {
+    const c = ctr(); if (!c.docs) return '<div class="fl-sol-g"><h3>From the contract</h3><p class="xs muted">No contract document has text yet, so the list shows the modules switched on in the project. Add the contract on Contract intake and the modules it names appear here.</p><button type="button" class="btn sm" data-act="nav" data-view="msaintake">Open Contract intake</button></div>';
+    const off = c.strong.filter(x => !((F.allModules() || []).find(m => m.name === x.name) || {}).inScope); const added = new Set(arr(doc().addedModules)); const weak = c.weak.filter(x => !added.has(x.name));
+    return '<div class="fl-sol-g"><h3>From the contract</h3><p class="xs muted">' + c.docs + ' document' + (c.docs === 1 ? '' : 's') + ' read: ' + c.strong.length + ' module' + (c.strong.length === 1 ? '' : 's') + ' found.</p>'
+      + (off.length && !ro() ? '<button type="button" class="btn sm primary" data-act="solSwitchOn" title="' + esc(off.map(x => x.label).join(', ')) + '">Switch on ' + off.length + ' in the project</button><p class="xs muted">So the BRD, the state flows and the module pages follow the contract.</p>' : '')
+      + (weak.length ? '<details class="fl-sol-more"><summary>Also mentioned (' + weak.length + ')</summary>' + weak.slice(0, 20).map(x => '<div class="fl-sol-wk"><span>' + esc(x.label) + '<em>' + esc(x.hits[0].doc) + ' p.' + esc(x.hits[0].page) + '</em></span>' + (ro() ? '' : '<button type="button" class="btn sm" data-act="solAddMod" data-name="' + esc(x.name) + '">Add</button>') + '</div>').join('') + '</details>' : '')
+      + (c.excluded.length ? '<details class="fl-sol-more"><summary>Excluded by the contract (' + c.excluded.length + ')</summary><p class="xs muted">' + esc(c.excluded.map(x => x.label).join(', ')) + '</p></details>' : '') + '</div>';
+  }
   function detail(a) {
     const d = doc(), rec = L().recOf(d, a.key) || {}, reqs = L().reqLines(S.ws.requirements, a.key), ps = L().proposalsFor(props(), a.key), dr = ensureDraft(), lay = L().layoutOf(d, a.key);
     const link = a.key === 'area:kpis' || a.key === 'area:sla' ? '<button type="button" class="btn sm" data-act="nav" data-view="slakpi">Open KPIs &amp; SLA matrix</button>' : a.key === 'area:roles' ? '<button type="button" class="btn sm" data-act="nav" data-view="roles">Open Roles &amp; access</button>' : a.key === 'area:notifications' ? '<button type="button" class="btn sm" data-act="nav" data-view="notifications">Open Notifications</button>' : '';
     const busy = jobsOpen(['update_solution', 'compare_solution']);
-    return '<section class="cs-card cs-sol-d"><div class="cs-sol-dh"><h2 class="cs-card-h">' + esc(a.label) + '</h2>' + chip(L().statusOf(d, a.key)) + link + (a.custom ? '<button type="button" class="btn sm" data-act="solRemove" data-key="' + esc(a.key) + '">Remove this area</button>' : '') + '</div>' + about(a, !dr.rows.length && !dr.text)
+    return '<section class="cs-card cs-sol-d"><div class="cs-sol-dh"><h2 class="cs-card-h">' + esc(a.label) + '</h2>' + chip(L().statusOf(d, a.key)) + link + (a.custom ? '<button type="button" class="btn sm" data-act="solRemove" data-key="' + esc(a.key) + '">Remove this area</button>' : '') + '</div>' + about(a, !dr.rows.length && !dr.text) + evidence(a)
       + (a.key.startsWith('module:') ? '<details class="cs-sol-r"' + (reqs.length ? ' open' : '') + '><summary>Customer requirements (' + reqs.length + ' confirmed, read only)</summary>' + (reqs.length ? '<ul>' + reqs.map(r => '<li><b>' + esc(r.id) + '</b> ' + esc(r.text || r.title) + '</li>').join('') + '</ul>' : '<p class="cs-none">No confirmed requirement for this module yet. The solution can still be written; the BRD reads it.</p>') + '</details>' : '')
       + (ps.length ? '<div class="cs-sol-ps">' + ps.map(p => proposalCard(p, rec)).join('') + '</div>' : '')
       + '<label class="f" for="solText">Overview: a few sentences that open this solution in the BRD</label><textarea id="solText" rows="3" maxlength="6000"' + (ro() ? ' readonly' : '') + '>' + esc(dr.text) + '</textarea>'
@@ -130,18 +160,24 @@
   V.solution = { html() {
     if (V.isCustomer()) return '';
     const head = '<div class="page-header"><div class="t"><h1>Solution</h1><p>The agreed solution of each module and area: a short overview and a table of what Facilio does, topic by topic. The BRD is built from this page, so a change here shows in the BRD. Claude can propose changes; you accept them row by row.</p></div></div>';
-    if (!mods().length) return head + '<div class="page-body"><div class="card empty"><h3>No module is in scope yet</h3><p>Switch on the modules the project covers on System Modules &amp; Form Builder. The solution list follows that list.</p><div class="row empty-acts"><button class="btn primary" data-act="nav" data-view="modules">Open the modules</button></div></div></div>';
+    if (!mods().length) return head + '<div class="page-body"><div class="card empty"><h3>No module found in the contract yet</h3><p>The modules on this page come from the contract documents. Add the contract on Contract intake (Claude and the page read it), or switch on the modules the project covers on System Modules &amp; Form Builder.</p><div class="row empty-acts"><button class="btn primary" data-act="nav" data-view="msaintake">Open Contract intake</button><button class="btn" data-act="nav" data-view="modules">Open the modules</button></div></div></div>';
     const a = cur(), busy = jobsOpen(['compare_solution']);
     return head + '<div class="page-body"><div class="card cs-sol-all"><div class="cs-cmd-bar"><button type="button" class="btn primary" data-act="solAdd">+ Add an area or solution</button><button type="button" class="btn" data-act="solWord">Export Word</button><button type="button" class="btn" data-act="solDrop"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Claude is comparing the file' : 'Drop a file') + '</button><span class="xs muted">Drop a file (Word, PDF, Excel or e-mail) anywhere on this page: Claude compares it with the solutions, proposes updates where it differs, and proposes a new area for anything that fits none.</span></div>'
       + '<details class="cs-sol-all-ask"><summary>Ask Claude about all areas</summary><textarea id="solAskAll" rows="3" maxlength="600" placeholder="For example: the customer now wants all approvals to go to the site manager first."></textarea><div class="cs-cmd"><button type="button" class="btn" data-act="solAsk" data-key="">Ask Claude</button><button type="button" class="btn" data-act="solOpenClaude" data-key="">Open in Claude</button></div></details>'
       + '<div class="cs-sol"><nav class="cs-sol-n" aria-label="Solution areas">' + nav() + '</nav><div>' + detail(a) + '</div></div></div>'
       + '<details class="cs-sol-cov"><summary>Coverage: what is recorded per module</summary>' + coverage() + '</details></div>';
-  }, mount() { } };
+  }, mount() { if (V.contractLoad) V.contractLoad(); } };
 
   if (typeof document !== 'undefined') {   // what is typed in the overview or in the table is kept in the working copy, so a refresh does not lose it
     const upd = e => { const t = e.target; if (!t || !t.closest || !t.closest('.cs-sol-d')) return; if (t.id === 'solText') ensureDraft().text = t.value; else if (t.hasAttribute('data-c') || t.hasAttribute('data-s')) { const r = ensureDraft().rows[+t.getAttribute('data-ri')]; if (!r) return; if (t.hasAttribute('data-s')) r.status = t.value; else { r.cells = r.cells || {}; r.cells[t.getAttribute('data-c')] = t.value; } } };
     document.addEventListener('input', upd); document.addEventListener('change', upd);
   }
+  ACT.solAddMod = a => { if (guard()) return; const n = a.getAttribute('data-name'), d = doc(); if (arr(d.addedModules).includes(n)) return; write(Object.assign({}, d, { addedModules: arr(d.addedModules).concat(n).slice(0, 80) }), 'Module added to the solution', n); V.render(); };
+  ACT.solSwitchOn = async () => {
+    if (guard()) return; const off = ctr().strong.filter(x => !((F.allModules() || []).find(m => m.name === x.name) || {}).inScope); if (!off.length) return;
+    if (!(await V.confirmDialog('Switch on the contract modules', 'Mark ' + off.length + ' module' + (off.length === 1 ? '' : 's') + ' in scope for this project: ' + off.map(x => x.label).join(', ') + '? The BRD, the state flows and the module pages then follow the contract.', 'Switch on'))) return;
+    off.forEach(x => { F.wsMod(x.name).inScope = true; }); F.changed('Modules switched on from the contract', off.map(x => x.label).join(', ')); toast(off.length + ' module' + (off.length === 1 ? '' : 's') + ' switched on.', 4000); V.render();
+  };
   ACT.solPick = a => { const u = ui(); u.key = a.getAttribute('data-key'); u.draft = null; V.render(); };
   ACT.solSave = a => {
     if (guard()) return; const key = a.getAttribute('data-key'), g = i => (document.getElementById(i) || {}).value || ''; const dr = ensureDraft();

@@ -13,7 +13,7 @@ assert.deepEqual(a.missing, [], 'nothing is missing when everything is recorded'
 assert.deepEqual(b.missing, ['requirements', 'fields', 'forms', 'flows', 'actions', 'notifications', 'access', 'apps'], 'open points never count as missing'); assert.equal(b.text.fields, '');
 assert.equal(status([{ name: 'm', label: 'M', requirements: { confirmed: 0, draft: 2 }, fields: 0, forms: 0, flows: 0, actions: 0, notifications: 0, access: 0, apps: 0, open: 0 }])[0].done.requirements, false, 'a draft requirement is not a confirmed one');
 assert.deepEqual(status(null), []);
-mods = []; assert.ok(V.solution.html().includes('No module is in scope yet') && V.solution.html().includes('data-view="modules"'), 'an empty project says what to do');
+mods = []; assert.ok(V.solution.html().includes('No module found in the contract yet') && V.solution.html().includes('data-view="modules"'), 'an empty project says what to do');
 mods = [{ name: 'asset', label: 'Asset <b>X</b>', inScope: true }, { name: 'out', label: 'Out', inScope: false }]; const h = V.solution.html();
 assert.ok(h.includes('0/1') && h.includes('Asset &lt;b&gt;X&lt;/b&gt;') && !h.includes('<b>X</b>') && !h.includes('>Out<'), 'only modules in scope, escaped, with counts');
 assert.ok(h.includes('8 of 8 parts missing'));
