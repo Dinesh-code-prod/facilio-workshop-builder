@@ -1,5 +1,5 @@
 /* Plain-language help on the pages that confused people: a short "what is this page for" strip (V.pageGuide), an explained AI panel that replaces
-   rows of blue / Open in Claude / Add from Claude buttons (V.aiPanel), and for Training & Guides the bar of four separate tabs (V.trainTop) and, on the User Guide Builder only, the sources the drafts read (V.trainSources).
+   rows of blue / Ask Claude buttons (V.aiPanel), and for Training & Guides the bar of four separate tabs (V.trainTop) and, on the User Guide Builder only, the sources the drafts read (V.trainSources).
    Nothing here changes data: it reads what other pages keep and links to them. */
 (function (root) {
   'use strict';
@@ -36,7 +36,7 @@
   // rows: [task, name, what it makes]; opts: { title, intro, open }
   V.aiPanel = (rows, o = {}) => {
     if (!V.aiButton || V.isCustomer() || S.readonly) return '';
-    const how = `<div class="aip-how"><div><b>✦ Generate</b><span>DeepSeek writes a first draft inside Delivery Studio, from this project\'s records. Quick. It stays a draft until a person approves it.</span></div><div><b>Open in Claude</b><span>Copies a ready prompt (project facts included) into your own Claude. Better for long or polished writing. Needs no key.</span></div><div><b>Add from Claude</b><span>Paste the reply you got back from Claude. It comes in as a draft to review, nothing is applied by itself.</span></div></div>`;
+    const how = `<div class="aip-how"><div><b>✦ Generate</b><span>DeepSeek writes a first draft inside Delivery Studio, from this project\'s records. Quick. It stays a draft until a person approves it.</span></div><div><b>Ask Claude</b><span>Sends the request to the Assistant box. Your Claude picks it up through the connector, writes it and saves it here as a draft. Better for long or polished writing.</span></div></div>`;
     return `<details class="card aip"${o.open ? ' open' : ''}><summary><b>${esc(o.title || 'Draft with AI')}</b><span class="small muted">${rows.map(r => esc(r[1])).join(' · ')}</span></summary><div class="aip-b">${o.intro ? `<p class="small" style="margin:0 0 10px">${esc(o.intro)}</p>` : ''}${how}<div class="aip-rows">${rows.map(r => `<div class="aip-row"><div><b>${esc(r[1])}</b><div class="xs muted">${esc(r[2] || '')}</div></div><div class="row" style="gap:6px;flex-wrap:wrap">${V.aiButton(r[0], 'Generate')}</div></div>`).join('')}</div></div></details>`;
   };
 

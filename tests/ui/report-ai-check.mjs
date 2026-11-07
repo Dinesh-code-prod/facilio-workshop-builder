@@ -21,28 +21,34 @@ check('monthly prompt: summary, milestones, risks, scope changes, decisions need
 check('weekly update prompt carries the draft and never asks to invent', /Draft to rewrite/.test(g) && /UNIQUE-ACTION-RA1/.test(g) && /Do not add any fact/.test(g));
 check('dashboard summary prompt carries only the figures given', /Figures: Requirements 12/.test(d) && /never compute or invent a number/.test(d));
 check('a report prompt holds no BRD text (only the kinds the report needs)', !/Business Requirements Document \(BRD\)/.test(w));
-// 2. status reports: DeepSeek, Claude, pasted reply, Word
+// 2. status reports: DeepSeek in the report, Ask Claude through the Assistant queue, Word
+const jobs = () => p.evaluate(() => (window.FWBViews.studioJobs.K().jobs || []).filter(j => j.kind === 'chat').map(j => (j.params || {}).note || ''));
+const waitJob = async re => { for (let i = 0; i < 20; i++) { if ((await jobs()).some(n => re.test(n))) return true; await p.waitForTimeout(500); } return false; };
 await p.click('[data-act="repNew"][data-t="WSR"]'); await p.waitForSelector('#rp_c');
-check('the status report offers DeepSeek, Open in Claude and Add from Claude', (await p.locator('[data-act="repAi"]').count()) === 1 && (await p.locator('[data-act="repClaude"]').count()) === 2);
-await p.fill('#rp_c', ''); await p.click('[data-act="repClaude"]:not([data-add])'); await p.waitForSelector('#hoR', { timeout: 8000 });
-await p.fill('#hoR', REPLY('PASTED-WSR-OK')); await p.click('[data-act="hoBack"]'); await p.waitForFunction(() => (document.getElementById('rp_c') || {}).value && /PASTED-WSR-OK/.test(document.getElementById('rp_c').value), null, { timeout: 8000 }).catch(() => { });
-check('a pasted Claude reply fills the report as an editable draft that is not marked sent', /PASTED-WSR-OK/.test(await p.inputValue('#rp_c')) && !(await p.locator('text=Marked sent').count()) && !(await p.locator('#rp_c[disabled]').count()));
-const dl = p.waitForEvent('download', { timeout: 8000 }); await p.click('[data-act="repExport"]'); const f = await dl.catch(() => null);
-check('Export Word still works on the filled report', !!f && /\.docx$/.test(f.suggestedFilename()), f && f.suggestedFilename());
+check('the status report offers DeepSeek and Ask Claude, and no Open in Claude', (await p.locator('[data-act="repAi"]').count()) === 1 && (await p.locator('[data-act="repClaude"]').count()) === 1 && !/Open in Claude|Add from Claude/.test(await p.innerText('#drawer')));
+await p.click('[data-act="repClaude"]');
+check('Ask Claude queues a request for the Assistant box (get_task_pack wsr, save_draft) and opens nothing', await waitJob(/get_task_pack with task wsr[\s\S]*save_draft/) && !(await p.locator('#hoR').count()));
+const dl = p.waitForEvent('download', { timeout: 8000 }); await p.fill('#rp_c', REPLY('TYPED-WSR-OK')); await p.click('[data-act="repExport"]'); const f = await dl.catch(() => null);
+check('Export Word still works on the report', !!f && /\.docx$/.test(f.suggestedFilename()), f && f.suggestedFilename());
 await p.click('[data-act="closeDrawer"]').catch(() => { });
 // 3. dashboard report
 await p.goto(BASE + `/?nointro#/p/${pid}/dashreport`); await p.waitForSelector('[data-act="drAi"]', { timeout: 10000 });
-check('the dashboard report offers DeepSeek and Open in Claude', (await p.locator('[data-act="drAi"]').count()) === 1 && (await p.locator('[data-act="drClaude"]').count()) === 2);
-await p.click('[data-act="drClaude"]:not([data-add])'); await p.waitForSelector('#hoR', { timeout: 8000 }); await p.fill('#hoR', REPLY('PASTED-DASH-OK')); await p.click('[data-act="hoBack"]'); await p.waitForSelector('#dr_sum', { timeout: 8000 }).catch(() => { });
-check('a pasted reply opens the dashboard summary as an editable draft', /PASTED-DASH-OK/.test(await p.inputValue('#dr_sum').catch(() => '')));
+check('the dashboard report offers DeepSeek and Ask Claude', (await p.locator('[data-act="drAi"]').count()) === 1 && (await p.locator('[data-act="drClaude"]').count()) === 1);
+await p.click('[data-act="drAi"]'); await p.waitForSelector('#dr_sum', { timeout: 30000 }).catch(() => { });
+check('DeepSeek opens the dashboard summary as an editable draft, inside the app', (await p.locator('#dr_sum').count()) === 1 && (await p.inputValue('#dr_sum')).length > 20);
 await p.click('#drawer [data-act="closeDrawer"]').catch(() => { });
+await p.click('[data-act="drClaude"]'); check('Ask Claude queues the dashboard summary request', await waitJob(/task dashsummary/));
 const csv = p.waitForEvent('download', { timeout: 8000 }); await p.click('#drCsv'); const cf = await csv.catch(() => null);
 check('the dashboard CSV export still works', !!cf, cf && cf.suggestedFilename());
 // 4. weekly update (Governance, Facilio side)
 await p.goto(BASE + `/?nointro#/p/${pid}/governance`); await p.waitForSelector('.tabs', { timeout: 10000 }); await p.click('text=Weekly digest'); await p.waitForSelector('#dg_body');
-check('the weekly update offers DeepSeek and Open in Claude', (await p.locator('[data-act="dgAi"]').count()) === 1 && (await p.locator('[data-act="dgClaude"]').count()) === 2);
-await p.click('[data-act="dgClaude"]:not([data-add])'); await p.waitForSelector('#hoR', { timeout: 8000 }); await p.fill('#hoR', REPLY('PASTED-GOV-OK')); await p.click('[data-act="hoBack"]'); await p.waitForFunction(() => /PASTED-GOV-OK/.test((document.getElementById('dg_body') || {}).value || ''), null, { timeout: 8000 }).catch(() => { });
-check('a pasted reply fills the message box and nothing is posted', /PASTED-GOV-OK/.test(await p.inputValue('#dg_body')) && /Nothing posted yet/.test(await p.innerText('body')));
+check('the weekly update offers DeepSeek and Ask Claude', (await p.locator('[data-act="dgAi"]').count()) === 1 && (await p.locator('[data-act="dgClaude"]').count()) === 1);
+await p.click('[data-act="dgClaude"]'); check('Ask Claude queues the weekly update request and nothing is posted', await waitJob(/task govupdate/) && /Nothing posted yet/.test(await p.innerText('body')));
+// 4b. the Assistant box answers with DeepSeek inside, from the page the person is on
+await p.waitForSelector('#asM', { state: 'attached' }); if (!(await p.locator('#asst').isVisible())) await p.click('#asstTab');
+check('the Assistant box offers DeepSeek (in here) and Claude (queue)', (await p.locator('#asMode option').count()) === 2);
+await p.selectOption('#asMode', 'ds'); await p.fill('#asM', 'What should I tell the customer this week?'); await p.click('[data-act="asstSend"]'); await p.waitForFunction(() => /Local preview|DeepSeek could not/.test(document.querySelector('#asst .as-body').innerText), null, { timeout: 30000 }).catch(() => { });
+check('DeepSeek answers inside the Assistant box (no job, no Claude)', /Local preview/.test(await p.innerText('#asst .as-body')));
 // 5. FTR report
 await p.goto(BASE + `/?nointro#/p/${pid}/ftr`); await p.waitForSelector('.aip', { timeout: 10000 }).catch(() => { });
 check('the FTR page offers the AI panel for the written FTR report', /FTR report/.test(await p.locator('.aip').first().innerText().catch(() => '')));

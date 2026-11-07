@@ -84,7 +84,7 @@
 
   // job -> what to use
   const JOBS = [
-    ['Draft the BRD, UAT plan, guides, reports, handover or closure pack', 'Connector', 'Use the Open in Claude buttons, or ask Claude for a task pack (brd, uat, guide, ftr, gaps, workshop, golive, hypercare, handover, wsr, monthly, govupdate, dashsummary, config, pkg, training, closure). Every report page has a DeepSeek button and an Open in Claude button. Drafts arrive unapproved.'],
+    ['Draft the BRD, UAT plan, guides, reports, handover or closure pack', 'Connector', 'Use the Open in Claude buttons, or ask Claude for a task pack (brd, uat, guide, ftr, gaps, workshop, golive, hypercare, handover, wsr, monthly, govupdate, dashsummary, config, pkg, training, closure). Every report page has a DeepSeek button and an Ask Claude button (the request waits in the Assistant box until your Claude picks it up). Drafts arrive unapproved.'],
     ['Do the work the buttons asked for', 'Connector (jobs)', 'Say Do the waiting Delivery Studio jobs. Claude takes each waiting job, does it and finishes it with a summary.'],
     ['Change a solution, or merge a customer file into the solutions', 'Solution tab', 'Press Ask Claude on a card and say what to change, or drop the customer file on the tab. Claude proposes the new text with the quoted evidence; you press Accept. The BRD updates from the accepted text.'],
     ['Change one part of the BRD', 'BRD Draft', 'Press Ask Claude on the section heading, say what you want (you can drop files in the chat). Claude checks it and proposes the update; you accept.'],

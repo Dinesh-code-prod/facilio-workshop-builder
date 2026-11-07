@@ -552,3 +552,6 @@ body .auth-art .av-copy:not(#_):not(#__) { margin-top: clamp(10px, 2.5vh, 28px) 
 body .auth-art a.av-learn:not(#_):not(#__) { min-height: 40px !important; margin: 10px 8px 0 0 !important; padding: 4px 14px 4px 4px !important; font-size: 14px !important; gap: 10px !important; }
 body .auth-art a.av-learn.av-disc:not(#_):not(#__) { margin-left: 0 !important; }
 body .auth-art a.av-learn .av-play:not(#_):not(#__) { width: 30px !important; height: 30px !important; flex: none; }
+
+/* Assistant box: who answers (DeepSeek in here, or Claude from the queue) */
+#asst .as-mode{display:flex;align-items:center;gap:8px;padding:0 2px 6px;font-size:12px;color:var(--cs-fg2)}#asst .as-mode select{height:28px;border:1px solid var(--cs-bg4);border-radius:10px;background:#fff;color:var(--cs-fg1);font-size:12px;padding:0 8px}

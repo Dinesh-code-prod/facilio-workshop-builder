@@ -29,6 +29,11 @@ Rule for all of them: the answer lands as an editable draft. Nothing is sent to 
 | 20 | Solution document (Solution tab) | `src/solution.js` | no (built from records and edited by hand) | yes, through connector jobs (`update_solution`, `compare_solution`) | Word (`ACT.solWord`) |
 | 21 | Traceability gap check | Reports & quality | yes (`aiButton('gaps')`) | yes | draft |
 
+## Change after review (7 Nov 2026, same day, user: no opening in Claude, run everything inside)
+
+The report buttons no longer open Claude. **Ask Claude** now queues a chat request in the Assistant box (the page is its section); the person's Claude picks it up through the connector (`project_jobs`), writes it with `get_task_pack` and saves it with `save_draft` (unapproved, under Deliverables & AI), and tells them in the box. "Add from Claude" is gone from the report pages. The Assistant box also has an **Answer from** switch: DeepSeek (instant, inside the app, from the records of the page you are on, `POST /ai/ask`) or Claude (queue). The table below describes the buttons as first built; read "Open in Claude" there as "Ask Claude". Also fixed: the Assistant panel itself never drew (a comment swallowed `const open ... ask` in `src/assistant.js`).
+Limit: Claude answers only while someone's Claude app is open with the scheduled task on; the box says so while a request waits.
+
 ## What was added
 
 * Two helpers in `src/lifecycle.js`: `V.reportAi` (DeepSeek) and `V.reportClaude` (Claude through the hand-off engine). Both give the draft text back to the page, which puts it in an editable box. A copy also stays under Deliverables & AI as an unapproved draft.

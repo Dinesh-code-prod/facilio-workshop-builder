@@ -615,6 +615,14 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     await audit(P.id, s.id, 'ai-review-pack', 'chars ' + head.length); return ok({ title: 'Project review for ' + project.name, prompt: head.slice(0, CAP + 6000), sources: src, chars: head.length });
   });
 
+  // The assistant box asks DeepSeek, inside the app: the answer uses the records of the page the person is on (section -> the report task whose records fit that page). Nothing is saved; the reply is shown in the box.
+  const ASK_TASK = { reports: 'wsr', governance: 'govupdate', dashreport: 'dashsummary', overview: 'dashsummary', projdash: 'dashsummary', ftr: 'ftr', kpi: 'ftr', hypercare: 'hypercare', handover: 'handover', delivery: 'uat', golive: 'golive', brd: 'brd', guidebuilder: 'guide', cfginputs: 'config', rstrans: 'workshop', rsplan: 'workshop', rschecks: 'gaps', tasks: 'wsr' };
+  route('POST', '/api/projects/:id/ai/ask', async (b, P) => {
+    const s = await me(); await projectAccess(s, P.id, 'edit'); await limit('ai', s.id); const msg = str(b && b.message, 600, 'Message'); if (!msg.trim()) throw new HttpError(400, 'Write your message first');
+    const task = ASK_TASK[String(b && b.section || '')] || 'gaps'; const { src, text } = await aiContext(P.id, task, true);
+    const out = await aiGen({ op: 'assist', system: AI_SYSTEM, messages: [{ role: 'user', content: 'The consultant is on the page "' + plain(b && b.section, 40) + '" and asks: ' + msg + '. Answer briefly and only from the SOURCES. Say so when the sources do not hold the answer. SOURCES: ' + text.slice(0, 13000) }], maxTokens: 900, budget: 21000 });
+    await audit(P.id, s.id, 'ai-ask', task + ' via ' + out.provider); return ok({ text: out.text, provider: out.provider, notice: out.notice || '', sources: src, task });
+  });
   route('POST', '/api/projects/:id/ai/import', async (b, P) => {
     const s = await me(); await projectAccess(s, P.id, 'edit'); const task = String(b && b.task || ''); const T = AI_TASKS[task]; if (!T || !PACK_TASKS.includes(task)) throw new HttpError(400, 'Unknown AI task'); await limit('ai', s.id);
     const content = String(b && b.content || '').replace(/\r\n/g, '\n').trim();
