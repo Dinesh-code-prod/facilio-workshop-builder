@@ -48,7 +48,7 @@
 
   ACT.mdAdd = () => {
     if (ro()) return; V.drawer('Add a contract document', '<p class="small">An amendment, an order form, a statement of work or another signed document of this project. Claude reads it together with the others; where they differ the later one is used and the difference is shown here.</p><label class="f" for="mdRole">What is it?</label><select id="mdRole">' + M().ROLES.filter(r => r[0] !== 'msa').concat([M().ROLES[0]]).map(r => '<option value="' + r[0] + '">' + esc(r[1]) + '</option>').join('') + '</select>',
-      '<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="mdAddFile">Choose the file and add it</button>', {});
+      '<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="mdAddFile">Choose the file and add it</button>', { compact: true });
   };
   ACT.mdAddFile = async () => {
     if (ro()) return; const role = (document.getElementById('mdRole') || {}).value || 'amendment'; const f = (await V.pickFile('.pdf,.docx,.txt'))[0]; if (!f) return; const ext = (f.name.split('.').pop() || '').toLowerCase();
