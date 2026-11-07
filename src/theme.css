@@ -638,12 +638,6 @@ body .main > .page:has(.wb-page) > .page-header p:not(#_) { font-size: 14px !imp
 
 /* ---------- Project Tasks (src/tasks.js): KPI strip, sheet tabs, spreadsheet grid, task drawer, import and extraction reviews ---------- */
 body .pt-kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
-@media (max-width: 1100px) { body .pt-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } } @media (max-width: 640px) { body .pt-kpis { grid-template-columns: 1fr 1fr; } }
-body .pt-sheets { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
-body .pt-sh { height: 36px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; border: 0; border-radius: var(--th-r-full); background: none; font: inherit; font-size: 14px; font-weight: 500; color: var(--th-muted); cursor: pointer; white-space: nowrap; }
-body .pt-sh:hover { background: var(--th-soft-2); color: var(--th-ink); } body .pt-sh.on { background: var(--th-ink); color: #fff; }
-body .pt-sh:focus-visible { outline: 2px solid var(--th-violet); outline-offset: 2px; }
-body .pt-shn { font-family: var(--th-mono); font-size: 11px; padding: 1px 7px; border-radius: var(--th-r-full); background: var(--th-soft-2); color: var(--th-text); } body .pt-sh.on .pt-shn { background: rgba(255,255,255,.18); color: #fff; }
 body .pt-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; } body .pt-bar select:not(#_) { width: auto; }
 body .pt-q { margin: 0 !important; width: 280px; max-width: 100%; }
 body .pt-bulk { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; margin-bottom: 10px; border-radius: var(--th-r-md); background: var(--th-violet-soft); }
