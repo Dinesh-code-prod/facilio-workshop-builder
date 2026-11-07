@@ -1,8 +1,9 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/discover-login-check.mjs
 // The sign-in page's Discover more (full-screen story, src/animation/discover/login-scroll.js): every solution area is a pinned scene that zooms in, its words light up with the scroll, then it leaves.
 // Usage: node --import ./tests/ui/use-edge.mjs tests/ui/discover-login-check.mjs [baseUrl] [shotsDir]
 import { chromium } from 'playwright'; import fs from 'node:fs';
 const BASE = process.argv[2] || 'http://localhost:4173', OUT = process.argv[3] || ''; if (OUT) fs.mkdirSync(OUT, { recursive: true });
-const b = await chromium.launch(); const errs = []; const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const errs = []; const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
 let ctx = await b.newContext({ viewport: { width: 1440, height: 900 } }); let p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
 await p.goto(BASE + '/?nointro#/discover'); await p.waitForSelector('.dx-ov', { timeout: 30000 }); await p.waitForTimeout(2500);
 const nScene = await p.locator('.dx-ov .dxl-scene').count(); check('every solution area is a pinned scene', nScene >= 4, nScene + ' scenes');

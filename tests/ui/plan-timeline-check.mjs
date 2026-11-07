@@ -1,3 +1,4 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/plan-timeline-check.mjs
 // Project Plan › Timeline & planning tab: built once from the uploaded workbook (phases by indent, the customer's name as owner), legend, collapse, update notice.
 import { chromium } from 'playwright'; import ExcelJS from 'exceljs'; import fs from 'node:fs';
 const BASE = process.argv[2] || 'http://localhost:4175'; const OUT = process.argv[3] || 'tests/ui/out'; fs.mkdirSync(OUT, { recursive: true });
@@ -7,7 +8,7 @@ add('Project Initiation', '', '', '', '', '', 0); add('Kick-off meeting', 'Facil
 add('Requirements', '', '', '', '', '', 0); add('Workshops', 'Facilio', '2026-09-09', '2026-10-05', 0.8, 'In progress', 1); add('Data templates filled', 'Al Moallam', '2026-09-20', '2026-10-20', 0.3, 'In progress', 1); add('BRD sign-off', 'Al Moallam', '2026-10-25', '2026-10-25', 0, 'Not started', 1);
 add('Build & UAT', '', '', '', '', '', 0); add('Configuration', 'Facilio', '2026-10-26', '2026-11-30', 0, 'Not started', 1); add('UAT', 'Al Moallam', '2026-12-01', '2026-12-20', 0, '', 1); add('Go-live', 'Facilio/Al Moallam', '2026-12-28', '2026-12-28', 0, '', 1);
 const file = OUT + '/al-moallam-plan.xlsx'; await wb.xlsx.writeFile(file);
-const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1440, height: 900 } }); const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, x) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (x ? '  (' + x + ')' : '')); };
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const p = await b.newPage({ viewport: { width: 1440, height: 900 } }); const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, x) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (x ? '  (' + x + ')' : '')); };
 await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');
 const pid = await p.evaluate(async () => (await (await fetch('/api/fn/api/projects', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Al Moallam CAFM', customer: 'Al Moallam Group' }) })).json()).project.id);
 await p.goto(BASE + `/#/p/${pid}/plan`); await p.reload(); await p.waitForSelector('[data-act="planUpload"]');

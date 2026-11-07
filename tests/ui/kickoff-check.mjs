@@ -1,8 +1,9 @@
+// OBSOLETE (7 Nov 2026): this tests the old team Kick-off Deck page (src/viewers.js). The team now gets the contract-driven Project introduction page (src/kickoff.js); only customers still see the old deck viewer, and they cannot upload. Needs a rewrite for the new page before it can run again. The fixture is tests/fixtures/kickoff.pptx (made by make-kickoff-pptx.mjs).
 // Kick-off Deck: no slide rendering; upload a .pptx, read it with AI (the preview server's test double), review, save; the team cards and the
-// kick-off summary fill in, and text from the model is shown as text. Usage: node tests/ui/kickoff-check.mjs [base] [deck.pptx]
+// kick-off summary fill in, and text from the model is shown as text. Usage: PW_CHANNEL=msedge node tests/ui/kickoff-check.mjs [base] [deck.pptx]
 import { chromium } from 'playwright';
-const BASE = process.argv[2] || 'http://localhost:4173', DECK = process.argv[3] || '/tmp/claude-0/fx/kickoff.pptx';
-const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1440, height: 900 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
+const BASE = process.argv[2] || 'http://localhost:4173', DECK = process.argv[3] || 'tests/fixtures/kickoff.pptx';
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const p = await b.newPage({ viewport: { width: 1440, height: 900 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
 const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
 await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');
 const pid = await p.evaluate(async () => (await (await fetch('/api/fn/api/projects', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Kick-off check', customer: 'Acme Facilities' }) })).json()).project.id);

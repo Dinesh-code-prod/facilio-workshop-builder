@@ -31,9 +31,11 @@
     return { cur, info, note: ph.note || '', forced: !!ph.step, next, hasPlan: dated.length > 0 };
   }
   V.phaseNow = phaseNow; V.STD_STEPS = STD;
+  // the eight-stage roadmap of the menu; each of the 12 plan steps belongs to one stage (keep in step with work/server/_portfolio.mjs)
+  const ROADMAP = { 1: 'Project introduction', 2: 'Requirement sessions', 3: 'Mockup & BRD', 4: 'UAT & FTR', 5: 'Training guides', 7: 'Hypercare', 8: 'Project handover' }; const STAGE_OF_STEP = [1, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 7]; V.stageOfStep = i => STAGE_OF_STEP[i] || 0; V.roadmapName = n => ROADMAP[n] || '';
   V.phaseStrip = () => { if (!S.project) return ''; const p = phaseNow(); if (!p.hasPlan && !p.forced) return '';
     const x = p.cur >= 0 ? p.info[p.cur] : null; const fd = d => (d ? V.fmtDate(d) : '');
-    return `<div class="phase-strip" role="status"><span class="ps-l">Current phase</span>${x ? `<b>Step ${x.i + 1} of 12 · ${esc(x.title)}</b>${x.start ? `<span class="muted">${fd(x.start)}${x.end && x.end !== x.start ? ' – ' + fd(x.end) : ''}</span>` : ''}` : '<b>Not started</b>'}${p.next ? `<span class="muted">Next: ${esc(p.next.title)} · ${fd(p.next.start)}</span>` : ''}${p.note ? `<span class="ps-n">${esc(p.note)}</span>` : ''}<a href="#" data-act="nav" data-view="timeline" class="ps-a">Timeline</a></div>`; };
+    return `<div class="phase-strip" role="status"><span class="ps-l">Current phase</span>${x ? `<b>Stage ${STAGE_OF_STEP[x.i]} · ${esc(ROADMAP[STAGE_OF_STEP[x.i]])}</b><span class="muted">Plan step ${x.i + 1} of 12 · ${esc(x.title)}</span>${x.start ? `<span class="muted">${fd(x.start)}${x.end && x.end !== x.start ? ' – ' + fd(x.end) : ''}</span>` : ''}` : '<b>Not started</b>'}${p.next ? `<span class="muted">Next: ${esc(p.next.title)} · ${fd(p.next.start)}</span>` : ''}${p.note ? `<span class="ps-n">${esc(p.note)}</span>` : ''}<a href="#" data-act="nav" data-view="timeline" class="ps-a">Timeline</a></div>`; };
 
   // ---------- helpers ----------
   const days = (a, b) => V.daysBetween(a, b);

@@ -1,7 +1,8 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/brd-figsize-check.mjs
 // BRD diagrams: each figure (state flows, combined flows) can be exported at page width, on a full page, or on a landscape page of its own,
 // and is rendered sharp enough to enlarge in Word.
 import { chromium } from 'playwright'; import fs from 'node:fs'; import JSZip from 'jszip';
-const BASE = process.argv[2] || 'http://localhost:4175'; const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }); const p = await ctx.newPage();
+const BASE = process.argv[2] || 'http://localhost:4175'; const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }); const p = await ctx.newPage();
 const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
 await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');
 const pid = await p.evaluate(async () => { const pid = (await (await fetch('/api/fn/api/projects', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Figure size', customer: 'Al Moallam Group' }) })).json()).project.id;

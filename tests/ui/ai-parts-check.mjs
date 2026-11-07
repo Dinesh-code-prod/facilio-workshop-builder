@@ -1,6 +1,7 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/ai-parts-check.mjs
 // Deliverables & AI in the browser: a full document is written part by part (each server call inside the 25 s limit), with progress, and lands as a draft.
 import { chromium } from 'playwright'; import JSZip from 'jszip'; import fs from 'node:fs';
-const BASE = process.argv[2] || 'http://localhost:4175'; const b = await chromium.launch(); const bctx = await b.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }); const p = await bctx.newPage();
+const BASE = process.argv[2] || 'http://localhost:4175'; const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const bctx = await b.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }); const p = await bctx.newPage();
 const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
 const calls = []; let jobBody = null; p.on('request', r => { if (/\/ai\//.test(r.url())) { calls.push(r.url().replace(/^.*\/api\/projects\/[^/]+/, '')); if (/\/ai\/job$/.test(r.url())) jobBody = JSON.parse(r.postData() || '{}'); } });
 await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');

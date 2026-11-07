@@ -1,3 +1,4 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/csp-watch.mjs
 // Preload for the browser tests (node --import ./tests/ui/csp-watch.mjs tests/ui/<test>.mjs): every page opened through Playwright
 // reports Content-Security-Policy violations ("Refused to ...") to tests/ui/out/csp-violations.txt, so a whole test run doubles as a CSP check.
 import { chromium } from 'playwright'; import fs from 'node:fs';

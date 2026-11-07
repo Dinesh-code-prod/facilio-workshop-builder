@@ -1,9 +1,10 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/inbox-check.mjs
 // Project Inbox in the browser, against the preview server started with FAKE_GRAPH=1 (a local stand-in mailbox and Teams).
 // Checks filing by project address and conversation, the unassigned path, Teams notices and their deep link, search and filters,
 // plain-text bodies, attachments, status, the "check original" path, access from outside the project, and phone layout.
 import { chromium } from 'playwright'; import fs from 'node:fs';
 const BASE = process.argv[2] || 'http://localhost:4175'; const OUT = process.argv[3] || 'tests/ui/out'; fs.mkdirSync(OUT, { recursive: true });
-const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }); const p = await ctx.newPage();
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }); const p = await ctx.newPage();
 const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
 const api = (m, path, body) => p.evaluate(async ({ m, path, body }) => { const r = await fetch('/api/fn/api' + path, { method: m, headers: { 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }); return { status: r.status, data: await r.json().catch(() => ({})) }; }, { m, path, body });
 await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');

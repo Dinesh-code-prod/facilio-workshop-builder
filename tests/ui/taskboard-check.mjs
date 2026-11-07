@@ -1,3 +1,4 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/taskboard-check.mjs
 // Project Tasks, Board view (src/tasks.js, src/taskboard.css) in a browser against the local preview: the board and the list show the same tasks,
 // drag and drop, Alt + Arrow and the status menu each change the status, focus stays on the moved card for keyboard users, a click on the
 // status menu does not open the task, a customer question cannot be moved to Done without a final response, a second move after a re-render
@@ -5,7 +6,7 @@
 // Usage: node tests/ui/taskboard-check.mjs [baseUrl] [outDir]
 import { chromium } from 'playwright'; import fs from 'node:fs';
 const BASE = process.argv[2] || 'http://localhost:4173'; const OUT = process.argv[3] || 'tests/ui/out'; fs.mkdirSync(OUT, { recursive: true });
-const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } }); const p = await ctx.newPage();
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } }); const p = await ctx.newPage();
 const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
 await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');
 const pid = await p.evaluate(async () => {

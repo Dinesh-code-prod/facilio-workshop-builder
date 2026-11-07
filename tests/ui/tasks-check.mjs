@@ -1,3 +1,4 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/tasks-check.mjs
 // Project Tasks end to end in a browser against the local preview (node tests/ui/devserver.mjs 4173): creating and editing tasks,
 // saved sheets (views, never copies), customer questions answered only with a final response, the AI Task Assistant (suggestions are
 // applied only on confirmation), AI type suggestions, Excel import with mapping and row checks, multi-sheet Excel export (the file is
@@ -6,7 +7,7 @@
 // Usage: node tests/ui/tasks-check.mjs [baseUrl] [outDir]
 import { chromium } from 'playwright'; import fs from 'node:fs'; import ExcelJS from 'exceljs';
 const BASE = process.argv[2] || 'http://localhost:4173'; const OUT = process.argv[3] || 'tests/ui/out'; fs.mkdirSync(OUT, { recursive: true });
-const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }); const p = await ctx.newPage();
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }); const p = await ctx.newPage();
 const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
 await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');
 const api = (m, u, body) => p.evaluate(async ([m, u, body]) => { const r = await fetch('/api/fn/api' + u, { method: m, headers: { 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }); return { status: r.status, data: await r.json() }; }, [m, u, body]);

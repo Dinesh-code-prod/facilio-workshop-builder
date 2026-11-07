@@ -1,3 +1,4 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/road-frames-live.mjs
 // Plays the road journey in real time (not stepped) and records every frame: frame-to-frame time, how long draw() took, long frames, and a
 // CPU profile of where the time goes. Usage: node tests/ui/road-frames-live.mjs [base] [width] [seconds]
 import { chromium } from 'playwright'; import fs from 'node:fs';

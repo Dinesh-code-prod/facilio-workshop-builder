@@ -1,3 +1,4 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/exports.mjs
 // Export audit: triggers every generated export from the real UI (button clicks in a browser, against the local preview
 // server and its mock platform), saves each downloaded file and checks its CONTENT, not just that a file arrived:
 // Excel is opened with ExcelJS (sheets, headers, rows), Word with mammoth (text, headings), PDF with pdf.js (pages, text),
@@ -14,7 +15,7 @@ async function pdf(f) { try { return await pdf0(f); } catch (e) { return { pages
 async function pdf0(f) { const doc = await pdfjs.getDocument({ data: new Uint8Array(fs.readFileSync(f)), useSystemFonts: true, disableFontFace: true }).promise; let text = ''; for (let i = 1; i <= doc.numPages; i++) { const c = await (await doc.getPage(i)).getTextContent(); text += c.items.map(x => x.str).join(' ') + '\n'; } return { pages: doc.numPages, text: text.replace(/\s+/g, ' ') }; }
 const sheetRows = ws => { let n = 0; ws.eachRow({ includeEmpty: false }, () => n++); return n; };
 
-const browser = await chromium.launch(); const ctx = await browser.newContext({ acceptDownloads: true, viewport: { width: 1440, height: 900 } }); const page = await ctx.newPage();
+const browser = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const ctx = await browser.newContext({ acceptDownloads: true, viewport: { width: 1440, height: 900 } }); const page = await ctx.newPage();
 const errors = []; page.on('pageerror', e => errors.push(e.message)); page.on('dialog', d => d.accept());
 await page.goto(BASE + '/'); await page.waitForSelector('[data-act]');
 const pid = await page.evaluate(async () => ((await (await fetch('/api/fn/api/projects')).json()).projects || []).sort((a, b) => b.name.length - a.name.length)[0]?.id);

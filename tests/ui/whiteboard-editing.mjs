@@ -1,3 +1,4 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/whiteboard-editing.mjs
 // Whiteboard editing like Miro: every state of an imported State Flow moves on its own, connectors stay attached, multi-select,
 // group drill-in, alignment guides, context menu, copy/paste, connector re-attach, link verification, persistence, boards saved
 // before the fix (flow grouped as one block), the original flow left unchanged, and a large board staying responsive.
@@ -6,7 +7,7 @@ import { chromium } from 'playwright'; import fs from 'node:fs';
 let __pk = 0; const place = async (p, t) => { if (['rect', 'ellipse', 'diamond', 'tri', 'para', 'hex', 'frame'].includes(t)) { await p.click('#wbShapesB'); await p.click(`#wbShapes [data-wbtool="${t}"]`); } else await p.click(`.wb-rail [data-wbtool="${t}"]`); const bb = await p.locator('#wbSvg').boundingBox(); __pk++; await p.mouse.click(bb.x + bb.width / 2 - 330 + (__pk % 4) * 140, bb.y + bb.height / 2 - 60 + Math.floor(__pk / 4) % 3 * 110); };
 
 const BASE = process.argv[2] || 'http://localhost:4173'; const OUT = process.argv[3] || 'tests/ui/out'; fs.mkdirSync(OUT, { recursive: true });
-const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } }); const p = await ctx.newPage();
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } }); const p = await ctx.newPage();
 const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
 await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');
 const pid = await p.evaluate(async () => { const r = await fetch('/api/fn/api/projects', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Whiteboard editing', customer: 'Acme' }) }); return (await r.json()).project.id; });

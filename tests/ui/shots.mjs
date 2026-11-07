@@ -1,8 +1,9 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/shots.mjs
 // Targeted screenshots for review: node tests/ui/shots.mjs <outDir> <baseUrl> <spec>...
 // spec = width:screen[:action]  screen = home | admin[/Section] | <view id>   action = dialog | menu | tab=<label> | click=<selector>
 import { chromium } from 'playwright'; import fs from 'node:fs'; import path from 'node:path';
 const [out, base, ...specs] = process.argv.slice(2); fs.mkdirSync(out, { recursive: true });
-const browser = await chromium.launch();
+const browser = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined });
 for (const spec of specs) {
   const [w, screen, ...rest] = spec.split(':'); const action = rest.join(':'); const width = +w;
   const page = await browser.newPage({ viewport: { width, height: width < 500 ? 844 : width < 1000 ? 1024 : 900 } });

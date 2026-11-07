@@ -10,7 +10,7 @@
   const STAGE_OF = {}; STAGES.forEach((s, i) => s.views.forEach(v => { STAGE_OF[v] = i; }));
   V.stageOfView = view => { const i = STAGE_OF[view]; return i == null ? '' : STAGES[i].name; };
   V.LIFE_STAGES = STAGES; V.lifeStageOf = v => (v in STAGE_OF ? STAGE_OF[v] : -1);
-  const ST = L().STATUS; const CLS = { completed: 'done', current: 'progress', delayed: 'progress', blocked: 'progress', upcoming: 'none', na: 'none' };
+  const ST = L().STATUS; const CLS = { completed: 'done', ready: 'progress', current: 'progress', delayed: 'progress', blocked: 'progress', upcoming: 'none', na: 'none' };
   const SO_NAME = { brd: 'BRD Sign-Off', uat: 'UAT Sign-Off', golive: 'Go-Live Acceptance' };
   const team = () => !V.isCustomer(); const canEdit = () => team() && !S.readonly; const canDecide = () => canEdit() && S.project && S.project.role === 'owner';
   const KINDS = ['action', 'raid', 'signoff', 'task'];
@@ -61,12 +61,12 @@
   }
   V.lifeAttention = () => (ready() ? attention() : null);
 
-  // compact stage indicator shown above pages of the Overview and Delivery Lifecycle modules
+  // compact stage indicator (the eight-stage roadmap)
   V.lifeStrip = () => {
     if (!S.project || V.isCustomer()) return V.phaseStrip ? V.phaseStrip() : '';
     const C = V.lifeStages(); if (!C) return '';
     const p = V.phaseNow ? V.phaseNow() : null; const step = p && p.cur >= 0 ? p.info[p.cur] : null; const mine = V.lifeStageOf(S.ui.view);
-    return `<nav class="lc-strip" aria-label="Delivery lifecycle"><ol>${C.list.map(x => `<li class="${CLS[x.status]} ${x.status}${x.i === C.cur ? ' cur' : ''}${x.i === mine ? ' here' : ''}"><button type="button" data-act="lcStage" data-k="${x.i}" title="${esc(x.s.name)}: ${ST[x.status]}"${x.i === C.cur ? ' aria-current="step"' : ''}><i aria-hidden="true">${x.status === 'completed' ? '✓' : x.i + 1}</i><span>${esc(x.s.short)}</span></button></li>`).join('')}</ol>${step ? `<span class="lc-plan" title="From the Plan Timeline">Plan: step ${step.i + 1} of 12 · ${esc(step.title)}</span>` : ''}</nav>`;
+    return `<nav class="lc-strip" aria-label="Delivery lifecycle"><ol>${C.list.map(x => `<li class="${CLS[x.status]} ${x.status}${x.i === C.cur ? ' cur' : ''}${x.i === mine ? ' here' : ''}"><button type="button" data-act="lcStage" data-k="${x.i}" title="${esc(x.s.name)}: ${ST[x.status]}"${x.i === C.cur ? ' aria-current="step"' : ''}><i aria-hidden="true">${x.status === 'completed' ? '✓' : x.s.n}</i><span>${esc(x.s.short)}</span></button></li>`).join('')}</ol>${step ? `<span class="lc-plan" title="From the Plan Timeline">Plan: step ${step.i + 1} of 12 · ${esc(step.title)}</span>` : ''}</nav>`;
   };
   ACT.lcStage = a => { S.ui.lcOpen = Number(a.getAttribute('data-k')); V.go('lifecycle'); setTimeout(() => { const el = document.getElementById('lc-s' + S.ui.lcOpen); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 60); };
 
@@ -80,22 +80,22 @@
     const s = x.s; const pg = pages(s); const prog = x.parts.filter(p => p.state === 'done').length + x.signs.filter(y => y.st === 'signed').length; const tot = x.parts.length + x.signs.length;
     const mism = x.dec.status === 'closed' && x.open > 0;
     return `<section class="card lc-stage ${CLS[x.status]} st-${x.status}${x.i === C.cur ? ' cur' : ''}" id="lc-s${x.i}" aria-labelledby="lc-h${x.i}">
-      <header><span class="lc-num" aria-hidden="true">${x.status === 'completed' ? '✓' : x.i + 1}</span><div><p class="lc-eyebrow">Stage ${String(x.i + 1).padStart(2, '0')} / ${String(STAGES.length).padStart(2, '0')}${x.i === C.cur ? ' · current' : ''}</p><h2 id="lc-h${x.i}">${esc(s.name)}</h2><p class="small muted">${esc(s.hint)}</p></div><span class="lc-badge ${CLS[x.status]} st-${x.status}">${ST[x.status]}</span></header>
+      <header><span class="lc-num" aria-hidden="true">${x.status === 'completed' ? '✓' : s.n}</span><div><p class="lc-eyebrow">Stage ${s.n}${x.i === C.cur ? ' · current' : ''}</p><h2 id="lc-h${x.i}">${esc(s.name)}</h2><p class="small muted">${esc(s.hint)}</p></div><span class="lc-badge ${CLS[x.status]} st-${x.status}">${ST[x.status]}</span></header>
       <dl class="lc-meta"><div><dt>Owner</dt><dd>${x.dec.owner ? esc(x.dec.owner) : '<span class="muted">Not assigned</span>'}</dd></div><div><dt>${x.status === 'completed' ? 'Completed on' : 'Completion'}</dt><dd>${x.status === 'completed' ? esc(doneOn(x)) : '<span class="muted">Not completed</span>'}</dd></div><div><dt>Progress</dt><dd>${tot ? prog + ' of ' + tot + ' records complete' : '<span class="muted">No records to count</span>'}</dd></div></dl>
       ${mism ? `<p class="lc-warn">Closed by ${esc(x.dec.by || 'a project owner')}${x.dec.at ? ' on ' + esc(fd(x.dec.at)) : ''} while ${x.open} record${x.open === 1 ? ' is' : 's are'} still open. The decision stands; the records below have not caught up.</p>` : ''}
       ${x.status === 'na' ? `<p class="lc-warn">Marked not applicable by ${esc(x.dec.by || 'a project owner')}${x.dec.note ? ': ' + esc(x.dec.note) : ''}.</p>` : ''}
       <ul class="lc-evid">${x.parts.map(p => `<li class="${p.state}"><b>${esc(p.name)}</b><span>${esc(p.detail)}</span></li>`).join('')}${x.signs.map(y => `<li class="${y.st === 'signed' ? 'done' : y.st === 'notdue' ? 'none' : 'progress'}"><b>${esc(SO_NAME[y.k])}</b><span>${esc(SIGN_TXT[y.st] || y.st)}</span></li>`).join('')}</ul>
       <div class="lc-4"><div><h4>Critical blockers <span class="lc-n${x.blockers.length ? ' bad' : ''}">${x.blockers.length}</span></h4>${list(x.blockers, 'None recorded.')}</div><div><h4>Pending actions <span class="lc-n">${x.pending.length}</span></h4>${list(x.pending, 'None matched to this stage.')}</div><div><h4>Upcoming activities</h4>${list(x.upcoming, 'None dated in the plan.')}</div>${x.overdue.length ? `<div><h4>Behind schedule <span class="lc-n bad">${x.overdue.length}</span></h4>${list(x.overdue.slice(0, 4).map(r => ({ t: r.title, d: 'Due ' + fd(r.end || r.start), late: true, v: 'timeline' })), '')}</div>` : ''}</div>
-      <div class="lc-foot">${pg.length ? `<div class="lc-pages">${pg.map(([v, l]) => `<button class="btn sm" data-act="nav" data-view="${v}">${esc(l)}</button>`).join('')}</div>` : '<span></span>'}${canEdit() ? `<button class="btn sm${canDecide() ? ' primary' : ''}" data-act="lcManage" data-k="${esc(s.k)}">${canDecide() ? 'Owner, decision and history' : 'Owner and history'}</button>` : ''}</div>
+      <div class="lc-foot">${pg.length ? `<div class="lc-pages">${pg.map(([v, l]) => `<button class="btn sm" data-act="nav" data-view="${v}">${esc(l)}</button>`).join('')}</div>` : '<span></span>'}${canEdit() ? `<button class="btn sm${canDecide() ? ' primary' : ''}" data-act="lcManage" data-k="${esc(s.k)}">${x.status === 'ready' && canDecide() ? 'Review and close this stage' : canDecide() ? 'Owner, decision and history' : 'Owner and history'}</button>` : ''}</div>
       </section>`;
   }
   V.lifecycle = {
     html() {
       const C = V.lifeStages(); if (!C) return '<div class="page-body"><div class="muted" style="padding:20px">Loading…</div></div>';
       const A = attention(); const cur = C.list[C.cur]; const n = C.counts;
-      return `<div class="page-header"><div class="t"><h1>Delivery Lifecycle</h1><p>From kickoff to closure. A stage is complete only when its records are complete or a project owner has closed it, with their name and the date kept. Nothing is marked complete automatically, and nothing is a percentage.</p></div></div>
+      return `<div class="page-header"><div class="t"><h1>Project cycle</h1><p>The eight-stage roadmap. The records decide when a stage is <b>Ready to close</b>; a project owner or admin closes it, and their name and the date are kept. Claude and the Studio never close a stage on their own, and nothing here is a percentage.</p></div></div>
       <div class="page-body">
-        <div class="lc-top"><div class="card lc-now"><p class="lc-eyebrow">Current stage</p><h2>${esc(cur.s.name)}</h2><p class="small muted">${n.done} of ${n.total} stages completed${n.na ? ' · ' + n.na + ' not applicable' : ''} · ${esc(ST[cur.status])}</p><div class="lc-bar" role="img" aria-label="${n.done} of ${n.total} stages completed">${C.list.map(x => `<i class="${CLS[x.status]} st-${x.status}${x.i === C.cur ? ' cur' : ''}" title="${esc(x.s.name)}: ${ST[x.status]}"></i>`).join('')}</div>${pages(cur.s).length ? `<button class="btn primary" data-act="nav" data-view="${pages(cur.s)[0][0]}">Continue in ${esc(pages(cur.s)[0][1])}</button>` : ''}</div>
+        <div class="lc-top"><div class="card lc-now"><p class="lc-eyebrow">Current stage</p><h2>${esc(cur.s.name)}</h2><p class="small muted">${n.done} of ${n.total} stages closed${C.list.filter(x => x.status === 'ready').length ? ' · ' + C.list.filter(x => x.status === 'ready').length + ' ready to close' : ''}${n.na ? ' · ' + n.na + ' not applicable' : ''} · ${esc(ST[cur.status])}</p><div class="lc-bar" role="img" aria-label="${n.done} of ${n.total} stages completed">${C.list.map(x => `<i class="${CLS[x.status]} st-${x.status}${x.i === C.cur ? ' cur' : ''}" title="${esc(x.s.name)}: ${ST[x.status]}"></i>`).join('')}</div>${pages(cur.s).length ? `<button class="btn primary" data-act="nav" data-view="${pages(cur.s)[0][0]}">Continue in ${esc(pages(cur.s)[0][1])}</button>` : ''}</div>
           <div class="card lc-att"><h3>Blockers <span class="lc-n${A.blockers.length ? ' bad' : ''}">${A.blockers.length}</span></h3>${list(A.blockers, 'No blocked actions, open issues or high risks.')}</div>
           <div class="card lc-att"><h3>Waiting on the customer <span class="lc-n">${A.customer.length}</span></h3>${list(A.customer, 'No open customer actions or sign-off requests.')}</div>
           <div class="card lc-att"><h3>Our pending actions <span class="lc-n">${A.facilio.length}</span></h3>${list(A.facilio, 'No open actions for the Facilio team.')}</div>

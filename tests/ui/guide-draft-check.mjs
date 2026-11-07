@@ -1,3 +1,4 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/guide-draft-check.mjs
 // User Guide Builder, guided drafting (src/guidedraft.js) in a browser against the local preview (local stand-in for the model):
 // set-up wizard (modules, readers, sources, sections), every section written one at a time from the chosen module's records, progress and
 // status, a person's edit is never overwritten (regeneration comes back as a proposal: add below / replace after saving a version),
@@ -6,7 +7,7 @@
 // Usage: node tests/ui/guide-draft-check.mjs [baseUrl] [outDir]
 import { chromium } from 'playwright'; import fs from 'node:fs'; import JSZip from 'jszip';
 const BASE = process.argv[2] || 'http://localhost:4173'; const OUT = process.argv[3] || 'tests/ui/out'; fs.mkdirSync(OUT, { recursive: true });
-const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }); const p = await ctx.newPage();
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }); const p = await ctx.newPage();
 const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
 await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');
 const pid = await p.evaluate(async () => {

@@ -1,3 +1,4 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/exports-all.mjs
 // Export content audit with realistic data. Creates a fresh project, seeds it through the app's own API and state
 // (requirements, use cases, decisions, RAID, actions, UAT, lessons, status reports, AI drafts, user guide, workshop sessions,
 // processes, Arabic text, control characters pasted from Office, markdown tables, long text) and then triggers every export
@@ -27,7 +28,7 @@ const has = (t, s) => String(t).includes(s);
 // Arabic in a PDF is stored in visual order; accept each word either as written or with its letters reversed
 const arIn = t => AR.split(' ').every(w => has(t, w) || has(t, [...w].reverse().join('')));
 
-const browser = await chromium.launch(); const ctx = await browser.newContext({ acceptDownloads: true, viewport: { width: 1440, height: 900 } }); const page = await ctx.newPage();
+const browser = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const ctx = await browser.newContext({ acceptDownloads: true, viewport: { width: 1440, height: 900 } }); const page = await ctx.newPage();
 const errors = []; page.on('pageerror', e => errors.push(e.message)); page.on('dialog', d => d.accept());
 await page.goto(BASE + '/'); await page.waitForSelector('[data-act]');
 const api = (m, p, b) => page.evaluate(async ([m, p, b]) => { const r = await fetch('/api/fn/api' + p, { method: m, headers: { 'content-type': 'application/json' }, body: b ? JSON.stringify(b) : undefined }); const t = await r.text(); try { return JSON.parse(t); } catch (e) { return { raw: t }; } }, [m, p, b]);

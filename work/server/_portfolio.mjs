@@ -19,6 +19,9 @@ export const HEALTH = ['blocked', 'overdue', 'at_risk', 'on_track', 'insufficien
 export const HEALTH_LABEL = { blocked: 'Blocked', overdue: 'Overdue', at_risk: 'At risk', on_track: 'On track', insufficient: 'Insufficient data', on_hold: 'On hold', completed: 'Completed', cancelled: 'Cancelled', churned: 'Churned', not_workable: 'Not workable', discontinued: 'Discontinued' };
 export const MANUAL = ['active', 'on_hold', 'completed', 'cancelled', 'churned', 'not_workable', 'discontinued'];   // set by a person; anything but 'active' leaves the active delivery figures and stays in the history
 export const STEPS = ['Kick-Off', 'Workshops & Data Templates', 'BRD Sign-Off', 'Final Implementation Timeline', 'Implementation & Testing', 'Demo To UAT Users', 'UAT & Feedback', 'Feedback Incorporated', 'UAT Sign-Off', 'Training The Wider Team', 'Data Clean-Up', 'Go-Live & Hypercare'];
+// the eight-stage roadmap of the Studio menu (1 to 5, 7, 8; go-live readiness sits inside 4); each of the 12 plan steps belongs to one stage (keep in step with src/timeline.js)
+export const ROADMAP = { 1: 'Project introduction', 2: 'Requirement sessions', 3: 'Mockup & BRD', 4: 'UAT & FTR', 5: 'Training guides', 7: 'Hypercare', 8: 'Project handover' };
+export const STAGE_OF_STEP = [1, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 7];
 // the same mapping of plan rows to the 12 standard steps as the Plan Timeline page (src/timeline.js)
 const STEP_RE = [/kick.?off|project start/i, /workshop|data template|requirement (session|gathering)|discovery/i, /\bbrd\b|requirement.*sign/i, /final.*(timeline|plan)|implementation timeline|project plan/i, /implementation|configur|build|set.?up|internal test/i, /demo|handover|hand over/i, /\buat\b|user acceptance|feedback/i, /incorporat|feedback.*(fix|resol|appl)/i, /uat.*sign|sign.?off.*uat/i, /train/i, /clean.?up|migrat|data load|cut.?over/i, /go.?live|hyper.?care/i];
 const STEP_ORDER = [8, 2, 11, 3, 10, 9, 5, 0, 7, 1, 6, 4];
@@ -127,7 +130,7 @@ export function assess(r, today, opts) {
   // ---- metrics for the portfolio table ----
   const custWait = qOpen.filter(t => t.data.question.status === 'Awaiting Customer' || t.data.status === 'Awaiting Customer').length + soReq.length + decP.length + open.filter(t => t.data.type === 'Customer Action Required').length;
   const deadlines = [pl.next && pl.next.start, pl.goLive, end].filter(x => x && x >= today).sort();
-  const m = { stage: pl.cur >= 0 ? pl.cur + 1 : 0, stageTitle: pl.curTitle || (live ? 'Live' : ''), stageForced: pl.forced, planRows: pl.rows, planStatusRows: pl.withStatus,
+  const m = { roadmapStage: pl.cur >= 0 ? STAGE_OF_STEP[pl.cur] : 0, roadmapTitle: pl.cur >= 0 ? ROADMAP[STAGE_OF_STEP[pl.cur]] : '', stage: pl.cur >= 0 ? pl.cur + 1 : 0, stageTitle: pl.curTitle || (live ? 'Live' : ''), stageForced: pl.forced, planRows: pl.rows, planStatusRows: pl.withStatus,
     openTasks: open.length, overdueTasks: open.filter(lateDate).length, blockers: blockedT.length + blockedA.length, custWaiting: custWait, questionsOpen: qOpen.length,
     nextMilestone: pl.next ? { title: pl.next.title, date: pl.next.start } : null, goLive: pl.goLive || '', endDate: end || '', target: pl.goLive || end || '', targetKind: pl.goLive ? 'go-live (plan)' : end ? 'end date (settings)' : '',
     deadlineSoon: !!(deadlines[0] && days(today, deadlines[0]) <= RULES.deadlineDays), nextDeadline: deadlines[0] || '', lastActivity: lastAt, idleDays: idle, live,

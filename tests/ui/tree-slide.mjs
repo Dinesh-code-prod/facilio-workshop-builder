@@ -1,8 +1,9 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/tree-slide.mjs
 // Steps the tree intro frame by frame (60 fps clock) through the slide to the left and measures how each label moves relative to its own node:
 // offsets must change smoothly (no jumps), labels must not blink on and off, and nodes themselves must move smoothly. Usage: node tests/ui/tree-slide.mjs [base] [width]
 import { chromium } from 'playwright';
 const BASE = process.argv[2] || 'http://localhost:4173', WID = +(process.argv[3] || 1440);
-const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: WID, height: 900 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const p = await b.newPage({ viewport: { width: WID, height: 900 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
 await p.goto(BASE + '/?intro=1' + (process.argv[4] === 'full' ? '#full' : '')); await p.waitForFunction(() => window.__ti && window.__ti.scrub, null, { timeout: 15000 });
 const r = await p.evaluate(async () => {
   const ti = window.__ti, frames = [], R = ti.REVEAL, FULL = location.hash === '#full', c0 = FULL ? 0 : ti.unwarp(R - .5), c1 = ti.unwarp(R + 4);

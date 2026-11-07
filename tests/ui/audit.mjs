@@ -1,3 +1,4 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/audit.mjs
 // Application-wide UI audit: visits every reachable screen (projects home, account menu, every project view and its tabs,
 // the admin console and its sections, the first create/edit dialog on each page) at four viewport sizes, runs the geometry
 // and semantics checks in tests/ui/checks.js, and writes a JSON report plus screenshots.
@@ -48,7 +49,7 @@ async function tryDialog(page, vp, screen) {
   const btn = await page.$$('.page-header .btn, .page .card-h .btn, .adm-hero .btn, .page .btn');
   for (const b of btn) { const t = ((await b.innerText().catch(() => '')) || '').trim(); if (/^(\+\s*)?(new|add|create|edit|import|invite|grant)\b/i.test(t) && await b.isVisible()) { await b.click().catch(() => { }); await page.waitForTimeout(500); const d = await page.$('#drawer .drawer, .scrim .dialog, .scrim [role=dialog], .modal'); if (d) await audit(page, vp, `${screen}#dialog:${t.slice(0, 24)}`); await closeOverlays(page); return; } }
 }
-const browser = await chromium.launch();
+const browser = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined });
 for (const vp of VIEWPORTS) {
   const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, deviceScaleFactor: 1 }); await ctx.addInitScript(checks);
   const page = await ctx.newPage(); page.on('pageerror', e => { if (!seen.has(e.message)) { seen.add(e.message); console.log('PAGE ERROR', e.message); } });
