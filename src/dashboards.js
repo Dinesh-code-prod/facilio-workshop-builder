@@ -59,7 +59,7 @@
   let loading = false;
   const HC = { blocked: '#D92D20', overdue: '#E8710A', at_risk: '#D49A06', on_track: '#12A35B', insufficient: '#98A2B3' };
   const SEVC = { critical: '#D92D20', high: '#E8710A', medium: '#D49A06', low: '#98A2B3' };
-  const TABS = [['overview', 'Overview'], ['delivery', 'Delivery'], ['risk', 'Risk'], ['people', 'People'], ['customers', 'Customers'], ['reports', 'Reports']];
+  const TABS = [['overview', 'Overview'], ['stages', 'Stages'], ['delivery', 'Delivery'], ['risk', 'Risk'], ['people', 'People'], ['customers', 'Customers'], ['reports', 'Reports']];
   const dd = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
   const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const wk = d => { const t = new Date(d + 'T00:00:00Z'); return t.getUTCDate() + ' ' + MON[t.getUTCMonth()]; };
@@ -155,7 +155,8 @@
       delivery: `<div class="adx-g">${timeW}${stageW}${nxtW}${flowW}${actW}</div>`,
       risk: `<div class="adx-g">${dangerW}${riskW}${sevW}${catW}${heatW}</div>`,
       people: `<div class="adx-g">${loadW}${unW}${concW}${flowW}${actW}</div>`,
-      customers: `<div class="adx-g">${waitW}${docsW}${govW}</div>`
+      customers: `<div class="adx-g">${waitW}${docsW}${govW}</div>`,
+      stages: V.stageAdmin ? V.stageAdmin(ps) : ''
     };
     const tabs = `<nav class="adx-tabs" role="tablist" aria-label="Dashboard sections">${TABS.map(([id, l]) => `<button type="button" role="tab" class="${tab === id ? 'on' : ''}" aria-selected="${tab === id}" data-act="admTab" data-v="${id}">${esc(l)}</button>`).join('')}</nav>`;
     return `<div class="adx">${tabs}${tab === 'reports' ? (reports ? reports() : '') : layouts[tab]}</div>`;
