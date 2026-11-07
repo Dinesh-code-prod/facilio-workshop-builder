@@ -118,3 +118,27 @@ body .st-page.st-wrap > .st-sec:first-child { padding-top: 8px; border-top: 0; }
 body .st-card .kv { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 8px 16px; margin: 0 0 12px; } body .st-card .kv dt { color: var(--fl-fg3); font-weight: 500; } body .st-card .kv dd { margin: 0; color: var(--fl-fg1); }
 body .st-card .pink-label:not(#_):not(#__) { margin: 16px 0 6px; font: 600 14px/20px var(--fl-font) !important; color: var(--fl-fg1) !important; letter-spacing: -.005em !important; }
 body .st-card .grid.g4 { gap: 12px; }
+
+/* ---- sign-in and welcome page: the night-city art stays; the interface on top of it follows coss.com's own dark pages (soft translucent surfaces, hairlines, a white main button) ---- */
+body .auth-art .av-copy h1:not(#_):not(#__) { font-family: var(--fl-font) !important; font-weight: 600 !important; letter-spacing: -.03em !important; line-height: 1.08 !important; }
+body .auth-art .lsx-eb:not(#_):not(#__) { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px; border: 1px solid rgba(255, 255, 255, .16); border-radius: 999px; background: rgba(255, 255, 255, .07); font: 500 13px/20px var(--fl-font) !important; letter-spacing: 0 !important; text-transform: none !important; color: #dbe6ff !important; }
+body .auth-art a.av-learn:not(#_):not(#__) { border-radius: 14px !important; background: rgba(255, 255, 255, .08) !important; background-image: none !important; border: 1px solid rgba(255, 255, 255, .16) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 1px 2px rgba(0, 0, 0, .25) !important; font-family: var(--fl-font) !important; font-weight: 500 !important; letter-spacing: -.005em !important; color: #fff !important; transition: background-color var(--fl-fast) var(--fl-ease), border-color var(--fl-fast) var(--fl-ease) !important; animation: none !important; }
+body .auth-art a.av-learn:not(#_):not(#__):hover { background: rgba(255, 255, 255, .14) !important; border-color: rgba(255, 255, 255, .28) !important; transform: none !important; }
+body .auth-art .av-learn .av-dur:not(#_):not(#__) { padding: 2px 8px; border-radius: 8px; background: rgba(255, 255, 255, .12) !important; font: 500 12px/18px var(--fl-font) !important; letter-spacing: 0 !important; color: #e8efff !important; }
+body .auth-form .auth-hello:not(#_):not(#__) { font-family: var(--fl-font) !important; font-weight: 600 !important; letter-spacing: -.03em !important; }
+body .auth-form .aw-acct:not(#_):not(#__) { border: 1px solid rgba(255, 255, 255, .14) !important; border-radius: 14px !important; background: rgba(255, 255, 255, .06) !important; box-shadow: none !important; }
+body .auth-form .auth-box .btn.primary.aw-go:not(#_):not(#__) { background: #fafafa !important; color: #171717 !important; border: 1px solid #fafafa !important; border-radius: 10px !important; min-height: 40px !important; font: 500 15px/20px var(--fl-font) !important; box-shadow: 0 1px 2px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(255, 255, 255, .9) !important; }
+body .auth-form .auth-box .btn.primary.aw-go:not([disabled]):not(#_):not(#__):hover { background: #e5e5e5 !important; border-color: #e5e5e5 !important; }
+body .auth-form .aw-hint:not(#_):not(#__) { color: rgba(255, 255, 255, .62) !important; font: 400 13px/18px var(--fl-font) !important; }
+body .auth-form .aw-feats li:not(#_):not(#__) { border: 1px solid rgba(255, 255, 255, .12) !important; border-radius: 14px !important; background: rgba(255, 255, 255, .05) !important; box-shadow: none !important; transition: background-color var(--fl-fast) var(--fl-ease), border-color var(--fl-fast) var(--fl-ease) !important; }
+body .auth-form .aw-feats li:not(#_):not(#__):hover { background: rgba(255, 255, 255, .09) !important; border-color: rgba(255, 255, 255, .22) !important; transform: none !important; }
+body .auth-form .aw-feats li b:not(#_):not(#__) { font: 500 14px/20px var(--fl-font) !important; letter-spacing: -.005em; color: #fff !important; }
+
+/* ---- home page banner: the night-city picture stays; its buttons follow coss.com's dark pages ---- */
+body .hm-hero .hm-btn:not(#_):not(#__) { height: 36px; padding: 0 14px; border-radius: 10px !important; font: 500 14px/20px var(--fl-font) !important; letter-spacing: -.005em !important; box-shadow: none !important; transition: background-color var(--fl-fast) var(--fl-ease), border-color var(--fl-fast) var(--fl-ease) !important; }
+body .hm-hero .hm-btn.primary:not(#_):not(#__) { background: #fafafa !important; color: #171717 !important; border: 1px solid #fafafa !important; box-shadow: 0 1px 2px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(255, 255, 255, .9) !important; }
+body .hm-hero .hm-btn.primary:not(#_):not(#__):hover { background: #e5e5e5 !important; border-color: #e5e5e5 !important; }
+body .hm-hero .hm-btn.ghost:not(#_):not(#__), body .hm-hero .btn:not(.primary):not(#_):not(#__) { background: rgba(255, 255, 255, .08) !important; border: 1px solid rgba(255, 255, 255, .18) !important; color: #fff !important; }
+body .hm-hero .hm-btn.ghost:not(#_):not(#__):hover { background: rgba(255, 255, 255, .14) !important; border-color: rgba(255, 255, 255, .3) !important; }
+body .hm-hero h1:not(#_):not(#__) { font-family: var(--fl-font) !important; font-weight: 600 !important; letter-spacing: -.03em !important; }
+body .hm-hero .hm-hi:not(#_):not(#__) { font: 500 13px/18px var(--fl-font) !important; letter-spacing: 0 !important; }
