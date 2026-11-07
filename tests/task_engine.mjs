@@ -63,4 +63,10 @@ await t('a go-live gap becomes a task and resolves when the check turns green; d
   const w = desired({ goliveGaps: [{ id: 'run', label: 'Test cases have been run', detail: '3 of 10 run' }] }); assert.deepEqual([w[0].key, w[0].rule, w[0].view], ['gl:run', 'gl', 'golive']); assert.match(w[0].title, /^Go-live: Test cases/);
   const made = reconcile(w, [], 'n').create; assert.equal(reconcile(desired({}), made, 'n').resolve[0].why, 'the go-live check turned green'); assert.deepEqual(reconcile(desired({}), made, 'n', null, new Set(['gl'])).resolve, []);
 });
+await t('SLA row, handover item and plan task due soon become tasks with the right fields and resolve when done', () => {
+  const w = desired({ slaOpen: [{ id: 's1', label: 'Work Order High', missing: 'resolution time' }], handoverOpen: [{ id: 'h1', text: 'Train the support team' }], planDue: [{ id: 'p1', title: 'Data load', end: '2026-11-10' }] });
+  assert.deepEqual(w.map(x => x.key), ['sla:s1', 'ho:h1', 'plan:p1']); assert.match(w[0].title, /^Complete the SLA: Work Order High/); assert.equal(w[1].title, 'Hand over: Train the support team'); assert.equal(w[2].due, '2026-11-10');
+  const made = reconcile(w, [], 'n').create; assert.equal(made[2].due, '2026-11-10'); const r = reconcile(desired({}), made, 'n'); assert.deepEqual(r.resolve.map(x => x.why).sort(), ['the SLA row is complete', 'the handover item was ticked', 'the plan task is done']);
+  assert.deepEqual(reconcile(desired({}), made, 'n', null, new Set(['sla', 'ho', 'plan'])).resolve, []);
+});
 console.log(n + ' checks passed');
