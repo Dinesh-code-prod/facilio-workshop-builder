@@ -22,12 +22,12 @@ const pick = async g => { await p.click(`.tl-g[data-g="${g}"] .tl-gsel`); await 
 const allBefore = await allIds();
 
 check('menu item is called Tabs & Layouts', /Tabs & Layouts/.test(await p.textContent('.sidebar')));
-let grps = await groups(); const brd = grps.find(g => g[0] === '3. Mockup & BRD');
+let grps = await groups(); const brd = grps.find(g => g[0] === '3. Solution design & BRD');
 check('BRD, forms, state flows, whiteboard, configuration, roles and traceability sit under one parent group', brd && ['solution', 'modules', 'flow', 'mockup', 'roles', 'notifications', 'cfginputs', 'slakpi', 'brd'].every(v => brd[1].includes(v)), JSON.stringify(brd));
-const subs = await p.evaluate(() => { const g = window.FWBViews.navFor().find(x => x.g === '3. Mockup & BRD'); return g.items.map(i => i[3] || ''); });
+const subs = await p.evaluate(() => { const g = window.FWBViews.navFor().find(x => x.g === '3. Solution design & BRD'); return g.items.map(i => i[3] || ''); });
 check('the parent group has sub-headings in order: Build the solution, Set up access, alerts and data, Record all configuration, Write the BRD', [...new Set(subs)].join(' | ') === 'Build the solution | Set up access, alerts and data | Record all configuration | Write the BRD', [...new Set(subs)].join(' | '));
 check('the side menu draws the sub-headings under the parent group', (await p.$$eval('.sidebar .sb-sub', e => e.map(x => x.textContent))).join('|').includes('Record all configuration'));
-check('groups follow the delivery order', grps.map(g => g[0]).slice(0, 6).join(' > ') === 'Project > 1. Project introduction > 2. Requirement sessions > 3. Mockup & BRD > 4. UAT & FTR > 5. Training guides', grps.map(g => g[0]).slice(0, 6).join(' > '));
+check('groups follow the delivery order', grps.map(g => g[0]).slice(0, 6).join(' > ') === 'Project > 1. Project introduction > 2. Requirement sessions > 3. Solution design & BRD > 4. UAT & FTR > 5. Training guides', grps.map(g => g[0]).slice(0, 6).join(' > '));
 check('the side menu draws a section heading above each part', (await p.$$eval('.sidebar .sb-sec', e => e.map(x => x.textContent))).length >= 4);
 check('groups list with search, and the tabs of the selected group as cards', (await p.$$('.tl-g')).length > 8 && (await p.$$('.tl-row')).length > 0);
 await p.fill('#wsQ', 'hyper'); await p.waitForTimeout(300); const found = await p.$$eval('.tl-g .tl-gn', e => e.map(x => x.textContent)); check('group search finds groups by tab name', found.length >= 1 && found.length < 6, found.join(', ')); await p.fill('#wsQ', ''); await p.waitForTimeout(300);
@@ -53,7 +53,7 @@ await pick('Customer reporting'); const at0 = order.indexOf('Customer reporting'
 check('Move group up (keyboard-friendly) moves the group one place', order.indexOf('Customer reporting') === at0 - 1, at0 + ' -> ' + order.indexOf('Customer reporting'));
 
 // rename a standard group and change its icon
-await pick('3. Mockup & BRD'); await p.click('.tl-mh [data-act="wsGroupEdit"]'); await p.fill('#wsg_n', 'Design & BRD'); await p.click('.tl-ic[data-k="l:doc"]'); await p.click('[data-act="wsGroupSave"]'); await p.waitForTimeout(500);
+await pick('3. Solution design & BRD'); await p.click('.tl-mh [data-act="wsGroupEdit"]'); await p.fill('#wsg_n', 'Design & BRD'); await p.click('.tl-ic[data-k="l:doc"]'); await p.click('[data-act="wsGroupSave"]'); await p.waitForTimeout(500);
 check('a standard group can be renamed; the side menu shows the new heading', /Design & BRD/.test(await p.textContent('.sidebar')) && !/3\. Solution Design & Configuration/.test(await p.textContent('.sidebar')));
 check('a renamed group keeps its tabs, sub-headings and its new icon', await p.evaluate(() => { const g = window.FWBViews.navFor().find(x => x.g === 'Design & BRD'); return !!g && g.items.length >= 9 && g.ik === 'l:doc' && g.items.some(i => i[3] === 'Record all configuration'); }));
 // sub-heading of one tab changed in the edit dialog
@@ -91,7 +91,7 @@ await v.close();
 
 // reset
 await p.click('[data-act="wsReset"]'); await p.click('.dialog .btn.danger, [role="dialog"] .btn.danger, .confirm .btn.danger, .dialog .btn.primary').catch(() => { }); await p.waitForTimeout(600);
-check('Reset restores the standard menu (deleted and renamed groups come back)', (await menu()).includes('kpi') && (await p.evaluate(() => { const n = window.FWBViews.navFor().map(g => g.g); return !n.includes('Customer reporting') && n.includes('2. Requirement sessions') && n.includes('3. Mockup & BRD'); })));
+check('Reset restores the standard menu (deleted and renamed groups come back)', (await menu()).includes('kpi') && (await p.evaluate(() => { const n = window.FWBViews.navFor().map(g => g.g); return !n.includes('Customer reporting') && n.includes('2. Requirement sessions') && n.includes('3. Solution design & BRD'); })));
 
 // a layout saved with the group names used before the regrouping lands in the matching new groups
 const pid2 = await newProject('Old layout');
@@ -100,7 +100,7 @@ await p.evaluate(() => { const w = window.FWB.doc('workspace'); Object.keys(w).f
 await p.waitForTimeout(1500); await p.reload(); await p.waitForSelector('.tl-grid'); await p.waitForTimeout(800);
 grps = await groups(); const names = grps.map(g => g[0]); const gOf = id => (grps.find(g => g[1].includes(id)) || [''])[0];
 check('old layout: no old group names remain', !names.some(n => /^(2\. Workshops|3\. Requirements|4\. BRD & Approvals|5\. Configuration & Implementation|7\. FTR|10\. Hypercare|Process & State Flows)$/.test(n)), names.join(' | '));
-check('old layout: moved tabs land in the matching new groups', gOf('ftr') === '4. UAT & FTR' && gOf('delivery') === '3. Mockup & BRD' && gOf('cx_p1') === '7. Hypercare', [gOf('ftr'), gOf('delivery'), gOf('cx_p1')].join(', '));
+check('old layout: moved tabs land in the matching new groups', gOf('ftr') === '4. UAT & FTR' && gOf('delivery') === '3. Solution design & BRD' && gOf('cx_p1') === '7. Hypercare', [gOf('ftr'), gOf('delivery'), gOf('cx_p1')].join(', '));
 check('old layout: saved group order and the order inside merged groups are kept', names.indexOf('7. Hypercare') < names.indexOf('1. Project introduction') && (grps.find(g => g[0] === '2. Requirement sessions') || [0, []])[1].slice(0, 3).join(',') === 'rstrans,rschecks,rsplan', JSON.stringify(grps.find(g => g[0] === '2. Requirement sessions')));
 check('old layout: labels, hidden tabs and an extra (empty) group are kept', !(await menu()).includes('kpi') && await p.evaluate(() => window.FWBViews.navFor().flatMap(g => g.items).find(i => i[0] === 'brd')[1] === 'BRD') && !!(await p.$('.tl-g[data-g="My extras"]')));
 

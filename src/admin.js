@@ -6,7 +6,7 @@
   const F = root.FWB; const { S, esc } = F; const V = root.FWBViews; const API = root.FWBApi; const ACT = V.ACT;
   const { drawer, closeDrawer, toast, confirmDialog } = V;
   const A = { sec: 'dashboard', dash: 'command', ins: null, q: '', filter: 'all', stage: 'all', data: null, users: null, audit: null, access: null, detail: null };
-  const STAGES = ['Not started', '1 Project introduction', '2 Requirement sessions', '2 Requirements confirmed', '3 Mockup & BRD', '4 UAT & FTR', '4 Go-live ready'];   // the stages of the menu; the number is the stage, the words say how far into it
+  const STAGES = ['Not started', '1 Project introduction', '2 Requirement sessions', '2 Requirements confirmed', '3 Solution design & BRD', '4 UAT & FTR', '4 Go-live ready'];   // the stages of the menu; the number is the stage, the words say how far into it
   // one health vocabulary for the whole console (work/server/_portfolio.mjs decides it; see the Command center's "How health is worked out")
   const HEALTH = { blocked: ['Blocked', 'h-bad'], overdue: ['Overdue', 'h-bad'], at_risk: ['At risk', 'h-attention'], on_track: ['On track', 'h-healthy'], insufficient: ['Insufficient data', 'h-stale'], on_hold: ['On hold', 'h-stale'], completed: ['Completed', 'h-live'], cancelled: ['Cancelled', 'h-stale'], churned: ['Churned', 'h-stale'], not_workable: ['Not workable', 'h-stale'], discontinued: ['Discontinued', 'h-stale'], archived: ['Archived', 'h-stale'] };
   V.ADM_HEALTH = HEALTH;

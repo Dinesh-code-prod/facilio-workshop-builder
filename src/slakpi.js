@@ -1,4 +1,4 @@
-/* KPIs & SLA matrix (stage 3, Mockup & BRD): where the team records what has to be tracked and how Facilio delivers it.
+/* KPIs & SLA matrix (stage 3, Solution design & BRD): where the team records what has to be tracked and how Facilio delivers it.
    SLA matrix: per module and priority, the response and resolution times, the business hours and up to three escalation levels (S.ws.slaMatrix).
    KPIs: the KPI definitions of the KPI workbooks (records of kind kpi), with the module they belong to and the solution (how Facilio delivers it: dashboard, report, field, formula).
    Both go into the BRD (SLA matrix and KPIs sections), the draft UAT test cases, the FTR checklist and the Solution Document. */

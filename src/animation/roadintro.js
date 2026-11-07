@@ -16,7 +16,7 @@
   const STEPS = [
     { h: 'Project introduction', c: 'The contract, kick-off notes and files are spread across emails and folders, and nobody is sure who does what next.', f: 'The contract is read into one project, the kick-off and plan are set, and tasks create themselves from what is recorded, each with an owner.' },
     { h: 'Requirement sessions', c: 'What was agreed in a workshop is lost before it reaches the document.', f: 'Workshops are planned, transcripts are captured and requirements are confirmed one by one, with checks on what was said.' },
-    { h: 'Mockup & BRD', c: 'Modules, forms and state flows are hard to picture until they are built.', f: 'Modules, state flows, roles and the KPIs & SLA matrix are laid out, mockups show the screens, and the BRD is written from all of it.' },
+    { h: 'Solution design & BRD', c: 'Modules, forms and state flows are hard to picture until they are built.', f: 'Modules, state flows, roles and the KPIs & SLA matrix are laid out, mockups show the screens, and the BRD is written from all of it.' },
     { h: 'UAT & FTR', c: 'It is unclear what passed, what is blocked and whether the go-live is safe.', f: 'UAT cases and issues, the FTR report and KPI workbooks each have a status and an owner, and go-live readiness is checked in one list.' },
     { h: 'Training guides', c: 'Writing user guides takes days and goes out of date.', f: 'AI drafts guides from what is recorded in your project. Every draft cites its sources and is reviewed before anyone uses it.' },
     { h: 'Hypercare', c: 'The first weeks after launch are when small problems pile up.', f: 'Hypercare issues are tracked with a status and an owner until the exit is recorded.' },

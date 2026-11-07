@@ -192,7 +192,7 @@
   ACT.sdTab = a => { S.ui.sdTab = a.getAttribute('data-v'); V.render(); };
 
   // ---------- admin: the stages across every active project ----------
-  const RSTG = [[0, 'All stages'], [1, 'Project introduction'], [2, 'Requirement sessions'], [3, 'Mockup and BRD'], [4, 'UAT and FTR'], [5, 'Training guides'], [7, 'Hypercare'], [8, 'Handover']];
+  const RSTG = [[0, 'All stages'], [1, 'Project introduction'], [2, 'Requirement sessions'], [3, 'Solution design and BRD'], [4, 'UAT and FTR'], [5, 'Training guides'], [7, 'Hypercare'], [8, 'Handover']];
   const RC = { 1: '#3b82f6', 2: '#14b8a6', 3: '#ec4899', 4: '#f59e0b', 5: '#22c55e', 7: '#0ea5e9', 8: '#64748b' };
   const ORDER = ['blocked', 'overdue', 'at_risk', 'on_track', 'insufficient'];
   const rstageOf = p => { const st = p.metrics && p.metrics.stage; return st > 0 && V.stageOfStep ? V.stageOfStep(st - 1) : 0; };

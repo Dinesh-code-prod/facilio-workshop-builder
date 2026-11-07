@@ -49,7 +49,7 @@ await t('reading marks it read; another person has their own list', async () => 
 });
 await t('closing a stage tells the team, not the person who closed it; Claude suggestions tell the person even though Claude acted as them', async () => {
   const r = await as(SAM, 'PUT', `/api/projects/${pid}/items/lcstage/design`, { data: { status: 'closed', note: 'BRD signed', owner: SAM, at: new Date().toISOString() } }); assert.equal(r.status, 200, JSON.stringify(r.data));
-  const k = await list(KIM); assert.ok(k.items.some(x => x.type === 'stage_closed' && /Mockup & BRD/.test(x.title)), JSON.stringify(k.items.map(x => x.title))); assert.ok(!(await list(SAM)).items.some(x => x.type === 'stage_closed'));
+  const k = await list(KIM); assert.ok(k.items.some(x => x.type === 'stage_closed' && /Solution design & BRD/.test(x.title)), JSON.stringify(k.items.map(x => x.title))); assert.ok(!(await list(SAM)).items.some(x => x.type === 'stage_closed'));
   const s = await tool(KIM, 'save_task_suggestions', { project: pid, suggestions: [{ action: 'create', fields: { title: 'Ask about the data load' }, reason: 'r', source: { type: 'transcript', ref: 'tr 1', quote: 'q' } }] }); assert.equal(s.status, 200, JSON.stringify(s.data)); assert.ok((await list(KIM)).items.some(x => x.type === 'proposal_waiting'));
 });
 await t('mail saved by Claude tells the team that mail arrived; the stage-ready push from the browser tells the team once a day and refuses customers and unknown events', async () => {

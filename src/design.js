@@ -1,4 +1,4 @@
-/* Stage 3, Mockup and BRD: what Claude proposes for the design, shown on the Process whiteboard (Requirement sessions) and on the State flow builder (roadmap E20).
+/* Stage 3, Solution design and BRD: what Claude proposes for the design, shown on the Process whiteboard (Requirement sessions) and on the State flow builder (roadmap E20).
    Claude saves proposals (state flows: standard flow changed, or new; flows that cross modules) in the project document design_proposals (work/server/_dsapi.mjs). A person looks at each one with the words it rests on and
    presses Apply (it becomes a state flow or a cross-module action in the project's design, with the person's name kept on the proposal) or Dismiss. Nothing Claude proposes is part of the design until a person applies it.
    Also here: one button that saves the project's copy of the STANDARD state flow for every module in scope (no Claude needed), so every flow is stored even when the sessions never changed it. */

@@ -20,7 +20,7 @@
       ['whiteboard', 'Process whiteboard', 'Draw the process with the customer so the flows have a picture behind them.', 'Capture the flows'],
       ['rschecks', 'Checks & validations', 'Everything found in the sessions, the contract and the BRD waiting for your decision. Select several and confirm together, with a short solution note. Confirmed items flow into the BRD and draft test cases by themselves.', 'Check what was said']],
       'Every requirement is Confirmed or Rejected. Nothing stays in Draft.', 'A requirement with no source is a guess. Keep the transcript line on each one.'],
-    ['3', 'Mockup & BRD', 'Agree the solution module by module, show it to the customer, record the configuration, and let the BRD be written from all of it.', [
+    ['3', 'Solution design & BRD', 'Agree the solution module by module, show it to the customer, record the configuration, and let the BRD be written from all of it.', [
       ['solution', 'Solution', 'One card per module in scope (and connected apps, templates, KPIs, SLA, notifications, roles): the customer requirement and the solution in words. Change one with Ask Claude, drop a customer file to compare, export a plain Word. The BRD reads from here.', 'Build the solution'],
       ['modules', 'System Modules & Form Builder', 'Define modules and fields. New fields come from requirements, not from memory.', 'Build the solution'],
       ['flow', 'State Flow Builder', 'Draw each module\'s statuses and transitions, with who may press each button.', 'Build the solution'],
@@ -82,6 +82,7 @@
     ['transfers', 'Transfers', 'What your Claude read from or sent to other systems, and what waits for you to approve. Claude cannot approve. Pushed and Synchronized are what Claude reported, not something this app can see.', 'Run the project'],
     ['governance', 'Governance & RAID', 'Sign-offs, risks, decisions, actions and minutes, shared with the customer.', 'Run the project'],
     ['changes', 'Change Requests', 'Anything outside the signed scope. Never change scope silently.', 'Run the project'],
+    ['statusrep', 'Status reports (WSR)', 'The weekly status report and the monthly report on one page. Build them from the live records or ask Claude; each is kept with its status.', 'Run the project'],
     ['aiwork', 'Deliverables & AI', 'Draft documents with AI, or with Open in Claude on your own account. Drafts are never final until reviewed.', 'Run the project'],
     ['reports', 'Reports & quality', 'Weekly and monthly status reports, and the traceability of each requirement through the BRD, configuration, guides and UAT.', 'Run the project'],
     ['resources', 'Notes & Links', 'Keep notes and links with the project.', 'Run the project']];

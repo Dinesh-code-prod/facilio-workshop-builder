@@ -1,4 +1,4 @@
-/* Stage 3, Mockup and BRD: what Claude PROPOSES for the design (roadmap E20). One project document, team only:
+/* Stage 3, Solution design and BRD: what Claude PROPOSES for the design (roadmap E20). One project document, team only:
      design_proposals  { items: [{ id, kind, module, name, ..., why, quote, source, status: 'open'|'applied'|'dismissed', by, byAt }] }
    kind 'flow'       a state flow for one module: basedOn default (small changes to the standard flow), changed (a session changed it) or new; states are labels, transitions are { from, to, name }
    kind 'field'      a custom field of a module (name = its label; fieldType, required, options, lookup, validation, description)
