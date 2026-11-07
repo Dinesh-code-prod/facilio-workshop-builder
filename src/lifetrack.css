@@ -2,7 +2,7 @@
 body .lc-bar { grid-template-columns: repeat(9, 1fr) !important; }
 body .lc-bar i.st-delayed { background: #E5197F !important; } body .lc-bar i.st-blocked { background: #B42318 !important; } body .lc-bar i.st-current { background: #1570EF !important; } body .lc-bar i.st-na { background: repeating-linear-gradient(45deg, #D0D5DD 0 4px, #EAECF0 4px 8px) !important; }
 body .lc-badge.st-completed { background: #E7F6EC !important; color: #027A48 !important; } body .lc-badge.st-current { background: #EAF2FF !important; color: #1570EF !important; }
-body .lc-badge.st-delayed { background: #FDE7F1 !important; color: #c8126a !important; } body .lc-badge.st-blocked { background: #FEE4E2 !important; color: #B42318 !important; }
+body .lc-badge.st-delayed { background: #fdf3f4 !important; color: #b10e1c !important; } body .lc-badge.st-blocked { background: #FEE4E2 !important; color: #B42318 !important; }
 body .lc-badge.st-upcoming, body .lc-badge.st-na { background: #F2F4F7 !important; color: #475467 !important; }
 body .lc-stage.st-blocked { box-shadow: inset 4px 0 0 #B42318; } body .lc-stage.st-delayed { box-shadow: inset 4px 0 0 #E5197F; } body .lc-stage.st-na { opacity: .78; }
 body .lc-meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 12px 0; }

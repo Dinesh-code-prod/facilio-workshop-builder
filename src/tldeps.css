@@ -21,9 +21,9 @@ body .pl-bar:not(.ph):not(.sum) { overflow: visible; }
 .pl-bar:hover .pl-lk, .pl-bar:focus-visible .pl-lk, .pl-bar.lk-target .pl-lk, .pl-ms:hover .pl-lk, .pl-ms:focus-visible .pl-lk, .pl-ms.lk-target .pl-lk { opacity: 1; transform: scale(1); }
 .pl-lk:hover { background: #1570EF; }
 .pl-bar.lk-target, .pl-ms.lk-target { outline: 2px solid #1570EF; outline-offset: 3px; }
-body .pl-bar.crit { box-shadow: 0 0 0 2px #E5197F; } body .pl-ms.crit { box-shadow: 0 0 0 3px rgba(229, 25, 127, .55); }
+body .pl-bar.crit { box-shadow: 0 0 0 2px #E5197F; } body .pl-ms.crit { box-shadow: 0 0 0 3px rgba(0, 0, 0, .55); }
 /* what appears when a line is clicked */
-.pl-lkpop { position: fixed; z-index: 700; display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 12px; background: #fff; border: 1px solid #dfe5f3; box-shadow: 0 10px 24px -10px rgba(29, 26, 94, .35); font-size: 12.5px; white-space: nowrap; }
+.pl-lkpop { position: fixed; z-index: 700; display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 12px; background: #fff; border: 1px solid #dfe5f3; box-shadow: 0 10px 24px -10px rgba(0, 0, 0, .35); font-size: 12.5px; white-space: nowrap; }
 .pl-dep-tools { display: inline-flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
 .tdp-list { display: grid; gap: 4px; max-height: 190px; overflow: auto; padding: 8px 10px; border: 1px solid #e3e9f5; border-radius: 10px; }
 /* compact table: only the task and the timeline, so the timeline gets the room (the full table is one click away) */

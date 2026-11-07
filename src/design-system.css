@@ -12,7 +12,7 @@
    glass, glows or decorative dots.
    ===================================================================================================== */
 :root {
-  --ds-night: #0D0B40; --ds-navy: #1D1A5E; --ds-navy-2: #2A2680; --ds-navy-50: #EEEDFB; --ds-navy-100: #DCDAF5;
+  --ds-night: #1D1A5E; --ds-navy: #1D1A5E; --ds-navy-2: #2A2680; --ds-navy-50: #EEEDFB; --ds-navy-100: #DCDAF5;
   --ds-blue: #1570EF; --ds-blue-h: #175CD3; --ds-blue-50: #f6f3ff; --ds-blue-100: #ddd5ff; --ds-sky: #8DB8FF; --ds-pink: #E5197F;
   --ds-ink: #101828; --ds-ink-2: #344054; --ds-ink-3: #475467; --ds-muted: #667085; --ds-faint: #98A2B3;
   --ds-line: #EAECF0; --ds-line-2: #D0D5DD; --ds-bg: #F5F6FA; --ds-card: #FFFFFF; --ds-hover: #F8F9FC; --ds-soft: #F2F4F7;
@@ -366,7 +366,7 @@ body .sidebar .sb-foot { position: sticky !important; bottom: -24px !important; 
 }
 
 /* ---- Facilio loader and page transitions ---- */
-.fxl { background: radial-gradient(60% 80% at 50% 40%, #1d1a62 0%, #0e0b3d 70%) !important; z-index: 300; opacity: 0; animation: fxlIn .22s ease forwards; backdrop-filter: none; }
+.fxl { background: radial-gradient(60% 80% at 50% 40%, #1D1A5E 0%, #1D1A5E 70%) !important; z-index: 300; opacity: 0; animation: fxlIn .22s ease forwards; backdrop-filter: none; }
 .fxl.out { animation: fxlOut .36s ease forwards; pointer-events: none; }
 .fxl-in { display: grid; justify-items: center; gap: 18px; }
 .fxl-in img { animation: fxlPulse 1.6s ease-in-out infinite; }
@@ -511,7 +511,7 @@ body .ib-main:not(#_) { display: grid; grid-template-columns: minmax(280px, 380p
 body .ib-list:not(#_) { padding: 6px; max-height: calc(100vh - 290px); min-height: 320px; overflow: auto; display: flex; flex-direction: column; gap: 2px; }
 body .ib-row:not(#_) { position: relative; display: grid; grid-template-columns: 10px 1fr; column-gap: 10px; row-gap: 2px; width: 100%; text-align: left; padding: 10px 12px; border: 1px solid transparent; border-radius: 10px; background: transparent; cursor: pointer; color: var(--ds-text, #1F2430); font: inherit; }
 body .ib-row:not(#_):hover { background: #F5F8FF; }
-body .ib-row.on:not(#_) { background: #f4f0ff; border-color: #B2CCFF; }
+body .ib-row.on:not(#_) { background: #fafafa; border-color: #B2CCFF; }
 body .ib-row:not(#_):focus-visible { outline: 2px solid #1570EF; outline-offset: 1px; }
 body .ib-dot:not(#_) { grid-row: 1 / span 3; width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: transparent; }
 body .ib-dot.new:not(#_) { background: #1570EF; } body .ib-dot.handled:not(#_) { background: #17B26A; }
@@ -535,7 +535,7 @@ body .ib-msg header:not(#_) { display: flex; justify-content: space-between; gap
 body .ib-body:not(#_) { white-space: pre-wrap; word-break: break-word; font-size: 13.5px; line-height: 1.55; color: #344054; max-height: 520px; overflow: auto; }
 body .ib-atts:not(#_) { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 body .ib-att:not(#_) { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 6px 10px; border: 1px solid #D0D5DD; border-radius: 8px; background: #F9FAFB; font: inherit; font-size: 12.5px; cursor: pointer; color: #344054; }
-body .ib-att:not(#_):hover { background: #f4f0ff; border-color: #84ADFF; }
+body .ib-att:not(#_):hover { background: #fafafa; border-color: #84ADFF; }
 body .ib-att span:not(#_) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
 body .ib-att small:not(#_) { color: #424242; }
 body .ib-att svg:not(#_) { width: 14px; height: 14px; }

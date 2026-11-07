@@ -50,3 +50,29 @@ t('server: a new proposal replaces the open one of that area; a decided one stay
   const done = b.items.map(x => (x.module === 'area:sla' ? Object.assign({}, x, { status: 'dismissed' }) : x)); const c = mergeProposals(done, [p('v2'), p('v3')], B); assert.equal(c.added, 1); assert.equal(c.items.filter(x => x.module === 'area:sla').length, 2);
 });
 console.log(n + ' solution checks passed');
+{   // areas the team adds: integrations, custom areas, keyword and module links, what reaches the BRD
+  const mods = [{ name: 'servicerequest', label: 'Service Request' }, { name: 'asset', label: 'Asset' }]; const t2 = (name, fn) => { fn(); console.log('  ok  ' + name); };
+  t2('an added area keeps its type, group, keywords and modules, gets a unique key, and saving text does not lose it', () => {
+    let r = L.addArea({}, { label: 'SR to customer portal', type: 'int_portal', modules: [], keywords: ['SR'] }, 'a@x.com', A); assert.equal(r.key, 'custom:sr-to-customer-portal'); assert.equal(L.customOf(r.doc)[0].group, 'Integrations');
+    const r2 = L.addArea(r.doc, { label: 'SR to customer portal', type: 'int_portal' }, 'a', A); assert.equal(r2.key, 'custom:sr-to-customer-portal-2'); assert.throws(() => L.addArea({}, { label: ' ' }, 'a', A));
+    const d = L.save(r.doc, r.key, 'Service requests created in Facilio are sent back to their portal.', { at: A }); assert.equal(L.customOf(d).length, 1); assert.ok(L.areasFor(mods, d).some(x => x.key === r.key && x.custom));
+    assert.equal(L.customOf(L.removeArea(d, r.key)).length, 0); assert.equal(L.textOf(L.removeArea(d, r.key), r.key).length > 0, true, 'the text is kept');
+  });
+  t2('a module is linked by pick, by keyword, by the name or by the text', () => {
+    let r = L.addArea({}, { label: 'Procurement feed', type: 'int_proc', modules: ['asset'], keywords: [] }, 'a', A); let d = L.save(r.doc, r.key, 'Purchase orders flow to the ERP when a Service Request needs parts.', { at: A });
+    const area = L.areasFor(mods, d).find(x => x.key === r.key); assert.deepEqual(L.linkedModules(area, d, mods).sort(), ['asset', 'servicerequest']);
+    const k = L.addArea({}, { label: 'Notes', type: 'other', keywords: ['service requests'] }, 'a', A); assert.deepEqual(L.linkedModules(L.areasFor(mods, k.doc).pop(), k.doc, mods), ['servicerequest']); assert.deepEqual(L.linkedModules({ key: 'module:asset' }, d, mods), []);
+  });
+  t2('BRD: a linked area is shown inside its module, an integration is only referred to there and has its own place, an unlinked area goes to other areas, integrations first', () => {
+    let d = L.addArea({}, { label: 'Portal return', type: 'int_portal', modules: ['servicerequest'] }, 'a', A); const ik = d.key; d = L.save(d.doc, ik, 'Sent back to the portal.', { at: A });
+    let r = L.addArea(d, { label: 'Asset labels', type: 'other', modules: ['asset'] }, 'a', A); const lk = r.key; d = L.save(r.doc, lk, 'Labels are printed.', { at: A });
+    r = L.addArea(d, { label: 'Training pack', type: 'other' }, 'a', A); const uk = r.key; d = L.save(r.doc, uk, 'Delivered at go-live.', { at: A }); d = L.save(d, 'area:sla', 'SLA wording', { at: A });
+    assert.deepEqual(L.relatedFor(d, 'asset', mods).map(x => x.key), [lk]); assert.deepEqual(L.relatedFor(d, 'servicerequest', mods), []); assert.deepEqual(L.integrationsFor(d, 'servicerequest', mods), ['Portal return']);
+    assert.deepEqual(L.otherAreas(d, mods).map(x => x.key), [ik, 'area:sla', uk]);
+  });
+  t2('accepting a proposal for a new area registers it with the name and group Claude gave', () => {
+    const p = { kind: 'solution', module: 'custom:procurement-erp', name: 'Procurement and ERP', group: 'Integrations', text: 'POs go to the ERP.', why: 'file', quote: 'PO export', source: 'cust.docx', fromCustomer: true }; const d = L.accept({}, p, 'a', B);
+    const c = L.customOf(d)[0]; assert.equal(c.label, 'Procurement and ERP'); assert.equal(c.group, 'Integrations'); assert.equal(L.textOf(d, 'custom:procurement-erp'), 'POs go to the ERP.'); assert.equal(L.statusOf(d, 'custom:procurement-erp'), 'Changed by customer');
+    assert.equal(cleanProposal({ kind: 'solution', area: 'custom:procurement-erp', name: 'Procurement and ERP', group: 'Integrations', text: 'x', why: 'y' }).group, 'Integrations'); assert.equal(cleanProposal({ kind: 'solution', area: 'custom:Bad Key', text: 'x', why: 'y' }), null);
+  });
+}

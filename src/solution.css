@@ -33,3 +33,17 @@ body .fl-sol-all-ask, body .fl-sol-cov { background: var(--fl-bg1); border: 1px 
 body .fl-sol-all-ask summary, body .fl-sol-cov summary, body .fl-sol-h summary { cursor: pointer; font: 600 14px/20px var(--fl-font); }
 body .fl-sol-all-ask textarea { width: 100%; box-sizing: border-box; margin: 8px 0; }
 @media (max-width: 900px) { body .fl-sol { grid-template-columns: 1fr; } body .fl-sol-n { position: static; max-height: none; } }
+
+/* BRD Draft tidy-up: block tools only when the pointer or keyboard is on the block; the section button is one compact icon; the design proposals fold into one line. */
+body .paper .blk .blk-tools { left: -64px; display: flex; gap: 2px; opacity: 0; transition: opacity var(--fl-fast, 100ms); }
+body .paper .blk:hover .blk-tools, body .paper .blk:focus-within .blk-tools, body .paper .blk-tools:focus-within { opacity: 1; }
+body .paper .blk { position: relative; }
+body .paper .blk > .blk-ask { position: absolute; right: 0; top: 2px; z-index: 2; height: 30px; padding: 0 12px; border: 1px solid var(--fl-brand); border-radius: 4px; background: var(--fl-bg1); color: var(--fl-brand-text); font: 600 13px/20px var(--fl-font); white-space: nowrap; cursor: pointer; }
+body .paper .blk > .blk-ask:hover { background: var(--fl-brand-soft); }
+body .paper .blk:has(> .blk-ask) > h1 { padding-right: 140px; }
+body .ds-fold { background: var(--fl-bg1); border: 1px solid var(--fl-st2); border-radius: var(--fl-r-card); padding: 8px 12px; margin: 0 0 12px; }
+body .ds-fold > summary { cursor: pointer; font: 600 14px/20px var(--fl-font); color: var(--fl-fg1); }
+body .ds-fold[open] > summary { margin-bottom: 8px; }
+
+body .fl-sol-mods { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 4px 0 8px; font: 400 14px/20px var(--fl-font); }
+body .fl-sol-mods label { display: inline-flex; align-items: center; gap: 6px; }
