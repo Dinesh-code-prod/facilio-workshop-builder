@@ -54,7 +54,7 @@
   async function run(force) {
     if (busy || V.isCustomer() || S.readonly || !S.project) return 0; if (!force && S.ui.teAt && S.ui.teAt.p === S.project.id && Date.now() - S.ui.teAt.t < 60000) return 0; busy = true;
     try { I().load(['task', 'utc', 'kpi']); for (let i = 0; i < 24 && !I().ready(['task', 'utc', 'kpi']); i++) await new Promise(r => setTimeout(r, 250)); if (!I().ready(['task', 'utc', 'kpi'])) return 0; S.ui.teAt = { p: S.project.id, t: Date.now() }; if (V.mailInbox) await V.mailInbox.ensure();
-      const now = new Date().toISOString(); const fx = facts(); const r = reconcile(desired(fx), I().list('task'), now, fx.mailWhy, new Set(fx.unknownRules || [])); let n = 0;
+      const now = new Date().toISOString(); const fx = facts(); (fx.stagesReady || []).forEach(x => { if (V.notifyStageReady) V.notifyStageReady(x); });   // a stage whose records are all done: the team is told once a day const r = reconcile(desired(fx), I().list('task'), now, fx.mailWhy, new Set(fx.unknownRules || [])); let n = 0;
       for (const t of r.create) { await I().put('task', t.id, t); n++; }
       for (const x of r.resolve) { const t = I().get('task', x.id); if (t) { await I().put('task', t.id, Object.assign({}, t, { status: 'Done', completion: 'Resolved automatically: ' + x.why + '.', auto: Object.assign({}, t.auto, { resolvedBy: 'engine', resolvedAt: now }) })); n++; } }
       for (const x of r.reopen) { const t = I().get('task', x.id); if (t) { await I().put('task', t.id, Object.assign({}, t, { status: 'To Do', completion: '', auto: Object.assign({}, t.auto, { resolvedBy: '', resolvedAt: '' }) })); n++; } }

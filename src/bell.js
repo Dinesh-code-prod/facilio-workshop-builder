@@ -32,11 +32,13 @@
   // new entries the admin published to this project's Discover more (read from the server once per project; the read / unread mark is the same one the other notices use)
   const LIB = { pid: '', items: [] };
   function libItems() { const id = S.project && S.project.id; if (!id) return []; if (LIB.pid !== id) { LIB.pid = id; LIB.items = []; root.FWBApi.get('/api/projects/' + id + '/discover').then(r => { LIB.items = (r.items || []).slice(0, 8); V.render(); }).catch(() => { }); } return LIB.items.map(e => ({ id: 'dm-' + e.id, kind: 'new', text: 'New in Discover more: ' + e.title, view: cust() ? 'explore' : 'showcase' })); }
-  const all = () => V.bellItems().concat(libItems(), assistant());
-  const GROUPS = [['rem', 'Needs you', 'Reminders and things waiting on someone'], ['new', 'New from Facilio', 'Product updates published for this project'], ['ai', 'Delivery assistant', 'What the project cycle says is missing or late'], ['act', 'Activity', 'Changes made by the other side in the last 14 days']];
+  const all = () => (V.notifyItems ? V.notifyItems() : []).concat(V.bellItems(), libItems(), assistant());   // the server list first (src/notifyclient.js)
+  const GROUPS = [['srv', 'For you', 'Events in your projects, also sent to Teams if you chose it'], ['rem', 'Needs you', 'Reminders and things waiting on someone'], ['new', 'New from Facilio', 'Product updates published for this project'], ['ai', 'Delivery assistant', 'What the project cycle says is missing or late'], ['act', 'Activity', 'Changes made by the other side in the last 14 days']];
   const dot = x => (x.tone === 'late' ? 'late' : x.kind === 'ai' ? 'ai' : x.kind === 'act' ? 'act' : 'rem');
 
-  function count() { return all().filter(x => !readSet().has(x.id)).length; }
+  const isRead = (x, rs) => (x.srv ? !!x.read : rs.has(x.id));   // a server notification is read on the server, the others in this browser
+  function count() { const rs = readSet(); return all().filter(x => !isRead(x, rs)).length; }
+  V.bellCount = count;
   V.bellHtml = () => { if (!S.project || !S.user) return ''; I().load(['action', 'signoff', 'cr', 'onb', 'raid', 'decision', 'minutes', 'onbsub']); const n = count(); return `<button class="bell" data-act="bellOpen" aria-haspopup="true" aria-label="Notifications${n ? ', ' + n + ' unread' : ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></svg>${n ? `<span class="bell-n">${n > 9 ? '9+' : n}</span>` : ''}</button>`; };
 
   function close() { const p = document.getElementById('bellPop'); if (p) p.remove(); document.removeEventListener('keydown', onKey); document.removeEventListener('mousedown', onOut, true); }
@@ -46,21 +48,23 @@
   function draw() {
     const rs = readSet(); const list = all(); const f = S.ui.bellTab || 'all';
     const tabs = [['all', 'All'], ['unread', 'Unread']];
-    const shown = list.filter(x => f === 'all' || !rs.has(x.id));
-    const row = x => `<button type="button" class="bp-row${rs.has(x.id) ? ' read' : ''}" data-act="bellGo" data-id="${esc(x.id)}"><i class="bp-dot ${dot(x)}"></i><span>${esc(x.text)}</span><em aria-hidden="true">&rsaquo;</em></button>`;
+    const shown = list.filter(x => f === 'all' || !isRead(x, rs));
+    const row = x => `<button type="button" class="bp-row${isRead(x, rs) ? ' read' : ''}" data-act="bellGo" data-id="${esc(x.id)}"><i class="bp-dot ${dot(x)}"></i><span>${esc(x.text)}</span><em aria-hidden="true">&rsaquo;</em></button>`;
     const body = GROUPS.map(([k, t, s]) => { const g = shown.filter(x => x.kind === k); return g.length ? `<section class="bp-g"><h4>${t}<small>${s}</small></h4>${g.map(row).join('')}</section>` : ''; }).join('') || `<div class="bp-empty"><b>You are all caught up</b><span>Nothing needs you right now.</span></div>`;
-    const unread = list.filter(x => !rs.has(x.id)).length;
+    const unread = list.filter(x => !isRead(x, rs)).length;
     let p = document.getElementById('bellPop'); if (!p) { p = document.createElement('div'); p.id = 'bellPop'; p.setAttribute('role', 'dialog'); p.setAttribute('aria-label', 'Notifications'); document.body.appendChild(p); document.addEventListener('keydown', onKey); document.addEventListener('mousedown', onOut, true); }
     p.innerHTML = `<header><h3>Notifications</h3><span class="bp-n">${unread ? unread + ' unread' : 'All read'}</span><button type="button" class="bp-x" data-act="bellClose" aria-label="Close">&times;</button></header>
-      <div class="bp-tabs">${tabs.map(([k, l]) => `<button type="button" class="${f === k ? 'on' : ''}" data-act="bellTab" data-v="${k}">${l}</button>`).join('')}<span class="spacer"></span><button type="button" class="bp-all" data-act="bellRead"${unread ? '' : ' disabled'}>Mark all as read</button></div>
+      <div class="bp-tabs">${tabs.map(([k, l]) => `<button type="button" class="${f === k ? 'on' : ''}" data-act="bellTab" data-v="${k}">${l}</button>`).join('')}<span class="spacer"></span><button type="button" class="bp-all" data-act="bellPrefs">Settings</button><button type="button" class="bp-all" data-act="bellRead"${unread ? '' : ' disabled'}>Mark all as read</button></div>
       <div class="bp-body">${body}</div>`;
   }
+  V.bellRedraw = draw; ACT.bellPrefs = () => { close(); if (ACT.ntPrefs) ACT.ntPrefs(); };
   ACT.bellOpen = () => { if (document.getElementById('bellPop')) { close(); return; } draw(); };
   ACT.bellClose = close;
   ACT.bellTab = a => { S.ui.bellTab = a.getAttribute('data-v'); draw(); };
-  ACT.bellRead = () => { const rs = readSet(); all().forEach(x => rs.add(x.id)); saveRead(rs); close(); V.render(); };
+  ACT.bellRead = () => { const rs = readSet(); all().forEach(x => rs.add(x.id)); saveRead(rs); if (V.notifyReadAll) V.notifyReadAll(); close(); V.render(); };
   ACT.bellGo = a => {
     const id = a.getAttribute('data-id'); const x = all().find(n => n.id === id); const rs = readSet(); rs.add(id); saveRead(rs); close(); if (!x) { V.render(); return; }
+    if (x.srv) { if (V.notifyRead) V.notifyRead([x.sid]); if (x.pid && S.project && x.pid !== S.project.id) { V.notifyGo(x); return; } }
     let view = x.view; if (cust()) { const ok = new Set(V.navBase().flatMap(g => g.items.map(i => i[0]))); if (!ok.has(view)) view = 'cust_home'; }
     V.go(view, Object.assign({}, x.x || {})); };
 })(typeof window !== 'undefined' ? window : globalThis);
