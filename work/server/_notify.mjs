@@ -74,7 +74,7 @@ export function installNotify(d) {
   route('GET', '/api/notifications', async () => {
     const s = await me(); const { h, rows } = await mine(s); const keep = rows.slice(0, KEEP);
     for (const r of rows.slice(KEEP)) { try { await dbDel('nt', h + '.' + r.id); } catch (e) { } }   // the list keeps the newest 100
-    return ok({ items: keep, unread: keep.filter(r => !r.read).length, prefs: prefsFor(await prefsOf(s.email)), events: Object.fromEntries(Object.entries(EVENTS).map(([k, e]) => [k, e.label])), teams: await teamsOn() });
+    return ok({ h, items: keep, unread: keep.filter(r => !r.read).length, prefs: prefsFor(await prefsOf(s.email)), events: Object.fromEntries(Object.entries(EVENTS).map(([k, e]) => [k, e.label])), teams: await teamsOn() });
   });
   route('POST', '/api/notifications/read', async b => {
     const s = await me(); const h = hashOf(s.email); const ids = Array.isArray(b && b.ids) ? b.ids.map(String).slice(0, 200) : null; const pid = b && b.pid ? String(b.pid) : '';
