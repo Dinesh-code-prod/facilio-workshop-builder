@@ -3,7 +3,7 @@
    Mail text is untrusted data: it is stored and shown, never run. The Studio holds no Microsoft token and sends nothing: Claude (Microsoft 365 connector) or a dropped .eml brings mail in;
    a person accepts each one; a reply is drafted UNAPPROVED and opened in Outlook by a person.
    Connector (actions of the existing tool task_tracking, so the tool count stays 39): mail_list, mail_save, mail_draft, mail_sent.
-   Routes (project edit access, team only): GET/POST /api/projects/:id/mail, POST .../mail/:mid/{accept,dismiss,link,resolved,reply,sent-check}. */
+   Routes (project edit access, team only): GET/POST /api/projects/:id/mailtasks, POST .../mail/:mid/{accept,dismiss,link,resolved,reply,sent-check}. */
 import './_mailtasks.mjs';
 
 export function installMailTasks(d) {
@@ -48,8 +48,8 @@ export function installMailTasks(d) {
       return withLock('ml.' + pid + '.' + id, async () => { const rw = await dbGet(col(pid), id); if (!rw || !rw.value) throw new HttpError(404, 'Mail not found'); const nx = wrap(() => fn(rw.value, new Date().toISOString())); await dbPut(col(pid), id, nx); if (auditText) await audit(pid, s.id, auditText, id); return nx; });
     },
     /** a person accepts: the task is then made by the task engine (rule mail) from this record, with the done-when check stored here */
-    accept(s, pid, id) {
-      return ops.change(s, pid, id, (r, now) => { if (r.status !== 'pending') { const e = new Error('This mail was already ' + r.status + '.'); e.status = 409; throw e; } return Object.assign({}, r, { status: 'accepted', acceptedBy: s.email, acceptedAt: now, doneWhen: MT.doneWhen(r.route, now, r.id) }); }, 'mail-accepted');
+    accept(s, pid, id, data) {
+      return ops.change(s, pid, id, (r, now) => { if (r.status !== 'pending') { const e = new Error('This mail was already ' + r.status + '.'); e.status = 409; throw e; } return Object.assign({}, r, { status: 'accepted', acceptedBy: s.email, acceptedAt: now, doneWhen: MT.doneWhen(r.route, now, r.id, data && Number.isInteger(data.brdCount) ? data.brdCount : undefined) }); }, 'mail-accepted');
     },
     dismiss(s, pid, id) { return ops.change(s, pid, id, (r, now) => { if (r.status !== 'pending') { const e = new Error('This mail was already ' + r.status + '.'); e.status = 409; throw e; } return Object.assign({}, r, { status: 'dismissed', dismissedBy: s.email, dismissedAt: now }); }, 'mail-dismissed'); },
     /** the page records the file and the compare_solution job it made from this mail */
@@ -71,10 +71,10 @@ export function installMailTasks(d) {
     async checkSent(s, pid, id) { const rec = (await ops.list(s, pid, 'all', id)).mails[0]; if (!rec.reply || rec.reply.state !== 'approved') throw new HttpError(409, 'Approve the reply first.'); const r = await viaApp('POST', '/api/projects/' + pid + '/jobs', '', { kind: 'check_sent', ref: id, note: cut(rec.title, 200) }); return { job: r && r.job ? r.job.id : null }; }
   };
 
-  const P = '/api/projects/:id/mail';
-  route('GET', P, async (b, G, q) => { const s = await me(); return ok(await ops.list(s, G.id, String(q.get('status') || ''), '')); });
+  const P = '/api/projects/:id/mailtasks';
+  route('GET', P, async (b, G, q) => { const s = await me(); return ok(await ops.list(s, G.id, String(q.get('status') || ''), String(q.get('id') || ''))); });
   route('POST', P, async (b, G) => { const s = await me(); return ok(await ops.save(s, G.id, b && b.mails, b && b.keywords), 201); });
-  route('POST', P + '/:mid/accept', async (b, G) => { const s = await me(); return ok({ mail: view(await ops.accept(s, G.id, G.mid)) }); });
+  route('POST', P + '/:mid/accept', async (b, G) => { const s = await me(); return ok({ mail: view(await ops.accept(s, G.id, G.mid, b || {})) }); });
   route('POST', P + '/:mid/dismiss', async (b, G) => { const s = await me(); return ok({ mail: view(await ops.dismiss(s, G.id, G.mid)) }); });
   route('POST', P + '/:mid/link', async (b, G) => { const s = await me(); return ok({ mail: view(await ops.link(s, G.id, G.mid, b || {})) }); });
   route('POST', P + '/:mid/resolved', async (b, G) => { const s = await me(); return ok(await ops.resolved(s, G.id, G.mid, b && b.why)); });

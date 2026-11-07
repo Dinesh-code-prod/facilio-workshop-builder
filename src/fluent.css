@@ -252,3 +252,16 @@ body .kb-new { color: #1262D8; }
 body .kb-card.dragging { cursor: grabbing; }
 @media (max-width: 600px) { body .kb-col { min-width: 0; scroll-snap-align: start; } }
 body .kb-ty { background: var(--fl-bg4); color: var(--fl-fg2); border-radius: 4px; } body .kb-fl.q { background: var(--fl-warn-soft); color: #8a3706; } body .kb-d.late { color: var(--fl-danger); font-weight: 600; } body .kb-t { color: var(--fl-fg1); } body .kb-id { color: var(--fl-fg3); }
+
+/* Mail inbox on the Tasks page (src/mailinbox.js): customer mail waiting for a person, the task it became and its reply. Fluent tokens only. */
+body .fl-mail { background: var(--fl-bg1); border: 1px solid var(--fl-st2); border-radius: var(--fl-r-card); box-shadow: var(--fl-sh4); margin-bottom: 12px; }
+body .fl-mail-h { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 16px; }
+body .fl-mail-h h3 { margin: 0; font: 600 16px/22px var(--fl-font); color: var(--fl-fg1); } body .fl-mail-h .sp { flex: 1 1 auto; }
+body .fl-mail-r { display: grid; gap: 4px; padding: 12px 16px; border-top: 1px solid var(--fl-st3); font: 400 14px/20px var(--fl-font); color: var(--fl-fg1); }
+body .fl-mail-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; } body .fl-mail-top b { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+body .fl-mail-chip { display: inline-block; padding: 0 8px; border-radius: 4px; background: var(--fl-bg4); color: var(--fl-fg2); font: 600 12px/20px var(--fl-font); }
+body .fl-mail-chip.route { background: var(--fl-brand-soft, #e8f1fd); color: #0f4fb8; }
+body .fl-mail-meta { font: 400 12px/16px var(--fl-font); color: var(--fl-fg3); } body .fl-mail-ex { color: var(--fl-fg2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+body .fl-mail-act { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 4px; }
+body .fl-mail-reply { width: 100%; box-sizing: border-box; min-height: 96px; padding: 8px 12px; border: 1px solid var(--fl-st1); border-radius: var(--fl-r-ctl); font: 400 14px/20px var(--fl-font); color: var(--fl-fg1); background: var(--fl-bg1); resize: vertical; }
+body .fl-mail-reply:focus-visible { outline: 2px solid var(--fl-brand); outline-offset: 0; }

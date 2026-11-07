@@ -17,9 +17,9 @@
     const d = decodeBody(body, h); return { text: (ct.startsWith('text/html') ? stripHtml(d) : d).trim(), attachments: [] }; }
   function parseEml(raw) { raw = String(raw || ''); const { h } = split(raw); const from = decodeWord(h.from || ''); const m = /<([^>]+)>/.exec(from) || /([^\s<>"]+@[^\s<>"]+)/.exec(from); const email = m ? m[1].trim() : ''; const name = from.replace(/<[^>]*>/, '').replace(/^["'\s]+|["'\s]+$/g, '') || email;
     const t = textOf(raw); let when = ''; try { const d = new Date(h.date); if (!isNaN(d)) when = d.toISOString(); } catch (e) { }
-    const id = (h['message-id'] || '').replace(/^<|>$/g, '').trim(); return { messageId: id || 'eml-' + Math.abs(hash(raw)), conversationId: (h['thread-index'] || h['references'] || '').split(/\s+/)[0] || id || undefined, from: { name, email }, subject: decodeWord(h.subject || '(no subject)'), body: t.text, receivedAt: when || undefined, attachments: t.attachments.map(n => ({ name: n })) }; }
+    const id = (h['message-id'] || '').replace(/^<|>$/g, '').trim(); return { to: (h.to || '').split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(x => x.trim()).filter(Boolean), cc: (h.cc || '').split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(x => x.trim()).filter(Boolean), messageId: id || 'eml-' + Math.abs(hash(raw)), conversationId: (h['thread-index'] || h['references'] || '').split(/\s+/)[0] || id || undefined, from: { name, email }, subject: decodeWord(h.subject || '(no subject)'), body: t.text, receivedAt: when || undefined, attachments: t.attachments.map(n => ({ name: n })) }; }
   function hash(s) { let x = 0; for (let i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) | 0; return x; }
-  const lib = { parseEml };
+  const lib = { parseEml }; root.FWBParseEml = parseEml;
   if (typeof module !== 'undefined' && module.exports) { module.exports = lib; return; }
 
   const F = root.FWB; const { S } = F; const V = root.FWBViews; const ACT = V.ACT; const API = root.FWBApi;

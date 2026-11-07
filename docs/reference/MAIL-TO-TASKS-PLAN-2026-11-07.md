@@ -15,7 +15,7 @@ Reply states: none -> drafted -> approved -> sent (or discarded). `sent` needs `
 
 ## Where the code goes
 - `work/server/_mailtasks.mjs`: pure rules (clean, scenario, route, id, done-when, reply state). Same pattern as `_planfrommsa.mjs`: one copy for server, tests and browser bundle. Test: `tests/mail_tasks.mjs`.
-- `work/server/_mailapi.mjs`: storage and routes `/api/projects/:id/mail`, and the actions on the existing `task_tracking` tool (`mail_list`, `mail_save`, `mail_draft`, `mail_sent`). Connector stays at 39 tools.
+- `work/server/_mailapi.mjs`: storage and routes `/api/projects/:id/mailtasks`, and the actions on the existing `task_tracking` tool (`mail_list`, `mail_save`, `mail_draft`, `mail_sent`). Connector stays at 39 tools.
 - `work/server/_jobs.mjs`: job kinds `fetch_mail`, `draft_reply`, `check_sent`.
 - `src/mailinbox.js`: the Mail inbox card on the Tasks tab (Fluent `fl-` classes). `src/taskengine.js`: mail rule. `src/emlimport.js`: also reads To and Cc.
 - Claude side in step: `work/work.json`, `_skills.mjs`, Team Guide, Claude setup, `src/claudehand.js`, tests `claude_launch`, `connector_skills`, `ui/claude-handoff-check`.

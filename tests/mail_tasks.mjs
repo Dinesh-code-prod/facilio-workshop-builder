@@ -48,7 +48,8 @@ await t('done-when: a Solution area is done only by an accepted version after th
   assert.match(M.isDone(rec, f('2026-11-07T11:00:00Z', [{ quote: 'x', source: 'mail:ml_1 Re: flow' }])), /Work Order was accepted/); assert.equal(M.isDone(rec, {}), '');
 });
 await t('done-when: BRD saved on or after the task day; change request decided; none never resolves', () => {
-  const b = { doneWhen: { type: 'brd_saved', since: '2026-11-07T10:00:00Z' } }; assert.equal(M.isDone(b, { brdDates: ['2026-11-06'] }), ''); assert.match(M.isDone(b, { brdDates: ['2026-11-06', '2026-11-07'] }), /BRD version/);
+  const b = { doneWhen: { type: 'brd_saved', since: '2026-11-07T10:00:00Z' } }; assert.equal(M.isDone(b, { brdDates: ['2026-11-06', '2026-11-07'] }), ''); assert.match(M.isDone(b, { brdDates: ['2026-11-08'] }), /BRD version/);   // no count: only a later day counts
+  const bc = { doneWhen: M.doneWhen({ area: 'brd' }, '2026-11-07T10:00:00Z', 'ml_1', 2) }; assert.equal(M.isDone(bc, { brdCount: 2, brdDates: ['2026-11-09'] }), ''); assert.match(M.isDone(bc, { brdCount: 3 }), /BRD version/);   // a new row in the version history
   const c = { doneWhen: { type: 'cr_decided', since: 'x', crId: 'cr1' } }; assert.equal(M.isDone(c, { crs: [{ id: 'cr1', status: 'Open' }] }), ''); assert.match(M.isDone(c, { crs: [{ id: 'cr1', status: 'Approved' }] }), /decided/);
   assert.equal(M.isDone({ doneWhen: { type: 'none', since: 'x' } }, { brdDates: ['2030-01-01'] }), ''); assert.equal(M.isDone({ doneWhen: null }, {}), '');
 });

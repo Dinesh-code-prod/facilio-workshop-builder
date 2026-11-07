@@ -51,9 +51,9 @@
     return { area, label: AREAS[area], words: hit, module, areaKey: area === 'solution' ? (module ? 'module:' + module : 'area:other') : '', job: area === 'solution' ? 'compare_solution' : '' };
   }
   /** the check that resolves the task. since = ISO time the task was accepted. */
-  function doneWhen(rt, since, id) {
+  function doneWhen(rt, since, id, brdCount) {
     if (rt.area === 'solution') return { type: 'solution_accepted', area: rt.areaKey, since, mailId: id };
-    if (rt.area === 'brd') return { type: 'brd_saved', since };
+    if (rt.area === 'brd') return Number.isInteger(brdCount) && brdCount >= 0 ? { type: 'brd_saved', since, count: brdCount } : { type: 'brd_saved', since };   // count = BRD versions in the history when the task was made
     return { type: 'none' };
   }
   /** a pending inbox record for one cleaned mail, or null when the mail matters to nobody on the project */
@@ -63,12 +63,13 @@
       mail, savedAt: now, doneWhen: null, reply: null };
   }
 
-  /** is the "done when" met? facts: { solutions: { items }, brdDates: ['YYYY-MM-DD'], crs: [{ id, status }] }. Returns the reason (for "Resolved automatically: ...") or '' while open. */
+  /** is the "done when" met? facts: { solutions: { items }, brdCount: number of BRD versions in the history, brdDates: ['YYYY-MM-DD'], crs: [{ id, status }] }. Returns the reason (for "Resolved automatically: ...") or '' while open. */
   function isDone(rec, facts) {
     const w = rec && rec.doneWhen; if (!w || !w.since) return ''; const f = facts || {};
-    if (w.type === 'solution_accepted') { const it = ((f.solutions || {}).items || {})[w.area]; const tag = 'mail:' + w.mailId;
+    if (w.type === 'solution_accepted') { const it = ((f.solutions || {}).items || {})[w.area]; const tag = String(w.mailId);   // the record id; the accepted version quotes it as mail:<id> or in the file name
       if (it && String(it.updatedAt || '') >= w.since && arr(it.sources).some(s => String((s && s.source) || '').includes(tag) || String((s && s.quote) || '').includes(tag))) return 'the solution of ' + w.area.replace(/^(module|area):/, '') + ' was accepted with a version that quotes this mail'; return ''; }
-    if (w.type === 'brd_saved') { const d = w.since.slice(0, 10); return arr(f.brdDates).some(x => String(x).slice(0, 10) >= d) ? 'a BRD version was saved after this task was made' : ''; }
+    if (w.type === 'brd_saved') { const d = w.since.slice(0, 10); const more = Number.isInteger(w.count) ? Number(f.brdCount) > w.count : arr(f.brdDates).some(x => String(x).slice(0, 10) > d);   // a version dated the same day cannot be told apart from an older one, so without a count only a later day counts
+      return more ? 'a BRD version was saved after this task was made' : ''; }
     if (w.type === 'cr_decided') { const c = arr(f.crs).find(x => x && x.id === w.crId); return c && /approved|rejected|declined|accepted|closed|decided/i.test(String(c.status || '')) ? 'the change request was decided' : ''; }
     return '';
   }

@@ -43,18 +43,21 @@
     const PARTS = [['intro', 'Introduction'], ['requirements', 'Requirements'], ['flows', 'Process flows'], ['fields', 'Fields and forms'], ['apps', 'Connected apps'], ['contract', 'Match with the contract']];
     const cases = I().list('utc'); const mods = F.allModules().filter(m => m.inScope); const data = mods.map(m => ({ name: m.name, label: m.label, requirements: reqs.filter(r => (r.modules || []).includes(m.name)).map(r => ({ id: r.id, title: r.title })) })); data.push({ name: '__general', label: 'General requirements', requirements: reqs.filter(r => !(r.modules && r.modules.length)).map(r => ({ id: r.id, title: r.title })) });
     const cov = U() ? U().coverage(data, cases) : { rows: [] };
-    return { openFindings: Object.keys(by).map(k => ({ transcriptId: k, title: title(k), count: by[k] })), reviewMissing: reqs.length ? PARTS.filter(p => !(review[p[0]] && review[p[0]].at)).map(p => ({ part: p[0], label: p[1] })) : [],
+    const MI = V.mailInbox; const mf = MI ? MI.facts() : {}; const MT = root.FWBMailTasks; const recs = MI && MT ? MI.records().filter(r => r.status === 'accepted') : []; const mailOpen = [], mailWhy = {};
+    recs.forEach(r => { const why = MT.isDone(r, mf); if (why) mailWhy['mail:' + r.id] = why; else mailOpen.push({ id: r.id, title: r.title, area: (r.route || {}).area, owner: r.acceptedBy, quote: ((r.mail || {}).subject || '').slice(0, 300), desc: 'Customer mail from ' + (((r.mail || {}).from || {}).name || ((r.mail || {}).from || {}).email || 'the customer') + ': ' + ((r.mail || {}).subject || '') + '. Made when you accepted it in the Mail inbox. Done when: ' + ((r.doneWhen || {}).type === 'solution_accepted' ? 'an accepted version on the Solution tab quotes this mail' : (r.doneWhen || {}).type === 'brd_saved' ? 'a BRD version is saved' : 'you close it here or tell Otto in Teams') + '.' }); });
+    return { mailOpen, mailWhy, openFindings: Object.keys(by).map(k => ({ transcriptId: k, title: title(k), count: by[k] })), reviewMissing: reqs.length ? PARTS.filter(p => !(review[p[0]] && review[p[0]].at)).map(p => ({ part: p[0], label: p[1] })) : [],
       coverageMissing: cov.rows.map(r => ({ module: r.name, label: r.label, count: r.missing.length })), failedCases: cases.filter(c => (c.status === 'Failed' || c.status === 'Blocked') && !c.issue).map(c => ({ id: c.id, tcid: c.tcid, title: c.title })), kpisNoSolution: I().list('kpi').filter(k => !String(k.solution || '').trim()).map(k => ({ id: k.id, name: k.name })) };
   }
   let busy = false;
   /** apply the engine to the open project; quiet unless something changed. force skips the one-minute pause */
   async function run(force) {
     if (busy || V.isCustomer() || S.readonly || !S.project) return 0; if (!force && S.ui.teAt && S.ui.teAt.p === S.project.id && Date.now() - S.ui.teAt.t < 60000) return 0; busy = true;
-    try { I().load(['task', 'utc', 'kpi']); for (let i = 0; i < 24 && !I().ready(['task', 'utc', 'kpi']); i++) await new Promise(r => setTimeout(r, 250)); if (!I().ready(['task', 'utc', 'kpi'])) return 0; S.ui.teAt = { p: S.project.id, t: Date.now() };
-      const now = new Date().toISOString(); const r = reconcile(desired(facts()), I().list('task'), now); let n = 0;
+    try { I().load(['task', 'utc', 'kpi']); for (let i = 0; i < 24 && !I().ready(['task', 'utc', 'kpi']); i++) await new Promise(r => setTimeout(r, 250)); if (!I().ready(['task', 'utc', 'kpi'])) return 0; S.ui.teAt = { p: S.project.id, t: Date.now() }; if (V.mailInbox) await V.mailInbox.ensure();
+      const now = new Date().toISOString(); const fx = facts(); const r = reconcile(desired(fx), I().list('task'), now, fx.mailWhy); let n = 0;
       for (const t of r.create) { await I().put('task', t.id, t); n++; }
       for (const x of r.resolve) { const t = I().get('task', x.id); if (t) { await I().put('task', t.id, Object.assign({}, t, { status: 'Done', completion: 'Resolved automatically: ' + x.why + '.', auto: Object.assign({}, t.auto, { resolvedBy: 'engine', resolvedAt: now }) })); n++; } }
       for (const x of r.reopen) { const t = I().get('task', x.id); if (t) { await I().put('task', t.id, Object.assign({}, t, { status: 'To Do', completion: '', auto: Object.assign({}, t.auto, { resolvedBy: '', resolvedAt: '' }) })); n++; } }
+      if (V.mailInbox) await V.mailInbox.markResolved(I().list('task'));   // a finished mail task (by the engine or by a person) queues the reply draft once
       if (n) { V.render(); } return n;
     } catch (e) { return 0; } finally { busy = false; }
   }

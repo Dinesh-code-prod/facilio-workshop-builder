@@ -25,27 +25,27 @@ await t('a team mail the person never saw (sent to another member) and a mention
   const r = await CONNECTOR.mail_save(S, { project: 'p1', mails: [mail({ messageId: 'm2', to: ['ravi@facilio.com'], subject: 'BRD update', body: 'Please change the BRD.' }), mail({ messageId: 'm3', to: ['x@y.com'], subject: 'Question', body: 'About Inventory.' })] }); assert.equal(r.stored, 2);
   const l = await CONNECTOR.mail_list(S, { project: 'p1' }); assert.deepEqual(l.mails.map(x => x.scenario).sort(), ['mention', 'team', 'to']); id = l.mails.find(x => x.route.area === 'solution').id;
   const a = await d.CONNECTOR.mail_list(S, { project: 'p1', id }); assert.equal(a.mails[0].mail.body.length > 0, true);
-  const acc = await routes['POST /api/projects/:id/mail/:mid/accept']({}, { id: 'p1', mid: id }); assert.deepEqual([acc.b.mail.status, acc.b.mail.doneWhen.type, acc.b.mail.doneWhen.area, acc.b.mail.acceptedBy], ['accepted', 'solution_accepted', 'module:Work Order', 'me@facilio.com']);
-  await assert.rejects(() => routes['POST /api/projects/:id/mail/:mid/accept']({}, { id: 'p1', mid: id }), /already accepted/);
+  const acc = await routes['POST /api/projects/:id/mailtasks/:mid/accept']({}, { id: 'p1', mid: id }); assert.deepEqual([acc.b.mail.status, acc.b.mail.doneWhen.type, acc.b.mail.doneWhen.area, acc.b.mail.acceptedBy], ['accepted', 'solution_accepted', 'module:Work Order', 'me@facilio.com']);
+  await assert.rejects(() => routes['POST /api/projects/:id/mailtasks/:mid/accept']({}, { id: 'p1', mid: id }), /already accepted/);
 });
 await t('resolved queues ONE draft_reply job; a repeat does not queue another', async () => {
-  const a = await routes['POST /api/projects/:id/mail/:mid/resolved']({ why: 'the solution was accepted' }, { id: 'p1', mid: id }); assert.equal(a.b.job, 'jb_1'); assert.equal(jobs[0].b.kind, 'draft_reply'); assert.equal(jobs[0].b.ref, id); assert.ok(KINDS.draft_reply && KINDS.fetch_mail && KINDS.check_sent);
-  const b = await routes['POST /api/projects/:id/mail/:mid/resolved']({ why: 'again' }, { id: 'p1', mid: id }); assert.equal(b.b.job, null); assert.equal(jobs.length, 1);
+  const a = await routes['POST /api/projects/:id/mailtasks/:mid/resolved']({ why: 'the solution was accepted' }, { id: 'p1', mid: id }); assert.equal(a.b.job, 'jb_1'); assert.equal(jobs[0].b.kind, 'draft_reply'); assert.equal(jobs[0].b.ref, id); assert.ok(KINDS.draft_reply && KINDS.fetch_mail && KINDS.check_sent);
+  const b = await routes['POST /api/projects/:id/mailtasks/:mid/resolved']({ why: 'again' }, { id: 'p1', mid: id }); assert.equal(b.b.job, null); assert.equal(jobs.length, 1);
 });
 await t('the reply is stored unapproved; Sent Items cannot be confirmed before a person approves; then the mail closes', async () => {
   await assert.rejects(() => CONNECTOR.mail_sent(S, { project: 'p1', id, sentRef: 'x' }), /no reply|approved/i);
   const dr = await CONNECTOR.mail_draft(S, { project: 'p1', id, subject: 'Re: Process flow change', body: 'Done, see the Solution tab.', to: ['sara@customer.com'] }); assert.equal(dr.reply.state, 'drafted'); assert.match(dr.note, /nothing was sent/);
   await assert.rejects(() => CONNECTOR.mail_sent(S, { project: 'p1', id, sentRef: 'x' }), /approved/);
-  await assert.rejects(() => routes['POST /api/projects/:id/mail/:mid/sent-check']({}, { id: 'p1', mid: id }), /Approve the reply first/);
-  const ed = await routes['POST /api/projects/:id/mail/:mid/reply']({ event: 'edit', body: 'Edited text.' }, { id: 'p1', mid: id }); assert.equal(ed.b.mail.reply.body, 'Edited text.');
-  const ap = await routes['POST /api/projects/:id/mail/:mid/reply']({ event: 'approve' }, { id: 'p1', mid: id }); assert.equal(ap.b.mail.reply.state, 'approved');
-  await assert.rejects(() => routes['POST /api/projects/:id/mail/:mid/reply']({ event: 'sent' }, { id: 'p1', mid: id }), /event must be/);
-  const chk = await routes['POST /api/projects/:id/mail/:mid/sent-check']({}, { id: 'p1', mid: id }); assert.ok(chk.b.job); assert.equal(jobs[jobs.length - 1].b.kind, 'check_sent');
+  await assert.rejects(() => routes['POST /api/projects/:id/mailtasks/:mid/sent-check']({}, { id: 'p1', mid: id }), /Approve the reply first/);
+  const ed = await routes['POST /api/projects/:id/mailtasks/:mid/reply']({ event: 'edit', body: 'Edited text.' }, { id: 'p1', mid: id }); assert.equal(ed.b.mail.reply.body, 'Edited text.');
+  const ap = await routes['POST /api/projects/:id/mailtasks/:mid/reply']({ event: 'approve' }, { id: 'p1', mid: id }); assert.equal(ap.b.mail.reply.state, 'approved');
+  await assert.rejects(() => routes['POST /api/projects/:id/mailtasks/:mid/reply']({ event: 'sent' }, { id: 'p1', mid: id }), /event must be/);
+  const chk = await routes['POST /api/projects/:id/mailtasks/:mid/sent-check']({}, { id: 'p1', mid: id }); assert.ok(chk.b.job); assert.equal(jobs[jobs.length - 1].b.kind, 'check_sent');
   const sent = await CONNECTOR.mail_sent(S, { project: 'p1', id, sentRef: 'Re: Process flow change to sara@customer.com 12:01' }); assert.equal(sent.status, 'closed');
   await assert.rejects(() => CONNECTOR.mail_draft(S, { project: 'p1', id, body: 'again' }), /closed/);
 });
 await t('dismiss keeps a mail out; customers and viewers are refused', async () => {
-  const l = await CONNECTOR.mail_list(S, { project: 'p1' }); const x = l.mails[0].id; const r = await routes['POST /api/projects/:id/mail/:mid/dismiss']({}, { id: 'p1', mid: x }); assert.equal(r.b.mail.status, 'dismissed');
+  const l = await CONNECTOR.mail_list(S, { project: 'p1' }); const x = l.mails[0].id; const r = await routes['POST /api/projects/:id/mailtasks/:mid/dismiss']({}, { id: 'p1', mid: x }); assert.equal(r.b.mail.status, 'dismissed');
   assert.equal((await CONNECTOR.mail_save(S, { project: 'p1', mails: [mail({ messageId: l.mails[0].mail.messageId })] })).results[0].status, 'duplicate');   // still known, so Claude does not bring it back
   role = 'customer'; await assert.rejects(() => CONNECTOR.mail_list(S, { project: 'p1' }), /project team/); role = 'lead';
 });
