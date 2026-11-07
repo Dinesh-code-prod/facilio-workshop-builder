@@ -1285,6 +1285,10 @@
        "type": "string",
        "description": "Only for save_mockup: the one-hour file link of the prototype index.html (Meteor get_prototype with files true)"
       },
+      "videoUrl": {
+       "type": "string",
+       "description": "Only for save_mockup: the share link of the Comet video of this card (https://comet.facilio.work/...); alone or with pageUrl"
+      },
       "pageName": {
        "type": "string",
        "description": "Only for save_mockup: the file name to keep, default index.html"

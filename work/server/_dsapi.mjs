@@ -84,6 +84,12 @@ export function installDs(d) {
     async mockup_save_page(s, b) {
       const p = await pickProject(s, b.project); const { role } = await projectAccess(s, p.id, 'edit'); if (role === 'customer') throw new HttpError(403, 'Mockup pages are for the project team');
       const key = String(b.pageKey || '').trim().slice(0, 300); if (!/^(portfolio:all|flow:|module:|link:|app:)/.test(key)) throw new HttpError(400, 'pageKey must be the key of a mockup card: portfolio:all, or flow:/module:/link:/app: followed by the card name (the Mockup tab lists them).');
+      const vid = String(b.videoUrl || '').trim();
+      if (vid) {   // the Comet video of this card: only the link is kept (a video file is too large for the project); it shows on the card and in the client mockup
+        let v; try { v = new URL(vid); } catch (e) { throw new HttpError(400, 'videoUrl must be the share link of the Comet video'); } if (v.protocol !== 'https:' || v.hostname !== 'comet.facilio.work') throw new HttpError(400, 'videoUrl must be a Comet link (https://comet.facilio.work/...)');
+        const at0 = new Date().toISOString(); await update(p.id, 'mockup_pages', doc => { const items = Object.assign({}, doc.items); items[key] = Object.assign({}, items[key], { video: v.href.slice(0, 600), videoBy: (s.name || s.email || '') + ' (Claude)', videoAt: at0 }); return { doc: { items } }; }); await audit(p.id, s.id, 'mockup-video', key);
+        if (!String(b.pageUrl || '').trim()) return { project: p.name, key, video: v.href, note: 'Saved. The Comet video shows on the card in the Mockup tab and in the client mockup.' };
+      }
       let u; try { u = new URL(String(b.pageUrl || '')); } catch (e) { throw new HttpError(400, 'pageUrl must be the file link Meteor gave for index.html'); }
       if (u.protocol !== 'https:' || !/^facilio-work-sites[.]s3[.][a-z0-9-]+[.]amazonaws[.]com$/.test(u.hostname)) throw new HttpError(400, 'pageUrl must be a Meteor file link (the one-hour link from get_prototype with files)');
       let r; try { r = await fetch(u.href); } catch (e) { throw new HttpError(502, 'The Meteor file could not be fetched. Ask for a fresh link (they last one hour) and try again.'); } if (!r.ok) throw new HttpError(502, 'The Meteor file link did not open (status ' + r.status + '). Ask for a fresh link and try again.');

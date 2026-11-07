@@ -27,4 +27,10 @@ await t('a good page is stored as mockup_html and recorded under its card key; a
   assert.deepEqual(docs.mockup_pages.items['portfolio:all'].file, { id: 'f_1', name: 'Portfolio page.html', size: stored[0].text.length }); assert.match(docs.mockup_pages.items['portfolio:all'].by, /Claude/);
   await tool(s, { pageKey: 'flow:workorder:f1', pageUrl: OK }); assert.deepEqual(Object.keys(docs.mockup_pages.items), ['portfolio:all', 'flow:workorder:f1'], 'a second card is added beside the first');
 });
+await t('a Comet video link is kept on the card (link only, Comet host only), alone or beside the page', async () => {
+  const sq = JSON.parse(fs.readFileSync(new URL('../work/work.json', import.meta.url), 'utf8')).mcp.tools.find(x => x.name === 'session_questions').input_schema.properties; assert.ok(sq.videoUrl);
+  await rejects(tool(s, { pageKey: 'portfolio:all', videoUrl: 'https://evil.example.com/v/1' }), 400); await rejects(tool(s, { pageKey: 'portfolio:all', videoUrl: 'http://comet.facilio.work/v/1' }), 400); const before = stored.length;
+  const r = await tool(s, { pageKey: 'portfolio:all', videoUrl: 'https://comet.facilio.work/#/v/abc' }); assert.equal(r.video, 'https://comet.facilio.work/#/v/abc'); assert.equal(stored.length, before, 'no file is stored for a video');
+  assert.equal(docs.mockup_pages.items['portfolio:all'].video, 'https://comet.facilio.work/#/v/abc'); assert.ok(docs.mockup_pages.items['portfolio:all'].file, 'the page already saved stays');
+});
 console.log(n + ' mockup push checks passed');
