@@ -66,3 +66,12 @@ console.log('11 BRD scope and format checks passed');
   F.doc('solutions').items = {}; assert.ok(!build(['workorder']).some(b => /Agreed Solution: Other Areas|Solution para/.test(b.text || '')), 'no solution text: no section');
   console.log('BRD built from the solution records');
 }
+{   // areas the team added: an integration has its own place and the module points to it; a linked area sits inside its module
+  const L = globalThis.FWBSolutionLogic; let d = L.addArea({}, { label: 'Portal return', type: 'int_portal', modules: ['workorder'] }, 'a', 't'); const ik = d.key; d = L.save(d.doc, ik, 'Service requests are sent back to the customer portal.', { at: 't' });
+  d = L.addArea(d, { label: 'Asset labels', type: 'other', modules: ['asset'] }, 'a', 't'); const lk = d.key; d = L.save(d.doc, lk, 'Labels are printed at handover.', { at: 't' }); F.doc('solutions').items = d.items; F.doc('solutions').custom = d.custom;
+  const bs = build(['workorder', 'asset']); const txt = bs.map(b => b.text || '');
+  assert.ok(txt.includes('Related solution: Asset labels') && txt.includes('Labels are printed at handover.'), 'a linked area shows inside its module');
+  assert.ok(txt.some(x => /This module takes part in: Portal return/.test(x)), 'the module points to the integration'); const ih = bs.findIndex(b => b.t === 'h' && b.text === 'Integrations' && b.id.includes('h2g'));
+  assert.ok(ih > 0 && bs[ih + 1].text === 'Portal return' && bs[ih + 2].text === 'Service requests are sent back to the customer portal.', 'the integration has its own place');
+  F.doc('solutions').items = {}; F.doc('solutions').custom = []; console.log('BRD shows added areas and integrations');
+}

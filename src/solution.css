@@ -44,3 +44,6 @@ body .paper .blk:has(> .blk-ask) > h1 { padding-right: 140px; }
 body .ds-fold { background: var(--fl-bg1); border: 1px solid var(--fl-st2); border-radius: var(--fl-r-card); padding: 8px 12px; margin: 0 0 12px; }
 body .ds-fold > summary { cursor: pointer; font: 600 14px/20px var(--fl-font); color: var(--fl-fg1); }
 body .ds-fold[open] > summary { margin-bottom: 8px; }
+
+body .fl-sol-mods { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 4px 0 8px; font: 400 14px/20px var(--fl-font); }
+body .fl-sol-mods label { display: inline-flex; align-items: center; gap: 6px; }

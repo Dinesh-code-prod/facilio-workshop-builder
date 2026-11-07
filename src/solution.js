@@ -55,7 +55,7 @@
   const guard = () => { if (ro()) { toast('This project is read-only for you.', 4000, true); return true; } return false; };
   const ui = () => S.ui.sol || (S.ui.sol = { key: '', draft: null });
   const mods = () => (F.allModules() || []).filter(m => m.inScope).map(m => ({ name: m.name, label: m.label || m.name })).sort((a, b) => a.label.localeCompare(b.label));
-  const areas = () => L().areasFor(mods());
+  const areas = () => L().areasFor(mods(), doc());
   const doc = () => F.doc('solutions') || { items: {} };
   const props = () => ((F.doc('design_proposals') || {}).items) || [];
   const cur = () => { const as = areas(); return as.find(a => a.key === ui().key) || as[0]; };
@@ -85,11 +85,18 @@
       n(props().filter(p => p.kind === 'connectedapp' && p.status === 'applied' && (!m || String(p.module).toLowerCase() === m.toLowerCase() || String(p.module).toLowerCase() === String((a.label || '')).toLowerCase())).length, 'connected app'), n(arr(w.questions).filter(q => q && q.status !== 'closed' && (!m || arr(q.modules).includes(m))).length, 'open question')];
     return '<p class="xs muted">Claude reads for this area: ' + esc(parts.join(', ')) + ', the fields and forms, access, what was said in the sessions, the contract scope and the solutions of the other areas.</p>';
   }
+  /** the line under the title of an area the team added, and the guide for an integration with no text yet */
+  function about(a, text) {
+    const mm = mods(), lk = (a.custom || a.group === 'Integrations') ? L().linkedModules(a, doc(), mm).map(n => (mm.find(x => x.name === n) || {}).label || n) : [];
+    return (a.custom ? '<p class="xs muted">Added by your team' + (a.keywords && a.keywords.length ? '. Keywords: ' + esc(a.keywords.join(', ')) : '') + '.</p>' : '')
+      + (lk.length ? '<p class="xs muted">Linked to ' + esc(lk.join(', ')) + (a.group === 'Integrations' ? ': those module sections of the BRD point to this integration.' : ': the BRD shows this text inside those module sections.') + '</p>' : (a.custom ? '<p class="xs muted">Not linked to a module yet. Name a module in the text or the keywords and the BRD links it.</p>' : ''))
+      + (a.group === 'Integrations' && !text ? '<div class="fl-sol-r"><h4>What to cover for an integration</h4><ul>' + L().INT_HINT.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></div>' : '');
+  }
   function detail(a) {
     const d = doc(), rec = L().recOf(d, a.key) || {}, u = ui(), reqs = L().reqLines(S.ws.requirements, a.key), ps = L().proposalsFor(props(), a.key), text = u.draft && u.draft.key === a.key ? u.draft.text : (rec.text || '');
     const link = a.key === 'area:kpis' || a.key === 'area:sla' ? '<button type="button" class="btn sm" data-act="nav" data-view="slakpi">Open KPIs &amp; SLA matrix</button>' : a.key === 'area:roles' ? '<button type="button" class="btn sm" data-act="nav" data-view="roles">Open Roles &amp; access</button>' : a.key === 'area:notifications' ? '<button type="button" class="btn sm" data-act="nav" data-view="notifications">Open Notifications</button>' : '';
     const busy = jobsOpen(['update_solution', 'compare_solution']);
-    return '<section class="fl-card fl-sol-d"><div class="fl-sol-dh"><h2 class="fl-card-h">' + esc(a.label) + '</h2>' + chip(L().statusOf(d, a.key)) + link + '</div>'
+    return '<section class="fl-card fl-sol-d"><div class="fl-sol-dh"><h2 class="fl-card-h">' + esc(a.label) + '</h2>' + chip(L().statusOf(d, a.key)) + link + (a.custom ? '<button type="button" class="btn sm" data-act="solRemove" data-key="' + esc(a.key) + '">Remove this area</button>' : '') + '</div>' + about(a, rec.text)
       + (a.key.startsWith('module:') ? '<div class="fl-sol-r"><h4>Customer requirements (confirmed, read only)</h4>' + (reqs.length ? '<ul>' + reqs.map(r => '<li><b>' + esc(r.id) + '</b> ' + esc(r.text || r.title) + '</li>').join('') + '</ul>' : '<p class="fl-none">No confirmed requirement for this module yet. The solution can still be written; it is read by the BRD.</p>') + '</div>' : '')
       + (ps.length ? '<div class="fl-sol-ps">' + ps.map(p => proposalCard(p, rec.text || '')).join('') + '</div>' : '')
       + '<label class="f" for="solText">Solution (written in words, as it will read in the BRD; a blank line starts a new paragraph)</label><textarea id="solText" rows="11" maxlength="6000"' + (ro() ? ' readonly' : '') + '>' + esc(text) + '</textarea>'
@@ -106,7 +113,7 @@
     const head = '<div class="page-header"><div class="t"><h1>Solution</h1><p>The agreed solution of each module and area, in words. The BRD is built from this page: change the text here and the BRD follows. Claude can propose changes; you accept them.</p></div></div>';
     if (!mods().length) return head + '<div class="page-body"><div class="card empty"><h3>No module is in scope yet</h3><p>Switch on the modules the project covers on System Modules &amp; Form Builder. The solution list follows that list.</p><div class="row empty-acts"><button class="btn primary" data-act="nav" data-view="modules">Open the modules</button></div></div></div>';
     const a = cur(), busy = jobsOpen(['compare_solution']);
-    return head + '<div class="page-body"><div class="card fl-sol-all"><div class="fl-cmd-bar"><button type="button" class="btn" data-act="solWord">Export Word</button><button type="button" class="btn" data-act="solDrop"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Claude is comparing the file' : 'Drop a file') + '</button><span class="xs muted">Drop the customer’s changed file (Word, PDF, Excel or e-mail) anywhere on this page. Claude compares it and proposes updates only where it differs.</span></div>'
+    return head + '<div class="page-body"><div class="card fl-sol-all"><div class="fl-cmd-bar"><button type="button" class="btn primary" data-act="solAdd">+ Add an area or solution</button><button type="button" class="btn" data-act="solWord">Export Word</button><button type="button" class="btn" data-act="solDrop"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Claude is comparing the file' : 'Drop a file') + '</button><span class="xs muted">Drop a file (Word, PDF, Excel or e-mail) anywhere on this page: Claude compares it with the solutions, proposes updates where it differs, and proposes a new area for anything that fits none.</span></div>'
       + '<details class="fl-sol-all-ask"><summary>Ask Claude about all areas</summary><textarea id="solAskAll" rows="3" maxlength="600" placeholder="For example: the customer now wants all approvals to go to the site manager first."></textarea><div class="fl-cmd"><button type="button" class="btn" data-act="solAsk" data-key="">Ask Claude</button><button type="button" class="btn" data-act="solOpenClaude" data-key="">Open in Claude</button></div></details>'
       + '<div class="fl-sol"><nav class="fl-sol-n" aria-label="Solution areas">' + nav() + '</nav><div>' + detail(a) + '</div></div></div>'
       + '<details class="fl-sol-cov"><summary>Coverage: what is recorded per module</summary>' + coverage() + '</details></div>';
@@ -135,6 +142,37 @@
     if (!note) { toast('Write what you want changed first.', 4000, true); return; }
     const r = await J().post('/jobs', { kind: 'update_solution', note, section: key }); if (box) box.value = ''; toast(r && r.duplicate ? 'Claude already has this request.' : 'Sent. Claude’s proposal appears here when it is ready.', 5000); startAsst();
   });
+  // ---------- add an area or a solution: a name (or none, to let Claude sort a file or pasted text into the right areas), the modules it touches, keywords, the text, a file ----------
+  const add = () => S.ui.solAdd || (S.ui.solAdd = { file: null });
+  ACT.solAdd = () => {
+    if (guard()) return; add().file = null; const mm = mods();
+    V.drawer('Add an area or a solution', '<p class="small">Add something the contract fixes that has no place yet: an integration with a service desk, procurement or ERP system, the customer’s own portal, a connected app, a report, or any other commitment. Write the solution, paste it, or add a file. Leave the name empty to let Claude sort a file or pasted text into the right areas.</p>'
+      + '<label class="f" for="saName">Name</label><input type="text" id="saName" maxlength="80" placeholder="For example: Service requests to the customer portal"><label class="f" for="saType">Type</label><select id="saType">' + L().TYPES.map(t => '<option value="' + esc(t[0]) + '">' + esc(t[1]) + '</option>').join('') + '</select>'
+      + '<label class="f">Modules it touches (the BRD shows it with them)</label><div class="fl-sol-mods">' + mm.map(m => '<label><input type="checkbox" class="sa-mod" value="' + esc(m.name) + '"> ' + esc(m.label) + '</label>').join('') + '</div>'
+      + '<label class="f" for="saKw">Keywords (separated by commas)</label><input type="text" id="saKw" maxlength="200" placeholder="service request, SR, portal"><p class="xs muted">A module named in the keywords, the name or the text is linked on its own.</p>'
+      + '<label class="f" for="saText">Solution (write or paste)</label><textarea id="saText" rows="8" maxlength="6000"></textarea>'
+      + '<div class="fl-cmd"><button type="button" class="btn sm" data-act="solAddFile">Add a file</button><span class="xs muted" id="saFile">Or drop a file here: Word, PDF, Excel or e-mail.</span></div>',
+      '<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="solAddSave">Add</button>', {});
+  };
+  ACT.solAddFile = a => V.busy(a, async () => {
+    if (guard()) return; const fs = await V.pickFile('.docx,.pdf,.xlsx,.xlsm,.xls,.csv,.txt,.eml,.msg', false); const f = Array.isArray(fs) ? fs[0] : fs; if (!f) return;
+    const rec = await root.FWBApi.uploadFile(S.project.id, f, 'solution_input', { from: 'solution tab, add' }); add().file = { id: rec.id, name: f.name }; const el = document.getElementById('saFile'); if (el) el.textContent = f.name + ' is attached.';
+  });
+  ACT.solAddSave = a => V.busy(a, async () => {
+    if (guard() || J().guard()) return; const g = i => (document.getElementById(i) || {}).value || '', st = add(); const name = g('saName').trim(), text = g('saText').trim(); let file = st.file;
+    if (!name && !text && !file) { toast('Give it a name, write or paste the solution, or add a file.', 5000, true); return; }
+    const by_ = by(), at = new Date().toISOString(); let key = '';
+    if (name) {
+      const kw = g('saKw').split(',').map(x => x.trim()).filter(Boolean), md = Array.from(document.querySelectorAll('.sa-mod:checked')).map(x => x.value); let r;
+      try { r = L().addArea(doc(), { label: name, type: g('saType'), modules: md, keywords: kw }, by_, at); if (text) r.doc = L().save(r.doc, r.key, text, { by: by_, at, why: 'Added on the Solution tab', sources: [{ source: 'Written or pasted on the Solution tab' }] }); } catch (e) { toast(e.message, 5000, true); return; }
+      key = r.key; write(r.doc, 'Solution area added', name); ui().key = key; ui().draft = null;
+    } else if (text && !file) {   // no name: Claude sorts the pasted text, so it travels as a file the connector can read
+      const f = new File([text], 'pasted-solution.txt', { type: 'text/plain' }); const rec = await root.FWBApi.uploadFile(S.project.id, f, 'solution_input', { from: 'solution tab, pasted' }); file = { id: rec.id, name: f.name };
+    }
+    if (file) { const r = await J().post('/jobs', { kind: 'compare_solution', ref: file.id, note: (name ? 'New area: ' + name + '. ' : '') + file.name, section: key }); toast(r && r.duplicate ? 'Claude already has this file.' : 'Sent. Claude reads ' + file.name + (key ? ' for this area' : ' and sorts it into the areas') + ' and proposes the text here.', 6000); startAsst(); } else toast('Added.', 3000);
+    V.closeDrawer(); V.render();
+  });
+  ACT.solRemove = async a => { if (guard()) return; const key = a.getAttribute('data-key'); if (!(await V.confirmDialog('Remove this area', 'The area leaves the list and the BRD. Its text and history are kept in the project, so adding an area with the same name brings them back.', 'Remove', true))) return; write(L().removeArea(doc(), key), 'Solution area removed', key); ui().key = ''; V.render(); };
   /** the short connector prompt for a person's own Claude session (no job needed) */
   function openPrompt(key, note) {
     const label = key ? ((areas().find(x => x.key === key) || {}).label || key) : 'all areas'; const p = S.project || {};

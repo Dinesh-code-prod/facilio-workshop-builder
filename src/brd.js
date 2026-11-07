@@ -226,7 +226,7 @@
           const es = rows.flatMap(r => (r.esc || []).filter(e => e && (e.after || e.to)).map((e, i) => [ml(r.module) + ' / ' + r.priority, 'Level ' + (i + 1), e.after || '', e.to || ''])); if (es.length) { H(2, 'Escalation Matrix', 'h2em'); TB(['Module / priority', 'Level', 'Duration', 'Role'], es, [2.2, 1, 1.3, 2], 'slaesc'); } }
       }
       else if (sid === 'solutions') {   // the fixed areas of the Solution tab that have text: connected apps, PDF templates, KPIs, SLA, notifications, approvals, roles, other commitments
-        const oa = SOL().otherAreas(F.doc('solutions')); if (oa.length) { H(1, ++secNo + '. Agreed Solution: Other Areas', 'h'); oa.forEach(a => { H(2, a.label, 'h2:' + a.key); a.paras.forEach((t, i) => P(t, 'sol:' + a.key + ':' + i)); }); }
+        const oa = SOL().otherAreas(F.doc('solutions'), inScope.map(x => ({ name: x.name, label: x.label }))); if (oa.length) { H(1, ++secNo + '. Agreed Solution: Other Areas', 'h'); let intHead = false; oa.forEach(a => { const isI = a.group === 'Integrations'; if (isI && !intHead) { intHead = true; H(2, 'Integrations', 'h2g:integrations'); } H(isI ? 3 : 2, a.label, 'h2:' + a.key); a.paras.forEach((t, i) => P(t, 'sol:' + a.key + ':' + i)); }); }
       }
       else if (sid === 'kpis') {
         const ks = (root.FWBViews.items ? root.FWBViews.items.list('kpi') : []).filter(k => !k.module || scopeNames.has(k.module)); const ml = n => (!n ? 'General' : ((F.moduleView(n) || {}).label || n));
@@ -267,7 +267,7 @@
     }
 
     function moduleSection(m) {
-      const w = S.ws.modules[m.name] || {}; secNo++; const std = includeStd(); const modSol = SOL().paras(SOL().textOf(F.doc('solutions'), 'module:' + m.name));
+      const w = S.ws.modules[m.name] || {}; secNo++; const std = includeStd(); const modSol = SOL().paras(SOL().textOf(F.doc('solutions'), 'module:' + m.name)); const solMods = inScope.map(x => ({ name: x.name, label: x.label })), relSol = SOL().relatedFor(F.doc('solutions'), m.name, solMods), intSol = SOL().integrationsFor(F.doc('solutions'), m.name, solMods);   // areas of the Solution tab linked to this module by the person or by a keyword
       H(1, secNo + '. ' + m.label.toUpperCase(), 'h', { pageBreakBefore: true });
       H(2, 'Module Purpose', 'h2p'); P(T.modulePurpose(m.name), 'purpose');
       if (m.origin === 'proposed' && w.reg) { const g = w.reg; [['Customer terminology', g.terminology], ['Business owner', g.owner], ['Category', g.category], ['Scope status', g.scopeStatus], ['Business process', g.process], ['Related standard modules', g.relatedStd], ['Related custom modules', g.relatedCustom], ['Dependencies', g.dependencies], ['Customer confirmation', g.confirmation ? g.confirmation + (g.confirmedBy ? ' by ' + g.confirmedBy : '') : ''], ['Evidence', g.evidence]].forEach(([l, v]) => { if (v) L(l + ':', v, 'reg' + F.slug(l).slice(0, 8)); }); P('This module is a workshop proposal. It has not been created in the live Facilio organisation.', 'regnote'); }
@@ -334,6 +334,8 @@
       }
       const cs = F.changeSummary(); const mine = [].concat(cs.additions.map(x => ['Addition', x]), cs.modifications.map(x => ['Modification', x]), cs.removals.map(x => ['Removal', x])).filter(([, x]) => x.module === m.name);
       if (mine.length) { H(2, 'Proposed Changes', 'h2c'); TB(['Change', 'Area', 'Item', 'Detail'], mine.map(([k, x]) => [k, x.area, x.item, x.detail]), [1, 1, 2, 3], 'chg'); }
+      relSol.forEach(a => { H(2, 'Related solution: ' + a.label, 'h2rs:' + a.key); a.paras.forEach((t, i) => P(t, 'sol:' + a.key + ':' + i)); });
+      if (intSol.length) { H(2, 'Integrations', 'h2in'); P('This module takes part in: ' + intSol.join('; ') + '. The solution is written in the section Agreed Solution: Other Areas.', 'intref'); }
       H(2, 'Limitations, Assumptions & Open Questions', 'h2l'); const lim = [];
       const fo = F.effFields(m.name).filter(f => f.formOnly).length; if (fo) lim.push(fo + ' platform fields appear only on forms; their data-model attributes are ' + TBC + '.');
       flows.forEach(f => { const n = f.transitions.filter(t => !t.removed && t.enabled !== false && t.type === 'user' && (t.actors || []).every(F.isTbc)).length; if (n) lim.push(n + ' transition(s) in ' + q(f.name) + ' have no configured role and are shown as “User / Role to Be Confirmed”.'); });

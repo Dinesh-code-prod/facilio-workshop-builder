@@ -182,6 +182,9 @@
 
   // ---------- render ----------
   let mode = 'boot'; // boot | auth | projects | workspace
+  // which colour a page carries: the sidebar group it sits in (0 project, 1 discover, 2 design and build, 3 launch and support, 4 share with the customer, 5 integrations and admin); a customer login always uses the project blue
+  const SEC_OF_GROUP = [0, 1, 1, 2, 2, 3, 3, 3, 4, 4, 5, 5];
+  function secOf(key) { if (S.user && S.user.kind === 'customer') return 0; const i = NAV.findIndex(g => g.items.some(it => it[0] === key)); return i < 0 ? 0 : (SEC_OF_GROUP[i] || 0); }
   function render() {
     if (!S.user) { const up = document.getElementById('userPop'); if (up) up.remove(); }   // signed out: no account menu on the sign-in screen
     const app = document.getElementById('app'); if (!app) return;
@@ -199,7 +202,7 @@
     let body; if (V.ui && V.ui.blocked(key)) body = `<div class="page-body">${V.ui.denied('this page')}</div>`; else try { body = view.html(); } catch (e) { console.error(e); body = `<div class="page-body">${V.ui ? V.ui.error('This page could not be displayed', 'Something went wrong while drawing this page. Your work is safe. Try again, or go back to the overview. (' + String((e && e.message) || e).slice(0, 140) + ')') : '<div class="notice err">This view could not be displayed.</div>'}</div>`; }
     const sbOld = document.querySelector('.sidebar'); const sbTop = sbOld ? sbOld.scrollTop : (S.ui.navScroll || 0); // the whole shell is rebuilt on every render: carry the sidebar's scroll position across so a click never moves it
     if (body.indexOf('ob-focus-page') >= 0 || body.indexOf('wb-focus-page') >= 0) { app.innerHTML = body; if (view.mount) try { view.mount(); } catch (e) { console.error(e); } return; }   // the Excel sheet opened in its own tab: the sheet and nothing else
-    app.innerHTML = navbarHtml(true) + `<div class="shell"><nav class="sidebar" id="projNav" aria-label="Workspace">${sidebarHtml()}</nav><main class="main" id="main">${crumbHtml()}<div class="page">${V.phaseStrip ? V.phaseStrip() : ''}${body}</div></main></div>`;
+    app.innerHTML = navbarHtml(true) + `<div class="shell"><nav class="sidebar" id="projNav" aria-label="Workspace">${sidebarHtml()}</nav><main class="main" id="main" data-sec="${secOf(key)}">${crumbHtml()}<div class="page">${V.phaseStrip ? V.phaseStrip() : ''}${body}</div></main></div>`;
     const m = document.querySelector('.main'); if (m) m.scrollTop = scroll; const sbNew = document.querySelector('.sidebar'); if (sbNew) sbNew.scrollTop = sbTop;
     if (view.mount) try { view.mount(); } catch (e) { console.error(e); }
     if (V.motion) V.motion.route(key + '|' + (S.project ? S.project.id : ''));
@@ -261,7 +264,7 @@
   // ---------- drop a file on any import button or area (7 Nov 2026) ----------
   // Every action that asks for a file (V.pickFile) can also take a file dropped on its button, or anywhere in the card or window that holds exactly one such button.
   // The dropped file is handed to the same action, so the same checks and the same saving apply. A file that does not match the accepted types is refused with a message.
-  const DROP_ACTS = new Set('brdAskFile brdImportFile brdLogoUp brdSampleUp ciFileAdd ciImport ctUpload dashPick dmFile drLogoUp fiOpen ftrLoadRes ftrImport kpiImport guPick importConfig koReplaceMsa npMsa npZip onbCheck onbFileUp onbPkg opkValidateZip planUpload repAtt rsAddDoc rsAddFile sesImport soPickEv tkAttach tkNewFile trPick mkHtmlUp shPkg ugImgAdd solDrop ugLogo uploadDeck uploadMsa utcAttach vgPick vgTr wbImgPick wsLoadFile xfImg'.split(' '));
+  const DROP_ACTS = new Set('brdAskFile brdImportFile brdLogoUp brdSampleUp ciFileAdd ciImport ctUpload dashPick dmFile drLogoUp fiOpen ftrLoadRes ftrImport kpiImport guPick importConfig koReplaceMsa npMsa npZip onbCheck onbFileUp onbPkg opkValidateZip planUpload repAtt rsAddDoc rsAddFile sesImport soPickEv tkAttach tkNewFile trPick mkHtmlUp shPkg ugImgAdd solAddFile solDrop ugLogo uploadDeck uploadMsa utcAttach vgPick vgTr wbImgPick wsLoadFile xfImg'.split(' '));
   V.DROP_ACTS = DROP_ACTS;
   const dropBtn = t => { const el = t && t.closest && t.closest('[data-act]'); if (el && DROP_ACTS.has(el.getAttribute('data-act'))) return el; const box = t && t.closest && t.closest('.card, .drawer, .modal, .dlg'); if (!box) return null; const b = Array.from(box.querySelectorAll('[data-act]')).filter(x => DROP_ACTS.has(x.getAttribute('data-act')) && !x.disabled); return b.length === 1 ? b[0] : null; };
   const hasFiles = e => e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
