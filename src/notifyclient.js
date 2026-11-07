@@ -40,7 +40,8 @@
       ws.onerror = () => { try { ws.close(); } catch (e) { } };
     } catch (e) { ws = null; }
   }
-  function start() { if (st.started || !team()) return; st.started = true; load(); connect(); setInterval(() => { if (document.visibilityState === 'visible') load(); }, 60000); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') load(); }); }
+  async function sweep() { const k = 'fwb_ntsw_' + ((S.user && S.user.id) || '') + '_' + new Date().toISOString().slice(0, 10); try { if (root.localStorage.getItem(k)) return; root.localStorage.setItem(k, '1'); } catch (e) { } try { const r = await API.post('/api/notifications/sweep', {}); if (r && r.notified) load(); } catch (e) { } }
+  function start() { if (st.started || !team()) return; st.started = true; load(); sweep(); connect(); setInterval(() => { if (document.visibilityState === 'visible') load(); }, 60000); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') load(); }); }
   /** the rows the bell shows ("For you"); the first call starts the checks */
   V.notifyItems = () => { if (!team()) return []; start(); const here = S.project && S.project.id; return st.items.slice(0, 25).map(x => ({ id: 'sv-' + x.id, sid: x.id, srv: true, kind: 'srv', read: !!x.read, pid: x.pid, view: x.view, text: (here && x.pid && x.pid !== here && x.pname ? x.pname + ': ' : '') + x.title })); };
   V.notifyRead = async ids => { st.items.forEach(x => { if (ids.includes(x.id)) x.read = true; }); st.unread = st.items.filter(x => !x.read).length; paint(); try { await API.post('/api/notifications/read', { ids }); } catch (e) { } };

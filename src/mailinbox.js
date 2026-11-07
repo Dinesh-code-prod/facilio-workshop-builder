@@ -40,6 +40,15 @@
     return `<section class="cs-mail" role="region" aria-label="Mail inbox"><div class="cs-mail-h"><h3>Mail inbox</h3><span class="cs-mail-meta">${list.length ? pend + ' waiting for you. Nothing becomes a task until you accept it.' : 'Customer mail that needs action shows here, sorted by Claude. Nothing is sent from the Studio.'}</span><span class="sp"></span><button class="btn sm" data-act="mlFind" title="Claude searches your Outlook (to you, copied to you, naming this project, or sent to the rest of the team) and adds what matters here">${ico('spark')}Find mail with Claude</button><button class="btn sm" data-act="mlDrop">${ico('upl')}Add .eml files</button></div>${list.map(row).join('')}</section>`;
   };
   V.mailLoad = load;
+  // the page of its own (Project menu): the same panel as on the Tasks page, with how the mail gets here
+  V.mailtab = {
+    html() {
+      const head = '<div class="page-header"><div class="t"><h1>Customer mail</h1><p>Mail from the customer that needs action, fetched through Microsoft 365 by your own Claude. Nothing becomes a task until you accept it, and the Studio sends nothing: replies open in Outlook.</p></div></div>';
+      if (!canEdit()) return head + '<div class="page-body"><div class="card"><div class="card-b muted">Only the project team can see customer mail.</div></div></div>';
+      return head + '<div class="page-body">' + V.mailPanel() + '<div class="card" style="margin-top:14px"><div class="card-h"><h3>How mail gets here</h3></div><div class="card-b"><ol class="small" style="line-height:1.8;margin:0 0 0 18px"><li>Press <b>Find mail</b> (it writes a job), then tell your Claude <i>Do the waiting Delivery Studio jobs</i>. Claude searches your Outlook with the Microsoft 365 connector and saves only the mail that names this project, its customer or its modules.</li><li>Or drop a saved mail (.eml) on the panel.</li><li>The team is told in the bell when mail arrives. Accept a mail to make a task (it closes itself when its check is met), then let Claude draft the reply and send it from Outlook.</li></ol></div></div></div>';
+    },
+    mount() { load(false); }
+  };
 
   // ---------- actions ----------
   const guard = (a, fn) => V.busy(a, async () => { try { return await fn(); } catch (e) { toast(e.message || 'That did not work.', 6000, true); } });

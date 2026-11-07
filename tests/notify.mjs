@@ -64,4 +64,8 @@ await t('preferences: turning in-app off stops the record; Teams messages go onl
   const r = await as(SAM, 'PUT', `/api/projects/${pid}/items/lcstage/uat`, { data: { status: 'closed', note: 'ok', at: new Date().toISOString() } }); assert.equal(r.status, 200, JSON.stringify(r.data)); assert.equal(await stageClosed(KIM), kBefore, 'Kim turned it off'); assert.ok((await list(VIC)).items.some(x => x.title.includes('UAT & FTR') && x.type === 'stage_closed'), 'Vic still gets it');
   await as(VIC, 'PUT', '/api/notifications/prefs', { types: { stage_closed: { inapp: true, teams: true } } }); sent = []; for (let i = 0; i < 8; i++) await as(SAM, 'PUT', `/api/projects/${pid}/items/lcstage/hypercare`, { data: { status: i % 2 ? 'closed' : '', note: i % 2 ? 'n' + i : '', at: new Date(Date.now() + i).toISOString() } }); const toVic = sent.filter(x => x.to && x.to[0] === VIC && /Stage closed/.test(x.title)); assert.ok(toVic.length >= 1 && toVic.length <= 5, 'Teams only for the person who left it on, at most 5 a day: ' + toVic.length); assert.equal(sent.filter(x => x.to && x.to[0] === KIM).length, 0, 'none for Kim');
 });
+await t('the daily sweep answers for the caller only, never fails, once a day per project', async () => {
+  const r = await as(SAM, 'POST', '/api/notifications/sweep', {}); assert.equal(r.status, 200, JSON.stringify(r.data)); assert.ok(typeof r.data.notified === 'number');
+  assert.equal((await as(SAM, 'POST', '/api/notifications/sweep', {})).data.notified, 0, 'once a day per project');
+});
 console.log(n + ' notification checks passed');

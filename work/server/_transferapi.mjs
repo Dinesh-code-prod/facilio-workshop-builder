@@ -8,7 +8,7 @@ import { holdingId } from './_msaextract.mjs';
 const ID_RE = /^x-[0-9a-f]{32}$/, te = new TextEncoder();
 
 export function installTransfer(d) {
-  const { route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbList, save, unpack, withLock, audit, pickProject, CONNECTOR } = d;
+  const { route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbList, save, unpack, withLock, audit, pickProject, CONNECTOR } = d; const notify = d.notify || (async () => 0);
   const col = pid => 'xf.' + pid, dcol = pid => 'xfd.' + pid, pcol = pid => 'xfdp.' + pid, lock = (pid, id) => 'xf.' + pid + '.' + id;
   /** project access for the team only (a person's own holding space, for an extraction that has no project yet, is theirs alone and never reachable by anyone else, because the id is made from their own id): customers are refused, viewers and sub admins can read but not write (projectAccess), approval is the owner's (the rules) */
   async function access(s, pid, need) { if (pid === holdingId(s.id)) return { role: 'owner' }; const a = await projectAccess(s, pid, need); if (a.role === 'customer') throw new HttpError(403, 'Transfers are for the project team'); return a; }
@@ -93,7 +93,9 @@ export function installTransfer(d) {
       if (r.created && b.advance !== false && ['Not Retrieved', 'Retrieving', 'Retrieved'].includes(cur)) for (const to of want.slice(cur === 'Not Retrieved' ? 0 : want.indexOf(cur) + 1)) r.transfer = (await ops.move(s, p, id, { to, note: 'Content stored by Claude' }, 'claude')).transfer;
       return { created: r.created, duplicate: r.duplicate, version: r.version, transfer: r.transfer, note: r.duplicate ? 'The same content is already the newest version; nothing was changed.' : 'Stored as an unapproved version. A person approves in Delivery Studio.' };
     },
-    async transfer_submit(s, b) { const r = await ops.move(s, await pid(s, b), String(b.id || ''), { to: 'Awaiting Review', note: text(b.note, 200) || 'Submitted for review by Claude' }, 'claude'); return { transfer: r.transfer, note: 'Waiting for a person to approve it in Delivery Studio. Claude cannot approve.' }; },
+    async transfer_submit(s, b) { const r = await ops.move(s, await pid(s, b), String(b.id || ''), { to: 'Awaiting Review', note: text(b.note, 200) || 'Submitted for review by Claude' }, 'claude');
+      try { const p = await pickProject(s, b.project); const owners = (p.members || []).filter(m => m.role === 'owner').map(m => m.email); await notify({ type: 'approval_requested', project: p, to: owners, actor: '', title: 'A transfer from Claude waits for your approval · ' + p.name, text: 'Check it in Transfers and press Approve. Claude cannot approve.', view: 'transfers', key: 'tf|' + String(b.id || '') }); } catch (e) { /* the notice never fails the submit */ }
+      return { transfer: r.transfer, note: 'Waiting for a person to approve it in Delivery Studio. Claude cannot approve.' }; },
     /** the person has confirmed a push of the approved version: records the intent and returns a one-time nonce valid 15 minutes. Do not touch the destination before this succeeds. */
     async transfer_push_begin(s, b) {
       const r = await ops.move(s, await pid(s, b), String(b.id || ''), {}, 'claude', { audit: 'push-intent', fn: (cur, role) => beginPush(cur, Object.assign({ role, destEtag: b.destEtag }, mine(s))) });

@@ -2144,7 +2144,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   // customer and password sign-in do not exist in this version
   ['login', 'signup', 'guest', 'guest-login', 'upgrade', 'customer', 'password'].forEach(n => route('POST', '/api/auth/' + n, async () => { throw new HttpError(403, 'Sign-in is handled by your Facilio Microsoft account'); }));
 
-  const TRANSFER = installTransfer({ route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbList, save, unpack, withLock, audit, pickProject, limit, CONNECTOR });   // push and pull engine: routes and connector tools (_transferapi.mjs)
+  const TRANSFER = installTransfer({ route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbList, save, unpack, withLock, audit, pickProject, limit, CONNECTOR, notify: (...a) => N(...a) });   // push and pull engine: routes and connector tools (_transferapi.mjs)
   installMsaExtract({ route, ok, me, HttpError, dbGet, dbPut, dbList, withLock, audit, viaApp, projectAccess, CONNECTOR }, TRANSFER);   // MSA extraction tools: msa_extraction_save, create_project_from_msa (_msaapi.mjs)
   installRs({ HttpError, projectAccess, pickProject, viaApp, audit, CONNECTOR });
   // a file the server itself stores for a project (text only, up to 25 MB): used when Claude pushes a Meteor page. Same record as a browser upload, status ready.
@@ -2153,10 +2153,17 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     const rec = { id, category: o.category, name: o.name, mime: o.mime, size: Buffer.byteLength(o.text, 'utf8'), chunks: 1, status: 'ready', meta: o.meta || {}, replaces: null, supersededBy: null, createdBy: userId, createdAt: now(), deletedAt: null, urls: [put.file_id], mint: {}, contentCheck: 'unchecked' };
     await dbPut('fl.' + pid, id, rec); return fileOut(rec);
   }
-  installDs({ HttpError, projectAccess, pickProject, viaApp, audit, CONNECTOR, storeServerFile });   // design proposals: flows and cross-module flows (_dsapi.mjs)   // requirement session transcripts and findings (_rsapi.mjs)
+  installDs({ HttpError, projectAccess, pickProject, viaApp, audit, CONNECTOR, storeServerFile, notify: (...a) => N(...a) });   // design proposals: flows and cross-module flows (_dsapi.mjs)   // requirement session transcripts and findings (_rsapi.mjs)
   installQuestions({ HttpError, projectAccess, pickProject, docRead, CONNECTOR });   // prepared questions for a workshop and live_ask (_questionsapi.mjs)
   notify = installNotify({ route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbList, dbDel, ctx: () => CTX, now, teamOf, BASE_URL: TW_BASE }).notify;   // in-app, browser and Teams notifications (_notify.mjs)
   const N = (...a) => notify(...a);
+  // tasks due or overdue: the browser asks once a day when a team member opens the Studio (there is no scheduler); one notice per project, only for the person's own tasks
+  route('POST', '/api/notifications/sweep', async () => {
+    const s = await me(); const today = now().slice(0, 10); const ps = await memberProjects(s); const p = pendingFor(s.email, await taskRowsOf(ps), today); let n = 0;
+    for (const pj of ps) { const due = p.items.filter(x => x.project === pj.id && (x.overdue || x.soon)); if (!due.length) continue;
+      n += await notify({ type: 'task_due', project: pj, to: [s.email], actor: '', title: due.length + ' task' + (due.length === 1 ? '' : 's') + ' due or overdue · ' + pj.name, text: due.slice(0, 3).map(x => (x.n ? 'T-' + x.n + ' ' : '') + x.title + (x.overdue ? ' (overdue)' : '')).join('; '), view: 'tasks', key: 'td|' + pj.id + '|' + today }); }
+    return ok({ notified: n });
+  });
   installTaskTracking({ route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, itemsOf, withLock, audit, viaApp, CONNECTOR, DONE_RE, cut, rid, notify: N });   // task suggestions from Claude: routes and tools (_tasksapi.mjs)
   installQbank({ route, ok, HttpError, me, projectAccess, limit, aiJSON, docRead });   // AI requirements intelligence: generate questions from the documents, analyse a call (_qbankapi.mjs)
   installMailTasks({ route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, withLock, audit, viaApp, CONNECTOR, docRead, cut, notify: N });   // customer mail becomes tasks: inbox records, routes and task_tracking actions (_mailapi.mjs)
