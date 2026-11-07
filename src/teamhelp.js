@@ -9,84 +9,100 @@
   const CODE_CMD = 'claude mcp add --transport http facilio-delivery-studio ' + CONNECTOR;
   // [stage, group in the menu, goal, [[page id, label, how, sub-heading in the menu]], done when, watch out]
   const PHASES = [
-    ['1', 'Kick-off & Planning', 'Agree what is being delivered, by when, and who does what.', [
-      ['msaflow', 'Contract', 'Upload the MSA and order form. Check the extracted scope, fees and dates before you rely on them.'],
-      ['kickoff', 'Kick-off Deck', 'Build the deck from the contract and present it. Record who attended.'],
-      ['plan', 'Project Plan', 'Import the plan workbook. The timeline, "current phase" and reminders all read from it.']],
-      'The customer has seen the scope and plan, and the plan has dates.', 'Plan dates drive every reminder. A plan with no dates means nothing is ever "late".'],
-    ['2', 'Workshops & Requirements', 'Run the sessions, turn what was said into requirements the customer has confirmed, and check them before design.', [
-      ['demokit', 'Facilio Screens', 'Show the customer real Facilio screens during the session so they can say what fits and what does not.', 'Run the sessions'],
-      ['transcripts', 'Requirements & Data Onboarding', 'Three tabs. Data onboarding: the first session explains the onboarding sheet and the data the customer has to fill (open it in a new tab to show it full screen). Transcripts & requirements: paste or upload each transcript and confirm the drafts that come out. Use cases: group confirmed requirements into scenarios the customer recognises.', 'Show the data sheet, capture and confirm'],
-      ['workshop', 'Workshop room', 'Keep it open during a workshop (Full screen, or New tab on a second screen). The questions to ask for each module with a status and a note, buttons that make a draft requirement, decision, action or open question with its source, a place to paste or load the call transcript so Delivery Studio can show which questions look answered, a timer, the agenda, and buttons for the State Flow Builder and Process Whiteboard. Nothing said here becomes an approved requirement.', 'Run the sessions'],
-      ['checks', 'Checks & Validations', 'Two tabs. Validations & readiness: fix conflicts, gaps and missing sources. MSA scope check: compare what was asked with what was sold.', 'Check before design']],
-      'Every requirement is Confirmed or Rejected. Nothing stays Draft.', 'A requirement with no source is a guess. Keep the transcript link on each one.'],
-    ['3', 'Solution Design & Configuration', 'Design and build from confirmed requirements, record all of it in the Configuration Hub, then write the BRD last and get it signed.', [
+    ['1', 'Project introduction', 'Agree what is being delivered, by when, and who does what.', [
+      ['msaintake', 'Contract intake', 'Add the MSA and order form. Claude reads them with the Microsoft 365 connector; you check the extraction in Transfers and approve it. Check the scope, fees and dates before you rely on them.'],
+      ['kickoff', 'Project introduction', 'Build the kick-off deck from the contract, present it and record who attended.'],
+      ['plan', 'Project Plan', 'Import the plan workbook. The timeline, the current phase and the reminders all read from it.']],
+      'The customer has seen the scope and plan, and the plan has dates.', 'Plan dates drive every reminder. A plan with no dates means nothing is ever late.'],
+    ['2', 'Requirement sessions', 'Run the sessions, turn what was said into requirements the customer has confirmed, and check them before design.', [
+      ['rsplan', 'Workshop plan', 'Plan the sessions, send the schedule, and prepare the questions to ask for each module.', 'Plan the sessions'],
+      ['rstrans', 'Transcripts', 'Add each transcript (paste, upload, or let Claude pull it). Claude finds the promises and asks; each one stays a suggestion until you confirm it.', 'Run the sessions'],
+      ['whiteboard', 'Process whiteboard', 'Draw the process with the customer so the flows have a picture behind them.', 'Capture the flows'],
+      ['rschecks', 'Checks & validations', 'Everything found in the sessions, the contract and the BRD waiting for your decision. Select several and confirm together, with a short solution note. Confirmed items flow into the BRD and draft test cases by themselves.', 'Check what was said']],
+      'Every requirement is Confirmed or Rejected. Nothing stays in Draft.', 'A requirement with no source is a guess. Keep the transcript line on each one.'],
+    ['3', 'Mockup & BRD', 'Agree the solution module by module, show it to the customer, record the configuration, and let the BRD be written from all of it.', [
+      ['solution', 'Solution', 'One card per module in scope (and connected apps, templates, KPIs, SLA, notifications, roles): the customer requirement and the solution in words. Change one with Ask Claude, drop a customer file to compare, export a plain Word. The BRD reads from here.', 'Build the solution'],
       ['modules', 'System Modules & Form Builder', 'Define modules and fields. New fields come from requirements, not from memory.', 'Build the solution'],
       ['flow', 'State Flow Builder', 'Draw each module\'s statuses and transitions, with who may press each button.', 'Build the solution'],
-      ['whiteboard', 'Process Whiteboard', 'Draw the process with the customer so the flows have a picture behind them.', 'Build the solution'],
+      ['mockup', 'Mockup (Meteor)', 'Ask Claude to build the screens in Meteor, then bring them in. Share the whole mockup with the customer by link, tab by tab.', 'Build the solution'],
       ['roles', 'Roles & Access Permissions', 'Map people to roles and what each role can see and do.', 'Set up access, alerts and data'],
       ['notifications', 'Notifications', 'Say who is told what and when. Email rules are written into the package.', 'Set up access, alerts and data'],
-      ['cfginputs', 'Configuration Hub', 'Describe everything configured for this customer in one place: modules, relationships, connected apps and tabs. Guides, test plans and handover read from it.', 'Record all configuration'],
-      ['brd', 'BRD Draft', 'Last step. Generate the BRD from the confirmed requirements and the Hub, review it, then ask the customer to sign off.', 'Write the BRD']],
-      'The configuration is recorded in the Hub, the BRD matches it and the BRD is signed off.', 'Sign-off counts only when the customer signs or you record the evidence. Exporting a document is never sign-off.'],
-    ['4', 'UAT & Go-Live', 'Prove it works for the customer and launch.', [
-      ['delivery', 'Build, UAT & Go-Live', 'Three tabs. Build: track each module. UAT: tester guide, test cases and the issues board. Go-live: readiness verdict and checklist.'],
-      ['ftr', 'FTR Report (Excel)', 'Import the FTR workbook and map its columns.'],
-      ['kpi', 'KPI Workbooks', 'Prepare the KPI workbooks the customer will report on.']],
+      ['cfginputs', 'Configuration & org package', 'Describe everything configured for this customer in one place. Guides, test plans and handover read from it.', 'Record all configuration'],
+      ['slakpi', 'KPIs & SLA matrix', 'The service levels and escalation per module and priority, and the KPIs with how Facilio delivers each. Both flow into the BRD, the draft test cases and the FTR checklist.', 'Record all configuration'],
+      ['brd', 'BRD Draft', 'Last step. The BRD is drafted from the confirmed requirements and the Solution tab. Press Ask Claude on any section heading to change it. Tick each review part, then ask for approval.', 'Write the BRD']],
+      'The solution is agreed, the configuration is recorded, and the BRD matches both and is signed off.', 'Sign-off counts only when the customer signs or you record the evidence. Exporting a document is never sign-off.'],
+    ['4', 'UAT & FTR', 'Prove it works for the customer, then check it is ready to launch.', [
+      ['delivery', 'Build, UAT & Go-Live', 'Track the build, then UAT: a status board, draft test cases from the BRD (including SLA and KPI cases), walkthroughs and the issues board.'],
+      ['ftr', 'FTR Report (Excel)', 'Import the FTR workbook and map its columns. The checklist is drafted from the confirmed scope.'],
+      ['kpi', 'KPI Workbooks', 'Prepare the KPI workbooks the customer will report on.'],
+      ['golive', 'Go-live readiness', 'The verdict and the checklist: one line per gap, each turns green when its reason is gone.']],
       'UAT sign-off is recorded and the go-live checklist is complete.', 'Do not start go-live with open critical defects. Raise them in Governance.'],
-    ['5', 'Training & Guides', 'Leave the customer able to run it without you. Four separate tabs: each does one job and shows only its own work. Switch with the tab bar at the top of the page.', [
-      ['guidebuilder', 'User Guide Builder', 'Write the customer\'s written guide section by section, review each one, then export to Word or PDF. Inner tabs: Content, Update from configuration, Version history, Branding, Quality checks, Export.'],
-      ['vidguide', 'Video to Guide', 'Turn a screen recording you already have into guide steps. The video stays on your computer. Needs the transcript.'],
-      ['resources', 'Notes & Links', 'Keep notes and links with the project. Inner tabs: Notes, Links & resources.']],
+    ['5', 'Training guides', 'Leave the customer able to run it without you.', [
+      ['guides', 'Training guides', 'The list of guides to write, one per audience, with what is done.'],
+      ['guidebuilder', 'User Guide Builder', 'Write the written guide section by section, review each one, then export to Word or PDF.'],
+      ['vidguide', 'Video to Guide', 'Turn a screen recording you already have into guide steps. The video stays on your computer.']],
       'Customers have the guides they need and training dates are set.', 'AI drafts need a human read. Check every screen name against the real configuration.'],
-    ['6', 'Hypercare, Handover & Closure', 'Stay close after launch, then hand over cleanly.', [
-      ['hypercare', 'Hypercare', 'Log issues raised after launch and their fixes. Share the status.'],
+    ['7', 'Hypercare', 'Stay close after launch.', [
+      ['hypercare', 'Hypercare', 'Log issues raised after launch and their fixes. Claude can turn open UAT issues and e-mails into hypercare items for you to accept. Share the status.']],
+      'Issues are fixed or handed to support, and the customer knows who to call.', 'Keep one list. An issue in e-mail only is an issue nobody owns.'],
+    ['8', 'Project handover', 'Hand over cleanly and close.', [
       ['handover', 'Handover & Closure', 'Record who owns what, hand over to support, review lessons learned, close the project. Drop the org package here and Claude builds the Solution Document.']],
       'Support owns the steady state and the project is formally closed.', 'Closing with open actions loses the history. Close or move every open item first.']
   ];
+
   // the Project group of the menu: [page, label, what it is for, sub-heading]
   const RUN = [
     ['projdash', 'Dashboard', 'How the project stands today, in numbers.', 'Where are we?'],
-    ['overview', 'Project Overview', 'Current phase, what is due next, the lifecycle and roadmap.', 'Where are we?'],
-    ['tasks', 'Tasks', 'One register for everything to do. List view or Board view: drag a card to change its status.', 'Run the project'],
+    ['tasks', 'Tasks', 'One register for everything to do, as a list or a board (drag a card to change its status). Some tasks make themselves from what the project holds (marked Auto) and close themselves when the reason is gone; a task a person made or closed is never touched. The Mail inbox on this page turns customer mail into proposed tasks.', 'Run the project'],
     ['transfers', 'Transfers', 'What your Claude read from or sent to other systems, and what waits for you to approve. Claude cannot approve. Pushed and Synchronized are what Claude reported, not something this app can see.', 'Run the project'],
     ['governance', 'Governance & RAID', 'Sign-offs, risks, decisions, actions and minutes, shared with the customer.', 'Run the project'],
     ['changes', 'Change Requests', 'Anything outside the signed scope. Never change scope silently.', 'Run the project'],
     ['aiwork', 'Deliverables & AI', 'Draft documents with AI, or with Open in Claude on your own account. Drafts are never final until reviewed.', 'Run the project'],
-    ['reports', 'Status Reports (WSR / Monthly)', 'Weekly and monthly reports, prepared and tracked here.', 'Run the project'],
-    ['trace', 'Traceability & Quality', 'Follow each requirement through the BRD, configuration, guides and UAT, and see what is missing.', 'Run the project']];
+    ['reports', 'Reports & quality', 'Weekly and monthly status reports, and the traceability of each requirement through the BRD, configuration, guides and UAT.', 'Run the project'],
+    ['resources', 'Notes & Links', 'Keep notes and links with the project.', 'Run the project']];
+
   const WITH = [
     ['Preview as customer', 'The button at the top shows exactly what the customer sees. Nothing is saved while previewing. Use it before every customer meeting.', null],
-    ['Customer View menu', 'Switch on only the pages the customer needs: Customer Introduction, Learn & Prepare, Product Tour, Module guides, Customer User Guide, Dashboard Gallery, Discover more and the Customer Portal.', 'custintro'],
-    ['Discover more', 'Facilio modules outside the contract. When the customer taps "I am interested" you get an action to follow up.', 'explore']];
+    ['Customer View menu', 'Switch on only the pages the customer needs: Customer Introduction, Learn & Prepare, Module guides, Connecting Your Systems, Customer User Guide and the Customer Portal.', 'custintro'],
+    ['Learn & Prepare and Module guides', 'Both are written from the contract. Learn & Prepare shows what is included, what the customer is responsible for and what is not part of the project. Each module guide gets a section From your contract with questions the customer answers; their answers reach you straight away.', 'prepare'],
+    ['Show Facilio', 'Facilio Screens, Product Tour, Dashboard Gallery and Discover more: pages to show the customer what Facilio can do. When the customer taps I am interested you get an action to follow up.', 'explore']];
+
   // set up your own Claude: what to add, why, and which job it is for
   const SETUP = [
-    ['Connector: Facilio Delivery Studio', 'Needed. Lets your own Claude read the projects you can open and save drafts back to them. In Claude: Settings > Connectors > Add custom connector. Name it Facilio Delivery Studio, use the address below and sign in with your Facilio account. On a Team or Enterprise plan the owner of the Claude organisation must allow custom connectors first.', ['Copy address', CONNECTOR]],
+    ['Start here: Claude setup', 'New to the Studio? Open Help > Claude setup > Start here. It walks through what you need, the first day step by step, the safety rules and what to do when something does not work. Waiting jobs explains how the buttons that ask Claude to do work get done.', 'claudesetup'],
+    ['Connector: Facilio Delivery Studio', 'Needed. Lets your own Claude read the projects you can open and save drafts back to them. In Claude: Settings > Connectors > Add custom connector. Name it Facilio Delivery Studio, use the address below and sign in with your Facilio account. On a Team or Enterprise plan the owner of the Claude organisation must allow custom connectors first. When new actions are added, remove the connector and add it again.', ['Copy address', CONNECTOR]],
     ['Claude Code', 'If you use Claude Code, add the same connector with this command, then type /mcp and sign in.', ['Copy command', CODE_CMD]],
-    ['One Claude account', 'Use the same Claude account in the browser and the desktop app, or Claude shows "Account mismatch". The work counts against your own Claude plan; there is no extra key or charge.', null],
+    ['One Claude account', 'Use the same Claude account in the browser and the desktop app, or Claude shows Account mismatch. The work counts against your own Claude plan; there is no extra key or charge.', null],
+    ['Do the waiting jobs', 'Some buttons only write a job. Nothing starts it by itself. Say Do the waiting Delivery Studio jobs to your Claude, then review the drafts here. A timer is optional and belongs to each person; see Claude setup > Waiting jobs.', null],
     ['Skills: recommended', 'Small add-ons for your Claude. Add video-to-user-guide if you turn recordings into guides, excel-analysis for workbooks, and the video skills if you make videos. Pick, copy the command for Mac or Windows and run it once.', 'skills'],
-    ['Facilio implementation skills', 'Install the Facilio toolbox once (/facilio-impl-toolbox: FTR Generator, UAT Guide Generator, Configuration Builder and more). The step-by-step guide is in Claude setup (Help group of the menu), tab Facilio skills. Fetch both repositories in GitHub Desktop before you use it, every day you work.', null],
-    ['Check the connector is really added', 'Claude setup (Help group of the menu) shows the last time your Claude used the connector. Open in Claude then opens a chat that confirms the project with you, asks what you need if it is not clear, and reads the project itself.', null],
-    ['Link the org package folder', 'In Project Settings > Project details, press "Find it in my facilio-config-data" and choose repo_index.json from your copy of that repository. Claude and the Facilio skills then know where the org package is, and a mismatch with the imported package or the org id is flagged.', null],
-    ['Plugins: none needed', 'The connector and the skills do everything this app asks of Claude. The old Claude Desktop extension was removed on 2 November 2026: do not install it, use the connector. Ask your Claude administrator before adding any other plugin.', null],
+    ['Facilio implementation skills', 'Install the Facilio toolbox once (/facilio-impl-toolbox: FTR Generator, UAT Guide Generator, Configuration Builder and more). The step-by-step guide is in Claude setup, tab Facilio skills. Fetch both repositories in GitHub Desktop before you use it, every day you work.', null],
+    ['Check the connector is really added', 'Claude setup shows the last time your Claude used the connector. Open in Claude then opens a chat that confirms the project with you, asks what you need if it is not clear, and reads the project itself.', null],
+    ['Link the org package folder', 'In Project Settings > Project details, press Find it in my facilio-config-data and choose repo_index.json from your copy of that repository. Claude and the Facilio skills then know where the org package is, and a mismatch with the imported package or the org id is flagged.', null],
+    ['Teams: Otto', 'Otto, the Teams bot, can send you a message about tasks that are due and take your reply: say T-12 is done, or press the Done button in the message. Only the owner of a task can close it that way, and approvals are closed in the Studio only. Messages are off until an app owner switches them on.', null],
+    ['Plugins: none needed', 'The connector and the skills do everything this app asks of Claude. Ask your Claude administrator before adding any other plugin.', null],
     ['Deploying: owners and collaborators only', 'Only the app owner and collaborators publish changes, using the separate facilio work connector (https://mcp.facilio.work/mcp) in a Claude Code session and the /deploy command. Everyone else can ignore this.', null]];
+
   // job -> what to use
   const JOBS = [
     ['Draft the BRD, UAT plan, guides, reports, handover or closure pack', 'Connector', 'Use the Open in Claude buttons, or ask Claude for a task pack (brd, uat, guide, ftr, gaps, workshop, golive, hypercare, handover, wsr, monthly, config, pkg, training, closure). Drafts arrive unapproved.'],
-    ['Bring a call transcript in', 'Connector, then Transfers', 'Ask Claude to store the transcript as a transfer of kind transcript (a Teams transcript through the Microsoft 365 connector, or text you give it). Open Transfers, check it and press Approve, then Import into Transcripts. The same version is never imported twice. What was said stays a suggestion until you confirm it in Requirements. In the Workshop room you can also paste or load a transcript to see which prepared questions look answered.'],
+    ['Do the work the buttons asked for', 'Connector (jobs)', 'Say Do the waiting Delivery Studio jobs. Claude takes each waiting job, does it and finishes it with a summary.'],
+    ['Change a solution, or merge a customer file into the solutions', 'Solution tab', 'Press Ask Claude on a card and say what to change, or drop the customer file on the tab. Claude proposes the new text with the quoted evidence; you press Accept. The BRD updates from the accepted text.'],
+    ['Change one part of the BRD', 'BRD Draft', 'Press Ask Claude on the section heading, say what you want (you can drop files in the chat). Claude checks it and proposes the update; you accept.'],
+    ['Bring a call transcript in', 'Connector, then Transfers', 'Ask Claude to store the transcript as a transfer of kind transcript (a Teams transcript through the Microsoft 365 connector, or text you give it). Open Transfers, check it and press Approve, then import it into Transcripts. The same version is never imported twice. What was said stays a suggestion until you confirm it.'],
     ['Start a project from a signed contract', 'Connector, then Transfers', 'Ask Claude to read the contract with the Microsoft 365 connector and save the extraction. Open Transfers > Holding, check it and press Approve, then press Start project from this contract. Nothing is created until you do, and an existing project is never changed.'],
-    ['Ask what is open on a project, or find one', 'Connector', 'Ask Claude for a project overview, the open questions, the requirements or the latest activity.'],
-    ['See where a project stands: tasks, overdue, UAT, risks, org id', 'Connector', 'Ask Claude for the project overview. It now includes task and overdue counts, UAT test cases, risks and issues, change requests, sign-offs and the org id.'],
-    ['Carry on a deliverable with the Facilio tools (FTR, UAT guide, configuration)', 'Skills: Facilio toolbox', 'Ask Claude "which Facilio skill fits this?". It asks the connector (get_impl_skills), then you start it with /facilio-impl-toolbox. Needs the one-time setup in Project Settings > Implementation skills.'],
-    ['Take over a project that already has documents, or start one with them', 'Bring your project in', 'In 1. Kick-off, open Bring your project in (or tick "This project already has documents" when you create the project). Drop the files: each is sorted by name and a small peek, you check where it goes, then press Send. Big files are fine; they go one at a time, straight to storage. Then open each area and press its Analyse or Import button.'],
+    ['Turn customer mail into tasks and reply drafts', 'Connector (jobs), Tasks > Mail inbox', 'Claude fetches the mail of the project (a waiting job), proposes tasks, and drafts replies. You accept a task or approve a reply; the reply is sent from your Outlook, and Claude checks the Sent folder.'],
+    ['Get your open tasks, or a reminder, in Teams', 'Otto', 'Ask Otto for your tasks. It can also message you about tasks that are due. Reply Done, or press the button.'],
+    ['Ask what is open on a project, or find one', 'Connector', 'Ask Claude for a project overview, the open questions, the requirements or the latest activity. It includes task and overdue counts, UAT cases, risks, change requests, sign-offs and the org id.'],
+    ['Carry on a deliverable with the Facilio tools (FTR, UAT guide, configuration)', 'Skills: Facilio toolbox', 'Ask Claude which Facilio skill fits this. It asks the connector (get_impl_skills), then you start it with /facilio-impl-toolbox. Needs the one-time setup in Project Settings > Implementation skills.'],
+    ['Build the Solution Document at the end', 'Handover & Closure', 'Drop the org package. Claude builds the Solution Document with the Facilio skill; you read it and accept it.'],
     ['Raise or suggest a support ticket', 'Connector', 'Ask Claude to suggest a ticket first; it creates it only when you confirm.'],
     ['Guide steps from a recording you already have', 'Skill: video-to-user-guide', 'Then bring the steps into the Video to Guide tab.'],
-    ['Make a video or a walkthrough clip', 'Skills: demo-video, ui-mockup-video, video-editing, remotion-create, remotion-captions, remotion-multimedia, remotion-render', 'Start from the brief in Guides & Video Studio.'],
+    ['Make a video or a walkthrough clip', 'Skills: demo-video, ui-mockup-video, video-editing, remotion-create, remotion-captions', 'Optional.'],
     ['Work with FTR, KPI or UAT spreadsheets', 'Skill: excel-analysis', 'Reads workbooks, pivots and summaries.'],
-    ['Make sense of a big org package or document folder', 'Skill: graphify', 'Builds a graph so questions are answered from it.'],
-    ['A short launch video of a web page', 'Skill: brag', 'Optional.']];
+    ['Make sense of a big org package or document folder', 'Skill: graphify', 'Builds a graph so questions are answered from it.']];
+
   const RULES = [
-    ['Do', ['Confirm requirements with the customer before generating the BRD.', 'Keep a source (transcript, email, document) on every requirement and decision.', 'Record sign-offs with evidence.', 'Use a change request for anything outside the signed scope.', 'Give every action an owner and a due date.']],
+    ['Do', ['Confirm requirements with the customer before generating the BRD.', 'Keep a source (transcript, email, document) on every requirement and decision.', 'Record sign-offs with evidence.', 'Use a change request for anything outside the signed scope.', 'Read the before and after before you press Accept on anything Claude proposes.', 'Give every action an owner and a due date.']],
     ['Do not', ['Do not treat an AI draft as final. Read it and fix it.', 'Do not export the organisation package before the BRD is signed off, except as a draft.', 'Do not paste customer passwords or keys into notes, tasks or AI prompts.', 'Do not close a task with a customer question unless the final answer is recorded.']]];
   const op = id => ((S.ui && S.ui.tgOpen) || []).includes(id) ? ' open' : '';   // which folds are open survives the page being redrawn (ticking a step redraws it)
   const key = () => 'fwb_tguide_' + (S.project && S.project.id) + '_' + ((S.user && S.user.id) || '');
@@ -106,7 +122,7 @@
       const head = `<div class="page-header"><div class="t"><h1>Team Guide</h1><p>Run a project in the same order as the menu. Open a stage, tick steps as you finish them.</p></div><div class="row"><button class="btn" data-act="tgReset">Clear ticks</button></div></div>`;
       const prog = `<div class="tg2-prog"><div><b>${got} of ${total}</b> steps done <span class="muted">for this project, on this device</span></div><div class="tg2-bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div></div>`;
       const chips = `<nav class="tg2-chips" aria-label="Guide sections"><a href="#tg2-setup" data-act="tgJump" data-id="tg2-setup">Set up Claude</a>${PHASES.map(p => `<a href="#tg2-${p[0]}" data-act="tgJump" data-id="tg2-${p[0]}">${p[0]}. ${esc(p[1].split(' & ')[0].split(',')[0])}</a>`).join('')}<a href="#tg2-run" data-act="tgJump" data-id="tg2-run">Run the project</a><a href="#tg2-with" data-act="tgJump" data-id="tg2-with">With the customer</a><a href="#tg2-map" data-act="tgJump" data-id="tg2-map">Menu map</a><a href="#tg2-rules" data-act="tgJump" data-id="tg2-rules">Working rules</a></nav>`;
-      const first = `<section class="tg2-first"><h2>Your first hour</h2><ol><li><b>Set up your Claude</b> with the connector below, so Open in Claude works.</li><li><b>Open Project Overview</b> and read the current phase and what is due next.</li><li><b>Check Contract</b> so you know the scope, fees and dates you are delivering.</li><li><b>Open Tasks</b> and Governance &amp; RAID to see what is already owed and by whom.</li><li><b>Preview as customer</b> once, so you know what they see.</li></ol><div class="row"><button class="btn primary" data-act="tgGo" data-view="overview">Open Project Overview</button><button class="btn" data-act="tgGo" data-view="tasks">Open Tasks</button></div></section>`;
+      const first = `<section class="tg2-first"><h2>Your first hour</h2><ol><li><b>Set up your Claude</b> with the connector below, so Open in Claude works.</li><li><b>Open the Dashboard</b> and read where the project stands and what is due next.</li><li><b>Check Contract intake</b> so you know the scope, fees and dates you are delivering.</li><li><b>Open Tasks</b> and Governance &amp; RAID to see what is already owed and by whom.</li><li><b>Preview as customer</b> once, so you know what they see.</li></ol><div class="row"><button class="btn primary" data-act="tgGo" data-view="projdash">Open Dashboard</button><button class="btn" data-act="tgGo" data-view="claudesetup">Claude setup: Start here</button><button class="btn" data-act="tgGo" data-view="tasks">Open Tasks</button></div></section>`;
       const setup = `<details class="tg2-box tg2-fold" id="tg2-setup" data-tg="tg2-setup"${op('tg2-setup')}><summary><h2>Set up your Claude: connector, skills and plugins</h2></summary><p class="tg2-sub">Do this once. It takes about five minutes and makes every Open in Claude button work.</p>
         <div class="tg2-grid">${SETUP.map(s => `<div class="tg2-tile"><b>${esc(s[0])}</b><span>${esc(s[1])}</span>${Array.isArray(s[2]) ? `<span><button type="button" class="btn sm" data-act="tgCopy" data-text="${esc(s[2][1])}">${esc(s[2][0])}</button> <code class="tg2-code">${esc(s[2][1].length > 70 ? s[2][1].slice(0, 67) + '...' : s[2][1])}</code></span>` : s[2] === 'skills' ? '<span><button type="button" class="btn sm" data-act="skillsHelp">Install the skills</button></span>' : ''}</div>`).join('')}</div>
         <details class="tg2-jobwrap"><summary class="tg2-h3">Which one for which job</summary><div class="tg2-jobs">${JOBS.map(j => `<div class="tg2-job"><b>${esc(j[0])}</b><em>${esc(j[1])}</em><span>${esc(j[2])}</span></div>`).join('')}</div></details>
