@@ -23,3 +23,7 @@ Legacy audit total (gradients / large radii / shadows): start 193 / 251 / 606.
 | Settings, Templates, Admin | not done | |
 
 Not checked: a real phone width below 800 px, keyboard-only walk-through of the new list.
+
+## Requested by the user, 7 Nov 2026 (not started)
+- **Dashboard gallery replica** for demos: a gallery of sample dashboards (service request, reactive work order, planned work order, inventory requests, quotation, inspection, and the other in-scope modules), like the Facilio dashboard gallery, so a demo can be shown without a customer's data. The user will send the reference material (a patch of the gallery). Needs its own session once the material arrives.
+- **Standing rule for the page pass:** on every page and sub page look from top to bottom at number cards, search and filter areas, buttons and boxes; where information is dropped into one rectangle, split it into sections and cards of one idea (Microsoft way).
