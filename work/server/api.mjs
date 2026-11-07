@@ -252,10 +252,10 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
       else if (kind === 'lcstage' && role !== 'customer' && data.status === 'closed' && (!cur || cur.status !== 'closed')) await notify({ type: 'stage_closed', project, to: 'team', actor: s.email, title: 'Stage closed: ' + (STAGE_NAME[id] || id), text: (s.name || s.email) + ' closed it' + (data.note ? ': ' + data.note : '.'), view: 'lifecycle', key: 'sc|' + id + '|' + (data.at || now()) });
     } catch (e) { console.log('notify item failed: ' + (e && e.message)); }
   }
-  async function taskAssignedNotice(project, cur, data, s, role) {
-    try { if (role === 'customer' || !(await teamsOn())) return; const m = assignmentNotice(cur, data, s.email, project.name); if (!m) return;
+  async function taskAssignedNotice(project, cur, data, s, role, taskId) {
+    try { if (role === 'customer' || !(await teamsOn())) return; const m = assignmentNotice(cur, data, s.email, project.name, { project: project.id, id: taskId }); if (!m) return;
       const key = assignKey(m.to); const gate = assignGate((await dbGet('twn', key) || {}).value, now().slice(0, 10)); if (!gate.allow) return; await dbPut('twn', key, gate.rec);
-      await Promise.race([CTX.teams.send({ to: [m.to], title: m.title, text: m.text, facts: m.facts, actions: [{ title: 'Open tasks', url: TW_BASE + '#/p/' + project.id + '/tasks' }] }), new Promise(r => setTimeout(r, 4000))]);
+      await Promise.race([CTX.teams.send({ to: [m.to], title: m.title, text: m.text, facts: m.facts, actions: [{ title: 'Open tasks', url: TW_BASE + '#/p/' + project.id + '/tasks' }].concat(m.done ? [m.done] : []) }), new Promise(r => setTimeout(r, 4000))]);
     } catch (e) { console.log('task notice failed: ' + (e && e.message)); }
   }
   async function ticketNotify(project, key, cur, data, s) {
@@ -1782,7 +1782,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     if (P.kind === 'tkt') await ticketNotify(project, P.item, cur, data, s);
     let notice; if (P.kind === 'interest' && !cur) { notice = await interestNotice(project, P.item, data) ? 'teams' : 'none'; await audit(P.id, s.id, 'interest-created', P.item + ' ' + data.title); }
     if (['signoff', 'cr', 'raid', 'onb', 'onbsub', 'decision', 'brdrev', 'ai', 'hc', 'ho', 'close', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'tkt', 'res', 'ugv', 'ugu', 'task', 'lcstage', 'utr'].includes(P.kind)) await audit(P.id, s.id, P.kind + (cur ? '-updated' : '-created'), P.item + (data.status ? ' ' + data.status : ''));
-    if (P.kind === 'task') await taskAssignedNotice(project, cur, data, s, role);
+    if (P.kind === 'task') await taskAssignedNotice(project, cur, data, s, role, P.item);
     await notifyItem(project, P.kind, P.item, cur, data, s, role);
     return ok(Object.assign({ item: itemOut(P.kind, P.item, nh, data) }, notice ? { notice } : {}));
   }));

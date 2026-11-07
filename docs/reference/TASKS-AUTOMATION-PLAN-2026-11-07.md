@@ -59,3 +59,9 @@ Each slice also updates `work/work.json`, the Team Guide and the tests (the conn
 
 ## Not checked
 No Teams message has been sent or received. The engine is not written.
+
+## Status at the end of 7 Nov 2026 (what the engine does now)
+Rules built in `src/taskengine.js`: Checks & validations (findings), BRD review ticks (brd), BRD in review (brdapp: Approve the BRD), test case coverage (cover), failed or blocked case (fail), KPI without a solution (kpi), change request waiting (cr), Claude question waiting (ask), stage ready to close (stage), go-live gaps once testing has started (gl: tests run, open issues, guides made), and customer mail (mail, see MAIL-TO-TASKS-PLAN). Each creates its task with a stable key and resolves it with "Resolved automatically: <why>" when the fact is gone; a rule whose data is not loaded is left alone (`unknownRules`); a task a person made or closed is never touched.
+Not built: SLA row incomplete, handover item not done, plan task due soon (the plan task is itself the task), hypercare and UAT issues (already tasks).
+The loop with Teams: the assignment message and the daily digest carry a Done button (runs `task_reply` as whoever presses it, so only the owner can); plain words to Otto ("T-12 is done") go through `task_tracking` action `reply`, which the Studio accepts only from the task owner and never for approvals or sign-offs. The task then shows Done in the Studio with the reply as a comment. Not checked: a real Teams message or Otto reply.
+Efficiency: the engine saves its changes five at a time, loads the extra record kinds only once per page, and runs at most once a minute per project.

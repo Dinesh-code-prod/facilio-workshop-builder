@@ -4,7 +4,10 @@ import assert from 'node:assert/strict';
 import handler from '../work/server/api.mjs';
 import { pendingFor, digestMessage, digestKey, assignKey, assignGate, assignmentNotice, dueOf } from '../work/server/_taskwatch.mjs';
 
-let n = 0; const t = async (name, fn) => { await fn(); n++; console.log('  ok  ' + name); };
+let n = 0; const t = async (name, fn) => { await fn(); n++; { const m = assignmentNotice({ owner: '' }, { owner: 'kim@facilio.com', title: 'Send data', n: 12, status: 'To Do' }, 'lead@facilio.com', 'Alpha', { project: 'p1', id: 't_a' });
+  assert.deepEqual(m.done, { title: 'Done: T-12', fn: 'api', data: { tool: 'task_reply', project: 'p1', taskId: 't_a', status: 'Done', text: 'Marked done by the owner from the Teams message.', via: 'teams' } });
+  assert.equal(assignmentNotice({ owner: '' }, { owner: 'kim@facilio.com', title: 'x', n: 1, status: 'To Do' }, 'lead@facilio.com', 'Alpha').done, null); console.log('  ok  the assignment message carries a Done button for the owner'); }
+console.log('  ok  ' + name); };
 const today = new Date().toISOString().slice(0, 10); const day = k => new Date(Date.now() + k * 864e5).toISOString().slice(0, 10);
 
 // ---------- pure rules ----------

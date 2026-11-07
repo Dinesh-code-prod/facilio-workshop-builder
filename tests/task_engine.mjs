@@ -59,4 +59,8 @@ await t('the engine source hides no statement inside a comment (a comment once s
   const bad = lines.filter(l => { const i = l.indexOf(' // '); return i > 0 && (l.indexOf('const r = reconcile(') > i || l.indexOf('let n = 0') > i); }); assert.deepEqual(bad, []);
   assert.ok(lines.some(l => l.trim().startsWith('const r = reconcile(desired(fx)')), 'the engine call stands on its own line');
 });
+await t('a go-live gap becomes a task and resolves when the check turns green; data not loaded leaves it alone', () => {
+  const w = desired({ goliveGaps: [{ id: 'run', label: 'Test cases have been run', detail: '3 of 10 run' }] }); assert.deepEqual([w[0].key, w[0].rule, w[0].view], ['gl:run', 'gl', 'golive']); assert.match(w[0].title, /^Go-live: Test cases/);
+  const made = reconcile(w, [], 'n').create; assert.equal(reconcile(desired({}), made, 'n').resolve[0].why, 'the go-live check turned green'); assert.deepEqual(reconcile(desired({}), made, 'n', null, new Set(['gl'])).resolve, []);
+});
 console.log(n + ' checks passed');

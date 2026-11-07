@@ -44,12 +44,14 @@ export function assignGate(rec, today, max = 3) { const n = rec && rec.day === t
 const oneLine = (v, max) => String(v || '').replace(/\s+/g, ' ').trim().slice(0, max);
 
 /** DM for a task that just got a new owner; null when nobody needs telling (no owner, same owner, done task, or the person assigned it to themselves). */
-export function assignmentNotice(prev, next, actorEmail, projectName) {
+export function assignmentNotice(prev, next, actorEmail, projectName, ref) {
   const to = String((next && next.owner) || '').trim().toLowerCase(); if (!to) return null;
   if (to === String((prev && prev.owner) || '').trim().toLowerCase()) return null;
   if (to === String(actorEmail || '').trim().toLowerCase()) return null;
   if (DONE.test(String(next.status || '').trim())) return null;
   const due = dueOf(next);
   return { to, title: 'Task assigned to you · ' + projectName, text: oneLine(next.title, 300),
-    facts: [{ title: 'Project', value: projectName }, { title: 'Status', value: next.status || 'To Do' }, { title: 'Priority', value: next.priority || '—' }, { title: 'Due', value: due || '—' }] };
+    facts: [{ title: 'Project', value: projectName }, { title: 'Status', value: next.status || 'To Do' }, { title: 'Priority', value: next.priority || '—' }, { title: 'Due', value: due || '—' }],
+    // the owner can finish it from the message: the button runs task_reply as the person who presses it, so only the owner can (the same button the daily digest has)
+    done: ref && ref.project && ref.id ? { title: 'Done: ' + (next.n ? 'T-' + next.n : oneLine(next.title, 20)), fn: 'api', data: { tool: 'task_reply', project: ref.project, taskId: ref.id, status: 'Done', text: 'Marked done by the owner from the Teams message.', via: 'teams' } } : null };
 }
