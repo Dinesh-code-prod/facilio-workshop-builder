@@ -109,7 +109,7 @@ Last updated: 2 Nov 2026 (evening), Claude Code session `vigilant-euclid`. Pushe
 - Login page: night city skyline, tree intro first on every fresh load, Open workspace goes straight to the home page.
 - Projects home: white KPI tiles, white glass project cards, tile/list switch, sort, show more, search on the left. Portfolio health and My work panels removed.
 - Admin dashboard: tabs (Overview, Delivery, Risk, People, Customers, Reports) built from widgets; flat matte admin styling; the top bar stays visible.
-- Depth (light top edge, soft black shadow) on flat boxes for team, admin and customer pages (`src/depthlayer.css`).
+- Depth on flat boxes was replaced by the coss look (`src/ui.css`); the old `depthlayer.css` and `clay-*.css` files are removed.
 - Facilio screens: side panel of grouped screens with a large 1920 px preview (102 screens, WebP, `public/demokit/shots`).
 - Server: AI limits fail fast with Retry-After; the page waits and retries by itself (`src/api.js`); `tests/load_ai.mjs` (100 projects, 100 people).
 - Road animation ("See how Delivery Studio helps"): 16 s shorter, wheel blur, tyres grounded.

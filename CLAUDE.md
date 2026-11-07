@@ -20,7 +20,7 @@ Run `/handoff`. It commits and pushes finished work, puts half-done work on a `w
 ## How the project works
 - Plain JavaScript single-page app: `src/*.js` is bundled by `build.mjs` (esbuild) into `dist/`. Views register in `FWBViews`, actions in `ACT.<name>` (wired with `data-act` and `data-change`).
 - Server function: `work/server/api.mjs` (plus `_ai.mjs` for AI, `_portfolio.mjs` for admin health). `work/work.json` lists the tools Otto (the Teams bot) can call.
-- CSS: styles are layered in the order listed in `build.mjs`; later layers win. Overrides use `body ...:not(#_):not(#__)` with `!important`. `depthlayer.css` is the last layer.
+- CSS: styles are layered in the order listed in `build.mjs`; later layers win. Overrides use `body ...:not(#_):not(#__)` with `!important`. `ui.css` is the last layer (the coss library, see `docs/reference/UI-COSS-LIBRARY.md`).
 - Preview locally: `node build.mjs`, then `node tests/ui/devserver.mjs 4173` and open http://localhost:4173/?nointro (`?intro=1` forces the opening animation). Local data is in `tests/ui/.devdata.json` (not committed).
 - Tests: `npm test`. Also `npm run test:load` (100 projects, 100 people, AI limits) and `npm run test:scale`.
 - CI: `.github/workflows/test.yml` runs `npm test` and the build on every push.
