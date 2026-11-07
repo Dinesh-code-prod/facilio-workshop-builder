@@ -41,4 +41,15 @@ assert.ok(!h.includes('<h2>Asset</h2>') && !h.includes('Rollout <b>x</b>') && h.
   assert.ok(r.text.includes('WO-001 Material request: Raise it from the spare-parts list Agreed answer: Cost is booked to the job on approval'));
   assert.ok(!build({ customer: 'A', project: 'P', modules: [{ label: 'Work Order', requirements: [{ id: 'WO-002', title: 'x', objective: 'y' }], flows: [], fields: [], forms: [{ label: 'f', sections: [{ name: 's', fields: ['a'] }] }] }], crosslinks: [], apps: [] }).text.includes('Agreed answer'));
 }
-console.log('10 mockup brief checks passed');
+{ // the agreed Solution text reaches the brief (src/sollogic.js areas, status Agreed only; the page passes paragraphs per module and the other agreed areas)
+  const { buildItems, toHtml } = globalThis.FWBViews.mockupLogic;
+  const sol = { customer: 'A', project: 'P', modules: [{ name: 'workorder', label: 'Work Order', requirements: [], flows: [], fields: [], forms: [], solution: ['Technicians close a job from the mobile app.', 'A supervisor approves anything over 500.'] }], other: [{ label: 'Notifications', group: 'Notifications', paras: ['Email the requester when the job is closed.'] }], crosslinks: [], apps: [] };
+  const r = build(sol); assert.equal(r.empty, false, 'a module with only an agreed solution is kept');
+  assert.ok(r.text.includes('## Work Order') && r.text.includes('Agreed solution (from the Solution tab') && r.text.includes('A supervisor approves anything over 500.'), 'the module solution is in the brief');
+  assert.ok(r.text.includes('## Other agreed areas (from the Solution tab)') && r.text.includes('### Notifications') && r.text.includes('Email the requester'), 'the other agreed areas are in the brief');
+  assert.equal(build({ customer: 'A', project: 'P', modules: [], other: [], crosslinks: [], apps: [] }).empty, true, 'nothing agreed, nothing applied: empty');
+  const items = buildItems(sol); assert.deepEqual(items.map(x => x.key), ['portfolio:all', 'module:workorder', 'area:other'], 'a module without flows and the other areas each get a brief');
+  assert.ok(items[1].text.includes('Technicians close a job') && !items[1].text.includes('Email the requester'), 'the module brief carries only its own solution');
+  const h = toHtml(sol); assert.ok(h.includes('<h3>Agreed solution</h3>') && h.includes('A supervisor approves') && h.includes('<h2>Other agreed areas</h2>'), 'the HTML copy has them too');
+}
+console.log('16 mockup brief checks passed');

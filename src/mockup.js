@@ -10,16 +10,18 @@
 
   /** pure: the spec text and the counts from plain data (see gather for the shape) */
   function build(d) {
-    const mods = arr(d.modules).filter(m => m.requirements.length || m.flows.length || m.fields.length || m.forms.length);
+    const mods = arr(d.modules).filter(m => m.requirements.length || m.flows.length || m.fields.length || m.forms.length || arr(m.solution).length);
     const out = ['# Prototype brief: ' + (d.customer ? d.customer + ' · ' : '') + (d.project || 'Facilio project'), '',
       'Build a clickable Facilio prototype of the solution below. It is made only from what the delivery team has confirmed. Use standard Facilio screens and behaviour wherever this brief is silent, and do not invent states, fields or steps.', ''];
     mods.forEach(m => {
       out.push('## ' + m.label, '');
+      if (arr(m.solution).length) { out.push('Agreed solution (from the Solution tab, agreed with the customer):'); arr(m.solution).forEach(p => out.push(p, '')); }
       if (m.requirements.length) { out.push('Confirmed requirements:'); m.requirements.forEach(r => out.push('- ' + r.id + ' ' + r.title + (r.objective ? ': ' + r.objective : '') + (r.rules ? ' Agreed answer: ' + r.rules : ''))); out.push(''); }
       m.flows.forEach(f => { out.push('State flow “' + f.name + '”: ' + list(f.states) + '.'); f.transitions.forEach(t => out.push('- ' + t.name + ': ' + t.from + ' → ' + t.to)); out.push(''); });
       if (m.fields.length) { out.push('Custom fields:'); m.fields.forEach(x => out.push('- ' + x.label + ' (' + x.type + (x.required ? ', required' : '') + (x.options && x.options.length ? ': ' + list(x.options) : '') + ')')); out.push(''); }
       m.forms.forEach(f => { out.push('Form “' + f.label + '”:'); f.sections.forEach(s => out.push('- ' + s.name + ': ' + list(s.fields))); out.push(''); });
     });
+    if (arr(d.other).length) { out.push('## Other agreed areas (from the Solution tab)', ''); d.other.forEach(a => { out.push('### ' + a.label, ''); arr(a.paras).forEach(p => out.push(p, '')); }); }
     if (arr(d.crosslinks).length) { out.push('## Flows across modules', ''); d.crosslinks.forEach(c => out.push('- ' + c.from + ' → ' + c.to + ': ' + c.name + (c.condition ? ' (when ' + c.condition + ')' : ''))); out.push(''); }
     if (arr(d.apps).length) {
       out.push('## Connected apps', '', 'Each of these is a connected app: show it opening from the place named, as a separate screen.', '');
@@ -27,20 +29,22 @@
       out.push('');
     }
     const counts = { modules: mods.length, flows: mods.reduce((n, m) => n + m.flows.length, 0), fields: mods.reduce((n, m) => n + m.fields.length, 0), forms: mods.reduce((n, m) => n + m.forms.length, 0), crosslinks: arr(d.crosslinks).length, apps: arr(d.apps).length, requirements: mods.reduce((n, m) => n + m.requirements.length, 0) };
-    return { text: out.join('\n').trim() + '\n', counts, empty: !mods.length && !counts.crosslinks && !counts.apps };
+    return { text: out.join('\n').trim() + '\n', counts, empty: !mods.length && !counts.crosslinks && !counts.apps && !arr(d.other).length };
   }
   /** pure: the same brief as one self-contained HTML page (Facilio colours, no outside files); it prints cleanly, so the browser's Print can save it as a PDF */
   function toHtml(d) {
-    const mods = arr(d.modules).filter(m => m.requirements.length || m.flows.length || m.fields.length || m.forms.length); const e = esc; const li = a => '<ul>' + a.map(x => '<li>' + x + '</li>').join('') + '</ul>';
+    const mods = arr(d.modules).filter(m => m.requirements.length || m.flows.length || m.fields.length || m.forms.length || arr(m.solution).length); const e = esc; const li = a => '<ul>' + a.map(x => '<li>' + x + '</li>').join('') + '</ul>';
     const body = [];
     mods.forEach(m => {
       body.push('<section><h2>' + e(m.label) + '</h2>');
+      if (arr(m.solution).length) body.push('<h3>Agreed solution</h3>' + arr(m.solution).map(p => '<p>' + e(p) + '</p>').join(''));
       if (m.requirements.length) body.push('<h3>Confirmed requirements</h3>' + li(m.requirements.map(r => '<b>' + e(r.id) + '</b> ' + e(r.title) + (r.objective ? ': ' + e(r.objective) : ''))));
       m.flows.forEach(f => body.push('<h3>State flow: ' + e(f.name) + '</h3><p class="st">' + f.states.map(s => '<span>' + e(s) + '</span>').join('<i>›</i>') + '</p>' + li(f.transitions.map(t => '<b>' + e(t.name) + '</b>: ' + e(t.from) + ' → ' + e(t.to)))));
       if (m.fields.length) body.push('<h3>Custom fields</h3>' + li(m.fields.map(x => '<b>' + e(x.label) + '</b> (' + e(x.type) + (x.required ? ', required' : '') + (x.options && x.options.length ? ': ' + e(list(x.options)) : '') + ')')));
       m.forms.forEach(f => body.push('<h3>Form: ' + e(f.label) + '</h3>' + li(f.sections.map(s => '<b>' + e(s.name) + '</b>: ' + e(list(s.fields))))));
       body.push('</section>');
     });
+    if (arr(d.other).length) body.push('<section><h2>Other agreed areas</h2>' + d.other.map(a => '<h3>' + e(a.label) + '</h3>' + arr(a.paras).map(p => '<p>' + e(p) + '</p>').join('')).join('') + '</section>');
     if (arr(d.crosslinks).length) body.push('<section><h2>Flows across modules</h2>' + li(d.crosslinks.map(c => e(c.from) + ' → ' + e(c.to) + ': <b>' + e(c.name) + '</b>' + (c.condition ? ' (when ' + e(c.condition) + ')' : ''))) + '</section>');
     if (arr(d.apps).length) body.push('<section><h2>Connected apps</h2>' + li(d.apps.map(a => '<b>' + e(a.name) + '</b> (' + e(a.module) + '): opens from the ' + e((a.triggerLabel ? a.triggerLabel + ' ' : '') + a.trigger) + '. ' + e(a.purpose) + (a.shows ? ' It shows: ' + e(a.shows) : '') + (a.users && a.users.length ? ' Used by: ' + e(list(a.users)) + '.' : ''))) + '</section>');
     const title = (d.customer ? d.customer + ' · ' : '') + (d.project || 'Facilio project');
@@ -71,11 +75,12 @@
     if (arr(d.modules).length) out.push({ key: 'portfolio:all', label: 'Portfolio: all sites', text: ['# Prototype brief: ' + (d.customer ? d.customer + ' · ' : '') + 'portfolio', '', 'Build a portfolio mockup for ' + (d.customer || 'the customer') + ': all their sites in one list (city, manager, status, open work orders, compliance), then one site summary with details, comments, cost and audit window, and the work orders of that site. Flow: portfolio, open a site, open its work orders, back to the portfolio.', 'Fictional sample data only.', '', houseGuide('module', 'Site: portfolio')].join(String.fromCharCode(10)) });
     arr(d.modules).forEach(m => {
       const flows = arr(m.flows);
-      flows.forEach((f, i) => out.push(mk('flow:' + (m.name || m.label) + ':' + (f.id || f.name), m.label + ': ' + f.name, { modules: [Object.assign({}, m, { flows: [f] }, i ? { requirements: [], fields: [], forms: [] } : {})] })));
+      flows.forEach((f, i) => out.push(mk('flow:' + (m.name || m.label) + ':' + (f.id || f.name), m.label + ': ' + f.name, { modules: [Object.assign({}, m, { flows: [f] }, i ? { requirements: [], fields: [], forms: [], solution: [] } : {})] })));
       if (!flows.length) out.push(mk('module:' + (m.name || m.label), m.label + ': fields and forms', { modules: [m] }));
     });
     arr(d.crosslinks).forEach(c => out.push(mk('link:' + c.from + '>' + c.to + ':' + c.name, c.from + ' to ' + c.to + ': ' + c.name, { crosslinks: [c] })));
     arr(d.apps).forEach(a => out.push(mk('app:' + (a.id || a.name), 'Connected app: ' + a.name, { apps: [a] })));
+    if (arr(d.other).length) out.push(mk('area:other', 'Other agreed areas', { other: d.other }));
     return out.filter(Boolean);
   }
   /** Brief for a Comet walkthrough video of one finished prototype. label is "Module: flow"; url is the Meteor share link (may be empty). Fictional data only, every step shown, the module named. */
@@ -94,11 +99,15 @@
       const fields = F.effFields(m.name).filter(x => x.status === 'proposed' || x.status === 'modified').map(x => ({ label: x.label, type: x.type, required: !!x.required, options: x.options || [] }));
       const forms = F.formsForModule(m.name).filter(f => f && f.proposed).map(f => ({ label: f.label || f.name, sections: (f.sections || []).map(s => ({ name: s.name, fields: (s.fields || []).filter(x => !x.hidden).map(x => x.label || F.fieldLabel(m.name, x.field)) })) }));
       const requirements = (S.ws.requirements || []).filter(r => r.status === 'Confirmed' && (r.modules || []).includes(m.name)).map(r => ({ id: r.id, title: r.title, objective: r.objective, rules: r.rules || '' }));
-      return { name: m.name, label: m.label || m.name, flows, fields, forms, requirements };
+      return { name: m.name, label: m.label || m.name, flows, fields, forms, requirements, solution: agreedSolution('module:' + m.name) };
     });
+    const SL = root.FWBSolutionLogic; const sdoc = F.doc('solutions') || { items: {} };   // only what the Solution tab has marked Agreed reaches the prototype brief
+    const other = SL ? SL.otherAreas(sdoc, (F.allModules() || []).filter(m => m.inScope).map(m => ({ name: m.name, label: m.label }))).filter(a => a.paras && a.paras.length && ((sdoc.items || {})[a.key] || {}).status === 'Agreed').map(a => ({ label: a.label, group: a.group, paras: a.paras })) : [];
     const crosslinks = []; Object.entries(S.ws.crossLinks || {}).forEach(([from, l]) => arr(l).forEach(x => crosslinks.push({ from: label(from), to: label(x.to), name: x.name, condition: x.condition || '' })));
-    return { customer: (S.project && S.project.customer) || '', project: (S.project && S.project.name) || '', modules, crosslinks, apps: props.filter(p => p.kind === 'connectedapp' && p.status === 'applied') };
+    return { customer: (S.project && S.project.customer) || '', project: (S.project && S.project.name) || '', modules, other, crosslinks, apps: props.filter(p => p.kind === 'connectedapp' && p.status === 'applied') };
   }
+  /** the paragraphs of one Solution-tab area, but only when its status is Agreed (a draft is not yet confirmed with the customer) */
+  function agreedSolution(key) { const SL = root.FWBSolutionLogic; const doc = F.doc('solutions') || { items: {} }; const rec = (doc.items || {})[key]; return SL && rec && rec.status === 'Agreed' ? SL.paras(SL.textOf(doc, key)) : []; }
   /** Data for the client mockup: every module in scope with its default state flow, its fields (agreed or changed first, then the standard ones, up to 16 more), its first form, confirmed requirements, flows across modules and applied connected apps. */
   function gatherClient() {
     const base = gather(); const mk = (F.allModules() || []).filter(m => m.inScope);
@@ -109,7 +118,7 @@
       const all = F.effFields(m.name).filter(x => x.status !== 'removed'); const agreed = all.filter(x => x.status === 'proposed' || x.status === 'modified'), std = all.filter(x => !(x.status === 'proposed' || x.status === 'modified')).slice(0, 16);
       const fields = agreed.concat(std).map(x => ({ label: x.label || x.name, type: typeof x.type === 'string' ? x.type : '', required: !!x.required, options: x.options || [] }));
       const fm = F.formsForModule(m.name); const form = fm.find(f => f && f.proposed) || fm[0]; const forms = form ? [{ label: form.label || form.name, sections: (form.sections || []).map(s => ({ name: s.name, fields: (s.fields || []).filter(x => !x.hidden).map(x => x.label || F.fieldLabel(m.name, x.field)).slice(0, 12) })).filter(s => s.fields.length) }] : [];
-      return { name: m.name, label: m.label || m.name, flows, fields, forms, requirements: g.requirements };
+      return { name: m.name, label: m.label || m.name, flows, fields, forms, requirements: g.requirements, solution: g.solution || [] };
     });
     return Object.assign({}, base, { modules });
   }
