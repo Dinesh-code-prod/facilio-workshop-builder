@@ -39,5 +39,12 @@ export function installQbank(d) {
     const p = M.checkPrompt(d, 14000); const r = await aiJSON({ op: 'extract', provider: String((b && b.provider) || ''), system: p.system, messages: [{ role: 'user', content: p.user }], maxTokens: 1800, temperature: 0.1, budget: 21000 }, j => { if (!j || typeof j !== 'object' || Array.isArray(j)) throw new HttpError(502, 'The documents could not be read'); return j; });
     return ok({ result: M.parseCheck(r.data, d), fingerprint: M.fingerprint(d), provider: r.provider || '' });
   });
+  /** the contract documents read for the modules they deliver, exclude or mention, each with the words and the page (nothing is saved here; the page keeps the result with the documents) */
+  route('POST', '/api/projects/:id/msadocs/modules', async (b, P) => {
+    const s = await me(); await team(s, P.id); await limit('ai', s.id); const M = globalThis.FWBMsaDocs; const d = await data(P.id, 'msa_text'); if (!M.docsOf(d).length) throw new HttpError(400, 'There is no contract document with readable text yet.');
+    const cat = (Array.isArray(b && b.catalogue) ? b.catalogue : []).slice(0, 600).map(c => ({ name: String(c && c.name || '').slice(0, 80), label: String(c && c.label || '').slice(0, 80) })).filter(c => /^[A-Za-z0-9_.-]{1,80}$/.test(c.name) && c.label);
+    const p = M.modulesPrompt(d, cat, 12000); const r = await aiJSON({ op: 'extract', provider: String((b && b.provider) || ''), system: p.system, messages: [{ role: 'user', content: p.user }], maxTokens: 2200, temperature: 0.1, budget: 21000 }, j => { if (!j || typeof j !== 'object' || Array.isArray(j)) throw new HttpError(502, 'The documents could not be read'); return j; });
+    return ok({ modules: M.parseModules(r.data, d, cat), fingerprint: M.fingerprint(d), provider: r.provider || '' });
+  });
   return {};
 }

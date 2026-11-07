@@ -57,9 +57,20 @@
   const catalogue = () => (F.allModules() || []).map(m => ({ name: m.name, label: m.label || m.name }));
   /** what the contract documents say about the modules (cached while the documents and the catalogue are the same) */
   const empty = { strong: [], weak: [], excluded: [], docs: 0 };
+  /** the AI's reading joins the word matching: a delivered module with its quote found in the document is strong, one without is weak, an excluded one is excluded; what Facilio's list does not have becomes a custom entry */
+  function withScan(res, scan) {
+    if (!scan) return res; const lab = id => ((V.contractDocs ? V.contractDocs() : []).find(d => d.id === id) || {}).label || 'Contract'; const pull = (list, n) => { const i = list.findIndex(x => x.name === n); return i < 0 ? null : list.splice(i, 1)[0]; };
+    scan.forEach(x => { const hit = { doc: lab(x.doc), page: x.page, quote: x.quote, strong: x.status === 'delivered' && x.quoted, excluded: x.status === 'excluded', ai: true }; const kind = x.status === 'excluded' && x.quoted ? 'excluded' : x.status === 'delivered' && x.quoted ? 'strong' : 'weak';
+      if (!x.name) { if (x.status !== 'excluded') res.custom.push({ label: x.label, hits: [hit], useCases: x.useCases, status: x.status, quoted: x.quoted }); return; }
+      const e = pull(res.strong, x.name) || pull(res.weak, x.name) || pull(res.excluded, x.name) || { name: x.name, label: (catalogue().find(m => m.name === x.name) || {}).label || x.label, hits: [] };
+      if (kind === 'strong') res.strong.push(e); else if (kind === 'excluded') (e.hits.some(h => h.strong) ? res.strong : res.excluded).push(e); else (e.hits.some(h => h.strong) ? res.strong : res.weak).push(e);
+      e.hits = e.hits.concat(hit); e.useCases = (e.useCases || []).concat(x.useCases).filter((u, i, a) => a.indexOf(u) === i).slice(0, 8); });
+    res.strong.sort((a, b) => a.label.localeCompare(b.label)); return res;
+  }
   function ctr() {
     const docs = V.contractDocs ? V.contractDocs() : []; if (!docs.length || !root.FWBContractMods) return empty; const cat = catalogue(); const fp = docs.map(d => d.name + ':' + d.pages.reduce((n, p) => n + p.text.length, 0)).join('|') + '#' + cat.length; const u = S.ui;
-    if (!u.cm || u.cm.fp !== fp) u.cm = { fp, res: Object.assign(root.FWBContractMods.find(cat, docs), { docs: docs.length }) }; return u.cm.res;
+    const scan = V.contractScan ? V.contractScan() : null; const fp2 = fp + '#' + (scan ? scan.length : 'x');
+    if (!u.cm || u.cm.fp !== fp2) u.cm = { fp: fp2, res: withScan(Object.assign(root.FWBContractMods.find(cat, docs), { docs: docs.length, custom: [], scanned: !!scan }), scan, docs) }; return u.cm.res;
   }
   /** the modules that get an area: the ones the contract delivers (strong evidence), the ones a person added from the weaker mentions, and any module that already has a written solution (written work is never hidden);
       with no contract text at all, the modules switched on in the project (the old behaviour) */
@@ -132,11 +143,17 @@
     return '<p class="xs muted">' + (hits.length ? 'The contract only mentions this module in passing or excludes it; it is here because someone added it.' : 'The contract documents do not mention this module; it is here because it was switched on or added by hand.') + '</p>' + (li ? '<details class="fl-sol-r"><summary>What the contract says (' + hits.length + ')</summary><ul>' + li + '</ul></details>' : '');
   }
   /** the panel above the list: how many documents were read, which modules were found, which are only mentioned, which the contract excludes, and the switch-on button */
+  /** modules (from the contract, with use cases) whose table is still empty: [{ key, label, useCases, hit }] */
+  function seedList() { const c = ctr(), d = doc(); const out = []; c.strong.forEach(x => { if (x.useCases && x.useCases.length && !L().hasContent(d, 'module:' + x.name) && !arr((L().recOf(d, 'module:' + x.name) || {}).rows).length) out.push({ key: 'module:' + x.name, label: x.label, useCases: x.useCases, hit: x.hits.find(h => h.ai) || x.hits[0] }); });
+    L().customOf(d).filter(x => x.type === 'module_contract').forEach(x => { const m = (c.custom || []).find(y => y.label.toLowerCase() === x.label.toLowerCase()); if (m && m.useCases.length && !arr((L().recOf(d, x.key) || {}).rows).length) out.push({ key: x.key, label: x.label, useCases: m.useCases, hit: m.hits[0] }); }); return out; }
   function ctrPanel() {
     const c = ctr(); if (!c.docs) return '<div class="fl-sol-g"><h3>From the contract</h3><p class="xs muted">No contract document has text yet, so the list shows the modules switched on in the project. Add the contract on Contract intake and the modules it names appear here.</p><button type="button" class="btn sm" data-act="nav" data-view="msaintake">Open Contract intake</button></div>';
-    const off = c.strong.filter(x => !((F.allModules() || []).find(m => m.name === x.name) || {}).inScope); const added = new Set(arr(doc().addedModules)); const weak = c.weak.filter(x => !added.has(x.name));
+    const off = c.strong.filter(x => !((F.allModules() || []).find(m => m.name === x.name) || {}).inScope); const added = new Set(arr(doc().addedModules)); const weak = c.weak.filter(x => !added.has(x.name)); const have = new Set(L().customOf(doc()).map(x => x.label.toLowerCase())); const custom = (c.custom || []).filter(x => x.status === 'delivered' && !have.has(x.label.toLowerCase())); const seedable = seedList();
     return '<div class="fl-sol-g"><h3>From the contract</h3><p class="xs muted">' + c.docs + ' document' + (c.docs === 1 ? '' : 's') + ' read: ' + c.strong.length + ' module' + (c.strong.length === 1 ? '' : 's') + ' found.</p>'
+      + (!c.scanned && !ro() ? '<button type="button" class="btn sm primary" data-act="mdModules">Read the contract with the AI</button><p class="xs muted">The word match can miss modules the contract words differently (for example reactive service or planned work). The AI reads every page and quotes where.</p>' : '')
       + (off.length && !ro() ? '<button type="button" class="btn sm primary" data-act="solSwitchOn" title="' + esc(off.map(x => x.label).join(', ')) + '">Switch on ' + off.length + ' in the project</button><p class="xs muted">So the BRD, the state flows and the module pages follow the contract.</p>' : '')
+      + (seedable.length && !ro() ? '<button type="button" class="btn sm" data-act="solSeed">Add the use cases from the contract (' + seedable.length + ' module' + (seedable.length === 1 ? '' : 's') + ')</button>' : '')
+      + (custom.length ? '<details class="fl-sol-more" open><summary>Named in the contract, not in Facilio’s list (' + custom.length + ')</summary>' + custom.map((x, i) => '<div class="fl-sol-wk"><span>' + esc(x.label) + '<em>' + esc(x.hits[0].doc) + ' p.' + esc(x.hits[0].page) + '</em></span>' + (ro() ? '' : '<button type="button" class="btn sm" data-act="solAddCustom" data-i="' + i + '">Add</button>') + '</div>').join('') + '</details>' : '')
       + (weak.length ? '<details class="fl-sol-more"><summary>Also mentioned (' + weak.length + ')</summary>' + weak.slice(0, 20).map(x => '<div class="fl-sol-wk"><span>' + esc(x.label) + '<em>' + esc(x.hits[0].doc) + ' p.' + esc(x.hits[0].page) + '</em></span>' + (ro() ? '' : '<button type="button" class="btn sm" data-act="solAddMod" data-name="' + esc(x.name) + '">Add</button>') + '</div>').join('') + '</details>' : '')
       + (c.excluded.length ? '<details class="fl-sol-more"><summary>Excluded by the contract (' + c.excluded.length + ')</summary><p class="xs muted">' + esc(c.excluded.map(x => x.label).join(', ')) + '</p></details>' : '') + '</div>';
   }
@@ -173,6 +190,9 @@
     document.addEventListener('input', upd); document.addEventListener('change', upd);
   }
   ACT.solAddMod = a => { if (guard()) return; const n = a.getAttribute('data-name'), d = doc(); if (arr(d.addedModules).includes(n)) return; write(Object.assign({}, d, { addedModules: arr(d.addedModules).concat(n).slice(0, 80) }), 'Module added to the solution', n); V.render(); };
+  /** the use cases the contract names become the first rows of the module's table (topic filled, solution still to write), each with the contract words as its source */
+  ACT.solSeed = () => { if (guard()) return; let d = doc(), n = 0; seedList().forEach(x => { d = L().save(d, x.key, '', { rows: x.useCases.map(u => ({ cells: { topic: u }, status: 'Draft' })), by: by(), at: new Date().toISOString(), why: 'Use cases read from the contract', sources: [{ quote: x.hit && x.hit.quote, source: x.hit ? x.hit.doc + ' page ' + x.hit.page : 'the contract' }] }); n++; }); if (!n) return; write(d, 'Use cases added from the contract', n + ' module' + (n === 1 ? '' : 's')); toast('Use cases added to ' + n + ' module' + (n === 1 ? '' : 's') + '. Write what Facilio does for each.', 5000); V.render(); };
+  ACT.solAddCustom = a => { if (guard()) return; const x = (ctr().custom || []).filter(y => y.status === 'delivered')[+a.getAttribute('data-i')]; if (!x) return; try { const r = L().addArea(doc(), { label: x.label, type: 'module_contract', keywords: [x.label] }, by(), new Date().toISOString()); let d = r.doc; d = L().save(d, r.key, '', { rows: x.useCases.map(u => ({ cells: { topic: u }, status: 'Draft' })), by: by(), at: new Date().toISOString(), why: 'Named in the contract', sources: [{ quote: x.hits[0].quote, source: x.hits[0].doc + ' page ' + x.hits[0].page }] }); write(d, 'Contract module added', x.label); ui().key = r.key; ui().draft = null; V.render(); } catch (e) { toast(e.message, 5000, true); } };
   ACT.solSwitchOn = async () => {
     if (guard()) return; const off = ctr().strong.filter(x => !((F.allModules() || []).find(m => m.name === x.name) || {}).inScope); if (!off.length) return;
     if (!(await V.confirmDialog('Switch on the contract modules', 'Mark ' + off.length + ' module' + (off.length === 1 ? '' : 's') + ' in scope for this project: ' + off.map(x => x.label).join(', ') + '? The BRD, the state flows and the module pages then follow the contract.', 'Switch on'))) return;
