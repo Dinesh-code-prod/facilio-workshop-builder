@@ -122,5 +122,6 @@
     const tbl = widget(cur ? RSTG.find(x => x[0] === cur)[1] : 'All active projects', 'worst health first', table(['Project', 'Health', 'Plan step', 'Next milestone', 'Target', 'Open tasks', 'Waiting'], rows, 'No active project is in this stage.'), cur ? 12 : 7, RC[cur]);
     return `<div class="sd-admin">${tabs}${kp}${grid(cur ? tbl : pipe + tbl)}</div>`;
   };
+  V.sd = { kpi, widget, table, chipT, grid, none, lifecycle };   // shared with the PMO overview (src/pmo.js)
   ACT.sdAdm = a => { S.ui.sdAdm = Number(a.getAttribute('data-v')); V.setMode('admin'); };
 })(typeof window !== 'undefined' ? window : globalThis);
