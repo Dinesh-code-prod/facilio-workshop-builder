@@ -13,6 +13,7 @@ import { buildContext } from './_solctx.mjs';
 import { installTaskTracking } from './_tasksapi.mjs';
 import { installMailTasks } from './_mailapi.mjs';
 import { installJobs } from './_jobsapi.mjs';
+import { installNotify, norm as nNorm } from './_notify.mjs';
 import { pendingFor, digestMessage, digestKey, assignKey, assignGate, assignmentNotice, BASE_URL as TW_BASE } from './_taskwatch.mjs';
 let FWB = null; // this copy of the server's own dispatcher (not looked up through a global, so two copies in one process cannot mix)
 let CTX = null, HDR = {};   // set at the start of every request (a Lambda handles one request at a time)
@@ -238,6 +239,16 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   async function teamsOn() { if (!CTX.teams || !CTX.teams.send) return false; try { return String(await CTX.secrets.get('teams_notify')).toLowerCase() === 'on'; } catch (e) { return false; } }
   // One message to the new owner, at most 3 a day per person (a bulk owner change must not flood Teams or use up the app's send budget), never from a customer's edit,
   // and never allowed to hold up or fail the save: it runs after the record is saved and gives Teams 4 seconds.
+  // in-app notifications (_notify.mjs): installed below; until then a no-op
+  let notify = async () => 0;
+  const STAGE_NAME = { intro: 'Project introduction', sessions: 'Requirement sessions', design: 'Mockup & BRD', uat: 'UAT & FTR', training: 'Training guides', hypercare: 'Hypercare', handover: 'Project handover' };
+  async function notifyItem(project, kind, id, cur, data, s, role) {
+    try {
+      if (kind === 'task' && role !== 'customer') { const to = nNorm(data.owner); if (to && to !== nNorm(cur && cur.owner)) await notify({ type: 'task_assigned', project, to: [to], actor: s.email, title: 'Task assigned to you · ' + project.name, text: data.title, view: 'tasks', key: 'ta|' + id + '|' + to, skipTeams: true }); }   // the Teams message of this event is sent by taskAssignedNotice
+      else if (kind === 'signoff' && role === 'customer' && data.status && data.status !== (cur && cur.status) && ['signed', 'concern'].includes(data.status)) await notify({ type: 'customer_signoff', project, to: 'team', actor: s.email, title: (data.status === 'signed' ? 'Signed off' : 'Concern raised') + ' · ' + project.name, text: data.title || data.name || id, view: 'governance', key: 'so|' + id + '|' + data.status });
+      else if (kind === 'lcstage' && role !== 'customer' && data.status === 'closed' && (!cur || cur.status !== 'closed')) await notify({ type: 'stage_closed', project, to: 'team', actor: s.email, title: 'Stage closed: ' + (STAGE_NAME[id] || id), text: (s.name || s.email) + ' closed it' + (data.note ? ': ' + data.note : '.'), view: 'lifecycle', key: 'sc|' + id + '|' + (data.at || now()) });
+    } catch (e) { console.log('notify item failed: ' + (e && e.message)); }
+  }
   async function taskAssignedNotice(project, cur, data, s, role) {
     try { if (role === 'customer' || !(await teamsOn())) return; const m = assignmentNotice(cur, data, s.email, project.name); if (!m) return;
       const key = assignKey(m.to); const gate = assignGate((await dbGet('twn', key) || {}).value, now().slice(0, 10)); if (!gate.allow) return; await dbPut('twn', key, gate.rec);
@@ -1754,6 +1765,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     let notice; if (P.kind === 'interest' && !cur) { notice = await interestNotice(project, P.item, data) ? 'teams' : 'none'; await audit(P.id, s.id, 'interest-created', P.item + ' ' + data.title); }
     if (['signoff', 'cr', 'raid', 'onb', 'onbsub', 'decision', 'brdrev', 'ai', 'hc', 'ho', 'close', 'cmodx', 'cfgrel', 'capp', 'ugd', 'vid', 'tkt', 'res', 'ugv', 'ugu', 'task', 'lcstage', 'utr'].includes(P.kind)) await audit(P.id, s.id, P.kind + (cur ? '-updated' : '-created'), P.item + (data.status ? ' ' + data.status : ''));
     if (P.kind === 'task') await taskAssignedNotice(project, cur, data, s, role);
+    await notifyItem(project, P.kind, P.item, cur, data, s, role);
     return ok(Object.assign({ item: itemOut(P.kind, P.item, nh, data) }, notice ? { notice } : {}));
   }));
   route('DELETE', '/api/projects/:id/items/:kind/:item', async (b, P) => {
@@ -2141,9 +2153,11 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   }
   installDs({ HttpError, projectAccess, pickProject, viaApp, audit, CONNECTOR, storeServerFile });   // design proposals: flows and cross-module flows (_dsapi.mjs)   // requirement session transcripts and findings (_rsapi.mjs)
   installQuestions({ HttpError, projectAccess, pickProject, docRead, CONNECTOR });   // prepared questions for a workshop and live_ask (_questionsapi.mjs)
-  installTaskTracking({ route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, itemsOf, withLock, audit, viaApp, CONNECTOR, DONE_RE, cut, rid });   // task suggestions from Claude: routes and tools (_tasksapi.mjs)
-  installMailTasks({ route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, withLock, audit, viaApp, CONNECTOR, docRead, cut });   // customer mail becomes tasks: inbox records, routes and task_tracking actions (_mailapi.mjs)
-  installJobs({ route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, withLock, audit, CONNECTOR, rid, CTX });   // job queue: Studio buttons write jobs, Claude in the person's own session claims and finishes them (_jobsapi.mjs)
+  notify = installNotify({ route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbList, dbDel, ctx: () => CTX, now, teamOf, BASE_URL: TW_BASE }).notify;   // in-app, browser and Teams notifications (_notify.mjs)
+  const N = (...a) => notify(...a);
+  installTaskTracking({ route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, itemsOf, withLock, audit, viaApp, CONNECTOR, DONE_RE, cut, rid, notify: N });   // task suggestions from Claude: routes and tools (_tasksapi.mjs)
+  installMailTasks({ route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, withLock, audit, viaApp, CONNECTOR, docRead, cut, notify: N });   // customer mail becomes tasks: inbox records, routes and task_tracking actions (_mailapi.mjs)
+  installJobs({ route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, withLock, audit, CONNECTOR, rid, CTX, notify: N });   // job queue: Studio buttons write jobs, Claude in the person's own session claims and finishes them (_jobsapi.mjs)
   // The platform allows at most 40 MCP tools per app, so related tools share one public entry with an `action`; the old tool names stay as the implementations.
   const ACTION_TOOLS = { transfer_read: { list: 'transfer_list', get: 'transfer_get' }, transfer_write: { begin: 'transfer_begin', store: 'transfer_store', submit: 'transfer_submit' }, transfer_push: { push_begin: 'transfer_push_begin', report: 'transfer_report', verify: 'transfer_verify' }, session_questions: { prepare: 'get_prepared_questions', live: 'live_ask', save_transcript: 'rs_save_transcript', save_findings: 'rs_save_findings', save_design: 'design_save_proposals', save_mockup: 'mockup_save_page' }, task_tracking: { evidence: 'task_evidence', save: 'save_task_suggestions', reply: 'task_reply', mail_list: 'mail_list', mail_save: 'mail_save', mail_draft: 'mail_draft', mail_sent: 'mail_sent' }, project_jobs: { list: 'jobs_list', claim: 'jobs_claim', progress: 'jobs_progress', finish: 'jobs_finish', handoff_get: 'get_handoff', file_urls: 'jobs_file_urls', file_put_begin: 'jobs_file_put_begin', file_put_done: 'jobs_file_put_done', handoff_submit: 'submit_handoff_result' } };
   for (const [name, acts] of Object.entries(ACTION_TOOLS)) CONNECTOR[name] = async (s, b) => { const impl = Object.prototype.hasOwnProperty.call(acts, String((b || {}).action)) ? acts[b.action] : null; if (!impl) throw new HttpError(400, 'action must be one of: ' + Object.keys(acts).join(', ')); return CONNECTOR[impl](s, b); };
