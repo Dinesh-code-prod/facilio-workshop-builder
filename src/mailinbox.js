@@ -6,7 +6,7 @@
   'use strict';
   const F = root.FWB, V = root.FWBViews; if (!F || !V) return; const { S, esc } = F; const API = root.FWBApi; const ACT = V.ACT; const { toast, ico } = V;
   const canEdit = () => !V.isCustomer() && !S.readonly; const pid = () => S.project && S.project.id;
-  const SC = { to: 'You are on To', cc: 'You are on CC', team: 'Sent to a team member', mention: 'Names the project' };
+  const SC = { found: 'Found by Claude', to: 'You are on To', cc: 'You are on CC', team: 'Sent to a team member', mention: 'Names the project' };
   const DW = { solution_accepted: 'An accepted version on the Solution tab that quotes this mail', brd_saved: 'A BRD version saved after the task was made', cr_decided: 'The change request is decided', none: 'No fact to check: close it on the board or tell Otto in Teams' };
   const day = v => { const d = new Date(v); return isNaN(d) ? '' : d.toISOString().slice(0, 10); };
   const box = () => (S.ui.mlBox && S.ui.mlBox.pid === pid() ? S.ui.mlBox : null);
@@ -35,11 +35,20 @@
     if (rp.state === 'drafted') return `<div class="cs-mail-r" data-id="${esc(r.id)}">${top}${meta}<div class="cs-mail-meta">Reply drafted by Claude, <b>not approved</b>. Read it, change it if you like, then approve.</div><textarea class="cs-mail-reply" id="mlBody_${esc(r.id)}" aria-label="Reply to the customer">${esc(rp.body)}</textarea><div class="cs-mail-act"><button class="btn sm primary" data-act="mlApprove" data-id="${esc(r.id)}">Approve this reply</button></div></div>`;
     return `<div class="cs-mail-r" data-id="${esc(r.id)}">${top}${meta}<div class="cs-mail-meta">Reply approved by ${esc(rp.approvedBy)}. Nothing has been sent by the Studio: open it in Outlook and press Send there.</div><div class="cs-mail-ex">${esc(rp.body)}</div><div class="cs-mail-act"><button class="btn sm primary" data-act="mlOutlook" data-id="${esc(r.id)}">Open in Outlook</button><button class="btn sm" data-act="mlSentCheck" data-id="${esc(r.id)}" title="Claude looks in your Sent Items and closes this mail when it finds the reply">Ask Claude: was it sent?</button></div></div>`;
   }
+  /** what the latest "Find mail with Claude" request is doing, so the card never sits silent */
+  const fetchJob = () => { const k = V.studioJobs && V.studioJobs.K && V.studioJobs.K(); return ((k && k.pid === pid() && k.jobs) || []).filter(j => j.kind === 'fetch_mail').sort((a, b) => String(b.requestedAt).localeCompare(String(a.requestedAt)))[0] || null; };
+  const jobLine = () => { const j = fetchJob(); if (!j) return ''; const sum = (j.result && j.result.summary) || ''; const recent = Date.now() - Date.parse(j.finishedAt || j.requestedAt || 0) < 6 * 3600e3;
+    const t = j.status === 'waiting' ? 'Waiting for your Claude to pick up the request (it checks every 5 minutes while the Claude app is open).' : j.status === 'claimed' ? 'Claude is searching your mail: ' + ((j.progress && j.progress.text) || 'working') : j.status === 'needs_input' ? 'Claude has a question: ' + (((j.result || {}).questions || [])[0] || 'open the Assistant panel') : j.status === 'failed' && recent ? 'The search could not finish: ' + sum : j.status === 'done' && recent ? 'Claude finished: ' + (sum || 'done') + ((b => b && b.list && b.list.length ? '' : ' Nothing new matched this project.')(box())) : '';
+    return t ? '<div class="cs-mail-r"><div class="cs-mail-meta">' + esc(t) + '</div></div>' : ''; };
+  let tick = 0;
+  /** while a search is open the job and the list are read again every 8 seconds, so what Claude saves shows up without a reload */
+  function watch() { if (tick || !canEdit()) return; tick = setInterval(async () => { const j = fetchJob(); if (!pid() || !(S.view === 'tasks' || document.querySelector('.cs-mail'))) { clearInterval(tick); tick = 0; return; } if (document.hidden) return; const was = j && j.status;
+    if (V.studioJobs && V.studioJobs.load) await V.studioJobs.load(true, true); const n = fetchJob(); if (n && ['waiting', 'claimed', 'needs_input'].includes(n.status) || (was && n && was !== n.status)) await load(true); if (!n || !['waiting', 'claimed', 'needs_input'].includes(n.status)) { clearInterval(tick); tick = 0; } }, 8000); }
   V.mailPanel = function () {
     if (!canEdit() || !pid()) return ''; const b = box(); const list = (b && b.list) || []; const pend = list.filter(r => r.status === 'pending').length;
-    return `<section class="cs-mail" role="region" aria-label="Mail inbox"><div class="cs-mail-h"><h3>Mail inbox</h3><span class="cs-mail-meta">${list.length ? pend + ' waiting for you. Nothing becomes a task until you accept it.' : 'Customer mail that needs action shows here, sorted by Claude. Nothing is sent from the Studio.'}</span><span class="sp"></span><button class="btn sm" data-act="mlFind" title="Claude searches your Outlook (to you, copied to you, naming this project, or sent to the rest of the team) and adds what matters here">${ico('spark')}Find mail with Claude</button><button class="btn sm" data-act="mlDrop">${ico('upl')}Add .eml files</button></div>${list.map(row).join('')}</section>`;
+    return `<section class="cs-mail" role="region" aria-label="Mail inbox"><div class="cs-mail-h"><h3>Mail inbox</h3><span class="cs-mail-meta">${list.length ? pend + ' waiting for you. Nothing becomes a task until you accept it.' : 'Customer mail that needs action shows here, sorted by Claude. Nothing is sent from the Studio.'}</span><span class="sp"></span><button class="btn sm" data-act="mlFind" title="Claude searches your Outlook (to you, copied to you, naming this project, or sent to the rest of the team) and adds what matters here">${ico('spark')}Find mail with Claude</button><button class="btn sm" data-act="mlDrop">${ico('upl')}Add .eml files</button></div>${jobLine()}${list.map(row).join('')}</section>`;
   };
-  V.mailLoad = load;
+  V.mailLoad = force => { const p = load(force); if (V.studioJobs && V.studioJobs.load) V.studioJobs.load(false, true); const j = fetchJob(); if (j && ['waiting', 'claimed', 'needs_input'].includes(j.status)) watch(); return p; };
   // the page of its own (Project menu): the same panel as on the Tasks page, with how the mail gets here
   V.mailtab = {
     html() {
@@ -55,7 +64,7 @@
   ACT.mlFind = a => guard(a, async () => {
     const r = await V.studioJobs.post('/jobs', { kind: 'fetch_mail', note: 'Customer mail for ' + (S.project.customer || S.project.name) });
     // no Claude page: the background Claude (scheduled task "Delivery Studio job queue", every 5 minutes) does the job through the connectors; the bell tells the team when mail arrives
-    toast((r && r.duplicate ? 'Claude already has this request. ' : '') + 'Your Claude picks it up within about 5 minutes; the mail then appears here and the bell tells you.', 9000); setTimeout(() => load(false), 90000);
+    toast((r && r.duplicate ? 'Claude already has this request. ' : '') + 'Your Claude picks it up within about 5 minutes; the mail then appears here and the bell tells you.', 9000); setTimeout(() => load(false), 90000); watch();
   });
   ACT.mlDrop = () => { let i = document.getElementById('mlFile'); if (!i) { i = document.createElement('input'); i.type = 'file'; i.id = 'mlFile'; i.accept = '.eml,message/rfc822'; i.multiple = true; i.hidden = true; document.body.appendChild(i);
     i.addEventListener('change', async () => { const files = [...i.files]; i.value = ''; if (!files.length) return; const parse = root.FWBParseEml; const mails = [], bad = [];

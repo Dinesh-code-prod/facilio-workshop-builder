@@ -71,6 +71,13 @@ export function installJobs(d) {
       if (!f.mint || !f.mint[0]) throw new HttpError(400, 'The upload link was never issued'); f.urls = [f.mint[0]]; f.status = 'ready'; f.contentCheck = 'unchecked'; await dbPut('fl.' + p.id, f.id, f); await audit(p.id, s.id, 'file-uploaded', 'solution_doc: ' + f.name);
       return { name: f.name, note: 'Saved to the project. It shows on the Handover page under Solution document.' };
     },
+    /** the background Claude asks for the daily mail search; only this kind, and not again within 20 hours (whoever asked, however it ended) */
+    async jobs_request(s, b) {
+      const p = await pickProject(s, b.project); const kind = String(b.kind || 'fetch_mail'); if (kind !== 'fetch_mail') throw new HttpError(400, 'Only fetch_mail can be requested this way.');
+      const rows = await all(p.id); const last = rows.filter(j => j.kind === 'fetch_mail').map(j => Date.parse(j.requestedAt)).filter(Boolean).sort((a, c) => c - a)[0];
+      if (last && Date.now() - last < 20 * 3600e3) return { project: p.name, requested: false, note: 'A mail search was already requested in the last 20 hours. Do the waiting one, if there is one.' };
+      const r = await ops.create(s, p.id, { kind: 'fetch_mail', note: 'Daily search for customer mail' }); return { project: p.name, requested: !r.duplicate, job: r.job.id, note: 'Queued. Claim it with action list and claim, then follow its instructions.' };
+    },
     async jobs_progress(s, b) { const p = await pickProject(s, b.project); const j = await ops.progress(s, p.id, String(b.id || ''), b.summary); return { job: view(j), note: 'Shown to the person in Delivery Studio. Keep going.' }; },
     async jobs_finish(s, b) {
       const p = await pickProject(s, b.project); const j = await ops.finish(s, p.id, String(b.id || ''), { status: b.status, summary: b.summary, transferId: b.transferId, questions: b.questions });

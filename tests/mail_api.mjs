@@ -14,16 +14,17 @@ const d = { route: (m, p, fn) => { routes[m + ' ' + p] = fn; }, ok: (b, st) => (
 installMailTasks(d); const S = { id: 'u1', email: 'me@facilio.com' };
 const mail = (o) => Object.assign({ messageId: '<m1@c.com>', from: { name: 'Sara', email: 'sara@customer.com' }, to: ['me@facilio.com'], cc: [], subject: 'Process flow change', body: 'The Work Order approval needs two steps.' }, o || {});
 
-await t('mail_save stores a pending record, ignores irrelevant mail, and never stores the same message id twice (any spelling)', async () => {
+await t('mail_save stores a pending record (also one that names nothing: found by Claude), and never stores the same message id twice (any spelling)', async () => {
   const r = await CONNECTOR.mail_save(S, { project: 'p1', mails: [mail(), mail({ messageId: 'M1@C.com' }), mail({ messageId: 'x', to: ['z@z.com'], subject: 'Lunch', body: 'Pizza?' }), { subject: 'no id' }] });
-  assert.deepEqual(r.results.map(x => x.status), ['stored', 'duplicate', 'ignored', 'rejected']); assert.equal(r.stored, 1);
-  const l = await CONNECTOR.mail_list(S, { project: 'p1' }); assert.equal(l.mails.length, 1); assert.deepEqual([l.mails[0].status, l.mails[0].route.area, l.mails[0].route.job, l.mails[0].route.areaKey, l.mails[0].scenario], ['pending', 'solution', 'compare_solution', 'module:Work Order', 'to']);
-  assert.match(l.untrusted, /data/); assert.deepEqual(l.knownMessageIds, ['m1@c.com']);
+  assert.deepEqual(r.results.map(x => x.status), ['stored', 'duplicate', 'stored', 'rejected']); assert.equal(r.stored, 2);   // a mail Claude brings that names nothing is still shown (found), for a person to dismiss
+  const strict = await routes['POST /api/projects/:id/mailtasks']({ mails: [mail({ messageId: 'zz', to: ['z@z.com'], subject: 'Lunch', body: 'Pizza?' })] }, { id: 'p1' }); assert.equal(strict.b.results[0].status, 'ignored');   // a dropped file must still match
+  const l = await CONNECTOR.mail_list(S, { project: 'p1' }); assert.equal(l.mails.length, 2); const sol = l.mails.find(x => x.route.area === 'solution'); assert.deepEqual([l.mails.find(x => x.scenario === 'found').status, sol.status, sol.route.area, sol.route.job, sol.route.areaKey, sol.scenario], ['pending', 'pending', 'solution', 'compare_solution', 'module:Work Order', 'to']);
+  assert.match(l.untrusted, /data/); assert.deepEqual(l.knownMessageIds.sort(), ['m1@c.com', 'x']);
 });
 let id;
 await t('a team mail the person never saw (sent to another member) and a mention are stored; accept sets the done-when check once', async () => {
   const r = await CONNECTOR.mail_save(S, { project: 'p1', mails: [mail({ messageId: 'm2', to: ['ravi@facilio.com'], subject: 'BRD update', body: 'Please change the BRD.' }), mail({ messageId: 'm3', to: ['x@y.com'], subject: 'Question', body: 'About Inventory.' })] }); assert.equal(r.stored, 2);
-  const l = await CONNECTOR.mail_list(S, { project: 'p1' }); assert.deepEqual(l.mails.map(x => x.scenario).sort(), ['mention', 'team', 'to']); id = l.mails.find(x => x.route.area === 'solution').id;
+  const l = await CONNECTOR.mail_list(S, { project: 'p1' }); assert.deepEqual(l.mails.map(x => x.scenario).sort(), ['found', 'mention', 'team', 'to']); id = l.mails.find(x => x.route.area === 'solution').id;
   const a = await d.CONNECTOR.mail_list(S, { project: 'p1', id }); assert.equal(a.mails[0].mail.body.length > 0, true);
   const acc = await routes['POST /api/projects/:id/mailtasks/:mid/accept']({}, { id: 'p1', mid: id }); assert.deepEqual([acc.b.mail.status, acc.b.mail.doneWhen.type, acc.b.mail.doneWhen.area, acc.b.mail.acceptedBy], ['accepted', 'solution_accepted', 'module:Work Order', 'me@facilio.com']);
   await assert.rejects(() => routes['POST /api/projects/:id/mailtasks/:mid/accept']({}, { id: 'p1', mid: id }), /already accepted/);

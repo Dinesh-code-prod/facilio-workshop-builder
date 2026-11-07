@@ -7,7 +7,7 @@ let n = 0; const t = async (name, fn) => { await fn(); n++; console.log('  ok  '
 
 await t('defaults: every event is in-app; browser only where it matters; Teams only for the ones that need a person quickly', () => {
   const p = prefsFor(null); for (const k of Object.keys(EVENTS)) assert.equal(p.types[k].inapp, true, k);
-  assert.deepEqual(channelsFor('customer_signoff', null), { inapp: true, browser: true, teams: true }); assert.deepEqual(channelsFor('mail_arrived', null), { inapp: true, browser: false, teams: false }); assert.deepEqual(channelsFor('nope', null), { inapp: false, browser: false, teams: false });
+  assert.deepEqual(channelsFor('customer_signoff', null), { inapp: true, browser: true, teams: true }); assert.deepEqual(channelsFor('mail_arrived', null), { inapp: true, browser: true, teams: true }); assert.deepEqual(channelsFor('ticket_new', null), { inapp: true, browser: true, teams: false }); assert.deepEqual(channelsFor('nope', null), { inapp: false, browser: false, teams: false });
 });
 await t('a person can turn a channel off; bad values are ignored; quiet hours (also across midnight) silence the pop-up and Teams but never the in-app record', () => {
   const off = { types: { stage_ready: { inapp: true, teams: false }, task_due: { browser: 'yes' } } }; assert.equal(channelsFor('stage_ready', off).teams, false); assert.equal(prefsFor(off).types.task_due.browser, false);

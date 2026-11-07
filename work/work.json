@@ -303,7 +303,7 @@
    },
    {
     "name": "project_jobs",
-    "description": "The job queue: work Delivery Studio asks Claude to do (pull the MSA, apply kick-off change requests, fetch feedback or org status). action list: waiting jobs of a project. action claim (id): take one job; you get fixed instructions for it. action finish (id, status done|needs_input|failed, summary, transferId, questions): report the result; anything you stored waits for a person to approve it. Legacy Open in Claude hand-offs: action handoff_get (id) and handoff_submit (id, result).",
+    "description": "The job queue: action request asks for the daily customer-mail search (fetch_mail only, refused if one was requested in the last 20 hours); work Delivery Studio asks Claude to do (pull the MSA, apply kick-off change requests, fetch feedback or org status). action list: waiting jobs of a project. action claim (id): take one job; you get fixed instructions for it. action finish (id, status done|needs_input|failed, summary, transferId, questions): report the result; anything you stored waits for a person to approve it. Legacy Open in Claude hand-offs: action handoff_get (id) and handoff_submit (id, result).",
     "function": "api",
     "input_schema": {
      "type": "object",
@@ -311,6 +311,7 @@
       "action": {
        "type": "string",
        "enum": [
+        "request",
         "list",
         "claim",
         "finish",

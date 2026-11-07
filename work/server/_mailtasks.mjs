@@ -56,9 +56,9 @@
     if (rt.area === 'brd') return Number.isInteger(brdCount) && brdCount >= 0 ? { type: 'brd_saved', since, count: brdCount } : { type: 'brd_saved', since };   // count = BRD versions in the history when the task was made
     return { type: 'none' };
   }
-  /** a pending inbox record for one cleaned mail, or null when the mail matters to nobody on the project */
-  function makeRecord(mail, ctx, now) {
-    const sc = scenario(mail, ctx); if (!sc) return null; const rt = route(mail, ctx);
+  /** a pending inbox record for one cleaned mail, or null when the mail matters to nobody on the project (never null when lenient) */
+  function makeRecord(mail, ctx, now, lenient) {
+    const sc = scenario(mail, ctx) || (lenient ? { scenario: 'found', hit: '' } : null); if (!sc) return null; const rt = route(mail, ctx);   // lenient: Claude already searched by the project words, so a mail it brings is shown for a person to accept or dismiss
     return { id: idOf(mail.messageId), status: 'pending', scenario: sc.scenario, hit: sc.hit, route: rt, title: (rt.area === 'solution' ? 'Solution change: ' : rt.area === 'brd' ? 'BRD change: ' : rt.area === 'uat' ? 'UAT: ' : rt.area === 'hypercare' ? 'Hypercare: ' : 'Customer mail: ') + mail.subject.replace(/^((re|fw|fwd)\s*:\s*)+/i, '').slice(0, 160),
       mail, savedAt: now, doneWhen: null, reply: null };
   }

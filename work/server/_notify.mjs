@@ -16,8 +16,8 @@ export const EVENTS = {
   customer_signoff: { label: 'The customer signed off or raised a concern', def: { inapp: true, browser: true, teams: true } },
   proposal_waiting: { label: 'A Claude proposal is waiting for you', def: { inapp: true, browser: true, teams: false } },
   job_done: { label: 'A job you asked for finished or needs input', def: { inapp: true, browser: true, teams: false } },
-  mail_arrived: { label: 'Customer mail arrived for a project', def: { inapp: true, browser: false, teams: false } },
-  ticket_new: { label: 'A support ticket needs attention', def: { inapp: true, browser: false, teams: false } }
+  mail_arrived: { label: 'Customer mail arrived for a project', def: { inapp: true, browser: true, teams: true } },
+  ticket_new: { label: 'A support ticket needs attention', def: { inapp: true, browser: true, teams: false } }
 };
 export const TEAMS_PER_DAY = 5, KEEP = 100;
 const cut = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);

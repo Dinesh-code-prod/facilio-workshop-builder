@@ -47,4 +47,16 @@ await t('the Teams digest gets a Done button for tasks due soon or overdue, run 
   const m = digestMessage(pendingFor('kim@facilio.com', P, today), today); assert.equal(m.actions.length, 2); assert.deepEqual(m.actions[1], { title: 'Done: T-12', fn: 'api', data: { tool: 'task_reply', project: 'p1', taskId: 't_a', status: 'Done', text: 'Marked done by the owner from the Teams message.', via: 'teams' } });
   assert.match(src('work/server/api.mjs'), /viaButton \? \(b\.tool === 'task_reply' \? 'task_reply' : ''\)/);
 });
+await t('change request waiting, BRD in review and a Claude question each become one task, and resolve when the fact is gone', () => {
+  const f = { crsWaiting: [{ id: 'c1', label: 'CR-001 Extra report' }], brdApproval: true, claudeAsks: [{ id: 'jb_1', q: 'Which file is the MSA?', by: 'kim@facilio.com' }] };
+  const w = desired(f); assert.deepEqual(w.map(x => x.key), ['cr:c1', 'brdapp', 'ask:jb_1']); assert.deepEqual([w[0].type, w[1].title, w[2].owner], ['Change Request', 'Approve the BRD', 'kim@facilio.com']);
+  const made = reconcile(w, [], 'n').create; assert.equal(made.length, 3); assert.equal(reconcile(w, made, 'n').create.length, 0);
+  const r = reconcile(desired({}), made, 'n'); assert.deepEqual(r.resolve.map(x => x.why).sort(), ['Claude has its answer', 'the BRD was approved', 'the change request was decided']);
+  const keep = reconcile(desired({}), made, 'n', null, new Set(['cr', 'ask'])); assert.deepEqual(keep.resolve.map(x => x.id), [made[1].id]);   // data not loaded for a rule: its tasks are left alone
+});
+await t('the engine source hides no statement inside a comment (a comment once swallowed the reconcile call and stopped the whole engine with no error)', () => {
+  const code = fs.readFileSync(new URL('../src/taskengine.js', import.meta.url), 'utf8'); const lines = code.split(String.fromCharCode(10));
+  const bad = lines.filter(l => { const i = l.indexOf(' // '); return i > 0 && (l.indexOf('const r = reconcile(') > i || l.indexOf('let n = 0') > i); }); assert.deepEqual(bad, []);
+  assert.ok(lines.some(l => l.trim().startsWith('const r = reconcile(desired(fx)')), 'the engine call stands on its own line');
+});
 console.log(n + ' checks passed');
