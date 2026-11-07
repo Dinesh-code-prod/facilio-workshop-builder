@@ -1,10 +1,11 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/showcase-check.mjs
 // Explore Facilio in a browser against the local preview: start an entry from a module (only configuration facts are filled), save a draft,
 // upload an image, publishing needs a named source and a confirmation, the customer's view lists only published entries, an "I'm interested"
 // request is stored with its author and opens a Facilio action (and, with FAKE_GRAPH=1, a Teams notice), the team updates the request, and entry text is shown as text.
 // Usage: node tests/ui/showcase-check.mjs [baseUrl] [outDir]   (start the preview first: npm run preview)
 import { chromium } from 'playwright'; import fs from 'node:fs';
 const BASE = process.argv[2] || 'http://localhost:4173'; const OUT = process.argv[3] || 'tests/ui/out'; fs.mkdirSync(OUT, { recursive: true });
-const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } }); const p = await ctx.newPage();
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } }); const p = await ctx.newPage();
 const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
 await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');
 const pid = await p.evaluate(async () => { const r = await fetch('/api/fn/api/projects', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Showcase test', customer: 'Gulf Towers' }) }); return (await r.json()).project.id; });

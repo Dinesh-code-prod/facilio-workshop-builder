@@ -1,3 +1,4 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/command-check.mjs
 // Admin Command Center in a browser against the local preview (node tests/ui/devserver.mjs 4173): portfolio metrics that filter the
 // table, health worked out from the records (blocked, insufficient data), evidence buttons that open the actual task, the project
 // drawer and the delivery status set by a person, the AI briefing (evidence only, a local stand-in for the model), My work on the
@@ -6,7 +7,7 @@
 // Usage: node tests/ui/command-check.mjs [baseUrl] [outDir]
 import { chromium } from 'playwright'; import fs from 'node:fs';
 const BASE = process.argv[2] || 'http://localhost:4173'; const OUT = process.argv[3] || 'tests/ui/out'; fs.mkdirSync(OUT, { recursive: true });
-const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } }); const p = await ctx.newPage();
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } }); const p = await ctx.newPage();
 const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
 const as = async email => { await ctx.clearCookies(); if (email) await ctx.addCookies([{ name: 'dev_user', value: encodeURIComponent(email), url: BASE }]); };
 const api = (m, u, body) => p.evaluate(async ([m, u, body]) => { const r = await fetch('/api/fn/api' + u, { method: m, headers: { 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }); return { status: r.status, data: await r.json().catch(() => ({})) }; }, [m, u, body]);

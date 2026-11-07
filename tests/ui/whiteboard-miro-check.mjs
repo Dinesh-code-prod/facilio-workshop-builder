@@ -1,8 +1,9 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/whiteboard-miro-check.mjs
 // Process Whiteboard, Miro-style tools: left tool rail with a shapes menu, click-to-place, pen, connector variants, the floating bar over a selection
 // (fill, font size, bold, lock), the zoom bar; then "Save as combined flow" and the combined flow in the BRD (drawing, steps, connections; Word export).
 import { chromium } from 'playwright'; import fs from 'node:fs'; import JSZip from 'jszip';
 const BASE = process.argv[2] || 'http://localhost:4175'; const OUT = process.argv[3] || 'tests/ui/out'; fs.mkdirSync(OUT, { recursive: true });
-const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }); const p = await ctx.newPage();
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }); const p = await ctx.newPage();
 const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
 await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');
 const pid = await p.evaluate(async () => (await (await fetch('/api/fn/api/projects', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Miro board check', customer: 'Acme Facilities' }) })).json()).project.id);

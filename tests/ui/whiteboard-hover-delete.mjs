@@ -1,3 +1,4 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/whiteboard-hover-delete.mjs
 // Whiteboard, Miro-style deletion and editing: hovering an element shows a delete button without deleting anything, the button deletes
 // only that element (and the connectors on it) without starting a drag, Delete/Backspace delete the selection, undo/redo restore it,
 // Shift+click multi-select moves several elements with their connectors attached, zoom keeps the button on the element, a large
@@ -6,7 +7,7 @@
 // Usage: node tests/ui/whiteboard-hover-delete.mjs [baseUrl] [outDir]   (start the preview first: npm run preview)
 import { chromium } from 'playwright'; import fs from 'node:fs';
 const BASE = process.argv[2] || 'http://localhost:4173'; const OUT = process.argv[3] || 'tests/ui/out'; fs.mkdirSync(OUT, { recursive: true });
-const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
 const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
 await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');
 const pid = await p.evaluate(async () => { const r = await fetch('/api/fn/api/projects', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Whiteboard delete', customer: 'Acme' }) }); return (await r.json()).project.id; });

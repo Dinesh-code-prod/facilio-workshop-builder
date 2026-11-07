@@ -1,8 +1,9 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/csp-libs.mjs
 // Loads every bundled library under the page's Content-Security-Policy and runs one small real operation with each
 // (PDF make + read, OCR, Excel write + read, Word write + read, ZIP, PowerPoint renderer import). Run with the CSP watch preload.
 import { chromium } from 'playwright';
 const BASE = process.argv[2] || 'http://localhost:4173';
-const b = await chromium.launch(); const p = await b.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const p = await b.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
 await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');
 const r = await p.evaluate(async () => {
   const V = window.FWBViews, out = {}; const t = async (k, fn) => { try { out[k] = await fn(); } catch (e) { out[k] = 'ERROR ' + (e && e.message || e); } };

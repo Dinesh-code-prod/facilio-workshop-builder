@@ -1,3 +1,4 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/mom-check.mjs
 // Minutes of meeting from a transcript: Create MOM on the Transcripts page, DeepSeek in parts (stubbed), preview, "Use these minutes" fills the Meeting minutes form, saving creates the minutes and their decision and action records.
 import { chromium } from 'playwright';
 const BASE = process.argv[2] || 'http://localhost:4173'; const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const p = await (await b.newContext({ viewport: { width: 1440, height: 900 } })).newPage();

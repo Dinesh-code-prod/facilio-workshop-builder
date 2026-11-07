@@ -1,3 +1,4 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/brd-word-check.mjs
 // BRD Draft: Word-style editing (add blocks, bold, Enter for a new paragraph), import of a Word file, delete with confirm, exports keep the edits.
 import { chromium } from 'playwright'; import fs from 'node:fs'; import JSZip from 'jszip';
 const BASE = process.argv[2] || 'http://localhost:4175'; const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }); const p = await ctx.newPage();

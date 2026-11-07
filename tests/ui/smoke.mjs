@@ -1,9 +1,10 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/smoke.mjs
 // Functional regression after the UI changes: workspace switch, phone menu, keyboard activation of rows,
 // a form that validates, saves and persists, drawer Cancel/Close, and sign out. Usage: node tests/ui/smoke.mjs [baseUrl]
 import { chromium } from 'playwright';
 const BASE = process.argv[2] || 'http://localhost:4173'; const res = [];
 const check = (name, pass, detail) => { res.push({ name, pass }); console.log((pass ? 'ok   ' : 'FAIL ') + name + (detail ? '  (' + detail + ')' : '')); };
-const browser = await browser0(); async function browser0() { return chromium.launch(); }
+const browser = await browser0(); async function browser0() { return chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); }
 const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
 const toast = () => page.evaluate(() => [...document.querySelectorAll('.toast')].map(t => t.textContent).join(' | '));
 await page.goto(BASE + '/'); await page.waitForSelector('[data-act]'); await page.getByRole('button', { name: /open workspace/i }).click(); await page.waitForSelector('.projects-page');

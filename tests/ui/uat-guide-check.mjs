@@ -1,10 +1,11 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/uat-guide-check.mjs
 // UAT guide preparation (local preview, local stand-in for the model): from Build, UAT & Go-Live › UAT the team prepares the testers' guide
 // with the same guided drafting as user guides: UAT-shaped sections and sources, scenarios written from confirmed requirements (a draft
 // requirement is never the one tested), the guide listed back on the UAT tab and opened from there, Word export.
 // Usage: node tests/ui/uat-guide-check.mjs [baseUrl] [outDir]
 import { chromium } from 'playwright'; import fs from 'node:fs';
 const BASE = process.argv[2] || 'http://localhost:4173'; const OUT = process.argv[3] || 'tests/ui/out'; fs.mkdirSync(OUT, { recursive: true });
-const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
 const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
 await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');
 const pid = await p.evaluate(async () => (await (await fetch('/api/fn/api/projects', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'UAT guide check', customer: 'Acme' }) })).json()).project.id);

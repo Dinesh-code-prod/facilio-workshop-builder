@@ -1,3 +1,4 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/intro-small-check.mjs
 // The opening animation must not throw on a small window (a negative canvas radius used to stop it and leave the page stuck behind it).
 import { chromium } from 'playwright';
 const BASE = process.argv[2] || 'http://localhost:4173'; const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const errs = [];

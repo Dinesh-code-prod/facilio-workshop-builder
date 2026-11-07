@@ -1,9 +1,10 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/security-check.mjs
 // Browser checks for the security fixes: hostile values in uploaded spreadsheets, sample Word files, shared whiteboard records and
 // stored links never run as script; CSV cells cannot become formulas; ZIP imports are bounded; the server refuses unsafe links and
 // malformed boards. Every payload sets window.__pwn if it ever executes. Usage: node tests/ui/security-check.mjs [baseUrl]
 import { chromium } from 'playwright';
 const BASE = process.argv[2] || 'http://localhost:4173';
-const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1440, height: 900 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const p = await b.newPage({ viewport: { width: 1440, height: 900 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
 const res = []; const check = (n, ok, d) => { res.push(ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
 await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');
 let pid = await p.evaluate(async () => ((await (await fetch('/api/fn/api/projects')).json()).projects || [])[0]?.id);

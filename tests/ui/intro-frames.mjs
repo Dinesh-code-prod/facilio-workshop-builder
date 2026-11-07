@@ -1,10 +1,11 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/intro-frames.mjs
 // Frame-pacing check for the opening tree animation (src/animation/treeintro.js), from start until "Get started" shows.
 // Records every animation frame: real time, the intro's own timeline position, canvas size changes and long frames,
 // then reports what a viewer perceives as stutter: frames over 50 ms, jumps in the timeline, sudden speed changes and canvas
 // re-allocations. Usage: node tests/ui/intro-frames.mjs [baseUrl] [cpuSlowdown]
 import { chromium } from 'playwright';
 const BASE = process.argv[2] || 'http://localhost:4173'; const SLOW = Number(process.argv[3] || 1);
-const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } }); const p = await ctx.newPage();
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } }); const p = await ctx.newPage();
 if (SLOW > 1) { const cdp = await ctx.newCDPSession(p); await cdp.send('Emulation.setCPUThrottlingRate', { rate: SLOW }); }
 await p.addInitScript(() => {
   const rec = window.__frames = []; let lastW = 0;

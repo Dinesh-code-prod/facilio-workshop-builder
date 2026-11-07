@@ -1,3 +1,4 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/explore-scroll-check.mjs
 // Discover more inside a project: pinned sideways galleries (src/animation/discover/project-scroll.js). The headline assembles, a chapter stays pinned while its cards slide sideways,
 // the card in focus grows, and it is all off for reduced motion and phone widths.
 // Usage: node tests/ui/explore-scroll-check.mjs [baseUrl] [shotsDir]

@@ -1,3 +1,4 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/orgpkg-check.mjs
 // Org Package Export page in the browser (local preview): the project's new custom module, fields and state flow are listed with their
 // status and source requirements; before BRD sign-off they are drafts and the package is named DRAFT_; after sign-off the package downloads,
 // re-opens as a ZIP with exactly the listed files, every XML parses and passes the structural check; unsupported items and manual steps are
@@ -6,7 +7,7 @@
 import { chromium } from 'playwright'; import fs from 'node:fs'; import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url); const JSZip = require('jszip'); const { DOMParser } = require('@xmldom/xmldom'); const O = require('../../src/orgpkg.js');
 const BASE = process.argv[2] || 'http://localhost:4173'; const OUT = process.argv[3] || 'tests/ui/out'; fs.mkdirSync(OUT, { recursive: true });
-const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }); const p = await ctx.newPage();
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }); const p = await ctx.newPage();
 const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
 await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');
 const pid = await p.evaluate(async () => (await (await fetch('/api/fn/api/projects', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Org package', customer: 'Acme' }) })).json()).project.id);

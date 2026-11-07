@@ -1,5 +1,6 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/wide.mjs
 import { chromium } from 'playwright';
-const [view, w, tab] = process.argv.slice(2); const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: +w, height: 844 } });
+const [view, w, tab] = process.argv.slice(2); const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const p = await b.newPage({ viewport: { width: +w, height: 844 } });
 await p.goto('http://localhost:4173/'); await p.waitForSelector('[data-act]');
 const pid = await p.evaluate(async () => ((await (await fetch('/api/fn/api/projects')).json()).projects || []).sort((a, b) => b.name.length - a.name.length)[0]?.id);
 if (view.startsWith('admin')) { await p.getByRole('button', { name: /open workspace/i }).first().click(); await p.waitForTimeout(900); await p.evaluate(() => window.FWBViews.ACT.openAdmin()); await p.waitForSelector('.adm-nav .adm-ni', { state: 'attached' }); await p.locator('.adm-nav .adm-ni', { hasText: view.split('/')[1] }).first().click(); await p.waitForTimeout(1500); } else { await p.goto(`http://localhost:4173/#/p/${pid}/${view}`); await p.reload(); await p.waitForSelector('main.main', { state: 'attached' }); await p.waitForTimeout(1500); }

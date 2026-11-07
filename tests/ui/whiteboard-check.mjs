@@ -1,20 +1,21 @@
+// Run: PW_CHANNEL=msedge node tests/ui/whiteboard-check.mjs [baseUrl]  (PW_CHANNEL=msedge on this PC)
 // Process Whiteboard, end to end in a browser against the local preview (start it with FAKE_CLAUDE=1 to exercise the image import review with the
 // local test double; without it the import must explain that Claude is needed). Usage: node tests/ui/whiteboard-check.mjs [baseUrl] [outDir]
 import { chromium } from 'playwright'; import fs from 'node:fs';
 let __pk = 0; const place = async (p, t) => { if (['rect', 'ellipse', 'diamond', 'tri', 'para', 'hex', 'frame'].includes(t)) { await p.click('#wbShapesB'); await p.click(`#wbShapes [data-wbtool="${t}"]`); } else await p.click(`.wb-rail [data-wbtool="${t}"]`); const bb = await p.locator('#wbSvg').boundingBox(); __pk++; await p.mouse.click(bb.x + bb.width / 2 - 330 + (__pk % 4) * 140, bb.y + bb.height / 2 - 60 + Math.floor(__pk / 4) % 3 * 110); };
 const BASE = process.argv[2] || 'http://localhost:4173'; const OUT = process.argv[3] || 'tests/ui/out'; fs.mkdirSync(OUT, { recursive: true });
-const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }); const p = await ctx.newPage();
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }); const p = await ctx.newPage();
 const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
 await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');
-const pid = await p.evaluate(async () => { const have = (await (await fetch('/api/fn/api/projects')).json()).projects || []; if (have.length) return have[0].id; const r = await fetch('/api/fn/api/projects', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Whiteboard test', customer: 'Acme' }) }); return (await r.json()).project.id; });
+const pid = await p.evaluate(async () => { const r = await fetch('/api/fn/api/projects', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Whiteboard test', customer: 'Acme' }) }); return (await r.json()).project.id; });
 await p.goto(BASE + `/#/p/${pid}/whiteboard`); await p.reload(); await p.waitForSelector('main.main', { state: 'attached' }); await p.waitForTimeout(1500);
-check('menu has Process Whiteboard under Solution Design & Configuration', await p.evaluate(() => window.FWBViews.navFor().some(g => g.g === '3. Solution Design & Configuration' && g.items.some(i => i[0] === 'whiteboard'))));
+check('menu has Process Whiteboard under 2. Requirement sessions', await p.evaluate(() => window.FWBViews.navFor().some(g => g.g === '2. Requirement sessions' && g.items.some(i => i[0] === 'whiteboard'))));
 const W = () => p.evaluate(() => { const s = window.FWBViews.whiteboardState; return s.B ? { nodes: s.B.nodes.length, edges: s.B.edges.length, frames: s.B.nodes.filter(n => n.t === 'frame').length, states: s.B.nodes.filter(n => n.t === 'state').length, sel: s.sel.size, undo: s.undo.length, name: s.B.name } : null; });
 // new board
 await p.click('[data-act="wbNew"]'); await p.fill('#wbName', 'Order to cash'); await p.click('#drawer .btn.primary'); await p.waitForSelector('#wbSvg'); await p.waitForTimeout(600);
 check('a new board is created and opened', (await W())?.name === 'Order to cash');
 // notes, shapes, text editing
-await place(p, 'note'); await p.waitForSelector('.wb-edit'); await p.keyboard.type('Customer raises a request'); await p.click('#wbSvg', { position: { x: 30, y: 30 } }); await p.waitForTimeout(200);
+await place(p, 'note'); await p.waitForSelector('.wb-edit'); await p.keyboard.type('Customer raises a request'); await p.click('#wbSvg', { position: { x: 700, y: 450 } }); await p.waitForTimeout(200);
 await place(p, 'rect'); await p.waitForTimeout(200); await place(p, 'diamond'); await p.waitForTimeout(200);
 let s = await W(); check('sticky note, box and decision added', s.nodes === 3, JSON.stringify(s));
 check('note text is saved as plain text', await p.evaluate(() => window.FWBViews.whiteboardState.B.nodes[0].text === 'Customer raises a request'));
@@ -50,12 +51,13 @@ await p.waitForTimeout(400); await p.selectOption('[data-change="wbAlign"]', 't'
 const al = await p.evaluate(() => { const ns = window.FWBViews.whiteboardState.B.nodes.filter(n => n.t === 'note' || n.t === 'rect'); return ns.map(n => n.y); });
 check('align top edges', new Set(al).size === 1, al.join(','));
 await p.click('[data-act="wbGroup"]'); await p.waitForTimeout(150); check('group', await p.evaluate(() => { const ns = window.FWBViews.whiteboardState.B.nodes.filter(n => n.t === 'note' || n.t === 'rect'); return ns[0].g && ns.every(n => n.g === ns[0].g); }));
-// image import (with the local test double when FAKE_CLAUDE=1)
+// image import: the picture is read by the person's own Claude, so the test pastes a Claude reply (the same flow as tests/ui/claude-handoff-check.mjs); the reply has a missing step, a markup label and an unsure part
 await p.click('[data-act="wbImg"]'); await p.waitForSelector('#drawer');
 const [chooser] = await Promise.all([p.waitForEvent('filechooser'), p.click('[data-act="wbImgPick"]')]);
 const png = Buffer.from(await p.evaluate(async () => { const c = document.createElement('canvas'); c.width = 400; c.height = 200; const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 400, 200); g.strokeRect(20, 60, 100, 40); g.strokeRect(250, 60, 100, 40); g.fillText('Submitted', 40, 85); g.fillText('Closed', 280, 85); return [...new Uint8Array(await (await new Promise(r => c.toBlob(r, 'image/png'))).arrayBuffer())]; }));
 await chooser.setFiles({ name: 'flow.png', mimeType: 'image/png', buffer: png }); await p.waitForTimeout(300);
-await p.click('#wbImgRead'); await p.waitForSelector('#wbImgOut .tbl, #wbImgOut .notice.err', { timeout: 20000 });
+await p.evaluate(() => localStorage.setItem('fwb_claude_conn', '0')); await p.click('#wbImgRead'); await p.waitForSelector('#hoR', { timeout: 8000 });
+await p.fill('#hoR', JSON.stringify({ title: 'Work order approval', nodes: [{ id: 'n1', label: 'Submitted', kind: 'start', confidence: 'detected' }, { id: 'n2', label: 'Approval needed?', kind: 'decision', confidence: 'detected' }, { id: 'n3', label: 'Approved <script>alert(1)</script>', kind: 'state', confidence: 'inferred' }, { id: 'n4', label: '', kind: 'state', confidence: 'detected' }, { id: 'n5', label: 'Closed', kind: 'end', confidence: 'detected' }], edges: [{ from: 'n1', to: 'n2', label: '', confidence: 'detected' }, { from: 'n2', to: 'n3', label: 'Yes', confidence: 'detected' }, { from: 'n2', to: 'n4', label: 'No', confidence: 'uncertain' }, { from: 'n3', to: 'n5', label: 'Complete', confidence: 'detected' }, { from: 'n4', to: 'n9', label: 'ghost', confidence: 'detected' }], notes: 'One box was too blurry to read.' })); await p.click('[data-act="hoBack"]'); await p.waitForSelector('#wbImgOut .tbl, #wbImgOut .notice.err', { timeout: 20000 });
 const rv = await p.evaluate(() => ({ rows: document.querySelectorAll('#wbImgOut [data-wbn]').length, uncertain: document.querySelectorAll('#wbImgOut .tag.red').length, err: (document.querySelector('#wbImgOut .notice.err') || {}).textContent || '', dropped: (document.querySelector('#wbImgOut .notice.warn') || {}).textContent || '', script: document.querySelector('#wbImgOut').innerHTML.includes('<script') }));
 if (rv.err) check('image import explains that Claude is needed when no key is set', /needs Claude/.test(rv.err), rv.err.slice(0, 90));
 else {
@@ -70,7 +72,7 @@ else {
 }
 await p.keyboard.press('Escape');
 // persistence: reload and reopen
-await p.waitForTimeout(1500); const n1 = (await W()).nodes; await p.reload(); await p.waitForSelector('main.main', { state: 'attached' }); await p.waitForTimeout(1500);
+await p.waitForTimeout(3000); const n1 = (await W()).nodes; await p.reload(); await p.waitForSelector('main.main', { state: 'attached' }); await p.waitForTimeout(1500);
 await p.evaluate(() => window.FWBViews.go('whiteboard')); await p.waitForTimeout(1200);
 check('the board is saved and reopens after a reload', (await W())?.nodes === n1, `${n1} elements`);
 await p.click('[data-act="wbFit"]'); await p.waitForTimeout(500); await p.screenshot({ path: `${OUT}/whiteboard-board.png` });

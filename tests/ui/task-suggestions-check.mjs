@@ -1,10 +1,11 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/task-suggestions-check.mjs
 // Tasks page, "Claude suggestions" panel (src/tasks.js) in a browser against the local preview: pending suggestions are listed with their reason and source, Accept saves the
 // task through the normal save and removes the row, a refused Accept (bad owner) keeps the row and the task, Dismiss removes the row, and the panel does not appear when nothing is waiting.
 // The same flow was checked by hand in the Browser pane against the local preview (Playwright's browsers were not installed when this was written, so this script itself has not been run).
 // Usage: NO_PERSIST=1 node tests/ui/devserver.mjs 4173   then   node tests/ui/task-suggestions-check.mjs [baseUrl] [outDir]
 import { chromium } from 'playwright'; import fs from 'node:fs';
 const BASE = process.argv[2] || 'http://localhost:4173'; const OUT = process.argv[3] || 'tests/ui/out'; fs.mkdirSync(OUT, { recursive: true });
-const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } }); const p = await ctx.newPage();
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } }); const p = await ctx.newPage();
 const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
 await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');
 const pid = await p.evaluate(async () => {

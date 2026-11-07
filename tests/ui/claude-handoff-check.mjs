@@ -1,3 +1,4 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/claude-handoff-check.mjs
 // Open in Claude from the Process Whiteboard "Describe with AI" box: the panel opens, the three Open buttons and Copy work, a pasted reply comes back as a checked preview.
 import { chromium } from 'playwright';
 const BASE = process.argv[2] || 'http://localhost:4173'; const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, permissions: ['clipboard-read', 'clipboard-write'] }); const p = await ctx.newPage();

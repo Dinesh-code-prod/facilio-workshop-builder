@@ -1,3 +1,4 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/wb-align-check.mjs
 // Whiteboard: every Align option lines up the selected items (edges, centres, middles, even spacing), also with a locked item and state pills.
 import { chromium } from 'playwright';
 const BASE = process.argv[2] || 'http://localhost:4173'; const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const p = await (await b.newContext({ viewport: { width: 1440, height: 900 } })).newPage();

@@ -1,8 +1,9 @@
+// On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/welcome-check.mjs
 // "See how Delivery Studio helps" on the team sign-in and the customer invitation sign-in: the highlighted button plays the road journey,
 // Skip and the natural end both leave through the liquid reveal, and the visitor lands back on the same sign-in page.
 import { chromium } from 'playwright';
 const BASE = process.argv[2] || 'http://localhost:4173'; const OUT = process.argv[3] || 'tests/ui/out';
-const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1440, height: 900 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const p = await b.newPage({ viewport: { width: 1440, height: 900 } }); const errs = []; p.on('pageerror', e => errs.push(e.message));
 const res = []; const check = (n, ok, d) => { res.push(ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
 async function run(label, url, skip) {
   await p.goto(BASE + url); await p.reload(); await p.waitForSelector('[data-act="openWelcome"]', { timeout: 10000 }); await p.waitForTimeout(700);
