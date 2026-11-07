@@ -32,15 +32,15 @@
     const reasons = []; let rank = 0; const add = (n, s) => { rank = Math.max(rank, n); reasons.push(s); };
     sos.filter(x => x.status === 'concern').forEach(x => add(2, x.label + ': ' + custName() + ' raised a concern'));
     sos.filter(x => x.status === 'requested' && x.due && x.due < t).forEach(x => add(2, x.label + ' is overdue (due ' + fd(x.due) + ')'));
-    if (st.n && gv < -10) add(2, 'Progress is ' + -gv + ' points behind plan');
+    if (st.n && gv < -10) add(2, 'Progress is ' + -gv + (gv === -1 ? ' point' : ' points') + ' behind plan');
     if (hiLate.length) add(2, hiLate.length + ' high risk/issue past its due date');
-    if (st.n && gv < 0 && gv >= -10) add(1, 'Progress is ' + -gv + ' points behind plan');
+    if (st.n && gv < 0 && gv >= -10) add(1, 'Progress is ' + -gv + (gv === -1 ? ' point' : ' points') + ' behind plan');
     if (late.length) add(1, late.length + ' action' + (late.length === 1 ? '' : 's') + ' overdue');
     if (hi.length > hiLate.length) add(1, (hi.length - hiLate.length) + ' high risk/issue open');
     sos.filter(x => x.status === 'requested' && !(x.due && x.due < t)).forEach(x => add(1, x.label + ' waiting for ' + custName()));
     if (crP.length) add(1, crP.length + ' change request' + (crP.length === 1 ? '' : 's') + ' awaiting a decision');
     if (!st.n) reasons.push('No dated plan yet, so progress cannot be compared with plan');
-    const rag = rank === 2 ? ['bad', 'Red · needs attention'] : rank === 1 ? ['warn', 'Amber · watch'] : ['ok', 'Green · on track'];
+    const rag = rank === 2 ? ['bad', 'Red · needs attention'] : rank === 1 ? ['warn', 'Amber · watch'] : (!st.n && !acts.length && !raid.length && !dec.length && !crs.length && !sos.some(x => x.status && x.status !== 'notdue')) ? ['', 'Grey · not enough recorded yet'] : ['ok', 'Green · on track'];   // nothing recorded is not the same as on track
     const wk = V.addDays ? V.addDays(t, -14) : '';
     const done = []
       .concat(sos.filter(x => x.status === 'signed').map(x => ({ at: (x.signedAt || '').slice(0, 10), what: x.label + ' signed', who: x.signer || '' })))
@@ -73,7 +73,7 @@
   V.pmoView = function () {
     const f = facts(); const fac = !cust() && !S.readonly; const c = '#3b82f6';
     const stage = f.cur ? 'Stage ' + V.stageOfStep(f.cur.i) + ' · ' + V.roadmapName(V.stageOfStep(f.cur.i)) : 'Plan not started';
-    const banner = `<section class="pm-rag pm-${f.rag[0]}"><div><span class="pm-dot"></span><b>${esc(f.rag[1])}</b></div><div class="pm-why"><b>${esc(stage)}</b>${f.cur ? ' · step ' + (f.cur.i + 1) + ' of 12 (' + esc(f.cur.title) + ')' : ''}${f.st.n ? ' · ' + f.st.actual + '% done, ' + f.st.planned + '% planned' : ''}${f.st.goLive ? ' · go-live ' + esc(fd(f.st.goLive)) : ''}<ul>${f.reasons.map(r => `<li>${esc(r)}</li>`).join('') || '<li>Nothing is late, blocked or waiting.</li>'}</ul></div>${fac ? `<div class="pm-btns"><button class="btn primary" data-act="pmoShare">Share with the PMO</button><button class="btn" data-act="pmoDownload">Download report</button><button class="btn" data-act="pmoCopy">Copy</button></div>` : `<div class="pm-btns"><button class="btn" data-act="pmoDownload">Download report</button><button class="btn" data-act="pmoCopy">Copy</button></div>`}</section>`;
+    const banner = `<section class="pm-rag pm-${f.rag[0]}"><div><span class="pm-dot"></span><b>${esc(f.rag[1])}</b></div><div class="pm-why"><b>${esc(stage)}</b>${f.cur ? ' · step ' + (f.cur.i + 1) + ' of 12 (' + esc(f.cur.title) + ')' : ''}${f.st.n ? ' · ' + f.st.actual + '% done, ' + f.st.planned + '% planned' : ''}${f.st.goLive ? ' · go-live ' + esc(fd(f.st.goLive)) : ''}<ul>${f.reasons.map(r => `<li>${esc(r)}</li>`).join('') || `<li>${f.rag[0] ? 'Nothing is late, blocked or waiting.' : 'No plan, actions, risks, decisions or sign-offs are recorded yet.'}</li>`}</ul></div>${fac ? `<div class="pm-btns"><button class="btn primary" data-act="pmoShare">Share with the PMO</button><button class="btn" data-act="pmoDownload">Download report</button><button class="btn" data-act="pmoCopy">Copy</button></div>` : `<div class="pm-btns"><button class="btn" data-act="pmoDownload">Download report</button><button class="btn" data-act="pmoCopy">Copy</button></div>`}</section>`;
     const kp = `<div class="sd-kpis">${kpi('Sign-offs', f.sos.filter(x => x.status === 'signed').length + ' / 3', f.sos.filter(x => x.status === 'requested').length + ' waiting', c, f.sos.filter(x => x.status === 'signed').length / 3 * 100)}${kpi('Actions open', f.open.length, f.late.length ? f.late.length + ' overdue' : 'none overdue', f.late.length ? '#ef4444' : '#22c55e')}${kpi('High risks and issues', f.hi.length, f.raid.filter(openR).length + ' open in total', f.hi.length ? '#f97316' : '#22c55e')}${kpi('Decisions to make', f.decP.length + f.crP.length, f.crP.length + ' change request' + (f.crP.length === 1 ? '' : 's') + ' · ' + f.decP.length + ' proposed', '#ec4899')}</div>`;
     const hm = `<div class="pm-heat"><span></span>${['High', 'Medium', 'Low'].map(i => `<em>${i}</em>`).join('')}${Object.keys(RT).map((k, r) => `<b>${RT[k]}</b>${f.heat[r].map((n, i) => `<i class="pm-h${n ? ' h' + i : ''}">${n}</i>`).join('')}`).join('')}</div>`;
     const top = f.raid.filter(openR).sort((a, b) => ['High', 'Medium', 'Low'].indexOf(a.impact || 'Medium') - ['High', 'Medium', 'Low'].indexOf(b.impact || 'Medium')).slice(0, 5).map(r => [esc(RT[tk(r)]), `<b>${esc(r.title)}</b>`, chipT(r.impact || 'Medium', r.impact === 'High' ? 'bad' : r.impact === 'Low' ? '' : 'warn'), esc(r.owner || '—'), esc(fd(r.due))]);
