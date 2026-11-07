@@ -609,3 +609,12 @@ body .sd-hd { display: inline-flex; align-items: center; gap: 6px; font: 600 12p
 #asst .as-send { width: 36px; height: 36px; border-radius: var(--cs-r-ctl) !important; background: var(--cs-brand) !important; } #asst .as-send:hover { background: var(--cs-brand-h) !important; }
 #asst .as-ask { background: var(--cs-warn-soft) !important; border: 1px solid #f1d4bd !important; border-radius: var(--cs-r-ctl) !important; color: var(--cs-fg1) !important; }
 #asstTab:not(#_):not(#__) { background: var(--cs-fg1); border-color: var(--cs-fg1); border-radius: var(--cs-r-card) 0 0 var(--cs-r-card); font-family: var(--cs-font); }
+
+/* One box, one outline: where an input sits inside a box that already has a border (the menu search, the Assistant message box and search), the box shows the focus ring and the input inside shows nothing, so two boxes no longer collide. */
+body .sidebar .search input:focus-visible:not(#_):not(#__):not(#___),
+body #asst .as-comp textarea:focus-visible:not(#_):not(#__),
+body #asst .as-crow textarea:focus:not(#_):not(#__), body #asst .as-crow textarea:not(#_):not(#__) { outline: 0 !important; box-shadow: none !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; }
+body .sidebar .search:focus-within:not(#_):not(#__) { box-shadow: inset 0 0 0 1px var(--cs-brand), 0 0 0 3px var(--cs-brand-soft) !important; }
+body #asst .as-search input:focus-visible:not(#_):not(#__) { outline: 0 !important; border-color: var(--cs-brand) !important; box-shadow: 0 0 0 3px var(--cs-brand-soft) !important; }
+body #asst .as-crow:focus-within:not(#_):not(#__) { border-color: var(--cs-brand) !important; box-shadow: 0 0 0 3px var(--cs-brand-soft) !important; }
+body .sidebar .search input:not(#_):not(#__):not(#___), body .sidebar .search input:focus:not(#_):not(#__):not(#___) { border: 0 !important; box-shadow: none !important; outline: 0 !important; background: transparent !important; border-radius: 0 !important; }
