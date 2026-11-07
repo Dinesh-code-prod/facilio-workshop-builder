@@ -46,6 +46,21 @@ export function planInfo(plan, controls, today) {
   return { dated: info.filter(x => x.start).length, rows: rows.length, withStatus: rows.filter(r => r.status).length, cur, curTitle: cur >= 0 ? STEPS[cur] : '', forced: !!(ph.step >= 1), next, goLive, late };
 }
 
+
+/* money per project, from the contract records only (fee milestones, the rate card's currency) and change-request prices; null when nothing is recorded.
+   A milestone counts as billable on its own date, or on the signing or go-live date when it is tied to one of those events; the rest is reported as undated, never guessed. */
+function moneyOf(items, pl, today, p) {
+  const get = k => ((items.find(i => i.kind === k && i.id === 'main') || {}).data) || {}; const fees = get('ctrfees'), core = get('ctrcore'), rates = get('ctrrates');
+  const n = v => { const x = Number(String(v == null ? '' : v).replace(/[^0-9.-]/g, '')); return isNaN(x) ? 0 : x; };
+  const ms = (Array.isArray(fees.milestones) ? fees.milestones : []).map(m => { const d = D(m.date) ? m.date : m.event === 'signing' && D(core.signed) ? core.signed : m.event === 'golive' && pl.goLive ? pl.goLive : ''; return { amount: n(m.amount), date: d }; });
+  const contract = ms.reduce((a, m) => a + m.amount, 0); const crs = items.filter(i => i.kind === 'cr' && i.data);
+  const crSum = list => crs.filter(c => list.includes(c.data.status)).reduce((a, c) => a + n(c.data.price), 0);
+  const converted = crSum(['CR Converted', 'Delivered']), pending = crSum(['Requested', 'Draft', 'Proposed']);
+  if (!contract && !converted && !pending) return null;
+  const dated = ms.filter(m => m.date), soon = dated.filter(m => m.date > today && days(today, m.date) <= 60);
+  return { currency: String(p.currency || rates.currency || '').trim().slice(0, 8), contract, billed: dated.filter(m => m.date <= today).reduce((a, m) => a + m.amount, 0), next60: soon.reduce((a, m) => a + m.amount, 0), undated: ms.filter(m => !m.date).reduce((a, m) => a + m.amount, 0), crConverted: converted, crPending: pending };
+}
+
 /* one project -> { health, manual, signals, metrics }.
    r: { p, plan, controls, brd, planner, workshop, items: [{ kind, id, data, createdAt, updatedAt }], fb: [], au: [] } */
 export function assess(r, today, opts) {
@@ -134,7 +149,7 @@ export function assess(r, today, opts) {
     openTasks: open.length, overdueTasks: open.filter(lateDate).length, blockers: blockedT.length + blockedA.length, custWaiting: custWait, questionsOpen: qOpen.length,
     nextMilestone: pl.next ? { title: pl.next.title, date: pl.next.start } : null, goLive: pl.goLive || '', endDate: end || '', target: pl.goLive || end || '', targetKind: pl.goLive ? 'go-live (plan)' : end ? 'end date (settings)' : '',
     deadlineSoon: !!(deadlines[0] && days(today, deadlines[0]) <= RULES.deadlineDays), nextDeadline: deadlines[0] || '', lastActivity: lastAt, idleDays: idle, live,
-    crOpen: cr.filter(c => ['Requested', 'Draft', 'Proposed'].includes(c.data.status)).length, raidHigh: rHigh.length };
+    crOpen: cr.filter(c => ['Requested', 'Draft', 'Proposed'].includes(c.data.status)).length, raidHigh: rHigh.length, money: moneyOf(items, pl, today, p) };
   return { health, why, manual, signals: sig, metrics: m };
 }
 

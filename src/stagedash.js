@@ -1,14 +1,15 @@
-/* Stage dashboards: the Dashboard page gets one mini dashboard per stage of the project, as tabs inside it, and a health lifecycle strip.
-   - Team and customer (V.projdash): Overview | Kick-off | Requirements | BRD and sign-off | Build and UAT | Go-live and hypercare | Handover (a customer sees the stages that are theirs).
-   - Admin (V.stageAdmin, drawn by the Dashboard's Stages tab): the same stages across every active project: how many sit in each, how healthy they are, and who needs attention.
-   Every number is computed from saved records; a stage with nothing recorded says so. Read-only: nothing here writes data. */
+/* Stage dashboards: the Dashboard page gets one mini dashboard per stage of the project, as tabs inside it, a health lifecycle strip, and a Reports tab.
+   - Team and customer (V.projdash): Overview | Kick-off | Requirements | BRD and sign-off | Build and UAT | Go-live and hypercare | Handover | Reports (a customer sees the stages that are theirs, and never internal tasks, fees or notes).
+   - Admin (V.stageAdmin, drawn by the Dashboard's Stages tab): the same stages across every active project: pipeline, RAG heat map, funnel, ageing, workload, and a portfolio Reports tab.
+   Every number is computed from saved records; a stage with nothing recorded says so. Read-only: nothing here writes data. Charts come from V.sdc (src/sdcharts.js); reports from V.sdReports (src/sdreports.js). */
 (function (root) {
   'use strict';
   const F = root.FWB; const { S, esc } = F; const V = root.FWBViews; const ACT = V.ACT; const I = () => V.items;
-  if (!V || !V.projdash) return;
+  if (!V || !V.projdash || !V.sdc) return;
+  const C = V.sdc;
   const cust = () => !!(V.isCustomer && V.isCustomer());
   const fd = d => (d ? V.fmtDate(d) : '—');
-  const KINDS = ['action', 'signoff', 'cr', 'task', 'hc', 'ugd', 'vid', 'lesson', 'utc', 'usecase', 'raid'];
+  const KINDS = ['action', 'signoff', 'cr', 'task', 'hc', 'ugd', 'vid', 'lesson', 'utc', 'usecase', 'raid', 'ho', 'close', 'uat', 'build'];
   // one accent per stage (coss palette); used for the dot, the bar and the top edge, never for text
   const STG = [
     { id: 'kickoff', label: 'Kick-off', c: '#3b82f6' }, { id: 'req', label: 'Requirements', c: '#14b8a6' }, { id: 'brd', label: 'BRD and sign-off', c: '#ec4899' },
@@ -17,22 +18,63 @@
   const CUST_STG = ['req', 'brd', 'build', 'live'];
   const HC = { blocked: '#ef4444', overdue: '#f97316', at_risk: '#f59e0b', on_track: '#22c55e', insufficient: '#a3a3a3' };
   const HL = { blocked: 'Blocked', overdue: 'Overdue', at_risk: 'At risk', on_track: 'On track', insufficient: 'No data' };
+  const OK = '#22c55e', WARN = '#f59e0b', BAD = '#ef4444', GREY = '#a3a3a3';
   const list = k => (I().ready([k]) ? I().list(k) : []);
   const num = n => (n == null || isNaN(n) ? 0 : n);
   const pct = (a, b) => (b ? Math.round(a / b * 100) : 0);
   const name = x => String(x.title || x.text || x.name || x.label || x.id || '').slice(0, 70);
-  const closed = x => /^(done|closed|resolved|fixed|cancelled|complete|completed|signed)$/i.test(String(x.status || ''));
+  const closed = x => /^(done|closed|resolved|fixed|cancelled|complete|completed|signed|accepted)$/i.test(String(x.status || ''));
+  const dayOf = s => String(s || '').slice(0, 10);
+  const add = (d, n) => new Date(Date.parse(d + 'T00:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+  const ageOf = (x, today) => (x._created ? Math.max(0, V.daysBetween(dayOf(x._created), today)) : null);
+  const BUCKETS = [['0 to 7 days', 0, 7, OK], ['8 to 14 days', 8, 14, WARN], ['15 to 30 days', 15, 30, '#f97316'], ['Over 30 days', 31, 1e9, BAD]];
+  const buckets = (arr, today) => BUCKETS.map(([l, lo, hi, c]) => [l, arr.filter(x => { const a = ageOf(x, today); return a != null && a >= lo && a <= hi; }).length, c]);
 
   // ---------- widgets ----------
   const kpi = (label, value, sub, c, p) => `<div class="sd-kpi" style="--c:${c}"><span class="sd-kl">${esc(label)}</span><b class="sd-kv">${value}</b><span class="sd-ks">${sub || ''}</span>${p == null ? '' : `<i class="sd-kb" aria-hidden="true"><u style="width:${Math.max(0, Math.min(100, p))}%"></u></i>`}</div>`;
   const widget = (title, sub, inner, span, c) => `<section class="sd-w sd-s${span || 6}"${c ? ` style="--c:${c}"` : ''}><header><h3>${esc(title)}</h3>${sub ? `<span>${esc(sub)}</span>` : ''}</header><div class="sd-b">${inner}</div></section>`;
-  const none = t => `<p class="sd-none">${esc(t)}</p>`;
-  const chipT = (t, tn) => `<span class="sd-chip ${tn || ''}">${esc(t)}</span>`;
-  const tone = s => (/^(done|closed|resolved|fixed|signed|confirmed|passed|pass|complete|completed)$/i.test(s) ? 'ok' : /^(blocked|failed|fail|concern|overdue)$/i.test(s) ? 'bad' : /^(open|in progress|requested|draft|proposed|to confirm|pending)$/i.test(s) ? 'warn' : '');
-  const table = (cols, rows, empty) => (rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : none(empty));
-  const bars = rows => { const mx = Math.max(1, ...rows.map(r => r[1])); return `<ul class="sd-bars">${rows.map(([l, n, c]) => `<li><span>${esc(l)}</span><i><u style="width:${n / mx * 100}%;background:${c}"></u></i><b>${n}</b></li>`).join('')}</ul>`; };
+  const none = C.none;
+  const chipT = (t, tn) => ({ h: `<span class="sd-chip ${tn || ''}">${esc(t)}</span>`, t });
+  const tone = s => (/^(done|closed|resolved|fixed|signed|confirmed|passed|pass|complete|completed|approved|accepted)$/i.test(s) ? 'ok' : /^(blocked|failed|fail|concern|overdue|rejected)$/i.test(s) ? 'bad' : /^(open|in progress|requested|draft|proposed|to confirm|pending|new)$/i.test(s) ? 'warn' : '');
+  let COL = [];   // the tables drawn since the last reset; the reports export them as CSV
+  const cell = c => (c && typeof c === 'object' ? c.h : esc(c));
+  const table = (title, cols, rows, empty) => { COL.push({ title, cols, rows: rows.map(r => r.map(c => (c && typeof c === 'object' ? c.t : c))) });
+    return rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${cell(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : none(empty); };
+  const bars = (rows, empty) => { if (!rows.some(r => r[1])) return none(empty || 'Nothing recorded yet.'); const mx = Math.max(1, ...rows.map(r => r[1])); return `<ul class="sd-bars">${rows.map(([l, n, c]) => `<li><span>${esc(l)}</span><i><u style="width:${n / mx * 100}%;background:${c}"></u></i><b>${n}</b></li>`).join('')}</ul>`; };
+  const check = (title, items, empty) => { COL.push({ title, cols: ['Check', 'Status', 'Detail'], rows: items.map(x => [x.l, C.RAG[x.s][0], x.d || '']) }); return C.checklist(items, empty); };
   const grid = inner => `<div class="sd-grid">${inner}</div>`;
+  const kp = (arr, c) => arr.map(a => kpi(a[0], a[1], a[2], c, a[3])).join('');
   const tabsHtml = (cur, items) => `<div class="tabs sd-tabs" role="tablist" aria-label="Dashboard stages">${items.map(([id, l, c]) => `<button type="button" role="tab" aria-selected="${cur === id}" class="tab${cur === id ? ' active' : ''}" data-act="sdTab" data-v="${esc(id)}">${c ? `<i class="sd-dot" style="background:${c}"></i>` : ''}${esc(l)}</button>`).join('')}</div>`;
+
+  // ---------- the numbers every widget and report shares, computed once per draw ----------
+  const reqs = () => (S.ws && S.ws.requirements) || [];
+  const planRows = () => ((F.doc('plan_struct') || {}).rows || []).filter(r => !r.isPhase && /^\d{4}-\d{2}-\d{2}$/.test(String(r.start || '')));
+  const CR_ENDED = /^(approved|rejected|implemented|withdrawn|closed|done|cancelled|declined)$/i;
+  function X() {
+    const k = cust(), today = V.today(), U = root.FWBUat; const st = V.planStats ? V.planStats() : { n: 0, actual: 0, planned: 0 }; const ph = V.phaseNow ? V.phaseNow() : { cur: -1, info: [] };
+    const R = reqs(), tcs = list('utc'), sstat = c => String(c.status || '');
+    const passed = tcs.filter(c => /^(passed|approved)$/i.test(sstat(c))).length, failed = tcs.filter(c => /^(failed|blocked)$/i.test(sstat(c))).length, run = tcs.filter(c => !/^(not started|ready for testing|deferred|)$/i.test(sstat(c))).length;
+    const issues = !k && U ? list('task').filter(t => U.isUatIssue(t)) : []; const iOpen = issues.filter(t => !['Closed', 'Deferred'].includes(U.issueStatus(t))); const sev = t => (t.uat && t.uat.severity) || 'Minor';
+    const so = list('signoff'), sg = id => so.find(x => x.id === id) || { status: 'notdue' }; const cr = list('cr'), crOpen = cr.filter(x => !closed(x) && !CR_ENDED.test(String(x.status || '')));
+    const acts = list('action'), actsOpen = acts.filter(a => !closed(a)), custLate = actsOpen.filter(a => a.side === 'customer' && a.due && a.due < today), anyLate = actsOpen.filter(a => a.due && a.due < today);
+    const raid = list('raid'), raidOpen = raid.filter(x => !closed(x)), raidHigh = raidOpen.filter(x => x.impact === 'High'); const hc = list('hc'), hcOpen = hc.filter(x => !closed(x));
+    const spi = st.n && st.planned > 0 ? st.actual / st.planned : null; const pr = planRows(); const due = pr.filter(r => (r.end || r.start) <= today); const hit = due.filter(r => r.status === 'Done');
+    const trace = V.traceSummary ? V.traceSummary() : null; const mods = F.allModules ? F.allModules().filter(m => m.inScope) : []; const DONE = ['completed', 'reviewed_no_change', 'reviewed_changes']; const ms = m => (V.moduleStatus ? V.moduleStatus(m.name) : '');
+    return { k, today, U, st, ph, R, tcs, passed, failed, run, issues, iOpen, sev, so, sg, cr, crOpen, acts, actsOpen, custLate, anyLate, raid, raidOpen, raidHigh, hc, hcOpen, spi, pr, due, hit, trace, mods, ms, reviewed: mods.filter(m => DONE.includes(ms(m))).length,
+      openBy: s => iOpen.filter(t => sev(t) === s).length, goDays: st.goLive && V.daysBetween ? V.daysBetween(today, st.goLive) : null };
+  }
+  // RAG per area, with the rule that gave it (shown in the sub line, so nobody has to guess)
+  function areas(c) {
+    const a = [];
+    a.push({ id: 'schedule', l: 'Schedule', s: c.spi == null ? 'n' : c.spi >= .95 ? 'g' : c.spi >= .85 ? 'a' : 'r', d: c.spi == null ? 'No dated plan yet.' : 'Schedule performance index ' + c.spi.toFixed(2) + ': ' + c.st.actual + '% done against ' + c.st.planned + '% planned.' });
+    const oldCr = c.crOpen.filter(x => (ageOf(x, c.today) || 0) > 14).length; a.push({ id: 'scope', l: c.k ? 'Scope' : 'Scope and change', s: !c.cr.length && !c.R.length ? 'n' : oldCr ? 'r' : c.crOpen.length ? 'a' : 'g', d: !c.cr.length && !c.R.length ? 'No requirements or change requests yet.' : c.crOpen.length + ' open change request' + (c.crOpen.length === 1 ? '' : 's') + (oldCr ? ', ' + oldCr + ' open over 14 days' : '') + '.' });
+    const crit = c.openBy('Critical'), maj = c.openBy('Major'); a.push({ id: 'quality', l: 'Quality', s: !c.tcs.length ? 'n' : crit ? 'r' : (maj || c.failed) ? 'a' : 'g', d: !c.tcs.length ? 'No test cases yet.' : c.passed + ' of ' + c.tcs.length + ' test cases passed' + (c.k ? '' : ', ' + crit + ' critical and ' + maj + ' major defects open') + '.' });
+    a.push({ id: 'customer', l: c.k ? 'Your actions' : 'Customer actions', s: !c.acts.some(x => x.side === 'customer') ? 'n' : c.custLate.length > 2 ? 'r' : c.custLate.length ? 'a' : 'g', d: !c.acts.some(x => x.side === 'customer') ? 'No customer actions recorded.' : c.custLate.length + ' customer action' + (c.custLate.length === 1 ? '' : 's') + ' past the date.' });
+    if (!c.k || V.custShow('risks')) a.push({ id: 'risk', l: 'Risk', s: !c.raid.length ? 'n' : c.raidHigh.length > 2 ? 'r' : c.raidHigh.length ? 'a' : 'g', d: !c.raid.length ? 'Nothing in the RAID log.' : c.raidHigh.length + ' high-impact item' + (c.raidHigh.length === 1 ? '' : 's') + ' open, ' + c.raidOpen.length + ' open in total.' });
+    return a;
+  }
+  const overall = list => C.worst(list.map(x => x.s));
+  const OV = { g: 'On track', a: 'Needs attention', r: 'Off track', n: 'Not enough data' };
 
   // ---------- the health lifecycle: the 12 plan steps as one strip ----------
   function lifecycle() {
@@ -47,63 +89,105 @@
     return `<section class="sd-life" aria-label="Project health lifecycle"><header><h3>Project health lifecycle</h3><span class="sd-chip ${tn}">${!st.n ? 'No dated plan yet' : gv >= 0 ? (gv ? gv + ' points ahead of plan' : 'On plan') : -gv + ' points behind plan'}</span><span class="sd-sub">${p.cur >= 0 ? 'Step ' + (p.cur + 1) + ' of 12 · ' + esc(p.info[p.cur].title) : 'Plan not started'}</span></header><ol class="sd-steps">${cells}</ol>${st.n ? `<div class="sd-prog"><span>Done ${st.actual}%</span><i><u style="width:${st.planned}%"></u><em style="width:${st.actual}%"></em></i><span>Planned ${st.planned}%</span></div>` : ''}</section>`;
   }
 
+  // ---------- Overview extras: RAG by area, schedule index, milestone adherence ----------
+  function overviewExtra() {
+    COL = []; const c = X(), A = areas(c), ov = overall(A); const sc = c.spi == null ? null : Math.round(c.spi * 100), ad = c.due.length ? pct(c.hit.length, c.due.length) : null;
+    const kpis = [['Overall status', C.rag(ov, OV[ov]), A.filter(x => x.s === 'r').length + ' red · ' + A.filter(x => x.s === 'a').length + ' amber · ' + A.filter(x => x.s === 'g').length + ' green'], ['Schedule performance', c.spi == null ? '—' : c.spi.toFixed(2), c.spi == null ? 'needs a dated plan' : c.spi >= 1 ? 'on or ahead of plan' : 'below 1.00 means behind plan', sc == null ? null : Math.min(100, sc)],
+      ['Milestone adherence', ad == null ? '—' : ad + '%', c.due.length ? c.hit.length + ' of ' + c.due.length + ' due plan steps are Done' : 'no plan step has come due yet', ad], [c.k ? 'Waiting on you' : 'Overdue actions', c.k ? c.actsOpen.filter(a => a.side === 'customer').length : c.anyLate.length, c.k ? 'open actions on your side' : 'actions past their date']];
+    const w = widget('Health by area', 'red, amber or green, with the rule behind each', C.checklist(A.map(x => ({ l: x.l, s: x.s, d: x.d })), 'No data yet.'), 7) +
+      widget('Schedule index', 'actual progress over planned progress', C.gauge(sc == null ? null : Math.min(100, sc), c.spi == null ? '' : c.spi.toFixed(2), 'SPI: 1.00 is exactly on plan', c.spi >= .95 ? OK : c.spi >= .85 ? WARN : BAD, 'No dated plan yet. Add or import the plan to see this.'), 5);
+    return `<div class="sd-kpis">${kp(kpis, '#3b82f6')}</div>${grid(w)}`;
+  }
+
   // ---------- one builder per stage; each returns the KPI cards and the widgets for that stage ----------
-  const reqs = () => (S.ws && S.ws.requirements) || [];
   const B = {};
-  B.kickoff = () => {
-    const ppl = F.doc('people') || {}; const team = ppl.team || [], sk = ppl.stakeholders || []; const st = V.planStats ? V.planStats() : { n: 0 }; const p = V.phaseNow ? V.phaseNow() : { info: [] };
-    const act = list('action').filter(a => !closed(a));
-    const rows = team.concat(sk).filter(x => x.name).slice(0, 8).map(x => [esc(x.name), esc(x.role || '—'), esc(x.email || '—'), chipT(team.indexOf(x) >= 0 ? 'Facilio' : 'Customer', team.indexOf(x) >= 0 ? '' : 'pink')]);
-    const next = (p.info || []).filter(x => x.start).slice(0, 5).map(x => [esc(x.title), esc(fd(x.start)), esc(fd(x.end))]);
-    return { kpis: [kpi('Team members', team.length, 'on the implementation team', STG[0].c), kpi('Customer stakeholders', sk.length, 'named by the customer', STG[0].c), kpi('Plan steps dated', st.n || 0, 'of 12 standard steps', STG[0].c, pct(st.n || 0, 12)), kpi('Open actions', act.length, act.length ? 'to close before workshops' : 'nothing open', STG[0].c)],
-      body: widget('People on the project', 'team and stakeholders', table(['Name', 'Role', 'Email', 'Side'], rows, 'No people added yet. Add them in Project settings.'), 7, STG[0].c) + widget('Plan, first steps', 'dates from the plan', table(['Step', 'Start', 'End'], next, 'No dates yet. Generate or import the plan.'), 5, STG[0].c) };
+  const burn = (hc, today) => {   // open hypercare issues per day; an issue stops counting on the day it was last updated as closed
+    const d = hc.filter(x => x._created).map(x => dayOf(x._created)).sort(); if (!d.length) return null; const n = Math.min(29, Math.max(1, V.daysBetween(d[0], today))); const out = [];
+    for (let i = n; i >= 0; i--) { const day = add(today, -i); out.push(hc.filter(x => x._created && dayOf(x._created) <= day && !(closed(x) && dayOf(x._at) <= day)).length); }
+    return { vals: out, from: add(today, -n) };
   };
-  B.req = () => {
-    const R = reqs(); const conf = R.filter(r => r.status === 'Confirmed').length, draft = R.filter(r => !r.status || r.status === 'Draft').length; const pl = F.doc('planner') || {}; const sess = pl.sessions || []; const tr = (F.doc('transcripts') || {}).items || [];
-    const qo = ((S.ws && S.ws.questions) || []).filter(q => !q.answer && q.status !== 'Closed').length;
-    const rows = R.slice(0, 8).map(r => [esc(r.id || ''), esc(name(r)), chipT(r.status || 'Draft', tone(r.status || 'Draft'))]);
-    return { kpis: [kpi('Requirements', R.length, conf + ' confirmed', STG[1].c, pct(conf, R.length)), kpi('Sessions planned', sess.length, sess.filter(s => /complete|held|done/i.test(s.status || '')).length + ' held', STG[1].c), kpi('Transcripts', tr.length, 'added to the project', STG[1].c), kpi('Open questions', qo, qo ? 'waiting for an answer' : 'all answered', STG[1].c)],
-      body: widget('Requirements by status', 'confirmed ones reach the BRD', bars([['Confirmed', conf, '#22c55e'], ['Draft', draft, '#f59e0b'], ['Other', Math.max(0, R.length - conf - draft), '#a3a3a3']]), 4, STG[1].c) + widget('Latest requirements', 'first eight', table(['ID', 'Requirement', 'Status'], rows, 'No requirements yet. Read the transcripts and confirm the findings.'), 8, STG[1].c) };
+  B.kickoff = c => {
+    const ppl = F.doc('people') || {}; const team = ppl.team || [], sk = ppl.stakeholders || []; const pl = F.doc('planner') || {}; const p = c.ph;
+    const rows = team.concat(sk).filter(x => x.name).slice(0, 8).map(x => [x.name, x.role || '—', x.email || '—', chipT(team.indexOf(x) >= 0 ? 'Facilio' : 'Customer', team.indexOf(x) >= 0 ? '' : 'pink')]);
+    const next = (p.info || []).filter(x => x.start).slice(0, 6).map(x => [x.title, fd(x.start), fd(x.end), c.today >= x.start ? 'Started' : V.daysBetween(c.today, x.start) + ' days to go']);
+    const chk = [{ l: 'Implementation team named', s: team.length ? 'g' : 'r', d: team.length + ' on the team.' }, { l: 'Customer stakeholders named', s: sk.length ? 'g' : 'r', d: sk.length + ' named by the customer.' }, { l: 'Project plan has dates', s: c.st.n ? 'g' : 'r', d: c.st.n ? c.st.n + ' dated plan rows.' : 'No dated plan rows.' },
+      { l: 'Go-live date set', s: c.st.goLive ? 'g' : 'a', d: c.st.goLive ? fd(c.st.goLive) : 'No go-live row in the plan yet.' }, { l: 'Requirement sessions planned', s: (pl.sessions || []).length ? 'g' : 'a', d: (pl.sessions || []).length + ' sessions in the planner.' }, { l: 'No action past its date', s: c.anyLate.length ? 'a' : 'g', d: c.anyLate.length ? c.anyLate.length + ' open actions are late.' : 'Nothing late.' }];
+    const good = chk.filter(x => x.s === 'g').length;
+    return { kpis: [['Team members', team.length, 'on the implementation team'], ['Customer stakeholders', sk.length, 'named by the customer'], ['Plan steps dated', c.st.n || 0, 'dated plan rows', pct(Math.min(12, (p.info || []).filter(x => x.start).length), 12)], ['Kick-off readiness', good + ' of ' + chk.length, 'checks green', pct(good, chk.length)]],
+      body: widget('Kick-off readiness', 'what must be true before the workshops', check('Kick-off readiness', chk), 5) + widget('People on the project', 'team and stakeholders', table('People', ['Name', 'Role', 'Email', 'Side'], rows, 'No people added yet. Add them in Project settings.'), 7) +
+        widget('Who is on the project', 'Facilio and customer', C.donut([['Facilio', team.length, '#3b82f6'], ['Customer', sk.length, '#ec4899']], team.length + sk.length, 'people', 'Nobody added yet.'), 4) + widget('Plan, first steps', 'dates from the plan', table('Plan first steps', ['Step', 'Start', 'End', 'When'], next, 'No dates yet. Generate or import the plan.'), 8) };
   };
-  B.brd = () => {
-    const rd = V.brdReadiness ? V.brdReadiness() : { blocking: 0, warning: 0, info: 0 }; const so = list('signoff'); const cr = list('cr'); const uc = list('usecase');
-    const sg = id => so.find(x => x.id === id) || { status: 'notdue' }; const L = { notdue: 'Not due', requested: 'Waiting for signature', signed: 'Signed', concern: 'Concern raised' };
-    const rowsS = [['brd', 'Requirements (BRD)'], ['uat', 'Testing (UAT)'], ['golive', 'Go-live']].map(([id, l]) => [esc(l), chipT(L[sg(id).status] || 'Not due', sg(id).status === 'signed' ? 'ok' : sg(id).status === 'requested' ? 'warn' : sg(id).status === 'concern' ? 'bad' : '')]);
-    const rowsC = cr.slice(0, 6).map(x => [esc(name(x)), chipT(x.status || 'Open', tone(x.status || 'Open'))]);
-    return { kpis: [kpi('Blocking checks', rd.blocking, rd.blocking ? 'to fix before sign-off' : 'none', STG[2].c), kpi('Warnings', rd.warning, 'worth a look', STG[2].c), kpi('Change requests', cr.filter(x => !closed(x)).length, cr.length + ' in total', STG[2].c), kpi('Use cases', uc.length, 'written for the BRD', STG[2].c)],
-      body: widget('Sign-off journey', 'BRD, UAT and go-live', table(['Sign-off', 'Status'], rowsS, ''), 5, STG[2].c) + widget('Change requests', 'after the BRD is agreed', table(['Change', 'Status'], rowsC, 'No change requests. Changes after sign-off are logged here.'), 7, STG[2].c) };
+  B.req = c => {
+    const R = c.R; const conf = R.filter(r => r.status === 'Confirmed').length, rej = R.filter(r => r.status === 'Rejected').length, draft = R.filter(r => !r.status || r.status === 'Draft').length, oth = Math.max(0, R.length - conf - draft - rej);
+    const pl = F.doc('planner') || {}; const sess = pl.sessions || []; const held = sess.filter(s => /complete|held|done/i.test(s.status || '')).length; const tr = (F.doc('transcripts') || {}).items || []; const Q = ((S.ws && S.ws.questions) || []).filter(q => !q.answer && q.status !== 'Closed');
+    const rows = R.slice(0, 8).map(r => [r.id || '', name(r), chipT(r.status || 'Draft', tone(r.status || 'Draft'))]); const tcov = c.trace && c.trace.total ? pct(c.trace.traced, c.trace.total) : null;
+    const qrows = Q.slice(0, 5).map(q => [String(q.q || q.question || q.text || q.id || '').slice(0, 80), q.owner || q.side || '—']);
+    return { kpis: [['Requirements', R.length, conf + ' confirmed', pct(conf, R.length)], ['Sessions held', held + ' of ' + sess.length, sess.length ? 'planned sessions completed' : 'no sessions planned yet', pct(held, sess.length)], ['Transcripts', tr.length, 'added to the project'], ['Open questions', Q.length, Q.length ? 'waiting for an answer' : 'all answered']],
+      body: widget('Requirement status', 'confirmed ones reach the BRD', C.donut([['Confirmed', conf, OK], ['Draft', draft, WARN], ['Rejected', rej, BAD], ['Other', oth, GREY]], pct(conf, R.length) + '%', 'confirmed', 'No requirements yet. Read the transcripts and confirm the findings.'), 4, STG[1].c) +
+        widget(c.k ? 'Confirmed share' : 'Traceability coverage', c.k ? 'requirements the customer has confirmed' : 'requirement to use case to module to test', c.k ? C.gauge(R.length ? pct(conf, R.length) : null, pct(conf, R.length) + '%', conf + ' of ' + R.length + ' confirmed', STG[1].c, 'No requirements yet.') : C.gauge(tcov, tcov == null ? '' : tcov + '%', c.trace ? c.trace.traced + ' of ' + c.trace.total + ' requirements fully traced · ' + c.trace.gaps + ' gaps' : '', tcov >= 80 ? OK : tcov >= 50 ? WARN : BAD, 'Needs requirements, use cases and test cases first.'), 4, STG[1].c) +
+        widget('Sessions held against planned', 'requirement workshops', C.stack([['Held', held, OK], ['Still to hold', Math.max(0, sess.length - held), '#d4d4d4']], 'No sessions planned yet. Plan them in the session planner.'), 4, STG[1].c) +
+        widget('Latest requirements', 'first eight', table('Requirements', ['ID', 'Requirement', 'Status'], rows, 'No requirements yet.'), 8, STG[1].c) + widget('Questions waiting', 'no answer recorded', table('Open questions', ['Question', 'Owner'], qrows, 'No open questions.'), 4, STG[1].c) };
   };
-  B.build = () => {
-    const mods = F.allModules ? F.allModules().filter(m => m.inScope) : []; const DONE = ['completed', 'reviewed_no_change', 'reviewed_changes']; const ms = m => (V.moduleStatus ? V.moduleStatus(m.name) : '');
-    const reviewed = mods.filter(m => DONE.includes(ms(m))).length; const tc = list('utc'); const pass = tc.filter(x => /^pass/i.test(x.result || x.status || '')).length, fail = tc.filter(x => /^fail/i.test(x.result || x.status || '')).length;
-    const tasks = list('task').filter(t => (t.type || (t.data && t.data.type)) === 'UAT Task' && !closed(t));
-    const rows = mods.slice(0, 8).map(m => [esc(m.label || m.name), chipT((V.REVIEW && (V.REVIEW.find(x => x[0] === ms(m)) || [0, ms(m)])[1]) || ms(m) || 'Not started', DONE.includes(ms(m)) ? 'ok' : 'warn')]);
-    return { kpis: [kpi('Modules in scope', mods.length, reviewed + ' reviewed', STG[3].c, pct(reviewed, mods.length)), kpi('UAT test cases', tc.length, pass + ' passed', STG[3].c, pct(pass, tc.length)), kpi('Failed cases', fail, fail ? 'need a fix and a re-test' : 'none failing', STG[3].c), kpi('Open UAT issues', tasks.length, tasks.length ? 'in the task register' : 'none open', STG[3].c)],
-      body: widget('Test results', 'all UAT cases', bars([['Passed', pass, '#22c55e'], ['Failed', fail, '#ef4444'], ['Not run', Math.max(0, tc.length - pass - fail), '#a3a3a3']]), 4, STG[3].c) + widget('Module review', 'modules in scope', table(['Module', 'Review'], rows, 'No modules marked in scope yet.'), 8, STG[3].c) };
+  B.brd = c => {
+    const rd = !c.k && V.brdReadiness ? V.brdReadiness() : { blocking: 0, warning: 0, info: 0 }; const uc = list('usecase'); const L = { notdue: 'Not due', requested: 'Waiting for signature', signed: 'Signed', concern: 'Concern raised' };
+    const SO3 = [['brd', 'Requirements (BRD)'], ['uat', 'Testing (UAT)'], ['golive', 'Go-live']]; const stt = id => c.sg(id).status;
+    const tl = SO3.map(([id, l]) => { const s = c.sg(id); return [l, chipT(L[s.status] || 'Not due', s.status === 'signed' ? 'ok' : s.status === 'requested' ? 'warn' : s.status === 'concern' ? 'bad' : ''), s.requestedAt ? fd(dayOf(s.requestedAt)) : '—', s.signedAt ? fd(dayOf(s.signedAt)) : s.due ? 'due ' + fd(s.due) : '—', s.signer || '—']; });
+    const crRows = c.cr.slice(0, 6).map(x => [name(x), chipT(x.status || 'Open', tone(x.status || 'Open')), ageOf(x, c.today) == null ? '—' : ageOf(x, c.today) + ' days']); const signed = SO3.filter(([id]) => stt(id) === 'signed').length;
+    const stat = {}; c.cr.forEach(x => { const s = x.status || 'Open'; stat[s] = (stat[s] || 0) + 1; });
+    return { kpis: [c.k ? ['Waiting for your signature', SO3.filter(([id]) => stt(id) === 'requested').length, 'sign-offs sent to you'] : ['Blocking checks', rd.blocking, rd.blocking ? 'to fix before sign-off' : 'none'], c.k ? ['Change requests', c.crOpen.length, c.cr.length + ' in total'] : ['Warnings', rd.warning, 'worth a look'], ['Sign-offs done', signed + ' of 3', 'BRD, UAT, go-live', pct(signed, 3)], ['Use cases', uc.length, 'written for the BRD']],
+      body: widget('Sign-off timeline', 'requested, due and signed', table('Sign-off timeline', ['Sign-off', 'Status', 'Requested', 'Signed or due', 'Signer'], tl, ''), 7, STG[2].c) +
+        widget('Change request ageing', 'open requests by days since raised', c.cr.length ? C.stack(buckets(c.crOpen, c.today).concat([['No date', c.crOpen.filter(x => ageOf(x, c.today) == null).length, GREY]]), 'No open change requests.') : none('No change requests. Changes after sign-off are logged here.'), 5, STG[2].c) +
+        widget('Change requests by status', 'after the BRD is agreed', C.donut(Object.entries(stat).map(([s, n]) => [s, n, tone(s) === 'ok' ? OK : tone(s) === 'bad' ? BAD : tone(s) === 'warn' ? WARN : GREY]), c.cr.length, 'requests', 'No change requests yet.'), 4, STG[2].c) +
+        widget('Change requests', 'newest six', table('Change requests', ['Change', 'Status', 'Age'], crRows, 'No change requests yet.'), 8, STG[2].c) };
   };
-  B.live = () => {
-    const st = V.planStats ? V.planStats() : {}; const hc = list('hc'); const open = hc.filter(x => !closed(x)); const so = list('signoff'); const g = so.find(x => x.id === 'golive') || { status: 'notdue' }; const les = list('lesson');
-    const dd = st.goLive && V.daysBetween ? V.daysBetween(V.today(), st.goLive) : null;
-    const rows = hc.slice(0, 8).map(x => [esc(name(x)), esc(x.severity || x.priority || '—'), chipT(x.status || 'Open', tone(x.status || 'Open'))]);
-    return { kpis: [kpi('Go-live', dd == null ? '—' : dd >= 0 ? dd + ' days' : 'Passed', st.goLive ? esc(fd(st.goLive)) : 'no date set', STG[4].c), kpi('Go-live sign-off', g.status === 'signed' ? 'Signed' : g.status === 'requested' ? 'Waiting' : 'Not due', 'customer approval', STG[4].c), kpi('Hypercare issues', open.length, hc.length + ' logged in total', STG[4].c, pct(hc.length - open.length, hc.length)), kpi('Lessons learned', les.length, 'kept for the next project', STG[4].c)],
-      body: widget('Hypercare issues', 'after go-live', table(['Issue', 'Severity', 'Status'], rows, 'No hypercare issues logged. They appear here after go-live.'), 8, STG[4].c) + widget('Issue status', 'open and closed', bars([['Open', open.length, '#f59e0b'], ['Closed', hc.length - open.length, '#22c55e']]), 4, STG[4].c) };
+  B.build = c => {
+    const tc = c.tcs, notRun = Math.max(0, tc.length - c.passed - c.failed); const SV = [['Critical', BAD], ['Major', '#f97316'], ['Minor', WARN], ['Trivial', GREY]];
+    const found = c.issues.length, post = c.hc.length; const dre = found + post ? pct(found, found + post) : null; const passRate = c.run ? pct(c.passed, c.run) : null;
+    const exit = [{ l: 'Every test case executed', s: !tc.length ? 'n' : c.run >= tc.length ? 'g' : c.run ? 'a' : 'r', d: tc.length ? c.run + ' of ' + tc.length + ' executed.' : 'No test cases yet.' }, { l: 'Pass rate of executed cases at least 90%', s: passRate == null ? 'n' : passRate >= 90 ? 'g' : passRate >= 75 ? 'a' : 'r', d: passRate == null ? 'Nothing executed yet.' : passRate + '% passed (' + c.passed + ' of ' + c.run + ').' }];
+    if (!c.k) exit.push({ l: 'No open critical defects', s: !c.issues.length && !tc.length ? 'n' : c.openBy('Critical') ? 'r' : 'g', d: c.openBy('Critical') + ' open.' }, { l: 'No open major defects', s: !c.issues.length && !tc.length ? 'n' : c.openBy('Major') > 2 ? 'r' : c.openBy('Major') ? 'a' : 'g', d: c.openBy('Major') + ' open.' });
+    exit.push({ l: 'Modules in scope reviewed', s: !c.mods.length ? 'n' : c.reviewed >= c.mods.length ? 'g' : c.reviewed ? 'a' : 'r', d: c.reviewed + ' of ' + c.mods.length + ' reviewed.' }, { l: 'UAT sign-off signed', s: c.sg('uat').status === 'signed' ? 'g' : c.sg('uat').status === 'requested' ? 'a' : 'n', d: c.sg('uat').status === 'signed' ? 'Signed.' : c.sg('uat').status === 'requested' ? 'Waiting for the customer to sign.' : 'Not requested yet.' });
+    const rows = c.mods.slice(0, 8).map(m => [m.label || m.name, chipT((V.REVIEW && (V.REVIEW.find(x => x[0] === c.ms(m)) || [0, c.ms(m)])[1]) || c.ms(m) || 'Not started', ['completed', 'reviewed_no_change', 'reviewed_changes'].includes(c.ms(m)) ? 'ok' : 'warn')]);
+    const body = widget('Test pass rate', 'all UAT test cases', C.donut([['Passed', c.passed, OK], ['Failed or blocked', c.failed, BAD], ['Not run', notRun, GREY]], passRate == null ? '—' : passRate + '%', 'pass rate', 'No test cases yet. Add them in UAT.'), 4, STG[3].c) +
+      widget('UAT exit criteria', 'red, amber or green against each', check('UAT exit criteria', exit), 8, STG[3].c);
+    const team = c.k ? '' : widget('Defects by severity', 'open now', bars(SV.map(([l, col]) => [l, c.openBy(l), col]), 'No UAT defects logged.'), 4, STG[3].c) + widget('Defect age', 'open defects by days since logged', c.iOpen.length ? C.stack(buckets(c.iOpen, c.today).concat([['No date', c.iOpen.filter(x => ageOf(x, c.today) == null).length, GREY]])) : none('No open defects.'), 4, STG[3].c) +
+      widget('Defect removal efficiency', 'found before go-live over all found', C.gauge(dre, dre == null ? '' : dre + '%', found + ' found in UAT · ' + post + ' found in hypercare', dre >= 90 ? OK : dre >= 75 ? WARN : BAD, 'Needs defects logged in UAT or hypercare.'), 4, STG[3].c);
+    return { kpis: [['Modules in scope', c.mods.length, c.reviewed + ' reviewed', pct(c.reviewed, c.mods.length)], ['Test cases', tc.length, c.passed + ' passed, ' + c.run + ' run', pct(c.passed, tc.length)], ['Failed cases', c.failed, c.failed ? 'need a fix and a re-test' : 'none failing'], c.k ? ['Not yet run', notRun, 'test cases waiting'] : ['Open defects', c.iOpen.length, c.openBy('Critical') + ' critical · ' + c.openBy('Major') + ' major']],
+      body: body + team + widget('Module review', 'modules in scope', table('Module review', ['Module', 'Review'], rows, 'No modules marked in scope yet.'), 12, STG[3].c) };
   };
-  B.handover = () => {
-    const ug = list('ugd'), vd = list('vid'), les = list('lesson'); const so = list('signoff'); const signed = so.filter(x => x.status === 'signed').length;
-    const rows = ug.concat(vd).slice(0, 8).map(x => [esc(name(x)), esc(vd.indexOf(x) >= 0 ? 'Video' : 'User guide'), chipT(x.status || 'Draft', tone(x.status || 'Draft'))]);
-    return { kpis: [kpi('User guides', ug.length, 'for the customer team', STG[5].c), kpi('Videos', vd.length, 'walkthroughs', STG[5].c), kpi('Sign-offs done', signed + ' of 3', 'BRD, UAT, go-live', STG[5].c, pct(signed, 3)), kpi('Lessons learned', les.length, 'recorded', STG[5].c)],
-      body: widget('Handover pack', 'guides and videos', table(['Item', 'Type', 'Status'], rows, 'The pack builds from the user guides and videos.'), 8, STG[5].c) + widget('What is ready', 'by type', bars([['User guides', ug.length, '#0ea5e9'], ['Videos', vd.length, '#14b8a6'], ['Lessons', les.length, '#f59e0b']]), 4, STG[5].c) };
+  B.live = c => {
+    const g = c.sg('golive'); const hc = c.hc; const open = c.hcOpen; const dd = c.goDays; const rs = hc.filter(x => closed(x) && x._created && x._at).map(x => Math.max(0, V.daysBetween(dayOf(x._created), dayOf(x._at)))); const mttr = rs.length ? Math.round(rs.reduce((a, b) => a + b, 0) / rs.length * 10) / 10 : null;
+    const b = burn(hc, c.today); const SEVS = [['Critical', BAD], ['High', '#f97316'], ['Medium', WARN], ['Low', GREY]];
+    const elapsed = c.st.first && c.st.goLive ? pct(Math.max(0, V.daysBetween(c.st.first, c.today)), Math.max(1, V.daysBetween(c.st.first, c.st.goLive))) : null;
+    const rd = [{ l: 'Test cases executed', s: !c.tcs.length ? 'n' : c.run >= c.tcs.length ? 'g' : c.run ? 'a' : 'r', d: c.run + ' of ' + c.tcs.length + ' executed.' }, { l: 'No failed or blocked test cases', s: !c.tcs.length ? 'n' : c.failed ? 'r' : 'g', d: c.failed + ' failed or blocked.' }];
+    if (!c.k) rd.push({ l: 'No open critical or major defects', s: !c.tcs.length && !c.issues.length ? 'n' : c.openBy('Critical') ? 'r' : c.openBy('Major') ? 'a' : 'g', d: c.openBy('Critical') + ' critical, ' + c.openBy('Major') + ' major open.' });
+    rd.push({ l: 'BRD signed', s: c.sg('brd').status === 'signed' ? 'g' : c.sg('brd').status === 'requested' ? 'a' : 'r', d: c.sg('brd').status === 'signed' ? 'Signed.' : 'Not signed yet.' }, { l: 'UAT signed', s: c.sg('uat').status === 'signed' ? 'g' : c.sg('uat').status === 'requested' ? 'a' : 'r', d: c.sg('uat').status === 'signed' ? 'Signed.' : 'Not signed yet.' }, { l: 'Training guides made', s: list('ugd').length ? 'g' : 'a', d: list('ugd').length + ' user guides.' }, { l: 'Go-live sign-off', s: g.status === 'signed' ? 'g' : g.status === 'requested' ? 'a' : 'n', d: g.status === 'signed' ? 'Signed.' : g.status === 'requested' ? 'Waiting for the customer.' : 'Not requested yet.' });
+    const rows = hc.slice(0, 8).map(x => [name(x), x.severity || '—', chipT(x.status || 'Open', tone(x.status || 'Open')), ageOf(x, c.today) == null ? '—' : ageOf(x, c.today) + ' days']);
+    return { kpis: [['Go-live', dd == null ? '—' : dd >= 0 ? dd + ' days' : 'Passed', c.st.goLive ? esc(fd(c.st.goLive)) : 'no date set'], ['Go-live sign-off', g.status === 'signed' ? 'Signed' : g.status === 'requested' ? 'Waiting' : 'Not due', 'customer approval'], ['Hypercare issues open', open.length, hc.length + ' logged in total', pct(hc.length - open.length, hc.length)], ['Mean time to resolve', mttr == null ? '—' : mttr + ' days', rs.length ? rs.length + ' resolved issues' : 'needs resolved issues with dates']],
+      body: widget('Go-live countdown', 'time used between plan start and go-live', C.gauge(elapsed, dd == null ? '' : dd >= 0 ? dd + 'd' : 'live', c.st.goLive ? 'Go-live ' + fd(c.st.goLive) : '', dd != null && dd >= 0 && dd <= 14 ? WARN : STG[4].c, 'No go-live date in the plan yet.'), 4, STG[4].c) + widget('Go-live readiness', 'checked from the records', check('Go-live readiness', rd), 8, STG[4].c) +
+        widget('Hypercare burn-down', b ? 'open issues per day, last ' + (b.vals.length - 1) + ' days' : 'open issues per day', b ? C.spark(b.vals, STG[4].c, [fd(b.from), 'today'], 'open') : none('No hypercare issues with dates yet. The line draws after the first one is logged.'), 5, STG[4].c) +
+        widget('Issues by severity', 'open now', bars(SEVS.map(([l, col]) => [l, open.filter(x => x.severity === l).length, col]), 'No hypercare issues logged.'), 3, STG[4].c) + widget('Hypercare issues', 'newest first', table('Hypercare issues', ['Issue', 'Severity', 'Status', 'Age'], rows, 'No hypercare issues logged. They appear here after go-live.'), 4, STG[4].c) };
   };
-  function stagePage(id) { try { const r = B[id](); const s = STG.find(x => x.id === id); return `<div class="sd-stage" style="--c:${s.c}"><div class="sd-kpis">${r.kpis.join('')}</div>${grid(r.body)}</div>`; } catch (e) { console.error(e); return `<div class="sd-stage">${none('This stage could not be drawn.')}</div>`; } }
+  B.handover = c => {
+    const ug = list('ugd'), vd = list('vid'), les = list('lesson'), ho = list('ho'); const hoDone = ho.filter(x => x.done).length; const exit = (I().get('close', 'hypercare') || {}).exitAt; const signed = ['brd', 'uat', 'golive'].filter(id => c.sg(id).status === 'signed').length;
+    const chk = [{ l: 'User guides made', s: ug.length ? 'g' : 'r', d: ug.length + ' guides.' }, { l: 'Walkthrough videos', s: vd.length ? 'g' : 'a', d: vd.length + ' videos.' }, { l: 'Three sign-offs signed', s: signed === 3 ? 'g' : signed ? 'a' : 'r', d: signed + ' of 3.' }, { l: 'Handover checklist done', s: !ho.length ? 'n' : hoDone === ho.length ? 'g' : 'a', d: ho.length ? hoDone + ' of ' + ho.length + ' ticked.' : 'The checklist has not been started.' },
+      { l: 'Hypercare exit recorded', s: exit ? 'g' : 'a', d: exit ? 'Recorded ' + fd(dayOf(exit)) : 'Not recorded yet.' }, { l: 'Lessons learned recorded', s: les.length ? 'g' : 'a', d: les.length + ' lessons.' }];
+    const good = chk.filter(x => x.s === 'g').length; const rows = ug.concat(vd).slice(0, 8).map(x => [name(x), vd.indexOf(x) >= 0 ? 'Video' : 'User guide', chipT(x.status || 'Draft', tone(x.status || 'Draft'))]);
+    return { kpis: [['User guides', ug.length, 'for the customer team'], ['Videos', vd.length, 'walkthroughs'], ['Sign-offs done', signed + ' of 3', 'BRD, UAT, go-live', pct(signed, 3)], ['Handover complete', pct(good, chk.length) + '%', good + ' of ' + chk.length + ' checks green', pct(good, chk.length)]],
+      body: widget('Handover completeness', 'share of checks that are green', C.gauge(pct(good, chk.length), pct(good, chk.length) + '%', good + ' of ' + chk.length + ' checks green', good === chk.length ? OK : good >= 3 ? WARN : BAD), 4, STG[5].c) + widget('Handover checklist', 'checked from the records', check('Handover checklist', chk), 8, STG[5].c) +
+        widget('What is ready', 'by type', bars([['User guides', ug.length, '#0ea5e9'], ['Videos', vd.length, '#14b8a6'], ['Lessons', les.length, WARN]], 'Nothing in the pack yet.'), 4, STG[5].c) + widget('Handover pack', 'guides and videos', table('Handover pack', ['Item', 'Type', 'Status'], rows, 'The pack builds from the user guides and videos.'), 8, STG[5].c) };
+  };
+  function stageData(id) { COL = []; const c = X(); const r = B[id](c); return { c, r, tables: COL.slice(), s: STG.find(x => x.id === id) }; }
+  function stagePage(id) { try { const d = stageData(id); return `<div class="sd-stage" style="--c:${d.s.c}"><div class="sd-kpis">${kp(d.r.kpis, d.s.c)}</div>${grid(d.r.body)}</div>`; } catch (e) { console.error(e); return `<div class="sd-stage">${none('This stage could not be drawn.')}</div>`; } }
 
   // ---------- wire into the project dashboard ----------
   const base = V.projdash.html;
   V.projdash.html = function () {
-    I().load(KINDS); const items = cust() ? STG.filter(s => CUST_STG.includes(s.id)) : STG; const all = [['overview', 'Overview']].concat(items.map(s => [s.id, s.label, s.c]));
+    I().load(KINDS); const items = cust() ? STG.filter(s => CUST_STG.includes(s.id)) : STG; const all = [['overview', 'Overview']].concat(items.map(s => [s.id, s.label, s.c]), [['reports', 'Reports']]);
     let cur = S.ui.sdTab || 'overview'; if (!all.some(x => x[0] === cur)) cur = 'overview';
     const html = base.call(this); const mark = '<div class="cs-page">';
-    if (cur === 'overview') return html.replace(mark, () => mark + tabsHtml(cur, all) + lifecycle());
-    const i = html.indexOf(mark); return (i < 0 ? html : html.slice(0, i)) + mark + tabsHtml(cur, all) + stagePage(cur) + '</div>';
+    if (cur === 'overview') { let ex = ''; try { ex = overviewExtra(); } catch (e) { console.error(e); } return html.replace(mark, () => mark + tabsHtml(cur, all) + lifecycle() + ex); }
+    const i = html.indexOf(mark); let body; try { body = cur === 'reports' ? (V.sdReports ? V.sdReports.page() : none('Reports are not available.')) : stagePage(cur); } catch (e) { console.error(e); body = none('This tab could not be drawn.'); }
+    return (i < 0 ? html : html.slice(0, i)) + mark + tabsHtml(cur, all) + body + '</div>';
   };
   ACT.sdTab = a => { S.ui.sdTab = a.getAttribute('data-v'); V.render(); };
 
@@ -111,17 +195,45 @@
   const RSTG = [[0, 'All stages'], [1, 'Project introduction'], [2, 'Requirement sessions'], [3, 'Mockup and BRD'], [4, 'UAT and FTR'], [5, 'Training guides'], [7, 'Hypercare'], [8, 'Handover']];
   const RC = { 1: '#3b82f6', 2: '#14b8a6', 3: '#ec4899', 4: '#f59e0b', 5: '#22c55e', 7: '#0ea5e9', 8: '#64748b' };
   const ORDER = ['blocked', 'overdue', 'at_risk', 'on_track', 'insufficient'];
+  const rstageOf = p => { const st = p.metrics && p.metrics.stage; return st > 0 && V.stageOfStep ? V.stageOfStep(st - 1) : 0; };
+  V.sdd = { STG, RSTG, RC, ORDER, HC, HL, X, areas, overall, OV, stageData, fd, dayOf, ageOf, pct, num, rstageOf, buckets };
+  // the older shared API (cells are already-escaped HTML), used by the PMO overview in src/pmo.js
+  const rawTable = (cols, rows, empty) => (rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : none(empty));
+  V.sd = { kpi, widget, table: rawTable, chipT: (t, tn) => chipT(t, tn).h, grid, none, lifecycle };
+  // ---------- admin: the portfolio as a CEO and a finance lead read it: health, lifecycle, top risks, go-lives, and money per currency ----------
+  const money = (n, c) => (c && c !== 'No currency' ? c + ' ' : '') + Math.round(n || 0).toLocaleString('en-US');
+  function finance(ps) {
+    const m = p => p.metrics || {}; const groups = {}; ps.forEach(p => { const mo = m(p).money; if (!mo) return; const c = mo.currency || 'No currency'; (groups[c] = groups[c] || []).push(p); });
+    const codes = Object.keys(groups).sort((a, b) => groups[b].reduce((n, p) => n + m(p).money.contract, 0) - groups[a].reduce((n, p) => n + m(p).money.contract, 0));
+    const noMoney = ps.filter(p => !m(p).money).length; if (!codes.length) return widget('Finance', 'contract value, billing and change orders', none('No contract fees or change-request prices are recorded yet. Add fee milestones on each project\'s Contract page and set the project currency; this view totals them per currency.'), 12);
+    const note = `<p class="sd-fnote">${noMoney ? noMoney + ' active project' + (noMoney === 1 ? ' has' : 's have') + ' no contract fees or change-order prices recorded. ' : ''}Currencies are never added together. Delivery cost and margin are not tracked in the studio, so they are not shown; billing dates come from the fee milestones.</p>`;
+    const sections = codes.slice(0, 4).map(c => {
+      const g = groups[c], sum = f => g.reduce((n, p) => n + f(m(p).money), 0); const contract = sum(x => x.contract), billed = sum(x => x.billed), nx = sum(x => x.next60), conv = sum(x => x.crConverted), pend = sum(x => x.crPending); const risk = g.filter(p => ['at_risk', 'overdue', 'blocked'].includes(p.health)); const riskV = risk.reduce((n, p) => n + m(p).money.contract, 0);
+      const kps = [['Contract value', money(contract, c), g.length + ' project' + (g.length === 1 ? '' : 's'), null], ['Billable to date', money(billed, c), contract ? pct(billed, contract) + '% of contract has a date on or before today' : 'no milestones', contract ? pct(billed, contract) : null], ['Billable in 60 days', money(nx, c), 'milestones dated in the next 60 days'], ['Change orders', money(conv, c), (contract ? pct(conv, contract) + '% of contract · ' : '') + money(pend, c) + ' still pending'], ['Value at risk', money(riskV, c), risk.length + ' project' + (risk.length === 1 ? '' : 's') + ' at risk, overdue or blocked', contract ? pct(riskV, contract) : null]];
+      const byH = ORDER.map(h => [HL[h], g.filter(p => p.health === h).reduce((n, p) => n + m(p).money.contract, 0), HC[h]]);
+      const rows = g.slice().sort((a, b) => m(b).money.contract - m(a).money.contract).slice(0, 6).map(p => [{ h: `<button type="button" class="sd-link" data-act="cmdDrill" data-p="${esc(p.id)}" data-v="contract" data-x="{}">${esc(p.name)}</button><small>${esc(p.customer || '')}</small>`, t: p.name }, money(m(p).money.contract), money(m(p).money.billed), money(m(p).money.next60), money(m(p).money.crConverted + m(p).money.crPending), { h: `<span class="sd-hd" style="--c:${HC[p.health] || GREY}">${esc(HL[p.health] || '—')}</span>`, t: HL[p.health] || '' }]);
+      return `<h3 class="sd-cur">${esc(c === 'No currency' ? 'Projects with no currency set' : c + ' projects')}</h3><div class="sd-kpis">${kps.map((a, i) => kpi(a[0], a[1], a[2], i === 4 ? (riskV ? BAD : OK) : '#3b82f6', a[3])).join('')}</div>${grid(widget('Contract value by health', c, C.stack(byH.map(x => [x[0], Math.round(x[1]), x[2]]), 'No contract value.'), 5) + widget('Largest contracts', 'value, billing and change orders', table('Largest contracts ' + c, ['Project', 'Contract', 'Billable to date', 'Next 60 days', 'Change orders', 'Health'], rows, 'None.'), 7))}`;
+    }).join('');
+    return `<section class="sd-fin"><h2 class="sd-h2">Finance</h2>${sections}${note}</section>`;
+  }
+  V.sdFinance = finance;
   V.stageAdmin = function (ps) {
-    const cur = RSTG.some(x => String(x[0]) === String(S.ui.sdAdm)) ? Number(S.ui.sdAdm) : 0; const rstage = p => { const st = p.metrics && p.metrics.stage; return st > 0 && V.stageOfStep ? V.stageOfStep(st - 1) : 0; }; const inStage = n => ps.filter(p => rstage(p) === n);
-    const sub = cur ? inStage(cur) : ps; const m = p => p.metrics || {}; const sum = f => sub.reduce((n, p) => n + num(f(p)), 0);
-    const health = h => sub.filter(p => p.health === h).length;
-    const tabs = `<div class="tabs sd-tabs" role="tablist" aria-label="Stages across projects">${RSTG.map(([id, l]) => `<button type="button" role="tab" aria-selected="${cur === id}" class="tab${cur === id ? ' active' : ''}" data-act="sdAdm" data-v="${id}">${RC[id] ? `<i class="sd-dot" style="background:${RC[id]}"></i>` : ''}${esc(l)}<span class="cnt">${id ? inStage(id).length : ps.length}</span></button>`).join('')}</div>`;
-    const kp = `<div class="sd-kpis">${kpi(cur ? 'Projects in this stage' : 'Active projects', sub.length, cur ? 'of ' + ps.length + ' active' : ps.filter(p => !rstage(p)).length + ' have no dated plan yet', RC[cur] || '#3b82f6', cur ? pct(sub.length, ps.length) : null)}${kpi('Blocked or overdue', health('blocked') + health('overdue'), health('blocked') + ' blocked · ' + health('overdue') + ' overdue', '#ef4444')}${kpi('Open tasks', sum(p => m(p).openTasks), sum(p => m(p).overdueTasks) + ' overdue', '#f59e0b')}${kpi('Waiting on customers', sum(p => m(p).custWaiting), 'actions and sign-offs', '#14b8a6')}${kpi('On track', health('on_track'), pct(health('on_track'), sub.length) + '% of these projects', '#22c55e', pct(health('on_track'), sub.length))}</div>`;
-    const pipe = widget('Pipeline', 'projects per stage, coloured by health', `<ul class="sd-pipe">${RSTG.slice(1).map(([id, l]) => { const g = inStage(id); return `<li><button type="button" data-act="sdAdm" data-v="${id}"><span>${esc(l)}</span><i>${ORDER.map(h => { const n = g.filter(p => p.health === h).length; return n ? `<u style="flex:${n};background:${HC[h]}" title="${HL[h]}: ${n}"></u>` : ''; }).join('') || '<u style="flex:1;background:rgba(0,0,0,.06)"></u>'}</i><b>${g.length}</b></button></li>`; }).join('')}</ul>`, 5);
-    const rows = sub.slice().sort((a, b) => ORDER.indexOf(a.health) - ORDER.indexOf(b.health)).slice(0, 14).map(p => [`<button type="button" class="sd-link" data-act="cmdDrill" data-p="${esc(p.id)}" data-v="overview" data-x="{}">${esc(p.name)}</button><small>${esc(p.customer || '')}</small>`, `<span class="sd-hd" style="--c:${HC[p.health] || '#a3a3a3'}">${esc(HL[p.health] || p.health || '—')}</span>`, esc(m(p).stageTitle || '—'), esc(m(p).nextMilestone ? m(p).nextMilestone.title : '—'), esc(fd(m(p).target || m(p).goLive)), num(m(p).openTasks) + (num(m(p).overdueTasks) ? ` <em class="sd-late">${num(m(p).overdueTasks)} late</em>` : ''), num(m(p).custWaiting)]);
-    const tbl = widget(cur ? RSTG.find(x => x[0] === cur)[1] : 'All active projects', 'worst health first', table(['Project', 'Health', 'Plan step', 'Next milestone', 'Target', 'Open tasks', 'Waiting'], rows, 'No active project is in this stage.'), cur ? 12 : 7, RC[cur]);
-    return `<div class="sd-admin">${tabs}${kp}${grid(cur ? tbl : pipe + tbl)}</div>`;
+    COL = []; const rep = S.ui.sdAdm === 'rep'; const m = p => p.metrics || {}; const today = V.today(); const H = h => ps.filter(p => p.health === h).length;
+    const tabs = `<div class="tabs sd-tabs" role="tablist" aria-label="Portfolio view"><button type="button" role="tab" aria-selected="${!rep}" class="tab${rep ? '' : ' active'}" data-act="sdAdm" data-v="0">Overview</button><button type="button" role="tab" aria-selected="${rep}" class="tab${rep ? ' active' : ''}" data-act="sdAdm" data-v="rep">Report</button></div>`;
+    if (rep) return `<div class="sd-admin">${tabs}${V.sdReports ? V.sdReports.portfolio(ps) : none('Reports are not available.')}</div>`;
+    const days = p => (m(p).target ? V.daysBetween(today, m(p).target) : null); const soon = ps.filter(p => { const d = days(p); return d != null && d >= 0 && d <= 60; }).sort((a, b) => days(a) - days(b));
+    const attn = H('at_risk') + H('overdue') + H('blocked');
+    const kps = [['Active projects', ps.length, ps.filter(p => !rstageOf(p)).length + ' have no dated plan yet'], ['On track', pct(H('on_track'), ps.length) + '%', H('on_track') + ' of ' + ps.length + ' projects', pct(H('on_track'), ps.length)], ['Need attention', attn, H('blocked') + ' blocked · ' + H('overdue') + ' overdue · ' + H('at_risk') + ' at risk'], ['Go-live in 60 days', soon.length, soon.length ? 'next: ' + esc(soon[0].name) : 'none dated in this window']];
+    const kpiH = `<div class="sd-kpis">${kps.map((a, i) => kpi(a[0], a[1], a[2], i === 2 ? (attn ? BAD : OK) : i === 1 ? OK : '#3b82f6', a[3])).join('')}</div>`;
+    const health = widget('Portfolio health', 'all active projects', C.donut(ORDER.map(h => [HL[h], H(h), HC[h]]), pct(H('on_track'), ps.length) + '%', 'on track', 'No active projects.'), 5);
+    const pipe = widget('Where projects are in the lifecycle', 'projects per stage, coloured by health', `<ul class="sd-pipe">${RSTG.slice(1).map(([id, l]) => { const g = ps.filter(p => rstageOf(p) === id); return `<li><div class="sd-pr"><span>${esc(l)}</span><i>${ORDER.map(h => { const n = g.filter(p => p.health === h).length; return n ? `<u style="flex:${n};background:${HC[h]}" title="${HL[h]}: ${n}"></u>` : ''; }).join('') || '<u style="flex:1;background:rgba(0,0,0,.06)"></u>'}</i><b>${g.length}</b></div></li>`; }).join('')}</ul>`, 7);
+    const sigs = ((V.cmd && V.cmd.get && V.cmd.get()) || {}).signals || []; const SEVO = ['critical', 'high', 'medium', 'low']; const why = p => { const s = sigs.filter(g => g.project === p.name).sort((a, b) => SEVO.indexOf(a.sev) - SEVO.indexOf(b.sev))[0]; return s ? s.title : '—'; };
+    const risky = ps.filter(p => p.health !== 'on_track' && p.health !== 'insufficient').sort((a, b) => ORDER.indexOf(a.health) - ORDER.indexOf(b.health)).slice(0, 5);
+    const link = p => ({ h: `<button type="button" class="sd-link" data-act="cmdDrill" data-p="${esc(p.id)}" data-v="overview" data-x="{}">${esc(p.name)}</button><small>${esc(p.customer || '')}</small>`, t: p.name });
+    const hd = p => ({ h: `<span class="sd-hd" style="--c:${HC[p.health] || GREY}">${esc(HL[p.health] || '—')}</span>`, t: HL[p.health] || '' });
+    const riskW = widget('Top risks', 'worst health first, with the main reason', table('Top risks', ['Project', 'Health', 'Main reason', 'Target'], risky.map(p => [link(p), hd(p), why(p), fd(m(p).target)]), 'No project is at risk. Everything dated is on track.'), 7);
+    const nextW = widget('Go-lives coming up', 'next 60 days', table('Go-lives coming up', ['Project', 'Date', 'In', 'Health'], soon.slice(0, 5).map(p => [link(p), fd(m(p).target), days(p) + ' days', hd(p)]), 'No target date falls in the next 60 days.'), 5);
+    return `<div class="sd-admin">${tabs}${kpiH}${grid(health + pipe + riskW + nextW)}${finance(ps)}</div>`;
   };
-  V.sd = { kpi, widget, table, chipT, grid, none, lifecycle };   // shared with the PMO overview (src/pmo.js)
-  ACT.sdAdm = a => { S.ui.sdAdm = Number(a.getAttribute('data-v')); V.setMode('admin'); };
+  ACT.sdAdm = a => { const v = a.getAttribute('data-v'); S.ui.sdAdm = v === 'rep' ? 'rep' : 0; V.setMode('admin'); };
 })(typeof window !== 'undefined' ? window : globalThis);

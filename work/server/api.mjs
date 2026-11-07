@@ -138,7 +138,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     else { try { const g = await dbGet('grant', s.id); if (g && g.value) role = g.value.role === 'admin' ? 'admin' : 'sub'; } catch (e) { } }
     ROLE = { role, at: Date.now() }; return role;
   }
-  const projectOut = (p, role) => ({ demo: !!p.demo, id: p.id, name: p.name, customer: p.customer, description: p.description, startDate: p.startDate || null, endDate: p.endDate || null, type: p.type === 'agents' ? 'agents' : 'cmms', customerAccessEnabled: !!p.customerAccessEnabled, deliveryStatus: MANUAL.includes(p.deliveryStatus) ? p.deliveryStatus : 'active', deliveryStatusBy: p.deliveryStatusBy || null, deliveryStatusAt: p.deliveryStatusAt || null, createdAt: p.createdAt, updatedAt: p.updatedAt, role });
+  const projectOut = (p, role) => ({ currency: p.currency || '', demo: !!p.demo, id: p.id, name: p.name, customer: p.customer, description: p.description, startDate: p.startDate || null, endDate: p.endDate || null, type: p.type === 'agents' ? 'agents' : 'cmms', customerAccessEnabled: !!p.customerAccessEnabled, deliveryStatus: MANUAL.includes(p.deliveryStatus) ? p.deliveryStatus : 'active', deliveryStatusBy: p.deliveryStatusBy || null, deliveryStatusAt: p.deliveryStatusAt || null, createdAt: p.createdAt, updatedAt: p.updatedAt, role });
   async function projectAccess(s, id, need) {
     const r = await dbGet('projects', id); const p = r && r.value; if (!p || p.archived) throw new HttpError(404, 'Project not found');
     const ar = await adminRole(s);
@@ -304,9 +304,10 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     for (const p of mine.slice(0, 200)) { for (const it of await itemsOf(p.id, 'lesson')) { const d = it.data || {}; if (!d.reusable) continue; out.push({ id: it.id, projectId: p.id, project: p.name, title: String(d.title || '').slice(0, 200), area: d.area || '', impact: d.impact || '', what: String(d.what || '').slice(0, 2000), reco: String(d.reco || '').slice(0, 2000), at: it.updatedAt }); } }
     out.sort((a, b) => String(b.at).localeCompare(String(a.at))); return ok({ items: out.slice(0, 1000) });
   });
+  const ccy = v => { const c = String(v == null ? '' : v).trim().toUpperCase(); return /^[A-Z]{3}$/.test(c) ? c : ''; };   // ISO 4217 code of the money in this project (contract fees, change requests)
   route('POST', '/api/projects', async (b) => {
     const s = await me(); await limit('create', s.id); const id = rid('p'); const t = now(); const d = v => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
-    const p = { id, name: str(b.name, 160, 'Project name', true), customer: str(b.customer, 160, 'Customer name', true), description: str(b.description, 4000, 'Description'), startDate: d(b.startDate), endDate: d(b.endDate), type: b.type === 'agents' ? 'agents' : 'cmms', customerAccessEnabled: false, archived: false, createdBy: s.id, createdAt: t, updatedAt: t, members: [{ id: s.id, email: s.email, name: s.name, role: 'owner' }] };
+    const p = { id, name: str(b.name, 160, 'Project name', true), customer: str(b.customer, 160, 'Customer name', true), description: str(b.description, 4000, 'Description'), currency: ccy(b.currency), startDate: d(b.startDate), endDate: d(b.endDate), type: b.type === 'agents' ? 'agents' : 'cmms', customerAccessEnabled: false, archived: false, createdBy: s.id, createdAt: t, updatedAt: t, members: [{ id: s.id, email: s.email, name: s.name, role: 'owner' }] };
     await dbPut('projects', id, p);
     const team = Array.isArray(b.team) ? b.team.slice(0, 50) : [], stakeholders = Array.isArray(b.stakeholders) ? b.stakeholders.slice(0, 100) : [];
     await docWrite(s, id, 'people', { team, stakeholders }, 0);
@@ -321,7 +322,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
       if (b.deliveryStatus !== 'active' && b.deliveryStatus !== prevStatus && !note.trim()) throw new HttpError(400, 'Give a reason for this status. It is kept in the project history.');
       await patchProject(P.id, project => { if (b.deliveryStatus !== prevStatus) { const h = Array.isArray(project.deliveryStatusHistory) ? project.deliveryStatusHistory : []; h.push({ from: prevStatus, to: b.deliveryStatus, reason: note, by: s.name || s.email, at: now() }); project.deliveryStatusHistory = h.slice(-50); } project.deliveryStatus = b.deliveryStatus; project.deliveryStatusBy = s.name || s.email; project.deliveryStatusAt = now(); project.deliveryStatusNote = note; }); ADM = null; await audit(P.id, s.id, 'delivery-status', b.deliveryStatus + (note ? ': ' + note : '')); }
     const project = await patchProject(P.id, project => { if (b.name !== undefined) project.name = str(b.name, 160, 'Project name', true); if (b.customer !== undefined) project.customer = str(b.customer, 160, 'Customer', true);
-    if (b.description !== undefined) project.description = str(b.description, 4000, 'Description'); if (b.type !== undefined) project.type = b.type === 'agents' ? 'agents' : 'cmms'; if (b.startDate !== undefined) project.startDate = d(b.startDate); if (b.endDate !== undefined) project.endDate = d(b.endDate); });
+    if (b.description !== undefined) project.description = str(b.description, 4000, 'Description'); if (b.type !== undefined) project.type = b.type === 'agents' ? 'agents' : 'cmms'; if (b.currency !== undefined) project.currency = ccy(b.currency); if (b.startDate !== undefined) project.startDate = d(b.startDate); if (b.endDate !== undefined) project.endDate = d(b.endDate); });
     await audit(P.id, s.id, 'project-updated', null); return ok({ project: projectOut(project, (await projectAccess(s, P.id, 'read')).role) });
   });
   route('DELETE', '/api/projects/:id', async (b, P) => { const s = await me(); await projectAccess(s, P.id, 'owner'); await patchProject(P.id, p => { p.archived = true; }); await audit(P.id, s.id, 'project-archived', null); return ok({ ok: true }); });
@@ -1909,7 +1910,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
       const id = p.id; const sg = async f => { try { return await f(); } catch (e) { return null; } };
       const [planner, workshop, brd, plan, controls, ftr, items, files, fb, au] = await Promise.all([
         sg(() => docRead(id, 'planner')), sg(() => docRead(id, 'workshop')), sg(() => docRead(id, 'brddoc')), sg(() => docRead(id, 'plan_struct')), sg(() => docRead(id, 'portal_controls')), sg(() => docRead(id, 'ftr_wb')),
-        sg(() => itemsFor(id, ['action', 'raid', 'uat', 'signoff', 'task', 'decision', 'cr', 'hc', 'ai', 'ugd'])), sg(() => dbList('fl.' + id)), sg(() => dbList('fb.' + id)), sg(() => dbList('au.' + id))]);
+        sg(() => itemsFor(id, ['action', 'raid', 'uat', 'signoff', 'task', 'decision', 'cr', 'hc', 'ai', 'ugd', 'ctrfees', 'ctrcore', 'ctrrates'])), sg(() => dbList('fl.' + id)), sg(() => dbList('fb.' + id)), sg(() => dbList('au.' + id))]);
       // AI drafts and user guides are large; the portfolio needs only their status
       const slim = (items || []).map(i => (i.kind === 'ai' || i.kind === 'ugd') ? Object.assign({}, i, { data: { task: i.data && i.data.task, title: i.data && i.data.title, status: i.data && i.data.status, missingParts: i.data && i.data.missingParts } }) : i);
       return { p, planner: planner && planner.data || {}, workshop: workshop && workshop.data || {}, brd: brd && brd.data || {}, plan: plan && plan.data || {}, controls: controls && controls.data || {}, ftr: ftr && ftr.data || {}, items: slim, files: (files || []).map(r => r.value).filter(f => f && !f.deletedAt), fb: (fb || []).map(r => r.value), au: (au || []).map(r => Object.assign({ id: r.key, projectId: id }, r.value)) };
