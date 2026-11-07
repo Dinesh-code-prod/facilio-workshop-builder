@@ -676,3 +676,13 @@ body .drawer.compact .drawer-b { padding: 4px 24px 16px; display: grid; gap: 10p
 .sb-item.sb-new>span:not(.sb-badge){font-weight:600}
 @keyframes sbping{0%{box-shadow:0 0 0 0 rgba(21,112,239,.55)}70%{box-shadow:0 0 0 8px rgba(21,112,239,0)}100%{box-shadow:0 0 0 0 rgba(21,112,239,0)}}
 @media (prefers-reduced-motion:reduce){.sb-ping{animation:none}}
+
+/* Bigger view for generated HTML pages shown in a frame (src/bigview.js) */
+.bv-host{position:relative}
+.bv-btn{position:absolute;top:8px;right:8px;z-index:5;display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--cs-border,#e5e7eb);border-radius:10px;background:#fff;color:#111;font:500 12px/1 inherit;cursor:pointer;box-shadow:none}
+.bv-btn:hover,.bv-btn:focus-visible{background:#f4f4f5;outline:2px solid #1570EF;outline-offset:1px}
+.bv-ov{position:fixed;inset:0;z-index:2000;display:flex;flex-direction:column;background:#f4f4f5}
+.bv-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:#fff;border-bottom:1px solid var(--cs-border,#e5e7eb)}
+.bv-stage{flex:1;overflow:auto;padding:16px;min-height:0}
+.bv-stage iframe{display:block;border:1px solid var(--cs-border,#e5e7eb);background:#fff;transform-origin:top left}
+body.bv-lock{overflow:hidden}
