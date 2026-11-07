@@ -12,3 +12,5 @@ The scheduled task `studio-job-queue` (file `C:\Users\Dell\.claude\scheduled-tas
 6. Do chat jobs first and finish them before any long job in the same run (already in change 4).
 7. The Studio side is already lighter: the chat brief carries only the playbooks the message is about, and "Auto" mode in the assistant answers plain questions at once (no queue) and sends only requests to change or make something to Claude.
 8. The wait before Claude starts is the schedule (up to 5 minutes). If that is too slow, change the task schedule to every 2 minutes (cron `*/2 * * * *`); each run costs one short Claude session when nothing is waiting.
+
+9. Sizes: a chat job now has a size (small or heavy) in its request. Do small chat jobs first (they are quick), then heavy ones; for heavy ones post your plan with progress first, as the job instructions say.
