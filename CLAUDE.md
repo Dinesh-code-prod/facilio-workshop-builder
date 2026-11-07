@@ -27,10 +27,10 @@ Run `/handoff`. It commits and pushes finished work, puts half-done work on a `w
 - Deploy: `/deploy`, or see `docs/operations/DEPLOY.md`. The site must stay under 50 MB extracted (about 41 MB now).
 
 ## Look and feel (the user's rules)
-- **Fluent 2 is the core of the UI** (user, 7 Nov 2026; https://fluent2.microsoft.design/). The dictionary is `docs/reference/FLUENT2-SPEC-2026-11-07.md` and the code is `src/fluent.css` (the last style layer; it retunes the `--th-*` tokens). New UI uses Fluent type (Segoe UI, Body 1 14/20, semibold headings, sentence case), radius 4/8/12, shadows 4/8/16/28/64, neutral greys, 32 px controls, focus as a thicker stroke, motion 100 to 200 ms. Do not add new gradients, clay edges or custom shadows; use the `--fl-*` tokens.
-- Facilio navy #1D1A5E, blue #1570EF, pink #E5197F and sky #8DB8FF are brand accents only (blue = primary action, links, focus; navy = strong text; pink rare). No violet or purple, no neon or glow.
-- Old decoration is being removed file by file (`node tests/ui/css-legacy-audit.mjs` shows what is left). Never bring back the clay and depth layers.
-- Page pass: `docs/reference/FLUENT2-PAGE-PASS-2026-11-07.md` lists which pages are done. Shared page patterns are the `fl-` classes in `src/fluent.css`; `scripts/css-prune.mjs` deletes old rules; `tests/ui/contrast-snippet.js` checks text contrast. Keep the Customer projects night-city banner, the login scene, intro and Discover more as designed.
+- **The look is coss ui** (user, 7 Nov 2026; https://coss.com/ui). Fluent 2 was dropped on purpose: do not bring it back. Light theme only, no dark mode. The dictionary is `docs/reference/UI-COSS-SPEC-2026-11-07.md` and the code is `src/ui.css` (the last style layer; tokens `--cs-*`, shared patterns `cs-*`). New UI uses Geist type, near-black main buttons, hairline borders, 10 px controls and 16 px cards, the segmented tab control, and the label-left card-right layout for settings (`stSec` in `src/settings.js`). No new gradients, glow or custom shadows; use the tokens.
+- Facilio blue #1570EF is the accent (links, focus, selection); navy #1D1A5E and pink #E5197F are brand accents only. No violet or purple, no neon.
+- Old decoration is being removed file by file (`node tests/ui/css-legacy-audit.mjs` shows what is left).
+- Page pass: `docs/reference/UI-PAGE-PASS-2026-11-07.md` lists which pages are done. `scripts/css-prune.mjs` deletes old rules, `scripts/palette-colors.mjs` maps tinted colours to neutrals, `tests/ui/contrast-snippet.js` checks text contrast. Keep the night-city banner on Customer projects, the sign-in scene art, the intro and Discover more as designed.
 - Everything the customer and the team see must look neat and uncrowded. Keep answers short and in plain words; say what was not checked.
 
 ## Things that go wrong here

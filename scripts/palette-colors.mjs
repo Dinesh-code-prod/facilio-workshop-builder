@@ -1,15 +1,15 @@
-// Recolours violet / lavender / magenta tinted colours in src/*.css to the Fluent palette.
-// Usage: node scripts/fluent-colors.mjs [--dry]   (--dry only prints what would change)
+// Recolours violet / lavender / magenta tinted colours in src/*.css to the neutral palette.
+// Usage: node scripts/palette-colors.mjs [--dry]   (--dry only prints what would change)
 // Rules (by lightness l, saturation s, and what the declaration styles):
-//   lavender greys (hue 238-300): text -> #242424 / #616161; fills and borders -> the Fluent neutral greys by lightness
+//   lavender greys (hue 238-300): text -> #242424 / #616161; fills and borders -> the neutral greys by lightness
 //   saturated pale violets -> the soft brand blue #eaf2ff (sky #8DB8FF when stronger); mid violets used as text -> brand text blue #1262D8
 //   dark violets: ink text -> #242424; dark fills -> Facilio navy #1D1A5E
-//   magenta text and borders -> Fluent danger red #b10e1c; pale magenta fills -> #fdf3f4; strong magenta fills stay brand pink #E5197F
+//   magenta text and borders -> danger red #b10e1c; pale magenta fills -> #fdf3f4; strong magenta fills stay brand pink #E5197F
 //   tinted rgba() in box-shadow / text-shadow -> neutral black rgba
 // Left alone: the login scene, intro and Discover more files (explore*, tourplayer, authclay, animation/), Facilio navy and pink themselves.
 import fs from 'node:fs';
 const dry = process.argv.includes('--dry');
-const SKIP = /^(explore|explore2|tourplayer|authclay|fluent|clay-|depthlayer|homeclay)/;
+const SKIP = /^(explore|explore2|tourplayer|authclay|clay-|depthlayer|homeclay)/;
 const files = fs.readdirSync('src').filter(f => f.endsWith('.css') && !SKIP.test(f.replace('.css', '')));
 const hsl = (r, g, b) => { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2; let h = 0, s = 0; if (mx !== mn) { const d = mx - mn; s = l > .5 ? d / (2 - mx - mn) : d / (mx + mn); h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h *= 60; } return [h, s * 100, l * 100]; };
 const kindOf = prop => /^(color|fill|stroke|caret-color|text-decoration-color|-webkit-text-fill-color)$/.test(prop) ? 'text' : /shadow|filter/.test(prop) ? 'shadow' : /border|outline|column-rule/.test(prop) ? 'border' : 'bg';

@@ -1,4 +1,4 @@
-/* Projects home hero (kept as designed: the night-city banner). The rest of the home page is Fluent: see the Projects home block in fluent.css. */
+/* Projects home hero (kept as designed: the night-city banner). The rest of the home page is UI: see the Projects home block in ui.css. */
 body .projects-page.hm .hm-hero:not(#_):not(#__) { border: 0 !important; background: #1d1747 !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), inset 0 -6px 14px rgba(8, 6, 30, .35), 0 18px 30px -20px rgba(44, 33, 102, .6) !important; }
 body .projects-page.hm .hm-hi:not(#_):not(#__) { color: #8DB8FF !important; }
 body .projects-page.hm .hm-sub:not(#_):not(#__) { color: rgba(255, 255, 255, .82) !important; }

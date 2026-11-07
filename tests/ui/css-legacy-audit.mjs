@@ -1,8 +1,8 @@
-// Fluent 2 migration audit (roadmap E19): counts the old decoration still left in each style file, so the clean-up can go file by file and be checked.
-// Counts: gradients, border-radius of 14px or more (Fluent: 4 controls, 8 cards, 12 popovers), pill radius, text/box shadows that are not a Fluent shadow, uppercase tracking, violet-looking hex colours.
+// 2 migration audit (roadmap E19): counts the old decoration still left in each style file, so the clean-up can go file by file and be checked.
+// Counts: gradients, border-radius of 14px or more (UI: 4 controls, 8 cards, 12 popovers), pill radius, text/box shadows that are not a shadow, uppercase tracking, violet-looking hex colours.
 // Usage: node tests/ui/css-legacy-audit.mjs   (prints a table; exit 0 always, it is a report)
 import fs from 'node:fs';
-const dir = new URL('../../src/', import.meta.url); const files = fs.readdirSync(dir).filter(f => f.endsWith('.css') && f !== 'fluent.css');
+const dir = new URL('../../src/', import.meta.url); const files = fs.readdirSync(dir).filter(f => f.endsWith('.css') && f !== 'ui.css');
 const inBuild = fs.readFileSync(new URL('../../build.mjs', import.meta.url), 'utf8');
 const hexRe = /#([0-9a-f]{6}|[0-9a-f]{3})\b/gi;
 const violet = h => { let x = h.slice(1); if (x.length === 3) x = x.split('').map(c => c + c).join(''); const r = parseInt(x.slice(0, 2), 16), g = parseInt(x.slice(2, 4), 16), b = parseInt(x.slice(4, 6), 16); return b > r + 25 && r > g + 25 && b > 120; };
