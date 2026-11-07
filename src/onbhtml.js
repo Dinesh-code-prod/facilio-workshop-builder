@@ -18,7 +18,7 @@
     const files = arr(p.files).map(f => ({ id: uniq('f_' + slug(f.id || f.name)), name: f.name }));
     // one data grid per sheet and table (a sheet with several tables gets one grid each); the key is shared by the page and by the importer
     const grids = []; arr(p.sheets).forEach((s, i) => { const ents = []; arr(s.cols).forEach(c => { const e = String(c.ent || ''); if (!ents.includes(e)) ents.push(e); });
-      ents.forEach((e, j) => grids.push({ key: sheets[i].id + '_' + (j + 1), sheet: s.sheet, ent: e, cols: arr(s.cols).filter(c => String(c.ent || '') === e).map(c => String(c.h || '')) })); });
+      ents.forEach((e, j) => grids.push({ key: sheets[i].id + '_' + (j + 1), sheet: s.sheet, ent: e, cols: arr(s.cols).filter(c => String(c.ent || '') === e).map(c => String(c.h || '')), opts: arr(s.cols).filter(c => String(c.ent || '') === e).map(c => (Array.isArray(c.opts) && c.opts.length ? c.opts.slice(0, 60).map(x => String(x).slice(0, 80)) : null)) })); });
     return { sheets, files, grids, checklist: ['read_guide'].concat(sheets.map(s => 'sheet_' + s.id), files.map(f => 'file_' + f.id), ['ready_to_send']), answers: GENERAL_Q.map(q => q[0]).concat(sheets.map(s => 'note_' + s.id)) };
   }
 
@@ -42,7 +42,12 @@
     function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { } }
     function drawGrid(g) {
       var tb = doc.getElementById('gb_' + g.key); if (!tb) return; var rows = state.rows[g.key] || [], n = Math.max(8, rows.length); tb.textContent = '';
-      for (var r = 0; r < n; r++) { var tr = doc.createElement('tr'); for (var c = 0; c < g.cols.length; c++) { var td = doc.createElement('td'); td.contentEditable = 'true'; td.setAttribute('data-r', String(r)); td.setAttribute('data-c', String(c)); td.setAttribute('aria-label', g.cols[c] + ', row ' + (r + 1)); td.textContent = (rows[r] && rows[r][c]) || ''; tr.appendChild(td); } tb.appendChild(tr); }
+      for (var r = 0; r < n; r++) { var tr = doc.createElement('tr'); for (var c = 0; c < g.cols.length; c++) { var td = doc.createElement('td'), val = (rows[r] && rows[r][c]) || '', ops = g.opts && g.opts[c];
+        if (ops && ops.length) {   // a column with a fixed list of allowed values: a dropdown (a pasted value that is not on the list is kept, so nothing is lost)
+          var sel = doc.createElement('select'); sel.setAttribute('data-r', String(r)); sel.setAttribute('data-c', String(c)); sel.setAttribute('aria-label', g.cols[c] + ', row ' + (r + 1)); var all = [''].concat(ops); if (val && all.indexOf(val) < 0) all.push(val);
+          all.forEach(function (o) { var op = doc.createElement('option'); op.value = o; op.textContent = o || 'Choose…'; sel.appendChild(op); }); sel.value = val; td.appendChild(sel);
+        } else { td.contentEditable = 'true'; td.setAttribute('data-r', String(r)); td.setAttribute('data-c', String(c)); td.setAttribute('aria-label', g.cols[c] + ', row ' + (r + 1)); td.textContent = val; }
+        tr.appendChild(td); } tb.appendChild(tr); }
     }
     function gridOf(td) { var tb = td.closest ? td.closest('tbody') : null; var k = tb && tb.id ? tb.id.replace(/^gb_/, '') : ''; return grids.filter(function (g) { return g.key === k; })[0]; }
     function setCell(g, r, c, v) { var rows = state.rows[g.key] = state.rows[g.key] || []; while (rows.length <= r) rows.push([]); rows[r][c] = String(v).slice(0, 500); }
@@ -60,7 +65,8 @@
     }
     $$('[data-ck]').forEach(function (el) { el.checked = state.checklist[el.getAttribute('data-ck')] === true; });
     $$('[data-ans]').forEach(function (el) { el.value = state.answers[el.getAttribute('data-ans')] || ''; });
-    doc.addEventListener('change', function (e) { var el = e.target, k = el.getAttribute && el.getAttribute('data-ck'); if (k) { state.checklist[k] = el.checked; save(); paint(); } });
+    doc.addEventListener('change', function (e) { var el = e.target, k = el.getAttribute && el.getAttribute('data-ck'); if (k) { state.checklist[k] = el.checked; save(); paint(); return; }
+      if (el.tagName === 'SELECT' && el.getAttribute('data-r') !== null) { var sg = gridOf(el); if (sg) { setCell(sg, +el.getAttribute('data-r'), +el.getAttribute('data-c'), el.value); save(); } } });
     doc.addEventListener('input', function (e) { var el = e.target, k = el.getAttribute && el.getAttribute('data-ans'); if (k) { state.answers[k] = el.value; save(); return; }
       if (el.getAttribute && el.getAttribute('data-r') !== null) { var g = gridOf(el); if (g) { setCell(g, +el.getAttribute('data-r'), +el.getAttribute('data-c'), el.textContent); save(); } } });
     // paste from Excel or Sheets: tab-separated cells, one line per row, starting at the cell you are in
@@ -98,7 +104,7 @@ main{max-width:980px;margin:0 auto;padding:20px 16px 64px;display:grid;gap:18px}
 .pill{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:2px 10px;background:#EAF2FF;color:#1570EF;vertical-align:middle}.pill.crit{background:#FDE7F1;color:#B0125F}.meta{font-size:14px;color:#4A5784}.tw{overflow-x:auto;border:1px solid #DCE4F3;border-radius:10px}table{border-collapse:collapse;width:100%;font-size:14px}th,td{text-align:left;padding:8px 10px;border-bottom:1px solid #E3E9F5;vertical-align:top}th{background:#F1F5FB;white-space:nowrap}tr:last-child td{border-bottom:0}.req{color:#B0125F;font-weight:600}.ex{font-family:ui-monospace,Consolas,monospace;font-size:13px;color:#4A5784}ul.l,ol.l{margin:0;padding-left:22px}
 label{display:block;font-weight:600;margin:12px 0 4px}.ck{display:flex;gap:10px;align-items:flex-start;font-weight:600;margin:14px 0 0}.ck input{width:22px;height:22px;margin:1px 0 0;accent-color:#1570EF;flex:none}textarea{width:100%;min-height:84px;padding:10px;border:1px solid #8DB8FF;border-radius:10px;font:inherit;color:inherit;background:#fff}
 button,.btn{font:inherit;font-weight:600;background:#fff;color:#1570EF;border:1px solid #1570EF;border-radius:10px;padding:10px 16px;min-height:44px;cursor:pointer}button.pri{background:#1570EF;color:#fff}button:hover{background:#EAF2FF}button.pri:hover{background:#0F5FD0}:focus-visible{outline:3px solid #1570EF;outline-offset:2px}.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.note{font-size:14px;color:#4A5784}.sr{position:absolute;left:-9999px}
-.wbt td{min-width:130px;height:34px;border:1px solid #E3E9F5;background:#fff;outline:none;white-space:pre-wrap}.wbt td:focus{background:#EAF2FF;box-shadow:inset 0 0 0 2px #1570EF}.wbw{max-height:420px;overflow:auto}.wbt thead th{position:sticky;top:0;z-index:1}
+.wbt td{min-width:130px;height:34px;border:1px solid #E3E9F5;background:#fff;outline:none;white-space:pre-wrap}.wbt td:focus{background:#EAF2FF;box-shadow:inset 0 0 0 2px #1570EF}.wbt td select{width:100%;min-height:32px;border:0;background:transparent;font:inherit;color:inherit;padding:0 4px}.wbt td:focus-within{background:#EAF2FF}.wbw{max-height:420px;overflow:auto}.wbt thead th{position:sticky;top:0;z-index:1}
 @media(max-width:600px){h1{font-size:24px}section,.card{padding:14px}}@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}@media print{.top,button{display:none}body{background:#fff}}`;
 
   // the data grids of one sheet: type or paste rows; the header marks the required columns

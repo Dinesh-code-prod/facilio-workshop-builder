@@ -237,7 +237,7 @@
   function htmlOptions(p) {
     const scope = ((V.plannerDoc ? V.plannerDoc().scope : []) || []).filter(x => x && x.status === 'matched' && x.text).map(x => String(x.text));
     const sheets = p.sheets.map(s => { const g = T.ONB.GUIDE.sheets[s.sheet] || {}; return { sheet: s.sheet, crit: s.crit, due: s.due, why: s.why, purpose: g.purpose || '', steps: arr(g.steps), watch: arr(g.watch), before: arr(g.before), mistakes: mistakesOf(s),
-      cols: s.ents.flatMap(k => colsOf(k).map(c => ({ ent: T.ENT[k].label, h: c.h, req: c.req, doc: c.doc, rule: expectOf(c, k), ex: c.ex }))) }; });
+      cols: s.ents.flatMap(k => colsOf(k).map(c => ({ ent: T.ENT[k].label, h: c.h, req: c.req, doc: c.doc, rule: expectOf(c, k), ex: c.ex, opts: Array.isArray(c.list) ? c.list : null }))) }; });
     return { scope, modules: inScope().map(m => m.short), plan: { lead: T.MASTER_LEAD, tip: T.CUSTOM_FIELD_TIP, master: p.master, sheets, files: p.files, auto: p.auto, none: p.none }, upload: UPLOAD, fmt: V.fmtDate };
   }
   ACT.onbHtml = a => V.busy(a, async () => { await loadT(); const p = buildPlan(); if (!p.sheets.length) { toast('No data sheets apply yet. Mark modules in scope first.'); return; }
