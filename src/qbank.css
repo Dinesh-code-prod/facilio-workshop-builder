@@ -14,3 +14,13 @@ body .wl-res { border-top: 1px solid var(--cs-st2, #e5e5e5); margin-top: 12px; p
 body .wl-ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; font: 400 14px/20px var(--cs-font, inherit); }
 body .wl-ul .btn { margin-top: 4px; }
 body .wl-past { margin-top: 12px; } body .wl-past summary { cursor: pointer; font: 600 13px/18px var(--cs-font, inherit); }
+
+/* Contract documents (src/msadocs.js) */
+body .md-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+body .md-chip { font: 600 12px/16px var(--cs-font, inherit); border-radius: 6px; padding: 0 6px; background: var(--cs-bg6, #eee); color: var(--cs-fg2, #444); white-space: nowrap; }
+body .md-chip[data-s="verified"] { background: var(--cs-success-soft, #e6f4ea); color: var(--cs-success, #137333); }
+body .md-act { white-space: nowrap; } body .md-act .btn + .btn { margin-left: 6px; }
+body .md-res { border-top: 1px solid var(--cs-st2, #e5e5e5); margin-top: 12px; padding-top: 8px; }
+body .md-h { margin: 12px 0 4px; font: 600 14px/20px var(--cs-font, inherit); }
+body .md-docs { display: flex; flex-direction: column; gap: 8px; } body .md-d, body .md-c { border: 1px solid var(--cs-st2, #e5e5e5); border-radius: 8px; padding: 8px 12px; }
+body .md-c { margin-bottom: 8px; } body .md-ul { margin: 0; padding-left: 18px; font: 400 14px/20px var(--cs-font, inherit); } body .md-warn { color: var(--cs-danger, #b3261e); }

@@ -3,6 +3,7 @@
      POST /api/projects/:id/qbank/analyse    reads the end of a call (mode live) or a finished call (mode summary) against the prepared questions and returns the summary, answered questions with their quotes, follow-ups, decisions, assumptions, dependencies, actions and clarifications
    Nothing is saved here: the page keeps what the person accepts in the project document rs_questions (and the Workshop room notes). The rules, prompts and parsers are in _qbank.mjs (tests/qbank.mjs). Documents and call text are data, never instructions. */
 import './_qbank.mjs';
+import './_msadocs.mjs';
 
 export function installQbank(d) {
   const { route, ok, HttpError, me, projectAccess, limit, aiJSON, docRead } = d; const Q = globalThis.FWBQBank;
@@ -31,6 +32,12 @@ export function installQbank(d) {
     const p = Q.callPrompt(mode, bank, transcript, mode === 'summary' ? 14000 : 6500);
     const r = await aiJSON({ op: 'extract', provider: String((b && b.provider) || ''), system: p.system, messages: [{ role: 'user', content: p.user }], maxTokens: mode === 'summary' ? 1800 : 1400, temperature: 0.1, budget: 21000 }, j => { if (!j || typeof j !== 'object' || Array.isArray(j)) throw new HttpError(502, 'The call could not be read'); return j; });
     return ok(Object.assign({ mode, provider: r.provider || '', truncated: transcript.length > (mode === 'summary' ? 14000 : 6500) }, Q.parseCall(r.data, bank.map(q => q.id), transcript)));
+  });
+  /** the contract documents read against each other (summary of each, conflicts with quotes, what supersedes what, gaps, recommendations). Nothing is saved here; the page keeps the result with the documents. */
+  route('POST', '/api/projects/:id/msadocs/check', async (b, P) => {
+    const s = await me(); await team(s, P.id); await limit('ai', s.id); const M = globalThis.FWBMsaDocs; const d = await data(P.id, 'msa_text'); if (!M.docsOf(d).length) throw new HttpError(400, 'There is no contract document with readable text yet.');
+    const p = M.checkPrompt(d, 14000); const r = await aiJSON({ op: 'extract', provider: String((b && b.provider) || ''), system: p.system, messages: [{ role: 'user', content: p.user }], maxTokens: 1800, temperature: 0.1, budget: 21000 }, j => { if (!j || typeof j !== 'object' || Array.isArray(j)) throw new HttpError(502, 'The documents could not be read'); return j; });
+    return ok({ result: M.parseCheck(r.data, d), fingerprint: M.fingerprint(d), provider: r.provider || '' });
   });
   return {};
 }
