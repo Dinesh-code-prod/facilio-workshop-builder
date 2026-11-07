@@ -112,8 +112,6 @@ body .auth-form .auth-box .btn.primary:not(#_):not(#__)::after { display: none !
 body .auth-form .auth-box:not(#_):not(#__) { text-align: center; }
 
 /* ---- readable text, always (user, 7 Nov 2026): text colour must never sit on a background that hides it ---- */
-body .bn-t.bn-dark:not(#_):not(#__) { background: var(--fl-navy) !important; background-image: none !important; box-shadow: var(--fl-sh4) !important; color: #fff !important; }
-body .bn-t.bn-dark .bn-eye:not(#_):not(#__) { color: #cfe0ff !important; }
 body .gl-state:not(#_):not(#__) { background: var(--sf-initial, #1262D8) !important; color: #fff !important; border-color: transparent !important; }
 body .paper .pfoot:not(#_):not(#__), body .paper .phead:not(#_):not(#__), body .paper .pfoot span:not(#_):not(#__) { color: var(--fl-fg3) !important; }
 body .pp-label:not(#_):not(#__) { color: var(--fl-fg3) !important; }
@@ -140,7 +138,7 @@ body .screen__url:not(#_):not(#__), body .s-sub:not(#_):not(#__) { color: var(--
    page = title 2 + intro + command bar, then sections (Subtitle heading + white cards of one idea), a 12-column-friendly grid with 16 px gutters,
    stat cards, a data grid (header on grey, 1 px row lines), an empty state with one clear action. Spacing is on the 4 px ramp.
    ====================================================================================================================== */
-body .fl-page { max-width: 1280px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 24px; box-sizing: border-box; }
+body .fl-page { width: 100%; max-width: 1280px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 24px; box-sizing: border-box; }
 body .fl-page-h { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
 body .fl-page-t { min-width: 0; }
 body .fl-eyebrow { margin: 0 0 4px; font: 400 12px/16px var(--fl-font); color: var(--fl-fg3); }
@@ -201,3 +199,25 @@ body .pj-more { display: flex; justify-content: center; }
 body a.skip-link:not(#_):not(#__) { color: #fff !important; }
 body .fl-stat:not(#_):not(#__) { background: var(--fl-bg1) !important; background-image: none !important; box-shadow: var(--fl-sh4) !important; transform: none !important; }
 body .fl-stat:not(#_):not(#__)::before, body .fl-stat:not(#_):not(#__)::after { display: none !important; }
+
+/* ---- dashboard and section cards (page pass): a section = Subtitle heading + cards of one idea; lists are rows with 1 px lines ---- */
+body .fl-sec { display: flex; flex-direction: column; gap: 12px; }
+body .fl-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+body .fl-card { background: var(--fl-bg1); border: 1px solid var(--fl-st2); border-radius: var(--fl-r-card); box-shadow: var(--fl-sh4); padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+body .fl-card-h { margin: 0; font: 600 16px/22px var(--fl-font); color: var(--fl-fg1); }
+body .fl-hero-row { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+body .fl-hero-t { display: grid; gap: 4px; } body .fl-hero-t b { font: 600 20px/26px var(--fl-font); color: var(--fl-fg1); } body .fl-hero-t span { font: 400 14px/20px var(--fl-font); color: var(--fl-fg2); }
+body .fl-stat-btn { text-align: left; font: inherit; cursor: pointer; } body .fl-stat-btn:hover { box-shadow: var(--fl-sh8) !important; }
+body .fl-stat-s { font: 400 12px/16px var(--fl-font); color: var(--fl-fg3); }
+body .fl-stat-v.bad { color: var(--fl-danger); } body .fl-stat-v.warn { color: #8a3706; }
+body .fl-big { font: 600 28px/36px var(--fl-font); color: var(--fl-fg1); } body .fl-big small { font: 400 14px/20px var(--fl-font); color: var(--fl-fg3); }
+body .fl-bar { height: 8px; border-radius: 4px; background: var(--fl-bg6); overflow: hidden; } body .fl-bar i { display: block; height: 100%; background: var(--fl-brand); }
+body .fl-stack { display: flex; height: 8px; border-radius: 4px; overflow: hidden; gap: 2px; background: var(--fl-bg6); } body .fl-stack i { display: block; min-width: 6px; }
+body .fl-leg { display: flex; flex-wrap: wrap; gap: 4px 16px; font: 400 12px/16px var(--fl-font); color: var(--fl-fg2); } body .fl-leg i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; } body .fl-leg b { color: var(--fl-fg1); font-weight: 600; }
+body .fl-ul { list-style: none; margin: 0 -16px -16px; padding: 0; } body .fl-ul li + li { border-top: 1px solid var(--fl-st3); }
+body .fl-ul button.fl-row:not(#_):not(#__) { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 44px; padding: 8px 16px; text-align: left; border: 0; background: transparent; font: 400 14px/20px var(--fl-font); color: var(--fl-fg1); cursor: pointer; }
+body .fl-ul button.fl-row:hover { background: var(--fl-bg3); } body .fl-ul button:last-child { border-radius: 0 0 var(--fl-r-card) var(--fl-r-card); }
+body .fl-ul em, body .fl-so em { flex: none; font: 600 12px/16px var(--fl-font); font-style: normal; padding: 2px 8px; border-radius: 10px; background: var(--fl-bg4); color: var(--fl-fg2); }
+body .fl-ul em.bad, body .fl-so em.bad { background: var(--fl-danger-soft); color: #8e0b17; } body .fl-ul em.warn, body .fl-so em.warn { background: var(--fl-warn-soft); color: #8a3706; } body .fl-so em.ok { background: var(--fl-success-soft); color: #0b5a0b; }
+body .fl-so li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; padding: 8px 16px; font: 400 14px/20px var(--fl-font); color: var(--fl-fg1); }
+body .fl-none { margin: 0; font: 400 14px/20px var(--fl-font); color: var(--fl-fg3); }
