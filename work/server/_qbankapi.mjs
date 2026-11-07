@@ -4,6 +4,8 @@
    Nothing is saved here: the page keeps what the person accepts in the project document rs_questions (and the Workshop room notes). The rules, prompts and parsers are in _qbank.mjs (tests/qbank.mjs). Documents and call text are data, never instructions. */
 import './_qbank.mjs';
 import './_msadocs.mjs';
+import { readPrompt, parseRead } from './_solread.mjs';
+import { cleanProposal } from './_dsapi.mjs';
 
 export function installQbank(d) {
   const { route, ok, HttpError, me, projectAccess, limit, aiJSON, docRead } = d; const Q = globalThis.FWBQBank;
@@ -45,6 +47,14 @@ export function installQbank(d) {
     const cat = (Array.isArray(b && b.catalogue) ? b.catalogue : []).slice(0, 600).map(c => ({ name: String(c && c.name || '').slice(0, 80), label: String(c && c.label || '').slice(0, 80) })).filter(c => /^[A-Za-z0-9_.-]{1,80}$/.test(c.name) && c.label);
     const p = M.modulesPrompt(d, cat, 12000); const r = await aiJSON({ op: 'extract', provider: String((b && b.provider) || ''), system: p.system, messages: [{ role: 'user', content: p.user }], maxTokens: 2200, temperature: 0.1, budget: 21000 }, j => { if (!j || typeof j !== 'object' || Array.isArray(j)) throw new HttpError(502, 'The documents could not be read'); return j; });
     return ok({ modules: M.parseModules(r.data, d, cat), fingerprint: M.fingerprint(d), provider: r.provider || '' });
+  });
+  /** a dropped solution document read by the AI layer into PROPOSALS for the Solution tab (nothing is saved here; the page stores them unapproved and a person accepts each) */
+  route('POST', '/api/projects/:id/solution/read', async (b, P) => {
+    const s = await me(); await team(s, P.id); await limit('ai', s.id); const text = String((b && b.text) || '').slice(0, 40000); if (text.trim().length < 60) throw new HttpError(400, 'There is almost no text in that file to read.');
+    const areas = (Array.isArray(b && b.areas) ? b.areas : []).slice(0, 80).map(a => ({ key: String(a && a.key || '').slice(0, 90), label: String(a && a.label || '').slice(0, 100), kind: String(a && a.kind || '').slice(0, 20), columns: (Array.isArray(a && a.columns) ? a.columns : []).map(c => String(c).slice(0, 20)).filter(c => /^[a-z]{2,12}$/.test(c)).slice(0, 8), current: { text: String(a && a.current && a.current.text || '').slice(0, 300), topics: (Array.isArray(a && a.current && a.current.topics) ? a.current.topics : []).slice(0, 10).map(x => String(x).slice(0, 60)) } })).filter(a => /^(module:[A-Za-z0-9_.-]{1,80}|area:[a-z]{2,20}|custom:[a-z0-9-]{1,40})$/.test(a.key));
+    const only = areas.some(a => a.key === (b && b.only)) ? b.only : ''; const fileName = String((b && b.fileName) || 'dropped document').slice(0, 120); const p = readPrompt({ text, fileName, areas, only });
+    const r = await aiJSON({ op: 'extract', provider: String((b && b.provider) || ''), system: p.system, messages: [{ role: 'user', content: p.user }], maxTokens: 2600, temperature: 0.1, budget: 21000 }, j => { if (!j || typeof j !== 'object' || Array.isArray(j)) throw new HttpError(502, 'The document could not be read'); return j; });
+    const proposals = parseRead(r.data, { text, fileName, areas, only }).map(x => cleanProposal(x)).filter(Boolean); return ok({ proposals, areasRead: areas.length, provider: r.provider || '', truncated: String((b && b.text) || '').length > 40000 });
   });
   return {};
 }

@@ -130,8 +130,14 @@
   }
 
   /** the solution proposals of design_proposals: open ones, optionally for one area */
+  /** the design_proposals list with new solution proposals added (same rules as work/server/_dsapi.mjs mergeProposals: a decided identical one is skipped, an open one of the same area is replaced); returns { items, added } */
+  function mergeProposals(items, incoming, now) {
+    const old = arr(items); const key = p => ['solution', p.module, p.text, JSON.stringify(p.rows || [])].join('|'); const decided = new Set(old.filter(p => p && p.kind === 'solution' && p.status !== 'open').map(key)); const fresh = arr(incoming).filter(p => p && p.kind === 'solution' && p.module && !decided.has(key(p)));
+    const areas = new Set(fresh.map(p => p.module)); let n = Math.max(0, ...old.map(p => parseInt(String(p && p.id).slice(3), 10) || 0)); const keep = old.filter(p => !(p && p.kind === 'solution' && p.status === 'open' && areas.has(p.module)));
+    return { items: keep.concat(fresh.map(p => Object.assign({ id: 'dp_' + (++n), status: 'open', by: '', byAt: '', savedAt: now }, p))), added: fresh.length };
+  }
   const proposalsFor = (props, key) => arr(props).filter(p => p && p.kind === 'solution' && p.status === 'open' && (!key || p.module === key));
 
-  const api = { LAYOUTS, ROW_STATUS, kindOfKey, layoutOf, cleanRows, rowFilled, hasContent, flatText, table, diffRows, integrationsFor, TYPES, INT_HINT, customOf, addArea, removeArea, linkedModules, relatedFor, STATUSES, GROUPS, FIXED, KEY_RE, areasFor, itemsOf, recOf, textOf, statusOf, reqLines, save, restore, accept, diff, paras, otherAreas, wordRows, proposalsFor };
+  const api = { mergeProposals, LAYOUTS, ROW_STATUS, kindOfKey, layoutOf, cleanRows, rowFilled, hasContent, flatText, table, diffRows, integrationsFor, TYPES, INT_HINT, customOf, addArea, removeArea, linkedModules, relatedFor, STATUSES, GROUPS, FIXED, KEY_RE, areasFor, itemsOf, recOf, textOf, statusOf, reqLines, save, restore, accept, diff, paras, otherAreas, wordRows, proposalsFor };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBSolutionLogic = api;
 })(typeof window !== 'undefined' ? window : globalThis);

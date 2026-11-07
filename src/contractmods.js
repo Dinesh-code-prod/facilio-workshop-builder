@@ -16,6 +16,10 @@
     vendors: ['vendor', 'contractor management'], invoice: ['invoice', 'invoicing', 'billing'], tenant: ['tenant', 'tenants', 'tenant portal', 'tenant management'], facilitybooking: ['facility booking', 'room booking', 'amenity booking'], spacebooking: ['space booking', 'desk booking', 'hot desking', 'room booking'], invitevisitor: ['visitor', 'visitors', 'visitor management'], visitorlog: ['visitor log', 'visitor management'] };
   const GENERIC = new Set(['site', 'space', 'floor', 'building', 'client', 'people', 'tool', 'quote', 'insurance', 'employee', 'item', 'vendors', 'invoice', 'tenant']);   // a bare mention proves nothing
   const GENERIC_LABEL = new Set(['service', 'schedule', 'request', 'order', 'task', 'record', 'report', 'user', 'team', 'role', 'form', 'data', 'document', 'notification', 'approval', 'event', 'log', 'setting', 'type', 'category', 'group', 'template', 'plan', 'job', 'project', 'contract', 'agreement', 'status', 'priority', 'customer', 'supplier', 'location', 'department', 'organization', 'organisation', 'company', 'account', 'item', 'list']);
+  // a module whose label ends in one of these words is a list that belongs to another module (Asset Category, Work Order Type, Ticket Status), not part of the solution on its own
+  const SUB_WORD = new Set(['category', 'categories', 'subcategory', 'type', 'status', 'group', 'class', 'classification', 'tag', 'reading', 'mapping', 'setting', 'config', 'configuration', 'field', 'lookup', 'attachment', 'note', 'comment', 'history', 'preference', 'rule', 'trigger']);
+  /** whether a catalogue module can be part of a solution: not a one-word generic label and not a sub-list of another module */
+  function isSolutionModule(m) { const w = norm(m && m.label).trim().split(' ').filter(Boolean); if (!w.length) return false; const raw = w[w.length - 1], last = raw.replace(/s$/, ''); const in_ = set => set.has(raw) || set.has(last); return w.length === 1 ? !in_(GENERIC_LABEL) : !in_(SUB_WORD); }
   const SCOPE_H = /\b(scope of (work|services?)|services? scope|in.?scope|deliverables?|modules?|services to be (provided|delivered)|statement of work|solution scope)\b/i;
   const END_H = /^(\d+(\.\d+)*\.?\s+)?(fees|payment|pricing|commercial|term(s|ination)?|confidential|liabilit|governing law|warrant|definitions|general)/i;
   const EXCL_H = /\b(exclusions?|out.?of.?scope|not included|excluded (items|services))\b/i;
@@ -28,7 +32,7 @@
   /** one entry per label (the catalogue has several modules called Work Order: keep the one whose name is the label), and no entry whose label is one common word */
   function tidy(catalogue) {
     const canon = new Map(); arr(catalogue).forEach(m => { if (!m || !m.name || !m.label) return; const k = norm(m.label).trim(); const prefer = x => String(x.name).toLowerCase() === k.replace(/ /g, ''); const old = canon.get(k); if (!old || (!prefer(old) && (prefer(m) || String(m.name).length < String(old.name).length))) canon.set(k, m); });
-    return [...canon.values()].filter(m => { const w = norm(m.label).trim().split(' '); return !(w.length === 1 && GENERIC_LABEL.has(w[0].replace(/s$/, ''))); });
+    return [...canon.values()].filter(isSolutionModule);
   }
   /** catalogue: [{ name, label }] (the whole catalogue); docs: [{ label, pages: [{ n, text }] }]. Returns { strong, weak, excluded }, each [{ name, label, hits: [{ doc, page, quote, strong, excluded }] }] */
   function find(catalogue, docs) {
@@ -48,6 +52,6 @@
       if (s && (!generic || s >= 2 || e.hits.some(h => h.strong && /\bmodule\b/i.test(h.quote)))) strong.push(e); else if (ex && !s) excluded.push(e); else if (!generic) weak.push(e); });
     const by = (a, b) => cnt(b) - cnt(a) || b.hits.length - a.hits.length || a.label.localeCompare(b.label); return { strong: strong.sort(by), weak: weak.sort(by), excluded: excluded.sort(by) };
   }
-  const api = { find, tidy, ALIASES };
+  const api = { find, tidy, isSolutionModule, ALIASES };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBContractMods = api;
 })(typeof window !== 'undefined' ? window : globalThis);
