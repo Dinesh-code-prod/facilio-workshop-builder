@@ -10,9 +10,9 @@
   const norm = s => ' ' + String(s || '').replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
   const camel = s => String(s || '').replace(/([a-z])([A-Z])/g, '$1 $2');
   /** other words a contract uses for a module (keyed by the module's name, lower case) */
-  const ALIASES = { workorder: ['work order', 'job order', 'maintenance order', 'corrective maintenance'], servicerequest: ['service request', 'helpdesk', 'help desk', 'service desk', 'request portal', 'ticketing'], asset: ['assets', 'equipment', 'asset register', 'asset management'],
-    plannedmaintenance: ['planned maintenance', 'planned preventive maintenance', 'preventive maintenance', 'preventative maintenance', 'ppm'], preventivemaintenance: ['preventive maintenance', 'preventative maintenance', 'ppm', 'pm schedule'], inspectiontemplate: ['inspection', 'inspections', 'checklist', 'checklists'], inspectionresponse: ['inspection', 'inspections'],
-    workpermit: ['work permit', 'permit to work', 'ptw'], inventoryrequest: ['inventory', 'stock', 'storeroom', 'stores', 'spare parts'], purchaserequest: ['purchase request', 'purchase requisition', 'requisition'], purchaseorder: ['purchase order', 'procurement', 'purchasing'], requestforquotation: ['request for quotation', 'rfq'],
+  const ALIASES = { workorder: ['work order', 'job order', 'maintenance order', 'corrective maintenance', 'reactive maintenance', 'reactive service', 'reactive work', 'breakdown maintenance', 'breakdown'], servicerequest: ['service request', 'helpdesk', 'help desk', 'service desk', 'request portal', 'ticketing'], asset: ['assets', 'equipment', 'asset register', 'asset management'],
+    plannedmaintenance: ['planned maintenance', 'planned preventive maintenance', 'preventive maintenance', 'preventative maintenance', 'planned work', 'scheduled maintenance', 'ppm'], preventivemaintenance: ['preventive maintenance', 'preventative maintenance', 'ppm', 'pm schedule'], inspectiontemplate: ['inspection', 'inspections', 'checklist', 'checklists'], inspectionresponse: ['inspection', 'inspections'],
+    workpermit: ['work permit', 'permit to work', 'ptw'], inventoryrequest: ['inventory', 'stock', 'stock control', 'storeroom', 'stores', 'spare parts', 'materials management'], purchaserequest: ['purchase request', 'purchase requisition', 'requisition'], purchaseorder: ['purchase order', 'procurement', 'purchasing'], requestforquotation: ['request for quotation', 'rfq'],
     vendors: ['vendor', 'contractor management'], invoice: ['invoice', 'invoicing', 'billing'], tenant: ['tenant', 'tenants', 'tenant portal', 'tenant management'], facilitybooking: ['facility booking', 'room booking', 'amenity booking'], spacebooking: ['space booking', 'desk booking', 'hot desking', 'room booking'], invitevisitor: ['visitor', 'visitors', 'visitor management'], visitorlog: ['visitor log', 'visitor management'] };
   const GENERIC = new Set(['site', 'space', 'floor', 'building', 'client', 'people', 'tool', 'quote', 'insurance', 'employee', 'item', 'vendors', 'invoice', 'tenant']);   // a bare mention proves nothing
   const GENERIC_LABEL = new Set(['service', 'schedule', 'request', 'order', 'task', 'record', 'report', 'user', 'team', 'role', 'form', 'data', 'document', 'notification', 'approval', 'event', 'log', 'setting', 'type', 'category', 'group', 'template', 'plan', 'job', 'project', 'contract', 'agreement', 'status', 'priority', 'customer', 'supplier', 'location', 'department', 'organization', 'organisation', 'company', 'account', 'item', 'list']);
@@ -25,11 +25,14 @@
   const has = (text, p) => text.includes(p) || text.includes(p.slice(0, -1) + 's ') || text.includes(p.slice(0, -1) + 'es ');
   const sentences = text => String(text || '').split(/\r?\n/).flatMap(l => (l.length > 260 ? l.split(/(?<=[.;])\s+/) : [l])).map(s => s.replace(/\s+/g, ' ').trim()).filter(s => s.length > 3);
 
+  /** one entry per label (the catalogue has several modules called Work Order: keep the one whose name is the label), and no entry whose label is one common word */
+  function tidy(catalogue) {
+    const canon = new Map(); arr(catalogue).forEach(m => { if (!m || !m.name || !m.label) return; const k = norm(m.label).trim(); const prefer = x => String(x.name).toLowerCase() === k.replace(/ /g, ''); const old = canon.get(k); if (!old || (!prefer(old) && (prefer(m) || String(m.name).length < String(old.name).length))) canon.set(k, m); });
+    return [...canon.values()].filter(m => { const w = norm(m.label).trim().split(' '); return !(w.length === 1 && GENERIC_LABEL.has(w[0].replace(/s$/, ''))); });
+  }
   /** catalogue: [{ name, label }] (the whole catalogue); docs: [{ label, pages: [{ n, text }] }]. Returns { strong, weak, excluded }, each [{ name, label, hits: [{ doc, page, quote, strong, excluded }] }] */
   function find(catalogue, docs) {
-    // one entry per label (the catalogue has several modules called Work Order: keep the one whose name is the label), and no entry whose label is one common word
-    const canon = new Map(); arr(catalogue).forEach(m => { if (!m || !m.name || !m.label) return; const k = norm(m.label).trim(); const prefer = x => String(x.name).toLowerCase() === k.replace(/ /g, ''); const old = canon.get(k); if (!old || (!prefer(old) && (prefer(m) || String(m.name).length < String(old.name).length))) canon.set(k, m); });
-    const mods = [...canon.values()].filter(m => { const w = norm(m.label).trim().split(' '); return !(w.length === 1 && GENERIC_LABEL.has(w[0].replace(/s$/, ''))); }).map(m => ({ m, ps: phrases(m) })); const found = new Map();
+    const mods = tidy(catalogue).map(m => ({ m, ps: phrases(m) })); const found = new Map();
     for (const d of arr(docs)) {
       let inScope = false, inExcl = false;
       for (const pg of arr(d && d.pages).filter(Boolean)) for (const s of sentences(pg.text)) {
@@ -45,6 +48,6 @@
       if (s && (!generic || s >= 2 || e.hits.some(h => h.strong && /\bmodule\b/i.test(h.quote)))) strong.push(e); else if (ex && !s) excluded.push(e); else if (!generic) weak.push(e); });
     const by = (a, b) => cnt(b) - cnt(a) || b.hits.length - a.hits.length || a.label.localeCompare(b.label); return { strong: strong.sort(by), weak: weak.sort(by), excluded: excluded.sort(by) };
   }
-  const api = { find, ALIASES };
+  const api = { find, tidy, ALIASES };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBContractMods = api;
 })(typeof window !== 'undefined' ? window : globalThis);
