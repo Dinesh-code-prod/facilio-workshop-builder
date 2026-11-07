@@ -17,6 +17,12 @@ await t('reconcile creates what is missing; the id comes from the key, so a seco
   assert.equal(new Set(r.create.map(x => x.id)).size, 5); assert.deepEqual([r.create[0].src.type, r.create[0].status, r.create[0].auto.key], ['auto', 'To Do', 'findings:tr1']);
   const again = reconcile(desired(facts), r.create, 'x'); assert.deepEqual([again.create.length, again.resolve.length, again.reopen.length], [0, 0, 0]);
 });
+await t('a stage that is Ready to close gets a Close stage task; it resolves when the stage is closed; unknown facts leave it alone', () => {
+  const w = desired({ stagesReady: [{ k: 'design', n: 3, name: 'Mockup & BRD' }] }); assert.deepEqual(w.map(x => x.key), ['stage:design']); assert.match(w[0].title, /Close stage 3: Mockup & BRD/);
+  const made = reconcile(w, [], 'x').create; assert.equal(made.length, 1);
+  assert.equal(reconcile(desired({}), made, 'y').resolve.length, 1, 'closed: the reason is gone');
+  assert.equal(reconcile(desired({}), made, 'y', null, new Set(['stage'])).resolve.length, 0, 'stage facts not loaded yet: leave it');
+});
 await t('an automatic task whose reason is gone is resolved; a task a person made is never touched', () => {
   const made = reconcile(desired(facts), [], 'x').create; const person = { id: 't_1', title: 'Mine', status: 'To Do' };
   const r = reconcile(desired({ reviewMissing: facts.reviewMissing }), made.concat([person]), 'y'); assert.deepEqual(r.resolve.map(x => x.id).sort(), made.filter(x => x.auto.rule !== 'brd').map(x => x.id).sort()); assert.ok(!r.resolve.some(x => x.id === 't_1'));

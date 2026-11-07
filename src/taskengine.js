@@ -16,21 +16,22 @@
     arr(f.reviewMissing).forEach(x => out.push({ key: 'brd:' + x.part, rule: 'brd', type: 'BRD Task', title: 'Review the BRD: ' + x.label, stage: 'Mockup & BRD', view: 'brd', reason: 'This part of the BRD review is not ticked' }));
     arr(f.coverageMissing).forEach(x => { if (x && x.count > 0) out.push({ key: 'cover:' + x.module, rule: 'cover', type: 'UAT Task', title: 'Write test cases for ' + x.label + ' (' + x.count + ' requirement' + (x.count === 1 ? '' : 's') + ')', stage: 'UAT & FTR', view: 'delivery', reason: x.count + ' confirmed requirement' + (x.count === 1 ? '' : 's') + ' without a test case' }); });
     arr(f.failedCases).forEach(x => out.push({ key: 'fail:' + x.id, rule: 'fail', type: 'UAT Task', title: 'Fix and retest ' + ((x.tcid ? x.tcid + ' ' : '') + (x.title || '')).trim(), stage: 'UAT & FTR', view: 'delivery', reason: 'The test case failed or is blocked' }));
+    arr(f.stagesReady).forEach(x => out.push({ key: 'stage:' + x.k, rule: 'stage', type: 'Internal Action', title: 'Close stage ' + x.n + ': ' + x.name + ' (every check is met)', stage: x.name, view: 'lifecycle', reason: 'Every record of this stage is complete; a project owner or admin closes it on the Project cycle page' }));
     arr(f.kpisNoSolution).forEach(x => out.push({ key: 'kpi:' + x.id, rule: 'kpi', type: 'BRD Task', title: 'Write how Facilio delivers the KPI "' + x.name + '"', stage: 'Mockup & BRD', view: 'slakpi', reason: 'The KPI has no solution written yet' }));
     // accepted customer mail (docs/reference/MAIL-TO-TASKS-PLAN-2026-11-07.md): wanted until its "done when" check is met. mailOpen rows: { id, title, area, owner, desc, quote }
     const MT = { brd: ['BRD Task', 'Requirements & Workshops'], solution: ['Requirement Task', 'Requirements & Workshops'], uat: ['UAT Task', 'Testing & UAT'], hypercare: ['Implementation Task', 'Go-Live & Handover'] };
     arr(f.mailOpen).forEach(x => { const m = MT[x.area] || ['Other', '']; out.push({ key: 'mail:' + x.id, rule: 'mail', type: m[0], title: x.title, stage: m[1], view: 'tasks', reason: 'A customer mail asked for this', owner: x.owner || '', desc: x.desc || '', src: { type: 'email', ref: x.id, quote: x.quote || '', label: 'Customer mail' } }); });
     return out;
   }
-  const WHY = { findings: 'nothing is left to review for it', brd: 'the part is ticked', cover: 'every confirmed requirement has a test case', fail: 'the test case no longer fails', kpi: 'the solution is written', mail: 'the check for this mail is met' };
+  const WHY = { findings: 'nothing is left to review for it', brd: 'the part is ticked', cover: 'every confirmed requirement has a test case', fail: 'the test case no longer fails', kpi: 'the solution is written', stage: 'the stage is closed', mail: 'the check for this mail is met' };
   /** returns { create: [task], reopen: [{ id }], resolve: [{ id, why }] }. tasks: the existing task records (each automatic one carries auto: { key, rule, by }) */
-  function reconcile(want, tasks, now, whyBy) {
+  function reconcile(want, tasks, now, whyBy, keep) {   // keep: rules whose facts are not known right now; their tasks are left alone
     const have = {}; arr(tasks).forEach(t => { if (t && t.auto && t.auto.key) have[t.auto.key] = t; }); const wantKeys = new Set(arr(want).map(w => w.key)); const out = { create: [], reopen: [], resolve: [] };
     arr(want).forEach(w => { const t = have[w.key];
       if (!t) out.create.push({ id: idOf(w.key), title: w.title, type: w.type, status: 'To Do', stage: w.stage, desc: w.desc || (w.reason + '. Made by the Studio from the project facts; it resolves itself when this is no longer true.'), owner: w.owner || '', due: '', src: w.src || { type: 'auto', ref: w.key, label: 'Automatic' }, auto: { key: w.key, rule: w.rule, view: w.view, at: now || '' } });
       else if (CLOSED.includes(t.status) && t.auto.resolvedBy === 'engine') out.reopen.push({ id: t.id });   // it was resolved by the engine and the reason is back; a task a person closed stays closed
     });
-    Object.keys(have).forEach(k => { const t = have[k]; if (!wantKeys.has(k) && !CLOSED.includes(t.status)) out.resolve.push({ id: t.id, why: (whyBy && whyBy[k]) || WHY[t.auto.rule] || 'the reason is gone' }); });
+    Object.keys(have).forEach(k => { const t = have[k]; if (keep && keep.has(t.auto.rule)) return; if (!wantKeys.has(k) && !CLOSED.includes(t.status)) out.resolve.push({ id: t.id, why: (whyBy && whyBy[k]) || WHY[t.auto.rule] || 'the reason is gone' }); });
     return out;
   }
   const V = root.FWBViews; if (V) V.taskEngineLogic = { desired, reconcile, idOf };
@@ -42,10 +43,10 @@
     const reqs = (S.ws.requirements || []).filter(r => r.status === 'Confirmed'); const review = (F.doc('brddoc') || {}).review || {};
     const PARTS = [['intro', 'Introduction'], ['requirements', 'Requirements'], ['flows', 'Process flows'], ['fields', 'Fields and forms'], ['apps', 'Connected apps'], ['contract', 'Match with the contract']];
     const cases = I().list('utc'); const mods = F.allModules().filter(m => m.inScope); const data = mods.map(m => ({ name: m.name, label: m.label, requirements: reqs.filter(r => (r.modules || []).includes(m.name)).map(r => ({ id: r.id, title: r.title })) })); data.push({ name: '__general', label: 'General requirements', requirements: reqs.filter(r => !(r.modules && r.modules.length)).map(r => ({ id: r.id, title: r.title })) });
-    const cov = U() ? U().coverage(data, cases) : { rows: [] };
+    const cov = U() ? U().coverage(data, cases) : { rows: [] }; const lc = V.lifeStages ? V.lifeStages() : null;   // null while the stage records load
     const MI = V.mailInbox; const mf = MI ? MI.facts() : {}; const MT = root.FWBMailTasks; const recs = MI && MT ? MI.records().filter(r => r.status === 'accepted') : []; const mailOpen = [], mailWhy = {};
     recs.forEach(r => { const why = MT.isDone(r, mf); if (why) mailWhy['mail:' + r.id] = why; else mailOpen.push({ id: r.id, title: r.title, area: (r.route || {}).area, owner: r.acceptedBy, quote: ((r.mail || {}).subject || '').slice(0, 300), desc: 'Customer mail from ' + (((r.mail || {}).from || {}).name || ((r.mail || {}).from || {}).email || 'the customer') + ': ' + ((r.mail || {}).subject || '') + '. Made when you accepted it in the Mail inbox. Done when: ' + ((r.doneWhen || {}).type === 'solution_accepted' ? 'an accepted version on the Solution tab quotes this mail' : (r.doneWhen || {}).type === 'brd_saved' ? 'a BRD version is saved' : 'you close it here or tell Otto in Teams') + '.' }); });
-    return { mailOpen, mailWhy, openFindings: Object.keys(by).map(k => ({ transcriptId: k, title: title(k), count: by[k] })), reviewMissing: reqs.length ? PARTS.filter(p => !(review[p[0]] && review[p[0]].at)).map(p => ({ part: p[0], label: p[1] })) : [],
+    return { stagesReady: lc ? lc.list.filter(x => x.status === 'ready').map(x => ({ k: x.s.k, n: x.s.n, name: x.s.name })) : [], unknownRules: lc ? [] : ['stage'], mailOpen, mailWhy, openFindings: Object.keys(by).map(k => ({ transcriptId: k, title: title(k), count: by[k] })), reviewMissing: reqs.length ? PARTS.filter(p => !(review[p[0]] && review[p[0]].at)).map(p => ({ part: p[0], label: p[1] })) : [],
       coverageMissing: cov.rows.map(r => ({ module: r.name, label: r.label, count: r.missing.length })), failedCases: cases.filter(c => (c.status === 'Failed' || c.status === 'Blocked') && !c.issue).map(c => ({ id: c.id, tcid: c.tcid, title: c.title })), kpisNoSolution: I().list('kpi').filter(k => !String(k.solution || '').trim()).map(k => ({ id: k.id, name: k.name })) };
   }
   let busy = false;
@@ -53,7 +54,7 @@
   async function run(force) {
     if (busy || V.isCustomer() || S.readonly || !S.project) return 0; if (!force && S.ui.teAt && S.ui.teAt.p === S.project.id && Date.now() - S.ui.teAt.t < 60000) return 0; busy = true;
     try { I().load(['task', 'utc', 'kpi']); for (let i = 0; i < 24 && !I().ready(['task', 'utc', 'kpi']); i++) await new Promise(r => setTimeout(r, 250)); if (!I().ready(['task', 'utc', 'kpi'])) return 0; S.ui.teAt = { p: S.project.id, t: Date.now() }; if (V.mailInbox) await V.mailInbox.ensure();
-      const now = new Date().toISOString(); const fx = facts(); const r = reconcile(desired(fx), I().list('task'), now, fx.mailWhy); let n = 0;
+      const now = new Date().toISOString(); const fx = facts(); const r = reconcile(desired(fx), I().list('task'), now, fx.mailWhy, new Set(fx.unknownRules || [])); let n = 0;
       for (const t of r.create) { await I().put('task', t.id, t); n++; }
       for (const x of r.resolve) { const t = I().get('task', x.id); if (t) { await I().put('task', t.id, Object.assign({}, t, { status: 'Done', completion: 'Resolved automatically: ' + x.why + '.', auto: Object.assign({}, t.auto, { resolvedBy: 'engine', resolvedAt: now }) })); n++; } }
       for (const x of r.reopen) { const t = I().get('task', x.id); if (t) { await I().put('task', t.id, Object.assign({}, t, { status: 'To Do', completion: '', auto: Object.assign({}, t.auto, { resolvedBy: '', resolvedAt: '' }) })); n++; } }
