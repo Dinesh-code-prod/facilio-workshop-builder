@@ -302,9 +302,6 @@ body .adm-hero .adm-crumb { margin: 0 0 6px !important; font-size: 13px !importa
 body .adm-hero-art { display: none !important; }
 body .adm-hero-a { margin-top: 0 !important; }
 body .dtabs { display: flex; gap: 22px !important; padding: 0 !important; margin: -8px 0 20px !important; background: none !important; border: 0 !important; border-radius: 0 !important; box-shadow: inset 0 -1px 0 var(--ds-line) !important; overflow-x: auto; }
-body .dtab { position: relative; padding: 10px 0 12px !important; border: 0 !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; font-size: 14px !important; font-weight: 600 !important; color: var(--ds-muted) !important; }
-body .dtab:hover { color: var(--ds-ink-2) !important; }
-body .dtab.on { color: var(--ds-navy) !important; }
 body .dtab.on::after { content: "" !important; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; border-radius: 2px; background: var(--ds-navy) !important; display: block !important; }
 body .kpi { padding: 16px 18px !important; }
 body .kpi .kpi-s, body .kpi .kpi-sub { font-size: 12.5px !important; color: var(--ds-muted) !important; }

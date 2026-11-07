@@ -268,9 +268,9 @@ body .fl-mail-reply:focus-visible { outline: 2px solid var(--fl-brand); outline-
 /* ======== controls and headings, one scale everywhere (colour pass, 7 Nov 2026) ======== */
 /* buttons: medium 32, small 24, icon buttons are rounded squares, link buttons are plain text */
 body .btn:not(.icon):not(.link):not(#_):not(#__) { height: 32px !important; min-height: 32px !important; }
-body .btn.sm:not(.icon):not(.link):not(#_):not(#__) { height: 24px !important; min-height: 24px !important; }
+body .btn.sm:not(.icon):not(.link):not(#_):not(#__) { height: 28px !important; min-height: 28px !important; }
 body .btn.icon:not(#_):not(#__) { border-radius: var(--fl-r-ctl) !important; min-width: 32px; height: 32px !important; }
-body .btn.icon.sm:not(#_):not(#__) { min-width: 24px; height: 24px !important; }
+body .btn.icon.sm:not(#_):not(#__) { min-width: 28px; height: 28px !important; }
 body .btn.link:not(#_):not(#__) { border-radius: 4px !important; height: auto !important; }
 /* fields: 32 px, same on every page */
 body input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="hidden"]):not(#_):not(#__), body select:not(#_):not(#__) { height: 32px !important; min-height: 32px; box-sizing: border-box; }
@@ -295,3 +295,117 @@ body .tab.active:not(#_):not(#__)::after { display: none; }
 body .tab .cnt:not(#_):not(#__) { margin: 0; padding: 0 8px; border-radius: 10px; background: var(--fl-bg4); font: 600 12px/16px var(--fl-font); color: var(--fl-fg2); }
 body .main .sp .hd h1:not(#_):not(#__) { color: #fff !important; }
 body .mk-d summary:not(#_):not(#__) { color: #1262D8; }
+
+/* ======================================================================================================================
+   Colour with meaning, and motion from the Fluent tokens (7 Nov 2026).
+   Fluent: brand colour marks the selected thing and the call to action; shared colours accent a section sparingly; status colours only mean status.
+   So every sidebar group gets one accent (blue project, teal discover, deep blue design and build, green launch, pink customer-facing, grey admin) used for the page header
+   strip, the section heading bar, the selected tab, the selected sidebar item and the big numbers. Primary buttons stay Facilio blue everywhere.
+   Motion tokens from @fluentui/tokens: durations 100 faster, 150 fast, 200 normal, 250 gentle, 300 slow; curves decelerateMid (0,0,0,1), decelerateMin (.33,0,.1,1), easyEase (.33,0,.67,1).
+   ====================================================================================================================== */
+:root { --fl-dur-fast: 100ms; --fl-dur-fast2: 150ms; --fl-dur-normal: 200ms; --fl-dur-gentle: 250ms; --fl-dur-slow: 300ms; --fl-dec: cubic-bezier(0, 0, 0, 1); --fl-dec-min: cubic-bezier(.33, 0, .1, 1); --fl-ease: cubic-bezier(.33, 0, .67, 1); --fl-out: cubic-bezier(.33, 0, .1, 1);
+  --fl-accent: #1570EF; --fl-accent-ink: #0e4a9a; --fl-accent-soft: #eaf2ff; --fl-accent-line: #b4d6fa; }
+body .shell:has(> .main[data-sec="1"]) { --fl-accent: #038387; --fl-accent-ink: #025f62; --fl-accent-soft: #e6f5f5; --fl-accent-line: #a8dcdc; }
+body .shell:has(> .main[data-sec="2"]) { --fl-accent: #0f548c; --fl-accent-ink: #0f548c; --fl-accent-soft: #e9f1f9; --fl-accent-line: #b4cfe6; }
+body .shell:has(> .main[data-sec="3"]) { --fl-accent: #0e7a5a; --fl-accent-ink: #0a5a42; --fl-accent-soft: #e8f5f0; --fl-accent-line: #b2dccb; }
+body .shell:has(> .main[data-sec="4"]) { --fl-accent: #E5197F; --fl-accent-ink: #a30f58; --fl-accent-soft: #fdeaf3; --fl-accent-line: #f5b3d3; }
+body .shell:has(> .main[data-sec="5"]) { --fl-accent: #616161; --fl-accent-ink: #424242; --fl-accent-soft: #f0f0f0; --fl-accent-line: #d1d1d1; }
+
+/* page header: a soft tint of the section accent with a 4 px accent edge; the title carries the accent ink */
+body .main > .page > .page-header:not(#_):not(#__), body .adm-main > .adm-hero:not(#_):not(#__) { background: var(--fl-accent-soft) !important; border-bottom: 1px solid var(--fl-accent-line) !important; box-shadow: inset 4px 0 0 var(--fl-accent) !important; }
+body .main > .page > .page-header .t h1:not(#_):not(#__), body .adm-main > .adm-hero h1:not(#_):not(#__) { color: var(--fl-accent-ink) !important; }
+body .main > .page > .page-header .t p:not(#_):not(#__), body .adm-main > .adm-hero p:not(#_):not(#__) { color: var(--fl-fg2) !important; }
+/* section headings get an accent bar, so a long page reads as sections */
+body .fl-sub:not(#_):not(#__) { display: flex; align-items: center; gap: 8px; }
+body .fl-sub:not(#_):not(#__)::before { content: ""; flex: none; width: 4px; height: 18px; border-radius: 2px; background: var(--fl-accent); }
+/* numbers and selected things take the accent */
+body .fl-stat-v:not(.bad):not(.warn):not(#_):not(#__), body .pt-kpis .kpi-v:not(#_):not(#__) { color: var(--fl-accent-ink); }
+body .fl-stat-btn:hover:not(#_):not(#__) { border-color: var(--fl-accent-line) !important; }
+body .tab.active:not(#_):not(#__), body .pt-sh.on:not(#_):not(#__) { border-bottom-color: var(--fl-accent) !important; color: var(--fl-accent-ink) !important; }
+body .pt-sh.on .pt-shn:not(#_):not(#__) { background: var(--fl-accent-soft); color: var(--fl-accent-ink); }
+body .sidebar .sb-item.active:not(#_):not(#__) { background: var(--fl-accent-soft) !important; color: var(--fl-accent-ink) !important; font-weight: 600 !important; }
+body .sidebar .sb-item.active::before:not(#_):not(#__), body .sidebar .sb-item.active::before { background: var(--fl-accent) !important; }
+body .sidebar .sb-item.active svg, body .sidebar .sb-item.active .fi { color: var(--fl-accent-ink) !important; }
+body .phase-strip:not(#_):not(#__) { background: var(--fl-accent-soft) !important; border-color: var(--fl-accent-line) !important; box-shadow: none !important; }
+body .phase-strip .ps-l:not(#_):not(#__) { color: var(--fl-accent-ink) !important; }
+/* admin tabs: the same Fluent tab list as everywhere */
+body .dtab:not(#_):not(#__) { height: 40px; padding: 0 12px; border: 0 !important; border-bottom: 2px solid transparent !important; border-radius: 0 !important; background: none !important; font: 400 14px/20px var(--fl-font); color: var(--fl-fg2) !important; box-shadow: none !important; cursor: pointer; }
+body .dtab:not(#_):not(#__):hover { background: var(--fl-bg3) !important; color: var(--fl-fg1) !important; }
+body .dtab.on:not(#_):not(#__) { color: var(--fl-accent-ink) !important; font-weight: 600; border-bottom-color: var(--fl-accent) !important; background: none !important; }
+
+/* motion: entrance is a short rise and fade (250 ms, decelerate); the stagger delays set by the older rules stay */
+@keyframes flUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes flWave { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+body .si-play .si-item:not(#_):not(#__) { animation-name: flUp; animation-duration: var(--fl-dur-gentle); animation-timing-function: var(--fl-dec); }
+body .fl-card:not(#_):not(#__), body .fl-stat:not(#_):not(#__), body .card:not(#_):not(#__) { transition: box-shadow var(--fl-dur-fast2) var(--fl-dec-min), border-color var(--fl-dur-fast2) var(--fl-dec-min); }
+/* loading: the Fluent skeleton wave (#e6e6e6 to #fafafa, 3 s) and nothing else moving */
+body .ui-loading i:not(#_):not(#__) { height: 12px; border-radius: 4px; background: linear-gradient(90deg, #e6e6e6 0%, #fafafa 50%, #e6e6e6 100%); background-size: 400% 100%; animation: flWave 3s ease-in-out infinite; }
+
+/* ======== Claude work panel (the chat shared by Contract intake, Transcripts, Checks and the stage tabs) and data tables, Fluent version ======== */
+body .ki-chat { background: var(--fl-bg1); border: 1px solid var(--fl-st2); border-radius: var(--fl-r-card); box-shadow: var(--fl-sh4); overflow: hidden; margin-bottom: 16px; }
+body .ki-head { padding: 16px 20px; background: var(--fl-bg1); border-bottom: 1px solid var(--fl-st3); box-shadow: inset 3px 0 0 var(--fl-accent); color: var(--fl-fg1); }
+body .ki-head b { display: block; font: 600 16px/22px var(--fl-font); color: var(--fl-fg1); }
+body .ki-head span { display: block; margin-top: 2px; font: 400 14px/20px var(--fl-font); color: var(--fl-fg3); }
+body .ki-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); }
+body .ki-feed-wrap { display: flex; flex-direction: column; min-width: 0; border-right: 1px solid var(--fl-st3); }
+body .ki-feed { padding: 16px 20px; display: grid; gap: 12px; align-content: start; background: var(--fl-bg2); min-height: 220px; max-height: 640px; overflow: auto; }
+body .ki-row { display: flex; gap: 12px; align-items: flex-start; max-width: 92%; } body .ki-row.you { flex-direction: row-reverse; margin-left: auto; }
+body .ki-av { flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font: 600 12px/16px var(--fl-font); color: #fff; background: var(--fl-accent-ink); }
+body .ki-row.you .ki-av { background: var(--fl-fg3); } body .ki-row.sys .ki-av { background: var(--fl-bg6); color: var(--fl-fg2); } body .ki-row.bad .ki-av { background: var(--fl-danger); } body .ki-row.other .ki-av { background: var(--fl-bg6); color: var(--fl-fg1); }
+body .ki-body { display: grid; gap: 4px; min-width: 0; } body .ki-row.you .ki-body { justify-items: end; }
+body .ki-bub { padding: 12px 16px; border-radius: var(--fl-r-ctl); font: 400 14px/20px var(--fl-font); color: var(--fl-fg1); background: var(--fl-bg1); border: 1px solid var(--fl-st2); word-break: break-word; }
+body .ki-row.you .ki-bub { background: var(--fl-accent-soft); border-color: var(--fl-accent-line); } body .ki-row.sys .ki-bub { background: var(--fl-bg3); color: var(--fl-fg2); }
+body .ki-row.bad .ki-bub { background: var(--fl-danger-soft); border-color: #e8b9be; color: #8e0b17; } body .ki-row.other .ki-bub { background: var(--fl-accent-soft); border-color: var(--fl-accent-line); }
+body .ki-name { font: 600 12px/16px var(--fl-font); color: var(--fl-fg2); } body .ki-time { font: 400 12px/16px var(--fl-font); color: var(--fl-fg3); padding: 0 2px; }
+body .ki-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; } body .ki-reply { display: grid; gap: 8px; margin-top: 12px; }
+body .ki-comp { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 12px 20px; border-top: 1px solid var(--fl-st3); background: var(--fl-bg1); } body .ki-comp .spacer { flex: 1; }
+body .ki-side { padding: 16px 20px; display: grid; gap: 12px; align-content: start; background: var(--fl-bg1); }
+body .ki-st { font: 600 12px/16px var(--fl-font); letter-spacing: 0; text-transform: none; color: var(--fl-fg3); }
+body .ki-tile { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 12px 16px; border: 1px solid var(--fl-st2); border-radius: var(--fl-r-ctl); background: var(--fl-bg1); }
+body .ki-tile.done { border-color: var(--fl-accent-line); background: var(--fl-accent-soft); } body .ki-tile.bad { border-color: #e8b9be; background: var(--fl-danger-soft); }
+body .ki-tic { position: relative; width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--fl-st1); background: var(--fl-bg1); }
+body .ki-tile.now .ki-tic { border-color: var(--fl-accent); border-top-color: transparent; animation: flSpin 1.5s linear infinite; }
+body .ki-tile.done .ki-tic { border-color: var(--fl-accent); background: var(--fl-accent); } body .ki-tile.done .ki-tic::after { content: ""; position: absolute; left: 5px; top: 1px; width: 5px; height: 9px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+body .ki-tile.bad .ki-tic { border-color: var(--fl-danger); }
+body .ki-tx { display: grid; min-width: 0; } body .ki-tx b { font: 600 14px/20px var(--fl-font); color: var(--fl-fg1); } body .ki-tx span { font: 400 12px/16px var(--fl-font); color: var(--fl-fg3); }
+body .ki-tr { display: flex; align-items: center; gap: 8px; } body .ki-tr em { font: 600 12px/16px var(--fl-font); font-style: normal; padding: 0 8px; border-radius: 10px; background: var(--fl-bg4); color: var(--fl-fg2); }
+body .ki-tile.done .ki-tr em { background: var(--fl-bg1); color: var(--fl-accent-ink); }
+body .ki-lite .ki-asks { background: var(--fl-bg2); border-bottom: 1px solid var(--fl-st3); min-height: 0; max-height: none; }
+body .ki-lite .ki-tiles { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); padding: 16px 20px; } body .ki-lite .ki-tiles .ki-st { grid-column: 1 / -1; }
+@keyframes flSpin { to { transform: rotate(360deg); } }
+@media (max-width: 900px) { body .ki-grid { grid-template-columns: 1fr; } body .ki-feed-wrap { border-right: 0; border-bottom: 1px solid var(--fl-st3); } }
+/* data tables inside cards: the whole width, header on grey and left aligned, 1 px row lines (Fluent data grid) */
+body .tw { overflow-x: auto; } body .tw table, body table.tbl { width: 100%; border-collapse: collapse; }
+body .tw th, body table.tbl th { text-align: left; padding: 8px 12px; font: 600 12px/16px var(--fl-font); color: var(--fl-fg2); background: var(--fl-bg2) !important; border: 0; border-bottom: 1px solid var(--fl-st2); white-space: nowrap; }
+body .tw td, body table.tbl td { padding: 10px 12px; font: 400 14px/20px var(--fl-font); color: var(--fl-fg1); border: 0; border-top: 1px solid var(--fl-st3); vertical-align: middle; }
+body .tw tbody tr:hover td, body table.tbl tbody tr:hover td { background: var(--fl-bg3); } body .tw td:last-child { text-align: right; white-space: nowrap; }
+/* admin console: the same page title scale and a Fluent selected state in the side menu (no black pill) */
+body .adm-main > .adm-hero h1:not(#_):not(#__) { font: 600 28px/36px var(--fl-font) !important; letter-spacing: 0 !important; margin: 0 !important; }
+body .adm-main > .adm-hero .adm-sub:not(#_):not(#__), body .adm-main > .adm-hero p:not(#_):not(#__) { color: var(--fl-fg2) !important; font: 400 14px/20px var(--fl-font) !important; }
+body .adm-main > .adm-hero .adm-crumb:not(#_):not(#__) { color: var(--fl-fg3) !important; font: 400 12px/16px var(--fl-font) !important; }
+body .adm-nav .adm-ni:not(#_):not(#__) { border-radius: var(--fl-r-ctl); }
+body .adm-nav .adm-ni.on:not(#_):not(#__) { background: var(--fl-accent-soft) !important; color: var(--fl-accent-ink) !important; font-weight: 600; box-shadow: inset 3px 0 0 var(--fl-accent) !important; }
+body .adm-nav .adm-ni.on svg:not(#_):not(#__) { color: var(--fl-accent-ink) !important; }
+/* customer home: the navy "next 3 things" band keeps white headings; the "Nov" date chip of an action is a readable orange */
+body .upnext h2:not(#_):not(#__), body .upnext h3:not(#_):not(#__) { color: #fff !important; }
+body .dtile.action i:not(#_):not(#__) { background: #bc4b09 !important; color: #fff; }
+
+/* ======== Checks and validations: filters as a tab list, actions as a command bar, findings as a clean list ======== */
+body .fl-filters { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; border-bottom: 1px solid var(--fl-st2); }
+body .ko-chipb { height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 12px; margin-bottom: -1px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; font: 400 14px/20px var(--fl-font); color: var(--fl-fg2); cursor: pointer; }
+body .ko-chipb:hover { background: var(--fl-bg3); color: var(--fl-fg1); } body .ko-chipb.on { color: var(--fl-accent-ink); font-weight: 600; border-bottom-color: var(--fl-accent); }
+body .ko-chipb b { font: 600 12px/16px var(--fl-font); padding: 0 8px; border-radius: 10px; background: var(--fl-bg4); color: var(--fl-fg2); } body .ko-chipb.on b { background: var(--fl-accent-soft); color: var(--fl-accent-ink); }
+body .fl-cmd-bar .spacer { flex: 1; }
+body .fl-note { margin: 8px 0 0; font: 400 12px/16px var(--fl-font); color: var(--fl-fg3); }
+body .rs-bulk { position: sticky; top: 8px; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0; padding: 8px 12px; background: var(--fl-bg3); border: 1px solid var(--fl-st2); border-radius: var(--fl-r-ctl); box-shadow: var(--fl-sh4); font: 400 14px/20px var(--fl-font); color: var(--fl-fg2); }
+body .ko-card .card-h { display: flex; align-items: center; gap: 12px; padding: 12px 16px; } body .ko-card .card-h b { font: 600 16px/22px var(--fl-font); color: var(--fl-fg1); } body .ko-card .card-h .xs { margin-left: auto; font: 400 12px/16px var(--fl-font); color: var(--fl-fg3); }
+body .card-b { padding: 0; } body .ko-card .card-b > p, body .ko-card .card-b > .row { margin: 16px; }
+body .rs-f { position: relative; display: grid; gap: 4px; padding: 16px 16px 16px 48px; border-top: 1px solid var(--fl-st3); } body .rs-f:first-child { border-top: 0; } body .rs-f:hover { background: var(--fl-bg2); }
+body .rs-pick { position: absolute; left: 16px; top: 16px; display: inline-flex; cursor: pointer; } body .rs-pick input { width: 16px; height: 16px; accent-color: var(--fl-brand); }
+body .card-h .rs-pick { position: static; }
+body .rs-t { font: 600 14px/20px var(--fl-font); color: var(--fl-fg1); }
+body .rs-f blockquote { margin: 4px 0; padding: 8px 12px; border: 0; border-left: 3px solid var(--fl-accent-line); border-radius: 0 4px 4px 0; background: var(--fl-bg2); font: 400 14px/20px var(--fl-font); color: var(--fl-fg2); }
+body .rs-f .xs { font: 400 12px/16px var(--fl-font); color: var(--fl-fg3); }
+body .rs-sol { margin: 4px 0; padding: 8px 12px; border-left: 3px solid var(--fl-accent); background: var(--fl-accent-soft); border-radius: 0 4px 4px 0; color: var(--fl-fg1); font: 400 14px/20px var(--fl-font); } body .rs-sol b { display: block; font-weight: 600; color: var(--fl-accent-ink); }
+body .ko-btns { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+body .fl-cmd-bar.ko-btns { margin-top: 0; }

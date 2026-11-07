@@ -1206,7 +1206,6 @@ body.reveal > div:not(.intro):not(.loading) { animation: revealIn .9s cubic-bezi
 @media (prefers-reduced-motion: reduce) { .iv-track, .iv-cloud, .iv-card, .iv-b, .iv-base, .iv-arc path, .iv-w i, .iv-pill i { animation: none !important; } .iv-card, .iv-b, .iv-top, .iv-title, .iv-sub, .iv-st, .iv-note, .iv-rail, .iv-bar, .iv-glow { opacity: 1 !important; transform: none !important; } .iv-meter i { transform: none; animation: none; } .iv-chart .ln { stroke-dashoffset: 0; animation: none; } }
 /* ---- admin dashboards: tabs and extra chart types ---- */
 .dtabs { display: flex; gap: 4px; padding: 4px; margin: 0 0 18px; border: 1px solid #e3e9f5; border-radius: 12px; background: #fff; width: fit-content; max-width: 100%; overflow-x: auto; }
-.dtab { border: 0; background: transparent; padding: 8px 16px; border-radius: 9px; font: inherit; font-size: 13px; font-weight: 600; color: #4a5775; cursor: pointer; white-space: nowrap; transition: background .2s, color .2s; } .dtab:hover { background: #f1f5fd; } .dtab.on { background: #1570EF; color: #fff; box-shadow: 0 4px 12px rgba(10, 95, 232, .28); }
 .hb { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; } .hb li { display: grid; grid-template-columns: minmax(80px, 34%) 1fr auto; gap: 10px; align-items: center; font-size:13px; } .hb li.click { cursor: pointer; } .hb li.click:hover .hb-l { color: #1570EF; }
 .hb-l { color: #1d2b4d; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .hb-t { height: 8px; border-radius: 8px; background: #edf1fa; overflow: hidden; } .hb-t i { display: block; height: 100%; border-radius: 8px; transform-origin: left; animation: hbGrow .8s cubic-bezier(.2,.8,.2,1) both; } @keyframes hbGrow { from { transform: scaleX(0); } } .hb em { font-style: normal; color: #424242; font-size: 12px; white-space: nowrap; }
 .stk { display: flex; align-items: flex-end; gap: 6px; height: 170px; padding-top: 18px; } .stk-c { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; } .stk-b { width: 100%; max-width: 30px; display: flex; flex-direction: column-reverse; border-radius: 6px 6px 2px 2px; overflow: hidden; min-height: 2px; background: #edf1fa; animation: barUp .7s cubic-bezier(.2,.8,.2,1) both; transform-origin: bottom; } .stk-b i { display: block; min-height: 2px; } @keyframes barUp { from { transform: scaleY(0); } }
@@ -1845,8 +1844,6 @@ body.cn-on { overflow: hidden; }
 .adm-h h3::before { content: ""; width: 9px; height: 9px; border-radius: 2.5px; background: #1570EF; flex: none; }
 .adm-row > .adm-card:nth-child(2) .adm-h h3::before { background: #E5197F; } .adm-row > .adm-card:nth-child(3) .adm-h h3::before { background: #2EC9C4; }
 .adm-main .dtabs { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 5px; gap: 4px; box-shadow: none; flex-wrap: wrap; }
-.adm-main .dtab { height: 36px; padding: 0 16px; border-radius: 10px; color: #475467; font-weight: 650; transition: background .18s, color .18s; } .adm-main .dtab:hover { background: #fafafa; color: #1D1A5E; }
-.adm-main .dtab.on { background: #1D1A5E; color: #fff; box-shadow: 0 8px 18px -10px rgba(0, 0, 0, .8); }
 .adm-main .fchip { height: 34px; border-radius: 999px; border-color: #e0e0e0; color: #344054; } .adm-main .fchip:hover { border-color: #1570EF; color: #1570EF; }
 .adm-main .fchip.on { background: #1570EF; border-color: #1570EF; color: #fff; } .adm-main .fchip.on b { background: rgba(255,255,255,.25); color: #fff; }
 .adm-tools { align-items: center; gap: 10px; } .adm-tools input[type=search], .adm-tools select, .adm-main .grant-form input, .adm-main .grant-form select { height: 40px; border: 1px solid #e0e0e0; border-radius: 10px; background: #fff; font: 500 14px Inter, Roboto, sans-serif; color: #1D1A5E; padding: 0 12px; }
@@ -1875,7 +1872,6 @@ button { font-family: var(--font, Inter, Roboto, system-ui, sans-serif) !importa
 .navbar .right { flex-wrap: nowrap; } 
 @media (max-width: 480px) { .navbar { padding-left: 12px; padding-right: 12px; } .navbar .right { gap: 6px; } }
 .adm-ni { background: rgba(255,255,255,.07); } .adm-ni:hover { background: rgba(255,255,255,.14); } .adm-ni.on { background: #1570EF; }
-.adm-main .dtab { background: #fafafa; } .adm-main .dtab:hover { background: #f0f0f0; } .adm-main .dtab.on { background: #1D1A5E; }
 
 /* Get started -> sign-in: three brand panels sweep across, then the sign-in page assembles itself */
 @keyframes lgBox { from { opacity: 0; transform: translateY(26px) scale(.985); } to { opacity: 1; transform: none; } }
@@ -1936,7 +1932,6 @@ input, select, textarea { font-size: 14.5px; font-family: inherit; }
 .kpi-v { font-size: 34px; font-weight: 800; } .kpi-l { font-size: 15px; font-weight: 700; color: #1D1A5E; } .kpi-s { font-size: 13px; font-weight: 500; }
 .adm-ni { font-size: 15px; font-weight: 650; } .adm-me b { font-size: 15px; font-weight: 750; } .adm-me .xs { font-size: 12.5px; }
 .adm-sub, .adm-crumb { font-size: 14.5px; font-weight: 500; } .adm-hero h1 { font-weight: 800; }
-.dtab { font-size: 14.5px; font-weight: 700; height: 38px; }
 .fn-l, .hb-l, .legend li, .alist li, .flist li { font-size: 14px; font-weight: 550; } .fn-l, .hb-l { font-weight: 650; }
 .blab, .bval, .htime, .hday { font-size: 12.5px; font-weight: 600; }
 .pav, .avatar { font-weight: 750; }
