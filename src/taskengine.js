@@ -17,17 +17,20 @@
     arr(f.coverageMissing).forEach(x => { if (x && x.count > 0) out.push({ key: 'cover:' + x.module, rule: 'cover', type: 'UAT Task', title: 'Write test cases for ' + x.label + ' (' + x.count + ' requirement' + (x.count === 1 ? '' : 's') + ')', stage: 'UAT & FTR', view: 'delivery', reason: x.count + ' confirmed requirement' + (x.count === 1 ? '' : 's') + ' without a test case' }); });
     arr(f.failedCases).forEach(x => out.push({ key: 'fail:' + x.id, rule: 'fail', type: 'UAT Task', title: 'Fix and retest ' + ((x.tcid ? x.tcid + ' ' : '') + (x.title || '')).trim(), stage: 'UAT & FTR', view: 'delivery', reason: 'The test case failed or is blocked' }));
     arr(f.kpisNoSolution).forEach(x => out.push({ key: 'kpi:' + x.id, rule: 'kpi', type: 'BRD Task', title: 'Write how Facilio delivers the KPI "' + x.name + '"', stage: 'Mockup & BRD', view: 'slakpi', reason: 'The KPI has no solution written yet' }));
+    // accepted customer mail (docs/reference/MAIL-TO-TASKS-PLAN-2026-11-07.md): wanted until its "done when" check is met. mailOpen rows: { id, title, area, owner, desc, quote }
+    const MT = { brd: ['BRD Task', 'Requirements & Workshops'], solution: ['Requirement Task', 'Requirements & Workshops'], uat: ['UAT Task', 'Testing & UAT'], hypercare: ['Implementation Task', 'Go-Live & Handover'] };
+    arr(f.mailOpen).forEach(x => { const m = MT[x.area] || ['Other', '']; out.push({ key: 'mail:' + x.id, rule: 'mail', type: m[0], title: x.title, stage: m[1], view: 'tasks', reason: 'A customer mail asked for this', owner: x.owner || '', desc: x.desc || '', src: { type: 'email', ref: x.id, quote: x.quote || '', label: 'Customer mail' } }); });
     return out;
   }
-  const WHY = { findings: 'nothing is left to review for it', brd: 'the part is ticked', cover: 'every confirmed requirement has a test case', fail: 'the test case no longer fails', kpi: 'the solution is written' };
+  const WHY = { findings: 'nothing is left to review for it', brd: 'the part is ticked', cover: 'every confirmed requirement has a test case', fail: 'the test case no longer fails', kpi: 'the solution is written', mail: 'the check for this mail is met' };
   /** returns { create: [task], reopen: [{ id }], resolve: [{ id, why }] }. tasks: the existing task records (each automatic one carries auto: { key, rule, by }) */
-  function reconcile(want, tasks, now) {
+  function reconcile(want, tasks, now, whyBy) {
     const have = {}; arr(tasks).forEach(t => { if (t && t.auto && t.auto.key) have[t.auto.key] = t; }); const wantKeys = new Set(arr(want).map(w => w.key)); const out = { create: [], reopen: [], resolve: [] };
     arr(want).forEach(w => { const t = have[w.key];
-      if (!t) out.create.push({ id: idOf(w.key), title: w.title, type: w.type, status: 'To Do', stage: w.stage, desc: w.reason + '. Made by the Studio from the project facts; it resolves itself when this is no longer true.', owner: '', due: '', src: { type: 'auto', ref: w.key, label: 'Automatic' }, auto: { key: w.key, rule: w.rule, view: w.view, at: now || '' } });
+      if (!t) out.create.push({ id: idOf(w.key), title: w.title, type: w.type, status: 'To Do', stage: w.stage, desc: w.desc || (w.reason + '. Made by the Studio from the project facts; it resolves itself when this is no longer true.'), owner: w.owner || '', due: '', src: w.src || { type: 'auto', ref: w.key, label: 'Automatic' }, auto: { key: w.key, rule: w.rule, view: w.view, at: now || '' } });
       else if (CLOSED.includes(t.status) && t.auto.resolvedBy === 'engine') out.reopen.push({ id: t.id });   // it was resolved by the engine and the reason is back; a task a person closed stays closed
     });
-    Object.keys(have).forEach(k => { const t = have[k]; if (!wantKeys.has(k) && !CLOSED.includes(t.status)) out.resolve.push({ id: t.id, why: WHY[t.auto.rule] || 'the reason is gone' }); });
+    Object.keys(have).forEach(k => { const t = have[k]; if (!wantKeys.has(k) && !CLOSED.includes(t.status)) out.resolve.push({ id: t.id, why: (whyBy && whyBy[k]) || WHY[t.auto.rule] || 'the reason is gone' }); });
     return out;
   }
   const V = root.FWBViews; if (V) V.taskEngineLogic = { desired, reconcile, idOf };
