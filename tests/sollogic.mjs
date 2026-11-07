@@ -76,3 +76,33 @@ console.log(n + ' solution checks passed');
     assert.equal(cleanProposal({ kind: 'solution', area: 'custom:procurement-erp', name: 'Procurement and ERP', group: 'Integrations', text: 'x', why: 'y' }).group, 'Integrations'); assert.equal(cleanProposal({ kind: 'solution', area: 'custom:Bad Key', text: 'x', why: 'y' }), null);
   });
 }
+{   // the solution as a table: rows by kind of area, versions that keep rows, row-level diff, what reaches the BRD and Word
+  const t3 = (name, fn) => { fn(); console.log('  ok  ' + name); }; const mods = [{ name: 'workorder', label: 'Work Order' }];
+  t3('every kind of area has its own columns; the kind follows the key and the type of an added area', () => {
+    assert.equal(L.kindOfKey({}, 'module:workorder'), 'module'); assert.equal(L.kindOfKey({}, 'area:integrations'), 'integration'); assert.equal(L.kindOfKey({}, 'area:sla'), 'sla'); assert.equal(L.layoutOf({}, 'area:apps').cols[0][0], 'app');
+    const d = L.addArea({}, { label: 'Portal', type: 'int_portal' }, 'a', A); assert.equal(L.kindOfKey(d.doc, d.key), 'integration'); assert.ok(L.LAYOUTS.integration.cols.length >= 6);
+  });
+  t3('rows are cleaned to the layout: unknown columns dropped, empty rows dropped, status checked, ids made', () => {
+    const r = L.cleanRows([{ cells: { topic: 'Approvals', solution: ' Two levels ', bogus: 'x' }, status: 'Agreed' }, { cells: {} }, { cells: { topic: 'Notifications' }, status: 'weird' }], 'module');
+    assert.equal(r.length, 2); assert.deepEqual(r[0].cells, { topic: 'Approvals', solution: 'Two levels' }); assert.equal(r[1].status, 'Draft'); assert.ok(r[0].id && r[1].id && r[0].id !== r[1].id); assert.equal(L.cleanRows(Array.from({ length: 60 }, (_, i) => ({ cells: { topic: 't' + i } })), 'module').length, 40);
+  });
+  t3('saving rows is a version that keeps the old rows; restore brings them back; a rows-only change counts as a change', () => {
+    let d = L.save({}, 'module:workorder', 'Overview', { rows: [{ cells: { topic: 'Approvals', solution: 'One level' } }], at: A }); assert.equal(L.recOf(d, 'module:workorder').rows.length, 1); assert.equal(L.statusOf(d, 'module:workorder'), 'Draft');
+    d = L.save(d, 'module:workorder', 'Overview', { rows: [{ cells: { topic: 'Approvals', solution: 'Two levels' } }], at: B, by: 'b' }); const r = L.recOf(d, 'module:workorder'); assert.equal(r.versions.length, 1); assert.equal(r.versions[0].rows[0].cells.solution, 'One level');
+    d = L.save(d, 'module:workorder', 'Overview', { at: B }); assert.equal(L.recOf(d, 'module:workorder').rows[0].cells.solution, 'Two levels', 'rows are kept when not given');
+    const back = L.restore(d, 'module:workorder', 0, 'c', B); assert.equal(L.recOf(back, 'module:workorder').rows[0].cells.solution, 'One level');
+    assert.equal(L.statusOf(L.save({}, 'module:workorder', '', { rows: [{ cells: { topic: 'Approvals' } }], at: A }), 'module:workorder'), 'Not written', 'a row with only a name is not a solution yet');
+  });
+  t3('the row diff matches by the first column: new, changed, removed, same', () => {
+    const o = [{ cells: { topic: 'Approvals', solution: 'One' }, status: 'Draft' }, { cells: { topic: 'Notifications', solution: 'SMS' }, status: 'Draft' }, { cells: { topic: 'Access', solution: 'x' }, status: 'Draft' }]; const n = [{ cells: { topic: 'approvals', solution: 'Two' }, status: 'Draft' }, { cells: { topic: 'Notifications', solution: 'SMS' }, status: 'Draft' }, { cells: { topic: 'Reports', solution: 'new' }, status: 'Draft' }];
+    assert.deepEqual(L.diffRows(o, n).map(x => x.t), ['chg', 'same', 'add', 'del']);
+  });
+  t3('accepting a proposal with rows sets the rows; one without rows keeps them; the BRD table and the Word text come from the rows', () => {
+    let d = L.save({}, 'module:workorder', 'Old overview', { rows: [{ cells: { topic: 'Process', solution: 'Keep me' } }], at: A });
+    const keep = L.accept(d, { kind: 'solution', module: 'module:workorder', text: 'New overview', why: 'w' }, 'a', B); assert.equal(L.recOf(keep, 'module:workorder').rows[0].cells.solution, 'Keep me'); assert.equal(L.textOf(keep, 'module:workorder'), 'New overview');
+    const set = L.accept(d, { kind: 'solution', module: 'module:workorder', rows: [{ cells: { topic: 'Approvals', solution: 'Two levels', reqs: 'WO-001' }, status: 'Open question' }], why: 'w' }, 'a', B); assert.equal(L.textOf(set, 'module:workorder'), 'Old overview'); const t = L.table(set, 'module:workorder');
+    assert.deepEqual(t.headers, ['Topic', 'What Facilio does', 'Who is involved', 'Requirements', 'Status']); assert.deepEqual(t.rows[0], ['Approvals', 'Two levels', '', 'WO-001', 'To be confirmed']); assert.equal(L.table(d, 'module:workorder').headers.length, 5, 'a draft row shows its status'); assert.equal(L.table({}, 'area:sla'), null);
+    const ag = L.save(set, 'module:workorder', 'Old overview', { rows: [{ cells: { topic: 'Approvals', solution: 'Two levels' }, status: 'Agreed' }], at: B }); assert.equal(L.table(ag, 'module:workorder').headers.length, 4, 'no Status column when every row is agreed');
+    assert.ok(L.flatText(ag, 'module:workorder').includes('Approvals: Two levels')); assert.equal(L.wordRows(L.areasFor(mods, ag), ag, [])[0][2].includes('Approvals: Two levels'), true);
+  });
+}
