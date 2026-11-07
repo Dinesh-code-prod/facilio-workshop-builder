@@ -68,7 +68,7 @@
       + (apps.length ? '<div class="ds-apps"><b>Connected apps to build in Vibe</b>' + apps.map(p => '<div class="ds-app"><span>' + esc(p.module) + ': ' + esc(p.name) + '</span><button class="btn sm" data-act="dsVibe" data-id="' + esc(p.id) + '">Copy the Vibe prompt</button></div>').join('') + '</div>' : '')
       + (done ? '<p class="xs muted">' + done + ' proposal' + (done === 1 ? '' : 's') + ' already applied or dismissed.</p>' : '') + '</section>';
   };
-  [['whiteboard'], ['flow'], ['modules'], ['brd']].forEach(([id]) => { const v = V[id]; if (!v || typeof v.html !== 'function') return; const h = v.html; v.html = function () { const out = h.apply(this, arguments); return typeof out === 'string' ? V.designPanel() + out : out; }; });
+  [['whiteboard'], ['flow'], ['modules'], ['brd']].forEach(([id]) => { const v = V[id]; if (!v || typeof v.html !== 'function') return; const h = v.html; v.html = function () { const out = h.apply(this, arguments); if (typeof out !== 'string') return out; const p = V.designPanel(); if (id !== 'brd' || !p) return p + out; const n = items().filter(x => x.kind !== 'solution' && x.status === 'open').length; return '<details class="ds-fold"' + (n ? ' open' : '') + '><summary>Claude proposals for the design' + (n ? ' (' + n + ' to review)' : '') + '</summary>' + p + '</details>' + out; }; });
 
   const decide = async (id, status, apply) => {
     if (J().guard()) return; const prev = JSON.parse(JSON.stringify(F.doc('design_proposals') || { items: [] })); const p = items().find(x => x.id === id); if (!p || p.status !== 'open') return;
