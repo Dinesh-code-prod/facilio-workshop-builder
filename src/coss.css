@@ -102,3 +102,19 @@ body label.f:not(#_):not(#__) { font: 500 13px/18px var(--fl-font); color: var(-
 @media (max-width: 900px) { body .st-sec { grid-template-columns: 1fr; gap: 12px; padding: 20px 0; } body .st-side p { max-width: none; } }
 body .tbl thead:not(#_):not(#__), body .tbl thead tr:not(#_):not(#__), body .tw thead:not(#_):not(#__) { background: transparent !important; }
 body .st-card .empty:not(#_):not(#__) { text-align: center; color: var(--fl-fg3); border: 0 !important; box-shadow: none !important; background: transparent !important; padding: 24px 0; }
+body .st-foot > input:not(#_):not(#__) { flex: 1; min-width: 200px; }
+body .st-status { display: flex; align-items: center; gap: 8px; }
+body .st-more { margin-top: 0; } body .st-more .st-sec { border-top: 1px solid var(--fl-st3); }
+/* forms and tables inside settings cards (these rules came from settingstidy.css, now deleted) */
+body .st-card .fgrid:not(#_):not(#__) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; } body .st-card .fgrid .full:not(#_):not(#__) { grid-column: 1 / -1; }
+body .st-card textarea:not(#_):not(#__) { width: 100%; box-sizing: border-box; }
+body .st-card .tbl td:not(#_):not(#__) { padding: 10px 12px; vertical-align: middle; } body .st-card .tbl td input:not(#_):not(#__), body .st-card .tbl td select:not(#_):not(#__) { width: 100%; }
+body .st-card .tbl th:not(#_):not(#__) { padding: 10px 12px; text-align: left; }
+body .st-card .row.st-actions:not(#_):not(#__) { gap: 8px; flex-wrap: wrap; align-items: center; padding-top: 4px; } body .st-card .st-actions select:not(#_):not(#__) { width: 130px; flex: none; } body .st-card .st-actions .spacer { flex: 1 1 auto; }
+body details.auth-key:not(#_):not(#__) { margin-top: 12px; padding: 10px 14px; border: 1px dashed rgba(0, 0, 0, .15); border-radius: var(--fl-r-ctl); background: rgba(0, 0, 0, .02); } body details.auth-key > summary:not(#_):not(#__) { cursor: pointer; font-weight: 500; color: var(--fl-accent-ink); } body details.auth-key .fld { margin: 10px 0; }
+@media (max-width: 900px) { body .st-card .fgrid:not(#_):not(#__) { grid-template-columns: 1fr; } }
+body .st-side-x { margin-top: 10px; font: 400 13px/18px var(--fl-font); color: var(--fl-fg3); }
+body .st-page.st-wrap > .st-sec:first-child { padding-top: 8px; border-top: 0; }
+body .st-card .kv { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 8px 16px; margin: 0 0 12px; } body .st-card .kv dt { color: var(--fl-fg3); font-weight: 500; } body .st-card .kv dd { margin: 0; color: var(--fl-fg1); }
+body .st-card .pink-label:not(#_):not(#__) { margin: 16px 0 6px; font: 600 14px/20px var(--fl-font) !important; color: var(--fl-fg1) !important; letter-spacing: -.005em !important; }
+body .st-card .grid.g4 { gap: 12px; }
