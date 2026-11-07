@@ -75,3 +75,8 @@ console.log('11 BRD scope and format checks passed');
   assert.ok(ih > 0 && bs[ih + 1].text === 'Portal return' && bs[ih + 2].text === 'Service requests are sent back to the customer portal.', 'the integration has its own place');
   F.doc('solutions').items = {}; F.doc('solutions').custom = []; console.log('BRD shows added areas and integrations');
 }
+{   // the BRD prints the solution table of a module
+  const L = globalThis.FWBSolutionLogic; const d = L.save({}, 'module:workorder', 'Overview line.', { rows: [{ cells: { topic: 'Approvals', solution: 'Two levels above 500.', reqs: 'WO-001' }, status: 'Agreed' }], at: 't' }); F.doc('solutions').items = d.items;
+  const bs = build(['workorder']); const tb = bs.find(b => b.t === 'table' && b.headers && b.headers[0] === 'Topic'); assert.ok(tb && tb.rows[0][1] === 'Two levels above 500.' && !tb.headers.includes('Status'), 'the module solution table is in the BRD');
+  assert.ok(bs.some(b => b.text === 'Overview line.'), 'the overview opens it'); F.doc('solutions').items = {}; console.log('BRD prints the solution table');
+}

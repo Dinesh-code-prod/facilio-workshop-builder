@@ -71,12 +71,6 @@
     return L().GROUPS.map(g => { const as = areas().filter(a => a.group === g); if (!as.length) return ''; return '<div class="fl-sol-g"><h3>' + esc(g) + '</h3>' + as.map(a => { const n = L().proposalsFor(ps, a.key).length;
       return '<button type="button" class="fl-sol-i' + (u && a.key === u.key ? ' on' : '') + '" data-act="solPick" data-key="' + esc(a.key) + '"><span>' + esc(a.label) + '</span>' + (n ? '<em>' + n + ' proposed</em>' : chip(L().statusOf(d, a.key))) + '</button>'; }).join('') + '</div>'; }).join('');
   }
-  function proposalCard(p, text) {
-    return '<article class="fl-sol-p"><div class="fl-sol-ph"><b>' + (p.fromCustomer ? 'Proposed from the customer’s file' : 'Proposed by Claude') + '</b>' + (p.outOfScope ? '<span class="fl-sol-warn">May be beyond the contract scope</span>' : '') + '</div>'
-      + (p.why ? '<p class="small">' + esc(p.why) + '</p>' : '') + '<div class="fl-sol-diff">' + diffHtml(text, p.text) + '</div>' + (p.quote ? '<blockquote class="ds-q">' + esc(p.quote) + (p.source ? '<cite>' + esc(p.source) + '</cite>' : '') + '</blockquote>' : (p.source ? '<p class="xs muted">' + esc(p.source) + '</p>' : ''))
-      + (p.outOfScope ? '<p class="small">' + esc(p.scopeNote || 'Check this against the contract before you accept it.') + '</p>' : '')
-      + '<div class="fl-cmd"><button type="button" class="btn sm primary" data-act="solAccept" data-id="' + esc(p.id) + '">Accept</button><button type="button" class="btn sm" data-act="solDismiss" data-id="' + esc(p.id) + '">Dismiss</button>' + (p.outOfScope ? '<button type="button" class="btn sm" data-act="solCr" data-id="' + esc(p.id) + '">Raise a change request</button>' : '') + '</div></article>';
-  }
   /** one line that tells the person what Claude reads for the area (the same sources as the server context pack, work/server/_solctx.mjs) */
   function reads(a) {
     const m = a.key.startsWith('module:') ? a.key.slice(7) : '', w = S.ws, inM = x => !m || arr(x && x.modules).includes(m) || (x && x.module === m); const n = (c, one, many) => c + ' ' + (c === 1 ? one : many || one + 's');
@@ -85,32 +79,57 @@
       n(props().filter(p => p.kind === 'connectedapp' && p.status === 'applied' && (!m || String(p.module).toLowerCase() === m.toLowerCase() || String(p.module).toLowerCase() === String((a.label || '')).toLowerCase())).length, 'connected app'), n(arr(w.questions).filter(q => q && q.status !== 'closed' && (!m || arr(q.modules).includes(m))).length, 'open question')];
     return '<p class="xs muted">Claude reads for this area: ' + esc(parts.join(', ')) + ', the fields and forms, access, what was said in the sessions, the contract scope and the solutions of the other areas.</p>';
   }
-  /** the line under the title of an area the team added, and the guide for an integration with no text yet */
-  function about(a, text) {
+  const clone = x => JSON.parse(JSON.stringify(x));
+  /** the working copy of the open area: what is typed and not yet saved survives a refresh */
+  function ensureDraft() { const a = cur(), u = ui(); if (!u.draft || u.draft.key !== a.key || !Array.isArray(u.draft.rows)) { const r = L().recOf(doc(), a.key) || {}; u.draft = { key: a.key, text: r.text || '', rows: clone(arr(r.rows)) }; } return u.draft; }
+  const cellDiff = (was, now) => (was === now ? esc(now || '') : diffHtml(was || '', now || ''));
+  /** the proposal: the overview as a word diff, the table as rows marked New, Changed or Removed, then the words it rests on */
+  function proposalCard(p, rec) {
+    const lay = L().layoutOf(doc(), p.module), cols = lay.cols; const dr = p.rows ? L().diffRows(rec.rows, L().cleanRows(p.rows, L().kindOfKey(doc(), p.module))) : [], same = dr.filter(x => x.t === 'same').length;
+    const tbl = dr.length ? '<table class="fl-sol-tbl fl-sol-dt"><thead><tr><th></th>' + cols.map(c => '<th>' + esc(c[1]) + '</th>').join('') + '</tr></thead><tbody>' + dr.filter(x => x.t !== 'same').map(x => '<tr class="' + x.t + '"><td><b>' + (x.t === 'add' ? 'New' : x.t === 'chg' ? 'Changed' : 'Removed') + '</b></td>' + cols.map(c => '<td>' + (x.t === 'del' ? '<del>' + esc((x.row.cells || {})[c[0]] || '') + '</del>' : x.t === 'add' ? '<ins>' + esc((x.row.cells || {})[c[0]] || '') + '</ins>' : cellDiff((x.was.cells || {})[c[0]], (x.row.cells || {})[c[0]])) + '</td>').join('') + '</tr>').join('') + '</tbody></table>' + (same ? '<p class="xs muted">' + same + ' row' + (same === 1 ? '' : 's') + ' stay as they are.</p>' : '') : '';
+    return '<article class="fl-sol-p"><div class="fl-sol-ph"><b>' + (p.fromCustomer ? 'Proposed from the customer’s file' : 'Proposed by Claude') + '</b>' + (p.outOfScope ? '<span class="fl-sol-warn">May be beyond the contract scope</span>' : '') + '</div>'
+      + (p.why ? '<p class="small">' + esc(p.why) + '</p>' : '') + (p.text && p.text !== rec.text ? '<div class="fl-sol-diff">' + diffHtml(rec.text || '', p.text) + '</div>' : '') + tbl + (p.quote ? '<blockquote class="ds-q">' + esc(p.quote) + (p.source ? '<cite>' + esc(p.source) + '</cite>' : '') + '</blockquote>' : (p.source ? '<p class="xs muted">' + esc(p.source) + '</p>' : ''))
+      + (p.outOfScope ? '<p class="small">' + esc(p.scopeNote || 'Check this against the contract before you accept it.') + '</p>' : '')
+      + '<div class="fl-cmd"><button type="button" class="btn sm primary" data-act="solAccept" data-id="' + esc(p.id) + '">Accept</button><button type="button" class="btn sm" data-act="solDismiss" data-id="' + esc(p.id) + '">Dismiss</button>' + (p.outOfScope ? '<button type="button" class="btn sm" data-act="solCr" data-id="' + esc(p.id) + '">Raise a change request</button>' : '') + '</div></article>';
+  }
+  /** the line under the title of an area the team added, and the guide for an integration with no rows yet */
+  function about(a, empty) {
     const mm = mods(), lk = (a.custom || a.group === 'Integrations') ? L().linkedModules(a, doc(), mm).map(n => (mm.find(x => x.name === n) || {}).label || n) : [];
     return (a.custom ? '<p class="xs muted">Added by your team' + (a.keywords && a.keywords.length ? '. Keywords: ' + esc(a.keywords.join(', ')) : '') + '.</p>' : '')
-      + (lk.length ? '<p class="xs muted">Linked to ' + esc(lk.join(', ')) + (a.group === 'Integrations' ? ': those module sections of the BRD point to this integration.' : ': the BRD shows this text inside those module sections.') + '</p>' : (a.custom ? '<p class="xs muted">Not linked to a module yet. Name a module in the text or the keywords and the BRD links it.</p>' : ''))
-      + (a.group === 'Integrations' && !text ? '<div class="fl-sol-r"><h4>What to cover for an integration</h4><ul>' + L().INT_HINT.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></div>' : '');
+      + (lk.length ? '<p class="xs muted">Linked to ' + esc(lk.join(', ')) + (a.group === 'Integrations' ? ': those module sections of the BRD point to this integration.' : ': the BRD shows this solution inside those module sections.') + '</p>' : (a.custom ? '<p class="xs muted">Not linked to a module yet. Name a module in the text or the keywords and the BRD links it.</p>' : ''))
+      + (a.group === 'Integrations' && empty ? '<div class="fl-sol-r"><h4>What to cover for an integration</h4><ul>' + L().INT_HINT.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></div>' : '');
+  }
+  /** the solution as an editable table: one row per topic or item, columns by the kind of solution */
+  function tableHtml(a, dr) {
+    const cols = L().layoutOf(doc(), a.key).cols, ro_ = ro(); const kind = L().kindOfKey(doc(), a.key);
+    const head = '<tr>' + cols.map(c => '<th>' + esc(c[1]) + '</th>').join('') + '<th>Status</th><th></th></tr>';
+    const body = dr.rows.map((r, i) => '<tr>' + cols.map((c, ci) => '<td><textarea data-ri="' + i + '" data-c="' + c[0] + '" rows="2" maxlength="700" aria-label="' + esc(c[1]) + ', row ' + (i + 1) + '"' + (ro_ ? ' readonly' : '') + '>' + esc((r.cells || {})[c[0]] || '') + '</textarea></td>').join('')
+      + '<td><select data-ri="' + i + '" data-s="1" aria-label="Status, row ' + (i + 1) + '"' + (ro_ ? ' disabled' : '') + '>' + L().ROW_STATUS.map(x => '<option' + (x === r.status ? ' selected' : '') + '>' + esc(x) + '</option>').join('') + '</select></td><td>' + (ro_ ? '' : '<button type="button" class="btn sm" data-act="solRowDel" data-ri="' + i + '" aria-label="Delete row ' + (i + 1) + '">Delete</button>') + '</td></tr>').join('');
+    const props_ = props().filter(p => p.kind === 'connectedapp' && p.status === 'applied').length;
+    const tot = cols.reduce((n, c) => n + c[2], 0) / 0.84, cg = '<colgroup>' + cols.map(c => '<col style="width:' + (c[2] / tot * 100).toFixed(1) + '%">').join('') + '<col style="width:10%"><col style="width:6%"></colgroup>';
+    return '<div class="fl-sol-tw"><table class="fl-sol-tbl">' + cg + '<thead>' + head + '</thead><tbody>' + (body || '<tr><td colspan="' + (cols.length + 2) + '" class="fl-none">No rows yet. Add the first one, or start from the list below.</td></tr>') + '</tbody></table></div>'
+      + (ro_ ? '' : '<div class="fl-cmd"><button type="button" class="btn sm primary" data-act="solRowAdd">+ Add row</button>' + (kind === 'module' ? '<button type="button" class="btn sm" data-act="solTopics">Add the standard topics</button>' : '') + (kind === 'apps' && props_ ? '<button type="button" class="btn sm" data-act="solFromApps">Fill from the ' + props_ + ' connected app' + (props_ === 1 ? '' : 's') + ' captured in the sessions</button>' : '') + '</div>');
   }
   function detail(a) {
-    const d = doc(), rec = L().recOf(d, a.key) || {}, u = ui(), reqs = L().reqLines(S.ws.requirements, a.key), ps = L().proposalsFor(props(), a.key), text = u.draft && u.draft.key === a.key ? u.draft.text : (rec.text || '');
+    const d = doc(), rec = L().recOf(d, a.key) || {}, reqs = L().reqLines(S.ws.requirements, a.key), ps = L().proposalsFor(props(), a.key), dr = ensureDraft(), lay = L().layoutOf(d, a.key);
     const link = a.key === 'area:kpis' || a.key === 'area:sla' ? '<button type="button" class="btn sm" data-act="nav" data-view="slakpi">Open KPIs &amp; SLA matrix</button>' : a.key === 'area:roles' ? '<button type="button" class="btn sm" data-act="nav" data-view="roles">Open Roles &amp; access</button>' : a.key === 'area:notifications' ? '<button type="button" class="btn sm" data-act="nav" data-view="notifications">Open Notifications</button>' : '';
     const busy = jobsOpen(['update_solution', 'compare_solution']);
-    return '<section class="fl-card fl-sol-d"><div class="fl-sol-dh"><h2 class="fl-card-h">' + esc(a.label) + '</h2>' + chip(L().statusOf(d, a.key)) + link + (a.custom ? '<button type="button" class="btn sm" data-act="solRemove" data-key="' + esc(a.key) + '">Remove this area</button>' : '') + '</div>' + about(a, rec.text)
-      + (a.key.startsWith('module:') ? '<div class="fl-sol-r"><h4>Customer requirements (confirmed, read only)</h4>' + (reqs.length ? '<ul>' + reqs.map(r => '<li><b>' + esc(r.id) + '</b> ' + esc(r.text || r.title) + '</li>').join('') + '</ul>' : '<p class="fl-none">No confirmed requirement for this module yet. The solution can still be written; it is read by the BRD.</p>') + '</div>' : '')
-      + (ps.length ? '<div class="fl-sol-ps">' + ps.map(p => proposalCard(p, rec.text || '')).join('') + '</div>' : '')
-      + '<label class="f" for="solText">Solution (written in words, as it will read in the BRD; a blank line starts a new paragraph)</label><textarea id="solText" rows="11" maxlength="6000"' + (ro() ? ' readonly' : '') + '>' + esc(text) + '</textarea>'
-      + '<div class="fl-sol-sv"><input type="text" id="solWhy" maxlength="300" placeholder="Why this change (kept in the history)"><select id="solStatus" aria-label="Status">' + L().STATUSES.map(s => '<option' + (s === (rec.status || 'Draft') ? ' selected' : '') + '>' + esc(s) + '</option>').join('') + '</select><button type="button" class="btn primary" data-act="solSave" data-key="' + esc(a.key) + '"' + (ro() ? ' disabled' : '') + '>Save</button></div>'
+    return '<section class="fl-card fl-sol-d"><div class="fl-sol-dh"><h2 class="fl-card-h">' + esc(a.label) + '</h2>' + chip(L().statusOf(d, a.key)) + link + (a.custom ? '<button type="button" class="btn sm" data-act="solRemove" data-key="' + esc(a.key) + '">Remove this area</button>' : '') + '</div>' + about(a, !dr.rows.length && !dr.text)
+      + (a.key.startsWith('module:') ? '<details class="fl-sol-r"' + (reqs.length ? ' open' : '') + '><summary>Customer requirements (' + reqs.length + ' confirmed, read only)</summary>' + (reqs.length ? '<ul>' + reqs.map(r => '<li><b>' + esc(r.id) + '</b> ' + esc(r.text || r.title) + '</li>').join('') + '</ul>' : '<p class="fl-none">No confirmed requirement for this module yet. The solution can still be written; the BRD reads it.</p>') + '</details>' : '')
+      + (ps.length ? '<div class="fl-sol-ps">' + ps.map(p => proposalCard(p, rec)).join('') + '</div>' : '')
+      + '<label class="f" for="solText">Overview: a few sentences that open this solution in the BRD</label><textarea id="solText" rows="3" maxlength="6000"' + (ro() ? ' readonly' : '') + '>' + esc(dr.text) + '</textarea>'
+      + '<h3 class="fl-sol-th">' + esc(lay.label) + '</h3>' + tableHtml(a, dr)
+      + '<div class="fl-sol-sv"><input type="text" id="solWhy" maxlength="300" placeholder="Why this change (kept in the history)"><select id="solStatus" aria-label="Status of the whole area">' + L().STATUSES.map(s => '<option' + (s === (rec.status || 'Draft') ? ' selected' : '') + '>' + esc(s) + '</option>').join('') + '</select><button type="button" class="btn primary" data-act="solSave" data-key="' + esc(a.key) + '"' + (ro() ? ' disabled' : '') + '>Save</button></div>'
       + (rec.updatedAt ? '<p class="xs muted">Last saved ' + esc(when(rec.updatedAt)) + ' by ' + esc(rec.updatedBy || '') + (rec.why ? ': ' + esc(rec.why) : '') + '</p>' : '')
       + '<div class="fl-sol-ask"><label class="f" for="solAsk">Ask Claude to change this</label><textarea id="solAsk" rows="3" maxlength="600" placeholder="For example: the approval now has two levels, and the technician is told by SMS."></textarea><div class="fl-cmd"><button type="button" class="btn" data-act="solAsk" data-key="' + esc(a.key) + '"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Claude is on it' : 'Ask Claude') + '</button><button type="button" class="btn" data-act="solOpenClaude" data-key="' + esc(a.key) + '">Open in Claude</button></div><p class="xs muted">Claude only proposes. Nothing changes until you press Accept.</p>' + reads(a) + '</div>'
       + '<details class="fl-sol-h"><summary>History (' + arr(rec.versions).length + ') and sources (' + arr(rec.sources).length + ')</summary>'
-      + (arr(rec.versions).length ? '<ol>' + arr(rec.versions).map((v, i) => '<li><span class="xs muted">' + esc(when(v.at)) + ' · ' + esc(v.by || '') + (v.why ? ' · ' + esc(v.why) : '') + '</span><div class="fl-sol-old">' + esc(String(v.text || '').slice(0, 400)) + '</div><button type="button" class="btn sm" data-act="solRestore" data-key="' + esc(a.key) + '" data-i="' + i + '">Restore this version</button></li>').join('') + '</ol>' : '<p class="fl-none">No earlier version.</p>')
+      + (arr(rec.versions).length ? '<ol>' + arr(rec.versions).map((v, i) => '<li><span class="xs muted">' + esc(when(v.at)) + ' · ' + esc(v.by || '') + (v.why ? ' · ' + esc(v.why) : '') + '</span><div class="fl-sol-old">' + esc(String(v.text || '').slice(0, 300) + (arr(v.rows).length ? '  [' + arr(v.rows).length + ' rows]' : '')) + '</div><button type="button" class="btn sm" data-act="solRestore" data-key="' + esc(a.key) + '" data-i="' + i + '">Restore this version</button></li>').join('') + '</ol>' : '<p class="fl-none">No earlier version.</p>')
       + (arr(rec.sources).length ? '<h4>Sources</h4><ul>' + arr(rec.sources).map(s => '<li>' + (s.quote ? '“' + esc(s.quote) + '”' : '') + (s.source ? ' <span class="xs muted">' + esc(s.source) + '</span>' : '') + '</li>').join('') + '</ul>' : '') + '</details></section>';
   }
 
   V.solution = { html() {
     if (V.isCustomer()) return '';
-    const head = '<div class="page-header"><div class="t"><h1>Solution</h1><p>The agreed solution of each module and area, in words. The BRD is built from this page: change the text here and the BRD follows. Claude can propose changes; you accept them.</p></div></div>';
+    const head = '<div class="page-header"><div class="t"><h1>Solution</h1><p>The agreed solution of each module and area: a short overview and a table of what Facilio does, topic by topic. The BRD is built from this page, so a change here shows in the BRD. Claude can propose changes; you accept them row by row.</p></div></div>';
     if (!mods().length) return head + '<div class="page-body"><div class="card empty"><h3>No module is in scope yet</h3><p>Switch on the modules the project covers on System Modules &amp; Form Builder. The solution list follows that list.</p><div class="row empty-acts"><button class="btn primary" data-act="nav" data-view="modules">Open the modules</button></div></div></div>';
     const a = cur(), busy = jobsOpen(['compare_solution']);
     return head + '<div class="page-body"><div class="card fl-sol-all"><div class="fl-cmd-bar"><button type="button" class="btn primary" data-act="solAdd">+ Add an area or solution</button><button type="button" class="btn" data-act="solWord">Export Word</button><button type="button" class="btn" data-act="solDrop"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Claude is comparing the file' : 'Drop a file') + '</button><span class="xs muted">Drop a file (Word, PDF, Excel or e-mail) anywhere on this page: Claude compares it with the solutions, proposes updates where it differs, and proposes a new area for anything that fits none.</span></div>'
@@ -119,15 +138,21 @@
       + '<details class="fl-sol-cov"><summary>Coverage: what is recorded per module</summary>' + coverage() + '</details></div>';
   }, mount() { } };
 
-  if (typeof document !== 'undefined') document.addEventListener('input', e => { if (e.target && e.target.id === 'solText') ui().draft = { key: cur().key, text: e.target.value }; });   // a refresh while typing keeps the unsaved text
-
+  if (typeof document !== 'undefined') {   // what is typed in the overview or in the table is kept in the working copy, so a refresh does not lose it
+    const upd = e => { const t = e.target; if (!t || !t.closest || !t.closest('.fl-sol-d')) return; if (t.id === 'solText') ensureDraft().text = t.value; else if (t.hasAttribute('data-c') || t.hasAttribute('data-s')) { const r = ensureDraft().rows[+t.getAttribute('data-ri')]; if (!r) return; if (t.hasAttribute('data-s')) r.status = t.value; else { r.cells = r.cells || {}; r.cells[t.getAttribute('data-c')] = t.value; } } };
+    document.addEventListener('input', upd); document.addEventListener('change', upd);
+  }
   ACT.solPick = a => { const u = ui(); u.key = a.getAttribute('data-key'); u.draft = null; V.render(); };
   ACT.solSave = a => {
-    if (guard()) return; const key = a.getAttribute('data-key'), g = i => (document.getElementById(i) || {}).value || '';
-    let next; try { next = L().save(doc(), key, g('solText'), { by: by(), at: new Date().toISOString(), why: g('solWhy') || 'Edited by hand', status: g('solStatus') }); } catch (e) { toast(e.message, 5000, true); return; }
+    if (guard()) return; const key = a.getAttribute('data-key'), g = i => (document.getElementById(i) || {}).value || ''; const dr = ensureDraft();
+    let next; try { next = L().save(doc(), key, g('solText'), { rows: dr.rows, by: by(), at: new Date().toISOString(), why: g('solWhy') || 'Edited by hand', status: g('solStatus') }); } catch (e) { toast(e.message, 5000, true); return; }
     if (JSON.stringify(next.items) === JSON.stringify(L().itemsOf(doc()))) { toast('Nothing changed.', 2500); return; }
-    write(next, 'Solution saved', (cur() || {}).label); ui().draft = null; toast('Saved. The BRD reads this text.', 3500); V.render();
+    write(next, 'Solution saved', (cur() || {}).label); ui().draft = null; toast('Saved. The BRD reads this solution.', 3500); V.render();
   };
+  ACT.solRowAdd = () => { if (guard()) return; ensureDraft().rows.push({ cells: {}, status: 'Draft' }); V.render(); };
+  ACT.solRowDel = a => { if (guard()) return; ensureDraft().rows.splice(+a.getAttribute('data-ri'), 1); V.render(); };
+  ACT.solTopics = () => { if (guard()) return; const dr = ensureDraft(), have = new Set(dr.rows.map(r => String((r.cells || {}).topic || '').toLowerCase())); L().LAYOUTS.module.topics.forEach(t => { if (!have.has(t.toLowerCase())) dr.rows.push({ cells: { topic: t }, status: 'Draft' }); }); V.render(); };
+  ACT.solFromApps = () => { if (guard()) return; const dr = ensureDraft(), have = new Set(dr.rows.map(r => String((r.cells || {}).app || '').toLowerCase())); props().filter(p => p.kind === 'connectedapp' && p.status === 'applied' && !have.has(String(p.name).toLowerCase())).forEach(p => dr.rows.push({ cells: { app: p.name, opens: (p.triggerLabel ? p.triggerLabel + ' ' : '') + p.trigger + ' of ' + p.module, what: [p.purpose, p.shows].filter(Boolean).join(' '), users: arr(p.users).join(', ') }, status: 'Draft' })); V.render(); };
   ACT.solRestore = a => { if (guard()) return; try { write(L().restore(doc(), a.getAttribute('data-key'), +a.getAttribute('data-i'), by(), new Date().toISOString()), 'Solution version restored', (cur() || {}).label); ui().draft = null; V.render(); } catch (e) { toast(e.message, 5000, true); } };
   ACT.solAccept = async a => {
     if (guard()) return; const id = a.getAttribute('data-id'); const prev = JSON.parse(JSON.stringify(doc()));

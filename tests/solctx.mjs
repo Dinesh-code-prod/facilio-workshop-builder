@@ -31,3 +31,9 @@ t('a fixed area gets the whole-project view (all KPIs, all SLA rows, all notific
 });
 t('text is capped and stays data: long customer text is cut', () => { const big = { workshop: { requirements: [{ id: 'X', status: 'Confirmed', modules: ['m'], objective: 'x'.repeat(5000) }] } }; assert.equal(buildContext('module:m', big).requirements[0].objective.length, 400); });
 console.log(n + ' solution context checks passed');
+{   // the table columns the server tells Claude about are the ones the page shows
+  const { LAYOUT_KEYS } = await import('../work/server/_solctx.mjs'); const { createRequire } = await import('node:module'); const L = createRequire(import.meta.url)('../src/sollogic.js');
+  for (const k of Object.keys(L.LAYOUTS)) assert.deepEqual(LAYOUT_KEYS[k], L.LAYOUTS[k].cols.map(c => c[0]), 'layout ' + k); assert.deepEqual(Object.keys(LAYOUT_KEYS).sort(), Object.keys(L.LAYOUTS).sort());
+  const c = buildContext('area:integrations', {}); assert.equal(c.layout.kind, 'integration'); assert.ok(c.layout.columns.includes('flow')); assert.equal(buildContext('module:asset', {}).layout.columns[0], 'topic');
+  console.log('  ok  the layouts of the page and of the context pack are the same');
+}
