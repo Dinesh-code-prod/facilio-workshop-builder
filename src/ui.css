@@ -709,3 +709,60 @@ body #asst .ki-row.you .ki-bub:not(#_):not(#__){border-radius:16px 16px 4px 16px
 body #asst .ki-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 body #asst .ki-acts .btn:not(#_):not(#__){border-radius:999px!important;padding:6px 14px!important;background:#fff!important;border:1px solid var(--cs-st1)!important;color:var(--cs-fg1)!important;font-weight:500}
 body #asst .ki-acts .btn:hover:not(#_):not(#__){border-color:var(--cs-brand)!important;background:var(--cs-brand-soft)!important}
+/* ======== coss ui library, round 2 (docs/reference/UI-COSS-LIBRARY.md): semantic colours, motion, loading, colour across the inside pages, stage-coloured sidebar.
+   Never applied to the Projects home or the sign-in page: everything below hangs on .main[data-sec] (a project page), .sidebar, .adm-main, or the shared pop-ups. ======== */
+:root { --cs-info: #3b82f6; --cs-info-ink: #1d4ed8; --cs-success: #10b981; --cs-success-ink: #047857; --cs-warning: #f59e0b; --cs-warning-ink: #b45309; --cs-destructive: #ef4444; --cs-destructive-ink: #b91c1c; }
+@keyframes csSpin { to { transform: rotate(360deg); } }
+@keyframes csPop { from { opacity: 0; transform: scale(.96) translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes csSlide { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes csToastPop { 0% { scale: 1; } 30% { scale: 1.025; } 60% { scale: .99; } 100% { scale: 1; } }
+@keyframes csShake { 0%, 100% { translate: 0 0; } 25% { translate: -3px 0; } 50% { translate: 3px 0; } 75% { translate: -3px 0; } }
+@keyframes csSkel { to { background-position: -200% 0; } }
+@keyframes csRise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+/* buttons: a press, a loading state, a danger that reads as danger */
+body .btn:not(.link):not(#_):not(#__) { cursor: pointer; transition: transform 110ms var(--cs-ease), background-color 150ms var(--cs-ease), border-color 150ms var(--cs-ease), box-shadow 150ms var(--cs-ease), opacity 150ms var(--cs-ease); }
+body .btn[disabled]:not(#_):not(#__) { cursor: not-allowed; }
+body .btn:not([disabled]):not([aria-busy="true"]):not(#_):not(#__):active { transform: scale(.97); }
+body .btn[aria-busy="true"]:not(#_):not(#__) { position: relative; pointer-events: none; opacity: .82; }
+body .btn[aria-busy="true"]:not(.icon):not(#_):not(#__)::after { content: ""; display: inline-block; width: 13px; height: 13px; margin-left: 8px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; vertical-align: -2px; animation: csSpin .7s linear infinite; }
+body .btn.icon[aria-busy="true"]:not(#_):not(#__) svg { animation: csSpin .9s linear infinite; }
+body .btn.danger:not(.icon):not([disabled]):not(#_):not(#__):hover { border-color: color-mix(in srgb, var(--cs-destructive) 40%, transparent) !important; color: var(--cs-destructive-ink) !important; }
+body .btn.danger.primary:not(#_):not(#__), body .btn.primary.danger:not(#_):not(#__) { background: var(--cs-destructive) !important; border-color: var(--cs-destructive) !important; color: #fff !important; box-shadow: inset 0 1px rgba(255, 255, 255, .16), 0 1px 2px color-mix(in srgb, var(--cs-destructive) 28%, transparent) !important; }
+body .btn.danger.primary:not([disabled]):not(#_):not(#__):hover, body .btn.primary.danger:not([disabled]):not(#_):not(#__):hover { background: color-mix(in srgb, var(--cs-destructive) 90%, #000) !important; }
+body :focus-visible:not(#_):not(#__) { outline: 2px solid color-mix(in srgb, var(--cs-accent, #1570EF) 60%, transparent); outline-offset: 2px; }
+/* pop-ups come in, they do not appear: dialog pops, drawer slides, toast pops (error shakes), menus rise */
+body .dialog:not(#_):not(#__), body .modal:not(#_):not(#__) { animation: csPop 180ms var(--cs-out) both; }
+body .drawer:not(#_):not(#__) { animation: csSlide 240ms var(--cs-out) both; }
+body .toast:not(#_):not(#__), body .ui-toast:not(#_):not(#__) { animation: csRise 200ms var(--cs-out) both, csToastPop .32s .2s cubic-bezier(.5, 1, .89, 1); }
+body .toast.err:not(#_):not(#__), body .ui-toast.err:not(#_):not(#__) { animation: csRise 200ms var(--cs-out) both, csShake .28s .2s cubic-bezier(.5, 1, .89, 1); }
+body #userPop:not(#_):not(#__), body .menu:not(#_):not(#__), body .popover:not(#_):not(#__) { animation: csPop 140ms var(--cs-out) both; transform-origin: top right; }
+/* loading: the coss skeleton shimmer */
+body .ui-loading i:not(#_):not(#__) { background: linear-gradient(120deg, transparent 40%, rgba(255, 255, 255, .7), transparent 60%) rgba(0, 0, 0, .05) 0 0 / 200% 100% !important; animation: csSkel 2s -1s infinite linear !important; border-radius: 6px; }
+/* cards and tiles lift a little when they can be clicked */
+body .card:not(#_):not(#__), body .cs-card:not(#_):not(#__), body .sd-w:not(#_):not(#__) { transition: box-shadow 160ms var(--cs-ease), border-color 160ms var(--cs-ease), transform 160ms var(--cs-ease); }
+body .cs-stat-btn:hover:not(#_):not(#__), body .card[data-act]:hover:not(#_):not(#__) { transform: translateY(-1px); box-shadow: var(--cs-sh8); cursor: pointer; }
+/* page order, the same on every inside page: header, then the summary, then the work, balanced headings */
+body .main[data-sec] h1:not(#_):not(#__), body .main[data-sec] h2:not(#_):not(#__), body .main[data-sec] h3:not(#_):not(#__) { text-wrap: balance; }
+/* colour across the inside pages, from the accent of the group the page belongs to (blue, teal, deep blue, green, pink, grey) */
+body .main[data-sec]:not(#_):not(#__) { background: linear-gradient(180deg, color-mix(in srgb, var(--cs-accent) 5%, #fafafa) 0, #fafafa 280px) !important; }
+body .main[data-sec] .card > .card-h:not(#_):not(#__) { background: color-mix(in srgb, var(--cs-accent) 6%, #fff) !important; border-bottom: 1px solid color-mix(in srgb, var(--cs-accent) 18%, transparent) !important; }
+body .main[data-sec] .card > .card-h h3:not(#_):not(#__) { color: var(--cs-accent-ink) !important; }
+body .main[data-sec] .tbl thead th:not(#_):not(#__) { background: color-mix(in srgb, var(--cs-accent) 6%, #fff) !important; color: var(--cs-accent-ink) !important; border-bottom: 1px solid color-mix(in srgb, var(--cs-accent) 20%, transparent) !important; }
+body .main[data-sec] .tbl tbody tr:hover td:not(#_):not(#__) { background: color-mix(in srgb, var(--cs-accent) 4%, #fff) !important; }
+body .main[data-sec] .tabs .tab.active:not(#_):not(#__) { color: var(--cs-accent-ink) !important; }
+body .main[data-sec] .ui-panel .ui-ic:not(#_):not(#__) { background: var(--cs-accent-soft) !important; color: var(--cs-accent-ink) !important; border: 1px solid var(--cs-accent-line) !important; border-radius: 12px; }
+body .main[data-sec] .notice:not(.err):not(.warn):not(#_):not(#__) { background: color-mix(in srgb, var(--cs-info) 6%, #fff) !important; border: 1px solid color-mix(in srgb, var(--cs-info) 28%, transparent) !important; border-radius: 12px; }
+body .main[data-sec] .notice.warn:not(#_):not(#__) { background: color-mix(in srgb, var(--cs-warning) 8%, #fff) !important; border: 1px solid color-mix(in srgb, var(--cs-warning) 34%, transparent) !important; border-radius: 12px; }
+body .main[data-sec] .notice.err:not(#_):not(#__) { background: color-mix(in srgb, var(--cs-destructive) 6%, #fff) !important; border: 1px solid color-mix(in srgb, var(--cs-destructive) 32%, transparent) !important; border-radius: 12px; }
+/* the sidebar: stages are numbered and coloured, every page has an icon, the rail of the open stage carries its colour */
+body .sidebar .sb-title:not(#_):not(#__) { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+body .sidebar .sb-no:not(#_):not(#__) { flex: none; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 6px; background: color-mix(in srgb, var(--sg) 16%, #fff); color: color-mix(in srgb, var(--sg) 68%, #000); font: 700 11px/1 var(--cs-font); font-style: normal; transition: background-color 150ms var(--cs-ease), color 150ms var(--cs-ease); }
+body .sidebar .sb-stage.has-active .sb-no:not(#_):not(#__), body .sidebar .sb-stage .sb-title:hover .sb-no:not(#_):not(#__) { background: var(--sg); color: #fff; }
+body .sidebar .sb-chev:not(#_):not(#__) { margin-left: auto; width: 6px; height: 6px; border-right: 1.5px solid var(--cs-fg3); border-bottom: 1.5px solid var(--cs-fg3); transform: rotate(-45deg); transition: transform 160ms var(--cs-ease); }
+body .sidebar .sb-group.open .sb-chev:not(#_):not(#__) { transform: rotate(45deg); }
+body .sidebar .sb-stage.open .sb-item:not(#_):not(#__) { margin-left: 10px; border-left: 2px solid color-mix(in srgb, var(--sg) 22%, transparent); border-radius: 0 8px 8px 0; }
+body .sidebar .sb-stage.open .sb-item.active:not(#_):not(#__) { border-left-color: var(--sg); background: color-mix(in srgb, var(--sg) 10%, #fff) !important; }
+body .sidebar .sb-stage.open .sb-item.active svg:not(#_):not(#__) { color: color-mix(in srgb, var(--sg) 70%, #000) !important; }
+body .sidebar .sb-group.open > .sb-item:not(#_):not(#__) { animation: csRise 180ms var(--cs-out) both; }
+body .sidebar .sb-item svg:not(#_):not(#__), body .sidebar .sb-title svg:not(#_):not(#__) { flex: none; width: 16px; height: 16px; }
+@media (prefers-reduced-motion: reduce) { body .dialog, body .modal, body .drawer, body .toast, body .ui-toast, body #userPop, body .menu, body .popover, body .sidebar .sb-group.open > .sb-item, body .ui-loading i { animation: none !important; } body .btn:active { transform: none !important; } }
