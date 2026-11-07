@@ -52,7 +52,7 @@
   ACT.utrSave = a => V.busy(a, async () => { const id = a.getAttribute('data-id'); const x = I().get('utr', id); if (!x) return; const g = k => String((document.getElementById(k + id) || {}).value || '').trim(); const result = g('ur_r_'); const actual = g('ur_a_'); const link = g('ur_l_');
     if ((result === 'Failed' || result === 'Blocked') && !actual) { toast('Say briefly what happened, so the team can fix it', 5000, true); return; } if (link && !/^https?:\/\//i.test(link)) { toast('The link must start with https://', 5000, true); return; }
     try { await I().put('utr', id, Object.assign({}, x, { result, actual, link })); toast('Saved. Thank you.'); V.render(); } catch (e) { toast(e.message || 'Could not save', 6000, true); } });
-  V.uatCases = () => { if (team() && can() && S.ui.uatAutoRan !== S.project.id) { S.ui.uatAutoRan = S.project.id; setTimeout(() => { if (V.uatAuto) V.uatAuto().then(k => { if (k) { toast(k + ' draft test case' + (k === 1 ? '' : 's') + ' drafted from the modules and the BRD.', 5000); V.render(); } }); }, 600); } return uatCasesCore() + statusCard() + coverageCard() + walkthroughCard(); };
+  V.uatCases = () => { if (team() && can() && S.ui.uatAutoRan !== S.project.id) { S.ui.uatAutoRan = S.project.id; setTimeout(() => { if (V.uatAuto) V.uatAuto().then(k => { if (k) { toast(k + ' draft test case' + (k === 1 ? '' : 's') + ' drafted from the modules and the BRD.', 5000); V.render(); } }); }, 600); } return uatCasesCore() + statusCard() + coverageCard(); };
   /** read only: where each module stands in stage 4 */
   function statusCard() {
     if (!team() || !I().ready(['utc'])) return ''; const mods = scoped(); if (!mods.length || !cases().length) return '';
@@ -69,6 +69,7 @@
   }
   /** Comet walkthroughs: one card per scenario, folded; copy the brief, make the video in Comet, paste its link here */
   const walkLinks = () => { const m = {}; Object.entries(S.ws.walkthroughs || {}).forEach(([k, v]) => { if (v && /^https:\/\//i.test(v.url || '')) m[k] = v.url; }); return m; };
+  V.uatWalkthroughs = () => (team() && I().ready(['utc']) ? U().walkthroughs(cases(), modLabel).slice(0, 40) : []);   // the scenarios worth a Comet video; the Training page shows them
   function walkthroughCard() {
     if (!team() || !I().ready(['utc'])) return ''; const list = U().walkthroughs(cases(), modLabel); if (!list.length) return ''; const store = S.ws.walkthroughs || {}; const withLink = list.filter(w => (store[w.key] || {}).url).length; const shown = list.slice(0, 40);
     const row = w => { const url = (store[w.key] || {}).url || ''; return '<details class="wt"' + (S.ui.wtOpen === w.key ? ' open' : '') + '><summary><b>' + esc(w.label) + '</b> <span class="xs muted">' + w.count + ' test case' + (w.count === 1 ? '' : 's') + (w.mod ? ' · ' + esc(modLabel(w.mod)) : '') + '</span>' + (url ? ' <span class="tag green">Walkthrough added</span>' : '') + '</summary><div class="wt-b"><div class="row" style="gap:8px"><button class="btn sm" data-act="utcWtCopy" data-key="' + esc(w.key) + '">Copy the brief</button><button class="btn sm" data-act="utcWtComet">Open Comet</button></div>'

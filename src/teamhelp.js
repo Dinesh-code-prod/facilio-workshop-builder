@@ -24,7 +24,7 @@
       ['solution', 'Solution', 'One card per module in scope (and connected apps, templates, KPIs, SLA, notifications, roles): the customer requirement and the solution in words. Change one with Ask Claude, drop a customer file to compare, export a plain Word. The BRD reads from here.', 'Build the solution'],
       ['modules', 'System Modules & Form Builder', 'Define modules and fields. New fields come from requirements, not from memory.', 'Build the solution'],
       ['flow', 'State Flow Builder', 'Draw each module\'s statuses and transitions, with who may press each button.', 'Build the solution'],
-      ['mockup', 'Mockup (Meteor and Comet)', 'Ask Claude to build the screens in Meteor, then bring them in. Share the whole mockup with the customer by link, tab by tab.', 'Build the solution'],
+      ['mockup', 'Mockup (Meteor)', 'Ask Claude to build the screens in Meteor, then bring them in. Share the whole mockup with the customer by link, tab by tab.', 'Build the solution'],
       ['roles', 'Roles & Access Permissions', 'Map people to roles and what each role can see and do.', 'Set up access, alerts and data'],
       ['notifications', 'Notifications', 'Say who is told what and when. Email rules are written into the package.', 'Set up access, alerts and data'],
       ['cfginputs', 'Configuration & org package', 'Describe everything configured for this customer in one place. Guides, test plans and handover read from it.', 'Record all configuration'],
