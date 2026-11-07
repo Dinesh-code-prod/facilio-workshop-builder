@@ -589,3 +589,23 @@ body .sd-link { padding: 0; border: 0; background: none; font: 600 13px/18px var
 body .sd-hd { display: inline-flex; align-items: center; gap: 6px; font: 600 12px/16px var(--cs-font); color: var(--cs-fg1); } body .sd-hd::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c); } body .sd-late { font-style: normal; font: 600 11px/14px var(--cs-font); color: #b91c1c; margin-left: 4px; }
 @media (max-width: 1100px) { body .sd-steps { grid-template-columns: repeat(6, minmax(0, 1fr)); row-gap: 16px; } body .sd-step:nth-child(7)::before { display: none; } body .sd-w, body .sd-s4, body .sd-s5, body .sd-s7, body .sd-s8 { grid-column: span 12; } }
 @media (prefers-reduced-motion: reduce) { body .sd-kpi, body .sd-w, body .sd-step { animation: none; } }
+
+/* ======== Assistant chat box in the look of Project settings (coss): white surface, hairline borders, 12px cards, neutral bubbles, the same primary button ======== */
+#asst:not(#_):not(#__) { background: var(--cs-bg1); border-left: 1px solid var(--cs-st2); box-shadow: var(--cs-sh16); }
+#asst .as-head:not(#_):not(#__) { padding: 16px 20px !important; border-bottom: 1px solid var(--cs-st3) !important; }
+#asst .as-t b { font: 600 16px/22px var(--cs-font); color: var(--cs-fg1) !important; }
+#asst .as-logo { width: 28px; height: 28px; border-radius: 8px; background: var(--cs-fg1) !important; color: #fff; font: 600 13px/1 var(--cs-font); }
+#asst .as-ib { border-radius: var(--cs-r-ctl); color: var(--cs-fg3) !important; } #asst .as-ib:hover { background: var(--cs-bg4) !important; color: var(--cs-fg1) !important; }
+#asst .as-search input { border: 1px solid var(--cs-st1) !important; border-radius: var(--cs-r-ctl) !important; font: 400 14px/20px var(--cs-font); }
+#asst .as-body { padding: 0 20px 20px !important; }
+#asst .as-body .as-now { margin: 0 -20px 8px !important; padding: 10px 20px !important; background: var(--cs-bg2) !important; border-bottom: 1px solid var(--cs-st3) !important; color: var(--cs-fg2) !important; font: 400 13px/18px var(--cs-font) !important; }
+#asst .as-topic { margin: 20px 0 8px; } #asst .as-topic:before, #asst .as-topic:after { background: var(--cs-st3); } #asst .as-topic b, #asst .as-topic span { color: var(--cs-fg3) !important; font: 600 12px/16px var(--cs-font); }
+#asst .ki-bub { background: var(--cs-bg3) !important; border: 1px solid var(--cs-st3) !important; border-radius: var(--cs-r-card) !important; color: var(--cs-fg1) !important; font: 400 14px/21px var(--cs-font) !important; padding: 10px 14px; }
+#asst .ki-row.you .ki-bub { background: var(--cs-accent-soft) !important; border-color: var(--cs-accent-line) !important; color: var(--cs-fg1) !important; }
+#asst .ki-row.other .ki-bub { background: var(--cs-bg4) !important; color: var(--cs-fg1) !important; } #asst .ki-row.bad .ki-bub { background: var(--cs-danger-soft) !important; color: var(--cs-danger) !important; border-color: #e8b9be !important; }
+#asst .ki-time, #asst .ki-name { color: var(--cs-fg3) !important; font: 400 12px/16px var(--cs-font); }
+#asst .as-comp { padding: 12px 20px 20px !important; border-top: 1px solid var(--cs-st3) !important; background: var(--cs-bg1) !important; }
+#asst .as-crow { border: 1px solid var(--cs-st1) !important; border-radius: var(--cs-r-card) !important; padding: 6px 6px 6px 14px; background: var(--cs-bg1); } #asst .as-crow:focus-within { border-color: var(--cs-brand) !important; box-shadow: 0 0 0 3px var(--cs-brand-soft) !important; }
+#asst .as-send { width: 36px; height: 36px; border-radius: var(--cs-r-ctl) !important; background: var(--cs-brand) !important; } #asst .as-send:hover { background: var(--cs-brand-h) !important; }
+#asst .as-ask { background: var(--cs-warn-soft) !important; border: 1px solid #f1d4bd !important; border-radius: var(--cs-r-ctl) !important; color: var(--cs-fg1) !important; }
+#asstTab:not(#_):not(#__) { background: var(--cs-fg1); border-color: var(--cs-fg1); border-radius: var(--cs-r-card) 0 0 var(--cs-r-card); font-family: var(--cs-font); }

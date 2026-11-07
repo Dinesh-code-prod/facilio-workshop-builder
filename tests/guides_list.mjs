@@ -11,3 +11,8 @@ t('counts and names what exists', () => {
   assert.equal(row(s, 'user').count, 4); assert.equal(row(s, 'user').detail, 'A, B, C and 1 more'); assert.equal(row(s, 'uat').count, 1); assert.match(row(s, 'uat').detail, /12 test cases/); assert.equal(row(s, 'wt').detail, '3 scenarios with a video.'); assert.equal(row(s, 'mv').detail, '1 mockup card with a video.'); assert.equal(s.total, 4 + 1 + 1 + 3 + 1);
 });
 console.log(n + ' guides overview checks passed');
+// the request for Claude (make a guide, change a guide)
+{ const { askJob } = globalThis.FWBViews.guidesLogic; let m = 0; const u = (name, fn) => { fn(); m++; console.log('  ok  ' + name); };
+  u('make: any of the four kinds becomes a make_guide job, and an empty note means everything in scope', () => { const r = askJob('make', 'uat', ''); assert.deepEqual([r.ok, r.job.kind, r.job.section], [true, 'make_guide', 'uat']); assert.match(r.job.note, /Everything in scope/); assert.equal(askJob('make', 'video', 'x'.repeat(900)).job.note.length, 600); });
+  u('change: needs the words; a wrong kind is refused', () => { assert.equal(askJob('change', 'user', '  ').ok, false); const r = askJob('change', 'training', 'add a rejection step'); assert.deepEqual([r.job.kind, r.job.section, r.job.note], ['change_guide', 'training', 'add a rejection step']); assert.equal(askJob('make', 'nope', 'x').ok, false); });
+  console.log(m + ' guide request checks passed'); }
