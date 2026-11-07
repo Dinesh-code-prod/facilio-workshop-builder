@@ -175,7 +175,7 @@
     const onb = V.onboardingDigest ? V.onboardingDigest() : [];
     const phase = V.phaseNow ? V.phaseNow() : null;
     const subject = `${cn} × Facilio · Weekly Update · ${V.fmtDate(t)}`;
-    const body = [phase ? `Current phase: Step ${phase.n} of 12 — ${phase.title}${phase.note ? ' (' + phase.note + ')' : ''}\n` : '', L('Done this week', doneWk), L('Coming up (next two weeks)', sessions), L('Due from ' + cn, due('customer')), L('Due from Facilio', due('facilio')), L('Waiting on sign-off', waiting), L('Change requests awaiting your approval', crs), L('High risks', risks), L('Data onboarding', onb)].filter(Boolean).join('\n') + '\nKind regards,\nFacilio Implementation Team';
+    const body = [phase ? `Current stage: ${V.stageOfStep ? 'Stage ' + V.stageOfStep(phase.n - 1) + ' · ' + V.roadmapName(V.stageOfStep(phase.n - 1)) + ' (plan step ' + phase.n + ' of 12: ' + phase.title + ')' : 'Step ' + phase.n + ' of 12: ' + phase.title}${phase.note ? ' (' + phase.note + ')' : ''}\n` : '', L('Done this week', doneWk), L('Coming up (next two weeks)', sessions), L('Due from ' + cn, due('customer')), L('Due from Facilio', due('facilio')), L('Waiting on sign-off', waiting), L('Change requests awaiting your approval', crs), L('High risks', risks), L('Data onboarding', onb)].filter(Boolean).join('\n') + '\nKind regards,\nFacilio Implementation Team';
     return { subject, body };
   }
   V.digestDraft = digestDraft;
