@@ -142,6 +142,26 @@
     const r = await J().post('/jobs', { kind: 'compare_solution', ref: rec.id, note: f.name, section: '' }); toast(r && r.duplicate ? 'Claude already has this file.' : 'Sent. Claude compares ' + f.name + ' with the solutions and proposes updates where they differ.', 6000); startAsst();
   });
 
+  // ---------- BRD section: Ask Claude (button on each heading, src/brdview.js). The side box scopes the job to that section. A section built from a Solution area proposes a change to that area
+  // (update_solution, or compare_solution when a file is attached); any other section goes to the project chat as a request for an unapproved draft. Nothing is applied without a person. ----------
+  const bd = () => S.ui.bdAsk || (S.ui.bdAsk = { key: '', title: '', file: null });
+  ACT.brdAsk = a => {
+    const s = bd(); s.key = a.getAttribute('data-key') || ''; s.title = a.getAttribute('data-title') || 'this section'; s.file = null; const area = s.key ? (areas().find(x => x.key === s.key) || {}).label : '';
+    V.drawer('Ask Claude: ' + s.title, '<p class="small">' + (s.key ? 'This section is built from the solution of <b>' + esc(area || s.key) + '</b>. Claude proposes the new text there; you accept it on the Solution tab and the BRD follows.' : 'Claude prepares a draft change for this section and shows it in the assistant panel. Nothing in the BRD changes until you apply it.') + '</p><label class="f" for="bdAskNote">What should change?</label><textarea id="bdAskNote" rows="6" maxlength="500" placeholder="For example: the customer wants two approval levels here."></textarea>'
+      + '<div class="fl-cmd"><button type="button" class="btn sm" data-act="brdAskFile">Add a file</button><span class="xs muted" id="bdAskFile">Drop or pick the customer’s file (optional).</span></div>', '<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="brdAskSend">Send to Claude</button>', {});
+  };
+  ACT.brdAskFile = a => V.busy(a, async () => {
+    if (guard()) return; const fs = await V.pickFile('.docx,.pdf,.xlsx,.xlsm,.xls,.csv,.txt,.eml,.msg', false); const f = Array.isArray(fs) ? fs[0] : fs; if (!f) return;
+    const rec = await root.FWBApi.uploadFile(S.project.id, f, 'solution_input', { from: 'brd section' }); bd().file = { id: rec.id, name: f.name }; const el = document.getElementById('bdAskFile'); if (el) el.textContent = f.name + ' is attached.';
+  });
+  ACT.brdAskSend = a => V.busy(a, async () => {
+    if (guard() || J().guard()) return; const s = bd(), box = document.getElementById('bdAskNote'), words = (box && box.value || '').trim(); if (!words && !s.file) { toast('Write what should change, or add a file.', 4000, true); return; }
+    const head = 'BRD section "' + s.title + '": ';
+    const body = s.key ? (s.file ? { kind: 'compare_solution', ref: s.file.id, note: (head + words).slice(0, 600), section: s.key } : { kind: 'update_solution', note: (head + words).slice(0, 600), section: s.key })
+      : { kind: 'chat', note: (head + words + (s.file ? ' (file: ' + s.file.name + ', project file ' + s.file.id + ')' : '') + ' Prepare the change for this BRD section as an unapproved draft with save_draft; do not apply it.').slice(0, 600), ref: String(Date.now()), section: 'brd' };
+    const r = await J().post('/jobs', body); V.closeDrawer(); toast(r && r.duplicate ? 'Claude already has this request.' : 'Sent. Claude’s answer shows in the assistant panel' + (s.key ? ' and as a proposal on the Solution tab.' : '.'), 6000); startAsst();
+  });
+
   // ---------- Word export: Module | Customer requirement | Solution (not the Solution Document, not the BRD) ----------
   async function wordBlob() {
     const X = await V.loadDocx(); const { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle } = X; const font = 'Calibri';
