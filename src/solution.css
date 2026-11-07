@@ -63,5 +63,16 @@ body .cs-sol-dt td { padding: 6px 8px; } body .cs-sol-dt tr.add td { background:
 body .cs-sol-dt ins { text-decoration: none; background: var(--cs-success-soft); } body .cs-sol-dt del { color: var(--cs-danger); }
 body .cs-sol-r summary { cursor: pointer; font: 600 14px/20px var(--cs-font); }
 
-body .fl-sol-more { margin-top: 6px; } body .fl-sol-more summary { cursor: pointer; font: 600 13px/18px var(--fl-font, var(--cs-font, inherit)); }
-body .fl-sol-wk { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0; font: 400 13px/18px var(--fl-font, var(--cs-font, inherit)); } body .fl-sol-wk em { display: block; font-style: normal; color: var(--fl-fg3, var(--cs-fg3, #666)); font-size: 12px; }
+body .cs-sol-more { margin-top: 6px; } body .cs-sol-more summary { cursor: pointer; font: 600 13px/18px var(--fl-font, var(--cs-font, inherit)); }
+body .cs-sol-wk { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0; font: 400 13px/18px var(--fl-font, var(--cs-font, inherit)); } body .cs-sol-wk em { display: block; font-style: normal; color: var(--fl-fg3, var(--cs-fg3, #666)); font-size: 12px; }
+
+/* the solution area: drop zone, folded contract panel, calmer sections */
+body .cs-sol-dz { display: flex; flex-direction: column; gap: 6px; }
+body .cs-sol-drop { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; padding: 20px 16px; border: 1.5px dashed var(--cs-st3, var(--fl-st3, #c8c8c8)); border-radius: 12px; background: var(--cs-bg2, var(--fl-bg2, #fafafa)); color: var(--cs-fg1, var(--fl-fg1, #111)); cursor: pointer; text-align: center; font: 400 14px/20px var(--cs-font, var(--fl-font, inherit)); }
+body .cs-sol-drop b { font-weight: 600; } body .cs-sol-drop span { color: var(--cs-fg3, var(--fl-fg3, #666)); max-width: 62ch; }
+body .cs-sol-drop:hover, body .cs-sol-drop.drop-ready { border-color: var(--cs-brand, var(--fl-brand, #1570EF)); background: var(--cs-brand-soft, var(--fl-brand-soft, #EAF2FF)); }
+body .cs-sol-drop:disabled { opacity: .5; cursor: default; }
+body details.cs-sol-ct > summary { cursor: pointer; font: 600 12px/16px var(--cs-font, var(--fl-font, inherit)); color: var(--cs-fg3, var(--fl-fg3, #666)); display: flex; justify-content: space-between; padding: 0 8px 4px; list-style: none; }
+body details.cs-sol-ct > summary::-webkit-details-marker { display: none; } body details.cs-sol-ct > summary em { font-style: normal; color: var(--cs-brand, var(--fl-brand, #1570EF)); }
+body details.cs-sol-ct { padding: 0 0 4px; border-bottom: 1px solid var(--cs-st2, var(--fl-st2, #e5e5e5)); margin-bottom: 4px; } body details.cs-sol-ct > *:not(summary) { padding: 0 8px; }
+body .cs-sol-d { gap: 16px; } body .cs-sol-d > label.f { margin-bottom: -8px; font-weight: 600; }
