@@ -1,0 +1,16 @@
+/* Questions tab (src/qbank.js) and the live assistant (src/workshoplive.js). coss tokens only; no gradients or custom shadows. */
+body .qb-bar { display: flex; flex-wrap: wrap; gap: 8px; }
+body .qb-sum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; font: 400 14px/20px var(--cs-font, inherit); color: var(--cs-fg2, #444); }
+body .qb-sum b { font-size: 20px; color: var(--cs-fg1, #111); margin-right: 4px; }
+body .qb-sug { font: 600 12px/16px var(--cs-font, inherit); color: var(--cs-brand, #1570EF); background: var(--cs-brand-soft, #EAF2FF); border-radius: 6px; padding: 0 6px; }
+body .qb-flt { display: flex; flex-wrap: wrap; gap: 8px; }
+body .qb-q { display: flex; flex-direction: column; gap: 6px; padding: 12px 0; border-bottom: 1px solid var(--cs-st2, #e5e5e5); }
+body .qb-q:last-child { border-bottom: 0; }
+body .qb-q.sug { background: var(--cs-bg2, #fafafa); margin: 0 -12px; padding: 12px; border-radius: 8px; }
+body .qb-h { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+body .qb-t { font: 600 14px/20px var(--cs-font, inherit); color: var(--cs-fg1, #111); }
+body .qb-act { display: flex; flex-wrap: wrap; gap: 6px; }
+body .wl-res { border-top: 1px solid var(--cs-st2, #e5e5e5); margin-top: 12px; padding-top: 4px; }
+body .wl-ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; font: 400 14px/20px var(--cs-font, inherit); }
+body .wl-ul .btn { margin-top: 4px; }
+body .wl-past { margin-top: 12px; } body .wl-past summary { cursor: pointer; font: 600 13px/18px var(--cs-font, inherit); }
