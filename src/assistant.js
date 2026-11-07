@@ -82,6 +82,7 @@
   document.addEventListener('input', e => { if (e.target && e.target.id === 'asM') { e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 140) + 'px'; } });   // the message box grows with the text
   document.addEventListener('input', e => { if (e.target && e.target.id === 'asQ') { st().q = e.target.value; st().sig = ''; paint(); } });
   V.assistantPaint = paint;
+  V.asstViewOf = j => { const m = /Tab:\s*([a-z_]{2,24})\s*$/i.exec(String(j.summary || '')); if (m && V[m[1].toLowerCase()] && V[m[1].toLowerCase()].html) return m[1].toLowerCase(); return OPEN[j.kind] ? OPEN[j.kind][0] : ''; };   // the tab a finished job belongs to (the sidebar dot)
   setInterval(() => {   // every two seconds: keep the panel in step with the project that is open; ask for the jobs list now and then
     try { ticks++; if (team() && J()) { const k = J().K(); if (k.pid !== S.project.id || !k.jobs) J().load(false); else if (ticks % 7 === 0 && (st().open || k.jobs.some(j => ['waiting', 'claimed', 'needs_input'].includes(j.status)))) J().load(true); } paint(); } catch (e) { /* the panel is optional: never break a page */ }
   }, 2000);
