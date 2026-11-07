@@ -1,0 +1,35 @@
+/* Solution tab (src/solution.js). Fluent 2 tokens only: no gradients, no custom shadows. Loaded before fluent.css, so the --fl-* tokens win where they overlap. */
+body .card.fl-sol-all { background: none; border: 0; box-shadow: none; padding: 0; display: flex; flex-direction: column; gap: 16px; }
+body .fl-sol { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 16px; align-items: start; }
+body .fl-sol-n { background: var(--fl-bg1); border: 1px solid var(--fl-st2); border-radius: var(--fl-r-card); padding: 8px; display: flex; flex-direction: column; gap: 12px; position: sticky; top: 8px; max-height: calc(100vh - 32px); overflow: auto; }
+body .fl-sol-g h3 { margin: 0 0 4px; padding: 0 8px; font: 600 12px/16px var(--fl-font); color: var(--fl-fg3); }
+body .fl-sol-i { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 32px; padding: 4px 8px; border: 0; border-radius: 4px; background: transparent; color: var(--fl-fg1); font: 400 14px/20px var(--fl-font); text-align: left; cursor: pointer; }
+body .fl-sol-i:hover { background: var(--fl-bg3); }
+body .fl-sol-i.on { background: var(--fl-brand-soft); color: var(--fl-brand-text); font-weight: 600; }
+body .fl-sol-i:focus-visible { outline: 2px solid var(--fl-brand); outline-offset: -2px; }
+body .fl-sol-i em { font: 600 12px/16px var(--fl-font); font-style: normal; color: var(--fl-brand-text); }
+body .fl-sol-chip { font: 600 12px/16px var(--fl-font); padding: 0 6px; border-radius: 4px; background: var(--fl-bg6); color: var(--fl-fg2); white-space: nowrap; }
+body .fl-sol-chip[data-s="agreed"] { background: var(--fl-success-soft); color: var(--fl-success); }
+body .fl-sol-chip[data-s="changed-by-customer"] { background: var(--fl-warn-soft); color: var(--fl-fg1); }
+body .fl-sol-dh { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+body .fl-sol-dh .fl-card-h { margin-right: auto; }
+body .fl-sol-d textarea { width: 100%; box-sizing: border-box; font: 400 14px/20px var(--fl-font); }
+body .fl-sol-r { background: var(--fl-bg2); border-radius: 4px; padding: 8px 12px; }
+body .fl-sol-r h4, body .fl-sol-h h4 { margin: 0 0 4px; font: 600 14px/20px var(--fl-font); color: var(--fl-fg1); }
+body .fl-sol-r ul { margin: 0; padding-left: 18px; font: 400 14px/20px var(--fl-font); }
+body .fl-sol-sv { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+body .fl-sol-sv input { flex: 1 1 220px; }
+body .fl-sol-ask { border-top: 1px solid var(--fl-st2); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+body .fl-sol-ps { display: flex; flex-direction: column; gap: 12px; }
+body .fl-sol-p { border: 1px solid var(--fl-brand); border-radius: var(--fl-r-card); padding: 12px; display: flex; flex-direction: column; gap: 8px; background: var(--fl-bg1); }
+body .fl-sol-ph { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+body .fl-sol-warn { font: 600 12px/16px var(--fl-font); color: var(--fl-fg1); background: var(--fl-warn-soft); border-radius: 4px; padding: 0 6px; }
+body .fl-sol-diff { white-space: pre-wrap; font: 400 14px/20px var(--fl-font); background: var(--fl-bg2); border-radius: 4px; padding: 8px 12px; }
+body .fl-sol-diff ins { background: var(--fl-success-soft); text-decoration: none; }
+body .fl-sol-diff del { background: var(--fl-danger-soft); color: var(--fl-danger); }
+body .fl-sol-h ol { margin: 8px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 12px; }
+body .fl-sol-old { white-space: pre-wrap; font: 400 13px/18px var(--fl-font); color: var(--fl-fg2); margin: 2px 0 4px; }
+body .fl-sol-all-ask, body .fl-sol-cov { background: var(--fl-bg1); border: 1px solid var(--fl-st2); border-radius: var(--fl-r-card); padding: 8px 12px; }
+body .fl-sol-all-ask summary, body .fl-sol-cov summary, body .fl-sol-h summary { cursor: pointer; font: 600 14px/20px var(--fl-font); }
+body .fl-sol-all-ask textarea { width: 100%; box-sizing: border-box; margin: 8px 0; }
+@media (max-width: 900px) { body .fl-sol { grid-template-columns: 1fr; } body .fl-sol-n { position: static; max-height: none; } }

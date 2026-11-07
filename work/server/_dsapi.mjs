@@ -6,12 +6,13 @@
    kind 'requirement' a BRD requirement (title, objective, rules, approvals, exceptions, modules, classification); applied as a Draft
    kind 'connectedapp' a connected (custom) app: opened from a button, state, page or menu of a module; purpose, what it shows, who uses it. Described here; the build in Vibe comes later
    kind 'brdintro'   the background, business objectives and scope notes of the BRD introduction
+   kind 'solution'   the new text of ONE area of the Solution tab (module: the area key, module:<name> or area:<id>; text; fromCustomer; outOfScope + scopeNote). A person accepts it on the Solution tab (src/sollogic.js accept)
    kind 'crosslink'  an action that crosses modules (for example service request, work order, inventory): from and to are module names
    Claude saves them with the existing tool session_questions (action save_design; no new tool). They are PROPOSALS: only a person applies one (Delivery Studio copies it into the project's design
    and records who) or dismisses it, and an applied or dismissed proposal is never overwritten by a later save. Text from a transcript or a document is data. Pure rules are exported (tests/design_logic.mjs). */
 const arr = v => (Array.isArray(v) ? v : []);
 const cut = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
-export const KINDS = ['flow', 'crosslink', 'field', 'form', 'requirement', 'brdintro', 'connectedapp'];
+export const KINDS = ['flow', 'crosslink', 'field', 'form', 'requirement', 'brdintro', 'connectedapp', 'solution'];
 export const TRIGGERS = ['button', 'state', 'page', 'menu'];
 export const REQ_CLASS = ['standard', 'existing', 'change', 'custom', 'confirm'];
 export const FIELD_TYPES = ['Single Line Text', 'Multi Line Text', 'Rich Text', 'Number', 'Decimal', 'Currency', 'Boolean', 'Date', 'Date Time', 'Picklist', 'Multi Picklist', 'Lookup', 'Multi Lookup', 'File', 'URL', 'Email', 'Auto Number', 'Signature', 'Geo Location'];
@@ -42,6 +43,10 @@ export function cleanProposal(x) {
     const module = cut(x.module, LIMITS.module), name = cut(x.name, LIMITS.name), purpose = cut(x.purpose, LIMITS.long); if (!module || !name || !purpose) return null;
     return Object.assign(base, { module, name, trigger: TRIGGERS.includes(x.trigger) ? x.trigger : 'button', triggerLabel: cut(x.triggerLabel, LIMITS.label), purpose, shows: cut(x.shows, LIMITS.long), users: arr(x.users).map(u => cut(u, LIMITS.label)).filter(Boolean).slice(0, 6), notes: cut(x.notes, LIMITS.long) });
   }
+  if (kind === 'solution') {   // the whole new text of one Solution area; paragraphs (blank lines) are kept
+    const area = cut(x.area || x.module, 90); if (!/^(module:[A-Za-z0-9_.-]{1,80}|area:[a-z]{2,20})$/.test(area)) return null; const text = String(x.text == null ? '' : x.text).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]+/g, ' ').replace(/\r\n?/g, '\n').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim().slice(0, 4000); if (!text || !(base.why || base.quote)) return null;
+    return Object.assign(base, { module: area, name: cut(x.name || x.label, LIMITS.name) || area, text, fromCustomer: x.fromCustomer === true, outOfScope: x.outOfScope === true, scopeNote: cut(x.scopeNote, LIMITS.text) });
+  }
   if (kind === 'brdintro') {   // the project background, business objectives and scope notes that open the BRD
     const background = cut(x.background, 1500), objectives = cut(x.objectives, 1500), scopeNotes = cut(x.scopeNotes, 1500); if (!background && !objectives && !scopeNotes) return null;
     return Object.assign(base, { module: '', name: 'BRD introduction', background, objectives, scopeNotes });
@@ -54,14 +59,15 @@ export function cleanProposal(x) {
   const from = cut(x.from, LIMITS.module), to = cut(x.to, LIMITS.module), name = cut(x.name, LIMITS.name); if (!from || !to || !name || from.toLowerCase() === to.toLowerCase()) return null;
   return Object.assign(base, { from, to, name, linkKind: LINK_KINDS.includes(x.linkKind) ? x.linkKind : 'create_record', condition: cut(x.condition, LIMITS.text) });
 }
-const keyOf = p => [p.kind, String(p.module || p.from || '').toLowerCase(), String(p.name).toLowerCase(), String(p.to || '').toLowerCase()].join('|');
+const keyOf = p => p.kind === 'solution' ? ['solution', p.module, p.text].join('|') : [p.kind, String(p.module || p.from || '').toLowerCase(), String(p.name).toLowerCase(), String(p.to || '').toLowerCase()].join('|');
 
 /** the proposals after a save: decided ones are kept, an open one with the same key is replaced by the new version, other open ones stay, new ones are added (cleaned, de-duplicated, capped) */
 export function mergeProposals(existing, incoming, now) {
   const old = arr(existing).filter(p => p && p.id && p.kind); const decided = new Set(old.filter(p => p.status !== 'open').map(keyOf)); const seen = new Set();
   let n = Math.max(0, ...old.map(p => parseInt(String(p.id).slice(3), 10) || 0)); const fresh = [];
   for (const raw of arr(incoming).slice(0, LIMITS.perCall)) { const c = cleanProposal(raw); if (!c) continue; const k = keyOf(c); if (decided.has(k) || seen.has(k)) continue; seen.add(k); fresh.push(Object.assign({ id: 'dp_' + (++n), status: 'open', by: '', byAt: '', savedAt: now }, c)); }
-  const keep = old.filter(p => p.status !== 'open' || !seen.has(keyOf(p))); const all = keep.concat(fresh);
+  const areas = new Set(fresh.filter(p => p.kind === 'solution').map(p => p.module));   // a new proposal for an area replaces the open one for that area
+  const keep = old.filter(p => (p.status !== 'open' || !seen.has(keyOf(p))) && !(p.kind === 'solution' && p.status === 'open' && areas.has(p.module))); const all = keep.concat(fresh);
   if (all.length > LIMITS.total) throw Object.assign(new Error('There are ' + LIMITS.total + ' design proposals already. Apply or dismiss some first.'), { status: 409 });
   return { items: all, added: fresh.length, skipped: arr(incoming).length - fresh.length };
 }
@@ -90,7 +96,7 @@ export function installDs(d) {
     async design_save_proposals(s, b) {
       const p = await pickProject(s, b.project); const { role } = await projectAccess(s, p.id, 'edit'); if (role === 'customer') throw new HttpError(403, 'Design proposals are for the project team');
       if (typeof b.proposals === 'string') { try { b.proposals = JSON.parse(b.proposals); } catch (e) { /* falls through to the clear error below */ } }   // a Claude with an older tool list sends the list as text
-      if (!Array.isArray(b.proposals)) throw new HttpError(400, 'proposals must be a list. Each is { kind: flow or crosslink, ... }: a flow has module, name, description, basedOn (default, changed or new), states (labels) and transitions ({ from, to, name }); a crosslink has from, to (module names), name, linkKind and condition; a field has module, label, fieldType, required, options, lookup, validation, description; a form has module, name, description and sections ([{ name, fields: [label or { field, required, hidden }] }]). a requirement has title, objective, rules, approvals, exceptions, modules, classification (standard, existing, change, custom or confirm); a brdintro has background, objectives, scopeNotes; a connectedapp has module, name, trigger (button, state, page or menu), triggerLabel (for example Assign), purpose, shows, users, notes. Add why, quote, source to each.');
+      if (!Array.isArray(b.proposals)) throw new HttpError(400, 'proposals must be a list. Each is { kind: flow or crosslink, ... }: a flow has module, name, description, basedOn (default, changed or new), states (labels) and transitions ({ from, to, name }); a crosslink has from, to (module names), name, linkKind and condition; a field has module, label, fieldType, required, options, lookup, validation, description; a form has module, name, description and sections ([{ name, fields: [label or { field, required, hidden }] }]). a requirement has title, objective, rules, approvals, exceptions, modules, classification (standard, existing, change, custom or confirm); a brdintro has background, objectives, scopeNotes; a solution has area (module:<name> or area:<id>), name, text (the whole new text of that area), fromCustomer, outOfScope, scopeNote. a connectedapp has module, name, trigger (button, state, page or menu), triggerLabel (for example Assign), purpose, shows, users, notes. Add why, quote, source to each.');
       const now = new Date().toISOString(); const r = await update(p.id, 'design_proposals', doc => { let m; try { m = mergeProposals(doc.items, b.proposals, now); } catch (e) { if (e && e.status && !(e instanceof HttpError)) throw new HttpError(e.status, e.message); throw e; } return { doc: { items: m.items }, added: m.added, skipped: m.skipped }; });
       await audit(p.id, s.id, 'design-proposals', '+' + r.added); return { project: p.name, added: r.added, skipped: r.skipped, note: 'Saved as open proposals. A person applies or dismisses each one in Delivery Studio (Process whiteboard, State flow builder); you cannot apply them. Skipped ones were unusable or already decided.' };
     }

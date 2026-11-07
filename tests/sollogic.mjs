@@ -1,0 +1,52 @@
+// Solution tab rules (src/sollogic.js): areas, requirement lines, versions, restore, accepting a proposal, word diff, BRD text and Word rows,
+// plus the server side: a solution proposal is cleaned, kept per area, never touched once decided.
+import assert from 'node:assert/strict'; import { createRequire } from 'node:module';
+import { cleanProposal, mergeProposals } from '../work/server/_dsapi.mjs';
+const L = createRequire(import.meta.url)('../src/sollogic.js'); let n = 0; const t = (name, fn) => { fn(); n++; console.log('  ok  ' + name); };
+const A = '2026-11-07T10:00:00Z', B = '2026-11-07T11:00:00Z';
+t('areas: modules in scope first, then the fixed areas', () => { const a = L.areasFor([{ name: 'workorder', label: 'Work Order' }]); assert.equal(a[0].key, 'module:workorder'); assert.equal(a[0].group, 'Modules'); assert.ok(a.some(x => x.key === 'area:sla')); assert.ok(a.every(x => L.GROUPS.includes(x.group))); });
+t('requirement lines: only confirmed ones of that module, read live', () => {
+  const reqs = [{ id: 'WO-001', status: 'Confirmed', modules: ['workorder'], objective: 'Approve before work' }, { id: 'WO-002', status: 'Draft', modules: ['workorder'] }, { id: 'AS-001', status: 'Confirmed', modules: ['asset'] }];
+  assert.deepEqual(L.reqLines(reqs, 'module:workorder').map(r => r.id), ['WO-001']); assert.deepEqual(L.reqLines(reqs, 'area:sla'), []);
+});
+t('saving keeps the previous text as a version with who, when and why; restore adds a new version', () => {
+  let d = L.save({}, 'module:workorder', 'First text', { by: 'a@x.com', at: A, why: 'first' }); assert.equal(L.textOf(d, 'module:workorder'), 'First text'); assert.equal(L.recOf(d, 'module:workorder').versions.length, 0);
+  d = L.save(d, 'module:workorder', 'Second text', { by: 'b@x.com', at: B, why: 'customer call' }); const r = L.recOf(d, 'module:workorder'); assert.equal(r.versions.length, 1); assert.deepEqual([r.versions[0].text, r.versions[0].by, r.versions[0].at, r.versions[0].why], ['First text', 'a@x.com', A, 'first']);
+  const back = L.restore(d, 'module:workorder', 0, 'c@x.com', B); assert.equal(L.textOf(back, 'module:workorder'), 'First text'); assert.equal(L.recOf(back, 'module:workorder').versions[0].text, 'Second text'); assert.throws(() => L.restore(d, 'module:workorder', 5, 'c', B));
+});
+t('the same text saved again adds no version; a bad key is refused; text is cleaned and capped; history is capped', () => {
+  let d = L.save({}, 'area:apps', 'Same', { at: A }); d = L.save(d, 'area:apps', 'Same', { at: B }); assert.equal(L.recOf(d, 'area:apps').versions.length, 0); assert.equal(L.recOf(d, 'area:apps').updatedAt, A);
+  assert.throws(() => L.save({}, '../x', 'a')); assert.equal(L.textOf(L.save({}, 'area:apps', 'a\u0000b'), 'area:apps'), 'a b'); assert.equal(L.recOf(L.save({}, 'area:apps', 'x'.repeat(9000)), 'area:apps').text.length, 6000);
+  for (let i = 0; i < 40; i++) d = L.save(d, 'area:apps', 'v' + i, { at: A }); assert.equal(L.recOf(d, 'area:apps').versions.length, 30);
+});
+t('status: Not written, Draft, Agreed, and Changed by customer when a customer proposal is accepted (quote kept as a source)', () => {
+  assert.equal(L.statusOf({}, 'area:sla'), 'Not written'); let d = L.save({}, 'area:sla', 'Text', { at: A }); assert.equal(L.statusOf(d, 'area:sla'), 'Draft'); d = L.save(d, 'area:sla', 'Text', { status: 'Agreed', at: B }); assert.equal(L.statusOf(d, 'area:sla'), 'Agreed');
+  const p = { kind: 'solution', module: 'area:sla', text: 'New text', why: 'differs', quote: 'two levels', source: 'cust.docx p2', fromCustomer: true }; const e = L.accept(d, p, 'a@x.com', B); const r = L.recOf(e, 'area:sla');
+  assert.equal(r.status, 'Changed by customer'); assert.equal(r.text, 'New text'); assert.equal(r.sources[0].quote, 'two levels'); assert.equal(r.versions[0].text, 'Text'); assert.throws(() => L.accept(d, { kind: 'flow' }, 'a', B));
+});
+t('the word diff marks removed and added words and rebuilds both texts', () => {
+  const d = L.diff('the approval has one level', 'the approval has two levels'); assert.ok(d.some(x => x.t === 'del') && d.some(x => x.t === 'add'));
+  assert.equal(d.filter(x => x.t !== 'add').map(x => x.w).join(''), 'the approval has one level'); assert.equal(d.filter(x => x.t !== 'del').map(x => x.w).join(''), 'the approval has two levels'); assert.deepEqual(L.diff('same', 'same'), [{ t: 'same', w: 'same' }]);
+});
+t('the BRD reads the solution: paragraphs per blank line, and only the fixed areas that have text', () => {
+  const d = L.save(L.save({}, 'module:workorder', 'One.\nstill one.\n\nTwo.', { at: A }), 'area:kpis', 'KPI text', { at: A });
+  assert.deepEqual(L.paras(L.textOf(d, 'module:workorder')), ['One. still one.', 'Two.']); assert.deepEqual(L.paras(''), []); assert.deepEqual(L.otherAreas(d).map(a => a.key), ['area:kpis']); assert.equal(L.otherAreas({}).length, 0);
+});
+t('Word rows: Module | Customer requirement | Solution, only areas with something, and a missing solution says so', () => {
+  const areas = L.areasFor([{ name: 'workorder', label: 'Work Order' }, { name: 'asset', label: 'Asset' }]); const reqs = [{ id: 'WO-001', status: 'Confirmed', modules: ['workorder'], objective: 'Approve first' }, { id: 'AS-001', status: 'Confirmed', modules: ['asset'], objective: 'Tag assets' }];
+  const d = L.save({}, 'module:workorder', 'Two-level approval', { at: A }); const rows = L.wordRows(areas, d, reqs);
+  assert.deepEqual(rows[0], ['Work Order', 'WO-001 Approve first', 'Two-level approval']); assert.deepEqual(rows[1], ['Asset', 'AS-001 Tag assets', 'To be written']); assert.equal(rows.length, 2);
+});
+t('open proposals of one area', () => { const ps = [{ kind: 'solution', status: 'open', module: 'area:sla' }, { kind: 'solution', status: 'applied', module: 'area:sla' }, { kind: 'flow', status: 'open' }]; assert.equal(L.proposalsFor(ps, 'area:sla').length, 1); assert.equal(L.proposalsFor(ps).length, 1); });
+t('server: a solution proposal needs a valid area, a text and evidence; paragraphs survive', () => {
+  const ok = cleanProposal({ kind: 'solution', area: 'module:workorder', name: 'Work Order', text: 'A.\n\n\n\nB   c', why: 'asked', quote: 'q', fromCustomer: true, outOfScope: true, scopeNote: 'p4' });
+  assert.equal(ok.module, 'module:workorder'); assert.equal(ok.text, 'A.\n\nB c'); assert.equal(ok.fromCustomer, true); assert.equal(ok.outOfScope, true);
+  assert.equal(cleanProposal({ kind: 'solution', area: 'bad key', text: 'x', why: 'y' }), null); assert.equal(cleanProposal({ kind: 'solution', area: 'area:sla', text: '', why: 'y' }), null); assert.equal(cleanProposal({ kind: 'solution', area: 'area:sla', text: 'x' }), null, 'no why and no quote');
+});
+t('server: a new proposal replaces the open one of that area; a decided one stays; the same text is not proposed again', () => {
+  const p = (text, extra) => Object.assign({ kind: 'solution', area: 'area:sla', name: 'SLA', text, why: 'w' }, extra || {});
+  const a = mergeProposals([], [p('v1'), p('other', { area: 'area:kpis', name: 'K' })], A); assert.equal(a.added, 2);
+  const b = mergeProposals(a.items, [p('v2')], B); assert.equal(b.items.filter(x => x.module === 'area:sla').length, 1); assert.equal(b.items.find(x => x.module === 'area:sla').text, 'v2'); assert.equal(b.items.filter(x => x.module === 'area:kpis').length, 1);
+  const done = b.items.map(x => (x.module === 'area:sla' ? Object.assign({}, x, { status: 'dismissed' }) : x)); const c = mergeProposals(done, [p('v2'), p('v3')], B); assert.equal(c.added, 1); assert.equal(c.items.filter(x => x.module === 'area:sla').length, 2);
+});
+console.log(n + ' solution checks passed');

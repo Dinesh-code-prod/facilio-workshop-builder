@@ -55,7 +55,7 @@
   }
   /** the panel shown above the whiteboard and the state flow builder */
   V.designPanel = () => {
-    if (!team() || /[?&]focus=whiteboard/.test(root.location ? root.location.search : '')) return ''; const all = items(), open = all.filter(p => p.status === 'open'), done = all.length - open.length;
+    if (!team() || /[?&]focus=whiteboard/.test(root.location ? root.location.search : '')) return ''; const all = items().filter(p => p.kind !== 'solution'), open = all.filter(p => p.status === 'open'), done = all.length - open.length;
     const j = J() && J().K() && Array.isArray(J().K().jobs) ? J().K().jobs.filter(x => x.kind === 'capture_flows' && ['waiting', 'claimed', 'needs_input'].includes(x.status)).length : 0;
     const jf = J() && J().K() && Array.isArray(J().K().jobs) ? J().K().jobs.filter(x => x.kind === 'fill_forms' && ['waiting', 'claimed', 'needs_input'].includes(x.status)).length : 0;
     const apps = all.filter(p => p.kind === 'connectedapp' && p.status === 'applied');
@@ -77,6 +77,7 @@
     if (!(await J().saved('design_proposals'))) { J().setDoc('design_proposals', prev); S.docs.design_proposals.dirty = false; V.render(); toast('Not saved: the server refused it or someone changed this at the same time. Nothing was changed; try again.', 7000, true); return false; }
     return true;
   };
+  V.designDecide = decide;   // the Solution tab accepts and dismisses its own proposals through the same saved-or-undone rule
   ACT.dsApply = async a => {
     const id = a.getAttribute('data-id'); let undo = null;
     const ok = await decide(id, 'applied', p => {

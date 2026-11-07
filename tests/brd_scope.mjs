@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'; import { createRequire } from 'node:module'; import zlib from 'node:zlib'; import { REFERENCE_GZ_B64 } from '../data/reference-data.mjs';
 const req = createRequire(import.meta.url); globalThis.FWBParser = req('../src/parser.js'); req('../src/core.js'); const F = globalThis.FWB; const S = F.S;
 globalThis.FWBViews = { ACT: {}, toast() { }, isCustomer: () => false, ui: {}, extraSections: [], loadingMsg() { }, ico: () => '', crossLinks: () => [] };
-req('../src/textgen.js'); req('../src/diagrams.js'); req('../src/roles.js'); req('../src/brd.js');
+req('../src/textgen.js'); req('../src/diagrams.js'); req('../src/roles.js'); globalThis.FWBSolutionLogic = req('../src/sollogic.js'); req('../src/brd.js');
 S.baseline = JSON.parse(zlib.gunzipSync(Buffer.from(REFERENCE_GZ_B64, 'base64')).toString()); S.project = { id: 'p1', name: 'T', customer: 'C' }; S.user = { name: 'A', email: 'a@x.com' };
 const build = scope => { S.ws = F.newWorkshop(); scope.forEach(m => { S.ws.modules[m] = { inScope: true }; }); return globalThis.FWBBrd.buildBlocks().blocks; };
 const table = (bl, first) => bl.find(b => b.rows && b.headers && b.headers[0] === first);
@@ -58,3 +58,11 @@ S.ws.modules.workorder.agreedAutomation = '   '; bl = globalThis.FWBBrd.buildBlo
   S.ws.slaMatrix = []; globalThis.FWBViews.items = { ready: () => true, load() { }, get: () => null, list: () => [] }; const b5 = globalThis.FWBBrd.buildBlocks().blocks; assert.ok(!b5.some(x => x.t === 'h' && /SLA Matrix|KPIs and Reporting/.test(x.text || '')), 'nothing recorded, no section');
 }
 console.log('11 BRD scope and format checks passed');
+{   // the BRD reads the Solution tab (document `solutions`): module text under Solution Proposal, the other areas in their own section, nothing typed in the BRD
+  F.doc('solutions').items = { 'module:workorder': { text: 'Solution para one.\n\nSolution para two.', status: 'Agreed' }, 'area:sla': { text: 'The SLA wording.', status: 'Draft' } };
+  const bs = build(['workorder']); const ix = bs.findIndex(b => b.t === 'p' && b.text === 'Solution para one.');
+  assert.ok(ix > 0 && bs[ix + 1].text === 'Solution para two.' && bs.slice(0, ix).reverse().find(b => b.t === 'h').text.includes('Solution Proposal'), 'module solution paragraphs sit under Solution Proposal');
+  const oh = bs.findIndex(b => b.t === 'h' && /Agreed Solution: Other Areas/.test(b.text)); assert.ok(oh > 0 && bs.slice(oh).some(b => b.text === 'SLA and escalation matrix') && bs.slice(oh).some(b => b.text === 'The SLA wording.'), 'other areas with text get a section');
+  F.doc('solutions').items = {}; assert.ok(!build(['workorder']).some(b => /Agreed Solution: Other Areas|Solution para/.test(b.text || '')), 'no solution text: no section');
+  console.log('BRD built from the solution records');
+}
