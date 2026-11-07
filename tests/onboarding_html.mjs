@@ -23,14 +23,14 @@ t('the file asks for nothing from outside: no web addresses, no frame or form, a
   assert.ok(!/https?:\/\//i.test(html), 'no web address'); assert.ok(!/<(iframe|form|link|img|embed|object)\b/i.test(html)); assert.ok(!/\bsrc=|\bhref="(?!#)/i.test(html));
   assert.match(html, /Content-Security-Policy" content="default-src 'none'/); assert.ok(!/fetch\(|XMLHttpRequest|sendBeacon|WebSocket/.test(html)); });
 t('it has the welcome, a card per sheet with fields and a sample row, the files, the questions and the download', () => {
-  ['id="welcome"', 'id="sheet-site"', 'id="sheet-asset"', 'Fields and formats', 'A sample row', 'Upload requirements', 'id="files"', 'id="questions"', 'Download your completed package', 'role="progressbar"', 'Please send by 2026-12-01'].forEach(s => assert.ok(html.includes(s), s));
+  ['id="welcome"', 'id="sheet-site"', 'id="sheet-asset"', 'Fields and formats', 'A sample row', 'Upload requirements', 'id="files"', 'id="questions"', 'Save workbook', 'Download the answers only', 'role="progressbar"', 'Please send by 2026-12-01'].forEach(s => assert.ok(html.includes(s), s));
   assert.ok(!html.includes('Please send by undefined')); });
 t('colours stay in the Facilio palette (no violet or purple, no glow)', () => { assert.ok(!/purple|violet|glow|#7c3aed|#8b5cf6/i.test(html)); ['#1D1A5E', '#1570EF', '#E5197F', '#8DB8FF'].forEach(c => assert.ok(html.includes(c), c)); });
 t('every project string is escaped, in the page and in the data block', () => {
   const evil = '<script>alert(1)</script>"\'`${x}&';
   const h = H.buildOnboardingHtml({ id: 'p_<x>', name: evil, customer: evil }, { scope: [evil], modules: [evil], plan: { lead: evil, tip: evil, master: [{ mod: evil, need: evil, skip: evil, sheets: [evil] }], sheets: [{ sheet: evil, crit: evil, due: evil, why: [evil], purpose: evil, steps: [evil], watch: [evil], before: [evil], mistakes: [evil], cols: [{ ent: evil, h: evil, req: true, doc: evil, rule: evil, ex: evil }] }], files: [{ id: evil, name: evil, ask: evil, mods: [evil] }] }, upload: { ext: [evil], maxMB: 1 }, fmt: d => d });
   assert.ok(!h.includes('<script>alert'), 'raw script tag'); assert.ok(!h.includes('alert(1)</script>')); assert.ok(!/<(img|svg|iframe)/i.test(h));
-  assert.equal((h.match(/<script/g) || []).length, 2, 'only the two script blocks of the page'); assert.ok(h.includes('&lt;script&gt;alert(1)&lt;/script&gt;&quot;&#39;`${x}&amp;'));
+  assert.equal((h.match(/<script/g) || []).length, 3, 'only the three script blocks of the page (spec, saved data holder, script)'); assert.ok(h.includes('&lt;script&gt;alert(1)&lt;/script&gt;&quot;&#39;`${x}&amp;'));
   assert.ok(!/ on[a-z]+\s*=/i.test(h.replace(/<script>[\s\S]*<\/script>/, '')), 'no inline handler');
   const m = /<script type="application\/json" id="spec">([\s\S]*?)<\/script>/.exec(h); assert.ok(m && !/[<>&]/.test(m[1])); assert.equal(JSON.parse(m[1]).project.name, evil); });
 t('the page script parses, and the data block is valid JSON', () => {

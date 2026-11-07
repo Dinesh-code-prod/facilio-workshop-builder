@@ -56,6 +56,40 @@
       return { ok: errors.length === 0, errors, warnings, clean: errors.length ? null : clean };
     } catch (e) { return { ok: false, errors: errors.concat(['The package could not be checked.']), warnings, clean: null }; }
   }
-  const api = { validateReturn, SCHEMA, VERSION, MAX_BYTES, FILE_EXTS };
+  // A saved workbook: the customer's page downloaded again with their data inside (a JSON block with id "wbdata"). The HTML is never run or rendered here; only that block is read as text and checked.
+  // rules: { grids:[{ key, sheet, ent, cols:[header] }], answerIds, checklistIds }. Returns { ok, errors, warnings, clean:{ rows:{ gridKey:[[cell]] }, answers, checklist, rowCount } }; never throws.
+  const WB_SCHEMA = 'fds-onboarding-workbook', WB_MAX_BYTES = 20e6, WB_MAX_ROWS = 5000, WB_MAX_CELL = 500;
+  function validateWorkbookHtml(text, project, rules) {
+    const errors = [], warnings = [], fail = () => ({ ok: false, errors, warnings, clean: null });
+    try {
+      const R = rules || {}; const grids = R.grids || [];
+      if (typeof text !== 'string' || !text.trim()) { errors.push('The file is empty.'); return fail(); }
+      if (text.length > WB_MAX_BYTES) { errors.push('The file is larger than ' + (WB_MAX_BYTES / 1e6) + ' MB, so it was not read.'); return fail(); }
+      const m = /<script[^>]*\bid="wbdata"[^>]*>([\s\S]*?)<\/script>/i.exec(text);
+      if (!m || !m[1].trim()) { errors.push('No saved workbook was found in this file. Ask the customer to press Save workbook on the page and send that file.'); return fail(); }
+      let w; try { w = JSON.parse(m[1]); } catch (e) { errors.push('The saved data in this file is not readable.'); return fail(); }
+      if (!isObj(w)) { errors.push('The saved data is not an object.'); return fail(); }
+      const h = hostile(w, 0, { n: 0 }); if (h) { errors.push('The file was refused: ' + h + '.'); return fail(); }
+      if (w.schema !== WB_SCHEMA) { errors.push('This is not a saved onboarding workbook.'); return fail(); }
+      if (w.version !== 1) { errors.push('Unsupported workbook version.'); return fail(); }
+      const pid = project && project.id != null ? String(project.id) : '';
+      if (!isObj(w.project) || typeof w.project.id !== 'string' || !pid || w.project.id !== pid) { errors.push('The workbook is for a different project' + (isObj(w.project) && w.project.name ? ' ("' + String(w.project.name).slice(0, 60) + '")' : '') + '.'); return fail(); }
+      const clean = { rows: {}, answers: {}, checklist: {}, rowCount: 0, savedAt: typeof w.savedAt === 'string' && w.savedAt.length <= 40 && !isNaN(Date.parse(w.savedAt)) ? w.savedAt : '' };
+      if (!isObj(w.rows)) { errors.push('The saved data has no rows.'); return fail(); }
+      const byKey = {}; grids.forEach(g => { byKey[g.key] = g; });
+      Object.keys(w.rows).forEach(k => {
+        const g = byKey[k]; if (!g) { warnings.push('Ignored data for "' + k.slice(0, 40) + '": this project has no such sheet (the plan may have changed since the page was sent).'); return; }
+        const rows = w.rows[k]; if (!Array.isArray(rows)) { errors.push('The rows of "' + g.sheet + '" are not a list.'); return; }
+        if (rows.length > WB_MAX_ROWS) { errors.push('"' + g.sheet + '" has more than ' + WB_MAX_ROWS + ' rows.'); return; }
+        const out = []; rows.forEach(r => { if (!Array.isArray(r)) return; const cells = g.cols.map((_, c) => { const v = r[c]; return v == null ? '' : String(v).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ' ').slice(0, WB_MAX_CELL); }); if (cells.some(x => x.trim())) out.push(cells); });
+        if (out.length) { clean.rows[k] = out; clean.rowCount += out.length; }
+      });
+      if (isObj(w.answers)) Object.keys(w.answers).forEach(k => { const v = w.answers[k]; if ((R.answerIds || []).includes(k) && typeof v === 'string' && v.trim()) clean.answers[k] = v.slice(0, MAX_ANSWER); });
+      if (isObj(w.checklist)) Object.keys(w.checklist).forEach(k => { if ((R.checklistIds || []).includes(k) && typeof w.checklist[k] === 'boolean') clean.checklist[k] = w.checklist[k]; });
+      if (!errors.length && !clean.rowCount) warnings.push('The workbook has no data rows yet.');
+      return { ok: errors.length === 0, errors, warnings, clean: errors.length ? null : clean };
+    } catch (e) { return { ok: false, errors: errors.concat(['The workbook could not be checked.']), warnings, clean: null }; }
+  }
+  const api = { validateReturn, validateWorkbookHtml, SCHEMA, VERSION, MAX_BYTES, FILE_EXTS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBOnbReturn = api;
 })(typeof window !== 'undefined' ? window : globalThis);
