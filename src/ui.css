@@ -547,3 +547,8 @@ body .hm-hero .hm-btn.ghost:not(#_):not(#__), body .hm-hero .btn:not(.primary):n
 body .hm-hero .hm-btn.ghost:not(#_):not(#__):hover { background: rgba(255, 255, 255, .14) !important; border-color: rgba(255, 255, 255, .3) !important; }
 body .hm-hero h1:not(#_):not(#__) { font-family: var(--cs-font) !important; font-weight: 600 !important; letter-spacing: -.03em !important; }
 body .hm-hero .hm-hi:not(#_):not(#__) { font: 500 13px/18px var(--cs-font) !important; letter-spacing: 0 !important; }
+/* sign-in left side: a tighter header (the two buttons sit on one row) so the story below gets the room */
+body .auth-art .av-copy:not(#_):not(#__) { margin-top: clamp(10px, 2.5vh, 28px) !important; }
+body .auth-art a.av-learn:not(#_):not(#__) { min-height: 40px !important; margin: 10px 8px 0 0 !important; padding: 4px 14px 4px 4px !important; font-size: 14px !important; gap: 10px !important; }
+body .auth-art a.av-learn.av-disc:not(#_):not(#__) { margin-left: 0 !important; }
+body .auth-art a.av-learn .av-play:not(#_):not(#__) { width: 30px !important; height: 30px !important; flex: none; }

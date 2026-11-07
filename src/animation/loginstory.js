@@ -1,6 +1,6 @@
 /* Sign-in page, left side: a canvas story that fills the left column of the sign-in page (replaces the earlier CSS story).
    Facilio team: an AI-assisted delivery studio. Inputs flow into one project, AI suggests first drafts, people review and own every deliverable,
-   and the project moves round the 12-stage tracker. Customer (invite links #/c/...): scattered email and files pull together into one lane
+   and the project settings are drafted from them for a person to review. Customer (invite links #/c/...): scattered email and files pull together into one lane
    across a city, through kick-off, workshops, approval and testing to go-live.
    Drawn with Canvas 2D in the Facilio colours; the canvas sits behind the page text and never takes clicks. Plays once per page view
    (a re-render, for example after an error message, continues where it was), pauses in a hidden tab, and shows the finished picture for
@@ -18,22 +18,22 @@
   const eIO = t => { t = clamp(t, 0, 1); return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
   const eBack = t => { t = clamp(t, 0, 1); const c = 1.7; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
   function rng(seed) { let s = seed >>> 0; return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296; }
-  const FONT = 'Inter, Roboto, system-ui, sans-serif';
+  const FONT = 'Geist, Inter, system-ui, sans-serif';
   let cv = null, cx = null, art = null, box = null, W = 0, H = 0, DPR = 1, S = { x: 0, y: 0, w: 0, h: 0 }, NARROW = false;
   let aud = 'team', last = 0, raf = 0, ro = null, gridC = null, beatIdx = -1, hidAt = 0;
   const T0 = {};
   const BEATS = {
-    team: [[0, 'Bring in what you already have', 'Workshop recordings, the MSA, org packages and site walkthroughs flow into one project.'],
-      [3.6, 'Help reading the inputs', 'Transcripts are scanned for likely requirements and open questions, and AI drafts the documents for you to review.'],
-      [6.6, 'Your team shapes every deliverable', 'AI gives a first draft. Consultants review, edit and approve requirements, the BRD and UAT scripts.'],
-      [10.4, 'All 12 stages, one view', 'Every project moves around the same tracker, from kick-off to closure.']],
+    team: [[0, 'Add what you already have', 'Workshop recordings, the MSA, org packages and site walkthroughs go in once.'],
+      [3.4, 'AI fills in the project settings', 'Names, dates, customer details and the team are drafted from your files in seconds, not typed by hand.'],
+      [8.9, 'You review every section', 'Each field stays editable. Nothing is final until a person approves it.'],
+      [11.8, 'Ready for kick-off', 'The workshop plan, requirements and BRD build on the same project.']],
     cust: [[0, 'Projects usually start scattered', 'Email threads, spreadsheet versions and meeting notes pile up in different places.'],
       [3.4, 'Facilio brings it into one lane', 'Everything about your rollout lives in a single project you can open anytime.'],
       [8.0, 'Review and approve in one place', 'See what was captured from your workshops and sign off without long email threads.'],
       [11.2, 'Test with clear scripts', 'Your team tests against the agreed requirements, step by step.'],
       [13.4, 'Go live, with a clear finish line', 'Know where your project stands every day until launch.']]
   };
-  const END = { team: 14.6, cust: 16.2 };
+  const END = { team: 14.8, cust: 16.2 };
   function glow(x, y, r, col, a) {
     const g = cx.createRadialGradient(x, y, 0, x, y, r);
     g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(1, `rgba(${col},0)`);
@@ -63,145 +63,116 @@
   function rr(x, y, w, h, r) { cx.beginPath(); cx.moveTo(x + r, y); cx.arcTo(x + w, y, x + w, y + h, r); cx.arcTo(x + w, y + h, x, y + h, r); cx.arcTo(x, y + h, x, y, r); cx.arcTo(x, y, x + w, y, r); cx.closePath(); }
   function ring(x, y, k, col, maxR) { if (k <= 0 || k >= 1) return; cx.strokeStyle = `rgba(${col},${(1 - k) * .9})`; cx.lineWidth = 2 * (1 - k) + .5; cx.beginPath(); cx.arc(x, y, 4 + k * maxR, 0, TAU); cx.stroke(); }
 
-  /* ---------- TEAM: the delivery engine ---------- */
-  const STAGES = ['Kick-off', 'Workshops', 'Requirements', 'BRD & sign-off', 'Configuration', 'FTR & KPI', 'UAT & defects', 'Training & guides', 'Go-live readiness', 'Hypercare', 'Handover', 'Closure'];
+  /* ---------- TEAM: from your files to a ready project ---------- */
+  // Files go in, AI drafts the project settings (what you now see on Settings: a label and a card per section), a person reviews every section, and the plan, requirements and BRD follow.
   const INPUTS = [['Workshop audio', '58 min recording', 'rec'], ['MSA & scope', 'PDF · 24 pages', 'doc'], ['Org package', 'Sites, assets, users', 'org'], ['Site walkthrough', 'Video · 3 sites', 'vid'], ['Existing SOPs', '12 documents', 'doc']];
-  const OUTPUTS = [['Requirements', 'AI first draft · 48', '21,112,239', 'Consultant confirmed', 'AK'], ['BRD', 'AI first draft', '229,25,127', 'Customer signed off', 'RM'], ['User guides', 'AI first draft · 6 roles', '46,201,196', 'Consultant edited', 'SV'], ['UAT scripts', 'AI first draft · 32', '21,112,239', 'QA lead reviewed', 'NJ'], ['Readiness list', 'Template applied', '229,25,127', 'Project lead owns', 'DP']];
-  const REV = i => OUT_T(i) + 2.3;
-  const IN_T = i => .5 + i * .52, OUT_T = i => 6.9 + i * .58, RING_T = 10.6, RING_D = 3.6;
-  let dots = null, G = {};
-  function noise3(x, y, z) {
-    const h = (a, b, c) => { let n = a * 374761393 + b * 668265263 + c * 1274126177; n = (n ^ (n >>> 13)) * 1274126177; return ((n ^ (n >>> 16)) >>> 0) / 4294967296; };
-    const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z), xf = x - xi, yf = y - yi, zf = z - zi;
-    const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf), w = zf * zf * (3 - 2 * zf);
-    const L = (a, b, t) => a + (b - a) * t;
-    return L(L(L(h(xi, yi, zi), h(xi + 1, yi, zi), u), L(h(xi, yi + 1, zi), h(xi + 1, yi + 1, zi), u), v), L(L(h(xi, yi, zi + 1), h(xi + 1, yi, zi + 1), u), L(h(xi, yi + 1, zi + 1), h(xi + 1, yi + 1, zi + 1), u), v), w);
-  }
-  function buildDots() {
-    const N = 9000, out = []; const ga = Math.PI * (3 - Math.sqrt(5));
-    for (let i = 0; i < N; i++) {
-      const y = 1 - (i / (N - 1)) * 2, r = Math.sqrt(1 - y * y), th = ga * i;
-      const x = Math.cos(th) * r, z = Math.sin(th) * r;
-      const n = noise3(x * 1.6 + 4, y * 1.6 + 2, z * 1.6) * .65 + noise3(x * 3.4, y * 3.4 + 7, z * 3.4 + 1) * .35;
-      const land = n > .5 && Math.abs(y) < .93;
-      if (land || i % 9 === 0) out.push([x, y, z, land ? 1 : 0]);
-    }
-    dots = out;
-  }
+  const FIELDS = [[0, 0, 0, 'Project name', 'Riverside Towers rollout'], [0, 1, 0, 'Customer', 'Riverside Facilities'], [0, 0, 1, 'Go-live', '05 Jan 2027'], [0, 1, 1, 'Phase', 'Requirements'], [1, 0, 0, 'Sector', 'Real estate'], [1, 1, 0, 'Region', 'UAE'], [1, 2, 0, 'Sites', '12 buildings']];
+  const PEOPLE = [['MS', 'Meera S.', 'Project manager', '21,112,239'], ['DR', 'Dinesh R.', 'Consultant', '14,147,132'], ['PN', 'Priya N.', 'Customer', '229,25,127']];
+  const SECS = [['Project', 'Name, customer, dates and phase.', 50, 96], ['Customer', 'Sector, region and size of the estate.', 158, 52], ['Team', 'Who works on it, and who signs off.', 222, 52]];
+  const OUTS = [['Workshop plan', 'Sessions and agendas', 'doc'], ['Requirements', 'From the transcripts', 'rec'], ['BRD', 'Builds on this project', 'doc']];
+  const TABS = ['Project details', 'People & access', 'Org package', 'Keeping', 'History'];
+  const LW = 520, LH = 284, CX0 = 176, CW0 = 330;   // the settings mock is drawn in these units and scaled to fit
+  const IN_T = i => .5 + i * .5, F_T = k => 3.9 + k * .42, TICK_T = [9.0, 9.9, 10.8], OUT_T = i => 11.9 + i * .45;
+  const NF = FIELDS.length + PEOPLE.length;
+  let G = {}, gpulse = 0, teamFx = [], lastT = 0;
   function layoutTeam() {
-    const cw = NARROW ? 46 : clamp(S.w * .25, 120, 196);
-    const top = S.y + (NARROW ? 40 : 34);
-    const bot = S.y + S.h - (NARROW ? 4 : 8);
-    const R = NARROW ? Math.min(S.w * .21, (bot - top) * .3) : Math.min(S.w * .14, (bot - top) * .3);
-    G = { cx: S.x + S.w * .5, cy: (top + bot) / 2 - (NARROW ? 0 : 10), R, rx: R * (NARROW ? 1.5 : 1.42), ry: R * .38, tilt: -.16, cw, ch: NARROW ? 38 : 52, top, bot };
-    const step = (bot - top - G.ch) / 4;
-    G.inPos = INPUTS.map((_, i) => ({ x: S.x + (NARROW ? 8 : 4) + Math.sin(i / 4 * Math.PI) * (NARROW ? 0 : S.w * .02), y: top + i * step }));
-    G.outPos = OUTPUTS.map((_, i) => ({ x: S.x + S.w - cw - (NARROW ? 8 : 4) - Math.sin(i / 4 * Math.PI) * (NARROW ? 0 : S.w * .02), y: top + i * step }));
-    // surface targets in globe space (lat/lon)
-    G.inTgt = INPUTS.map((_, i) => ({ lat: (.55 - i * .28), lon: 2.2 - (-.6 + (IN_T(i) + 1.25) * .16) }));
+    const cw = NARROW ? 46 : clamp(S.w * .25, 132, 188), ch = NARROW ? 38 : 50;
+    const outH = NARROW ? 38 : 46, top = S.y + 34, bot = S.y + S.h - outH - 16;
+    const left = S.x + cw + (NARROW ? 12 : S.w * .05), pw = S.x + S.w - left - 2, ph = Math.max(150, bot - top);
+    const f = Math.min(pw / LW, ph / LH, 1.25);
+    G = { cw, ch, f, outH, top, bot, px: left + (pw - LW * f) / 2, py: top + (ph - LH * f) / 2, pw: LW * f, ph: LH * f, oy: S.y + S.h - outH - 4 };
+    const step = (bot - top - ch) / 4;
+    G.inPos = INPUTS.map((_, i) => ({ x: S.x + (NARROW ? 6 : 4), y: top + i * step }));
+    G.outX = S.x + 4; G.outW = (S.w - 8 - 16) / 3;
   }
-  function rot(p, a) { // y rotation then tilt
-    const ca = Math.cos(a), sa = Math.sin(a), x = p[0] * ca - p[2] * sa, z0 = p[0] * sa + p[2] * ca;
-    const tl = .32, ct = Math.cos(tl), st = Math.sin(tl);
-    return [x, p[1] * ct - z0 * st, p[1] * st + z0 * ct];
+  function wrapText(str, maxW) { const out = []; let line = ''; str.split(' ').forEach(w => { const test = line ? line + ' ' + w : w; if (cx.measureText(test).width > maxW && line) { out.push(line); line = w; } else line = test; }); if (line) out.push(line); return out; }
+  function spark(x, y, r, col, a) { if (a <= .01) return; cx.save(); cx.globalAlpha = a; cx.fillStyle = col; cx.beginPath(); cx.moveTo(x, y - r); cx.quadraticCurveTo(x, y, x + r, y); cx.quadraticCurveTo(x, y, x, y + r); cx.quadraticCurveTo(x, y, x - r, y); cx.quadraticCurveTo(x, y, x, y - r); cx.fill(); cx.restore(); }
+  function fieldAt(k) { const F = FIELDS[k]; const s = SECS[F[0]]; const cwid = F[0] === 0 ? 150 : 98, gx = F[0] === 0 ? 158 : 104; return { x: CX0 + 14 + F[1] * gx, y: s[2] + (F[0] === 0 ? 12 + F[2] * 40 : 10), w: cwid, label: F[3], value: F[4] }; }
+  function drawField(k, t) {
+    const f = fieldAt(k), t0 = F_T(k), p = clamp((t - t0) / .55, 0, 1), done = t >= t0 + .55;
+    cx.font = `500 9.5px ${FONT}`; cx.fillStyle = '#686868'; cx.textBaseline = 'alphabetic'; cx.fillText(f.label, f.x, f.y + 9);
+    if (done && t < t0 + 1.3) { cx.fillStyle = `rgba(21,112,239,${.1 * (1 - (t - t0 - .55) / .75)})`; rr(f.x - 6, f.y - 3, f.w, 32, 7); cx.fill(); }
+    if (p <= 0) { cx.fillStyle = `rgba(0,0,0,${.06 + .03 * Math.sin(t * 5 + k)})`; rr(f.x, f.y + 17, f.w * .62, 9, 4.5); cx.fill(); return; }
+    cx.font = `500 12px ${FONT}`; cx.fillStyle = '#262626'; const n = Math.ceil(f.value.length * eOut(p)); const txt = f.value.slice(0, n); cx.fillText(txt, f.x, f.y + 26);
+    if (p < 1) { const w = cx.measureText(txt).width; cx.fillStyle = '#1570EF'; cx.fillRect(f.x + w + 1.5, f.y + 15, 1.6, 13); spark(f.x + w + 12, f.y + 15, 3.5, '#E5197F', .9); }
+    else { cx.fillStyle = 'rgba(21,112,239,.55)'; cx.beginPath(); cx.arc(f.x + f.w - 14, f.y + 5, 2.4, 0, TAU); cx.fill(); }
   }
-  function ringPt(a) { // angle on orbit ring -> screen + depth
-    const x = Math.cos(a) * G.rx, y = Math.sin(a) * G.ry, c = Math.cos(G.tilt), s = Math.sin(G.tilt);
-    return { x: G.cx + x * c - y * s, y: G.cy + x * s + y * c, front: Math.sin(a) > 0 };
+  function drawPeople(t) {
+    const s = SECS[2];
+    PEOPLE.forEach(([ini, nm, role, col], i) => {
+      const k = FIELDS.length + i, t0 = F_T(k), a = sm(t0, t0 + .35, t), x = CX0 + 14 + i * 104, y = s[2] + 11;
+      if (a <= 0) { cx.fillStyle = 'rgba(0,0,0,.06)'; rr(x, y + 4, 90, 22, 11); cx.fill(); return; }
+      cx.save(); cx.globalAlpha = a; const sc = .9 + .1 * eBack((t - t0) / .45); cx.translate(x + 45, y + 15); cx.scale(sc, sc); cx.translate(-x - 45, -y - 15);
+      cx.fillStyle = '#fff'; cx.strokeStyle = 'rgba(0,0,0,.12)'; cx.lineWidth = 1; rr(x, y, 92, 30, 15); cx.fill(); cx.stroke();
+      cx.fillStyle = `rgb(${col})`; cx.beginPath(); cx.arc(x + 15, y + 15, 10, 0, TAU); cx.fill(); cx.fillStyle = '#fff'; cx.font = `700 8.5px ${FONT}`; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText(ini, x + 15, y + 15.5); cx.textAlign = 'left';
+      cx.fillStyle = '#262626'; cx.font = `600 10.5px ${FONT}`; cx.fillText(nm, x + 30, y + 11); cx.fillStyle = '#686868'; cx.font = `500 8.5px ${FONT}`; cx.fillText(role, x + 30, y + 22);
+      cx.restore();
+    });
   }
-  const stageAng = i => -Math.PI * .5 - Math.PI * .1 + (i / 12) * TAU; // starts top-left, goes clockwise
-  function drawRing(t, front, prog, spin) {
-    cx.save();
-    // ring band
-    cx.lineWidth = 1.2;
-    for (let k = 0; k < 2; k++) {
-      cx.beginPath(); let started = false;
-      for (let a = 0; a <= TAU + .01; a += .04) {
-        const p = ringPt(a); if (p.front !== front) { started = false; continue; }
-        const rx2 = G.rx * (1 + k * .06), q = { x: G.cx + (p.x - G.cx) * (1 + k * .06), y: G.cy + (p.y - G.cy) * (1 + k * .06) };
-        if (!started) { cx.moveTo(q.x, q.y); started = true; } else cx.lineTo(q.x, q.y);
-      }
-      cx.strokeStyle = k ? 'rgba(141,184,255,.12)' : `rgba(141,184,255,${front ? .38 : .18})`; cx.stroke();
-    }
-    // lit progress arc
-    if (prog > 0) {
-      const a0 = stageAng(0), a1 = a0 + prog * TAU;
-      cx.beginPath(); let started = false;
-      for (let a = a0; a <= a1; a += .03) { const p = ringPt(a); if (p.front !== front) { started = false; continue; } if (!started) { cx.moveTo(p.x, p.y); started = true; } else cx.lineTo(p.x, p.y); }
-      cx.strokeStyle = '#E5197F'; cx.lineWidth = 3; cx.stroke();
-    }
-    // stage nodes
-    for (let i = 0; i < 12; i++) {
-      const a = stageAng(i), p = ringPt(a); if (p.front !== front) continue;
-      const lit = prog * 12 >= i + .5 - .001 || prog >= 1;
-      const d = front ? 1 : .5;
-      if (lit) { cx.fillStyle = '#E5197F'; cx.beginPath(); cx.arc(p.x, p.y, 7, 0, TAU); cx.fill(); cx.fillStyle = '#fff'; }
-      else cx.fillStyle = `rgba(141,184,255,${.55 * d})`;
-      cx.beginPath(); cx.arc(p.x, p.y, lit ? 3 : 3, 0, TAU); cx.fill();
-      if (!lit) { cx.strokeStyle = `rgba(141,184,255,${.3 * d})`; cx.beginPath(); cx.arc(p.x, p.y, 6.5, 0, TAU); cx.stroke(); }
-    }
-    // idle comet on the ring
-    if (spin > 0) {
-      const a = stageAng(0) + ((t * .09) % 1) * TAU;
-      for (let k = 0; k < 14; k++) { const p = ringPt(a - k * .035); if (p.front !== front) continue; cx.fillStyle = `rgba(141,184,255,${spin * (1 - k / 14) * .7})`; cx.beginPath(); cx.arc(p.x, p.y, 2.2 * (1 - k / 18), 0, TAU); cx.fill(); }
+  function drawPanel(t, pa) {
+    cx.save(); cx.globalAlpha = pa; cx.translate(G.px, G.py + (1 - pa) * 14); cx.scale(G.f, G.f);
+    cx.shadowColor = 'rgba(4,3,30,.5)'; cx.shadowBlur = 30; cx.shadowOffsetY = 12; cx.fillStyle = '#fafafa'; rr(0, 0, LW, LH, 18); cx.fill(); cx.shadowColor = 'transparent';
+    cx.strokeStyle = 'rgba(255,255,255,.7)'; cx.lineWidth = 1; rr(.5, .5, LW - 1, LH - 1, 18); cx.stroke();
+    cx.save(); rr(0, 0, LW, LH, 18); cx.clip();
+    // segmented tab control, as on Settings
+    cx.fillStyle = 'rgba(0,0,0,.05)'; rr(14, 12, LW - 28, 28, 10); cx.fill(); let tx = 17;
+    cx.font = `500 10.5px ${FONT}`; cx.textBaseline = 'middle';
+    TABS.forEach((lb, i) => { const w = cx.measureText(lb).width + 24; if (i === 0) { cx.fillStyle = '#fff'; cx.shadowColor = 'rgba(0,0,0,.16)'; cx.shadowBlur = 3; cx.shadowOffsetY = 1; rr(tx, 15, w, 22, 8); cx.fill(); cx.shadowColor = 'transparent'; } cx.fillStyle = i === 0 ? '#262626' : '#686868'; cx.fillText(lb, tx + 12, 26.5); tx += w + 3; });
+    // sections: label and description on the left, the card on the right
+    SECS.forEach(([title, desc, y, h]) => {
+      cx.fillStyle = '#262626'; cx.font = `600 12.5px ${FONT}`; cx.textBaseline = 'alphabetic'; cx.fillText(title, 16, y + 16);
+      cx.fillStyle = '#686868'; cx.font = `500 10px ${FONT}`; wrapText(desc, 140).slice(0, 3).forEach((ln, i) => cx.fillText(ln, 16, y + 31 + i * 13));
+      cx.fillStyle = '#fff'; cx.strokeStyle = 'rgba(0,0,0,.09)'; cx.lineWidth = 1; rr(CX0, y, CW0, h, 12); cx.fill(); cx.stroke();
+    });
+    FIELDS.forEach((_, k) => drawField(k, t)); drawPeople(t);
+    // the reading beam: a soft blue band sweeping down the settings while AI drafts
+    const bs = (t > END.team) ? ((t - END.team) % 7) / 1.6 : (t - 3.4) / 1.8;
+    if (bs > 0 && bs < 1) { const by = lerp(-40, LH + 20, eIO(bs)); const g = cx.createLinearGradient(0, by - 36, 0, by + 36); g.addColorStop(0, 'rgba(21,112,239,0)'); g.addColorStop(.5, 'rgba(21,112,239,.14)'); g.addColorStop(1, 'rgba(21,112,239,0)'); cx.fillStyle = g; cx.fillRect(0, by - 36, LW, 72); cx.fillStyle = 'rgba(21,112,239,.45)'; cx.fillRect(0, by - .6, LW, 1.2); }
+    // review: a tick on each section card
+    SECS.forEach(([, , y], s) => { const k = (t - TICK_T[s]) / .4; if (k <= 0) return; const sc = eBack(k); const x = CX0 + CW0 - 17, yy = y + 17; cx.save(); cx.translate(x, yy); cx.scale(sc, sc); cx.fillStyle = '#107c10'; cx.beginPath(); cx.arc(0, 0, 9, 0, TAU); cx.fill(); icon('ok', -4.8, -4.8, 9.6, '#fff'); cx.restore(); });
+    cx.restore();
+    // the reviewer's pointer
+    const KF = [[8.1, 430, 262], [8.95, CX0 + CW0 - 20, SECS[0][2] + 24], [9.45, CX0 + CW0 - 20, SECS[0][2] + 24], [9.85, CX0 + CW0 - 20, SECS[1][2] + 24], [10.35, CX0 + CW0 - 20, SECS[1][2] + 24], [10.75, CX0 + CW0 - 20, SECS[2][2] + 24], [11.15, CX0 + CW0 - 20, SECS[2][2] + 24], [11.9, 470, 268]];
+    if (t > KF[0][0] && t < KF[KF.length - 1][0] + .2) {
+      let i = 0; while (i < KF.length - 2 && t > KF[i + 1][0]) i++; const a = KF[i], b = KF[i + 1], u = eIO((t - a[0]) / (b[0] - a[0]));
+      const x = lerp(a[1], b[1], u), y = lerp(a[2], b[2], u), al = sm(8.1, 8.5, t) * (1 - sm(11.5, 12, t));
+      cx.globalAlpha = pa * al; cx.shadowColor = 'rgba(0,0,0,.35)'; cx.shadowBlur = 4; cx.shadowOffsetY = 2; cx.fillStyle = '#171717'; cx.strokeStyle = '#fff'; cx.lineWidth = 1.4;
+      cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x + 3, y + 15); cx.lineTo(x + 6.5, y + 10.5); cx.lineTo(x + 12, y + 10); cx.closePath(); cx.fill(); cx.stroke(); cx.shadowColor = 'transparent';
     }
     cx.restore();
   }
-  let gpulse = 0, teamFx = [], lastT = 0, curProg = 0;
-  function drawGlobe(t, ang, intro, pulse, scan) {
-    const { cx: X, cy: Y, R } = G;
-    // halo + atmosphere
-    glow(X, Y, R * 2.6, '21,112,239', .22 * intro + pulse * .1);
-    glow(X, Y, R * 1.5, '141,184,255', .16 * intro);
-    // breathing rings: soft waves leaving the studio, one every few seconds
-    for (let k = 0; k < 3; k++) { const ph = ((t * .22 + k / 3) % 1), rr = R * (1.05 + ph * .9); cx.strokeStyle = `rgba(141,184,255,${(1 - ph) * .28 * intro})`; cx.lineWidth = 1.5; cx.beginPath(); cx.arc(X, Y, rr, 0, TAU); cx.stroke(); }
-    if (pulse > .02) glow(X, Y, R * 1.3, '229,25,127', pulse * .1);
-    const gi = cx.createRadialGradient(X - R * .35, Y - R * .4, R * .1, X, Y, R);
-    gi.addColorStop(0, '#332C93'); gi.addColorStop(.75, '#221D6B'); gi.addColorStop(1, '#1A1659');
-    cx.fillStyle = gi; cx.beginPath(); cx.arc(X, Y, R, 0, TAU); cx.fill();
-    // dots, batched by brightness bucket
-    const B = [[], [], [], []], ds = Math.max(1, R / 150);
-    for (let i = 0; i < dots.length; i++) {
-      const d = dots[i]; const p = rot(d, ang); if (p[2] < -.05) continue;
-      // reveal: dots appear from the core outward
-      const rv = intro >= 1 ? 1 : sm((i % 97) / 97 * .6, (i % 97) / 97 * .6 + .4, intro);
-      if (rv <= 0) continue;
-      const b = d[3] ? (p[2] > .55 ? 3 : p[2] > .2 ? 2 : 1) : 0;
-      B[b].push(X + p[0] * R, Y + p[1] * R);
-    }
-    const cols = ['rgba(255,255,255,.1)', 'rgba(141,184,255,.4)', 'rgba(141,184,255,.75)', 'rgba(255,255,255,.95)'];
-    for (let b = 0; b < 4; b++) { cx.fillStyle = cols[b]; cx.beginPath(); const a = B[b], s = b ? ds : ds * .8; for (let i = 0; i < a.length; i += 2) cx.rect(a[i] - s / 2, a[i + 1] - s / 2, s, s); cx.fill(); }
-    // AI scan: a bright latitude band sweeping the globe
-    if (scan > 0) {
-      const yy = Math.sin(t * 1.9) * .85;
-      cx.save(); cx.beginPath(); cx.arc(X, Y, R, 0, TAU); cx.clip();
-      const sy = Y + yy * R * Math.cos(.32), rw = Math.sqrt(1 - yy * yy) * R;
-      const g = cx.createLinearGradient(0, sy - 26, 0, sy + 26);
-      g.addColorStop(0, 'rgba(229,25,127,0)'); g.addColorStop(.5, `rgba(229,25,127,${.28 * scan})`); g.addColorStop(1, 'rgba(229,25,127,0)');
-      cx.fillStyle = g; cx.fillRect(X - R, sy - 26, R * 2, 52);
-      cx.strokeStyle = `rgba(255,170,210,${.8 * scan})`; cx.lineWidth = 1.4; cx.beginPath(); cx.ellipse(X, sy, rw, rw * .3, 0, 0, TAU); cx.stroke();
-      cx.restore();
-    }
-    // rim light
-    cx.strokeStyle = `rgba(255,255,255,${.28 + pulse * .3})`; cx.lineWidth = 1.5; cx.beginPath(); cx.arc(X, Y, R, 0, TAU); cx.stroke();
-    // satellites: the many customer projects that orbit one studio (small lights with a short trail, in front of and behind the globe)
-    for (let k = 0; k < 9; k++) {
-      const lat = ((k % 3) - 1) * .5 + Math.sin(t * .3 + k) * .08, base = t * (.32 + (k % 3) * .06) + k * .72;
-      for (let j = 7; j >= 0; j--) { const p = rot([Math.cos(lat) * Math.cos(base - j * .07), -Math.sin(lat), Math.cos(lat) * Math.sin(base - j * .07)], 0); const z = p[2]; const rr2 = R * 1.16; const a = (1 - j / 8) * (z > 0 ? .85 : .35) * intro;
-        cx.fillStyle = `rgba(${k % 3 === 0 ? '124,243,198' : k % 3 === 1 ? '255,170,210' : '141,184,255'},${a})`; if (!j && z > 0) glow(X + p[0] * rr2, Y + p[1] * rr2, 14, k % 3 === 0 ? '124,243,198' : k % 3 === 1 ? '255,170,210' : '141,184,255', .55 * intro); cx.beginPath(); cx.arc(X + p[0] * rr2, Y + p[1] * rr2, (j ? 1.4 : 3) * (z > 0 ? 1 : .75), 0, TAU); cx.fill(); }
-    }
-    // delivery core: once the tracker runs, a progress ring and the percentage fill the middle of the globe
-    if (curProg > 0.001 && intro >= 1) {
-      const r = R * .55, sc = cx.createRadialGradient(X, Y, r * .2, X, Y, r * 1.5); sc.addColorStop(0, 'rgba(18,14,60,.78)'); sc.addColorStop(1, 'rgba(18,14,60,0)');
-      cx.fillStyle = sc; cx.beginPath(); cx.arc(X, Y, r * 1.5, 0, TAU); cx.fill();
-      cx.lineCap = 'round'; cx.lineWidth = Math.max(4, R * .07); cx.strokeStyle = 'rgba(255,255,255,.14)'; cx.beginPath(); cx.arc(X, Y, r, 0, TAU); cx.stroke();
-      const gr = cx.createLinearGradient(X - r, Y - r, X + r, Y + r); gr.addColorStop(0, '#8DB8FF'); gr.addColorStop(1, '#E5197F'); cx.strokeStyle = gr;
-      cx.beginPath(); cx.arc(X, Y, r, -Math.PI / 2, -Math.PI / 2 + curProg * TAU); cx.stroke(); cx.lineCap = 'butt';
-      cx.fillStyle = '#fff'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.font = `800 ${Math.round(R * .3)}px ${FONT}`; cx.fillText(Math.round(curProg * 100) + '%', X, Y - R * .03);
-      cx.fillStyle = 'rgba(255,255,255,.75)'; cx.font = `600 ${Math.max(9, Math.round(R * .095))}px ${FONT}`; cx.fillText(curProg >= 1 ? 'DELIVERED' : 'DELIVERY TRACKED', X, Y + R * .2); cx.textAlign = 'start'; cx.textBaseline = 'alphabetic';
-    }
+  function team(t, dt) {
+    INPUTS.forEach((_, i) => { const tt = IN_T(i) + 1.2; if (lastT < tt && t >= tt) { gpulse = Math.min(1.2, gpulse + .6); teamFx.push({ k: 'land', i, t }); } });
+    gpulse *= Math.pow(.15, dt);
+    const pa = eOut(t / .9), { cw, ch } = G;
+    glow(G.px + G.pw * .5, G.py + G.ph * .5, G.pw * .62, '21,112,239', .13 + .08 * gpulse);
+    drawPanel(t, pa);
+    // inputs: each file flies into the settings and is added to the project
+    INPUTS.forEach(([ti, su, kd], i) => {
+      const p = G.inPos[i], st = IN_T(i), ap = eOut((t - st + .45) / .6), used = sm(st + 1.2, st + 1.7, t);
+      const from = { x: p.x + cw, y: p.y + ch / 2 }, to = { x: G.px + 4, y: G.py + G.ph * (.22 + i * .14) };
+      const hd = eIO((t - st) / 1.2), tl = eIO((t - st - .9) / .9);
+      if (t > st && tl < 1) { cx.save(); arc(from, to, Math.hypot(to.x - from.x, to.y - from.y) * .3, hd, tl, '141,184,255', 2.2); cx.restore(); }
+      card(p.x - (1 - ap) * 24, p.y, cw, ch, ti, used > .5 ? 'Added to project' : su, kd, ap * (1 - used * .15), { subCol: used > .5 ? '#6ee7b7' : null, icBg: used > .5 ? 'rgba(52,211,153,.18)' : null, icCol: used > .5 ? '#34d399' : null });
+    });
+    teamFx.forEach(f => { const k = (t - f.t) / 1.1; if (k < 1 && f.k === 'land') { const to = { x: G.px + 4, y: G.py + G.ph * (.22 + f.i * .14) }; ring(to.x, to.y, k, '255,255,255', 22); ring(to.x, to.y, Math.max(0, k - .2), '21,112,239', 14); } });
+    // what AI is doing now, in one line above the settings
+    const filled = FIELDS.concat(PEOPLE).filter((_, k) => t >= F_T(k) + .55).length;
+    const reviewing = t < OUT_T(0) - .2;
+    const msg = t < 3.4 ? null : t < TICK_T[0] - .2 ? 'AI is drafting the settings · ' + filled + ' of ' + NF + ' fields' : reviewing ? 'Your turn: review each section' : 'Ready for kick-off';
+    if (msg) pill(G.px + G.pw / 2, G.py - 4, msg, null, sm(3.4, 3.9, t) * pa, { dot: reviewing ? '#E5197F' : '#107c10', tail: false, small: true });
+    // outputs: the next pieces of the project build on these settings
+    OUTS.forEach(([ti, su, kd], i) => {
+      const st = OUT_T(i); if (t < st) return;
+      const x = G.outX + i * (G.outW + 8), y = G.oy, to = { x: x + G.outW / 2, y }, from = { x: G.px + G.pw * (.25 + i * .25), y: G.py + G.ph };
+      const hd = eIO((t - st) / 1.0), tl = eIO((t - st - .8) / .8);
+      if (tl < 1) { cx.save(); arc(from, to, 26, hd, tl, '229,25,127', 2); cx.restore(); }
+      const k = t - st - 1.0, ap = sm(0, .25, k), sc = k > 0 ? eBack(k / .45) : 0;
+      card(x, y, G.outW, G.outH, ti, su, kd, ap, { scale: .88 + .12 * sc, icBg: 'rgba(141,184,255,.2)', icCol: '#8DB8FF', subCol: '#6ee7b7', glowCol: '141,184,255', glowK: Math.max(0, 1 - k / 1.2) });
+    });
+    teamFx = teamFx.filter(f => t - f.t < 2);
+    lastT = t;
   }
-  function surf(lat, lon, ang) { const p = rot([Math.cos(lat) * Math.cos(lon), -Math.sin(lat), Math.cos(lat) * Math.sin(lon)], ang); return { x: G.cx + p[0] * G.R, y: G.cy + p[1] * G.R, z: p[2] }; }
   function arc(a, b, lift, head, tail, col, width) {
     if (head <= tail) return;
     const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2 - lift;
@@ -230,114 +201,20 @@
     if (a <= .01) return;
     cx.save(); cx.globalAlpha = a;
     const s = opt.scale || 1; cx.translate(x + w / 2, y + h / 2); cx.scale(s, s); cx.translate(-x - w / 2, -y - h / 2);
-    cx.shadowColor = 'rgba(8,6,40,.4)'; cx.shadowBlur = 18; cx.shadowOffsetY = 6;
-    const cg = cx.createLinearGradient(0, y, 0, y + h); cg.addColorStop(0, opt.dim ? '#F1F2FA' : '#FFFFFF'); cg.addColorStop(1, opt.dim ? '#DDE0F0' : '#E4EDFB');
-    cx.fillStyle = cg; rr(x, y, w, h, 14); cx.fill(); cx.shadowColor = 'transparent';
-    // clay depth: a bright rim on top, a soft shade underneath
-    cx.save(); rr(x, y, w, h, 14); cx.clip(); cx.strokeStyle = 'rgba(255,255,255,.95)'; cx.lineWidth = 2; rr(x + 1, y + 1, w - 2, h - 2, 13); cx.stroke();
-    const sh = cx.createLinearGradient(0, y + h - 14, 0, y + h); sh.addColorStop(0, 'rgba(40,80,150,0)'); sh.addColorStop(1, 'rgba(40,80,150,.18)'); cx.fillStyle = sh; cx.fillRect(x, y + h - 14, w, 14); cx.restore();
-    if (opt.stroke) { cx.strokeStyle = opt.stroke; cx.lineWidth = 2; cx.stroke(); }
-    if (opt.glowCol && opt.glowK > 0) { cx.strokeStyle = `rgba(${opt.glowCol},${.6 * opt.glowK})`; cx.lineWidth = 2; rr(x - 3, y - 3, w + 6, h + 6, 14); cx.stroke(); }
-    const ic = Math.min(30, h - 16);
-    cx.fillStyle = opt.icBg || '#EEF4FF'; rr(x + 10, y + (h - ic) / 2, ic, ic, 8); cx.fill();
-    icon(kind, x + 10 + ic * .2, y + (h - ic) / 2 + ic * .2, ic * .6, opt.icCol || '#1570EF');
-    if (opt.badge) { const bx = x + w - 14, by = y + 12; cx.fillStyle = opt.badge[1]; cx.beginPath(); cx.arc(bx, by, 9 * opt.badge[2], 0, TAU); cx.fill(); if (opt.badge[2] > .6) { cx.fillStyle = '#fff'; cx.font = `700 8.5px ${FONT}`; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText(opt.badge[0], bx, by + .5); cx.textAlign = 'left'; } }
+    // flat glass: a soft translucent fill and a hairline, no gloss and no heavy shadow (the coss look on a dark scene)
+    cx.fillStyle = opt.dim ? 'rgba(255,255,255,.05)' : 'rgba(255,255,255,.09)'; rr(x, y, w, h, 12); cx.fill();
+    cx.strokeStyle = opt.stroke || 'rgba(255,255,255,.18)'; cx.lineWidth = 1; rr(x + .5, y + .5, w - 1, h - 1, 12); cx.stroke();
+    if (opt.glowCol && opt.glowK > 0) { cx.strokeStyle = `rgba(${opt.glowCol},${.8 * opt.glowK})`; cx.lineWidth = 1.5; rr(x - 2, y - 2, w + 4, h + 4, 14); cx.stroke(); }
+    const ic = Math.min(28, h - 16);
+    cx.fillStyle = opt.icBg || 'rgba(255,255,255,.12)'; rr(x + 10, y + (h - ic) / 2, ic, ic, 8); cx.fill();
+    icon(kind, x + 10 + ic * .2, y + (h - ic) / 2 + ic * .2, ic * .6, opt.icCol || '#cfe0ff');
     if (NARROW) { cx.restore(); return; }
-    cx.textBaseline = 'middle'; const tx = x + 18 + ic, small = false;
-    cx.fillStyle = '#1D1A5E'; cx.font = `700 ${small ? 11 : 13}px ${FONT}`;
+    cx.textBaseline = 'middle'; const tx = x + 18 + ic;
     const fit = (str, mw) => { if (cx.measureText(str).width <= mw) return str; while (str.length > 3 && cx.measureText(str + '…').width > mw) str = str.slice(0, -1); return str + '…'; };
-    const mw = x + w - tx - (opt.badge ? 26 : 8);
-    if (small) cx.fillText(fit(title, mw), tx, y + h / 2);
-    else {
-      cx.fillText(fit(title, mw), tx, y + h / 2 - 8);
-      cx.fillStyle = opt.subCol || '#667085'; cx.font = `500 11.5px ${FONT}`; cx.fillText(fit(sub, x + w - tx - 8), tx, y + h / 2 + 9);
-    }
+    cx.fillStyle = '#fff'; cx.font = `600 12.5px ${FONT}`; cx.fillText(fit(title, x + w - tx - 8), tx, y + h / 2 - 8);
+    cx.fillStyle = opt.subCol || 'rgba(255,255,255,.62)'; cx.font = `500 11px ${FONT}`; cx.fillText(fit(sub, x + w - tx - 8), tx, y + h / 2 + 9);
     cx.restore();
   }
-  function team(t, dt) {
-    const intro = eOut(t / 1.6);
-    const ang = -.6 + t * .16;
-    // events
-    INPUTS.forEach((_, i) => { if (lastT < IN_T(i) + 1.25 && t >= IN_T(i) + 1.25) { gpulse = Math.min(1.4, gpulse + .7); teamFx.push({ k: 'land', i, t }); } });
-    OUTPUTS.forEach((_, i) => { if (lastT < OUT_T(i) + 1.05 && t >= OUT_T(i) + 1.05) teamFx.push({ k: 'out', i, t }); });
-    if (lastT < RING_T + RING_D && t >= RING_T + RING_D) { gpulse = 1.6; teamFx.push({ k: 'done', t }); }
-    gpulse *= Math.pow(.15, dt);
-    const scan = sm(3.4, 4.2, t) * (1 - sm(9.6, 10.6, t)) + (t > 14.6 ? .25 : 0);
-    const prog = clamp((t - RING_T) / RING_D, 0, 1);
-    const spin = sm(13.8, 14.8, t) + (t < RING_T ? sm(1, 2, t) * .7 * (1 - sm(RING_T - .6, RING_T, t)) : 0);
-
-    curProg = prog;
-    drawRing(t, false, prog, spin * sm(0, 1.5, t));
-    drawGlobe(t, ang, intro, gpulse, scan);
-    drawRing(t, true, prog, spin * sm(0, 1.5, t));
-
-    const { cw, ch } = G;
-    // inputs
-    INPUTS.forEach(([ti, su, kd], i) => {
-      const p = G.inPos[i], st = IN_T(i), ap = eOut((t - st + .45) / .6);
-      const used = sm(st + 1.3, st + 1.8, t);
-      const s = G.inTgt[i], live = surf(s.lat, s.lon, ang);
-      const from = { x: p.x + cw, y: p.y + ch / 2 };
-      const hd = eIO((t - st) / 1.25), tl = eIO((t - st - 1.0) / .9);
-      // keep the end of the arc on the turning globe until landed; afterwards it is gone
-      if (t > st && tl < 1) { cx.save(); arc(from, live, Math.hypot(live.x - from.x, live.y - from.y) * .35, hd, tl, '141,184,255', 2.4); cx.restore(); }
-      card(p.x - (1 - ap) * 24, p.y, cw, ch, ti, used > .5 ? 'Added to project' : su, kd, ap * (1 - used * .15), { subCol: used > .5 ? '#0E9384' : null, icBg: used > .5 ? '#E6FAF9' : null, icCol: used > .5 ? '#0E9384' : null });
-      if (used > 0 && t < st + 1.9) { glow(from.x, from.y, 10, '141,184,255', .5 * (1 - used)); }
-    });
-    // landing rings on the globe (they ride the rotation)
-    teamFx.forEach(f => {
-      const k = (t - f.t) / 1.1;
-      if (f.k === 'land' && k < 1) { const s = G.inTgt[f.i], p = surf(s.lat, s.lon, ang); if (p.z > 0) { ring(p.x, p.y, k, '255,255,255', 24); ring(p.x, p.y, Math.max(0, k - .2), '229,25,127', 16); } }
-    });
-    // outputs: arcs leave the globe towards the right
-    OUTPUTS.forEach(([ti, su, col, rev, ini], i) => {
-      const p = G.outPos[i], st = OUT_T(i);
-      if (t < st) return;
-      const to = { x: p.x, y: p.y + ch / 2 };
-      const from = { x: G.cx + G.R * .55, y: G.cy - G.R * .45 + i * G.R * .22 };
-      const hd = eIO((t - st) / 1.05), tl = eIO((t - st - .85) / .8);
-      if (tl < 1) { cx.save(); arc(from, to, 40 + Math.abs(to.y - from.y) * .25, hd, tl, '229,25,127', 2.2); cx.restore(); }
-      const k = (t - st - 1.05);
-      const ap = sm(0, .25, k), sc = k > 0 ? eBack(k / .45) : 0;
-      const rv = sm(REV(i), REV(i) + .35, t), done = rv > .5;
-      card(p.x, p.y, cw, ch, ti, done ? rev : su, done ? 'ok' : 'doc', ap, { scale: .85 + .15 * sc, icBg: done ? '#E6FAF9' : `rgba(${col},.12)`, icCol: done ? '#0E9384' : `rgb(${col})`, subCol: done ? '#0E9384' : '#C11574', glowCol: done ? '14,147,132' : '229,25,127', glowK: done ? Math.max(0, 1 - (t - REV(i)) / .9) : Math.max(0, 1 - k / 1.2), badge: rv > 0 ? [ini, ['#1570EF', '#E5197F', '#0E9384', '#1D1A5E', '#7A5AF8'][i], eBack(rv)] : null });
-      if (k > 0 && k < 1.1) { ring(to.x, to.y, k / 1.1, '229,25,127', 30); }
-      if (k > 0) { cx.fillStyle = '#E5197F'; cx.beginPath(); cx.arc(to.x, to.y, 2.6, 0, TAU); cx.fill(); }
-    });
-    // ring progress label
-    if (t >= RING_T - .2) {
-      const idx = Math.min(11, Math.floor(prog * 12 - .001 + .5));
-      const i2 = prog >= 1 ? 11 : Math.max(0, idx);
-      const a = stageAng(i2), p = ringPt(a);
-      const al = sm(RING_T - .2, RING_T + .3, t);
-      if (prog < 1) {
-        // comet head
-        const hp = ringPt(stageAng(0) + prog * TAU);
-        glow(hp.x, hp.y, 18, '229,25,127', .7); cx.fillStyle = '#fff'; cx.beginPath(); cx.arc(hp.x, hp.y, 3.2, 0, TAU); cx.fill();
-      }
-      const lbl = prog >= 1 ? '12 of 12 stages on one tracker' : `${String(i2 + 1).padStart(2, '0')} · ${STAGES[i2]}`;
-      const px = prog >= 1 ? G.cx : p.x, py = prog >= 1 ? G.cy - G.R - 26 : (p.y < G.cy ? p.y - 14 : p.y + 44);
-      pill(px, py, lbl, prog >= 1 ? 'Kick-off → Closure' : null, al, { dot: '#E5197F', tail: prog >= 1 || p.y < G.cy });
-    }
-    teamFx.forEach(f => { if (f.k === 'done') { const k = (t - f.t) / 1.6; if (k < 1) { ring(G.cx, G.cy, k, '229,25,127', G.R * 1.2); ring(G.cx, G.cy, Math.max(0, k - .12), '141,184,255', G.R * 1.4); } } });
-    teamFx = teamFx.filter(f => t - f.t < 2);
-    // after the story: keep showing proof of life — occasional arcs in and out
-    if (t > END.team) {
-      const cyc = (t - END.team) % 2.6, j = Math.floor((t - END.team) / 2.6);
-      const i = j % 5, o = (j * 3 + 1) % 5;
-      const p = G.inPos[i], s = G.inTgt[i], live = surf(s.lat, s.lon, ang);
-      cx.save(); cx.globalCompositeOperation = 'lighter';
-      arc({ x: p.x + cw, y: p.y + ch / 2 }, live, 60, eIO(cyc / 1.1), eIO((cyc - .9) / .8), '141,184,255', 1.8);
-      const q = G.outPos[o];
-      arc({ x: G.cx + G.R * .55, y: G.cy - G.R * .45 + o * G.R * .22 }, { x: q.x, y: q.y + ch / 2 }, 50, eIO((cyc - 1.1) / 1), eIO((cyc - 1.9) / .7), '229,25,127', 1.8);
-      cx.restore();
-    }
-    // AI core chip
-    const chipA = sm(3.5, 4.1, t) * (1 - sm(9.4, 10.2, t));
-    if (chipA > 0) pill(G.cx, G.cy + G.R + 46, 'AI suggestions', `${Math.min(48, Math.floor(clamp((t - 3.6) / 5.4, 0, 1) * 48))} requirements for your team to review`, chipA, { dot: '#E5197F', tail: false });
-    lastT = t;
-  }
-
   /* ---------- CUSTOMER: from inbox to go-live ---------- */
   const BEAC = [['Kick-off', 'Meet your Facilio team'], ['Workshops', 'Your needs captured'], ['Approve', 'You sign off in one place'], ['Test', 'Your team tests, step by step'], ['Go live', 'Launched, with hypercare']];
   const BT = [6.3, 7.6, 9.0, 11.5, 13.6];
@@ -567,7 +444,7 @@
     const bottom = nr ? nr.top - ar.top - 12 : H - 16;
     NARROW = W < 560;
     S = { x: 12, y: top, w: W - 24, h: Math.max(220, bottom - top) };
-    buildGrid(); if (!dots) buildDots(); layoutTeam(); buildCity();
+    buildGrid(); layoutTeam(); buildCity();
   }
   function setBeat(t) {
     const B = BEATS[aud]; let i = 0; for (let k = 0; k < B.length; k++) if (t >= B[k][0]) i = k;
@@ -616,7 +493,7 @@
   if (RM.addEventListener) RM.addEventListener('change', () => { if (cv) kick(); });
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   const DESC = {
-    team: 'Illustration: workshop recordings, the MSA, org packages, site walkthroughs and SOPs flow into one project. AI suggests first drafts; consultants, QA and the project lead review and own the requirements, BRD, user guides, UAT scripts and readiness list. The project then moves round twelve delivery stages from kick-off to closure.',
+    team: 'Illustration: workshop recordings, the MSA, org packages, site walkthroughs and existing documents are added once. AI drafts the project settings from them: the project name, customer, dates and phase, the customer details and the team. A person reviews and approves each section, and the workshop plan, requirements and BRD then build on the same project.',
     cust: 'Illustration: scattered emails and files come together into one lane across a city, passing kick-off, workshops, your approval and testing, and arriving at go-live with hypercare.'
   };
   V.isoLogin = a => {
