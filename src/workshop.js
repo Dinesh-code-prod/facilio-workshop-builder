@@ -15,7 +15,7 @@
   const doc = () => { let d = F.doc('workshop_room'); if (!d || typeof d !== 'object') { S.docs.workshop_room.data = d = {}; } return L().notesOf(d); };   // a document nobody has saved yet reads as null
   const PC = { must: 'red', should: 'tbc', could: 'low' };
   const elapsed = () => { const t = U().t; return t.acc + (t.run ? Date.now() - t.start : 0); };
-  const prepared = () => Q().prepareQuestions(V.prepqInput ? V.prepqInput() : {});
+  const prepared = () => { const p = Q().prepareQuestions(V.prepqInput ? V.prepqInput() : {}); if (!root.FWBQBank) return p; F.doc('rs_questions'); return root.FWBQBank.toPrep(S.docs.rs_questions && S.docs.rs_questions.data, p); };
   const questions = prep => L().questionList(prep || prepared(), doc(), U().res ? U().res.byId : {});
   function rerender() { const sc = document.querySelector('.ws-scroll'); const top = sc ? sc.scrollTop : 0; const y = window.scrollY; V.render(); const n = document.querySelector('.ws-scroll'); if (n) n.scrollTop = top; if (FOCUS()) window.scrollTo(0, y); }
   const projUrl = (q, view) => location.pathname + (q || '') + '#/p/' + encodeURIComponent(S.project.id) + '/' + view;
@@ -70,7 +70,7 @@
   V.workshop = { html() {
     if (V.isCustomer()) return '<div class="page-body"><div class="empty">This page is for the project team.</div></div>';
     const u = U(); const prep = prepared(); const all = questions(prep);
-    const main = `<div class="ws-grid"><div class="ws-left">${questionsPanel(prep, all)}</div><div class="ws-right">${livePanel(all)}${agendaPanel()}</div></div>`;
+    const main = `<div class="ws-grid"><div class="ws-left">${questionsPanel(prep, all)}</div><div class="ws-right">${livePanel(all)}${V.wsLiveExtra ? V.wsLiveExtra(all) : ''}${agendaPanel()}</div></div>`;
     const lead = 'Run the workshop from here: the questions to ask, a status and a note on each, quick capture of drafts, a live transcript check and the diagrams. Nothing said here becomes an approved requirement: every record made is a draft with its source.';
     if (FOCUS()) return `<div class="wb-focus-page ws-room ws-focus"><div class="wb-focus-bar"><b>Workshop room</b><span class="xs muted">${esc((S.project && S.project.name) || '')}</span></div>${bar()}${main}</div>`;
     return (u.full ? '' : `<div class="page-header"><div class="t"><h1>Workshop room</h1><p>${lead}</p></div></div>`) + `<div class="page-body"><div class="ws-room${u.full ? ' ws-full ws-scroll' : ''}">${u.full ? '<div class="wb-focus-bar"><b>Workshop room</b><span class="xs muted">' + esc((S.project && S.project.name) || '') + '</span></div>' : ''}${bar()}${main}</div></div>`;
@@ -104,6 +104,7 @@
     if (!info.chunks.length) { u.res = null; return; } const prep = prepared(); const base = L().questionList(prep, doc(), {});
     u.res = L().mergeLive(base, Q().liveAsk(prep, info.chunks.map(c => ({ speaker: c.speaker, at: TP().fmtAt(c.at), text: c.text }))));
   }
+  V.wsRerender = rerender; V.wsRunLive = runLive;   // the live assistant (src/workshoplive.js) refreshes the room and re-checks the questions
   ACT.wsLive = el => { U().live = el.value; };
   ACT.wsCheck = () => { const el = document.getElementById('wsLive'); const u = U(); if (el) u.live = el.value; if (!u.live.trim()) { toast('Paste some transcript text first'); return; } runLive(u.fileName); rerender(); };
   ACT.wsLiveClear = () => { const u = U(); u.live = ''; u.fileName = ''; u.res = null; u.info = null; rerender(); };
