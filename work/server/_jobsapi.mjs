@@ -5,7 +5,7 @@
 import { OPEN, LIMITS, KINDS, cleanRequest, newJob, step, brief, leaseExpired } from './_jobs.mjs';
 
 export function installJobs(d) {
-  const { route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, withLock, audit, CONNECTOR, rid, CTX } = d;
+  const { route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, withLock, audit, CONNECTOR, rid, CTX } = d; const notify = d.notify || (async () => 0);
   const col = pid => 'jb.' + pid, JID = /^jb_[0-9a-f]{18}$/;
   /** team members with edit access only: customers and viewers are refused */
   async function access(s, pid) { const a = await projectAccess(s, pid, 'edit'); if (a.role === 'customer') throw new HttpError(403, 'The job queue is for the project team'); return a; }
@@ -74,6 +74,7 @@ export function installJobs(d) {
     async jobs_progress(s, b) { const p = await pickProject(s, b.project); const j = await ops.progress(s, p.id, String(b.id || ''), b.summary); return { job: view(j), note: 'Shown to the person in Delivery Studio. Keep going.' }; },
     async jobs_finish(s, b) {
       const p = await pickProject(s, b.project); const j = await ops.finish(s, p.id, String(b.id || ''), { status: b.status, summary: b.summary, transferId: b.transferId, questions: b.questions });
+      if (j && String(j.requestedBy || '').includes('@')) await notify({ type: 'job_done', project: p, to: [j.requestedBy], actor: '', title: (j.status === 'needs_input' ? 'A job needs your answer' : 'A job finished') + ' · ' + p.name, text: (KINDS[j.kind] ? KINDS[j.kind].label : j.kind) + (b.summary ? ': ' + String(b.summary).slice(0, 200) : ''), view: 'transfers', key: 'jd|' + j.id + '|' + j.status });
       return { job: view(j), note: j.status === 'needs_input' ? 'The questions are shown to the person in Delivery Studio; the job waits for their answer.' : 'Recorded. Anything you stored as a transfer waits for a person to approve it in Delivery Studio.' };
     }
   };
