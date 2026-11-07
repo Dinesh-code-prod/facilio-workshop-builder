@@ -15,6 +15,7 @@ import './_msadocs.mjs';
 import { installTaskTracking } from './_tasksapi.mjs';
 import { installMailTasks } from './_mailapi.mjs';
 import { installJobs } from './_jobsapi.mjs';
+import { installFeedback } from './_feedback.mjs';
 import { installNotify, norm as nNorm } from './_notify.mjs';
 import { pendingFor, digestMessage, digestKey, assignKey, assignGate, assignmentNotice, BASE_URL as TW_BASE } from './_taskwatch.mjs';
 let FWB = null; // this copy of the server's own dispatcher (not looked up through a global, so two copies in one process cannot mix)
@@ -2170,6 +2171,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   }
   installDs({ HttpError, projectAccess, pickProject, viaApp, audit, CONNECTOR, storeServerFile, notify: (...a) => N(...a) });   // design proposals: flows and cross-module flows (_dsapi.mjs)   // requirement session transcripts and findings (_rsapi.mjs)
   installQuestions({ HttpError, projectAccess, pickProject, docRead, CONNECTOR });   // prepared questions for a workshop and live_ask (_questionsapi.mjs)
+  Object.assign(CONNECTOR, installFeedback({ route, ok, HttpError, me, dbPut, dbList, ctx: () => CTX, now: () => Date.now() }));   // team feedback tab + get_feedback (_feedback.mjs)
   notify = installNotify({ route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbList, dbDel, ctx: () => CTX, now, teamOf, BASE_URL: TW_BASE }).notify;   // in-app, browser and Teams notifications (_notify.mjs)
   const N = (...a) => notify(...a);
   // tasks due or overdue: the browser asks once a day when a team member opens the Studio (there is no scheduler); one notice per project, only for the person's own tasks

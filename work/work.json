@@ -1398,6 +1398,28 @@
       "project"
      ]
     }
+   },
+   {
+    "name": "get_feedback",
+    "description": "Team feedback and feature requests from the Feedback tab of Delivery Studio, for the daily review: one day (default today) or a range, with who sent it, what, which feature and the GitHub issue. Put the rows in an Excel sheet in the order given.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "day": {
+       "type": "string",
+       "description": "One day, YYYY-MM-DD (default today, UTC)"
+      },
+      "from": {
+       "type": "string",
+       "description": "Range start YYYY-MM-DD"
+      },
+      "to": {
+       "type": "string",
+       "description": "Range end YYYY-MM-DD"
+      }
+     }
+    }
    }
   ]
  }

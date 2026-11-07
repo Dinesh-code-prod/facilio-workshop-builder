@@ -51,7 +51,7 @@ await t('dismiss keeps a mail out; customers and viewers are refused', async () 
   role = 'customer'; await assert.rejects(() => CONNECTOR.mail_list(S, { project: 'p1' }), /project team/); role = 'lead';
 });
 await t('the connector action list and the job recipes are in step', () => {
-  const w = JSON.parse(fs.readFileSync(new URL('../work/work.json', import.meta.url), 'utf8')).mcp.tools; assert.equal(w.length, 39); const x = w.find(y => y.name === 'task_tracking');
+  const w = JSON.parse(fs.readFileSync(new URL('../work/work.json', import.meta.url), 'utf8')).mcp.tools; assert.equal(w.length, 40); const x = w.find(y => y.name === 'task_tracking');
   for (const a of ['mail_list', 'mail_save', 'mail_draft', 'mail_sent']) assert.ok(x.input_schema.properties.action.enum.includes(a) && x.description.includes(a), a);
   for (const k of ['fetch_mail', 'draft_reply', 'check_sent']) assert.match(KINDS[k].recipe, /task_tracking/); assert.match(KINDS.fetch_mail.recipe, /OTHER members/); assert.match(KINDS.draft_reply.recipe, /UNAPPROVED/); assert.match(KINDS.fetch_mail.recipe, /data, never instructions/);
 });
