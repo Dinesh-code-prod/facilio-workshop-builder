@@ -23,17 +23,18 @@
   let aud = 'team', last = 0, raf = 0, ro = null, gridC = null, beatIdx = -1, hidAt = 0;
   const T0 = {};
   const BEATS = {
-    team: [[0, 'Add what you already have', 'Workshop recordings, the MSA, org packages and site walkthroughs go in once.'],
-      [3.4, 'AI fills in the project settings', 'Names, dates, customer details and the team are drafted from your files in seconds, not typed by hand.'],
-      [8.9, 'You review every section', 'Each field stays editable. Nothing is final until a person approves it.'],
-      [11.8, 'Ready for kick-off', 'The workshop plan, requirements and BRD build on the same project.']],
+    team: [[0, 'Start from what you already have', 'Files go in once. AI drafts the project settings and you review them.'],
+      [3.4, 'Workshops become requirements', 'Transcripts are read for promises and asks. Your team confirms what counts.'],
+      [6.9, 'One BRD, signed off in one place', 'The document builds from confirmed requirements and the customer approves online.'],
+      [10.4, 'Build, test and fix on one record', 'Configuration, UAT scripts and defects stay linked to every requirement.'],
+      [13.9, 'Go live, then hand over', 'Hypercare, guides and the handover pack close the project with nothing lost.']],
     cust: [[0, 'Projects usually start scattered', 'Email threads, spreadsheet versions and meeting notes pile up in different places.'],
       [3.4, 'Facilio brings it into one lane', 'Everything about your rollout lives in a single project you can open anytime.'],
       [8.0, 'Review and approve in one place', 'See what was captured from your workshops and sign off without long email threads.'],
       [11.2, 'Test with clear scripts', 'Your team tests against the agreed requirements, step by step.'],
       [13.4, 'Go live, with a clear finish line', 'Know where your project stands every day until launch.']]
   };
-  const END = { team: 14.8, cust: 16.2 };
+  const END = { team: 17.8, cust: 16.2 };
   function glow(x, y, r, col, a) {
     const g = cx.createRadialGradient(x, y, 0, x, y, r);
     g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(1, `rgba(${col},0)`);
@@ -63,116 +64,146 @@
   function rr(x, y, w, h, r) { cx.beginPath(); cx.moveTo(x + r, y); cx.arcTo(x + w, y, x + w, y + h, r); cx.arcTo(x + w, y + h, x, y + h, r); cx.arcTo(x, y + h, x, y, r); cx.arcTo(x, y, x + w, y, r); cx.closePath(); }
   function ring(x, y, k, col, maxR) { if (k <= 0 || k >= 1) return; cx.strokeStyle = `rgba(${col},${(1 - k) * .9})`; cx.lineWidth = 2 * (1 - k) + .5; cx.beginPath(); cx.arc(x, y, 4 + k * maxR, 0, TAU); cx.stroke(); }
 
-  /* ---------- TEAM: from your files to a ready project ---------- */
-  // Files go in, AI drafts the project settings (what you now see on Settings: a label and a card per section), a person reviews every section, and the plan, requirements and BRD follow.
+  /* ---------- TEAM: one project, from the first file to handover ---------- */
+  // A window that looks like the app changes page as the project moves: settings, transcripts and requirements, BRD and sign-off, build and UAT, go-live and handover.
+  // A stage rail along the bottom fills from Kick-off to Handover. AI marks where it saves time; people confirm, sign off and approve.
   const INPUTS = [['Workshop audio', '58 min recording', 'rec'], ['MSA & scope', 'PDF · 24 pages', 'doc'], ['Org package', 'Sites, assets, users', 'org'], ['Site walkthrough', 'Video · 3 sites', 'vid'], ['Existing SOPs', '12 documents', 'doc']];
-  const FIELDS = [[0, 0, 0, 'Project name', 'Riverside Towers rollout'], [0, 1, 0, 'Customer', 'Riverside Facilities'], [0, 0, 1, 'Go-live', '05 Jan 2027'], [0, 1, 1, 'Phase', 'Requirements'], [1, 0, 0, 'Sector', 'Real estate'], [1, 1, 0, 'Region', 'UAE'], [1, 2, 0, 'Sites', '12 buildings']];
-  const PEOPLE = [['MS', 'Meera S.', 'Project manager', '21,112,239'], ['DR', 'Dinesh R.', 'Consultant', '14,147,132'], ['PN', 'Priya N.', 'Customer', '229,25,127']];
-  const SECS = [['Project', 'Name, customer, dates and phase.', 50, 96], ['Customer', 'Sector, region and size of the estate.', 158, 52], ['Team', 'Who works on it, and who signs off.', 222, 52]];
-  const OUTS = [['Workshop plan', 'Sessions and agendas', 'doc'], ['Requirements', 'From the transcripts', 'rec'], ['BRD', 'Builds on this project', 'doc']];
-  const TABS = ['Project details', 'People & access', 'Org package', 'Keeping', 'History'];
-  const LW = 520, LH = 284, CX0 = 176, CW0 = 330;   // the settings mock is drawn in these units and scaled to fit
-  const IN_T = i => .5 + i * .5, F_T = k => 3.9 + k * .42, TICK_T = [9.0, 9.9, 10.8], OUT_T = i => 11.9 + i * .45;
-  const NF = FIELDS.length + PEOPLE.length;
-  let G = {}, gpulse = 0, teamFx = [], lastT = 0;
+  const SCN = [0, 3.4, 6.9, 10.4, 13.9], ENDT = 17.8;
+  const SCN_TITLE = ['Project settings', 'Transcripts and requirements', 'BRD and sign-off', 'Configuration and UAT', 'Go-live and handover'];
+  const SCN_MSG = ['AI is drafting the project settings', 'AI proposes requirements: your team confirms', 'The BRD builds from confirmed requirements', 'Every test case links to a requirement', 'Live, supported, then handed over'];
+  const RAIL = ['Kick-off', 'Workshops', 'Requirements', 'BRD', 'Build & test', 'Go-live', 'Hypercare', 'Handover'];
+  const RK = [[0, 0], [3.0, .5], [3.6, 1], [5.6, 2], [6.9, 2.5], [8.6, 3], [10.4, 3.4], [12.4, 4], [13.9, 4.5], [14.6, 5], [15.8, 6], [17.2, 7]];
+  const railAt = t => { if (t <= 0) return 0; for (let i = 0; i < RK.length - 1; i++) if (t < RK[i + 1][0]) return lerp(RK[i][1], RK[i + 1][1], eIO((t - RK[i][0]) / (RK[i + 1][0] - RK[i][0]))); return 7; };
+  const LW = 700, LH = 290;   // the window is drawn in these units and scaled to fit
+  let G = {}, teamFx = [], gpulse = 0, lastT = 0;
   function layoutTeam() {
-    const cw = NARROW ? 46 : clamp(S.w * .25, 132, 188), ch = NARROW ? 38 : 50;
-    const outH = NARROW ? 38 : 46, top = S.y + 34, bot = S.y + S.h - outH - 16;
-    const left = S.x + cw + (NARROW ? 12 : S.w * .05), pw = S.x + S.w - left - 2, ph = Math.max(150, bot - top);
-    const f = Math.min(pw / LW, ph / LH, 1.25);
-    G = { cw, ch, f, outH, top, bot, px: left + (pw - LW * f) / 2, py: top + (ph - LH * f) / 2, pw: LW * f, ph: LH * f, oy: S.y + S.h - outH - 4 };
-    const step = (bot - top - ch) / 4;
-    G.inPos = INPUTS.map((_, i) => ({ x: S.x + (NARROW ? 6 : 4), y: top + i * step }));
-    G.outX = S.x + 4; G.outW = (S.w - 8 - 16) / 3;
+    const railH = NARROW ? 40 : 52, top = S.y + 32, ry = S.y + S.h - railH;
+    const ww = S.w - 4, wh = Math.max(150, ry - top - 8), f = Math.min(ww / LW, wh / LH, 1.5);
+    G = { f, wx: S.x + 2 + (ww - LW * f) / 2, wy: top + (wh - LH * f) / 2, ww: LW * f, wh: LH * f, ry, rx0: S.x + (NARROW ? 14 : 30), rx1: S.x + S.w - (NARROW ? 14 : 30) };
   }
-  function wrapText(str, maxW) { const out = []; let line = ''; str.split(' ').forEach(w => { const test = line ? line + ' ' + w : w; if (cx.measureText(test).width > maxW && line) { out.push(line); line = w; } else line = test; }); if (line) out.push(line); return out; }
-  function spark(x, y, r, col, a) { if (a <= .01) return; cx.save(); cx.globalAlpha = a; cx.fillStyle = col; cx.beginPath(); cx.moveTo(x, y - r); cx.quadraticCurveTo(x, y, x + r, y); cx.quadraticCurveTo(x, y, x, y + r); cx.quadraticCurveTo(x, y, x - r, y); cx.quadraticCurveTo(x, y, x, y - r); cx.fill(); cx.restore(); }
-  function fieldAt(k) { const F = FIELDS[k]; const s = SECS[F[0]]; const cwid = F[0] === 0 ? 150 : 98, gx = F[0] === 0 ? 158 : 104; return { x: CX0 + 14 + F[1] * gx, y: s[2] + (F[0] === 0 ? 12 + F[2] * 40 : 10), w: cwid, label: F[3], value: F[4] }; }
-  function drawField(k, t) {
-    const f = fieldAt(k), t0 = F_T(k), p = clamp((t - t0) / .55, 0, 1), done = t >= t0 + .55;
-    cx.font = `500 9.5px ${FONT}`; cx.fillStyle = '#686868'; cx.textBaseline = 'alphabetic'; cx.fillText(f.label, f.x, f.y + 9);
-    if (done && t < t0 + 1.3) { cx.fillStyle = `rgba(21,112,239,${.1 * (1 - (t - t0 - .55) / .75)})`; rr(f.x - 6, f.y - 3, f.w, 32, 7); cx.fill(); }
-    if (p <= 0) { cx.fillStyle = `rgba(0,0,0,${.06 + .03 * Math.sin(t * 5 + k)})`; rr(f.x, f.y + 17, f.w * .62, 9, 4.5); cx.fill(); return; }
-    cx.font = `500 12px ${FONT}`; cx.fillStyle = '#262626'; const n = Math.ceil(f.value.length * eOut(p)); const txt = f.value.slice(0, n); cx.fillText(txt, f.x, f.y + 26);
-    if (p < 1) { const w = cx.measureText(txt).width; cx.fillStyle = '#1570EF'; cx.fillRect(f.x + w + 1.5, f.y + 15, 1.6, 13); spark(f.x + w + 12, f.y + 15, 3.5, '#E5197F', .9); }
-    else { cx.fillStyle = 'rgba(21,112,239,.55)'; cx.beginPath(); cx.arc(f.x + f.w - 14, f.y + 5, 2.4, 0, TAU); cx.fill(); }
+  const T = (s, x, y, size, weight, col, align) => { cx.font = `${weight} ${size}px ${FONT}`; cx.fillStyle = col; cx.textAlign = align || 'left'; cx.textBaseline = 'alphabetic'; cx.fillText(s, x, y); cx.textAlign = 'left'; };
+  const pnl = (x, y, w, h, r, fill, stroke) => { rr(x, y, w, h, r); cx.fillStyle = fill || '#fff'; cx.fill(); if (stroke !== false) { cx.strokeStyle = stroke || 'rgba(0,0,0,.09)'; cx.lineWidth = 1; cx.stroke(); } };
+  const bar = (x, y, w, h, col) => { cx.fillStyle = col || 'rgba(0,0,0,.08)'; rr(x, y, Math.max(0, w), h, h / 2); cx.fill(); };
+  const tick = (x, y, s, col) => { cx.save(); cx.translate(x, y); cx.fillStyle = col || '#107c10'; cx.beginPath(); cx.arc(0, 0, s, 0, TAU); cx.fill(); icon('ok', -s * .55, -s * .55, s * 1.1, '#fff'); cx.restore(); };
+  const chip = (x, y, w, h, label, bg, fg) => { pnl(x, y, w, h, h / 2, bg, false); T(label, x + w / 2, y + h / 2 + 3.5, 9.5, 600, fg, 'center'); };
+  const dot = (x, y, a) => { cx.fillStyle = `rgba(21,112,239,${.6 * a})`; cx.beginPath(); cx.arc(x, y, 2.4, 0, TAU); cx.fill(); };
+  function sparkle(x, y, r, col, a) { if (a <= .01) return; cx.save(); cx.globalAlpha = a; cx.fillStyle = col; cx.beginPath(); cx.moveTo(x, y - r); cx.quadraticCurveTo(x, y, x + r, y); cx.quadraticCurveTo(x, y, x, y + r); cx.quadraticCurveTo(x, y, x - r, y); cx.quadraticCurveTo(x, y, x, y - r); cx.fill(); cx.restore(); }
+  const SET_F = [['Project name', 'Riverside Towers rollout'], ['Customer', 'Riverside Facilities'], ['Go-live', '05 Jan 2027'], ['Phase', 'Kick-off']];
+  const PEOPLE = [['MS', 'Meera S.', 'Project manager', '21,112,239'], ['DR', 'Dinesh R.', 'Consultant', '14,147,132'], ['PN', 'Priya N.', 'Customer', '229,25,127']];
+  const REQS = [['R-01', 'Technicians raise material requests'], ['R-02', 'Weekly readings shown as a trend'], ['R-03', 'Supervisors alerted on SLA breach'], ['R-04', 'Documents follow the work order']];
+  const MODS = ['Work orders', 'Assets', 'Inventory', 'SLAs', 'Roles', 'Portals'];
+  const CASES = ['Raise a work order from the portal', 'Approve a purchase request', 'SLA breach alert is sent', 'Reading appears on the trend', 'Handover pack opens'];
+  const CHECKS = ['Users trained', 'Data loaded', 'Guides published', 'Sign-offs done', 'Support ready'];
+  const ini = (x, y, i, a) => { const p = PEOPLE[i % 3]; cx.save(); cx.globalAlpha *= a; cx.fillStyle = `rgb(${p[3]})`; cx.beginPath(); cx.arc(x, y, 8, 0, TAU); cx.fill(); T(p[0], x, y + 3, 7.5, 700, '#fff', 'center'); cx.restore(); };
+
+  function sceneSet(tl) {
+    INPUTS.forEach(([ti, su, kd], i) => {
+      const a = sm(.1 + i * .2, .45 + i * .2, tl), x = 22 - (1 - eOut(a)) * 30, y = 56 + i * 38; if (a <= 0) return; cx.save(); cx.globalAlpha = a;
+      const added = tl > 1.6 + i * .15;
+      pnl(x, y, 172, 31, 9, '#f7f7f7'); cx.fillStyle = added ? 'rgba(16,124,16,.12)' : 'rgba(21,112,239,.10)'; rr(x + 5, y + 5, 21, 21, 6); cx.fill(); icon(kd, x + 9.5, y + 9.5, 12, added ? '#107c10' : '#1570EF');
+      T(ti, x + 33, y + 14, 10.5, 600, '#262626'); T(added ? 'Added to project' : su, x + 33, y + 25, 8.5, 500, added ? '#107c10' : '#686868'); cx.restore();
+    });
+    for (let k = 0; k < 4; k++) { const u = ((tl * 1.4 + k * .25) % 1), a = Math.sin(u * Math.PI) * sm(.6, 1, tl); sparkle(204 + u * 40, 150 + Math.sin(u * 6 + k) * 8, 3, k % 2 ? '#E5197F' : '#1570EF', a); }
+    pnl(256, 50, 422, 206, 14, '#fff'); T('Project settings', 274, 74, 12.5, 600, '#262626'); T('Name, customer, dates and phase', 274, 88, 9.5, 500, '#686868');
+    SET_F.forEach(([lb, val], k) => {
+      const x = 274 + (k % 2) * 206, y = 108 + Math.floor(k / 2) * 48, t0 = .9 + k * .5, p = clamp((tl - t0) / .6, 0, 1);
+      T(lb, x, y, 9.5, 500, '#686868'); if (p <= 0) { bar(x, y + 8, 110, 9, `rgba(0,0,0,${.06 + .03 * Math.sin(tl * 5 + k)})`); return; }
+      const txt = val.slice(0, Math.ceil(val.length * eOut(p))); T(txt, x, y + 17, 12, 500, '#262626');
+      if (p < 1) { cx.font = `500 12px ${FONT}`; const w = cx.measureText(txt).width; cx.fillStyle = '#1570EF'; cx.fillRect(x + w + 1.5, y + 7, 1.6, 13); sparkle(x + w + 12, y + 8, 3.5, '#E5197F', .9); } else dot(x + 180, y - 4, 1);
+    });
+    PEOPLE.forEach(([i2, nm, role], i) => { const t0 = 2.2 + i * .25, a = sm(t0, t0 + .3, tl); if (a <= 0) return; cx.save(); cx.globalAlpha = a; const x = 274 + i * 134, y = 208; pnl(x, y, 126, 38, 19, '#fff', 'rgba(0,0,0,.12)'); ini(x + 19, y + 19, i, 1); T(nm, x + 34, y + 17, 10.5, 600, '#262626'); T(role, x + 34, y + 29, 8.5, 500, '#686868'); cx.restore(); });
   }
-  function drawPeople(t) {
-    const s = SECS[2];
-    PEOPLE.forEach(([ini, nm, role, col], i) => {
-      const k = FIELDS.length + i, t0 = F_T(k), a = sm(t0, t0 + .35, t), x = CX0 + 14 + i * 104, y = s[2] + 11;
-      if (a <= 0) { cx.fillStyle = 'rgba(0,0,0,.06)'; rr(x, y + 4, 90, 22, 11); cx.fill(); return; }
-      cx.save(); cx.globalAlpha = a; const sc = .9 + .1 * eBack((t - t0) / .45); cx.translate(x + 45, y + 15); cx.scale(sc, sc); cx.translate(-x - 45, -y - 15);
-      cx.fillStyle = '#fff'; cx.strokeStyle = 'rgba(0,0,0,.12)'; cx.lineWidth = 1; rr(x, y, 92, 30, 15); cx.fill(); cx.stroke();
-      cx.fillStyle = `rgb(${col})`; cx.beginPath(); cx.arc(x + 15, y + 15, 10, 0, TAU); cx.fill(); cx.fillStyle = '#fff'; cx.font = `700 8.5px ${FONT}`; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText(ini, x + 15, y + 15.5); cx.textAlign = 'left';
-      cx.fillStyle = '#262626'; cx.font = `600 10.5px ${FONT}`; cx.fillText(nm, x + 30, y + 11); cx.fillStyle = '#686868'; cx.font = `500 8.5px ${FONT}`; cx.fillText(role, x + 30, y + 22);
+  function sceneReq(tl) {
+    pnl(22, 50, 280, 206, 14, '#fff'); T('Workshop 2 · transcript', 38, 74, 11, 600, '#262626'); cx.fillStyle = '#1570EF'; cx.beginPath(); cx.moveTo(268, 66); cx.lineTo(268, 78); cx.lineTo(278, 72); cx.fill();
+    for (let i = 0; i < 38; i++) { const h = 4 + (Math.sin(i * 1.7) * .5 + .5) * 18 * (.55 + .45 * Math.sin(tl * 4 + i * .6)); bar(38 + i * 6.4, 98 - h / 2, 3.6, h, 'rgba(21,112,239,.55)'); }
+    [.8, 1.0, 1.0, .74, .9].forEach((w, i) => {
+      const y = 126 + i * 24, hl = [1, 3, 4].indexOf(i), on = hl >= 0 && tl > .9 + hl * .65;
+      if (on) { cx.fillStyle = 'rgba(21,112,239,.14)'; rr(36, y - 7, 250 * w + 6, 17, 5); cx.fill(); cx.fillStyle = '#1570EF'; cx.fillRect(36, y + 10, 250 * w + 6, 1.6); sparkle(36 + 250 * w + 12, y - 4, 3.2, '#E5197F', .9); }
+      bar(39, y, 244 * w, 8, on ? 'rgba(21,112,239,.35)' : 'rgba(0,0,0,.09)');
+    });
+    pnl(322, 50, 356, 206, 14, '#fff'); T('Requirements', 340, 74, 12, 600, '#262626'); chip(430, 62, 86, 17, 'AI first draft', 'rgba(21,112,239,.10)', '#0e4a9a');
+    REQS.forEach(([id, title], i) => {
+      const t0 = 1.3 + i * .32, a = sm(t0, t0 + .3, tl), tc = 2.5 + i * .45, conf = tl > tc, y = 92 + i * 39; if (a <= 0) return; cx.save(); cx.globalAlpha = a; cx.translate((1 - eOut(a)) * 14, 0);
+      pnl(338, y, 324, 32, 9, '#fafafa'); T(id, 348, y + 20, 9, 600, '#686868'); T(title, 380, y + 20, 10.5, 500, '#262626');
+      if (conf) { chip(578, y + 7, 66, 18, 'Confirmed', 'rgba(16,124,16,.12)', '#0b5a0b'); ini(556, y + 16, i, clamp(eBack((tl - tc) / .35), 0, 1)); } else chip(578, y + 7, 66, 18, 'To confirm', 'rgba(188,75,9,.12)', '#8a3706');
       cx.restore();
     });
   }
-  function drawPanel(t, pa) {
-    cx.save(); cx.globalAlpha = pa; cx.translate(G.px, G.py + (1 - pa) * 14); cx.scale(G.f, G.f);
-    cx.shadowColor = 'rgba(4,3,30,.5)'; cx.shadowBlur = 30; cx.shadowOffsetY = 12; cx.fillStyle = '#fafafa'; rr(0, 0, LW, LH, 18); cx.fill(); cx.shadowColor = 'transparent';
-    cx.strokeStyle = 'rgba(255,255,255,.7)'; cx.lineWidth = 1; rr(.5, .5, LW - 1, LH - 1, 18); cx.stroke();
-    cx.save(); rr(0, 0, LW, LH, 18); cx.clip();
-    // segmented tab control, as on Settings
-    cx.fillStyle = 'rgba(0,0,0,.05)'; rr(14, 12, LW - 28, 28, 10); cx.fill(); let tx = 17;
-    cx.font = `500 10.5px ${FONT}`; cx.textBaseline = 'middle';
-    TABS.forEach((lb, i) => { const w = cx.measureText(lb).width + 24; if (i === 0) { cx.fillStyle = '#fff'; cx.shadowColor = 'rgba(0,0,0,.16)'; cx.shadowBlur = 3; cx.shadowOffsetY = 1; rr(tx, 15, w, 22, 8); cx.fill(); cx.shadowColor = 'transparent'; } cx.fillStyle = i === 0 ? '#262626' : '#686868'; cx.fillText(lb, tx + 12, 26.5); tx += w + 3; });
-    // sections: label and description on the left, the card on the right
-    SECS.forEach(([title, desc, y, h]) => {
-      cx.fillStyle = '#262626'; cx.font = `600 12.5px ${FONT}`; cx.textBaseline = 'alphabetic'; cx.fillText(title, 16, y + 16);
-      cx.fillStyle = '#686868'; cx.font = `500 10px ${FONT}`; wrapText(desc, 140).slice(0, 3).forEach((ln, i) => cx.fillText(ln, 16, y + 31 + i * 13));
-      cx.fillStyle = '#fff'; cx.strokeStyle = 'rgba(0,0,0,.09)'; cx.lineWidth = 1; rr(CX0, y, CW0, h, 12); cx.fill(); cx.stroke();
+  function sceneBrd(tl) {
+    pnl(22, 46, 250, 216, 12, '#fff'); T('Business requirements document', 36, 68, 10.5, 600, '#262626'); chip(206, 55, 54, 16, 'v1 draft', 'rgba(0,0,0,.06)', '#686868');
+    [['Scope', 3], ['Requirements', 4], ['Process flows', 3]].forEach(([h, n], s) => {
+      const y0 = 86 + s * 56, p0 = clamp((tl - .3 - s * .55) / .35, 0, 1); T(h, 36, y0 + 8, 10, 600, `rgba(29,26,94,${p0})`);
+      for (let l = 0; l < n; l++) { const p = clamp((tl - .5 - s * .55 - l * .14) / .45, 0, 1); bar(36, y0 + 16 + l * 11, (l === n - 1 ? 130 : 200) * eOut(p), 5, 'rgba(0,0,0,.10)'); }
     });
-    FIELDS.forEach((_, k) => drawField(k, t)); drawPeople(t);
-    // the reading beam: a soft blue band sweeping down the settings while AI drafts
-    const bs = (t > END.team) ? ((t - END.team) % 7) / 1.6 : (t - 3.4) / 1.8;
-    if (bs > 0 && bs < 1) { const by = lerp(-40, LH + 20, eIO(bs)); const g = cx.createLinearGradient(0, by - 36, 0, by + 36); g.addColorStop(0, 'rgba(21,112,239,0)'); g.addColorStop(.5, 'rgba(21,112,239,.14)'); g.addColorStop(1, 'rgba(21,112,239,0)'); cx.fillStyle = g; cx.fillRect(0, by - 36, LW, 72); cx.fillStyle = 'rgba(21,112,239,.45)'; cx.fillRect(0, by - .6, LW, 1.2); }
-    // review: a tick on each section card
-    SECS.forEach(([, , y], s) => { const k = (t - TICK_T[s]) / .4; if (k <= 0) return; const sc = eBack(k); const x = CX0 + CW0 - 17, yy = y + 17; cx.save(); cx.translate(x, yy); cx.scale(sc, sc); cx.fillStyle = '#107c10'; cx.beginPath(); cx.arc(0, 0, 9, 0, TAU); cx.fill(); icon('ok', -4.8, -4.8, 9.6, '#fff'); cx.restore(); });
-    cx.restore();
-    // the reviewer's pointer
-    const KF = [[8.1, 430, 262], [8.95, CX0 + CW0 - 20, SECS[0][2] + 24], [9.45, CX0 + CW0 - 20, SECS[0][2] + 24], [9.85, CX0 + CW0 - 20, SECS[1][2] + 24], [10.35, CX0 + CW0 - 20, SECS[1][2] + 24], [10.75, CX0 + CW0 - 20, SECS[2][2] + 24], [11.15, CX0 + CW0 - 20, SECS[2][2] + 24], [11.9, 470, 268]];
-    if (t > KF[0][0] && t < KF[KF.length - 1][0] + .2) {
-      let i = 0; while (i < KF.length - 2 && t > KF[i + 1][0]) i++; const a = KF[i], b = KF[i + 1], u = eIO((t - a[0]) / (b[0] - a[0]));
-      const x = lerp(a[1], b[1], u), y = lerp(a[2], b[2], u), al = sm(8.1, 8.5, t) * (1 - sm(11.5, 12, t));
-      cx.globalAlpha = pa * al; cx.shadowColor = 'rgba(0,0,0,.35)'; cx.shadowBlur = 4; cx.shadowOffsetY = 2; cx.fillStyle = '#171717'; cx.strokeStyle = '#fff'; cx.lineWidth = 1.4;
-      cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x + 3, y + 15); cx.lineTo(x + 6.5, y + 10.5); cx.lineTo(x + 12, y + 10); cx.closePath(); cx.fill(); cx.stroke(); cx.shadowColor = 'transparent';
-    }
-    cx.restore();
+    pnl(292, 50, 386, 206, 14, '#fff'); T('Customer sign-off', 310, 74, 12, 600, '#262626');
+    ini(322, 100, 2, sm(.4, .8, tl)); T('Priya N., Riverside Facilities', 338, 99, 10.5, 600, '#262626'); T('Decision maker', 338, 111, 8.5, 500, '#686868');
+    pnl(310, 126, 350, 78, 10, '#fafafa'); cx.strokeStyle = 'rgba(0,0,0,.15)'; cx.setLineDash([3, 3]); cx.beginPath(); cx.moveTo(326, 186); cx.lineTo(644, 186); cx.stroke(); cx.setLineDash([]);
+    const sp = clamp((tl - 1.3) / 1.2, 0, 1);
+    if (sp > 0) { cx.strokeStyle = '#1D1A5E'; cx.lineWidth = 2; cx.lineCap = 'round'; cx.beginPath(); for (let u = 0; u <= sp + .001; u += .01) { const x = 340 + u * 220, y = 168 + Math.sin(u * 15) * 15 * (1 - u * .45) - u * 12; if (u === 0) cx.moveTo(x, y); else cx.lineTo(x, y); } cx.stroke(); }
+    const st = sm(2.7, 3.0, tl); if (st > 0) { cx.save(); cx.translate(574, 160); cx.rotate(-.07); const sc = .85 + .15 * eBack((tl - 2.7) / .4); cx.scale(sc, sc); cx.globalAlpha *= st; pnl(-58, -17, 116, 34, 10, '#fff', '#107c10'); tick(-40, 0, 8); T('Signed off', -26, 4, 11.5, 700, '#0b5a0b'); T('07 Nov', 22, 4, 9, 500, '#686868'); cx.restore(); }
+    T('Later changes go through change requests', 310, 232, 9.5, 500, '#686868'); if (tl > 2.9) tick(640, 228, 6);
   }
+  function sceneBuild(tl) {
+    pnl(22, 50, 250, 206, 14, '#fff'); T('Configuration', 38, 74, 12, 600, '#262626');
+    MODS.forEach((m, i) => { const t0 = .3 + i * .28, a = sm(t0, t0 + .3, tl), x = 36 + (i % 2) * 118, y = 90 + Math.floor(i / 2) * 36; if (a <= 0) return; cx.save(); cx.globalAlpha = a; cx.translate((1 - eOut(a)) * -12, 0); pnl(x, y, 110, 28, 9, '#fafafa'); T(m, x + 10, y + 18, 10.5, 500, '#262626'); if (tl > t0 + .6) tick(x + 96, y + 14, 6.5); cx.restore(); });
+    T('Same record as the BRD', 38, 232, 9.5, 500, '#686868');
+    pnl(292, 50, 386, 206, 14, '#fff'); T('UAT test cases', 310, 74, 12, 600, '#262626');
+    const done = CASES.filter((_, i) => tl > .8 + i * .55 + (i === 2 ? .9 : 0)).length, pct = Math.round(done / CASES.length * 100); T(pct + '%', 660, 74, 11, 600, '#262626', 'right');
+    bar(310, 84, 350, 7, 'rgba(0,0,0,.08)'); bar(310, 84, 350 * (done / CASES.length), 7, '#107c10');
+    CASES.forEach((c, i) => {
+      const t0 = .8 + i * .55, y = 104 + i * 29, a = sm(t0 - .4, t0 - .1, tl); if (a <= 0) return; const fail = i === 2, fixed = fail && tl > t0 + .9, ok = tl > t0 && (!fail || fixed), bad = fail && tl > t0 && !fixed;
+      cx.save(); cx.globalAlpha = a; pnl(310, y, 350, 24, 8, '#fafafa'); T(c, 338, y + 16, 10.5, 500, '#262626');
+      if (ok) tick(324, y + 12, 6, '#107c10'); else if (bad) { cx.fillStyle = '#b10e1c'; cx.beginPath(); cx.arc(324, y + 12, 6, 0, TAU); cx.fill(); T('!', 324, y + 15.5, 9, 700, '#fff', 'center'); } else { cx.strokeStyle = 'rgba(0,0,0,.25)'; cx.lineWidth = 1.2; rr(318, y + 6, 12, 12, 4); cx.stroke(); }
+      if (fixed) chip(584, y + 4, 66, 16, 'Defect fixed', 'rgba(16,124,16,.12)', '#0b5a0b'); else if (bad) chip(592, y + 4, 58, 16, 'Defect', 'rgba(177,14,28,.10)', '#8e0b17'); else if (ok) chip(600, y + 4, 50, 16, 'Pass', 'rgba(16,124,16,.12)', '#0b5a0b');
+      cx.restore();
+    });
+  }
+  function sceneLive(tl) {
+    pnl(22, 50, 210, 206, 14, '#fff'); T('Go-live readiness', 38, 74, 12, 600, '#262626');
+    CHECKS.forEach((c, i) => { const t0 = .3 + i * .33, a = sm(t0 - .2, t0, tl), y = 92 + i * 31; if (a <= 0) return; cx.save(); cx.globalAlpha = a; pnl(36, y, 182, 25, 8, '#fafafa'); T(c, 62, y + 16.5, 10.5, 500, '#262626'); if (tl > t0 + .1) tick(49, y + 12.5, 6, '#107c10'); else { cx.strokeStyle = 'rgba(0,0,0,.25)'; rr(43, y + 6.5, 12, 12, 4); cx.stroke(); } cx.restore(); });
+    const live = sm(1.7, 2.1, tl), px = 350, py = 140; for (let k = 0; k < 3; k++) { const u = ((tl * .7 + k / 3) % 1) * live; cx.strokeStyle = `rgba(16,124,16,${(1 - u) * .35 * live})`; cx.lineWidth = 1.5; cx.beginPath(); cx.arc(px, py, 30 + u * 44, 0, TAU); cx.stroke(); }
+    cx.fillStyle = live > .05 ? '#107c10' : 'rgba(0,0,0,.14)'; cx.beginPath(); cx.arc(px, py, 33, 0, TAU); cx.fill(); T('Live', px, py + 5, 15, 700, '#fff', 'center');
+    T(tl > 2.1 ? 'Hypercare: first 30 days' : 'Ready to launch', px, py + 62, 10.5, 600, '#262626', 'center');
+    pnl(468, 50, 210, 112, 14, '#fff'); T('Hypercare · open issues', 484, 74, 11.5, 600, '#262626');
+    const pts = [9, 7, 6, 4, 3, 1, 0], pp = clamp((tl - .8) / 2.2, 0, 1); cx.strokeStyle = '#1570EF'; cx.lineWidth = 2; cx.lineJoin = 'round'; cx.beginPath();
+    pts.forEach((v, i) => { const u = i / (pts.length - 1); if (u > pp) return; const x = 486 + u * 172, y = 142 - v * 5.6; if (i === 0) cx.moveTo(x, y); else cx.lineTo(x, y); }); cx.stroke();
+    pnl(468, 172, 210, 84, 14, '#fff'); T('Handover pack', 484, 194, 11.5, 600, '#262626');
+    ['Guides', 'BRD', 'Config'].forEach((d, i) => { const t0 = 2.0 + i * .3, a = sm(t0, t0 + .3, tl); if (a <= 0) return; cx.save(); cx.globalAlpha = a; cx.translate(0, (1 - eOut(a)) * 8); pnl(484 + i * 62, 206, 56, 36, 8, '#fafafa'); icon('doc', 498 + i * 62, 210, 14, '#1570EF'); T(d, 512 + i * 62, 237, 8.5, 600, '#262626', 'center'); cx.restore(); });
+    const hd = sm(3.1, 3.4, tl); if (hd > 0) { cx.save(); cx.globalAlpha = hd; pnl(536, 162, 106, 20, 10, '#107c10', false); T('Handed over', 589, 176, 10, 700, '#fff', 'center'); cx.restore(); }
+  }
+  const SCENES = [sceneSet, sceneReq, sceneBrd, sceneBuild, sceneLive];
   function team(t, dt) {
-    INPUTS.forEach((_, i) => { const tt = IN_T(i) + 1.2; if (lastT < tt && t >= tt) { gpulse = Math.min(1.2, gpulse + .6); teamFx.push({ k: 'land', i, t }); } });
-    gpulse *= Math.pow(.15, dt);
-    const pa = eOut(t / .9), { cw, ch } = G;
-    glow(G.px + G.pw * .5, G.py + G.ph * .5, G.pw * .62, '21,112,239', .13 + .08 * gpulse);
-    drawPanel(t, pa);
-    // inputs: each file flies into the settings and is added to the project
-    INPUTS.forEach(([ti, su, kd], i) => {
-      const p = G.inPos[i], st = IN_T(i), ap = eOut((t - st + .45) / .6), used = sm(st + 1.2, st + 1.7, t);
-      const from = { x: p.x + cw, y: p.y + ch / 2 }, to = { x: G.px + 4, y: G.py + G.ph * (.22 + i * .14) };
-      const hd = eIO((t - st) / 1.2), tl = eIO((t - st - .9) / .9);
-      if (t > st && tl < 1) { cx.save(); arc(from, to, Math.hypot(to.x - from.x, to.y - from.y) * .3, hd, tl, '141,184,255', 2.2); cx.restore(); }
-      card(p.x - (1 - ap) * 24, p.y, cw, ch, ti, used > .5 ? 'Added to project' : su, kd, ap * (1 - used * .15), { subCol: used > .5 ? '#6ee7b7' : null, icBg: used > .5 ? 'rgba(52,211,153,.18)' : null, icCol: used > .5 ? '#34d399' : null });
+    const pa = eOut(t / .8), si = SCN.reduce((n, s, i) => (t >= s ? i : n), 0);
+    glow(G.wx + G.ww * .5, G.wy + G.wh * .5, G.ww * .6, '21,112,239', .12);
+    // the window
+    cx.save(); cx.globalAlpha = pa; cx.translate(G.wx, G.wy + (1 - pa) * 12); cx.scale(G.f, G.f);
+    cx.shadowColor = 'rgba(4,3,30,.5)'; cx.shadowBlur = 30; cx.shadowOffsetY = 12; pnl(0, 0, LW, LH, 18, '#fafafa', false); cx.shadowColor = 'transparent';
+    cx.save(); rr(0, 0, LW, LH, 18); cx.clip();
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, LW, 34); cx.fillStyle = 'rgba(0,0,0,.08)'; cx.fillRect(0, 34, LW, 1);
+    T('Riverside Towers rollout', 20, 22, 10.5, 600, '#262626'); T('/', 138, 22, 10.5, 500, '#a3a3a3');
+    SCN_TITLE.forEach((nm, i) => { const e = i + 1 < SCN.length ? SCN[i + 1] : 1e9, a = sm(SCN[i] - .05, SCN[i] + .3, t) * (1 - sm(e - .3, e, t)); if (a > .01) { cx.save(); cx.globalAlpha = a; T(nm, 152, 22, 10.5, 500, '#686868'); cx.restore(); } });
+    ini(LW - 70, 17, 0, 1); ini(LW - 52, 17, 1, 1); ini(LW - 34, 17, 2, 1);
+    SCENES.forEach((fn, i) => {
+      const s0 = SCN[i], e = i + 1 < SCN.length ? SCN[i + 1] : 1e9, a = sm(s0 - .05, s0 + .35, t) * (1 - sm(e - .3, e, t)); if (a <= .01) return;
+      cx.save(); cx.globalAlpha *= a; cx.translate((1 - sm(s0 - .05, s0 + .35, t)) * 18 - sm(e - .3, e, t) * 18, 0); fn(t - s0); cx.restore();
     });
-    teamFx.forEach(f => { const k = (t - f.t) / 1.1; if (k < 1 && f.k === 'land') { const to = { x: G.px + 4, y: G.py + G.ph * (.22 + f.i * .14) }; ring(to.x, to.y, k, '255,255,255', 22); ring(to.x, to.y, Math.max(0, k - .2), '21,112,239', 14); } });
-    // what AI is doing now, in one line above the settings
-    const filled = FIELDS.concat(PEOPLE).filter((_, k) => t >= F_T(k) + .55).length;
-    const reviewing = t < OUT_T(0) - .2;
-    const msg = t < 3.4 ? null : t < TICK_T[0] - .2 ? 'AI is drafting the settings · ' + filled + ' of ' + NF + ' fields' : reviewing ? 'Your turn: review each section' : 'Ready for kick-off';
-    if (msg) pill(G.px + G.pw / 2, G.py - 4, msg, null, sm(3.4, 3.9, t) * pa, { dot: reviewing ? '#E5197F' : '#107c10', tail: false, small: true });
-    // outputs: the next pieces of the project build on these settings
-    OUTS.forEach(([ti, su, kd], i) => {
-      const st = OUT_T(i); if (t < st) return;
-      const x = G.outX + i * (G.outW + 8), y = G.oy, to = { x: x + G.outW / 2, y }, from = { x: G.px + G.pw * (.25 + i * .25), y: G.py + G.ph };
-      const hd = eIO((t - st) / 1.0), tl = eIO((t - st - .8) / .8);
-      if (tl < 1) { cx.save(); arc(from, to, 26, hd, tl, '229,25,127', 2); cx.restore(); }
-      const k = t - st - 1.0, ap = sm(0, .25, k), sc = k > 0 ? eBack(k / .45) : 0;
-      card(x, y, G.outW, G.outH, ti, su, kd, ap, { scale: .88 + .12 * sc, icBg: 'rgba(141,184,255,.2)', icCol: '#8DB8FF', subCol: '#6ee7b7', glowCol: '141,184,255', glowK: Math.max(0, 1 - k / 1.2) });
+    cx.restore(); cx.restore();
+    // what AI or the team is doing now
+    pill(G.wx + G.ww / 2, G.wy - 5, SCN_MSG[si], null, sm(.8, 1.3, t) * pa, { dot: si === 4 && t > 15.6 ? '#107c10' : '#E5197F', tail: false, small: true });
+    // the stage rail, Kick-off to Handover
+    const p = railAt(t), n = RAIL.length, X = i => lerp(G.rx0, G.rx1, i / (n - 1)), y = G.ry + 14;
+    cx.strokeStyle = 'rgba(255,255,255,.2)'; cx.lineWidth = 2; cx.lineCap = 'round'; cx.beginPath(); cx.moveTo(G.rx0, y); cx.lineTo(G.rx1, y); cx.stroke();
+    cx.strokeStyle = '#8DB8FF'; cx.lineWidth = 2.5; cx.beginPath(); cx.moveTo(G.rx0, y); cx.lineTo(X(p), y); cx.stroke(); glow(X(p), y, 16, '141,184,255', .55);
+    RAIL.forEach((lb, i) => {
+      const x = X(i), done = p >= i - .001, cur = Math.round(p) === i && p < 6.999;
+      if (cur) ring(x, y, (t * .9) % 1, '229,25,127', 14);
+      cx.fillStyle = done ? '#fff' : 'rgba(255,255,255,.28)'; cx.beginPath(); cx.arc(x, y, done ? 5 : 4, 0, TAU); cx.fill();
+      if (done && !cur) { cx.strokeStyle = '#1D1A5E'; cx.lineWidth = 1.4; cx.beginPath(); cx.moveTo(x - 2.2, y); cx.lineTo(x - .6, y + 1.8); cx.lineTo(x + 2.4, y - 1.8); cx.stroke(); }
+      if (!NARROW || cur) { cx.font = `${cur || (i === 7 && p > 6.9) ? 700 : 500} ${NARROW ? 10.5 : 10}px ${FONT}`; cx.fillStyle = done || cur ? '#fff' : 'rgba(255,255,255,.55)'; cx.textAlign = NARROW ? (i < 2 ? 'left' : i > 5 ? 'right' : 'center') : 'center'; cx.textBaseline = 'alphabetic'; cx.fillText(lb, x, y + 20); cx.textAlign = 'left'; }
     });
-    teamFx = teamFx.filter(f => t - f.t < 2);
     lastT = t;
   }
+
   function arc(a, b, lift, head, tail, col, width) {
     if (head <= tail) return;
     const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2 - lift;
@@ -493,7 +524,7 @@
   if (RM.addEventListener) RM.addEventListener('change', () => { if (cv) kick(); });
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   const DESC = {
-    team: 'Illustration: workshop recordings, the MSA, org packages, site walkthroughs and existing documents are added once. AI drafts the project settings from them: the project name, customer, dates and phase, the customer details and the team. A person reviews and approves each section, and the workshop plan, requirements and BRD then build on the same project.',
+    team: 'Illustration: one project followed from the first file to handover. Files are added once and AI drafts the project settings. Workshop transcripts become proposed requirements that the team confirms. The BRD builds from them and the customer signs off online. Configuration and UAT test cases stay linked to each requirement, then the project goes live, runs through hypercare and is handed over. A stage rail from kick-off to handover fills as the project moves.',
     cust: 'Illustration: scattered emails and files come together into one lane across a city, passing kick-off, workshops, your approval and testing, and arriving at go-live with hypercare.'
   };
   V.isoLogin = a => {
