@@ -1,0 +1,104 @@
+/* coss ui layer (user decision, 7 Nov 2026: https://coss.com/ui, a 2026 component library on Base UI by the Cal.com team).
+   Read from coss ui's own tokens and components: radius .625rem (10 px), near-black primary (neutral 800), translucent hairline borders (black at 8 to 10 percent),
+   muted text #686868, soft secondary fills (black at 4 percent), 32 px buttons at weight 500 with an inner top highlight, a segmented tab control with a raised selected tab,
+   framed cards with 16 px corners, tiny shadows, Geist type, 150 ms transitions. Light theme first; Facilio blue stays the accent for links, focus and selection, and the
+   section accents stay. This is the LAST style layer: it retunes the tokens fluent.css still defines, then restyles the shared components. fluent.css is being removed page by page. */
+@font-face { font-family: "Geist"; src: url("fonts/Geist-Variable.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+:root {
+  --fl-font: "Geist", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", sans-serif;
+  --fl-fg1: #262626; --fl-fg2: #404040; --fl-fg3: #686868; --fl-fg4: #737373; --fl-fg-dis: #a3a3a3;
+  --fl-bg1: #ffffff; --fl-bg2: #fafafa; --fl-bg3: #f5f5f5; --fl-bg4: rgba(0, 0, 0, .04); --fl-bg5: rgba(0, 0, 0, .06); --fl-bg6: rgba(0, 0, 0, .08);
+  --fl-st1: rgba(0, 0, 0, .12); --fl-st2: rgba(0, 0, 0, .08); --fl-st3: rgba(0, 0, 0, .05); --fl-st-acc: rgba(0, 0, 0, .25);
+  --fl-r-ctl: 10px; --fl-r-card: 16px; --fl-r-pop: 20px;
+  --fl-sh4: 0 1px 2px rgba(0, 0, 0, .05); --fl-sh8: 0 4px 12px -4px rgba(0, 0, 0, .10), 0 1px 2px rgba(0, 0, 0, .05); --fl-sh16: 0 10px 24px -8px rgba(0, 0, 0, .14), 0 2px 4px rgba(0, 0, 0, .05);
+  --fl-sh28: 0 18px 44px -12px rgba(0, 0, 0, .22), 0 2px 6px rgba(0, 0, 0, .06); --fl-sh64: 0 28px 72px -16px rgba(0, 0, 0, .30), 0 4px 10px rgba(0, 0, 0, .08);
+  --fl-primary: #262626; --fl-primary-h: #404040; --fl-primary-p: #171717;
+  --fl-ease: cubic-bezier(.4, 0, .2, 1); --fl-out: cubic-bezier(.4, 0, .2, 1); --fl-dec-min: cubic-bezier(.4, 0, .2, 1); --fl-fast: 150ms; --fl-normal: 200ms;
+  --th-r-sm: 8px; --th-r-md: 10px; --th-r-lg: 16px; --th-r-xl: 20px; --r: 10px; --shadow: var(--fl-sh4);
+}
+html body, body { font-family: var(--fl-font); letter-spacing: -.003em; -webkit-font-smoothing: antialiased; }
+body :focus-visible:not(#_):not(#__) { outline: 2px solid rgba(21, 112, 239, .6) !important; outline-offset: 2px !important; border-radius: 8px; }
+
+/* ---- type: tight, confident headings ---- */
+body .main h1:not(#_):not(#__), body .adm-main > .adm-hero h1:not(#_):not(#__), body .fl-page-h h1:not(#_):not(#__) { font-weight: 600 !important; letter-spacing: -.025em !important; }
+body .main h2:not(#_):not(#__), body .fl-sub:not(#_):not(#__) { letter-spacing: -.015em !important; }
+body .main h3:not(#_):not(#__), body .fl-card-h:not(#_):not(#__) { letter-spacing: -.01em !important; font-weight: 600 !important; }
+
+/* ---- buttons: 32 px, radius 10, weight 500; secondary is white with a hairline and a tiny shadow; primary is near-black with an inner top highlight ---- */
+body .btn:not(.icon):not(.link):not(#_):not(#__) { border-radius: var(--fl-r-ctl) !important; font: 500 14px/20px var(--fl-font) !important; letter-spacing: -.005em !important; background: #fff !important; border: 1px solid rgba(0, 0, 0, .10) !important; box-shadow: 0 1px 2px rgba(0, 0, 0, .05) !important; color: var(--fl-fg1) !important; transition: background-color var(--fl-fast) var(--fl-ease), border-color var(--fl-fast) var(--fl-ease), box-shadow var(--fl-fast) var(--fl-ease) !important; }
+body .btn.sm:not(.icon):not(.link):not(#_):not(#__) { border-radius: 8px !important; font-size: 13px !important; line-height: 18px !important; padding: 0 10px !important; }
+body .btn:not(.icon):not(.link):not([disabled]):not(#_):not(#__):hover { background: #f5f5f5 !important; border-color: rgba(0, 0, 0, .14) !important; }
+body .btn:not(.icon):not(.link):not([disabled]):not(#_):not(#__):active { background: #ececec !important; }
+body .btn.primary:not(.icon):not(#_):not(#__) { background: var(--fl-primary) !important; color: #fafafa !important; border-color: var(--fl-primary) !important; box-shadow: 0 1px 2px rgba(0, 0, 0, .25), inset 0 1px 0 rgba(255, 255, 255, .16) !important; }
+body .btn.primary:not(.icon):not([disabled]):not(#_):not(#__):hover { background: var(--fl-primary-h) !important; border-color: var(--fl-primary-h) !important; }
+body .btn.primary:not(.icon):not([disabled]):not(#_):not(#__):active { background: var(--fl-primary-p) !important; }
+body .btn.ghost:not(.icon):not(#_):not(#__) { background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
+body .btn.ghost:not(.icon):not([disabled]):not(#_):not(#__):hover { background: rgba(0, 0, 0, .05) !important; }
+body .btn.danger:not(.icon):not(#_):not(#__) { color: var(--fl-danger) !important; border-color: rgba(177, 14, 28, .22) !important; background: #fff !important; }
+body .btn.danger:not(.icon):not([disabled]):not(#_):not(#__):hover { background: var(--fl-danger-soft) !important; }
+body .btn.icon:not(#_):not(#__) { border-radius: 8px !important; color: var(--fl-fg3) !important; }
+body .btn.icon.ghost:not([disabled]):not(#_):not(#__):hover { background: rgba(0, 0, 0, .05) !important; color: var(--fl-fg1) !important; }
+body .btn[disabled]:not(#_):not(#__) { background: rgba(0, 0, 0, .04) !important; color: var(--fl-fg-dis) !important; border-color: transparent !important; box-shadow: none !important; }
+
+/* ---- fields: hairline border, tiny shadow, a soft ring when focused ---- */
+body input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="hidden"]):not(#_):not(#__), body select:not(#_):not(#__), body textarea:not(#_):not(#__) { border: 1px solid rgba(0, 0, 0, .12) !important; border-radius: var(--fl-r-ctl) !important; box-shadow: 0 1px 2px rgba(0, 0, 0, .04) !important; background: #fff; color: var(--fl-fg1); transition: border-color var(--fl-fast) var(--fl-ease), box-shadow var(--fl-fast) var(--fl-ease); }
+body input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(#_):not(#__):hover, body select:not(#_):not(#__):hover, body textarea:not(#_):not(#__):hover { border-color: rgba(0, 0, 0, .22) !important; }
+body input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(#_):not(#__):focus, body select:not(#_):not(#__):focus, body textarea:not(#_):not(#__):focus { border-color: rgba(21, 112, 239, .7) !important; box-shadow: 0 0 0 3px rgba(21, 112, 239, .16) !important; outline: none !important; }
+body input[type="checkbox"], body input[type="radio"] { accent-color: var(--fl-primary); }
+
+/* ---- surfaces: framed cards, 16 px corners, a hairline and almost no shadow ---- */
+body .card:not(.dark):not([class*="night"]):not(#_):not(#__), body .proj-card:not(#_):not(#__), body .kpi:not(#_):not(#__), body .adm-card:not(#_):not(#__), body .tbl-wrap:not(#_):not(#__), body .fl-card:not(#_):not(#__), body .fl-stat:not(#_):not(#__), body .ki-chat:not(#_):not(#__), body .fl-dg:not(#_):not(#__), body .pj-list:not(#_):not(#__), body .adx-c:not(#_):not(#__), body .adx-stat:not(#_):not(#__) { border-radius: var(--fl-r-card) !important; border: 1px solid var(--fl-st2) !important; box-shadow: var(--fl-sh4) !important; background: #fff !important; }
+body .card.click:not(#_):not(#__):hover, body .proj-card:not(#_):not(#__):hover, body .fl-stat-btn:not(#_):not(#__):hover { box-shadow: var(--fl-sh8) !important; border-color: rgba(0, 0, 0, .14) !important; }
+body .card-h:not(#_):not(#__), body .adm-h:not(#_):not(#__) { border-bottom: 1px solid var(--fl-st3) !important; }
+
+/* ---- page header: a clean white bar, a short accent bar above the title, no tinted band ---- */
+body .main > .page > .page-header:not(#_):not(#__), body .adm-main > .adm-hero:not(#_):not(#__) { background: #fff !important; box-shadow: none !important; border-bottom: 1px solid var(--fl-st2) !important; }
+body .main > .page > .page-header .t h1:not(#_):not(#__), body .adm-main > .adm-hero h1:not(#_):not(#__) { color: var(--fl-fg1) !important; }
+body .main > .page > .page-header .t::before { content: ""; display: block; width: 28px; height: 3px; margin-bottom: 12px; border-radius: 2px; background: var(--fl-accent); }
+body .fl-sub:not(#_):not(#__)::before { width: 6px; height: 6px; border-radius: 50%; }
+body .phase-strip:not(#_):not(#__) { background: #fff !important; border-color: var(--fl-st2) !important; border-radius: 999px; }
+body .phase-strip .ps-l:not(#_):not(#__) { color: var(--fl-accent-ink) !important; }
+
+/* ---- sidebar: quiet; the selected item is a soft grey chip with an accent icon ---- */
+body .sidebar .sb-item.active:not(#_):not(#__), body .adm-nav .adm-ni.on:not(#_):not(#__) { background: rgba(0, 0, 0, .05) !important; color: var(--fl-fg1) !important; font-weight: 500 !important; box-shadow: none !important; border-radius: 8px; }
+body .sidebar .sb-item.active svg:not(#_):not(#__), body .sidebar .sb-item.active .fi:not(#_):not(#__), body .adm-nav .adm-ni.on svg:not(#_):not(#__) { color: var(--fl-accent-ink) !important; }
+body .sidebar .sb-item:not(#_):not(#__), body .adm-nav .adm-ni:not(#_):not(#__) { border-radius: 8px; transition: background-color var(--fl-fast) var(--fl-ease); }
+
+/* ---- tabs: the coss segmented control (a soft track, the selected tab is raised and white) for every tab strip ---- */
+body .tabs:not(#_):not(#__), body .pt-sheets:not(#_):not(#__), body .fl-filters:not(#_):not(#__), body .dtabs:not(#_):not(#__) { display: inline-flex; max-width: 100%; flex-wrap: nowrap; overflow-x: auto; gap: 2px; padding: 3px; margin: 0 0 16px; background: rgba(0, 0, 0, .045) !important; border: 0 !important; border-radius: 12px; box-shadow: none !important; scrollbar-width: none; }
+body .pt-sheets:not(#_):not(#__) { flex-wrap: wrap; }
+body .tab:not(#_):not(#__), body .pt-sh:not(#_):not(#__), body .ko-chipb:not(#_):not(#__), body .dtab:not(#_):not(#__) { height: 32px; padding: 0 12px; margin: 0; border: 0 !important; border-radius: 9px !important; background: transparent !important; color: var(--fl-fg3) !important; font: 500 14px/20px var(--fl-font) !important; box-shadow: none !important; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; transition: background-color var(--fl-fast) var(--fl-ease), color var(--fl-fast) var(--fl-ease), box-shadow var(--fl-fast) var(--fl-ease); }
+body .tab:not(#_):not(#__):hover, body .pt-sh:not(#_):not(#__):hover, body .ko-chipb:not(#_):not(#__):hover, body .dtab:not(#_):not(#__):hover { color: var(--fl-fg1) !important; background: rgba(0, 0, 0, .04) !important; }
+body .tab.active:not(#_):not(#__), body .pt-sh.on:not(#_):not(#__), body .ko-chipb.on:not(#_):not(#__), body .dtab.on:not(#_):not(#__) { background: #fff !important; color: var(--fl-fg1) !important; font-weight: 500 !important; box-shadow: 0 1px 2px rgba(0, 0, 0, .10), 0 0 0 1px rgba(0, 0, 0, .05) !important; }
+body .tab .cnt:not(#_):not(#__), body .pt-shn:not(#_):not(#__), body .ko-chipb b:not(#_):not(#__) { padding: 0 6px; border-radius: 6px; background: rgba(0, 0, 0, .06) !important; color: var(--fl-fg2) !important; font: 500 12px/18px var(--fl-font) !important; }
+body .tab.active .cnt:not(#_):not(#__), body .pt-sh.on .pt-shn:not(#_):not(#__), body .ko-chipb.on b:not(#_):not(#__) { background: var(--fl-accent-soft) !important; color: var(--fl-accent-ink) !important; }
+body .kb-seg:not(#_):not(#__) { background: rgba(0, 0, 0, .045); border-radius: 12px; padding: 3px; } body .kb-seg button.on:not(#_):not(#__) { box-shadow: 0 1px 2px rgba(0, 0, 0, .10), 0 0 0 1px rgba(0, 0, 0, .05); border-radius: 9px; }
+
+/* ---- data: quiet headers, hairline rows ---- */
+body .tbl th:not(#_):not(#__), body .tw th:not(#_):not(#__), body table.tbl th:not(#_):not(#__), body .fl-dg-h:not(#_):not(#__), body .pj-h:not(#_):not(#__) { background: transparent !important; color: var(--fl-fg3) !important; font: 500 12px/16px var(--fl-font) !important; border-bottom: 1px solid var(--fl-st2) !important; }
+body .tbl td:not(#_):not(#__), body .tw td:not(#_):not(#__) { border-bottom: 0 !important; border-top: 1px solid var(--fl-st3) !important; }
+body .tbl tbody tr:not(#_):not(#__):hover td, body .tw tbody tr:hover td, body .fl-dg-r:hover, body .pj-r:hover { background: rgba(0, 0, 0, .025) !important; }
+body .fl-stat-v:not(.bad):not(.warn):not(#_):not(#__), body .pt-kpis .kpi-v:not(#_):not(#__) { color: var(--fl-fg1); letter-spacing: -.03em; }
+body .tag:not(#_):not(#__), body .chip:not(#_):not(#__) { border-radius: 6px; font-weight: 500 !important; letter-spacing: 0 !important; }
+
+/* ---- feedback: a quiet pulse for loading, rounder pop-ups ---- */
+@keyframes cossPulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+body .ui-loading i:not(#_):not(#__) { background: rgba(0, 0, 0, .07); background-image: none; animation: cossPulse 2s cubic-bezier(.4, 0, .6, 1) infinite; }
+body .drawer:not(#_):not(#__) { border-radius: var(--fl-r-pop) 0 0 var(--fl-r-pop) !important; } body .toast:not(#_):not(#__), body .dialog:not(#_):not(#__) { border-radius: 14px !important; }
+
+/* ---- settings pages (coss ui pattern): the name and a short description on the left, the form card on the right, buttons in a footer bar ---- */
+body .st-wrap { max-width: 1040px; }
+body .st-sec { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 32px; padding: 28px 0; border-top: 1px solid var(--fl-st3); }
+body .st-sec:first-child { border-top: 0; padding-top: 8px; }
+body .st-side h3:not(#_):not(#__) { margin: 0 0 4px; font: 600 15px/22px var(--fl-font) !important; color: var(--fl-fg1) !important; }
+body .st-side p { margin: 0; max-width: 34ch; font: 400 14px/20px var(--fl-font); color: var(--fl-fg3); }
+body .st-card { overflow: hidden; padding: 0 !important; align-self: start; }
+body .st-card > .card-b { padding: 20px; }
+body .st-card .tbl-wrap:not(#_):not(#__) { border: 0 !important; box-shadow: none !important; background: transparent !important; border-radius: 0 !important; }
+body .st-card .fgrid { gap: 16px; }
+body .st-foot { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; padding: 12px 20px; background: rgba(0, 0, 0, .025); border-top: 1px solid var(--fl-st3); }
+body .st-danger .st-side h3:not(#_):not(#__) { color: var(--fl-danger) !important; } body .st-danger .st-card:not(#_):not(#__) { border-color: rgba(177, 14, 28, .25) !important; }
+body label.f:not(#_):not(#__) { font: 500 13px/18px var(--fl-font); color: var(--fl-fg2); margin-bottom: 6px; display: block; }
+@media (max-width: 900px) { body .st-sec { grid-template-columns: 1fr; gap: 12px; padding: 20px 0; } body .st-side p { max-width: none; } }
+body .tbl thead:not(#_):not(#__), body .tbl thead tr:not(#_):not(#__), body .tw thead:not(#_):not(#__) { background: transparent !important; }
+body .st-card .empty:not(#_):not(#__) { text-align: center; color: var(--fl-fg3); border: 0 !important; box-shadow: none !important; background: transparent !important; padding: 24px 0; }
