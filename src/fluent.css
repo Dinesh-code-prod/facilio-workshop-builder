@@ -126,7 +126,7 @@ body .tag.low:not(#_):not(#__), body .tag.system:not(#_):not(#__) { color: var(-
 /* old colour tokens (the --fc family) pointed at light greys and tinted blues; they now read the Fluent values, so no text can end up pale on a pale background */
 :root { --fc-muted: #616161; --fc-caption: #616161; --fc-text: #242424; --fc-text-strong: #242424; --fc-border: #e0e0e0; --fc-border-2: #e0e0e0; --fc-border-3: #d1d1d1; --fc-head-bg: #fafafa; --fc-hover: #f5f5f5; --fc-page: #fafafa; --fc-danger: #b10e1c; --fc-indigo: #1262D8; --fc-link-hover: #0e4a9a; --fc-avatar: #115cc0; --fc-indigo-grad: none; --fl-brand-text: #1262D8; --th-violet: #1262D8; --th-violet-2: #0e4a9a; --th-blue: #1262D8; --th-muted: #616161; --th-faint: #616161; }
 body .page-header small:not(#_):not(#__), body .page-header .muted:not(#_):not(#__), body .page-header .row small:not(#_):not(#__) { color: var(--fl-fg3) !important; }
-body .sb h3:not(#_):not(#__) { color: #c8126a !important; }
+body .sb h3:not(#_):not(#__) { color: var(--fl-fg2) !important; }
 body .brd-ban em:not(#_):not(#__), body .brd-ban a:not(#_):not(#__) { color: #1262D8 !important; }
 body .tg2-lvl:not(#_):not(#__) { color: #1262D8 !important; }
 body .screen__url:not(#_):not(#__), body .s-sub:not(#_):not(#__) { color: var(--fl-fg3) !important; }
@@ -252,3 +252,34 @@ body .kb-new { color: #1262D8; }
 body .kb-card.dragging { cursor: grabbing; }
 @media (max-width: 600px) { body .kb-col { min-width: 0; scroll-snap-align: start; } }
 body .kb-ty { background: var(--fl-bg4); color: var(--fl-fg2); border-radius: 4px; } body .kb-fl.q { background: var(--fl-warn-soft); color: #8a3706; } body .kb-d.late { color: var(--fl-danger); font-weight: 600; } body .kb-t { color: var(--fl-fg1); } body .kb-id { color: var(--fl-fg3); }
+
+/* ======== controls and headings, one scale everywhere (colour pass, 7 Nov 2026) ======== */
+/* buttons: medium 32, small 24, icon buttons are rounded squares, link buttons are plain text */
+body .btn:not(.icon):not(.link):not(#_):not(#__) { height: 32px !important; min-height: 32px !important; }
+body .btn.sm:not(.icon):not(.link):not(#_):not(#__) { height: 24px !important; min-height: 24px !important; }
+body .btn.icon:not(#_):not(#__) { border-radius: var(--fl-r-ctl) !important; min-width: 32px; height: 32px !important; }
+body .btn.icon.sm:not(#_):not(#__) { min-width: 24px; height: 24px !important; }
+body .btn.link:not(#_):not(#__) { border-radius: 4px !important; height: auto !important; }
+/* fields: 32 px, same on every page */
+body input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="hidden"]):not(#_):not(#__), body select:not(#_):not(#__) { height: 32px !important; min-height: 32px; box-sizing: border-box; }
+/* headings: Title 2 for the page, Subtitle 1 for a section, Subtitle 2 for a card, Body 1 strong for a small group; sentence case, one ink colour */
+body .main h1:not(#_):not(#__) { color: var(--fl-fg1) !important; }
+body .main h2:not(#_):not(#__) { font: 600 20px/26px var(--fl-font) !important; color: var(--fl-fg1) !important; text-transform: none !important; }
+body .main h3:not(#_):not(#__) { font: 600 16px/22px var(--fl-font) !important; color: var(--fl-fg1) !important; text-transform: none !important; letter-spacing: 0 !important; }
+body .main h4:not(#_):not(#__) { font: 600 14px/20px var(--fl-font) !important; color: var(--fl-fg1) !important; text-transform: none !important; letter-spacing: 0 !important; }
+/* selected step (module guides): a soft brand fill, never white on white */
+body .mf-step.on:not(#_):not(#__) { background: var(--fl-brand-soft) !important; color: #0e4a9a !important; border-color: var(--fl-brand) !important; box-shadow: none !important; }
+body .mf-step.on .n:not(#_):not(#__) { background: #fff !important; color: #0e4a9a !important; }
+/* small leftovers found by the contrast crawl */
+body summary.btn:not(#_):not(#__), body .s-badge.info:not(#_):not(#__) { color: #1262D8; }
+body .tg2-done i:not(#_):not(#__) { background: #107c10; } body .tg2-warn i:not(#_):not(#__) { background: #bc4b09; }
+
+/* ---- tabs: one Fluent tab list for every page (flat row, 40 px tall, the selected tab is semibold with a 2 px brand underline) ---- */
+body .tabs:not(#_):not(#__) { display: flex; gap: 4px; flex-wrap: nowrap; overflow-x: auto; padding: 0; margin: 0 0 16px; background: transparent !important; border: 0; border-bottom: 1px solid var(--fl-st2) !important; box-shadow: none !important; }
+body .tab:not(#_):not(#__) { position: relative; height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 12px; border: 0 !important; border-bottom: 2px solid transparent !important; margin-bottom: -1px; border-radius: 0 !important; background: none !important; font: 400 14px/20px var(--fl-font) !important; color: var(--fl-fg2) !important; white-space: nowrap; cursor: pointer; box-shadow: none !important; transform: none; }
+body .tab:not(#_):not(#__):hover { background: var(--fl-bg3) !important; color: var(--fl-fg1) !important; }
+body .tab.active:not(#_):not(#__) { color: var(--fl-fg1) !important; font-weight: 600 !important; border-bottom-color: var(--fl-brand) !important; background: none !important; }
+body .tab.active:not(#_):not(#__)::after { display: none; }
+body .tab .cnt:not(#_):not(#__) { margin: 0; padding: 0 8px; border-radius: 10px; background: var(--fl-bg4); font: 600 12px/16px var(--fl-font); color: var(--fl-fg2); }
+body .main .sp .hd h1:not(#_):not(#__) { color: #fff !important; }
+body .mk-d summary:not(#_):not(#__) { color: #1262D8; }

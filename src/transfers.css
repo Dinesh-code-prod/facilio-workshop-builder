@@ -14,7 +14,7 @@
 .xf-link:hover{text-decoration:underline}
 .xf-route{min-width:200px;overflow-wrap:anywhere}
 .xf-when{white-space:nowrap;color: #424242}
-.xf-err{color: #c8126a;overflow-wrap:anywhere;min-width:120px}
+.xf-err{color: #b10e1c;overflow-wrap:anywhere;min-width:120px}
 .xf-empty{padding:28px 18px;background:#fff;border:1px dashed #8DB8FF;border-radius: 12px;color: #424242;text-align:center}
 .xf-chip{display:inline-block;padding:2px 9px;border-radius:11px;font-size:11.5px;font-weight:600;white-space:nowrap;border:1px solid transparent}
 .xf-st-not-retrieved,.xf-st-unknown{background:#f0f2f7;color: #424242}
@@ -23,7 +23,7 @@
 .xf-st-approved{background:#1570EF;color:#fff}
 .xf-st-pushed,.xf-st-synchronized{background:#1D1A5E;color:#fff}
 .xf-st-failed{background:#E5197F;color:#fff}
-.xf-st-requires-attention{background:#fff1f7;color: #c8126a;border:2px solid #E5197F;padding:1px 8px}
+.xf-st-requires-attention{background:#fdf3f4;color: #b10e1c;border:2px solid #E5197F;padding:1px 8px}
 .xf-d h4{margin:16px 0 6px;color:#1D1A5E;font-size:13px}
 .xf-dh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
 .xf-act{padding:12px;background:#f6f9ff;border:1px solid #d7dfee;border-radius: 12px}

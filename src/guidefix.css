@@ -1,6 +1,6 @@
 /* Customer User Guide: module list on the left and the section chips. They had violet fills, overlapping dots and a count that ran into the module name; this layer puts them in the Facilio palette
    (navy #1D1A5E, blue #1570EF, sky #8DB8FF) and keeps every label on its own line. */
-body .wb-nav:not(#_):not(#__) { background: #fff; border: 1px solid #e3e9f5; border-radius: 14px; padding: 10px; box-shadow: 0 1px 2px rgba(29, 26, 94, .06); }
+body .wb-nav:not(#_):not(#__) { background: #fff; border: 1px solid #e3e9f5; border-radius: 14px; padding: 10px; box-shadow: 0 1px 2px rgba(0, 0, 0, .06); }
 body .wb-mod:not(#_):not(#__) { display: flex; align-items: center; gap: 8px; width: 100%; margin: 2px 0; padding: 9px 12px; border: 0; border-radius: 10px; background: transparent; color: #1D1A5E; font-size: 13.5px; font-weight: 600; line-height: 1.3; transform: none; box-shadow: none; }
 body .wb-mod:not(#_):not(#__) > span:first-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 body .wb-mod:not(#_):not(#__) .wb-n { flex: none; background: #fff; border: 1px solid #c9d6ef; color: #44527a; }
