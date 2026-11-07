@@ -41,6 +41,8 @@
       + '<div class="row md-bar"><button type="button" class="btn primary" data-act="mdAdd"' + dis + (docs.length ? '' : ' disabled') + '>+ Add a contract document</button><button type="button" class="btn" data-act="mdCheck"' + dis + (docs.length && !s.busy ? '' : ' disabled') + '>' + (s.busy === 'check' ? 'Reading the documents…' : 'Check the documents together') + '</button><button type="button" class="btn" data-act="mdReread"' + dis + (docs.length ? '' : ' disabled') + '>Ask Claude to re-read all</button></div>'
       + (ck && ck.result ? '<div class="md-res">' + (cur ? '' : '<div class="notice small"><div>The documents changed after this check. Run it again before you rely on it.</div></div>') + '<p class="xs muted">Checked ' + esc(when(ck.at)) + (ck.by ? ' by ' + esc(ck.by) : '') + '. The AI reads and reports; a person decides.</p>' + result(ck.result, docs) + '</div>' : '') + '</div></section>';
   }
+  V.contractDocs = () => M().docsOf(md().data).map(d => ({ label: d.label, name: d.name, pages: d.pages }));   // the contract documents (once loaded) for the Solution tab
+  V.contractLoad = () => load(false);
   const ROLE = r => (M().ROLES.find(x => x[0] === r) || [r, r])[1];
   const old = V.msaintake; if (old) V.msaintake = Object.assign({}, old, {
     html() { const h = old.html.apply(this, arguments); if (V.isCustomer() || typeof h !== 'string') return h; const i = h.lastIndexOf('</div>'); return i < 0 ? h + card() : h.slice(0, i) + card() + h.slice(i); },
