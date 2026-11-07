@@ -42,9 +42,28 @@ The cycle is the eight-stage roadmap of the menu (1 Project introduction, 2 Requ
 
 Who marks a stage complete: **the criteria are checked automatically; closing is always a person's click** (a project lead, owner or admin; their name, date and a note are recorded, and a stage closed while criteria are still open says so). **Claude never closes a stage.** Claude (and the task engine) can say *Ready to close*: when every criterion is met an automatic task "Close stage N" appears for the project lead and a notification is sent. An admin looking at a project sees: the current stage, which criteria are met and which are not, the stage owner, the last activity, blockers, and the history of closed stages (who, when).
 
+## 4. Support Desk tickets into the task engine (explored 7 Nov 2026)
+What was looked at: the Support Desk page https://support-desk.facilio.run/#/homepage and its Tickets list, in the user's own signed-in browser pane, reading page text and the list of requests only (no ticket content was copied).
+
+What it is: a **Facilio Run** app (not facilio.work). It has **no ticket API of its own**: its server side only serves `/api/me` and a small `/api/db/access` list for who may open it. The page signs the person in with **Microsoft (MSAL)** and reads everything **straight from Microsoft Graph in the browser**:
+- the tickets are items of a **SharePoint list** on `facilio958.sharepoint.com` (`/sites/<site>/lists/<list>/items`, 200 at a time), with fields **Title, TicketNumber, Status, Priority, CustomerName, CustomerEmail, ReceivedOn, DueDate, AssignedToLookupId, Mail URL, Group, Sentiment, RootCause, ETA** and escalation fields;
+- the customer accounts come from a file `customer-accounts.json` in that site's drive; people and photos from `/users`;
+- the mails behind the tickets are read from the shared mailbox **help@facilio.com** (`/users/help@facilio.com/mailFolders/inbox`, `/messages`).
+The dashboard on the page shows (all time): about 1.8k tickets, 63 open, 38 pending, 44 awaiting customer, 83 overdue, 6 unassigned; per person and per customer tables.
+
+What this means for fetching tickets into Delivery Studio:
+1. **Not possible from the Studio page itself**: the sign-in belongs to the Support Desk's own Entra app registration (its redirect addresses); the Studio has no Graph token and cannot reuse it.
+2. **Not possible from the Studio server today**: the only Microsoft credential the app has is `graph_mail` (the support mailbox, Mail.Read). Reading the SharePoint list needs a credential with **Sites.Read.All** or **Sites.Selected** on that one list (a request to IT; the owner then grants it to the app in secrets.facilio.work). With that, a server function could read the list on demand, but there is still no scheduler to do it.
+3. **Possible with Power Automate (recommended, same mechanism as mail)**: a flow with the trigger *When an item is created or modified* on the Support Desk list (a standard SharePoint connector) calls the same Studio webhook (HTTP action: Premium) with `TicketNumber, Title, Status, Priority, CustomerName, CustomerEmail, DueDate, AssignedTo (email), ReceivedOn, Mail URL`. The Studio keeps one record per ticket (updated on every change, closed tickets kept for history).
+4. **Possible by hand today**: a person's own Claude with the Microsoft 365 connector can search the help@ mailbox and the SharePoint files, and propose tasks through the Mail inbox. It cannot read SharePoint **list items** with the tools of that connector (not verified).
+5. Ask the Support Desk's owner whether he will publish a read API (a Facilio Run function, or the same list through a service account); then the Studio could call it with a work token.
+
+How tickets become tasks (task engine rule `ticket`): a ticket belongs to a project when the **CustomerName or the e-mail domain of CustomerEmail** matches the project's customer (an Unmatched list for a person to route). Each **open** ticket of a matched customer becomes an automatic task "Ticket #1727: <title>" with the owner (AssignedTo, when that person is a project member), the due date (DueDate), the priority, and a link back to the Support Desk; it **resolves itself when the ticket's Status is Closed or Resolved**; a ticket that is overdue or unassigned raises a notification (section 2). The task engine never changes the ticket; the Support Desk stays the place where tickets are worked.
+Not verified: the SharePoint list's real column names (read from the request, not from SharePoint), anything about the flow, and whether IT will approve the Graph permission or the Premium licence.
+
 ## Build order
-1. Stage cycle (pure rules, tests, the card on the project dashboard, Close and Not applicable actions, the Ready task, Admin project detail).
+1. Stage cycle (built: the lifecycle tracker re-mapped to the eight stages, Ready to close, a person closes, the Project cycle page, the Close stage task).
 2. Notification centre (server `notify`, in-app list with read state, live toast over the WebSocket, browser pop-up with permission, preferences).
 3. Otto/Teams triggers on the events above (reusing the digest and the owner-only reply).
-4. Mail hook (`work.json` webhook, handler into the Mail inbox, unassigned list, last-received time) and the step-by-step Power Automate guide, tested with the platform's `send_test_webhook`.
+4. One hook for mail and Support Desk tickets (`work.json` webhook, handler into the Mail inbox and the ticket records, unassigned list, last-received time), the `ticket` task rule, and the step-by-step Power Automate guide, tested with the platform's `send_test_webhook`.
 Real Power Automate, real Teams delivery and the browser pop-up permission cannot be tested from here.
