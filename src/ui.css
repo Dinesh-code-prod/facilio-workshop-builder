@@ -796,7 +796,9 @@ body .ui-toast .ui-tx:not(#_):not(#__) { width: 24px; height: 24px; padding: 0; 
 /* the last old decoration found rendering on the inside pages (a scan of every page and tab, 7 Nov 2026): flat accent, card radius, token shadows */
 body .rm-go:not(#_):not(#__) { background-image: none !important; background-color: var(--cs-accent-soft) !important; color: var(--cs-accent-ink) !important; box-shadow: none !important; }
 body section.upnext:not(#_):not(#__), body .upnext.si-item:not(#_):not(#__) { border-radius: var(--cs-r-card) !important; }
-body .gl-thumb:not(#_):not(#__) { background-image: none !important; background-color: var(--cs-accent-soft) !important; }
+body .gl-thumb:not(#_):not(#__) { background-image: none !important; background-color: #1f2430 !important; }   /* white clip titles need a dark tile; a pale tile made them unreadable (and pink before) */
+body .gl-thumb .t-tag:not(#_):not(#__) { background: rgba(255, 255, 255, .16) !important; color: #fff !important; }
+body .gl-thumb .t-play:not(#_):not(#__) { background: var(--cs-accent) !important; }
 body .gl-car-stage:not(#_):not(#__), body .gl-screen:not(#_):not(#__) { box-shadow: var(--cs-sh16) !important; }
 
 /* Feedback tab (src/feedback.js) */
