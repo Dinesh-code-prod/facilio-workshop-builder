@@ -799,6 +799,11 @@ body section.upnext:not(#_):not(#__), body .upnext.si-item:not(#_):not(#__) { bo
 body .gl-thumb:not(#_):not(#__) { background-image: none !important; background-color: #1f2430 !important; }   /* white clip titles need a dark tile; a pale tile made them unreadable (and pink before) */
 body .gl-thumb .t-tag:not(#_):not(#__) { background: rgba(255, 255, 255, .16) !important; color: #fff !important; }
 body .gl-thumb .t-play:not(#_):not(#__) { background: var(--cs-accent) !important; }
+/* Checks & validations overview: one compact row per kind of check so all of them fit on one screen */
+body .rs-ov th:not(#_):not(#__), body .rs-ov td:not(#_):not(#__) { padding: 4px 12px !important; font-size: 13px; }
+body .rs-ov td.num:not(#_):not(#__), body .rs-ov th.num:not(#_):not(#__) { text-align: right; font-variant-numeric: tabular-nums; }
+body .rs-ov tr.on td:not(#_):not(#__) { background: var(--cs-accent-soft); }
+body .rs-ov .cs-bar:not(#_):not(#__) { height: 6px; }
 body .gl-car-stage:not(#_):not(#__), body .gl-screen:not(#_):not(#__) { box-shadow: var(--cs-sh16) !important; }
 
 /* Feedback tab (src/feedback.js) */
