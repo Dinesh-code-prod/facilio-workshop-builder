@@ -50,7 +50,12 @@ export function installJobs(d) {
 
   // ---------- Claude connector tools (public entry: project_jobs, with an action) ----------
   const tools = {
-    async jobs_list(s, b) { const p = await pickProject(s, b.project); const r = await ops.list(s, p.id, String(b.status || ''), String(b.stage || '').toLowerCase()); return { project: p.name, projectId: p.id, open: r.open, jobs: r.jobs, note: 'Claim one with action claim and its id. Only waiting jobs can be claimed.' }; },
+    // no project given: the waiting jobs of every project the person can open, in ONE call (an idle check costs one tool call); kind narrows it (for example chat)
+    async jobs_list_all(s, b) { const ps = d.readableProjects ? await d.readableProjects(s) : []; const out = []; let waiting = 0;
+      for (const p of ps.slice(0, 50)) { let r; try { r = await ops.list(s, p.id, 'waiting', String(b.stage || '').toLowerCase()); } catch (e) { continue; }
+        const jobs = r.jobs.filter(j => j.status === 'waiting' && (!b.kind || j.kind === String(b.kind))); if (jobs.length) { waiting += jobs.length; out.push({ project: p.name, projectId: p.id, jobs }); } }
+      return { waiting, projects: out, note: waiting ? 'Claim one with action claim, its id and project (the projectId). Chat jobs first.' : 'No waiting jobs.' }; },
+    async jobs_list(s, b) { if (!String(b.project || '').trim()) return tools.jobs_list_all(s, b); const p = await pickProject(s, b.project); const r = await ops.list(s, p.id, String(b.status || ''), String(b.stage || '').toLowerCase()); return { project: p.name, projectId: p.id, open: r.open, jobs: r.jobs, note: 'Claim one with action claim and its id. Only waiting jobs can be claimed.' }; },
     async jobs_claim(s, b) { const p = await pickProject(s, b.project); const j = await ops.claim(s, p.id, String(b.id || '')); return brief(j, { id: p.id, name: p.name, customer: p.customer || '' }); },
     async jobs_file_urls(s, b) {
       const p = await pickProject(s, b.project); await access(s, p.id); const r = await dbGet('fl.' + p.id, String(b.fileId || '')); const f = r && r.value; if (!f || f.deletedAt || f.status !== 'ready') throw new HttpError(404, 'That project file was not found');
