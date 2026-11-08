@@ -640,7 +640,10 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   route('POST', '/api/projects/:id/ai/ask', async (b, P) => {
     const s = await me(); await projectAccess(s, P.id, 'edit'); await limit('ai', s.id); const msg = str(b && b.message, 600, 'Message'); if (!msg.trim()) throw new HttpError(400, 'Write your message first');
     const wantT = String(b && b.task || ''); const task = (ROUTE_TASKS.includes(wantT) ? wantT : '') || ASK_TASK[String(b && b.section || '')] || 'gaps'; const { src, text } = await aiContext(P.id, task, true);
+    const ck = hashOf('ask|' + task + '|' + msg.trim() + '|' + text.slice(0, 13000)); const hit = ((await dbGet('aic', ck)) || {}).value;   // the same question on the same records: the saved answer, no AI call
+    if (hit && Date.parse(hit.at) > Date.now() - 864e5) { await audit(P.id, s.id, 'ai-ask', task + ' from the saved answers'); return ok({ text: hit.text, provider: hit.provider, notice: hit.notice, sources: src, task, cached: true }); }
     const out = await aiGen({ op: 'assist', system: AI_SYSTEM, messages: [{ role: 'user', content: 'The consultant is on the page "' + plain(b && b.section, 40) + '" and asks: ' + msg + '. Answer briefly and only from the SOURCES. Say so when the sources do not hold the answer. SOURCES: ' + text.slice(0, 13000) }], maxTokens: 900, budget: 21000 });
+    await dbPut('aic', ck, { text: out.text, provider: out.provider, notice: out.notice || '', at: now() }).catch(() => { });
     await audit(P.id, s.id, 'ai-ask', task + ' via ' + out.provider); return ok({ text: out.text, provider: out.provider, notice: out.notice || '', sources: src, task });
   });
   /* The assistant's size router: a look-up is answered at once (DeepSeek, from the project records) with a button to the page; a small change goes to Claude as a quick job; heavy work goes to Claude with a plan first. The model only classifies (never acts); if it fails, plain rules decide. */

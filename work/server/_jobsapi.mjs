@@ -50,6 +50,10 @@ export function installJobs(d) {
   route('POST', P + '/:jid/answer', async (b, G) => { const s = await me(); return ok({ job: view(await ops.answer(s, G.id, G.jid, b && b.answers)) }); });
 
   // ---------- Claude connector tools (public entry: project_jobs, with an action) ----------
+  // how much the Claude queue was used: jobs per kind per day over the last 14 days, across the projects the caller can read
+  route('GET', '/api/jobs/usage', async () => { const s = await me(); const ps = d.readableProjects ? await d.readableProjects(s) : []; const since = new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10); const byDay = {}, byKind = {}; let total = 0;
+    for (const p of ps.slice(0, 50)) { for (const j of await all(p.id)) { const day = String(j.requestedAt || '').slice(0, 10); if (!day || day < since) continue; total++; byKind[j.kind] = (byKind[j.kind] || 0) + 1; (byDay[day] = byDay[day] || {})[j.kind] = ((byDay[day] || {})[j.kind] || 0) + 1; } }
+    return ok({ since, total, byKind, byDay }); });
   const tools = {
     // no project given: the waiting jobs of every project the person can open, in ONE call (an idle check costs one tool call); kind narrows it (for example chat)
     async jobs_list_all(s, b) { const ps = d.readableProjects ? await d.readableProjects(s) : []; const out = []; let waiting = 0;

@@ -56,8 +56,8 @@ await t('assignmentNotice only fires for a new owner who is somebody else and th
 });
 
 // ---------- connector tools on a stand-in platform ----------
-const store = new Map(); const KEY = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/; let sent = []; let teamsReply = () => ({ delivered: 1, muted: 0, failed: 0 }); let teamsOn = false;
-const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' }, llm: async () => ({ model: 'mock', choices: [{ message: { content: 'x' } }] }),
+const store = new Map(); const KEY = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/; let sent = []; let teamsReply = () => ({ delivered: 1, muted: 0, failed: 0 }); let teamsOn = false; let llmN = 0;
+const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' }, llm: async () => { llmN++; return { model: 'mock', choices: [{ message: { content: 'x' } }] }; },
   secrets: { async get(name) { if (name === 'teams_notify' && teamsOn) return 'on'; throw new Error('no secret'); } },
   teams: { async send(o) { sent.push(o); return teamsReply(o); } },
   db: {
@@ -145,6 +145,12 @@ await t('Send my list now: the caller gets their own digest again on request, no
 await t('the Studio-open signal: nobody open means the helper stops; one heartbeat means keep going', async () => {
   if (store.get('presence')) store.get('presence').clear(); assert.equal((await tool(SAM, 'project_jobs', { action: 'presence' })).data.open, 0);
   assert.equal((await as(KIM, 'POST', '/api/presence', {})).status, 200); const r = await tool(SAM, 'project_jobs', { action: 'presence' }); assert.equal(r.data.open, 1); assert.match(r.data.note, /keep working/);
+});
+await t('look-ups are cached: the same question on unchanged records is not sent to the model twice, another question or changed records are', async () => {
+  const ask = m => as(SAM, 'POST', `/api/projects/${pid}/ai/ask`, { message: m, section: 'tasks', task: 'dashsummary' }); const n0 = llmN;
+  const a1 = await ask('What is overdue?'); assert.equal(a1.status, 200, JSON.stringify(a1.data)); assert.equal(llmN, n0 + 1); const a2 = await ask('What is overdue?'); assert.equal(a2.data.cached, true); assert.equal(llmN, n0 + 1, 'no second model call');
+  await ask('Who owns what?'); assert.equal(llmN, n0 + 2); await put(SAM, pid, 'cache1', { title: 'A new task changes the records', status: 'To Do' }); await ask('What is overdue?'); assert.ok(llmN >= n0 + 3, 'changed records ask again');
+  const u = await as(SAM, 'GET', '/api/jobs/usage'); assert.equal(u.status, 200); assert.ok(typeof u.data.total === 'number' && u.data.byKind && u.data.byDay);
 });
 await t('a bulk owner change sends at most three messages to that person', async () => {
   teamsOn = true; sent = []; for (let i = 0; i < 5; i++) assert.equal((await put(SAM, pid, 'b' + i, { title: 'Bulk ' + i, status: 'To Do', owner: VIC })).status, 200);
