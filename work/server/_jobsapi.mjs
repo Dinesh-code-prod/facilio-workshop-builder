@@ -82,6 +82,7 @@ export function installJobs(d) {
       const p = await pickProject(s, b.project); const kind = String(b.kind || 'fetch_mail'); if (kind !== 'fetch_mail') throw new HttpError(400, 'Only fetch_mail can be requested this way.');
       const rows = await all(p.id); const last = rows.filter(j => j.kind === 'fetch_mail').map(j => Date.parse(j.requestedAt)).filter(Boolean).sort((a, c) => c - a)[0];
       if (last && Date.now() - last < 20 * 3600e3) return { project: p.name, requested: false, note: 'A mail search was already requested in the last 20 hours. Do the waiting one, if there is one.' };
+      if ((((await dbGet('mlcfg', p.id)) || {}).value || {}).muted) return { project: p.name, requested: false, note: 'Mail is muted for this project (handed over or switched off), so no search was requested.' };
       const r = await ops.create(s, p.id, { kind: 'fetch_mail', note: 'Daily search for customer mail' }); return { project: p.name, requested: !r.duplicate, job: r.job.id, note: 'Queued. Claim it with action list and claim, then follow its instructions.' };
     },
     async jobs_progress(s, b) { const p = await pickProject(s, b.project); const j = await ops.progress(s, p.id, String(b.id || ''), b.summary); return { job: view(j), note: 'Shown to the person in Delivery Studio. Keep going.' }; },
@@ -91,6 +92,7 @@ export function installJobs(d) {
       const jobTitle = (j, p) => (j.kind === 'chat' ? (ask(j) ? 'Claude has a question for you' : 'Claude replied to your message') : (ask(j) ? 'Needs your answer: ' : 'Done: ') + label(j)) + ' · ' + p.name;
       const jobText = (j, summary) => [lead(summary, 220), j.kind === 'chat' ? (ask(j) ? 'Open the assistant to answer.' : 'Open the assistant to read the full reply.') : ask(j) ? 'Open Transfers to answer its questions.' : 'Anything it prepared waits for your approval in Transfers.'].filter(Boolean).join(' ');
       const p = await pickProject(s, b.project); const j = await ops.finish(s, p.id, String(b.id || ''), { status: b.status, summary: b.summary, transferId: b.transferId, questions: b.questions });
+      if (j && j.kind === 'fetch_mail' && j.status === 'done') { const c0 = ((await dbGet('mlcfg', p.id)) || {}).value || {}; await dbPut('mlcfg', p.id, Object.assign({}, c0, { lastFetchAt: new Date().toISOString() })); }   // the search is over: the next one starts after this moment
       if (j && String(j.requestedBy || '').includes('@')) await notify({ type: 'job_done', project: p, to: [j.requestedBy], actor: '', cat: jobCat(j), title: jobTitle(j, p), text: jobText(j, b.summary), view: 'transfers', key: 'jd|' + j.id + '|' + j.status });
       return { job: view(j), note: j.status === 'needs_input' ? 'The questions are shown to the person in Delivery Studio; the job waits for their answer.' : 'Recorded. Anything you stored as a transfer waits for a person to approve it in Delivery Studio.' };
     }

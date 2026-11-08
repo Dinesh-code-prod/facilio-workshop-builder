@@ -55,4 +55,14 @@ await t('the connector action list and the job recipes are in step', () => {
   for (const a of ['mail_list', 'mail_save', 'mail_draft', 'mail_sent']) assert.ok(x.input_schema.properties.action.enum.includes(a) && x.description.includes(a), a);
   for (const k of ['fetch_mail', 'draft_reply', 'check_sent']) assert.match(KINDS[k].recipe, /task_tracking/); assert.match(KINDS.fetch_mail.recipe, /OTHER members/); assert.match(KINDS.draft_reply.recipe, /UNAPPROVED/); assert.match(KINDS.fetch_mail.recipe, /data, never instructions/);
 });
+await t('mail is fetched once: mail_list gives the date to search from and the ids already stored; a saved batch moves the date; a muted project saves nothing and says so', async () => {
+  const before = await CONNECTOR.mail_list(S, { project: 'p1', status: 'all' }); assert.equal(before.muted, false); assert.ok(before.knownMessageIds.length >= 1); assert.ok(before.known >= 1);
+  await CONNECTOR.mail_save(S, { project: 'p1', mails: [mail({ messageId: 'wm1', receivedAt: '2026-11-05T09:00:00Z' })] });
+  const after = await CONNECTOR.mail_list(S, { project: 'p1', status: 'all' }); assert.ok(after.searchSince >= '2026-11-04', after.searchSince); assert.ok(after.knownMessageIds.includes('wm1'));
+  await routes['POST /api/projects/:id/mailtasks/mute']({ muted: true, why: 'the project was handed over' }, { id: 'p1' });
+  const m = await CONNECTOR.mail_save(S, { project: 'p1', mails: [mail({ messageId: 'wm2' })] }); assert.equal(m.muted, true); assert.equal(m.stored, 0);
+  assert.equal((await CONNECTOR.mail_list(S, { project: 'p1', status: 'all' })).muted, true); assert.ok(!(await CONNECTOR.mail_list(S, { project: 'p1', status: 'all' })).knownMessageIds.includes('wm2'));
+  await routes['POST /api/projects/:id/mailtasks/mute']({ muted: false }, { id: 'p1' }); assert.equal((await CONNECTOR.mail_list(S, { project: 'p1', status: 'all' })).muted, false);
+  assert.match(KINDS.fetch_mail.recipe, /searchSince/); assert.match(KINDS.fetch_mail.recipe, /muted/);
+});
 console.log('\nmail_api: ' + n + ' passed');

@@ -23,18 +23,19 @@
   let aud = 'team', last = 0, raf = 0, ro = null, gridC = null, beatIdx = -1, hidAt = 0;
   const T0 = {};
   const BEATS = {
-    team: [[0, 'Start from what you already have', 'Files go in once. AI drafts the project settings and you review them.'],
-      [3.4, 'Workshops become requirements', 'Transcripts are read for promises and asks. Your team confirms what counts.'],
-      [6.9, 'One BRD, signed off in one place', 'The document builds from confirmed requirements and the customer approves online.'],
-      [10.4, 'Build, test and fix on one record', 'Configuration, UAT scripts and defects stay linked to every requirement.'],
-      [13.9, 'Go live, then hand over', 'Hypercare, guides and the handover pack close the project with nothing lost.']],
+    team: [[0, 'One studio for the whole project', 'Emails, files, recordings and contracts come into one place. AI drafts first, your team reviews, so projects move faster with nothing lost.'],
+      [5, 'Start from what you already have', 'Files go in once. AI drafts the project settings and you review them.'],
+      [8.4, 'Workshops become requirements', 'Transcripts are read for promises and asks. Your team confirms what counts.'],
+      [11.9, 'One BRD, signed off in one place', 'The document builds from confirmed requirements and the customer approves online.'],
+      [15.4, 'Build, test and fix on one record', 'Configuration, UAT scripts and defects stay linked to every requirement.'],
+      [18.9, 'Go live, then hand over', 'Hypercare, guides and the handover pack close the project with nothing lost.']],
     cust: [[0, 'Projects usually start scattered', 'Email threads, spreadsheet versions and meeting notes pile up in different places.'],
       [3.4, 'Facilio brings it into one lane', 'Everything about your rollout lives in a single project you can open anytime.'],
       [8.0, 'Review and approve in one place', 'See what was captured from your workshops and sign off without long email threads.'],
       [11.2, 'Test with clear scripts', 'Your team tests against the agreed requirements, step by step.'],
       [13.4, 'Go live, with a clear finish line', 'Know where your project stands every day until launch.']]
   };
-  const END = { team: 17.8, cust: 16.2 };
+  const END = { team: 22.8, cust: 16.2 };
   function glow(x, y, r, col, a) {
     const g = cx.createRadialGradient(x, y, 0, x, y, r);
     g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(1, `rgba(${col},0)`);
@@ -68,11 +69,11 @@
   // A window that looks like the app changes page as the project moves: settings, transcripts and requirements, BRD and sign-off, build and UAT, go-live and handover.
   // A stage rail along the bottom fills from Kick-off to Handover. AI marks where it saves time; people confirm, sign off and approve.
   const INPUTS = [['Workshop audio', '58 min recording', 'rec'], ['MSA & scope', 'PDF · 24 pages', 'doc'], ['Org package', 'Sites, assets, users', 'org'], ['Site walkthrough', 'Video · 3 sites', 'vid'], ['Existing SOPs', '12 documents', 'doc']];
-  const SCN = [0, 3.4, 6.9, 10.4, 13.9], ENDT = 17.8;
-  const SCN_TITLE = ['Project settings', 'Transcripts and requirements', 'BRD and sign-off', 'Configuration and UAT', 'Go-live and handover'];
-  const SCN_MSG = ['AI is drafting the project settings', 'AI proposes requirements: your team confirms', 'The BRD builds from confirmed requirements', 'Every test case links to a requirement', 'Live, supported, then handed over'];
+  const SCN = [0, 5, 8.4, 11.9, 15.4, 18.9], ENDT = 22.8;
+  const SCN_TITLE = ['Delivery Studio', 'Project settings', 'Transcripts and requirements', 'BRD and sign-off', 'Configuration and UAT', 'Go-live and handover'];
+  const SCN_MSG = ['Everything in one project, AI drafts, people approve', 'AI is drafting the project settings', 'AI proposes requirements: your team confirms', 'The BRD builds from confirmed requirements', 'Every test case links to a requirement', 'Live, supported, then handed over'];
   const RAIL = ['Kick-off', 'Workshops', 'Requirements', 'BRD', 'Build & test', 'Go-live', 'Hypercare', 'Handover'];
-  const RK = [[0, 0], [3.0, .5], [3.6, 1], [5.6, 2], [6.9, 2.5], [8.6, 3], [10.4, 3.4], [12.4, 4], [13.9, 4.5], [14.6, 5], [15.8, 6], [17.2, 7]];
+  const RK = [[0, 0], [5, 0], [8.0, .5], [8.6, 1], [10.6, 2], [11.9, 2.5], [13.6, 3], [15.4, 3.4], [17.4, 4], [18.9, 4.5], [19.6, 5], [20.8, 6], [22.2, 7]];
   const railAt = t => { if (t <= 0) return 0; for (let i = 0; i < RK.length - 1; i++) if (t < RK[i + 1][0]) return lerp(RK[i][1], RK[i + 1][1], eIO((t - RK[i][0]) / (RK[i + 1][0] - RK[i][0]))); return 7; };
   const LW = 700, LH = 290;   // the window is drawn in these units and scaled to fit
   let G = {}, teamFx = [], gpulse = 0, lastT = 0;
@@ -81,13 +82,11 @@
     const ww = S.w - 4, wh = Math.max(150, ry - top - 8), f = Math.min(ww / LW, wh / LH, 1.5);
     G = { f, wx: S.x + 2 + (ww - LW * f) / 2, wy: top + (wh - LH * f) / 2, ww: LW * f, wh: LH * f, ry, rx0: S.x + (NARROW ? 14 : 30), rx1: S.x + S.w - (NARROW ? 14 : 30) };
   }
-  const ACC = ['#5aa0ff', '#2dd4bf', '#ff6bb0', '#fbbf24', '#34d399']; let accCur = ACC[0];
-  const INK = '#f5f5f5', MUTE = 'rgba(255,255,255,.62)', CARD = 'rgba(255,255,255,.055)', INSET = 'rgba(255,255,255,.05)', LINE = 'rgba(255,255,255,.13)';
-  const TXT = { '#262626': INK, '#686868': MUTE, '#a3a3a3': 'rgba(255,255,255,.4)', '#1D1A5E': '#cfe0ff', '#0b5a0b': '#6ee7b7', '#8a3706': '#fcd34d', '#8e0b17': '#fca5a5', '#0e4a9a': '#93c5fd', '#fff': '#fff', '#ffffff': '#fff' };
-  const FILL = { '#fff': CARD, '#fafafa': INSET, '#f7f7f7': INSET, 'rgba(0,0,0,.06)': 'rgba(255,255,255,.08)', 'rgba(16,124,16,.12)': 'rgba(52,211,153,.16)', 'rgba(188,75,9,.12)': 'rgba(251,191,36,.15)', 'rgba(177,14,28,.10)': 'rgba(248,113,113,.17)', 'rgba(21,112,239,.10)': 'rgba(90,160,255,.17)' };
-  const STK = { 'rgba(0,0,0,.09)': LINE, 'rgba(0,0,0,.12)': 'rgba(255,255,255,.2)', GRN: '#34d399' };
+  const ACC = ['#1570EF', '#5aa0ff', '#2dd4bf', '#ff6bb0', '#fbbf24', '#34d399']; let accCur = ACC[0];
+  const INK = '#262626', MUTE = '#686868', CARD = '#fff', INSET = '#f7f7f7', LINE = 'rgba(0,0,0,.09)';   // the window is light, like the product (coss look)
+  const TXT = {}, FILL = {}, STK = {};
   const GRN = '#22c55e';
-  const dim = c => (typeof c === 'string' && c.indexOf('rgba(0,0,0,') === 0) ? c.replace('rgba(0,0,0,', 'rgba(255,255,255,') : c;
+  const dim = c => c;
   const T = (s, x, y, size, weight, col, align) => { cx.font = `${weight} ${size}px ${FONT}`; cx.fillStyle = TXT[col] || col; cx.textAlign = align || 'left'; cx.textBaseline = 'alphabetic'; cx.fillText(s, x, y); cx.textAlign = 'left'; };
   const hdr = (s, x, y) => { cx.fillStyle = accCur; cx.shadowColor = accCur; cx.shadowBlur = 8; cx.beginPath(); cx.arc(x - 10, y - 4, 3, 0, TAU); cx.fill(); cx.shadowColor = 'transparent'; T(s, x, y, 12, 600, INK); };
   const pnl = (x, y, w, h, r, fill, stroke) => { rr(x, y, w, h, r); cx.fillStyle = FILL[fill] || fill || CARD; cx.fill(); if (stroke !== false) { cx.strokeStyle = STK[stroke] || stroke || LINE; cx.lineWidth = 1; cx.stroke(); } };
@@ -104,6 +103,42 @@
   const CHECKS = ['Users trained', 'Data loaded', 'Guides published', 'Sign-offs done', 'Support ready'];
   const ini = (x, y, i, a) => { const p = PEOPLE[i % 3]; cx.save(); cx.globalAlpha *= a; cx.fillStyle = `rgb(${p[3]})`; cx.beginPath(); cx.arc(x, y, 8, 0, TAU); cx.fill(); T(p[0], x, y + 3, 7.5, 700, '#fff', 'center'); cx.restore(); };
 
+
+  // Scene 0, "what it is": loose inputs travel into one project, AI reads, links and drafts, deliverables come out for people to review and approve.
+  const HUB_IN = [['Emails', 'doc'], ['Meeting audio', 'rec'], ['Contract', 'doc'], ['Spreadsheets', 'org'], ['Site videos', 'vid']];
+  const HUB_POS = [[22, 62, -3], [58, 100, 2.5], [24, 138, -2], [62, 176, 3.5], [26, 214, -2.5]];
+  const HUB_OUT = [['BRD', 'From requirements'], ['UAT plan', 'Linked test cases'], ['Configuration', 'Documented set-up'], ['User guides', 'One per role'], ['Handover pack', 'Nothing lost']];
+  const HUB_CH = ['Requirements', 'Risks', 'Tasks', 'Documents'];
+  function sceneHub(tl) {
+    const hx = 244, hy = 84, hw = 196, hh = 130, cxm = hx + hw / 2, cym = hy + hh / 2;
+    T('Scattered today', 24, 50, 9.5, 600, '#a3a3a3'); T('One project', cxm, 50, 9.5, 600, '#a3a3a3', 'center'); T('Ready for review', 486, 50, 9.5, 600, '#a3a3a3');
+    HUB_IN.forEach(([ti, kd], i) => {
+      const [bx, by, rot] = HUB_POS[i], a = sm(.05 + i * .12, .4 + i * .12, tl), go = clamp((tl - (1 + i * .22)) / .9, 0, 1); if (a <= 0 || go >= 1) return;
+      const e = eIO(go), x = lerp(bx, hx - 20, e), y = lerp(by, cym - 14, e) - Math.sin(e * Math.PI) * 18, k = lerp(1, .45, e);
+      cx.save(); cx.globalAlpha = a * (1 - sm(.75, 1, go)); cx.translate(x + 64, y + 14); cx.rotate((rot + Math.sin(tl * 2 + i) * 1.2) * (1 - e) * Math.PI / 180); cx.scale(k, k); cx.translate(-64, -14);
+      pnl(0, 0, 128, 28, 9, '#f7f7f7'); icon(kd, 8, 7, 14, '#1570EF'); T(ti, 30, 18, 10.5, 600, '#262626'); cx.restore();
+    });
+    const landed = HUB_IN.filter((_, i) => tl > 1.9 + i * .22).length, pulse = landed ? Math.max(0, 1 - ((tl - 1.9 - (landed - 1) * .22) / .5)) : 0;
+    const ha = sm(.3, .9, tl); if (ha <= .01) return;
+    cx.save(); cx.globalAlpha = ha; glow(cxm, cym, 120, '21,112,239', .08 + .12 * pulse);
+    pnl(hx, hy, hw, hh, 16, '#fff', 'rgba(21,112,239,.35)'); T('Delivery Studio', hx + 16, hy + 24, 12.5, 700, '#1D1A5E');
+    const bx0 = hx + hw - 24, by0 = hy + 20; cx.fillStyle = '#E5197F'; cx.beginPath(); cx.arc(bx0, by0, 11, 0, TAU); cx.fill(); T('AI', bx0, by0 + 3, 8.5, 700, '#fff', 'center');
+    for (let k = 0; k < 3; k++) { const an = tl * 2.2 + k * TAU / 3; sparkle(bx0 + Math.cos(an) * 18, by0 + Math.sin(an) * 18, 2.6, k % 2 ? '#1570EF' : '#E5197F', sm(1.4, 1.9, tl)); }
+    const cp = k => ({ x: hx + 14 + (k % 2) * 88 + 40, y: hy + 52 + Math.floor(k / 2) * 30 + 11 });
+    HUB_CH.forEach((_, k) => { const a2 = sm(1.7 + k * .3, 2.1 + k * .3, tl), p = cp(k), q = cp((k + 1) % 4); if (a2 <= 0 || k === 3) return; cx.strokeStyle = 'rgba(21,112,239,' + (.35 * a2) + ')'; cx.lineWidth = 1.2; cx.beginPath(); cx.moveTo(p.x, p.y); cx.lineTo(q.x, q.y); cx.stroke(); });
+    { const u = (tl * .9) % 1, p = cp(0), q = cp(3), a3 = sm(2.6, 3, tl); cx.fillStyle = 'rgba(229,25,127,' + a3 + ')'; cx.beginPath(); cx.arc(lerp(p.x, q.x, u), lerp(p.y, q.y, u), 2.4, 0, TAU); cx.fill(); }
+    HUB_CH.forEach((lb, k) => { const a2 = sm(1.7 + k * .3, 2.1 + k * .3, tl), p = cp(k); if (a2 <= 0) return; cx.save(); cx.globalAlpha *= a2; pnl(p.x - 40, p.y - 11 + (1 - eOut(a2)) * 6, 80, 22, 8, '#f7f7f7'); T(lb, p.x, p.y + 3.5 + (1 - eOut(a2)) * 6, 9.5, 600, '#262626', 'center'); cx.restore(); });
+    T('AI reads, links and drafts', cxm, hy + hh - 14, 9.5, 600, '#686868', 'center'); cx.restore();
+    HUB_OUT.forEach(([ti, su], i) => {
+      const t0 = 2.6 + i * .28, a = sm(t0, t0 + .4, tl); if (a <= 0) return; const e = eOut(a), x = lerp(hx + hw - 14, 482, e), y = 60 + i * 38, rev = tl > 3.8 + i * .18;
+      cx.strokeStyle = 'rgba(21,112,239,' + (.28 * a) + ')'; cx.lineWidth = 1.2; cx.beginPath(); cx.moveTo(hx + hw, cym); cx.quadraticCurveTo(hx + hw + 20, cym, x, y + 16); cx.stroke();
+      cx.save(); cx.globalAlpha = a; pnl(x, y, 196, 33, 10, '#fff'); T(ti, x + 12, y + 14, 10.5, 600, '#262626'); T(su, x + 12, y + 26, 8.5, 500, '#686868');
+      if (rev) { chip(x + 126, y + 8, 60, 17, 'Reviewed', 'rgba(16,124,16,.12)', '#0b5a0b'); ring(x + 156, y + 16, (tl - 3.8 - i * .18) / .6, '34,197,94', 22); } else chip(x + 126, y + 8, 60, 17, 'AI draft', 'rgba(21,112,239,.10)', '#0e4a9a');
+      cx.restore();
+    });
+    const la = sm(2.6, 3.3, tl); if (la > .01) { cx.save(); cx.globalAlpha = la; T('5 \u2192 1', 24, 140, 34, 700, '#1D1A5E'); T('places to look become', 24, 162, 10.5, 500, '#686868'); T('one project record', 24, 177, 10.5, 600, '#262626'); cx.restore(); }
+    const na = sm(4.1, 4.6, tl); if (na > .01) { cx.save(); cx.globalAlpha = na; T('People review and approve every draft. Nothing goes out on its own.', LW / 2, 276, 10.5, 600, '#686868', 'center'); cx.restore(); }
+  }
   function sceneSet(tl) {
     INPUTS.forEach(([ti, su, kd], i) => {
       const a = sm(.1 + i * .2, .45 + i * .2, tl), x = 22 - (1 - eOut(a)) * 30, y = 56 + i * 38; if (a <= 0) return; cx.save(); cx.globalAlpha = a;
@@ -170,7 +205,7 @@
     pnl(22, 50, 210, 206, 14, '#fff'); hdr('Go-live readiness', 42, 74);
     CHECKS.forEach((c, i) => { const t0 = .3 + i * .33, a = sm(t0 - .2, t0, tl), y = 92 + i * 31; if (a <= 0) return; cx.save(); cx.globalAlpha = a; pnl(36, y, 182, 25, 8, '#fafafa'); T(c, 62, y + 16.5, 10.5, 500, '#262626'); if (tl > t0 + .1) tick(49, y + 12.5, 6, GRN); else { cx.strokeStyle = 'rgba(0,0,0,.25)'; rr(43, y + 6.5, 12, 12, 4); cx.stroke(); } cx.restore(); });
     const live = sm(1.7, 2.1, tl), px = 350, py = 140; for (let k = 0; k < 3; k++) { const u = ((tl * .7 + k / 3) % 1) * live; cx.strokeStyle = `rgba(16,124,16,${(1 - u) * .35 * live})`; cx.lineWidth = 1.5; cx.beginPath(); cx.arc(px, py, 30 + u * 44, 0, TAU); cx.stroke(); }
-    cx.shadowColor = live > .05 ? GRN : 'transparent'; cx.shadowBlur = 24 * live; cx.fillStyle = live > .05 ? GRN : 'rgba(255,255,255,.14)'; cx.beginPath(); cx.arc(px, py, 33, 0, TAU); cx.fill(); cx.shadowColor = 'transparent'; T('Live', px, py + 5, 15, 700, '#fff', 'center');
+    cx.shadowColor = live > .05 ? GRN : 'transparent'; cx.shadowBlur = 24 * live; cx.fillStyle = live > .05 ? GRN : 'rgba(0,0,0,.1)'; cx.beginPath(); cx.arc(px, py, 33, 0, TAU); cx.fill(); cx.shadowColor = 'transparent'; T('Live', px, py + 5, 15, 700, '#fff', 'center');
     T(tl > 2.1 ? 'Hypercare: first 30 days' : 'Ready to launch', px, py + 62, 10.5, 600, '#262626', 'center');
     pnl(468, 50, 210, 112, 14, '#fff'); hdr('Hypercare · open issues', 488, 74);
     const pts = [9, 7, 6, 4, 3, 1, 0], pp = clamp((tl - .8) / 2.2, 0, 1); cx.shadowColor = '#5aa0ff'; cx.shadowBlur = 8; cx.strokeStyle = '#5aa0ff'; cx.lineWidth = 2.2; cx.lineJoin = 'round'; cx.beginPath(); let lx = 486;
@@ -179,15 +214,15 @@
     ['Guides', 'BRD', 'Config'].forEach((d, i) => { const t0 = 2.0 + i * .3, a = sm(t0, t0 + .3, tl); if (a <= 0) return; cx.save(); cx.globalAlpha = a; cx.translate(0, (1 - eOut(a)) * 8); pnl(484 + i * 62, 206, 56, 36, 8, '#fafafa'); icon('doc', 498 + i * 62, 210, 14, '#5aa0ff'); T(d, 512 + i * 62, 237, 8.5, 600, '#262626', 'center'); cx.restore(); });
     const hd = sm(3.1, 3.4, tl); if (hd > 0) { cx.save(); cx.globalAlpha = hd; pnl(536, 162, 106, 20, 10, GRN, false); T('Handed over', 589, 176, 10, 700, '#fff', 'center'); cx.restore(); }
   }
-  const SCENES = [sceneSet, sceneReq, sceneBrd, sceneBuild, sceneLive];
+  const SCENES = [sceneHub, sceneSet, sceneReq, sceneBrd, sceneBuild, sceneLive];
   function team(t, dt) {
     const pa = eOut(t / .8), si = SCN.reduce((n, s, i) => (t >= s ? i : n), 0);
     { const dr = Math.sin(t * .5), dr2 = Math.cos(t * .4); glow(G.wx + G.ww * (.15 + .04 * dr), G.wy + G.wh * .25, G.ww * .55, '90,160,255', .2); glow(G.wx + G.ww * (.85 - .04 * dr2), G.wy + G.wh * .35, G.ww * .5, '255,107,176', .15); glow(G.wx + G.ww * (.5 + .1 * dr2), G.wy + G.wh * .98, G.ww * .5, '45,212,191', .15); }
     // the window
     cx.save(); cx.globalAlpha = pa; cx.translate(G.wx, G.wy + (1 - pa) * 12); cx.scale(G.f, G.f);
-    cx.shadowColor = 'rgba(3,2,24,.65)'; cx.shadowBlur = 40; cx.shadowOffsetY = 16; { const wg = cx.createLinearGradient(0, 0, LW * .4, LH); wg.addColorStop(0, '#1b1f4a'); wg.addColorStop(1, '#0c0f2b'); rr(0, 0, LW, LH, 18); cx.fillStyle = wg; cx.fill(); } cx.shadowColor = 'transparent';
+    cx.shadowColor = 'rgba(3,2,24,.65)'; cx.shadowBlur = 40; cx.shadowOffsetY = 16; { const wg = cx.createLinearGradient(0, 0, LW * .4, LH); wg.addColorStop(0, '#ffffff'); wg.addColorStop(1, '#f3f6ff'); rr(0, 0, LW, LH, 18); cx.fillStyle = wg; cx.fill(); } cx.shadowColor = 'transparent';
     cx.save(); rr(0, 0, LW, LH, 18); cx.clip();
-    cx.fillStyle = 'rgba(255,255,255,.045)'; cx.fillRect(0, 0, LW, 34); cx.fillStyle = 'rgba(255,255,255,.1)'; cx.fillRect(0, 34, LW, 1); { const tg = cx.createLinearGradient(0, 0, LW, 0); tg.addColorStop(0, 'rgba(255,255,255,0)'); tg.addColorStop(.5, 'rgba(255,255,255,.5)'); tg.addColorStop(1, 'rgba(255,255,255,0)'); cx.fillStyle = tg; cx.fillRect(0, 0, LW, 1); }
+    cx.fillStyle = '#fafafa'; cx.fillRect(0, 0, LW, 34); cx.fillStyle = 'rgba(0,0,0,.08)'; cx.fillRect(0, 34, LW, 1); { const tg = cx.createLinearGradient(0, 0, LW, 0); tg.addColorStop(0, 'rgba(21,112,239,0)'); tg.addColorStop(.5, 'rgba(21,112,239,.55)'); tg.addColorStop(1, 'rgba(21,112,239,0)'); cx.fillStyle = tg; cx.fillRect(0, 0, LW, 1); }
     T('Riverside Towers rollout', 20, 22, 10.5, 600, '#262626'); T('/', 138, 22, 10.5, 500, '#a3a3a3');
     SCN_TITLE.forEach((nm, i) => { const e = i + 1 < SCN.length ? SCN[i + 1] : 1e9, a = sm(SCN[i] - .05, SCN[i] + .3, t) * (1 - sm(e - .3, e, t)); if (a > .01) { cx.save(); cx.globalAlpha = a; T(nm, 152, 22, 10.5, 500, '#686868'); cx.restore(); } });
     ini(LW - 70, 17, 0, 1); ini(LW - 52, 17, 1, 1); ini(LW - 34, 17, 2, 1);
@@ -195,9 +230,9 @@
       const s0 = SCN[i], e = i + 1 < SCN.length ? SCN[i + 1] : 1e9, a = sm(s0 - .05, s0 + .35, t) * (1 - sm(e - .3, e, t)); if (a <= .01) return;
       accCur = ACC[i]; cx.save(); cx.globalAlpha *= a; cx.translate((1 - sm(s0 - .05, s0 + .35, t)) * 18 - sm(e - .3, e, t) * 18, 0); fn(t - s0); cx.restore();
     });
-    cx.restore(); cx.strokeStyle = 'rgba(255,255,255,.16)'; cx.lineWidth = 1; rr(.5, .5, LW - 1, LH - 1, 18); cx.stroke(); cx.restore();
+    cx.restore(); cx.strokeStyle = 'rgba(255,255,255,.55)'; cx.lineWidth = 1; rr(.5, .5, LW - 1, LH - 1, 18); cx.stroke(); cx.restore();
     // what AI or the team is doing now
-    pill(G.wx + G.ww / 2, G.wy - 5, SCN_MSG[si], null, sm(.8, 1.3, t) * pa, { dot: si === 4 && t > 15.6 ? GRN : '#E5197F', tail: false, small: true });
+    pill(G.wx + G.ww / 2, G.wy - 5, SCN_MSG[si], null, sm(.8, 1.3, t) * pa, { dot: si === 5 && t > 20.6 ? GRN : '#E5197F', tail: false, small: true });
     // the stage rail, Kick-off to Handover
     const p = railAt(t), n = RAIL.length, X = i => lerp(G.rx0, G.rx1, i / (n - 1)), y = G.ry + 14;
     cx.strokeStyle = 'rgba(255,255,255,.2)'; cx.lineWidth = 2; cx.lineCap = 'round'; cx.beginPath(); cx.moveTo(G.rx0, y); cx.lineTo(G.rx1, y); cx.stroke();

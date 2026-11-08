@@ -13,6 +13,9 @@ export function installMailTasks(d) {
   async function access(s, pid) { const a = await projectAccess(s, pid, 'edit'); if (a.role === 'customer') throw new HttpError(403, 'The mail inbox is for the project team'); return a; }
   const wrap = fn => { try { return fn(); } catch (e) { if (e && e.status) throw new HttpError(e.status, e.message); throw e; } };
   const all = async pid => (await dbList(col(pid))).map(r => r.value).filter(r => r && r.id);
+  /** per project: { muted, why, lastFetchAt }. Muted = no search is requested and nothing is saved (set by hand, or when the handover stage is closed). */
+  const cfgOf = async pid => ((await dbGet('mlcfg', pid)) || {}).value || {};
+  const dayBefore = iso => { const t = Date.parse(iso); return t ? new Date(t - 864e5).toISOString().slice(0, 10) : ''; };
   async function ctxOf(s, pid, extra) {
     const p = (await dbGet('projects', pid)).value || {}; let modules = []; try { const w = await docRead(pid, 'workshop'); modules = ((w && w.data && w.data.modules) || []).map(m => (m && (m.name || m.label)) || (typeof m === 'string' ? m : '')).filter(Boolean).slice(0, 60); } catch (e) { /* no workshop document yet */ }
     return { me: s.email, team: (p.members || []).map(m => m.email).filter(Boolean), customer: p.customer || '', project: p.name || '', modules, keywords: (Array.isArray(extra) ? extra : []).map(x => String(x).slice(0, 80)).slice(0, 20) };
@@ -25,7 +28,8 @@ export function installMailTasks(d) {
     async list(s, pid, status, id) {
       await access(s, pid); let rows = await all(pid); if (id) { rows = rows.filter(r => r.id === id); if (!rows.length) throw new HttpError(404, 'Mail not found'); }
       const want = id || status === 'all' ? null : status === 'open' ? ['pending', 'accepted'] : status ? [status] : ['pending'];
-      return { mails: rows.filter(r => !want || want.includes(r.status)).sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt))).slice(0, 100).map(r => view(r, !!id)), pending: rows.filter(r => r.status === 'pending').length, knownMessageIds: rows.map(r => r.mail && r.mail.messageId).filter(Boolean).slice(-300) };
+      const cfg = await cfgOf(pid); const newest = rows.map(r => r.mail && r.mail.receivedAt).concat([cfg.lastFetchAt]).filter(Boolean).sort().pop() || '';
+      return { muted: !!cfg.muted, mutedWhy: cfg.why || '', searchSince: dayBefore(newest), known: rows.length, mails: rows.filter(r => !want || want.includes(r.status)).sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt))).slice(0, 100).map(r => view(r, !!id)), pending: rows.filter(r => r.status === 'pending').length, knownMessageIds: rows.map(r => r.mail && r.mail.messageId).filter(Boolean).slice(-300) };
     },
     /** each valid mail that matters becomes a PENDING record; the same message id is never stored twice; nothing is created before a person accepts */
     async save(s, pid, list, keywords, lenient) {
@@ -72,6 +76,7 @@ export function installMailTasks(d) {
   };
 
   const P = '/api/projects/:id/mailtasks';
+  route('POST', P + '/mute', async (b, Q) => { const s = await me(); await access(s, Q.id); const cfg = await cfgOf(Q.id); const muted = !!(b && b.muted); await dbPut('mlcfg', Q.id, Object.assign({}, cfg, { muted, why: muted ? String((b && b.why) || 'switched off by ' + (s.name || s.email)).slice(0, 120) : '', at: new Date().toISOString() })); await audit(Q.id, s.id, muted ? 'mail-muted' : 'mail-unmuted', ''); return ok({ muted }); });
   route('GET', P, async (b, G, q) => { const s = await me(); return ok(await ops.list(s, G.id, String(q.get('status') || ''), String(q.get('id') || ''))); });
   route('POST', P, async (b, G) => { const s = await me(); return ok(await ops.save(s, G.id, b && b.mails, b && b.keywords), 201); });
   route('POST', P + '/:mid/accept', async (b, G) => { const s = await me(); return ok({ mail: view(await ops.accept(s, G.id, G.mid, b || {})) }); });
@@ -84,7 +89,8 @@ export function installMailTasks(d) {
   // ---------- Claude connector actions of task_tracking ----------
   const tools = {
     async mail_list(s, b) { const p = await pickProject(s, b.project); const r = await ops.list(s, p.id, String(b.status || ''), String(b.id || '')); return Object.assign({ project: p.name, projectId: p.id, untrusted: UNTRUSTED }, r); },
-    async mail_save(s, b) { const p = await pickProject(s, b.project); const r = await ops.save(s, p.id, b.mails, b.keywords, true); if (r.stored) await notify({ type: 'mail_arrived', project: p, to: 'team', actor: '', title: r.stored + ' new customer mail' + (r.stored === 1 ? '' : 's') + ' · ' + p.name, text: 'Waiting in the Mail inbox on the Tasks page. Accept it to make a task.', view: 'tasks' }); return { project: p.name, stored: r.stored, results: r.results, note: 'Stored as PENDING. A person accepts or dismisses each on the Tasks page (Mail inbox); no task exists before. A mail seen again (same message id) is a duplicate and is not stored twice.' }; },
+    async mail_save(s, b) { const p = await pickProject(s, b.project); const cfg = await cfgOf(p.id); if (cfg.muted) return { project: p.name, stored: 0, muted: true, note: 'Mail is muted for this project (' + (cfg.why || 'switched off') + '). Nothing was stored. Stop searching for this project.' };
+      const r = await ops.save(s, p.id, b.mails, b.keywords, true); await dbPut('mlcfg', p.id, Object.assign({}, cfg, { lastFetchAt: new Date().toISOString() })); if (r.stored) await notify({ type: 'mail_arrived', project: p, to: 'team', actor: '', title: r.stored + ' new customer mail' + (r.stored === 1 ? '' : 's') + ' · ' + p.name, text: 'Waiting in the Mail inbox on the Tasks page. Accept it to make a task.', view: 'tasks' }); return { project: p.name, stored: r.stored, results: r.results, note: 'Stored as PENDING. A person accepts or dismisses each on the Tasks page (Mail inbox); no task exists before. A mail seen again (same message id) is a duplicate and is not stored twice.' }; },
     async mail_draft(s, b) { const p = await pickProject(s, b.project); const m = await ops.reply(s, p.id, String(b.id || ''), 'draft', { subject: b.subject, body: b.body, to: b.to, cc: b.cc }); return { project: p.name, id: m.id, reply: m.reply, note: 'Stored UNAPPROVED. A person edits and approves it on the Tasks page and opens it in Outlook; nothing was sent. Do not create an Outlook draft or send anything yourself.' }; },
     async mail_sent(s, b) { const p = await pickProject(s, b.project); const m = await ops.reply(s, p.id, String(b.id || ''), 'confirm_sent', { sentRef: b.sentRef }); return { project: p.name, id: m.id, status: m.status, note: 'Recorded: the reply was found in Sent Items and the mail is closed.' }; }
   };
