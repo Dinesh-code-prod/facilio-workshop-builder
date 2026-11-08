@@ -28,3 +28,10 @@ Read from the code (not tried with a real Claude run). It supersedes nothing; it
 
 ## 4. Not verified
 Nothing here was run with a real Claude session or a real upload on the live app. The upload and the `file_urls` path are the existing ones used by the solution and org package jobs.
+
+## 5. Comet videos and the guides (8 Nov 2026)
+- **What Comet is here:** Comet makes the video from a brief; the Studio cannot watch a video and has no speech to text, so a video cannot be turned into a guide by itself.
+- **How a video reaches a guide (built):** every video row on the Training page (Mockup prototypes, UAT scenarios, and the new + Add a video rows) is kept with the project: the link, and for added videos a title and what the video shows (workshop document, parts walkthroughs and mockups). The recipes of make_guide and change_guide tell Claude to read those parts, put the matching video link next to the module or steps it belongs to, and keep the steps consistent with what the video is meant to show.
+- **Guide and video from the same brief:** a row has one brief; the video is made from it in Comet and the guide is written from the same notes, so the two agree.
+- **If Comet gives subtitles or a script:** add the .vtt, .srt or text as a document for Claude on the same page.
+- **Not built:** reading a video, and an automatic return of the finished video from Comet (the person pastes the link back; the Ask Claude to bring the finished videos button asks Claude to look in Comet).

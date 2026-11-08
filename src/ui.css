@@ -1499,3 +1499,10 @@ body a:not([class]):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; te
 /* the navy banner of every project page keeps white text (a later rule forced dark heading text onto it, so the title and the lead line were unreadable) */
 body .main[data-sec] > .page > .page-header .t h1:not(#_):not(#__):not(#_):not(#__):not(#_), body .main[data-sec] > .page > .page-header .t h2:not(#_):not(#__):not(#_):not(#__):not(#_) { color: #fff !important; }
 body .main[data-sec] > .page > .page-header .t p:not(#_):not(#__):not(#_):not(#__):not(#_), body .main[data-sec] > .page > .page-header .t *:not(.btn):not(.tag):not(h1):not(h2):not(#_):not(#__):not(#_):not(#__):not(#_) { color: #e3e9fb !important; }
+
+/* Team Guide layout (8 Nov 2026): the roadmap rows are a steady three-column grid again (tick box, words, buttons) and the section chips are an even grid of equal pills instead of an uneven two-row wrap. */
+body .tg2-road .tg2-steps li:not(#_):not(#__) { display: grid !important; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 12px; align-items: start; justify-content: stretch !important; }
+body .tg2-road .tg2-ck:not(#_):not(#__) { flex: none !important; width: 28px; }
+body .tg2-chips:not(#_):not(#__) { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+body .tg2-chips a:not(#_):not(#__) { text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body .ws-switch a[aria-current="page"]:not(#_):not(#__) { color: #fff !important; }   /* the active Projects or Admin button keeps a white label on its dark pill (a black-text rule had made it invisible) */
