@@ -92,6 +92,41 @@
     else { const data = Object.assign({}, r); delete data.id; await I.put(d.store, r.id, data, { silent: true }); }
     save(q.id, { made: { kind, id: r.id } }); toast({ requirement: 'Requirement draft ' + r.id + ' made. Confirm it in Requirements.', decision: 'Decision draft made (Proposed). Agree it in Governance.', action: 'Action made. Give it an owner and a date in Governance.', question: 'Open question added' }[kind], 5000); rerender();
   });
+  // Answered questions of a module go to the Solution tab as ONE proposal per module (the agreed text so far plus the new answers); a person reads each and presses Accept there. Nothing is written into the solution itself.
+  ACT.wsSolution = a => V.busy(a, async () => {
+    if (ro()) return; /* the questions carry the module's label, the Solution tab its name */ const SL = root.FWBSolutionLogic; if (!SL) return; const nz = x => String(x || '').toLowerCase().replace(/[^a-z0-9]/g, '').replace(/s$/, ''); const scoped = (F.allModules() || []).filter(m => m.inScope); const modOf = x => { const k = nz(x); return k ? scoped.find(m => nz(m.name) === k || nz(m.label) === k) : null; };  const pend = questions().filter(q => q.status === 'answered' && String(q.note || '').trim() && !q.made.solution);
+    const by = {}; let skipped = 0; pend.forEach(q => { const m = modOf(q.module); if (!m) { skipped++; return; } (by[m.name] = by[m.name] || []).push(q); });
+    const mods = Object.keys(by); if (!mods.length) { toast(pend.length ? 'The answered questions have no module in scope, so they have no place in the Solution tab' : 'No answered question with a note is waiting to go to the Solution tab', 6000, true); return; }
+    const sdoc = F.doc('solutions') || { items: {} }; const now = new Date().toISOString(); const incoming = mods.map(m => { const key = 'module:' + m; const cur = SL.textOf(sdoc, key); const add = by[m].map(q => q.text.replace(/\s+/g, ' ').trim() + ' Customer answer: ' + String(q.note).replace(/\s+/g, ' ').trim()); const ev = by[m].map(q => (q.evidence && q.evidence.quote) || '').filter(Boolean)[0] || '';
+      return { kind: 'solution', module: key, text: (cur ? cur + '\n\n' : '') + add.join('\n\n'), why: 'Answered in the requirement session (' + by[m].length + ' question' + (by[m].length === 1 ? '' : 's') + ')', quote: ev, source: 'Workshop room' }; });
+    const pd = F.doc('design_proposals') || { items: [] }; const r = SL.mergeProposals(pd.items || [], incoming, now); S.docs.design_proposals.data = Object.assign({}, pd, { items: r.items }); F.markDirty('design_proposals');
+    mods.forEach(m => by[m].forEach(q => save(q.id, { made: Object.assign({}, q.made, { solution: true }) }))); toast(r.added + ' proposal' + (r.added === 1 ? '' : 's') + ' sent to the Solution tab' + (skipped ? ' (' + skipped + ' answers without a module in scope were left out)' : '') + '. Open Solution to review and accept.', 8000); rerender();
+  });
+  // A small always-on-top window (the browser's own Document Picture-in-Picture, Chrome and Edge) that stays above Teams, Meet or Zoom while the call runs: the questions still to ask, one tap to mark asked or answered.
+  // Nothing leaves the browser and no meeting is joined; where the browser has no such window it says so.
+  let pip = null;
+  function pipDraw() {
+    if (!pip || pip.closed) { pip = null; return; } const d = pip.document; let all = []; try { all = questions(); } catch (e) { return; } const open = all.filter(q => q.status === 'toask' || q.status === 'asked'); const done = all.length - open.length;
+    d.getElementById('pqHead').textContent = open.length + ' to go, ' + done + ' done'; const list = d.getElementById('pqList'); list.textContent = '';
+    open.slice(0, 40).forEach(q => { const row = d.createElement('div'); row.className = 'q'; const t = d.createElement('div'); t.className = 't'; t.textContent = (q.module ? q.module + ': ' : '') + q.text; row.appendChild(t); const b = d.createElement('div'); b.className = 'b';
+      [['asked', q.status === 'asked' ? 'Asked' : 'Mark asked'], ['answered', 'Answered'], ['skipped', 'Skip']].forEach(([s, label]) => { const x = d.createElement('button'); x.type = 'button'; x.textContent = label; x.setAttribute('data-q', q.id); x.setAttribute('data-s', s); if (q.status === s) x.disabled = true; b.appendChild(x); }); row.appendChild(b); list.appendChild(row); });
+    if (!open.length) list.textContent = 'Every prepared question has been asked or answered.';
+  }
+  ACT.wsPip = async () => {
+    if (!('documentPictureInPicture' in window)) { toast('This browser cannot float a window above the call. Use Chrome or Edge, or put this page in its own window beside the call.', 7000, true); return; }
+    if (pip && !pip.closed) { pip.focus(); return; }
+    try { pip = await window.documentPictureInPicture.requestWindow({ width: 380, height: 560 }); } catch (e) { toast('The floating window was not opened: ' + (e.message || 'blocked'), 6000, true); return; }
+    const d = pip.document; const st = d.createElement('style'); st.textContent = 'body{margin:0;font:14px/1.4 system-ui,Segoe UI,Arial,sans-serif;color:#1D1A5E;background:#fff}h1{font-size:14px;margin:0;padding:10px 12px;border-bottom:1px solid #DCE4F3;position:sticky;top:0;background:#fff}#pqList{padding:8px 12px}.q{padding:8px 0;border-bottom:1px solid #E3E9F5}.t{margin-bottom:6px}.b{display:flex;gap:6px;flex-wrap:wrap}button{font:inherit;font-size:12px;padding:4px 10px;border:1px solid #8DB8FF;background:#fff;color:#1570EF;border-radius:8px;cursor:pointer}button:disabled{opacity:.5;cursor:default}';
+    d.head.appendChild(st); d.title = 'Questions for the call'; const h = d.createElement('h1'); h.id = 'pqHead'; d.body.appendChild(h); const l = d.createElement('div'); l.id = 'pqList'; d.body.appendChild(l);
+    d.addEventListener('click', e => { const b = e.target.closest && e.target.closest('button[data-q]'); if (!b || ro()) return; save(b.getAttribute('data-q'), { status: b.getAttribute('data-s') }); pipDraw(); rerender(); });
+    const tm = setInterval(pipDraw, 3000); pip.addEventListener('pagehide', () => { clearInterval(tm); pip = null; }); pipDraw();
+  };
+  // keep the call text of the live box as a transcript of the project (Requirement sessions > Transcripts: stored, listed, downloadable, analysed like an uploaded file)
+  ACT.wsSaveTranscript = a => V.busy(a, async () => {
+    if (ro()) return; const u = U(); const text = String(u.live || '').trim(); if (text.length < 40) { toast('There is no call text yet. Listen with the microphone, or paste the transcript first.', 5000, true); return; } if (!V.trSave) return;
+    const day = new Date().toISOString().slice(0, 10); const name = 'live-call-' + day + (u.sessionId ? '-' + String(u.sessionId).replace(/[^a-z0-9]+/gi, '-').slice(0, 30) : '') + '.txt';
+    await V.trSave(new File([text], name, { type: 'text/plain' }), { sessionId: u.sessionId || '', modules: [], notes: 'Saved from the Workshop room (live call).' }, null); toast('The call is saved as a transcript. Find it, download it or review its suggestions in Transcripts.', 8000);
+  });
   ACT.wsTimer = () => { const t = U().t; if (t.run) { t.acc += Date.now() - t.start; t.run = false; } else { t.start = Date.now(); t.run = true; } rerender(); };
   ACT.wsTimerReset = () => { U().t = { run: false, start: 0, acc: 0 }; rerender(); };
   ACT.wsFull = () => { U().full = !U().full; rerender(); };
