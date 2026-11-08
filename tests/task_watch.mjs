@@ -119,6 +119,14 @@ await t('saving a task with a new owner sends that person one direct message', a
   assert.equal((await put(SAM, pid, 't6', { title: 'Mine', status: 'To Do', owner: SAM })).status, 200); assert.equal(sent.length, 1, 'assigning to yourself: no message');
   teamsOn = false; assert.equal((await put(SAM, pid, 't7', { title: 'Quiet', status: 'To Do', owner: KIM })).status, 200); assert.equal(sent.length, 1, 'Teams notices off: no message');
 });
+await t('Send to my Teams: one task goes to the caller only; Teams off, a finished task, a customer and an unknown task send nothing', async () => {
+  teamsOn = true; store.get('twn').clear(); sent = []; await put(SAM, pid, 'm1', { title: 'Carry me', status: 'To Do', priority: 'High' });
+  sent = []; const r = await as(SAM, 'POST', `/api/projects/${pid}/tasks/m1/to-my-teams`, {}); assert.equal(r.status, 200, JSON.stringify(r.data)); assert.equal(r.data.sent, true);
+  assert.equal(sent.length, 1); assert.deepEqual(sent[0].to, [SAM]); assert.match(sent[0].title, /^TASK · /); assert.match(sent[0].text, /Carry me/);
+  teamsOn = false; assert.equal((await as(SAM, 'POST', `/api/projects/${pid}/tasks/m1/to-my-teams`, {})).data.sent, false); teamsOn = true;
+  assert.equal((await as(SAM, 'POST', `/api/projects/${pid}/tasks/nope/to-my-teams`, {})).status, 404);
+  await put(SAM, pid, 'm2', { title: 'Finished', status: 'Done' }); assert.equal((await as(SAM, 'POST', `/api/projects/${pid}/tasks/m2/to-my-teams`, {})).data.sent, false); assert.equal(sent.length, 1, 'nothing more was sent');
+});
 await t('a bulk owner change sends at most three messages to that person', async () => {
   teamsOn = true; sent = []; for (let i = 0; i < 5; i++) assert.equal((await put(SAM, pid, 'b' + i, { title: 'Bulk ' + i, status: 'To Do', owner: VIC })).status, 200);
   assert.equal(sent.filter(x => x.to[0] === VIC).length, 3, 'the other two are left for the digest');

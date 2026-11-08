@@ -197,6 +197,7 @@
     if (status === 'Done' && t.question && !(t.question.final || '').trim()) { toast('Record the final response to the customer question first (open the task).', 6000, true); V.render(); if (focus) refocus(id, focus === 'sel'); return; }
     try { await save(t, { status }, tid(t) + ' moved to ' + status); } catch (e) { toast(e.message, 6000, true); V.render(); } if (focus) refocus(id, focus === 'sel'); }
   ACT.tkClearQ = () => { S.ui.tkQ = ''; V.render(); };
+  ACT.tkToTeams = a => V.busy(a, async () => { const r = await API.post(`/api/projects/${S.project.id}/tasks/${encodeURIComponent(a.getAttribute('data-id'))}/to-my-teams`, {}); toast(r.sent ? 'Sent to your Teams chat. Nobody else was messaged.' : (r.why || 'Nothing was sent.'), r.sent ? 4000 : 7000, !r.sent); });
   ACT.tkTab = a => { S.ui.tkTab = a.getAttribute('data-v') === 'overview' ? 'overview' : 'work'; V.render(); };
   ACT.tkView = a => { S.ui.tkView = a.getAttribute('data-v') === 'board' ? 'board' : 'list'; try { localStorage.setItem('fwb_tkview', S.ui.tkView); } catch (e) { } V.render(); };
   ACT.tkMoveSel = el => moveTo(el.getAttribute('data-id'), el.value, 'sel');
@@ -317,7 +318,7 @@
     } else {
       body = `<ul class="pt-hist">${(d.hist || []).slice().reverse().map(h => `<li><b>${esc(h.event)}</b><span class="xs muted">${esc(h.who || '')} · ${esc(String(h.at).slice(0, 16).replace('T', ' '))}</span></li>`).join('') || '<li class="muted">No history yet.</li>'}</ul>`;
     }
-    const foot = tab === 'details' && can ? `${t ? `<button class="btn danger" data-act="tkDel" data-id="${esc(t.id)}">Delete</button>` : ''}<span class="spacer"></span><button class="btn" data-act="closeDrawer">Close</button><button class="btn primary" data-act="tkSave" data-id="${esc(t ? t.id : '')}">${t ? 'Save' : 'Create task'}</button>` : '<span class="spacer"></span><button class="btn" data-act="closeDrawer">Close</button>';
+    const foot = tab === 'details' && can ? `${t ? `<button class="btn danger" data-act="tkDel" data-id="${esc(t.id)}">Delete</button>` : ''}<span class="spacer"></span>${t ? `<button class="btn" data-act="tkToTeams" data-id="${esc(t.id)}" title="Sends this task to your own Teams chat. Nobody else gets it.">Send to my Teams</button>` : ''}<button class="btn" data-act="closeDrawer">Close</button><button class="btn primary" data-act="tkSave" data-id="${esc(t ? t.id : '')}">${t ? 'Save' : 'Create task'}</button>` : '<span class="spacer"></span><button class="btn" data-act="closeDrawer">Close</button>';
     drawer(t ? tid(t) + ' · ' + t.title.slice(0, 60) : 'New task', tabs + `<div class="pt-form">${body}</div>`, foot, { wide: true });
     S.ui.tkDraft = { links: (d.links || []).slice(), deps: (d.deps || []).slice(), checklist: (d.checklist || []).map(c => Object.assign({}, c)) };
   }

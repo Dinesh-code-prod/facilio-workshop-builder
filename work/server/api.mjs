@@ -1787,6 +1787,15 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     await notifyItem(project, P.kind, P.item, cur, data, s, role);
     return ok(Object.assign({ item: itemOut(P.kind, P.item, nh, data) }, notice ? { notice } : {}));
   }));
+  route('POST', '/api/projects/:id/tasks/:task/to-my-teams', async (b, P) => {   // one task to the caller's own Teams DM; never to anybody else
+    const s = await me(); const { project, role } = await projectAccess(s, P.id, 'edit'); if (role === 'customer') throw new HttpError(403, 'Not permitted');
+    if (!(await teamsOn())) return ok({ sent: false, why: 'Teams messages are switched off for this app (the teams_notify setting), so nothing was sent.' });
+    const t = (await itemsOf(P.id, 'task')).find(x => x.id === P.task); if (!t) throw new HttpError(404, 'Task not found');
+    const m = assignmentNotice(null, Object.assign({}, t.data, { owner: s.email }), '', project.name, { project: project.id, id: P.task }); if (!m) return ok({ sent: false, why: 'A finished task is not sent.' });
+    const key = assignKey(s.email); const gate = assignGate((await dbGet('twn', key) || {}).value, now().slice(0, 10), 5); if (!gate.allow) return ok({ sent: false, why: 'Five task messages were already sent to you today.' }); await dbPut('twn', key, gate.rec);
+    try { await Promise.race([CTX.teams.send({ to: [s.email], title: m.title, text: m.text, facts: m.facts, actions: [{ title: 'Open tasks', url: TW_BASE + '#/p/' + project.id + '/tasks' }].concat(m.done ? [m.done] : []) }), new Promise(r => setTimeout(r, 4000))]); } catch (e) { return ok({ sent: false, why: 'Teams did not accept the message: ' + String(e && e.message || e).slice(0, 160) }); }
+    await audit(P.id, s.id, 'task-to-my-teams', P.task); return ok({ sent: true, to: s.email });
+  });
   route('DELETE', '/api/projects/:id/items/:kind/:item', async (b, P) => {
     const s = await me(); if (!KINDS.includes(P.kind)) throw new HttpError(400, 'Unknown item type'); const { role } = await projectAccess(s, P.id, 'edit'); if (role === 'customer' && (TEAM_KINDS.has(P.kind) || P.kind === 'utr')) throw new HttpError(403, 'Not permitted');
     const r = await dbGet('it.' + P.id + '.' + P.kind, P.item); if (!r) throw new HttpError(404, 'Not found');
