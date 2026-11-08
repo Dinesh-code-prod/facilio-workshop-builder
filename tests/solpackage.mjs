@@ -1,5 +1,5 @@
 // The solution package (work/server/_solpackage.mjs): one versioned, hashed statement of the agreed solution that the BRD, the mockup and other tools read. Run: node tests/solpackage.mjs
-import assert from 'node:assert/strict';
+import assert from 'node:assert/strict'; import fs from 'node:fs';
 import { buildPackage, manifest, PARTS, SCHEMA } from '../work/server/_solpackage.mjs';
 let n = 0; const t = (name, fn) => { fn(); n++; };
 const fx = () => ({ now: '2026-11-08T10:00:00Z', project: { id: 'p1', name: 'Al Moallam CAFM', customer: 'Al Moallam' },
@@ -23,4 +23,13 @@ t('outputs say where the BRD and the mockup stand, so a reader can tell a stale 
 t('the hash follows the content only: the same facts give the same hash, a change gives another', () => { const a = buildPackage(fx()), b = buildPackage(Object.assign(fx(), { now: '2027-01-01T00:00:00Z' })); assert.equal(a.sourceHash, b.sourceHash); const c = fx(); c.solutions.items['module:workorder'].text += ' More.'; assert.notEqual(buildPackage(c).sourceHash, a.sourceHash); });
 t('an empty project gives an empty but valid package, and the manifest lists the parts and the counts', () => { const p = buildPackage({}); assert.equal(p.schema, SCHEMA); assert.ok(PARTS.every(k => k in p)); const m = manifest(buildPackage(fx())); assert.deepEqual(m.parts, PARTS); assert.equal(m.counts.requirements, 1); assert.ok(!('solutions' in m)); });
 t('text is cut to a safe length', () => { const f = fx(); f.solutions.items['module:workorder'].text = 'x'.repeat(20000); assert.equal(buildPackage(f).solutions[0].overview.length, 6000); });
+t('while nobody chose, the contract match decides the scope (origin contract); a choice by the team wins either way (origin team)', () => {
+  const f = fx(); f.planner = { scope: [{ module: 'workorder', status: 'matched' }, { module: 'asset', status: 'matched' }, { module: 'client', status: 'uncertain' }] }; f.workshop.modules.workorder.inScope = false;
+  const sc = buildPackage(f).scope.map(x => [x.module, x.origin]); assert.ok(!sc.some(x => x[0] === 'workorder'), 'switched off by the team stays off'); assert.ok(sc.some(x => x[0] === 'asset' && x[1] === 'contract')); assert.ok(!sc.some(x => x[0] === 'client'), 'only matched items count'); assert.ok(sc.some(x => x[0] === 'pdfbuilder' && x[1] === 'team')); });
+t('the package follows the JSON Schema file (required keys and their types), so another tool can rely on it', () => {
+  const sch = JSON.parse(fs.readFileSync(new URL('../docs/reference/solution-package.schema.json', import.meta.url), 'utf8')); const p = buildPackage(fx());
+  for (const k of sch.required) assert.ok(k in p, 'missing ' + k); for (const [k, def] of Object.entries(sch.properties)) { if (!(k in p)) continue; const want = def.type; const got = Array.isArray(p[k]) ? 'array' : typeof p[k]; assert.equal(got, want, k + ' should be ' + want); }
+  assert.equal(sch.properties.schema.const, SCHEMA); assert.deepEqual(sch.properties.scope.items.properties.origin.enum, ['team', 'contract']); assert.ok(PARTS.every(k => sch.properties[k])); });
+t('a tool can report back with the existing transfer engine: kind implementation_report, with the package hash in the scope', async () => { const { canonKey } = await import('../work/server/_transfer.mjs'); const p = buildPackage(fx());
+  assert.ok(canonKey({ dir: 'push', kind: 'implementation_report', source: { system: 'config-applier', ref: 'run-1' }, dest: { system: 'studio', ref: 'solution' }, scope: 'package ' + p.sourceHash.slice(0, 8) })); });
 console.log('solpackage: ' + n + ' checks passed');

@@ -141,7 +141,7 @@ await t('Open in Claude uses the engine with the short transfer_read task; tab, 
   answers = [{ transfers: [waitingT] }, { id: 'h_abc' }, { transfers: [] }]; calls.length = 0; await ACT.xfRefresh(anchor({})); assert.ok(calls.some(c => c[1] === '/api/projects/p_1/transfers'));
 });
 await t('the page is wired in: the Project group of the menu after Tasks, team-only, built, tested last, and the team text says it plainly', () => {
-  const shell = read('src/shell.js'); assert.ok(/\['tasks', 'Tasks and email'\], \['transfers', 'Transfers'\]/.test(shell)); assert.ok(/\[g: 'Project'|g: 'Project'/.test(shell));
+  const shell = read('src/shell.js'); assert.ok(/\['tasks', 'Tasks and email'\], \['mailtab', 'Customer mail'\], \['transfers', 'Transfers'\]/.test(shell)); assert.ok(/g: '1\. Project introduction'[^\n]*\['transfers', 'Transfers'\]/.test(shell));
   assert.ok(/'transfers', 'settings'/.test(read('src/uistate.js')), 'hidden from customers like the other team pages'); const b = read('build.mjs'); assert.ok(b.includes("'src/transferslogic.js', 'src/transfers.js'") && b.includes("r('src/transfers.css')"));
   const tests = JSON.parse(read('package.json')).scripts.test.split(' && '); assert.ok(tests.includes('node tests/transfers_page.mjs'));   // later pages append their own tests after it assert.ok(tests.includes('node tests/msa_project_route.mjs'));
   const help = read('src/teamhelp.js') + read('src/claudesetup.js'); for (const s of ['Claude cannot approve', 'Start project from this contract', 'Pushed and Synchronized']) assert.ok(help.includes(s), s);
