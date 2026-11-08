@@ -2185,10 +2185,14 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   notify = installNotify({ route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbList, dbDel, ctx: () => CTX, now, teamOf, BASE_URL: TW_BASE }).notify;   // in-app, browser and Teams notifications (_notify.mjs)
   const N = (...a) => notify(...a);
   // tasks due or overdue: the browser asks once a day when a team member opens the Studio (there is no scheduler); one notice per project, only for the person's own tasks
+  route('GET', '/api/projects/:id/daily-brief', async (b, P) => { const s = await me(); await projectAccess(s, P.id, 'edit'); return ok({ on: !!(((await dbGet('dbrcfg', P.id)) || {}).value || {}).on }); });
+  route('POST', '/api/projects/:id/daily-brief', async (b, P) => { const s = await me(); const { role } = await projectAccess(s, P.id, 'edit'); if (role === 'customer') throw new HttpError(403, 'Not permitted'); const on = !!(b && b.on); await dbPut('dbrcfg', P.id, { on, by: s.id, at: now() }); await audit(P.id, s.id, on ? 'daily-brief-on' : 'daily-brief-off', ''); return ok({ on }); });
   route('POST', '/api/notifications/sweep', async () => {
     const s = await me(); const today = now().slice(0, 10); const ps = await memberProjects(s); const p = pendingFor(s.email, await taskRowsOf(ps), today); let n = 0;
     for (const pj of ps) { const due = p.items.filter(x => x.project === pj.id && (x.overdue || x.soon)); if (!due.length) continue;
       n += await notify({ type: 'task_due', project: pj, to: [s.email], actor: '', title: due.length + ' task' + (due.length === 1 ? '' : 's') + ' due or overdue · ' + pj.name, text: due.slice(0, 3).map(x => (x.n ? 'T-' + x.n + ' ' : '') + x.title + (x.overdue ? ' (overdue)' : '')).join('; '), view: 'tasks', key: 'td|' + pj.id + '|' + today }); }
+    // the morning brief: the first person to open the Studio each day sends every owner of each of their projects the task digest (the digest tool keeps it to one per person per day, and Teams must be on)
+    for (const pj of ps) { try { if (!((await dbGet('dbrcfg', pj.id)) || {}).value || !((await dbGet('dbrcfg', pj.id)).value.on)) continue; const had = await dbGet('dbr', pj.id); if (had && had.value && had.value.day === today) continue; await dbPut('dbr', pj.id, { day: today, by: s.id }); await CONNECTOR.send_task_digest(s, { to: 'team', project: pj.id }); } catch (e) { /* a reader or a project without Teams: no brief, no error */ } }
     return ok({ notified: n });
   });
   installTaskTracking({ route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, itemsOf, withLock, audit, viaApp, CONNECTOR, DONE_RE, cut, rid, notify: N });   // task suggestions from Claude: routes and tools (_tasksapi.mjs)

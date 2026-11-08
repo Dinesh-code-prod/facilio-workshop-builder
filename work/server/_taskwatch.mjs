@@ -18,11 +18,11 @@ export function pendingFor(email, projects, today, soonDays = 3) {
     const d = t.data || {}; if (d.superseded === true || DONE.test(String(d.status || '').trim())) continue;
     if (String(d.owner || '').trim().toLowerCase() !== me) continue;
     const due = dueOf(d);
-    items.push({ project: p.id, projectName: p.name, id: t.id, n: d.n, title: oneLine(d.title, 160), status: d.status || '', priority: d.priority || '', due,
+    items.push({ project: p.id, projectName: p.name, id: t.id, n: d.n, title: oneLine(d.title, 160), status: d.status || '', priority: d.priority || '', due, stage: oneLine(d.stage, 40), today: due === today,
       overdue: !!(due && due < today), soon: !!(due && due >= today && due <= soonEnd), blocked: d.status === 'Blocked' || !!String(d.blocker || '').trim() });
   }
   items.sort((a, b) => (b.overdue - a.overdue) || (b.blocked - a.blocked) || String(a.due || '9999').localeCompare(String(b.due || '9999')) || (Number(a.n) || 0) - (Number(b.n) || 0));
-  return { counts: { open: items.length, overdue: items.filter(x => x.overdue).length, soon: items.filter(x => x.soon).length, blocked: items.filter(x => x.blocked).length }, items };
+  return { counts: { open: items.length, dueToday: items.filter(x => x.today).length, overdue: items.filter(x => x.overdue).length, soon: items.filter(x => x.soon).length, blocked: items.filter(x => x.blocked).length }, items };
 }
 
 /** The Teams message for a digest; null when there is nothing pending (no empty DMs). */
@@ -31,11 +31,11 @@ export function digestMessage(pending, today, { maxLines = 8 } = {}) {
   const byP = projects.map(id => { const it = pending.items.filter(x => x.project === id); return { id, name: it[0].projectName, items: it, overdue: it.filter(x => x.overdue).length }; });
   let room = maxLines; const lines = [];
   for (const g of byP) { if (byP.length > 1) lines.push('**' + g.name + '** · ' + g.items.length + ' open' + (g.overdue ? ', ' + g.overdue + ' overdue' : ''));
-    for (const x of g.items) { if (room <= 0) break; room--; lines.push('• ' + (x.n ? 'T-' + x.n + ' ' : '') + x.title + (byP.length > 1 ? '' : ' (' + x.projectName + ')') + (x.due ? ' · due ' + x.due : '') + (x.overdue ? ' · OVERDUE' : x.blocked ? ' · blocked' : '')); } }
+    for (const x of g.items) { if (room <= 0) break; room--; lines.push('• ' + (x.n ? 'T-' + x.n + ' ' : '') + x.title + (byP.length > 1 ? '' : ' (' + x.projectName + ')') + (x.stage ? ' · ' + x.stage : '') + (x.due ? ' · due ' + x.due : '') + (x.overdue ? ' · OVERDUE' : x.today ? ' · DUE TODAY' : x.blocked ? ' · blocked' : '')); } }
   if (pending.items.length > maxLines) lines.push('… and ' + (pending.items.length - maxLines) + ' more');
   const where = byP.length === 1 ? byP[0].name : byP.length + ' projects';
-  return { title: 'TASKS \u00b7 ' + where + ' \u00b7 ' + c.open + ' open' + (c.overdue ? ', ' + c.overdue + ' overdue' : ''), text: lines.join('\n'),
-    facts: [{ title: 'Open', value: String(c.open) }, { title: 'Overdue', value: String(c.overdue) }, { title: 'Due in 3 days', value: String(c.soon) }, { title: 'Blocked', value: String(c.blocked) }],
+  return { title: 'TASKS \u00b7 ' + where + ' \u00b7 ' + c.open + ' open' + (c.overdue ? ', ' + c.overdue + ' overdue' : '') + (c.dueToday ? ', ' + c.dueToday + ' due today' : ''), text: lines.join('\n'),
+    facts: [{ title: 'Open', value: String(c.open) }, { title: 'Due today', value: String(c.dueToday || 0) }, { title: 'Overdue', value: String(c.overdue) }, { title: 'Due in 3 days', value: String(c.soon) }, { title: 'Blocked', value: String(c.blocked) }],
     actions: [{ title: 'Open Delivery Studio', url: projects.length === 1 ? BASE_URL + '#/p/' + projects[0] + '/tasks' : BASE_URL }].concat(pending.items.filter(x => (x.overdue || x.soon) && x.id).slice(0, 3).map(x => ({ title: 'Done: ' + (x.n ? 'T-' + x.n : oneLine(x.title, 20)), fn: 'api', data: { tool: 'task_reply', project: x.project, taskId: x.id, status: 'Done', text: 'Marked done by the owner from the Teams message.', via: 'teams' } }))) };
 }
 
