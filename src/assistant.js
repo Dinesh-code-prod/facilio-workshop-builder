@@ -65,11 +65,19 @@
     comp();
     const b0 = panel.querySelector('.as-body'); if (b0) b0.scrollTop = b0.scrollHeight;   // opens at the newest message
   }
+  // how long Claude usually takes: the middle of the last finished chat jobs (asked to done), else a fixed guess; a big task is several times longer
+  function etaMin(size) {
+    const k = J() && J().K && J().K(), rows = k && Array.isArray(k.jobs) ? L().jobRows(k.jobs).filter(j => j.kind === 'chat' && j.status === 'done' && j.finishedAt && j.at) : [];
+    const m = rows.slice(0, 8).map(j => (Date.parse(j.finishedAt) - Date.parse(j.at)) / 60000).filter(x => x > 0 && x < 120).sort((x, y) => x - y); const med = m.length ? m[Math.floor(m.length / 2)] : 0;
+    const small = Math.min(15, Math.max(2, Math.round(med || 5))); return size === 'heavy' ? Math.max(8, small * 3) : small;
+  }
+  const etaText = size => { const n = etaMin(size); return size === 'heavy' ? 'Claude will be back in about ' + n + '-' + (n * 2) + ' minutes with a plan first, then the work in steps. Keep working: the progress shows here.' : 'Claude will be back in about ' + n + ' minute' + (n === 1 ? '' : 's') + '. Keep working: the reply shows here.'; };
   // DeepSeek runs inside the app: it answers from the records of the page the person is on and nothing is saved; the answer stays in this box.
   async function askDeepSeek(note, box, plan) {
     const a = st(); a.local = a.local || []; a.open = true; box.value = ''; const at = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     a.local.push({ who: 'you', text: note, at }); const wait = { who: 'claude', text: 'Looking it up in the project records…', typing: true }; a.local.push(wait); a.sig = ''; paint();
-    try { const r = await root.FWBApi.post('/api/projects/' + S.project.id + '/ai/ask', { message: note, section: String(S.view || ''), task: (plan && plan.task) || '' }); wait.text = r.text + (r.notice ? '\n\n' + r.notice : ''); wait.typing = false; wait.who = 'claude'; if (plan && plan.view && V[plan.view] && V[plan.view].html) wait.actions = [{ label: 'Open ' + (plan.label || plan.view), act: 'koOpen', attrs: { view: plan.view } }]; }
+    try { const r = await root.FWBApi.post('/api/projects/' + S.project.id + '/ai/ask', { message: (plan && plan.intent && plan.intent.toLowerCase() !== note.toLowerCase() ? note + ' (meaning: ' + plan.intent + ')' : note).slice(0, 590), section: String(S.view || ''), task: plan && plan.route === 'help' ? 'app' : (plan && plan.task) || '' }); wait.text = r.text + (r.notice ? '\n\n' + r.notice : ''); wait.typing = false; wait.who = 'claude'; wait.actions = []; if (plan && plan.view && V[plan.view] && V[plan.view].html) wait.actions.push({ label: 'Open ' + (plan.label || plan.view), act: 'koOpen', attrs: { view: plan.view } });
+      if (r.escalate) { wait.actions.push({ label: 'Ask Claude to look deeper', act: 'asstEscalate', attrs: { t: note.slice(0, 560) }, primary: true }); wait.text += '\n\nThe records did not settle it. Claude can read the documents in full: ' + etaText('small'); } }
     catch (e) { wait.text = 'DeepSeek could not answer: ' + (e.message || 'try again'); wait.typing = false; wait.who = 'bad'; }
     a.sig = ''; paint();
   }
@@ -84,12 +92,17 @@
     if ((st().mode || 'auto') !== 'cl') { const q = V.quickFacts && V.quickFacts(note); if (q) { const a0 = st(); a0.local = a0.local || []; a0.open = true; box.value = ''; a0.local.push({ who: 'you', text: note, at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }); const r0 = { who: 'claude', text: q.text }; if (q.view && V[q.view] && V[q.view].html) r0.actions = [{ label: 'Open ' + q.view, act: 'koOpen', attrs: { view: q.view } }]; a0.local.push(r0); a0.sig = ''; paint(); return; } }   // an exact answer from the records: no AI, no wait
     let mode = st().mode || 'auto', plan = { route: mode === 'cl' ? 'small' : 'lookup', task: '', view: '' };
     if (mode === 'auto') { try { plan = await root.FWBApi.post('/api/projects/' + S.project.id + '/assistant/route', { message: note, section: String(S.view || '') }); } catch (e) { plan = { route: CHANGE.test(note) ? 'small' : 'lookup', task: '', view: '' }; } }   // the size decides who works: look-ups at once, changes by Claude
-    if (plan.route === 'lookup' && mode !== 'cl') { await askDeepSeek(note, box, plan); return; }
-    const big = plan.route === 'heavy'; const a2 = st(); a2.open = true; a2.local = a2.local || [];
+    if (plan.route === 'unclear' && mode !== 'cl' && plan.question && (plan.options || []).length > 1) { const au = st(); au.local = au.local || []; au.open = true; box.value = ''; au.local.push({ who: 'you', text: note, at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }); au.local.push({ who: 'claude', text: plan.question, actions: plan.options.map(o => ({ label: o, act: 'asstQuick', attrs: { t: (note + ' (' + o + ')').slice(0, 590) } })) }); au.sig = ''; paint(); return; }   // not sure what is meant: one short question with tap answers, instead of a wrong guess
+    if ((plan.route === 'lookup' || plan.route === 'help') && mode !== 'cl') { await askDeepSeek(note, box, plan); return; }
+    const big = plan.route === 'heavy'; const a2 = st(); a2.open = true; a2.local = a2.local || []; const meant = plan.intent && plan.intent.toLowerCase().replace(/[^a-z0-9]/g, '') !== note.toLowerCase().replace(/[^a-z0-9]/g, '') ? plan.intent : '';
     const sent = { who: 'you', text: note, at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), ts: Date.now(), pend: note }; a2.local.push(sent); box.value = ''; a2.sig = ''; paint();   // your message is a bubble at once; the real one replaces it when the list refreshes
-    try { await J().post('/jobs', { kind: 'chat', note, ref: String(Date.now()), section: String(S.view || ''), size: big ? 'heavy' : 'small' }); } catch (e) { a2.local = a2.local.filter(x => x !== sent); box.value = raw; a2.sig = ''; paint(); throw e; }   // nothing was sent: the bubble goes and your words come back
-    a2.local.push({ who: 'sys', ts: Date.now(), text: big ? 'This is a big task, so Claude takes it: it plans first, works in steps and shows each step here. Usually several minutes.' : 'A small change: Claude takes it next, usually within 5 minutes.' }); a2.sig = ''; J().load(true); paint();
+    try { await J().post('/jobs', { kind: 'chat', note: meant ? (note + '\n(Understood as: ' + meant + ')').slice(0, 590) : note, ref: String(Date.now()), section: String(S.view || ''), size: big ? 'heavy' : 'small' }); } catch (e) { a2.local = a2.local.filter(x => x !== sent); box.value = raw; a2.sig = ''; paint(); throw e; }   // nothing was sent: the bubble goes and your words come back
+    a2.local.push({ who: 'sys', ts: Date.now(), text: (meant ? 'I read this as: ' + meant + '. ' : '') + (big ? 'This is a big task, so Claude takes it. ' : 'Claude takes this one. ') + etaText(big ? 'heavy' : 'small') }); a2.sig = ''; J().load(true); paint();
   });
+  // a tapped answer to "what do you mean?" is sent as the message; "Ask Claude to look deeper" sends the same words to Claude as a job
+  V.ACT.asstQuick = a => { const box = document.getElementById('asM'); if (!box) return; box.value = a.getAttribute('data-t') || ''; return V.ACT.asstSend(a); };
+  V.ACT.asstEscalate = a => V.busy(a, async () => { const t = a.getAttribute('data-t') || ''; if (!t || J().guard()) return; const a2 = st(); a2.local = a2.local || []; a2.local.push({ who: 'you', text: t, at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), ts: Date.now(), pend: t }); a2.sig = ''; paint();
+    await J().post('/jobs', { kind: 'chat', note: t, ref: String(Date.now()), section: String(S.view || ''), size: 'small' }); a2.local.push({ who: 'sys', ts: Date.now(), text: 'Sent to Claude. ' + etaText('small') }); a2.sig = ''; J().load(true); paint(); });
   // Enter makes a new line, as in a chat on a phone: the message is sent only by the Send button
   V.ACT.asstPick = a => V.busy(a, async () => { const id = a.getAttribute('data-job'), v = a.getAttribute('data-v'); if (!id || !v || J().guard()) return; await J().post('/jobs/' + encodeURIComponent(id) + '/answer', { answers: [v] }); const a3 = st(); a3.sig = ''; J().load(true); });   // tapping an option answers like typing it
   // the mode: a chip under the message box that opens a small menu (Auto is the default)
