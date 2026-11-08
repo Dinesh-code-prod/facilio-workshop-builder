@@ -1308,6 +1308,12 @@ body #asst .as-send:not(#_):not(#__) { width: 38px !important; height: 38px !imp
 .rp-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; } .rp-t b { font: 600 15px/22px var(--cs-font, inherit); color: var(--cs-fg1, #111); } .rp-t span { font: 400 13px/18px var(--cs-font, inherit); color: var(--cs-fg3, #666); }
 @media (max-width: 720px) { .rp-tiles { grid-template-columns: 1fr; } }
 
+/* chat bubbles: the time sits in the corner of the bubble and never wraps over the message, even for a one-word message; no sideways scroll (8 Nov 2026) */
+body #asst .ki-bub:not(#_):not(#__) { min-width: 92px; }
+body #asst .ki-time:not(#_):not(#__) { white-space: nowrap !important; }
+body #asst .as-body:not(#_):not(#__) { overflow-x: hidden !important; }
+body #asst .ki-row.you .ki-bub:not(#_):not(#__) { text-align: left; }
+
 /* ---- blue text to black (user, 8 Nov 2026) ---- */
 #asst .as-ib:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
 #asst .ki-link:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
