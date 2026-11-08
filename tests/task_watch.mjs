@@ -23,7 +23,7 @@ const P1 = { id: 'p1', name: 'Alpha', tasks: [
 await t('pendingFor lists only the person\'s open tasks, overdue and blocked first, and counts them', () => {
   const r = pendingFor('KIM@facilio.com', [P1], today);
   assert.deepEqual(r.items.map(x => x.id), ['a', 'h', 'f', 'b', 'c'], 'overdue (oldest first), blocked, then by date');
-  assert.deepEqual(r.counts, { open: 5, overdue: 2, soon: 1, blocked: 1 });
+  assert.deepEqual(r.counts, { open: 5, dueToday: 0, overdue: 2, soon: 1, blocked: 1 });
   assert.equal(pendingFor('', [P1], today).counts.open, 0); assert.equal(pendingFor('nobody@facilio.com', [P1], today).items.length, 0);
 });
 await t('dueOf uses the earlier of due and eta and ignores bad dates', () => { assert.equal(dueOf({ due: '2026-03-01', eta: '2026-02-01' }), '2026-02-01'); assert.equal(dueOf({ due: 'soon', eta: '' }), ''); });
@@ -126,6 +126,15 @@ await t('Send to my Teams: one task goes to the caller only; Teams off, a finish
   teamsOn = false; assert.equal((await as(SAM, 'POST', `/api/projects/${pid}/tasks/m1/to-my-teams`, {})).data.sent, false); teamsOn = true;
   assert.equal((await as(SAM, 'POST', `/api/projects/${pid}/tasks/nope/to-my-teams`, {})).status, 404);
   await put(SAM, pid, 'm2', { title: 'Finished', status: 'Done' }); assert.equal((await as(SAM, 'POST', `/api/projects/${pid}/tasks/m2/to-my-teams`, {})).data.sent, false); assert.equal(sent.length, 1, 'nothing more was sent');
+});
+await t('the morning brief: the first sweep of a day sends each owner of the project the digest (stage and DUE TODAY shown), a second sweep the same day sends nothing', async () => {
+  teamsOn = true; store.get('twn').clear(); if (store.get('dbr')) store.get('dbr').clear(); sent = [];
+  sent = []; await as(SAM, 'POST', '/api/notifications/sweep', {}); assert.equal(sent.filter(x => /^TASKS/.test(x.title)).length, 0, 'off by default: no brief'); if (store.get('dbr')) store.get('dbr').clear();
+  assert.equal((await as(SAM, 'POST', `/api/projects/${pid}/daily-brief`, { on: true })).data.on, true); assert.equal((await as(SAM, 'GET', `/api/projects/${pid}/daily-brief`)).data.on, true);
+  assert.equal((await put(SAM, pid, 'br1', { title: 'Brief me', status: 'To Do', owner: KIM, due: day(0), stage: 'Testing & UAT' })).status, 200); sent = []; store.get('twn').clear();
+  const r = await as(SAM, 'POST', '/api/notifications/sweep', {}); assert.equal(r.status, 200, JSON.stringify(r.data));
+  const toKim = sent.filter(x => x.to && x.to[0] === KIM && /^TASKS/.test(x.title) && /due today/.test(x.title)); assert.equal(toKim.length, 1, 'Kim gets one brief that counts what is due today'); assert.equal(toKim[0].facts.find(f => f.title === 'Due today').value, '1'); assert.match(toKim[0].text, /Brief me .*· Testing & UAT · due .* · DUE TODAY/);
+  sent = []; await as(SAM, 'POST', '/api/notifications/sweep', {}); assert.equal(sent.filter(x => /^TASKS/.test(x.title)).length, 0, 'once a day');
 });
 await t('a bulk owner change sends at most three messages to that person', async () => {
   teamsOn = true; sent = []; for (let i = 0; i < 5; i++) assert.equal((await put(SAM, pid, 'b' + i, { title: 'Bulk ' + i, status: 'To Do', owner: VIC })).status, 200);
