@@ -15,6 +15,7 @@ Live is deploy 142 (3 Nov 2026). Commits: `b5acdbf`, `df9039a`.
 ### A0. Pending for tomorrow (7 Nov 2026, after deploy 273)
 - [ ] Check live, signed in: Status reports page (Weekly and Monthly: Build, Preview, Download HTML, E-mail and status drawer, Ask Claude then Record as report); the Training page (Comet moved out of Mockup and UAT); the stage 3 name **Solution design & BRD** everywhere (confirm the name with the user).
 - [x] Done 8 Nov 2026: actual end stamped when a plan task is set Done in the drawer; `make_wsr` and `make_monthly` in the queue prompt docs and `docs/CLAUDE-INTEGRATION.md`; the live queue task already runs any kind by the claim recipe.
+- [x] Team Project dashboard shows the latest status reports (deploy 275, not looked at in a browser).
 - [ ] Status reports, still open: show the report on the stage dashboards and the customer view; retire the text-only editor on the hidden Reports page once the new page is approved.
 - [ ] Feedback tab: owner creates the `github_feedback` credential (steps in `docs/operations/FEEDBACK-GITHUB.md`), then sends the saved feedback to GitHub.
 - [ ] Job queue (user): the task studio-job-queue runs every 5 minutes and is enabled; paste the full replacement prompt from `docs/operations/STUDIO-JOB-QUEUE-PROMPT-2026-11-07.md` into it (it now lists make_wsr and make_monthly) and decide on a faster lane for chat jobs and Find mail.
