@@ -26,16 +26,19 @@ export function pendingFor(email, projects, today, soonDays = 3) {
 }
 
 /** The Teams message for a digest; null when there is nothing pending (no empty DMs). */
-export function digestMessage(pending, today, { maxLines = 8 } = {}) {
+export function digestMessage(pending, today, { maxLines = 10, name = '' } = {}) {
   const c = pending.counts; if (!c.open) return null; const projects = [...new Set(pending.items.map(x => x.project))];
-  const byP = projects.map(id => { const it = pending.items.filter(x => x.project === id); return { id, name: it[0].projectName, items: it, overdue: it.filter(x => x.overdue).length }; });
-  let room = maxLines; const lines = [];
-  for (const g of byP) { if (byP.length > 1) lines.push('**' + g.name + '** · ' + g.items.length + ' open' + (g.overdue ? ', ' + g.overdue + ' overdue' : ''));
-    for (const x of g.items) { if (room <= 0) break; room--; lines.push('• ' + (x.n ? 'T-' + x.n + ' ' : '') + x.title + (byP.length > 1 ? '' : ' (' + x.projectName + ')') + (x.stage ? ' · ' + x.stage : '') + (x.due ? ' · due ' + x.due : '') + (x.overdue ? ' · OVERDUE' : x.today ? ' · DUE TODAY' : x.blocked ? ' · blocked' : '')); } }
-  if (pending.items.length > maxLines) lines.push('… and ' + (pending.items.length - maxLines) + ' more');
+  const byP = projects.map(id => { const it = pending.items.filter(x => x.project === id); return { id, name: it[0].projectName, items: it }; });
+  const line = x => '- ' + (x.n ? 'T-' + x.n + ' \u00b7 ' : '') + short(x.title, 80) + (x.stage ? ' (' + x.stage + ')' : '') + (x.due && !x.today ? ' \u00b7 due ' + x.due : '') + (x.blocked && !x.overdue ? ' \u00b7 blocked' : '');
+  const SECTIONS = [['Overdue', x => x.overdue], ['Due today', x => x.today && !x.overdue], ['Blocked', x => x.blocked], ['Coming up in the next 3 days', x => x.soon], ['Other open tasks', () => true]];
+  let room = maxLines; const out = ['**' + (name ? 'Hi ' + name + ', here' : 'Here') + ' is what is open for you' + (byP.length === 1 ? ' in ' + byP[0].name : '') + '.**'];
+  for (const g of byP) { if (byP.length > 1) out.push('', '**' + g.name + '**'); const used = new Set();
+    for (const [title, test] of SECTIONS) { const it = g.items.filter(x => !used.has(x) && test(x)); if (!it.length) continue; it.forEach(x => used.add(x)); out.push('', '**' + title + ' (' + it.length + ')**'); for (const x of it) { if (room <= 0) break; room--; out.push(line(x)); } } }
+  const shown = maxLines - room; if (pending.items.length > shown) out.push('', '...and ' + (pending.items.length - shown) + ' more in Delivery Studio.');
+  out.push('', 'Open Delivery Studio to update them. A Done button below marks that task finished.');
   const where = byP.length === 1 ? byP[0].name : byP.length + ' projects';
-  return { title: 'TASKS \u00b7 ' + where + ' \u00b7 ' + c.open + ' open' + (c.overdue ? ', ' + c.overdue + ' overdue' : '') + (c.dueToday ? ', ' + c.dueToday + ' due today' : ''), text: lines.join('\n'),
-    facts: [{ title: 'Open', value: String(c.open) }, { title: 'Due today', value: String(c.dueToday || 0) }, { title: 'Overdue', value: String(c.overdue) }, { title: 'Due in 3 days', value: String(c.soon) }, { title: 'Blocked', value: String(c.blocked) }],
+  return { title: 'TASKS \u00b7 ' + where + ' \u00b7 ' + c.open + ' open' + (c.overdue ? ', ' + c.overdue + ' overdue' : '') + (c.dueToday ? ', ' + c.dueToday + ' due today' : ''), text: out.join('\n'),
+    facts: [{ title: 'Why you got this', value: 'Your morning list of tasks that are assigned to you' }, { title: 'Open', value: String(c.open) }, { title: 'Due today', value: String(c.dueToday || 0) }, { title: 'Overdue', value: String(c.overdue) }, { title: 'Blocked', value: String(c.blocked) }],
     actions: [{ title: 'Open Delivery Studio', url: projects.length === 1 ? BASE_URL + '#/p/' + projects[0] + '/tasks' : BASE_URL }].concat(pending.items.filter(x => (x.overdue || x.soon) && x.id).slice(0, 3).map(x => ({ title: 'Done: ' + (x.n ? 'T-' + x.n : oneLine(x.title, 20)), fn: 'api', data: { tool: 'task_reply', project: x.project, taskId: x.id, status: 'Done', text: 'Marked done by the owner from the Teams message.', via: 'teams' } }))) };
 }
 
@@ -45,6 +48,8 @@ export const digestKey = (email, scope) => 'd' + createHash('sha256').update(Str
 export const assignKey = email => 'a' + createHash('sha256').update(String(email || '').trim().toLowerCase()).digest('hex').slice(0, 40);
 /** At most `max` assignment messages per person per day (a bulk owner change must not become a message per task). rec = what was stored, or null. */
 export function assignGate(rec, today, max = 3) { const n = rec && rec.day === today ? Number(rec.n) || 0 : 0; return n >= max ? { allow: false, rec: { day: today, n } } : { allow: true, rec: { day: today, n: n + 1 } }; }
+/** a task title cut at a word with an ellipsis, so a line never stops in the middle of a word */
+const short = (v, n) => { const t = String(v || '').replace(/\s+/g, ' ').trim(); if (t.length <= n) return t; const c = t.slice(0, n - 1); const i = c.lastIndexOf(' '); return (i > n * 0.6 ? c.slice(0, i) : c).replace(/[\s,;:.\-]+$/, '') + '…'; };
 const oneLine = (v, max) => String(v || '').replace(/\s+/g, ' ').trim().slice(0, max);
 
 /** DM for a task that just got a new owner; null when nobody needs telling (no owner, same owner, done task, or the person assigned it to themselves). */
@@ -54,8 +59,8 @@ export function assignmentNotice(prev, next, actorEmail, projectName, ref) {
   if (to === String(actorEmail || '').trim().toLowerCase()) return null;
   if (DONE.test(String(next.status || '').trim())) return null;
   const due = dueOf(next);
-  return { to, title: 'TASK \u00b7 ' + projectName, text: 'Assigned to you: ' + (next.n ? 'T-' + next.n + ' ' : '') + oneLine(next.title, 280),
-    facts: [{ title: 'Project', value: projectName }, { title: 'Status', value: next.status || 'To Do' }, { title: 'Priority', value: next.priority || '—' }, { title: 'Due', value: due || '—' }],
+  return { to, title: 'TASK \u00b7 ' + projectName, text: '**Assigned to you**\n' + (next.n ? 'T-' + next.n + ' \u00b7 ' : '') + oneLine(next.title, 280),
+    facts: [{ title: 'Why you got this', value: 'Someone made you the owner of this task' }, { title: 'Project', value: projectName }, { title: 'Status', value: next.status || 'To Do' }, { title: 'Priority', value: next.priority || '—' }, { title: 'Due', value: due || '—' }],
     // the owner can finish it from the message: the button runs task_reply as the person who presses it, so only the owner can (the same button the daily digest has)
     done: ref && ref.project && ref.id ? { title: 'Done: ' + (next.n ? 'T-' + next.n : oneLine(next.title, 20)), fn: 'api', data: { tool: 'task_reply', project: ref.project, taskId: ref.id, status: 'Done', text: 'Marked done by the owner from the Teams message.', via: 'teams' } } : null };
 }
