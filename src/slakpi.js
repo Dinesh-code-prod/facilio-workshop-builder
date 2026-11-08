@@ -89,12 +89,24 @@
   ACT.slkImport = a => {
     if (!can()) return; const want = a.getAttribute('data-want') === 'kpi' ? 'kpi' : 'sla'; const what = want === 'kpi' ? 'KPIs' : 'SLA rows';
     drawer('Import ' + what, '<p class="small">Choose the contract, an SLA schedule, a KPI sheet or an e-mail (Word, PDF, Excel, CSV or text), or paste text, for example the answer Claude gave you. The AI reads it and <b>suggests</b> ' + what + '. Nothing is added until you tick the rows and press Add.</p>'
-      + '<div class="cs-cmd"><button type="button" class="btn primary" data-act="slkPick" data-want="' + want + '">Choose a file</button></div><label class="f" for="slkPaste" style="margin-top:14px">Or paste text</label><textarea id="slkPaste" rows="7" maxlength="40000" placeholder="Paste a table or the clause here"></textarea>',
+      + '<div class="cs-cmd"><button type="button" class="btn primary" data-act="slkContract" data-want="' + want + '">Read the project contract</button><button type="button" class="btn" data-act="slkPick" data-want="' + want + '">Choose a file</button></div><p class="xs muted" style="margin:6px 0 0">Read the project contract takes the pages of the contract documents already in this project that speak about service levels, response times, priorities or KPIs.</p><label class="f" for="slkPaste" style="margin-top:14px">Or paste text</label><textarea id="slkPaste" rows="7" maxlength="40000" placeholder="Paste a table or the clause here"></textarea>',
       '<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="slkPasteGo" data-want="' + want + '">Read the pasted text</button>', {});
   };
   ACT.slkPick = a => V.busy(a, async () => {
     const fs = await V.pickFile('.docx,.pdf,.txt,.csv,.xlsx,.xlsm,.eml', false); const f = Array.isArray(fs) ? fs[0] : fs; if (!f) return; const want = a.getAttribute('data-want');
     V.loading(true, 'Reading ' + f.name + '…'); try { const t = await fileText(f); V.loadingMsg('The AI is reading it…'); await readText(t, f.name, want); } catch (e) { toast('Could not read it: ' + (e.message || 'error'), 8000, true); } finally { V.loading(false); }
+  });
+  // the contract documents of the project (msa_text): only the pages that speak about SLA or KPIs go to the AI, so a long contract still fits
+  const SLA_WORDS = /service level|\bSLA\b|response time|resolution time|respond within|resolve within|priority|escalat|uptime|availability|penalt|credit|KPI|key performance|performance indicator|target|compliance/i;
+  ACT.slkContract = a => V.busy(a, async () => {
+    const want = a.getAttribute('data-want'); V.loading(true, 'Reading the contract documents…');
+    try {
+      const r = await root.FWBApi.get('/api/projects/' + encodeURIComponent(S.project.id) + '/docs/msa_text'); const docs = (root.FWBMsaDocs ? root.FWBMsaDocs.docsOf((r && r.data) || {}) : []);
+      const parts = []; docs.forEach(d => (d.pages || []).forEach(p => { if (p && p.text && SLA_WORDS.test(p.text)) parts.push('[' + (d.label || d.name || 'contract') + ', page ' + p.n + ']\n' + p.text); }));
+      if (!docs.length) { toast('This project has no contract document yet. Add it on Contract intake, or choose a file.', 7000, true); return; }
+      if (!parts.length) { toast('No page of the contract mentions service levels or KPIs. Choose another file, or paste the clause.', 7000, true); return; }
+      V.loadingMsg('The AI is reading ' + parts.length + ' page' + (parts.length === 1 ? '' : 's') + '…'); await readText(parts.join('\n\n').slice(0, 38000), 'the project contract', want);
+    } catch (e) { toast('Could not read the contract: ' + (e.message || 'error'), 8000, true); } finally { V.loading(false); }
   });
   ACT.slkPasteGo = a => V.busy(a, async () => { const t = ((document.getElementById('slkPaste') || {}).value || '').trim(); if (t.length < 40) { toast('Paste a little more text first.', 4000, true); return; } try { await readText(t, 'pasted text', a.getAttribute('data-want')); } catch (e) { toast('Could not read it: ' + (e.message || 'error'), 8000, true); } });
   function showFound() {
