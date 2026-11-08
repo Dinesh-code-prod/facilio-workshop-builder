@@ -129,7 +129,7 @@
       subs: { solution: 'Build the solution', modules: 'Build the solution', flow: 'Build the solution', mockup: 'Build the solution', whiteboard: 'Build the solution', roles: 'Set up access, alerts and data', notifications: 'Set up access, alerts and data', cfginputs: 'Record all configuration', slakpi: 'Record all configuration', brd: 'Write the BRD', governance: 'Sign-offs and changes', changes: 'Sign-offs and changes' } },
     { g: '4. UAT & FTR', sec: 'Design and build', icon: 'check', fi: 'delivery', items: [['delivery', 'Build, UAT & Go-Live'], ['ftr', 'FTR Report (Excel)'], ['kpi', 'KPI Workbooks']],
       subs: { delivery: 'Test and sign off', ftr: 'Test and sign off', kpi: 'Test and sign off' } },
-    { g: '5. Training guides', sec: 'Launch and support', icon: 'book', fi: 'guide', items: [['guides', 'Training']] },
+    { g: '5. Training guides', sec: 'Launch and support', icon: 'book', fi: 'guide', items: [['guides', 'Guides & Videos']] },
     { g: '6. Go-live', sec: 'Launch and support', icon: 'flag', fi: 'g_delivery', items: [['golive', 'Go-live readiness']] },   // the go-live checklist is its own stage, so the numbers run 1 to 8 without a gap
     { g: '7. Hypercare', sec: 'Launch and support', icon: 'shield', fi: 'g_delivery', items: [['hypercare', 'Hypercare']] },   // stage 6 (Go-live) has no page of its own yet; its checklist is inside Build, UAT & Go-Live
     { g: '8. Project handover', sec: 'Launch and support', icon: 'book', fi: 'g_delivery', items: [['handover', 'Handover & Closure']] },
