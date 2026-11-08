@@ -918,3 +918,13 @@ body .pt-wide .pt-kpis .kpi:not(#_):not(#__) { padding: 8px 12px !important; min
 body .pt-wide .pt-kpis .kpi-v:not(#_):not(#__) { font-size: 22px !important; line-height: 28px !important; }
 body .pt-wide .pt-kpis .kpi-l:not(#_):not(#__) { font-size: 12px !important; }
 @media (max-width: 900px) { body .pt-wide .pt-kpis:not(#_):not(#__) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+body .ol-q { min-width: 200px; } body .ol-tb { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; padding-bottom: 12px; border-bottom: 1px solid var(--cs-st3); flex-wrap: wrap; }
+body .ol-comp { margin: 14px 0; padding: 14px; border: 1px solid var(--cs-accent-line); border-left: 3px solid var(--cs-accent); border-radius: 12px; background: var(--cs-accent-soft); } body .ol-ct { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; } body .ol-ct b { font: 700 14px/20px var(--cs-font); color: #0a0a0a; }
+body .ol-tpl { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; } body .ol-comp textarea { width: 100%; box-sizing: border-box; font: 400 14px/22px var(--cs-font); border-radius: 10px; } body .ol-ca { display: flex; gap: 8px; margin-top: 10px; }
+
+body .ol-bar select:not(#_):not(#__) { width: auto !important; min-width: 130px; max-width: 200px; height: 32px; }
+
+/* Sign-in explainer (src/animation/loginflow.js): the SVG stage under the caption */
+.lsf-stage{flex:1 1 auto;min-height:0;margin-top:14px;position:relative;z-index:2}.lsf-svg{display:block;width:100%;max-width:760px;height:auto;overflow:visible}
+@media (max-width:900px){.lsf-stage{margin-top:8px}}
