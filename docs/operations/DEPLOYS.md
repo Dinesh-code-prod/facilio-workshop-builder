@@ -228,3 +228,5 @@ One line per deploy: date and time (UTC), commit, deploy number, who ran it, not
 
 | 2026-11-08 15:53 | 54a8592 | 304 | dinesh.r@facilio.com (Claude Code) | 296 files, 44.5 MB. Training: Drafts to review (Claude guide drafts are read, copied and downloaded on the Training page); Claude save message points guide drafts there; plus what was on main (Questions: Analyse the documents fix). Not checked on the live app. |
 | 2026-11-08 10:26 UTC | cfb513f | 305 | dinesh.r@facilio.com (Claude Code) | 296 files, 44.5 MB. Menu: every page sits under the stages 1 to 8 (Project and Show Facilio groups removed); Notes & Links, Reports & quality, Product Tour, Dashboard Gallery, Discover more and What's new shown; Deliverables & AI still hidden. Replaced a deploy made 12 s earlier (it had one file more than main). |
+
+| 2026-11-08 15:59 | ca98bb3 | 306 | dinesh.r@facilio.com (Claude Code) | 296 files, 44.5 MB. Questions tab: steady spacing, one calm counts line, the three filters in one row. Checked on the local copy only. |
