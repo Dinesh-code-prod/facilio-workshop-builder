@@ -238,3 +238,5 @@ One line per deploy: date and time (UTC), commit, deploy number, who ran it, not
 | 2026-11-08 11:15 UTC | b9aaf8d | 319 | dinesh.r@facilio.com (Claude Code) | 296 files, 44.5 MB. Process whiteboard: a mouse box also selects the arrows and their labels; curved connectors; Describe with Claude has a Draw it here button; duplicate New state flow button removed. |
 
 | 2026-11-08 16:48 | 0ec62c2 | 320 | dinesh.r@facilio.com (Claude Code) | 296 files, 44.5 MB. Training page in two columns, Comet always available (+ Add a video, brief, link; Claude reads the video notes for guides), Team Guide rows and chips fixed and updated, top-bar Projects label visible again; plus the whiteboard fixes that were on main. Checked on the local copy only. |
+
+| 2026-11-08 11:36 UTC | f67602e | 322 | dinesh.r@facilio.com (Claude Code) | 296 files, 44.5 MB. Handover & Closure in four tabs (Checklist, Solution and configuration, Acceptance and closure, Packs and reports); Guides & Videos four tabs and rename; sidebar and top bar no longer redraw on a click. |
