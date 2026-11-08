@@ -47,9 +47,9 @@ One pure module (`work/server/_solpackage.mjs`, shared with the browser build) a
 
 ## 6. Order to build it (steps 1 and 2 are built, 8 Nov 2026, not deployed until the next deploy row says so)
 1. BUILT: package builder (`work/server/_solpackage.mjs`) with 8 checks (`tests/solpackage.mjs`).
-2. BUILT: `get_document` section `solution_package` (no part gives the manifest with counts and the sourceHash; a part gives one list) and `GET /api/projects/:id/solution-package` (the whole document, delivery team only, read only). A JSON Schema file is still to write.
-3. Move the BRD and mockup builders to read the package; compare outputs with today's.
-4. Write-back kind `implementation_report` and a "built from version" badge on the BRD and Mockup tabs.
+2. BUILT: `get_document` section `solution_package` (no part gives the manifest with counts and the sourceHash; a part gives one list) and `GET /api/projects/:id/solution-package` (the whole document, delivery team only, read only). The JSON Schema is `docs/reference/solution-package.schema.json`, checked by the tests. The scope follows the module page rule: the team choice if there is one, otherwise the contract match (field `origin` says which).
+3. NOT BUILT, on purpose: moving the BRD and mockup builders onto the package. They run in the browser on the live working copy, which includes defaults the server does not store (module priority and the default scope from the contract scan, now mirrored in the package as origin contract) and the Word layout. Switching them blind would change today's output. Safe route: first a check in the browser that compares what the builders use with the package (same modules, same solutions), then the move, one builder at a time.
+4. Write-back WORKS TODAY with the existing transfer engine (no code needed, checked in `tests/solpackage.mjs`): a tool calls `transfer_write` begin with dir push, kind `implementation_report`, source {system: its name, ref: its run}, dest {system: studio, ref: solution}, scope "package <first 8 characters of sourceHash>", then store and submit its report; a person approves in Transfers. Still to build: a "built from version" badge on the BRD and Mockup tabs.
 5. First external consumer (for example a Facilio configuration applier) in read-only dry-run mode.
 
 ## 7. Not verified
