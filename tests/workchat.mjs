@@ -22,4 +22,9 @@ t('the panel feed is just the messages; the lighter tab card keeps only the ques
   assert.ok(!W.html({ lite: true, messages: [{ who: 'you', text: 'x' }] }).includes('ki-asks'), 'no questions, no empty feed');
 });
 t('a teammate message shows their name and initials', () => { const h = W.feed([{ who: 'other', name: 'Asha Rao', text: 'Which assets were discussed?' }]); assert.ok(h.includes('ki-name') && h.includes('Asha Rao') && h.includes('>AR<')); });
+t('a Claude reply can carry a heading with the question, the area, an Open link and a Reply link; yours never does', () => {
+  const h = W.feed([{ who: 'claude', text: 'Done.', head: { q: 'Which "file" is it?', full: 'Which file', area: 'BRD', view: 'brd' } }, { who: 'you', text: 'x', head: { q: 'no', full: 'no', area: '', view: '' } }]);
+  assert.ok(h.includes('ki-reQ') && h.includes('Which &quot;file&quot; is it?') && h.includes('ki-area') && h.includes('data-act="koOpen" data-view="brd"') && h.includes('data-act="asstQuote" data-q="Which file"'));
+  assert.equal(h.split('ki-re"').length, 2, 'one heading only');
+});
 console.log(n + ' work chat checks passed');

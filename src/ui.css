@@ -810,3 +810,18 @@ body .ui-toast .ui-tx:not(#_):not(#__) { width: 24px; height: 24px; padding: 0; 
 .tg2-road{border-color:var(--cs-accent-line,#b2ccff)}.tg2-rmcount{margin-left:10px;padding:2px 10px;border-radius:999px;background:var(--cs-accent-soft,#eaf2ff);color:#1570EF;font:600 12px/20px var(--cs-font)}
 .tg2-rmg{margin:14px 0 4px}.tg2-rmg h3{display:flex;align-items:center;gap:10px;font:600 15px/22px var(--cs-font);margin:0 0 6px}
 .tg2-road .tg2-steps li{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}.tg2-road .tg2-ck{flex:1}.tg2-road .tg2-ck em{display:block;font-style:normal;color:var(--cs-fg2);font-weight:400;margin-top:2px}
+
+/* Assistant panel: neat and readable (8 Nov 2026). A visible blue selection, the symbol, a heading over each Claude reply, the follow-up chip. */
+::selection{background:rgba(21,112,239,.32);color:inherit}
+#asst ::selection{background:#1570EF;color:#fff}
+#asst .ki-bub,#asst .ki-re,#asst .ki-time{user-select:text;-webkit-user-select:text;cursor:text}
+#asst .as-logo svg{display:block;width:16px;height:16px}#asst .as-logo{display:grid;place-items:center}
+#asstTab svg{flex:none;width:16px;height:16px}
+#asst .ki-re{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin:14px 0 6px 2px;padding-left:10px;border-left:2px solid var(--cs-accent-line,#b2ccff)}
+#asst .ki-reQ{flex:1 1 100%;font:600 12.5px/17px var(--cs-font);color:var(--cs-fg1);overflow-wrap:anywhere}
+#asst .ki-area{padding:1px 8px;border-radius:999px;background:var(--cs-bg4,#f2f4f7);color:var(--cs-fg2);font:500 11.5px/18px var(--cs-font)}
+#asst .ki-link{border:0;background:none;padding:0;color:#1570EF;font:500 12px/18px var(--cs-font);cursor:pointer}#asst .ki-link:hover{text-decoration:underline}
+#asst .ki-row{margin-bottom:2px}#asst .ki-time{margin-top:3px}
+#asst .as-quote{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px;padding:6px 10px;border:1px solid var(--cs-accent-line,#b2ccff);border-left-width:3px;border-radius:10px;background:var(--cs-accent-soft,#eaf2ff);font:400 12.5px/17px var(--cs-font);color:var(--cs-fg2)}
+#asst .as-quote[hidden]{display:none}#asst .as-quote span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#asst .as-quote b{color:var(--cs-fg1);font-weight:600}
+#asst .as-qx{flex:none;width:22px;height:22px;border:0;border-radius:6px;background:transparent;color:var(--cs-fg3);font-size:16px;line-height:1;cursor:pointer}#asst .as-qx:hover{background:#fff;color:var(--cs-fg1)}
