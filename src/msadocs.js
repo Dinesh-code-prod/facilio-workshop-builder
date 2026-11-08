@@ -79,7 +79,8 @@
   ACT.mdModules = a => V.busy(a, async () => {
     if (ro()) return; const s = md(); s.busy = 'mods'; V.render();
     try { await load(true); const cat = root.FWBContractMods ? root.FWBContractMods.tidy((F.allModules() || []).map(m => ({ name: m.name, label: m.label || m.name }))) : []; const r = await API.post(base() + '/msadocs/modules', { catalogue: cat }); await put(M().setScan(s.data, r.modules, by(), now())); S.ui.cm = null;
-      const n = r.modules.filter(x => x.status === 'delivered').length; toast(n + ' module' + (n === 1 ? '' : 's') + ' found in the contract. They are listed on the Solution tab, with the page and the words.', 6000); } finally { s.busy = ''; V.render(); }
+      const n = r.modules.filter(x => x.status === 'delivered').length; toast(n + ' module' + (n === 1 ? '' : 's') + ' found in the contract. They are listed on the Solution tab, with the page and the words.', 6000);
+      if (V.applyContractModules) { const ap = await V.applyContractModules({ auto: true }); if (ap && (ap.on.length || ap.made.length)) toast('From the contract: ' + (ap.on.length ? ap.on.length + ' module' + (ap.on.length === 1 ? '' : 's') + ' switched on' : '') + (ap.on.length && ap.made.length ? ', ' : '') + (ap.made.length ? ap.made.length + ' custom module' + (ap.made.length === 1 ? '' : 's') + ' created' : '') + '. Switch any off on System Modules & Form Builder.', 9000); } } finally { s.busy = ''; V.render(); }
   });
   ACT.mdReread = a => V.busy(a, async () => { if (ro()) return; await load(true); await reread('re-read on request'); });
 })(typeof window !== 'undefined' ? window : globalThis);

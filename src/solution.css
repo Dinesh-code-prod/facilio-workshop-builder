@@ -76,3 +76,35 @@ body details.cs-sol-ct > summary { cursor: pointer; font: 600 12px/16px var(--cs
 body details.cs-sol-ct > summary::-webkit-details-marker { display: none; } body details.cs-sol-ct > summary em { font-style: normal; color: var(--cs-brand, var(--fl-brand, #1570EF)); }
 body details.cs-sol-ct { padding: 0 0 4px; border-bottom: 1px solid var(--cs-st2, var(--fl-st2, #e5e5e5)); margin-bottom: 4px; } body details.cs-sol-ct > *:not(summary) { padding: 0 8px; }
 body .cs-sol-d { gap: 16px; } body .cs-sol-d > label.f { margin-bottom: -8px; font-weight: 600; }
+
+/* Solution tab layout pass (8 Nov 2026): more air, a full-width contract card, a wider list with a search box, the detail as one calm card, document drop and Ask Claude side by side. */
+body .card.cs-sol-all { gap: 20px; }
+body .cs-sol-all > .cs-cmd-bar { padding: 14px 18px; gap: 12px 16px; align-items: center; background: var(--cs-bg1); border: 1px solid var(--cs-st2); border-radius: var(--cs-r-card); }
+body .cs-sol { grid-template-columns: 320px minmax(0, 1fr); gap: 24px; }
+body .cs-sol-n { padding: 16px; gap: 20px; top: 12px; max-height: calc(100vh - 40px); }
+body .cs-sol-q { width: 100%; box-sizing: border-box; height: 40px; padding: 0 14px; border: 1px solid var(--cs-st2); border-radius: 10px; background: var(--cs-bg1); font: 400 14px/20px var(--cs-font); }
+body .cs-sol-g h3 { padding: 0 12px; margin: 0 0 8px; }
+body .cs-sol-i { min-height: 40px; padding: 8px 12px; border-radius: 8px; font: 500 14px/20px var(--cs-font); }
+body .cs-sol-d { padding: 28px 32px; display: flex; flex-direction: column; gap: 22px; }
+body .cs-sol-dh { gap: 10px 12px; padding-bottom: 14px; border-bottom: 1px solid var(--cs-st2); }
+body .cs-sol-d .cs-sol-th { margin: 0; font: 600 16px/24px var(--cs-font); }
+body .cs-sol-d textarea { min-height: 120px; padding: 12px 14px; border: 1px solid var(--cs-st2); border-radius: 10px; }
+body .cs-sol-r { padding: 12px 16px; border-radius: 10px; }
+body .cs-sol-r summary { cursor: pointer; font: 600 14px/20px var(--cs-font); }
+body .cs-sol-sv { position: sticky; bottom: 0; z-index: 2; padding: 14px 0 4px; background: var(--cs-bg1); border-top: 1px solid var(--cs-st2); }
+body .cs-sol-tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+body .cs-sol-tools > div { border: 1px solid var(--cs-st2); border-radius: var(--cs-r-card); padding: 18px; background: var(--cs-bg2); }
+body .cs-sol-tools .cs-sol-ask { border-top: 1px solid var(--cs-st2); padding-top: 18px; }
+body .cs-sol-ct { background: var(--cs-bg1); border: 1px solid var(--cs-st2); border-radius: var(--cs-r-card); padding: 16px 20px; }
+body .cs-sol-ct > summary { cursor: pointer; font: 600 15px/24px var(--cs-font); }
+body .cs-sol-ct > summary em { font-style: normal; font-weight: 500; color: var(--cs-fg3); margin-left: 8px; }
+body .cs-sol-ct[open] { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: flex-start; }
+body .cs-sol-ct[open] > summary { flex: 1 1 100%; }
+body .cs-sol-ct[open] > p { flex: 1 1 100%; margin: 0; }
+body .cs-sol-ct[open] > .cs-sol-more { flex: 1 1 280px; background: var(--cs-bg2); border-radius: 10px; padding: 10px 14px; }
+body .cs-sol-ct .cs-sol-wk { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--cs-st2); }
+body .cs-sol-ct .cs-sol-wk em { display: block; font-style: normal; font-size: 12px; color: var(--cs-fg3); }
+body .cs-sol-cov { padding: 12px 18px; }
+@media (max-width: 1100px) { body .cs-sol { grid-template-columns: 1fr; } body .cs-sol-tools { grid-template-columns: 1fr; } body .cs-sol-d { padding: 20px; } }
+body .cs-sol-all > .cs-sol-g { background: var(--cs-bg1); border: 1px solid var(--cs-st2); border-radius: var(--cs-r-card); padding: 16px 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+body .cs-sol-all > .cs-sol-g h3 { padding: 0; margin: 0; font: 600 15px/24px var(--cs-font); color: var(--cs-fg1); }

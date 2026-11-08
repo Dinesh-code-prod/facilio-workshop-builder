@@ -64,14 +64,19 @@
   ACT.modPage = a => { S.ui.modPage = Math.max(0, (S.ui.modPage || 0) + Number(a.getAttribute('data-d'))); V.render(); };
   ACT.setFilter = a => { S.ui.filters[a.getAttribute('data-k')] = a.getAttribute('data-v'); S.ui.modPage = 0; V.render(); };
   ACT.newModule = () => drawer('New module', `<div class="notice" style="margin-bottom:14px">Custom modules are workshop proposals. They become available to the Form Builder, State Flow Builder, roles, user guide, requirements and the BRD.</div><div class="fgrid"><div class="full"><label class="f">Name <span class="req">*</span></label><input type="text" id="nm_label" placeholder="e.g. Incident Report"></div><div class="full"><label class="f">Description <span class="req">*</span></label><textarea id="nm_desc" rows="3" placeholder="What the module is for"></textarea></div><div class="full"><label class="chk"><input type="checkbox" id="nm_flow" checked> Create a starter stateflow</label></div></div>`, `<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="createModule">Confirm</button>`);
-  ACT.createModule = () => {
-    const label = document.getElementById('nm_label').value.trim(), desc = document.getElementById('nm_desc').value.trim();
-    if (!label) { toast('Please input module name'); return; } if (!desc) { toast('Please input module description'); return; }
-    const name = 'custom_' + F.slug(label).replace(/_/g, ''); if (F.moduleView(name)) { toast('A module with this name already exists'); return; }
+  // the one place that creates a custom module (the New module drawer and "Apply the contract" both use it): returns the new name, or '' when that name is taken
+  V.makeCustomModule = (label, desc, withFlow) => {
+    const name = 'custom_' + F.slug(label).replace(/_/g, ''); if (F.moduleView(name)) return '';
     S.ws.customModules.push({ name, label, description: desc }); Object.assign(F.wsMod(name), { inScope: true, priority: 'medium', purpose: desc });
     F.fops(name).add.push({ name: 'name', label: 'Name', type: 'Single Line Text', required: true, mainField: true, options: [], lookup: '', status: 'proposed' });
     const key = name + '::standard'; S.ws.formOps[key] = { key, name: 'standard', module: name, label: 'Standard', app: 'maintenance', description: '', sections: [{ name: 'Details', link: 'details', seq: 1, fields: [{ field: 'name', label: 'Name', required: true, hidden: false, default: '', span: 12 }] }] };
-    if (document.getElementById('nm_flow').checked) { const id = name + '::proposed_default'; S.ws.flows[id] = { id, module: name, name: label + ' Stateflow', origin: 'proposed', initial: 's_open', enabled: true, workshopCopy: true, criteria: '', states: [{ id: 's_open', name: 'open', label: 'Open', x: 80, y: 100, origin: 'proposed' }, { id: 's_closed', name: 'closed', label: 'Closed', x: 380, y: 100, origin: 'proposed' }], transitions: [{ id: F.uid('t'), name: 'Close', from: 's_open', to: 's_closed', type: 'user', enabled: true, buttonType: 1, actors: [{ actor: 'tbc:any', status: 'tbc', note: '' }], condition: '', conditionFields: [], commentRequired: false, approval: { required: false, approvers: [] }, actions: [], notifications: [], portals: [], notes: '', origin: 'proposed', removed: false }] }; }
+    if (withFlow) { const id = name + '::proposed_default'; S.ws.flows[id] = { id, module: name, name: label + ' Stateflow', origin: 'proposed', initial: 's_open', enabled: true, workshopCopy: true, criteria: '', states: [{ id: 's_open', name: 'open', label: 'Open', x: 80, y: 100, origin: 'proposed' }, { id: 's_closed', name: 'closed', label: 'Closed', x: 380, y: 100, origin: 'proposed' }], transitions: [{ id: F.uid('t'), name: 'Close', from: 's_open', to: 's_closed', type: 'user', enabled: true, buttonType: 1, actors: [{ actor: 'tbc:any', status: 'tbc', note: '' }], condition: '', conditionFields: [], commentRequired: false, approval: { required: false, approvers: [] }, actions: [], notifications: [], portals: [], notes: '', origin: 'proposed', removed: false }] }; }
+    return name;
+  };
+  ACT.createModule = () => {
+    const label = document.getElementById('nm_label').value.trim(), desc = document.getElementById('nm_desc').value.trim();
+    if (!label) { toast('Please input module name'); return; } if (!desc) { toast('Please input module description'); return; }
+    const name = V.makeCustomModule(label, desc, document.getElementById('nm_flow').checked); if (!name) { toast('A module with this name already exists'); return; }
     closeDrawer(); F.changed('Custom module created', label); V.go('module', { module: name, moduleTab: 'templates' });
   };
 

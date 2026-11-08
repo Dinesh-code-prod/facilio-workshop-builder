@@ -1,5 +1,8 @@
 # Handoff
 
+**SOLUTION DESIGN AND BRD: contract to modules, Solution layout, integration plan (8 Nov 2026).** Apply the contract (`V.applyContractModules` in `src/solution.js`, also automatic after Read the contract with the AI) switches on delivered modules and creates delivered custom modules through `V.makeCustomModule` (`src/module.js`). The Solution page has a full-width contract card, a wider list with search and tools side by side. How the tabs power the BRD draft and the mockup, and the proposed one-file solution package for other tools: `docs/reference/SOLUTION-INTEGRATION-ARCHITECTURE-2026-11-08.md`. Not built: the package itself. Not checked with a real contract or on the live app.
+
+
 **FAST CHAT LANE (8 Nov 2026, server part live as deploy 278; the scheduled tasks are the owner's to change).** The live queue task only checks the stages intake and requirements, so chat jobs (stage other) were left waiting, and each run takes about 40 s. Built: `project_jobs` action list with no project returns the waiting jobs of all projects in one call (optional kind), so an idle check is one call. Owner steps in `docs/operations/STUDIO-CHAT-LANE-PROMPT-2026-11-08.md`: create the task studio-chat-lane (every minute in working hours), paste the full prompt of `STUDIO-JOB-QUEUE-PROMPT-2026-11-07.md` into studio-job-queue, re-add the connector once. Not tried with a real Claude run.
 
 **PENDING FOR TOMORROW (7 Nov 2026, end of day; everything below is on `main`, live as deploy 273; the same list is in `docs/ROADMAP-REQUIREMENTS.md` section A0).** Start with `/sync`, then work this list top to bottom.
