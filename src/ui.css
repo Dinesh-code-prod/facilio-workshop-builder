@@ -1235,3 +1235,20 @@ body .tabs::-webkit-scrollbar { display: none; }
 #asst .as-quote{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px;padding:6px 10px;border:1px solid var(--cs-accent-line,#b2ccff);border-left-width:3px;border-radius:10px;background:var(--cs-accent-soft,#eaf2ff);font:400 12.5px/17px var(--cs-font);color:var(--cs-fg2)}
 #asst .as-quote[hidden]{display:none}#asst .as-quote span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#asst .as-quote b{color:var(--cs-fg1);font-weight:600}
 #asst .as-qx{flex:none;width:22px;height:22px;border:0;border-radius:6px;background:transparent;color:var(--cs-fg3);font-size:16px;line-height:1;cursor:pointer}#asst .as-qx:hover{background:#fff;color:var(--cs-fg1)}
+
+/* Calm pass (8 Nov 2026): no sky-blue tints or blue card top lines (the dark page banner stays), and no text under 12.5px. */
+body .main:not(#_):not(#__):not(#___), body .shell:not(#_):not(#__):not(#___) { background: #FAFAFA !important; background-image: none !important; }
+body .card-h:not(#_):not(#__):not(#___), body .adm-h:not(#_):not(#__):not(#___), body th:not(#_):not(#__):not(#___), body .tbl thead th:not(#_):not(#__):not(#___) { background: #fff !important; background-image: none !important; }
+body .card:not(#_):not(#__):not(#___), body .card.stat:not(#_):not(#__):not(#___), body .main[data-sec] .card:not(.card .card):not(.stat):not(#_):not(#__):not(#___), body .main[data-sec] .card.stat:not(#_):not(#__):not(#___) { border-top: 1px solid var(--cs-st2, #e5e7eb) !important; }
+body .sidebar .sb-item.active:not(#_):not(#__):not(#___), body .sidebar .sb-stage.open .sb-item.active:not(#_):not(#__):not(#___) { background: rgba(0, 0, 0, .06) !important; }
+body .empty:not(#_):not(#__):not(#___), body td.empty:not(#_):not(#__):not(#___), body .tr-tile.on:not(#_):not(#__):not(#___), body .dkv-i.on:not(#_):not(#__):not(#___), body .tg2-sum:not(#_):not(#__):not(#___), body .tg2-code:not(#_):not(#__):not(#___) { background: #F4F4F5 !important; }
+body .small:not(#_):not(#__):not(#___), body .xs:not(#_):not(#__):not(#___), body th:not(#_):not(#__):not(#___), body .tag:not(#_):not(#__):not(#___), body .crumb-p:not(#_):not(#__):not(#___), body .save-state:not(#_):not(#__):not(#___), body .sb-sub:not(#_):not(#__):not(#___), body .sd-chip:not(#_):not(#__):not(#___), body .dx-pill:not(#_):not(#__):not(#___), body .lc-badge:not(#_):not(#__):not(#___), body .lc-eyebrow:not(#_):not(#__):not(#___) { font-size: 12.5px !important; line-height: 1.5; }
+body .small:not(#_):not(#__):not(#___), body .xs:not(#_):not(#__):not(#___), body th:not(#_):not(#__):not(#___) { font-size: 13px !important; }
+body :is(.sd-kpi, .sd-w, .st-card, .lc-stage, .lc-now, .lc-att, .md-card, .ho-cfg, .bv-host, .si-item, .ko-card, .aip, .card.empty):not(#_):not(#__):not(#___) { border-top: 1px solid var(--cs-st2, #e5e7eb) !important; }
+body .sb-sec span:not(#_):not(#__):not(#___), body .crumb span:not(#_):not(#__):not(#___), body .crumb b:not(#_):not(#__):not(#___), body .ob-nav-g:not(#_):not(#__):not(#___) { font-size: 12.5px !important; }
+body .ki-tiles:not(#_):not(#__):not(#___) { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 14px !important; }
+@media (max-width: 760px) { body .ki-tiles:not(#_):not(#__):not(#___) { grid-template-columns: 1fr !important; } }
+body .ki-tile:not(#_):not(#__):not(#___) { padding: 16px 20px !important; }
+body .ki-head:not(#_):not(#__):not(#___) { box-shadow: none !important; border-left: 0 !important; border-bottom: 1px solid var(--cs-st2, #e5e7eb) !important; background: #fff !important; padding: 18px 22px !important; }
+body .ki-head b:not(#_):not(#__):not(#___) { font-size: 16px !important; }
+body .ki-head span:not(#_):not(#__):not(#___) { font-size: 13.5px !important; line-height: 1.5; }
