@@ -188,6 +188,13 @@
   // the numbered stage group a page sits in (1 to 5), so the page can wear that stage's colour; null for Project, Share, Integrations and customer logins
   function stageOf(key) { if (S.user && S.user.kind === 'customer') return null; const g = NAV.find(x => x.items.some(it => it[0] === key)); const m = g && /^(\d)\.\s*(.*)$/.exec(g.g); return m ? { n: +m[1], name: m[2] } : null; }
   function secOf(key) { if (S.user && S.user.kind === 'customer') return 0; const i = NAV.findIndex(g => g.items.some(it => it[0] === key)); return i < 0 ? 0 : (SEC_OF_GROUP[i] || 0); }
+  /** make the old element look like the new one by changing only what differs (a class, a label), so the browser keeps the nodes and nothing flashes; the root keeps its own attributes */
+  function morph(o, n, root) {
+    if (o.nodeType !== n.nodeType || o.nodeName !== n.nodeName) { o.replaceWith(n); return; }
+    if (o.nodeType !== 1) { if (o.nodeValue !== n.nodeValue) o.nodeValue = n.nodeValue; return; }
+    if (!root) { for (const a of [...o.attributes]) if (!n.hasAttribute(a.name)) o.removeAttribute(a.name); for (const a of n.attributes) if (o.getAttribute(a.name) !== a.value) o.setAttribute(a.name, a.value); }
+    const oc = [...o.childNodes], nc = [...n.childNodes]; nc.forEach((c, i) => { if (i < oc.length) morph(oc[i], c); else o.appendChild(c); }); while (o.childNodes.length > nc.length) o.lastChild.remove();
+  }
   function render() {
     if (!S.user) { const up = document.getElementById('userPop'); if (up) up.remove(); }   // signed out: no account menu on the sign-in screen
     const app = document.getElementById('app'); if (!app) return;
@@ -208,7 +215,7 @@
     // the navbar and sidebar are kept when they did not change, so a click redraws only the page (no flicker, no replayed animation)
     const nbH = navbarHtml(true), sbH = sidebarHtml(), mainH = `<main class="main" id="main" data-sec="${secOf(key)}"${(st => st ? ` data-stage="${st.n}" style="--stage-label:'Stage ${st.n} · ${st.name.replace(/&/g, '&amp;')}'"` : '')(stageOf(key))}>${crumbHtml()}<div class="page">${V.phaseStrip ? V.phaseStrip() : ''}${body}</div></main>`;
     const shEl = app.querySelector(':scope > .shell'), mEl = shEl && shEl.querySelector(':scope > .main');
-    if (mEl && render._nb === nbH && render._sb === sbH && app.firstElementChild.classList.contains('navbar')) mEl.outerHTML = mainH; else app.innerHTML = nbH + `<div class="shell"><nav class="sidebar" id="projNav" aria-label="Workspace">${sbH}</nav>${mainH}</div>`;
+    if (mEl && render._nb === nbH && app.firstElementChild.classList.contains('navbar')) { if (render._sb !== sbH) { const nsb = document.createElement('nav'); nsb.innerHTML = sbH; morph(shEl.querySelector(':scope > .sidebar'), nsb, true); } mEl.outerHTML = mainH; } else app.innerHTML = nbH + `<div class="shell"><nav class="sidebar" id="projNav" aria-label="Workspace">${sbH}</nav>${mainH}</div>`;
     render._nb = nbH; render._sb = sbH;
     const m = document.querySelector('.main'); if (m) m.scrollTop = scroll; const sbNew = document.querySelector('.sidebar'); if (sbNew) sbNew.scrollTop = sbTop;
     if (view.mount) try { view.mount(); } catch (e) { console.error(e); }
