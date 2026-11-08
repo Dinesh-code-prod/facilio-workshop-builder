@@ -1,6 +1,6 @@
 /* Process Whiteboard in the State Flow Builder's frame: the same white canvas with the pale dot grid, the same thin border and square-ish corners, and the same light grey toolbar.
    The shapes, arrows and labels follow the Builder's colours in src/whiteboard.js (taken from FWBDiagrams.COLORS). */
-body .wb-host:not(#_):not(#__) { background: #fff !important; border: 1px solid var(--fc-border, #e0e0e0) !important; border-radius: 4px !important; }
+body .wb-host:not(#_):not(#__) { background: #fff !important; border: 1px solid var(--fc-border, #e5e5e5) !important; border-radius: 4px !important; }
 /* dragging on empty space draws a selection rectangle, so the cursor is the plain arrow; Space turns it into the hand */
 body .wb-host:not(.panning):not(.spacepan) svg:not(#_) { cursor: default; } body .wb-host.spacepan svg:not(#_) { cursor: grab; }
 body .wb-tb:not(#_):not(#__) { background: #fafafa !important; border: 1px solid #ededed !important; border-radius: 4px !important; box-shadow: none !important; }

@@ -185,6 +185,8 @@
   let mode = 'boot'; // boot | auth | projects | workspace
   // which colour a page carries: the sidebar group it sits in (0 project, 1 discover, 2 design and build, 3 launch and support, 4 share with the customer, 5 integrations and admin); a customer login always uses the project blue
   const SEC_OF_GROUP = [0, 1, 1, 2, 2, 3, 3, 3, 4, 4, 5, 5];
+  // the numbered stage group a page sits in (1 to 5), so the page can wear that stage's colour; null for Project, Share, Integrations and customer logins
+  function stageOf(key) { if (S.user && S.user.kind === 'customer') return null; const g = NAV.find(x => x.items.some(it => it[0] === key)); const m = g && /^(\d)\.\s*(.*)$/.exec(g.g); return m ? { n: +m[1], name: m[2] } : null; }
   function secOf(key) { if (S.user && S.user.kind === 'customer') return 0; const i = NAV.findIndex(g => g.items.some(it => it[0] === key)); return i < 0 ? 0 : (SEC_OF_GROUP[i] || 0); }
   function render() {
     if (!S.user) { const up = document.getElementById('userPop'); if (up) up.remove(); }   // signed out: no account menu on the sign-in screen
@@ -203,7 +205,7 @@
     let body; if (V.ui && V.ui.blocked(key)) body = `<div class="page-body">${V.ui.denied('this page')}</div>`; else try { body = view.html(); } catch (e) { console.error(e); body = `<div class="page-body">${V.ui ? V.ui.error('This page could not be displayed', 'Something went wrong while drawing this page. Your work is safe. Try again, or go back to the overview. (' + String((e && e.message) || e).slice(0, 140) + ')') : '<div class="notice err">This view could not be displayed.</div>'}</div>`; }
     const sbOld = document.querySelector('.sidebar'); const sbTop = sbOld ? sbOld.scrollTop : (S.ui.navScroll || 0); // the whole shell is rebuilt on every render: carry the sidebar's scroll position across so a click never moves it
     if (body.indexOf('ob-focus-page') >= 0 || body.indexOf('wb-focus-page') >= 0) { app.innerHTML = body; if (view.mount) try { view.mount(); } catch (e) { console.error(e); } return; }   // the Excel sheet opened in its own tab: the sheet and nothing else
-    app.innerHTML = navbarHtml(true) + `<div class="shell"><nav class="sidebar" id="projNav" aria-label="Workspace">${sidebarHtml()}</nav><main class="main" id="main" data-sec="${secOf(key)}">${crumbHtml()}<div class="page">${V.phaseStrip ? V.phaseStrip() : ''}${body}</div></main></div>`;
+    app.innerHTML = navbarHtml(true) + `<div class="shell"><nav class="sidebar" id="projNav" aria-label="Workspace">${sidebarHtml()}</nav><main class="main" id="main" data-sec="${secOf(key)}"${(st => st ? ` data-stage="${st.n}" style="--stage-label:'Stage ${st.n} · ${st.name.replace(/&/g, '&amp;')}'"` : '')(stageOf(key))}>${crumbHtml()}<div class="page">${V.phaseStrip ? V.phaseStrip() : ''}${body}</div></main></div>`;
     const m = document.querySelector('.main'); if (m) m.scrollTop = scroll; const sbNew = document.querySelector('.sidebar'); if (sbNew) sbNew.scrollTop = sbTop;
     if (view.mount) try { view.mount(); } catch (e) { console.error(e); }
     if (V.motion) V.motion.route(key + '|' + (S.project ? S.project.id : ''));
@@ -235,7 +237,7 @@
   V.NAV_ICONS = ['f:g_project', 'f:g_dash', 'f:g_delivery', 'f:g_config', 'f:g_req', 'f:g_admin', 'f:kickoff', 'f:contract', 'f:scope', 'f:plan', 'f:timeline', 'f:planner', 'f:transcripts', 'f:usecases', 'f:checks', 'f:brd', 'f:modules', 'f:flow', 'f:roles', 'f:onboarding', 'f:dashboards', 'f:governance', 'f:changes', 'f:delivery', 'f:guide', 'f:portal', 'f:settings', 'f:schedule', 'l:home', 'l:flag', 'l:mic', 'l:doc', 'l:book', 'l:check', 'l:shield', 'l:mail', 'l:spark', 'l:gear', 'l:cal', 'l:deck', 'l:link', 'l:bell', 'l:roles', 'l:lock', 'l:eye', 'l:clip'].filter(k => FI.has(k.slice(2)) || ICON[k.slice(2)]);
   const ITEM_ICO = { lifecycle: 'l:flag', tasks: 'l:check', transfers: 'l:link', mailtab: 'l:mail', aiwork: 'l:spark', reports: 'l:doc', resources: 'l:clip', rsquestions: 'l:search', whiteboard: 'l:edit', solution: 'l:spark', mockup: 'l:deck', notifications: 'l:bell', slakpi: 'l:check', ftr: 'l:doc', kpi: 'l:deck', golive: 'l:flag', guidebuilder: 'l:edit', vidguide: 'l:deck', hypercare: 'l:shield', handover: 'l:book', demokit: 'l:deck', seefacilio: 'l:eye', explore: 'l:spark', custintro: 'l:home', prepare: 'l:book', learnlib: 'l:book', integguide: 'l:link', claudesetup: 'l:spark', teamhelp: 'l:book', webframe: 'l:link', whatsnew: 'l:spark', privacy: 'l:lock', templates: 'l:doc', workspace: 'l:modules', rsplan: 'l:cal', guides: 'l:book' };
   const itemIcon = id => (FI.has(id) ? FI.svg(id) : ITEM_ICO[id] ? V.navIcon(ITEM_ICO[id]) : V.navIcon('l:flag'));
-  const STAGE_C = { 1: '#3b82f6', 2: '#14b8a6', 3: '#ec4899', 4: '#f59e0b', 5: '#22c55e', 7: '#0ea5e9', 8: '#64748b' };   // the stage accents of the dashboards (src/stagedash.js)
+  const STAGE_C = { 1: '#1d4ed8', 2: '#1d4ed8', 3: '#1d4ed8', 4: '#1d4ed8', 5: '#1d4ed8', 7: '#475569', 8: '#64748b' };   // the stage accents of the dashboards (src/stagedash.js)
   const stageNo = g => { const m = /^(\d)\./.exec(g.g); return m ? Number(m[1]) : 0; };
   const groupIcon = g => V.navIcon(g.ik || (g.fi ? 'f:' + g.fi : 'l:' + (g.icon || 'flag')));
   function crumbHtml() {

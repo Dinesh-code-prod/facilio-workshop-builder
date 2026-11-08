@@ -12,8 +12,8 @@
   const KINDS = ['action', 'signoff', 'cr', 'task', 'hc', 'ugd', 'vid', 'lesson', 'utc', 'usecase', 'raid', 'ho', 'close', 'uat', 'build'];
   // one accent per stage (coss palette); used for the dot, the bar and the top edge, never for text
   const STG = [
-    { id: 'kickoff', label: 'Kick-off', c: '#3b82f6' }, { id: 'req', label: 'Requirements', c: '#14b8a6' }, { id: 'brd', label: 'BRD and sign-off', c: '#ec4899' },
-    { id: 'build', label: 'Build and UAT', c: '#f59e0b' }, { id: 'live', label: 'Go-live and hypercare', c: '#22c55e' }, { id: 'handover', label: 'Handover', c: '#0ea5e9' }
+    { id: 'kickoff', label: 'Kick-off', c: '#1d4ed8' }, { id: 'req', label: 'Requirements', c: '#1e40af' }, { id: 'brd', label: 'BRD and sign-off', c: '#0369a1' },
+    { id: 'build', label: 'Build and UAT', c: '#334155' }, { id: 'live', label: 'Go-live and hypercare', c: '#475569' }, { id: 'handover', label: 'Handover', c: '#1e3a8a' }
   ];
   const CUST_STG = ['req', 'brd', 'build', 'live'];
   const HC = { blocked: '#ef4444', overdue: '#f97316', at_risk: '#f59e0b', on_track: '#22c55e', insufficient: '#a3a3a3' };
@@ -115,7 +115,7 @@
     const good = chk.filter(x => x.s === 'g').length;
     return { kpis: [['Team members', team.length, 'on the implementation team'], ['Customer stakeholders', sk.length, 'named by the customer'], ['Plan steps dated', c.st.n || 0, 'dated plan rows', pct(Math.min(12, (p.info || []).filter(x => x.start).length), 12)], ['Kick-off readiness', good + ' of ' + chk.length, 'checks green', pct(good, chk.length)]],
       body: widget('Kick-off readiness', 'what must be true before the workshops', check('Kick-off readiness', chk), 5) + widget('People on the project', 'team and stakeholders', table('People', ['Name', 'Role', 'Email', 'Side'], rows, 'No people added yet. Add them in Project settings.'), 7) +
-        widget('Who is on the project', 'Facilio and customer', C.donut([['Facilio', team.length, '#3b82f6'], ['Customer', sk.length, '#ec4899']], team.length + sk.length, 'people', 'Nobody added yet.'), 4) + widget('Plan, first steps', 'dates from the plan', table('Plan first steps', ['Step', 'Start', 'End', 'When'], next, 'No dates yet. Generate or import the plan.'), 8) };
+        widget('Who is on the project', 'Facilio and customer', C.donut([['Facilio', team.length, '#3b82f6'], ['Customer', sk.length, '#94a3b8']], team.length + sk.length, 'people', 'Nobody added yet.'), 4) + widget('Plan, first steps', 'dates from the plan', table('Plan first steps', ['Step', 'Start', 'End', 'When'], next, 'No dates yet. Generate or import the plan.'), 8) };
   };
   B.req = c => {
     const R = c.R; const conf = R.filter(r => r.status === 'Confirmed').length, rej = R.filter(r => r.status === 'Rejected').length, draft = R.filter(r => !r.status || r.status === 'Draft').length, oth = Math.max(0, R.length - conf - draft - rej);
@@ -174,7 +174,7 @@
     const good = chk.filter(x => x.s === 'g').length; const rows = ug.concat(vd).slice(0, 8).map(x => [name(x), vd.indexOf(x) >= 0 ? 'Video' : 'User guide', chipT(x.status || 'Draft', tone(x.status || 'Draft'))]);
     return { kpis: [['User guides', ug.length, 'for the customer team'], ['Videos', vd.length, 'walkthroughs'], ['Sign-offs done', signed + ' of 3', 'BRD, UAT, go-live', pct(signed, 3)], ['Handover complete', pct(good, chk.length) + '%', good + ' of ' + chk.length + ' checks green', pct(good, chk.length)]],
       body: widget('Handover completeness', 'share of checks that are green', C.gauge(pct(good, chk.length), pct(good, chk.length) + '%', good + ' of ' + chk.length + ' checks green', good === chk.length ? OK : good >= 3 ? WARN : BAD), 4, STG[5].c) + widget('Handover checklist', 'checked from the records', check('Handover checklist', chk), 8, STG[5].c) +
-        widget('What is ready', 'by type', bars([['User guides', ug.length, '#0ea5e9'], ['Videos', vd.length, '#14b8a6'], ['Lessons', les.length, WARN]], 'Nothing in the pack yet.'), 4, STG[5].c) + widget('Handover pack', 'guides and videos', table('Handover pack', ['Item', 'Type', 'Status'], rows, 'The pack builds from the user guides and videos.'), 8, STG[5].c) };
+        widget('What is ready', 'by type', bars([['User guides', ug.length, '#1d4ed8'], ['Videos', vd.length, '#475569'], ['Lessons', les.length, WARN]], 'Nothing in the pack yet.'), 4, STG[5].c) + widget('Handover pack', 'guides and videos', table('Handover pack', ['Item', 'Type', 'Status'], rows, 'The pack builds from the user guides and videos.'), 8, STG[5].c) };
   };
   function stageData(id) { COL = []; const c = X(); const r = B[id](c); return { c, r, tables: COL.slice(), s: STG.find(x => x.id === id) }; }
   function stagePage(id) { try { const d = stageData(id); return `<div class="sd-stage" style="--c:${d.s.c}"><div class="sd-kpis">${kp(d.r.kpis, d.s.c)}</div>${grid(d.r.body)}</div>`; } catch (e) { console.error(e); return `<div class="sd-stage">${none('This stage could not be drawn.')}</div>`; } }
@@ -193,7 +193,7 @@
 
   // ---------- admin: the stages across every active project ----------
   const RSTG = [[0, 'All stages'], [1, 'Project introduction'], [2, 'Requirement sessions'], [3, 'Solution design and BRD'], [4, 'UAT and FTR'], [5, 'Training guides'], [7, 'Hypercare'], [8, 'Handover']];
-  const RC = { 1: '#3b82f6', 2: '#14b8a6', 3: '#ec4899', 4: '#f59e0b', 5: '#22c55e', 7: '#0ea5e9', 8: '#64748b' };
+  const RC = { 1: '#1d4ed8', 2: '#1e40af', 3: '#0369a1', 4: '#334155', 5: '#475569', 7: '#1e3a8a', 8: '#64748b' };
   const ORDER = ['blocked', 'overdue', 'at_risk', 'on_track', 'insufficient'];
   const rstageOf = p => { const st = p.metrics && p.metrics.stage; return st > 0 && V.stageOfStep ? V.stageOfStep(st - 1) : 0; };
   V.sdd = { STG, RSTG, RC, ORDER, HC, HL, X, areas, overall, OV, stageData, fd, dayOf, ageOf, pct, num, rstageOf, buckets };

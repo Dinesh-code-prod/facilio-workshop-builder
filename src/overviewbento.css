@@ -13,7 +13,7 @@
 .ovb-date{flex:none;width:46px;height:50px;border-radius: 12px;background:#e8eefc;color:#1D1A5E;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
 .ovb-date b{font-size:18px}.ovb-date span{font-size:10px;text-transform: none;letter-spacing:.06em}
 .ovb-st b{font-size:13px}
-.ovb-pl{font-size:11px;text-transform: none;letter-spacing:.08em;color: #424242;margin:12px 0 6px}.ovb-pl:first-of-type{margin-top:0}
+.ovb-pl{font-size:11px;text-transform: none;letter-spacing:.08em;color: #262626;margin:12px 0 6px}.ovb-pl:first-of-type{margin-top:0}
 .ovb-p{display:flex;align-items:center;gap:10px;padding:5px 0}
 .ovb-av{flex:none;width:30px;height:30px;border-radius:50%;background:#1D1A5E;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center}
 .ovb-pt{display:flex;flex-direction:column;min-width:0}.ovb-pt b{font-size:13px}

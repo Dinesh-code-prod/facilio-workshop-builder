@@ -2,11 +2,11 @@
    Part 1 is the base (tokens, resets and shared patterns); part 2 is the coss component layer that restyles them. */
 /* ===== part 1: base ===== */
 :root {
-  --cs-fg1: #242424; --cs-fg2: #424242; --cs-fg3: #616161; --cs-fg4: #707070; --cs-fg-dis: #bdbdbd;
-  --cs-bg1: #ffffff; --cs-bg2: #fafafa; --cs-bg3: #f5f5f5; --cs-bg4: #f0f0f0; --cs-bg5: #ebebeb; --cs-bg6: #e0e0e0;
-  --cs-st1: #d1d1d1; --cs-st2: #e0e0e0; --cs-st3: #f0f0f0; --cs-st-acc: #616161;
+  --cs-fg1: #171717; --cs-fg2: #262626; --cs-fg3: #525252; --cs-fg4: #707070; --cs-fg-dis: #bdbdbd;
+  --cs-bg1: #ffffff; --cs-bg2: #fafafa; --cs-bg3: #f5f5f5; --cs-bg4: #f0f0f0; --cs-bg5: #ebebeb; --cs-bg6: #e5e5e5;
+  --cs-st1: #d4d4d4; --cs-st2: #e5e5e5; --cs-st3: #f0f0f0; --cs-st-acc: #525252;
   --cs-brand: #1570EF; --cs-brand-h: #115cc0; --cs-brand-p: #0e4a9a; --cs-brand-soft: #eaf2ff; --cs-navy: #1D1A5E; --cs-pink: #E5197F; --cs-sky: #8DB8FF;
-  --cs-danger: #b10e1c; --cs-danger-soft: #fdf3f4; --cs-success: #107c10; --cs-success-soft: #f1faf1; --cs-warn: #bc4b09; --cs-warn-soft: #fff9f5;
+  --cs-danger: #b10e1c; --cs-danger-soft: #fdf3f4; --cs-success: #15803d; --cs-success-soft: #f1faf1; --cs-warn: #bc4b09; --cs-warn-soft: #fff9f5;
   --cs-font: "Segoe UI", "Segoe UI Web (West European)", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif;
   --cs-sh4: 0 0 2px rgba(0, 0, 0, .12), 0 2px 4px rgba(0, 0, 0, .14); --cs-sh8: 0 0 2px rgba(0, 0, 0, .12), 0 4px 8px rgba(0, 0, 0, .14); --cs-sh16: 0 0 2px rgba(0, 0, 0, .12), 0 8px 16px rgba(0, 0, 0, .14);
   --cs-sh28: 0 0 8px rgba(0, 0, 0, .20), 0 14px 28px rgba(0, 0, 0, .24); --cs-sh64: 0 0 8px rgba(0, 0, 0, .20), 0 32px 64px rgba(0, 0, 0, .24);
@@ -121,14 +121,14 @@ body .tag.amber:not(#_):not(#__), body .tag.warn:not(#_):not(#__), body .tag.med
 body .tag.low:not(#_):not(#__), body .tag.system:not(#_):not(#__) { color: var(--cs-fg2) !important; background: var(--cs-bg4) !important; }
 
 /* old colour tokens (the --fc family) pointed at light greys and tinted blues; they now read the values, so no text can end up pale on a pale background */
-:root { --fc-muted: #616161; --fc-caption: #616161; --fc-text: #242424; --fc-text-strong: #242424; --fc-border: #e0e0e0; --fc-border-2: #e0e0e0; --fc-border-3: #d1d1d1; --fc-head-bg: #fafafa; --fc-hover: #f5f5f5; --fc-page: #fafafa; --fc-danger: #b10e1c; --fc-indigo: #1262D8; --fc-link-hover: #0e4a9a; --fc-avatar: #115cc0; --fc-indigo-grad: none; --cs-brand-text: #1262D8; --th-violet: #1262D8; --th-violet-2: #0e4a9a; --th-blue: #1262D8; --th-muted: #616161; --th-faint: #616161; }
+:root { --fc-muted: #525252; --fc-caption: #525252; --fc-text: #171717; --fc-text-strong: #171717; --fc-border: #e5e5e5; --fc-border-2: #e5e5e5; --fc-border-3: #d4d4d4; --fc-head-bg: #fafafa; --fc-hover: #f5f5f5; --fc-page: #fafafa; --fc-danger: #b10e1c; --fc-indigo: #1262D8; --fc-link-hover: #0e4a9a; --fc-avatar: #115cc0; --fc-indigo-grad: none; --cs-brand-text: #1262D8; --th-violet: #1262D8; --th-violet-2: #0e4a9a; --th-blue: #1262D8; --th-muted: #525252; --th-faint: #525252; }
 body .page-header small:not(#_):not(#__), body .page-header .muted:not(#_):not(#__), body .page-header .row small:not(#_):not(#__) { color: var(--cs-fg3) !important; }
 body .sb h3:not(#_):not(#__) { color: var(--cs-fg2) !important; }
 body .brd-ban em:not(#_):not(#__), body .brd-ban a:not(#_):not(#__) { color: #1262D8 !important; }
 body .tg2-lvl:not(#_):not(#__) { color: #1262D8 !important; }
 body .screen__url:not(#_):not(#__), body .s-sub:not(#_):not(#__) { color: var(--cs-fg3) !important; }
 /* the state-flow colours of the module guides: every chip carries white text, so every colour is dark enough for it (4.5:1 or more) */
-:root { --sf-line: #0f6cbd; --sf-active: #c4314b; --sf-user: #1262D8; --sf-cond: #0e7a85; --sf-time: #107c10; --sf-initial: #2f7f7c; }
+:root { --sf-line: #3b82f6; --sf-active: #ef4444; --sf-user: #0ea5e9; --sf-cond: #14b8a6; --sf-time: #22c55e; --sf-initial: #0d9488; }   /* state-flow builder colours: the coss palette */
 
 /* ======================================================================================================================
    page patterns (page pass, 7 Nov 2026). New and reworked pages are built from these; the older per-page skins are deleted.
@@ -281,7 +281,7 @@ body .mf-step.on:not(#_):not(#__) { background: var(--cs-brand-soft) !important;
 body .mf-step.on .n:not(#_):not(#__) { background: #fff !important; color: #0e4a9a !important; }
 /* small leftovers found by the contrast crawl */
 body summary.btn:not(#_):not(#__), body .s-badge.info:not(#_):not(#__) { color: #1262D8; }
-body .tg2-done i:not(#_):not(#__) { background: #107c10; } body .tg2-warn i:not(#_):not(#__) { background: #bc4b09; }
+body .tg2-done i:not(#_):not(#__) { background: #15803d; } body .tg2-warn i:not(#_):not(#__) { background: #bc4b09; }
 
 /* ---- tabs: one tab list for every page (flat row, 40 px tall, the selected tab is semibold with a 2 px brand underline) ---- */
 body .tabs:not(#_):not(#__) { display: flex; gap: 4px; flex-wrap: nowrap; overflow-x: auto; padding: 0; margin: 0 0 16px; background: transparent !important; border: 0; border-bottom: 1px solid var(--cs-st2) !important; box-shadow: none !important; }
@@ -302,11 +302,7 @@ body .mk-d summary:not(#_):not(#__) { color: #1262D8; }
    ====================================================================================================================== */
 :root { --cs-dur-fast: 100ms; --cs-dur-fast2: 150ms; --cs-dur-normal: 200ms; --cs-dur-gentle: 250ms; --cs-dur-slow: 300ms; --cs-dec: cubic-bezier(0, 0, 0, 1); --cs-dec-min: cubic-bezier(.33, 0, .1, 1); --cs-ease: cubic-bezier(.33, 0, .67, 1); --cs-out: cubic-bezier(.33, 0, .1, 1);
   --cs-accent: #1570EF; --cs-accent-ink: #0e4a9a; --cs-accent-soft: #eaf2ff; --cs-accent-line: #b4d6fa; }
-body .shell:has(> .main[data-sec="1"]) { --cs-accent: #038387; --cs-accent-ink: #025f62; --cs-accent-soft: #e6f5f5; --cs-accent-line: #a8dcdc; }
-body .shell:has(> .main[data-sec="2"]) { --cs-accent: #0f548c; --cs-accent-ink: #0f548c; --cs-accent-soft: #e9f1f9; --cs-accent-line: #b4cfe6; }
-body .shell:has(> .main[data-sec="3"]) { --cs-accent: #0e7a5a; --cs-accent-ink: #0a5a42; --cs-accent-soft: #e8f5f0; --cs-accent-line: #b2dccb; }
-body .shell:has(> .main[data-sec="4"]) { --cs-accent: #E5197F; --cs-accent-ink: #a30f58; --cs-accent-soft: #fdeaf3; --cs-accent-line: #f5b3d3; }
-body .shell:has(> .main[data-sec="5"]) { --cs-accent: #616161; --cs-accent-ink: #424242; --cs-accent-soft: #f0f0f0; --cs-accent-line: #d1d1d1; }
+body .shell:has(> .main[data-sec="5"]) { --cs-accent: #525252; --cs-accent-ink: #262626; --cs-accent-soft: #f0f0f0; --cs-accent-line: #d4d4d4; }
 
 /* page header: a soft tint of the section accent with a 4 px accent edge; the title carries the accent ink */
 body .main > .page > .page-header:not(#_):not(#__), body .adm-main > .adm-hero:not(#_):not(#__) { background: var(--cs-accent-soft) !important; border-bottom: 1px solid var(--cs-accent-line) !important; box-shadow: inset 4px 0 0 var(--cs-accent) !important; }
@@ -815,3 +811,75 @@ body .gl-car-stage:not(#_):not(#__), body .gl-screen:not(#_):not(#__) { box-shad
 .tg2-road{border-color:var(--cs-accent-line,#b2ccff)}.tg2-rmcount{margin-left:10px;padding:2px 10px;border-radius:999px;background:var(--cs-accent-soft,#eaf2ff);color:#1570EF;font:600 12px/20px var(--cs-font)}
 .tg2-rmg{margin:14px 0 4px}.tg2-rmg h3{display:flex;align-items:center;gap:10px;font:600 15px/22px var(--cs-font);margin:0 0 6px}
 .tg2-road .tg2-steps li{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}.tg2-road .tg2-ck{flex:1}.tg2-road .tg2-ck em{display:block;font-style:normal;color:var(--cs-fg2);font-weight:400;margin-top:2px}
+
+/* ==== coss colour pass (8 Nov 2026): a project page wears the colour of its stage, as the dashboards and the sidebar already do.
+   Stages 1 blue, 2 teal, 3 pink, 4 amber, 5 green (coss palette); Project stays Facilio blue, Share pink, Admin grey. The old Fluent teal/navy/green section colours are replaced. ==== */
+body .shell:has(> .main[data-sec="1"]), body .shell:has(> .main[data-sec="2"]), body .shell:has(> .main[data-sec="3"]), body .shell:has(> .main[data-sec="4"]), body .shell:has(> .main[data-stage]) { --cs-sc: #1d4ed8; }   /* enterprise: one formal blue for every section; status colours stay for status only */
+body .shell:has(> .main[data-sec="1"]), body .shell:has(> .main[data-sec="2"]), body .shell:has(> .main[data-sec="3"]), body .shell:has(> .main[data-sec="4"]), body .shell:has(> .main[data-stage]) { --cs-accent: var(--cs-sc); --cs-accent-ink: color-mix(in srgb, var(--cs-sc) 58%, #000); --cs-accent-soft: color-mix(in srgb, var(--cs-sc) 6%, #fff); --cs-accent-line: color-mix(in srgb, var(--cs-sc) 22%, #fff); }
+/* the page header is a soft banner in the stage colour, with a small stage label above the title */
+body .main[data-sec] > .page > .page-header:not(#_):not(#__) { margin: 4px 0 16px !important; padding: 18px 24px 18px 28px !important; background: var(--cs-accent-soft) !important; border: 1px solid var(--cs-accent-line) !important; border-radius: var(--cs-r-card) !important; box-shadow: inset 4px 0 0 var(--cs-accent) !important; }
+body .main[data-stage] > .page > .page-header .t:not(#_):not(#__)::before { content: var(--stage-label); display: inline-flex; width: auto; height: auto; white-space: nowrap; margin: 0 0 10px; padding: 2px 10px; border-radius: 999px; background: #fff; border: 1px solid var(--cs-accent-line); color: var(--cs-accent-ink); font: 600 11px/16px var(--cs-font); letter-spacing: .04em; text-transform: uppercase; }
+body .main[data-sec] > .page > .page-header h1:not(#_):not(#__) { color: var(--cs-fg1) !important; }
+body .main[data-sec] .page-header .t p:not(#_):not(#__) { color: color-mix(in srgb, var(--cs-accent-ink) 55%, var(--cs-fg3)) !important; }
+
+/* coss colour pass, part 2: cards, tabs, phase strip, labels and empty states carry the page colour */
+body .main[data-sec] .card:not(.card .card):not(.stat):not(#_):not(#__) { border-top: 3px solid var(--cs-accent) !important; }
+body .main[data-sec] .card.stat:not(#_):not(#__) { border-top: 3px solid var(--cs-accent) !important; }
+body .main[data-sec] .tabs:not(#_):not(#__) { background: var(--cs-accent-soft) !important; border: 1px solid var(--cs-accent-line) !important; }
+body .main[data-sec] .tabs .tab.active:not(#_):not(#__) { background: #fff !important; color: var(--cs-accent-ink) !important; box-shadow: inset 0 -2px 0 var(--cs-accent), 0 1px 2px rgba(0, 0, 0, .06) !important; }
+body .main[data-sec] .tabs .tab:not(.active):hover:not(#_):not(#__) { background: color-mix(in srgb, var(--cs-accent) 10%, #fff) !important; color: var(--cs-accent-ink) !important; }
+body .main[data-sec] .page > .phase-strip:not(#_):not(#__) { background: #fff !important; border: 1px solid var(--cs-accent-line) !important; box-shadow: inset 0 3px 0 var(--cs-accent) !important; border-radius: var(--cs-r-card) !important; }
+body .main[data-sec] .phase-strip .ps-l:not(#_):not(#__), body .main[data-sec] .phase-strip > *:first-child:not(#_):not(#__) { color: var(--cs-accent-ink) !important; }
+body .main[data-sec] .pink-label:not(#_):not(#__) { color: var(--cs-accent-ink) !important; display: flex; align-items: center; gap: 8px; }
+body .main[data-sec] .pink-label:not(#_):not(#__)::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--cs-accent); flex: none; }
+body .main[data-sec] .empty:not(#_):not(#__) { background: var(--cs-accent-soft) !important; border: 1px dashed var(--cs-accent-line) !important; border-radius: var(--cs-r-card) !important; color: var(--cs-accent-ink) !important; }
+body .main[data-sec] a:not(.btn):not(.tab):not(.sb-item):not(#_):not(#__) { color: var(--cs-accent-ink); }
+body .main[data-sec] input:focus:not(#_):not(#__), body .main[data-sec] select:focus:not(#_):not(#__), body .main[data-sec] textarea:focus:not(#_):not(#__) { border-color: var(--cs-accent) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--cs-accent) 22%, transparent) !important; }
+
+/* coss colour pass, part 3 (user, 8 Nov 2026): text is black. Headings are bold black; weight carries emphasis. The stage colour lives in edges, fills and dots, never in running text; no blue text unless it is a real status. */
+body .main[data-sec] h1:not(#_):not(#__), body .main[data-sec] h2:not(#_):not(#__), body .main[data-sec] h3:not(#_):not(#__), body .main[data-sec] .card > .card-h h3:not(#_):not(#__) { color: #0a0a0a !important; font-weight: 700 !important; }
+body .main[data-sec] h4:not(#_):not(#__), body .main[data-sec] .pink-label:not(#_):not(#__), body .main[data-sec] .tbl thead th:not(#_):not(#__), body .main[data-sec] .tabs .tab.active:not(#_):not(#__), body .main[data-sec] .phase-strip .ps-l:not(#_):not(#__) { color: #0a0a0a !important; font-weight: 700 !important; }
+body .main[data-sec] .tabs .tab:not(.active):not(#_):not(#__), body .main[data-sec] .tabs .tab:not(.active):hover:not(#_):not(#__) { color: #262626 !important; font-weight: 500 !important; }
+body .main[data-sec] .page-header .t p:not(#_):not(#__), body .main[data-sec] .page-header .t *:not(.btn):not(.tag):not(h1):not(#_):not(#__) { color: #262626 !important; }
+body .main[data-stage] > .page > .page-header .t:not(#_):not(#__)::before { color: #0a0a0a !important; font-weight: 700; }
+body .main[data-sec] .empty:not(#_):not(#__) { color: #262626 !important; }
+body .main[data-sec] a:not(.btn):not(.tab):not(.sb-item):not(.tag):not(#_):not(#__) { color: #0a0a0a !important; font-weight: 600; text-decoration: none; }
+body .main[data-sec] a:not(.btn):not(.tab):not(.sb-item):not(.tag):hover:not(#_):not(#__), body .main[data-sec] p a:not(#_):not(#__), body .main[data-sec] td a:not(#_):not(#__), body .main[data-sec] .small a:not(#_):not(#__), body .main[data-sec] .notice a:not(#_):not(#__) { text-decoration: underline; text-decoration-color: var(--cs-accent); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+body .main[data-sec] .muted:not(#_):not(#__), body .main[data-sec] .small.muted:not(#_):not(#__) { color: #525252 !important; }
+body .main[data-sec] b:not(#_):not(#__), body .main[data-sec] strong:not(#_):not(#__) { font-weight: 700; color: #0a0a0a; }
+body .main[data-sec] .tbl td:not(#_):not(#__) { color: #171717; }
+
+/* coss colour pass, part 4 (user, 8 Nov 2026): the older page-header gradient is back on every project page: navy with a blue glow top right and a soft rose glow bottom left (rose reduced). Fonts, cards and the rest stay as they are. The banner text is white because it sits on navy. */
+body .main[data-sec] > .page > .page-header:not(#_):not(#__) { position: relative; overflow: hidden; background: radial-gradient(60% 140% at 100% 0%, rgba(21, 112, 239, .55), transparent 60%), radial-gradient(40% 120% at 0% 120%, rgba(229, 25, 127, .16), transparent 60%), linear-gradient(135deg, #1D1A5E, #1D1A5E) !important; border: 0 !important; box-shadow: 0 8px 24px rgba(29, 26, 94, .22) !important; }
+body .main[data-sec] > .page > .page-header h1:not(#_):not(#__), body .main[data-sec] > .page > .page-header h2:not(#_):not(#__) { color: #fff !important; font-weight: 700 !important; }
+body .main[data-sec] > .page > .page-header .t p:not(#_):not(#__), body .main[data-sec] > .page > .page-header .t *:not(.btn):not(.tag):not(h1):not(h2):not(#_):not(#__) { color: #e3e9fb !important; }
+body .main[data-sec] > .page > .page-header .tag:not(#_):not(#__), body .main[data-sec] > .page > .page-header .pill:not(#_):not(#__) { background: rgba(255, 255, 255, .14) !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, .3) !important; }
+body .main[data-sec] > .page > .page-header .btn:not(.primary):not(#_):not(#__) { background: rgba(255, 255, 255, .14) !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, .34) !important; box-shadow: none !important; }
+body .main[data-sec] > .page > .page-header .btn:not(.primary):hover:not(#_):not(#__) { background: rgba(255, 255, 255, .24) !important; }
+body .main[data-sec] > .page > .page-header .btn.primary:not(#_):not(#__) { background: #1570EF !important; color: #fff !important; border-color: #1570EF !important; }
+body .main[data-sec] > .page > .page-header a:not(.btn):not(#_):not(#__) { color: #fff !important; text-decoration: underline; text-decoration-color: rgba(255, 255, 255, .6); }
+body .main[data-stage] > .page > .page-header .t:not(#_):not(#__)::before { background: rgba(255, 255, 255, .14) !important; border: 1px solid rgba(255, 255, 255, .3) !important; color: #fff !important; }
+body .main[data-sec] > .page > .page-header .t:not(#_):not(#__)::before { background-color: #1570EF; }
+
+/* coss colour pass, part 5: no blue running text. Links, ids and link-style buttons are black and bold; only a real status keeps a colour. */
+body .main[data-sec] .crumb b:not(#_):not(#__), body .main[data-sec] b:not(.tag):not(#_):not(#__) { color: #0a0a0a !important; font-weight: 700 !important; }
+body .main[data-sec] .btn.link:not(#_):not(#__), body .main[data-sec] button.link:not(#_):not(#__), body .main[data-sec] .pt-id:not(#_):not(#__), body .main[data-sec] .blk-ask:not(#_):not(#__), body .main[data-sec] .brd-add:not(#_):not(#__), body .main[data-sec] .mnu-i:not(#_):not(#__), body .main[data-sec] .ws-seg:not(#_):not(#__), body .main[data-sec] .lc-eyebrow:not(#_):not(#__), body .main[data-sec] .sol-c:not(#_):not(#__), body .main[data-sec] .mk-c:not(#_):not(#__), body .main[data-sec] .meta:not(#_):not(#__) { color: #0a0a0a !important; font-weight: 600 !important; }
+body .main[data-sec] .btn.link:not(#_):not(#__), body .main[data-sec] button.link:not(#_):not(#__) { text-decoration: underline; text-decoration-color: var(--cs-accent); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+
+/* Tasks: the board and the list get a tab of their own, so they use the whole page height */
+body .pt-tabs:not(#_):not(#__) { display: inline-flex; margin: 0 0 14px; }
+body .pt-tabs .pt-shn:not(#_):not(#__) { margin-left: 6px; }
+body .pt-wide .pt-wrap:not(#_):not(#__) { max-height: calc(100vh - 230px) !important; min-height: 360px; }
+body .pt-wide .kb-cols:not(#_):not(#__) { min-height: calc(100vh - 290px); align-items: stretch; }
+body .pt-wide .kb-col:not(#_):not(#__) { min-width: 260px; }
+
+/* Up next (user, 8 Nov 2026): no dark gradient band. A plain heading and one white card per item. */
+body section.upnext:not(#_):not(#__) { background: transparent !important; background-image: none !important; color: #0a0a0a !important; padding: 0 !important; box-shadow: none !important; border: 0 !important; gap: 12px; }
+body section.upnext:not(#_):not(#__)::before, body section.upnext:not(#_):not(#__)::after { display: none !important; }
+body .upnext .upnext-k:not(#_):not(#__) { color: #525252 !important; font: 600 11px/16px var(--cs-font) !important; letter-spacing: .06em; text-transform: uppercase; }
+body .upnext h2:not(#_):not(#__), body .upnext h3:not(#_):not(#__) { color: #0a0a0a !important; font-weight: 700 !important; }
+body .upnext .upnext-i:not(#_):not(#__) { background: #fff !important; color: #0a0a0a !important; border: 1px solid var(--cs-st2) !important; border-left: 3px solid var(--cs-accent) !important; border-radius: var(--cs-r-card) !important; box-shadow: var(--cs-sh4) !important; }
+body .upnext .upnext-i:hover:not(#_):not(#__) { background: var(--cs-accent-soft) !important; }
+body .upnext .upnext-i small:not(#_):not(#__) { color: #525252 !important; }
+body .upnext .upnext-i b:not(#_):not(#__) { color: #0a0a0a !important; font-weight: 700 !important; }
+body .upnext .upnext-i em:not(#_):not(#__) { color: #404040 !important; }
