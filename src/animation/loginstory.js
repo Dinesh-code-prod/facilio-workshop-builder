@@ -20,22 +20,17 @@
   function rng(seed) { let s = seed >>> 0; return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296; }
   const FONT = 'Geist, Inter, system-ui, sans-serif';
   let cv = null, cx = null, art = null, box = null, W = 0, H = 0, DPR = 1, S = { x: 0, y: 0, w: 0, h: 0 }, NARROW = false;
-  let aud = 'team', last = 0, raf = 0, ro = null, gridC = null, beatIdx = -1, hidAt = 0;
+  let aud = 'cust', last = 0, raf = 0, ro = null, beatIdx = -1, hidAt = 0;
   const T0 = {};
   const BEATS = {
-    team: [[0, 'One studio for the whole project', 'Emails, files, recordings and contracts come into one place. AI drafts first, your team reviews, so projects move faster with nothing lost.'],
-      [5, 'Start from what you already have', 'Files go in once. AI drafts the project settings and you review them.'],
-      [8.4, 'Workshops become requirements', 'Transcripts are read for promises and asks. Your team confirms what counts.'],
-      [11.9, 'One BRD, signed off in one place', 'The document builds from confirmed requirements and the customer approves online.'],
-      [15.4, 'Build, test and fix on one record', 'Configuration, UAT scripts and defects stay linked to every requirement.'],
-      [18.9, 'Go live, then hand over', 'Hypercare, guides and the handover pack close the project with nothing lost.']],
     cust: [[0, 'Projects usually start scattered', 'Email threads, spreadsheet versions and meeting notes pile up in different places.'],
       [3.4, 'Facilio brings it into one lane', 'Everything about your rollout lives in a single project you can open anytime.'],
       [8.0, 'Review and approve in one place', 'See what was captured from your workshops and sign off without long email threads.'],
       [11.2, 'Test with clear scripts', 'Your team tests against the agreed requirements, step by step.'],
       [13.4, 'Go live, with a clear finish line', 'Know where your project stands every day until launch.']]
   };
-  const END = { team: 22.8, cust: 16.2 };
+  const END = { cust: 16.2 };
+  let lastT = 0;
   function glow(x, y, r, col, a) {
     const g = cx.createRadialGradient(x, y, 0, x, y, r);
     g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(1, `rgba(${col},0)`);
@@ -65,188 +60,6 @@
   function rr(x, y, w, h, r) { cx.beginPath(); cx.moveTo(x + r, y); cx.arcTo(x + w, y, x + w, y + h, r); cx.arcTo(x + w, y + h, x, y + h, r); cx.arcTo(x, y + h, x, y, r); cx.arcTo(x, y, x + w, y, r); cx.closePath(); }
   function ring(x, y, k, col, maxR) { if (k <= 0 || k >= 1) return; cx.strokeStyle = `rgba(${col},${(1 - k) * .9})`; cx.lineWidth = 2 * (1 - k) + .5; cx.beginPath(); cx.arc(x, y, 4 + k * maxR, 0, TAU); cx.stroke(); }
 
-  /* ---------- TEAM: one project, from the first file to handover ---------- */
-  // A window that looks like the app changes page as the project moves: settings, transcripts and requirements, BRD and sign-off, build and UAT, go-live and handover.
-  // A stage rail along the bottom fills from Kick-off to Handover. AI marks where it saves time; people confirm, sign off and approve.
-  const INPUTS = [['Workshop audio', '58 min recording', 'rec'], ['MSA & scope', 'PDF · 24 pages', 'doc'], ['Org package', 'Sites, assets, users', 'org'], ['Site walkthrough', 'Video · 3 sites', 'vid'], ['Existing SOPs', '12 documents', 'doc']];
-  const SCN = [0, 5, 8.4, 11.9, 15.4, 18.9], ENDT = 22.8;
-  const SCN_TITLE = ['Delivery Studio', 'Project settings', 'Transcripts and requirements', 'BRD and sign-off', 'Configuration and UAT', 'Go-live and handover'];
-  const SCN_MSG = ['Everything in one project, AI drafts, people approve', 'AI is drafting the project settings', 'AI proposes requirements: your team confirms', 'The BRD builds from confirmed requirements', 'Every test case links to a requirement', 'Live, supported, then handed over'];
-  const RAIL = ['Kick-off', 'Workshops', 'Requirements', 'BRD', 'Build & test', 'Go-live', 'Hypercare', 'Handover'];
-  const RK = [[0, 0], [5, 0], [8.0, .5], [8.6, 1], [10.6, 2], [11.9, 2.5], [13.6, 3], [15.4, 3.4], [17.4, 4], [18.9, 4.5], [19.6, 5], [20.8, 6], [22.2, 7]];
-  const railAt = t => { if (t <= 0) return 0; for (let i = 0; i < RK.length - 1; i++) if (t < RK[i + 1][0]) return lerp(RK[i][1], RK[i + 1][1], eIO((t - RK[i][0]) / (RK[i + 1][0] - RK[i][0]))); return 7; };
-  const LW = 700, LH = 290;   // the window is drawn in these units and scaled to fit
-  let G = {}, teamFx = [], gpulse = 0, lastT = 0;
-  function layoutTeam() {
-    const railH = NARROW ? 40 : 52, top = S.y + 32, ry = S.y + S.h - railH;
-    const ww = S.w - 4, wh = Math.max(150, ry - top - 8), f = Math.min(ww / LW, wh / LH, 1.5);
-    G = { f, wx: S.x + 2 + (ww - LW * f) / 2, wy: top + (wh - LH * f) / 2, ww: LW * f, wh: LH * f, ry, rx0: S.x + (NARROW ? 14 : 30), rx1: S.x + S.w - (NARROW ? 14 : 30) };
-  }
-  const ACC = ['#1570EF', '#5aa0ff', '#2dd4bf', '#ff6bb0', '#fbbf24', '#34d399']; let accCur = ACC[0];
-  const INK = '#262626', MUTE = '#686868', CARD = '#fff', INSET = '#f7f7f7', LINE = 'rgba(0,0,0,.09)';   // the window is light, like the product (coss look)
-  const TXT = {}, FILL = {}, STK = {};
-  const GRN = '#22c55e';
-  const dim = c => c;
-  const T = (s, x, y, size, weight, col, align) => { cx.font = `${weight} ${size}px ${FONT}`; cx.fillStyle = TXT[col] || col; cx.textAlign = align || 'left'; cx.textBaseline = 'alphabetic'; cx.fillText(s, x, y); cx.textAlign = 'left'; };
-  const hdr = (s, x, y) => { cx.fillStyle = accCur; cx.shadowColor = accCur; cx.shadowBlur = 8; cx.beginPath(); cx.arc(x - 10, y - 4, 3, 0, TAU); cx.fill(); cx.shadowColor = 'transparent'; T(s, x, y, 12, 600, INK); };
-  const pnl = (x, y, w, h, r, fill, stroke) => { rr(x, y, w, h, r); cx.fillStyle = FILL[fill] || fill || CARD; cx.fill(); if (stroke !== false) { cx.strokeStyle = STK[stroke] || stroke || LINE; cx.lineWidth = 1; cx.stroke(); } };
-  const bar = (x, y, w, h, col) => { cx.fillStyle = dim(col || 'rgba(0,0,0,.1)'); rr(x, y, Math.max(0, w), h, h / 2); cx.fill(); };
-  const tick = (x, y, s, col) => { cx.save(); cx.translate(x, y); const c = (!col || col === GRN) ? GRN : col; cx.fillStyle = c; cx.shadowColor = c; cx.shadowBlur = 8; cx.beginPath(); cx.arc(0, 0, s, 0, TAU); cx.fill(); cx.shadowColor = 'transparent'; icon('ok', -s * .55, -s * .55, s * 1.1, '#fff'); cx.restore(); };
-  const chip = (x, y, w, h, label, bg, fg) => { pnl(x, y, w, h, h / 2, bg, false); T(label, x + w / 2, y + h / 2 + 3.5, 9.5, 600, fg, 'center'); };
-  const dot = (x, y, a) => { cx.fillStyle = `rgba(147,197,253,${.8 * a})`; cx.beginPath(); cx.arc(x, y, 2.4, 0, TAU); cx.fill(); };
-  function sparkle(x, y, r, col, a) { if (a <= .01) return; cx.save(); cx.globalAlpha = a; cx.fillStyle = col; cx.beginPath(); cx.moveTo(x, y - r); cx.quadraticCurveTo(x, y, x + r, y); cx.quadraticCurveTo(x, y, x, y + r); cx.quadraticCurveTo(x, y, x - r, y); cx.quadraticCurveTo(x, y, x, y - r); cx.fill(); cx.restore(); }
-  const SET_F = [['Project name', 'Riverside Towers rollout'], ['Customer', 'Riverside Facilities'], ['Go-live', '05 Jan 2027'], ['Phase', 'Kick-off']];
-  const PEOPLE = [['MS', 'Meera S.', 'Project manager', '21,112,239'], ['DR', 'Dinesh R.', 'Consultant', '14,147,132'], ['PN', 'Priya N.', 'Customer', '229,25,127']];
-  const REQS = [['R-01', 'Technicians raise material requests'], ['R-02', 'Weekly readings shown as a trend'], ['R-03', 'Supervisors alerted on SLA breach'], ['R-04', 'Documents follow the work order']];
-  const MODS = ['Work orders', 'Assets', 'Inventory', 'SLAs', 'Roles', 'Portals'];
-  const CASES = ['Raise a work order from the portal', 'Approve a purchase request', 'SLA breach alert is sent', 'Reading appears on the trend', 'Handover pack opens'];
-  const CHECKS = ['Users trained', 'Data loaded', 'Guides published', 'Sign-offs done', 'Support ready'];
-  const ini = (x, y, i, a) => { const p = PEOPLE[i % 3]; cx.save(); cx.globalAlpha *= a; cx.fillStyle = `rgb(${p[3]})`; cx.beginPath(); cx.arc(x, y, 8, 0, TAU); cx.fill(); T(p[0], x, y + 3, 7.5, 700, '#fff', 'center'); cx.restore(); };
-
-
-  // Scene 0, "what it is": loose inputs travel into one project, AI reads, links and drafts, deliverables come out for people to review and approve.
-  const HUB_IN = [['Emails', 'doc'], ['Meeting audio', 'rec'], ['Contract', 'doc'], ['Spreadsheets', 'org'], ['Site videos', 'vid']];
-  const HUB_POS = [[22, 62, -3], [58, 100, 2.5], [24, 138, -2], [62, 176, 3.5], [26, 214, -2.5]];
-  const HUB_OUT = [['BRD', 'From requirements'], ['UAT plan', 'Linked test cases'], ['Configuration', 'Documented set-up'], ['User guides', 'One per role'], ['Handover pack', 'Nothing lost']];
-  const HUB_CH = ['Requirements', 'Risks', 'Tasks', 'Documents'];
-  function sceneHub(tl) {
-    const hx = 244, hy = 84, hw = 196, hh = 130, cxm = hx + hw / 2, cym = hy + hh / 2;
-    T('Scattered today', 24, 50, 9.5, 600, '#a3a3a3'); T('One project', cxm, 50, 9.5, 600, '#a3a3a3', 'center'); T('Ready for review', 486, 50, 9.5, 600, '#a3a3a3');
-    HUB_IN.forEach(([ti, kd], i) => {
-      const [bx, by, rot] = HUB_POS[i], a = sm(.05 + i * .12, .4 + i * .12, tl), go = clamp((tl - (1 + i * .22)) / .9, 0, 1); if (a <= 0 || go >= 1) return;
-      const e = eIO(go), x = lerp(bx, hx - 20, e), y = lerp(by, cym - 14, e) - Math.sin(e * Math.PI) * 18, k = lerp(1, .45, e);
-      cx.save(); cx.globalAlpha = a * (1 - sm(.75, 1, go)); cx.translate(x + 64, y + 14); cx.rotate((rot + Math.sin(tl * 2 + i) * 1.2) * (1 - e) * Math.PI / 180); cx.scale(k, k); cx.translate(-64, -14);
-      pnl(0, 0, 128, 28, 9, '#f7f7f7'); icon(kd, 8, 7, 14, '#1570EF'); T(ti, 30, 18, 10.5, 600, '#262626'); cx.restore();
-    });
-    const landed = HUB_IN.filter((_, i) => tl > 1.9 + i * .22).length, pulse = landed ? Math.max(0, 1 - ((tl - 1.9 - (landed - 1) * .22) / .5)) : 0;
-    const ha = sm(.3, .9, tl); if (ha <= .01) return;
-    cx.save(); cx.globalAlpha = ha; glow(cxm, cym, 120, '21,112,239', .08 + .12 * pulse);
-    pnl(hx, hy, hw, hh, 16, '#fff', 'rgba(21,112,239,.35)'); T('Delivery Studio', hx + 16, hy + 24, 12.5, 700, '#1D1A5E');
-    const bx0 = hx + hw - 24, by0 = hy + 20; cx.fillStyle = '#E5197F'; cx.beginPath(); cx.arc(bx0, by0, 11, 0, TAU); cx.fill(); T('AI', bx0, by0 + 3, 8.5, 700, '#fff', 'center');
-    for (let k = 0; k < 3; k++) { const an = tl * 2.2 + k * TAU / 3; sparkle(bx0 + Math.cos(an) * 18, by0 + Math.sin(an) * 18, 2.6, k % 2 ? '#1570EF' : '#E5197F', sm(1.4, 1.9, tl)); }
-    const cp = k => ({ x: hx + 14 + (k % 2) * 88 + 40, y: hy + 52 + Math.floor(k / 2) * 30 + 11 });
-    HUB_CH.forEach((_, k) => { const a2 = sm(1.7 + k * .3, 2.1 + k * .3, tl), p = cp(k), q = cp((k + 1) % 4); if (a2 <= 0 || k === 3) return; cx.strokeStyle = 'rgba(21,112,239,' + (.35 * a2) + ')'; cx.lineWidth = 1.2; cx.beginPath(); cx.moveTo(p.x, p.y); cx.lineTo(q.x, q.y); cx.stroke(); });
-    { const u = (tl * .9) % 1, p = cp(0), q = cp(3), a3 = sm(2.6, 3, tl); cx.fillStyle = 'rgba(229,25,127,' + a3 + ')'; cx.beginPath(); cx.arc(lerp(p.x, q.x, u), lerp(p.y, q.y, u), 2.4, 0, TAU); cx.fill(); }
-    HUB_CH.forEach((lb, k) => { const a2 = sm(1.7 + k * .3, 2.1 + k * .3, tl), p = cp(k); if (a2 <= 0) return; cx.save(); cx.globalAlpha *= a2; pnl(p.x - 40, p.y - 11 + (1 - eOut(a2)) * 6, 80, 22, 8, '#f7f7f7'); T(lb, p.x, p.y + 3.5 + (1 - eOut(a2)) * 6, 9.5, 600, '#262626', 'center'); cx.restore(); });
-    T('AI reads, links and drafts', cxm, hy + hh - 14, 9.5, 600, '#686868', 'center'); cx.restore();
-    HUB_OUT.forEach(([ti, su], i) => {
-      const t0 = 2.6 + i * .28, a = sm(t0, t0 + .4, tl); if (a <= 0) return; const e = eOut(a), x = lerp(hx + hw - 14, 482, e), y = 60 + i * 38, rev = tl > 3.8 + i * .18;
-      cx.strokeStyle = 'rgba(21,112,239,' + (.28 * a) + ')'; cx.lineWidth = 1.2; cx.beginPath(); cx.moveTo(hx + hw, cym); cx.quadraticCurveTo(hx + hw + 20, cym, x, y + 16); cx.stroke();
-      cx.save(); cx.globalAlpha = a; pnl(x, y, 196, 33, 10, '#fff'); T(ti, x + 12, y + 14, 10.5, 600, '#262626'); T(su, x + 12, y + 26, 8.5, 500, '#686868');
-      if (rev) { chip(x + 126, y + 8, 60, 17, 'Reviewed', 'rgba(16,124,16,.12)', '#0b5a0b'); ring(x + 156, y + 16, (tl - 3.8 - i * .18) / .6, '34,197,94', 22); } else chip(x + 126, y + 8, 60, 17, 'AI draft', 'rgba(21,112,239,.10)', '#0e4a9a');
-      cx.restore();
-    });
-    const la = sm(2.6, 3.3, tl); if (la > .01) { cx.save(); cx.globalAlpha = la; T('5 \u2192 1', 24, 140, 34, 700, '#1D1A5E'); T('places to look become', 24, 162, 10.5, 500, '#686868'); T('one project record', 24, 177, 10.5, 600, '#262626'); cx.restore(); }
-    const na = sm(4.1, 4.6, tl); if (na > .01) { cx.save(); cx.globalAlpha = na; T('People review and approve every draft. Nothing goes out on its own.', LW / 2, 276, 10.5, 600, '#686868', 'center'); cx.restore(); }
-  }
-  function sceneSet(tl) {
-    INPUTS.forEach(([ti, su, kd], i) => {
-      const a = sm(.1 + i * .2, .45 + i * .2, tl), x = 22 - (1 - eOut(a)) * 30, y = 56 + i * 38; if (a <= 0) return; cx.save(); cx.globalAlpha = a;
-      const added = tl > 1.6 + i * .15;
-      pnl(x, y, 172, 31, 9, '#f7f7f7'); cx.fillStyle = added ? 'rgba(52,211,153,.18)' : 'rgba(90,160,255,.18)'; rr(x + 5, y + 5, 21, 21, 6); cx.fill(); icon(kd, x + 9.5, y + 9.5, 12, added ? GRN : '#5aa0ff');
-      T(ti, x + 33, y + 14, 10.5, 600, '#262626'); T(added ? 'Added to project' : su, x + 33, y + 25, 8.5, 500, added ? GRN : '#686868'); cx.restore();
-    });
-    for (let k = 0; k < 4; k++) { const u = ((tl * 1.4 + k * .25) % 1), a = Math.sin(u * Math.PI) * sm(.6, 1, tl); sparkle(204 + u * 40, 150 + Math.sin(u * 6 + k) * 8, 3, k % 2 ? '#E5197F' : '#5aa0ff', a); }
-    pnl(256, 50, 422, 206, 14, '#fff'); hdr('Project settings', 278, 74); T('Name, customer, dates and phase', 274, 88, 9.5, 500, '#686868');
-    SET_F.forEach(([lb, val], k) => {
-      const x = 274 + (k % 2) * 206, y = 108 + Math.floor(k / 2) * 48, t0 = .9 + k * .5, p = clamp((tl - t0) / .6, 0, 1);
-      T(lb, x, y, 9.5, 500, '#686868'); if (p <= 0) { bar(x, y + 8, 110, 9, `rgba(0,0,0,${.06 + .03 * Math.sin(tl * 5 + k)})`); return; }
-      const txt = val.slice(0, Math.ceil(val.length * eOut(p))); T(txt, x, y + 17, 12, 500, '#262626');
-      if (p < 1) { cx.font = `500 12px ${FONT}`; const w = cx.measureText(txt).width; cx.fillStyle = '#5aa0ff'; cx.fillRect(x + w + 1.5, y + 7, 1.6, 13); sparkle(x + w + 12, y + 8, 3.5, '#E5197F', .9); } else dot(x + 180, y - 4, 1);
-    });
-    PEOPLE.forEach(([i2, nm, role], i) => { const t0 = 2.2 + i * .25, a = sm(t0, t0 + .3, tl); if (a <= 0) return; cx.save(); cx.globalAlpha = a; const x = 274 + i * 134, y = 208; pnl(x, y, 126, 38, 19, '#fff', 'rgba(0,0,0,.12)'); ini(x + 19, y + 19, i, 1); T(nm, x + 34, y + 17, 10.5, 600, '#262626'); T(role, x + 34, y + 29, 8.5, 500, '#686868'); cx.restore(); });
-  }
-  function sceneReq(tl) {
-    pnl(22, 50, 280, 206, 14, '#fff'); hdr('Workshop 2 · transcript', 42, 74); cx.fillStyle = '#5aa0ff'; cx.beginPath(); cx.moveTo(268, 66); cx.lineTo(268, 78); cx.lineTo(278, 72); cx.fill();
-    for (let i = 0; i < 38; i++) { const h = 4 + (Math.sin(i * 1.7) * .5 + .5) * 18 * (.55 + .45 * Math.sin(tl * 4 + i * .6)); bar(38 + i * 6.4, 98 - h / 2, 3.6, h, 'rgba(90,160,255,.7)'); }
-    [.8, 1.0, 1.0, .74, .9].forEach((w, i) => {
-      const y = 126 + i * 24, hl = [1, 3, 4].indexOf(i), on = hl >= 0 && tl > .9 + hl * .65;
-      if (on) { cx.fillStyle = 'rgba(90,160,255,.2)'; rr(36, y - 7, 250 * w + 6, 17, 5); cx.fill(); cx.fillStyle = '#5aa0ff'; cx.fillRect(36, y + 10, 250 * w + 6, 1.6); sparkle(36 + 250 * w + 12, y - 4, 3.2, '#E5197F', .9); }
-      bar(39, y, 244 * w, 8, on ? 'rgba(90,160,255,.5)' : 'rgba(0,0,0,.09)');
-    });
-    pnl(322, 50, 356, 206, 14, '#fff'); hdr('Requirements', 344, 74); chip(430, 62, 86, 17, 'AI first draft', 'rgba(21,112,239,.10)', '#0e4a9a');
-    REQS.forEach(([id, title], i) => {
-      const t0 = 1.3 + i * .32, a = sm(t0, t0 + .3, tl), tc = 2.5 + i * .45, conf = tl > tc, y = 92 + i * 39; if (a <= 0) return; cx.save(); cx.globalAlpha = a; cx.translate((1 - eOut(a)) * 14, 0);
-      pnl(338, y, 324, 32, 9, '#fafafa'); T(id, 348, y + 20, 9, 600, '#686868'); T(title, 380, y + 20, 10.5, 500, '#262626');
-      if (conf) { chip(578, y + 7, 66, 18, 'Confirmed', 'rgba(16,124,16,.12)', '#0b5a0b'); ini(556, y + 16, i, clamp(eBack((tl - tc) / .35), 0, 1)); } else chip(578, y + 7, 66, 18, 'To confirm', 'rgba(188,75,9,.12)', '#8a3706');
-      cx.restore();
-    });
-  }
-  function sceneBrd(tl) {
-    pnl(22, 46, 250, 216, 12, '#fff'); T('Business requirements document', 36, 68, 10.5, 600, '#262626'); chip(206, 55, 54, 16, 'v1 draft', 'rgba(0,0,0,.06)', '#686868');
-    [['Scope', 3], ['Requirements', 4], ['Process flows', 3]].forEach(([h, n], s) => {
-      const y0 = 86 + s * 56, p0 = clamp((tl - .3 - s * .55) / .35, 0, 1); T(h, 36, y0 + 8, 10, 600, `rgba(29,26,94,${p0})`);
-      for (let l = 0; l < n; l++) { const p = clamp((tl - .5 - s * .55 - l * .14) / .45, 0, 1); bar(36, y0 + 16 + l * 11, (l === n - 1 ? 130 : 200) * eOut(p), 5, 'rgba(0,0,0,.10)'); }
-    });
-    pnl(292, 50, 386, 206, 14, '#fff'); hdr('Customer sign-off', 314, 74);
-    ini(322, 100, 2, sm(.4, .8, tl)); T('Priya N., Riverside Facilities', 338, 99, 10.5, 600, '#262626'); T('Decision maker', 338, 111, 8.5, 500, '#686868');
-    pnl(310, 126, 350, 78, 10, '#fafafa'); cx.strokeStyle = 'rgba(0,0,0,.15)'; cx.setLineDash([3, 3]); cx.beginPath(); cx.moveTo(326, 186); cx.lineTo(644, 186); cx.stroke(); cx.setLineDash([]);
-    const sp = clamp((tl - 1.3) / 1.2, 0, 1);
-    if (sp > 0) { cx.strokeStyle = '#1D1A5E'; cx.lineWidth = 2; cx.lineCap = 'round'; cx.beginPath(); for (let u = 0; u <= sp + .001; u += .01) { const x = 340 + u * 220, y = 168 + Math.sin(u * 15) * 15 * (1 - u * .45) - u * 12; if (u === 0) cx.moveTo(x, y); else cx.lineTo(x, y); } cx.stroke(); }
-    const st = sm(2.7, 3.0, tl); if (st > 0) { cx.save(); cx.translate(574, 160); cx.rotate(-.07); const sc = .85 + .15 * eBack((tl - 2.7) / .4); cx.scale(sc, sc); cx.globalAlpha *= st; pnl(-58, -17, 116, 34, 10, '#fff', GRN); tick(-40, 0, 8); T('Signed off', -26, 4, 11.5, 700, '#0b5a0b'); T('07 Nov', 22, 4, 9, 500, '#686868'); cx.restore(); }
-    T('Later changes go through change requests', 310, 232, 9.5, 500, '#686868'); if (tl > 2.9) tick(640, 228, 6);
-  }
-  function sceneBuild(tl) {
-    pnl(22, 50, 250, 206, 14, '#fff'); hdr('Configuration', 42, 74);
-    MODS.forEach((m, i) => { const t0 = .3 + i * .28, a = sm(t0, t0 + .3, tl), x = 36 + (i % 2) * 118, y = 90 + Math.floor(i / 2) * 36; if (a <= 0) return; cx.save(); cx.globalAlpha = a; cx.translate((1 - eOut(a)) * -12, 0); pnl(x, y, 110, 28, 9, '#fafafa'); T(m, x + 10, y + 18, 10.5, 500, '#262626'); if (tl > t0 + .6) tick(x + 96, y + 14, 6.5); cx.restore(); });
-    T('Same record as the BRD', 38, 232, 9.5, 500, '#686868');
-    pnl(292, 50, 386, 206, 14, '#fff'); hdr('UAT test cases', 314, 74);
-    const done = CASES.filter((_, i) => tl > .8 + i * .55 + (i === 2 ? .9 : 0)).length, pct = Math.round(done / CASES.length * 100); T(pct + '%', 660, 74, 11, 600, '#262626', 'right');
-    bar(310, 84, 350, 7, 'rgba(0,0,0,.08)'); bar(310, 84, 350 * (done / CASES.length), 7, GRN);
-    CASES.forEach((c, i) => {
-      const t0 = .8 + i * .55, y = 104 + i * 29, a = sm(t0 - .4, t0 - .1, tl); if (a <= 0) return; const fail = i === 2, fixed = fail && tl > t0 + .9, ok = tl > t0 && (!fail || fixed), bad = fail && tl > t0 && !fixed;
-      cx.save(); cx.globalAlpha = a; pnl(310, y, 350, 24, 8, '#fafafa'); T(c, 338, y + 16, 10.5, 500, '#262626');
-      if (ok) tick(324, y + 12, 6, GRN); else if (bad) { cx.fillStyle = '#f87171'; cx.beginPath(); cx.arc(324, y + 12, 6, 0, TAU); cx.fill(); T('!', 324, y + 15.5, 9, 700, '#fff', 'center'); } else { cx.strokeStyle = 'rgba(0,0,0,.25)'; cx.lineWidth = 1.2; rr(318, y + 6, 12, 12, 4); cx.stroke(); }
-      if (fixed) chip(584, y + 4, 66, 16, 'Defect fixed', 'rgba(16,124,16,.12)', '#0b5a0b'); else if (bad) chip(592, y + 4, 58, 16, 'Defect', 'rgba(177,14,28,.10)', '#8e0b17'); else if (ok) chip(600, y + 4, 50, 16, 'Pass', 'rgba(16,124,16,.12)', '#0b5a0b');
-      cx.restore();
-    });
-  }
-  function sceneLive(tl) {
-    pnl(22, 50, 210, 206, 14, '#fff'); hdr('Go-live readiness', 42, 74);
-    CHECKS.forEach((c, i) => { const t0 = .3 + i * .33, a = sm(t0 - .2, t0, tl), y = 92 + i * 31; if (a <= 0) return; cx.save(); cx.globalAlpha = a; pnl(36, y, 182, 25, 8, '#fafafa'); T(c, 62, y + 16.5, 10.5, 500, '#262626'); if (tl > t0 + .1) tick(49, y + 12.5, 6, GRN); else { cx.strokeStyle = 'rgba(0,0,0,.25)'; rr(43, y + 6.5, 12, 12, 4); cx.stroke(); } cx.restore(); });
-    const live = sm(1.7, 2.1, tl), px = 350, py = 140; for (let k = 0; k < 3; k++) { const u = ((tl * .7 + k / 3) % 1) * live; cx.strokeStyle = `rgba(16,124,16,${(1 - u) * .35 * live})`; cx.lineWidth = 1.5; cx.beginPath(); cx.arc(px, py, 30 + u * 44, 0, TAU); cx.stroke(); }
-    cx.shadowColor = live > .05 ? GRN : 'transparent'; cx.shadowBlur = 24 * live; cx.fillStyle = live > .05 ? GRN : 'rgba(0,0,0,.1)'; cx.beginPath(); cx.arc(px, py, 33, 0, TAU); cx.fill(); cx.shadowColor = 'transparent'; T('Live', px, py + 5, 15, 700, '#fff', 'center');
-    T(tl > 2.1 ? 'Hypercare: first 30 days' : 'Ready to launch', px, py + 62, 10.5, 600, '#262626', 'center');
-    pnl(468, 50, 210, 112, 14, '#fff'); hdr('Hypercare · open issues', 488, 74);
-    const pts = [9, 7, 6, 4, 3, 1, 0], pp = clamp((tl - .8) / 2.2, 0, 1); cx.shadowColor = '#5aa0ff'; cx.shadowBlur = 8; cx.strokeStyle = '#5aa0ff'; cx.lineWidth = 2.2; cx.lineJoin = 'round'; cx.beginPath(); let lx = 486;
-    pts.forEach((v, i) => { const u = i / (pts.length - 1); if (u > pp) return; const x = 486 + u * 172, y = 142 - v * 5.6; lx = x; if (i === 0) cx.moveTo(x, y); else cx.lineTo(x, y); }); cx.stroke(); cx.shadowColor = 'transparent'; if (lx > 490) { const ag = cx.createLinearGradient(0, 90, 0, 144); ag.addColorStop(0, 'rgba(90,160,255,.28)'); ag.addColorStop(1, 'rgba(90,160,255,0)'); cx.fillStyle = ag; cx.beginPath(); cx.moveTo(486, 144); pts.forEach((v, i) => { const u = i / (pts.length - 1); if (u > pp) return; cx.lineTo(486 + u * 172, 142 - v * 5.6); }); cx.lineTo(lx, 144); cx.closePath(); cx.fill(); }
-    pnl(468, 172, 210, 84, 14, '#fff'); T('Handover pack', 484, 194, 11.5, 600, '#262626');
-    ['Guides', 'BRD', 'Config'].forEach((d, i) => { const t0 = 2.0 + i * .3, a = sm(t0, t0 + .3, tl); if (a <= 0) return; cx.save(); cx.globalAlpha = a; cx.translate(0, (1 - eOut(a)) * 8); pnl(484 + i * 62, 206, 56, 36, 8, '#fafafa'); icon('doc', 498 + i * 62, 210, 14, '#5aa0ff'); T(d, 512 + i * 62, 237, 8.5, 600, '#262626', 'center'); cx.restore(); });
-    const hd = sm(3.1, 3.4, tl); if (hd > 0) { cx.save(); cx.globalAlpha = hd; pnl(536, 162, 106, 20, 10, GRN, false); T('Handed over', 589, 176, 10, 700, '#fff', 'center'); cx.restore(); }
-  }
-  const SCENES = [sceneHub, sceneSet, sceneReq, sceneBrd, sceneBuild, sceneLive];
-  function team(t, dt) {
-    const pa = eOut(t / .8), si = SCN.reduce((n, s, i) => (t >= s ? i : n), 0);
-    { const dr = Math.sin(t * .5), dr2 = Math.cos(t * .4); glow(G.wx + G.ww * (.15 + .04 * dr), G.wy + G.wh * .25, G.ww * .55, '90,160,255', .2); glow(G.wx + G.ww * (.85 - .04 * dr2), G.wy + G.wh * .35, G.ww * .5, '255,107,176', .15); glow(G.wx + G.ww * (.5 + .1 * dr2), G.wy + G.wh * .98, G.ww * .5, '45,212,191', .15); }
-    // the window
-    cx.save(); cx.globalAlpha = pa; cx.translate(G.wx, G.wy + (1 - pa) * 12); cx.scale(G.f, G.f);
-    cx.shadowColor = 'rgba(3,2,24,.65)'; cx.shadowBlur = 40; cx.shadowOffsetY = 16; { const wg = cx.createLinearGradient(0, 0, LW * .4, LH); wg.addColorStop(0, '#ffffff'); wg.addColorStop(1, '#f3f6ff'); rr(0, 0, LW, LH, 18); cx.fillStyle = wg; cx.fill(); } cx.shadowColor = 'transparent';
-    cx.save(); rr(0, 0, LW, LH, 18); cx.clip();
-    cx.fillStyle = '#fafafa'; cx.fillRect(0, 0, LW, 34); cx.fillStyle = 'rgba(0,0,0,.08)'; cx.fillRect(0, 34, LW, 1); { const tg = cx.createLinearGradient(0, 0, LW, 0); tg.addColorStop(0, 'rgba(21,112,239,0)'); tg.addColorStop(.5, 'rgba(21,112,239,.55)'); tg.addColorStop(1, 'rgba(21,112,239,0)'); cx.fillStyle = tg; cx.fillRect(0, 0, LW, 1); }
-    T('Riverside Towers rollout', 20, 22, 10.5, 600, '#262626'); T('/', 138, 22, 10.5, 500, '#a3a3a3');
-    SCN_TITLE.forEach((nm, i) => { const e = i + 1 < SCN.length ? SCN[i + 1] : 1e9, a = sm(SCN[i] - .05, SCN[i] + .3, t) * (1 - sm(e - .3, e, t)); if (a > .01) { cx.save(); cx.globalAlpha = a; T(nm, 152, 22, 10.5, 500, '#686868'); cx.restore(); } });
-    ini(LW - 70, 17, 0, 1); ini(LW - 52, 17, 1, 1); ini(LW - 34, 17, 2, 1);
-    SCENES.forEach((fn, i) => {
-      const s0 = SCN[i], e = i + 1 < SCN.length ? SCN[i + 1] : 1e9, a = sm(s0 - .05, s0 + .35, t) * (1 - sm(e - .3, e, t)); if (a <= .01) return;
-      accCur = ACC[i]; cx.save(); cx.globalAlpha *= a; cx.translate((1 - sm(s0 - .05, s0 + .35, t)) * 18 - sm(e - .3, e, t) * 18, 0); fn(t - s0); cx.restore();
-    });
-    cx.restore(); cx.strokeStyle = 'rgba(255,255,255,.55)'; cx.lineWidth = 1; rr(.5, .5, LW - 1, LH - 1, 18); cx.stroke(); cx.restore();
-    // what AI or the team is doing now
-    pill(G.wx + G.ww / 2, G.wy - 5, SCN_MSG[si], null, sm(.8, 1.3, t) * pa, { dot: si === 5 && t > 20.6 ? GRN : '#E5197F', tail: false, small: true });
-    // the stage rail, Kick-off to Handover
-    const p = railAt(t), n = RAIL.length, X = i => lerp(G.rx0, G.rx1, i / (n - 1)), y = G.ry + 14;
-    cx.strokeStyle = 'rgba(255,255,255,.2)'; cx.lineWidth = 2; cx.lineCap = 'round'; cx.beginPath(); cx.moveTo(G.rx0, y); cx.lineTo(G.rx1, y); cx.stroke();
-    { const rg = cx.createLinearGradient(G.rx0, 0, G.rx1, 0); rg.addColorStop(0, '#5aa0ff'); rg.addColorStop(.45, '#ff6bb0'); rg.addColorStop(.75, '#fbbf24'); rg.addColorStop(1, '#34d399'); cx.strokeStyle = rg; cx.lineWidth = 3; cx.beginPath(); cx.moveTo(G.rx0, y); cx.lineTo(X(p), y); cx.stroke(); glow(X(p), y, 20, '255,255,255', .35); }
-    RAIL.forEach((lb, i) => {
-      const x = X(i), done = p >= i - .001, cur = Math.round(p) === i && p < 6.999;
-      if (cur) ring(x, y, (t * .9) % 1, '229,25,127', 14);
-      cx.fillStyle = done ? '#fff' : 'rgba(255,255,255,.28)'; if (done) { cx.shadowColor = ['#5aa0ff', '#2dd4bf', '#2dd4bf', '#ff6bb0', '#fbbf24', '#34d399', '#34d399', '#34d399'][i]; cx.shadowBlur = 10; } cx.beginPath(); cx.arc(x, y, done ? 5 : 4, 0, TAU); cx.fill(); cx.shadowColor = 'transparent';
-      if (done && !cur) { cx.strokeStyle = '#1D1A5E'; cx.lineWidth = 1.4; cx.beginPath(); cx.moveTo(x - 2.2, y); cx.lineTo(x - .6, y + 1.8); cx.lineTo(x + 2.4, y - 1.8); cx.stroke(); }
-      if (!NARROW || cur) { cx.font = `${cur || (i === 7 && p > 6.9) ? 700 : 500} ${NARROW ? 10.5 : 10}px ${FONT}`; cx.fillStyle = done || cur ? '#fff' : 'rgba(255,255,255,.55)'; cx.textAlign = NARROW ? (i < 2 ? 'left' : i > 5 ? 'right' : 'center') : 'center'; cx.textBaseline = 'alphabetic'; cx.fillText(lb, x, y + 20); cx.textAlign = 'left'; }
-    });
-    lastT = t;
-  }
-
   function arc(a, b, lift, head, tail, col, width) {
     if (head <= tail) return;
     const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2 - lift;
@@ -269,24 +82,6 @@
     else if (kind === 'org') { cx.beginPath(); cx.rect(1, 6, 5, 9); cx.rect(7, 2, 8, 13); cx.moveTo(10, 6); cx.lineTo(12, 6); cx.moveTo(10, 9); cx.lineTo(12, 9); cx.stroke(); }
     else if (kind === 'vid') { cx.beginPath(); cx.rect(1, 3, 10, 10); cx.moveTo(11, 7); cx.lineTo(15, 4); cx.lineTo(15, 12); cx.lineTo(11, 9); cx.stroke(); }
     else if (kind === 'ok') { cx.beginPath(); cx.moveTo(3, 8.5); cx.lineTo(6.5, 12); cx.lineTo(13, 4.5); cx.stroke(); }
-    cx.restore();
-  }
-  function card(x, y, w, h, title, sub, kind, a, opt) {
-    if (a <= .01) return;
-    cx.save(); cx.globalAlpha = a;
-    const s = opt.scale || 1; cx.translate(x + w / 2, y + h / 2); cx.scale(s, s); cx.translate(-x - w / 2, -y - h / 2);
-    // flat glass: a soft translucent fill and a hairline, no gloss and no heavy shadow (the coss look on a dark scene)
-    cx.fillStyle = opt.dim ? 'rgba(255,255,255,.05)' : 'rgba(255,255,255,.09)'; rr(x, y, w, h, 12); cx.fill();
-    cx.strokeStyle = opt.stroke || 'rgba(255,255,255,.18)'; cx.lineWidth = 1; rr(x + .5, y + .5, w - 1, h - 1, 12); cx.stroke();
-    if (opt.glowCol && opt.glowK > 0) { cx.strokeStyle = `rgba(${opt.glowCol},${.8 * opt.glowK})`; cx.lineWidth = 1.5; rr(x - 2, y - 2, w + 4, h + 4, 14); cx.stroke(); }
-    const ic = Math.min(28, h - 16);
-    cx.fillStyle = opt.icBg || 'rgba(255,255,255,.12)'; rr(x + 10, y + (h - ic) / 2, ic, ic, 8); cx.fill();
-    icon(kind, x + 10 + ic * .2, y + (h - ic) / 2 + ic * .2, ic * .6, opt.icCol || '#cfe0ff');
-    if (NARROW) { cx.restore(); return; }
-    cx.textBaseline = 'middle'; const tx = x + 18 + ic;
-    const fit = (str, mw) => { if (cx.measureText(str).width <= mw) return str; while (str.length > 3 && cx.measureText(str + '…').width > mw) str = str.slice(0, -1); return str + '…'; };
-    cx.fillStyle = '#fff'; cx.font = `600 12.5px ${FONT}`; cx.fillText(fit(title, x + w - tx - 8), tx, y + h / 2 - 8);
-    cx.fillStyle = opt.subCol || 'rgba(255,255,255,.62)'; cx.font = `500 11px ${FONT}`; cx.fillText(fit(sub, x + w - tx - 8), tx, y + h / 2 + 9);
     cx.restore();
   }
   /* ---------- CUSTOMER: from inbox to go-live ---------- */
@@ -500,14 +295,6 @@
 
 
   /* ---------- page plumbing ---------- */
-  function buildGrid() {
-    gridC = doc.createElement('canvas'); gridC.width = Math.max(1, W * DPR); gridC.height = Math.max(1, H * DPR);
-    const q = gridC.getContext('2d'); q.scale(DPR, DPR); q.fillStyle = 'rgba(141,184,255,.16)';
-    for (let y = 14; y < H; y += 26) for (let x = 14; x < W; x += 26) q.fillRect(x, y, 1.4, 1.4);
-    q.globalCompositeOperation = 'destination-in';
-    const m = q.createRadialGradient(W * .5, S.y + S.h * .5, 0, W * .5, S.y + S.h * .5, Math.max(W, S.h) * .62); m.addColorStop(0, 'rgba(0,0,0,1)'); m.addColorStop(1, 'rgba(0,0,0,0)');
-    q.fillStyle = m; q.fillRect(0, 0, W, H);
-  }
   function layout() {
     if (!art || !cv) return;
     const ar = art.getBoundingClientRect(); W = Math.max(1, Math.round(art.clientWidth)); H = Math.max(1, Math.round(art.clientHeight));
@@ -518,7 +305,7 @@
     const bottom = nr ? nr.top - ar.top - 12 : H - 16;
     NARROW = W < 560;
     S = { x: 12, y: top, w: W - 24, h: Math.max(220, bottom - top) };
-    buildGrid(); layoutTeam(); buildCity();
+    buildCity();
   }
   function setBeat(t) {
     const B = BEATS[aud]; let i = 0; for (let k = 0; k < B.length; k++) if (t >= B[k][0]) i = k;
@@ -540,8 +327,7 @@
     else { drawnUnder = false; box.classList.add('go'); }
     let t = (now - T0[aud]) / 1000; if (RM.matches) t = END[aud] + .5;
     cx.setTransform(DPR, 0, 0, DPR, 0, 0); cx.clearRect(0, 0, W, H);
-    if (aud === 'team' && gridC) cx.drawImage(gridC, 0, 0, W, H);
-    { const tt = Math.max(0, t); if (aud === 'team') team(tt, RM.matches ? 0 : dt); else cust(tt, RM.matches ? 0 : dt); } /* draw the first scene at once; no blank wait before the motion starts */
+    { const tt = Math.max(0, t); cust(tt, RM.matches ? 0 : dt); } /* draw the first scene at once; no blank wait before the motion starts */
     setBeat(Math.max(0, t));
     if (!RM.matches && !doc.hidden) raf = root.requestAnimationFrame(frame);
   }
@@ -551,13 +337,13 @@
   function mount() {
     const el = doc.querySelector('.lsx:not([data-on])'); if (!el) return;
     if (raf) root.cancelAnimationFrame(raf); raf = 0; if (ro) ro.disconnect();
-    box = el; el.setAttribute('data-on', '1'); aud = el.getAttribute('data-aud') === 'cust' ? 'cust' : 'team';
+    box = el; el.setAttribute('data-on', '1'); aud = 'cust';
     cv = el.querySelector('canvas'); cx = cv.getContext('2d'); art = el.closest('.auth-art') || el.parentNode;
     if (!T0[aud]) T0[aud] = root.performance.now() + 120;
-    const t = (root.performance.now() - T0[aud]) / 1000; lastT = Math.max(0, t); teamFx = []; gpulse = 0; beatIdx = -1; last = root.performance.now();
+    const t = (root.performance.now() - T0[aud]) / 1000; lastT = Math.max(0, t); beatIdx = -1; last = root.performance.now();
     layout();
     if (root.ResizeObserver) { ro = new root.ResizeObserver(() => { layout(); kick(); }); ro.observe(art); }
-    el.querySelector('.lsx-rp').addEventListener('click', () => { T0[aud] = root.performance.now(); lastT = 0; teamFx = []; gpulse = 0; beatIdx = -1; kick(); });
+    el.querySelector('.lsx-rp').addEventListener('click', () => { T0[aud] = root.performance.now(); lastT = 0; beatIdx = -1; kick(); });
     kick();
   }
   doc.addEventListener('visibilitychange', () => {
@@ -567,11 +353,10 @@
   if (RM.addEventListener) RM.addEventListener('change', () => { if (cv) kick(); });
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   const DESC = {
-    team: 'Illustration: one project followed from the first file to handover. Files are added once and AI drafts the project settings. Workshop transcripts become proposed requirements that the team confirms. The BRD builds from them and the customer signs off online. Configuration and UAT test cases stay linked to each requirement, then the project goes live, runs through hypercare and is handed over. A stage rail from kick-off to handover fills as the project moves.',
     cust: 'Illustration: scattered emails and files come together into one lane across a city, passing kick-off, workshops, your approval and testing, and arriving at go-live with hypercare.'
   };
   V.isoLogin = a => {
-    const k = a === 'customer' ? 'cust' : 'team', B = BEATS[k];
+    const k = 'cust', B = BEATS[k];
     root.setTimeout(mount, 0);
     return `<div class="lsx" data-aud="${k}"><canvas class="lsx-cv" aria-hidden="true"></canvas><div class="lsx-top"><div class="lsx-cap" aria-live="polite"><b>${esc(B[0][1])}</b><span>${esc(B[0][2])}</span></div><div class="lsx-row"><div class="lsx-prog" aria-hidden="true">${B.map(() => '<i></i>').join('')}</div><button type="button" class="lsx-rp">Replay</button><small>Illustrative</small></div></div><p class="lsx-sr">${esc(DESC[k])}</p></div>`;
   };
