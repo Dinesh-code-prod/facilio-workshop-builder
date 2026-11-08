@@ -817,7 +817,7 @@ body .gl-car-stage:not(#_):not(#__), body .gl-screen:not(#_):not(#__) { box-shad
 /* Team Guide: onboarding roadmap (src/teamhelp.js) */
 .tg2-road{border-color:var(--cs-accent-line,#b2ccff)}.tg2-rmcount{margin-left:10px;padding:2px 10px;border-radius:999px;background:var(--cs-accent-soft,#eaf2ff);color:#1570EF;font:600 12px/20px var(--cs-font)}
 .tg2-rmg{margin:14px 0 4px}.tg2-rmg h3{display:flex;align-items:center;gap:10px;font:600 15px/22px var(--cs-font);margin:0 0 6px}
-.tg2-road .tg2-steps li{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}.tg2-road .tg2-ck{flex:1}.tg2-road .tg2-ck em{display:block;font-style:normal;color:var(--cs-fg2);font-weight:400;margin-top:2px}
+.tg2-acts{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
 
 /* ==== coss colour pass (8 Nov 2026): a project page wears the colour of its stage, as the dashboards and the sidebar already do.
    Stages 1 blue, 2 teal, 3 pink, 4 amber, 5 green (coss palette); Project stays Facilio blue, Share pink, Admin grey. The old Fluent teal/navy/green section colours are replaced. ==== */
