@@ -16,7 +16,7 @@ import { installTaskTracking } from './_tasksapi.mjs';
 import { installMailTasks } from './_mailapi.mjs';
 import { installJobs } from './_jobsapi.mjs';
 import { installFeedback } from './_feedback.mjs';
-import { installNotify, norm as nNorm } from './_notify.mjs';
+import { installNotify, norm as nNorm, lead } from './_notify.mjs';
 import { pendingFor, digestMessage, digestKey, assignKey, assignGate, assignmentNotice, BASE_URL as TW_BASE } from './_taskwatch.mjs';
 let FWB = null; // this copy of the server's own dispatcher (not looked up through a global, so two copies in one process cannot mix)
 let CTX = null, HDR = {};   // set at the start of every request (a Lambda handles one request at a time)
@@ -247,8 +247,8 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   const STAGE_NAME = { intro: 'Project introduction', sessions: 'Requirement sessions', design: 'Solution design & BRD', uat: 'UAT & FTR', training: 'Training guides', hypercare: 'Hypercare', handover: 'Project handover' };
   async function notifyItem(project, kind, id, cur, data, s, role) {
     try {
-      if (kind === 'task' && role !== 'customer') { const to = nNorm(data.owner); if (to && to !== nNorm(cur && cur.owner)) await notify({ type: 'task_assigned', project, to: [to], actor: s.email, title: 'Task assigned to you · ' + project.name, text: data.title, view: 'tasks', key: 'ta|' + id + '|' + to, skipTeams: true }); }   // the Teams message of this event is sent by taskAssignedNotice
-      else if (kind === 'signoff' && role === 'customer' && data.status && data.status !== (cur && cur.status) && ['signed', 'concern'].includes(data.status)) await notify({ type: 'customer_signoff', project, to: 'team', actor: s.email, title: (data.status === 'signed' ? 'Signed off' : 'Concern raised') + ' · ' + project.name, text: data.title || data.name || id, view: 'governance', key: 'so|' + id + '|' + data.status });
+      if (kind === 'task' && role !== 'customer') { const to = nNorm(data.owner); if (to && to !== nNorm(cur && cur.owner)) await notify({ type: 'task_assigned', project, to: [to], actor: s.email, title: 'Task assigned to you · ' + project.name, text: [(data.n ? 'T-' + data.n + ' ' : '') + data.title, data.due ? 'due ' + data.due : '', data.priority ? data.priority + ' priority' : '', 'assigned by ' + (s.name || s.email)].filter(Boolean).join(' · '), view: 'tasks', key: 'ta|' + id + '|' + to, skipTeams: true }); }   // the Teams message of this event is sent by taskAssignedNotice
+      else if (kind === 'signoff' && role === 'customer' && data.status && data.status !== (cur && cur.status) && ['signed', 'concern'].includes(data.status)) await notify({ type: 'customer_signoff', project, to: 'team', actor: s.email, title: (data.status === 'signed' ? 'Customer signed off' : 'Customer raised a concern') + ' · ' + project.name, text: ({ brd: 'BRD sign-off', uat: 'UAT sign-off', golive: 'Go-live acceptance' }[id] || data.title || data.name || id) + (data.status === 'signed' ? (data.signer ? ' was signed by ' + data.signer + '.' : ' was signed.') + ' See the record under Governance.' : ': ' + (lead(data.concern, 150) || 'no reason was given.') + ' Reply under Governance.'), view: 'governance', key: 'so|' + id + '|' + data.status });
       else if (kind === 'lcstage' && role !== 'customer' && data.status === 'closed' && (!cur || cur.status !== 'closed')) await notify({ type: 'stage_closed', project, to: 'team', actor: s.email, title: 'Stage closed: ' + (STAGE_NAME[id] || id), text: (s.name || s.email) + ' closed it' + (data.note ? ': ' + data.note : '.'), view: 'lifecycle', key: 'sc|' + id + '|' + (data.at || now()) });
     } catch (e) { console.log('notify item failed: ' + (e && e.message)); }
   }

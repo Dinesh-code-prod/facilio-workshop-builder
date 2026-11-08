@@ -2,7 +2,7 @@
 // NOT checked: real Teams delivery, the live WebSocket push, the browser pop-up.
 import assert from 'node:assert/strict';
 import handler from '../work/server/api.mjs';
-import { EVENTS, prefsFor, channelsFor, inQuiet, teamsGate, makeRecord, hashOf } from '../work/server/_notify.mjs';
+import { EVENTS, prefsFor, channelsFor, inQuiet, teamsGate, makeRecord, hashOf, lead } from '../work/server/_notify.mjs';
 let n = 0; const t = async (name, fn) => { await fn(); n++; console.log('  ok  ' + name); };
 
 await t('defaults: every event is in-app; browser only where it matters; Teams only for the ones that need a person quickly', () => {
@@ -67,5 +67,11 @@ await t('preferences: turning in-app off stops the record; Teams messages go onl
 await t('the daily sweep answers for the caller only, never fails, once a day per project', async () => {
   const r = await as(SAM, 'POST', '/api/notifications/sweep', {}); assert.equal(r.status, 200, JSON.stringify(r.data)); assert.ok(typeof r.data.notified === 'number');
   assert.equal((await as(SAM, 'POST', '/api/notifications/sweep', {})).data.notified, 0, 'once a day per project');
+});
+await t('a notice text is a complete sentence: the greeting is dropped, the first sentence is kept, a long one ends at a word with an ellipsis, never in the middle of a word', () => {
+  assert.equal(lead('Hi Dinesh, the kick-off deck is tidied. It waits in Transfers.'), 'The kick-off deck is tidied.');
+  const long = lead('word '.repeat(80), 60); assert.ok(long.length <= 60 && long.endsWith('…') && !/ord…$/.test(long.slice(0, -1) + 'x') , long);
+  assert.equal(makeRecord({ type: 'task_due', title: 'a', text: 'alpha beta gamma '.repeat(40) }, { browser: false }, 'now', 'id').text.endsWith('…'), true);
+  assert.equal(lead(''), '');
 });
 console.log(n + ' notification checks passed');

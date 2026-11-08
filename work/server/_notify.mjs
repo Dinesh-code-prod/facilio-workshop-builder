@@ -20,7 +20,10 @@ export const EVENTS = {
   ticket_new: { label: 'A support ticket needs attention', def: { inapp: true, browser: true, teams: false } }
 };
 export const TEAMS_PER_DAY = 5, KEEP = 100;
-const cut = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
+const flat = v => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim();
+const cut = (v, n) => { const s = flat(v); if (s.length <= n) return s; const t = s.slice(0, n - 1); const i = t.lastIndexOf(' '); return (i > n * 0.6 ? t.slice(0, i) : t).replace(/[\s,;:.\-]+$/, '') + '…'; };   // a notice never stops in the middle of a word
+/** the first full sentence of a free text (a Claude reply, a note), without the greeting, at most n characters */
+export const lead = (v, n = 170) => { let s = flat(v).replace(/^(hi|hello|hey|dear)\b[^,.!:]{0,40}[,:!.]\s*/i, ''); const m = /^(.+?[.!?])(\s|$)/.exec(s); if (m && m[1].length <= n) s = m[1]; s = cut(s, n); return s ? s[0].toUpperCase() + s.slice(1) : ''; };
 export const norm = e => String(e || '').trim().toLowerCase();
 /** the key of a person in the notification collections (no e-mail address in a key) */
 export const hashOf = email => createHash('sha256').update(norm(email)).digest('hex').slice(0, 32);

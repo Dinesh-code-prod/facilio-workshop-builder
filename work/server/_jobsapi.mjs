@@ -2,6 +2,7 @@
    Jobs live in the collection jb.<project> (not a record kind, so a customer can never list them). The team writes jobs with the page; Claude reads them with the connector tool project_jobs
    (actions list, claim, finish), running AS the person with the person's project access. Nothing here calls Claude or Microsoft: the person's own Claude does the work.
    Routes (project edit access, team only): GET and POST /api/projects/:id/jobs, POST .../jobs/:jid/cancel and .../jobs/:jid/answer. */
+import { lead } from './_notify.mjs';
 import { OPEN, LIMITS, KINDS, cleanRequest, newJob, step, brief, leaseExpired } from './_jobs.mjs';
 
 export function installJobs(d) {
@@ -84,9 +85,12 @@ export function installJobs(d) {
       const r = await ops.create(s, p.id, { kind: 'fetch_mail', note: 'Daily search for customer mail' }); return { project: p.name, requested: !r.duplicate, job: r.job.id, note: 'Queued. Claim it with action list and claim, then follow its instructions.' };
     },
     async jobs_progress(s, b) { const p = await pickProject(s, b.project); const j = await ops.progress(s, p.id, String(b.id || ''), b.summary); return { job: view(j), note: 'Shown to the person in Delivery Studio. Keep going.' }; },
-    async jobs_finish(s, b) {
+    async jobs_finish(s, b) {   // notices: jobTitle / jobText below
+      const label = j => (KINDS[j.kind] ? KINDS[j.kind].label : j.kind); const ask = j => j.status === 'needs_input';
+      const jobTitle = (j, p) => (j.kind === 'chat' ? (ask(j) ? 'Claude has a question for you' : 'Claude replied to your message') : (ask(j) ? 'Needs your answer: ' : 'Done: ') + label(j)) + ' · ' + p.name;
+      const jobText = (j, summary) => [lead(summary, 220), j.kind === 'chat' ? (ask(j) ? 'Open the assistant to answer.' : 'Open the assistant to read the full reply.') : ask(j) ? 'Open Transfers to answer its questions.' : 'Anything it prepared waits for your approval in Transfers.'].filter(Boolean).join(' ');
       const p = await pickProject(s, b.project); const j = await ops.finish(s, p.id, String(b.id || ''), { status: b.status, summary: b.summary, transferId: b.transferId, questions: b.questions });
-      if (j && String(j.requestedBy || '').includes('@')) await notify({ type: 'job_done', project: p, to: [j.requestedBy], actor: '', title: (j.status === 'needs_input' ? 'A job needs your answer' : 'A job finished') + ' · ' + p.name, text: (KINDS[j.kind] ? KINDS[j.kind].label : j.kind) + (b.summary ? ': ' + String(b.summary).slice(0, 200) : ''), view: 'transfers', key: 'jd|' + j.id + '|' + j.status });
+      if (j && String(j.requestedBy || '').includes('@')) await notify({ type: 'job_done', project: p, to: [j.requestedBy], actor: '', title: jobTitle(j, p), text: jobText(j, b.summary), view: 'transfers', key: 'jd|' + j.id + '|' + j.status });
       return { job: view(j), note: j.status === 'needs_input' ? 'The questions are shown to the person in Delivery Studio; the job waits for their answer.' : 'Recorded. Anything you stored as a transfer waits for a person to approve it in Delivery Studio.' };
     }
   };
