@@ -510,7 +510,7 @@
    },
    {
     "name": "get_document",
-    "description": "Read a project document, or one part of it. Without part it lists the parts. Sections: workshop (parts: project, modules, customModules, flows, roles, notifications, processes, requirements, questions, brd, log ...), transcripts, planner (sessions, scope), brddoc, reviews, plan_struct, notifications, agentscope, people, config_digest, config, guide_published.",
+    "description": "Read a project document, or one part of it. Without part it lists the parts. Sections: solution_package (the whole agreed solution in one versioned document for other tools; no part gives counts and a sourceHash, parts: scope, solutions, requirements, flows, data, access, notifications, sla, kpis, apps, outputs), workshop (parts: project, modules, customModules, flows, roles, notifications, processes, requirements, questions, brd, log ...), transcripts, planner (sessions, scope), brddoc, reviews, plan_struct, notifications, agentscope, people, config_digest, config, guide_published.",
     "function": "api",
     "input_schema": {
      "type": "object",
