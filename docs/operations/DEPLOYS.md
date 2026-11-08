@@ -235,3 +235,4 @@ One line per deploy: date and time (UTC), commit, deploy number, who ran it, not
 
 | 2026-11-08 16:14 | 31fc5eb | 308 | dinesh.r@facilio.com (Claude Code) | 296 files, 44.5 MB. Assistant chat as a phone chat: your message is a bubble at once, one thread in time order, bubbles with the time inside, a rounded message box, Enter makes a new line and only Send sends. Checked on the local copy only. |
 | 2026-11-08 10:46 UTC | 4334029 | 309 | dinesh.r@facilio.com (Claude Code) | 296 files, 44.5 MB. Status report (WSR) & monthly report: Reports & quality and Status reports merged into one page (Traceability & quality stays as its tab); blue text is black across the app. |
+| 2026-11-08 11:15 UTC | b9aaf8d | 319 | dinesh.r@facilio.com (Claude Code) | 296 files, 44.5 MB. Process whiteboard: a mouse box also selects the arrows and their labels; curved connectors; Describe with Claude has a Draw it here button; duplicate New state flow button removed. |
