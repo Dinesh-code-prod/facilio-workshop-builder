@@ -311,6 +311,7 @@
       "action": {
        "type": "string",
        "enum": [
+        "presence",
         "request",
         "list",
         "claim",

@@ -142,6 +142,10 @@ await t('Send my list now: the caller gets their own digest again on request, no
   assert.ok(sent.every(x => x.to && x.to[0] === KIM), 'only the caller was messaged'); sent = []; const r2 = await as(KIM, 'POST', `/api/projects/${pid}/daily-brief/me`, {}); assert.equal(r2.data.sent, 1, 'asking again sends again');
   if (store.get('dbr')) store.get('dbr').clear(); sent = []; await as(SAM, 'POST', '/api/notifications/sweep', {}); const ch = sent.filter(x => x.channel); assert.ok(ch.length >= 1 && /^PROJECT · /.test(ch[0].title) && /Open \d+ · overdue \d+ · finished \d+/.test(ch[0].text), 'a channel summary was posted');
 });
+await t('the Studio-open signal: nobody open means the helper stops; one heartbeat means keep going', async () => {
+  if (store.get('presence')) store.get('presence').clear(); assert.equal((await tool(SAM, 'project_jobs', { action: 'presence' })).data.open, 0);
+  assert.equal((await as(KIM, 'POST', '/api/presence', {})).status, 200); const r = await tool(SAM, 'project_jobs', { action: 'presence' }); assert.equal(r.data.open, 1); assert.match(r.data.note, /keep working/);
+});
 await t('a bulk owner change sends at most three messages to that person', async () => {
   teamsOn = true; sent = []; for (let i = 0; i < 5; i++) assert.equal((await put(SAM, pid, 'b' + i, { title: 'Bulk ' + i, status: 'To Do', owner: VIC })).status, 200);
   assert.equal(sent.filter(x => x.to[0] === VIC).length, 3, 'the other two are left for the digest');

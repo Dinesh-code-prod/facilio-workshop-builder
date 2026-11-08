@@ -78,6 +78,7 @@ export function installJobs(d) {
       return { name: f.name, note: 'Saved to the project. It shows on the Handover page under Solution document.' };
     },
     /** the background Claude asks for the daily mail search; only this kind, and not again within 20 hours (whoever asked, however it ended) */
+    async jobs_presence(s) { const rows = await dbList('presence'); const since = Date.now() - 10 * 60 * 1000; const here = rows.filter(r => r.value && Date.parse(r.value.at) > since).length; return { open: here, note: here ? 'Someone has the Studio open: keep working the queue.' : 'Nobody has had the Studio open for 10 minutes: stop now and say the Studio is not open.' }; },
     async jobs_request(s, b) {
       const p = await pickProject(s, b.project); const kind = String(b.kind || 'fetch_mail'); if (kind !== 'fetch_mail') throw new HttpError(400, 'Only fetch_mail can be requested this way.');
       const rows = await all(p.id); const last = rows.filter(j => j.kind === 'fetch_mail').map(j => Date.parse(j.requestedAt)).filter(Boolean).sort((a, c) => c - a)[0];

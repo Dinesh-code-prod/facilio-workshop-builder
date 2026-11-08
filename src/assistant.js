@@ -78,6 +78,7 @@
     st().quote = '';
     const k = J().K(), ask = k && Array.isArray(k.jobs) ? L().jobRows(k.jobs).find(j => j.status === 'needs_input') : null;   // when Claude has asked something, this box IS the answer
     if (ask) { await J().post('/jobs/' + encodeURIComponent(ask.id) + '/answer', { answers: [raw] }); box.value = ''; const a3 = st(); a3.sig = ''; J().load(true); V.toast('Sent. Claude will continue.', 3500); return; }
+    if ((st().mode || 'auto') !== 'cl') { const q = V.quickFacts && V.quickFacts(note); if (q) { const a0 = st(); a0.local = a0.local || []; a0.open = true; box.value = ''; a0.local.push({ who: 'you', text: note, at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }); const r0 = { who: 'claude', text: q.text }; if (q.view && V[q.view] && V[q.view].html) r0.actions = [{ label: 'Open ' + q.view, act: 'koOpen', attrs: { view: q.view } }]; a0.local.push(r0); a0.sig = ''; paint(); return; } }   // an exact answer from the records: no AI, no wait
     let mode = st().mode || 'auto', plan = { route: mode === 'cl' ? 'small' : 'lookup', task: '', view: '' };
     if (mode === 'auto') { try { plan = await root.FWBApi.post('/api/projects/' + S.project.id + '/assistant/route', { message: note, section: String(S.view || '') }); } catch (e) { plan = { route: CHANGE.test(note) ? 'small' : 'lookup', task: '', view: '' }; } }   // the size decides who works: look-ups at once, changes by Claude
     if (plan.route === 'lookup' && mode !== 'cl') { await askDeepSeek(note, box, plan); return; }
