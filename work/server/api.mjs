@@ -18,7 +18,7 @@ import { installMailTasks } from './_mailapi.mjs';
 import { installJobs } from './_jobsapi.mjs';
 import { installFeedback } from './_feedback.mjs';
 import { installNotify, norm as nNorm, lead } from './_notify.mjs';
-import { pendingFor, teamCounts, digestMessage, digestKey, assignKey, assignGate, assignmentNotice, BASE_URL as TW_BASE } from './_taskwatch.mjs';
+import { pendingFor, teamCounts, dueOf, digestMessage, digestKey, assignKey, assignGate, assignmentNotice, BASE_URL as TW_BASE } from './_taskwatch.mjs';
 let FWB = null; // this copy of the server's own dispatcher (not looked up through a global, so two copies in one process cannot mix)
 let CTX = null, HDR = {};   // set at the start of every request (a Lambda handles one request at a time)
 {
@@ -2192,6 +2192,14 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   notify = installNotify({ route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbList, dbDel, ctx: () => CTX, now, teamOf, BASE_URL: TW_BASE }).notify;   // in-app, browser and Teams notifications (_notify.mjs)
   const N = (...a) => notify(...a);
   // tasks due or overdue: the browser asks once a day when a team member opens the Studio (there is no scheduler); one notice per project, only for the person's own tasks
+  // a team summary for the project channel: Teams delivers it only to a channel that is named like the project and linked to this app (channel posts start once the app is approved); anywhere else the call just fails quietly
+  async function projectChannelPost(pj, today) {
+    if (!(await teamsOn())) return; const rows = await taskRowsOf([pj]); const tc = teamCounts(rows, today)[pj.id]; if (!tc || !tc.open) return;
+    const late = (rows[0].tasks || []).filter(k => { const d = k.data || {}; const due = dueOf(d); return d.superseded !== true && !DONE_RE.test(String(d.status || '').trim()) && due && due < today; }).slice(0, 5).map(k => '- ' + ((k.data.n ? 'T-' + k.data.n + ' \u00b7 ' : '')) + String(k.data.title || '').slice(0, 80) + (k.data.owner ? ' (' + String(k.data.owner).split('@')[0] + ')' : ''));
+    const text = ['**Where the project stands today.**', 'Open ' + tc.open + ' \u00b7 overdue ' + tc.overdue + ' \u00b7 finished ' + tc.done + '.'].concat(late.length ? ['', '**Overdue**'].concat(late) : ['', 'Nothing is overdue.']).join('\n');
+    try { await Promise.race([CTX.teams.send({ channel: pj.name, title: 'PROJECT \u00b7 ' + pj.name, text, facts: [{ title: 'Why you got this', value: 'The daily project summary for the team channel' }], actions: [{ title: 'Open tasks', url: TW_BASE + '#/p/' + pj.id + '/tasks' }] }), new Promise(r => setTimeout(r, 4000))]); } catch (e) { /* no linked channel yet */ }
+  }
+  route('POST', '/api/projects/:id/daily-brief/me', async (b, P) => { const s = await me(); const { role } = await projectAccess(s, P.id, 'edit'); if (role === 'customer') throw new HttpError(403, 'Not permitted'); return ok(await CONNECTOR.send_task_digest(s, { project: P.id, again: true })); });   // your own list, to your own Teams, whenever you want it
   route('GET', '/api/projects/:id/daily-brief', async (b, P) => { const s = await me(); await projectAccess(s, P.id, 'edit'); return ok({ on: !!(((await dbGet('dbrcfg', P.id)) || {}).value || {}).on }); });
   route('POST', '/api/projects/:id/daily-brief', async (b, P) => { const s = await me(); const { role } = await projectAccess(s, P.id, 'edit'); if (role === 'customer') throw new HttpError(403, 'Not permitted'); const on = !!(b && b.on); await dbPut('dbrcfg', P.id, { on, by: s.id, at: now() }); await audit(P.id, s.id, on ? 'daily-brief-on' : 'daily-brief-off', ''); return ok({ on }); });
   route('POST', '/api/notifications/sweep', async () => {
@@ -2199,7 +2207,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     for (const pj of ps) { const due = p.items.filter(x => x.project === pj.id && (x.overdue || x.soon)); if (!due.length) continue;
       n += await notify({ type: 'task_due', project: pj, to: [s.email], actor: '', title: due.length + ' task' + (due.length === 1 ? '' : 's') + ' due or overdue · ' + pj.name, text: due.slice(0, 3).map(x => (x.n ? 'T-' + x.n + ' ' : '') + x.title + (x.overdue ? ' (overdue)' : '')).join('; '), view: 'tasks', key: 'td|' + pj.id + '|' + today }); }
     // the morning brief: the first person to open the Studio each day sends every owner of each of their projects the task digest (the digest tool keeps it to one per person per day, and Teams must be on)
-    for (const pj of ps) { try { if (!((await dbGet('dbrcfg', pj.id)) || {}).value || !((await dbGet('dbrcfg', pj.id)).value.on)) continue; const had = await dbGet('dbr', pj.id); if (had && had.value && had.value.day === today) continue; await dbPut('dbr', pj.id, { day: today, by: s.id }); await CONNECTOR.send_task_digest(s, { to: 'team', project: pj.id }); } catch (e) { /* a reader or a project without Teams: no brief, no error */ } }
+    for (const pj of ps) { try { if (!((await dbGet('dbrcfg', pj.id)) || {}).value || !((await dbGet('dbrcfg', pj.id)).value.on)) continue; const had = await dbGet('dbr', pj.id); if (had && had.value && had.value.day === today) continue; await dbPut('dbr', pj.id, { day: today, by: s.id }); await CONNECTOR.send_task_digest(s, { to: 'team', project: pj.id }); await projectChannelPost(pj, today); } catch (e) { /* a reader or a project without Teams: no brief, no error */ } }
     return ok({ notified: n });
   });
   installTaskTracking({ route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, itemsOf, withLock, audit, viaApp, CONNECTOR, DONE_RE, cut, rid, notify: N });   // task suggestions from Claude: routes and tools (_tasksapi.mjs)

@@ -137,6 +137,11 @@ await t('the morning brief: the first sweep of a day sends each owner of the pro
   const toKim = sent.filter(x => x.to && x.to[0] === KIM && /^TASKS/.test(x.title) && /due today/.test(x.title)); assert.equal(toKim.length, 1, 'Kim gets one brief that counts what is due today'); assert.equal(toKim[0].facts.find(f => f.title === 'Due today').value, '1'); assert.match(toKim[0].text, /\*\*DUE TODAY \(1\)\*\*\n\n\*\*T-\d+ · Brief me\*\*\nDue today · To Do · Testing & UAT/); assert.match(toKim[0].text, /Whole team on this project: \d+ open/);
   sent = []; await as(SAM, 'POST', '/api/notifications/sweep', {}); assert.equal(sent.filter(x => /^TASKS/.test(x.title)).length, 0, 'once a day');
 });
+await t('Send my list now: the caller gets their own digest again on request, nobody else is messaged; the brief also posts a summary to the project channel', async () => {
+  teamsOn = true; store.get('twn').clear(); sent = []; const r = await as(KIM, 'POST', `/api/projects/${pid}/daily-brief/me`, {}); assert.equal(r.status, 200, JSON.stringify(r.data)); assert.equal(r.data.sent, 1);
+  assert.ok(sent.every(x => x.to && x.to[0] === KIM), 'only the caller was messaged'); sent = []; const r2 = await as(KIM, 'POST', `/api/projects/${pid}/daily-brief/me`, {}); assert.equal(r2.data.sent, 1, 'asking again sends again');
+  if (store.get('dbr')) store.get('dbr').clear(); sent = []; await as(SAM, 'POST', '/api/notifications/sweep', {}); const ch = sent.filter(x => x.channel); assert.ok(ch.length >= 1 && /^PROJECT · /.test(ch[0].title) && /Open \d+ · overdue \d+ · finished \d+/.test(ch[0].text), 'a channel summary was posted');
+});
 await t('a bulk owner change sends at most three messages to that person', async () => {
   teamsOn = true; sent = []; for (let i = 0; i < 5; i++) assert.equal((await put(SAM, pid, 'b' + i, { title: 'Bulk ' + i, status: 'To Do', owner: VIC })).status, 200);
   assert.equal(sent.filter(x => x.to[0] === VIC).length, 3, 'the other two are left for the digest');
