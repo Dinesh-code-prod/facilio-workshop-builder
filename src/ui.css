@@ -1282,3 +1282,23 @@ body .dk-fq { flex: 1 1 220px; } body .dk-fq input { width: 100%; box-sizing: bo
 body .dk-f select:focus-visible, body .dk-f input:focus-visible { outline: 0; border-color: var(--cs-brand, #1570EF); box-shadow: 0 0 0 3px var(--cs-brand-soft, #dbe9ff); }
 body .dk-fc { margin-left: auto; align-self: center; font: 400 13.5px/20px var(--cs-font); color: var(--cs-fg2); } body .dk-fc b { color: var(--cs-fg1); font-weight: 600; }
 body .dk-fr { height: 38px; padding: 0 14px; border: 1px solid var(--cs-st1, #d4d4d4); border-radius: var(--cs-r-ctl, 10px); background: #fff; font: 500 13.5px/20px var(--cs-font); color: var(--cs-fg1); cursor: pointer; } body .dk-fr:hover { background: var(--cs-bg4, #f4f4f5); }
+
+/* Assistant chat as a phone chat (8 Nov 2026): a soft chat background, your messages as bubbles on the right, Claude's and teammates' on the left, the time inside each bubble, a rounded message box with a round Send button. Enter makes a new line; only Send sends. */
+body #asst .as-body:not(#_):not(#__) { background: #eef1f5 !important; padding: 12px 10px !important; }
+body #asst .as-run:not(#_):not(#__) { margin: 0 !important; }
+body #asst .ki-row:not(#_):not(#__) { display: flex !important; max-width: 86% !important; margin: 3px 0 !important; gap: 0 !important; }
+body #asst .ki-row.you:not(#_):not(#__) { flex-direction: row !important; margin-left: auto !important; justify-content: flex-end !important; }
+body #asst .ki-row .ki-av:not(#_):not(#__) { display: none !important; }
+body #asst .ki-body:not(#_):not(#__) { position: relative !important; min-width: 0 !important; }
+body #asst .ki-name:not(#_):not(#__) { font: 600 12px/16px var(--cs-font) !important; color: var(--cs-accent-ink) !important; margin: 0 0 2px 2px !important; }
+body #asst .ki-row:not(.you):not(.sys) .ki-bub:not(#_):not(#__) { background: #fff !important; border: 1px solid var(--cs-st2) !important; border-radius: 4px 14px 14px 14px !important; padding: 8px 12px 22px !important; font: 400 14.5px/21px var(--cs-font) !important; white-space: pre-wrap; word-break: break-word; }
+body #asst .ki-row.you .ki-bub:not(#_):not(#__) { background: var(--cs-accent-soft) !important; border: 1px solid var(--cs-accent-line) !important; border-radius: 14px 4px 14px 14px !important; padding: 8px 12px 22px !important; font: 400 14.5px/21px var(--cs-font) !important; white-space: pre-wrap; word-break: break-word; }
+body #asst .ki-row.bad:not(.you):not(.sys) .ki-bub:not(#_):not(#__) { background: var(--cs-danger-soft) !important; color: var(--cs-danger) !important; }
+body #asst .ki-time:not(#_):not(#__) { position: absolute !important; right: 10px; bottom: 4px; margin: 0 !important; font: 400 11px/14px var(--cs-font) !important; color: var(--cs-fg3) !important; }
+body #asst .ki-row.you .ki-time:not(#_):not(#__)::after { content: " \2713"; color: var(--cs-accent); }
+body #asst .ki-row.sys:not(#_):not(#__) { max-width: 100% !important; margin: 8px auto !important; justify-content: center !important; }
+body #asst .ki-row.sys .ki-bub:not(#_):not(#__) { background: rgba(255, 255, 255, .7) !important; border: 0 !important; border-radius: 10px !important; padding: 4px 12px !important; font: 400 12.5px/18px var(--cs-font) !important; color: var(--cs-fg2) !important; text-align: center; }
+body #asst .as-comp:not(#_):not(#__) { background: #eef1f5 !important; padding: 8px 10px 10px !important; border-top: 1px solid var(--cs-st2) !important; }
+body #asst .as-crow:not(#_):not(#__) { background: #fff !important; border: 1px solid var(--cs-st2) !important; border-radius: 22px !important; padding: 6px 8px 6px 14px !important; }
+body #asst .as-crow textarea:not(#_):not(#__) { border: 0 !important; background: transparent !important; box-shadow: none !important; resize: none !important; padding: 4px 0 !important; outline: none; }
+body #asst .as-send:not(#_):not(#__) { width: 38px !important; height: 38px !important; border-radius: 50% !important; background: var(--cs-accent) !important; color: #fff !important; border: 0 !important; display: grid; place-items: center; }
