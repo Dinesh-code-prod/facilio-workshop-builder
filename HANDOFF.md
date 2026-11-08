@@ -1,5 +1,8 @@
 # Handoff
 
+**GUIDES AND DOCUMENTS (8 Nov 2026).** The Training page has a Documents for Claude card: any document (Word, PDF, Excel, PowerPoint, notes, .vtt or .srt of a recording, e-mails, screenshots, an org package .zip) can be added or dropped, ticked (up to 8) and sent with a guide request; the make_guide and change_guide recipes read them through project_jobs file_urls (file category guide_source, team only). What each guide tool does, what was missing and what is still open: docs/reference/GUIDES-AND-DOCUMENTS-ANALYSIS-2026-11-08.md. Not tried with a real upload or a real Claude run.
+
+
 **SOLUTION DESIGN AND BRD: contract to modules, Solution layout, integration plan (8 Nov 2026).** Apply the contract (`V.applyContractModules` in `src/solution.js`, also automatic after Read the contract with the AI) switches on delivered modules and creates delivered custom modules through `V.makeCustomModule` (`src/module.js`). The Solution page has a full-width contract card, a wider list with search and tools side by side. How the tabs power the BRD draft and the mockup, and the proposed one-file solution package for other tools: `docs/reference/SOLUTION-INTEGRATION-ARCHITECTURE-2026-11-08.md`. Not built: the package itself. Not checked with a real contract or on the live app.
 
 
