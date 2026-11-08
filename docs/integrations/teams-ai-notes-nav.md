@@ -1,6 +1,6 @@
 # AI providers, Notes & Links, Teams ticket creation, navigation
 
-Status as of 27 Oct 2026, on top of GitHub main (builds 75–79). Companion to `docs/reference/tickets-and-mailbox.md`.
+Status as of 27 Oct 2026, on top of GitHub main (builds 75–79). Companion to `docs/integrations/tickets-and-mailbox.md`.
 
 ## 1. What already existed and was reused
 

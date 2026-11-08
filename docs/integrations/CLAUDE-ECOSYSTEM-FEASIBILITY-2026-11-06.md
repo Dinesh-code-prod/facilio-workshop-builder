@@ -65,7 +65,7 @@ Not verified: last-commit dates, SKILL.md presence in most repos, and any securi
 ## 6. Where things run
 
 - **Stay in Facilio** (facilio.work): UI, records, transfers/gateway, connector (MCP), skill registry read from GitHub, approvals, audit.
-- **Separate hosting, only if you accept API billing**: embedded code agent (isolated workspace per project, Git, command approval), Vexa call bot (needs an always-on container and speech-to-text, per [VEXA-REVIEW](VEXA-REVIEW-2026-11-04.md)).
+- **Separate hosting, only if you accept API billing**: embedded code agent (isolated workspace per project, Git, command approval), Vexa call bot (needs an always-on container and speech-to-text, per [VEXA-REVIEW](../reports/VEXA-REVIEW-2026-11-04.md)).
 - **Nowhere central**: employees' Claude sign-ins. Each person keeps their own.
 
 ## 7. Cost (do not read as zero)

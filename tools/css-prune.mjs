@@ -1,5 +1,5 @@
 // Removes old CSS rules for a page that has moved to UI.
-// Usage: node scripts/css-prune.mjs "<regex for selectors>" file.css [file2.css ...] [--dry]
+// Usage: node tools/css-prune.mjs "<regex for selectors>" file.css [file2.css ...] [--dry]
 // A rule (also inside @media / @supports) is deleted when EVERY selector in its list matches the regex,
 // so shared rules (a selector list that also styles something kept) stay. --dry lists what would go.
 import fs from 'node:fs';

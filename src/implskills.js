@@ -1,6 +1,6 @@
 /* Project Settings > Implementation skills: the setup guide for the Facilio Implementation Toolbox (the facilio-impl-ai-skills repository), so a team member can install it
    without the Word guide. The repository login is never written here: the platform team hands it out. Which skill carries on from which deliverable is served to Claude by
-   the connector's get_impl_skills tool (work/server/_skills.mjs, rebuilt with scripts/build-impl-skills.mjs). */
+   the connector's get_impl_skills tool (work/server/_skills.mjs, rebuilt with tools/build-impl-skills.mjs). */
 (function (root) {
   'use strict';
   const V = root.FWBViews; const { esc } = root.FWB;

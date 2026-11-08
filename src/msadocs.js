@@ -1,4 +1,4 @@
-/* Contract intake > Contract documents (plan: docs/reference/MSA-DOCUMENTS-PLAN-2026-11-08.md). A project can have several contract documents: the master agreement, amendments, order forms, statements of work.
+/* Contract intake > Contract documents (plan: docs/plans/MSA-DOCUMENTS-PLAN-2026-11-08.md). A project can have several contract documents: the master agreement, amendments, order forms, statements of work.
    The first MSA still comes in through "Bring in" / Upload on this page (src/planner.js msaIngest); every further document is added here. All of them live in the project document msa_text as a list (rules in work/server/_msadocs.mjs,
    tests/msadocs.mjs); the old single-MSA shape reads as a list of one, so nothing has to be migrated.
    What happens when the set changes: Claude is asked to re-read ALL the documents and save ONE combined extraction (job pull_msa), which drafts the kick-off deck, the project plan and the sessions again; when the kick-off is already APPROVED nothing

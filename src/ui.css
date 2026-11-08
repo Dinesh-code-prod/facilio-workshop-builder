@@ -705,7 +705,7 @@ body #asst .ki-row.you .ki-bub:not(#_):not(#__){border-radius:16px 16px 4px 16px
 body #asst .ki-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 body #asst .ki-acts .btn:not(#_):not(#__){border-radius:999px!important;padding:6px 14px!important;background:#fff!important;border:1px solid var(--cs-st1)!important;color:var(--cs-fg1)!important;font-weight:500}
 body #asst .ki-acts .btn:hover:not(#_):not(#__){border-color:var(--cs-brand)!important;background:var(--cs-brand-soft)!important}
-/* ======== coss ui library, round 2 (docs/reference/UI-COSS-LIBRARY.md): semantic colours, motion, loading, colour across the inside pages, stage-coloured sidebar.
+/* ======== coss ui library, round 2 (docs/design/UI-COSS-LIBRARY.md): semantic colours, motion, loading, colour across the inside pages, stage-coloured sidebar.
    Never applied to the Projects home or the sign-in page: everything below hangs on .main[data-sec] (a project page), .sidebar, .adm-main, or the shared pop-ups. ======== */
 :root { --cs-info: #3b82f6; --cs-info-ink: #1d4ed8; --cs-success: #10b981; --cs-success-ink: #047857; --cs-warning: #f59e0b; --cs-warning-ink: #b45309; --cs-destructive: #ef4444; --cs-destructive-ink: #b91c1c; }
 @keyframes csSpin { to { transform: rotate(360deg); } }

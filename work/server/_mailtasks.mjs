@@ -1,4 +1,4 @@
-/* Customer mail becomes tasks: the pure rules (plan: docs/reference/MAIL-TO-TASKS-PLAN-2026-11-07.md; tests: tests/mail_tasks.mjs).
+/* Customer mail becomes tasks: the pure rules (plan: docs/plans/MAIL-TO-TASKS-PLAN-2026-11-07.md; tests: tests/mail_tasks.mjs).
    ONE copy: build.mjs adds this file to the browser bundle (sets window.FWBMailTasks); the server and the tests import it (it sets globalThis.FWBMailTasks and module.exports).
    No database, no network. Mail text is untrusted data: it is cut, cleaned and only ever matched against words; nothing in it is run or followed.
    A mail becomes an inbox record (pending). A person accepts it; then a task exists, with a "done when" check on a fact the Studio already holds, and a reply that Claude drafts, a person approves and Outlook opens. */

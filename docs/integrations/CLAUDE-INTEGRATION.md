@@ -1,6 +1,6 @@
 # The Claude side of Delivery Studio: what is built (developer guide)
 
-Written 5 Nov 2026 for the developer who takes over the Claude integration. The direction (roadmap E15 in [ROADMAP-REQUIREMENTS.md](ROADMAP-REQUIREMENTS.md)): the Studio is the **visualization of the project** (stage tabs and layouts); Claude does the work and **pushes and pulls information through a gateway** that this repo provides. Nothing here calls the Anthropic API: Claude runs in each person's own Claude session (web, Desktop or Code) and reaches the Studio through the connector below.
+Written 5 Nov 2026 for the developer who takes over the Claude integration. The direction (roadmap E15 in [ROADMAP-REQUIREMENTS.md](../ROADMAP-REQUIREMENTS.md)): the Studio is the **visualization of the project** (stage tabs and layouts); Claude does the work and **pushes and pulls information through a gateway** that this repo provides. Nothing here calls the Anthropic API: Claude runs in each person's own Claude session (web, Desktop or Code) and reaches the Studio through the connector below.
 
 ## 1. How the pieces connect
 ```
@@ -12,12 +12,12 @@ person's Claude session  --(MCP, Entra sign-in)-->  https://mcp.facilio.work/fac
         v                                                    v
  reads files, org config, transcripts            ctx.db (records), ctx.files, ctx.teams (Otto DMs), ctx.llm (DeepSeek, no Claude)
 ```
-- **The Studio server cannot read Microsoft 365, Meteor, Comet or Clari.** Claude reads them in the person's session and stores results in the Studio through the tools below. Details and limits of every connector: [reference/CONNECTORS-2026-11-04.md](reference/CONNECTORS-2026-11-04.md).
+- **The Studio server cannot read Microsoft 365, Meteor, Comet or Clari.** Claude reads them in the person's session and stores results in the Studio through the tools below. Details and limits of every connector: [reference/CONNECTORS-2026-11-04.md](CONNECTORS-2026-11-04.md).
 - Every tool runs **as the signed-in person**: the same access rules as the web app (`projectAccess`), customers never reach team data, sub admins are read-only.
 - **Hard platform limit: 40 MCP tools per app.** We are at exactly 40. Add a capability by folding it into an existing action tool, never by adding a tool.
 
 ## 2. Add the connector
-Claude (web or Desktop): Settings, Connectors, Add custom connector, name `Facilio Delivery Studio`, address `https://mcp.facilio.work/facilio-delivery-studio`, sign in with a Facilio account. Claude Code: `claude mcp add --transport http facilio-delivery-studio https://mcp.facilio.work/facilio-delivery-studio`. After a deploy that changes the tool list, remove and re-add the connector (Claude caches tool lists). Fuller notes: [reference/claude-connector.md](reference/claude-connector.md).
+Claude (web or Desktop): Settings, Connectors, Add custom connector, name `Facilio Delivery Studio`, address `https://mcp.facilio.work/facilio-delivery-studio`, sign in with a Facilio account. Claude Code: `claude mcp add --transport http facilio-delivery-studio https://mcp.facilio.work/facilio-delivery-studio`. After a deploy that changes the tool list, remove and re-add the connector (Claude caches tool lists). Fuller notes: [reference/claude-connector.md](claude-connector.md).
 
 ## 3. The 40 tools (from `work/work.json`; implementations in `work/server/api.mjs` and the `_*.mjs` modules)
 | Group | Tools |
@@ -36,7 +36,7 @@ Claude (web or Desktop): Settings, Connectors, Add custom connector, name `Facil
 `confirm` = the platform shows the tool as destructive and Otto asks for a Confirm click.
 
 ## 4. Flows that exist
-**Push and pull engine (the base of the gateway).** One **transfer** record per thing moved: direction (pull, generate, push), kind (msa, transcript, org_modules, brd, ...), source, destination, scope, status, immutable versions, evidence, audit log. Statuses: Not Retrieved, Retrieving, Retrieved, Draft Generated, Awaiting Review, Approved, Pushed, Synchronized, Failed, Requires Attention. **Claude cannot approve**: a project owner approves in the Transfers page. Pushed and Synchronized need evidence (a one-time nonce from `push_begin`, a receipt, a destination reference, the read-back sha-256) and are labelled "reported by Claude" because the Studio cannot see the destination. Duplicates return the same record; a changed source makes a new version; version 1 is never rewritten. Design: [reference/STEP1-PUSH-PULL-DESIGN.md](reference/STEP1-PUSH-PULL-DESIGN.md). Code: `work/server/_transfer.mjs` (rules), `_transferapi.mjs` (routes `/api/projects/:id/transfers`, tools), page `src/transfers.js`.
+**Push and pull engine (the base of the gateway).** One **transfer** record per thing moved: direction (pull, generate, push), kind (msa, transcript, org_modules, brd, ...), source, destination, scope, status, immutable versions, evidence, audit log. Statuses: Not Retrieved, Retrieving, Retrieved, Draft Generated, Awaiting Review, Approved, Pushed, Synchronized, Failed, Requires Attention. **Claude cannot approve**: a project owner approves in the Transfers page. Pushed and Synchronized need evidence (a one-time nonce from `push_begin`, a receipt, a destination reference, the read-back sha-256) and are labelled "reported by Claude" because the Studio cannot see the destination. Duplicates return the same record; a changed source makes a new version; version 1 is never rewritten. Design: [reference/STEP1-PUSH-PULL-DESIGN.md](STEP1-PUSH-PULL-DESIGN.md). Code: `work/server/_transfer.mjs` (rules), `_transferapi.mjs` (routes `/api/projects/:id/transfers`, tools), page `src/transfers.js`.
 
 **MSA to project.** Claude lists and reads the MSA with the Microsoft 365 connector, extracts it, calls `msa_extraction_save` (the "holding" space before a project exists); a person approves; `create_project_from_msa` creates the project and fills the contract and scope records. Code: `work/server/_msaextract.mjs`, `_msaapi.mjs`. Stage 1 is being rebuilt around this (E15, half done, see HANDOFF.md).
 
@@ -57,8 +57,8 @@ The base exists: the 40 tools above and the transfer routes. What a separate Cla
 ## 7. Not built, not verified, known issues
 - No real Claude session, real MSA or real Microsoft 365 call has been tested against the live app. Teams DMs and Otto were never tried for real.
 - The binary file path (presigned upload from Claude Code) and the folder mirror are designs only.
-- Open issues from three independent reviews are listed in [reports/review-2026-11-05.md](reports/review-2026-11-05.md); the server ones (partial project creation on retry, push evidence, storage growth, tool allow-list) matter most for this integration.
+- Open issues from three independent reviews are listed in [reports/review-2026-11-05.md](../reports/review-2026-11-05.md); the server ones (partial project creation on retry, push evidence, storage growth, tool allow-list) matter most for this integration.
 - The Stage 1 rebuild, the Mockup and BRD stage (org module import, in an unmerged branch) and later stages are in the roadmap E15.
 
 ## 8. Run the tests
-`npm test` (41 suites, no network). The Claude-specific ones: `tests/transfer*.mjs`, `msa_extract.mjs`, `msa_project_route.mjs`, `prepared_questions_tool.mjs`, `task_suggestions.mjs`, `task_watch.mjs`, `connector_skills.mjs`, `claude_launch.mjs`. They run the real handler on a stand-in platform; the stand-in is in `tests/task_watch.mjs`. Deploy: [operations/DEPLOY.md](operations/DEPLOY.md).
+`npm test` (41 suites, no network). The Claude-specific ones: `tests/transfer*.mjs`, `msa_extract.mjs`, `msa_project_route.mjs`, `prepared_questions_tool.mjs`, `task_suggestions.mjs`, `task_watch.mjs`, `connector_skills.mjs`, `claude_launch.mjs`. They run the real handler on a stand-in platform; the stand-in is in `tests/task_watch.mjs`. Deploy: [operations/DEPLOY.md](../operations/DEPLOY.md).

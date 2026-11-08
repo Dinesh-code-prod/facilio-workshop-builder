@@ -2,7 +2,7 @@
 
 What each system and connector **really** offers, from calls and pages seen on 4 Nov 2026 in one Claude Code session and its browser pane. Only read-only actions were called. Nothing was written, created or deployed, nothing was signed in by Claude, and no secret was printed. Where something was not tried it says **not tested**; where it comes from a document or a page rather than a call it says **from docs**.
 
-Companion: [AUDIT-2026-11-04.md](AUDIT-2026-11-04.md).
+Companion: [AUDIT-2026-11-04.md](../reports/AUDIT-2026-11-04.md).
 
 ## 0. How the pieces fit (the important picture)
 
@@ -43,7 +43,7 @@ Companion: [AUDIT-2026-11-04.md](AUDIT-2026-11-04.md).
 
 ## 3. Delivery Studio connector (`https://mcp.facilio.work/facilio-delivery-studio`)
 
-**Not called today** (it is not one of this session's connectors). From `work/work.json` and `docs/reference/claude-connector.md`: 31 tools. Read: `find_projects`, `project_overview`, `portfolio_status`, `get_requirements`, `get_statements`, `get_open_questions`, `get_use_cases`, `get_tickets`, `list_record_kinds`, `get_records`, `get_document`, `search_project`, `recent_activity`, `list_overdue`, `project_changes`, `search_transcripts`, `get_transcripts`, `get_transcript`, `uat_summary`, `get_impl_skills`. Prepare: `get_task_pack`, `get_review_pack`, `get_mom_pack`. Write: `save_draft` (unapproved draft), `save_minutes` (flagged for review), `create_ticket` (real ticket after confirmation). Hand-off: `get_handoff`, `submit_handoff_result`. Help: `connector_help`. Teams: `list_projects`, `suggest_ticket`.
+**Not called today** (it is not one of this session's connectors). From `work/work.json` and `docs/integrations/claude-connector.md`: 31 tools. Read: `find_projects`, `project_overview`, `portfolio_status`, `get_requirements`, `get_statements`, `get_open_questions`, `get_use_cases`, `get_tickets`, `list_record_kinds`, `get_records`, `get_document`, `search_project`, `recent_activity`, `list_overdue`, `project_changes`, `search_transcripts`, `get_transcripts`, `get_transcript`, `uat_summary`, `get_impl_skills`. Prepare: `get_task_pack`, `get_review_pack`, `get_mom_pack`. Write: `save_draft` (unapproved draft), `save_minutes` (flagged for review), `create_ticket` (real ticket after confirmation). Hand-off: `get_handoff`, `submit_handoff_result`. Help: `connector_help`. Teams: `list_projects`, `suggest_ticket`.
 
 App status seen today through the Facilio Work Apps connector (`list_apps`): `facilio-delivery-studio`, owner dinesh.r@facilio.com, review status **pending**, visibility facilio, last deploy 4 Nov 2026 11:38 UTC, one server function `api`.
 

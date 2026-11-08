@@ -1,4 +1,4 @@
-/* Workshop room > Live assistant (plan: docs/reference/REQUIREMENTS-INTELLIGENCE-PLAN-2026-11-08.md, phases 3 and 4). Sits under the live transcript box of src/workshop.js (hook V.wsLiveExtra).
+/* Workshop room > Live assistant (plan: docs/plans/REQUIREMENTS-INTELLIGENCE-PLAN-2026-11-08.md, phases 3 and 4). Sits under the live transcript box of src/workshop.js (hook V.wsLiveExtra).
    Capture: the browser's own speech recognition (Chrome and Edge; free; the browser sends the speech to its own service, Delivery Studio never records or stores audio; it hears this computer's microphone only) appends to the same transcript box,
    or the consultant pastes or loads a transcript as before. The rules in src/workshoplogic.js keep marking questions possibly or likely answered, with no network.
    "Analyse the call" and "Summarise the meeting" ask the existing AI layer (route /qbank/analyse) for a summary, the answered questions with their quotes, suggested follow-ups, decisions, assumptions, dependencies, actions and clarifications.

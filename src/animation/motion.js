@@ -1,4 +1,4 @@
-/* Facilio Motion Kit integration (vanilla). Source of truth: docs/motionkit/animations.json (kit "Facilio Motion Kit", 26 animations).
+/* Facilio Motion Kit integration (vanilla). Source of truth: docs/design/motionkit/animations.json (kit "Facilio Motion Kit", 26 animations).
    Code below is the kit's own vanilla code for: intro (stagger), list (row stagger), modal, drawer. CSS for them is at the end of styles.css.
    Animations play on a route change only, because the shell re-renders on every state change and must not replay on each keystroke. */
 (function () {

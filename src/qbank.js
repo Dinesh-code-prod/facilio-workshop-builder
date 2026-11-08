@@ -1,4 +1,4 @@
-/* Requirement sessions > Questions (plan: docs/reference/REQUIREMENTS-INTELLIGENCE-PLAN-2026-11-08.md). The saved question bank of the project (project document rs_questions; rules in work/server/_qbank.mjs, tests/qbank.mjs).
+/* Requirement sessions > Questions (plan: docs/plans/REQUIREMENTS-INTELLIGENCE-PLAN-2026-11-08.md). The saved question bank of the project (project document rs_questions; rules in work/server/_qbank.mjs, tests/qbank.mjs).
    "Analyse the documents" asks the existing AI layer (route /qbank/generate) to read the MSA, the contract scope, the requirements and the client documents and write questions in ten categories; they arrive as SUGGESTED and a person keeps or drops each.
    "Add the rules-based questions" adds the ones src/sessionquestionsview.js works out from the records. Questions can be added, edited, deleted, moved and re-categorised by hand; every change is kept in the question's history.
    The answer status and the client response of a question are the Workshop room notes (workshop_room), so the Workshop room and this page show the same status. Kept questions are what the Workshop room asks. */

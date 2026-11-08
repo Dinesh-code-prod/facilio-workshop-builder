@@ -1,4 +1,4 @@
-// Task engine (docs/reference/TASKS-AUTOMATION-PLAN-2026-11-07.md): the pure rules in src/taskengine.js, then the server side that lets the owner answer a task (task_reply) and keeps the auto block.
+// Task engine (docs/plans/TASKS-AUTOMATION-PLAN-2026-11-07.md): the pure rules in src/taskengine.js, then the server side that lets the owner answer a task (task_reply) and keeps the auto block.
 // NOT checked: the Tasks page in a browser, a real Teams message, a real Otto conversation.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';

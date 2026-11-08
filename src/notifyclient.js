@@ -1,4 +1,4 @@
-/* Notifications in the browser (server side: work/server/_notify.mjs; plan: docs/reference/NOTIFY-MAIL-STAGES-PLAN-2026-11-07.md, section 2).
+/* Notifications in the browser (server side: work/server/_notify.mjs; plan: docs/plans/NOTIFY-MAIL-STAGES-PLAN-2026-11-07.md, section 2).
    The bell shows the person's server list ("For you"); a live signal over the app WebSocket (or a 60 second check while the page is visible) fetches new ones; a new one shows as a toast and,
    if the person allowed it, as a system pop-up (only while a Studio tab is open: the platform has no push to a closed browser). Preferences (per event: in-app, browser, Teams; quiet hours) are in the drawer
    opened from the bell. Customers get nothing: the server never notifies them, and this file does nothing for them. */

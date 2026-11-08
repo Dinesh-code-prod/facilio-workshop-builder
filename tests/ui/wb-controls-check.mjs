@@ -1,5 +1,5 @@
 // Process Whiteboard: a control-by-control inventory against what a Miro-style board offers (controls and feel only; there is no connection to Miro).
-// Every control is tried with the real mouse and keyboard on a new board and reported as ok / PARTLY / BROKEN / MISSING, so the result can be copied into docs/reference/WHITEBOARD-CONTROLS.md.
+// Every control is tried with the real mouse and keyboard on a new board and reported as ok / PARTLY / BROKEN / MISSING, so the result can be copied into docs/design/WHITEBOARD-CONTROLS.md.
 // Usage: PW_CHANNEL=msedge node tests/ui/wb-controls-check.mjs [baseUrl] [shotsDir]     Exit code 1 only when a control that exists is BROKEN; MISSING and PARTLY are listed, not failed.
 import { chromium } from 'playwright'; import fs from 'node:fs';
 const BASE = process.argv[2] || 'http://localhost:4173', OUT = process.argv[3] || ''; if (OUT) fs.mkdirSync(OUT, { recursive: true });

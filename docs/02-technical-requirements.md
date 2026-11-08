@@ -32,7 +32,7 @@ flowchart LR
 - Details: [reference/ai-architecture.md](reference/ai-architecture.md).
 
 ## Claude connector
-Tools are declared in `work/work.json` and served at `https://mcp.facilio.work/facilio-delivery-studio`. They run as the signed-in person through the same routes as the app, so project access and limits are the app's own. Reads are compact and capped; writes are unapproved drafts. See [reference/claude-connector.md](reference/claude-connector.md).
+Tools are declared in `work/work.json` and served at `https://mcp.facilio.work/facilio-delivery-studio`. They run as the signed-in person through the same routes as the app, so project access and limits are the app's own. Reads are compact and capped; writes are unapproved drafts. See [reference/claude-connector.md](integrations/claude-connector.md).
 
 ## Security
 - Access is checked on the server for every request (platform identity, then project membership and role).

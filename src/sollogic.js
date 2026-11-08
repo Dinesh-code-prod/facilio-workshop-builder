@@ -1,4 +1,4 @@
-/* Solution tab rules (plan: docs/reference/SOLUTION-TAB-PLAN-2026-11-07.md). Pure code, no page, no network; tested by tests/sollogic.mjs, used by src/solution.js, src/brd.js and the Word export.
+/* Solution tab rules (plan: docs/plans/SOLUTION-TAB-PLAN-2026-11-07.md). Pure code, no page, no network; tested by tests/sollogic.mjs, used by src/solution.js, src/brd.js and the Word export.
    The solutions are the project document `solutions`: { items: { "<areaKey>": { text, status, sources[], versions[], updatedAt, updatedBy } } }.
    An area is one module in scope (key module:<name>) or one fixed area (key area:<id>). Every change is a new version that keeps the previous text, who, when and why. Nothing here calls Claude:
    a proposal (design_proposals, kind solution) only becomes text when a person accepts it (accept). */

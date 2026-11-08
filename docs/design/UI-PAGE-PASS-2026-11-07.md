@@ -2,7 +2,7 @@
 
 Goal: every page is a clean Fluent 2 page (title, intro, command bar, sections with cards of one idea, data grid, empty state), with the old per-page skins deleted.
 Shared patterns live in `src/fluent.css` (`fl-page`, `fl-page-h`, `fl-sub`, `fl-grid`, `fl-stats`/`fl-stat`, `fl-cmd-bar`, `fl-empty`, `fl-dg`).
-Tools: `tests/ui/contrast-snippet.js` (paste in the browser pane, needs 4.5:1 or 3:1 for large text), `node scripts/css-prune.mjs "<regex>" files...` (deletes whole rules whose selectors all match; `--dry` lists them), `node tests/ui/css-legacy-audit.mjs`.
+Tools: `tests/ui/contrast-snippet.js` (paste in the browser pane, needs 4.5:1 or 3:1 for large text), `node tools/css-prune.mjs "<regex>" files...` (deletes whole rules whose selectors all match; `--dry` lists them), `node tests/ui/css-legacy-audit.mjs`.
 Kept on purpose (user, 7 Nov 2026): the night-city banner on Customer projects, the login scene, intro and Discover more.
 
 Legacy audit total (gradients / large radii / shadows): start 193 / 251 / 606.

@@ -1,4 +1,4 @@
-/* Several contract documents per project (plan: docs/reference/MSA-DOCUMENTS-PLAN-2026-11-08.md). ONE copy of the rules: build.mjs adds this file to the browser bundle (a plain script: it sets window.FWBMsaDocs);
+/* Several contract documents per project (plan: docs/plans/MSA-DOCUMENTS-PLAN-2026-11-08.md). ONE copy of the rules: build.mjs adds this file to the browser bundle (a plain script: it sets window.FWBMsaDocs);
    the server and the tests import it as a module (it sets globalThis.FWBMsaDocs). Pure code: no DOM, no network, no model. Run by tests/msadocs.mjs.
    The project document `msa_text` used to hold ONE contract: { name, at, pages }. It now may hold { docs: [{ id, role, label, name, at, pages, status, verifiedBy, verifiedAt, fileId }], check }.
    The old shape still reads as one document (docsOf), so no project needs a migration; the first document added turns it into a list.

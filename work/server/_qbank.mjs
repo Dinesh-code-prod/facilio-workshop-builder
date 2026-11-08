@@ -1,4 +1,4 @@
-/* ONE copy of the question bank rules (plan: docs/reference/REQUIREMENTS-INTELLIGENCE-PLAN-2026-11-08.md). build.mjs adds this file to the browser bundle (a plain script: it sets window.FWBQBank);
+/* ONE copy of the question bank rules (plan: docs/plans/REQUIREMENTS-INTELLIGENCE-PLAN-2026-11-08.md). build.mjs adds this file to the browser bundle (a plain script: it sets window.FWBQBank);
    the server and the tests import it as a module (it sets globalThis.FWBQBank). Pure code: no DOM, no network, no model. Run by tests/qbank.mjs.
    The bank is the project document `rs_questions`: { items: [{ id, text, category, module, why, ref, priority, expected, notes, state, source, history, order }], summaries: [] }.
    state: suggested (the AI or the rules proposed it: a person keeps or drops it) | kept (it is in the workshop). The answer status and the client response of a question live in the Workshop room notes

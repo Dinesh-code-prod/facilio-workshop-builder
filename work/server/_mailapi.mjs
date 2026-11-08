@@ -1,4 +1,4 @@
-/* Customer mail becomes tasks: storage, routes and connector actions (plan: docs/reference/MAIL-TO-TASKS-PLAN-2026-11-07.md). The rules are in _mailtasks.mjs.
+/* Customer mail becomes tasks: storage, routes and connector actions (plan: docs/plans/MAIL-TO-TASKS-PLAN-2026-11-07.md). The rules are in _mailtasks.mjs.
    api.mjs calls installMailTasks(deps) once. Records live in the collection ml.<project> (not a record kind, so a customer can never list it).
    Mail text is untrusted data: it is stored and shown, never run. The Studio holds no Microsoft token and sends nothing: Claude (Microsoft 365 connector) or a dropped .eml brings mail in;
    a person accepts each one; a reply is drafted UNAPPROVED and opened in Outlook by a person.

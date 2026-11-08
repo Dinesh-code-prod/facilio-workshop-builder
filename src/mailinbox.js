@@ -1,4 +1,4 @@
-/* Mail inbox on the Tasks page (plan: docs/reference/MAIL-TO-TASKS-PLAN-2026-11-07.md). Customer mail that Claude found (job fetch_mail, Microsoft 365 connector) or that a person dropped as .eml files
+/* Mail inbox on the Tasks page (plan: docs/plans/MAIL-TO-TASKS-PLAN-2026-11-07.md). Customer mail that Claude found (job fetch_mail, Microsoft 365 connector) or that a person dropped as .eml files
    waits here, already sorted: why it matters (to, cc, team, mention) and where it goes (BRD, Solution, UAT, Hypercare, Other). A person accepts or dismisses each one. Accepting makes the task through the
    task engine (rule mail, so it resolves itself when its "done when" fact holds) and, for a Solution mail, sends the mail text to Claude as a compare_solution job. When the task is done Claude drafts the reply;
    it stays a draft until a person approves it, and Outlook opens it pre-filled. The Studio sends nothing and holds no Microsoft sign-in. Mail text is data: it is shown escaped and never followed. */

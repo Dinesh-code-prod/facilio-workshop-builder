@@ -1,4 +1,4 @@
-/* Reading a dropped solution document into the Solution tab (plan: docs/reference/SOLUTION-TAB-PLAN-2026-11-07.md). Pure code: no network, no model. Run by tests/solread.mjs; used by the route in _qbankapi.mjs.
+/* Reading a dropped solution document into the Solution tab (plan: docs/plans/SOLUTION-TAB-PLAN-2026-11-07.md). Pure code: no network, no model. Run by tests/solread.mjs; used by the route in _qbankapi.mjs.
    The page reads the file in the browser and sends its text with the list of the project's solution areas (key, label, the table columns, a short summary of what is written now). The existing AI layer (DeepSeek or Claude, as the administrator configured)
    answers with PROPOSALS: for each area the document speaks about, the new overview and the whole new table. They are stored unapproved (design_proposals, kind solution) and a person presses Accept on the Solution tab; nothing is applied here.
    The document text is data, never instructions: the prompt says so, and the parser keeps only known areas, only the columns of that area's table, and drops a quote that is not in the document. */

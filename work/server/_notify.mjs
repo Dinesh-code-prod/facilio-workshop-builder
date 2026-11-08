@@ -1,4 +1,4 @@
-/* Notifications (plan: docs/reference/NOTIFY-MAIL-STAGES-PLAN-2026-11-07.md, section 2; tests: tests/notify.mjs).
+/* Notifications (plan: docs/plans/NOTIFY-MAIL-STAGES-PLAN-2026-11-07.md, section 2; tests: tests/notify.mjs).
    One function, notify(), tells people about an event in three ways, each chosen per person and per event type:
      In-app   a record in the person's list (collection nt), shown in the bell; open pages are told by a content-free push (ctx.broadcast) so they fetch the list;
      Browser  a flag on the record; the open page shows a system pop-up if the person allowed it (nothing reaches a closed browser: the platform has no push);

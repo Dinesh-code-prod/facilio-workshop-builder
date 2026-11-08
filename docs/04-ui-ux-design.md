@@ -22,7 +22,7 @@ The rules the screens follow. Colours, depth and wording are the owner's rules; 
 Not allowed: violet or purple, neon or glow, heavy gradients. (`reference/design-reference.md` records an older external artifact that used violet; it is history, not a rule.)
 
 ## Depth
-The look is coss ui (light theme only): hairline borders, near-black main buttons, a tinted accent per menu group, small shadows. The rules are in `docs/reference/UI-COSS-LIBRARY.md`. Styles are layered in `build.mjs`; overrides use `body ...:not(#_):not(#__)` with `!important` and the last layer is `ui.css`.
+The look is coss ui (light theme only): hairline borders, near-black main buttons, a tinted accent per menu group, small shadows. The rules are in `docs/design/UI-COSS-LIBRARY.md`. Styles are layered in `build.mjs`; overrides use `body ...:not(#_):not(#__)` with `!important` and the last layer is `ui.css`.
 
 ## Layout
 - **Sidebar** groups, then pages; the active page is a dark pill. Counts show what needs a person (statements to review, blocking checks).
@@ -41,7 +41,7 @@ Every list says what to do when empty ("Upload a transcript to start"); loading 
 Real buttons and inputs, labelled fields, `role="tablist"` on tab bars with `aria-selected`, visible focus, keyboard reachable menus, reduced-motion respected for the opening animation and transitions.
 
 ## Motion
-The opening animation (tree growth) and small transitions use the Facilio Motion Kit (`docs/motionkit/animations.json`). Motion must be reduced or off when the browser asks for it, and must never block the page: the animation clamps sizes so a tiny window cannot stop it.
+The opening animation (tree growth) and small transitions use the Facilio Motion Kit (`docs/design/motionkit/animations.json`). Motion must be reduced or off when the browser asks for it, and must never block the page: the animation clamps sizes so a tiny window cannot stop it.
 
 Discover more has two different Apple-style scroll effects, both in `src/animation/discover/`. The sign-in page (`login-scroll.*`): every solution area is a pinned scene that zooms in, its words light up with the scroll, then it shrinks away. Inside a project (`project-scroll.*`): every chapter is a dark pinned stage whose cards slide sideways while the card in focus grows. Both are switched off for reduced motion and on phones, tablets and short windows.
 
@@ -53,4 +53,4 @@ Discover more has two different Apple-style scroll effects, both in `src/animati
 A separate, calmer menu for the customer (introduction, prepare, product tour, guides, portal). Only tabs the team has switched on show. Team-only records never appear there.
 
 ## Where the design lives in code
-`src/theme.css`, `src/design-system.css`, `src/ui.css` (the last layer), one CSS file per page area, and `src/shell.js` for the menu. Further notes: [reference/design-reference.md](reference/design-reference.md), [reference/motion-and-design.md](reference/motion-and-design.md).
+`src/theme.css`, `src/design-system.css`, `src/ui.css` (the last layer), one CSS file per page area, and `src/shell.js` for the menu. Further notes: [reference/design-reference.md](design/design-reference.md), [reference/motion-and-design.md](design/motion-and-design.md).

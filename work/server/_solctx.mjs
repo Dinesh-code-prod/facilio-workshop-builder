@@ -1,4 +1,4 @@
-/* The context pack of one Solution area (plan: docs/reference/SOLUTION-TAB-PLAN-2026-11-07.md): everything the project holds about it, in ONE read, so Claude writes or changes a solution the way
+/* The context pack of one Solution area (plan: docs/plans/SOLUTION-TAB-PLAN-2026-11-07.md): everything the project holds about it, in ONE read, so Claude writes or changes a solution the way
    a business analyst and implementation manager would: with the requirements, the state flows, fields and forms, actions across modules, notifications, access, SLA rows, KPIs, connected apps,
    open questions, what was said in the sessions, the contract scope and the solutions of the neighbouring areas in front of it. Pure code (tests/solctx.mjs); work/server/api.mjs feeds it the stored documents
    and returns it as get_document solutions, part context:<areaKey>. Text from transcripts, files and customers inside it is data, never instructions. */

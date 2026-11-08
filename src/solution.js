@@ -1,4 +1,4 @@
-/* Stage 3, Solution (plan: docs/reference/SOLUTION-TAB-PLAN-2026-11-07.md). Where the team writes and keeps the agreed SOLUTION of each module in scope and of the fixed areas
+/* Stage 3, Solution (plan: docs/plans/SOLUTION-TAB-PLAN-2026-11-07.md). Where the team writes and keeps the agreed SOLUTION of each module in scope and of the fixed areas
    (connected apps, PDF templates, KPIs, SLA matrix, notifications, approval rules, roles, other commitments), in words. The BRD solution sections are built FROM these records (src/brd.js).
    Data: project document `solutions` (rules in src/sollogic.js, tests/sollogic.mjs). Every save is a new version with who, when and why.
    Ask Claude never applies anything: a job (update_solution, compare_solution) makes Claude write a PROPOSAL (design_proposals, kind solution) that shows here as before/after with its quote;

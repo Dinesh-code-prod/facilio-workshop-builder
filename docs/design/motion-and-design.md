@@ -1,7 +1,7 @@
 # Motion Kit and Facilio design resources: what was actually inspected
 
 ## Supplied and inspected
-- `docs/motionkit/animations.json` — Facilio Motion Kit (26 animations, componentMap, combinations, vanilla/React/Vue code). The app is plain JS, so the **vanilla** code is used.
+- `docs/design/motionkit/animations.json` — Facilio Motion Kit (26 animations, componentMap, combinations, vanilla/React/Vue code). The app is plain JS, so the **vanilla** code is used.
 - NOT supplied: `llms.txt`, `map.html`, `components.html` (the JSON contains the same componentMap, usage rules and combinations).
 - https://icons.facilio.run — a catalogue of the official Facilio icon library (1,599 icons in 67 groups; static SVGs at `icons.facilio.com/icons/svg/<group>/<name>.svg`; 10 animated Lottie icons in group `animated-icon`: ai-star, loader and 8 arrows). It is not an animator: nothing is created or exported there.
 - Figma connector: connected (account dinesh.r, team plan). No design file or FDS library link has been given yet.

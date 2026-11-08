@@ -1,4 +1,4 @@
-/* The task engine: tasks that create themselves and resolve themselves (plan: docs/reference/TASKS-AUTOMATION-PLAN-2026-11-07.md).
+/* The task engine: tasks that create themselves and resolve themselves (plan: docs/plans/TASKS-AUTOMATION-PLAN-2026-11-07.md).
    `desired(facts)` lists the tasks that SHOULD exist right now, from facts the Studio already holds. `reconcile(want, tasks)` compares that with the tasks that do exist:
    it creates what is missing, moves an automatic task to Done when its reason is gone (with the note "Resolved automatically: <why>"), and reopens one it resolved itself if the reason comes back.
    It never edits a task a person made and never reopens a task a person closed. An automatic task has a stable key and an id made from that key, so running it twice cannot make a duplicate.
@@ -25,7 +25,7 @@
     arr(f.crsWaiting).forEach(x => out.push({ key: 'cr:' + x.id, rule: 'cr', type: 'Change Request', title: 'Decide change request ' + x.label, stage: 'Requirements & Workshops', view: 'governance', reason: 'The change request is proposed and waits for a decision' }));
     if (f.brdApproval) out.push({ key: 'brdapp', rule: 'brdapp', type: 'BRD Task', title: 'Approve the BRD', stage: 'Requirements & Workshops', view: 'brd', reason: 'The BRD is in review and waits for approval' });
     arr(f.claudeAsks).forEach(x => out.push({ key: 'ask:' + x.id, rule: 'ask', type: 'Internal Action', title: 'Answer Claude: ' + x.q, stage: '', view: 'tasks', reason: 'Claude is waiting for your answer', owner: x.by || '' }));
-    // accepted customer mail (docs/reference/MAIL-TO-TASKS-PLAN-2026-11-07.md): wanted until its "done when" check is met. mailOpen rows: { id, title, area, owner, desc, quote }
+    // accepted customer mail (docs/plans/MAIL-TO-TASKS-PLAN-2026-11-07.md): wanted until its "done when" check is met. mailOpen rows: { id, title, area, owner, desc, quote }
     const MT = { brd: ['BRD Task', 'Requirements & Workshops'], solution: ['Requirement Task', 'Requirements & Workshops'], uat: ['UAT Task', 'Testing & UAT'], hypercare: ['Implementation Task', 'Go-Live & Handover'] };
     arr(f.mailOpen).forEach(x => { const m = MT[x.area] || ['Other', '']; out.push({ key: 'mail:' + x.id, rule: 'mail', type: m[0], title: x.title, stage: m[1], view: 'tasks', reason: 'A customer mail asked for this', owner: x.owner || '', desc: x.desc || '', src: { type: 'email', ref: x.id, quote: x.quote || '', label: 'Customer mail' } }); });
     return out;

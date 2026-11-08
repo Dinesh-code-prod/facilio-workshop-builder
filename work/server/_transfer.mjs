@@ -1,4 +1,4 @@
-/* Push and pull engine, the pure rules (roadmap E4, design in docs/reference/STEP1-PUSH-PULL-DESIGN.md). No database, no network: run by tests/transfer.mjs
+/* Push and pull engine, the pure rules (roadmap E4, design in docs/integrations/STEP1-PUSH-PULL-DESIGN.md). No database, no network: run by tests/transfer.mjs
    and used by work/server/_transferapi.mjs. A transfer is one head record per (direction, kind, source, destination, scope); its content lives in immutable
    versions kept elsewhere. Every function returns a new record and leaves its input alone; a refusal is { ok: false, http, code, error }.
    Nothing here can approve on Claude's behalf, and nothing becomes Pushed or Synchronized without the evidence fields. Evidence is what Claude reported;

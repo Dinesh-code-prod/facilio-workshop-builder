@@ -13,7 +13,7 @@ Facilio consultants run many customer implementations. What the customer agreed 
 | Solution architect | Module, state flow, role and notification design; check configuration against requirements |
 | Delivery lead / platform owner | See all projects, manage access, review readiness |
 | Customer stakeholder | Prepare for sessions, review and sign off, run UAT (customer sign-in is not enabled yet) |
-| The team's own Claude | Read project facts and prepare drafts through the connector (see [reference/claude-connector.md](reference/claude-connector.md)) |
+| The team's own Claude | Read project facts and prepare drafts through the connector (see [reference/claude-connector.md](integrations/claude-connector.md)) |
 
 ## Scope: what the product does
 Grouped as the team menu shows it (`src/shell.js`).

@@ -1,4 +1,4 @@
-/* Push and pull engine, storage and routes (roadmap E4, design in docs/reference/STEP1-PUSH-PULL-DESIGN.md). The rules are in _transfer.mjs; this file only reads and writes them.
+/* Push and pull engine, storage and routes (roadmap E4, design in docs/integrations/STEP1-PUSH-PULL-DESIGN.md). The rules are in _transfer.mjs; this file only reads and writes them.
    api.mjs calls installTransfer(deps) once, with its own helpers, so there is one request state and one set of access rules.
    Collections (not in KINDS, so a customer can never list them): xf.<pid> head records, xfd.<pid> and xfdp.<pid> immutable version payloads (key <id>.<n>, saved by save(): gzip and split when large).
    The in-record log is the authoritative trail; audit() mirrors it. There is no delete route. */

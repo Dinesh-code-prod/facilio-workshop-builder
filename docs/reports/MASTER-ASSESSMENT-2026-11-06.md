@@ -1,6 +1,6 @@
 # Master transformation: assessment and plan (6 Nov 2026)
 
-Answers the ten deliverables of the 6 Nov master specification. Nothing was built or changed. Grounded in [AUDIT-2026-11-04](AUDIT-2026-11-04.md), [CONNECTORS-2026-11-04](CONNECTORS-2026-11-04.md), [CLAUDE-ECOSYSTEM-FEASIBILITY-2026-11-06](CLAUDE-ECOSYSTEM-FEASIBILITY-2026-11-06.md) and `HANDOFF.md`. Items not tested are marked **NOT TESTED**.
+Answers the ten deliverables of the 6 Nov master specification. Nothing was built or changed. Grounded in [AUDIT-2026-11-04](AUDIT-2026-11-04.md), [CONNECTORS-2026-11-04](../integrations/CONNECTORS-2026-11-04.md), [CLAUDE-ECOSYSTEM-FEASIBILITY-2026-11-06](../integrations/CLAUDE-ECOSYSTEM-FEASIBILITY-2026-11-06.md) and `HANDOFF.md`. Items not tested are marked **NOT TESTED**.
 
 ## 0. Where the specification conflicts with what is possible (decide these first)
 
@@ -30,7 +30,7 @@ One plain-JavaScript page app (about 128 files, esbuild) and one server function
 | **Hide, keep** | Notifications, rules, views, roles, KPIs, SLA (the `EXPOSED` menu list in `src/shell.js` already supports hiding without deleting) |
 | **Deprecate later** | Show Facilio marketing group, duplicate hubs, old mail sync (blocked by a Microsoft 403) |
 
-Known weak spots: about 36 open review findings ([review-2026-11-05](../reports/review-2026-11-05.md)); Playwright suites not run; no real Claude session test of the connector yet.
+Known weak spots: about 36 open review findings ([review-2026-11-05](review-2026-11-05.md)); Playwright suites not run; no real Claude session test of the connector yet.
 
 ## 2. Architecture (Deliverable 2)
 

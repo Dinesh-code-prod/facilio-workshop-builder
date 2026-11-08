@@ -1,5 +1,5 @@
 // Recolours violet / lavender / magenta tinted colours in src/*.css to the neutral palette.
-// Usage: node scripts/palette-colors.mjs [--dry]   (--dry only prints what would change)
+// Usage: node tools/palette-colors.mjs [--dry]   (--dry only prints what would change)
 // Rules (by lightness l, saturation s, and what the declaration styles):
 //   lavender greys (hue 238-300): text -> #242424 / #616161; fills and borders -> the neutral greys by lightness
 //   saturated pale violets -> the soft brand blue #eaf2ff (sky #8DB8FF when stronger); mid violets used as text -> brand text blue #1262D8
