@@ -1219,8 +1219,8 @@ body.reveal > div:not(.intro):not(.loading) { animation: revealIn .9s cubic-bezi
 .iv-st em { visibility: hidden; } .iv-st.on em { visibility: visible; }
 /* ---- several BRDs per project ---- */
 .brd-bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px 0; flex-wrap: wrap; border-bottom: 1px solid #e3e9f5; background: #fff; }
-.brd-tab { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 8px 14px 9px; border: 1px solid #e3e9f5; border-bottom: 0; border-radius: 10px 10px 0 0; background: #f4f7fd; color: #4a5775; font: inherit; font-size: 13px; cursor: pointer; margin-bottom: -1px; max-width: 240px; } .brd-tab b { color: #1d2b4d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 210px; } .brd-tab .xs { color: #262626; }
-.brd-tab:hover { background: #eaf1fe; } .brd-tab.on { background: #fff; border-color: #1570EF; box-shadow: inset 0 3px 0 #1570EF; } .brd-tab.on b { color: #1570EF; }
+.brd-tab { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 8px 14px 9px; border: 1px solid #e5e5e5; border-bottom: 0; border-radius: 10px 10px 0 0; background: #f5f5f5; color: #404040; font: inherit; font-size: 13px; cursor: pointer; margin-bottom: -1px; max-width: 240px; } .brd-tab b { color: #1d2b4d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 210px; } .brd-tab .xs { color: #262626; }
+.brd-tab:hover { background: #ececec; } .brd-tab.on { background: #fff; border-color: #d4d4d4; box-shadow: inset 0 3px 0 #0a0a0a; } .brd-tab.on b { color: #0a0a0a; }
 .brd-add { border: 1px dashed #b8c6e6; background: transparent; color: #1570EF; border-radius: 10px; padding: 8px 14px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 8px; } .brd-add:hover { background: #fafafa; }
 .brd-bar .btn { margin-bottom: 8px; }
 .chips-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 6px 14px; max-height: 280px; overflow: auto; padding: 4px 2px; } .bf-m { font-size: 13px; } .bf-i { font-style: normal; color: #1570EF; font-weight: 700; }

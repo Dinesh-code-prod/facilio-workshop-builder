@@ -6,6 +6,7 @@ import './_qbank.mjs';
 import './_msadocs.mjs';
 import { readPrompt, parseRead } from './_solread.mjs';
 import { cleanProposal } from './_dsapi.mjs';
+import { slakpiPrompt, parseSlakpi } from './_slakpi.mjs';
 
 export function installQbank(d) {
   const { route, ok, HttpError, me, projectAccess, limit, aiJSON, docRead } = d; const Q = globalThis.FWBQBank;
@@ -55,6 +56,14 @@ export function installQbank(d) {
     const only = areas.some(a => a.key === (b && b.only)) ? b.only : ''; const fileName = String((b && b.fileName) || 'dropped document').slice(0, 120); const p = readPrompt({ text, fileName, areas, only });
     const r = await aiJSON({ op: 'extract', provider: String((b && b.provider) || ''), system: p.system, messages: [{ role: 'user', content: p.user }], maxTokens: 2600, temperature: 0.1, budget: 21000 }, j => { if (!j || typeof j !== 'object' || Array.isArray(j)) throw new HttpError(502, 'The document could not be read'); return j; });
     const proposals = parseRead(r.data, { text, fileName, areas, only }).map(x => cleanProposal(x)).filter(Boolean); return ok({ proposals, areasRead: areas.length, provider: r.provider || '', truncated: String((b && b.text) || '').length > 40000 });
+  });
+  /** a dropped contract, SLA schedule or KPI sheet read by the AI layer into SLA rows and KPIs for the KPIs & SLA matrix page (nothing is saved here; the page shows them and a person ticks what to keep) */
+  route('POST', '/api/projects/:id/slakpi/read', async (b, P) => {
+    const s = await me(); await team(s, P.id); await limit('ai', s.id); const text = String((b && b.text) || '').slice(0, 40000); if (text.trim().length < 40) throw new HttpError(400, 'There is almost no text in that file to read.');
+    const modules = (Array.isArray(b && b.modules) ? b.modules : []).slice(0, 60).map(m => ({ name: String(m && m.name || '').slice(0, 60), label: String(m && m.label || '').slice(0, 60) })); const want = ['sla', 'kpi'].includes(b && b.want) ? b.want : 'both'; const fileName = String((b && b.fileName) || 'dropped document').slice(0, 120);
+    const p = slakpiPrompt({ text, fileName, modules, want });
+    const r = await aiJSON({ op: 'extract', provider: String((b && b.provider) || ''), system: p.system, messages: [{ role: 'user', content: p.user }], maxTokens: 2600, temperature: 0.1, budget: 21000 }, j => { if (!j || typeof j !== 'object' || Array.isArray(j)) throw new HttpError(502, 'The document could not be read'); return j; });
+    const out = parseSlakpi(r.data, { text, modules, want }); return ok({ sla: out.sla, kpis: out.kpis, provider: r.provider || '', truncated: String((b && b.text) || '').length > 40000 });
   });
   return {};
 }

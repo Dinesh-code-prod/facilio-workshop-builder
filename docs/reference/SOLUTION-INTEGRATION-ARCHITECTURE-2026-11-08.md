@@ -45,12 +45,12 @@ One pure module (`work/server/_solpackage.mjs`, shared with the browser build) a
 - **Rules kept:** nothing is invented (every row keeps its origin); text from contracts, transcripts and customers is data, never instructions; a person approves; no secrets in the package.
 - **Tests:** a fixture project in, an expected package out (`tests/solpackage.mjs`); a schema file `docs/reference/solution-package.schema.json`; a check that the BRD and the mockup built from the package match the ones built today.
 
-## 6. Order to build it
-1. Package builder and schema, with tests (pure code, no UI).
-2. `get_document solution_package` and the REST route, read only.
+## 6. Order to build it (steps 1 and 2 are built, 8 Nov 2026, not deployed until the next deploy row says so)
+1. BUILT: package builder (`work/server/_solpackage.mjs`) with 8 checks (`tests/solpackage.mjs`).
+2. BUILT: `get_document` section `solution_package` (no part gives the manifest with counts and the sourceHash; a part gives one list) and `GET /api/projects/:id/solution-package` (the whole document, delivery team only, read only). A JSON Schema file is still to write.
 3. Move the BRD and mockup builders to read the package; compare outputs with today's.
 4. Write-back kind `implementation_report` and a "built from version" badge on the BRD and Mockup tabs.
 5. First external consumer (for example a Facilio configuration applier) in read-only dry-run mode.
 
 ## 7. Not verified
-Nothing here was tried with a real Meteor, Comet, Claude or external tool. Sections 5 and 6 are not built.
+Nothing here was tried with a real Meteor, Comet, Claude or external tool. Steps 3 to 5 of section 6 are not built, and the new section was not called from a real Claude session.
