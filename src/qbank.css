@@ -24,3 +24,13 @@ body .md-res { border-top: 1px solid var(--cs-st2, #e5e5e5); margin-top: 12px; p
 body .md-h { margin: 12px 0 4px; font: 600 14px/20px var(--cs-font, inherit); }
 body .md-docs { display: flex; flex-direction: column; gap: 8px; } body .md-d, body .md-c { border: 1px solid var(--cs-st2, #e5e5e5); border-radius: 8px; padding: 8px 12px; }
 body .md-c { margin-bottom: 8px; } body .md-ul { margin: 0; padding-left: 18px; font: 400 14px/20px var(--cs-font, inherit); } body .md-warn { color: var(--cs-danger, #b3261e); }
+
+/* Training page (src/guideslist.js) */
+body .tr { display: flex; flex-direction: column; gap: 16px; }
+body .tr-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+body .tr-tile { display: flex; flex-direction: column; gap: 4px; text-align: left; padding: 12px 14px; border: 1px solid var(--cs-st2, #e5e5e5); border-radius: 12px; background: var(--cs-bg1, #fff); cursor: pointer; font: 400 13px/18px var(--cs-font, inherit); color: var(--cs-fg3, #666); }
+body .tr-tile b { font: 600 14px/20px var(--cs-font, inherit); color: var(--cs-fg1, #111); } body .tr-tile:hover { border-color: var(--cs-fg3, #999); }
+body .tr-tile.on { border-color: var(--cs-brand, #1570EF); background: var(--cs-brand-soft, #EAF2FF); } body .tr-tile:focus-visible { outline: 2px solid var(--cs-brand, #1570EF); outline-offset: 2px; }
+body .tr-make { display: flex; flex-direction: column; gap: 12px; } body .tr-make textarea { width: 100%; box-sizing: border-box; }
+body .tr-tools { display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; align-items: center; }
+body .tr .card-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; }

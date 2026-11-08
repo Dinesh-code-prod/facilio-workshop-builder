@@ -5,7 +5,7 @@ const req = createRequire(import.meta.url); const H = req('../src/onbhtml.js'), 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log('  ok  ' + name); };
 const project = { id: 'p_123', name: 'CAFM roll-out', customer: 'Acme' };
 const opts = { plan: { sheets: [
-  { sheet: 'Site', crit: 'Critical', cols: [{ ent: 'Site', h: 'Site Name', req: true }, { ent: 'Site', h: 'City' }] },
+  { sheet: 'Site', crit: 'Critical', cols: [{ ent: 'Site', h: 'Site Name', req: true }, { ent: 'Site', h: 'City', opts: ['Dubai', 'Abu Dhabi'] }] },
   { sheet: 'Asset', crit: 'High', cols: [{ ent: 'Asset', h: 'Asset Name', req: true }, { ent: 'Asset', h: 'Site' }, { ent: 'Meter', h: 'Meter Name' }, { ent: 'Meter', h: 'Unit' }] }
 ], files: [] }, upload: { ext: ['xlsx'], maxMB: 60 } };
 const ids = H.idsFor(opts), html = H.buildOnboardingHtml(project, opts);
@@ -14,6 +14,7 @@ const saved = data => html.replace('<script type="application/json" id="wbdata">
 const wb = (rows, over) => Object.assign({ schema: 'fds-onboarding-workbook', version: 1, project: { id: 'p_123', name: 'CAFM roll-out' }, savedAt: '2026-11-07T10:00:00.000Z', rows, answers: { q_contact: 'Priya, priya@acme.com' }, checklist: { read_guide: true } }, over || {});
 
 t('one grid per sheet and per table of a sheet', () => { assert.deepEqual(ids.grids.map(g => [g.key, g.ent, g.cols.length]), [['site_1', 'Site', 2], ['asset_1', 'Asset', 2], ['asset_2', 'Meter', 2]]); });
+t('a column with a fixed list carries its choices to the page (dropdown); a free column carries none', () => { assert.deepEqual(ids.grids[0].opts, [null, ['Dubai', 'Abu Dhabi']]); assert.deepEqual(ids.grids[1].opts, [null, null]); assert.ok(html.includes('"opts":[null,["Dubai","Abu Dhabi"]]')); });
 t('the page has a body for every grid, the save buttons and the empty data holder', () => { ids.grids.forEach(g => assert.ok(html.includes('id="gb_' + g.key + '"'))); assert.ok(html.includes('data-wbsave')); assert.ok(html.includes('id="wbdata"')); });
 t('the page script still parses', () => { const m = /<script>([\s\S]*)<\/script>/.exec(html); assert.doesNotThrow(() => new vm.Script(m[1])); });
 t('a saved workbook is accepted and cleaned to the known columns', () => {

@@ -18,7 +18,7 @@ await t('reconcile creates what is missing; the id comes from the key, so a seco
   const again = reconcile(desired(facts), r.create, 'x'); assert.deepEqual([again.create.length, again.resolve.length, again.reopen.length], [0, 0, 0]);
 });
 await t('a stage that is Ready to close gets a Close stage task; it resolves when the stage is closed; unknown facts leave it alone', () => {
-  const w = desired({ stagesReady: [{ k: 'design', n: 3, name: 'Mockup & BRD' }] }); assert.deepEqual(w.map(x => x.key), ['stage:design']); assert.match(w[0].title, /Close stage 3: Mockup & BRD/);
+  const w = desired({ stagesReady: [{ k: 'design', n: 3, name: 'Solution design & BRD' }] }); assert.deepEqual(w.map(x => x.key), ['stage:design']); assert.match(w[0].title, /Close stage 3: Solution design & BRD/);
   const made = reconcile(w, [], 'x').create; assert.equal(made.length, 1);
   assert.equal(reconcile(desired({}), made, 'y').resolve.length, 1, 'closed: the reason is gone');
   assert.equal(reconcile(desired({}), made, 'y', null, new Set(['stage'])).resolve.length, 0, 'stage facts not loaded yet: leave it');

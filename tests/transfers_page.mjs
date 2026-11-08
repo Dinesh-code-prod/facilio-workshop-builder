@@ -25,7 +25,7 @@ await t('ten statuses have ten different chip classes; anything else is neutral 
   assert.equal(T.statusText({ status: 'Approved', approvedVer: 3 }), 'Approved v3'); assert.equal(T.statusText({ status: 'Pushed', approvedVer: 3 }), 'Pushed');
   assert.ok(T.isBad({ status: 'Failed' }) && T.isBad({ status: 'Requires Attention' }) && !T.isBad({ status: 'Approved' }));
   const css = read('src/transfers.css'); for (const c of ['failed', 'requires-attention', 'approved', 'awaiting-review']) assert.ok(css.includes('.xf-st-' + c), c);
-  assert.ok(!/#[0-9a-f]{3,6}/i.test(css.replace(/#(1D1A5E|1570EF|E5197F|8DB8FF|fff|f0f2f7|5b6b86|eef4ff|fff1f7|d7dfee|eef1f7|f6f9ff|616161|424242|242424|1262D8|c8126a|b10e1c|fdf3f4|fbe3e6|fafafa|f5f5f5|f0f0f0|e0e0e0|d1d1d1|bdbdbd|707070|eaf2ff)\b/gi, '')), 'only Facilio colours and neutrals'); assert.ok(!/gradient|glow|blur\(|violet|purple/i.test(css));
+  assert.ok(!/#[0-9a-f]{3,6}/i.test(css.replace(/#(1D1A5E|1570EF|E5197F|8DB8FF|fff|f0f2f7|5b6b86|eef4ff|fff1f7|d7dfee|eef1f7|f6f9ff|616161|424242|242424|525252|262626|171717|e5e5e5|d4d4d4|15803d|1262D8|c8126a|b10e1c|fdf3f4|fbe3e6|fafafa|f5f5f5|f0f0f0|e0e0e0|d1d1d1|bdbdbd|707070|eaf2ff)\b/gi, '')), 'only Facilio colours and neutrals'); assert.ok(!/gradient|glow|blur\(|violet|purple/i.test(css));
 });
 await t('buttons come only from next[]: nothing in next, nothing to press, whatever the status', () => {
   for (const s of T.STATUSES) assert.deepEqual(T.actionsFor(base({ status: s, next: [] })), [], s);
@@ -141,7 +141,7 @@ await t('Open in Claude uses the engine with the short transfer_read task; tab, 
   answers = [{ transfers: [waitingT] }, { id: 'h_abc' }, { transfers: [] }]; calls.length = 0; await ACT.xfRefresh(anchor({})); assert.ok(calls.some(c => c[1] === '/api/projects/p_1/transfers'));
 });
 await t('the page is wired in: the Project group of the menu after Tasks, team-only, built, tested last, and the team text says it plainly', () => {
-  const shell = read('src/shell.js'); assert.ok(/\['tasks', 'Tasks'\], \['transfers', 'Transfers'\]/.test(shell)); assert.ok(/\[g: 'Project'|g: 'Project'/.test(shell));
+  const shell = read('src/shell.js'); assert.ok(/\['tasks', 'Tasks and email'\], \['transfers', 'Transfers'\]/.test(shell)); assert.ok(/\[g: 'Project'|g: 'Project'/.test(shell));
   assert.ok(/'transfers', 'settings'/.test(read('src/uistate.js')), 'hidden from customers like the other team pages'); const b = read('build.mjs'); assert.ok(b.includes("'src/transferslogic.js', 'src/transfers.js'") && b.includes("r('src/transfers.css')"));
   const tests = JSON.parse(read('package.json')).scripts.test.split(' && '); assert.ok(tests.includes('node tests/transfers_page.mjs'));   // later pages append their own tests after it assert.ok(tests.includes('node tests/msa_project_route.mjs'));
   const help = read('src/teamhelp.js') + read('src/claudesetup.js'); for (const s of ['Claude cannot approve', 'Start project from this contract', 'Pushed and Synchronized']) assert.ok(help.includes(s), s);

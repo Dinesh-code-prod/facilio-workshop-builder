@@ -4,7 +4,7 @@ body .notice:not(#_):not(:has(> svg, > .fi, > .ico)) { display: block !important
 
 /* KPI tiles: a touch more clay depth, and on hover a fine grain and soft sheen so the tile looks like a crisp, textured surface. */
 body .card.stat:not(#_), body .cmd-m:not(#_), body .pp-stat:not(#_), body .kpi:not(#_), body .pl-kpis > div:not(#_) { position: relative; overflow: hidden; background: #fff; box-shadow: inset 0 1px 0 #fff, inset 0 -3px 6px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .07), 0 10px 20px -14px rgba(0, 0, 0, .32) !important; border-radius: 8px; transition: transform .2s ease, box-shadow .2s ease !important; }
-body .pl-kpis > div:not(#_) { border: 1px solid var(--line, #e0e0e0); padding: 12px 14px; }
+body .pl-kpis > div:not(#_) { border: 1px solid var(--line, #e5e5e5); padding: 12px 14px; }
 body .card.stat::before, body .cmd-m::before, body .pp-stat::before, body .kpi::before, body .pl-kpis > div::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .25s ease; background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, .75) 48%, transparent 66%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .25 0 0 0 0 .6 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E"); background-size: 220% 100%, 120px 120px; background-position: 120% 0, 0 0; }
 body .card.stat:hover::before, body .cmd-m:hover::before, body .pp-stat:hover::before, body .kpi:hover::before, body .pl-kpis > div:hover::before { opacity: .55; background-position: -20% 0, 0 0; transition: opacity .25s ease, background-position .7s ease; }
 body .card.stat:not(#_):hover, body .cmd-m:not(#_):hover, body .pp-stat:not(#_):hover, body .kpi:not(#_):hover, body .pl-kpis > div:not(#_):hover { transform: translateY(-3px); box-shadow: inset 0 1px 0 #fff, inset 0 -3px 6px rgba(0, 0, 0, .08), 0 3px 6px rgba(0, 0, 0, .09), 0 18px 28px -14px rgba(0, 0, 0, .42) !important; }
@@ -12,9 +12,9 @@ body .card.stat:not(#_):hover, body .cmd-m:not(#_):hover, body .pp-stat:not(#_):
 
 /* Headers are light now, but some controls inside them still had colours made for the old dark header (white text on a white button).
    Seen as the admin console's Refresh button, the report-range dropdown, header chips and the count badge on the active admin menu item. */
-body .adm-hero .hm-btn:not(#_), body .adm-hero .hm-btn.ghost:not(#_), body .page-header .rgdd-btn:not(#_), body .adm-hero .rgdd-btn:not(#_) { background: #fff !important; color: #242424 !important; border: 1px solid #d1d1d1 !important; }
+body .adm-hero .hm-btn:not(#_), body .adm-hero .hm-btn.ghost:not(#_), body .page-header .rgdd-btn:not(#_), body .adm-hero .rgdd-btn:not(#_) { background: #fff !important; color: #171717 !important; border: 1px solid #d4d4d4 !important; }
 body .adm-hero .hm-btn:not(#_):hover, body .adm-hero .hm-btn.ghost:not(#_):hover, body .page-header .rgdd-btn:not(#_):hover { background: #f5f5f5 !important; color: #1D1A5E !important; border-color: #8DB8FF !important; }
-body .page-header .rgdd-btn i, body .adm-hero .rgdd-btn i { color: #616161 !important; }
+body .page-header .rgdd-btn i, body .adm-hero .rgdd-btn i { color: #525252 !important; }
 body .page-header .tag:not(#_), body .page-header .chip:not(#_), body .page-header .pill:not(#_), body .adm-hero .chip:not(#_) { background: #f5f5f5 !important; color: #1D1A5E !important; border: 1px solid #eaf2ff !important; }
 body .page-header .rg-clear:not(#_), body .adm-hero .rg-clear:not(#_) { color: #1570EF !important; }
 body .adm-ni.on:not(#_) em { background: rgba(255, 255, 255, .22) !important; color: #fff !important; }
@@ -58,9 +58,9 @@ body .main > .page > .page-header:not(#_):not(#__)::after, body .adm-main > .adm
 body .main > .page > .page-header:not(#_):not(#__), body .adm-main > .adm-hero:not(#_):not(#__) { margin-bottom: 22px !important; border-radius: 0 0 12px 12px !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), inset 0 -4px 10px rgba(0, 0, 0, .28), inset 0 3px 8px rgba(255, 255, 255, .05), 0 14px 24px -16px rgba(0, 0, 0, .55) !important; }
 
 /* Other number tiles (Package Analysis: modules, fields, relationships, apps, tabs...) get the same clay depth and hover as the KPI tiles. */
-body .stat:not(.card):not(#_) { position: relative; overflow: hidden; padding: 12px 14px; border-radius: 14px; border: 1px solid #e0e0e0; background: #fff; background-color: #fff; box-shadow: inset 0 1px 0 #fff, inset 0 -3px 6px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .07), 0 10px 20px -14px rgba(0, 0, 0, .32) !important; transition: transform .2s ease, box-shadow .2s ease !important; }
-body .stat:not(.card) .n:not(#_) { font-size: 26px; font-weight: 800; letter-spacing: -.5px; color: #242424; line-height: 1.1; }
-body .stat:not(.card) .l:not(#_) { margin-top: 4px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: none; color: #424242; }
+body .stat:not(.card):not(#_) { position: relative; overflow: hidden; padding: 12px 14px; border-radius: 14px; border: 1px solid #e5e5e5; background: #fff; background-color: #fff; box-shadow: inset 0 1px 0 #fff, inset 0 -3px 6px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .07), 0 10px 20px -14px rgba(0, 0, 0, .32) !important; transition: transform .2s ease, box-shadow .2s ease !important; }
+body .stat:not(.card) .n:not(#_) { font-size: 26px; font-weight: 800; letter-spacing: -.5px; color: #171717; line-height: 1.1; }
+body .stat:not(.card) .l:not(#_) { margin-top: 4px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: none; color: #262626; }
 body .stat:not(.card)::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .25s ease, background-position .7s ease; background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, .75) 48%, transparent 66%); background-size: 220% 100%; background-position: 120% 0; }
 body .stat:not(.card):hover::before { opacity: .55; background-position: -20% 0; }
 body .stat:not(.card):not(#_):hover { transform: translateY(-3px); box-shadow: inset 0 1px 0 #fff, inset 0 -3px 6px rgba(0, 0, 0, .08), 0 3px 6px rgba(0, 0, 0, .09), 0 18px 28px -14px rgba(0, 0, 0, .42) !important; }
@@ -72,10 +72,10 @@ body .sidebar .search:not(#_):not(#__) { overflow: hidden; }
 body .sidebar .search:not(#_):not(#__):focus-within { box-shadow: inset 0 0 0 1px #1570EF, 0 0 0 3px rgba(0, 0, 0, .16) !important; background: #fff !important; }
 
 /* File pickers: the browser's grey "Choose File" box replaced by a soft drop-zone look with a pill button, in every form. */
-body input[type="file"]:not(#_):not(.sr-only) { width: 100%; height: auto; min-height: 48px; padding: 8px 10px; border: 1.5px dashed #8DB8FF !important; border-radius: 14px; background: #fff !important; color: #616161; font: inherit; font-size: 13.5px; cursor: pointer; box-shadow: inset 0 1px 0 #fff; transition: border-color .15s, background .15s; }
+body input[type="file"]:not(#_):not(.sr-only) { width: 100%; height: auto; min-height: 48px; padding: 8px 10px; border: 1.5px dashed #8DB8FF !important; border-radius: 14px; background: #fff !important; color: #525252; font: inherit; font-size: 13.5px; cursor: pointer; box-shadow: inset 0 1px 0 #fff; transition: border-color .15s, background .15s; }
 body input[type="file"]:not(#_):hover { border-color: #1570EF !important; background: #fafafa !important; }
 body input[type="file"]:not(#_):focus-visible { outline: 0; box-shadow: 0 0 0 3px rgba(0, 0, 0, .18); }
-body input[type="file"]:not(#_)::file-selector-button { margin-right: 12px; padding: 7px 16px; border: 1px solid #e0e0e0; border-radius: 999px; background: #fff; color: #1D1A5E; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer; box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 0, 0, .12); transition: background .15s; }
+body input[type="file"]:not(#_)::file-selector-button { margin-right: 12px; padding: 7px 16px; border: 1px solid #e5e5e5; border-radius: 999px; background: #fff; color: #1D1A5E; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer; box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 0, 0, .12); transition: background .15s; }
 body input[type="file"]:not(#_)::file-selector-button:hover { background: #eaf2ff; }
 
 /* Buttons whose old style was "white text on a coloured fill" (the AI draft button, Watch the introduction, roadmap go) lost the fill to the clay buttons and
@@ -87,10 +87,10 @@ body .btn.ai-btn:not(#_):not(#__):hover, body .ai-btn:not(#_):not(#__):hover, bo
 body .btn.ai-btn:not(#_):not(#__) *, body .ai-btn:not(#_):not(#__) * { color: inherit !important; }
 
 /* Jump chips and pills: soft clay pills in the app's ink and violet, not flat pale-blue boxes. */
-body .tg2-chips a:not(#_), body .gl-jump:not(#_) button { background: #fff !important; color: #242424 !important; border: 1px solid #e0e0e0; border-radius: 999px; padding: 7px 14px; font-weight: 600; font-size: 13px; text-decoration: none; box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 0, 0, .08), 0 6px 12px -10px rgba(0, 0, 0, .35); transition: transform .15s ease, box-shadow .15s ease, color .15s; }
+body .tg2-chips a:not(#_), body .gl-jump:not(#_) button { background: #fff !important; color: #171717 !important; border: 1px solid #e5e5e5; border-radius: 999px; padding: 7px 14px; font-weight: 600; font-size: 13px; text-decoration: none; box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 0, 0, .08), 0 6px 12px -10px rgba(0, 0, 0, .35); transition: transform .15s ease, box-shadow .15s ease, color .15s; }
 body .tg2-chips a:not(#_):hover, body .gl-jump:not(#_) button:hover, body .gl-jump:not(#_) button.on { color: #1D1A5E !important; border-color: #8DB8FF; transform: translateY(-1px); background: #fff !important; box-shadow: inset 0 1px 0 #fff, 0 8px 14px -10px rgba(0, 0, 0, .5); }
 /* Notices: a calm neutral box with a violet edge (warning and error keep their own colours). */
-body .notice:not(.warn):not(.err):not(.danger):not(.ok):not(#_):not(#__) { background: #fafafa !important; border: 1px solid #e0e0e0 !important; border-left: 3px solid #1570EF !important; color: #242424 !important; box-shadow: inset 0 1px 0 #fff !important; }
+body .notice:not(.warn):not(.err):not(.danger):not(.ok):not(#_):not(#__) { background: #fafafa !important; border: 1px solid #e5e5e5 !important; border-left: 3px solid #1570EF !important; color: #171717 !important; box-shadow: inset 0 1px 0 #fff !important; }
 
 /* Phone width: button rows in headers and toolbars wrap instead of running off the screen. */
 @media (max-width: 720px) {

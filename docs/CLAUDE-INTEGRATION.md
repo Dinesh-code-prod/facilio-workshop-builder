@@ -44,6 +44,8 @@ Claude (web or Desktop): Settings, Connectors, Add custom connector, name `Facil
 
 **Task tracking and reminders.** `task_tracking` gives Claude the open tasks plus evidence and stores UNAPPROVED suggestions that a person accepts; `send_task_digest` and an assignment message send Teams DMs through Otto (needs the platform secret `teams_notify = on`). Code: `_tasksuggest.mjs`, `_tasksapi.mjs`, `_taskwatch.mjs`.
 
+**Status reports (WSR and monthly).** Page `statusrep` (`src/wsr.js`, rules `src/wsrlogic.js`, tests `tests/wsr.mjs`): a report is a `rep` record (type WSR or Monthly) with the finished HTML in `html`. Build from the Studio is instant and uses the live records; Ask Claude writes a job `make_wsr` or `make_monthly` (recipes in `work/server/_jobs.mjs`), Claude checks the stages and the plan through the read tools and saves the HTML with `save_draft` (task wsr or monthly); a person previews it in a sandboxed frame and records it. No new tool.
+
 **Generated customer HTML (no server).** Self-contained files with no external requests: kick-off deck, data onboarding page (`src/onbhtml.js`, return file checked by `src/onbreturn.js`), FTR checklist, UAT guide, workshop preparation, project plan (in progress).
 
 ## 5. Rules the integration must keep

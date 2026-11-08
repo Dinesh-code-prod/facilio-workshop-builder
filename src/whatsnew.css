@@ -6,7 +6,7 @@ html body .wn-hero h2:not(#_):not(#__):not(.z1):not(.z2):not(.z3):not(.z4):not(.
 .wn-hero b{color:#8DB8FF}
 .wn-stats{display:flex;gap:30px}
 .wn-stats b{display:block;font-size:34px;line-height:1;font-weight:600;letter-spacing:-1px;color:#fff}
-.wn-stats span{font-size:12px;color: #616161}
+.wn-stats span{font-size:12px;color: #525252}
 .wn-stats .hot b{color:#ff7ab8}
 .wn-chips{display:flex;gap:8px;margin:0 0 18px;flex-wrap:wrap}
 .wn-chip{border:1px solid #d7dfee;background:#fff;color:#1D1A5E;border-radius:999px;padding:7px 15px;font:600 12.5px/1 inherit;cursor:pointer}
@@ -20,7 +20,7 @@ html body .wn-hero h2:not(#_):not(#__):not(.z1):not(.z2):not(.z3):not(.z4):not(.
 .wn-it.latest .wn-card{border-color:#c9d9fb}
 .wn-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .wn-v{font-weight:700;font-size:15px;color:#1D1A5E}
-.wn-d{font-size:12px;color: #424242}
+.wn-d{font-size:12px;color: #262626}
 .wn-k,.wn-a{font-size:11px;font-weight:700;padding:3px 9px;border-radius: 999px;letter-spacing:.02em}
 .wn-k.up{background:#e6f0ff;color:#0b4fbf}.wn-k.fx{background:#fff1e0;color:#9a4d00}.wn-k.now{background:#fdf3f4;color:#b10e1c}
 .wn-a{background:#eef1f7;color:#46506f}

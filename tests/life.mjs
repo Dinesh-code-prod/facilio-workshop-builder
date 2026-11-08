@@ -5,7 +5,7 @@ let n = 0; const t = (name, fn) => { fn(); n++; console.log('  ok  ' + name); };
 const cp = state => ({ state, name: 'x', detail: '' });
 
 t('there are seven stages (the eight-stage roadmap has no page for 6) in the agreed order, numbered as the menu, each tied to distinct checkpoints', () => {
-  assert.deepEqual(L.STAGES.map(s => s.name), ['Project introduction', 'Requirement sessions', 'Mockup & BRD', 'UAT & FTR', 'Training guides', 'Hypercare', 'Project handover']); assert.deepEqual(L.STAGES.map(s => s.n), [1, 2, 3, 4, 5, 7, 8]);
+  assert.deepEqual(L.STAGES.map(s => s.name), ['Project introduction', 'Requirement sessions', 'Solution design & BRD', 'UAT & FTR', 'Training guides', 'Hypercare', 'Project handover']); assert.deepEqual(L.STAGES.map(s => s.n), [1, 2, 3, 4, 5, 7, 8]);
   const all = L.STAGES.flatMap(s => s.cps); assert.equal(new Set(all).size, all.length); assert.deepEqual([...all].sort((a, b) => a - b), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]); });
 t('nothing completes by itself: only a recorded decision gives Completed, never the records alone', () => { assert.equal(L.status({ cps: [cp('done'), cp('done')], signs: [] }).status, 'ready'); assert.equal(L.status({ cps: [cp('done')], signs: [], decision: { status: 'closed' } }).status, 'completed'); assert.equal(L.STATUS.ready, 'Ready to close'); });
 t('no records at all is Upcoming, never Completed', () => { assert.equal(L.status({ cps: [cp('none')], signs: [] }).status, 'upcoming'); assert.equal(L.status({ cps: [], signs: [] }).status, 'upcoming'); });

@@ -52,6 +52,6 @@ t('Meteor and Comet can be docked beside a page; sites that refuse framing canno
   assert.deepEqual(W.SITES.filter(x => x.framed !== false).map(x => x.id), ['meteor', 'comet']);
   const js = read('src/webframe.js'); assert.ok(js.includes('return x && x.framed !== false && W.isAllowed(x.url) ? x : null'), 'dock only for sites that allow framing');
   ['ACT.wfDock =', 'ACT.wfDockClose', 'class="wf-dock-frame" title="${esc(x.title)}" src="${esc(x.url)}" referrerpolicy="no-referrer" sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-downloads" allow=""', 'This site does not open inside Delivery Studio', 'data-act="wfWin"', "'popup=yes,width=' + w + ',height=' + sh + ',left=' + (sw - w) + ',top=0,noopener,noreferrer'", "'fds_tool_' + x.id", 'if (!x || !W.isAllowed(x.url)) return;', 'ACT.wfBig'].forEach(x => assert.ok(js.includes(x), x));
-  const mk = read('src/mockup.js'); assert.ok(mk.includes("V.wfDockButton('meteor'") && mk.includes("V.wfDockButton('comet')"), 'Mockup has Open Meteor here / Open Comet here');
+  const mk = read('src/mockup.js'); assert.ok(mk.includes("V.wfDockButton('meteor'") && !mk.includes("V.wfDockButton('comet')"), 'Mockup has Open Meteor here and no Comet'); const tr = read('src/guideslist.js'); assert.ok(tr.includes("V.wfDockButton('comet')") && tr.includes('data-act="mkComet"'), 'Training has Open Comet and Open Comet here');
 });
 console.log(n + ' checks passed');

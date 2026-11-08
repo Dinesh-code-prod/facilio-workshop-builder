@@ -1,7 +1,7 @@
 // Push and pull engine, the pure rules in work/server/_transfer.mjs (roadmap E4, design STEP1-PUSH-PULL-DESIGN.md). No database, no network.
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { STATUSES, DIRS, LIMITS, canonKey, transferId, decideStore, newRecord, addVersion, transition, allowedNext, pushGuard, beginPush, view, summarise } from '../work/server/_transfer.mjs';
+import { STATUSES, DIRS, LIMITS, canonKey, transferId, decideStore, newRecord, addVersion, transition, allowedNext, pushGuard, beginPush, view, summarise, canRemove } from '../work/server/_transfer.mjs';
 
 let n = 0; const t = async (name, fn) => { await fn(); n++; console.log('  ok  ' + name); };
 const sha = s => createHash('sha256').update(s, 'utf8').digest('hex');
@@ -140,7 +140,8 @@ await t('hostile input is refused or trimmed, never stored raw', () => {
 await t('view hides the nonce and adds next[] for the role; summarise gives a small list row', () => {
   const live = approvedWithIntent(); const v = view(live, 'editor', { now: T0 + MIN }); assert.ok(!JSON.stringify(v).includes('N1'), 'no nonce in what a page sees'); assert.equal(v.pushIntent.live, true); assert.ok(v.next.includes('Pushed')); assert.deepEqual(view(live, 'viewer', { now: T0 + MIN }).next, []);
   assert.equal(view(live, 'editor', { now: T0 + 20 * MIN }).pushIntent.live, false); assert.equal(live.pushIntent.nonce, 'N1', 'view works on a copy');
-  const row = summarise(at('Awaiting Review'), 'owner'); assert.deepEqual(Object.keys(row).sort(), ['approvedVer', 'by', 'createdAt', 'dest', 'dir', 'error', 'id', 'kind', 'next', 'scope', 'source', 'status', 'updatedAt', 'ver']); assert.deepEqual(row.next, ['Approved', 'Draft Generated', 'Requires Attention']);
+  const row = summarise(at('Awaiting Review'), 'owner'); assert.deepEqual(Object.keys(row).sort(), ['approvedVer', 'by', 'canRemove', 'createdAt', 'dest', 'dir', 'error', 'id', 'kind', 'next', 'scope', 'source', 'status', 'updatedAt', 'ver']); assert.deepEqual(row.next, ['Approved', 'Draft Generated', 'Requires Attention']);
   assert.ok(Buffer.byteLength(JSON.stringify(row)) < 1500);
 });
+t('a transfer can be removed by an editor or owner until it is approved; never once approved, pushed or synchronized, never by a viewer', () => { for (const st of ['Not Retrieved', 'Awaiting Review', 'Failed', 'Requires Attention']) { assert.equal(canRemove(at(st), 'editor'), true, st); assert.equal(canRemove(at(st), 'owner'), true, st); assert.equal(canRemove(at(st), 'viewer'), false, st); } for (const st of ['Approved', 'Pushed', 'Synchronized']) assert.equal(canRemove(at(st), 'owner'), false, st); assert.equal(canRemove(Object.assign(at('Retrieved'), { projectId: 'p1' }), 'owner'), false, 'a project was made from it'); });
 console.log(n + ' transfer rule checks passed');

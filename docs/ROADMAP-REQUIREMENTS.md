@@ -12,6 +12,17 @@ Live is deploy 142 (3 Nov 2026). Commits: `b5acdbf`, `df9039a`.
 
 ## Part A. Pending and not checked
 
+### A0. Pending for tomorrow (7 Nov 2026, after deploy 273)
+- [ ] Check live, signed in: Status reports page (Weekly and Monthly: Build, Preview, Download HTML, E-mail and status drawer, Ask Claude then Record as report); the Training page (Comet moved out of Mockup and UAT); the stage 3 name **Solution design & BRD** everywhere (confirm the name with the user).
+- [x] Done 8 Nov 2026: actual end stamped when a plan task is set Done in the drawer; `make_wsr` and `make_monthly` in the queue prompt docs and `docs/CLAUDE-INTEGRATION.md`; the live queue task already runs any kind by the claim recipe.
+- [x] Team Project dashboard shows the latest status reports (deploy 275, not looked at in a browser).
+- [x] Stage dashboards Reports tab links to Status reports (team only). Customers do NOT see report records on purpose: the team sends the report by e-mail from the E-mail and status drawer; a customer view needs a server read rule first.
+- [ ] Status reports, still open: retire the text-only editor on the hidden Reports page once the new page is approved.
+- [ ] Feedback tab: owner creates the `github_feedback` credential (steps in `docs/operations/FEEDBACK-GITHUB.md`), then sends the saved feedback to GitHub.
+- [ ] Job queue (user): the task studio-job-queue runs every 5 minutes and is enabled; paste the full replacement prompt from `docs/operations/STUDIO-JOB-QUEUE-PROMPT-2026-11-07.md` into it (it now lists make_wsr and make_monthly) and decide on a faster lane for chat jobs and Find mail.
+- [ ] Read each other session's last report (Solution tab, Mail to tasks, Pro widgets and reports, Fluent page pass, Roadmap Part A) and carry their open items into the sections below.
+- [ ] Housekeeping: `/sync` the main folder (stale local `main`); ask before deleting the old `worktree-agent-*`, `claude/*` and `wip/*` branches; free disk space; facilio.work review still pending; keep the connector at 40 tools.
+
 ### A1. Not checked yet (3 Nov 2026 sessions)
 - [x] Customer's own view of the Customer User Guide: checked 4 Nov 2026 on localhost (guide published, previewed as the customer): module list, section links and answers strip are in Facilio colours, no overlapping names, no page errors (`tests/ui/guide-customer-check.mjs`, 5 of 5). Not checked on live. Small leftover: the "What your team will see" picture frame has a pale lilac tint (goes with the violet pass in A2).
 - [x] Live check that a file dropped in a box is really sent and stored: checked 4 Nov 2026 on facilio.work (deploy 142), test project "ZZ Walkthrough Test": a 68-byte file `live-upload-check.txt` put in the Workshop transcripts box went to category `transcript`, was sent with Send, showed "Stored", and the project's file list returned it. Not checked: a large file (16 MB parts), an e-mail (.eml) or the "Drop anything" guess on live. The test file is still in that project (delete it there if you want it gone).

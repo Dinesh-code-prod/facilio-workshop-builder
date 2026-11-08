@@ -22,7 +22,7 @@ The rules the screens follow. Colours, depth and wording are the owner's rules; 
 Not allowed: violet or purple, neon or glow, heavy gradients. (`reference/design-reference.md` records an older external artifact that used violet; it is history, not a rule.)
 
 ## Depth
-Slight clay and glass: a light top edge, a faint bottom shade and a soft black shadow. KPI tiles on the home page are flat white. Admin pages are flat and matte. Styles are layered in `build.mjs`; overrides use `body ...:not(#_):not(#__)` with `!important` and the last layer is `depthlayer.css`.
+The look is coss ui (light theme only): hairline borders, near-black main buttons, a tinted accent per menu group, small shadows. The rules are in `docs/reference/UI-COSS-LIBRARY.md`. Styles are layered in `build.mjs`; overrides use `body ...:not(#_):not(#__)` with `!important` and the last layer is `ui.css`.
 
 ## Layout
 - **Sidebar** groups, then pages; the active page is a dark pill. Counts show what needs a person (statements to review, blocking checks).
@@ -53,4 +53,4 @@ Discover more has two different Apple-style scroll effects, both in `src/animati
 A separate, calmer menu for the customer (introduction, prepare, product tour, guides, portal). Only tabs the team has switched on show. Team-only records never appear there.
 
 ## Where the design lives in code
-`src/theme.css`, `src/design-system.css`, `src/clay-*.css`, `src/depthlayer.css`, one CSS file per page area, and `src/shell.js` for the menu. Further notes: [reference/design-reference.md](reference/design-reference.md), [reference/motion-and-design.md](reference/motion-and-design.md). Screenshots: `docs/screenshots/`.
+`src/theme.css`, `src/design-system.css`, `src/ui.css` (the last layer), one CSS file per page area, and `src/shell.js` for the menu. Further notes: [reference/design-reference.md](reference/design-reference.md), [reference/motion-and-design.md](reference/motion-and-design.md).

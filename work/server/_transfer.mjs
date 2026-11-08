@@ -147,14 +147,16 @@ export function allowedNext(rec, role, o = {}) {
     if (to === 'Pushed') { const i = rec.pushIntent; return !!i && i.ver === rec.approvedVer && rec.ver === rec.approvedVer && Date.parse(i.exp) > Date.parse(iso(o.now)); }
     return true; });
 }
+/** A transfer added by mistake may be removed by an editor or owner until a person approved a version of it (Approved, Pushed, Synchronized and anything once approved are the record of what was agreed and sent, so they stay). */
+export const canRemove = (rec, role) => rank(role) > 0 && !['Approved', 'Pushed', 'Synchronized'].includes(rec.status) && rec.approvedVer == null && !rec.projectId;
 /** the record as a person sees it: no nonce, plus next[] for the viewer's role */
 export function view(rec, role, o = {}) {
   const r = clone(rec); if (r.pushIntent) r.pushIntent = { ver: r.pushIntent.ver, dest: r.pushIntent.dest, exp: r.pushIntent.exp, live: Date.parse(r.pushIntent.exp) > Date.parse(iso(o.now)) };
-  r.next = allowedNext(rec, role, o); r.evidenceNote = r.pushes.length ? EVIDENCE_NOTE : ''; return r;
+  r.next = allowedNext(rec, role, o); r.canRemove = canRemove(rec, role); r.evidenceNote = r.pushes.length ? EVIDENCE_NOTE : ''; return r;
 }
 /** one list row */
 export function summarise(rec, role, o = {}) {
   const e = x => ({ system: x.system, ref: x.ref, label: x.label });
   return { id: rec.id, dir: rec.dir, kind: rec.kind, scope: rec.scope, status: rec.status, ver: rec.ver, approvedVer: rec.approvedVer, source: e(rec.source), dest: e(rec.dest), by: rec.by, createdAt: rec.createdAt, updatedAt: rec.updatedAt,
-    error: rec.error ? { code: rec.error.code, msg: rec.error.msg } : null, next: allowedNext(rec, role, o) };
+    error: rec.error ? { code: rec.error.code, msg: rec.error.msg } : null, next: allowedNext(rec, role, o), canRemove: canRemove(rec, role) };
 }
