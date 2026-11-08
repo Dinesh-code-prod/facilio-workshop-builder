@@ -758,7 +758,6 @@ body .sidebar .sb-group.open .sb-chev:not(#_):not(#__) { transform: rotate(45deg
 body .sidebar .sb-stage.open .sb-item:not(#_):not(#__) { margin-left: 10px; border-left: 2px solid color-mix(in srgb, var(--sg) 22%, transparent); border-radius: 0 8px 8px 0; }
 body .sidebar .sb-stage.open .sb-item.active:not(#_):not(#__) { border-left-color: var(--sg); background: color-mix(in srgb, var(--sg) 10%, #fff) !important; }
 body .sidebar .sb-stage.open .sb-item.active svg:not(#_):not(#__) { color: color-mix(in srgb, var(--sg) 70%, #000) !important; }
-body .sidebar .sb-group.open > .sb-item:not(#_):not(#__) { animation: csRise 180ms var(--cs-out) both; }
 body .sidebar .sb-item svg:not(#_):not(#__), body .sidebar .sb-title svg:not(#_):not(#__) { flex: none; width: 16px; height: 16px; }
 @media (prefers-reduced-motion: reduce) { body .dialog, body .modal, body .drawer, body .toast, body .ui-toast, body #userPop, body .menu, body .popover, body .sidebar .sb-group.open > .sb-item, body .ui-loading i { animation: none !important; } body .btn:active { transform: none !important; } }
 

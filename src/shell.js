@@ -198,14 +198,18 @@
     if (mode === 'admin') { app.innerHTML = navbarHtml(false) + (V.adminHtml ? V.adminHtml() : ''); if (V.adminPost) V.adminPost(); return; }
     if (mode !== 'workspace') return;
     if ((S.ui.view === 'onboarding' || (S.ui.view === 'transcripts' && S.ui.reqTab === 'onboarding')) && S.ui.onbTab === 'excel' && document.getElementById('onbFrame')) return; // keep the embedded tool alive: re-rendering would reload it
-    if (V.wfKeep && V.wfKeep()) { const sb = document.querySelector('.sidebar'); if (sb) sb.innerHTML = sidebarHtml(); return; } // a Facilio tools frame is open on the same site: re-rendering would reload it
+    if (V.wfKeep && V.wfKeep()) { const sb = document.querySelector('.sidebar'); if (sb) { sb.innerHTML = sidebarHtml(); render._sb = null; } return; } // a Facilio tools frame is open on the same site: re-rendering would reload it
     const main = document.querySelector('.main'); const scroll = main ? main.scrollTop : 0;
     const active = document.activeElement; const activeBind = active && active.getAttribute && active.getAttribute('data-bind'); const caret = active && active.selectionStart;
     const key = ALIAS[S.ui.view] && !V[S.ui.view] ? ALIAS[S.ui.view] : S.ui.view; const view = V[key] || (/^cx_/.test(key) && V.customPage) || V.overview;
     let body; if (V.ui && V.ui.blocked(key)) body = `<div class="page-body">${V.ui.denied('this page')}</div>`; else try { body = view.html(); } catch (e) { console.error(e); body = `<div class="page-body">${V.ui ? V.ui.error('This page could not be displayed', 'Something went wrong while drawing this page. Your work is safe. Try again, or go back to the overview. (' + String((e && e.message) || e).slice(0, 140) + ')') : '<div class="notice err">This view could not be displayed.</div>'}</div>`; }
     const sbOld = document.querySelector('.sidebar'); const sbTop = sbOld ? sbOld.scrollTop : (S.ui.navScroll || 0); // the whole shell is rebuilt on every render: carry the sidebar's scroll position across so a click never moves it
     if (body.indexOf('ob-focus-page') >= 0 || body.indexOf('wb-focus-page') >= 0) { app.innerHTML = body; if (view.mount) try { view.mount(); } catch (e) { console.error(e); } return; }   // the Excel sheet opened in its own tab: the sheet and nothing else
-    app.innerHTML = navbarHtml(true) + `<div class="shell"><nav class="sidebar" id="projNav" aria-label="Workspace">${sidebarHtml()}</nav><main class="main" id="main" data-sec="${secOf(key)}"${(st => st ? ` data-stage="${st.n}" style="--stage-label:'Stage ${st.n} · ${st.name.replace(/&/g, '&amp;')}'"` : '')(stageOf(key))}>${crumbHtml()}<div class="page">${V.phaseStrip ? V.phaseStrip() : ''}${body}</div></main></div>`;
+    // the navbar and sidebar are kept when they did not change, so a click redraws only the page (no flicker, no replayed animation)
+    const nbH = navbarHtml(true), sbH = sidebarHtml(), mainH = `<main class="main" id="main" data-sec="${secOf(key)}"${(st => st ? ` data-stage="${st.n}" style="--stage-label:'Stage ${st.n} · ${st.name.replace(/&/g, '&amp;')}'"` : '')(stageOf(key))}>${crumbHtml()}<div class="page">${V.phaseStrip ? V.phaseStrip() : ''}${body}</div></main>`;
+    const shEl = app.querySelector(':scope > .shell'), mEl = shEl && shEl.querySelector(':scope > .main');
+    if (mEl && render._nb === nbH && render._sb === sbH && app.firstElementChild.classList.contains('navbar')) mEl.outerHTML = mainH; else app.innerHTML = nbH + `<div class="shell"><nav class="sidebar" id="projNav" aria-label="Workspace">${sbH}</nav>${mainH}</div>`;
+    render._nb = nbH; render._sb = sbH;
     const m = document.querySelector('.main'); if (m) m.scrollTop = scroll; const sbNew = document.querySelector('.sidebar'); if (sbNew) sbNew.scrollTop = sbTop;
     if (view.mount) try { view.mount(); } catch (e) { console.error(e); }
     if (V.motion) V.motion.route(key + '|' + (S.project ? S.project.id : ''));
@@ -288,7 +292,7 @@
   });
   document.addEventListener('input', e => {
     const el = e.target;
-    if (el.id === 'navq') { S.ui.navq = el.value; const nav = document.querySelector('.sidebar'); if (nav) { nav.innerHTML = sidebarHtml(); const n = document.getElementById('navq'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); } return; }
+    if (el.id === 'navq') { S.ui.navq = el.value; const nav = document.querySelector('.sidebar'); if (nav) { nav.innerHTML = sidebarHtml(); render._sb = null; const n = document.getElementById('navq'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); } return; }
     const b = el.getAttribute('data-bind'); if (!b || el.type === 'checkbox' || el.tagName === 'SELECT') return;
     const t = bindTarget(b); setPath(t.obj, t.path, el.type === 'number' ? (el.value === '' ? '' : Number(el.value)) : el.value); F.changed(null, null, { render: false, section: t.section });
   });
