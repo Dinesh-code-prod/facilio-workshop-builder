@@ -54,3 +54,5 @@ body .tr-n { display: inline-block; min-width: 18px; padding: 0 6px; border-radi
 body .tr-panel { display: flex; flex-direction: column; gap: 16px; }
 body .tr-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 8px 4px; }
 body .tr-empty p { margin: 0; font: 600 14px/20px var(--cs-font, inherit); } body .tr-empty p.small { font-weight: 400; }
+
+body .tr-panel > .card, body .tr-panel > div > .card { margin-bottom: 0 !important; }
