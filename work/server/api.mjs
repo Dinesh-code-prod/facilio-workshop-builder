@@ -17,7 +17,7 @@ import { installMailTasks } from './_mailapi.mjs';
 import { installJobs } from './_jobsapi.mjs';
 import { installFeedback } from './_feedback.mjs';
 import { installNotify, norm as nNorm, lead } from './_notify.mjs';
-import { pendingFor, digestMessage, digestKey, assignKey, assignGate, assignmentNotice, BASE_URL as TW_BASE } from './_taskwatch.mjs';
+import { pendingFor, teamCounts, digestMessage, digestKey, assignKey, assignGate, assignmentNotice, BASE_URL as TW_BASE } from './_taskwatch.mjs';
 let FWB = null; // this copy of the server's own dispatcher (not looked up through a global, so two copies in one process cannot mix)
 let CTX = null, HDR = {};   // set at the start of every request (a Lambda handles one request at a time)
 {
@@ -1525,7 +1525,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
       else { const k = cut(b.project, 80).toLowerCase(); rows = await taskRowsOf((await memberProjects(s)).filter(p => !k || p.id === b.project || String(p.name).toLowerCase().includes(k))); people = [String(s.email || '').toLowerCase()]; scope = k || 'all'; }
       const results = [];
       for (const to of [...new Set(people)].slice(0, 30)) {
-        const m = digestMessage(pendingFor(to, rows, today), today, { name: (to.split('@')[0].split(/[._]/)[0] || '').replace(/^./, c => c.toUpperCase()) }); if (!m) { results.push({ to, status: 'skipped', why: 'nothing pending' }); continue; }
+        const m = digestMessage(pendingFor(to, rows, today), today, { name: (to.split('@')[0].split(/[._]/)[0] || '').replace(/^./, c => c.toUpperCase()), team: teamCounts(rows, today) }); if (!m) { results.push({ to, status: 'skipped', why: 'nothing pending' }); continue; }
         const key = digestKey(to, scope); try { await withLock('twn.' + key, async () => { const prior = await dbGet('twn', key);   // one digest per person per scope (a project, or all of one's own) per day; the lock stops a double click sending twice
           if (!(b.again && !team) && prior && prior.value && prior.value.day === today) { results.push({ to, status: 'skipped', why: 'already sent today' + (team ? ' for this project' : '') }); return; }
           const r = await CTX.teams.send({ to: [to], title: m.title, text: m.text, facts: m.facts, actions: m.actions }) || {}; const dl = Array.isArray(r.delivered) ? r.delivered.length : Number(r.delivered) || 0;
