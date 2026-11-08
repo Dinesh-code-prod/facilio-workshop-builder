@@ -27,22 +27,27 @@
     const seg = L().STATUSES.map(s => `<button type="button" class="ws-seg${q.status === s ? ' on' : ''}" data-act="wsStatus" data-id="${esc(q.id)}" data-v="${s}" aria-pressed="${q.status === s}"${dis}>${esc(L().LABEL[s])}</button>`).join('');
     const mk = (k, label, made) => q.made[k] ? `<span class="ws-made" title="Already made from this question">${esc(made)}${k === 'requirement' ? ' ' + esc(q.made[k]) : ''}</span>` : `<button type="button" class="btn sm" data-act="wsMake" data-id="${esc(q.id)}" data-k="${k}"${dis}>${esc(label)}</button>`;
     const src = q.sources.filter(s => s.type !== 'statement').slice(0, 2).map(s => `<div class="xs muted">Source: ${esc(s.type)} ${esc(s.ref)}${s.quote ? ': &ldquo;' + esc(s.quote) + '&rdquo;' : ''}</div>`).join('');
-    return `<div class="ws-q ws-st-${q.status}"><div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">${tag(PC[q.priority] || 'low', esc(q.priority))}<span class="xs muted">${esc(q.kind.replace(/_/g, ' '))}</span></div>
-      <div class="ws-qt">${esc(q.text)}</div><div class="small muted">Why: ${esc(q.why)}</div>${src}${evidenceHtml(q, !ro())}
-      ${q.evidence ? `<div class="xs muted">Kept: ${esc(L().evidenceLine(q.evidence))}</div>` : ''}
+    return `<div class="ws-q ws-st-${q.status}"><div class="ws-qt">${tag(PC[q.priority] || 'low', esc(q.priority))} ${esc(q.text)}</div>${evidenceHtml(q, !ro())}
       <div class="ws-segs" role="group" aria-label="Status of this question">${seg}</div>
-      <textarea class="ws-note" rows="2" maxlength="2000" placeholder="What was said, in your own words. Quick capture uses this text." aria-label="Note for this question" data-bind="@workshop_room:q.${esc(q.id)}.note"${dis}>${esc(q.note)}</textarea>
-      <div class="ws-mk row" style="gap:6px;flex-wrap:wrap">${mk('requirement', 'Make requirement (draft)', 'Requirement draft')}${mk('decision', 'Make decision (draft)', 'Decision draft made')}${mk('action', 'Make action', 'Action made')}${mk('question', 'Make open question', 'Open question added')}</div></div>`;
+      <textarea class="ws-note" rows="2" maxlength="2000" placeholder="The customer's answer, in your own words" aria-label="Note for this question" data-bind="@workshop_room:q.${esc(q.id)}.note"${dis}>${esc(q.note)}</textarea>
+      <details class="ws-help"><summary>Why ask this, and quick capture</summary><div class="small muted">Why: ${esc(q.why)}</div>${src}${q.evidence ? `<div class="xs muted">Kept: ${esc(L().evidenceLine(q.evidence))}</div>` : ''}
+        <p class="xs muted" style="margin:8px 0 4px">Turn this answer into a draft record (a person approves it later):</p>
+        <div class="ws-mk row" style="gap:6px;flex-wrap:wrap">${mk('requirement', 'Make requirement (draft)', 'Requirement draft')}${mk('decision', 'Make decision (draft)', 'Decision draft made')}${mk('action', 'Make action', 'Action made')}${mk('question', 'Make open question', 'Open question added')}</div></details></div>`;
   }
+  // the planned session being run narrows the questions to its modules (and the general ones); none picked shows every question
+  const nzs = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '').replace(/s$/, '');
+  function sessionScope() { const u = U(); if (!u.sessionId) return null; const s = L().agendaOf(V.plannerDoc ? V.plannerDoc().sessions : []).find(x => x.id === u.sessionId); return s && s.modules.length ? { title: s.title, mods: new Set(s.modules.map(nzs)) } : null; }
+  const RANK = { must: 0, should: 1, could: 2 };
+  const visible = all => { const sc = sessionScope(), u = U(); return all.filter(q => (!sc || !q.module || sc.mods.has(nzs(q.module)) || sc.mods.has(nzs(q.moduleLabel))) && (!u.mod || q.module === u.mod)); };
   function questionsPanel(prep, all) {
-    const u = U(); const c = L().counts(all); const groups = prep.byModule.filter(g => !u.mod || g.module === u.mod);
+    const u = U(); const sc = sessionScope(); const c = L().counts(visible(all)); const groups = prep.byModule.filter(g => (!u.mod || g.module === u.mod) && (!sc || !g.module || sc.mods.has(nzs(g.module)) || sc.mods.has(nzs(g.label))));
     const byId = new Map(all.map(q => [q.id, q]));
     const strip = `<div class="ws-sum"><b>${c.total}</b> question${c.total === 1 ? '' : 's'}<span>${c.toask} to ask</span><span>${c.asked} asked</span><span>${c.answered} answered</span><span>${c.skipped} skipped</span>${c.likely + c.possible ? `<span class="ws-hint">${c.likely} likely and ${c.possible} possibly answered in the transcript</span>` : ''}</div>`;
     const filter = `<label class="ws-mod xs muted">Module <select data-change="wsMod" aria-label="Show one module"><option value="">All modules</option>${prep.byModule.map(g => `<option value="${esc(g.module)}"${u.mod === g.module ? ' selected' : ''}>${esc(g.label || 'General')}</option>`).join('')}</select></label>`;
     const cards = groups.map(g => { const qs = g.questions.map(x => byId.get(x.id)).filter(Boolean); const done = qs.filter(x => x.status === 'answered' || x.status === 'skipped').length;
       return `<div class="card ws-card"><div class="card-h"><b>${esc(g.label || 'General')}</b> <span class="xs muted">${done} of ${qs.length} done</span></div><div class="card-b">${qs.map(qRow).join('')}</div></div>`; }).join('');
     const gaps = prep.gaps.length ? `<div class="notice small"><div><b>Not worked out</b>${prep.gaps.map(g => `<div>${esc(g.message)}</div>`).join('')}</div></div>` : '';
-    return `<section aria-label="Prepared questions"><div class="row" style="justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">${strip}${filter}</div>${cards || '<div class="empty">No questions yet: add scope items, requirements or open questions first (Requirements > Prepare questions shows why).</div>'}${gaps}</section>`;
+    return `<section aria-label="Prepared questions">${sc ? `<p class="small" style="margin:0 0 8px">Questions for <b>${esc(sc.title)}</b> <button type="button" class="btn sm" data-act="wsSession" data-id="${esc(u.sessionId)}">Show all sessions</button></p>` : ''}<div class="row" style="justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">${strip}${filter}</div>${cards || '<div class="empty">No questions yet: add scope items, requirements or open questions first (Requirements > Prepare questions shows why).</div>'}${gaps}</section>`;
   }
   function livePanel(all) {
     const u = U(); const dis = ro() ? ' disabled' : ''; const r = u.res; const info = u.info;
@@ -61,20 +66,38 @@
     return `<div class="card ws-card"><div class="card-h"><b>Agenda</b> <span class="xs muted">planned sessions</span></div><div class="card-b">${rows ? `<ul class="ws-aglist">${rows}</ul>` : '<p class="small muted">No sessions planned yet. Plan them in the Contract page, Sessions.</p>'}<p class="xs muted" style="margin-top:8px">The session you pick is written on the requirement drafts you make.</p></div></div>`;
   }
   function bar() {
-    const u = U(); const t = u.t; const dis = ro() ? ' disabled' : '';
-    return `<div class="ws-bar" role="toolbar" aria-label="Workshop room"><div class="ws-timer"><span class="ws-clock" id="wsClock" role="timer" aria-label="Workshop timer">${esc(L().fmtClock(elapsed()))}</span><button type="button" class="btn sm" data-act="wsTimer">${t.run ? 'Pause' : t.acc ? 'Resume' : 'Start'}</button>${t.acc || t.run ? '<button type="button" class="btn sm" data-act="wsTimerReset">Reset</button>' : ''}</div>
-      <div class="row" style="gap:6px;flex-wrap:wrap"><button type="button" class="btn sm" data-act="wsOpenFlow" title="Opens the State Flow Builder for this project in a new tab">Open State Flow Builder</button><button type="button" class="btn sm" data-act="wsOpenWb" title="Opens the Process Whiteboard for this project in a new tab">Open Process Whiteboard</button>
-      <button type="button" class="btn sm" data-act="wsClaude"${dis}>Open in Claude</button>${FOCUS() ? '' : `<button type="button" class="btn sm" data-act="wsFull" title="Fill the window with the workshop room (Esc leaves)">${u.full ? 'Exit full screen' : 'Full screen'}</button><button type="button" class="btn sm" data-act="wsNewTab" title="Open the workshop room alone in its own browser tab">New tab</button>`}</div></div>`;
+    const u = U(); const t = u.t;
+    return `<div class="ws-bar" role="toolbar" aria-label="Workshop room"><div class="ws-timer"><span class="ws-clock" id="wsClock" role="timer" aria-label="Workshop timer">${esc(L().fmtClock(elapsed()))}</span><button type="button" class="btn sm" data-act="wsTimer">${t.run ? 'Pause' : t.acc ? 'Resume' : 'Start timer'}</button>${t.acc || t.run ? '<button type="button" class="btn sm" data-act="wsTimerReset">Reset</button>' : ''}</div>
+      <div class="row" style="gap:6px;flex-wrap:wrap">${FOCUS() ? '' : `<button type="button" class="btn sm" data-act="wsFull" title="Fill the window with the workshop room (Esc leaves)">${u.full ? 'Exit full screen' : 'Full screen'}</button><button type="button" class="btn sm" data-act="wsNewTab" title="Open the workshop room alone in its own browser tab">Open in a new tab</button>`}</div></div>`;
+  }
+  function stepNow(all) { const u = U(); if (u.step) return u.step; const c = L().counts(all); return u.live || c.answered || c.asked ? 'call' : 'ready'; }
+  function stepper(all, now) {
+    const c = L().counts(visible(all)); const defs = [['ready', 'Get ready', c.total + ' question' + (c.total === 1 ? '' : 's') + ' prepared'], ['call', 'During the call', c.answered + ' of ' + c.total + ' answered'], ['after', 'After the call', 'Summary, transcript, Solution']];
+    return `<nav class="ws-steps" aria-label="Steps of a workshop call">${defs.map((d, i) => `<button type="button" class="ws-step${now === d[0] ? ' on' : ''}" data-act="wsStep" data-v="${d[0]}"${now === d[0] ? ' aria-current="step"' : ''}><span class="ws-n">${i + 1}</span><span><b>${d[1]}</b><span class="xs muted">${esc(d[2])}</span></span></button>`).join('')}</nav>`;
+  }
+  function readyPanel(all) {
+    const c = L().counts(visible(all)); const dis = ro() ? ' disabled' : ''; const sc = sessionScope();
+    return `<div class="card ws-card"><div class="card-h"><b>Before the call</b></div><div class="card-b"><ol class="ws-fins">
+      <li class="ws-fin"><span class="ws-n">1</span><div><b>Check the questions</b><div class="small muted">${c.total ? c.total + ' question' + (c.total === 1 ? ' is' : 's are') + ' ready' + (sc ? ' for ' + esc(sc.title) : '') + ', worked out from the contract, scope and requirements, plus any you imported.' : 'No questions yet. Create them from the contract, or import your own from Excel or a document.'}</div></div><div class="row" style="gap:6px;flex-wrap:wrap"><button type="button" class="btn sm${c.total ? '' : ' primary'}" data-act="wsGoQuestions">${c.total ? 'Review the questions' : 'Create the questions'}</button><button type="button" class="btn sm" data-act="qbImport"${dis} title="Add your own questions from an Excel sheet, a Word or PDF document, or a text file">Import questions</button></div></li>
+      <li class="ws-fin"><span class="ws-n">2</span><div><b>Pick the session</b><div class="small muted">Choose which planned requirement session this call is, below. The questions then narrow to that session's modules. Skip it to see every question.</div></div></li>
+      <li class="ws-fin"><span class="ws-n">3</span><div><b>Start the call</b><div class="small muted">Opens the questions to ask, with the timer and the microphone.</div></div><button type="button" class="btn sm primary" data-act="wsStep" data-v="call">Start the call</button></li></ol></div></div>
+      ${agendaPanel()}
+      <details class="ws-help ws-more"><summary>More tools</summary><div class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px"><button type="button" class="btn sm" data-act="wsOpenFlow" title="Opens the State Flow Builder for this project in a new tab">Open State Flow Builder</button><button type="button" class="btn sm" data-act="wsOpenWb" title="Opens the Process Whiteboard for this project in a new tab">Open Process Whiteboard</button><button type="button" class="btn sm" data-act="wsClaude"${dis}>Open in Claude</button></div></details>`;
   }
 
   V.workshop = { html() {
     if (V.isCustomer()) return '<div class="page-body"><div class="empty">This page is for the project team.</div></div>';
-    const u = U(); const prep = prepared(); const all = questions(prep);
-    const main = `<div class="ws-grid"><div class="ws-left">${questionsPanel(prep, all)}</div><div class="ws-right">${livePanel(all)}${V.wsLiveExtra ? V.wsLiveExtra(all) : ''}${agendaPanel()}</div></div>`;
-    const lead = 'Run the workshop from here: the questions to ask, a status and a note on each, quick capture of drafts, a live transcript check and the diagrams. Nothing said here becomes an approved requirement: every record made is a draft with its source.';
+    const u = U(); const prep = prepared(); const all = questions(prep); const now = stepNow(all);
+    const body = now === 'ready' ? `<div class="ws-one">${readyPanel(all)}</div>`
+      : now === 'after' ? `<div class="ws-one">${V.wsLiveExtra ? V.wsLiveExtra(all, 'after') : ''}<div class="row" style="gap:8px"><button type="button" class="btn sm" data-act="wsStep" data-v="call">Back to the questions</button></div></div>`
+      : `<div class="ws-grid"><div class="ws-left">${questionsPanel(prep, all)}</div><div class="ws-right">${livePanel(all)}${V.wsLiveExtra ? V.wsLiveExtra(all, 'call') : ''}<button type="button" class="btn primary" data-act="wsStep" data-v="after" style="width:100%">The call is over: finish the session</button></div></div>`;
+    const main = `${stepper(all, now)}${body}`;
+    const lead = 'Run a requirement call in three steps: get ready, ask the questions, then finish. Nothing said here becomes an approved requirement: every record made is a draft with its source.';
     if (FOCUS()) return `<div class="wb-focus-page ws-room ws-focus"><div class="wb-focus-bar"><b>Workshop room</b><span class="xs muted">${esc((S.project && S.project.name) || '')}</span></div>${bar()}${main}</div>`;
     return (u.full ? '' : `<div class="page-header"><div class="t"><h1>Workshop room</h1><p>${lead}</p></div></div>`) + `<div class="page-body"><div class="ws-room${u.full ? ' ws-full ws-scroll' : ''}">${u.full ? '<div class="wb-focus-bar"><b>Workshop room</b><span class="xs muted">' + esc((S.project && S.project.name) || '') + '</span></div>' : ''}${bar()}${main}</div></div>`;
   } };
+  ACT.wsStep = a => { U().step = a.getAttribute('data-v'); rerender(); };
+  ACT.wsGoQuestions = () => V.go('rsquestions');
 
   // ---------- actions ----------
   const save = (id, patch) => { L().setNote(doc(), id, patch, (S.user && S.user.name) || '', new Date().toISOString()); F.markDirty('workshop_room'); };
@@ -106,9 +129,9 @@
   // Nothing leaves the browser and no meeting is joined; where the browser has no such window it says so.
   let pip = null;
   function pipDraw() {
-    if (!pip || pip.closed) { pip = null; return; } const d = pip.document; let all = []; try { all = questions(); } catch (e) { return; } const open = all.filter(q => q.status === 'toask' || q.status === 'asked'); const done = all.length - open.length;
+    if (!pip || pip.closed) { pip = null; return; } const d = pip.document; let all = []; try { all = questions(); } catch (e) { return; } const open = visible(all).filter(q => q.status === 'toask' || q.status === 'asked').sort((a, b) => (RANK[a.priority] == null ? 1 : RANK[a.priority]) - (RANK[b.priority] == null ? 1 : RANK[b.priority])); const done = visible(all).length - open.length;
     d.getElementById('pqHead').textContent = open.length + ' to go, ' + done + ' done'; const list = d.getElementById('pqList'); list.textContent = '';
-    open.slice(0, 40).forEach(q => { const row = d.createElement('div'); row.className = 'q'; const t = d.createElement('div'); t.className = 't'; t.textContent = (q.module ? q.module + ': ' : '') + q.text; row.appendChild(t); const b = d.createElement('div'); b.className = 'b';
+    open.slice(0, 40).forEach(q => { const row = d.createElement('div'); row.className = 'q'; const t = d.createElement('div'); t.className = 't'; t.textContent = (q.priority === 'must' ? '(must) ' : '') + (q.moduleLabel && q.moduleLabel !== 'General' ? q.moduleLabel + ': ' : '') + q.text; if (q.why) t.title = q.why; row.appendChild(t); const b = d.createElement('div'); b.className = 'b';
       [['asked', q.status === 'asked' ? 'Asked' : 'Mark asked'], ['answered', 'Answered'], ['skipped', 'Skip']].forEach(([s, label]) => { const x = d.createElement('button'); x.type = 'button'; x.textContent = label; x.setAttribute('data-q', q.id); x.setAttribute('data-s', s); if (q.status === s) x.disabled = true; b.appendChild(x); }); row.appendChild(b); list.appendChild(row); });
     if (!open.length) list.textContent = 'Every prepared question has been asked or answered.';
   }

@@ -37,3 +37,16 @@
 .ws-ag { padding: 10px 0; border-top: 1px solid #eef1f7; } .ws-ag:first-child { border-top: 0; padding-top: 0; }
 .ws-ag.on { box-shadow: inset 3px 0 0 #E5197F; padding-left: 10px; }
 .ws-ag .btn { margin-top: 6px; }
+.ws-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0 0 14px; }
+.ws-step { display: flex; gap: 10px; align-items: center; text-align: left; font: inherit; padding: 10px 12px; border: 1px solid #DCE4F3; border-radius: 12px; background: #fff; color: #1D1A5E; cursor: pointer; }
+.ws-step b { display: block; font-size: 14px; } .ws-step .xs { display: block; }
+.ws-step:hover { background: #F4F8FF; } .ws-step.on { border-color: #1570EF; box-shadow: inset 0 0 0 1px #1570EF; background: #EAF2FF; }
+.ws-n { flex: none; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #EAF2FF; color: #1570EF; font-weight: 700; font-size: 13px; }
+.ws-step.on .ws-n { background: #1570EF; color: #fff; }
+.ws-fins { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.ws-fin { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid #eef1f7; } .ws-fin:first-child { border-top: 0; }
+.ws-fin > div { flex: 1; min-width: 0; }
+.ws-one { max-width: 760px; }
+.ws-help { margin-top: 8px; } .ws-help summary { cursor: pointer; color: #1570EF; font-size: 13px; font-weight: 600; }
+.ws-more { margin: 4px 0 14px; }
+@media (max-width: 700px) { .ws-steps { grid-template-columns: minmax(0, 1fr); } }
