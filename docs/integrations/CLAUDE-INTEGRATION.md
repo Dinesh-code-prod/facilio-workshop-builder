@@ -46,6 +46,8 @@ Claude (web or Desktop): Settings, Connectors, Add custom connector, name `Facil
 
 **Status reports (WSR and monthly).** Page `statusrep` (`src/wsr.js`, rules `src/wsrlogic.js`, tests `tests/wsr.mjs`): a report is a `rep` record (type WSR or Monthly) with the finished HTML in `html`. Build from the Studio is instant and uses the live records; Ask Claude writes a job `make_wsr` or `make_monthly` (recipes in `work/server/_jobs.mjs`), Claude checks the stages and the plan through the read tools and saves the HTML with `save_draft` (task wsr or monthly); a person previews it in a sandboxed frame and records it. No new tool.
 
+**Solution package (for other tools).** `get_document` section `solution_package` (no new tool) and `GET /api/projects/:id/solution-package` give the whole agreed solution in one versioned, hashed document (rules: `work/server/_solpackage.mjs`, schema: `docs/reference/solution-package.schema.json`, plan: `docs/reference/SOLUTION-INTEGRATION-ARCHITECTURE-2026-11-08.md`). A tool reports back with `transfer_write` kind `implementation_report`. The Solution page has a Check the solution package button that compares the page with it.
+
 **Generated customer HTML (no server).** Self-contained files with no external requests: kick-off deck, data onboarding page (`src/onbhtml.js`, return file checked by `src/onbreturn.js`), FTR checklist, UAT guide, workshop preparation, project plan (in progress).
 
 ## 5. Rules the integration must keep
