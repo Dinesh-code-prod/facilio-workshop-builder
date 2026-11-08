@@ -9,6 +9,7 @@ import { createHash } from 'node:crypto';
 
 export const EVENTS = {
   task_assigned: { label: 'A task is assigned to you', def: { inapp: true, browser: false, teams: true } },
+  task_new: { label: 'A new task has no owner yet', def: { inapp: true, browser: false, teams: true } },
   task_due: { label: 'A task is due soon or overdue', def: { inapp: true, browser: false, teams: true } },
   approval_requested: { label: 'Something waits for your approval', def: { inapp: true, browser: true, teams: true } },
   stage_ready: { label: 'A stage is ready to close', def: { inapp: true, browser: false, teams: true } },
@@ -20,6 +21,11 @@ export const EVENTS = {
   ticket_new: { label: 'A support ticket needs attention', def: { inapp: true, browser: true, teams: false } }
 };
 export const TEAMS_PER_DAY = 5, KEEP = 100;
+/** the label that opens a Teams message and the bell line: what the message is about */
+export const CATEGORY = { task_assigned: 'TASK', task_new: 'TASK', task_due: 'TASK', approval_requested: 'APPROVAL', stage_ready: 'STAGE', stage_closed: 'STAGE', customer_signoff: 'SIGN-OFF', proposal_waiting: 'CLAUDE', job_done: 'JOB', mail_arrived: 'MAIL', ticket_new: 'TICKET' };
+export const catOf = ev => String((ev && ev.cat) || CATEGORY[ev && ev.type] || 'UPDATE').toUpperCase().slice(0, 20);
+/** the Teams card of an event: title = category and project, first line = what happened, then the text; facts carry the core details */
+export function teamsCard(ev, rec, actions) { const head = String(rec.title || '').split(' \u00b7 ')[0]; return { title: rec.cat + ' \u00b7 ' + rec.pname, text: head ? head + (rec.text ? '\n' + rec.text : '') : rec.text, facts: [{ title: 'Project', value: rec.pname }, { title: 'About', value: rec.cat }].concat((ev.facts || []).slice(0, 4)), actions }; }
 const flat = v => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim();
 const cut = (v, n) => { const s = flat(v); if (s.length <= n) return s; const t = s.slice(0, n - 1); const i = t.lastIndexOf(' '); return (i > n * 0.6 ? t.slice(0, i) : t).replace(/[\s,;:.\-]+$/, '') + '…'; };   // a notice never stops in the middle of a word
 /** the first full sentence of a free text (a Claude reply, a note), without the greeting, at most n characters */
@@ -49,7 +55,7 @@ export function channelsFor(type, stored, date) {
 export function teamsGate(rec, day, max = TEAMS_PER_DAY) { const n = rec && rec.day === day ? Number(rec.n) || 0 : 0; return n >= max ? { allow: false, rec: { day, n } } : { allow: true, rec: { day, n: n + 1 } }; }
 /** the record kept in the person's list */
 export function makeRecord(ev, ch, at, id) {
-  return { id, type: ev.type, pid: cut(ev.project && ev.project.id, 80), pname: cut(ev.project && ev.project.name, 120), title: cut(ev.title, 140), text: cut(ev.text, 300), view: cut(ev.view, 40) || 'projdash', at, read: false, browser: !!ch.browser, teams: false };
+  return { id, type: ev.type, pid: cut(ev.project && ev.project.id, 80), pname: cut(ev.project && ev.project.name, 120), cat: catOf(ev), title: cut(ev.title, 140), text: cut(ev.text, 300), view: cut(ev.view, 40) || 'projdash', at, read: false, browser: !!ch.browser, teams: false };
 }
 
 export function installNotify(d) {
@@ -67,7 +73,7 @@ export function installNotify(d) {
         const id = (ev.key ? createHash('sha256').update(ev.type + '|' + ev.key + '|' + h).digest('hex').slice(0, 20) : Date.now().toString(36) + Math.random().toString(36).slice(2, 8)); const rec = makeRecord(ev, ch, at, id);
         if (ch.inapp) { const had = await dbGet('nt', h + '.' + id); if (had && had.value && ev.key) continue; await dbPut('nt', h + '.' + id, rec); n++; }   // the same event (same key) is told once
         if (ch.teams && sendTeams) {
-          try { const g = teamsGate((await dbGet('tnc', h) || {}).value, day); if (g.allow) { await dbPut('tnc', h, g.rec); await Promise.race([c.teams.send({ to: [email], title: rec.title, text: rec.text, facts: [{ title: 'Project', value: rec.pname }], actions: [{ title: 'Open in Delivery Studio', url: (BASE_URL || '') + '#/p/' + rec.pid + '/' + rec.view }] }), new Promise(r => setTimeout(r, 4000))]); } } catch (e) { console.log('notify teams failed: ' + (e && e.message)); }
+          try { const g = teamsGate((await dbGet('tnc', h) || {}).value, day); if (g.allow) { await dbPut('tnc', h, g.rec); await Promise.race([c.teams.send(Object.assign({ to: [email] }, teamsCard(ev, rec, [{ title: 'Open in Delivery Studio', url: (BASE_URL || '') + '#/p/' + rec.pid + '/' + rec.view }]))), new Promise(r => setTimeout(r, 4000))]); } } catch (e) { console.log('notify teams failed: ' + (e && e.message)); }
         }
         if (ch.inapp) { try { if (c.broadcast) await c.broadcast({ type: 'notify', for: h }); } catch (e) { /* over the realtime budget: the page polls */ } }
       }

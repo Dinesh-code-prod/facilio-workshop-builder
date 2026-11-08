@@ -98,7 +98,7 @@ export function installTaskTracking(d) {
     },
     async save_task_suggestions(s, b) {
       const p = await pickProject(s, b.project); const r = await ops.save(s, p.id, b.suggestions);
-      if (r.stored) await notify({ type: 'proposal_waiting', project: p, to: [s.email], actor: '', title: 'Claude has ' + r.stored + ' task suggestion' + (r.stored === 1 ? '' : 's') + ' for you · ' + p.name, text: 'Accept or dismiss them on the Tasks page.', view: 'tasks' });   // the person may have left the page: the bell tells them
+      if (r.stored) await notify({ type: 'proposal_waiting', project: p, to: [s.email], actor: '', cat: 'TASK', title: 'Claude has ' + r.stored + ' task suggestion' + (r.stored === 1 ? '' : 's') + ' for you · ' + p.name, text: 'Accept or dismiss them on the Tasks page.', view: 'tasks' });   // the person may have left the page: the bell tells them
       return { project: p.name, stored: r.stored, results: r.results, note: 'Stored unapproved. A person accepts or dismisses each on the Tasks page in Delivery Studio (Claude suggestions); nothing was changed in the task register. A duplicate of an earlier suggestion, or one a person dismissed, is not stored again.' };
     }
   };

@@ -2,7 +2,7 @@
 // NOT checked: real Teams delivery, the live WebSocket push, the browser pop-up.
 import assert from 'node:assert/strict';
 import handler from '../work/server/api.mjs';
-import { EVENTS, prefsFor, channelsFor, inQuiet, teamsGate, makeRecord, hashOf, lead } from '../work/server/_notify.mjs';
+import { EVENTS, prefsFor, channelsFor, inQuiet, teamsGate, makeRecord, hashOf, lead, catOf, teamsCard } from '../work/server/_notify.mjs';
 let n = 0; const t = async (name, fn) => { await fn(); n++; console.log('  ok  ' + name); };
 
 await t('defaults: every event is in-app; browser only where it matters; Teams only for the ones that need a person quickly', () => {
@@ -62,7 +62,7 @@ await t('mail saved by Claude tells the team that mail arrived; the stage-ready 
 await t('preferences: turning in-app off stops the record; Teams messages go only to people who left it on, within the daily cap', async () => {
   const stageClosed = async who => (await list(who)).items.filter(x => x.type === 'stage_closed').length; const kBefore = await stageClosed(KIM); const p = await as(KIM, 'PUT', '/api/notifications/prefs', { types: { stage_closed: { inapp: false, teams: false } }, tz: -330 }); assert.equal(p.status, 200); assert.equal(p.data.prefs.types.stage_closed.inapp, false); assert.equal(p.data.prefs.types.mail_arrived.inapp, true);
   const r = await as(SAM, 'PUT', `/api/projects/${pid}/items/lcstage/uat`, { data: { status: 'closed', note: 'ok', at: new Date().toISOString() } }); assert.equal(r.status, 200, JSON.stringify(r.data)); assert.equal(await stageClosed(KIM), kBefore, 'Kim turned it off'); assert.ok((await list(VIC)).items.some(x => x.title.includes('UAT & FTR') && x.type === 'stage_closed'), 'Vic still gets it');
-  await as(VIC, 'PUT', '/api/notifications/prefs', { types: { stage_closed: { inapp: true, teams: true } } }); sent = []; for (let i = 0; i < 8; i++) await as(SAM, 'PUT', `/api/projects/${pid}/items/lcstage/hypercare`, { data: { status: i % 2 ? 'closed' : '', note: i % 2 ? 'n' + i : '', at: new Date(Date.now() + i).toISOString() } }); const toVic = sent.filter(x => x.to && x.to[0] === VIC && /Stage closed/.test(x.title)); assert.ok(toVic.length >= 1 && toVic.length <= 5, 'Teams only for the person who left it on, at most 5 a day: ' + toVic.length); assert.equal(sent.filter(x => x.to && x.to[0] === KIM).length, 0, 'none for Kim');
+  await as(VIC, 'PUT', '/api/notifications/prefs', { types: { stage_closed: { inapp: true, teams: true } } }); sent = []; for (let i = 0; i < 8; i++) await as(SAM, 'PUT', `/api/projects/${pid}/items/lcstage/hypercare`, { data: { status: i % 2 ? 'closed' : '', note: i % 2 ? 'n' + i : '', at: new Date(Date.now() + i).toISOString() } }); const toVic = sent.filter(x => x.to && x.to[0] === VIC && /Stage closed/.test(x.title + ' ' + x.text)); assert.ok(toVic.length >= 1 && toVic.length <= 5, 'Teams only for the person who left it on, at most 5 a day: ' + toVic.length); assert.equal(sent.filter(x => x.to && x.to[0] === KIM).length, 0, 'none for Kim');
 });
 await t('the daily sweep answers for the caller only, never fails, once a day per project', async () => {
   const r = await as(SAM, 'POST', '/api/notifications/sweep', {}); assert.equal(r.status, 200, JSON.stringify(r.data)); assert.ok(typeof r.data.notified === 'number');
@@ -73,5 +73,18 @@ await t('a notice text is a complete sentence: the greeting is dropped, the firs
   const long = lead('word '.repeat(80), 60); assert.ok(long.length <= 60 && long.endsWith('…') && !/ord…$/.test(long.slice(0, -1) + 'x') , long);
   assert.equal(makeRecord({ type: 'task_due', title: 'a', text: 'alpha beta gamma '.repeat(40) }, { browser: false }, 'now', 'id').text.endsWith('…'), true);
   assert.equal(lead(''), '');
+});
+await t('a Teams message opens with its category and the project (BRD, TASK, SIGN-OFF...), then what happened, with the project and category as facts', () => {
+  assert.equal(catOf({ type: 'customer_signoff', cat: 'BRD' }), 'BRD'); assert.equal(catOf({ type: 'task_assigned' }), 'TASK'); assert.equal(catOf({ type: 'nope' }), 'UPDATE');
+  const rec = makeRecord({ type: 'customer_signoff', cat: 'BRD', title: 'Customer signed off · Al Moallam', text: 'BRD sign-off was signed by Bayan.', project: { id: 'p1', name: 'Al Moallam' } }, { browser: false }, 'now', 'id');
+  const c = teamsCard({ facts: [{ title: 'Due', value: 'Nov 12' }] }, rec, []); assert.equal(c.title, 'BRD · Al Moallam'); assert.equal(c.text, 'Customer signed off\nBRD sign-off was signed by Bayan.'); assert.deepEqual(c.facts.map(f => f.title), ['Project', 'About', 'Due']);
+});
+await t('a new task with no owner is told to the whole project team once, except the person who added it; with an owner only the owner is told', async () => {
+  const before = async who => (await list(who)).items.filter(x => x.type === 'task_new').length; const k0 = await before(KIM), v0 = await before(VIC), s0 = await before(SAM);
+  const r = await as(SAM, 'PUT', `/api/projects/${pid}/items/task/t-new1`, { data: { title: 'Pick up the site keys', status: 'To Do', owner: '' } }); assert.equal(r.status, 200, JSON.stringify(r.data));
+  assert.equal(await before(KIM), k0 + 1); assert.equal(await before(VIC), v0 + 1); assert.equal(await before(SAM), s0, 'not the person who added it');
+  const it = (await list(KIM)).items.find(x => x.type === 'task_new'); assert.equal(it.cat, 'TASK'); assert.match(it.title, /nobody owns it yet/);
+  await as(SAM, 'PUT', `/api/projects/${pid}/items/task/t-new1`, { data: { title: 'Pick up the site keys', status: 'To Do', owner: '' } }); assert.equal(await before(KIM), k0 + 1, 'the same task is told once');
+  await as(SAM, 'PUT', `/api/projects/${pid}/items/task/t-new2`, { data: { title: 'Owned from the start', status: 'To Do', owner: KIM } }); assert.equal(await before(VIC), v0 + 1, 'an owned task is not told to everyone');
 });
 console.log(n + ' notification checks passed');

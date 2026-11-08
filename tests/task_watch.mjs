@@ -34,7 +34,7 @@ await t('digestMessage is null with nothing pending, and says what is overdue', 
 });
 await t('a long list is cut and says how many more', () => {
   const many = { id: 'p2', name: 'Big', tasks: Array.from({ length: 12 }, (_, i) => ({ id: 'x' + i, data: { n: i + 1, title: 'T' + i, status: 'To Do', owner: 'kim@facilio.com' } })) };
-  const m = digestMessage(pendingFor('kim@facilio.com', [many, P1], today), today); assert.equal(m.text.split('\n').length, 9); assert.match(m.text, /… and \d+ more/); assert.ok(!/#\/p\//.test(m.actions[0].url), 'two projects: link to the app, not one project');
+  const m = digestMessage(pendingFor('kim@facilio.com', [many, P1], today), today); assert.equal(m.text.split('\n').length, 11); assert.ok(m.text.includes('**Big** · 12 open')); assert.ok(m.title.startsWith('TASKS · 2 projects')); assert.match(m.text, /… and \d+ more/); assert.ok(!/#\/p\//.test(m.actions[0].url), 'two projects: link to the app, not one project');
 });
 await t('digestKey is a valid key per person and scope, and two addresses never share one', () => {
   const k = digestKey('Kim.R@Facilio.com', 'p1'); assert.ok(/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(k)); assert.equal(k, digestKey('kim.r@facilio.com', 'p1'));
@@ -104,7 +104,7 @@ await t('one person in two projects gets a team digest for each, on the same day
   assert.equal((await as(SAM, 'POST', `/api/projects/${pid2}/members`, { email: KIM, role: 'editor' })).status, 201);
   assert.equal((await put(SAM, pid2, 't9', { title: 'Kim in project two', status: 'To Do', owner: KIM, due: '2020-04-04' })).status, 200);
   sent = []; const r = await tool(SAM, 'send_task_digest', { to: 'team', project: pid2 }); const by = Object.fromEntries(r.data.results.map(x => [x.to, x.status]));
-  assert.equal(by[KIM], 'sent', 'Kim got project one\'s digest today, not this one'); assert.match(sent.find(x => x.to[0] === KIM && /digest|pending/i.test(x.title)).text, /Kim in project two/);
+  assert.equal(by[KIM], 'sent', 'Kim got project one\'s digest today, not this one'); assert.match(sent.find(x => x.to[0] === KIM && /tasks|digest|pending/i.test(x.title)).text, /Kim in project two/);
 });
 await t('a message Teams did not deliver is not counted and does not block a retry', async () => {
   store.get('twn').clear(); sent = []; teamsReply = () => ({ delivered: 0, muted: 1, failed: 0 });
@@ -114,7 +114,7 @@ await t('a message Teams did not deliver is not counted and does not block a ret
 });
 await t('saving a task with a new owner sends that person one direct message', async () => {
   sent = []; assert.equal((await put(SAM, pid, 't5', { title: 'Brand new', status: 'To Do', owner: KIM, due: day(5) })).status, 200);
-  assert.equal(sent.length, 1); assert.deepEqual(sent[0].to, [KIM]); assert.match(sent[0].title, /Task assigned to you/); assert.equal(sent[0].text, 'Brand new');
+  assert.equal(sent.length, 1); assert.deepEqual(sent[0].to, [KIM]); assert.match(sent[0].title, /^TASK · /); assert.equal(sent[0].text, 'Assigned to you: T-4 Brand new');
   assert.equal((await put(SAM, pid, 't5', { title: 'Brand new, edited', status: 'To Do', owner: KIM, due: day(5) })).status, 200); assert.equal(sent.length, 1, 'same owner: no second message');
   assert.equal((await put(SAM, pid, 't6', { title: 'Mine', status: 'To Do', owner: SAM })).status, 200); assert.equal(sent.length, 1, 'assigning to yourself: no message');
   teamsOn = false; assert.equal((await put(SAM, pid, 't7', { title: 'Quiet', status: 'To Do', owner: KIM })).status, 200); assert.equal(sent.length, 1, 'Teams notices off: no message');

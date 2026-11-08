@@ -28,9 +28,13 @@ export function pendingFor(email, projects, today, soonDays = 3) {
 /** The Teams message for a digest; null when there is nothing pending (no empty DMs). */
 export function digestMessage(pending, today, { maxLines = 8 } = {}) {
   const c = pending.counts; if (!c.open) return null; const projects = [...new Set(pending.items.map(x => x.project))];
-  const lines = pending.items.slice(0, maxLines).map(x => '• ' + (x.n ? 'T-' + x.n + ' ' : '') + x.title + ' (' + x.projectName + ')' + (x.due ? ' · due ' + x.due : '') + (x.overdue ? ' · OVERDUE' : x.blocked ? ' · blocked' : ''));
+  const byP = projects.map(id => { const it = pending.items.filter(x => x.project === id); return { id, name: it[0].projectName, items: it, overdue: it.filter(x => x.overdue).length }; });
+  let room = maxLines; const lines = [];
+  for (const g of byP) { if (byP.length > 1) lines.push('**' + g.name + '** · ' + g.items.length + ' open' + (g.overdue ? ', ' + g.overdue + ' overdue' : ''));
+    for (const x of g.items) { if (room <= 0) break; room--; lines.push('• ' + (x.n ? 'T-' + x.n + ' ' : '') + x.title + (byP.length > 1 ? '' : ' (' + x.projectName + ')') + (x.due ? ' · due ' + x.due : '') + (x.overdue ? ' · OVERDUE' : x.blocked ? ' · blocked' : '')); } }
   if (pending.items.length > maxLines) lines.push('… and ' + (pending.items.length - maxLines) + ' more');
-  return { title: 'Your pending tasks · ' + c.open + ' open' + (c.overdue ? ', ' + c.overdue + ' overdue' : ''), text: lines.join('\n'),
+  const where = byP.length === 1 ? byP[0].name : byP.length + ' projects';
+  return { title: 'TASKS \u00b7 ' + where + ' \u00b7 ' + c.open + ' open' + (c.overdue ? ', ' + c.overdue + ' overdue' : ''), text: lines.join('\n'),
     facts: [{ title: 'Open', value: String(c.open) }, { title: 'Overdue', value: String(c.overdue) }, { title: 'Due in 3 days', value: String(c.soon) }, { title: 'Blocked', value: String(c.blocked) }],
     actions: [{ title: 'Open Delivery Studio', url: projects.length === 1 ? BASE_URL + '#/p/' + projects[0] + '/tasks' : BASE_URL }].concat(pending.items.filter(x => (x.overdue || x.soon) && x.id).slice(0, 3).map(x => ({ title: 'Done: ' + (x.n ? 'T-' + x.n : oneLine(x.title, 20)), fn: 'api', data: { tool: 'task_reply', project: x.project, taskId: x.id, status: 'Done', text: 'Marked done by the owner from the Teams message.', via: 'teams' } }))) };
 }
@@ -50,7 +54,7 @@ export function assignmentNotice(prev, next, actorEmail, projectName, ref) {
   if (to === String(actorEmail || '').trim().toLowerCase()) return null;
   if (DONE.test(String(next.status || '').trim())) return null;
   const due = dueOf(next);
-  return { to, title: 'Task assigned to you · ' + projectName, text: oneLine(next.title, 300),
+  return { to, title: 'TASK \u00b7 ' + projectName, text: 'Assigned to you: ' + (next.n ? 'T-' + next.n + ' ' : '') + oneLine(next.title, 280),
     facts: [{ title: 'Project', value: projectName }, { title: 'Status', value: next.status || 'To Do' }, { title: 'Priority', value: next.priority || '—' }, { title: 'Due', value: due || '—' }],
     // the owner can finish it from the message: the button runs task_reply as the person who presses it, so only the owner can (the same button the daily digest has)
     done: ref && ref.project && ref.id ? { title: 'Done: ' + (next.n ? 'T-' + next.n : oneLine(next.title, 20)), fn: 'api', data: { tool: 'task_reply', project: ref.project, taskId: ref.id, status: 'Done', text: 'Marked done by the owner from the Teams message.', via: 'teams' } } : null };
