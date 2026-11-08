@@ -9,13 +9,13 @@
   const HUBS = [
     { view: 'transcripts', key: 'reqTab', label: 'Requirements', tabs: [['onboarding', 'Data onboarding'], ['transcripts', 'Transcripts & requirements'], ['prepq', 'Prepare questions'], ['usecases', 'Use cases']] },
     { view: 'msaflow', key: 'ctrHub', label: 'Contract', tabs: [['msaflow', 'Agreement'], ['msafind', 'Scope check'], ['contracts', 'Terms & integrations']] },
-    { view: 'reports', key: 'rptHub', label: 'Reports and quality', tabs: [['reports', 'Status reports'], ['trace', 'Traceability & quality']] },
+    { view: 'statusrep', key: 'rptHub', label: 'Status report (WSR) & monthly report', tabs: [['statusrep', 'Status report (WSR) & monthly report'], ['trace', 'Traceability & quality']] },
     { view: 'cfginputs', key: 'cfgHub', label: 'Configuration and org package', tabs: [['cfginputs', 'Configuration Hub'], ['pkgan', 'Analysis'], ['orgpkg', 'Export']] }
   ];
   const base = {}; HUBS.forEach(h => h.tabs.forEach(([k]) => { base[k] = V[k]; }));
   const hubOf = view => HUBS.find(h => h.tabs.some(t => t[0] === view));
   const prev = V.hubRoute;
-  V.hubRoute = view => { const r = prev ? prev(view) : view; const h = S.user && S.user.kind !== 'customer' && hubOf(r); if (!h || !base[r]) return r; S.ui[h.key] = r; return h.view; };
+  V.hubRoute = view => { const r0 = prev ? prev(view) : view; const r = r0 === 'reports' ? 'statusrep' : r0; const h = S.user && S.user.kind !== 'customer' && hubOf(r); if (!h || !base[r]) return r; S.ui[h.key] = r; return h.view; };
   const badge = k => { const n = k !== 'checks' && V.navCounts && V.navCounts()[k]; return n && n.n ? `<span class="cnt">${n.n}</span>` : ''; };
   HUBS.forEach(h => {
     const cur = () => (base[S.ui[h.key]] && h.tabs.some(t => t[0] === S.ui[h.key]) ? S.ui[h.key] : h.view);

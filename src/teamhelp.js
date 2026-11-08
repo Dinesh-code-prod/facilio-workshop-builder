@@ -82,9 +82,8 @@
     ['transfers', 'Transfers', 'What your Claude read from or sent to other systems, and what waits for you to approve. Claude cannot approve. Pushed and Synchronized are what Claude reported, not something this app can see.', 'Run the project'],
     ['governance', 'Governance & RAID', 'Sign-offs, risks, decisions, actions and minutes, shared with the customer.', 'Run the project'],
     ['changes', 'Change Requests', 'Anything outside the signed scope. Never change scope silently.', 'Run the project'],
-    ['statusrep', 'Status reports (WSR)', 'The weekly status report and the monthly report on one page. Build them from the live records or ask Claude; each is kept with its status.', 'Run the project'],
+    ['statusrep', 'Status report (WSR) & monthly report', 'The weekly status report and the monthly report on one page, with what was sent and what is overdue. Build them from the live records or ask Claude; each is kept with its status.', 'Run the project'],
     ['aiwork', 'Deliverables & AI', 'Draft documents with AI, or with Open in Claude on your own account. Drafts are never final until reviewed.', 'Run the project'],
-    ['reports', 'Reports & quality', 'Weekly and monthly status reports, and the traceability of each requirement through the BRD, configuration, guides and UAT.', 'Run the project'],
     ['resources', 'Notes & Links', 'Keep notes and links with the project.', 'Run the project']];
 
   const WITH = [

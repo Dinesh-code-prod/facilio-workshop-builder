@@ -1302,3 +1302,196 @@ body #asst .as-comp:not(#_):not(#__) { background: #eef1f5 !important; padding: 
 body #asst .as-crow:not(#_):not(#__) { background: #fff !important; border: 1px solid var(--cs-st2) !important; border-radius: 22px !important; padding: 6px 8px 6px 14px !important; }
 body #asst .as-crow textarea:not(#_):not(#__) { border: 0 !important; background: transparent !important; box-shadow: none !important; resize: none !important; padding: 4px 0 !important; outline: none; }
 body #asst .as-send:not(#_):not(#__) { width: 38px !important; height: 38px !important; border-radius: 50% !important; background: var(--cs-accent) !important; color: #fff !important; border: 0 !important; display: grid; place-items: center; }
+
+/* report tiles (Status report (WSR) & monthly report) */
+.rp-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0 0 16px; }
+.rp-tile { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 16px; border: 1px solid var(--cs-st2, #e5e5e5); border-radius: 16px; background: var(--cs-bg1, #fff); }
+.rp-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; } .rp-t b { font: 600 15px/22px var(--cs-font, inherit); color: var(--cs-fg1, #111); } .rp-t span { font: 400 13px/18px var(--cs-font, inherit); color: var(--cs-fg3, #666); }
+@media (max-width: 720px) { .rp-tiles { grid-template-columns: 1fr; } }
+
+/* ---- blue text to black (user, 8 Nov 2026) ---- */
+#asst .as-ib:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+#asst .ki-link:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+#bellPop .bp-g h4:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+#bellPop .bp-n:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+#bellPop .bp-row:hover em:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+#bellPop .bp-tabs .bp-all:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.adm-main .fchip:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.adm-ni em:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.adx-how summary:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.adx-link:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.adx-tabs button.on:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.ag-cols h4:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.ai-ref:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.auth-key summary:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.av-play:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.bf-i:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.brd-add:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.btn.ghost:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.btn.link:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.btn.link:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.btn.sm.ghost:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.btn:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.cal-col.today .cal-ch b:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.dk-b small:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.dkv-t small:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.drop svg:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.ds-st i:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.eco-ai em:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.fb-chip.feature:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.fb3 .tag.blue:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.fb3 .tag.proposed:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.gl-agenda .t:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.gl-chip svg:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.gl-chip:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.gl-jump button.on:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.gl-opt.on:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.gl-round:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.h-live:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.hb li.click:hover .hb-l:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.hw-top:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.iso-detail u:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.iso-sum:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.iv-foot b:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.iv-row .av:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.iv-st.on strong:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.iv-two em:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.kb-new:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.ko-steps li span:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.linkbtn:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.lnk:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.menu button:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.mf-step .n:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.mk-d summary:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.nav-out:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.ob-tabs button.on:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.palette-item:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.perm-row.changed span.l:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.phase-strip .ps-l:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.pp-fspark:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.pp-plabel:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.pp-spark:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.pp-watch span:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.preview-form .tag.blue:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.preview-form .tag.proposed:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.pw-eye:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.r-admin:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.rg-clear:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.rm-c.progress .rm-n:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.rm-c.progress .rm-s:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.rm-c:hover .rm-go:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.rm-skip:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.rv-row small:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.s-badge.info:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.s-cal em:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.s-table td.link:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.s-tabs span.on:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.s-tree .l3:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.sb-group.has-active > .sb-title:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.sb-group.has-active > .sb-title .arr:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.sb-group.open > .sb-title:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.sb-group.open > .sb-title .arr:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.sb-item.active:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.sb-item.active .fi:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.sb-item.active svg:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.sb-item:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.sb-item:hover .fi:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.sb-out:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.sb-title:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.sb-title .fi:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.sb-title svg:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.sb-title:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.seg button.on:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.sfb .tag.blue:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.side-tabs button.on:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.sidebar .sb-item.active svg:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.sol-ok:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.steps12 .here:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.tag.blue:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.tag.inferred:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.tag.proposed:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.tg2-job em:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.tg2-lvl:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.tg2-pg:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.tg2-rmcount:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.tg2-steps li.tg2-lv:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.tg2-tile em:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.tk-vt.on span:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.tq-link:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.tq-tile.warn b:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.tr-said summary:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.ui-ic:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.wb-help-g b:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.wb-mod.on:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.wb-sub button.on:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.wb-tabs button.on:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.wk-intro .eyebrow:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.wn-more summary:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.ws-grip:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.ws-sum .ws-hint:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.xe-b.on:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.xe-grid td.rh.xe-hsel:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.xe-grid th.xe-hsel:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.xf-link:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+.xf-st-awaiting-review:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body #asst .ki-name:not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .adm-h .btn:not(.primary):not(.danger):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .adm-hero .rg-clear:not(#_):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .adm-main > .adm-hero h1:not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .adm-nav .adm-ni.on svg:not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .adm-nav .adm-ni.on:not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .brd-ban-b li a:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .brd-ban-h em:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .btn.ghost:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .btn.link:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .btn.link:not([disabled]):not(#_):not(#__):hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .cal .cal-link:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .cal .cal-more:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .card-h .btn:not(.primary):not(.danger):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .cs-sol-i em:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .cs-sol-i.on:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .cs-stat-v:not(.bad):not(.warn):not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .dk-spine .now .dk-sn:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .dtab.on:not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .gl-jump:not(#_):not(#__) button:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .ig-card summary:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .ki-tile.done .ki-tr em:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .ko-chipb.on:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .ko-chipb.on b:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .lc-badge.st-current:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .main > .page > .page-header .t h1:not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .main[data-sec] .card > .card-h h3:not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .main[data-sec] .empty:not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .main[data-sec] .page-header .t p:not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .main[data-sec] .pink-label:not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .main[data-sec] .tbl thead th:not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .main[data-sec] .ui-panel .ui-ic:not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .main[data-sec] a:not(.btn):not(.tab):not(.sb-item):not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .page-header .rg-clear:not(#_):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .paper .blk > .blk-ask:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .phase-strip .ps-l:not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .pt-kpis .kpi-v:not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .pt-sh.on .pt-shn:not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .qb-sug:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .rm-go:not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .rm-strip .btn:not(.primary):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .rm-strip-h .btn:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .rs-sol b:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .sd-step.now .sd-n:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .sidebar .sb-item.active .fi:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .sidebar .sb-item.active .fi:not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .sidebar .sb-item.active svg:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .sidebar .sb-item.active svg:not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .sidebar .sb-item.active:not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .tag.blue:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .tag.custom:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .tag.info:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .tag.proposed:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .tbl tbody tr.click td:first-child b:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .tbl tbody tr[data-act] td:first-child b:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .wb-cap:not(#_):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .wb-sub:not(#_):not(#__) button.on:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body .wb-sub:not(#_):not(#__) button:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body details.auth-key > summary:not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body details.cs-sol-ct > summary em:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
+body a:not([class]):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; text-decoration: underline; text-underline-offset: 2px; }
