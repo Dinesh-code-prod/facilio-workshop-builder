@@ -830,8 +830,8 @@ body .main[data-sec] .card.stat:not(#_):not(#__) { border-top: 3px solid var(--c
 body .main[data-sec] .tabs:not(#_):not(#__) { background: var(--cs-accent-soft) !important; border: 1px solid var(--cs-accent-line) !important; }
 body .main[data-sec] .tabs .tab.active:not(#_):not(#__) { background: #fff !important; color: var(--cs-accent-ink) !important; box-shadow: inset 0 -2px 0 var(--cs-accent), 0 1px 2px rgba(0, 0, 0, .06) !important; }
 body .main[data-sec] .tabs .tab:not(.active):hover:not(#_):not(#__) { background: color-mix(in srgb, var(--cs-accent) 10%, #fff) !important; color: var(--cs-accent-ink) !important; }
-body .main[data-sec] .page > .phase-strip:not(#_):not(#__) { background: #fff !important; border: 1px solid var(--cs-accent-line) !important; box-shadow: inset 0 3px 0 var(--cs-accent) !important; border-radius: var(--cs-r-card) !important; }
-body .main[data-sec] .phase-strip .ps-l:not(#_):not(#__), body .main[data-sec] .phase-strip > *:first-child:not(#_):not(#__) { color: var(--cs-accent-ink) !important; }
+body .main[data-sec] .page > .phase-strip:not(#_):not(#__), body .main[data-sec] .phase-strip:not(#_):not(#__) { background: #fff !important; border: 1px solid var(--cs-st2) !important; box-shadow: var(--cs-sh16) !important; border-radius: var(--cs-r-card) !important; }   /* the phase bar under every page heading: neutral hairline and soft depth, no blue edge */
+body .main[data-sec] .phase-strip .ps-l:not(#_):not(#__), body .main[data-sec] .phase-strip > *:first-child:not(#_):not(#__) { color: var(--cs-fg1, #0a0a0a) !important; }
 body .main[data-sec] .pink-label:not(#_):not(#__) { color: var(--cs-accent-ink) !important; display: flex; align-items: center; gap: 8px; }
 body .main[data-sec] .pink-label:not(#_):not(#__)::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--cs-accent); flex: none; }
 body .main[data-sec] .empty:not(#_):not(#__) { background: var(--cs-accent-soft) !important; border: 1px dashed var(--cs-accent-line) !important; border-radius: var(--cs-r-card) !important; color: var(--cs-accent-ink) !important; }
