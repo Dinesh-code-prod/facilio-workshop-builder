@@ -1,0 +1,161 @@
+/* Dashboard widget kit (8 Nov 2026): the shapes the Overview tab of the project dashboard uses for the team, the customer and the admin.
+   pie, rings (concentric progress), dots (one dot per item), orbit (the project in the middle, one satellite per area), spine (a vertical journey), rows (stacked bars per row).
+   Pure SVG / HTML strings styled by the `dk-` classes in src/ui.css. Every figure comes from saved records through V.sdd.X() (src/stagedash.js); nothing is invented,
+   and an empty input draws a plain sentence instead of a chart. Run by tests/dashkit.mjs. */
+(function (root) {
+  'use strict';
+  const F = root.FWB, V = root.FWBViews; const esc = F ? F.esc : (s => String(s == null ? '' : s));
+  const OK = '#16a34a', WARN = '#f59e0b', BAD = '#ef4444', GREY = '#a3a3a3', BLUE = '#1570EF', NAVY = '#1D1A5E', SLATE = '#64748b';
+  const none = t => `<p class="sd-none">${esc(t)}</p>`;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const legend = parts => `<ul class="sd-lg">${parts.map(p => `<li><i style="background:${p[2]}"></i><span>${esc(p[0])}</span><b>${p[1]}</b></li>`).join('')}</ul>`;
+
+  // filled pie: parts = [[label, n, colour]]
+  function pie(parts, empty) {
+    const tot = parts.reduce((n, p) => n + p[1], 0); if (!tot) return none(empty || 'Nothing recorded yet.');
+    let a0 = -Math.PI / 2; const on = parts.filter(p => p[1]);
+    const seg = p => { if (on.length === 1) return `<circle cx="50" cy="50" r="46" fill="${p[2]}"/>`; const a1 = a0 + p[1] / tot * 2 * Math.PI, big = a1 - a0 > Math.PI ? 1 : 0;
+      const d = `M50 50 L${(50 + 46 * Math.cos(a0)).toFixed(2)} ${(50 + 46 * Math.sin(a0)).toFixed(2)} A46 46 0 ${big} 1 ${(50 + 46 * Math.cos(a1)).toFixed(2)} ${(50 + 46 * Math.sin(a1)).toFixed(2)} Z`; a0 = a1; return `<path d="${d}" fill="${p[2]}" stroke="#fff" stroke-width="1.5"/>`; };
+    return `<div class="dk-row"><svg viewBox="0 0 100 100" style="flex:none;width:132px;height:132px" role="img" aria-label="${esc(parts.map(p => p[0] + ' ' + p[1]).join(', '))}">${on.map(seg).join('')}</svg>${legend(parts)}</div>`;
+  }
+
+  // concentric progress rings: rows = [{ l, p: 0..100 or null, c, d }]
+  function rings(rs, empty) {
+    const ok = rs.filter(r => r.p != null); if (!ok.length) return none(empty || 'Nothing to measure yet.');
+    const R = [44, 35, 26, 17, 9]; const svg = ok.slice(0, 5).map((r, i) => { const c = 2 * Math.PI * R[i], len = c * clamp(r.p, 0, 100) / 100;
+      return `<circle cx="50" cy="50" r="${R[i]}" fill="none" stroke="rgba(0,0,0,.07)" stroke-width="6"/><circle cx="50" cy="50" r="${R[i]}" fill="none" stroke="${r.c}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${len.toFixed(1)} ${(c - len).toFixed(1)}" transform="rotate(-90 50 50)"/>`; }).join('');
+    return `<div class="dk-row"><svg viewBox="0 0 100 100" style="flex:none;width:148px;height:148px" role="img" aria-label="${esc(ok.map(r => r.l + ' ' + Math.round(clamp(r.p, 0, 100)) + '%').join(', '))}">${svg}</svg><ul class="dk-rl">${rs.map(r => `<li><i style="background:${r.c}"></i><span>${esc(r.l)}${r.d ? `<small>${esc(r.d)}</small>` : ''}</span><b>${r.p == null ? '—' : Math.round(clamp(r.p, 0, 100)) + '%'}</b></li>`).join('')}</ul></div>`;
+  }
+
+  // dot matrix: items = [colour], so 40 test cases are 40 dots; leg = [[label, n, colour]]
+  function dots(items, leg, empty) {
+    if (!items.length) return none(empty || 'Nothing recorded yet.');
+    return `<div class="dk-dots" role="img" aria-label="${esc(leg.map(p => p[0] + ' ' + p[1]).join(', '))}">${items.slice(0, 300).map(c => `<i style="background:${c}"></i>`).join('')}</div>${legend(leg)}${items.length > 300 ? `<p class="sd-none">Showing the first 300 of ${items.length}.</p>` : ''}`;
+  }
+
+  // orbit: the project in the middle, one numbered satellite per area; sats = [{ l, c, d }]
+  function orbit(title, sub, sats, empty) {
+    if (!sats.length) return none(empty || 'Nothing to show yet.');
+    const n = sats.length, pos = i => { const a = -Math.PI / 2 + i / n * 2 * Math.PI; return [100 + 74 * Math.cos(a), 100 + 74 * Math.sin(a)]; };
+    const dotsSvg = sats.map((s, i) => { const [x, y] = pos(i); return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="13" fill="${s.c}"/><text x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="middle" font-size="12" font-weight="600" fill="#fff">${i + 1}</text>`; }).join('');
+    return `<div class="dk-orbit"><svg viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="${esc(title + ': ' + sats.map(s => s.l).join(', '))}"><circle cx="100" cy="100" r="74" fill="none" stroke="rgba(0,0,0,.14)" stroke-dasharray="3 5"/><circle cx="100" cy="100" r="40" fill="#fff" stroke="rgba(0,0,0,.1)"/><text x="100" y="98" text-anchor="middle" font-size="13" font-weight="600" fill="#0a0a0a">${esc(title)}</text><text x="100" y="114" text-anchor="middle" font-size="9.5" fill="#6b7280">${esc(sub || '')}</text>${dotsSvg}</svg>`
+      + `<ol class="dk-ol">${sats.map((s, i) => `<li><span class="dk-n" style="background:${s.c}">${i + 1}</span><span>${esc(s.l)}${s.d ? `<small>${esc(s.d)}</small>` : ''}</span></li>`).join('')}</ol></div>`;
+  }
+
+  // spine: a vertical journey; nodes = [{ l, d, s: 'done'|'now'|'next'|'bad' }]
+  function spine(nodes, empty) {
+    if (!nodes.length) return none(empty || 'No steps yet.');
+    const ic = { done: '✓', now: '●', bad: '!', next: '' };
+    return `<ol class="dk-spine">${nodes.map(n => `<li class="${n.s}"><span class="dk-sn">${ic[n.s] || ''}</span><div><b>${esc(n.l)}</b>${n.d ? `<small>${esc(n.d)}</small>` : ''}</div></li>`).join('')}</ol>`;
+  }
+
+  // stacked rows: rs = [{ l, parts: [[n, colour, name]] }], one bar per row, the longest row fills the width
+  function rows(rs, leg, empty) {
+    const tot = r => r.parts.reduce((n, p) => n + p[0], 0), mx = Math.max(0, ...rs.map(tot)); if (!mx) return none(empty || 'Nothing recorded yet.');
+    return `<ul class="dk-rows">${rs.map(r => `<li><span>${esc(r.l)}</span><i style="width:${(tot(r) / mx * 100).toFixed(1)}%">${r.parts.filter(p => p[0]).map(p => `<u style="flex:${p[0]};background:${p[1]}" title="${esc(p[2] || '')}: ${p[0]}"></u>`).join('')}</i><b>${tot(r)}</b></li>`).join('')}</ul>${leg ? legend(leg) : ''}`;
+  }
+
+  // a clickable list line, the same look as the older dashboard lists
+  const line = (view, main, side, tone) => `<li><button type="button" class="cs-line" data-act="nav" data-view="${esc(view)}"><span>${esc(main || 'Untitled')}</span>${side ? `<em class="${tone || ''}">${esc(side)}</em>` : ''}</button></li>`;
+  const list = (ls, empty) => (ls.length ? `<ul class="cs-ul">${ls.join('')}</ul>` : none(empty));
+
+  const RAGC = { g: OK, a: WARN, r: BAD, n: GREY };
+  const SO = { notdue: ['Not due yet', 'next'], requested: ['Waiting for signature', 'now'], signed: ['Signed', 'done'], concern: ['Concern raised', 'bad'] };
+
+  // ---------- filters ----------
+  const ui = () => F.S.ui;
+  const PF = () => (ui().dkF || (ui().dkF = { win: 14, focus: 'all', who: 'all' }));
+  const AF = () => (ui().dkA || (ui().dkA = { stage: 'all', health: 'all', customer: 'all', type: 'all', when: 'all', q: '' }));
+  const sel = (act, k, label, opts, cur) => `<label class="dk-f"><span>${esc(label)}</span><select data-change="${act}" data-k="${k}" aria-label="${esc(label)}">${opts.map(([v, l]) => `<option value="${esc(v)}"${String(v) === String(cur) ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`;
+  // project dashboard (team and customer): the calendar window, what to focus on, and whose work
+  function projBar(k) {
+    const f = PF(), dirty = f.win !== 14 || f.focus !== 'all' || f.who !== 'all';
+    return `<div class="dk-fbar" role="group" aria-label="Dashboard filters">${sel('dkF', 'win', 'Calendar window', [[7, 'Next 7 days'], [14, 'Next 14 days'], [30, 'Next 30 days'], [60, 'Next 60 days']], f.win)}${sel('dkF', 'focus', 'Show', [['all', 'Everything'], ['overdue', 'Overdue only'], ['soon', 'Due in the next 7 days']], f.focus)}${k ? '' : sel('dkF', 'who', 'Work of', [['all', 'Everyone'], ['me', 'Me only']], f.who)}${dirty ? '<button type="button" class="dk-fr" data-act="dkFReset">Reset filters</button>' : ''}</div>`;
+  }
+  const typeOf = p => String(p.type || (p.metrics || {}).type || '').toUpperCase();
+  // Admin: the filters apply to every Admin tab, so a portfolio of hundreds of projects can be cut down to the part you are looking at
+  function filterPortfolio(ps) {
+    const f = AF(), D = V.sdd, today = V.today(), q = String(f.q || '').trim().toLowerCase();
+    return ps.filter(p => { const m = p.metrics || {};
+      if (f.stage !== 'all' && String(D.rstageOf(p)) !== f.stage) return false; if (f.health !== 'all' && p.health !== f.health) return false;
+      if (f.customer !== 'all' && (p.customer || 'No customer') !== f.customer) return false; if (f.type !== 'all' && typeOf(p) !== f.type) return false;
+      if (q && !((p.name || '') + ' ' + (p.customer || '')).toLowerCase().includes(q)) return false;
+      if (f.when !== 'all') { const d = m.target ? V.daysBetween(today, m.target) : null; if (f.when === 'none') { if (d != null) return false; } else if (d == null || (f.when === 'late' ? d >= 0 : d < 0 || d > Number(f.when))) return false; }
+      return true; });
+  }
+  function adminBar(all, shown) {
+    const f = AF(), D = V.sdd, dirty = Object.keys(f).some(k => f[k] !== (k === 'q' ? '' : 'all')); const cu = [...new Set(all.map(p => p.customer || 'No customer'))].sort(), ty = [...new Set(all.map(typeOf).filter(Boolean))].sort();
+    return `<div class="dk-fbar" role="group" aria-label="Portfolio filters"><label class="dk-f dk-fq"><span>Search</span><input type="search" data-change="dkAF" data-k="q" value="${esc(f.q || '')}" placeholder="Project or customer" aria-label="Search projects"></label>`
+      + sel('dkAF', 'stage', 'Stage', [['all', 'All stages']].concat(D.RSTG.slice(1).map(([id, l]) => [String(id), l]), [['0', 'No dated plan yet']]), f.stage)
+      + sel('dkAF', 'health', 'Health', [['all', 'Any health']].concat(D.ORDER.map(h => [h, D.HL[h]])), f.health)
+      + sel('dkAF', 'customer', 'Customer', [['all', 'All customers']].concat(cu.map(c => [c, c])), f.customer) + (ty.length ? sel('dkAF', 'type', 'Type', [['all', 'All types']].concat(ty.map(t => [t, t])), f.type) : '')
+      + sel('dkAF', 'when', 'Go-live', [['all', 'Any date'], ['late', 'Past target date'], ['30', 'Within 30 days'], ['60', 'Within 60 days'], ['none', 'No date set']], f.when)
+      + `<span class="dk-fc">Showing <b>${shown.length}</b> of ${all.length} project${all.length === 1 ? '' : 's'}</span>${dirty ? '<button type="button" class="dk-fr" data-act="dkAReset">Reset filters</button>' : ''}</div>`;
+  }
+
+  // ---------- the Overview widgets, from the numbers V.sdd.X() already computes ----------
+  function overview() {
+    const D = V.sdd, S = V.sd, C = V.sdc; if (!D || !S || !C) throw new Error('dashboard parts missing');
+    const c = D.X(), A = D.areas(c), ov = D.overall(A), k = c.k, pct = D.pct, today = c.today; const { widget, grid, kpi } = S;
+    const FS = PF(), win = FS.win, focus = FS.focus, add7 = new Date(Date.parse(today + 'T00:00:00Z') + 7 * 864e5).toISOString().slice(0, 10), me = String((F.S.user && F.S.user.email) || '').toLowerCase();
+    const fa = a => focus === 'all' || (focus === 'overdue' ? !!(a.due && a.due < today) : !!(a.due && a.due >= today && a.due <= add7));   // the Show filter, for actions
+    const conf = c.R.filter(r => r.status === 'Confirmed').length, signed = ['brd', 'uat', 'golive'].filter(id => c.sg(id).status === 'signed').length;
+    const sc = c.spi == null ? null : Math.round(c.spi * 100), ad = c.due.length ? pct(c.hit.length, c.due.length) : null;
+    const kpis = [['Overall status', C.rag(ov, D.OV[ov]), A.filter(x => x.s === 'r').length + ' red · ' + A.filter(x => x.s === 'a').length + ' amber · ' + A.filter(x => x.s === 'g').length + ' green', null],
+      ['Schedule performance', c.spi == null ? '—' : c.spi.toFixed(2), c.spi == null ? 'needs a dated plan' : c.spi >= 1 ? 'on or ahead of plan' : 'below 1.00 means behind plan', sc == null ? null : Math.min(100, sc)],
+      ['Milestone adherence', ad == null ? '—' : ad + '%', c.due.length ? c.hit.length + ' of ' + c.due.length + ' due plan steps are Done' : 'no plan step has come due yet', ad],
+      [k ? 'Waiting on you' : 'Overdue', k ? c.actsOpen.filter(a => a.side === 'customer' && fa(a)).length : c.anyLate.length, k ? 'open actions on your side' : 'actions past their date', null]];
+    const kp = `<div class="sd-kpis">${kpis.map((a, i) => kpi(a[0], a[1], a[2], i === 3 && !k && c.anyLate.length ? BAD : '#3b82f6', a[3])).join('')}</div>`;
+    const rg = widget('Delivery progress', 'four measures, one ring each', rings([
+      { l: 'Plan done', d: c.st.n ? 'against ' + c.st.planned + '% planned' : 'no dated plan', p: c.st.n ? c.st.actual : null, c: BLUE },
+      { l: 'Requirements confirmed', d: conf + ' of ' + c.R.length, p: c.R.length ? pct(conf, c.R.length) : null, c: NAVY },
+      { l: 'Test cases passed', d: c.passed + ' of ' + c.tcs.length, p: c.tcs.length ? pct(c.passed, c.tcs.length) : null, c: OK },
+      { l: 'Sign-offs signed', d: signed + ' of 3', p: pct(signed, 3), c: WARN }]), 4);
+    const open = c.actsOpen.filter(fa), isLate = a => a.due && a.due < today, late = open.filter(isLate), fac = open.filter(a => (a.side || 'facilio') === 'facilio' && !isLate(a)), cus = open.filter(a => a.side === 'customer' && !isLate(a));
+    const myAll = c.acts.filter(a => a.side === 'customer' && fa(a)), myOpen = open.filter(a => a.side === 'customer');
+    const who = k ? widget('Your actions', 'open, overdue and done', C.donut([['Open', myOpen.filter(a => !isLate(a)).length, BLUE], ['Overdue', myOpen.filter(isLate).length, BAD], ['Done', focus === 'all' ? myAll.length - myOpen.length : 0, OK]], String(myOpen.length), 'open', 'No actions recorded yet.'), 4)
+      : widget('Who owes what', 'open actions by side', pie([['Facilio', fac.length, NAVY], ['Customer', cus.length, BLUE], ['Overdue', late.length, BAD]], 'No open actions.'), 4);
+    const tks = k ? [] : (V.items && V.items.ready(['task']) ? V.items.list('task') : []).filter(t => FS.who !== 'me' || String(t.owner || '').toLowerCase() === me); const ts = x => (/^(done|closed|resolved|complete|completed|cancelled)$/i.test(x.status || '') ? 'done' : /block/i.test(x.status || '') ? 'blocked' : /progress/i.test(x.status || '') ? 'prog' : 'todo');
+    const by = s => tks.filter(t => ts(t) === s).length;
+    const journey = (names) => spine(['brd', 'uat', 'golive'].map(id => { const m = SO[c.sg(id).status] || SO.notdue; return { l: names[id], d: m[0], s: m[1] }; }).concat(c.goDays != null ? [{ l: 'Go-live date', d: V.fmtDate(c.st.goLive) + ' · ' + (c.goDays >= 0 ? c.goDays + ' days to go' : -c.goDays + ' days ago'), s: c.goDays < 0 ? 'bad' : 'next' }] : []));
+    const work = k ? widget('Your journey', 'what you are asked to approve', journey({ brd: 'Requirements (BRD)', uat: 'Testing (UAT)', golive: 'Go-live' }), 4)
+      : widget('Work by status', 'all tasks', C.donut([['To do', by('todo'), SLATE], ['In progress', by('prog'), BLUE], ['Blocked', by('blocked'), BAD], ['Done', by('done'), OK]], String(tks.length), 'tasks', 'No tasks yet.'), 4);
+    const orb = widget('Health by area', 'one satellite per area', orbit({ g: 'On track', a: 'Attention', r: 'Off track', n: 'No data' }[ov], 'overall', A.map(x => ({ l: x.l, c: RAGC[x.s], d: x.d }))), 7);
+    const sp = k ? '' : widget('Sign-off journey', 'BRD, UAT and go-live', journey({ brd: 'BRD', uat: 'UAT', golive: 'Go-live' }), 5);
+    const st = s => String(s.status || ''), GRY = '#d4d4d4'; const tcc = c.tcs.map(t => (/^(passed|approved)$/i.test(st(t)) ? OK : /^(failed|blocked)$/i.test(st(t)) ? BAD : /^(not started|ready for testing|deferred|)$/i.test(st(t)) ? GRY : WARN));
+    const cnt = col => tcc.filter(x => x === col).length;
+    const dt = widget('Test cases', 'one dot per test case', dots(tcc, [['Passed', cnt(OK), OK], ['In progress', cnt(WARN), WARN], ['Failed or blocked', cnt(BAD), BAD], ['Not started', cnt(GRY), GRY]], 'No test cases yet.'), 6);
+    const TY = ['Risk', 'Assumption', 'Issue', 'Dependency'], rd = c.raidOpen, imp = x => x.impact || 'Medium';
+    const rw = (!k || (V.custShow && V.custShow('risks'))) ? widget('Open RAID items', 'by type and impact', rows(TY.map(t => ({ l: t, parts: [['High', BAD], ['Medium', WARN], ['Low', GREY]].map(([im, col]) => [rd.filter(x => (x.type || 'Risk') === t && imp(x) === im).length, col, im]) })), [['High', rd.filter(x => imp(x) === 'High').length, BAD], ['Medium', rd.filter(x => imp(x) === 'Medium').length, WARN], ['Low', rd.filter(x => imp(x) === 'Low').length, GREY]], 'Nothing open in the RAID log.'), 6) : '';
+    const ev = (V.events ? V.events({ days: win }) : []).slice(0, 8), need = k ? myOpen.slice().sort((a, b) => (a.due || '9').localeCompare(b.due || '9')).slice(0, 5) : (V.attentionItems ? V.attentionItems() : []).slice(0, 6);
+    const l1 = widget('Next ' + win + ' days', 'sessions and milestones', list(ev.map(e => line(e.view === 'overview' ? 'governance' : e.view, e.title, V.fmtDate(e.date))), 'Nothing is scheduled in the next 14 days.'), 6);
+    const l2 = widget(k ? 'What we need from you' : 'Needs attention', k ? 'open actions, soonest first' : 'worth a look today', list(need.map(a => k ? line('governance', a.text || 'Action', a.due ? V.fmtDate(a.due) : '', isLate(a) ? 'bad' : '') : line(a.view || 'governance', a.t)), k ? 'Nothing is waiting on you right now.' : 'Nothing needs attention right now.'), k ? 5 : 6);
+    return projBar(k) + kp + grid(k ? rg + who + work + orb + l2 + dt + rw + l1 : rg + who + work + orb + sp + dt + rw + l1 + l2);
+  }
+
+  // ---------- Admin: extra portfolio widgets, from the project list the Admin dashboard already has ----------
+  function admin(ps) {
+    const D = V.sdd, S = V.sd; if (!D || !S || !ps.length) return ''; const { widget, grid } = S, { HC, HL, ORDER, pct } = D; const RSTGS = D.RSTG.slice(1).concat([[0, 'No dated plan yet']]);
+    const m = p => p.metrics || {}, on = ps.filter(p => p.health === 'on_track').length;
+    const worst = ps.slice().sort((a, b) => ORDER.indexOf(a.health) - ORDER.indexOf(b.health)); const NS = 10;   // with hundreds of projects the orbit shows the ones that need attention first
+    const orb = widget('Portfolio orbit', ps.length > NS ? 'the ' + NS + ' that need attention first, of ' + ps.length : 'one satellite per project, coloured by health', orbit(pct(on, ps.length) + '%', 'on track', worst.slice(0, NS).map(p => ({ l: p.name, c: HC[p.health] || GREY, d: (p.customer || '') + (m(p).target ? ' · target ' + V.fmtDate(m(p).target) : '') }))), 6);
+    const leg = ORDER.map(h => [HL[h], ps.filter(p => p.health === h).length, HC[h]]);
+    const dt = widget('Every project at a glance', 'one dot per project, worst first', dots(worst.map(p => HC[p.health] || GREY), leg), 6);
+    const cust = {}; ps.forEach(p => { const k = p.customer || 'No customer'; (cust[k] = cust[k] || []).push(p); });
+    const crowAll = Object.keys(cust).map(k => ({ l: k, parts: ORDER.map(h => [cust[k].filter(p => p.health === h).length, HC[h], HL[h]]) })).sort((a, b) => b.parts.reduce((n, p) => n + p[0], 0) - a.parts.reduce((n, p) => n + p[0], 0)), crow = crowAll.slice(0, 8);
+    const cw = widget('Health by customer', crowAll.length > 8 ? 'the 8 biggest customers, of ' + crowAll.length : 'projects per customer', rows(crow, leg), 6);
+    const stg = widget('Pipeline by stage', 'projects per stage, coloured by health', rows(RSTGS.map(([id, l]) => ({ l, parts: ORDER.map(h => [ps.filter(p => D.rstageOf(p) === id && p.health === h).length, HC[h], HL[h]]) })), leg), 6);
+    const dated = ps.filter(p => D.rstageOf(p)).length, tgt = ps.filter(p => m(p).target).length;
+    const rg = widget('Portfolio readiness', 'how much of the portfolio is planned', rings([{ l: 'On track', d: on + ' of ' + ps.length, p: pct(on, ps.length), c: OK }, { l: 'Has a dated plan', d: dated + ' of ' + ps.length, p: pct(dated, ps.length), c: BLUE }, { l: 'Has a go-live date', d: tgt + ' of ' + ps.length, p: pct(tgt, ps.length), c: NAVY }]), 6);
+    const ty = {}; ps.forEach(p => { const t = String(p.type || m(p).type || '').toUpperCase(); if (t) ty[t] = (ty[t] || 0) + 1; }); const TC = [BLUE, NAVY, OK, WARN, SLATE, BAD];
+    const tw = Object.keys(ty).length ? widget('Projects by type', 'share of the portfolio', pie(Object.keys(ty).map((t, i) => [t, ty[t], TC[i % TC.length]])), 6) : '';
+    return grid(orb + dt + stg + cw + rg + tw);
+  }
+
+  const ACT = V.ACT;
+  ACT.dkF = el => { const k = el.getAttribute('data-k'), v = el.value; PF()[k] = k === 'win' ? Number(v) : v; V.render(); };
+  ACT.dkFReset = () => { ui().dkF = { win: 14, focus: 'all', who: 'all' }; V.render(); };
+  ACT.dkAF = el => { AF()[el.getAttribute('data-k')] = el.value; V.setMode('admin'); };
+  ACT.dkAReset = () => { ui().dkA = { stage: 'all', health: 'all', customer: 'all', type: 'all', when: 'all', q: '' }; V.setMode('admin'); };
+  V.dk = { pie, rings, dots, orbit, spine, rows, overview, admin, adminBar, filterPortfolio, none };
+})(typeof window !== 'undefined' ? window : globalThis);

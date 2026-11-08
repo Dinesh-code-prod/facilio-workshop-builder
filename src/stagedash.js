@@ -185,7 +185,8 @@
     I().load(KINDS); const items = cust() ? STG.filter(s => CUST_STG.includes(s.id)) : STG; const all = [['overview', 'Overview']].concat(items.map(s => [s.id, s.label, s.c]), [['reports', 'Reports']]);
     let cur = S.ui.sdTab || 'overview'; if (!all.some(x => x[0] === cur)) cur = 'overview';
     const html = base.call(this); const mark = '<div class="cs-page">';
-    if (cur === 'overview') { let ex = ''; try { ex = overviewExtra(); } catch (e) { console.error(e); } return html.replace(mark, () => mark + tabsHtml(cur, all) + lifecycle() + ex); }
+    if (cur === 'overview') { const i0 = html.indexOf(mark); if (V.dk && i0 >= 0) { try { return html.slice(0, i0) + mark + tabsHtml(cur, all) + lifecycle() + V.dk.overview() + '</div>'; } catch (e) { console.error(e); } }   // the widget Overview (src/dashkit.js); the older bento below is the fallback
+      let ex = ''; try { ex = overviewExtra(); } catch (e) { console.error(e); } return html.replace(mark, () => mark + tabsHtml(cur, all) + lifecycle() + ex); }
     const i = html.indexOf(mark); let body; try { body = cur === 'reports' ? (V.sdReports ? V.sdReports.page() : none('Reports are not available.')) : stagePage(cur); } catch (e) { console.error(e); body = none('This tab could not be drawn.'); }
     return (i < 0 ? html : html.slice(0, i)) + mark + tabsHtml(cur, all) + body + '</div>';
   };

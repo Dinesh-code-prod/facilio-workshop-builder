@@ -77,7 +77,7 @@
     const C = V.cmd && V.cmd.get && V.cmd.get(); if (!C) { if (V.cmd && !loading && !V.cmd.ready()) { loading = true; V.cmd.load().finally(() => { loading = false; V.setMode('admin'); }); } return `<div class="adx"><div class="adx-c adx-s12">${V.ui ? V.ui.loading(2) : 'Loading…'}</div></div>`; }
     const tab = TABS.some(t => t[0] === S.ui.admTab) ? S.ui.admTab : 'overview';
     const m = C.metrics || {}, today = C.today || V.today(), H = V.ADM_HEALTH || {}, hl = h => (H[h] || [h])[0];
-    const ps = (C.projects || []).filter(p => p.manual === 'active'), T = C.trends || {}, W = C.workload || { owners: [], unassigned: [] }, sg = C.signals || [];
+    const ps0 = (C.projects || []).filter(p => p.manual === 'active'), ps = V.dk ? V.dk.filterPortfolio(ps0) : ps0, T = C.trends || {}, W = C.workload || { owners: [], unassigned: [] }, sg = C.signals || [];
     const sum = f => ps.reduce((n, p) => n + (Number(f(p)) || 0), 0), open = sum(p => p.metrics.openTasks), late = sum(p => p.metrics.overdueTasks), wait = sum(p => p.metrics.custWaiting);
     const drill = (p, inner, view, cls) => `<button type="button" class="${cls || 'adx-row'}" data-act="cmdDrill" data-p="${esc(p.id)}" data-v="${view || 'overview'}" data-x="{}">${inner}</button>`;
     const chip = h => `<em class="adx-chip" style="--c:${HC[h] || '#98A2B3'}">${esc(hl(h))}</em>`;
@@ -153,7 +153,7 @@
     const dueW = card('Next 45 days', 'milestones and target dates, by project health', dueIn.length || dueLate ? `<div class="du"><div class="du-ax">${[0, 7, 14, 21, 28, 35, 42].map(d => `<span style="left:${d / DAYS * 100}%">${d === 0 ? 'Today' : '+' + d + 'd'}</span>`).join('')}</div><div class="du-t">${[7, 14, 21, 28, 35, 42].map(d => `<i class="du-g" style="left:${d / DAYS * 100}%"></i>`).join('')}${dueIn.map((x, i) => `<button type="button" class="du-m" style="left:${x.d / DAYS * 100}%;top:${6 + (i % 4) * 18}px;--c:${HC[x.p.health] || '#98A2B3'}" data-act="cmdDrill" data-p="${esc(x.p.id)}" data-v="overview" data-x="{}" title="${esc(x.p.name)} · ${esc(x.t)} · ${esc(V.fmtDate(new Date(Date.parse(today) + x.d * 864e5).toISOString().slice(0, 10)))}" aria-label="${esc(x.p.name)}, ${esc(x.t)}, in ${x.d} days"></button>`).join('')}</div></div><p class="adx-more">${dueIn.length} date${dueIn.length === 1 ? '' : 's'} in the next 45 days${dueLate ? ' · ' + dueLate + ' already past' : ''}. Hover a marker for the project and date; click it to open the project.</p>` : none('No milestone or target date falls in the next 45 days.'), 12);
 
     const layouts = {
-      overview: stats + `<div class="adx-g">${healthW}${gaugeW}${bandsW}${dangerW}${stageW}${dueW}${flowW}${actW}</div>`,
+      overview: stats + `<div class="adx-g">${healthW}${gaugeW}${bandsW}${dangerW}${stageW}${dueW}${flowW}${actW}</div>` + (V.dk && ps.length ? '<h2 class="sd-h2" style="margin:28px 0 12px">Portfolio views</h2>' + V.dk.admin(ps) : ''),
       delivery: `<div class="adx-g">${timeW}${stageW}${nxtW}${flowW}${actW}</div>`,
       risk: `<div class="adx-g">${dangerW}${riskW}${sevW}${catW}${heatW}</div>`,
       people: `<div class="adx-g">${loadW}${unW}${concW}${flowW}${actW}</div>`,
@@ -161,6 +161,6 @@
       stages: V.stageAdmin ? V.stageAdmin(ps) : ''
     };
     const tabs = `<nav class="adx-tabs" role="tablist" aria-label="Dashboard sections">${TABS.map(([id, l]) => `<button type="button" role="tab" class="${tab === id ? 'on' : ''}" aria-selected="${tab === id}" data-act="admTab" data-v="${id}">${esc(l)}</button>`).join('')}</nav>`;
-    return `<div class="adx">${tabs}${tab === 'reports' ? (reports ? reports() : '') : layouts[tab]}</div>`;
+    return `<div class="adx">${tabs}${tab === 'reports' ? (reports ? reports() : '') : (V.dk ? V.dk.adminBar(ps0, ps) : '') + layouts[tab]}</div>`;
   };
 })(typeof window !== 'undefined' ? window : globalThis);

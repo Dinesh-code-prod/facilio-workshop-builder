@@ -1248,3 +1248,37 @@ body .ki-tile:not(#_):not(#__):not(#___) { padding: 16px 20px !important; }
 body .ki-head:not(#_):not(#__):not(#___) { box-shadow: none !important; border-left: 0 !important; border-bottom: 1px solid var(--cs-st2, #e5e7eb) !important; background: #fff !important; padding: 18px 22px !important; }
 body .ki-head b:not(#_):not(#__):not(#___) { font-size: 16px !important; }
 body .ki-head span:not(#_):not(#__):not(#___) { font-size: 13.5px !important; line-height: 1.5; }
+
+/* Dashboard widget kit (src/dashkit.js): pie, rings, dots, orbit, spine and stacked rows. Flat, neutral cards; colour only where it means a state. */
+body .dk-row { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; padding: 6px 4px; }
+body .dk-rl { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; flex: 1; min-width: 180px; }
+body .dk-rl li { display: grid; grid-template-columns: 10px 1fr auto; gap: 10px; align-items: center; font: 500 14px/20px var(--cs-font); color: var(--cs-fg1); }
+body .dk-rl li i { width: 10px; height: 10px; border-radius: 50%; } body .dk-rl small { display: block; font: 400 12.5px/17px var(--cs-font); color: var(--cs-fg3); } body .dk-rl b { font: 600 15px/20px var(--cs-font); }
+body .dk-dots { display: flex; flex-wrap: wrap; gap: 7px; padding: 4px 4px 14px; } body .dk-dots i { width: 15px; height: 15px; border-radius: 50%; display: block; }
+body .dk-orbit { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 24px; align-items: center; padding: 4px 8px; } body .dk-orbit svg { display: block; max-width: 100%; height: auto; }
+body .dk-ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; } body .dk-ol li { display: grid; grid-template-columns: 26px 1fr; gap: 12px; align-items: start; font: 500 14px/20px var(--cs-font); }
+body .dk-ol small { display: block; font: 400 12.5px/17px var(--cs-font); color: var(--cs-fg3); } body .dk-n { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; color: #fff; font: 600 12px/1 var(--cs-font); }
+body .dk-spine { list-style: none; margin: 0; padding: 4px 4px 0; } body .dk-spine li { position: relative; display: grid; grid-template-columns: 28px 1fr; gap: 14px; padding-bottom: 20px; }
+body .dk-spine li:not(:last-child)::before { content: ""; position: absolute; left: 13px; top: 28px; bottom: 0; width: 2px; background: var(--cs-st2, #e5e7eb); }
+body .dk-sn { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: #fff; border: 2px solid #d4d4d4; color: #fff; font: 600 13px/1 var(--cs-font); }
+body .dk-spine .done .dk-sn { background: #16a34a; border-color: #16a34a; } body .dk-spine .now .dk-sn { border-color: var(--cs-brand, #1570EF); color: var(--cs-brand, #1570EF); } body .dk-spine .bad .dk-sn { background: #ef4444; border-color: #ef4444; }
+body .dk-spine b { display: block; font: 600 14.5px/20px var(--cs-font); color: var(--cs-fg1); } body .dk-spine small { display: block; font: 400 13px/18px var(--cs-font); color: var(--cs-fg3); }
+body .dk-rows { list-style: none; margin: 0; padding: 4px 0 8px; display: grid; gap: 12px; }
+body .dk-rows li { display: grid; grid-template-columns: minmax(90px, 140px) minmax(0, 1fr) 34px; gap: 12px; align-items: center; font: 500 14px/20px var(--cs-font); }
+body .dk-rows i { display: flex; height: 16px; border-radius: 8px; overflow: hidden; background: rgba(0, 0, 0, .05); } body .dk-rows u { display: block; text-decoration: none; min-width: 3px; }
+body .dk-rows b { text-align: right; font: 600 14px/20px var(--cs-font); }
+@media (max-width: 760px) { body .dk-orbit { grid-template-columns: 1fr; justify-items: center; } }
+body .sd-w > .sd-b:has(> .dk-row, > .sd-dn, > .dk-orbit, > .dk-spine, > .dk-dots, > .dk-rows) { padding: 18px 22px 20px; display: flex; flex-direction: column; justify-content: center; }
+body .sd-w > .sd-b:has(> .dk-row) > .dk-row, body .sd-w > .sd-b:has(> .sd-dn) > .sd-dn { justify-content: center; }
+body .sd-w .sd-b .cs-line { padding-left: 20px; padding-right: 20px; }
+body .sd-w .sd-b > .sd-lg { padding: 6px 0 0; }
+body .sd-w { display: flex; flex-direction: column; } body .sd-w > .sd-b { flex: 1 1 auto; }
+body .dk-rl { min-width: 150px; } body .dk-row > svg { flex: none; }
+/* Dashboard filter bars (src/dashkit.js): one row of labelled controls above the widgets */
+body .dk-fbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 14px; margin: 0 0 16px; padding: 14px 16px; background: #fff; border: 1px solid var(--cs-st2, #e5e7eb); border-radius: var(--cs-r-card, 16px); }
+body .dk-f { display: grid; gap: 4px; min-width: 150px; } body .dk-f span { font: 500 12.5px/16px var(--cs-font); color: var(--cs-fg3); }
+body .dk-f select, body .dk-f input { height: 38px; padding: 0 12px; border: 1px solid var(--cs-st1, #d4d4d4); border-radius: var(--cs-r-ctl, 10px); background: #fff; font: 400 14px/20px var(--cs-font); color: var(--cs-fg1); }
+body .dk-fq { flex: 1 1 220px; } body .dk-fq input { width: 100%; box-sizing: border-box; }
+body .dk-f select:focus-visible, body .dk-f input:focus-visible { outline: 0; border-color: var(--cs-brand, #1570EF); box-shadow: 0 0 0 3px var(--cs-brand-soft, #dbe9ff); }
+body .dk-fc { margin-left: auto; align-self: center; font: 400 13.5px/20px var(--cs-font); color: var(--cs-fg2); } body .dk-fc b { color: var(--cs-fg1); font-weight: 600; }
+body .dk-fr { height: 38px; padding: 0 14px; border: 1px solid var(--cs-st1, #d4d4d4); border-radius: var(--cs-r-ctl, 10px); background: #fff; font: 500 13.5px/20px var(--cs-font); color: var(--cs-fg1); cursor: pointer; } body .dk-fr:hover { background: var(--cs-bg4, #f4f4f5); }
