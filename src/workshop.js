@@ -70,33 +70,60 @@
     return `<div class="ws-bar" role="toolbar" aria-label="Workshop room"><div class="ws-timer"><span class="ws-clock" id="wsClock" role="timer" aria-label="Workshop timer">${esc(L().fmtClock(elapsed()))}</span><button type="button" class="btn sm" data-act="wsTimer">${t.run ? 'Pause' : t.acc ? 'Resume' : 'Start timer'}</button>${t.acc || t.run ? '<button type="button" class="btn sm" data-act="wsTimerReset">Reset</button>' : ''}</div>
       <div class="row" style="gap:6px;flex-wrap:wrap">${FOCUS() ? '' : `<button type="button" class="btn sm" data-act="wsFull" title="Fill the window with the workshop room (Esc leaves)">${u.full ? 'Exit full screen' : 'Full screen'}</button><button type="button" class="btn sm" data-act="wsNewTab" title="Open the workshop room alone in its own browser tab">Open in a new tab</button>`}</div></div>`;
   }
-  function stepNow(all) { const u = U(); if (u.step) return u.step; const c = L().counts(all); return u.live || c.answered || c.asked ? 'call' : 'ready'; }
-  function stepper(all, now) {
-    const c = L().counts(visible(all)); const defs = [['ready', 'Get ready', c.total + ' question' + (c.total === 1 ? '' : 's') + ' prepared'], ['call', 'During the call', c.answered + ' of ' + c.total + ' answered'], ['after', 'After the call', 'Summary, transcript, Solution']];
-    return `<nav class="ws-steps" aria-label="Steps of a workshop call">${defs.map((d, i) => `<button type="button" class="ws-step${now === d[0] ? ' on' : ''}" data-act="wsStep" data-v="${d[0]}"${now === d[0] ? ' aria-current="step"' : ''}><span class="ws-n">${i + 1}</span><span><b>${d[1]}</b><span class="xs muted">${esc(d[2])}</span></span></button>`).join('')}</nav>`;
+  // ---------- the roadmap: one chip per planned requirement session, then one workspace for the chosen session ----------
+  const sessionList = () => L().agendaOf(V.plannerDoc ? V.plannerDoc().sessions : []);
+  const forSession = (all, s) => { const mods = s && s.modules.length ? new Set(s.modules.map(nzs)) : null; return all.filter(q => !mods || !q.module || mods.has(nzs(q.module)) || mods.has(nzs(q.moduleLabel))); };
+  const isOpenQ = q => q.status === 'toask' || q.status === 'asked';
+  const byPriority = (a, b) => (RANK[a.priority] == null ? 1 : RANK[a.priority]) - (RANK[b.priority] == null ? 1 : RANK[b.priority]);
+  function roadmap(all) {
+    const u = U(); const ses = sessionList(); const dis = ro() ? ' disabled' : ''; const c = L().counts(all);
+    const chips = ses.map((s, i) => { const qs = forSession(all, s); const done = qs.filter(q => !isOpenQ(q)).length; const full = qs.length && done === qs.length; const on = u.sessionId === s.id;
+      return `<button type="button" class="ws-chip${on ? ' on' : ''}${full ? ' done' : ''}" data-act="wsPick" data-id="${esc(s.id)}"${on ? ' aria-current="step"' : ''}><span class="ws-n">${full ? '&#10003;' : esc(s.no || i + 1)}</span><span><b>${esc(s.title)}</b><span class="xs muted">${esc(s.date ? V.fmtDate(s.date) : 'No date')} &middot; ${done} of ${qs.length} done</span></span></button>`; }).join('');
+    const allChip = `<button type="button" class="ws-chip${!u.sessionId ? ' on' : ''}" data-act="wsPick" data-id=""><span class="ws-n">&#8734;</span><span><b>All questions</b><span class="xs muted">${c.total - c.toask - c.asked} of ${c.total} done</span></span></button>`;
+    return `<section class="ws-prep" aria-label="Roadmap of the requirement sessions"><div class="ws-prep-h"><b>Your requirement sessions</b><span class="small muted">Pick the session you are running. Its questions are asked one by one; answers are kept as you go.</span>
+      <span class="spacer"></span><button type="button" class="btn sm" data-act="wsGoQuestions">Review the questions</button><button type="button" class="btn sm" data-act="qbImport"${dis} title="Add your own questions from an Excel sheet, a Word or PDF document, or a text file">Import questions</button></div>
+      <div class="ws-road" role="group">${chips}${allChip}</div>${ses.length ? '' : '<p class="small muted" style="margin:8px 0 0">No sessions are planned yet. Plan them under Workshop plan, and they appear here as a roadmap.</p>'}</section>`;
   }
-  function readyPanel(all) {
-    const c = L().counts(visible(all)); const dis = ro() ? ' disabled' : ''; const sc = sessionScope();
-    return `<div class="card ws-card"><div class="card-h"><b>Before the call</b></div><div class="card-b"><ol class="ws-fins">
-      <li class="ws-fin"><span class="ws-n">1</span><div><b>Check the questions</b><div class="small muted">${c.total ? c.total + ' question' + (c.total === 1 ? ' is' : 's are') + ' ready' + (sc ? ' for ' + esc(sc.title) : '') + ', worked out from the contract, scope and requirements, plus any you imported.' : 'No questions yet. Create them from the contract, or import your own from Excel or a document.'}</div></div><div class="row" style="gap:6px;flex-wrap:wrap"><button type="button" class="btn sm${c.total ? '' : ' primary'}" data-act="wsGoQuestions">${c.total ? 'Review the questions' : 'Create the questions'}</button><button type="button" class="btn sm" data-act="qbImport"${dis} title="Add your own questions from an Excel sheet, a Word or PDF document, or a text file">Import questions</button></div></li>
-      <li class="ws-fin"><span class="ws-n">2</span><div><b>Pick the session</b><div class="small muted">Choose which planned requirement session this call is, below. The questions then narrow to that session's modules. Skip it to see every question.</div></div></li>
-      <li class="ws-fin"><span class="ws-n">3</span><div><b>Start the call</b><div class="small muted">Opens the questions to ask, with the timer and the microphone.</div></div><button type="button" class="btn sm primary" data-act="wsStep" data-v="call">Start the call</button></li></ol></div></div>
-      ${agendaPanel()}
-      <details class="ws-help ws-more"><summary>More tools</summary><div class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px"><button type="button" class="btn sm" data-act="wsOpenFlow" title="Opens the State Flow Builder for this project in a new tab">Open State Flow Builder</button><button type="button" class="btn sm" data-act="wsOpenWb" title="Opens the Process Whiteboard for this project in a new tab">Open Process Whiteboard</button><button type="button" class="btn sm" data-act="wsClaude"${dis}>Open in Claude</button></div></details>`;
+  function briefCard(vis) {
+    const u = U(); const s = sessionList().find(x => x.id === u.sessionId); const open = vis.filter(isOpenQ).length; const done = vis.length - open; const pc = vis.length ? Math.round(done * 100 / vis.length) : 0;
+    const meta = s ? [s.date ? V.fmtDate(s.date) + (s.start ? ' ' + s.start : '') : '', s.minutes ? s.minutes + ' min' : '', s.modules.length ? 'Modules: ' + s.modules.join(', ') : ''].filter(Boolean).map(esc).join(' &middot; ') : 'Every prepared question, across all sessions';
+    return `<div class="ws-brief"><div><h2 class="ws-bt">${esc(s ? s.title : 'All questions')}</h2><div class="small muted">${meta}${s && s.topics ? '<br>Topics: ' + esc(s.topics) : ''}</div></div><div class="ws-prog" title="${done} of ${vis.length} asked or answered"><div class="ws-bar2"><i style="width:${pc}%"></i></div><span class="xs muted">${done} of ${vis.length} done</span></div></div>`;
   }
-
+  function focusCard(vis) {
+    const dis = ro() ? ' disabled' : ''; const open = vis.filter(isOpenQ).sort(byPriority);
+    if (!vis.length) return `<div class="card ws-card"><div class="card-b"><b>No questions for this session yet.</b><p class="small muted">Create them from the contract, or import your own from Excel or a document, using the buttons above.</p></div></div>`;
+    if (!open.length) return `<div class="card ws-card"><div class="card-b"><b>&#10003; Every question here is asked or answered.</b><p class="small muted">Open the Finish tab to write the summary, keep the call and send the answers to the Solution tab.</p><button type="button" class="btn primary" data-act="wsTab" data-v="finish">Go to Finish</button></div></div>`;
+    const q = open[0]; const n = vis.length - open.length + 1; const next = open.slice(1, 4);
+    const btn = (v, label, cls) => `<button type="button" class="btn${cls ? ' ' + cls : ''}" data-act="wsStatus" data-id="${esc(q.id)}" data-v="${v}"${dis}>${label}</button>`;
+    return `<div class="card ws-card ws-focus-card"><div class="card-h"><b>Question ${n} of ${vis.length}</b><span class="xs muted">${tag(PC[q.priority] || 'low', esc(q.priority))} ${q.moduleLabel && q.moduleLabel !== 'General' ? esc(q.moduleLabel) : 'General'}</span></div><div class="card-b">
+      <div class="ws-fq">${esc(q.text)}</div>${q.why ? `<div class="small muted">Why ask: ${esc(q.why)}</div>` : ''}${q.expected ? `<div class="small muted">A good answer: ${esc(q.expected)}</div>` : ''}${evidenceHtml(q, !ro())}
+      <label class="f" for="wsAns">What the customer answered</label><textarea id="wsAns" class="ws-note" rows="3" maxlength="2000" placeholder="Type the answer in your own words" data-bind="@workshop_room:q.${esc(q.id)}.note"${dis}>${esc(q.note)}</textarea>
+      <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">${btn('answered', 'Answered &#10003;', 'primary')}${btn('asked', q.status === 'asked' ? 'Asked, still waiting' : 'Asked, waiting for the answer')}${btn('skipped', 'Skip')}</div>
+      ${next.length ? `<div class="ws-next2"><div class="xs muted">Up next</div>${next.map(x => `<div class="small">${esc(x.text)}</div>`).join('')}</div>` : ''}</div></div>`;
+  }
+  function sessionTabs(vis, tab) {
+    const open = vis.filter(isOpenQ).length; const defs = [['ask', 'Ask the questions', open + ' to go'], ['listen', 'Listen to the call', 'Optional'], ['finish', 'Finish the session', 'Summary and answers']];
+    return `<nav class="ws-tabs2" role="tablist" aria-label="Parts of a session">${defs.map(d => `<button type="button" role="tab" class="ws-tab2${tab === d[0] ? ' on' : ''}" aria-selected="${tab === d[0]}" data-act="wsTab" data-v="${d[0]}"><b>${d[1]}</b><span class="xs muted">${esc(d[2])}</span></button>`).join('')}</nav>`;
+  }
+  function toolsRow() {
+    const dis = ro() ? ' disabled' : '';
+    return `<details class="ws-help ws-more"><summary>More tools</summary><div class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px"><button type="button" class="btn sm" data-act="wsOpenFlow" title="Opens the State Flow Builder for this project in a new tab">Open State Flow Builder</button><button type="button" class="btn sm" data-act="wsOpenWb" title="Opens the Process Whiteboard for this project in a new tab">Open Process Whiteboard</button><button type="button" class="btn sm" data-act="wsClaude"${dis}>Open in Claude</button></div></details>`;
+  }
   V.workshop = { html() {
     if (V.isCustomer()) return '<div class="page-body"><div class="empty">This page is for the project team.</div></div>';
-    const u = U(); const prep = prepared(); const all = questions(prep); const now = stepNow(all);
-    const body = now === 'ready' ? `<div class="ws-one">${readyPanel(all)}</div>`
-      : now === 'after' ? `<div class="ws-one">${V.wsLiveExtra ? V.wsLiveExtra(all, 'after') : ''}<div class="row" style="gap:8px"><button type="button" class="btn sm" data-act="wsStep" data-v="call">Back to the questions</button></div></div>`
-      : `<div class="ws-grid"><div class="ws-left">${questionsPanel(prep, all)}</div><div class="ws-right">${livePanel(all)}${V.wsLiveExtra ? V.wsLiveExtra(all, 'call') : ''}<button type="button" class="btn primary" data-act="wsStep" data-v="after" style="width:100%">The call is over: finish the session</button></div></div>`;
-    const main = `${stepper(all, now)}${body}`;
-    const lead = 'Run a requirement call in three steps: get ready, ask the questions, then finish. Nothing said here becomes an approved requirement: every record made is a draft with its source.';
+    const u = U(); const prep = prepared(); const all = questions(prep);
+    if (!u.picked) { u.picked = true; if (!u.sessionId) { const first = sessionList().find(s => { const qs = forSession(all, s); return qs.length && qs.some(isOpenQ); }); if (first) u.sessionId = first.id; } }
+    const vis = visible(all); const tab = u.tab || 'ask';
+    const pane = tab === 'listen' ? `<div class="ws-one">${livePanel(all)}${V.wsLiveExtra ? V.wsLiveExtra(all, 'call') : ''}</div>`
+      : tab === 'finish' ? `<div class="ws-one">${V.wsLiveExtra ? V.wsLiveExtra(all, 'after') : ''}</div>`
+      : `<div class="ws-one">${focusCard(vis)}<details class="ws-help ws-all"><summary>All questions for this session (${vis.length})</summary>${questionsPanel(prep, all)}</details></div>`;
+    const main = `${roadmap(all)}${briefCard(vis)}${sessionTabs(vis, tab)}${pane}${toolsRow()}`;
+    const lead = 'Go through your requirement sessions one by one: ask the questions, note what the customer answers, then finish the session. Nothing said here becomes an approved requirement: every record made is a draft with its source.';
     if (FOCUS()) return `<div class="wb-focus-page ws-room ws-focus"><div class="wb-focus-bar"><b>Workshop room</b><span class="xs muted">${esc((S.project && S.project.name) || '')}</span></div>${bar()}${main}</div>`;
     return (u.full ? '' : `<div class="page-header"><div class="t"><h1>Workshop room</h1><p>${lead}</p></div></div>`) + `<div class="page-body"><div class="ws-room${u.full ? ' ws-full ws-scroll' : ''}">${u.full ? '<div class="wb-focus-bar"><b>Workshop room</b><span class="xs muted">' + esc((S.project && S.project.name) || '') + '</span></div>' : ''}${bar()}${main}</div></div>`;
   } };
-  ACT.wsStep = a => { U().step = a.getAttribute('data-v'); rerender(); };
+  ACT.wsPick = a => { const u = U(); u.sessionId = a.getAttribute('data-id') || ''; u.tab = 'ask'; rerender(); };
+  ACT.wsTab = a => { U().tab = a.getAttribute('data-v'); rerender(); };
   ACT.wsGoQuestions = () => V.go('rsquestions');
 
   // ---------- actions ----------

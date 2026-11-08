@@ -50,3 +50,19 @@
 .ws-help { margin-top: 8px; } .ws-help summary { cursor: pointer; color: #1570EF; font-size: 13px; font-weight: 600; }
 .ws-more { margin: 4px 0 14px; }
 @media (max-width: 700px) { .ws-steps { grid-template-columns: minmax(0, 1fr); } }
+.ws-prep { background: #fff; border: 1px solid #DCE4F3; border-radius: 14px; padding: 12px 14px; margin: 0 0 12px; }
+.ws-prep-h { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; margin-bottom: 10px; } .ws-prep-h .spacer { flex: 1; }
+.ws-road { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.ws-chip { flex: 0 0 auto; min-width: 190px; max-width: 260px; display: flex; gap: 10px; align-items: center; text-align: left; font: inherit; padding: 9px 12px; border: 1px solid #DCE4F3; border-radius: 12px; background: #fff; color: #1D1A5E; cursor: pointer; }
+.ws-chip b { display: block; font-size: 14px; line-height: 1.25; } .ws-chip .xs { display: block; }
+.ws-chip:hover { background: #F4F8FF; } .ws-chip.on { border-color: #1570EF; box-shadow: inset 0 0 0 1px #1570EF; background: #EAF2FF; }
+.ws-chip.done .ws-n { background: #1570EF; color: #fff; }
+.ws-brief { display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin: 4px 2px 10px; }
+.ws-bt { font-size: 20px; margin: 0 0 2px; color: #1D1A5E; }
+.ws-prog { min-width: 180px; } .ws-bar2 { height: 8px; background: #DCE4F3; border-radius: 6px; overflow: hidden; margin-bottom: 4px; } .ws-bar2 i { display: block; height: 8px; background: #1570EF; border-radius: 6px; }
+.ws-tabs2 { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid #DCE4F3; margin: 0 0 14px; }
+.ws-tab2 { font: inherit; text-align: left; padding: 8px 14px; background: none; border: 0; border-bottom: 3px solid transparent; color: #1D1A5E; cursor: pointer; margin-bottom: -1px; }
+.ws-tab2 b { display: block; font-size: 14px; } .ws-tab2 .xs { display: block; } .ws-tab2:hover { background: #F4F8FF; } .ws-tab2.on { border-bottom-color: #1570EF; }
+.ws-fq { font-size: 20px; line-height: 1.35; font-weight: 600; color: #1D1A5E; margin: 2px 0 8px; }
+.ws-next2 { margin-top: 14px; padding-top: 10px; border-top: 1px solid #eef1f7; display: grid; gap: 2px; }
+.ws-all { margin-top: 14px; }
