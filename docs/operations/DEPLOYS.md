@@ -196,3 +196,5 @@ One line per deploy: date and time (UTC), commit, deploy number, who ran it, not
 | 2026-11-08 14:35 | a84a6e6 | 285 | dinesh.r@facilio.com (Claude Code) | 292 files, 44.2 MB. Phase bar under every page heading: neutral hairline and soft depth, no blue edge. Not checked on the live app. |
 
 | 2026-11-08 14:35 | 48d2812 | 286 | dinesh.r@facilio.com (Claude Code) | 292 files, 44.2 MB. Facilio Screens (demokit) is a tab of the Customer View group again. Not checked on the live app. |
+
+| 2026-11-08 14:51 | 0225d63 | 288 | dinesh.r@facilio.com (Claude Code) | 292 files, 44.3 MB. Checks & validations: group tabs with to-review counts, all-checks overview table, opens on To review, select-all follows the view. Checked locally with sample findings only; not checked on the live app. |
