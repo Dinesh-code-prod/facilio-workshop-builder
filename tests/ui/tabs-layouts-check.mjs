@@ -25,9 +25,9 @@ check('menu item is called Tabs & Layouts', /Tabs & Layouts/.test(await p.textCo
 let grps = await groups(); const brd = grps.find(g => g[0] === '3. Solution design & BRD');
 check('BRD, forms, state flows, whiteboard, configuration, roles and traceability sit under one parent group', brd && ['solution', 'modules', 'flow', 'mockup', 'roles', 'notifications', 'cfginputs', 'slakpi', 'brd'].every(v => brd[1].includes(v)), JSON.stringify(brd));
 const subs = await p.evaluate(() => { const g = window.FWBViews.navFor().find(x => x.g === '3. Solution design & BRD'); return g.items.map(i => i[3] || ''); });
-check('the parent group has sub-headings in order: Build the solution, Set up access, alerts and data, Record all configuration, Write the BRD', [...new Set(subs)].join(' | ') === 'Build the solution | Set up access, alerts and data | Record all configuration | Write the BRD', [...new Set(subs)].join(' | '));
+check('the parent group has sub-headings in order: Build the solution, Set up access, alerts and data, Record all configuration, Write the BRD', [...new Set(subs)].join(' | ') === 'Build the solution | Set up access, alerts and data | Record all configuration | Write the BRD | Sign-offs and changes', [...new Set(subs)].join(' | '));
 check('the side menu draws the sub-headings under the parent group', (await p.$$eval('.sidebar .sb-sub', e => e.map(x => x.textContent))).join('|').includes('Record all configuration'));
-check('groups follow the delivery order', grps.map(g => g[0]).slice(0, 6).join(' > ') === 'Project > 1. Project introduction > 2. Requirement sessions > 3. Solution design & BRD > 4. UAT & FTR > 5. Training guides', grps.map(g => g[0]).slice(0, 6).join(' > '));
+check('groups follow the delivery order', grps.map(g => g[0]).slice(0, 6).join(' > ') === '1. Project introduction > 2. Requirement sessions > 3. Solution design & BRD > 4. UAT & FTR > 5. Training guides > 6. Go-live', grps.map(g => g[0]).slice(0, 6).join(' > '));
 check('the side menu draws a section heading above each part', (await p.$$eval('.sidebar .sb-sec', e => e.map(x => x.textContent))).length >= 4);
 check('groups list with search, and the tabs of the selected group as cards', (await p.$$('.tl-g')).length > 8 && (await p.$$('.tl-row')).length > 0);
 await p.fill('#wsQ', 'hyper'); await p.waitForTimeout(300); const found = await p.$$eval('.tl-g .tl-gn', e => e.map(x => x.textContent)); check('group search finds groups by tab name', found.length >= 1 && found.length < 6, found.join(', ')); await p.fill('#wsQ', ''); await p.waitForTimeout(300);
@@ -47,8 +47,8 @@ await pick('4. UAT & FTR');
 await drag('.tl-row[data-wsid="ftr"] .tl-rn', '.tl-g[data-g="Customer reporting"]');
 grps = await groups();
 check('dragging a tab onto a group moves it there', (grps.find(g => g[0] === 'Customer reporting') || [0, []])[1].includes('ftr'), JSON.stringify(grps.find(g => g[0] === 'Customer reporting')));
-await p.evaluate(() => window.scrollTo(0, 0)); await drag('.tl-g[data-g="Project"] .tl-gn', '.tl-g[data-g="2. Requirement sessions"] .tl-gn'); let order = await p.evaluate(() => window.FWBViews.navFor().map(g => g.g));
-check('dragging a group onto another reorders them', order.indexOf('1. Project introduction') < order.indexOf('Project'), order.slice(0, 3).join(' > '));
+await p.evaluate(() => window.scrollTo(0, 0)); await drag('.tl-g[data-g="1. Project introduction"] .tl-gn', '.tl-g[data-g="3. Solution design & BRD"] .tl-gn'); let order = await p.evaluate(() => window.FWBViews.navFor().map(g => g.g));
+check('dragging a group onto another reorders them', order.indexOf('2. Requirement sessions') < order.indexOf('1. Project introduction'), order.slice(0, 3).join(' > '));
 await pick('Customer reporting'); const at0 = order.indexOf('Customer reporting'); await p.click('[data-act="wsGroupStep"][data-d="-1"]'); await p.waitForTimeout(400); order = await p.evaluate(() => window.FWBViews.navFor().map(g => g.g));
 check('Move group up (keyboard-friendly) moves the group one place', order.indexOf('Customer reporting') === at0 - 1, at0 + ' -> ' + order.indexOf('Customer reporting'));
 
@@ -62,7 +62,7 @@ check('edit tab: changing its sub-heading moves it under that heading', await p.
 await p.screenshot({ path: `${OUT}/tabs-layouts-renamed.png` });
 
 // edit a tab in one dialog: label, group and who sees it
-await pick('Project'); await p.click('.tl-row[data-wsid="governance"] [data-act="wsRename"]'); await p.waitForTimeout(250);
+await pick('3. Solution design & BRD'); await p.click('.tl-row[data-wsid="governance"] [data-act="wsRename"]'); await p.waitForTimeout(250);
 await p.fill('#ws_l', 'Governance'); await p.selectOption('#ws_w', 'owner'); await p.selectOption('#ws_g', 'Customer reporting'); await p.click('[data-act="wsRenameGo"]'); await p.waitForTimeout(500);
 grps = await groups(); const cr = grps.find(g => g[0] === 'Customer reporting');
 check('edit tab: renamed and moved to the chosen group', cr && cr[1].includes('governance') && await p.evaluate(() => window.FWBViews.navFor().flatMap(g => g.items).find(i => i[0] === 'governance')[1] === 'Governance'));
@@ -82,7 +82,7 @@ check('the layout survives a reload', !(await menu()).includes('kpi') && (await 
 
 // the viewer: menu without the owner-only tab, but the page itself still opens (the menu is not access control)
 const v = await b.newContext({ viewport: { width: 1440, height: 900 } }); await v.addCookies([{ name: 'dev_user', value: 'viewer.person@facilio.com', url: BASE }]); const vp = await v.newPage(); vp.on('pageerror', e => errs.push(e.message));
-await vp.goto(BASE + `/#/p/${pid}/overview`); await vp.reload(); await vp.waitForSelector('.sidebar', { timeout: 15000 }); await vp.waitForTimeout(800);
+await vp.goto(BASE + `/#/p/${pid}/brd`); await vp.reload(); await vp.waitForSelector('.sidebar', { timeout: 15000 }); await vp.waitForTimeout(800);
 const vmenu = await vp.evaluate(() => [...document.querySelectorAll('.sidebar .sb-item')].map(x => x.getAttribute('data-view')));
 check('a viewer does not see the owner-only tab in the menu', !vmenu.includes('governance') && vmenu.length > 5);
 check('a viewer sees the renamed group but cannot edit the layout', /Design & BRD/.test(await vp.textContent('.sidebar')) && await vp.evaluate(async () => { window.FWBViews.go('workspace'); await new Promise(r => setTimeout(r, 600)); return !document.querySelector('[data-act="wsNewGroup"]') && !document.querySelector('[data-act="wsGroupDel"]'); }));
