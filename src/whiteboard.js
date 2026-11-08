@@ -13,7 +13,7 @@
   const I = () => V.items;
   const GRID = 20, MAXZ = 3, MINZ = .15;
   const COLORS = { note: ['#FFF4B8', '#FFE1EC', '#DDF4E4', '#E3EDFF', '#E8F1FD'], shape: '#FFFFFF' };
-  const C = D.COLORS; const FONT = 'Roboto, Helvetica, Arial, sans-serif';   // the State Flow Builder look: white boxes with a thin blue line, arrows in the same blue, coloured pill labels
+  const C = D.COLORS; const SEL = '#1570EF'; const FONT = 'Roboto, Helvetica, Arial, sans-serif';   // the State Flow Builder look: white boxes with a thin blue line, arrows in the same blue, coloured pill labels
   const uid = p => p + Math.random().toString(36).slice(2, 9);
   const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 
@@ -109,14 +109,14 @@
   function nodeSvg(n, forExport) {
     if (n.hidden) return '';
     const sel = !forExport && W.sel.has(n.id), id = esc(n.id), conf = n.conf && n.conf !== 'detected' ? n.conf : '';
-    const start = n.t === 'ellipse'; let stroke = sel ? C.active : conf === 'uncertain' ? '#E5197F' : conf === 'inferred' ? C.tbc : n.t === 'note' ? 'rgba(16,24,40,.12)' : n.stype === 'skipped' ? C.disabled : start ? C.initial : C.line;
+    const start = n.t === 'ellipse'; let stroke = sel ? SEL : conf === 'uncertain' ? '#E5197F' : conf === 'inferred' ? C.tbc : n.t === 'note' ? 'rgba(16,24,40,.12)' : n.stype === 'skipped' ? C.disabled : start ? C.initial : C.line;
     let sw = sel ? 2 : start ? 2 : 1, dash = conf ? ' stroke-dasharray="6 4"' : '';
     if (!sel && n.bc) stroke = n.bc; if (n.bw !== undefined) sw = n.bw; if (n.bd) dash = ` stroke-dasharray="${n.bd === 'dot' ? '2 4' : '8 5'}"`;   // the person's own border: colour, width, dashed or dotted
     let shape = '';
-    if (n.t === 'frame') shape = `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="14" fill="rgba(239,245,255,.55)" stroke="${sel ? C.active : '#B2CCFF'}" stroke-width="${sel ? 2.5 : 1.5}" stroke-dasharray="8 6"/><text x="${n.x + 16}" y="${n.y + 26}" font-size="15" font-weight="700" fill="#1D1A5E">${esc(n.text || '')}</text>${n.src && n.src.kind === 'flow' ? `<text x="${n.x + 16}" y="${n.y + 44}" font-size="11.5" fill="${stale(n) ? '#B54708' : '#667085'}">${stale(n) ? 'The original flow has changed since this copy was made · right-click the frame to refresh it' : `Copy of the ${esc(n.src.origin === 'proposed' ? 'proposed' : 'configured')} state flow · changes here stay on this board`}</text>` : n.src && n.src.kind === 'image' ? `<text x="${n.x + 16}" y="${n.y + 44}" font-size="11.5" fill="#667085">Read from an image by AI · check the dashed parts</text>` : ''}`;
+    if (n.t === 'frame') shape = `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="14" fill="rgba(239,245,255,.55)" stroke="${sel ? SEL : '#B2CCFF'}" stroke-width="${sel ? 2.5 : 1.5}" stroke-dasharray="8 6"/><text x="${n.x + 16}" y="${n.y + 26}" font-size="15" font-weight="700" fill="#1D1A5E">${esc(n.text || '')}</text>${n.src && n.src.kind === 'flow' ? `<text x="${n.x + 16}" y="${n.y + 44}" font-size="11.5" fill="${stale(n) ? '#B54708' : '#667085'}">${stale(n) ? 'The original flow has changed since this copy was made · right-click the frame to refresh it' : `Copy of the ${esc(n.src.origin === 'proposed' ? 'proposed' : 'configured')} state flow · changes here stay on this board`}</text>` : n.src && n.src.kind === 'image' ? `<text x="${n.x + 16}" y="${n.y + 44}" font-size="11.5" fill="#667085">Read from an image by AI · check the dashed parts</text>` : ''}`;
     else if (n.t === 'image') {
       const href = forExport ? (W.imgData && W.imgData[n.fileId]) : W.imgUrl[n.fileId];
-      shape = `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="#F8F9FC" stroke="${sel ? C.active : '#D0D5DD'}" stroke-width="${sel ? 2.5 : 1}"/>${href ? `<image href="${esc(href)}" x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" preserveAspectRatio="xMidYMid meet" opacity="${n.dim ? .45 : 1}"/>` : `<text x="${n.x + n.w / 2}" y="${n.y + n.h / 2}" text-anchor="middle" font-size="13" fill="#667085">Reference image</text>`}<text x="${n.x}" y="${n.y - 8}" font-size="11.5" fill="#667085">Reference image (original upload)</text>`;
+      shape = `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="#F8F9FC" stroke="${sel ? SEL : '#D0D5DD'}" stroke-width="${sel ? 2.5 : 1}"/>${href ? `<image href="${esc(href)}" x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" preserveAspectRatio="xMidYMid meet" opacity="${n.dim ? .45 : 1}"/>` : `<text x="${n.x + n.w / 2}" y="${n.y + n.h / 2}" text-anchor="middle" font-size="13" fill="#667085">Reference image</text>`}<text x="${n.x}" y="${n.y - 8}" font-size="11.5" fill="#667085">Reference image (original upload)</text>`;
       return `<g class="wb-n" data-id="${id}">${shape}${!forExport && sel && !ro() ? handle(n) : ''}</g>`;
     }
     else if (n.t === 'ellipse') shape = `<ellipse cx="${n.x + n.w / 2}" cy="${n.y + n.h / 2}" rx="${n.w / 2}" ry="${n.h / 2}" fill="${n.fill || '#fff'}" stroke="${stroke}" stroke-width="${sw}"${dash}/>`;
@@ -125,15 +125,15 @@
     else if (n.t === 'para') { const k = Math.min(n.w * .18, 28); shape = `<path d="M${n.x + k} ${n.y} L${n.x + n.w} ${n.y} L${n.x + n.w - k} ${n.y + n.h} L${n.x} ${n.y + n.h} Z" fill="${n.fill || '#fff'}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"${dash}/>`; }
     else if (n.t === 'hex') { const k = Math.min(n.w * .2, 30); shape = `<path d="M${n.x + k} ${n.y} L${n.x + n.w - k} ${n.y} L${n.x + n.w} ${n.y + n.h / 2} L${n.x + n.w - k} ${n.y + n.h} L${n.x + k} ${n.y + n.h} L${n.x} ${n.y + n.h / 2} Z" fill="${n.fill || '#fff'}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"${dash}/>`; }
     else if (n.t === 'ink') { const kx = n.w / (n.pw || n.w), ky = n.h / (n.ph || n.h); const d = (n.pts || []).map((q, i) => (i ? 'L' : 'M') + (n.x + q[0] * kx).toFixed(1) + ' ' + (n.y + q[1] * ky).toFixed(1)).join(' ');
-      return `<g class="wb-n" data-id="${id}"><rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="transparent" stroke="${sel ? C.active : 'none'}" stroke-dasharray="4 3"/><path d="${d}" fill="none" stroke="${n.tc || '#1D1F3D'}" stroke-width="${n.sw || 3}" stroke-linecap="round" stroke-linejoin="round"/>${!forExport && sel && !ro() && !n.lock ? handle(n) : ''}</g>`; }
-    else if (n.t === 'text') shape = sel ? `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="none" stroke="${C.active}" stroke-width="1.5" stroke-dasharray="4 3"/>` : '';
+      return `<g class="wb-n" data-id="${id}"><rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="transparent" stroke="${sel ? SEL : 'none'}" stroke-dasharray="4 3"/><path d="${d}" fill="none" stroke="${n.tc || '#1D1F3D'}" stroke-width="${n.sw || 3}" stroke-linecap="round" stroke-linejoin="round"/>${!forExport && sel && !ro() && !n.lock ? handle(n) : ''}</g>`; }
+    else if (n.t === 'text') shape = sel ? `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="none" stroke="${SEL}" stroke-width="1.5" stroke-dasharray="4 3"/>` : '';
     else if (n.t === 'note') shape = `<rect x="${n.x + 3}" y="${n.y + 4}" width="${n.w}" height="${n.h}" rx="4" fill="rgba(16,24,40,.08)"/><rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="4" fill="${n.fill || COLORS.note[0]}" stroke="${stroke}" stroke-width="${sw}"/>`;
     else { const rx = 3, fill = n.fill || COLORS.shape;
       shape = `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="${rx}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dash}/>`; }
     let label = '';
     if (n.t !== 'frame') {
       const size = n.size || (n.t === 'text' ? 18 : n.t === 'text' ? 18 : 13), L = lines(n.text, n.w, size), lh = size * 1.3, top = n.y + n.h / 2 - (L.length - 1) * lh / 2 + (n.t === 'tri' ? n.h * .14 : 0);
-      const weight = n.b ? 700 : n.t === 'text' ? 700 : n.t === 'note' ? 500 : 400; const ink = n.tc || (n.t === 'note' || n.t === 'text' ? '#101828' : sel ? C.active : start ? C.initial : C.text); const tx = n.al === 'l' ? n.x + 10 : n.al === 'r' ? n.x + n.w - 10 : n.x + n.w / 2, anc = n.al === 'l' ? 'start' : n.al === 'r' ? 'end' : 'middle';
+      const weight = n.b ? 700 : n.t === 'text' ? 700 : n.t === 'note' ? 500 : 400; const ink = n.tc || (n.t === 'note' || n.t === 'text' ? '#101828' : start ? C.initial : '#101828'); const tx = n.al === 'l' ? n.x + 10 : n.al === 'r' ? n.x + n.w - 10 : n.x + n.w / 2, anc = n.al === 'l' ? 'start' : n.al === 'r' ? 'end' : 'middle';
       label = `<text x="${tx}" text-anchor="${anc}" font-size="${size}" font-weight="${weight}" font-family="${FONT}" fill="${ink}">${L.map((t, i) => `<tspan x="${tx}" y="${(top + i * lh + size * .35).toFixed(1)}">${esc(t)}</tspan>`).join('')}</text>`;
       if (conf && !forExport) label += `<text x="${n.x + n.w - 6}" y="${n.y - 5}" text-anchor="end" font-size="10.5" font-weight="600" fill="${conf === 'uncertain' ? '#C11574' : '#B54708'}">${conf}</text>`;
     }
@@ -142,9 +142,9 @@
   }
   function stale(n) { if (!n.src || n.src.kind !== 'flow' || !n.src.sig) return false; const f = F.flowModel && F.flowModel(n.src.flowId); return !!f && flowSig(f) !== n.src.sig; }
   const handle = n => { const x0 = n.x, y0 = n.y, x1 = n.x + n.w, y1 = n.y + n.h, cx = n.x + n.w / 2, cy = n.y + n.h / 2;
-    const H = (hd, x, y) => `<rect class="wb-h" data-h="${esc(n.id)}" data-hd="${hd}" x="${x - 6}" y="${y - 6}" width="12" height="12" rx="3" fill="#fff" stroke="${C.active}" stroke-width="2"/>`;
+    const H = (hd, x, y) => `<rect class="wb-h" data-h="${esc(n.id)}" data-hd="${hd}" x="${x - 6}" y="${y - 6}" width="12" height="12" rx="3" fill="#fff" stroke="${SEL}" stroke-width="2"/>`;
     return [['nw', x0, y0], ['n', cx, y0], ['ne', x1, y0], ['e', x1, cy], ['se', x1, y1], ['s', cx, y1], ['sw', x0, y1], ['w', x0, cy]].map(q => H(...q)).join('')
-      + `<line x1="${cx}" y1="${y0}" x2="${cx}" y2="${y0 - 22}" stroke="${C.active}" stroke-width="1.5" pointer-events="none"/><circle class="wb-rot" data-rot="${esc(n.id)}" cx="${cx}" cy="${y0 - 28}" r="7" fill="#fff" stroke="${C.active}" stroke-width="2"/>`; };   // corners and sides resize (Shift keeps the proportions); the round handle above rotates (Shift snaps to 15 degrees)
+      + `<line x1="${cx}" y1="${y0}" x2="${cx}" y2="${y0 - 22}" stroke="${SEL}" stroke-width="1.5" pointer-events="none"/><circle class="wb-rot" data-rot="${esc(n.id)}" cx="${cx}" cy="${y0 - 28}" r="7" fill="#fff" stroke="${SEL}" stroke-width="2"/>`; };   // corners and sides resize (Shift keeps the proportions); the round handle above rotates (Shift snaps to 15 degrees)
   // What a connector stands for. Transitions copied from a flow are configuration-backed. A line the person draws between two different
   // flows is only a drawing unless the project's relationship register (Configuration Inputs) records that link between the two modules.
   const norm = v => String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -163,15 +163,15 @@
   const KCOL = { confirmed: C.time, proposed: C.tbc, manual: '#8393ab' };   // links between flows: green when confirmed in the relationship register, orange when only proposed, grey when drawn by hand
   function edgeSvg(e, forExport) {
     const p = edgePts(e); if (!p) return ''; const sel = !forExport && W.sel.has(e.id), conf = e.conf && e.conf !== 'detected', K = edgeKind(e), kc = KCOL[K.k];
-    const col = sel ? C.active : conf ? (e.conf === 'uncertain' ? '#E5197F' : C.tbc) : kc || C.line, dashed = conf || K.k === 'manual' || K.k === 'proposed';
+    const col = sel ? SEL : conf ? (e.conf === 'uncertain' ? '#E5197F' : C.tbc) : kc || C.line, dashed = conf || K.k === 'manual' || K.k === 'proposed';
     const mk = sel ? 'S' : kc ? K.k : '';
     let s = `<g class="wb-e wb-k-${K.k}" data-e="${esc(e.id)}">${K.t && !forExport ? `<title>${esc(K.t)}</title>` : ''}<path d="${p.d}" fill="none" stroke="transparent" stroke-width="14"/><circle cx="${p.p0[0]}" cy="${p.p0[1]}" r="2.5" fill="${col}"/><path d="${p.d}" fill="none" stroke="${col}" stroke-width="${sel ? 2 : 1.4}"${dashed ? ' stroke-dasharray="6 4"' : ''} stroke-linejoin="round"${e.ah === 'none' ? '' : ` marker-end="url(#wbArr${mk})"`}${e.ah === 'both' ? ` marker-start="url(#wbArr${mk})"` : ''}/>`;
     const tagTxt = kc ? (K.k === 'confirmed' ? 'Confirmed link' : K.k === 'proposed' ? 'Proposed link' : 'Not verified') : '';
-    if (e.label || tagTxt) { const fromN = node(e.from); const pill = sel ? C.active : conf ? (e.conf === 'uncertain' ? '#E5197F' : C.tbc) : fromN && fromN.t === 'diamond' ? C.cond : C.user; const txt = e.label ? (e.label.length > 28 ? e.label.slice(0, 27) + '…' : e.label) : ''; const w = Math.min(220, Math.max(60, 22 + txt.length * 7));
+    if (e.label || tagTxt) { const fromN = node(e.from); const pill = sel ? SEL : conf ? (e.conf === 'uncertain' ? '#E5197F' : C.tbc) : fromN && fromN.t === 'diamond' ? C.cond : C.user; const txt = e.label ? (e.label.length > 28 ? e.label.slice(0, 27) + '…' : e.label) : ''; const w = Math.min(220, Math.max(60, 22 + txt.length * 7));
       s += `<g class="wb-el" data-el="${esc(e.id)}">${txt ? `<rect x="${p.lx - w / 2}" y="${p.ly - 13}" width="${w}" height="26" rx="12.5" fill="${pill}"/><text x="${p.lx}" y="${p.ly + 4.5}" text-anchor="middle" font-size="12" font-family="${FONT}" fill="#fff">${esc(txt)}</text>` : ''}${tagTxt ? `<text x="${p.lx}" y="${p.ly + (txt ? 26 : 4)}" text-anchor="middle" font-size="10" font-weight="700" font-family="${FONT}" fill="${kc}">${tagTxt}</text>` : ''}</g>`; }
     return s + '</g>';
   }
-  const DEFS = `<defs><marker id="wbArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="${C.line}"/></marker><marker id="wbArrS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="${C.active}"/></marker>${Object.keys(KCOL).map(k => `<marker id="wbArr${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="${KCOL[k]}"/></marker>`).join('')}
+  const DEFS = `<defs><marker id="wbArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="${C.line}"/></marker><marker id="wbArrS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="${SEL}"/></marker>${Object.keys(KCOL).map(k => `<marker id="wbArr${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="${KCOL[k]}"/></marker>`).join('')}
     <pattern id="wbGrid" width="${GRID}" height="${GRID}" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#dde3ea"/></pattern></defs>`;
   function worldSvg(forExport) {
     const ns = W.B.nodes, frames = ns.filter(n => n.t === 'frame'), imgs = ns.filter(n => n.t === 'image'), rest = ns.filter(n => n.t !== 'frame' && n.t !== 'image');
@@ -239,7 +239,7 @@
     if (!I().ready(['wb'])) { I().load(['wb', 'cflow']).then(() => V.render()); return `<div class="page-header"><div class="t"><h1>Process Whiteboard</h1></div></div><div class="page-body"><div class="empty">Loading boards…</div></div>`; }
     const B = current(); const list = boards();
     const head = `<div class="page-header"><div class="t"><h1>Process Whiteboard</h1><p>Lay out individual processes and the project's state flows side by side, connect them into one end-to-end process, and export it. Flows placed here are copies: the State Flow Builder stays the place to change a flow.</p></div>
-      <div class="row">${list.length ? `<select data-change="wbPick" aria-label="Board">${list.map(b => `<option value="${esc(b.id)}"${b.id === W.boardId ? ' selected' : ''}>${esc(b.name || 'Untitled board')}</option>`).join('')}</select>` : ''}${ro() ? '' : '<button class="btn" data-act="wbNew">New board</button>'}${B && !ro() ? '<button class="btn" data-act="wbRename">Rename</button>' : ''}${B ? '<button class="btn" data-act="wbExport" data-scope="board" data-fmt="jpg">Export JPG</button><button class="btn primary" data-act="wbExport" data-scope="board">Export PNG</button>' : ''}</div></div>`;
+      <div class="row">${list.length ? `<select data-change="wbPick" aria-label="Board">${list.map(b => `<option value="${esc(b.id)}"${b.id === W.boardId ? ' selected' : ''}>${esc(b.name || 'Untitled board')}</option>`).join('')}</select>` : ''}${ro() ? '' : '<button class="btn" data-act="wbNew">New board</button>'}${B && !ro() ? '<button class="btn" data-act="wbRename">Rename</button>' : ''}${B ? '<button class="btn" data-act="wbExport" data-scope="board" data-fmt="jpg">Export JPG</button><button class="btn" type="button" data-act="wbExport" data-scope="board" data-fmt="pdf">Export PDF</button><button class="btn primary" data-act="wbExport" data-scope="board">Export PNG</button>' : ''}</div></div>`;
     if (!B) return head + `<div class="page-body"><div class="card empty"><h3>No boards yet</h3><p>Create a board, then add notes and shapes, or place your project's state flows on it.</p>${ro() ? '' : '<div class="row empty-acts"><button class="btn primary" data-act="wbNew">Create a board</button></div>'}</div></div>`;
     const dis = ro() ? ' disabled' : ''; const nCf = cflows().length;
     const RB = (tool, icon, label, keyH) => `<button class="wb-rb" type="button" data-act="wbTool" data-wbtool="${tool}" aria-pressed="false" title="${esc(label)}${keyH ? ' (' + keyH + ')' : ''}" aria-label="${esc(label)}"${tool !== 'select' && tool !== 'hand' ? dis : ''}>${icon}</button>`;
@@ -297,6 +297,7 @@
       if (m.fr === fr.id || inside) { moving.push(m); have.add(m.id); } }));
     return { kind: 'move', x: p.x, y: p.y, start: moving.map(n => [n, n.x, n.y]), moved: false, drill, others: W.B.nodes.filter(n => !have.has(n.id) && !n.hidden && n.t !== 'image').slice(0, 1500) };
   }
+  const MULTI = ev => ev.shiftKey || ev.ctrlKey || ev.metaKey;   // Shift, Ctrl or Cmd + click adds to or removes from the selection
   function selectWithGroups(ids) { ids.forEach(id => groupOf(id).forEach(x => W.sel.add(x))); }
 
   function mount() {
@@ -319,20 +320,20 @@
         drag = { kind: 'relink', e, end }; W.link = end === 'to' ? { x0: fixed.x + fixed.w / 2, y0: fixed.y + fixed.h / 2, x1: p.x, y1: p.y } : { x0: p.x, y0: p.y, x1: fixed.x + fixed.w / 2, y1: fixed.y + fixed.h / 2, rev: true }; draw(); return; }
       if (elEl && !ro() && W.sel.has(elEl.getAttribute('data-el'))) { const e = W.B.edges.find(x => x.id === elEl.getAttribute('data-el')); const lo = e.lo || { x: 0, y: 0 }; drag = { kind: 'label', e, x: p.x, y: p.y, lx: lo.x, ly: lo.y, moved: false }; return; }
       const sbEl = ev.target.closest && ev.target.closest('[data-selbox]');
-      if (sbEl && !nEl && !ev.shiftKey && !ro()) { drag = beginMove(p, null); return; }   // inside the dashed box round a multi-selection: move it all
+      if (sbEl && !nEl && !MULTI(ev) && !ro()) { drag = beginMove(p, null); return; }   // inside the dashed box round a multi-selection: move it all
       if (nEl) {
         const id = nEl.getAttribute('data-id');
         if (/^connect/.test(W.tool) && !ro()) { const n = node(id); drag = { kind: 'link', from: id }; W.link = { x0: n.x + n.w / 2, y0: n.y + n.h / 2, x1: p.x, y1: p.y }; return; }
         // Miro-style groups: the first click selects the group; clicking a member of the already-selected group (without dragging) selects just that member
         const grp = groupOf(id); let drill = null;
-        if (ev.shiftKey) { if (W.sel.has(id)) grp.forEach(x => W.sel.delete(x)); else selectWithGroups([id]); }
+        if (MULTI(ev)) { if (W.sel.has(id)) grp.forEach(x => W.sel.delete(x)); else selectWithGroups([id]); }
         else if (!W.sel.has(id)) { W.sel.clear(); selectWithGroups([id]); }
         else if (grp.length > 1 && W.sel.size === grp.length && grp.every(x => W.sel.has(x))) drill = id;
         draw(); if (ro()) return;
         if (ev.altKey) duplicate();   // Alt + drag: the copy is what moves
         drag = beginMove(p, drill); return;
       }
-      if (eEl) { const id = eEl.getAttribute('data-e'); if (!ev.shiftKey) W.sel.clear(); W.sel.add(id); draw(); return; }
+      if (eEl) { const id = eEl.getAttribute('data-e'); if (!MULTI(ev)) W.sel.clear(); W.sel.add(id); draw(); return; }
       if (W.space) { drag = { kind: 'pan', sx: ev.clientX, sy: ev.clientY, vx: W.B.view.x, vy: W.B.view.y }; host.classList.add('panning'); return; }
       const add = ev.shiftKey || ev.ctrlKey || ev.metaKey; if (!add) W.sel.clear();   // a click on empty space clears the selection; a drag draws the rectangle
       W.marquee = { x0: p.x, y0: p.y, x1: p.x, y1: p.y }; drag = { kind: 'marquee' }; draw();
@@ -412,7 +413,7 @@
     if (ev.key === 'Escape' && W.full && !W.sel.size && W.tool === 'select' && !W.link) { ev.preventDefault(); ACT.wbFull(); return; }
     if (mod && k === 'z') { ev.preventDefault(); ev.shiftKey ? ACT.wbRedo() : ACT.wbUndo(); return; }
     if (mod && k === 'y') { ev.preventDefault(); ACT.wbRedo(); return; }
-    if (mod && k === 'a') { ev.preventDefault(); W.B.nodes.forEach(n => { if (!n.hidden) W.sel.add(n.id); }); draw(); return; }
+    if (mod && k === 'a') { ev.preventDefault(); W.B.nodes.forEach(n => { if (!n.hidden) W.sel.add(n.id); }); W.B.edges.forEach(e => { if (edgePts(e)) W.sel.add(e.id); }); draw(); return; }
     if (mod && k === 'g') { ev.preventDefault(); ev.shiftKey ? ACT.wbUngroup() : ACT.wbGroup(); return; }
     if (mod && k === 'd') { ev.preventDefault(); duplicate(); return; }
     if (mod && k === 'c') { ev.preventDefault(); copySel(); return; }
@@ -722,6 +723,18 @@
   });
 
   // ---------- export ----------
+  /** one-page PDF holding the JPEG: the page is the board's size (longest side at most about 1100 pt) */
+  function jpegToPdf(jpg, pw, ph) {
+    const enc = new TextEncoder(), k = Math.min(1, 1100 / Math.max(pw, ph)) * 0.75, pgW = +(pw * k).toFixed(2), pgH = +(ph * k).toFixed(2), parts = [], offs = []; let len = 0;
+    const add = d => { const u = typeof d === 'string' ? enc.encode(d) : d; parts.push(u); len += u.length; };
+    const obj = (n, head, stream) => { offs[n] = len; add(n + ' 0 obj\n' + head + (stream ? '\nstream\n' : '\n')); if (stream) { add(stream); add('\nendstream'); } add('\nendobj\n'); };
+    add('%PDF-1.4\n'); obj(1, '<</Type/Catalog/Pages 2 0 R>>'); obj(2, '<</Type/Pages/Kids[3 0 R]/Count 1>>');
+    obj(3, '<</Type/Page/Parent 2 0 R/MediaBox[0 0 ' + pgW + ' ' + pgH + ']/Resources<</XObject<</Im0 4 0 R>>>>/Contents 5 0 R>>');
+    obj(4, '<</Type/XObject/Subtype/Image/Width ' + pw + '/Height ' + ph + '/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length ' + jpg.length + '>>', jpg);
+    const cs = 'q ' + pgW + ' 0 0 ' + pgH + ' 0 0 cm /Im0 Do Q'; obj(5, '<</Length ' + cs.length + '>>', cs);
+    const xr = len; add('xref\n0 6\n0000000000 65535 f \n'); for (let i = 1; i <= 5; i++) add(String(offs[i]).padStart(10, '0') + ' 00000 n \n'); add('trailer\n<</Size 6/Root 1 0 R>>\nstartxref\n' + xr + '\n%%EOF');
+    const out = new Uint8Array(len); let o = 0; parts.forEach(u => { out.set(u, o); o += u.length; }); return out;
+  }
   async function exportPng(scope, fmt) {
     const list = (scope === 'sel' ? [...W.sel].map(node).filter(Boolean) : W.B.nodes).filter(n => !n.hidden);
     if (!list.length) { V.toast(scope === 'sel' ? 'Select something to export' : 'The board is empty', 4000, true); return; }
@@ -731,13 +744,16 @@
     W.imgData = {}; for (const n of keep.filter(n => n.t === 'image' && n.fileId)) { try { const bl = await V.fileBlob(n.fileId); W.imgData[n.fileId] = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(bl); }); } catch (e) { } }
     const saved = W.B; const sub = Object.assign({}, saved, { nodes: keep, edges: saved.edges.filter(e => ids.has(e.from) && ids.has(e.to)) });
     W.B = sub; let body; try { body = worldSvg(true); } finally { W.B = saved; }
-    const w = Math.ceil(b.w + pad * 2), h = Math.ceil(b.h + pad * 2);
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${b.x - pad} ${b.y - pad} ${w} ${h}" font-family="Inter, Roboto, Arial, sans-serif">${DEFS.replace(/<pattern[\s\S]*?<\/pattern>/, '')}<rect x="${b.x - pad}" y="${b.y - pad}" width="${w}" height="${h}" fill="#fff"/>${body}</svg>`;
+    const LG = { config: ['Copied transition', '#475467', ''], confirmed: ['Confirmed link', '#079455', ''], proposed: ['Proposed link', '#DC6803', '6 4'], manual: ['Not verified', '#1570EF', '6 4'] };
+    const kinds = [...new Set(sub.edges.map(e => edgeKind(e).k))].filter(k => LG[k]); const lgH = kinds.length ? 44 : 0;
+    const w = Math.ceil(b.w + pad * 2), h = Math.ceil(b.h + pad * 2) + lgH;
+    let legend = ''; if (kinds.length) { const y = b.y - pad + h - 22; let x = b.x - pad + 24; legend = '<text x="' + x + '" y="' + (y + 4) + '" font-size="12" font-weight="700" fill="#101828">Legend</text>'; x += 64; kinds.forEach(k => { const [lab, col, dash] = LG[k]; legend += '<line x1="' + x + '" y1="' + y + '" x2="' + (x + 24) + '" y2="' + y + '" stroke="' + col + '" stroke-width="2"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + '/><text x="' + (x + 30) + '" y="' + (y + 4) + '" font-size="12" fill="#344054">' + lab + '</text>'; x += 30 + lab.length * 6.8 + 28; }); }
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${b.x - pad} ${b.y - pad} ${w} ${h}" font-family="Inter, Roboto, Arial, sans-serif">${DEFS.replace(/<pattern[\s\S]*?<\/pattern>/, '')}<rect x="${b.x - pad}" y="${b.y - pad}" width="${w}" height="${h}" fill="#fff"/>${body}${legend}</svg>`;
     // high resolution, kept inside what browsers can draw (about 16k pixels a side, 64M pixels in all)
     const scale = Math.max(.5, Math.min(2, 15000 / Math.max(w, h), Math.sqrt(6.4e7 / (w * h))));
     const png = await D.svgToPng(svg, scale); W.imgData = null;
-    const jpg = fmt === 'jpg'; const base = (W.B.name || 'process-board').replace(/[^\w-]+/g, '_') + (scope === 'sel' ? '_selection' : ''); const name = base + (jpg ? '.jpg' : '.png'); let out = new Blob([png.data], { type: 'image/png' });
-    if (jpg) { const bm = await createImageBitmap(out); const cv = document.createElement('canvas'); cv.width = bm.width; cv.width = bm.width; cv.height = bm.height; const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(bm, 0, 0); out = await new Promise(r => cv.toBlob(r, 'image/jpeg', .92)); }
+    const pdf = fmt === 'pdf', jpg = fmt === 'jpg' || pdf; const base = (W.B.name || 'process-board').replace(/[^\w-]+/g, '_') + (scope === 'sel' ? '_selection' : ''); const name = base + (pdf ? '.pdf' : jpg ? '.jpg' : '.png'); let out = new Blob([png.data], { type: 'image/png' });
+    if (jpg) { const bm = await createImageBitmap(out); const cv = document.createElement('canvas'); cv.width = bm.width; cv.width = bm.width; cv.height = bm.height; const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(bm, 0, 0); out = await new Promise(r => cv.toBlob(r, 'image/jpeg', .92)); if (pdf) out = new Blob([jpegToPdf(new Uint8Array(await out.arrayBuffer()), cv.width, cv.height)], { type: 'application/pdf' }); }
     V.download(name, out); V.toast(`Exported ${name} (${Math.round(w * scale)} × ${Math.round(h * scale)} px)`);
   }
   root.__wbExportSvg = () => { const b = bbox(W.B.nodes); return { bbox: b, nodes: W.B.nodes.length, edges: W.B.edges.length }; };
