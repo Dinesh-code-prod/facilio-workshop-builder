@@ -34,3 +34,11 @@ body .tr-tile.on { border-color: var(--cs-brand, #1570EF); background: var(--cs-
 body .tr-make { display: flex; flex-direction: column; gap: 12px; } body .tr-make textarea { width: 100%; box-sizing: border-box; }
 body .tr-tools { display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; align-items: center; }
 body .tr .card-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+/* Questions tab layout (8 Nov 2026): the blocks of the page get a steady gap, the counts sit as one calm line, and the three filters share one row instead of each stretching across the page. */
+body .page-body.qb { display: flex; flex-direction: column; gap: 16px; }
+body .qb-sum { padding: 2px 4px; gap: 6px 18px; }
+body .qb-sum b { font-size: 18px; margin-right: 2px; }
+body .qb-flt { display: grid; grid-template-columns: repeat(3, minmax(0, 240px)); gap: 12px; }
+body .qb-flt select:not(#_):not(#__) { width: 100% !important; }
+@media (max-width: 800px) { body .qb-flt { grid-template-columns: 1fr; } }
