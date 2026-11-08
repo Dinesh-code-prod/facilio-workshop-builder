@@ -67,14 +67,16 @@
     const kd = `<label class="xf-f">Kind <select data-change="xfFilter" data-f="kind"><option value="">All</option>${o.kinds.map(k => `<option value="${esc(k)}"${o.kind === k ? ' selected' : ''}>${esc(kindLabel(k))}</option>`).join('')}</select></label>`;
     return `<div class="xf-filters">${st}${kd}<button type="button" class="btn sm" data-act="xfRefresh">Refresh</button></div>`;
   }
+  /** Remove for a transfer added by mistake. Shown only when the server says this person may (record.canRemove); the server checks again. */
+  const removeBtn = (t, sp, label) => (obj(t).canRemove ? `<button type="button" class="btn sm danger" data-act="xfRemove" data-id="${esc(t.id)}" data-sp="${sp}" title="Added by mistake? Remove it before it is reviewed">${label || "Remove"}</button>` : "");
   /** the table; holding adds a Start project button on an approved extraction. All text is escaped. */
   function tableHtml(list, o) {
     o = obj(o); if (!arr(list).length) return `<div class="xf-empty">${esc(o.empty || NO_LIST)}</div>`;
     const rows = list.map(t => { const r = rowOf(t);
       return `<tr class="xf-row${isBad(t) ? ' xf-bad' : ''}"><td><button type="button" class="xf-link" data-act="xfOpen" data-id="${esc(t.id)}" data-sp="${o.holding ? 'holding' : 'project'}">${esc(r.what)}</button></td>
         <td class="xf-route">${esc(r.from)} <span aria-label="to">&rarr;</span> ${esc(r.to)}</td><td>${chip(t)}</td><td>${esc(r.version)}</td><td>${esc(r.who)}</td><td class="xf-when">${esc(r.when)}</td>
-        <td class="xf-err">${esc(r.error)}</td>${o.holding ? `<td>${canStart(t) ? `<button type="button" class="btn sm primary" data-act="xfStart" data-id="${esc(t.id)}" data-sp="holding">Start project from this contract</button>` : ''}</td>` : ''}</tr>`; }).join('');
-    return `<div class="xf-wrap"><table class="xf-table"><thead><tr><th>What</th><th>From and to</th><th>Status</th><th>Version</th><th>Who</th><th>When</th><th>Error</th>${o.holding ? '<th></th>' : ''}</tr></thead><tbody>${rows}</tbody></table></div>`;
+        <td class="xf-err">${esc(r.error)}</td>${o.holding ? `<td>${canStart(t) ? `<button type="button" class="btn sm primary" data-act="xfStart" data-id="${esc(t.id)}" data-sp="holding">Start project from this contract</button>` : ''}</td>` : ''}<td>${removeBtn(t, o.holding ? 'holding' : 'project')}</td></tr>`; }).join('');
+    return `<div class="xf-wrap"><table class="xf-table"><thead><tr><th>What</th><th>From and to</th><th>Status</th><th>Version</th><th>Who</th><th>When</th><th>Error</th>${o.holding ? '<th></th>' : ''}<th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
 
   /** the content of a version in parts: a JSON object by its top-level keys, anything else in blocks of text */
@@ -105,7 +107,7 @@
       ${t.approvedVer != null ? `<p class="small">Approved: version ${esc(t.approvedVer)}${t.approvedBy ? ' by ' + esc(who(t.approvedBy)) : ''}${t.approvedAt ? ' on ' + esc(when(t.approvedAt)) : ''}.</p>` : ''}
       <section class="xf-act" aria-label="What you can do"><h4>What you can do</h4>
         ${needNote ? `<label class="f" for="xfNote">Note (needed for Request changes, Resolve and Mark attention)</label><textarea id="xfNote" rows="2" maxlength="200" data-change="xfNote">${esc(o.note || '')}</textarea>` : ''}
-        <div class="xf-btns">${btns}${start}${canImport(t) && o.tab !== 'holding' ? '<button type="button" class="btn sm primary" data-act="xfImport" title="Reads the approved version and adds it to Transcripts. A statement is never made a requirement.">Import into Transcripts</button>' : ''}<button type="button" class="btn sm" data-act="xfClaude">Open in Claude</button></div>
+        <div class="xf-btns">${btns}${start}${removeBtn(t, o.tab === 'holding' ? 'holding' : 'project', 'Remove this transfer')}${canImport(t) && o.tab !== 'holding' ? '<button type="button" class="btn sm primary" data-act="xfImport" title="Reads the approved version and adds it to Transcripts. A statement is never made a requirement.">Import into Transcripts</button>' : ''}<button type="button" class="btn sm" data-act="xfClaude">Open in Claude</button></div>
         ${acts.length || start ? '' : '<p class="small muted">Nothing is open for you on this transfer right now. Claude does the next step, or someone with the right access does.</p>'}
         <div id="xfMsg" class="xf-msg" role="alert">${o.msg ? note(o.msg.bad ? 'err' : 'ok', o.msg.text) : ''}</div>${linked}${startedHtml(o.started)}
         <p class="small muted">Claude cannot approve. Pushed and Synchronized are reported by Claude, with a receipt; Delivery Studio cannot see the destination itself.</p></section>
@@ -125,6 +127,6 @@
     return `<div class="page-header"><div class="t"><h1>Transfers</h1><p>What was read from, or sent to, other systems, and what waits for a person to approve it.</p></div></div>
       <div class="page-body xf">${tabs}${intro}${startedHtml(s.started)}${body}</div>`;
   }
-  const api = { STATUSES, esc, statusClass, statusText, chip, isBad, rowOf, filterRows, kindsOf, countBy, waiting, holdingOrder, actionsFor, canStart, canImport, projectHref, claudePrompt, tableHtml, drawerHtml, pageHtml, contentParts, partsHtml, startedHtml };
+  const api = { STATUSES, esc, statusClass, statusText, chip, isBad, rowOf, filterRows, kindsOf, countBy, waiting, holdingOrder, actionsFor, canStart, canImport, removeBtn, projectHref, claudePrompt, tableHtml, drawerHtml, pageHtml, contentParts, partsHtml, startedHtml };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBTransfers = api;
 })(typeof window !== 'undefined' ? window : globalThis);

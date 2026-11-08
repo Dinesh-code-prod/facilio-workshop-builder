@@ -50,6 +50,13 @@
       o.transfer = r.transfer; o.note = ''; o.msg = { text: act.label + ' done. The transfer is now ' + r.transfer.status + '.', bad: false }; toast(act.label + ' done', 3000); paint(); loadAll(true);
     } catch (e) { say(e.message || 'The server refused this.', true); toast(e.message || 'The server refused this.', 6000, true); try { await fetchOne(); paint(); } catch (e2) { /* the message stays */ } }
   });
+  ACT.xfRemove = a => V.busy(a, async () => {   // a transfer added by mistake: gone for good, so it is asked first
+    const x = X(); const id = a.getAttribute('data-id'); const tab = a.getAttribute('data-sp') === 'holding' ? 'holding' : 'project'; const space = spaceOf(tab);
+    const row = ((x[tab === 'holding' ? 'hold' : 'proj'] || {}).list || []).find(t => t.id === id) || (x.open && x.open.id === id ? x.open.transfer : null) || {};
+    if (!(await V.confirmDialog('Remove this transfer', '“' + T.rowOf(row).what + '” will be removed with all its versions. This cannot be undone. Use it only for something added by mistake.', 'Remove'))) return;
+    try { await API.del(url(space, id)); if (x.open && x.open.id === id) { x.open = null; V.closeDrawer(); } toast('Transfer removed', 3500); await loadAll(true); V.render(); }
+    catch (e) { toast(e.message || 'The transfer could not be removed', 6000, true); try { await loadAll(true); } catch (e2) { } }
+  });
   ACT.xfStart = a => V.busy(a, async () => {
     const x = X(); const id = a.getAttribute('data-id'); const tab = a.getAttribute('data-sp') === 'holding' ? 'holding' : 'project'; const space = spaceOf(tab);
     if (!(await V.confirmDialog('Start project from this contract', 'A new project is made from the approved extraction. Nothing that exists is changed. If one was already made from it, you are shown that one.', 'Start project'))) return;

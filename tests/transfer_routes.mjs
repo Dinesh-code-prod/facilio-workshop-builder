@@ -93,10 +93,21 @@ await t('the in-record log and the audit rows both record what happened', async 
   const acts = [...store.get('au.' + pid).values()].map(v => JSON.parse(v).action); for (const a of ['transfer-begin', 'transfer-version', 'transfer-move']) assert.ok(acts.includes(a), 'audit ' + a);
   assert.ok([...store.get('au.' + pid).values()].some(v => JSON.parse(v).detail.includes(id)), 'the audit row names the transfer');
 });
-await t('transfers are in their own collections: not in the items store a customer can list, and there is no delete route', async () => {
+await t('transfers are in their own collections: not in the items store a customer can list, and an outsider cannot remove', async () => {
   for (const c of [...store.keys()]) assert.ok(!/^it\.[^.]+\.(xf|transfer)/.test(c), c); assert.ok(store.has('xf.' + pid) && store.has('xfd.' + pid));
-  assert.equal((await as(CUS, 'GET', `/api/projects/${pid}/items/xf`)).status >= 400, true); assert.equal((await as(SAM, 'DELETE', BASE + '/' + id)).status, 404); assert.equal((await as(SAM, 'PUT', BASE + '/' + id, { status: 'Approved' })).status, 404);
+  assert.equal((await as(CUS, 'GET', `/api/projects/${pid}/items/xf`)).status >= 400, true); assert.ok((await as(CUS, 'DELETE', BASE + '/' + id)).status >= 403 && (await as(EVE, 'DELETE', BASE + '/' + id)).status >= 403, 'outsiders cannot remove'); assert.equal((await as(SAM, 'PUT', BASE + '/' + id, { status: 'Approved' })).status, 404);
   assert.equal(JSON.parse(store.get('xf.' + pid).get(id)).status, 'Awaiting Review');
+});
+await t('a transfer added by mistake can be removed by an editor before it is approved, with its versions; others and approved ones cannot', async () => {
+  const m = await begin(KIM, Object.assign({}, IN, { scope: 'added by mistake' })); assert.equal(m.status, 201); const mid = m.data.transfer.id; assert.equal(m.data.transfer.canRemove, true);
+  assert.equal((await as(KIM, 'POST', BASE + '/' + mid + '/versions', { content: 'wrong contract text' })).status, 201);
+  assert.equal((await as(VIC, 'GET', BASE + '/' + mid)).data.transfer.canRemove, false, 'a viewer is not offered it');
+  for (const who of [VIC, SUB, CUS]) assert.ok((await as(who, 'DELETE', BASE + '/' + mid)).status >= 403, who);
+  assert.equal((await as(KIM, 'GET', BASE + '/' + mid)).status, 200, 'still there after the refusals');
+  const d = await as(KIM, 'DELETE', BASE + '/' + mid); assert.equal(d.status, 200, JSON.stringify(d.data)); assert.equal(d.data.removed, true);
+  assert.equal((await as(KIM, 'GET', BASE + '/' + mid)).status, 404); assert.equal((await as(KIM, 'DELETE', BASE + '/' + mid)).status, 404, 'removing twice is a clean 404');
+  for (const c of ['xfd.', 'xfdp.']) assert.ok(![...(store.get(c + pid) || new Map()).keys()].some(k => k.startsWith(mid + '.')), c + ' holds nothing of it');
+  assert.ok((await as(KIM, 'GET', BASE)).data.transfers.some(x => x.id === id), 'the other transfers are untouched');
 });
 await t('deleting a project for good removes its transfers too', async () => {
   assert.equal((await as(SAM, 'DELETE', `/api/projects/${pid}`)).status, 200);   // archive

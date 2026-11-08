@@ -2170,7 +2170,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   // customer and password sign-in do not exist in this version
   ['login', 'signup', 'guest', 'guest-login', 'upgrade', 'customer', 'password'].forEach(n => route('POST', '/api/auth/' + n, async () => { throw new HttpError(403, 'Sign-in is handled by your Facilio Microsoft account'); }));
 
-  const TRANSFER = installTransfer({ route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbList, save, unpack, withLock, audit, pickProject, limit, CONNECTOR, notify: (...a) => N(...a) });   // push and pull engine: routes and connector tools (_transferapi.mjs)
+  const TRANSFER = installTransfer({ route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbDel, dbList, save, unpack, withLock, audit, pickProject, limit, CONNECTOR, notify: (...a) => N(...a) });   // push and pull engine: routes and connector tools (_transferapi.mjs)
   installMsaExtract({ route, ok, me, HttpError, dbGet, dbPut, dbList, withLock, audit, viaApp, projectAccess, CONNECTOR }, TRANSFER);   // MSA extraction tools: msa_extraction_save, create_project_from_msa (_msaapi.mjs)
   installRs({ HttpError, projectAccess, pickProject, viaApp, audit, CONNECTOR });
   // a file the server itself stores for a project (text only, up to 25 MB): used when Claude pushes a Meteor page. Same record as a browser upload, status ready.
