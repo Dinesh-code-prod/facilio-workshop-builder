@@ -13,7 +13,7 @@ t('the revamp tabs are exposed and unfinished tabs are hidden', () => {
   assert.ok(navIds.length - exposed.length >= 1, 'Deliverables & AI stays hidden');
 });
 t('navBase applies the filter to the team menu only, and the start view avoids a hidden tab', () => {
-  assert.match(src, /V\[id\] && \(cust \|\| tabOn\(id\)\)/); assert.match(src, /tabOn\('overview'\) \? 'overview' : 'projdash'/); assert.ok(exposed.includes('projdash'));
+  assert.match(src, /V\[id\] && !\(V\.featureHidden && V\.featureHidden\(id\)\) && \(cust \|\| tabOn\(id\)\)/); assert.match(src, /tabOn\('overview'\) \? 'overview' : 'projdash'/); assert.ok(exposed.includes('projdash'));
   assert.match(src, /alltabs=1/); assert.match(src, /const HIDE_UNBUILT_TABS = true;/);
 });
 console.log(n + ' menu exposure checks passed');

@@ -163,7 +163,7 @@
   const HIDE_UNBUILT_TABS = true;   // 6 Nov 2026: the earlier show-all was a demo for the developer; only the built tabs show again (Stage 1: Kick-off and Project Plan, plus Transfers where the extraction is approved and Contract for a manual upload)
   const tabOn = id => !HIDE_UNBUILT_TABS || EXPOSED.has(id) || showAllTabs();
   V.NAV_EXPOSED = EXPOSED;
-  function navBase() { const cust = S.user.kind === 'customer'; const ag = V.isAgentProject(); const ctl = V.controls ? V.controls() : { tabs: {} }; return (cust ? CUSTOMER_NAV : NAV).map(g => Object.assign({}, g, { items: g.items.filter(([id, , tab]) => V[id] && (cust || tabOn(id)) && !(ag && AGENT_HIDE.includes(id)) && !(!ag && AGENT_ONLY.includes(id)) && !(V.office() && id === 'roles') && (!cust || ctl.tabs[tab] !== false)).map(it => (g.subs && g.subs[it[0]] ? [it[0], it[1], it[2], g.subs[it[0]]] : it)) })).filter(g => g.items.length); }
+  function navBase() { const cust = S.user.kind === 'customer'; const ag = V.isAgentProject(); const ctl = V.controls ? V.controls() : { tabs: {} }; return (cust ? CUSTOMER_NAV : NAV).map(g => Object.assign({}, g, { items: g.items.filter(([id, , tab]) => V[id] && !(V.featureHidden && V.featureHidden(id)) && (cust || tabOn(id)) && !(ag && AGENT_HIDE.includes(id)) && !(!ag && AGENT_ONLY.includes(id)) && !(V.office() && id === 'roles') && (!cust || ctl.tabs[tab] !== false)).map(it => (g.subs && g.subs[it[0]] ? [it[0], it[1], it[2], g.subs[it[0]]] : it)) })).filter(g => g.items.length); }
   function navFor() { const base = navBase(); return S.user.kind !== 'customer' && V.wsApply ? V.wsApply(base) : base; }
   V.navBase = navBase;
   V.navFor = navFor;

@@ -8,6 +8,7 @@
   let cand = [];
   const cmpOf = (o) => { const p = S.ws.project || {}; return O().compare(Object.assign({ orgId: p.orgId, packageOrgId: pkgId(), folder: p.orgFolder }, o)); };
   V.orgLinkHtml = () => {
+    if (V.featureHidden && V.featureHidden('orgpkg')) return '';
     const cmp = cmpOf();
     return `<div class="full"><label class="f">Org package folder (in facilio-config-data)</label><div class="row" style="gap:8px;align-items:center"><div style="flex:1">${V.inp('project.orgFolder', 'e.g. us/400000077-CustomerName')}</div>${S.readonly ? '' : '<button type="button" class="btn sm" data-act="orgPick">Find it in my facilio-config-data</button>'}</div>
       <div class="xs" style="margin-top:6px"><div id="orgCmp" class="${cmp.state === 'mismatch' ? 'notice warn' : 'muted'}">${esc(cmp.text)}</div> Claude and the Facilio skills use this folder to find the org package. Choose <b>repo_index.json</b> from the top folder of your facilio-config-data copy (fetch it in GitHub Desktop first).</div></div>`;

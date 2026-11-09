@@ -51,6 +51,7 @@
   ];
 
   // The onboarding roadmap for a new teammate or intern: [step id, title, what to do and why, page to open or '', text to copy or '']
+  if (V.featureHidden && V.featureHidden('cfginputs')) PHASES.forEach(p => { p[3] = p[3].filter(st => st[0] !== 'cfginputs'); });
   const ROADMAP = [
     ['Before you start: get access', [
       ['rm-1', 'Ask your lead to add you to the app', 'The Studio is still in review, so only people the owner added can open it (https://facilio-delivery-studio.facilio.work). Sign in with your @facilio.com account. Then your lead adds you to the project you will work on (Project Settings > People).', '', ''],
@@ -109,6 +110,7 @@
     ['Deploying: owners and collaborators only', 'Only the app owner and collaborators publish changes, using the separate facilio work connector (https://mcp.facilio.work/mcp) in a Claude Code session and the /deploy command. Everyone else can ignore this.', null]];
 
   // job -> what to use
+  if (V.featureHidden && V.featureHidden('orgpkg')) { const i = SETUP.findIndex(x => x[0] === 'Link the org package folder'); if (i >= 0) SETUP.splice(i, 1); }
   const JOBS = [
     ['Draft the BRD, UAT plan, guides, reports, handover or closure pack', 'Connector', 'Use the Open in Claude buttons, or ask Claude for a task pack (brd, uat, guide, ftr, gaps, workshop, golive, hypercare, handover, wsr, monthly, govupdate, dashsummary, config, pkg, training, closure). Every report page has a DeepSeek button and an Ask Claude button (the request waits in the Assistant box until your Claude picks it up). Drafts arrive unapproved.'],
     ['Do the work the buttons asked for', 'Connector (jobs)', 'Say Do the waiting Delivery Studio jobs. Claude takes each waiting job, does it and finishes it with a summary.'],

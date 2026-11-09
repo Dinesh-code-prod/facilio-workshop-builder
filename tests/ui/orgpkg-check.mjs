@@ -8,6 +8,7 @@ import { chromium } from 'playwright'; import fs from 'node:fs'; import { create
 const require = createRequire(import.meta.url); const JSZip = require('jszip'); const { DOMParser } = require('@xmldom/xmldom'); const O = require('../../src/orgpkg.js');
 const BASE = process.argv[2] || 'http://localhost:4173'; const OUT = process.argv[3] || 'tests/ui/out'; fs.mkdirSync(OUT, { recursive: true });
 const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }); const p = await ctx.newPage();
+await ctx.addInitScript(() => { let v; Object.defineProperty(window, 'FWBViews', { configurable: true, get: () => v, set: x => { v = x; try { x.FEATURES = Object.assign({}, x.FEATURES, { orgPackage: true }); } catch (e) { } } }); });   // these pages are switched off in the app by default (src/features.js)
 const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
 await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');
 const pid = await p.evaluate(async () => (await (await fetch('/api/fn/api/projects', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Org package', customer: 'Acme' }) })).json()).project.id);
