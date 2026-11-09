@@ -2107,3 +2107,7 @@ body .auth-form .auth-hello:not(#_):not(#__)::after { display: none !important; 
 body .auth-form .auth-hello:not(#_):not(#__) { margin-bottom: 10px; }
 body .auth-form.night .auth-box h2:not(#_):not(#__) { margin: 0 0 16px; }
 body .auth-form.night .auth-box .sub:not(#_):not(#__) { margin: 0 auto 32px; max-width: 46ch; line-height: 1.6; }
+
+/* the assistant panel starts under the 68px top bar (it started at 60px and its title row was hidden behind the bar) */
+body #asst:not(#_):not(#__) { top: 68px !important; height: calc(100vh - 68px) !important; height: calc(100dvh - 68px) !important; }
+@media (max-width: 900px) { body #asst:not(#_):not(#__) { top: 60px !important; height: calc(100dvh - 60px) !important; } }
