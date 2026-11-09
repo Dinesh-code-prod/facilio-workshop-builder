@@ -1832,12 +1832,12 @@ body .hp-chip.off i:not(#_):not(#__) { background: #f59e0b; box-shadow: 0 0 0 3p
 body .hp-box:not(#_):not(#__) { border-radius: 10px; padding: 12px 14px; border: 1px solid var(--cs-line, #e5e5e5); }
 body .hp-box.on:not(#_):not(#__) { background: #f0fdf4; border-color: #bbf7d0; }
 body .hp-box.off:not(#_):not(#__) { background: #fff8eb; border-color: #f5c26b; }
-/* Hover pop (9 Nov 2026): KPI and stat tiles lift and grow a little, bigger boxes lift with a deeper shadow. Mouse devices only; off for reduced motion. */
+/* Hover pop (9 Nov 2026): KPI and stat tiles lift and grow a little, bigger boxes lift 1 px (reduced 9 Nov: was 6 and 5 px). Mouse devices only; off for reduced motion. */
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   body :is(.sd-kpi, .adx-stat, .cs-stat, .cs-stat-btn, .kpi, .sb-c, .stat):not(#_):not(#__):not(#___),
   body :is(.sd-w, .adx-c, .cs-card, .st-card, .proj-card, .ig-card, .ko-card, .md-card, .lc-stage, .card:not(:has(input, select, textarea, table))):not(#_):not(#__):not(#___) { transition: transform 220ms cubic-bezier(.2, .8, .2, 1), box-shadow 220ms cubic-bezier(.2, .8, .2, 1), border-color 220ms ease; }
-  body :is(.sd-kpi, .adx-stat, .cs-stat, .cs-stat-btn, .kpi, .sb-c, .stat):hover:not(#_):not(#__):not(#___) { transform: translateY(-6px) scale(1.035); box-shadow: var(--cs-sh28) !important; border-color: var(--cs-st1, #d4d4d4) !important; position: relative; z-index: 3; }
-  body :is(.sd-w, .adx-c, .cs-card, .st-card, .proj-card, .ig-card, .ko-card, .md-card, .lc-stage, .card:not(:has(input, select, textarea, table))):hover:not(#_):not(#__):not(#___) { transform: translateY(-5px); box-shadow: var(--cs-sh16) !important; border-color: var(--cs-st1, #d4d4d4) !important; position: relative; z-index: 2; }
+  body :is(.sd-kpi, .adx-stat, .cs-stat, .cs-stat-btn, .kpi, .sb-c, .stat):hover:not(#_):not(#__):not(#___) { transform: translateY(-2px); box-shadow: var(--cs-sh8) !important; border-color: var(--cs-st1, #d4d4d4) !important; position: relative; z-index: 3; }
+  body :is(.sd-w, .adx-c, .cs-card, .st-card, .proj-card, .ig-card, .ko-card, .md-card, .lc-stage, .card:not(:has(input, select, textarea, table))):hover:not(#_):not(#__):not(#___) { transform: translateY(-1px); box-shadow: var(--cs-sh4) !important; border-color: var(--cs-st1, #d4d4d4) !important; position: relative; z-index: 2; }
 }
 /* The entrance animations keep their end state forever (fill-mode both), which pins transform and hides the hover pop; let go once they finish. */
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
