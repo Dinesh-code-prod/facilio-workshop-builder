@@ -174,7 +174,7 @@
     if (S.user && S.user.kind !== 'customer' && V.mfRoute && ['contract', 'scope', 'planner', 'msaflow'].includes(view)) { if (extra && extra.plTab) S.ui.plTab = extra.plTab; view = V.mfRoute(view, extra); } // one Contract section; old links and #/p/<id>/planner land in it
     if (S.user && S.user.kind !== 'customer' && V.hubRoute) view = V.hubRoute(view);   // Delivery lifecycle, Roadmap, Plan vs actual and Reports are tabs of Project Overview
     Object.assign(S.ui, { view }, extra || {}); if (view !== 'flow') S.ui.selected = null;
-    const sub = view === 'module' && S.ui.module ? '/' + encodeURIComponent(S.ui.module) : '';
+    const sub = view === 'module' && S.ui.module ? '/' + encodeURIComponent(S.ui.module) : view === 'taskpage' && S.ui.tkPageId ? '/' + encodeURIComponent(S.ui.tkPageId) : '';
     try { history.replaceState(null, '', S.project ? `#/p/${S.project.id}/${view}${sub}` : '#/projects'); } catch (e) { }
     render(); const m = document.querySelector('.main'); if (m) m.scrollTop = 0;
   }
@@ -528,7 +528,7 @@ function projectsHtml() {
       const h = (location.hash.match(/#\/p\/[^/]+\/([a-z0-9_]+)(?:\/(.+))?/) || []);
       const custViews = navFor().flatMap(g => g.items.map(i => i[0]));
       const startView = S.user.kind === 'customer' ? (h[1] && custViews.includes(h[1]) ? h[1] : (custViews[0] || 'cust_home')) : (h[1] && V[h[1]] ? h[1] : (tabOn('overview') ? 'overview' : 'projdash'));
-      go(startView, h[2] ? { module: decodeURIComponent(h[2]) } : {});
+      go(startView, h[2] ? (startView === 'taskpage' ? { tkPageId: decodeURIComponent(h[2]) } : { module: decodeURIComponent(h[2]) }) : {});
     } finally { loading(false); }
   }
   V.openProject = openProject;
