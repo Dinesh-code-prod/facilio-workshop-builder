@@ -54,6 +54,7 @@ const txt = (v, n) => String(v == null ? '' : v).replace(/[^\w .:+\-·\/%$€£]
 const pct = v => { const x = Number(v); return Number.isFinite(x) ? Math.max(0, Math.min(100, Math.round(x))) : null; };
 /** a Claude's plan limits as it reports them (project_jobs action usage): only known fields, numbers clamped, text short and plain; null when nothing usable arrives */
 export function cleanUsage(u) {
+  if (typeof u === 'string') { try { u = JSON.parse(u); } catch (e) { u = null; } }   // some clients send a nested object as JSON text
   const o = u && typeof u === 'object' ? u : {}; const windows = (Array.isArray(o.windows) ? o.windows : []).slice(0, 6).map(w => ({ label: txt(w && w.label, 40), percentUsed: pct(w && w.percentUsed), resetsAt: /^\d{4}-\d{2}-\d{2}T[\d:.]+Z?$/.test(String(w && w.resetsAt || '')) ? String(w.resetsAt).slice(0, 30) : '' })).filter(w => w.label && w.percentUsed !== null);
   if (!windows.length) return null; const e = o.extra && typeof o.extra === 'object' ? o.extra : null; const num = v => { const x = Number(v); return Number.isFinite(x) && x >= 0 ? Math.round(x * 100) / 100 : null; };
   return { plan: txt(o.plan, 20), windows, extra: e ? { enabled: !!e.enabled, spent: num(e.spent), monthlyLimit: num(e.monthlyLimit), currency: txt(e.currency, 4), percentUsed: pct(e.percentUsed) } : null };
