@@ -1876,3 +1876,8 @@ body #asst .ki-row:not(.you):not(.sys):not(.bad):not(.other) .ki-bub:not(#_):not
 body #asst .ki-row.other .ki-bub:not(#_):not(#__):not(#___) { background: #fff !important; border: 1px solid #1570EF !important; color: #0f172a !important; padding: 10px 14px !important; border-radius: 16px 16px 16px 4px !important; }
 body #asst .ki-row.you .ki-time:not(#_):not(#__):not(#___) { text-align: right; }
 body #asst .ki-row.you .ki-body:not(#_):not(#__):not(#___) { justify-items: end; }
+
+/* Assistant chat: the date and time sit under each message, never on top of the text or the buttons (9 Nov 2026) */
+body #asst .ki-time:not(#_):not(#__):not(#___) { position: static !important; display: block !important; margin: 3px 6px 0 !important; padding: 0 !important; text-align: left; }
+body #asst .ki-row.you .ki-time:not(#_):not(#__):not(#___) { text-align: right; }
+body #asst .ki-row .ki-body:not(#_):not(#__):not(#___) { position: static; }

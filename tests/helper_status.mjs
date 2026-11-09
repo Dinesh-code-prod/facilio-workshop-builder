@@ -39,3 +39,5 @@ console.log(n + ' Claude helper checks passed');
   });
   u('your messages are a solid blue bubble, Claude\u2019s a pale grey-blue one, a teammate\u2019s white with a blue edge', () => { assert.match(css, /\.ki-row\.you \.ki-bub[^{]*\{ background: #1570EF !important;[^}]*color: #fff !important/); assert.match(css, /\.ki-row:not\(\.you\):not\(\.sys\):not\(\.bad\):not\(\.other\) \.ki-bub[^{]*\{ background: #EEF2F8 !important/); assert.match(css, /\.ki-row\.other \.ki-bub[^{]*\{ background: #fff !important; border: 1px solid #1570EF/); });
 }
+{ const css = fs.readFileSync('src/ui.css', 'utf8'); // the date and time of a chat message sit under it in the normal flow, never on top of the text or the buttons
+  assert.match(css, /body #asst \.ki-time:not\(#_\):not\(#__\):not\(#___\) \{ position: static !important; display: block !important;/); console.log('  ok  the date and time of each chat message sit under it, not over the text or the buttons'); }
