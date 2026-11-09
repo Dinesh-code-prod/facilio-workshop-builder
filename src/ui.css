@@ -458,6 +458,19 @@ body .tag:not(#_):not(#__), body .chip:not(#_):not(#__) { border-radius: 999px; 
 body .ui-loading i:not(#_):not(#__) { background: rgba(0, 0, 0, .07); background-image: none; animation: cossPulse 2s cubic-bezier(.4, 0, .6, 1) infinite; }
 body .drawer:not(#_):not(#__) { border-radius: var(--cs-r-pop) 0 0 var(--cs-r-pop) !important; background: rgba(255, 255, 255, .88) !important; -webkit-backdrop-filter: saturate(180%) blur(28px); backdrop-filter: saturate(180%) blur(28px); }
 body .toast:not(#_):not(#__), body .dialog:not(#_):not(#__) { border-radius: 20px !important; background: rgba(255, 255, 255, .88) !important; -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px); }
+/* menus, the notifications panel and other pop-ups: a translucent sheet, 20 px corners, a deep soft shadow, opening from the trigger with the spring ease */
+body #bellPop:not(#_):not(#__), body [role="menu"]:not(#_):not(#__), body .popover:not(#_):not(#__), body .pop:not(#_):not(#__), body .rg-pop:not(#_):not(#__) { border-radius: 20px !important; background: rgba(255, 255, 255, .86) !important; -webkit-backdrop-filter: saturate(180%) blur(28px); backdrop-filter: saturate(180%) blur(28px); border: 1px solid rgba(0, 0, 0, .06) !important; box-shadow: var(--cs-sh16) !important; }
+body #bellPop .bp-row:not(#_):not(#__), body [role="menu"] [role="menuitem"]:not(#_):not(#__) { border-radius: 12px; transition: background-color var(--cs-fast) var(--cs-ease), transform 120ms var(--cs-ease); } body #bellPop .bp-row:active { transform: scale(.985); }
+/* avatars: a soft grey disc with the initials, not a black one; the signed-in account in the top bar keeps its ring */
+body .avatar:not(#_):not(#__) { background: rgba(0, 0, 0, .07) !important; color: var(--cs-fg1) !important; font-weight: 600 !important; box-shadow: none !important; } body .navbar .avatar:not(#_):not(#__):not(#___) { box-shadow: 0 0 0 1px rgba(0, 0, 0, .06) !important; }
+/* empty states: a soft grey panel, no dashed outline */
+body .card.empty:not(#_):not(#__), body .empty:not(#_):not(#__) { border-style: solid !important; background: var(--cs-bg3) !important; }
+/* scrollbars: thin, rounded, quiet until hovered */
+html { scrollbar-width: thin; scrollbar-color: rgba(0, 0, 0, .22) transparent; }
+body *::-webkit-scrollbar { width: 10px; height: 10px; } body *::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, .22); border-radius: 999px; border: 3px solid transparent; background-clip: padding-box; } body *::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, .4); background-clip: padding-box; } body *::-webkit-scrollbar-track { background: transparent; }
+/* switches and tick boxes use the blue; links are blue and underline only on hover */
+body input[type="checkbox"], body input[type="radio"], body input[type="range"] { accent-color: var(--cs-primary); }
+body .main a:not(.btn):not([class*="card"]):not(#_):not(#__) { text-underline-offset: 3px; }
 
 /* ---- settings pages (coss ui pattern): the name and a short description on the left, the form card on the right, buttons in a footer bar ---- */
 body .st-wrap { max-width: 1040px; }
