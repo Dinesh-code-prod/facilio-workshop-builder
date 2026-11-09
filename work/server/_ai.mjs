@@ -207,7 +207,7 @@ export function createAI(env) {
         // (20 seconds when the service did not say), so the page can wait and try again by itself. Only a very short stated wait is worth retrying here.
         if (e.code === 'rate_limited') { if (!e.retryAfter) e.retryAfter = 20; if (e.retryAfter > 3 || left() < e.retryAfter * 1000 + 8000) throw e; }
         const wait = e.code === 'rate_limited' ? Math.min(2500, Math.max(800, (e.retryAfter || 0) * 1000)) : 600;
-        if (!e.retryable || left() < wait + 8000) throw e; await sleep(wait); return once(adapter, model, req, true); }
+        if (!e.retryable || left() < wait + 4500) throw e; await sleep(wait); return once(adapter, model, req, true); }
     };
     const req = { system: q.system, messages: q.messages, maxTokens: q.maxTokens, temperature: q.temperature };
     try { const out = await run(A, pv.model, req); if (pv.moved) out.notice = NAMES[pv.moved.from] + ' cannot do this here, so ' + A.name + ' did it.'; return out; }
