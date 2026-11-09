@@ -12,6 +12,7 @@ export const EVENTS = {
   task_assigned: { label: 'A task is assigned to you', def: { inapp: true, browser: false, teams: true } },
   task_new: { label: 'A new task has no owner yet', def: { inapp: true, browser: false, teams: true } },
   task_due: { label: 'A task is due soon or overdue', def: { inapp: true, browser: false, teams: true } },
+  lifecycle_nudge: { label: 'A project you own needs attention', def: { inapp: true, browser: false, teams: true } },
   approval_requested: { label: 'Something waits for your approval', def: { inapp: true, browser: true, teams: true } },
   stage_ready: { label: 'A stage is ready to close', def: { inapp: true, browser: false, teams: true } },
   stage_closed: { label: 'A stage was closed', def: { inapp: true, browser: false, teams: true } },
@@ -23,10 +24,10 @@ export const EVENTS = {
 };
 export const TEAMS_PER_DAY = 5, KEEP = 100;
 /** the label that opens a Teams message and the bell line: what the message is about */
-export const CATEGORY = { task_assigned: 'TASK', task_new: 'TASK', task_due: 'TASK', approval_requested: 'APPROVAL', stage_ready: 'STAGE', stage_closed: 'STAGE', customer_signoff: 'SIGN-OFF', proposal_waiting: 'CLAUDE', job_done: 'JOB', mail_arrived: 'MAIL', ticket_new: 'TICKET' };
+export const CATEGORY = { task_assigned: 'TASK', task_new: 'TASK', task_due: 'TASK', lifecycle_nudge: 'PROJECT', approval_requested: 'APPROVAL', stage_ready: 'STAGE', stage_closed: 'STAGE', customer_signoff: 'SIGN-OFF', proposal_waiting: 'CLAUDE', job_done: 'JOB', mail_arrived: 'MAIL', ticket_new: 'TICKET' };
 export const catOf = ev => String((ev && ev.cat) || CATEGORY[ev && ev.type] || 'UPDATE').toUpperCase().slice(0, 20);
 /** the Teams card of an event: title = category and project, first line = what happened, then the text; facts carry the core details */
-export const WHY = { task_assigned: 'It is assigned to you', task_new: 'Nobody owns it yet, so the whole project team is told', task_due: 'A task of yours is due soon or late', approval_requested: 'Something waits for your approval', stage_ready: 'Every record of the stage is complete', stage_closed: 'A stage of this project was closed', customer_signoff: 'The customer acted on a sign-off', proposal_waiting: 'Claude prepared something for you to review', job_done: 'A job you asked for finished', mail_arrived: 'New customer mail needs a decision', ticket_new: 'A support ticket needs attention' };
+export const WHY = { task_assigned: 'It is assigned to you', task_new: 'Nobody owns it yet, so the whole project team is told', task_due: 'A task of yours is due soon or late', lifecycle_nudge: 'You own this project and its records show it needs attention', approval_requested: 'Something waits for your approval', stage_ready: 'Every record of the stage is complete', stage_closed: 'A stage of this project was closed', customer_signoff: 'The customer acted on a sign-off', proposal_waiting: 'Claude prepared something for you to review', job_done: 'A job you asked for finished', mail_arrived: 'New customer mail needs a decision', ticket_new: 'A support ticket needs attention' };
 export function teamsCard(ev, rec, actions) {
   const head = String(rec.title || '').split(' \u00b7 ')[0]; const dueFact = (ev.facts || []).find(f => f && f.title === 'Due'); const due = /^\d{4}-\d{2}-\d{2}$/.test(rec.due || '') ? rec.due : /^\d{4}-\d{2}-\d{2}$/.test((dueFact && dueFact.value) || '') ? dueFact.value : ''; const dueTxt = due ? dueWords(due, String(rec.at || '').slice(0, 10)) : '';
   const proj = rec.pname ? rec.pname + (rec.cust && !rec.pname.toLowerCase().includes(rec.cust.toLowerCase()) ? ' \u00b7 ' + rec.cust : '') : '';

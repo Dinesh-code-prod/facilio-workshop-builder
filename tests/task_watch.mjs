@@ -163,4 +163,11 @@ await t('the public action tools reach the same code, and a wrong action is refu
   const a = await tool(SAM, 'task_tracking', { project: pid, action: 'evidence' }); assert.equal(a.status, 200); assert.equal((await tool(SAM, 'task_tracking', { project: pid, action: 'nope' })).status, 400);
   assert.equal((await tool(SAM, 'transfer_read', { project: pid, action: 'list' })).status, 200); assert.equal((await tool(SAM, 'transfer_read', { project: pid })).status, 400, 'no action given');
 });
+await t('lifecycle nudges: the Studio-open sweep tells a project owner once, privately, when the records show critical trouble, and not again for the same trouble', async () => {
+  teamsOn = true; for (const c of ['twn', 'tnc', 'nt']) if (store.get(c)) store.get(c).clear(); if (store.get('dbr')) store.get('dbr').clear();
+  assert.equal((await put(SAM, pid, 'blk1', { title: 'Cannot load the asset list', status: 'Blocked', priority: 'Critical', owner: KIM, blocker: 'Waiting for the customer export' })).status, 200);
+  sent = []; await as(SAM, 'POST', '/api/notifications/sweep', {}); const nudge = x => x.to && /^PROJECT \u00b7 Reminder Test/.test(x.title) && !x.channel && /attention/.test(JSON.stringify(x)); const first = sent.filter(nudge);
+  assert.ok(first.length >= 1, 'a nudge was sent: ' + JSON.stringify(sent.map(x => x.title))); assert.deepEqual(first[0].to, [SAM], 'to the project owner only (a private message)'); assert.match(JSON.stringify(first[0]), /open blocker|Project health/);
+  sent = []; await as(SAM, 'POST', '/api/notifications/sweep', {}); assert.equal(sent.filter(nudge).length, 0, 'the same trouble is not sent again');
+});
 console.log(n + ' task reminder checks passed');

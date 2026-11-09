@@ -21,6 +21,7 @@ export const NEXT = {
   task_assigned: 'Open the task, read the description, set the status as you go, and press Done when it is finished. If the date cannot hold, change it and say why.',
   task_new: 'Someone on the team should take it: open Tasks and set an owner.',
   task_due: 'Open each task and update its status, or move the date and say why it slipped.',
+  lifecycle_nudge: 'Open the project, start with the first item and deal with each next step; the page shows the records behind every item.',
   approval_requested: 'Open it, check it against the records, and approve it or send it back with a reason.',
   stage_ready: 'A project owner or admin can close the stage on the Project cycle page.',
   stage_closed: 'Nothing to do. The next stage is now the current one.',

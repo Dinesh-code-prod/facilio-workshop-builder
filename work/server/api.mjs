@@ -2,6 +2,7 @@
    Identity comes from the platform (ctx.viewer, verified); data lives in ctx.db; file bytes in private ctx.files.
    Roles and project access are enforced HERE, on the server, so pages cannot bypass them. */
 import { createAI, AIFail } from './_ai.mjs';
+import { lifecycleMessage } from './_nudges.mjs';
 import { assess, docsOf, workload, RULES as HRULES, HEALTH_LABEL, MANUAL } from './_portfolio.mjs';
 import { IMPL_SKILLS } from './_skills.mjs';
 import { installTransfer } from './_transferapi.mjs';
@@ -1545,7 +1546,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     async send_task_digest(s, b) {
       if (!CTX.teams || !CTX.teams.send) throw new HttpError(503, 'Teams messages are not available here');
       if (!(await teamsOn())) return { sent: 0, reason: 'Teams notices are off. The app owner must add the plain secret teams_notify = on at secrets.facilio.work.' };
-      const today = now().slice(0, 10); const team = String(b.to || 'me') === 'team'; let people, rows, pid = '', scope = 'all', projs = [];
+      const today = now().slice(0, 10); const team = String(b.to || 'me') === 'team'; let people, rows, pid = '', scope = 'all', projs = []; let nudgeCount = 0; if (b.lifecycle === true) { const lp = team ? [await pickProject(s, b.project)] : await memberProjects(s); for (const p of lp) await projectAccess(s, p.id, 'edit'); nudgeCount = await lifecycleNudges(lp, today); }
       if (team) { const p = await pickProject(s, b.project); await projectAccess(s, p.id, 'edit'); pid = scope = p.id; rows = await taskRowsOf([p]); projs = [p]; people = teamOf(p).map(m => String(m.email || '').toLowerCase()).filter(Boolean); }
       else { const k = cut(b.project, 80).toLowerCase(); projs = (await memberProjects(s)).filter(p => !k || p.id === b.project || String(p.name).toLowerCase().includes(k)); rows = await taskRowsOf(projs); people = [String(s.email || '').toLowerCase()]; scope = k || 'all'; }
       const results = [];
@@ -1560,7 +1561,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
         } catch (e) { results.push({ to, status: 'failed', why: cut(e && e.message, 120) }); }
       }
       const sent = results.filter(x => x.status === 'sent').length; if (pid) await audit(pid, s.id, 'task-digest', sent + ' sent of ' + results.length);
-      return { sent, results, note: 'Counts only messages that Teams accepted. "teams" shows what Teams answered (delivered, muted, failed). One digest per person per day.' };
+      return { sent, results, lifecycle_nudges: nudgeCount, note: 'Counts only messages that Teams accepted. "teams" shows what Teams answered (delivered, muted, failed). One digest per person per day.' };
     },
     async project_changes(s, b) { const p = await pickProject(s, b.project); await projectAccess(s, p.id, 'read'); const since = /^[0-9]{4}-[0-9]{2}-[0-9]{2}/.test(String(b.since || '')) ? String(b.since) : new Date(Date.now() - 7 * 864e5).toISOString(); const out = {};
       for (const kd of ['task', 'action', 'raid', 'decision', 'cr', 'signoff', 'minutes', 'utc', 'tkt', 'hc']) { const rows = (await itemsOf(p.id, kd).catch(() => [])).filter(r => String(r.updatedAt || r.ua || '') > since); if (rows.length) { rows.sort((x, y) => String(y.updatedAt || y.ua || '').localeCompare(String(x.updatedAt || x.ua || ''))); out[kd] = { what: KIND_LABEL[kd] || kd, changed: rows.length, latest: rows.slice(0, 8).map(r => ({ id: r.id, title: cut((r.data || {}).title || (r.data || {}).subject || (r.data || {}).name, 120), status: (r.data || {}).status || '', updated: r.updatedAt || r.ua })) }; } }
@@ -2231,6 +2232,16 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   route('POST', '/api/presence', async () => { const s = await me(); await dbPut('presence', hashOf(s.email), { at: now() }); return ok({ ok: true }); });
   // The morning brief of a project (its daily brief switched on): the FIRST trigger of the day sends every team member their own digest, so nobody has to open the Studio or Claude themselves.
   // Triggers: a person opening the Studio (the sweep below) or a running Claude task's idle check (project_jobs list). One brief per project per day, kept in the collection dbr.
+  // Lifecycle nudges: for each live, active project, the owners get a private Teams message (through notify(): Otto, once per set of signals per three days, 5 a day per person, their own settings) when the
+  // project's records show critical or high trouble (assess() in _portfolio.mjs). Triggered when a team member opens the Studio and by the digest tool with lifecycle = true. shortcut: it reads the cached
+  // all-projects load (15 s), which is fine at this size; give it a per-project loader if the portfolio grows large.
+  async function lifecycleNudges(ps, today) {
+    let sent = 0; try { const A = await loadAll(); const ids = new Set((ps || []).map(p => p.id));
+      for (const r of A.rows) { if (!ids.has(r.p.id) || r.p.archived) continue; const h = assess(r, today); if (h.manual !== 'active') continue; const m = lifecycleMessage(r.p, h, today); if (!m) continue;
+        const owners = (r.p.members || []).filter(x => x.role === 'owner').map(x => x.email).filter(Boolean); if (!owners.length) continue;
+        sent += await notify({ type: 'lifecycle_nudge', project: r.p, to: owners, actor: '', title: m.title, text: m.text, detail: m.detail, facts: m.facts, view: 'overview', key: m.key }); }
+    } catch (e) { console.log('lifecycle nudges failed: ' + (e && e.message)); } return sent;
+  }
   async function morningBriefs(s, ps, today) {
     let sent = 0; for (const pj of ps) { try { const cfg = (await dbGet('dbrcfg', pj.id)) || {}; if (((cfg.value || {}).on) === false) continue; /* on unless a project switched it off */ const had = await dbGet('dbr', pj.id); if (had && had.value && had.value.day === today) continue; await dbPut('dbr', pj.id, { day: today, by: s.id }); await CONNECTOR.send_task_digest(s, { to: 'team', project: pj.id }); await projectChannelPost(pj, today); sent++; } catch (e) { /* a reader or a project without Teams: no brief, no error */ } }
     return sent;
@@ -2242,7 +2253,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     for (const pj of ps) { const due = p.items.filter(x => x.project === pj.id && (x.overdue || x.soon)); if (!due.length) continue;
       n += await notify({ type: 'task_due', project: pj, to: [s.email], actor: '', title: due.length + ' task' + (due.length === 1 ? '' : 's') + ' due or overdue · ' + pj.name, text: due.slice(0, 3).map(x => (x.n ? 'T-' + x.n + ' ' : '') + x.title + (x.overdue ? ' (overdue)' : '')).join('; '), due: due.map(x => x.due).filter(Boolean).sort()[0] || '', detail: due.slice(0, 5).map(x => (x.n ? 'T-' + x.n + ' ' : '') + x.title + ': ' + dueWords(x.due, today) + (x.priority ? ', ' + x.priority + ' priority' : '')).join('; ') + (due.length > 5 ? '; and ' + (due.length - 5) + ' more' : ''), view: 'tasks', key: 'td|' + pj.id + '|' + today }); }
     // the morning brief: the first person to open the Studio each day sends every owner of each of their projects the task digest (the digest tool keeps it to one per person per day, and Teams must be on)
-    await morningBriefs(s, ps, today);
+    await morningBriefs(s, ps, today); n += await lifecycleNudges(ps, today);
     return ok({ notified: n });
   });
   installTaskTracking({ route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, itemsOf, withLock, audit, viaApp, CONNECTOR, DONE_RE, cut, rid, notify: N });   // task suggestions from Claude: routes and tools (_tasksapi.mjs)

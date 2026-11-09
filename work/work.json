@@ -803,7 +803,7 @@
    },
    {
     "name": "send_task_digest",
-    "description": "Send a Teams direct message with pending tasks and the plan milestones that are due: to yourself (default) or, with to \"team\" and a project, to EVERY team member (a person with no task of their own still gets it when a plan milestone is due). One digest per person per project per day, whoever triggers it; nothing is sent while Teams notices are off. Ask the person to confirm first.",
+    "description": "Send a Teams direct message with pending tasks and the plan milestones that are due: to yourself (default) or, with to \"team\" and a project, to EVERY team member (a person with no task of their own still gets it when a plan milestone is due). One digest per person per project per day, whoever triggers it; nothing is sent while Teams notices are off. With lifecycle true it also sends each project's owners a private message when the project's records show critical or high trouble (overdue plan steps, blocked work, customers waiting, go-live close with prerequisites open); the answer counts them in lifecycle_nudges. Ask the person to confirm first.",
     "function": "api",
     "confirm": true,
     "input_schema": {
@@ -824,6 +824,10 @@
       "again": {
        "type": "boolean",
        "description": "Send to yourself again today"
+      },
+      "lifecycle": {
+       "type": "boolean",
+       "description": "Also send the project owners their lifecycle nudges (what needs attention in the project)"
       }
      }
     }
