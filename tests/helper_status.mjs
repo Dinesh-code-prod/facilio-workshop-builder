@@ -41,3 +41,7 @@ console.log(n + ' Claude helper checks passed');
 }
 { const css = fs.readFileSync('src/ui.css', 'utf8'); // the date and time of a chat message sit under it in the normal flow, never on top of the text or the buttons
   assert.match(css, /body #asst \.ki-time:not\(#_\):not\(#__\):not\(#___\) \{ position: static !important; display: block !important;/); console.log('  ok  the date and time of each chat message sit under it, not over the text or the buttons'); }
+{ const a = fs.readFileSync('src/assistant.js', 'utf8'), css = fs.readFileSync('src/ui.css', 'utf8'); // Claude's side is green, its two buttons are a matching pair, and a waiting request says what is happening and for how long
+  assert.match(a, /Please wait\. Your request has been sent to Claude/); assert.match(a, /etaText\(j\.size === 'heavy' \? 'heavy' : 'small'\)/); assert.match(a, /Claude has started and is analysing your request/);
+  assert.match(css, /ki-row:not\(\.you\):not\(\.sys\):not\(\.bad\):not\(\.other\) \.ki-bub[^{]*\{ background: #E8F7EE !important;[^}]*border-left: 4px solid #16A34A/); assert.match(css, /\.ki-acts \.btn\.primary[^{]*\{ background: #16A34A !important/); assert.match(css, /\.ki-acts \.btn:not\(#_\)[^{]*\{[^}]*border: 1\.5px solid #16A34A/);
+  console.log('  ok  Claude\u2019s side is green with a matching pair of buttons, and a waiting request says it was sent, that Claude is analysing, and how long it takes'); }

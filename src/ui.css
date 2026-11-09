@@ -1885,3 +1885,17 @@ body #asst .ki-row .ki-body:not(#_):not(#__):not(#___) { position: static; }
 body .drawer.full:not(#_):not(#__) { width: min(98vw, 1800px) !important; }
 body .ol-wrap.wide:not(#_):not(#__) { position: fixed; inset: 0; z-index: 60; background: #fff; padding: 16px 24px; overflow: auto; }
 body .ol-wrap.wide .ol:not(#_):not(#__) { height: calc(100vh - 110px); }
+
+/* ===== Assistant: Claude's side in green, and one matching pair of buttons (9 Nov 2026) ===== */
+body #asst .ki-row:not(.you):not(.sys):not(.bad):not(.other) .ki-bub:not(#_):not(#__):not(#___) { background: #E8F7EE !important; border: 1px solid #98D6B3 !important; border-left: 4px solid #16A34A !important; color: #0B2E1A !important; box-shadow: 0 1px 2px rgba(22, 163, 74, .12); }
+body #asst .ki-row:not(.you):not(.sys):not(.bad):not(.other) .ki-bub *:not(.btn):not(#_):not(#__):not(#___) { color: #0B2E1A; }
+body #asst .as-now.run:not(#_):not(#__):not(#___) { background: #E8F7EE !important; color: #14532D !important; border-bottom-color: #98D6B3 !important; }
+body #asst .as-now.run i:not(#_):not(#__):not(#___) { background: #16A34A !important; box-shadow: 0 0 0 4px rgba(22, 163, 74, .2); }
+body #asst .as-now.run:not(#_):not(#__)::after { background: linear-gradient(90deg, transparent, #16A34A, transparent) !important; }
+body #asst .as-now.wait:not(#_):not(#__):not(#___) { background: #FFF8EB !important; color: #8A5300 !important; border-bottom-color: #F5C26B !important; }
+body #asst .as-now.wait:not(#_):not(#__)::after { background: linear-gradient(90deg, transparent, #F59E0B, transparent) !important; }
+/* the buttons inside a Claude message: the main one solid green, the other outlined green, same size, both clearly buttons */
+body #asst .ki-acts .btn:not(#_):not(#__):not(#___) { height: 34px; padding: 0 16px !important; border-radius: 999px !important; font-weight: 600 !important; font-size: 13.5px !important; background: #fff !important; border: 1.5px solid #16A34A !important; color: #14532D !important; box-shadow: none !important; }
+body #asst .ki-acts .btn.primary:not(#_):not(#__):not(#___) { background: #16A34A !important; border-color: #16A34A !important; color: #fff !important; box-shadow: 0 1px 2px rgba(22, 163, 74, .35) !important; }
+body #asst .ki-acts .btn:hover:not(#_):not(#__):not(#___) { background: #DDF3E7 !important; border-color: #15803D !important; }
+body #asst .ki-acts .btn.primary:hover:not(#_):not(#__):not(#___) { background: #15803D !important; }
