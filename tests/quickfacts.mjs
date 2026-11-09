@@ -31,3 +31,20 @@ await t('work and explanations are not answered here: they go on to the router',
   assert.ok(q('go-live date').text.endsWith('no AI used.'));
 });
 console.log(n + ' quick-fact checks passed');
+await t('a question about whether a document was changed is never answered with a date list ("updated" is not "date", "kick-off" is not every Sign-Off)', () => {
+  for (const s of ['is the kickoff deck updated', 'is the kick-off deck updated or not', 'has the BRD been updated', 'did you redesign the kick-off deck', 'are the slides reworded']) assert.equal(q(s), null, s);
+  assert.match(q('when does the kick-off start').text, /Kick-Off: 2026-10-07 to 2026-10-14/); assert.ok(!/Sign-Off/.test(q('when does the kick-off start').text));
+});
+await t('"is it done?" is answered from the Claude request behind it, in plain words with the time, and says nothing when there is no such request', () => {
+  const ago = m => new Date(Date.now() - m * 6e4).toISOString(); let jobs = [];
+  root.FWB.S.project = { id: 'p1' }; V.studioJobs = { K: () => ({ pid: 'p1', jobs }) }; root.FWBKickoffLogic = { jobRows: x => x };
+  jobs = [{ id: '1', kind: 'chat', note: 'Update the whole kick-off deck in a nicer way', label: 'Your message to Claude', status: 'done', at: ago(9), claimedAt: ago(8), finishedAt: ago(4), summary: 'I reworded every deck text field. No date was changed.' }];
+  let r = q('is the kickoff deck updated'); assert.match(r.text, /^Yes\. Claude finished "Update the whole kick-off deck in a nicer way" 4 minutes ago: I reworded every deck text field/); assert.equal(r.view, 'kickoff'); assert.ok(!/Sign-Off/.test(r.text));
+  jobs = [{ id: '2', kind: 'chat', note: 'Update the kick-off deck', status: 'claimed', at: ago(4), claimedAt: ago(3), size: 'small' }];
+  r = q('has the kick-off deck been updated yet'); assert.match(r.text, /^Not yet\. Claude is working on "Update the kick-off deck": started 3 minutes ago\. Requests like this usually take about 2 minutes/); 
+  jobs = [{ id: '3', kind: 'chat', note: 'Update the kick-off deck', status: 'waiting', at: ago(6) }]; assert.match(q('is the deck done').text, /^Not yet\. "Update the kick-off deck" is still in the queue \(6 minutes\)/);
+  jobs = [{ id: '4', kind: 'chat', note: 'Update the kick-off deck', status: 'needs_input', at: ago(6), questions: ['Which slide first?', '- Cover', '- Scope'] }]; assert.match(q('is the deck ready').text, /^Claude is waiting for your answer on "Update the kick-off deck": Which slide first\?/);
+  jobs = [{ id: '5', kind: 'chat', note: 'Update the kick-off deck', status: 'failed', at: ago(6), summary: 'The pack could not be read' }]; assert.match(q('did the deck update work').text, /^That did not work: "Update the kick-off deck" could not be completed \(The pack could not be read\)/);
+  jobs = [{ id: '6', kind: 'chat', note: 'Write the BRD', status: 'done', at: ago(9), claimedAt: ago(8), finishedAt: ago(4), summary: 'Done.' }]; assert.equal(q('is the kickoff deck updated'), null);   // a request about something else is not the answer
+  jobs = []; assert.equal(q('is the kickoff deck updated'), null);
+});
