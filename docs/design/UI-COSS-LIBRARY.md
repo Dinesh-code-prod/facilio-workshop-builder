@@ -38,3 +38,6 @@ Sections: Projects and delivery, Discover and define, Design and build, Launch a
 
 ## Rules for new work
 Use these classes and tokens; no new gradients, glows or custom shadows; no violet or purple; no dark mode; status colours only for status. Check the page at 1440 and 760 px and with reduced motion before shipping.
+
+## Side forms (9 Nov 2026)
+Every form that slides in from the right (`drawer()` in `src/shell.js`) follows one arrangement, set in the last block of `src/ui.css`: label 6 px above its field and 16 px below whatever is above it; short pairs share a row (`.fgrid`), long text and lone fields take the full width, grouped parts sit in a `fieldset` frame. Check it with `PW_CHANNEL=msedge node tests/ui/drawer-forms-check.mjs` (opens every reachable side form on the demo project and measures the arrangement; it must report 0 issues).
