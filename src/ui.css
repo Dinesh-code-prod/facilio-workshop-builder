@@ -1352,6 +1352,16 @@ body #asst .ki-time:not(#_):not(#__) { position: absolute !important; right: 10p
 body #asst .ki-row.you .ki-time:not(#_):not(#__)::after { content: " \2713"; color: var(--cs-accent); }
 body #asst .ki-row.sys:not(#_):not(#__) { max-width: 100% !important; margin: 8px auto !important; justify-content: center !important; }
 body #asst .ki-row.sys .ki-bub:not(#_):not(#__) { background: rgba(255, 255, 255, .7) !important; border: 0 !important; border-radius: 10px !important; padding: 4px 12px !important; font: 400 12.5px/18px var(--cs-font) !important; color: var(--cs-fg2) !important; text-align: center; }
+/* Assistant as an Apple sheet: translucent panel, message-style bubbles (grey for Claude, blue for you), no coloured outlines */
+body #asst:not(#_):not(#__) { background: rgba(255, 255, 255, .88) !important; -webkit-backdrop-filter: saturate(180%) blur(28px); backdrop-filter: saturate(180%) blur(28px); border-left: 1px solid rgba(0, 0, 0, .06) !important; box-shadow: var(--cs-sh16) !important; }
+body #asst .ki-row:not(.you):not(.sys):not(.bad) .ki-bub:not(#_):not(#__):not(#___) { background: #f2f2f7 !important; border: 0 !important; border-radius: 20px 20px 20px 6px !important; color: var(--cs-fg1) !important; }
+body #asst .ki-row.you .ki-bub:not(#_):not(#__):not(#___) { background: var(--cs-primary) !important; border: 0 !important; border-radius: 20px 20px 6px 20px !important; color: #fff !important; }
+body #asst .ki-row.you .ki-bub:not(#_):not(#__):not(#___) * { color: inherit !important; }
+body #asst .ki-row.claude .ki-bub:not(#_):not(#__):not(#___):not(#____) { background: #f2f2f7 !important; border: 0 !important; border-radius: 20px 20px 20px 6px !important; color: var(--cs-fg1) !important; box-shadow: none !important; }
+/* the Projects / Admin switch as the segmented control: grey track, white raised current side */
+body .ws-switch:not(#_):not(#__):not(#___) { background: rgba(118, 118, 128, .12) !important; border: 0 !important; border-radius: 999px !important; padding: 2px !important; box-shadow: none !important; }
+body .ws-switch a:not(#_):not(#__):not(#___) { border-radius: 999px !important; background: transparent !important; color: var(--cs-fg2) !important; font-weight: 500 !important; box-shadow: none !important; }
+body .ws-switch a[aria-current]:not(#_):not(#__):not(#___) { background: #fff !important; color: var(--cs-fg1) !important; font-weight: 600 !important; box-shadow: 0 1px 3px rgba(0, 0, 0, .14), 0 0 0 .5px rgba(0, 0, 0, .04) !important; }
 body #asst .as-comp:not(#_):not(#__) { background: #eef1f5 !important; padding: 8px 10px 10px !important; border-top: 1px solid var(--cs-st2) !important; }
 body #asst .as-crow:not(#_):not(#__) { background: #fff !important; border: 1px solid var(--cs-st2) !important; border-radius: 22px !important; padding: 6px 8px 6px 14px !important; }
 body #asst .as-crow textarea:not(#_):not(#__) { border: 0 !important; background: transparent !important; box-shadow: none !important; resize: none !important; padding: 4px 0 !important; outline: none; }
@@ -2039,10 +2049,6 @@ body .tr-sub button { white-space: nowrap; display: inline-flex; align-items: ce
 #bellPop .bp-row .bp-un:not(#_):not(#__) { flex: none; }
 #bellPop .bp-row .bp-t:not(#_):not(#__) { font-size: 14.5px; line-height: 20px; }
 #bellPop .bp-row span:not(#_):not(#__) { flex: none; }
-/* Top bar with the Assistant open: the page is narrower, so the bar drops what it can spare instead of overlapping */
-body.asst-open .navbar .title:not(#_):not(#__):not(#___), body.asst-open .nb-pt small:not(#_):not(#__):not(#___), body.asst-open .navbar .save-state:not(#_):not(#__):not(#___) { display: none !important; }
-body.asst-open .navbar .right [data-act="custPreview"]:not(#_):not(#__):not(#___) { font-size: 0; gap: 0; padding: 0 12px; } body.asst-open .navbar .gs-btn .gs-t:not(#_):not(#__):not(#___) { display: none; } body.asst-open .navbar .gs-btn:not(#_):not(#__):not(#___)::after { display: none !important; }
-body.asst-open .navbar:not(#_):not(#__):not(#___) { grid-template-columns: auto minmax(0, 1fr) auto; } body.asst-open .nb-proj { max-width: 100%; }
 
 
 /* Apple fallbacks (9 Nov 2026): solid surfaces when transparency is reduced, firmer borders for more contrast, no press scale for reduced motion */
