@@ -49,3 +49,8 @@ Not checked: that the scheduled-tasks tools are available inside the queue task'
 - The Studio keeps up to 12 Claude accounts per Studio sign-in. Accounts are told apart by plan plus the weekday and minute the weekly limit resets; a snapshot older than 36 hours is dropped. `GET /api/usage` returns the signed-in person's list. The chat shows the last-reported account in full and the others as one short line each.
 - Claude gives limits as percentages: it does not give tokens per request or per project.
 - Not checked: a real report from a queue task; two accounts reporting.
+
+## Update 10 Nov 2026: wake on a chat message, sleep after about 5 idle minutes
+- **Wake:** when the queue is paused and someone sends a chat message in the Studio assistant, the same click opens Claude with the Activate prompt (`helperOpen`), so the task is switched back on without a second press. The Studio cannot start Claude by itself: the task lives in the person's Claude desktop.
+- **Sleep sooner (change to step 11 of the real task prompt, to be pasted by the owner):** use `list_task_runs` with limit 4. If the 2 runs before this one both report that no jobs were waiting, and the 2nd of them started at least 5 minutes before this run, call `update_scheduled_task` with taskId studio-job-queue and enabled false, and end the reply with: "Queue paused after 5 idle minutes; sending a chat message in Delivery Studio wakes it again." Everything else in step 11 stays as it is.
+- Why it saves usage: a paused task makes no calls at all, including the usage report; it was 10 empty runs (about 30 minutes) before.
