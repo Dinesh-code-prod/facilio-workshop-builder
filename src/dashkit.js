@@ -64,19 +64,43 @@
 
   // ---------- filters ----------
   const ui = () => F.S.ui;
+  // calendar period (V.range, src/rangefilter.js): the project dashboard filters actions, tasks and the calendar by their date; the admin dashboard keeps the projects with activity in the period. Undated items are left out while a period is set.
+  const RG = () => ui().dkR || (ui().dkR = { period: 'all' }), RGA = () => ui().dkRA || (ui().dkRA = { period: 'all' });
+  if (V.range) {
+    V.range.hooks.dk = { state: RG, change: () => V.render(), pdf: () => V.range.printLive(document.querySelector('.cs-page'), ((F.S.project && F.S.project.name) || 'Project') + ' · Dashboard') };
+    V.range.hooks.dka = { state: RGA, change: () => V.setMode('admin'), pdf: () => V.range.printLive(document.querySelector('.adx'), 'Delivery Studio · Portfolio dashboard') };
+  }
+  // Export bar: PDF (the print dialog's Save as PDF, through V.range), a standalone HTML copy of what is on screen, and a CSV of its key figures, lists and tables.
+  const exportBar = (key, withPdf) => `<span class="dk-exp no-print" role="group" aria-label="Export">${withPdf ? `<button type="button" class="dk-fr" data-act="rgPdf" data-k="${key}">Export PDF</button>` : ''}<button type="button" class="dk-fr" data-act="dkExp" data-v="html" data-k="${key}">Export HTML</button><button type="button" class="dk-fr" data-act="dkExp" data-v="csv" data-k="${key}">Export CSV</button></span>`;
+  const rootEl = () => document.querySelector('.cs-page, .adx');
+  const slug = t => String(t).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'dashboard';
+  const docTitle = key => (key === 'dka' ? 'Portfolio dashboard' : ((F.S.project && F.S.project.name) || 'Project') + ' · ' + ((document.querySelector('.sd-tabs .tab.active') || {}).textContent || 'Dashboard').trim());
+  function exportHtml(key) {
+    const el = rootEl(); if (!el) return; const css = [...document.styleSheets].map(sh => { try { return [...sh.cssRules].map(r => r.cssText).join('\n'); } catch (e) { return ''; } }).join('\n');
+    const c = el.cloneNode(true); c.querySelectorAll('.dk-fbar, .dk-exp, .sd-tabs, .adx-tabs, .rgbar, script').forEach(n => n.remove()); const t = docTitle(key), day = V.today();
+    const html = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(t) + '</title><style>' + css + '\nbody{margin:0;background:#fafafa}.dk-doc{max-width:1440px;margin:0 auto;padding:28px}.dk-doc h1{font:600 22px/30px system-ui,sans-serif;margin:0 0 4px}.dk-doc>p{color:#6b7280;margin:0 0 20px;font:400 14px/20px system-ui,sans-serif}</style></head><body class="' + esc(document.body.className) + '"><div class="dk-doc"><h1>' + esc(t) + '</h1><p>Exported from Facilio Delivery Studio on ' + esc(day) + '. This is a static copy: links and filters do not work here.</p>' + c.outerHTML + '</div></body></html>';
+    V.download(slug(t) + '-' + day + '.html', html, 'text/html;charset=utf-8');
+  }
+  function exportCsv(key) {
+    const el = rootEl(); if (!el) return; const q = v => '"' + String(F.csvText(String(v == null ? '' : v))).replace(/"/g, '""') + '"', txt = n => (n ? n.textContent.replace(/\s+/g, ' ').trim() : ''); const out = [['Section', 'Item', 'Value', 'Detail']];
+    el.querySelectorAll('.sd-kpi, .adx-stat').forEach(k => out.push(['Key figures', txt(k.querySelector('.sd-kl, .adx-sl')), txt(k.querySelector('.sd-kv, b')), txt(k.querySelector('.sd-ks, .adx-ss'))]));
+    el.querySelectorAll('.sd-w, .adx-c').forEach(w => { const h = txt(w.querySelector('h3')); w.querySelectorAll('tbody tr').forEach(tr => out.push([h].concat([...tr.children].map(txt)))); w.querySelectorAll('li').forEach(li => { if (!li.closest('table')) out.push([h, txt(li)]); }); });
+    const t = docTitle(key); V.download(slug(t) + '-' + V.today() + '.csv', '\uFEFF' + out.map(r => r.map(q).join(',')).join('\r\n'), 'text/csv;charset=utf-8');
+  }
   const PF = () => (ui().dkF || (ui().dkF = { win: 14, focus: 'all', who: 'all' }));
   const AF = () => (ui().dkA || (ui().dkA = { stage: 'all', health: 'all', customer: 'all', type: 'all', when: 'all', q: '' }));
   const sel = (act, k, label, opts, cur) => `<label class="dk-f"><span>${esc(label)}</span><select data-change="${act}" data-k="${k}" aria-label="${esc(label)}">${opts.map(([v, l]) => `<option value="${esc(v)}"${String(v) === String(cur) ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`;
   // project dashboard (team and customer): the calendar window, what to focus on, and whose work
   function projBar(k) {
-    const f = PF(), dirty = f.win !== 14 || f.focus !== 'all' || f.who !== 'all';
-    return `<div class="dk-fbar" role="group" aria-label="Dashboard filters">${sel('dkF', 'win', 'Calendar window', [[7, 'Next 7 days'], [14, 'Next 14 days'], [30, 'Next 30 days'], [60, 'Next 60 days']], f.win)}${sel('dkF', 'focus', 'Show', [['all', 'Everything'], ['overdue', 'Overdue only'], ['soon', 'Due in the next 7 days']], f.focus)}${k ? '' : sel('dkF', 'who', 'Work of', [['all', 'Everyone'], ['me', 'Me only']], f.who)}${dirty ? '<button type="button" class="dk-fr" data-act="dkFReset">Reset filters</button>' : ''}</div>`;
+    const f = PF(), dirty = f.win !== 14 || f.focus !== 'all' || f.who !== 'all' || RG().period !== 'all';
+    return `<div class="dk-fbar" role="group" aria-label="Dashboard filters">${V.range ? V.range.bar('dk', RG(), { note: 'Actions, tasks and the calendar, by their date' }) : ''}${sel('dkF', 'win', 'Calendar window', [[7, 'Next 7 days'], [14, 'Next 14 days'], [30, 'Next 30 days'], [60, 'Next 60 days']], f.win)}${sel('dkF', 'focus', 'Show', [['all', 'Everything'], ['overdue', 'Overdue only'], ['soon', 'Due in the next 7 days']], f.focus)}${k ? '' : sel('dkF', 'who', 'Work of', [['all', 'Everyone'], ['me', 'Me only']], f.who)}${dirty ? '<button type="button" class="dk-fr" data-act="dkFReset">Reset filters</button>' : ''}${exportBar('dk', false)}</div>`;
   }
   const typeOf = p => String(p.type || (p.metrics || {}).type || '').toUpperCase();
   // Admin: the filters apply to every Admin tab, so a portfolio of hundreds of projects can be cut down to the part you are looking at
   function filterPortfolio(ps) {
     const f = AF(), D = V.sdd, today = V.today(), q = String(f.q || '').trim().toLowerCase();
-    return ps.filter(p => { const m = p.metrics || {};
+    const sp = V.range ? V.range.span(RGA()) : ['', ''];
+    return ps.filter(p => { const m = p.metrics || {}; if (V.range && !V.range.inRange(m.lastActivity, sp)) return false;
       if (f.stage !== 'all' && String(D.rstageOf(p)) !== f.stage) return false; if (f.health !== 'all' && p.health !== f.health) return false;
       if (f.customer !== 'all' && (p.customer || 'No customer') !== f.customer) return false; if (f.type !== 'all' && typeOf(p) !== f.type) return false;
       if (q && !((p.name || '') + ' ' + (p.customer || '')).toLowerCase().includes(q)) return false;
@@ -84,13 +108,13 @@
       return true; });
   }
   function adminBar(all, shown) {
-    const f = AF(), D = V.sdd, dirty = Object.keys(f).some(k => f[k] !== (k === 'q' ? '' : 'all')); const cu = [...new Set(all.map(p => p.customer || 'No customer'))].sort(), ty = [...new Set(all.map(typeOf).filter(Boolean))].sort();
-    return `<div class="dk-fbar" role="group" aria-label="Portfolio filters"><label class="dk-f dk-fq"><span>Search</span><input type="search" data-change="dkAF" data-k="q" value="${esc(f.q || '')}" placeholder="Project or customer" aria-label="Search projects"></label>`
+    const f = AF(), D = V.sdd, dirty = RGA().period !== 'all' || Object.keys(f).some(k => f[k] !== (k === 'q' ? '' : 'all')); const cu = [...new Set(all.map(p => p.customer || 'No customer'))].sort(), ty = [...new Set(all.map(typeOf).filter(Boolean))].sort();
+    return `<div class="dk-fbar" role="group" aria-label="Portfolio filters">${V.range ? V.range.bar('dka', RGA(), { note: 'Projects with activity in this period' }) : ''}<label class="dk-f dk-fq"><span>Search</span><input type="search" data-change="dkAF" data-k="q" value="${esc(f.q || '')}" placeholder="Project or customer" aria-label="Search projects"></label>`
       + sel('dkAF', 'stage', 'Stage', [['all', 'All stages']].concat(D.RSTG.slice(1).map(([id, l]) => [String(id), l]), [['0', 'No dated plan yet']]), f.stage)
       + sel('dkAF', 'health', 'Health', [['all', 'Any health']].concat(D.ORDER.map(h => [h, D.HL[h]])), f.health)
       + sel('dkAF', 'customer', 'Customer', [['all', 'All customers']].concat(cu.map(c => [c, c])), f.customer) + (ty.length ? sel('dkAF', 'type', 'Type', [['all', 'All types']].concat(ty.map(t => [t, t])), f.type) : '')
       + sel('dkAF', 'when', 'Go-live', [['all', 'Any date'], ['late', 'Past target date'], ['30', 'Within 30 days'], ['60', 'Within 60 days'], ['none', 'No date set']], f.when)
-      + `<span class="dk-fc">Showing <b>${shown.length}</b> of ${all.length} project${all.length === 1 ? '' : 's'}</span>${dirty ? '<button type="button" class="dk-fr" data-act="dkAReset">Reset filters</button>' : ''}</div>`;
+      + `<span class="dk-fc">Showing <b>${shown.length}</b> of ${all.length} project${all.length === 1 ? '' : 's'}</span>${dirty ? '<button type="button" class="dk-fr" data-act="dkAReset">Reset filters</button>' : ''}${exportBar('dka', false)}</div>`;
   }
 
   // Pain points and pending: what is late, blocked or waiting, worst first, each one a link to where it is fixed. Team only; every figure is counted from saved records.
@@ -151,13 +175,14 @@
     const D = V.sdd, S = V.sd, C = V.sdc; if (!D || !S || !C) throw new Error('dashboard parts missing');
     const c = D.X(), A = D.areas(c), ov = D.overall(A), k = c.k, pct = D.pct, today = c.today; const { widget, grid, kpi } = S;
     const FS = PF(), win = FS.win, focus = FS.focus, add7 = new Date(Date.parse(today + 'T00:00:00Z') + 7 * 864e5).toISOString().slice(0, 10), me = String((F.S.user && F.S.user.email) || '').toLowerCase();
-    const fa = a => focus === 'all' || (focus === 'overdue' ? !!(a.due && a.due < today) : !!(a.due && a.due >= today && a.due <= add7));   // the Show filter, for actions
+    const rsp = V.range ? V.range.span(RG()) : ['', ''], inR = d => (V.range ? V.range.inRange(d, rsp) : true);
+    const fa = a => inR(a.due) && (focus === 'all' || (focus === 'overdue' ? !!(a.due && a.due < today) : !!(a.due && a.due >= today && a.due <= add7)));   // the Show and period filters, for actions
     const conf = c.R.filter(r => r.status === 'Confirmed').length, signed = ['brd', 'uat', 'golive'].filter(id => c.sg(id).status === 'signed').length;
     const sc = c.spi == null ? null : Math.round(c.spi * 100), ad = c.due.length ? pct(c.hit.length, c.due.length) : null;
     const kpis = [['Overall status', C.rag(ov, D.OV[ov]), A.filter(x => x.s === 'r').length + ' red · ' + A.filter(x => x.s === 'a').length + ' amber · ' + A.filter(x => x.s === 'g').length + ' green', null],
       ['Schedule performance', c.spi == null ? '—' : c.spi.toFixed(2), c.spi == null ? 'needs a dated plan' : c.spi >= 1 ? 'on or ahead of plan' : 'below 1.00 means behind plan', sc == null ? null : Math.min(100, sc)],
       ['Milestone adherence', ad == null ? '—' : ad + '%', c.due.length ? c.hit.length + ' of ' + c.due.length + ' due plan steps are Done' : 'no plan step has come due yet', ad],
-      [k ? 'Waiting on you' : 'Overdue', k ? c.actsOpen.filter(a => a.side === 'customer' && fa(a)).length : c.anyLate.length, k ? 'open actions on your side' : 'actions past their date', null]];
+      [k ? 'Waiting on you' : 'Overdue', k ? c.actsOpen.filter(a => a.side === 'customer' && fa(a)).length : c.anyLate.filter(fa).length, k ? 'open actions on your side' : 'actions past their date', null]];
     const kp = `<div class="sd-kpis">${kpis.map((a, i) => kpi(a[0], a[1], a[2], i === 3 && !k && c.anyLate.length ? BAD : '#3b82f6', a[3])).join('')}</div>`;
     const rg = widget('Delivery progress', 'four measures, one ring each', rings([
       { l: 'Plan done', d: c.st.n ? 'against ' + c.st.planned + '% planned' : 'no dated plan', p: c.st.n ? c.st.actual : null, c: BLUE },
@@ -168,11 +193,11 @@
     const myAll = c.acts.filter(a => a.side === 'customer' && fa(a)), myOpen = open.filter(a => a.side === 'customer');
     const who = k ? widget('Your actions', 'open, overdue and done', C.donut([['Open', myOpen.filter(a => !isLate(a)).length, BLUE], ['Overdue', myOpen.filter(isLate).length, BAD], ['Done', focus === 'all' ? myAll.length - myOpen.length : 0, OK]], String(myOpen.length), 'open', 'No actions recorded yet.'), 4)
       : widget('Who owes what', 'open actions by side', pie([['Facilio', fac.length, NAVY], ['Customer', cus.length, BLUE], ['Overdue', late.length, BAD]], 'No open actions.'), 4);
-    const tks = k ? [] : (V.items && V.items.ready(['task']) ? V.items.list('task') : []).filter(t => FS.who !== 'me' || String(t.owner || '').toLowerCase() === me); const ts = x => (/^(done|closed|resolved|complete|completed|cancelled)$/i.test(x.status || '') ? 'done' : /block/i.test(x.status || '') ? 'blocked' : /progress/i.test(x.status || '') ? 'prog' : 'todo');
+    const tks = k ? [] : (V.items && V.items.ready(['task']) ? V.items.list('task') : []).filter(t => (FS.who !== 'me' || String(t.owner || '').toLowerCase() === me) && inR(t.due || t.eta)); const ts = x => (/^(done|closed|resolved|complete|completed|cancelled)$/i.test(x.status || '') ? 'done' : /block/i.test(x.status || '') ? 'blocked' : /progress/i.test(x.status || '') ? 'prog' : 'todo');
     const by = s => tks.filter(t => ts(t) === s).length;
     const journey = (names) => spine(['brd', 'uat', 'golive'].map(id => { const m = SO[c.sg(id).status] || SO.notdue; return { l: names[id], d: m[0], s: m[1] }; }).concat(c.goDays != null ? [{ l: 'Go-live date', d: V.fmtDate(c.st.goLive) + ' · ' + (c.goDays >= 0 ? c.goDays + ' days to go' : -c.goDays + ' days ago'), s: c.goDays < 0 ? 'bad' : 'next' }] : []));
     const work = k ? widget('Your journey', 'what you are asked to approve', journey({ brd: 'Requirements (BRD)', uat: 'Testing (UAT)', golive: 'Go-live' }), 4)
-      : widget('Work by status', 'all tasks', C.donut([['To do', by('todo'), SLATE], ['In progress', by('prog'), BLUE], ['Blocked', by('blocked'), BAD], ['Done', by('done'), OK]], String(tks.length), 'tasks', 'No tasks yet.'), 4);
+      : widget('Work by status', 'all tasks', C.donut([['To do', by('todo'), SLATE], ['In progress', by('prog'), BLUE], ['Blocked', by('blocked'), BAD], ['Done', by('done'), OK]], String(tks.length), 'tasks', 'No tasks match the filters.'), 4);
     const orb = widget('Health by area', 'one satellite per area', orbit({ g: 'On track', a: 'Attention', r: 'Off track', n: 'No data' }[ov], 'overall', A.map(x => ({ l: x.l, c: RAGC[x.s], d: x.d }))), 7);
     const sp = k ? '' : widget('Sign-off journey', 'BRD, UAT and go-live', journey({ brd: 'BRD', uat: 'UAT', golive: 'Go-live' }), 5);
     const st = s => String(s.status || ''), GRY = '#d4d4d4'; const tcc = c.tcs.map(t => (/^(passed|approved)$/i.test(st(t)) ? OK : /^(failed|blocked)$/i.test(st(t)) ? BAD : /^(not started|ready for testing|deferred|)$/i.test(st(t)) ? GRY : WARN));
@@ -180,7 +205,7 @@
     const dt = widget('Test cases', 'one dot per test case', dots(tcc, [['Passed', cnt(OK), OK], ['In progress', cnt(WARN), WARN], ['Failed or blocked', cnt(BAD), BAD], ['Not started', cnt(GRY), GRY]], 'No test cases yet.'), 6);
     const TY = ['Risk', 'Assumption', 'Issue', 'Dependency'], rd = c.raidOpen, imp = x => x.impact || 'Medium';
     const rw = (!k || (V.custShow && V.custShow('risks'))) ? widget('Open RAID items', 'by type and impact', rows(TY.map(t => ({ l: t, parts: [['High', BAD], ['Medium', WARN], ['Low', GREY]].map(([im, col]) => [rd.filter(x => (x.type || 'Risk') === t && imp(x) === im).length, col, im]) })), [['High', rd.filter(x => imp(x) === 'High').length, BAD], ['Medium', rd.filter(x => imp(x) === 'Medium').length, WARN], ['Low', rd.filter(x => imp(x) === 'Low').length, GREY]], 'Nothing open in the RAID log.'), 6) : '';
-    const ev = (V.events ? V.events({ days: win }) : []).slice(0, 8), need = k ? myOpen.slice().sort((a, b) => (a.due || '9').localeCompare(b.due || '9')).slice(0, 5) : (V.attentionItems ? V.attentionItems() : []).slice(0, 6);
+    const ev = (V.events ? V.events({ days: win }) : []).filter(e => inR(e.date)).slice(0, 8), need = k ? myOpen.slice().sort((a, b) => (a.due || '9').localeCompare(b.due || '9')).slice(0, 5) : (V.attentionItems ? V.attentionItems() : []).slice(0, 6);
     const l1 = widget('Next ' + win + ' days', 'sessions and milestones', list(ev.map(e => line(e.view === 'overview' ? 'governance' : e.view, e.title, V.fmtDate(e.date))), 'Nothing is scheduled in the next 14 days.'), 6);
     const l2 = widget(k ? 'What we need from you' : 'Needs attention', k ? 'open actions, soonest first' : 'worth a look today', list(need.map(a => k ? line('governance', a.text || 'Action', a.due ? V.fmtDate(a.due) : '', isLate(a) ? 'bad' : '') : line(a.view || 'governance', a.t)), k ? 'Nothing is waiting on you right now.' : 'Nothing needs attention right now.'), k ? 5 : 6);
     const top = k ? '' : widget('Pain points and pending', 'worst first, each opens where it is fixed', painList(pains(c).slice(0, 8), 'Nothing is late, blocked or waiting. The project is clear.'), 7) + widget('Stage map', 'how far each stage is, click for its dashboard', mapList(stageMap(c)), 5);
@@ -208,9 +233,16 @@
 
   const ACT = V.ACT;
   ACT.dkF = el => { const k = el.getAttribute('data-k'), v = el.value; PF()[k] = k === 'win' ? Number(v) : v; V.render(); };
-  ACT.dkFReset = () => { ui().dkF = { win: 14, focus: 'all', who: 'all' }; V.render(); };
+  ACT.dkFReset = () => { ui().dkF = { win: 14, focus: 'all', who: 'all' }; ui().dkR = { period: 'all' }; V.render(); };
   ACT.dkAF = el => { AF()[el.getAttribute('data-k')] = el.value; V.setMode('admin'); };
   ACT.dkAQ = el => { const k = el.getAttribute('data-k'); ui().dkA = { stage: 'all', health: 'all', customer: 'all', type: 'all', when: 'all', q: '' }; AF()[k] = el.getAttribute('data-v'); V.setMode('admin'); };   // a pain-point row narrows the portfolio to its projects
-  ACT.dkAReset = () => { ui().dkA = { stage: 'all', health: 'all', customer: 'all', type: 'all', when: 'all', q: '' }; V.setMode('admin'); };
-  V.dk = { pie, rings, dots, orbit, spine, rows, overview, admin, adminBar, filterPortfolio, pains, stageMap, adminPains, adminPainList, none };
+  ACT.dkAReset = () => { ui().dkRA = { period: 'all' }; ui().dkA = { stage: 'all', health: 'all', customer: 'all', type: 'all', when: 'all', q: '' }; V.setMode('admin'); };
+  ACT.dkExp = el => { const k = el.getAttribute('data-k'); try { if (el.getAttribute('data-v') === 'csv') exportCsv(k); else exportHtml(k); } catch (e) { V.toast && V.toast('Could not make the file: ' + (e.message || 'try again'), 5000, true); } };
+  // click a widget anywhere that is not itself a control to open the page its header link names (the link stays for keyboard users)
+  if (typeof document !== 'undefined') document.addEventListener('click', e => {
+    const w = e.target.closest && e.target.closest('.sd-w[data-go], .adx-c[data-gotab]'); if (!w || e.target.closest('a, button, input, select, textarea, label, summary, [data-act], [data-change], [role=link]')) return;
+    if (String(root.getSelection ? root.getSelection() : '')) return;   // the person is selecting text
+    if (w.getAttribute('data-go')) { const b = document.createElement('button'); b.setAttribute('data-view', w.getAttribute('data-go')); ACT.nav(b); } else { ui().admTab = w.getAttribute('data-gotab'); V.setMode('admin'); }
+  });
+  V.dk = { pie, rings, dots, orbit, spine, rows, overview, admin, adminBar, filterPortfolio, pains, stageMap, adminPains, adminPainList, exportBar, none };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -39,7 +39,7 @@
   const wgo = title => (cust() ? null : WGO[title] || (/^Next \d+ days$/.test(title) ? ['plan', 'Open the plan'] : null));
   const kpi = (label, value, sub, c, p) => { const v = kview(label), inner = `<span class="sd-kl">${esc(label)}</span><b class="sd-kv">${value}</b><span class="sd-ks">${sub || ''}</span>${p == null ? '' : `<i class="sd-kb" aria-hidden="true"><u style="width:${Math.max(0, Math.min(100, p))}%"></u></i>`}`;
     return v ? `<button type="button" class="sd-kpi sd-click" style="--c:${c}" data-act="nav" data-view="${v}" title="Open the page behind this number">${inner}</button>` : `<div class="sd-kpi" style="--c:${c}">${inner}</div>`; };
-  const widget = (title, sub, inner, span, c) => { const g = wgo(title); return `<section class="sd-w sd-s${span || 6}"${c ? ` style="--c:${c}"` : ''}><header><h3>${esc(title)}</h3>${sub ? `<span>${esc(sub)}</span>` : ''}${g ? `<button type="button" class="sd-go" data-act="nav" data-view="${g[0]}">${esc(g[1])} <i aria-hidden="true">\u2192</i></button>` : ''}</header><div class="sd-b">${inner}</div></section>`; };
+  const widget = (title, sub, inner, span, c) => { const g = wgo(title); return `<section class="sd-w sd-s${span || 6}"${c ? ` style="--c:${c}"` : ''}${g ? ` data-go="${g[0]}" title="Click to open ${esc(g[1].replace(/^Open (the )?/, ''))}"` : ''}><header><h3>${esc(title)}</h3>${sub ? `<span>${esc(sub)}</span>` : ''}${g ? `<button type="button" class="sd-go" data-act="nav" data-view="${g[0]}">${esc(g[1])} <i aria-hidden="true">\u2192</i></button>` : ''}</header><div class="sd-b">${inner}</div></section>`; };
   const none = C.none;
   const chipT = (t, tn) => ({ h: `<span class="sd-chip ${tn || ''}">${esc(t)}</span>`, t });
   const tone = s => (/^(done|closed|resolved|fixed|signed|confirmed|passed|pass|complete|completed|approved|accepted)$/i.test(s) ? 'ok' : /^(blocked|failed|fail|concern|overdue|rejected)$/i.test(s) ? 'bad' : /^(open|in progress|requested|draft|proposed|to confirm|pending|new)$/i.test(s) ? 'warn' : '');
@@ -200,7 +200,7 @@
     if (cur === 'overview') { const i0 = html.indexOf(mark); if (V.dk && i0 >= 0) { try { return html.slice(0, i0) + mark + tabsHtml(cur, all) + lifecycle() + V.dk.overview() + '</div>'; } catch (e) { console.error(e); } }   // the widget Overview (src/dashkit.js); the older bento below is the fallback
       let ex = ''; try { ex = overviewExtra(); } catch (e) { console.error(e); } return html.replace(mark, () => mark + tabsHtml(cur, all) + lifecycle() + ex); }
     const i = html.indexOf(mark); let body; try { body = cur === 'reports' ? (V.sdReports ? V.sdReports.page() : none('Reports are not available.')) : stagePage(cur); } catch (e) { console.error(e); body = none('This tab could not be drawn.'); }
-    return (i < 0 ? html : html.slice(0, i)) + mark + tabsHtml(cur, all) + body + '</div>';
+    return (i < 0 ? html : html.slice(0, i)) + mark + tabsHtml(cur, all) + (V.dk && cur !== 'reports' ? '<div class="dk-fbar">' + V.dk.exportBar('dk', true) + '</div>' : '') + body + '</div>';
   };
   ACT.sdTab = a => { S.ui.sdTab = a.getAttribute('data-v'); V.render(); };
 

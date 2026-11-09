@@ -1547,3 +1547,10 @@ body .sidebar > .sb-group:not(.sb-stage) .sb-item.active:not(#_):not(#__):not(#_
 /* Admin dashboard click-throughs (src/dashboards.js, src/dashkit.js) */
 body button.adx-stat.adx-click:not(#_):not(#__):not(#___) { text-align: left; cursor: pointer; font: inherit; width: 100%; } body .adx-click:hover { border-color: var(--cs-st1, #d4d4d4); box-shadow: var(--cs-sh8, 0 4px 14px rgba(0, 0, 0, .08)); } body .adx-click:focus-visible { outline: 2px solid var(--cs-brand, #1570EF); outline-offset: 2px; }
 body .adx-c > header { flex-wrap: wrap; } body .adx-go { margin-left: auto; border: 0; background: none; padding: 0; color: var(--cs-brand, #1570EF); font: 500 13px/18px var(--cs-font); cursor: pointer; white-space: nowrap; } body .adx-go:hover { text-decoration: underline; } body .adx-go i { font-style: normal; }
+
+/* Dashboard export bar, calendar bar inside the filter bar, click-anywhere widgets */
+body .dk-exp { display: inline-flex; gap: 8px; margin-left: auto; align-self: flex-end; }
+body .dk-fbar .rgbar { margin: 0; align-self: flex-end; } body .dk-fbar .rg-n { display: none; }
+body .sd-w[data-go], body .adx-c[data-gotab] { cursor: pointer; transition: box-shadow 160ms, border-color 160ms; } body .sd-w[data-go]:hover, body .adx-c[data-gotab]:hover { border-color: var(--cs-st1, #d4d4d4); box-shadow: var(--cs-sh8, 0 4px 14px rgba(0, 0, 0, .08)); }
+body .sd-w[data-go] button, body .sd-w[data-go] a, body .adx-c[data-gotab] button { cursor: pointer; }
+@media print { body .dk-fbar, body .dk-exp, body .sd-go, body .adx-go { display: none !important; } }
