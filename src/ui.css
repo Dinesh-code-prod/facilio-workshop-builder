@@ -1525,3 +1525,22 @@ body .dk-sm i { display: block; height: 8px; border-radius: 4px; background: rgb
 body .dk-sm button:not(#_):not(#__):not(#___) { border: 0 !important; background: transparent !important; box-shadow: none !important; border-radius: 0 !important; padding: 14px 22px !important; min-height: 64px; }
 body .dk-sm button:hover:not(#_):not(#__):not(#___) { background: rgba(0, 0, 0, .03) !important; }
 body .dk-sm:not(#_):not(#__):not(#___) { padding: 0; }
+
+/* ===== Sidebar: the page you are on is unmistakable; stages, sub-tabs and headings read as one hierarchy (9 Nov 2026) ===== */
+body .sidebar .sb-sec:not(#_):not(#__):not(#___):not(#____) { padding-top: 14px; }
+body .sidebar .sb-sec span:not(#_):not(#__):not(#___):not(#____) { font-size: 10.5px !important; font-weight: 700 !important; letter-spacing: .08em; text-transform: uppercase; color: var(--cs-fg3, #737373) !important; }
+body .sidebar .sb-title:not(#_):not(#__):not(#___):not(#____) { font-size: 13.5px !important; font-weight: 600 !important; letter-spacing: -.005em; color: var(--cs-fg2, #404040) !important; border-radius: 8px; transition: background-color .15s ease, color .15s ease; }
+body .sidebar .sb-title:hover:not(#_):not(#__):not(#___):not(#____) { background: rgba(0, 0, 0, .04) !important; color: var(--cs-fg1, #111) !important; }
+body .sidebar .sb-group.has-active > .sb-title:not(#_):not(#__):not(#___):not(#____) { color: var(--cs-fg1, #0a0a0a) !important; font-weight: 700 !important; }
+body .sidebar .sb-no:not(#_):not(#__):not(#___):not(#____) { background: color-mix(in srgb, var(--sg, #1d4ed8) 12%, #fff) !important; color: var(--sg, #1d4ed8) !important; font-weight: 700; }
+body .sidebar .sb-stage.has-active .sb-no:not(#_):not(#__):not(#___):not(#____) { background: var(--sg, #1d4ed8) !important; color: #fff !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--sg, #1d4ed8) 16%, transparent); }
+/* the sub-tabs of an open stage hang on a guide line under its number */
+body .sidebar .sb-stage.open .sb-item:not(#_):not(#__):not(#___):not(#____) { margin-left: 19px; padding: 7px 10px 7px 12px; border-left: 2px solid color-mix(in srgb, var(--sg, #1d4ed8) 18%, transparent) !important; border-radius: 0 8px 8px 0 !important; color: var(--cs-fg2, #404040) !important; font-weight: 500; }
+body .sidebar .sb-item:not(#_):not(#__):not(#___):not(#____) svg, body .sidebar .sb-item:not(#_):not(#__):not(#___):not(#____) .fi { color: var(--cs-fg3, #737373) !important; }
+body .sidebar .sb-item:hover:not(#_):not(#__):not(#___):not(#____) { background: rgba(0, 0, 0, .045) !important; color: var(--cs-fg1, #111) !important; }
+body .sidebar .sb-item:hover:not(#_):not(#__):not(#___):not(#____) svg, body .sidebar .sb-item:hover:not(#_):not(#__):not(#___):not(#____) .fi { color: var(--cs-fg1, #111) !important; }
+/* the page you are on: tinted in its stage colour, a solid bar on the left, bold text, coloured icon */
+body .sidebar .sb-item.active:not(#_):not(#__):not(#___):not(#____), body .sidebar .sb-stage.open .sb-item.active:not(#_):not(#__):not(#___):not(#____) { background: color-mix(in srgb, var(--sg, var(--cs-accent, #1d4ed8)) 11%, #fff) !important; color: color-mix(in srgb, var(--sg, var(--cs-accent, #1d4ed8)) 80%, #000) !important; font-weight: 650 !important; border-left: 3px solid var(--sg, var(--cs-accent, #1d4ed8)) !important; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sg, var(--cs-accent, #1d4ed8)) 16%, transparent); }
+body .sidebar .sb-item.active:not(#_):not(#__):not(#___):not(#____) svg, body .sidebar .sb-item.active:not(#_):not(#__):not(#___):not(#____) .fi { color: var(--sg, var(--cs-accent, #1d4ed8)) !important; }
+body .sidebar .sb-item.active:not(#_):not(#__):not(#___):not(#____)::before { display: none !important; }
+body .sidebar > .sb-group:not(.sb-stage) .sb-item.active:not(#_):not(#__):not(#___):not(#____) { border-radius: 8px !important; }
