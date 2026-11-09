@@ -11,3 +11,8 @@ tests/ui/.devdata.json
 release/
 *.exe
 tests/ui/.devdata*.json
+
+# local-only: other Claude sessions' worktrees, personal Claude settings, the graphify code map
+.claude/worktrees/
+.claude/settings.local.json
+graphify-out/
