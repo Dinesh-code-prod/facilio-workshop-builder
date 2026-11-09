@@ -8,6 +8,7 @@
   const CONNECTOR = 'https://mcp.facilio.work/facilio-delivery-studio';
   const CODE_CMD = 'claude mcp add --transport http facilio-delivery-studio ' + CONNECTOR;
   // [stage, group in the menu, goal, [[page id, label, how, sub-heading in the menu]], done when, watch out]
+  const HIDE_PKG = !!(V.featureHidden && V.featureHidden('orgpkg'));
   const PHASES = [
     ['1', 'Project introduction', 'Agree what is being delivered, by when, and who does what.', [
       ['msaintake', 'Contract intake', 'Add the MSA and order form. Claude reads them with the Microsoft 365 connector; you check the extraction in Transfers and approve it. Check the scope, fees and dates before you rely on them.'],
@@ -46,7 +47,7 @@
       ['hypercare', 'Hypercare', 'Log issues raised after launch and their fixes. Claude can turn open UAT issues and e-mails into hypercare items for you to accept. Share the status.']],
       'Issues are fixed or handed to support, and the customer knows who to call.', 'Keep one list. An issue in e-mail only is an issue nobody owns.'],
     ['8', 'Project handover', 'Hand over cleanly and close.', [
-      ['handover', 'Handover & Closure', 'Record who owns what, hand over to support, review lessons learned, close the project. Drop the org package here and Claude builds the Solution Document.']],
+      ['handover', 'Handover & Closure', 'Record who owns what, hand over to support, review lessons learned, close the project.' + (HIDE_PKG ? '' : ' Drop the org package here and Claude builds the Solution Document.')]],
       'Support owns the steady state and the project is formally closed.', 'Closing with open actions loses the history. Close or move every open item first.']
   ];
 
@@ -56,7 +57,7 @@
     ['Before you start: get access', [
       ['rm-1', 'Ask your lead to add you to the app', 'The Studio is still in review, so only people the owner added can open it (https://facilio-delivery-studio.facilio.work). Sign in with your @facilio.com account. Then your lead adds you to the project you will work on (Project Settings > People).', '', ''],
       ['rm-2', 'Get a Claude account and install the Claude desktop app', 'Use one Claude account everywhere (browser and desktop app), or Claude says Account mismatch. Everything Claude does for the Studio runs on your own plan: no extra key.', '', ''],
-      ['rm-3', 'Install GitHub Desktop and fetch the two Facilio repositories', 'The Facilio skills and the org package folder live in GitHub. Fetch both every day you work, before you use the skills.', '', '']]],
+      ['rm-3', 'Install GitHub Desktop and fetch the two Facilio repositories', HIDE_PKG ? 'The Facilio skills live in GitHub. Fetch them every day you work, before you use the skills.' : 'The Facilio skills and the org package folder live in GitHub. Fetch both every day you work, before you use the skills.', '', '']]],
     ['Day 1, part 1: connect your Claude (about 10 minutes)', [
       ['rm-4', 'Connector 1, needed: Facilio Delivery Studio', 'Claude > Settings > Connectors > Add custom connector. Name: Facilio Delivery Studio. Address: press Copy address. Sign in with your Facilio account. This lets your Claude read your projects and save drafts back.', 'claudesetup', CONNECTOR],
       ['rm-5', 'Connector 2, needed: Microsoft 365', 'Add it from the connector list and sign in. It lets Claude read contracts, e-mails, Teams transcripts and your BRD files in your own Outlook, OneDrive and SharePoint. Claude never sends or moves mail on its own.', '', ''],
@@ -122,16 +123,16 @@
     ['Get your open tasks, or a reminder, in Teams', 'Otto', 'Ask Otto for your tasks. It can also message you about tasks that are due. Reply Done, or press the button.'],
     ['Ask what is open on a project, or find one', 'Connector', 'Ask Claude for a project overview, the open questions, the requirements or the latest activity. It includes task and overdue counts, UAT cases, risks, change requests, sign-offs and the org id.'],
     ['Carry on a deliverable with the Facilio tools (FTR, UAT guide, configuration)', 'Skills: Facilio toolbox', 'Ask Claude which Facilio skill fits this. It asks the connector (get_impl_skills), then you start it with /facilio-impl-toolbox. Needs the one-time setup in Project Settings > Implementation skills.'],
-    ['Build the Solution Document at the end', 'Handover & Closure', 'Drop the org package. Claude builds the Solution Document with the Facilio skill; you read it and accept it.'],
+    ...(HIDE_PKG ? [] : [['Build the Solution Document at the end', 'Handover & Closure', 'Drop the org package. Claude builds the Solution Document with the Facilio skill; you read it and accept it.']]),
     ['Raise or suggest a support ticket', 'Connector', 'Ask Claude to suggest a ticket first; it creates it only when you confirm.'],
     ['Guide steps from a recording you already have', 'Skill: video-to-user-guide', 'Then bring the steps into the Video to Guide tab.'],
     ['Make a video or a walkthrough clip', 'Skills: demo-video, ui-mockup-video, video-editing, remotion-create, remotion-captions', 'Optional.'],
     ['Work with FTR, KPI or UAT spreadsheets', 'Skill: excel-analysis', 'Reads workbooks, pivots and summaries.'],
-    ['Make sense of a big org package or document folder', 'Skill: graphify', 'Builds a graph so questions are answered from it.']];
+    ...(HIDE_PKG ? [] : [['Make sense of a big org package or document folder', 'Skill: graphify', 'Builds a graph so questions are answered from it.']])];
 
   const RULES = [
     ['Do', ['Confirm requirements with the customer before generating the BRD.', 'Keep a source (transcript, email, document) on every requirement and decision.', 'Record sign-offs with evidence.', 'Use a change request for anything outside the signed scope.', 'Read the before and after before you press Accept on anything Claude proposes.', 'Give every action an owner and a due date.']],
-    ['Do not', ['Do not treat an AI draft as final. Read it and fix it.', 'Do not export the organisation package before the BRD is signed off, except as a draft.', 'Do not paste customer passwords or keys into notes, tasks or AI prompts.', 'Do not close a task with a customer question unless the final answer is recorded.']]];
+    ['Do not', ['Do not treat an AI draft as final. Read it and fix it.', ...(HIDE_PKG ? [] : ['Do not export the organisation package before the BRD is signed off, except as a draft.']), 'Do not paste customer passwords or keys into notes, tasks or AI prompts.', 'Do not close a task with a customer question unless the final answer is recorded.']]];
   const op = id => ((S.ui && S.ui.tgOpen) || []).includes(id) ? ' open' : '';   // which folds are open survives the page being redrawn (ticking a step redraws it)
   const key = () => 'fwb_tguide_' + (S.project && S.project.id) + '_' + ((S.user && S.user.id) || '');
   const getDone = () => { try { return new Set(JSON.parse(localStorage.getItem(key()) || '[]')); } catch (e) { return new Set(); } };

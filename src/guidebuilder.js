@@ -7,7 +7,7 @@
   const { tag, drawer, closeDrawer, toast, ico, confirmDialog } = V;
   const canEdit = () => !V.isCustomer() && !S.readonly; const canApprove = () => !V.isCustomer() && S.project && S.project.role === 'owner';
   const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-  const TABS = [['content', 'Content'], ['update', 'Update from configuration'], ['versions', 'Version history'], ['brand', 'Branding'], ['checks', 'Quality checks'], ['export', 'Export']];
+  const TABS = [['content', 'Content'], ...((V.featureHidden && V.featureHidden('orgpkg')) ? [] : [['update', 'Update from configuration']]), ['versions', 'Version history'], ['brand', 'Branding'], ['checks', 'Quality checks'], ['export', 'Export']];
   let W = null, WID = null, timer = null, saving = false, dirtyAt = 0;
   const strip = t => String(t || '').replace(/\s*\[S\d+\]/g, '');
   const when = d => d ? V.fmtDate(d) : '';

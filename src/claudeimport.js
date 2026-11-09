@@ -51,6 +51,7 @@
           <div class="ci-prev"><b class="xs">Preview</b><pre>${esc(X.text.slice(0, 900))}${X.text.length > 900 ? '\n…' : ''}</pre></div>`; }
       else if (X.kind === 'sheet') { const k = X.sheet.kind; const nm = x => ({ plan: 'a <b>project plan</b> (tasks with start dates)', tasks: 'a <b>task list</b> (issues with status, owner or ETA)', other: 'a spreadsheet that is not clearly tasks or a plan' })[x];
         result = `${head}<div class="notice"><span>This is ${nm(k)}. Sheets: ${X.sheet.sheets.map(esc).join(', ')}.</span></div><p class="small muted" style="margin:8px 0 0">${k === 'plan' ? 'Using it as the plan opens the Project Plan import and builds the timeline. ' : ''}Importing as tasks opens the Tasks import where you choose sheets, check the column mapping and review every row before anything is saved.</p>`; }
+      else if (X.kind === 'package' && (V.featureHidden && V.featureHidden('orgpkg'))) result = `${head}<div class="notice warn"><span>This kind of file is not read here.</span></div>`;
       else if (X.kind === 'package') result = `${head}<div class="notice"><span>This is an <b>organisation package</b> (it has PackageConf.xml). Package Analysis reads it and shows what is configured. To start a project from it, use New project and choose the package.</span></div>`;
       else if (X.kind === 'zip') result = `${head}<div class="notice warn"><span>This .zip has no PackageConf.xml, so it is not an organisation package. Unzip it and import the files inside one by one.</span></div>`;
       else if (X.kind === 'xml') result = `${head}<div class="notice warn"><span>A single XML file cannot be imported on its own. Configuration comes in as an organisation package (.zip with PackageConf.xml). If Claude made the XML, ask it to put the files in that structure, or paste the XML as text to keep it as a draft.</span></div>`;
@@ -62,7 +63,7 @@
     const go = (act, label, primary) => `<button class="btn${primary ? ' primary' : ''}" data-act="${act}">${label}</button>`; let b = '';
     if (X && X.kind === 'text') b = (parseFindings(X.text).length ? go('ciFindings', 'Create tasks from findings', true) : '') + go('ciDraft', 'Import as draft', !parseFindings(X.text).length);
     else if (X && X.kind === 'sheet') b = (X.ext !== 'csv' && X.sheet.kind === 'plan' ? go('ciPlan', 'Use as the project plan') : '') + go('ciTasks', 'Import as tasks…', X.sheet.kind !== 'plan');
-    else if (X && X.kind === 'package') b = go('ciPkg', 'Open Package Analysis', true);
+    else if (X && X.kind === 'package' && !(V.featureHidden && V.featureHidden('orgpkg'))) b = go('ciPkg', 'Open Package Analysis', true);
     return `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button>${b}`;
   }
   const open = () => drawer('Import from Claude', body(), foot());

@@ -20,10 +20,16 @@ await go('settings'); await p.waitForSelector('.st-sec', { timeout: 10000 }); aw
 check('Project settings shows no org package folder or package wording', !/Org package folder|org package/i.test(await p.evaluate(() => document.body.innerText)));
 await go('teamhelp'); await p.waitForTimeout(1200);
 check('the Team Guide does not list the configuration and org package page', !/Configuration & org package|Link the org package folder/.test(await p.evaluate(() => document.body.innerText)));
+await go('handover'); await p.waitForTimeout(1500);
+check('Handover has no Solution and configuration tab and no org package helper', !/Solution and configuration|Org package analysis|org package/i.test(await p.evaluate(() => document.body.innerText)));
+await go('guidebuilder'); await p.waitForTimeout(1500);
+check('the User Guide Builder has no Update from configuration tab', !/Update from configuration/.test(await p.evaluate(() => document.body.innerText)));
 check('no page errors while hidden', errs.length === 0, errs.slice(0, 2).join(' | '));
 // switched on: the pages are back (for the person who unhides them)
 await p.evaluate(() => { window.FWBViews.FEATURES.orgPackage = true; });
 const on = await menu(); check('with the switch on, the configuration and org package page is back in the menu', on.includes('cfginputs'));
 await go('orgpkg'); await p.waitForTimeout(1500);
 check('with the switch on, the org package export opens', /Org Package Export|Configuration/i.test(await p.evaluate(() => (document.querySelector('.page-header h1') || {}).textContent || '')));
+await go('handover'); await p.waitForTimeout(1500);
+check('with the switch on, Handover has its Solution and configuration tab again', /Solution and configuration/.test(await p.evaluate(() => document.body.innerText)));
 console.log(res.filter(Boolean).length + '/' + res.length + ' checks passed'); await b.close(); process.exit(res.every(Boolean) ? 0 : 1);
