@@ -309,3 +309,4 @@ One line per deploy: date and time (UTC), commit, deploy number, who ran it, not
 | 2026-11-09 | a2acaae | next | dinesh.r@facilio.com (Claude Code) | 305 files, 44.9 MB. Assistant chat: Enter sends, Shift+Enter new line; merged main. Review pending. npm test passed; not checked on the live site. |
 | 2026-11-09 18:32 UTC | b731124 | 395 | dinesh.r@facilio.com (Claude Code) | 305 files, 45.0 MB. The chat reads what is asked (filters, follow-ups) and the AI step gets the recent chat and the same reading. |
 | 2026-11-09 18:35 UTC | 6ac4fa4 | 396 | dinesh.r@facilio.com (Claude Code) | 305 files, 45.0 MB. Claude usage in the assistant: opening the chat or Update now asks your Claude for a fresh report on its next queue run. |
+| 2026-11-09 18:42 UTC | 4e6936c | 397 | dinesh.r@facilio.com (Claude Code) | 305 files, 45.0 MB. The chat also understands requirements and open questions, and AI tasks with a typed instruction apply the filter the person means. |
