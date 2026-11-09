@@ -10,3 +10,11 @@ console.log(n + ' assistant router checks passed');
   assert.ok(a.includes("const wantEnd = (a.open && !panel._open)") && a.includes('toEnd()') && a.includes("scrollBehavior = 'auto'"), 'the chat opens on the newest message, with no smooth scroll from the top');
   assert.ok(a.includes('class="as-opts"') && a.includes('data-act="asstPick"') && a.includes('class="as-q"'), 'what Claude asks sits above the message box in full, with its answer buttons');
   assert.ok(c.includes('#asst .as-ask:not(#_):not(#__) { max-height: min(42vh, 320px)'), 'the question box is no longer cut at 96 px'); console.log('  ok  the chat opens on the newest message and Claude\'s question is shown in full above the message box'); }
+{ const a = fs.readFileSync('src/assistant.js', 'utf8'), s = fs.readFileSync('work/server/api.mjs', 'utf8').split('\n');
+  assert.ok(s.join('\n').includes('"parts":[{"text":string,"route"') && s.join('\n').includes('parts: cleanParts(j.parts)') && s.join('\n').includes('parts: splitHeur(msg)'), 'the router returns parts, from the model or from plain rules');
+  const split = new Function(s.find(l => l.startsWith('  const routeHeur')) + '\n' + s.find(l => l.startsWith('  const splitHeur')) + '\nreturn splitHeur;')();
+  const p = split('What is the go-live date? Update the whole kick-off deck in a nicer way'); assert.deepEqual(p.map(x => x.route), ['lookup', 'heavy']); assert.equal(p[0].text, 'What is the go-live date?');
+  const q = split('is the kickoff deck updated and also draft a reply to Sara about the SLA wording'); assert.deepEqual(q.map(x => x.route), ['lookup', 'small']); assert.ok(!/ and$/.test(q[0].text));
+  assert.deepEqual(split('update the BRD'), []); assert.deepEqual(split('explain the go-live plan'), []);
+  assert.ok(a.includes('async function splitSend') && a.includes('plan.parts.length > 1') && a.includes("p.route === 'small' || p.route === 'heavy'") && a.includes('plan && plan.quiet') && a.includes('lookNote(note)'), 'look-ups are answered here, the work goes to Claude as one request, and the look of a deck is said to be out of reach');
+  console.log('  ok  a message with several asks is split: look-ups answered now by DeepSeek, the work to Claude as one request, and what went where is said in the chat'); }

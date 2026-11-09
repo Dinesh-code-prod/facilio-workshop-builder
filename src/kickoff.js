@@ -112,7 +112,7 @@
   function deckCard(p) {
     if (!root.FWBKickoffDeck) return ''; const k = K(); const d = deckHtml(p, k.slide || 0);
     return `<section class="card ko-card" aria-label="Kick-off deck"><div class="card-h"><b>Kick-off deck preview</b><span class="xs muted">${d.n} slides${d.skipped.length ? '. Left out because nothing to show: ' + esc(d.skipped.join(', ')) : ''}</span></div>
-      <div class="card-b"><div class="ko-deck"><iframe title="Kick-off deck preview" sandbox="" srcdoc="${esc(d.html)}"></iframe></div>
+      <div class="card-b"><div class="ko-deck"><iframe title="Kick-off deck preview" data-deck="1" sandbox="" srcdoc="${esc(d.html)}"></iframe></div>
       <div class="row ko-btns"><button type="button" class="btn sm" data-act="koSlide" data-d="-1">Previous slide</button><span class="xs muted" id="koSlideNo">Slide ${d.k} of ${d.n}: ${esc(d.names[d.k - 1] || '')}</span><button type="button" class="btn sm" data-act="koSlide" data-d="1">Next slide</button><button type="button" class="btn sm" data-act="koSlideAi" title="Ask Claude to change what this slide says"${ro() ? ' disabled' : ''}>Change this slide with AI</button><span class="spacer"></span>
       <button type="button" class="btn sm primary" data-act="koDlDeck">Download kick-off deck (HTML)</button><button type="button" class="btn sm" data-act="koDlPlan">Download project plan (HTML)</button></div>
       <p class="xs muted">The downloaded deck has all slides, arrow keys and full screen, works offline, and is marked draft until approved.</p></div></section>`;
@@ -142,7 +142,7 @@
     const head = '<div class="page-header"><div class="t"><h1>Project introduction</h1><p>The kick-off prepared from the contract: scope, the deck and your change requests. Review it, correct it and approve it.</p></div></div>';
     const k = K(); if (k.pid !== pid()) reset(k); const p = pack();
     if (!p) return head + '<div class="page-body ko"><div class="card ko-card"><div class="card-b"><p>Nothing to show yet. Upload the MSA on the Contract intake tab; Claude drafts the kick-off from it.</p><div class="row ko-btns"><button type="button" class="btn sm primary" data-act="nav" data-view="msaintake">Go to Contract intake</button></div></div></div></div>';
-    return head + '<div class="page-body ko">' + (p.status === 'discarded' ? '<div class="notice small">This draft was discarded. Upload the MSA again on the Contract intake tab.</div>' : '') + packCards(p) + crCard() + safeDeck(p) + reviewCard(p) + approveBar(p) + '</div>';
+    return head + '<div class="page-body ko">' + (p.status === 'discarded' ? '<div class="notice small">This draft was discarded. Upload the MSA again on the Contract intake tab.</div>' : '') + safeDeck(p) + crCard() + packCards(p) + reviewCard(p) + approveBar(p) + '</div>';
   }
   V.msaintake = { html() { return V.isCustomer() ? '' : intakePage(); }, mount() { if (V.isCustomer()) return; load(false); poll(); syncStruct(); syncSessions(); syncWorkbook(); } };
   // The team gets this page; customers keep the older Kick-off Deck viewer.
@@ -161,6 +161,8 @@
   ACT.koDlDeck = () => { const p = pack(); if (!p) return; try { V.download(file('kickoff'), new Blob([root.FWBKickoffDeck.build(p.deck, { fmt: dt }).html], { type: 'text/html' })); } catch (e) { toast('The deck could not be built: ' + (e.message || 'unknown error'), 6000, true); } };
   ACT.koDlPlan = () => { const p = pack(); if (!p) return; try { V.download(file('project-plan'), new Blob([root.FWBPlanHtml.build(F.doc('kickoff_pack'), { customer: S.project.customer, project: S.project.name, fmt: dt })], { type: 'text/html' })); } catch (e) { toast('The plan could not be built: ' + (e.message || 'unknown error'), 6000, true); } };
   ACT.koSlide = a => { const p = pack(); if (!p) return; const k = K(); const d = deckHtml(p, (k.slide || 0) + (+a.getAttribute('data-d') || 0)); k.slide = d.k - 1; const fr = document.querySelector('.ko-deck iframe'); if (fr) fr.srcdoc = d.html; const no = document.getElementById('koSlideNo'); if (no) no.textContent = 'Slide ' + d.k + ' of ' + d.n + ': ' + (d.names[d.k - 1] || ''); };
+  // the bigger view of the deck asks for the next or previous slide (src/bigview.js): the small preview moves with it, and the new slide comes back as a page
+  V.bvStep = d => { const p = pack(); if (!p) return null; ACT.koSlide({ getAttribute: () => String(d) }); const dd = deckHtml(p, K().slide || 0); return { html: dd.html, label: 'Slide ' + dd.k + ' of ' + dd.n + ': ' + (dd.names[dd.k - 1] || '') }; };
   // one slide, one request: the change-request box opens with the slide named, the person says what should change, and Claude applies it to the data that slide shows
   ACT.koSlideAi = () => { const p = pack(); if (!p || ro()) return; const k = K(), d = deckHtml(p, k.slide || 0), ta = document.getElementById('koCr'); k.cr = 'Slide ' + d.k + ' (' + (d.names[d.k - 1] || '') + '): '; if (ta) { ta.value = k.cr; ta.scrollIntoView({ block: 'center' }); ta.focus(); ta.setSelectionRange(k.cr.length, k.cr.length); } V.toast('Say what should change on this slide, then press Send to Claude.', 5000); };
   // Called after an MSA file is stored (Bring in, Contract tab): asks Claude to read it, so the kick-off is drafted without another click. The same request twice is one job.

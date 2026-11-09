@@ -18,3 +18,17 @@ console.log(`${n} kick-off deck checks passed`);
     const ko = fs.readFileSync('src/kickoff.js', 'utf8'); assert.ok(ko.includes('data-act="koSlideAi"') && ko.includes("'Slide ' + d.k + ' ('"));
     assert.match(J.KINDS.apply_change.recipe, /starts with Slide N \(name\)/); });
 }
+{ const u = (name, fn) => { fn(); console.log('  ok  ' + name); };
+  u('a list too long for one slide goes on continuation slides and every item is still shown (nothing is cut off)', () => {
+    const many = (p, n, len) => Array.from({ length: n }, (_, i) => p + ' ' + (i + 1) + ' ' + 'word '.repeat(len));
+    const d = Object.assign({}, full, { risks: many('Risk item', 14, 22), scope: many('Scope item', 14, 14), governance: many('Rule', 12, 10), objectives: many('Goal', 8, 18), outOfScope: many('Out', 12, 8), customerAsks: many('Ask', 12, 15).map(x => ({ text: x })) });
+    const r = K.build(d); for (const nm of ['Risks', 'Scope', 'Governance', 'Goals of the meeting', 'In and out of scope', 'What we need from you']) assert.ok(r.slides.includes(nm + ' (2)'), nm + ' continues on a second slide');
+    for (const k of [...d.risks, ...d.scope, ...d.governance, ...d.objectives, ...d.outOfScope]) assert.ok(r.html.includes(k.trim()), 'missing: ' + k.slice(0, 20));
+    assert.ok(K.build(full).slides.every(s => !/\(\d+\)$/.test(s)), 'a short project makes no continuation slides'); });
+}
+{ const fs = await import('node:fs'); const bv = fs.readFileSync('src/bigview.js', 'utf8'), ko = fs.readFileSync('src/kickoff.js', 'utf8'), J = await import('../work/server/_jobs.mjs'); const u = (name, fn) => { fn(); console.log('  ok  ' + name); };
+  u('the deck preview is on top of the kick-off page, and its bigger view has Previous, Next and the arrow keys', () => {
+    assert.ok(ko.includes('+ safeDeck(p) + crCard() + packCards(p) + reviewCard(p) +') && ko.includes('data-deck="1"') && ko.includes('V.bvStep = '));
+    assert.ok(bv.includes("k === 'ArrowRight'") && bv.includes("k === 'ArrowLeft'") && bv.includes('data-bv="prev"') && bv.includes('data-bv="next"') && bv.includes("a === 'prev' || a === 'next'")); });
+  u('Claude is told to answer a deck change with what it changed and what it did not (and that the look is not its to change)', () => { assert.match(J.KINDS.apply_change.recipe, /"Changed:".*"Not changed:".*look of the deck/); });
+}
