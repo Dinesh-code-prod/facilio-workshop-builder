@@ -1552,3 +1552,7 @@ body .lc-more:not(#_):not(#__) { margin: 10px 0 4px; } body .lc-more > summary:n
 body .lc-more[open] > summary:not(#_):not(#__) { margin-bottom: 8px; }
 body .dr-fdet:not(#_):not(#__) { border-top: 1px solid var(--cs-st2, #eef1f7); } body .dr-fdet > summary:not(#_):not(#__) { cursor: pointer; padding: 10px 16px; font-weight: 600; font-size: 14px; color: var(--cs-fg1); }
 body .dr-actions:not(#_):not(#__) { display: inline-flex; gap: 6px; flex-wrap: wrap; align-self: end; }
+
+/* ===== Buttons on the dark banners: the icon takes the colour of the label (white), never the dark ink of the page (9 Nov 2026) ===== */
+body .page-header .btn:not(#_):not(#__):not(#___):not(#____) svg, body .page-header .btn:not(#_):not(#__):not(#___):not(#____) .fi, body .adm-hero .btn:not(#_):not(#__):not(#___):not(#____) svg, body .adm-hero .hm-btn:not(#_):not(#__):not(#___):not(#____) svg, body .main[data-sec] > .page > .page-header .btn:not(#_):not(#__):not(#___):not(#____) svg { color: #fff !important; stroke: currentColor !important; }
+body .btn.primary:not(#_):not(#__):not(#___):not(#____) svg, body .btn.primary:not(#_):not(#__):not(#___):not(#____) .fi { color: currentColor !important; stroke: currentColor; }
