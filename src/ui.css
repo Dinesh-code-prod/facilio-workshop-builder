@@ -471,6 +471,16 @@ body *::-webkit-scrollbar { width: 10px; height: 10px; } body *::-webkit-scrollb
 /* switches and tick boxes use the blue; links are blue and underline only on hover */
 body input[type="checkbox"], body input[type="radio"], body input[type="range"] { accent-color: var(--cs-primary); }
 body .main a:not(.btn):not([class*="card"]):not(#_):not(#__) { text-underline-offset: 3px; }
+/* weights: Apple carries hierarchy with semibold (600), not 700 or 800 */
+body :is(b, strong, h2, h3, h4, th, .pink-label, .sd-kv, .tr-n, .wf-title, .dkv-gl, .tg2-n, .pp-step, .pp-stage-label, .iso-chip, .wn-v, .wn-k, .wn-a, .small b, .v):not(#_):not(#__):not(#___) { font-weight: 600 !important; }
+body .upnext-k:not(#_):not(#__) { text-transform: none !important; letter-spacing: .01em !important; }
+/* dashed empty states and add-boxes become soft solid panels */
+body .empty:not(#_):not(#__), body td.empty:not(#_):not(#__), body .brd-add:not(#_):not(#__) { border-style: solid !important; border-color: rgba(0, 0, 0, .08) !important; background: var(--cs-bg3) !important; border-radius: var(--cs-r-ctl); }
+/* controls built by single pages: round them like the rest */
+body :is(.rgdd-btn, .tl-gsel, .dkv-i, .fb-seg, .rv-box, .wn-chip):not(#_):not(#__):not(#___) { border-radius: 10px !important; }
+body .wn-chip.on:not(#_):not(#__):not(#___) { background: var(--cs-primary) !important; color: #fff !important; }
+/* panels built by single pages: 16 px corners, a hairline, the soft shadow */
+body :is(.tl-row, .dkv-side, .dkv-h, .dkv-frame, .tg2-first, .wn-card, .ds-panel, section.mk, section.rv, .mnu-list, .pp-tile):not(#_):not(#__):not(#___) { border-radius: 16px !important; }
 
 /* ---- settings pages (coss ui pattern): the name and a short description on the left, the form card on the right, buttons in a footer bar ---- */
 body .st-wrap { max-width: 1040px; }
