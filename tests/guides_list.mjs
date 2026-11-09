@@ -37,3 +37,8 @@ console.log(n + ' guides overview checks passed');
   u('the Training page has two tabs (Guides, Videos), the Meteor and Comet panel, and an Open here button on saved links', () => { const g = fs4.readFileSync('src/guideslist.js', 'utf8'), w = fs4.readFileSync('src/webframe.js', 'utf8'); assert.ok(g.includes("['guides', 'Guides'") && g.includes("['videos', 'Videos'") && g.includes('Meteor and Comet: what they bring') && g.includes('data-act="wfDock" data-url='));
     assert.ok(w.includes("a.getAttribute('data-url')") && w.includes('W.isAllowed(u)')); });
 }
+{ // Training page layout: one maker in three steps, one library, a video filter
+  const fs5 = await import('node:fs'); const g = fs5.readFileSync('src/guideslist.js', 'utf8'); const u = (name, fn) => { fn(); console.log('  ok  ' + name); };
+  u('Guides has three tabs (Make, Review, Library) and Videos has three (To make, Ready, Add); sources are optional and folded away', () => { assert.ok(g.includes("['make', 'Make', '']") && g.includes("['review', 'Review'") && g.includes("['library', 'Library', '']") && g.includes("['make', 'To make'") && g.includes("['ready', 'Ready'") && g.includes("['add', 'Add', '']") && g.includes('ACT.tgSub') && g.includes('ACT.tgFold') && g.includes('Add sources (optional)') && g.includes('ACT.tgOpenUg') && g.includes('Guides made')); });
+  u('a link pasted in the Add tab sends the video to Ready, none sends it to To make', () => { assert.ok(g.includes('tgv_u') && g.includes("vurl ? 'ready' : 'make'")); });
+}

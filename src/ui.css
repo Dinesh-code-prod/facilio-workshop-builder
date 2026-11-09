@@ -1998,6 +1998,23 @@ body .rs-c-pick { width: 48px; text-align: center !important; } body .rs-c-pick 
 body .rs-c-quote blockquote { margin: 0; padding: 0 0 0 12px; border: 0; border-left: 3px solid var(--cs-accent-line, #b2ccff); background: none; font: 400 14px/21px var(--cs-font); color: var(--cs-fg2); } body .rs-c-src div { font: 400 13px/19px var(--cs-font); color: var(--cs-fg2); } body .rs-c-src div:first-child { font-weight: 500; color: var(--cs-fg1); }
 body .rs-none { color: #a3a3a3; font: 400 13.5px/20px var(--cs-font); } body .rs-c-act .ko-btns { display: flex; flex-wrap: wrap; gap: 8px; max-width: none; } body .rs-c-st .xs { margin-top: 6px; }
 body table.rs-ov td:not(#_):not(#__):not(#___):not(#____) { vertical-align: middle !important; }
+/* Training page, second pass (user, 9 Nov 2026): one maker with three steps on the left, one library on the right, a slim Meteor and Comet strip */
+body .tr-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(300px, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 1000px) { body .tr-grid { grid-template-columns: 1fr; } }
+body .tr-h2 { margin: 0; font: 600 13px/18px var(--cs-font, inherit); color: var(--cs-fg3, #6b7280); letter-spacing: .02em; text-transform: none; }
+body .tr-about { border: 1px solid var(--cs-st2, #e5e5e5); border-radius: 12px; background: #fff; }
+body .tr-about > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; cursor: pointer; list-style: none; }
+body .tr-about > summary::-webkit-details-marker { display: none; }
+body .tr-about > summary:focus-visible { outline: 2px solid #1570EF; outline-offset: 2px; border-radius: 12px; }
+body .tr-about[open] > summary { border-bottom: 1px solid var(--cs-st2, #e5e5e5); }
+body .tr-about > .tr-two { padding: 14px; }
+body .tr-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--cs-st2, #e5e5e5); }
+body .tr-src { padding: 12px 14px; border: 1px solid var(--cs-st2, #e5e5e5); border-radius: 12px; }
+body .tr-src-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+body .tr-chk { display: flex; align-items: center; gap: 8px; padding: 5px 0; cursor: pointer; }
+body .tr-wiz .card { margin: 0; }
+body .tr-sub { align-self: flex-start; max-width: 100%; overflow-x: auto; margin-bottom: 2px; }
+body .tr-sub button { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
 
 /* Notifications (src/bell.js): every row says what it is (icon, type, state), which project and when; unread has a dot. The Assistant header is highlighted (src/assistant.js). */
 #bellPop:not(#_):not(#__) { width: min(460px, calc(100vw - 24px)); border-radius: 18px; }
