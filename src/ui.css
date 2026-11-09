@@ -1819,3 +1819,11 @@ body .drawer-b .xs.muted:not(#_):not(#__), body .drawer-b .small.muted:not(#_):n
 body .drawer-b .row:not(#_):not(#__) { gap: 8px; }
 @media (max-width: 640px) { body .drawer-b .fgrid:not(#_):not(#__) { grid-template-columns: 1fr; } }
 body .drawer.compact .drawer-b:not(#_):not(#__) { gap: 0; } body .drawer.compact .drawer-b > * + *:not(label.f + *):not(#_):not(#__) { margin-top: 10px; }   /* small dialogs: the gap comes from the same label rules, not from the grid */
+/* Project settings (9 Nov 2026): the hint beside each section's Save button */
+body .st-foot .st-hint { margin-right: auto; font-size: 13px; color: var(--cs-fg4); }
+/* the team and stakeholder tables: fixed, even columns; inputs fill their cell; a clear empty state */
+body .st-card .tbl:has(> thead th:nth-child(6)):not(#_):not(#__) { width: 100%; table-layout: fixed; }
+body .st-card .tbl:has(> thead th:nth-child(6)) th:nth-child(1) { width: 19%; } body .st-card .tbl:has(> thead th:nth-child(6)) th:nth-child(2) { width: 22%; } body .st-card .tbl:has(> thead th:nth-child(6)) th:nth-child(3) { width: 27%; }
+body .st-card .tbl:has(> thead th:nth-child(6)) th:nth-child(4) { width: 15%; } body .st-card .tbl:has(> thead th:nth-child(6)) th:nth-child(5) { width: 150px; } body .st-card .tbl:has(> thead th:nth-child(6)) th:nth-child(6) { width: 44px; }
+body .st-card .tbl td input:not(#_):not(#__), body .st-card .tbl td select:not(#_):not(#__) { width: 100%; min-width: 0; box-sizing: border-box; }
+body .st-card .tbl td.empty:not(#_):not(#__) { padding: 24px 12px; text-align: center; border: 0 !important; background: transparent !important; color: var(--cs-fg4); }
