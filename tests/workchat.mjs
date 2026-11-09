@@ -27,4 +27,9 @@ t('a Claude reply can carry a heading with the question, the area, an Open link 
   assert.ok(h.includes('ki-reQ') && h.includes('Which &quot;file&quot; is it?') && h.includes('ki-area') && h.includes('data-act="koOpen" data-view="brd"') && h.includes('data-act="asstQuote" data-q="Which file"'));
   assert.equal(h.split('ki-re"').length, 2, 'one heading only');
 });
+t('a reply names who wrote it: DeepSeek, Claude or the project records; your own message and unknown engines show no label', () => {
+  assert.match(W.feed([{ who: 'claude', via: 'deepseek', text: 'a' }]), /ki-via deepseek"><i><\/i>DeepSeek</);
+  assert.match(W.feed([{ who: 'claude', via: 'claude', text: 'a' }]), />Claude</); assert.match(W.feed([{ who: 'claude', via: 'app', text: 'a' }]), />Project records</);
+  assert.ok(!W.feed([{ who: 'you', via: 'deepseek', text: 'a' }]).includes('ki-via') && !W.feed([{ who: 'claude', via: '<b>', text: 'a' }]).includes('ki-via'));
+});
 console.log(n + ' work chat checks passed');

@@ -265,7 +265,7 @@
       },
       "maxChars": {
        "type": "number",
-       "description": "Largest size of the pack in characters (default 80000, at most 200000)"
+       "description": "Largest size of the pack in characters (default 30000, at most 200000)"
       }
      },
      "required": [
@@ -956,7 +956,7 @@
    },
    {
     "name": "transfer_write",
-    "description": "Create or change a transfer; no destination is touched. action begin: find or start one (safe to repeat). action store: content as the next version (the first version moves it to Retrieved or Draft Generated, never Approved; baseVersion refuses a stale write). action submit: put it up for review (Awaiting Review). Claude cannot approve: a project owner approves in Delivery Studio.",
+    "description": "Create or change a transfer; no destination is touched. begin: find or start one (safe to repeat). store: content as the next version (never Approved; baseVersion refuses a stale write). submit: put it up for review. Claude cannot approve; a project owner does that in Delivery Studio.",
     "function": "api",
     "input_schema": {
      "type": "object",
@@ -1078,7 +1078,7 @@
    },
    {
     "name": "transfer_push",
-    "description": "Push steps for the APPROVED version; ask the person to confirm first. action push_begin: records the confirmation and returns a one-time nonce valid 15 minutes (do not touch the destination before it succeeds). action report: the result of the push (outcome pushed needs the nonce, a receipt and destRef; failed records the error). action verify: the sha-256 of what you read back; Synchronized only if it equals the approved version. These are Claude's own reports: Delivery Studio cannot see the destination.",
+    "description": "Push steps for the APPROVED version; ask the person to confirm first. push_begin: records the confirmation, returns a one-time nonce (15 minutes); do not touch the destination before it succeeds. report: the result (pushed needs nonce, receipt, destRef; failed records the error). verify: sha-256 of what you read back; Synchronized only if it equals the approved version. These are your own reports; Delivery Studio cannot see the destination.",
     "function": "api",
     "confirm": true,
     "input_schema": {
@@ -1148,7 +1148,7 @@
    },
    {
     "name": "msa_extraction_save",
-    "description": "Save the extraction of an MSA that you read yourself with the Microsoft 365 connector (SharePoint or OneDrive). Delivery Studio cannot read Microsoft 365. It is validated, stored as an unapproved transfer version (kind msa) and submitted for review; a person must approve it in Delivery Studio, Claude cannot. Give a project to keep it there, or leave project out to keep it in your own holding space until a project is created from it. Label every item: origin contract (the MSA says so, with page, section or quote), interpreted (your reading) or assumed. Nothing is invented: leave a value out when the MSA does not give it.",
+    "description": "Save an MSA extraction you read yourself with the Microsoft 365 connector (Delivery Studio cannot read Microsoft 365). Stored as an unapproved transfer version (kind msa) and submitted for review; only a person can approve it. Give a project, or leave it out to keep it in your holding space. Label every item origin contract (page, section or quote), interpreted or assumed; leave out what the MSA does not give.",
     "function": "api",
     "input_schema": {
      "type": "object",
@@ -1186,7 +1186,7 @@
    },
    {
     "name": "create_project_from_msa",
-    "description": "Create a NEW project from an MSA extraction that a person has APPROVED in Delivery Studio (status Approved). Ask the person to confirm first, then pass confirm true. It writes the customer, name, dates, scope items and contract fields into the Contract workspace and Know Your Contract. Safe to repeat: a second call returns the project already made. It never changes an existing project. Use project \"holding\" or leave project out when the extraction is in your holding space.",
+    "description": "Create a NEW project from an MSA extraction a person has APPROVED in Delivery Studio. Ask the person first, then pass confirm true. Safe to repeat (a second call returns the project already made); never changes an existing project. Use project \"holding\" or omit it for the holding space.",
     "function": "api",
     "confirm": true,
     "input_schema": {
