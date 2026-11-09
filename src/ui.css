@@ -1827,3 +1827,13 @@ body .st-card .tbl:has(> thead th:nth-child(6)) th:nth-child(1) { width: 19%; } 
 body .st-card .tbl:has(> thead th:nth-child(6)) th:nth-child(4) { width: 15%; } body .st-card .tbl:has(> thead th:nth-child(6)) th:nth-child(5) { width: 150px; } body .st-card .tbl:has(> thead th:nth-child(6)) th:nth-child(6) { width: 44px; }
 body .st-card .tbl td input:not(#_):not(#__), body .st-card .tbl td select:not(#_):not(#__) { width: 100%; min-width: 0; box-sizing: border-box; }
 body .st-card .tbl td.empty:not(#_):not(#__) { padding: 24px 12px; text-align: center; border: 0 !important; background: transparent !important; color: var(--cs-fg4); }
+
+/* ===== Claude helper light in the top bar (9 Nov 2026) ===== */
+body .hp-chip:not(#_):not(#__) { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--cs-line, #e5e5e5); background: #fff; color: var(--cs-fg2, #404040); font: 600 12.5px/1 var(--cs-font, inherit); cursor: pointer; margin-right: 8px; }
+body .hp-chip i:not(#_):not(#__) { width: 8px; height: 8px; border-radius: 50%; background: #a3a3a3; flex: none; }
+body .hp-chip.on i:not(#_):not(#__) { background: #16a34a; box-shadow: 0 0 0 3px rgba(22, 163, 74, .18); }
+body .hp-chip.off:not(#_):not(#__) { border-color: #f5c26b; background: #fff8eb; color: #8a5300; }
+body .hp-chip.off i:not(#_):not(#__) { background: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, .2); }
+body .hp-box:not(#_):not(#__) { border-radius: 10px; padding: 12px 14px; border: 1px solid var(--cs-line, #e5e5e5); }
+body .hp-box.on:not(#_):not(#__) { background: #f0fdf4; border-color: #bbf7d0; }
+body .hp-box.off:not(#_):not(#__) { background: #fff8eb; border-color: #f5c26b; }
