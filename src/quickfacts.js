@@ -47,18 +47,19 @@
   }
   // the question engine (src/qengine.js) reads the question: what it is about, which ones (priority, status, owner, due date, type, a word), how (list, count, next); the last reading is kept for follow-ups
   let LAST = null, LASTPID = ''; const pidNow = () => String((S.project || {}).id || '');
-  const qctx = () => ({ today: today(), me: me(), members: S.members || [], fmtDate: fd, rowsFor: k => I().list(k) });
+  const docRows = k => k === 'requirement' ? ((S.ws && S.ws.requirements) || []) : k === 'question' ? ((S.ws && S.ws.questions) || []) : null;   // these two live in the project document, not in the item records
+  const qctx = () => ({ today: today(), me: me(), members: S.members || [], fmtDate: fd, rowsFor: k => docRows(k) || I().list(k) });
   const qkind = m => { const Q = root.FWBQuery; return Q ? (Object.keys(Q.KINDS).find(k => Q.KINDS[k].re.test(m)) || (LAST && LAST.kind) || '') : ''; };
   function engine(m) {
     const Q = root.FWBQuery; if (!Q) return null; if (LASTPID !== pidNow()) { LAST = null; LASTPID = pidNow(); }
-    const k = qkind(m); if (!k) return null; if (!I().ready([k])) { I().load([k]); return null; }
+    const k = qkind(m); if (!k) return null; if (!docRows(k) && !I().ready([k])) { I().load([k]); return null; }
     const r = Q.answer(m, qctx(), LAST); if (!r) return null; LAST = r.intent; return { text: r.text + '\n\nFrom the project records, no AI used.', view: r.view };
   }
   /** how the engine reads a message, in plain words (empty when it is not a records question): sent to the AI as a hint so DeepSeek and Claude answer the same question */
-  V.quickHint = function (message) { try { const Q = root.FWBQuery; if (!Q) return ''; const it = Q.parse(String(message || ''), Object.assign(qctx(), { rows: I().list(qkind(String(message || '').toLowerCase()) || 'task') }), LAST); return it ? Q.describe(it) : ''; } catch (e) { return ''; } };
+  V.quickHint = function (message) { try { const Q = root.FWBQuery; if (!Q) return ''; const it = Q.parse(String(message || ''), Object.assign(qctx(), { rows: qctx().rowsFor(qkind(String(message || '').toLowerCase()) || 'task') }), LAST); return it ? Q.describe(it) : ''; } catch (e) { return ''; } };
   /** returns { text, view } for a question the records answer exactly, or null (then the assistant's router decides) */
   V.quickFacts = function (message) {
-    const m = String(message || '').toLowerCase(); const fu = m && m.length <= 200 ? followUp(m) : null; if (fu) return fu; if (!m || m.length > 160 || /\b(change[ds]?|update[ds]?|updating|make|made|create[ds]?|write|written|draft|drafted|fix|fixed|add|added|remove[ds]?|delete[ds]?|rename[ds]?|revamp|redesign(ed)?|reword(ed)?|rewrite|rewritten|explain|why|summar|compare|check|review|deck|slides?)\b/.test(m)) return null;   // work, and questions about whether a document was changed, go to Claude or the router, never to a date look-up
+    const m = String(message || '').toLowerCase(); const fu = m && m.length <= 200 ? followUp(m) : null; if (fu) return fu; if (!m || m.length > 160 || /\b(change[ds]?|update[ds]?|updating|make|made|create[ds]?|write|written|drafted|fix|fixed|add|added|remove[ds]?|delete[ds]?|rename[ds]?|revamp|redesign(ed)?|reword(ed)?|rewrite|rewritten|explain|why|summar|compare|check|review|deck|slides?)\b/.test(m) || /^(?:please |pls |can you |could you )?draft\b/.test(m)) return null;   // work, and questions about whether a document was changed, go to Claude or the router, never to a date look-up
     if (!I().ready(['task', 'signoff', 'raid'])) { I().load(['task', 'signoff', 'raid']); return null; }
     const ex = engine(m); if (ex) return ex;
     for (const [test, answer, view] of RULES) { if (test(m)) { let t = ''; try { t = answer(m); } catch (e) { t = ''; } if (t) return { text: t + '\n\nFrom the project records, no AI used.', view }; } }

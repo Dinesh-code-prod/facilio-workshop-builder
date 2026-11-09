@@ -13,18 +13,21 @@
     decision: { re: /\bdecisions?\b/, one: 'decision', many: 'decisions', id: () => '', title: ['title'], status: ['status'], prio: [], owner: ['owner', 'by'], due: [], mod: ['mod'], view: 'governance', done: /^(superseded|rejected)$/i },
     action: { re: /\bactions?( items?)?\b/, one: 'action', many: 'actions', id: () => '', title: ['text'], status: ['status'], prio: [], owner: ['owner'], due: ['due'], mod: ['mod'], view: 'governance', done: /^(done|closed|cancelled)$/i },
     utc: { re: /\b(uat|test cases?|tests?)\b/, one: 'test case', many: 'test cases', id: () => '', title: ['title', 'name', 'scenario'], status: ['result'], prio: ['priority'], owner: ['owner', 'tester'], due: [], mod: ['module', 'mod'], view: 'delivery', done: /^(passed|failed)$/i },
-    tkt: { re: /\btickets?\b/, one: 'ticket', many: 'tickets', id: t => t.n ? 'TKT-' + t.n : '', title: ['subject'], status: ['status'], prio: ['priority'], owner: ['assignee', 'owner'], due: ['due'], mod: ['category'], view: 'tickets', done: /^(resolved|closed|cancelled)$/i }
+    tkt: { re: /\btickets?\b/, one: 'ticket', many: 'tickets', id: t => t.n ? 'TKT-' + t.n : '', title: ['subject'], status: ['status'], prio: ['priority'], owner: ['assignee', 'owner'], due: ['due'], mod: ['category'], view: 'tickets', done: /^(resolved|closed|cancelled)$/i },
+    // these two live in the project document (the BRD requirements and the open questions), not in the item records: the page hands them over through rowsFor
+    requirement: { re: /\b(requirements?|reqs?)\b/, one: 'requirement', many: 'requirements', id: r => r.id || '', title: ['title', 'objective'], status: ['status'], prio: ['priority'], owner: ['owner', 'users'], due: [], mod: ['modules', 'module'], view: 'brd', doc: true, done: /^(rejected|superseded|dropped|duplicate)$/i },
+    question: { re: /\bquestions?\b/, one: 'question', many: 'questions', id: () => '', title: ['text'], status: ['status'], prio: [], owner: ['owner'], due: [], mod: ['area'], view: 'rsquestions', doc: true, done: /^(closed|answered|resolved)$/i }
   };
   const TYPE_CODE = { R: 'risk', A: 'assumption', I: 'issue', D: 'dependency' };
   const LEVELS = { high: /^(high|critical|urgent|highest|p1|major)$/i, medium: /^(medium|normal|moderate|p2)$/i, low: /^(low|minor|lowest|p3)$/i };
   const LEVEL_WORDS = [['high', 'high(?:est)?|critical|urgent|top|important|major|p1'], ['medium', 'medium|normal|moderate|p2'], ['low', 'low(?:est)?|minor|p3']];
   const STATUS_WORDS = [['done', /\b(done|completed?|finished|closed|resolved|passed|signed|converted|approved|agreed)\b/g], ['blocked', /\b(blocked|stuck|on hold|waiting|stalled)\b/g], ['progress', /\b(in progress|ongoing|started|working on|being worked|underway|in review|under review)\b/g], ['failed', /\b(failed|failing|not passed)\b/g],
-    ['open', /\b(pending|open|outstanding|remaining|unresolved|to ?do|not (?:yet )?(?:done|started|finished|complete|completed)|still|left|active|new|proposed|draft)\b/g]];
+    ['confirmed', /\b(confirmed)\b/g], ['draft', /\b(draft|proposed|unconfirmed|not confirmed)\b/g], ['open', /\b(pending|open|outstanding|remaining|unresolved|unanswered|to ?do|not (?:yet )?(?:done|started|finished|complete|completed)|still|left|active|new)\b/g]];
   const STOP = new Set(('what whats which who whom whose are is was were the a an of on in at to for from with and or any all me my mine our us we you your please show list give tell see have has had do does did there their this that those these them it its be been being can could would should will just only also about now currently today right yet still more most some how many much number count total tasks task risk risks issue issues change request requests decision decisions action actions item items test tests case cases ticket tickets raid priority priorities impact status statuses level levels one ones next first last due by before after than then ok okay hi hello thanks thank pending open outstanding remaining done completed finished closed resolved high medium low critical urgent important minor normal overdue late blocked stuck waiting progress ongoing assigned owned owner belongs belonging people person team project week month tomorrow yesterday soon upcoming unassigned nobody uat').split(' '));
   const days = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
   const word = s => String(s || '').toLowerCase().replace(/[^a-z0-9@.' -]/g, ' ').replace(/\s+/g, ' ').trim();
   const local = e => String(e || '').split('@')[0];
-  const NO_WAY = /\b(who|workload|per person|by person|each person|everyone|most|least|average|trend|why|how (?:do|can|should)|explain|summar\w*|compare|draft|write|create|update|make|add|remove|delete|rename|send)\b/;
+  const NO_WAY = /\b(who|workload|per person|by person|each person|everyone|most|least|average|trend|why|how (?:do|can|should)|explain|summar\w*|compare|write|create|update|make|add|remove|delete|rename|send)\b|^(?:please |pls |can you |could you )?draft\b/;
   /** the people the records know: owner values and members, so "assigned to sam" can be matched */
   function peopleOf(rows, def, ctx) { const set = new Map(); const add = (email, name) => { const k = lc(email || name); if (k && !set.has(k)) set.set(k, { key: k, email: lc(email), name: String(name || local(email) || '') }); };
     (ctx.members || []).forEach(m => add(m.email, m.name)); rows.forEach(r => { const o = pick(r, def.owner); if (o) add(/@/.test(o) ? o : '', /@/.test(o) ? local(o) : o); }); return [...set.values()]; }
@@ -66,7 +69,7 @@
     return { kind, f, ask, carried };
   }
   const isDone = (def, r) => def.done.test(String(pick(r, def.status)).trim());
-  function statusOk(def, r, s) { const v = lc(pick(r, def.status)); if (!s || s === 'open') return !isDone(def, r); if (s === 'done') return isDone(def, r); if (s === 'blocked') return /block|hold|wait|stuck/.test(v); if (s === 'progress') return /progress|doing|work|review|started/.test(v); if (s === 'failed') return /fail/.test(v); return true; }
+  function statusOk(def, r, s) { const v = lc(pick(r, def.status)); if (!s || s === 'open') return !isDone(def, r); if (s === 'done') return isDone(def, r); if (s === 'blocked') return /block|hold|wait|stuck/.test(v); if (s === 'progress') return /progress|doing|work|review|started/.test(v); if (s === 'failed') return /fail/.test(v); if (s === 'confirmed') return /confirm|agreed|approved/.test(v); if (s === 'draft') return !isDone(def, r) && !/confirm|agreed|approved/.test(v); return true; }
   function dueState(def, r, due, T) { const d = String(pick(r, def.due) || '').slice(0, 10); if (due === 'nodue') return !d; if (!d) return false; const n = days(T, d); return due === 'overdue' ? n < 0 : due === 'today' ? n === 0 : due === 'tomorrow' ? n === 1 : due === 'week' ? n >= 0 && n <= 7 : due === 'nextweek' ? n >= 7 && n <= 14 : due === 'month' ? n >= 0 && n <= 31 : true; }
   function apply(intent, rows, ctx) {
     const def = KINDS[intent.kind], f = intent.f, T = (ctx || {}).today || new Date().toISOString().slice(0, 10), me = lc((ctx || {}).me);
@@ -81,7 +84,7 @@
   }
   /** how the question was read, in plain words (shown to the person, and passed to the AI as a hint) */
   function describe(intent, count) { const def = KINDS[intent.kind], f = intent.f, bits = [], sing = count === 1;
-    bits.push(({ done: 'finished', open: 'open', blocked: 'blocked or waiting', progress: 'in progress', failed: 'failed' })[f.status] || 'open'); bits.push(f.type ? f.type + (sing ? '' : 's') : sing ? def.one : def.many);
+    bits.push(({ done: 'finished', open: 'open', blocked: 'blocked or waiting', progress: 'in progress', failed: 'failed', confirmed: 'confirmed', draft: 'draft' })[f.status] || 'open'); bits.push(f.type ? f.type + (sing ? '' : 's') : sing ? def.one : def.many);
     if (f.prio) bits.push(f.prio === 'none' ? 'with no ' + (def.prio[0] === 'impact' ? 'impact' : 'priority') + ' set' : 'with ' + f.prio + ' ' + (def.prio[0] === 'impact' ? 'impact' : 'priority'));
     if (f.owner) bits.push(f.owner.me ? 'assigned to you' : f.owner.none ? 'with no owner' : 'assigned to ' + f.owner.name);
     if (f.due) bits.push(({ overdue: sing ? 'that is overdue' : 'that are overdue', today: 'due today', tomorrow: 'due tomorrow', week: 'due in the next 7 days', nextweek: 'due next week', month: 'due this month', nodue: 'with no due date' })[f.due]);

@@ -19,6 +19,8 @@ const a5 = await ask('how many tasks are done'); check('a count of finished task
 const a6 = await ask('tasks about vendor'); check('a word in the title filters the list', a6 && /ZQ urgent vendor call/.test(a6) && !/ZQ write minutes/.test(a6));
 const a7 = await ask('draft a reply to the customer about these tasks'); check('a request to write something is left for the AI (no canned list)', a7 === null);
 const a8 = await ask('why are the tasks late'); check('a "why" question is left for the AI', a8 === null);
+const r1 = await ask('which requirements are confirmed'); check('requirements (kept in the project document) are answered with the filter read', r1 && /I read this as: confirmed requirements/.test(r1), (r1 || 'null').split('\n').slice(0, 2).join(' | '));
+const r2 = await ask('what are the open questions'); check('open questions are answered too', r2 && /I read this as: open questions/.test(r2), (r2 || 'null').split('\n').slice(0, 2).join(' | '));
 const h = await p.evaluate(() => window.FWBViews.quickHint('what are the tasks on high priority')); check('the AI gets the same reading as a hint', /open tasks with high priority/.test(h), h);
 for (const [id] of mk) await p.evaluate(async ([pid, id]) => fetch(`/api/fn/api/projects/${pid}/items/task/${id}`, { method: 'DELETE' }), [pid, id]);
 check('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
