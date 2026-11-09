@@ -1684,3 +1684,7 @@ body .pt-grid .pt-late:not(#_):not(#__) { color: #B42318; font-weight: 600; }
 body .pt-grid tr.pt-g td:not(#_):not(#__) { background: #F9FAFB; border-top: 1px solid var(--cs-st2, #e5e5e5); border-bottom: 1px solid var(--cs-st2, #e5e5e5); padding: 8px 12px; font-size: 13px; color: var(--cs-fg1); }
 body .pt-grid tr.pt-g td b:not(#_):not(#__) { font-weight: 600; } body .pt-grid tr.pt-g .muted { margin-left: 6px; background: #fff; border: 1px solid var(--cs-st2, #e5e5e5); border-radius: 999px; padding: 0 8px; font-size: 12px; }
 body .pt-add:not(#_):not(#__) { margin-top: 10px; } body .pt-add input:not(#_):not(#__) { width: 100%; border: 1.5px dashed #98A2F3; background: #F8F9FF; border-radius: 10px; padding: 9px 12px; }
+/* the task actions sit on the heading in labelled groups (no hidden More menu) */
+body .pt-acts:not(#_):not(#__) { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: flex-end; justify-content: flex-end; }
+body .pt-ag:not(#_):not(#__) { display: grid; gap: 5px; } body .pt-agl:not(#_):not(#__) { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #c9d3f5 !important; }
+body .pt-agb:not(#_):not(#__) { display: flex; flex-wrap: wrap; gap: 6px; }
