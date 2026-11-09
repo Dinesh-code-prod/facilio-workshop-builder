@@ -75,5 +75,6 @@ console.log(n + ' Claude helper checks passed');
   u('usage rides on the existing project_jobs tool (no new tool), the list answer says when it is due, and the page shows it above the chat', () => {
     const pj = w.mcp.tools.find(t => t.name === 'project_jobs'); assert.ok(pj.input_schema.properties.action.enum.includes('usage') && pj.input_schema.properties.usage);
     assert.ok(a.includes("usage: 'jobs_usage'") && a.includes("route('GET', '/api/usage'") && j.includes('async jobs_usage(') && j.includes('usageDue: usageDue(snap && snap.accounts, Date.now())'));
+    assert.ok(a.includes("route('POST', '/api/usage/refresh'") && j.includes('snap.want'), 'Update now asks the queue task for a fresh report');
     assert.ok(asst.includes('id="asUse"') && asst.includes('function paintUsage()') && asst.includes('usageNote()') && asst.includes('it does not report tokens per request')); });
 }

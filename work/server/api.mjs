@@ -2243,6 +2243,8 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   // the Studio-open signal: one record per person (no address in the key), read by the project_jobs presence action
   // the signed-in person's own Claude usage snapshot (sent by their Claude through project_jobs action usage); nobody else's is ever returned
   route('GET', '/api/usage', async () => { const s = await me(); const r = await dbGet('usage', hashOf(s.email)); return ok({ usage: r && r.value ? r.value : null }); });
+  // "Update now" in the assistant: mark that this person wants a fresh report; their Claude's queue task sees usageDue on its next run (within 3 minutes) and the report clears the mark
+  route('POST', '/api/usage/refresh', async () => { const s = await me(); const k = hashOf(s.email); const cur = ((await dbGet('usage', k)) || {}).value || { accounts: [] }; if (cur.want && Date.now() - Date.parse(cur.want) < 60000) return ok({ asked: true }); await dbPut('usage', k, { ...cur, want: new Date().toISOString() }); return ok({ asked: true }); });
   route('POST', '/api/presence', async () => { const s = await me(); await dbPut('presence', hashOf(s.email), { at: now() }); return ok({ ok: true }); });
   // The morning brief of a project (its daily brief switched on): the FIRST trigger of the day sends every team member their own digest, so nobody has to open the Studio or Claude themselves.
   // Triggers: a person opening the Studio (the sweep below) or a running Claude task's idle check (project_jobs list). One brief per project per day, kept in the collection dbr.

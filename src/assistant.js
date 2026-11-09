@@ -27,7 +27,7 @@
   const waitMed = () => { const k = J() && J().K && J().K(), w = (k && Array.isArray(k.jobs) ? L().jobRows(k.jobs) : []).filter(j => j.status === 'done' && j.claimedAt && j.at).map(j => (Date.parse(j.claimedAt) - Date.parse(j.at)) / 6e4).filter(x => x >= 0 && x < 120).sort((a, b) => a - b); return w.length >= 3 ? Math.max(1, Math.round(w[Math.floor(w.length / 2)])) : 5; };
   // Claude usage above the chat: the signed-in person's own plan limits (5-hour, weekly, extra usage) as their Claude last reported them through project_jobs action usage; read every 5 minutes while the panel is open.
   // Claude reports limits as percentages: it does not report tokens per request or per project.
-  const USE = { at: 0, d: undefined };   // d: the person's Claude accounts, newest report first; null when none has reported yet
+  const USE = { at: 0, d: undefined, ask: 0 };   // d: the person's Claude accounts, newest report first; null when none has reported yet
   const resetIn = iso => { const m = (Date.parse(iso) - Date.now()) / 6e4; return !(m > 0) ? '' : m < 90 ? 'resets in ' + Math.round(m) + ' min' : m < 2880 ? 'resets in ' + Math.round(m / 60) + ' h' : 'resets in ' + Math.round(m / 1440) + ' days'; };
   const wkOf = u => (u.windows || []).find(w => /weekly/i.test(w.label) && /all/i.test(w.label)) || (u.windows || []).find(w => /weekly/i.test(w.label));
   const usageNote = () => { const u = USE.d && USE.d[0], w = u && wkOf(u); return w && w.percentUsed >= 80 ? ' Note: your Claude weekly limit is at ' + w.percentUsed + '% (' + (resetIn(w.resetsAt) || 'soon') + (USE.d.length > 1 ? ', on the account that reported last' : '') + '), so a big task may be held back.' : ''; };
@@ -40,7 +40,14 @@
     const u = list[0], f = five(u), w = wkOf(u), ex = u.extra && u.extra.enabled && u.extra.monthlyLimit ? 'Extra usage ' + (u.extra.spent || 0) + ' of ' + u.extra.monthlyLimit + ' ' + (u.extra.currency || '') : '';
     // the account that reported last is shown in full (it is the one doing the work); any others are one short line each, in a scrolling list
     const rest = list.slice(1).map((v, i) => { const a = five(v), b = wkOf(v), c = p => p >= 90 ? 'hi' : p >= 70 ? 'mid' : ''; return '<div class="as-us-r" title="' + esc(acctName(v, i + 1) + ' · updated ' + ago(v)) + '"><span>' + esc(acctName(v, i + 1)) + '</span>' + (a ? '<em class="' + c(a.percentUsed) + '">5h ' + a.percentUsed + '%</em>' : '') + (b ? '<em class="' + c(b.percentUsed) + '">Week ' + b.percentUsed + '%</em>' : '') + '<i>' + esc(ago(v)) + '</i></div>'; }).join('');
-    el.innerHTML = '<div class="as-us-a"><div class="as-us-h"><b>' + esc(list.length > 1 ? acctName(u, 0) + ' (last reported, of ' + list.length + ' accounts)' : 'Your Claude usage') + '</b><span>' + ago(u) + '</span></div>' + (f ? bar('5-hour', f) : '') + (w ? bar('Weekly', w) : '') + (ex ? '<div class="as-us-x">' + esc(ex) + '</div>' : '') + '</div>' + (rest ? '<div class="as-us-l">' + rest + '</div>' : '');
+    el.innerHTML = '<div class="as-us-a"><div class="as-us-h"><b>' + esc(list.length > 1 ? acctName(u, 0) + ' (last reported, of ' + list.length + ' accounts)' : 'Your Claude usage') + '</b><span>' + ago(u) + ' · ' + (USE.ask ? 'asking your Claude…' : '<button type="button" class="ki-link" data-act="asstUsage">Update now</button>') + '</span></div>' + (f ? bar('5-hour', f) : '') + (w ? bar('Weekly', w) : '') + (ex ? '<div class="as-us-x">' + esc(ex) + '</div>' : '') + '</div>' + (rest ? '<div class="as-us-l">' + rest + '</div>' : '');
+  }
+  // ask this person's Claude for a report now (it sends one on its next queue run, within about 3 minutes), then look every 20 seconds until a newer one arrives
+  let useTimer = 0;
+  async function askUsage() {
+    if (!team() || useTimer) return; const before = USE.d && USE.d[0] ? USE.d[0].at : ''; USE.ask = Date.now(); paintUsage();
+    try { await root.FWBApi.post('/api/usage/refresh', {}); } catch (e) { USE.ask = 0; paintUsage(); return; }
+    useTimer = setInterval(async () => { await loadUsage(true); const now = USE.d && USE.d[0] ? USE.d[0].at : ''; if ((now && now !== before) || Date.now() - USE.ask > 6 * 6e4) { clearInterval(useTimer); useTimer = 0; USE.ask = 0; paintUsage(); } }, 20000);
   }
   async function loadUsage(force) { if (!team() || (!force && Date.now() - USE.at < 3e5)) return; USE.at = Date.now(); try { const r = await root.FWBApi.get('/api/usage'); USE.d = r && r.usage && Array.isArray(r.usage.accounts) ? r.usage.accounts : null; } catch (e) { return; } paintUsage(); }
   const mins = ts => { const sec = Math.max(0, Math.floor((Date.now() - Date.parse(ts)) / 1000)); if (sec < 60) return sec < 15 ? 'a few seconds' : Math.floor(sec / 15) * 15 + ' seconds'; const m = Math.floor(sec / 60); return m === 1 ? '1 minute' : m + ' minutes'; };   // seconds under a minute, so the waiting time visibly moves
@@ -166,7 +173,8 @@
   document.addEventListener('click', e => { const mu = document.getElementById('asMenu'); if (mu && !mu.hidden && !(e.target.closest && e.target.closest('.as-modewrap'))) mu.hidden = true; });
   V.ACT.asstSearch = () => { const a = st(); a.sq = !a.sq; if (!a.sq) a.q = ''; a.sig = ''; const s = document.querySelector('#asst .as-search'); if (s) { s.hidden = !a.sq; const i = document.getElementById('asQ'); if (a.sq && i) i.focus(); else if (i) i.value = ''; } paint(); };
   V.ACT.asstQuote = a => { const a1 = st(); a1.quote = String(a.getAttribute('data-q') || '').slice(0, 70); a1.sig = ''; paint(); const m = document.getElementById('asM'); if (m && a1.quote) m.focus(); };   // Reply under an answer: your next message says what it follows up on
-  V.ACT.asstToggle =() => { const a = st(); a.open = !a.open; a.sig = ''; paint(); };
+  V.ACT.asstToggle =() => { const a = st(); a.open = !a.open; a.sig = ''; paint(); if (a.open) askUsage(); };
+  V.ACT.asstUsage = () => { askUsage(); };
   document.addEventListener('input', e => { if (e.target && e.target.id === 'asM') { e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 140) + 'px'; } });   // the message box grows with the text
   document.addEventListener('input', e => { if (e.target && e.target.id === 'asQ') { st().q = e.target.value; st().sig = ''; paint(); } });
   V.assistantPaint = paint;
