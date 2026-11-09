@@ -21,6 +21,11 @@ await t('overdue and my tasks list only open tasks, mine only for me', () => {
   assert.match(q('which tasks are overdue').text, /2 tasks are overdue[\s\S]*T-1 Late one[\s\S]*T-4 Someone else/); assert.ok(!/Finished/.test(q('which tasks are overdue').text));
   const m = q('what are my tasks').text; assert.match(m, /You have 2 open tasks/); assert.ok(!/Someone else/.test(m));
 });
+await t('task counts, workload and due soon are answered from the records, with the page button', () => {
+  const c = q('pending tasks'); assert.match(c.text, /[0-9]+ open tasks? of [0-9]+/); assert.equal(c.view, 'tasks'); assert.ok(!/Finished/.test(c.text));
+  assert.match(q('how many tasks do we have').text, /open task/); assert.match(q('who has the most tasks').text, /Open tasks by person:/);
+  assert.match(q('tasks due this week').text, /due in the next 7 days|No open task is due/);
+});
 await t('work and explanations are not answered here: they go on to the router', () => {
   for (const s of ['update the BRD', 'write a reply to Sara', 'explain the go-live plan', 'why is the plan behind', 'check the BRD against the sessions', 'how do I add a module', '']) assert.equal(q(s), null, s);
   assert.ok(q('go-live date').text.endsWith('no AI used.'));
