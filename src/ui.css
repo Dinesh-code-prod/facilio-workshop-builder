@@ -1848,3 +1848,5 @@ body .hp-box.off:not(#_):not(#__) { background: #fff8eb; border-color: #f5c26b; 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   body :is(.sd-kpi, .sd-w, .adx-stat, .adx-c, .cs-stat, .cs-card, .kpi, .st-card, .proj-card, .ig-card, .ko-card, .md-card, .lc-stage, .card):not(#_):not(#__):not(#___) { animation-fill-mode: backwards !important; }
 }
+
+body .sd-step[data-act] { cursor: pointer; border-radius: 12px; transition: background 160ms; } body .sd-step[data-act]:hover { background: rgba(0, 0, 0, .04); } body .sd-step[data-act]:focus-visible { outline: 2px solid var(--cs-brand, #1570EF); outline-offset: 2px; }

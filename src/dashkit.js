@@ -258,8 +258,11 @@
   ACT.dkExp = el => { const k = el.getAttribute('data-k'); try { if (el.getAttribute('data-v') === 'csv') exportCsv(k); else exportHtml(k); } catch (e) { V.toast && V.toast('Could not make the file: ' + (e.message || 'try again'), 5000, true); } };
   // click a widget anywhere that is not itself a control to open the page its header link names (the link stays for keyboard users)
   if (typeof document !== 'undefined') document.addEventListener('click', e => {
-    const w = e.target.closest && e.target.closest('.sd-w[data-go], .adx-c[data-gotab]'); if (!w || e.target.closest('a, button, input, select, textarea, label, summary, [data-act], [data-change], [role=link]')) return;
+    const w = e.target.closest && e.target.closest('.sd-w[data-go], .adx-c[data-gotab], .adx-c[data-gosec], .sd-admin .sd-w, .sd-admin .sd-kpi'); if (!w || e.target.closest('a, button, input, select, textarea, label, summary, [data-act], [data-change], [role=link]')) return;
     if (String(root.getSelection ? root.getSelection() : '')) return;   // the person is selecting text
+    const sec = w.getAttribute('data-gosec') || (w.closest('.sd-admin') ? ({ stages: 'projects', delivery: 'projects', risk: 'attention', people: 'users', customers: 'projects' })[ui().admTab || 'overview'] : '');   // Admin widgets with no tab of their own to go to open the Admin page behind them
+    if (sec) { const b = document.createElement('button'); b.setAttribute('data-go', sec); ACT.admGo(b); return; }
+    if (!w.getAttribute('data-go') && !w.getAttribute('data-gotab')) return;
     if (w.getAttribute('data-go')) { const b = document.createElement('button'); b.setAttribute('data-view', w.getAttribute('data-go')); ACT.nav(b); } else { ui().admTab = w.getAttribute('data-gotab'); V.setMode('admin'); }
   });
   V.dk = { pie, rings, dots, orbit, spine, rows, overview, admin, adminBar, filterPortfolio, pains, stageMap, adminPains, adminPainList, exportBar, none };
