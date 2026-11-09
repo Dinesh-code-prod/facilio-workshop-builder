@@ -1343,6 +1343,21 @@ body :is(.mdb, .adx) .sd-gz svg:not(#_):not(#__) { width: 230px; height: 135px; 
 body :is(.mdb, .adx) .sd-cols svg:not(#_):not(#__) { display: block; width: 100%; height: auto; max-height: 240px; }
 body :is(.mdb, .adx) .sd-cols .sd-lg:not(#_):not(#__) { display: flex; flex-wrap: wrap; gap: 2px 18px; padding: 8px 8px 0; margin: 0; }
 body :is(.mdb, .adx) .sd-cols .sd-lg li:not(#_):not(#__) { padding: 2px 0; }
+body :is(.mdb, .adx) .sd-k5:not(#_):not(#__) { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 1200px) { body :is(.mdb, .adx) .sd-k5:not(#_):not(#__) { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); } }
+body :is(.mdb, .adx) .sd-ksp:not(#_):not(#__) { display: block; width: 100%; height: 28px; margin-top: 10px; }
+body :is(.mdb, .adx) .sd-ln svg:not(#_):not(#__) { display: block; width: 100%; height: auto; max-height: 250px; }
+body :is(.mdb, .adx) .sd-lgl:not(#_):not(#__) { display: flex; flex-wrap: wrap; gap: 2px 18px; padding: 8px 8px 0; margin: 0; list-style: none; }
+body :is(.mdb, .adx) .sd-lgl li:not(#_):not(#__) { padding: 2px 0; }
+body :is(.mdb, .adx) .sd-gn:not(#_):not(#__) { padding: 4px 10px 0; }
+body :is(.mdb, .adx) .sd-gt:not(#_):not(#__), body :is(.mdb, .adx) .sd-gr:not(#_):not(#__) { display: grid; grid-template-columns: 190px minmax(0, 1fr); align-items: center; gap: 12px; }
+body :is(.mdb, .adx) .sd-gx:not(#_):not(#__) { position: relative; height: 18px; font: 400 11px/16px var(--cs-font); color: var(--cs-fg3); }
+body :is(.mdb, .adx) .sd-gx span:not(#_):not(#__) { position: absolute; transform: translateX(-50%); white-space: nowrap; } body :is(.mdb, .adx) .sd-gx span:first-child:not(#_):not(#__) { transform: none; } body :is(.mdb, .adx) .sd-gx span:last-child:not(#_):not(#__) { transform: translateX(-100%); }
+body :is(.mdb, .adx) .sd-gr b:not(#_):not(#__) { font: 500 12.5px/18px var(--cs-font); color: var(--cs-fg1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body :is(.mdb, .adx) .sd-gb:not(#_):not(#__) { position: relative; height: 22px; border-radius: 6px; background: #f3f5fa; }
+body :is(.mdb, .adx) .sd-gb i:not(#_):not(#__) { position: absolute; top: 3px; height: 16px; border-radius: 5px; }
+body :is(.mdb, .adx) .sd-gb u:not(#_):not(#__) { position: absolute; top: -2px; bottom: -2px; width: 0; border-left: 1.5px dashed #ef4444; }
+@media (max-width: 760px) { body :is(.mdb, .adx) .sd-gt:not(#_):not(#__), body :is(.mdb, .adx) .sd-gr:not(#_):not(#__) { grid-template-columns: 110px minmax(0, 1fr); } }
 /* ---- blue text to black (user, 8 Nov 2026) ---- */
 #asst .as-ib:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
 #asst .ki-link:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
