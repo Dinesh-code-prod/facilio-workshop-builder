@@ -2008,18 +2008,10 @@ body .tr-about > summary::-webkit-details-marker { display: none; }
 body .tr-about > summary:focus-visible { outline: 2px solid #1570EF; outline-offset: 2px; border-radius: 12px; }
 body .tr-about[open] > summary { border-bottom: 1px solid var(--cs-st2, #e5e5e5); }
 body .tr-about > .tr-two { padding: 14px; }
-body .tr-stepper { list-style: none; margin: 0; padding: 0; display: flex; gap: 6px; }
-body .tr-stepper li { flex: 1; }
-body .tr-stepper button { all: unset; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--cs-st2, #e5e5e5); font: 600 13px/18px var(--cs-font, inherit); color: var(--cs-fg3, #5b6472); cursor: pointer; }
-body .tr-stepper button .tr-no { background: #d4d9e1; color: #171717; }
-body .tr-stepper button.on { border-color: #171717; color: #171717; }
-body .tr-stepper button.on .tr-no, body .tr-stepper button.done .tr-no { background: #171717; color: #fff; }
-body .tr-stepper button:focus-visible { outline: 2px solid #1570EF; outline-offset: 2px; }
 body .tr-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--cs-st2, #e5e5e5); }
-body .tr-sum { display: flex; flex-wrap: wrap; gap: 6px; }
-body .tr-sum span { padding: 3px 10px; border-radius: 999px; background: var(--cs-bg6, #f1f3f5); font: 500 12px/18px var(--cs-font, inherit); }
-body .tr-sum span.k { background: #171717; color: #fff; font-weight: 600; }
 body .tr-src { padding: 12px 14px; border: 1px solid var(--cs-st2, #e5e5e5); border-radius: 12px; }
 body .tr-src-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
 body .tr-chk { display: flex; align-items: center; gap: 8px; padding: 5px 0; cursor: pointer; }
 body .tr-wiz .card { margin: 0; }
+body .tr-sub { align-self: flex-start; max-width: 100%; overflow-x: auto; margin-bottom: 2px; }
+body .tr-sub button { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }

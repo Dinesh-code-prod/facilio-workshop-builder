@@ -7,7 +7,7 @@
   const { tag, drawer, closeDrawer, toast, ico, confirmDialog } = V;
   const canEdit = () => !V.isCustomer() && !S.readonly; const canApprove = () => !V.isCustomer() && S.project && S.project.role === 'owner';
   const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-  const TABS = [['content', 'Content'], ...((V.featureHidden && V.featureHidden('orgpkg')) ? [] : [['update', 'Update from configuration']]), ['versions', 'Version history'], ['brand', 'Branding'], ['checks', 'Quality checks'], ['export', 'Export']];
+  const TABS = [['content', 'Edit'], ['brand', 'Style'], ['checks', 'Check and send'], ['versions', 'Versions']];
   let W = null, WID = null, timer = null, saving = false, dirtyAt = 0;
   const strip = t => String(t || '').replace(/\s*\[S\d+\]/g, '');
   const when = d => d ? V.fmtDate(d) : '';
@@ -92,16 +92,14 @@
         <div class="page-body"><div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Guide</th><th>Type</th><th>Audience</th><th>Status</th><th>Sections</th><th>Version</th><th>Updated</th><th></th></tr></thead><tbody>${guides().map(g => `<tr><td><b>${esc(g.title)}</b><div class="xs muted">${esc(g.customer || '')}</div></td><td class="small">${g.plan && g.plan.kind === 'uat' ? 'UAT guide' : 'User guide'}</td><td class="small">${esc(g.audience || '—')}</td><td>${stTag(g.status)}</td><td>${(g.sections || []).length}</td><td>${esc(g.version || '')}</td><td class="small">${esc(when(g._at))}</td><td style="text-align:right"><button class="btn sm" data-act="ugOpen" data-id="${esc(g.id)}">Open</button></td></tr>`).join('') || '<tr><td colspan="8" class="muted" style="padding:18px">No guides yet. Create one to get started.</td></tr>'}</tbody></table></div></div></div>`;
       }
       V.beforeLeave = () => { flush(); return true; };
-      const tab = S.ui.ugTab || 'content'; const ck = checks(W);
+      const tab = ({ export: 'checks', update: 'versions' })[S.ui.ugTab] || S.ui.ugTab || 'content'; const ck = checks(W);
       const head = `<div class="page-header"><div class="t"><h1>${esc(W.title)}</h1><p>${stTag(W.status)} <span class="small muted">${W.approvedBy ? 'Approved by ' + esc(W.approvedBy) + ' on ' + esc(when(W.approvedAt)) + '. ' : ''}<span id="ugState">All changes saved</span></span></p></div><div class="row"><button class="btn" data-act="ugBack">All guides</button></div></div>`;
       const bar = `<div class="tabs" role="tablist">${TABS.map(([k, l]) => `<button class="tab${tab === k ? ' active' : ''}" role="tab" data-act="ugTab" data-v="${k}">${l}${k === 'checks' && ck.length ? ` <span class="xs">(${ck.length})</span>` : ''}</button>`).join('')}</div>`;
       let body = '';
       if (tab === 'content') body = contentHtml(can);
-      if (tab === 'update') body = V.guideUpdate ? V.guideUpdate.html() : '';
-      if (tab === 'versions') body = V.guideUpdate ? V.guideUpdate.versionsHtml() : '';
+      if (tab === 'versions') body = (V.guideUpdate ? V.guideUpdate.versionsHtml() : '') + ((V.featureHidden && V.featureHidden('orgpkg')) ? '' : '<h3 style="margin:18px 0 8px">Update from configuration</h3>' + (V.guideUpdate ? V.guideUpdate.html() : ''));
       if (tab === 'brand') body = brandHtml(can);
-      if (tab === 'checks') body = checksHtml(ck);
-      if (tab === 'export') body = `<div class="card" style="padding:16px"><p class="small">Exports use the branding and the current content. ${W.status === 'approved' ? 'This guide is approved.' : 'This guide is a <b>draft</b>: the cover says so.'} AI source tags are removed. ${ck.filter(c => c.sev === 'medium').length ? `<b>${ck.filter(c => c.sev === 'medium').length} medium finding(s)</b> are still open on the Quality checks tab.` : ''}</p><div class="row" style="gap:8px"><button class="btn primary" data-act="ugDocx">${ico('dl')}Word (.docx)</button><button class="btn" data-act="ugPdf">${ico('dl')}PDF</button></div></div>`;
+      if (tab === 'checks') body = checksHtml(ck) + '<h3 style="margin:18px 0 8px">Export</h3>' + `<div class="card" style="padding:16px"><p class="small">Exports use the branding and the current content. ${W.status === 'approved' ? 'This guide is approved.' : 'This guide is a <b>draft</b>: the cover says so.'} AI source tags are removed. ${ck.filter(c => c.sev === 'medium').length ? `<b>${ck.filter(c => c.sev === 'medium').length} medium finding(s)</b> are still open on the Quality checks tab.` : ''}</p><div class="row" style="gap:8px"><button class="btn primary" data-act="ugDocx">${ico('dl')}Word (.docx)</button><button class="btn" data-act="ugPdf">${ico('dl')}PDF</button></div></div>`;
       return head + `<div class="page-body">${bar}<div style="margin-top:12px">${body}</div></div>`;
     },
     mount() { if (V.guideUpdate && V.guideUpdate.mount) V.guideUpdate.mount(); document.querySelectorAll('[data-ugimg]').forEach(async img => { try { const b = await V.fileBlob(img.getAttribute('data-ugimg')); img.src = URL.createObjectURL(b); } catch (e) { img.alt = 'Image not available'; } }); }

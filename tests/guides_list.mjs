@@ -39,6 +39,6 @@ console.log(n + ' guides overview checks passed');
 }
 { // Training page layout: one maker in three steps, one library, a video filter
   const fs5 = await import('node:fs'); const g = fs5.readFileSync('src/guideslist.js', 'utf8'); const u = (name, fn) => { fn(); console.log('  ok  ' + name); };
-  u('the guide maker has three steps (Type, Sources, Send) with Back and Next, and the library holds drafts, guides made and the tools', () => { assert.ok(g.includes("[['1', 'Type'], ['2', 'Sources'], ['3', 'Send']]") && g.includes('ACT.tgStep') && g.includes('Your library') && g.includes('Guides made') && g.includes('ACT.tgOpenUg')); });
-  u('the Videos tab can show all, the ones that need a video, or the ones added', () => { assert.ok(g.includes("['all', 'need', 'added']") && g.includes('ACT.tgVF')); });
+  u('Guides has three tabs (Make, Review, Library) and Videos has three (To make, Ready, Add); sources are optional and folded away', () => { assert.ok(g.includes("['make', 'Make', '']") && g.includes("['review', 'Review'") && g.includes("['library', 'Library', '']") && g.includes("['make', 'To make'") && g.includes("['ready', 'Ready'") && g.includes("['add', 'Add', '']") && g.includes('ACT.tgSub') && g.includes('ACT.tgFold') && g.includes('Add sources (optional)') && g.includes('ACT.tgOpenUg') && g.includes('Guides made')); });
+  u('a link pasted in the Add tab sends the video to Ready, none sends it to To make', () => { assert.ok(g.includes('tgv_u') && g.includes("vurl ? 'ready' : 'make'")); });
 }

@@ -61,7 +61,7 @@ await p.click('[data-act="ugTab"][data-v="content"]'); await p.waitForTimeout(30
 await p.click('[data-act="ugGen"][data-i="2"]'); await p.waitForTimeout(2500); check('regenerating clears the flag for that section', !(/Sources changed/.test(await p.textContent('.card:has([data-ugt="2"]) .ug-sbar'))));
 
 // export
-await p.click('[data-act="ugTab"][data-v="export"]'); await p.waitForTimeout(300);
+await p.click('[data-act="ugTab"][data-v="checks"]'); await p.waitForTimeout(300);
 const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 30000 }), p.click('[data-act="ugDocx"]')]); const fp = `${OUT}/guide-draft.docx`; await dl.saveAs(fp);
 const xml = await (await JSZip.loadAsync(fs.readFileSync(fp))).file('word/document.xml').async('string'); const txt = xml.replace(/<[^>]+>/g, ' ');
 check('the Word export carries every section and its AI text', ['Purpose and scope', 'Module overview', 'Step-by-step procedures'].every(t => txt.includes(t)) && /Permit to Work/.test(txt));

@@ -29,7 +29,7 @@ check('the set-up line says UAT guide', /UAT guide/.test(await p.textContent('.u
 await p.waitForTimeout(1500); await p.evaluate(() => window.FWBViews.go('delivery')); await p.waitForTimeout(800); await p.click('[data-act="dlTab"][data-v="uat"]').catch(() => { }); await p.waitForTimeout(800);
 check('the UAT tab lists the guide', !!(await p.$('[data-act="dlUatGuideOpen"]')) && /UAT guide/.test(await p.textContent('.page-body')));
 await p.click('[data-act="dlUatGuideOpen"]'); await p.waitForSelector('.ug-top', { timeout: 15000 }); check('Open goes to the guide in the builder', /UAT guide/.test(await p.textContent('.page-header h1')));
-await p.click('[data-act="ugTab"][data-v="export"]'); await p.waitForTimeout(300);
+await p.click('[data-act="ugTab"][data-v="checks"]'); await p.waitForTimeout(300);
 const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 30000 }), p.click('[data-act="ugDocx"]')]); check('Word export downloads', /\.docx$/.test(dl.suggestedFilename()), dl.suggestedFilename());
 await p.evaluate(() => { window.FWB.S.ui.ugOpen = null; window.FWBViews.go('guidebuilder'); }); await p.waitForTimeout(600);
 check('the guide list shows the type', /UAT guide/.test(await p.textContent('.tbl')) && !!(await p.$('[data-act="ugNewUat"]')));
