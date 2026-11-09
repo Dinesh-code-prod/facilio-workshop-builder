@@ -1,6 +1,7 @@
 /* Learn & Prepare: the first thing a customer reads before the requirement sessions. Plain language, no project data beyond the customer's name:
    what Facilio is, how the project runs, how to get ready for a session, what to bring, and the words they will hear. The team sees the same page
-   (it is part of the customer view). Links go to pages that already exist: schedule, guide, dashboards, contract. Nothing here is stored. */
+   (it is part of the customer view). Links go to pages that already exist: schedule, guide, dashboards, contract. Nothing here is stored.
+   Three short tabs (Start here, Get ready, Words) so nobody meets one long page; the checklist ticks live only on the screen. */
 (function (root) {
   'use strict';
   const F = root.FWB; const { S, esc } = F; const V = root.FWBViews; const ACT = V.ACT;
@@ -40,32 +41,34 @@
     ['Form', 'The screen where information is captured.'],
     ['UAT', 'User acceptance testing: your team checks Facilio against real scenarios.']
   ];
+  const TABS = [['start', 'Start here'], ['prepare', 'Get ready'], ['words', 'Words you will hear']];
   const isC = () => !!(V.isCustomer && V.isCustomer());
+  const tab = () => (TABS.find(t => t[0] === S.ui.prTab) || TABS[0])[0];
+  const done = () => (S.ui.prDone = S.ui.prDone || {});
   // customers and the team reach the same content through different pages
   const VIEW = { schedule: ['msaflow', 'schedule'], plan: ['plan', 'timeline'], contract: ['msaflow', 'contract'] };
   const go = (view, label, note) => { view = VIEW[view] ? VIEW[view][isC() ? 1 : 0] : view; return `<button class="btn" data-act="nav" data-view="${view}">${esc(label)}</button>${note ? `<span class="small muted">${esc(note)}</span>` : ''}` };
+  const start = cust => `<div class="card" style="padding:22px"><div class="sec-k"><p>Two minutes</p><h2>What Facilio is</h2></div>
+      <p style="max-width:40em;margin:0 0 14px">Facilio is where your team manages assets, work orders, planned maintenance, service requests, inspections and reports. This project sets it up around how <b>${esc(cust)}</b> works.</p>
+      <div class="row" style="gap:10px;flex-wrap:wrap">${ACT.replayRoadmap ? '<button class="btn primary" data-act="replayRoadmap">Watch the project journey</button>' : ''}${go('guide', 'Open the user guide')}${go('dashboards', 'See example dashboards')}</div></div>
+    <div class="sec-k" style="margin-top:24px"><p>The road ahead</p><h2>Five steps, and what we ask of you</h2></div>
+    <ol class="pr-steps">${STAGES.map((s, i) => `<li><span class="pr-n">${i + 1}</span><div><b>${esc(s[0])}</b><div class="small muted">${esc(s[1])}</div></div></li>`).join('')}</ol>`;
+  const prepare = () => { const d = done(); const n = CHECK.filter((c, i) => d['c' + i]).length;
+    return `<div class="grid g2"><div class="card" style="padding:20px"><div class="sec-k"><p>Before each session</p><h2>Your checklist</h2></div><div class="small muted" style="margin-bottom:8px">${n} of ${CHECK.length} ticked (kept only on this screen)</div>
+      ${CHECK.map((c, i) => `<label class="pr-chk"><input type="checkbox" data-change="prTick" data-k="c${i}" ${d['c' + i] ? 'checked' : ''}> <span>${esc(c)}</span></label>`).join('')}
+      <div class="row" style="gap:10px;flex-wrap:wrap;margin-top:12px">${go('schedule', 'See the session schedule')}</div></div>
+    <div class="card" style="padding:20px"><div class="sec-k"><p>It saves time</p><h2>What to bring</h2></div>${BRING.map(b => `<div class="pr-bring"><b>${esc(b[0])}</b><span class="small muted">${esc(b[1])}</span></div>`).join('')}</div></div>
+    ${V.msaQuestions ? V.msaQuestions.card() : ''}
+    <div class="card" style="padding:16px;margin-top:18px"><b>Questions at any time?</b> <span class="small">Ask your Facilio consultant, or raise it in the next session.</span><div class="row" style="gap:10px;flex-wrap:wrap;margin-top:8px">${go('contract', 'Your contract')}${go('plan', 'The project plan')}</div></div>`; };
+  const words = () => `<div class="card" style="padding:8px 20px">${WORDS.map(w => `<details class="pr-w"><summary><b>${esc(w[0])}</b></summary><p class="small muted" style="margin:4px 0 10px">${esc(w[1])}</p></details>`).join('')}</div>`;
   V.prepare = {
     html() {
-      const cust = (S.project && S.project.customer) || 'your team';
-      const hasJourney = !!ACT.replayRoadmap;
-      return `<div class="page-header"><div class="t"><h1>Learn &amp; Prepare</h1><p>Everything ${esc(cust)} needs to know before the requirement sessions. About five minutes to read.</p></div></div>
-      <div class="page-body">
-        <div class="card" style="padding:18px"><div class="sec-k"><p>Start here</p><h2>What Facilio is</h2></div>
-          <p>Facilio is the platform your facilities team will use to manage assets, work orders, planned maintenance, service requests, inspections and reports in one place. This project sets it up around how <b>${esc(cust)}</b> works.</p>
-          <div class="row" style="gap:10px;flex-wrap:wrap;margin-top:8px">${hasJourney ? '<button class="btn" data-act="replayRoadmap">Watch the project journey</button>' : ''}${go('guide', 'Open the user guide')}${go('dashboards', 'See example dashboards')}</div></div>
-        <div class="sec-k" style="margin-top:22px"><p>The road ahead</p><h2>How the project runs</h2></div>
-        <div class="grid g3">${STAGES.map((s, i) => `<div class="card" style="padding:14px"><div class="xs muted">Step ${i + 1}</div><h3 style="margin:2px 0 6px">${esc(s[0])}</h3><p class="small">${esc(s[1])}</p></div>`).join('')}</div>
-        <div class="grid g2" style="margin-top:22px">
-          <div class="card" style="padding:18px"><div class="sec-k"><p>For every session</p><h2>How to prepare</h2></div><ol class="small" style="padding-left:18px;line-height:1.7">${CHECK.map(c => `<li>${esc(c)}</li>`).join('')}</ol>
-            <div class="row" style="gap:10px;flex-wrap:wrap;margin-top:8px">${go('schedule', 'See the session schedule')}</div></div>
-          <div class="card" style="padding:18px"><div class="sec-k"><p>It saves time</p><h2>What to bring</h2></div><ul class="small" style="padding-left:18px;line-height:1.7">${BRING.map(b => `<li><b>${esc(b[0])}</b>: ${esc(b[1])}</li>`).join('')}</ul></div>
-        </div>
-        ${V.msaQuestions ? V.msaQuestions.card() : ''}
-        <div class="sec-k" style="margin-top:22px"><p>No jargon</p><h2>Words you will hear</h2></div>
-        <div class="grid g2">${WORDS.map(w => `<div class="card" style="padding:12px 14px"><b>${esc(w[0])}</b><div class="small muted">${esc(w[1])}</div></div>`).join('')}</div>
-        <div class="card" style="padding:16px;margin-top:22px"><b>Questions at any time?</b> <span class="small">Ask your Facilio consultant. Anything you are unsure of is a good thing to raise in the next session.</span>
-          <div class="row" style="gap:10px;flex-wrap:wrap;margin-top:8px">${go('contract', 'Your contract')}${go('plan', 'The project plan')}</div></div>
-      </div>`;
+      const cust = (S.project && S.project.customer) || 'your team'; const t = tab();
+      return `<div class="page-header"><div class="t"><h1>Learn &amp; Prepare</h1><p>What ${esc(cust)} needs before the requirement sessions, one short step at a time.</p></div></div>
+      <div class="page-body"><div class="seg" role="tablist" aria-label="Learn and prepare" style="margin:0 0 18px">${TABS.map(x => `<button type="button" role="tab" class="${x[0] === t ? 'on' : ''}" aria-selected="${x[0] === t}" data-act="prTab" data-v="${x[0]}">${esc(x[1])}</button>`).join('')}</div>
+      ${t === 'start' ? start(cust) : t === 'prepare' ? prepare() : words()}</div>`;
     }
   };
+  ACT.prTab = a => { S.ui.prTab = a.getAttribute('data-v'); V.render(); };
+  ACT.prTick = el => { done()[el.getAttribute('data-k')] = el.checked; V.render(); };
 })(typeof window !== 'undefined' ? window : globalThis);
