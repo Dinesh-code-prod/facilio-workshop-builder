@@ -5,24 +5,24 @@ let n = 0; const t = async (name, fn) => { await fn(); n++; console.log('  ok  '
 const today = '2026-11-08';
 const tasks = [{ id: 'a', n: 1, title: 'Late one', status: 'To Do', owner: 'me@facilio.com', due: '2026-11-01' }, { id: 'b', n: 2, title: 'Mine today', status: 'In Progress', owner: 'me@facilio.com', due: today }, { id: 'c', n: 3, title: 'Finished', status: 'Done', owner: 'me@facilio.com', due: '2026-10-01' }, { id: 'd', n: 4, title: 'Someone else', status: 'To Do', owner: 'kim@facilio.com', due: '2026-11-02' }];
 const so = { brd: { status: 'requested', due: '2026-11-20' }, uat: { status: 'notdue' }, golive: { status: 'signed', signer: 'Bayan' } };
-const V = { items: { ready: () => true, load: () => { }, list: k => (k === 'task' ? tasks : k === 'raid' ? [{ status: 'Open', impact: 'High' }, { status: 'Open', impact: 'Low' }, { status: 'Closed', impact: 'High' }] : []), get: (k, id) => (k === 'signoff' ? so[id] : null) },
+const V = { items: { ready: () => true, load: () => { }, list: k => (k === 'task' ? tasks : k === 'raid' ? [{ type: 'R', status: 'Open', impact: 'High' }, { type: 'R', status: 'Open', impact: 'Low' }, { type: 'R', status: 'Closed', impact: 'High' }] : []), get: (k, id) => (k === 'signoff' ? so[id] : null) },
   today: () => today, daysBetween: (a, b) => Math.round((new Date(b + 'T00:00:00Z') - new Date(a + 'T00:00:00Z')) / 864e5), fmtDate: d => d,
   planStats: () => ({ n: 4, actual: 30, planned: 35, goLive: '2026-12-26' }), phaseNow: () => ({ cur: 1, info: [{ i: 0, title: 'Kick-Off', start: '2026-10-07', end: '2026-10-14' }, { i: 1, title: 'BRD Sign-Off', start: '2026-10-21', end: '2026-11-16' }, { i: 2, title: 'UAT & Feedback', start: '2026-12-05', end: '2026-12-20' }] }) };
 globalThis.window = undefined; const root = { FWB: { S: { user: { email: 'me@facilio.com' } } }, FWBViews: V };
-new Function('window', 'globalThis', fs.readFileSync(new URL('../src/quickfacts.js', import.meta.url), 'utf8').replace(/\}\)\(typeof window[^\n]*$/, '})(window);'))(root, root);
+for (const f of ['qengine', 'quickfacts']) new Function('window', 'globalThis', fs.readFileSync(new URL('../src/' + f + '.js', import.meta.url), 'utf8').replace(/\}\)\(typeof window[^\n]*$/, '})(window);'))(root, root);
 const q = m => V.quickFacts(m);
 await t('go-live, stage, progress and next step come straight from the plan', () => {
   assert.match(q('when is the go-live date?').text, /26 Dec|2026-12-26/); assert.match(q('what stage are we in').text, /step 2 of 3: BRD Sign-Off/); assert.match(q('are we on track?').text, /30% is done against 35% planned: 5 points behind/); assert.match(q("what's next?").text, /UAT & Feedback/);
 });
 await t('a named step gives its dates; sign-offs and risks are counted from the records', () => {
-  assert.match(q('what is the BRD timeline').text, /BRD Sign-Off: 2026-10-21 to 2026-11-16/); assert.match(q('sign-off status').text, /BRD sign-off: waiting for the customer \(due 2026-11-20\)[\s\S]*Go-live acceptance: signed by Bayan/); assert.match(q('how many open risks').text, /2 open RAID items, 1 of high impact/);
+  assert.match(q('what is the BRD timeline').text, /BRD Sign-Off: 2026-10-21 to 2026-11-16/); assert.match(q('sign-off status').text, /BRD sign-off: waiting for the customer \(due 2026-11-20\)[\s\S]*Go-live acceptance: signed by Bayan/); assert.match(q('how many open risks').text, /2 open risks\./); assert.match(q('high impact risks').text, /1 open risk with high impact/);
 });
 await t('overdue and my tasks list only open tasks, mine only for me', () => {
-  assert.match(q('which tasks are overdue').text, /2 tasks are overdue[\s\S]*T-1 Late one[\s\S]*T-4 Someone else/); assert.ok(!/Finished/.test(q('which tasks are overdue').text));
-  const m = q('what are my tasks').text; assert.match(m, /You have 2 open tasks/); assert.ok(!/Someone else/.test(m));
+  assert.match(q('which tasks are overdue').text, /2 open tasks that are overdue:[\s\S]*T-1 Late one[\s\S]*T-4 Someone else/); assert.ok(!/Finished/.test(q('which tasks are overdue').text));
+  const m = q('what are my tasks').text; assert.match(m, /2 open tasks assigned to you/); assert.ok(!/Someone else/.test(m));
 });
 await t('task counts, workload and due soon are answered from the records, with the page button', () => {
-  const c = q('pending tasks'); assert.match(c.text, /[0-9]+ open tasks? of [0-9]+/); assert.equal(c.view, 'tasks'); assert.ok(!/Finished/.test(c.text));
+  const c = q('pending tasks'); assert.match(c.text, /[0-9]+ open tasks?:/); assert.equal(c.view, 'tasks'); assert.ok(!/Finished/.test(c.text));
   assert.match(q('how many tasks do we have').text, /open task/); assert.match(q('who has the most tasks').text, /Open tasks by person:/);
   assert.match(q('tasks due this week').text, /due in the next 7 days|No open task is due/);
 });
