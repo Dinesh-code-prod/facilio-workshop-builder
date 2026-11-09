@@ -34,4 +34,13 @@ t('pain points list the worst first, count from records, and leave out what is f
   assert.ok(p.some(x => x.text === '1 task is blocked') && p.some(x => x.text === '3 customer actions are past their date') && p.some(x => x.text === '1 change request has waited over 14 days') && p.some(x => x.text === '1 customer question has no answer'));
   assert.ok(!p.some(x => /critical|hypercare|dated plan/.test(x.text)), 'nothing is listed for what is fine');
 });
+t('admin pain points count across projects, name where to fix each, and skip what is fine', () => {
+  V.sdd.rstageOf = p => (p.metrics || {}).stage || 0; V.today = () => '2026-11-09'; V.daysBetween = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
+  const ps = [{ health: 'blocked', metrics: { target: '2026-11-01', overdueTasks: 2, custWaiting: 1, crOpen: 1 } }, { health: 'on_track', metrics: { stage: 2, target: '2027-01-01', overdueTasks: 1 } }];
+  const C = { today: '2026-11-09', signals: [{ sev: 'critical' }, { sev: 'high' }, { sev: 'high' }], workload: { unassigned: [{ n: 3 }, { n: 2 }], concentration: [] } };
+  const p = K.adminPains(C, ps), has = x => p.some(r => r.text === x);
+  assert.equal(p[0].text, '1 critical warning signal'); assert.ok(p.slice(0, 3).every(r => r.sev === 'bad')); assert.ok(has('1 project is blocked') && has('1 project is past its go-live target') && has('3 tasks are overdue') && has('2 high warning signals') && has('5 open tasks have no owner') && has('1 project has no dated plan'));
+  assert.ok(!p.some(r => /overdue.*project|concentration|one person/.test(r.text) && /projects? (is|are) overdue/.test(r.text)), 'no overdue projects listed');
+  assert.ok(p.find(r => r.text === '1 project is blocked').attrs.includes('data-act="dkAQ"') && p.find(r => r.text === '3 tasks are overdue').attrs.includes('data-v="people"'));
+});
 console.log(n + ' dashboard kit checks passed');

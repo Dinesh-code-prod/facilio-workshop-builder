@@ -1525,3 +1525,7 @@ body .dk-sm i { display: block; height: 8px; border-radius: 4px; background: rgb
 body .dk-sm button:not(#_):not(#__):not(#___) { border: 0 !important; background: transparent !important; box-shadow: none !important; border-radius: 0 !important; padding: 14px 22px !important; min-height: 64px; }
 body .dk-sm button:hover:not(#_):not(#__):not(#___) { background: rgba(0, 0, 0, .03) !important; }
 body .dk-sm:not(#_):not(#__):not(#___) { padding: 0; }
+
+/* Admin dashboard click-throughs (src/dashboards.js, src/dashkit.js) */
+body button.adx-stat.adx-click:not(#_):not(#__):not(#___) { text-align: left; cursor: pointer; font: inherit; width: 100%; } body .adx-click:hover { border-color: var(--cs-st1, #d4d4d4); box-shadow: var(--cs-sh8, 0 4px 14px rgba(0, 0, 0, .08)); } body .adx-click:focus-visible { outline: 2px solid var(--cs-brand, #1570EF); outline-offset: 2px; }
+body .adx-c > header { flex-wrap: wrap; } body .adx-go { margin-left: auto; border: 0; background: none; padding: 0; color: var(--cs-brand, #1570EF); font: 500 13px/18px var(--cs-font); cursor: pointer; white-space: nowrap; } body .adx-go:hover { text-decoration: underline; } body .adx-go i { font-style: normal; }

@@ -125,6 +125,27 @@
   const painList = (rs, empty) => (rs.length ? `<ul class="cs-ul">${rs.map(r => `<li><button type="button" class="cs-line" data-act="nav" data-view="${esc(r.view)}"><span><i class="dk-sev ${r.sev}" aria-hidden="true"></i>${esc(r.text)}</span><em class="${r.sev}">${esc(r.go)} \u2192</em></button></li>`).join('')}</ul>` : none(empty));
   const mapList = rs => `<ul class="dk-sm">${rs.map(([id, l, p, d]) => `<li><button type="button" data-act="sdTab" data-v="${id}" title="Open the ${esc(l)} dashboard"><span><b>${esc(l)}</b><small>${esc(d)}</small></span><i><u style="width:${p == null ? 0 : p}%"></u></i><em>${p == null ? '—' : p + '%'}</em></button></li>`).join('')}</ul>`;
 
+  // Admin pain points: what is wrong across the portfolio, worst first. Each row either opens the tab where the story continues (admTab) or narrows the portfolio to the projects concerned (dkAQ).
+  function adminPains(C, ps) {
+    const D = V.sdd, today = C.today || V.today(), m = p => p.metrics || {}, W = C.workload || {}, sg = C.signals || [], out = [], sum = f => ps.reduce((n, p) => n + (Number(f(p)) || 0), 0);
+    const dl = p => (m(p).target ? V.daysBetween(today, m(p).target) : null), H = h => ps.filter(p => p.health === h).length, tab = v => 'data-act="admTab" data-v="' + v + '"', q = (k, v) => 'data-act="dkAQ" data-k="' + k + '" data-v="' + v + '"';
+    const add = (n, sev, one, many, attrs, go) => { if (n > 0) out.push({ n, sev, text: n + ' ' + (n === 1 ? one : many), attrs, go }); };
+    add(sg.filter(x => x.sev === 'critical').length, 'bad', 'critical warning signal', 'critical warning signals', tab('risk'), 'Open Risk');
+    add(H('blocked'), 'bad', 'project is blocked', 'projects are blocked', q('health', 'blocked'), 'Show them');
+    add(H('overdue'), 'bad', 'project is overdue', 'projects are overdue', q('health', 'overdue'), 'Show them');
+    add(ps.filter(p => dl(p) !== null && dl(p) < 0).length, 'bad', 'project is past its go-live target', 'projects are past their go-live target', q('when', 'late'), 'Show them');
+    add(sum(p => m(p).overdueTasks), 'warn', 'task is overdue', 'tasks are overdue', tab('people'), 'Open People');
+    add(sum(p => m(p).custWaiting), 'warn', 'item is waiting on a customer', 'items are waiting on customers', tab('customers'), 'Open Customers');
+    add(sg.filter(x => x.sev === 'high').length, 'warn', 'high warning signal', 'high warning signals', tab('risk'), 'Open Risk');
+    add((W.unassigned || []).reduce((n, u) => n + (u.n || 0), 0), 'warn', 'open task has no owner', 'open tasks have no owner', tab('people'), 'Open People');
+    add((W.concentration || []).length, 'warn', 'project has one person holding most of its urgent work', 'projects have one person holding most of their urgent work', tab('people'), 'Open People');
+    add(sum(p => m(p).crOpen), 'warn', 'change request is open', 'change requests are open', tab('customers'), 'Open Customers');
+    add(ps.filter(p => !D.rstageOf(p)).length, 'warn', 'project has no dated plan', 'projects have no dated plan', q('stage', '0'), 'Show them');
+    add(ps.filter(p => !m(p).target).length, 'warn', 'project has no go-live date', 'projects have no go-live date', q('when', 'none'), 'Show them');
+    return out.sort((a, b) => (a.sev === 'bad' ? 0 : 1) - (b.sev === 'bad' ? 0 : 1) || b.n - a.n);
+  }
+  const adminPainList = rs => (rs.length ? `<ul class="cs-ul">${rs.map(r => `<li><button type="button" class="cs-line" ${r.attrs}><span><i class="dk-sev ${r.sev}" aria-hidden="true"></i>${esc(r.text)}</span><em class="${r.sev}">${esc(r.go)} \u2192</em></button></li>`).join('')}</ul>` : none('Nothing is blocked, late or waiting across the portfolio.'));
+
   // ---------- the Overview widgets, from the numbers V.sdd.X() already computes ----------
   function overview() {
     const D = V.sdd, S = V.sd, C = V.sdc; if (!D || !S || !C) throw new Error('dashboard parts missing');
@@ -189,6 +210,7 @@
   ACT.dkF = el => { const k = el.getAttribute('data-k'), v = el.value; PF()[k] = k === 'win' ? Number(v) : v; V.render(); };
   ACT.dkFReset = () => { ui().dkF = { win: 14, focus: 'all', who: 'all' }; V.render(); };
   ACT.dkAF = el => { AF()[el.getAttribute('data-k')] = el.value; V.setMode('admin'); };
+  ACT.dkAQ = el => { const k = el.getAttribute('data-k'); ui().dkA = { stage: 'all', health: 'all', customer: 'all', type: 'all', when: 'all', q: '' }; AF()[k] = el.getAttribute('data-v'); V.setMode('admin'); };   // a pain-point row narrows the portfolio to its projects
   ACT.dkAReset = () => { ui().dkA = { stage: 'all', health: 'all', customer: 'all', type: 'all', when: 'all', q: '' }; V.setMode('admin'); };
-  V.dk = { pie, rings, dots, orbit, spine, rows, overview, admin, adminBar, filterPortfolio, pains, stageMap, none };
+  V.dk = { pie, rings, dots, orbit, spine, rows, overview, admin, adminBar, filterPortfolio, pains, stageMap, adminPains, adminPainList, none };
 })(typeof window !== 'undefined' ? window : globalThis);
