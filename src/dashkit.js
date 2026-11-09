@@ -8,7 +8,7 @@
   const OK = '#16a34a', WARN = '#f59e0b', BAD = '#ef4444', GREY = '#a3a3a3', BLUE = '#1570EF', NAVY = '#1D1A5E', SLATE = '#64748b';
   const none = t => `<p class="sd-none">${esc(t)}</p>`;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-  const legend = parts => `<ul class="sd-lg">${parts.map(p => `<li><i style="background:${p[2]}"></i><span>${esc(p[0])}</span><b>${p[1]}</b></li>`).join('')}</ul>`;
+  const legend = parts => { const T = parts.reduce((n, p) => n + (typeof p[1] === 'number' ? p[1] : 0), 0), pc = p => (typeof p[1] === 'number' && T > 0 && parts.length > 1 ? `<em>${Math.round(p[1] * 100 / T)}%</em>` : ''); return `<ul class="sd-lg">${parts.map(p => `<li><i style="background:${p[2]}"></i><span>${esc(p[0])}</span><b>${p[1]}</b>${pc(p)}</li>`).join('')}</ul>`; };   // each part also shows its share
 
   // filled pie: parts = [[label, n, colour]]
   function pie(parts, empty) {
@@ -209,7 +209,12 @@
     const l1 = widget('Next ' + win + ' days', 'sessions and milestones', list(ev.map(e => line(e.view === 'overview' ? 'governance' : e.view, e.title, V.fmtDate(e.date))), 'Nothing is scheduled in the next 14 days.'), 6);
     const l2 = widget(k ? 'What we need from you' : 'Needs attention', k ? 'open actions, soonest first' : 'worth a look today', list(need.map(a => k ? line('governance', a.text || 'Action', a.due ? V.fmtDate(a.due) : '', isLate(a) ? 'bad' : '') : line(a.view || 'governance', a.t)), k ? 'Nothing is waiting on you right now.' : 'Nothing needs attention right now.'), k ? 5 : 6);
     const top = k ? '' : widget('Pain points and pending', 'worst first, each opens where it is fixed', painList(pains(c).slice(0, 8), 'Nothing is late, blocked or waiting. The project is clear.'), 7) + widget('Stage map', 'how far each stage is, click for its dashboard', mapList(stageMap(c)), 5);
-    return projBar(k) + kp + grid(top + (k ? rg + who + work + orb + l2 + dt + rw + l1 : rg + who + work + orb + sp + dt + rw + l1 + l2));
+    // work created per week (last 8 weeks), each column coloured by the status those tasks have today; and the test pass rate as a gauge
+    const weekEnd = i => new Date(Date.parse(today + 'T00:00:00Z') - i * 7 * 864e5).toISOString().slice(0, 10), WN = 8, wkRows = [], wkLab = [];
+    for (let i = WN - 1; i >= 0; i--) { const to = weekEnd(i), from = weekEnd(i + 1); wkLab.push(new Date(to + 'T00:00:00Z').toLocaleDateString('en', { day: 'numeric', month: 'short', timeZone: 'UTC' })); const inW = tks.filter(t => { const d = String(t._created || '').slice(0, 10); return d > from && d <= to; }); wkRows.push(['done', 'prog', 'todo', 'blocked'].map(s => inW.filter(t => ts(t) === s).length)); }
+    const cw = k ? '' : widget('Work created per week', 'last 8 weeks, coloured by status today', C.columns(wkLab, [['Done', OK], ['In progress', BLUE], ['To do', SLATE], ['Blocked', BAD]], wkRows, 'No task was created in the last 8 weeks.'), 8);
+    const tpr = c.tcs.length ? pct(c.passed, c.tcs.length) : null, gz = widget('Test pass rate', c.tcs.length ? c.passed + ' of ' + c.tcs.length + ' test cases passed' : 'no test cases yet', C.gauge(tpr, tpr + '%', c.tcs.length ? 'passed' : '', tpr >= 80 ? OK : tpr >= 50 ? WARN : BAD, 'No test cases yet.'), k ? 6 : 4);
+    return '<div class="mdb">' + projBar(k) + kp + grid((k ? '' : cw + gz) + top + (k ? rg + who + work + orb + l2 + gz + dt + rw + l1 : rg + who + work + orb + sp + dt + rw + l1 + l2)) + '</div>';   // the modern canvas (src/ui.css, modern dashboards)
   }
 
   // ---------- Admin: extra portfolio widgets, from the project list the Admin dashboard already has ----------

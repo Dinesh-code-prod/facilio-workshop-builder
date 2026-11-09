@@ -8,7 +8,7 @@
   const RAG = { g: ['Green', '#22c55e'], a: ['Amber', '#f59e0b'], r: ['Red', '#ef4444'], n: ['No data', '#a3a3a3'] };
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   const none = t => `<p class="sd-none">${esc(t)}</p>`;
-  const legend = parts => `<ul class="sd-lg">${parts.map(p => `<li><i style="background:${p[2]}"></i><span>${esc(p[0])}</span><b>${p[1]}</b></li>`).join('')}</ul>`;
+  const legend = parts => { const T = parts.reduce((n, p) => n + (typeof p[1] === 'number' ? p[1] : 0), 0), pc = p => (typeof p[1] === 'number' && T > 0 && parts.length > 1 ? `<em>${Math.round(p[1] * 100 / T)}%</em>` : ''); return `<ul class="sd-lg">${parts.map(p => `<li><i style="background:${p[2]}"></i><span>${esc(p[0])}</span><b>${p[1]}</b>${pc(p)}</li>`).join('')}</ul>`; };   // each part also shows its share
 
   // ring chart: parts = [[label, n, colour]]; the centre shows `center` with a small `sub` line
   function donut(parts, center, sub, empty) {
@@ -39,6 +39,16 @@
     return `<div class="sd-stk" role="img" aria-label="${esc(parts.map(p => p[0] + ' ' + p[1]).join(', '))}">${parts.filter(p => p[1]).map(p => `<i style="flex:${p[1]};background:${p[2]}" title="${esc(p[0])}: ${p[1]}"></i>`).join('')}</div>${legend(parts)}`;
   }
 
+  // stacked columns: labels = one per column, series = [[name, colour]], rows[i][j] = the count of series j in column i. Gridlines and a small axis; every segment has a tooltip.
+  const niceStep = m => { const p = Math.pow(10, Math.floor(Math.log10(Math.max(1, m) / 4))), r = Math.max(1, m) / 4 / p; return Math.max(1, (r <= 1 ? 1 : r <= 2 ? 2 : r <= 5 ? 5 : 10) * p); };
+  function columns(labels, series, rows, empty) {
+    const tot = rows.reduce((n, r) => n + r.reduce((a, b) => a + b, 0), 0); if (!tot) return none(empty || 'Nothing recorded yet.');
+    const W = 440, H = 196, L = 30, B = 26, T = 10, mx = Math.max(1, ...rows.map(r => r.reduce((a, b) => a + b, 0))), step = niceStep(mx), top = Math.ceil(mx / step) * step, gx = (W - L - 6) / rows.length, bw = Math.min(36, gx * 0.58); let g = '', bars = '';
+    for (let v = 0; v <= top; v += step) { const y = T + (H - T - B) * (1 - v / top); g += `<line x1="${L}" x2="${W}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(0,0,0,.07)"/><text x="${L - 6}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="9" fill="#737373">${v}</text>`; }
+    rows.forEach((r, i) => { let y = H - B; const x = L + gx * i + (gx - bw) / 2; r.forEach((n, j) => { if (!n) return; const h = (H - T - B) * n / top; y -= h; bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0, h - 1).toFixed(1)}" rx="3" fill="${series[j][1]}"><title>${esc(labels[i])}: ${esc(series[j][0])} ${n}</title></rect>`; }); bars += `<text x="${(x + bw / 2).toFixed(1)}" y="${H - 9}" text-anchor="middle" font-size="9" fill="#737373">${esc(labels[i])}</text>`; });
+    return `<div class="sd-cols"><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(series.map((s, j) => s[0] + ' ' + rows.reduce((n, r) => n + r[j], 0)).join(', '))}">${g}${bars}</svg>${legend(series.map((s, j) => [s[0], rows.reduce((n, r) => n + r[j], 0), s[1]]))}</div>`;
+  }
+
   // heat map: rows = [label], cols = [[label, colour]], cells[r][c] = number; the stronger the colour, the bigger the number
   function heat(rows, cols, cells, empty) {
     const mx = Math.max(0, ...cells.flat()); if (!rows.length || !mx) return none(empty || 'Nothing to compare yet.');
@@ -62,5 +72,5 @@
     return `<ul class="sd-ck">${items.map(x => `<li class="${x.s}${x.v ? ' sd-click' : ''}"${x.v ? ` data-act="nav" data-view="${esc(x.v)}" role="link" tabindex="0" title="Open where this is fixed"` : ''}><span class="sd-ci" style="--c:${(RAG[x.s] || RAG.n)[1]}" aria-hidden="true">${ic[x.s] || '–'}</span><div><b>${esc(x.l)}</b>${x.d ? `<small>${esc(x.d)}</small>` : ''}</div>${rag(x.s)}</li>`).join('')}</ul>`;
   }
 
-  V.sdc = { RAG, donut, gauge, spark, stack, heat, funnel, rag, worst, checklist, none, legend };
+  V.sdc = { RAG, donut, gauge, columns, spark, stack, heat, funnel, rag, worst, checklist, none, legend };
 })(typeof window !== 'undefined' ? window : globalThis);

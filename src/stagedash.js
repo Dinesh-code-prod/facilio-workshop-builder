@@ -37,7 +37,7 @@
   const CKGO = [[/team|stakeholder|people/i, 'settings'], [/plan|go-live date/i, 'plan'], [/session/i, 'rsplan'], [/action/i, 'governance'], [/brd/i, 'brd'], [/test case|pass rate|executed|defect/i, 'delivery'], [/module/i, 'modules'], [/sign-?off|signed/i, 'governance'], [/guide|video|training/i, 'guides'], [/hypercare|lesson|handover/i, 'handover']];
   const kview = label => (cust() ? '' : KGO[label] || '');
   const wgo = title => (cust() ? null : WGO[title] || (/^Next \d+ days$/.test(title) ? ['plan', 'Open the plan'] : null));
-  const kpi = (label, value, sub, c, p) => { const v = kview(label), inner = `<span class="sd-kl">${esc(label)}</span><b class="sd-kv">${value}</b><span class="sd-ks">${sub || ''}</span>${p == null ? '' : `<i class="sd-kb" aria-hidden="true"><u style="width:${Math.max(0, Math.min(100, p))}%"></u></i>`}`;
+  const kpi = (label, value, sub, c, p) => { const v = kview(label), inner = `<i class="sd-ki" aria-hidden="true">${V.dm ? V.dm.icon(label) : ''}</i><span class="sd-kl">${esc(label)}</span><b class="sd-kv">${value}</b><span class="sd-ks">${sub || ''}</span>${p == null ? '' : `<i class="sd-kb" aria-hidden="true"><u style="width:${Math.max(0, Math.min(100, p))}%"></u></i>`}`;
     return v ? `<button type="button" class="sd-kpi sd-click" style="--c:${c}" data-act="nav" data-view="${v}" title="Open the page behind this number">${inner}</button>` : `<div class="sd-kpi" style="--c:${c}">${inner}</div>`; };
   const widget = (title, sub, inner, span, c) => { const g = wgo(title); return `<section class="sd-w sd-s${span || 6}"${c ? ` style="--c:${c}"` : ''}${g ? ` data-go="${g[0]}" title="Click to open ${esc(g[1].replace(/^Open (the )?/, ''))}"` : ''}><header><h3>${esc(title)}</h3>${sub ? `<span>${esc(sub)}</span>` : ''}${g ? `<button type="button" class="sd-go" data-act="nav" data-view="${g[0]}">${esc(g[1])} <i aria-hidden="true">\u2192</i></button>` : ''}</header><div class="sd-b">${inner}</div></section>`; };
   const none = C.none;
@@ -189,7 +189,7 @@
         widget('Open handover items', 'ticked off on the handover page', table('Open handover items', ['Item'], ho.filter(x => !x.done).slice(0, 6).map(x => [String(x.text || x.title || 'Item').slice(0, 90)]), ho.length ? 'Every handover item is ticked.' : 'The handover checklist has not been started.'), 4, STG[5].c) + widget('What is ready', 'by type', bars([['User guides', ug.length, '#1d4ed8'], ['Videos', vd.length, '#475569'], ['Lessons', les.length, WARN]], 'Nothing in the pack yet.'), 4, STG[5].c) + widget('Handover pack', 'guides and videos', table('Handover pack', ['Item', 'Type', 'Status'], rows, 'The pack builds from the user guides and videos.'), 8, STG[5].c) };
   };
   function stageData(id) { COL = []; const c = X(); const r = B[id](c); return { c, r, tables: COL.slice(), s: STG.find(x => x.id === id) }; }
-  function stagePage(id) { try { const d = stageData(id); return `<div class="sd-stage" style="--c:${d.s.c}"><div class="sd-kpis">${kp(d.r.kpis, d.s.c)}</div>${grid(d.r.body)}</div>`; } catch (e) { console.error(e); return `<div class="sd-stage">${none('This stage could not be drawn.')}</div>`; } }
+  function stagePage(id) { try { const d = stageData(id); return `<div class="sd-stage mdb" style="--c:${d.s.c}"><div class="sd-kpis">${kp(d.r.kpis, d.s.c)}</div>${grid(d.r.body)}</div>`; } catch (e) { console.error(e); return `<div class="sd-stage">${none('This stage could not be drawn.')}</div>`; } }
 
   // ---------- wire into the project dashboard ----------
   const base = V.projdash.html;

@@ -1314,6 +1314,35 @@ body #asst .ki-time:not(#_):not(#__) { white-space: nowrap !important; }
 body #asst .as-body:not(#_):not(#__) { overflow-x: hidden !important; }
 body #asst .ki-row.you .ki-bub:not(#_):not(#__) { text-align: left; }
 
+/* ---- modern dashboards (9 Nov 2026, user): a soft canvas, roomy white cards, KPI tiles with a tinted icon, donuts with a legend and shares; the team, customer and admin dashboards share it ---- */
+body :is(.mdb, .adx):not(#_):not(#__) { background: #f3f5fa; border-radius: 20px; padding: 20px; margin-top: 14px; }
+body :is(.mdb, .adx) .sd-kpis:not(#_):not(#__) { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin: 0 0 16px; }
+body :is(.mdb, .adx) .sd-kpi:not(#_):not(#__):not(#___) { padding: 18px 20px 20px; gap: 6px; background: #fff; border: 1px solid #e7eaf2 !important; border-radius: 16px; box-shadow: none; text-align: left; }
+body :is(.mdb, .adx) .sd-kpi.sd-click:hover:not(#_):not(#__):not(#___) { border-color: color-mix(in srgb, var(--c, #3b82f6) 45%, #e7eaf2) !important; }
+body :is(.mdb, .adx) .sd-ki:not(#_):not(#__) { position: absolute; top: 16px; right: 16px; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: color-mix(in srgb, var(--c, #3b82f6) 13%, #fff); color: var(--c, #3b82f6); }
+body :is(.mdb, .adx) .sd-kl:not(#_):not(#__) { font: 600 13px/18px var(--cs-font); color: var(--cs-fg2); padding-right: 52px; }
+body :is(.mdb, .adx) .sd-kv:not(#_):not(#__) { font: 700 34px/40px var(--cs-font); letter-spacing: -.035em; margin-top: 6px; }
+body :is(.mdb, .adx) .sd-ks:not(#_):not(#__) { font: 400 12.5px/17px var(--cs-font); }
+body :is(.mdb, .adx) .sd-kb:not(#_):not(#__) { height: 8px; border-radius: 4px; margin-top: 10px; background: color-mix(in srgb, var(--c, #3b82f6) 14%, #fff); }
+body :is(.mdb, .adx) .sd-kb u:not(#_):not(#__) { border-radius: 4px; }
+body :is(.mdb, .adx) .sd-grid:not(#_):not(#__) { gap: 16px; }
+body :is(.mdb, .adx) .sd-w:not(#_):not(#__):not(#___) { background: #fff; border: 1px solid #e7eaf2 !important; border-radius: 16px; box-shadow: none; }
+body :is(.mdb, .adx) .sd-w > header:not(#_):not(#__) { padding: 18px 22px 6px; border-bottom: 0; align-items: center; }
+body :is(.mdb, .adx) .sd-w > header h3:not(#_):not(#__) { font: 650 15px/22px var(--cs-font); }
+body :is(.mdb, .adx) .sd-w > header span:not(#_):not(#__) { font: 400 12.5px/16px var(--cs-font); }
+body :is(.mdb, .adx) .sd-b:not(#_):not(#__) { padding: 6px 12px 16px; }
+body :is(.mdb, .adx) .sd-dn:not(#_):not(#__) { display: flex; align-items: center; justify-content: center; gap: 22px; flex-wrap: wrap; padding: 6px 10px 4px; }
+body :is(.mdb, .adx) .sd-dn svg:not(#_):not(#__) { width: 156px; height: 156px; flex: none; }
+body :is(.mdb, .adx) .sd-dn .sd-lg:not(#_):not(#__) { flex: 1 1 140px; min-width: 130px; margin: 0; padding: 0; }
+body :is(.mdb, .adx) .sd-lg li:not(#_):not(#__) { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+body :is(.mdb, .adx) .sd-lg li span:not(#_):not(#__) { flex: 1; min-width: 0; }
+body :is(.mdb, .adx) .sd-lg li em:not(#_):not(#__) { font: 500 12px/16px var(--cs-font); font-style: normal; color: var(--cs-fg3); min-width: 38px; text-align: right; }
+body :is(.mdb, .adx) .sd-lg i:not(#_):not(#__) { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+body :is(.mdb, .adx) .sd-gz svg:not(#_):not(#__) { width: 230px; height: 135px; }
+
+body :is(.mdb, .adx) .sd-cols svg:not(#_):not(#__) { display: block; width: 100%; height: auto; max-height: 240px; }
+body :is(.mdb, .adx) .sd-cols .sd-lg:not(#_):not(#__) { display: flex; flex-wrap: wrap; gap: 2px 18px; padding: 8px 8px 0; margin: 0; }
+body :is(.mdb, .adx) .sd-cols .sd-lg li:not(#_):not(#__) { padding: 2px 0; }
 /* ---- blue text to black (user, 8 Nov 2026) ---- */
 #asst .as-ib:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
 #asst .ki-link:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
