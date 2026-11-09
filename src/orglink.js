@@ -3,7 +3,8 @@
 (function (root) {
   'use strict';
   const F = root.FWB; const { S, esc } = F; const V = root.FWBViews; const ACT = V.ACT; const O = () => root.FWBOrg; const { drawer, closeDrawer, toast } = V;
-  const pkgId = () => { const B = S.baseline; return String((B && B.meta && B.meta.orgId) || ''); };
+  // only the customer's own imported package has an org id worth comparing; the bundled reference configuration belongs to another organisation and is never shown
+  const pkgId = () => { const B = S.baseline; return F.doc('config').source === 'imported' ? String((B && B.meta && B.meta.orgId) || '') : ''; };
   let cand = [];
   const cmpOf = (o) => { const p = S.ws.project || {}; return O().compare(Object.assign({ orgId: p.orgId, packageOrgId: pkgId(), folder: p.orgFolder }, o)); };
   V.orgLinkHtml = () => {

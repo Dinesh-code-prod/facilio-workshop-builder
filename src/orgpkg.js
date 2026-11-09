@@ -247,7 +247,7 @@
     files['PackageConf.xml'] = doc('Package', [kv('name', name), kv('displayName', name), kv('version', '1.0'), kv('type', 1), el('Components', null, types.map(T => el('Component', { Type: T }, T + '.xml')))]);
     const draft = items.some(i => i.included && i.readiness !== 'ready');
     if (items.some(i => i.included && i.uidNew)) warn.push({ item: 'Identifiers', detail: 'New records carry new Unique_Identifier numbers (from ' + (9000000000 + (now % 1000000) * 100) + '). The sample only shows identifiers the organisation gave; confirm with the Org Builder skill how new records must be numbered.' });
-    if (model.reference) warn.push({ item: 'Organisation', detail: 'The project uses the bundled Facilio reference configuration (org ' + model.orgId + '), not the customer\'s own organisation package: Parent_Id values point to modules in that org. Import the customer\'s package in Configuration Inputs before exporting for their org.' });
+    if (model.reference) warn.push({ item: 'Configuration', detail: 'This project uses Facilio\'s standard configuration, not the customer\'s own package, so module identifiers may not match their organisation. Load the customer\'s package above before exporting for them.' });
     warn.push({ item: 'PackageConf.xml', detail: 'The sample ends with a Feature_License_List (licence values of that organisation). It is left out because it belongs to the target org; confirm whether the import needs it.' });
     return { name: (draft ? 'DRAFT_' : '') + name, files, items, manual, warnings: warn, missing, draft, types, counts: types.reduce((o, T) => (o[T] = items.filter(i => i.included && i.type === T).length, o), {}) };
   }
