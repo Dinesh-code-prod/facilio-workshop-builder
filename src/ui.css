@@ -2056,7 +2056,9 @@ body .tr-sub button { white-space: nowrap; display: inline-flex; align-items: ce
 /* Apple fallbacks (9 Nov 2026): solid surfaces when transparency is reduced, firmer borders for more contrast, no press scale for reduced motion */
 @media (prefers-reduced-transparency: reduce) { body .navbar:not(#_):not(#__), body .sidebar:not(#_):not(#__), body .drawer:not(#_):not(#__), body .toast:not(#_):not(#__), body .dialog:not(#_):not(#__) { background: #fff !important; -webkit-backdrop-filter: none; backdrop-filter: none; } }
 @media (prefers-contrast: more) { body .card:not(.dark):not([class*="night"]):not(#_):not(#__), body .proj-card:not(#_):not(#__), body .kpi:not(#_):not(#__), body .adm-card:not(#_):not(#__), body .tbl-wrap:not(#_):not(#__), body .cs-card:not(#_):not(#__), body .cs-stat:not(#_):not(#__), body .ki-chat:not(#_):not(#__), body .cs-dg:not(#_):not(#__), body .pj-list:not(#_):not(#__), body .adx-c:not(#_):not(#__), body .adx-stat:not(#_):not(#__), body .list-item:not(#_):not(#__), body .gl-q:not(#_):not(#__), body .gl-box:not(#_):not(#__), body .tg2-tile:not(#_):not(#__), body .tg2-box:not(#_):not(#__), body .mf-step:not(#_):not(#__), body .dk-card:not(#_):not(#__), body .empty:not(#_):not(#__) { border-color: rgba(0, 0, 0, .4) !important; } body .btn:not(.icon):not(.link):not(#_):not(#__) { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .5) !important; } }
-@media (prefers-reduced-motion: reduce) { body .btn:not([disabled]):not(#_):not(#__):active { transform: none !important; } }
+/* press feedback on clickable cards, tiles and rows: they sink a hair the moment the pointer goes down */
+body :is(.card.click, .proj-card, .cs-stat-btn, .tg2-tile, .dk-card, .kb-card, .bp-row):active:not(#_):not(#__):not(#___) { transform: scale(.985) !important; transition: transform 100ms var(--cs-ease) !important; }
+@media (prefers-reduced-motion: reduce) { body .btn:not([disabled]):not(#_):not(#__):active, body :is(.card.click, .proj-card, .cs-stat-btn, .tg2-tile, .dk-card, .kb-card, .bp-row):active:not(#_):not(#__):not(#___) { transform: none !important; } }
 =======
 
 /* project guides added by the team (guideextra.js) */
