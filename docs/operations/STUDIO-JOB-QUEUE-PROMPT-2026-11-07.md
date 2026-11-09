@@ -45,7 +45,7 @@ STAGES. Delivery Studio is split into main tabs ("stages"). Every job belongs to
 Not checked: that the scheduled-tasks tools are available inside the queue task's own run, and that the Activate Claude chat can switch the task on (both are said to be skipped quietly if not).
 
 ## Update 9 Nov 2026: Claude usage above the chat
-- The queue task reports the person's plan limits once an hour (step 12): in the first 3 minutes of a clock hour, or when the Studio has none yet. Claude calls `mcp__ccd_session_mgmt__get_usage` and sends `{plan, windows, extra}` through the existing `project_jobs` tool, action `usage`. Nothing else is sent (no context size, no other sessions).
+- The queue task reports the person's plan limits on every run, about every 3 minutes (step 12 runs whenever the server says usageDue, which is true once the last report is 2 minutes old; changed 10 Nov 2026, it was once an hour). Claude calls `mcp__ccd_session_mgmt__get_usage` and sends `{plan, windows, extra}` through the existing `project_jobs` tool, action `usage`. Nothing else is sent (no context size, no other sessions).
 - The Studio keeps up to 12 Claude accounts per Studio sign-in. Accounts are told apart by plan plus the weekday and minute the weekly limit resets; a snapshot older than 36 hours is dropped. `GET /api/usage` returns the signed-in person's list. The chat shows the last-reported account in full and the others as one short line each.
 - Claude gives limits as percentages: it does not give tokens per request or per project.
 - Not checked: a real report from a queue task; two accounts reporting.

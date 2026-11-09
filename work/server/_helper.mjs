@@ -48,8 +48,8 @@ export function helperAlert(project, x, st, baseUrl) {
     actions: [{ title: 'Open the project', url }, { title: 'Set up Claude', url: url + '/claudesetup' }] };
 }
 
-/** minutes after which a person's usage snapshot is due again (the queue task sends one at most about once an hour) */
-export const USAGE_FRESH_MIN = 55;
+/** minutes after which a person's usage snapshot is due again (10 Nov 2026: the queue task runs every 3 minutes and sends one on every run, so the chat stays current without pressing Update now) */
+export const USAGE_FRESH_MIN = 2;
 const txt = (v, n) => String(v == null ? '' : v).replace(/[^\w .:+\-·\/%$€£]/g, '').trim().slice(0, n);
 const pct = v => { const x = Number(v); return Number.isFinite(x) ? Math.max(0, Math.min(100, Math.round(x))) : null; };
 /** a Claude's plan limits as it reports them (project_jobs action usage): only known fields, numbers clamped, text short and plain; null when nothing usable arrives */
