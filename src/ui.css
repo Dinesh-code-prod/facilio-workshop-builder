@@ -1881,3 +1881,7 @@ body #asst .ki-row.you .ki-body:not(#_):not(#__):not(#___) { justify-items: end;
 body #asst .ki-time:not(#_):not(#__):not(#___) { position: static !important; display: block !important; margin: 3px 6px 0 !important; padding: 0 !important; text-align: left; }
 body #asst .ki-row.you .ki-time:not(#_):not(#__):not(#___) { text-align: right; }
 body #asst .ki-row .ki-body:not(#_):not(#__):not(#___) { position: static; }
+/* bigger view: the open task and the mail fill the window (user, 9 Nov 2026) */
+body .drawer.full:not(#_):not(#__) { width: min(98vw, 1800px) !important; }
+body .ol-wrap.wide:not(#_):not(#__) { position: fixed; inset: 0; z-index: 60; background: #fff; padding: 16px 24px; overflow: auto; }
+body .ol-wrap.wide .ol:not(#_):not(#__) { height: calc(100vh - 110px); }
