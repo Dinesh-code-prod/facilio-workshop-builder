@@ -140,7 +140,9 @@
     const base = (V.navBase ? V.navBase() : []).map(g => g.g); d.groups = uniq(d.groups.map(m)).filter(n => !base.includes(n));
     d.custom.forEach(c => { if (c.group) c.group = m(c.group); }); d.v = 3;
   }
-  const ws = () => { const d = F.doc('workspace') || {}; const n = wsNorm(d); Object.keys(n).forEach(k => { if (d[k] === undefined) d[k] = n[k]; }); if (!d.mobile.hidden) d.mobile.hidden = []; if (!d.mobile.groupOrder) d.mobile.groupOrder = []; migrate(d); return d; };
+  // 9 Nov 2026: the Customer View group is off in a project until the team adds it back in Tabs & Layouts (the customer point of view itself opens from Preview as customer)
+  const CUSTOMER_VIEW_OFF = ['custintro', 'prepare', 'learnlib', 'demokit', 'integguide', 'guide', 'portal'];
+  const ws = () => { const d = F.doc('workspace') || {}; const n = wsNorm(d); Object.keys(n).forEach(k => { if (d[k] === undefined) d[k] = n[k]; }); if (!d.mobile.hidden) d.mobile.hidden = []; if (!d.mobile.groupOrder) d.mobile.groupOrder = []; migrate(d); if (!d.seeded) { d.seeded = 1; d.hidden = [...new Set(d.hidden.concat(CUSTOMER_VIEW_OFF.filter(id => !KEEP.includes(id))))]; } return d; };
   const KEEP = ['workspace', 'settings', 'templates'];
   const WHO = { all: 'Everyone in the project', edit: 'Owners and editors', owner: 'Owners only' };
   const roleOk = (need, role) => !need || need === 'all' || (need === 'edit' ? role !== 'viewer' : role === 'owner');
