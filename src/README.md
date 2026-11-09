@@ -142,7 +142,7 @@ Workshops, transcripts, questions, requirements, use cases and the process white
 | [mom.js](mom.js) | Minutes of meeting (MOM) from a call transcript. |
 | [qbank.js](qbank.js) | Requirement sessions > Questions (plan: docs/plans/REQUIREMENTS-INTELLIGENCE-PLAN-2026-11-08.md). |
 | [requirements.js](requirements.js) | Stage 2, Requirement sessions (roadmap E15): three tabs under one main tab. |
-| [resources.js](resources.js) | Project Resources & Links: meeting notes, call recordings, meeting links, SmartSheet, Miro and other project documents. |
+| [resources.js](resources.js) | Notes & Links: project notes (kind "pnote") and links to meetings, recordings, boards and trackers (kind "res"), both records on the item store, so permissions, audit and versions come from the... |
 | [sessionhtml.js](sessionhtml.js) | Requirement session plan as one self-contained HTML file, in the structure of Facilio's workshop plan sheet: planned sessions (items, agenda per module, required stakeholders, date, time, duration,... |
 | [sessionquestionsview.js](sessionquestionsview.js) | Requirements > Prepare questions (team only): the questions to ask in a workshop, worked out by the rules in work/server/_sessionquestions.mjs from the project's scope, requirements, open... |
 | [sourcecheck.js](sourcecheck.js) | Source checks (Checks & Validations › Source checks): is every confirmed statement traceable to where it came from, and do the links between requirements, use cases, questions, sessions and the MSA... |
@@ -216,7 +216,6 @@ Actions, risks, decisions, change requests, the task board, customer mail and tr
 | [mailinbox.js](mailinbox.js) | Mail inbox on the Tasks page (plan: docs/plans/MAIL-TO-TASKS-PLAN-2026-11-07.md). |
 | [outlook.js](outlook.js) | Outlook hand-off. A native Outlook inbox is NOT available in this deployment (see docs/integrations/outlook-feasibility.md): the platform gives the app only the signed-in email, not a Microsoft... |
 | [taskengine.js](taskengine.js) | The task engine: tasks that create themselves and resolve themselves (plan: docs/plans/TASKS-AUTOMATION-PLAN-2026-11-07.md). |
-| [privatetasks.js](privatetasks.js) | My private tasks: a person's own day-to-day list in a project (Tasks and email, My private tasks), stored apart from the shared tasks and visible to nobody else. |
 | [tasks.js](tasks.js) | Project Tasks: one task register per project (item kind "task", validated on the server) shown as a spreadsheet with saved sheets. |
 | [tickets.js](tickets.js) | Tickets: client issues, incoming requests, meeting requests and follow-ups, tracked per project and across projects. |
 | [transfers.js](transfers.js) | Transfers (roadmap E4, E10 step 1): the page for the push and pull engine. |
@@ -287,7 +286,20 @@ CSS files. The look is the coss style in ui.css (the last layer, see docs/design
 
 | File | What it does |
 |---|---|
+| [README.md](README.md) | src: the app |
+| [brdsessions.js](brdsessions.js) | What the requirement sessions captured, in the shape the BRD and the checks need (user, 9 Nov 2026: whatever is answered in the sessions must show in the BRD draft). |
+| [dashkit.js](dashkit.js) | Dashboard widget kit (8 Nov 2026): the shapes the Overview tab of the project dashboard uses for the team, the customer and the admin. |
+| [dashmodern.js](dashmodern.js) | Modern dashboards (user, 9 Nov 2026, after the Scorecard, Slingshot, Produkcia, Vora, Breeze and Lector examples): the shared look of the team, customer and admin dashboards. |
+| [planmerge.js](planmerge.js) | Importing a new version of the project plan into the Timeline (tests/plan_reimport.mjs). |
+| [presence.js](presence.js) | Studio-open signal: while a team member has a Studio tab open and visible, tell the server every 4 minutes. |
+| [privatetasks.js](privatetasks.js) | My private tasks (Tasks and email > My private tasks): a person's own day-to-day list for the project, kept apart from the shared tasks and visible to nobody else. |
+| [qimport.js](qimport.js) | Questions from a file: the extra questions a consultant already has (an Excel sheet of any layout, a Word or PDF document, plain text) become question-bank entries. |
+| [quickfacts.js](quickfacts.js) | Quick facts: a question the project records answer exactly (the go-live date, where we are, the next step, a step's dates, progress, overdue and my tasks, sign-offs, open risks) is answered here at... |
+| [reslinks.js](reslinks.js) | Notes & Links helpers (9 Nov 2026): turn the web addresses in a note into clickable links, guess what kind of resource a pasted address is, and apply the private-note rule. |
+| [taskroute.js](taskroute.js) | Where does a task belong? Reads the words of a task (title, description, module, sheet name) and says which type and project stage fit, so an imported row or an item found in a document lands in... |
 | [template.html](template.html) |  |
+| [wsplan.js](wsplan.js) | Workshop plan page tools (view rsplan; the cards are drawn by src/sessionhtml.js, the sessions live in the planner document and are edited with the Requirement Session Planner drawer,... |
+| [wsplanlogic.js](wsplanlogic.js) | Workshop plan import (tests/workshop_plan.mjs). |
 
 ## src/animation: opening and sign-in animations
 The sign-in explainer (`loginflow.js`, drawn in SVG and sequenced with GSAP), the customer sign-in city (`loginstory.js`), the opening intros and the Discover more scroll effects.
@@ -302,7 +314,7 @@ The sign-in explainer (`loginflow.js`, drawn in SVG and sequenced with GSAP), th
 | [animation/discover/project-scroll.css](animation/discover/project-scroll.css) | Discover more tab inside a project: pinned sideways galleries (src/animation/discover/project-scroll.js). |
 | [animation/discover/project-scroll.js](animation/discover/project-scroll.js) | "Discover more" tab inside a project (src/explore.js): pinned sideways galleries, in the manner of Apple's card carousels. |
 | [animation/intro.js](animation/intro.js) | Opening page (before sign-in), shown on every fresh load: the customer journey (src/animation/roadintro.js) on customer invite links, the tree intro (src/animation/treeintro.js) for everyone else. |
-| [animation/loginflow.js](animation/loginflow.js) | Sign-in page, left side (team view): "How Delivery Studio helps", a six-chapter explainer drawn in SVG and sequenced with ONE GSAP timeline (vendor/gsap.min.js, GSAP's free standard licence). |
+| [animation/loginflow.js](animation/loginflow.js) | Sign-in page, left side (team view): "How Delivery Studio works", seven short scenes in ONE product window, sequenced by one GSAP timeline (vendor/gsap.min.js, free standard licence). |
 | [animation/loginstory.js](animation/loginstory.js) | Sign-in page, left side: a canvas story that fills the left column of the sign-in page (replaces the earlier CSS story). |
 | [animation/motion.js](animation/motion.js) | Facilio Motion Kit integration (vanilla). |
 | [animation/roadintro.js](animation/roadintro.js) | "Your road to go-live": the Delivery Studio story told along a road. |

@@ -5,9 +5,11 @@ How Delivery Studio works with Claude, Microsoft 365 (Outlook, Teams), the Facil
 | Document | About |
 |---|---|
 | [CLAUDE-ECOSYSTEM-FEASIBILITY-2026-11-06.md](CLAUDE-ECOSYSTEM-FEASIBILITY-2026-11-06.md) | Claude ecosystem integration: feasibility study (6 Nov 2026) |
+| [CLAUDE-HELPER-AND-QUICK-FACTS-2026-11-08.md](CLAUDE-HELPER-AND-QUICK-FACTS-2026-11-08.md) | Fewer Claude tokens: quick facts, DeepSeek, and a helper that stops when nobody is here (8 Nov 2026) |
 | [CLAUDE-INTEGRATION.md](CLAUDE-INTEGRATION.md) | The Claude side of Delivery Studio: what is built (developer guide) |
 | [CONNECTORS-2026-11-04.md](CONNECTORS-2026-11-04.md) | Connector discovery, 4 Nov 2026 (Part E step 0) |
 | [MOCKUP-VIDEO-RETURN-2026-11-07.md](MOCKUP-VIDEO-RETURN-2026-11-07.md) | Meteor pages and Comet videos back into the Studio (7 Nov 2026) |
+| [SOLUTION-INTEGRATION-ARCHITECTURE-2026-11-08.md](SOLUTION-INTEGRATION-ARCHITECTURE-2026-11-08.md) | Solution design and BRD: how it fits together, and how another tool can plug in (8 Nov 2026) |
 | [STEP1-PUSH-PULL-DESIGN.md](STEP1-PUSH-PULL-DESIGN.md) | Step 1 design: the push and pull engine (4 Nov 2026) |
 | [claude-connector.md](claude-connector.md) | Claude connector |
 | [outlook-feasibility.md](outlook-feasibility.md) | Outlook integration: feasibility and prerequisites |

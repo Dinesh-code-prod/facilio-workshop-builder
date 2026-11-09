@@ -9,15 +9,19 @@ How to read a name: a test is named after the thing it checks (for example `wsr.
 | File | What it checks |
 |---|---|
 | [ai_layer.mjs](ai_layer.mjs) | The shared AI layer (work/server/_ai.mjs) on its own, with a fake platform: provider choice and capabilities, configuration |
+| [assistant_router.mjs](assistant_router.mjs) | Assistant box: the router sorts rough wording into lookup / help / small / heavy / unclear, DeepSeek can hand over to Claude, and the wait is told. |
 | [brd_draft.mjs](brd_draft.mjs) | The BRD drafts itself from confirmed findings (src/brddraft.js, rule `drafts`): confirmed becomes a Confirmed requirement with the team answer as rules, once; unconfirmed takes it back to Draft;... |
 | [brd_review.mjs](brd_review.mjs) | The BRD review checklist (src/brdreview.js): which parts are still not ticked, what is still open next to each part, and that the panel shows names and escapes text. |
 | [brd_scope.mjs](brd_scope.mjs) | The BRD follows the modules in scope (src/brd.js): roles, role matrix, portals and the location hierarchy show only what touches a module in scope, and the appendices are off by default. |
+| [brdsessions.mjs](brdsessions.mjs) | What the requirement sessions captured, as the BRD and the checks read it (src/brdsessions.js; the BRD wiring is checked in a browser by tests/ui/brd-sessions-check.mjs). |
+| [brief_fanout.mjs](brief_fanout.mjs) | Scenario: two people work on one project and the BRD milestone is due tomorrow. |
 | [cfg_gap.mjs](cfg_gap.mjs) | Configuration gap table (src/cfggap.js): one row per component kind, missing inputs found and never guessed, setInput leaves the old table alone |
 | [chat_brief.mjs](chat_brief.mjs) | The chat brief: only the playbooks the message is about, all areas readable, scope not limited to one stage. |
 | [claude_launch.mjs](claude_launch.mjs) | Open in Claude, shared rules (src/claudelogic.js): what may travel in a link, never a silently cut prompt, the short reference prompt, the common header. |
 | [connector_skills.mjs](connector_skills.mjs) | Connector add-ons: the Facilio implementation skills tool, the "where are we" block of project_overview, the org id, the connector-seen note, and the hand-off start guidance. |
 | [contractmods.mjs](contractmods.mjs) | Which modules the contract documents are about (src/contractmods.js): scope part, delivery wording, exclusions, passing mentions, generic words, several documents, evidence kept, and the untidy... |
 | [customer_mail.mjs](customer_mail.mjs) | Customer emails (Project Settings): saving them, refusing shared domains and clashes, and the mailbox search that files what those customers already sent. |
+| [dashkit.mjs](dashkit.mjs) | The dashboard widget kit (src/dashkit.js): each shape draws from numbers, says so when there is nothing, and escapes what it prints. |
 | [demo_project.mjs](demo_project.mjs) | The shared demo project: set up once by an admin, read-only for everyone else, example data in every section including the project plan, and sample AI drafts. |
 | [design_apply.mjs](design_apply.mjs) | What Apply builds from a proposal (src/design.js): a state flow in the shape the flow builder keeps, and the panel's text is escaped. |
 | [design_logic.mjs](design_logic.mjs) | Design proposals (work/server/_dsapi.mjs): cleaning, merging, never overwriting a decided one, limits. |
@@ -49,8 +53,10 @@ How to read a name: a test is named after the thing it checks (for example `wsr.
 | [msa_questions.mjs](msa_questions.mjs) | Questions from the contract (src/msaquestions.js): the rules that turn the MSA review into module-guide questions and the Learn & Prepare card, and the wiring. |
 | [msa_resume.mjs](msa_resume.mjs) | create_project_from_msa after the review of 5 Nov 2026 (findings A and H): a claim before the project is made, a failure after it reports the project id and a retry RESUMES the fill |
 | [msadocs.mjs](msadocs.mjs) | Several contract documents per project (work/server/_msadocs.mjs): the old single MSA reads as one document, adding and removing, verification, parts for Claude, the cross-document check and its... |
+| [msgfmt.mjs](msgfmt.mjs) | Wording of every message the Studio sends (work/server/_msgfmt.mjs, _notify.mjs teamsCard, _taskwatch.mjs assignmentNotice) and the shared AI working standard. |
 | [nav_exposed.mjs](nav_exposed.mjs) | The team menu shows only the tabs built in the Part E revamp (EXPOSED in src/shell.js). |
 | [notify.mjs](notify.mjs) | Notifications (work/server/_notify.mjs): the pure rules, then the events on a stand-in platform: who is told, who is not (the person who caused it, customers), the preferences, the quiet hours, the... |
+| [nudges.mjs](nudges.mjs) | Lifecycle nudges (work/server/_nudges.mjs): the owners' message is worded from the health signals, only critical and high ones count, and the key lets the same worry through at most every three days. |
 | [onboarding_html.mjs](onboarding_html.mjs) | Customer onboarding HTML (src/onbhtml.js) and the check of a returned package (src/onbreturn.js): the file is deterministic, asks for nothing from outside, escapes every project string |
 | [onboarding_rules.mjs](onboarding_rules.mjs) | Data onboarding sheet rules (public/onboarding-tool/04-rules.js + 05-engine.js): run the real checker on small workbooks and see that good data passes and each kind of mistake is caught. |
 | [onboarding_workbook.mjs](onboarding_workbook.mjs) | The customer's data workbook (src/onbhtml.js grids, Save workbook) and the studio's import check (src/onbreturn.js validateWorkbookHtml) |
@@ -60,26 +66,35 @@ How to read a name: a test is named after the thing it checks (for example `wsr.
 | [pkg_validate.mjs](pkg_validate.mjs) | Static package validation (src/pkgvalidate.js): the real sample fixture (tests/fixtures/orgpkg-sample, as used by tests/orgpkg.mjs) and a package built by |
 | [plan_from_msa.mjs](plan_from_msa.mjs) | Project plan drafted from the contract (work/server/_planfrommsa.mjs): 90-day default, weekends skipped, commitments pinned, conflicts reported not hidden |
 | [plan_html.mjs](plan_html.mjs) | Plan HTML export (src/planhtml.js): complete, self-contained, escaped, labelled by origin, nothing invented. |
+| [plan_reimport.mjs](plan_reimport.mjs) | Scenario: the customer delays the BRD sign-off and the team imports a new version of the project plan (src/planmerge.js, stages from work/server/_portfolio.mjs planInfo). |
 | [portfolio.mjs](portfolio.mjs) | Health rules of the Admin Command Center (work/server/_portfolio.mjs) on projects in known states: each project's health |
 | [portfolio_money.mjs](portfolio_money.mjs) | The admin finance view: money per project comes from the contract fee milestones and change-request prices, in the project's own currency. |
 | [prepared_questions_tool.mjs](prepared_questions_tool.mjs) | Prepared questions as connector tools (roadmap E2 workspace 3, E14): get_prepared_questions and live_ask, called the way Claude calls them (POST /api/ with the x-work-mcp-tool header) |
+| [private_tasks.mjs](private_tasks.mjs) | Private tasks (work/server/_privatetasks.mjs through work/server/api.mjs), on a stand-in platform like tests/transfer_routes.mjs. |
 | [qa_stress.mjs](qa_stress.mjs) | QA stress run for the facilio.work server function: 100 people, 100 projects, everyone adds notes, links and documents, large records, file parts, connector calls and a big hand-off answer. |
 | [qbank.mjs](qbank.mjs) | The question bank rules (work/server/_qbank.mjs): cleaning, merging without duplicates, editing with history, moving, the Workshop room's view, the prompts and the parsers of a model's answer. |
 | [qbank_api.mjs](qbank_api.mjs) | The two AI routes of the question bank (work/server/_qbankapi.mjs) with a stand-in AI and fake project documents: what is read, what is returned, who may call them. |
+| [qimport.mjs](qimport.mjs) | Questions from a file (src/qimport.js): a sheet of any layout and a document both give clean questions, filed under the project's modules; non-questions are left out. |
+| [quickfacts.mjs](quickfacts.mjs) | Quick facts (src/quickfacts.js): exact answers from the loaded records with no AI; anything that is not a plain look-up returns null. |
+| [reslinks.mjs](reslinks.mjs) | Notes & Links helpers (src/reslinks.js): clickable addresses in notes, type guessing for pasted links, the private-note rule. |
 | [roadmap_stage.mjs](roadmap_stage.mjs) | The eight-stage roadmap in admin, portfolio and customer screens: each of the 12 plan steps belongs to one stage of the menu; the server and the browser copy of the mapping agree. |
 | [rs_logic.mjs](rs_logic.mjs) | Requirement session transcripts and findings (work/server/_rsapi.mjs): cleaning, merging, replacing, limits. |
 | [scale.mjs](scale.mjs) | Tests the facilio.work server function (work/server/api.mjs) against a mock of the platform's ctx (db limits, verified viewer, private files). |
 | [session_html.mjs](session_html.mjs) | Requirement session plan HTML (src/sessionhtml.js): the structure of Facilio's workshop plan sheet, escaped, self-contained, nothing invented. |
 | [session_questions.mjs](session_questions.mjs) | Questions-to-ask engine (work/server/_sessionquestions.mjs): each rule fires on crafted input and cites its sources, nothing is made up, ids are stable, liveAsk is careful. |
+| [slakpi.mjs](slakpi.mjs) | A dropped contract or SLA/KPI sheet read into the KPIs & SLA matrix page (work/server/_slakpi.mjs). |
 | [solctx.mjs](solctx.mjs) | The context pack of a Solution area (work/server/_solctx.mjs): Claude gets everything the project holds about the area in one read. |
 | [sollogic.mjs](sollogic.mjs) | Solution tab rules (src/sollogic.js): areas, requirement lines, versions, restore, accepting a proposal, word diff, BRD text and Word rows |
+| [solpackage.mjs](solpackage.mjs) | The solution package (work/server/_solpackage.mjs): one versioned, hashed statement of the agreed solution that the BRD, the mockup and other tools read. |
 | [solread.mjs](solread.mjs) | A dropped solution document read by the AI layer (work/server/_solread.mjs and the route in _qbankapi.mjs), stored as proposals (src/sollogic.js mergeProposals), and only real solution modules... |
 | [solution_doc.mjs](solution_doc.mjs) | The Solution Document job (Handover page): Claude builds it from the dropped org package with the facilio-solution-document-builder skill. |
+| [solution_draft.mjs](solution_draft.mjs) | AI draft of one solution area from the project's own records (POST /api/projects/:id/solution/draft in work/server/_qbankapi.mjs) and the sessions block of the context pack (work/server/_solctx.mjs) |
 | [solution_status.mjs](solution_status.mjs) | Solution status (src/solution.js): what is recorded per module in scope, which parts are missing, an empty project says what to do, customers see nothing, text is escaped. |
 | [src_syntax.mjs](src_syntax.mjs) | Every browser source file must parse: a stray quote once blanked the whole live app while the other tests still passed. |
 | [task_engine.mjs](task_engine.mjs) | Task engine (docs/plans/TASKS-AUTOMATION-PLAN-2026-11-07.md): the pure rules in src/taskengine.js, then the server side that lets the owner answer a task (task_reply) and keeps the auto block. |
 | [task_suggestions.mjs](task_suggestions.mjs) | Task tracking by Claude (roadmap E12 slice 2): the pure rules of work/server/_tasksuggest.mjs, then the connector tools task_evidence and save_task_suggestions and the routes |
 | [task_watch.mjs](task_watch.mjs) | Task reminders (roadmap E12): the pure rules in work/server/_taskwatch.mjs, then the connector tools my_tasks and send_task_digest and the assignment DM |
+| [taskroute.mjs](taskroute.mjs) | Where a task belongs (src/taskroute.js): the stage and type come from the words, the first matching rule wins, nothing fits an empty row. |
 | [tl_deps.mjs](tl_deps.mjs) | Plan timeline dependencies (src/tldepslogic.js): loops are refused, later tasks follow an earlier one that moved, conflicts and the critical path are found. |
 | [transcript_import.mjs](transcript_import.mjs) | Import of an approved transcript transfer (src/transcriptimport.js, the button in src/transferslogic.js): who may import, the second import of the same version, bad content. |
 | [transcript_parse.mjs](transcript_parse.mjs) | Transcript parser (src/transcriptparse.js): every format, odd input, the size and count caps, hostile input and stability. |
@@ -93,5 +108,6 @@ How to read a name: a test is named after the thing it checks (for example `wsr.
 | [work_adapter.mjs](work_adapter.mjs) | Tests the facilio.work server function (work/server/api.mjs) against a mock of the platform's ctx (db limits, verified viewer, private files). |
 | [workchat.mjs](workchat.mjs) | The shared Claude conversation (src/workchat.js): messages with actions and reply boxes, tiles with state, escaping. |
 | [workshop_logic.mjs](workshop_logic.mjs) | Workshop room logic (src/workshoplogic.js): the question list with the person's status and notes, the live merge (never certain, never changes a status) |
+| [workshop_plan.mjs](workshop_plan.mjs) | Workshop plan page: sessions made in the planner read like the contract's, the plan exports to rows, and an imported plan (a Claude draft) is checked and applied (src/sessionhtml.js,... |
 | [workshop_prep.mjs](workshop_prep.mjs) | Workshop preparation (src/workshopprep.js): one session proposal per module, nothing invented, a plain JSON object the Studio can edit and re-render |
 | [wsr.mjs](wsr.mjs) | Status reports (src/wsrlogic.js): the weekly and monthly report built from the project records. |

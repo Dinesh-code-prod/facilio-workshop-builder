@@ -5,6 +5,7 @@ Audits, reviews and status reports, each with a date. They describe how things w
 | Document | About |
 |---|---|
 | [AUDIT-2026-11-04.md](AUDIT-2026-11-04.md) | Audit, 4 Nov 2026 (Part E step 0, and the "audit first" of Part D) |
+| [GUIDES-AND-DOCUMENTS-ANALYSIS-2026-11-08.md](GUIDES-AND-DOCUMENTS-ANALYSIS-2026-11-08.md) | Guides, UAT guide, solution document and imported documents: what exists, what was missing (8 Nov 2026) |
 | [MASTER-ASSESSMENT-2026-11-06.md](MASTER-ASSESSMENT-2026-11-06.md) | Master transformation: assessment and plan (6 Nov 2026) |
 | [REPORTS-AI-AUDIT-2026-11-07.md](REPORTS-AI-AUDIT-2026-11-07.md) | Reports: DeepSeek and Open in Claude audit (7 Nov 2026, roadmap A1c) |
 | [TABS-BACKUP-2026-11-07.md](TABS-BACKUP-2026-11-07.md) | Tabs backup (7 Nov 2026) |

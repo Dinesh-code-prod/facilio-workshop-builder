@@ -7,6 +7,7 @@ Plans written before a feature was built: what it should do, how, and in what or
 | [MAIL-TO-TASKS-PLAN-2026-11-07.md](MAIL-TO-TASKS-PLAN-2026-11-07.md) | Customer mail becomes tasks (plan, 7 Nov 2026) |
 | [MSA-DOCUMENTS-PLAN-2026-11-08.md](MSA-DOCUMENTS-PLAN-2026-11-08.md) | Several contract documents per project: plan (8 Nov 2026) |
 | [NOTIFY-MAIL-STAGES-PLAN-2026-11-07.md](NOTIFY-MAIL-STAGES-PLAN-2026-11-07.md) | Mail through Power Automate, notifications, and the stage cycle (feasibility and design, 7 Nov 2026) |
+| [PLAN-REIMPORT-2026-11-09.md](PLAN-REIMPORT-2026-11-09.md) | What a new project plan version changes (9 Nov 2026) |
 | [REQUIREMENTS-INTELLIGENCE-PLAN-2026-11-08.md](REQUIREMENTS-INTELLIGENCE-PLAN-2026-11-08.md) | AI Requirements Intelligence: plan (8 Nov 2026) |
 | [SOLUTION-TAB-PLAN-2026-11-07.md](SOLUTION-TAB-PLAN-2026-11-07.md) | Solution tab: plan (7 Nov 2026) |
 | [STAGE3-CORE-PLAN-2026-11-06.md](STAGE3-CORE-PLAN-2026-11-06.md) | Stage 3 core plan: scope, solution, BRD (6 Nov 2026, user direction) |

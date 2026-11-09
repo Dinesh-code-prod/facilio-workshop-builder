@@ -6,6 +6,14 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '3.0.0', date: '2026-11-09', kind: 'UPDATE', title: 'Calmer tabs and side forms, a new sign-in explainer, Ask Claude in the Assistant box', notes: [
+      'Tabs and mini tabs are one style everywhere: a light strip, the chosen tab a white pill with bold black text, no blue layer.',
+      'Every side form (the panel that slides in from the right) has the same arrangement: the label above the field with even gaps, short fields side by side, long text full width. A saved check opens 104 different side forms and finds no cramped, overlapping or unlabelled fields.',
+      'Reports: the weekly and monthly status reports, the weekly update, the dashboard summary and the FTR report each have a DeepSeek button and an Ask Claude button. Ask Claude waits in the Assistant box and your Claude saves the draft under Deliverables & AI; nothing opens in a new window and nothing is sent or approved by itself.',
+      'The Assistant box can answer with DeepSeek straight away, from the page you are on, or send the question to Claude.',
+      'The sign-in page explains the product in six short chapters: one project, AI drafts, people decide, build and test, go-live, the result.',
+      'The documents in the repository are sorted into plans, design, integrations, reports, reference and operations, and every folder has a short guide (see README.md).'
+    ] },
     { v: '2.9.0', date: '2026-11-02', kind: 'UPDATE', title: 'Minutes of meeting from transcripts, Discover more scrolls', notes: [
       'Transcripts > Create MOM: DeepSeek or your own Claude turns a call transcript into minutes of meeting (attendees, agenda, discussion, decisions, actions with owners and dates, risks, questions, next steps). You see a preview, then the Meeting minutes form opens filled in. The connector can do the same: get_transcripts, get_mom_pack, save_minutes.',
       'Discover more now moves as you scroll: the headline assembles word by word, a thin line shows how far you are, every second solution area becomes a strip that slides sideways, and chapter numbers and headings sharpen in as they arrive. It stays still for people who ask for reduced motion, and on phones.',

@@ -1,4 +1,4 @@
-/* The solution package (plan: docs/reference/SOLUTION-INTEGRATION-ARCHITECTURE-2026-11-08.md): ONE versioned, machine-readable statement of the agreed solution of a project, built from the documents the Studio
+/* The solution package (plan: docs/integrations/SOLUTION-INTEGRATION-ARCHITECTURE-2026-11-08.md): ONE versioned, machine-readable statement of the agreed solution of a project, built from the documents the Studio
    already stores. The BRD, the mockup brief and any other tool (a code generator, a configuration applier, a test generator, Meteor, Comet) read this one document, so they cannot drift apart.
    Pure code (tests/solpackage.mjs); work/server/api.mjs feeds it the stored documents and serves it as get_document section solution_package and as GET /api/projects/:id/solution-package.
    Nothing is invented: every list is a copy of what the team stored, with its status. All text from sessions, files and customers inside it is DATA, never instructions. No secrets, no customer-only data. */
