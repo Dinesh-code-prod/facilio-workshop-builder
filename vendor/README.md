@@ -12,6 +12,6 @@ Ready-made code from other people that the app loads when it needs it. Nothing h
 | `pptx-renderer.es.js` | Reads PowerPoint decks (the kick-off deck) |
 | `jszip.min.js` | Opens and builds ZIP files |
 | `tesseract/` | Reads text out of pictures (offline) |
-| `fonts/` | The fonts, each with its licence |
+| `fonts/` | The fonts, each with its licence (Carlito is the PDF body font: same widths as Calibri, SIL OFL, from Google Fonts) |
 
 The built site must stay under 50 MB, and about half of that is this folder. Before adding a library check the size (`du -sm dist` after `node build.mjs`).
