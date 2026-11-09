@@ -24,14 +24,21 @@
   // ---------- item cache ----------
   let st = { project: null, kinds: {}, at: {}, loading: {} };
   const reset = () => { if (st.project !== (S.project && S.project.id)) st = { project: S.project && S.project.id, kinds: {}, at: {}, loading: {} }; };
+  let q = null;   // the kinds asked for in this moment: one request and one redraw for all of them, not one each
+  function flush() {
+    const b = q; q = null; const need = [...b.kinds], done = () => b.res.forEach(f => f());
+    if (!S.project) { need.forEach(k => { st.loading[k] = false; }); return done(); }
+    API.get(`/api/projects/${S.project.id}/items?kinds=${need.join(',')}`).then(r => {
+      need.forEach(k => { st.kinds[k] = new Map(); st.at[k] = Date.now(); st.loading[k] = false; });
+      (r.items || []).forEach(it => { st.kinds[it.kind] = st.kinds[it.kind] || new Map(); st.kinds[it.kind].set(it.id, it); });
+      V.render(); done();
+    }).catch(e => { need.forEach(k => { st.loading[k] = false; st.at[k] = Date.now(); }); if (e.status !== 403) V.toast(e.message || 'Could not load records', 5000, true); done(); });
+  }
   function load(kinds, force) {
     reset(); const need = kinds.filter(k => force || !st.at[k] || Date.now() - st.at[k] > 30000).filter(k => !st.loading[k]); if (!need.length || !S.project) return Promise.resolve();
     need.forEach(k => { st.loading[k] = true; });
-    return API.get(`/api/projects/${S.project.id}/items?kinds=${need.join(',')}`).then(r => {
-      need.forEach(k => { st.kinds[k] = new Map(); st.at[k] = Date.now(); st.loading[k] = false; });
-      (r.items || []).forEach(it => { st.kinds[it.kind] = st.kinds[it.kind] || new Map(); st.kinds[it.kind].set(it.id, it); });
-      V.render();
-    }).catch(e => { need.forEach(k => { st.loading[k] = false; st.at[k] = Date.now(); }); if (e.status !== 403) V.toast(e.message || 'Could not load records', 5000, true); });
+    if (!q) { q = { kinds: new Set(), res: [] }; Promise.resolve().then(flush); }
+    need.forEach(k => q.kinds.add(k)); return new Promise(res => q.res.push(res));
   }
   const ready = kinds => { reset(); return kinds.every(k => st.kinds[k]); };
   const list = kind => { reset(); return st.kinds[kind] ? [...st.kinds[kind].values()].map(x => Object.assign({ id: x.id, _v: x.version, _at: x.updatedAt, _by: x.updatedBy, _side: x.updatedSide, _created: x.createdAt, _cside: x.createdSide }, x.data)) : []; };

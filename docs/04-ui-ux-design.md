@@ -19,6 +19,8 @@ The rules the screens follow. Colours, depth and wording are the owner's rules; 
 | Sky (soft accents, borders on hover) | `#8DB8FF` |
 | Soft surfaces and lines | `#F4F7FD`, `#E3E9F5` |
 
+Sky and the soft surfaces are for small accents only (a hover border, a selected chip). Cards, card headers, table headers and the page background stay white or neutral grey: no sky-blue fills or blue top lines (owner rule, 9 Nov 2026). Buttons, borders, radii and the type follow coss ui (https://coss.com/ui): near-black primary button, hairline borders, 10 px controls, Geist.
+
 Not allowed: violet or purple, neon or glow, heavy gradients. (`reference/design-reference.md` records an older external artifact that used violet; it is history, not a rule.)
 
 ## Depth

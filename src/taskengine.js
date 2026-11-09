@@ -73,9 +73,9 @@
       // a stage whose records are all done: the team is told once a day
       const r = reconcile(desired(fx), I().list('task'), now, fx.mailWhy, new Set(fx.unknownRules || [])); let n = 0;
       const batch = async (list, fn) => { for (let i = 0; i < list.length; i += 5) await Promise.all(list.slice(i, i + 5).map(fn)); };   // five saves at a time
-      await batch(r.create, async t => { await I().put('task', t.id, t); n++; });
-      for (const x of r.resolve) { const t = I().get('task', x.id); if (t) { await I().put('task', t.id, Object.assign({}, t, { status: 'Done', completion: 'Resolved automatically: ' + x.why + '.', auto: Object.assign({}, t.auto, { resolvedBy: 'engine', resolvedAt: now }) })); n++; } }
-      for (const x of r.reopen) { const t = I().get('task', x.id); if (t) { await I().put('task', t.id, Object.assign({}, t, { status: 'To Do', completion: '', auto: Object.assign({}, t.auto, { resolvedBy: '', resolvedAt: '' }) })); n++; } }
+      await batch(r.create, async t => { await I().put('task', t.id, t, { silent: true }); n++; });
+      for (const x of r.resolve) { const t = I().get('task', x.id); if (t) { await I().put('task', t.id, Object.assign({}, t, { status: 'Done', completion: 'Resolved automatically: ' + x.why + '.', auto: Object.assign({}, t.auto, { resolvedBy: 'engine', resolvedAt: now }) }), { silent: true }); n++; } }
+      for (const x of r.reopen) { const t = I().get('task', x.id); if (t) { await I().put('task', t.id, Object.assign({}, t, { status: 'To Do', completion: '', auto: Object.assign({}, t.auto, { resolvedBy: '', resolvedAt: '' }) }), { silent: true }); n++; } }
       if (V.mailInbox) await V.mailInbox.markResolved(I().list('task'));   // a finished mail task (by the engine or by a person) queues the reply draft once
       if (n) { V.render(); } return n;
     } catch (e) { return 0; } finally { busy = false; }
