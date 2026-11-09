@@ -5,7 +5,7 @@
   'use strict';
   const F = root.FWB; const { S, esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   let st = null, last = 0, forPid = '';
-  const PROMPT = 'Use the Facilio Delivery Studio connector. First check the scheduled task "Delivery Studio job queue" with the scheduled-tasks tools: if it is paused (enabled false), switch it on again with update_scheduled_task (enabled true, keep its schedule) and say so in one line; if you cannot, say that in one line and carry on. Then call project_jobs with action list (no project) and do the waiting jobs one by one.';
+  const PROMPT = 'Use the Facilio Delivery Studio connector. First check the scheduled task "Delivery Studio job queue" with the scheduled-tasks tools: if it is paused (enabled false), switch it on again with update_scheduled_task (enabled true, keep its schedule) and say so in one line; if you cannot, say in one line that the person must switch on "Delivery Studio job queue" under Scheduled in Claude desktop, and carry on. Then call project_jobs with action list (no project) and do the waiting jobs one by one.';
   const show = () => !!(S.project && !V.isCustomer() && S.user && S.user.kind !== 'customer');
   const skipKey = () => 'fwb.hp.skip.' + String((S.user && S.user.email) || '');
   const skipped = () => { try { return Date.now() - Number(localStorage.getItem(skipKey()) || 0) < 3 * 864e5; } catch (e) { return false; } };
