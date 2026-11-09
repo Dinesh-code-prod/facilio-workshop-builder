@@ -130,7 +130,7 @@ await t('Send to my Teams: one task goes to the caller only; Teams off, a finish
 });
 await t('the morning brief: the first sweep of a day sends each owner of the project the digest (stage and DUE TODAY shown), a second sweep the same day sends nothing', async () => {
   teamsOn = true; store.get('twn').clear(); if (store.get('dbr')) store.get('dbr').clear(); sent = [];
-  sent = []; await as(SAM, 'POST', '/api/notifications/sweep', {}); assert.equal(sent.filter(x => /^TASKS/.test(x.title)).length, 0, 'off by default: no brief'); if (store.get('dbr')) store.get('dbr').clear();
+  assert.equal((await as(SAM, 'GET', `/api/projects/${pid}/daily-brief`)).data.on, true, 'on unless switched off'); await as(SAM, 'POST', `/api/projects/${pid}/daily-brief`, { on: false }); assert.equal((await as(SAM, 'GET', `/api/projects/${pid}/daily-brief`)).data.on, false); sent = []; await as(SAM, 'POST', '/api/notifications/sweep', {}); assert.equal(sent.filter(x => /^TASKS/.test(x.title) && /Reminder Test/.test(x.title)).length, 0, 'switched off: no brief for this project (the others still get theirs)'); if (store.get('dbr')) store.get('dbr').clear();
   assert.equal((await as(SAM, 'POST', `/api/projects/${pid}/daily-brief`, { on: true })).data.on, true); assert.equal((await as(SAM, 'GET', `/api/projects/${pid}/daily-brief`)).data.on, true);
   assert.equal((await put(SAM, pid, 'br1', { title: 'Brief me', status: 'To Do', owner: KIM, due: day(0), stage: 'Testing & UAT' })).status, 200); sent = []; store.get('twn').clear();
   const r = await as(SAM, 'POST', '/api/notifications/sweep', {}); assert.equal(r.status, 200, JSON.stringify(r.data));
