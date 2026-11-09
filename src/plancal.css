@@ -17,7 +17,7 @@ body .cal .cal-today, body .cal .cal-fb { background: rgba(255, 255, 255, .12) !
 body .cal .cal-today:hover, body .cal .cal-fb:hover { background: rgba(255, 255, 255, .2) !important; } body .cal .cal-fb.on { border-color: #fff !important; } .cal-fb span { font-size: 12px; }
 body .cal .cal-q { width: 160px !important; flex: none; border: 1px solid rgba(255, 255, 255, .22) !important; background: rgba(255, 255, 255, .12) !important; color: #fff !important; border-radius: 10px !important; padding: 0 12px !important; min-height: 36px; font: inherit; font-size: 13px; } body .cal .cal-q::placeholder { color: #C9DAFA; }
 /* a later layer paints the box white, so the text and hint must be dark: the light hint was hard to read */
-body .cal .cal-q:not(#_):not(#__) { background: #fff !important; color: #1D1A5E !important; border-color: #c9d6ef !important; }
+body .cal .cal-q:not(#_):not(#__) { background: #fff !important; color: #1d1d1f !important; border-color: #c9d6ef !important; }
 body .cal .cal-q:not(#_):not(#__)::placeholder { color: #5B6B99; opacity: 1; }
 body .cal .cal-new { background: #fff !important; color: var(--ink) !important; border: 0 !important; box-shadow: none !important; font: inherit; font-size: 13px; font-weight: 750; min-height: 36px; padding: 0 14px !important; border-radius: 10px !important; cursor: pointer; } body .cal .cal-new:hover { background: #E8F0FF !important; }
 /* body: soft, with a phase strip and the grid */
@@ -54,7 +54,7 @@ body .cal .cal-chip { border: 0 !important; border-left: 3px solid var(--a) !imp
 /* day */
 .cal-dayv { max-width: 760px; display: grid; gap: 10px; } .cal-dayv h3 { margin: 0 0 2px; font-size: 19px; color: var(--ink); } .cal-pill { display: inline-block; vertical-align: middle; font-size: 11px; font-weight: 700; color: #fff; background: var(--blue); border-radius: 999px; padding: 2px 9px; margin-left: 6px; }
 body .cal .cal-row { display: flex; align-items: stretch; text-align: left; border: 1px solid var(--line) !important; background: var(--cell) !important; border-radius: 12px !important; padding: 0 !important; cursor: pointer; font: inherit; overflow: hidden; box-shadow: none !important; transition: border-color .15s ease; } body .cal .cal-row:hover { border-color: var(--sky) !important; } body .cal .cal-row.done { opacity: .65; }
-.cal-bar-c { width: 6px; flex: none; background: var(--a); } .cal-rb { padding: 12px 14px; display: grid; gap: 3px; flex: 1; min-width: 0; } .cal-rb b { font-size: 14.5px; color: var(--ink); } .cal-rb small { color: var(--mut); font-size: 12.5px; } .cal-late { font-style: normal; font-size: 11px; font-weight: 700; color: #b10e1c; background: #fdf3f4; border-radius: 6px; padding: 1px 7px; }
+.cal-bar-c { width: 6px; flex: none; background: var(--a); } .cal-rb { padding: 12px 14px; display: grid; gap: 3px; flex: 1; min-width: 0; } .cal-rb b { font-size: 14.5px; color: var(--ink); } .cal-rb small { color: var(--mut); font-size: 12.5px; } .cal-late { font-style: normal; font-size: 11px; font-weight: 700; color: #d70015; background: #fdf3f4; border-radius: 6px; padding: 1px 7px; }
 .cal-prog { display: block; height: 6px; background: #DDE6F4; border-radius: 4px; overflow: hidden; margin-top: 5px; } .cal-prog i { display: block; height: 100%; background: var(--a); border-radius: 4px; }
 /* year */
 .cal-year { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; } .cal-year .cal-mini { background: var(--cell); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
@@ -96,5 +96,5 @@ body .cal .cal-mini > button.t span { background: #1570EF !important; }
 body .cal .cal-new:not(#_):not(#__) { background: #fff !important; }
 
 /* the AI menu reuses the Filter menu's look; its two actions are plain rows */
-body .cal .cal-aib:not(#_):not(#__) { width: 100%; display: flex; align-items: center; gap: 8px; border: 1px solid #DCE4F3 !important; border-radius: 10px !important; background: #fff !important; color: #1D1A5E !important; font: inherit; font-weight: 650; padding: 10px 12px !important; margin-top: 6px; cursor: pointer; text-align: left; box-shadow: none !important; }
+body .cal .cal-aib:not(#_):not(#__) { width: 100%; display: flex; align-items: center; gap: 8px; border: 1px solid #DCE4F3 !important; border-radius: 10px !important; background: #fff !important; color: #1d1d1f !important; font: inherit; font-weight: 650; padding: 10px 12px !important; margin-top: 6px; cursor: pointer; text-align: left; box-shadow: none !important; }
 body .cal .cal-aib:not(#_):not(#__):hover { background: #EAF2FF !important; border-color: #8DB8FF !important; }

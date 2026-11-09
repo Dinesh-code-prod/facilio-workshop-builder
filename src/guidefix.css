@@ -1,7 +1,7 @@
 /* Customer User Guide: module list on the left and the section chips. They had violet fills, overlapping dots and a count that ran into the module name; this layer puts them in the Facilio palette
    (navy #1D1A5E, blue #1570EF, sky #8DB8FF) and keeps every label on its own line. */
 body .wb-nav:not(#_):not(#__) { background: #fff; border: 1px solid #e3e9f5; border-radius: 14px; padding: 10px; box-shadow: 0 1px 2px rgba(0, 0, 0, .06); }
-body .wb-mod:not(#_):not(#__) { display: flex; align-items: center; gap: 8px; width: 100%; margin: 2px 0; padding: 9px 12px; border: 0; border-radius: 10px; background: transparent; color: #1D1A5E; font-size: 13.5px; font-weight: 600; line-height: 1.3; transform: none; box-shadow: none; }
+body .wb-mod:not(#_):not(#__) { display: flex; align-items: center; gap: 8px; width: 100%; margin: 2px 0; padding: 9px 12px; border: 0; border-radius: 10px; background: transparent; color: #1d1d1f; font-size: 13.5px; font-weight: 600; line-height: 1.3; transform: none; box-shadow: none; }
 body .wb-mod:not(#_):not(#__) > span:first-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 body .wb-mod:not(#_):not(#__) .wb-n { flex: none; background: #fff; border: 1px solid #c9d6ef; color: #44527a; }
 body .wb-mod:not(#_):not(#__):hover { background: #eef4ff; transform: none; }
@@ -13,14 +13,14 @@ body .wb-sub:not(#_):not(#__) button { display: block; width: 100%; padding: 6px
 body .wb-sub:not(#_):not(#__) button::before { display: none; }
 body .wb-sub:not(#_):not(#__) button:hover { background: #eef4ff !important; color: #1570EF !important; }
 body .wb-sub:not(#_):not(#__) button.on { color: #1570EF !important; font-weight: 600; }
-body .gl-jump:not(#_):not(#__) button { background: #fff !important; color: #1D1A5E !important; border: 1px solid #c9d6ef !important; box-shadow: none !important; transform: none !important; }
+body .gl-jump:not(#_):not(#__) button { background: #fff !important; color: #1d1d1f !important; border: 1px solid #c9d6ef !important; box-shadow: none !important; transform: none !important; }
 body .gl-jump:not(#_):not(#__) button:hover { background: #eef4ff !important; color: #1570EF !important; border-color: #8DB8FF !important; }
 body .gl-jump:not(#_):not(#__) button.on { background: #1570EF !important; color: #fff !important; border-color: #1570EF !important; }
-body .tag.violet:not(#_):not(#__), body .tag.custom:not(#_):not(#__) { background: #e8f0ff; color: #1D1A5E; }
+body .tag.violet:not(#_):not(#__), body .tag.custom:not(#_):not(#__) { background: #e8f0ff; color: #1d1d1f; }
 /* the answers strip at the top of a module: light card, all three meters visible (it was a dark violet bar that cut off after one line) */
-body .gl-strip:not(#_):not(#__) { overflow: visible; height: auto; max-height: none; background: #f7faff; color: #1D1A5E; border: 1px solid #dbe6fb; box-shadow: none; }
+body .gl-strip:not(#_):not(#__) { overflow: visible; height: auto; max-height: none; background: #f7faff; color: #1d1d1f; border: 1px solid #dbe6fb; box-shadow: none; }
 body .gl-strip:not(#_):not(#__) .gl-meter, body .gl-strip:not(#_):not(#__) .gl-save { color: #44527a; }
-body .gl-strip:not(#_):not(#__) .gl-meter b { color: #1D1A5E; }
+body .gl-strip:not(#_):not(#__) .gl-meter b { color: #1d1d1f; }
 body .gl-strip:not(#_):not(#__) .gl-bar { background: #dbe6fb; }
 body .gl-bar i:not(#_):not(#__) { background: #1570EF; }
 body .notice:not(.err):not(.warn):not(.ok):not(#_):not(#__) { border-left-color: #1570EF; }

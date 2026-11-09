@@ -9,7 +9,7 @@ html body .wn-hero h2:not(#_):not(#__):not(.z1):not(.z2):not(.z3):not(.z4):not(.
 .wn-stats span{font-size:12px;color: #525252}
 .wn-stats .hot b{color:#ff7ab8}
 .wn-chips{display:flex;gap:8px;margin:0 0 18px;flex-wrap:wrap}
-.wn-chip{border:1px solid #d7dfee;background:#fff;color:#1D1A5E;border-radius:999px;padding:7px 15px;font:600 12.5px/1 inherit;cursor:pointer}
+.wn-chip{border:1px solid #d7dfee;background:#fff;color:#1d1d1f;border-radius:999px;padding:7px 15px;font:600 12.5px/1 inherit;cursor:pointer}
 .wn-chip.on{background:var(--wn-ink);color:#fff;border-color:var(--wn-ink)}
 .wn-tl{list-style:none;margin:0;padding:0 0 0 26px;position:relative}
 .wn-tl::before{content:"";position:absolute;left:7px;top:8px;bottom:8px;width:2px;background: #1570EF}
@@ -19,12 +19,12 @@ html body .wn-hero h2:not(#_):not(#__):not(.z1):not(.z2):not(.z3):not(.z4):not(.
 .wn-card{background:#fff;border:1px solid #e3e8f2;border-radius: 8px;padding:18px 20px}
 .wn-it.latest .wn-card{border-color:#c9d9fb}
 .wn-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.wn-v{font-weight:700;font-size:15px;color:#1D1A5E}
+.wn-v{font-weight:700;font-size:15px;color:#1d1d1f}
 .wn-d{font-size:12px;color: #262626}
 .wn-k,.wn-a{font-size:11px;font-weight:700;padding:3px 9px;border-radius: 999px;letter-spacing:.02em}
-.wn-k.up{background:#e6f0ff;color:#0b4fbf}.wn-k.fx{background:#fff1e0;color:#9a4d00}.wn-k.now{background:#fdf3f4;color:#b10e1c}
+.wn-k.up{background:#e6f0ff;color:#0b4fbf}.wn-k.fx{background:#fff1e0;color:#9a4d00}.wn-k.now{background:#fdf3f4;color:#d70015}
 .wn-a{background:#eef1f7;color:#46506f}
-.wn-card h3{margin:10px 0 8px;font-size:18px;line-height:1.3;color:#1D1A5E}
+.wn-card h3{margin:10px 0 8px;font-size:18px;line-height:1.3;color:#1d1d1f}
 .wn-ul{margin:0;padding:0 0 0 18px;line-height:1.65;font-size:13.5px;color:#39425f}
 .wn-ul li{margin:3px 0}
 .wn-ul li::marker{color:#1570EF}
@@ -33,5 +33,5 @@ html body .wn-hero h2:not(#_):not(#__):not(.z1):not(.z2):not(.z3):not(.z4):not(.
 @media(max-width:700px){.wn-hero{padding:24px 20px}.wn-stats{gap:20px}}
 /* progressive disclosure inside long forms: essentials first, the rest under "More options" */
 details.adv{border:1px solid #e3e8f2;border-radius: 12px;padding:8px 12px;background:#f8faff}
-details.adv>summary{cursor:pointer;font-weight:600;font-size:13px;color:#1D1A5E;padding:4px 0}
+details.adv>summary{cursor:pointer;font-weight:600;font-size:13px;color:#1d1d1f;padding:4px 0}
 details.adv[open]>summary{margin-bottom:6px}

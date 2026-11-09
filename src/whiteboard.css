@@ -1,17 +1,17 @@
 /* Process Whiteboard full screen: the board fills the window below the top bar (the page header and toolbar above it left only about 550 px on a 950 px screen). */
 body .wb-host.wb-full:not(#_) { position: fixed; top: 62px; left: 0; right: 0; bottom: 0; height: auto !important; min-height: 0; z-index: 450; border-radius: 0; border-left: 0; border-right: 0; border-bottom: 0; }
-body .wb-exitfull:not(#_) { position: absolute; top: 10px; right: 12px; z-index: 5; border: 1px solid #c9d6ef; background: #fff; color: #1D1A5E; font: inherit; font-weight: 650; font-size: 13px; padding: 7px 14px; border-radius: 10px; cursor: pointer; box-shadow: 0 1px 2px rgba(0, 0, 0, .1); }
+body .wb-exitfull:not(#_) { position: absolute; top: 10px; right: 12px; z-index: 5; border: 1px solid #c9d6ef; background: #fff; color: #1d1d1f; font: inherit; font-weight: 650; font-size: 13px; padding: 7px 14px; border-radius: 10px; cursor: pointer; box-shadow: 0 1px 2px rgba(0, 0, 0, .1); }
 body .wb-exitfull:not(#_):hover { background: #EAF2FF; border-color: #8DB8FF; }
 
 /* the board opened in its own tab: nothing but a slim title bar, the toolbar and the board */
 .wb-focus-page { padding: 8px 14px 0; background: #fff; min-height: 100vh; }
-.wb-focus-bar { display: flex; align-items: center; gap: 12px; padding: 2px 2px 8px; } .wb-focus-bar b { color: #1D1A5E; font-size: 16px; }
+.wb-focus-bar { display: flex; align-items: center; gap: 12px; padding: 2px 2px 8px; } .wb-focus-bar b { color: #1d1d1f; font-size: 16px; }
 .wb-focus-page .page-body { padding: 0; }
 
 /* shortcut list */
 body .wb-help:not(#_) { position: absolute; right: 14px; bottom: 64px; z-index: 6; width: min(460px, calc(100% - 28px)); max-height: 70%; overflow: auto; background: #fff; border: 1px solid #DCE4F3; border-radius: 8px; box-shadow: 0 16px 40px -14px rgba(0, 0, 0, .35); padding: 14px 16px; }
-.wb-help[hidden] { display: none; } .wb-help-h { display: flex; justify-content: space-between; align-items: center; color: #1D1A5E; margin-bottom: 8px; }
-.wb-help-g { display: grid; grid-template-columns: 70px 1fr; gap: 8px 12px; font-size: 13px; line-height: 1.5; } .wb-help-g b { color: #1570EF; } .wb-help-g span { color: #1D1A5E; }
+.wb-help[hidden] { display: none; } .wb-help-h { display: flex; justify-content: space-between; align-items: center; color: #1d1d1f; margin-bottom: 8px; }
+.wb-help-g { display: grid; grid-template-columns: 70px 1fr; gap: 8px 12px; font-size: 13px; line-height: 1.5; } .wb-help-g b { color: #1570EF; } .wb-help-g span { color: #1d1d1f; }
 body .wb-zsel:not(#_) { font-size: 12px; font-weight: 700; padding: 0 8px; width: auto; }
 
 /* resize handles point the way they pull; the round handle above a shape rotates it */

@@ -7,10 +7,10 @@
 .ovb-dg{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .ovb-d{display:flex;align-items:center;gap:12px;text-align:left;background:#f6f8fc;border:1px solid transparent;border-radius: 8px;padding:12px;cursor:pointer;font:inherit;color:inherit;transition:background .15s,border-color .15s,transform .15s}
 .ovb-d:hover{background:#fff;border-color:#c9d3ea;transform:translateY(-1px)}
-.ovb-n{flex:none;width:30px;height:30px;border-radius:9px;background:#e8eefc;color:#1D1A5E;font-weight:700;font-size:12px;display:grid;place-items:center}
+.ovb-n{flex:none;width:30px;height:30px;border-radius:9px;background:#e8eefc;color:#1d1d1f;font-weight:700;font-size:12px;display:grid;place-items:center}
 .ovb-dt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.ovb-dt b{font-size:13px}
 .ovb-s{display:flex;gap:12px;padding:10px 0;border-top:1px solid #eef1f7}.ovb-s:first-of-type{border-top:0;padding-top:0}
-.ovb-date{flex:none;width:46px;height:50px;border-radius: 12px;background:#e8eefc;color:#1D1A5E;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.ovb-date{flex:none;width:46px;height:50px;border-radius: 12px;background:#e8eefc;color:#1d1d1f;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
 .ovb-date b{font-size:18px}.ovb-date span{font-size:10px;text-transform: none;letter-spacing:.06em}
 .ovb-st b{font-size:13px}
 .ovb-pl{font-size:11px;text-transform: none;letter-spacing:.08em;color: #262626;margin:12px 0 6px}.ovb-pl:first-of-type{margin-top:0}

@@ -62,7 +62,7 @@
 .xp-card-t { font-size: 16.5px; font-weight: 800; letter-spacing: -.2px; color: var(--th-ink, #0B0B12); }
 .xp-card-d { flex: 1; margin: 7px 0 12px; font-size: 14px; line-height: 1.55; color: var(--th-text, #33333D); }
 .xp-card-f { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; font-size: 12px; color: var(--th-muted, #6B6B78); }
-.xp-hot { font-weight: 700; color: #B54708; }
+.xp-hot { font-weight: 700; color: #b25000; }
 .xp-card-a { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .xp-sent { font-size: 12px; font-weight: 700; color: var(--th-green, #12A35B); }
 /* the rise-in animation starts from hidden but the card itself is always visible, so a hover animation can never leave it blank */

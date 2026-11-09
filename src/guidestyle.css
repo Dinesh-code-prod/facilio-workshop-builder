@@ -20,7 +20,7 @@ body .gl-sec:not(#_):last-child { border: 1px solid #e5e5e5; }
 body .gl-h:not(#_) h2, body .gl-h:not(#_) h3 { font-size: 19px; letter-spacing: -.01em; color: #171717; }
 body .gl-lead:not(#_) { color: #525252; font-size: 14.5px; line-height: 1.6; }
 body .gl-jump:not(#_) { display: flex; flex-wrap: wrap; gap: 6px; }
-body .gl-jump:not(#_) button { border: 0; border-radius: 999px; padding: 6px 13px; background: #f5f5f5; color: #1D1A5E; font-weight: 600; font-size: 13px; cursor: pointer; }
+body .gl-jump:not(#_) button { border: 0; border-radius: 999px; padding: 6px 13px; background: #f5f5f5; color: #1d1d1f; font-weight: 600; font-size: 13px; cursor: pointer; }
 body .gl-jump:not(#_) button:hover, body .gl-jump:not(#_) button.on { background: #1570EF; color: #fff; }
 
 body .gl-screen:not(#_) { border-radius: 8px; border: 1px solid #e5e5e5; overflow: hidden; box-shadow: 0 18px 30px -20px rgba(0, 0, 0, .55); background: #fff; }

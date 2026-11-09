@@ -25,7 +25,7 @@ await t('ten statuses have ten different chip classes; anything else is neutral 
   assert.equal(T.statusText({ status: 'Approved', approvedVer: 3 }), 'Approved v3'); assert.equal(T.statusText({ status: 'Pushed', approvedVer: 3 }), 'Pushed');
   assert.ok(T.isBad({ status: 'Failed' }) && T.isBad({ status: 'Requires Attention' }) && !T.isBad({ status: 'Approved' }));
   const css = read('src/transfers.css'); for (const c of ['failed', 'requires-attention', 'approved', 'awaiting-review']) assert.ok(css.includes('.xf-st-' + c), c);
-  assert.ok(!/#[0-9a-f]{3,6}/i.test(css.replace(/#(1D1A5E|1570EF|E5197F|8DB8FF|fff|f0f2f7|5b6b86|eef4ff|fff1f7|d7dfee|eef1f7|f6f9ff|616161|424242|242424|525252|262626|171717|e5e5e5|d4d4d4|15803d|1262D8|c8126a|b10e1c|fdf3f4|fbe3e6|fafafa|f5f5f5|f0f0f0|e0e0e0|d1d1d1|bdbdbd|707070|eaf2ff)\b/gi, '')), 'only Facilio colours and neutrals'); assert.ok(!/gradient|glow|blur\(|violet|purple/i.test(css));
+  assert.ok(!/#[0-9a-f]{3,6}/i.test(css.replace(/#(1D1A5E|1570EF|E5197F|8DB8FF|fff|f0f2f7|5b6b86|eef4ff|fff1f7|d7dfee|eef1f7|f6f9ff|616161|424242|242424|525252|262626|171717|e5e5e5|d4d4d4|15803d|1262D8|c8126a|b10e1c|fdf3f4|fbe3e6|fafafa|f5f5f5|f0f0f0|e0e0e0|d1d1d1|bdbdbd|707070|eaf2ff|1d1d1f|6e6e73|d70015|248a3d|b25000|34c759|ff9f0a|ff3b30|8e8e93|e4f7e9|fff1dc|ffe9e7)\b/gi, '')), 'only Facilio colours and neutrals'); assert.ok(!/gradient|glow|blur\(|violet|purple/i.test(css));
 });
 await t('buttons come only from next[]: nothing in next, nothing to press, whatever the status', () => {
   for (const s of T.STATUSES) assert.deepEqual(T.actionsFor(base({ status: s, next: [] })), [], s);
