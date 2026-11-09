@@ -18,3 +18,6 @@ console.log(n + ' assistant router checks passed');
   assert.deepEqual(split('update the BRD'), []); assert.deepEqual(split('explain the go-live plan'), []);
   assert.ok(a.includes('async function splitSend') && a.includes('plan.parts.length > 1') && a.includes("p.route === 'small' || p.route === 'heavy'") && a.includes('plan && plan.quiet') && a.includes('lookNote(note)'), 'look-ups are answered here, the work goes to Claude as one request, and the look of a deck is said to be out of reach');
   console.log('  ok  a message with several asks is split: look-ups answered now by DeepSeek, the work to Claude as one request, and what went where is said in the chat'); }
+{ const a = fs.readFileSync('src/assistant.js', 'utf8');
+  assert.ok(a.includes('const waitMed = ') && a.includes('x < 120') && a.includes("label: 'Run it now in Claude', act: 'helperOpen'") && a.includes('Most of the wait is Claude coming to check the queue'), 'a request that waits more than a minute and a half says the wait is most of the time, gives the usual wait from this project, and offers Run it now in Claude');
+  console.log('  ok  a waiting request offers Run it now in Claude after 90 seconds, and says how long the wait usually is here'); }
