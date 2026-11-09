@@ -925,11 +925,71 @@ body .ol-tpl { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; } b
 
 body .ol-bar select:not(#_):not(#__) { width: auto !important; min-width: 130px; max-width: 200px; height: 32px; }
 
-/* Sign-in explainer (src/animation/loginflow.js): the SVG stage under the caption */
-.lsf-stage{flex:1 1 auto;min-height:0;margin-top:14px;position:relative;z-index:2}.lsf-svg{display:block;width:100%;max-width:760px;height:auto;overflow:visible}
-@media (max-width:900px){.lsf-stage{margin-top:8px}}
-.lsf{position:relative}.lsf-g{position:absolute;pointer-events:none;border-radius:50%;filter:blur(40px);z-index:0}.lsf-g1{left:-6%;top:30%;width:62%;height:46%;background:rgba(90,160,255,.30)}.lsf-g2{right:-4%;top:46%;width:54%;height:42%;background:rgba(255,107,176,.20)}
-.lsf .lsx-cap{min-height:88px}
+/* Sign-in explainer (src/animation/loginflow.js): one product window, seven scenes, a labelled rail. Drawn 480 px wide and scaled to the column. */
+.lsn .lsx-cap{min-height:96px}.lsn .lsx-cap span{max-width:56ch}
+.lsn-fit{position:relative;z-index:2;width:100%;max-width:520px;margin-top:14px}
+.lsn-win{width:480px;height:304px;transform-origin:0 0;background:#fff;border-radius:14px;overflow:hidden;position:relative;font:500 12.5px/1.35 Geist,Inter,system-ui,sans-serif;color:#171717;box-shadow:0 0 0 1px rgba(255,255,255,.5),0 18px 40px -18px rgba(3,2,24,.55)}
+.lsn-bar{height:34px;display:flex;align-items:center;gap:8px;padding:0 14px;background:#f7f7f8;border-bottom:1px solid rgba(0,0,0,.08);font-size:12px}
+.lsn-bar b{font-weight:600}.lsn-bar i{font-style:normal;color:#8a8f98}.lsn-crumb{color:#5b6472}.lsn-bar em{margin-left:auto;display:flex}.lsn-bar em .lz-av{margin-left:-4px;box-shadow:0 0 0 2px #f7f7f8}
+.lsn-body{position:absolute;inset:34px 0 0}
+.lsn .lz-sc{position:absolute;inset:0;padding:14px 18px;opacity:0;visibility:hidden}
+.lsn .lz-h{font-size:13px;font-weight:600;margin:0 0 10px}
+.lsn small{display:block;font-size:11.5px;font-weight:500;color:#5b6472}
+.lsn b{font-weight:600}
+.lsn .lz-av{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#dbe8fd;color:#1d1a5e;font:600 9px/1 Geist,sans-serif;font-style:normal}
+.lsn .lz-av.lz-o{background:#1d1a5e;color:#fff;width:26px;height:26px;font-size:11px}
+.lsn .lz-p{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;white-space:nowrap}
+.lsn .lz-p.lz-ok{background:#e3f6ea;color:#0b5f2c}.lsn .lz-p.lz-wa{background:#fff2d6;color:#7a4300}.lsn .lz-p.lz-bad{background:#fde8ea;color:#9c1120}.lsn .lz-p.lz-ai{background:#e6effd;color:#1d1a5e}
+.lsn .lz-r{display:flex;align-items:center;gap:10px;padding:7px 12px;border:1px solid rgba(0,0,0,.08);border-radius:10px;margin-bottom:7px;background:#fff}
+.lsn .lz-r div{flex:1;min-width:0}
+.lsn .lz-foot{position:absolute;left:18px;right:18px;bottom:12px;font-size:12px;font-weight:600;color:#1d1a5e;padding-top:8px;border-top:1px solid rgba(0,0,0,.07)}
+.lsn .lz-g2{display:grid;grid-template-columns:222px 1fr;gap:12px}.lsn .lz-col{display:grid;gap:5px;align-content:start}
+.lsn .lz-chip{position:relative;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 10px;border:1px solid rgba(0,0,0,.08);border-radius:9px;overflow:hidden;font-weight:600;white-space:nowrap}
+.lsn .lz-chip u{position:absolute;left:0;bottom:0;height:2px;width:100%;background:#1570ef;transform-origin:0 50%}
+.lsn .lz-card{border:1px solid rgba(0,0,0,.1);border-radius:12px;padding:12px 14px;background:#fff}
+.lsn .lz-card.lz-wide{margin-top:6px}
+.lsn .lz-card .lz-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.lsn .lz-card p{margin:0 0 10px;font-size:13px;color:#171717}
+.lsn .lz-why{font-size:11.5px;color:#5b6472;margin-bottom:5px}
+.lsn .lz-src{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:7px;background:#f4f5f7;margin-bottom:5px;font-size:12px}
+.lsn .lz-sw{position:relative;display:inline-block;min-width:78px;height:20px}.lsn .lz-sw .lz-p{position:absolute;right:0;top:0}
+.lsn .lz-sw2{position:relative;min-height:54px}.lsn .lz-sw2 span{position:absolute;left:0;right:0;top:0}.lsn .lz-sw2 mark{background:rgba(21,112,239,.16);color:#171717;padding:0 2px;border-radius:3px}
+.lsn .lz-bar{display:flex;justify-content:space-between;align-items:center;margin-top:34px;padding-top:10px;border-top:1px solid rgba(0,0,0,.07)}
+.lsn .lz-who{display:flex;align-items:center;gap:6px}
+.lsn .lz-btn{font:600 12px/1 Geist,sans-serif;padding:8px 14px;border-radius:9px;border:0;background:#171717;color:#fff}
+.lsn .lz-cur{position:absolute;left:0;top:34px;width:16px;height:19px;opacity:0;pointer-events:none}
+.lsn .lz-portal{border:1px solid rgba(0,0,0,.1);border-radius:12px;overflow:hidden}
+.lsn .lz-ph{padding:10px 14px;background:#f1f4fb;font-weight:600;color:#1d1a5e;display:flex;justify-content:space-between}
+.lsn .lz-ph small{color:#4a5160}
+.lsn .lz-portal .lz-r{margin:0;border:0;border-radius:0;border-top:1px solid rgba(0,0,0,.07);padding:11px 14px;position:relative}
+.lsn .lz-portal .lz-btn{position:absolute;right:14px}.lsn .lz-portal .lz-sw{margin-right:76px}
+.lsn .lz-tr{display:grid;grid-template-columns:1fr 16px 1fr 16px 1.5fr;align-items:center;margin-bottom:8px}
+.lsn .lz-tr .lz-n{border:1px solid rgba(0,0,0,.08);border-radius:9px;padding:7px 9px;min-height:54px;position:relative}
+.lsn .lz-tr .lz-n small{font-size:10.5px}.lsn .lz-tr .lz-n b{display:block;font-size:12px}.lsn .lz-tr .lz-n .lz-p{position:absolute;right:7px;top:7px}
+.lsn .lz-ln{height:2px;background:#1570ef;border-radius:2px}
+.lsn .lz-fix{position:absolute;right:18px;top:128px;font-size:11.5px;font-weight:600;color:#1d1a5e}
+.lsn .lz-card.s6m,.lsn .lz-card.s6t{min-height:150px}.lsn .s6m p span{color:#4a5160;font-weight:500}.lsn .s6m .lz-btn{margin-top:4px}
+.lsn .lz-tk{display:flex;justify-content:space-between;gap:8px;padding:7px 8px;border-radius:7px;border-bottom:1px solid rgba(0,0,0,.06)}.lsn .lz-tk small{white-space:nowrap}
+.lsn .lz-teams{position:absolute;left:18px;right:18px;bottom:14px;display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:12px;background:#eef2fb}
+.lsn .lz-teams span{display:block;color:#171717}
+.lsn .lz-track{display:flex;gap:10px;margin:6px 0 14px}
+.lsn .lz-st{flex:1;display:flex;align-items:center;gap:6px;white-space:nowrap;padding:10px 9px;border:1px solid rgba(0,0,0,.08);border-radius:10px}
+.lsn .s7d{width:18px;height:18px;border-radius:50%;background:#d4d9e1;display:grid;place-items:center}
+.lsn .lz-pack{border:1px solid rgba(0,0,0,.1);border-radius:12px;padding:12px 14px}
+.lsn .lz-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+.lsn .lz-tl{padding:9px;border-radius:9px;background:#f4f5f7;display:grid;gap:6px;font-weight:600;font-size:12px}
+.lsn-rail{position:relative;z-index:2;list-style:none;margin:16px 0 0;padding:0;display:flex;gap:6px;max-width:520px}
+.lsn-rail li{flex:1;min-width:0}
+.lsn-rail button{all:unset;box-sizing:border-box;display:block;width:100%;cursor:pointer;padding:6px 0 4px}
+.lsn-rail button:focus-visible{outline:2px solid #8db8ff;outline-offset:2px;border-radius:4px}
+.lsn-rail u{display:block;height:3px;border-radius:3px;background:rgba(255,255,255,.22);overflow:hidden}
+.lsn-rail u i{display:block;height:100%;background:#8db8ff;transform:scaleX(var(--p,0));transform-origin:0 50%}
+.lsn-rail span{display:block;margin-top:6px;font-size:11.5px;font-weight:600;color:rgba(255,255,255,.72);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lsn-rail button.on span,.lsn-rail button:hover span{color:#fff}
+.lsn .lsx-row{position:relative;z-index:2}
+body .auth .lsn .lsx-row small:not(#_):not(#__){color:rgba(255,255,255,.72);font-size:11.5px}
+@media (max-width:900px){.lsn .lsx-cap span{display:block;font-size:13.5px}.lsn .lsx-cap{min-height:118px}.lsn-rail span{display:none}.lsn-rail button.on span{display:block;position:absolute;margin-top:0;left:0;top:100%;width:max-content;max-width:100%}.lsn-rail{margin-bottom:26px}.lsn-rail li{position:static}}
+@media (prefers-reduced-motion:reduce){.lsn .lsx-cap.swap b,.lsn .lsx-cap.swap span{animation:none}}
 
 /* one switch for every mini tab and segmented control (user, 8 Nov 2026): a light grey track, the chosen tab a raised white pill with bold black text, no outlines or underlines */
 body .tabs:not(#_):not(#__),
