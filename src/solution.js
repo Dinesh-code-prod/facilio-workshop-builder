@@ -295,7 +295,7 @@
       try {
         const x = await V.extractDocPages(f, V.loadingMsg); const text = x.pages ? x.pages.map(p => 'p.' + p.n + ' ' + p.text).join('\n') : String(x.text || ''); V.loadingMsg('The AI is reading it…');
         const r = await root.FWBApi.post('/api/projects/' + encodeURIComponent(S.project.id) + '/solution/read', { text, fileName: f.name, areas: areaInfo(), only });
-        const pd = F.doc('design_proposals'); const m = L().mergeProposals(arr(pd.items), r.proposals, new Date().toISOString()); S.docs.design_proposals.data = Object.assign({}, pd, { items: m.items }); F.markDirty('design_proposals');
+        F.doc('design_proposals'); const pd = S.docs.design_proposals.data || {}; const m = L().mergeProposals(arr(pd.items), r.proposals, new Date().toISOString()); S.docs.design_proposals.data = Object.assign({}, pd, { items: m.items }); F.markDirty('design_proposals');
         if (!m.added) toast('The AI read ' + f.name + ' and found nothing that differs from what is written.', 7000); else { ui().key = r.proposals[0].module; ui().draft = null; toast(m.added + ' proposal' + (m.added === 1 ? '' : 's') + ' from ' + f.name + '. Review each one and press Accept.', 8000); }
         return;
       } catch (e) { toast('The AI could not read it (' + (e.message || 'error') + '). A job for your own Claude was created instead.', 8000, true); } finally { V.loading(false); V.render(); }
@@ -304,6 +304,21 @@
   });
   // ---------- BRD section: Ask Claude (button on each heading, src/brdview.js). The side box scopes the job to that section. A section built from a Solution area proposes a change to that area
   // (update_solution, or compare_solution when a file is attached); any other section goes to the project chat as a request for an unapproved draft. Nothing is applied without a person. ----------
+  /** Draft with AI (button on a module or solution heading of the BRD): the AI layer writes the area's solution from the project's own records; it is stored as an unapproved proposal, shown here, and a person accepts it (or reviews it on the Solution tab) */
+  ACT.brdDraft = a => V.busy(a, async () => {
+    if (guard()) return; const key = a.getAttribute('data-key'), title = a.getAttribute('data-title') || 'this area'; if (!key) return;
+    V.loading(true, 'The AI is drafting ' + title + ' from the project records…'); let r;
+    try { r = await root.FWBApi.post('/api/projects/' + encodeURIComponent(S.project.id) + '/solution/draft', { key }); } catch (e) { V.loading(false); toast('The AI could not draft it (' + (e.message || 'error') + '). Use Ask Claude for your own Claude.', 8000, true); return; }
+    V.loading(false); F.doc('design_proposals'); const pd = S.docs.design_proposals.data || {}; const m = L().mergeProposals(arr(pd.items), r.proposals, new Date().toISOString()); S.docs.design_proposals.data = Object.assign({}, pd, { items: m.items }); F.markDirty('design_proposals');
+    const p = m.items.filter(x => x.kind === 'solution' && x.module === key && x.status === 'open').pop();
+    if (!m.added || !p) { toast('The AI found nothing to change: what is written already matches the project records.', 7000); return; }
+    const rows = arr(p.rows).filter(x => x && x.cells), cols = rows.length ? Object.keys(rows[0].cells) : [];
+    V.drawer('AI draft: ' + title, '<p class="small muted" style="margin-top:0">Written from the requirements, flows, fields, SLA, KPIs and what the client answered in the sessions. Nothing is in the BRD until you accept it. ' + (r.truncated ? 'The records were long, so only the first part was read. ' : '') + 'Anything missing is a row marked Open question.</p>' + (p.text ? '<p>' + esc(p.text) + '</p>' : '')
+      + (rows.length ? '<div class="tbl-wrap"><table class="tbl"><thead><tr>' + cols.map(c => '<th>' + esc(c) + '</th>').join('') + '<th>Status</th></tr></thead><tbody>' + rows.map(x => '<tr>' + cols.map(c => '<td class="small">' + esc(x.cells[c] || '') + '</td>').join('') + '<td>' + esc(x.status || 'Draft') + '</td></tr>').join('') + '</tbody></table></div>' : '') + (p.why ? '<p class="xs muted">' + esc(p.why) + '</p>' : ''),
+      '<button class="btn" data-act="closeDrawer">Later</button><button class="btn" data-act="brdDraftReview" data-key="' + esc(key) + '">Review on the Solution tab</button><button class="btn primary" data-act="brdDraftAccept" data-id="' + esc(p.id) + '">Accept into the BRD</button>', { wide: true }); V.render();
+  });
+  ACT.brdDraftAccept = async a => { await ACT.solAccept(a); V.closeDrawer(); };
+  ACT.brdDraftReview = a => { ui().key = a.getAttribute('data-key') || ui().key; V.closeDrawer(); if (V.go) V.go('solution'); };
   const bd = () => S.ui.bdAsk || (S.ui.bdAsk = { key: '', title: '', file: null });
   ACT.brdAsk = a => {
     const s = bd(); s.key = a.getAttribute('data-key') || ''; s.title = a.getAttribute('data-title') || 'this section'; s.file = null; const area = s.key ? (areas().find(x => x.key === s.key) || {}).label : '';
