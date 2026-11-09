@@ -155,7 +155,8 @@
   V.ACT.asstQuick = a => { const box = document.getElementById('asM'); if (!box) return; box.value = a.getAttribute('data-t') || ''; return V.ACT.asstSend(a); };
   V.ACT.asstEscalate = a => V.busy(a, async () => { const t = a.getAttribute('data-t') || ''; if (!t || J().guard()) return; const a2 = st(); a2.local = a2.local || []; a2.local.push({ who: 'you', text: t, at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), ts: Date.now(), pend: t }); a2.sig = ''; paint();
     await J().post('/jobs', { kind: 'chat', note: t, ref: String(Date.now()), section: String(S.view || ''), size: 'small' }); a2.local.push({ who: 'sys', ts: Date.now(), text: 'Sent to Claude. ' + etaText('small') }); a2.sig = ''; J().load(true); paint(); });
-  // Enter makes a new line, as in a chat on a phone: the message is sent only by the Send button
+  // Enter sends the message; Shift+Enter makes a new line (changed 9 Nov 2026 at the user's request)
+  document.addEventListener('keydown', e => { const t = e.target; if (t && t.id === 'asM' && e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); const b = document.querySelector('#asst .as-send'); if (b && !b.disabled) b.click(); } });
   V.ACT.asstPick = a => V.busy(a, async () => { const id = a.getAttribute('data-job'), v = a.getAttribute('data-v'); if (!id || !v || J().guard()) return; await J().post('/jobs/' + encodeURIComponent(id) + '/answer', { answers: [v] }); const a3 = st(); a3.sig = ''; J().load(true); });   // tapping an option answers like typing it
   // the mode: a chip under the message box that opens a small menu (Auto is the default)
   const MODES = [['auto', 'Auto', 'Answers questions at once; Claude takes changes and big work'], ['cl', 'Claude', 'Claude does it, in any tab (about 5 minutes)'], ['ds', 'Quick answer', 'Looks it up in this page only, instantly']];
