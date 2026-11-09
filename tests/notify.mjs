@@ -77,7 +77,7 @@ await t('a notice text is a complete sentence: the greeting is dropped, the firs
 await t('a Teams message opens with its category and the project (BRD, TASK, SIGN-OFF...), then what happened, with the project and category as facts', () => {
   assert.equal(catOf({ type: 'customer_signoff', cat: 'BRD' }), 'BRD'); assert.equal(catOf({ type: 'task_assigned' }), 'TASK'); assert.equal(catOf({ type: 'nope' }), 'UPDATE');
   const rec = makeRecord({ type: 'customer_signoff', cat: 'BRD', title: 'Customer signed off · Al Moallam', text: 'BRD sign-off was signed by Bayan.', project: { id: 'p1', name: 'Al Moallam' } }, { browser: false }, 'now', 'id');
-  const c = teamsCard({ type: 'customer_signoff', facts: [{ title: 'Due', value: 'Nov 12' }] }, rec, []); assert.equal(c.title, 'BRD · Al Moallam'); assert.equal(c.text, '**Customer signed off**\nBRD sign-off was signed by Bayan.'); assert.deepEqual(c.facts.map(f => f.title), ['Project', 'About', 'Due', 'Why you got this']);
+  const c = teamsCard({ type: 'customer_signoff', facts: [{ title: 'Due', value: 'Nov 12' }] }, rec, []); assert.equal(c.title, 'BRD · Al Moallam'); assert.equal(c.text, '**Customer signed off**\nBRD sign-off was signed by Bayan.\n**Project:** Al Moallam\n**What to do:** Read it under Governance, then reply to the customer or follow up on the concern.'); assert.deepEqual(c.facts.map(f => f.title), ['Project', 'About', 'Due', 'Why you got this']);
 });
 await t('a new task with no owner is told to the whole project team once, except the person who added it; with an owner only the owner is told', async () => {
   const before = async who => (await list(who)).items.filter(x => x.type === 'task_new').length; const k0 = await before(KIM), v0 = await before(VIC), s0 = await before(SAM);

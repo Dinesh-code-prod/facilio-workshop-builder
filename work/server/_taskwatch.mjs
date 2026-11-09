@@ -2,6 +2,7 @@
    Who has what pending, the Teams direct message, the once-a-day guard key and the assignment notice.
    Nothing here sends anything; the server decides whether Teams notices are on and reports what Teams really returned. */
 import { createHash } from 'node:crypto';
+import { dueWords, personOf, NEXT } from './_msgfmt.mjs';
 const DONE = /^(done|closed|resolved|cancelled|mitigated|accepted|approved|passed|complete|completed)$/i;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 export const BASE_URL = 'https://facilio-delivery-studio.facilio.work/';
@@ -32,7 +33,7 @@ export function teamCounts(projects, today) { const out = {}; for (const p of pr
 export function digestMessage(pending, today, { maxLines = 6, name = '', team = {} } = {}) {
   const c = pending.counts; if (!c.open) return null; const projects = [...new Set(pending.items.map(x => x.project))];
   const byP = projects.map(id => { const it = pending.items.filter(x => x.project === id); return { id, name: it[0].projectName, items: it }; });
-  const when = x => (x.overdue ? 'OVERDUE since ' + x.due : x.today ? 'Due today' : x.due ? 'Due ' + x.due : 'No due date');
+  const when = x => dueWords(x.due, today);
   const block = x => ['**' + (x.n ? 'T-' + x.n + ' \u00b7 ' : '') + short(x.title, 80) + '**', [when(x), x.status, x.priority ? x.priority + ' priority' : '', x.type !== 'Other' ? x.type : '', x.stage].filter(Boolean).join(' \u00b7 '), x.desc ? short(x.desc, 140) : '', x.blockerText ? 'Blocked: ' + short(x.blockerText, 120) : ''].filter(Boolean).join('\n');
   const SECTIONS = [['Overdue', x => x.overdue], ['Due today', x => x.today && !x.overdue], ['Blocked', x => x.blocked], ['Coming up in the next 3 days', x => x.soon], ['Other open tasks', () => true]];
   const tline = id => { const k = team[id]; return k ? 'Whole team on this project: ' + k.open + ' open, ' + k.overdue + ' overdue, ' + k.done + ' finished.' : ''; };
@@ -65,8 +66,9 @@ export function assignmentNotice(prev, next, actorEmail, projectName, ref) {
   if (to === String(actorEmail || '').trim().toLowerCase()) return null;
   if (DONE.test(String(next.status || '').trim())) return null;
   const due = dueOf(next);
-  return { to, title: 'TASK \u00b7 ' + projectName, text: ['**Assigned to you**', (next.n ? 'T-' + next.n + ' \u00b7 ' : '') + oneLine(next.title, 200), [due ? 'Due ' + due : 'No due date', next.status || 'To Do', next.priority ? next.priority + ' priority' : '', next.type !== 'Other' ? next.type : '', next.stage].filter(Boolean).join(' \u00b7 '), next.desc ? short(next.desc, 220) : '', next.blocker ? 'Blocked: ' + short(next.blocker, 140) : ''].filter(Boolean).join('\n'),
-    facts: [{ title: 'Why you got this', value: 'Someone made you the owner of this task' }, { title: 'Assigned by', value: String(actorEmail || '').split('@')[0] || 'the team' }, { title: 'Project', value: projectName }, { title: 'Status', value: next.status || 'To Do' }, { title: 'Priority', value: next.priority || '—' }, { title: 'Due', value: due || '—' }],
+  const by = personOf((ref && ref.actorName) || actorEmail) || 'the team', cust = ref && ref.customer ? String(ref.customer) : '', today = ref && ref.today;
+  return { to, title: 'TASK \u00b7 ' + projectName, text: ['**You have been given a task' + (by !== 'the team' ? ' by ' + by : '') + '.**', '**' + (next.n ? 'T-' + next.n + ' \u00b7 ' : '') + oneLine(next.title, 200) + '**', '**Project:** ' + projectName + (cust && !projectName.toLowerCase().includes(cust.toLowerCase()) ? ' \u00b7 ' + cust : ''), '**' + dueWords(due, today) + '**', [next.status || 'To Do', next.priority ? next.priority + ' priority' : '', next.type !== 'Other' ? next.type : '', next.stage].filter(Boolean).join(' \u00b7 '), next.desc ? '**What it is:** ' + short(next.desc, 420) : '', next.blocker ? '**Blocked:** ' + short(next.blocker, 160) : '', '**What to do:** ' + NEXT.task_assigned].filter(Boolean).join('\n'),
+    facts: [{ title: 'Why you got this', value: 'Someone made you the owner of this task' }, { title: 'Assigned by', value: by }, { title: 'Project', value: projectName }].concat(cust ? [{ title: 'Customer', value: cust }] : []).concat(next.stage ? [{ title: 'Stage', value: oneLine(next.stage, 40) }] : []).concat([{ title: 'Status', value: next.status || 'To Do' }, { title: 'Priority', value: next.priority || '—' }, { title: 'Due', value: dueWords(due, today) }]),
     // the owner can finish it from the message: the button runs task_reply as the person who presses it, so only the owner can (the same button the daily digest has)
     done: ref && ref.project && ref.id ? { title: 'Done: ' + (next.n ? 'T-' + next.n : oneLine(next.title, 20)), fn: 'api', data: { tool: 'task_reply', project: ref.project, taskId: ref.id, status: 'Done', text: 'Marked done by the owner from the Teams message.', via: 'teams' } } : null };
 }
