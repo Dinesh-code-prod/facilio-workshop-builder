@@ -476,6 +476,8 @@ body :is(b, strong, h2, h3, h4, th, .pink-label, .sd-kv, .tr-n, .wf-title, .dkv-
 body .upnext-k:not(#_):not(#__) { text-transform: none !important; letter-spacing: .01em !important; }
 /* dashed empty states and add-boxes become soft solid panels */
 body .empty:not(#_):not(#__), body td.empty:not(#_):not(#__), body .brd-add:not(#_):not(#__) { border-style: solid !important; border-color: rgba(0, 0, 0, .08) !important; background: var(--cs-bg3) !important; border-radius: var(--cs-r-ctl); }
+body :is(.np-drop, .gu-drop, .tr-zone, .cs-sol-drop, .drop, .pt-add, .kb-new, .ui-empty, .xf-empty, .proj-empty, .logo-slot):not(.drop-ready):not(.dragover):not(#_):not(#__):not(#___) { border-style: solid !important; border-color: rgba(0, 0, 0, .1) !important; background: var(--cs-bg3) !important; border-radius: var(--cs-r-ctl) !important; }
+body .adx-row:not(#_):not(#__):not(#___) { border-radius: 10px !important; }
 /* controls built by single pages: round them like the rest */
 body :is(.rgdd-btn, .tl-gsel, .dkv-i, .fb-seg, .rv-box, .wn-chip):not(#_):not(#__):not(#___) { border-radius: 10px !important; }
 body .wn-chip.on:not(#_):not(#__):not(#___) { background: var(--cs-primary) !important; color: #fff !important; }

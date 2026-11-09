@@ -43,7 +43,7 @@ body.asst-open #app>.shell{margin-right:var(--aw)}
 .as-ch{position:absolute;right:14px;top:50%;width:8px;height:8px;border:solid #1D1A5E;border-width:0 2px 2px 0;transform:translateY(-70%) rotate(45deg);transition:transform .15s}.as-run.is-open .as-ch{transform:translateY(-30%) rotate(-135deg)}.as-run:not(.is-open) .as-rh{border-bottom:0}
 .as-now{position:sticky;top:-12px;z-index:2;display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius: 12px;font-size:13.5px;line-height:1.35;color:#1D1A5E;background:#fff;border:1px solid #DCE4F3;box-shadow:0 4px 10px rgba(0, 0, 0, .08)}.as-now i{flex:none;width:10px;height:10px;margin-top:4px;border-radius:50%;background:#8DB8FF}.as-now.run{border-color:#1570EF}.as-now.run i{background:#1570EF;animation:ko-pulse 1.2s ease-in-out infinite}.as-now.ask{border-color:#E5197F}.as-now.ask i{background:#E5197F;animation:ko-pulse 1.2s ease-in-out infinite}.as-now.wait i{background:#8DB8FF;animation:ko-pulse 2s ease-in-out infinite}
 .as-feed{min-height:0!important;max-height:300px!important;overflow-y:auto!important;padding:10px 12px!important;background:#fff!important;gap:10px!important}.as-feed .ki-row{max-width:100%}
-@media(max-width:900px){#asst{top:0;width:100%}body.asst-open #app>.shell{margin-right:0}body.asst-open #asstTab{right:0;display:none}}
+@media(max-width:900px){#asst{width:100%}body.asst-open #app>.shell{margin-right:0}body.asst-open #asstTab{right:0;display:none}}
 /* assistant panel: one single scrolling thread; each run opens with a heading that says what the chat is about */
 .as-body{display:block!important;padding:0 12px 24px!important;background:#fff!important}
 .as-body .as-now{top:0;margin:10px 0 4px;box-shadow:none}
