@@ -312,6 +312,7 @@
        "type": "string",
        "enum": [
         "presence",
+        "usage",
         "request",
         "list",
         "claim",
@@ -324,6 +325,10 @@
         "file_put_done"
        ],
        "description": "Which step"
+      },
+      "usage": {
+       "type": "object",
+       "description": "Only for action usage: your plan limits as your Claude shows them: plan, windows (a list of { label, percentUsed, resetsAt }) and extra ({ enabled, spent, monthlyLimit, currency, percentUsed })"
       },
       "project": {
        "type": "string",

@@ -2090,3 +2090,14 @@ body :is(.card.click, .proj-card, .cs-stat-btn, .tg2-tile, .dk-card, .kb-card, .
 body #asst .as-ask:not(#_):not(#__) { max-height: min(42vh, 320px); overflow: auto; }
 body #asst .as-ask .as-q { display: block; white-space: pre-wrap; margin-top: 4px; }
 body #asst .as-ask .as-opts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+
+/* Claude usage above the assistant chat: two thin bars (5-hour, weekly); amber from 70%, red from 90% */
+body #asst .as-usage:not(#_):not(#__) { padding: 8px 14px 10px; border-bottom: 1px solid var(--cs-st3, #eef2fa); background: #fff; display: grid; gap: 6px; }
+body #asst .as-usage:empty { display: none; }
+body #asst .as-us-h { display: flex; justify-content: space-between; font: 600 12px/16px var(--cs-font, inherit); color: #1D1A5E; } body #asst .as-us-h span { font-weight: 500; color: #5B6B99; }
+body #asst .as-us { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 8px; font: 500 12px/16px var(--cs-font, inherit); color: #1D1A5E; }
+body #asst .as-us b { font-weight: 600; } body #asst .as-us i { display: block; height: 6px; border-radius: 3px; background: #E8EEF8; overflow: hidden; } body #asst .as-us u { display: block; height: 100%; background: #1570EF; border-radius: 3px; text-decoration: none; }
+body #asst .as-us u.mid { background: #D97706; } body #asst .as-us u.hi { background: #DC2626; } body #asst .as-us span { white-space: nowrap; } body #asst .as-us em { font-style: normal; color: #5B6B99; }
+body #asst .as-us-x, body #asst .as-us-n { font: 500 12px/16px var(--cs-font, inherit); color: #5B6B99; }
+body #asst .as-us-l { max-height: 96px; overflow: auto; display: grid; gap: 4px; padding-top: 6px; border-top: 1px dashed var(--cs-st3, #e3e9f5); } body #asst .as-us-r { display: grid; grid-template-columns: 1fr auto auto auto; gap: 8px; align-items: center; font: 500 11px/16px var(--cs-font, inherit); color: #1D1A5E; } body #asst .as-us-r span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } body #asst .as-us-r em { font-style: normal; font-weight: 600; } body #asst .as-us-r em.mid { color: #D97706; } body #asst .as-us-r em.hi { color: #DC2626; } body #asst .as-us-r i { font-style: normal; color: #5B6B99; }
+body #asst .as-us-a { display: grid; gap: 6px; } body #asst .as-us-a + .as-us-a { padding-top: 8px; border-top: 1px dashed var(--cs-st3, #e3e9f5); }

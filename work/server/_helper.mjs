@@ -47,3 +47,23 @@ export function helperAlert(project, x, st, baseUrl) {
     facts: [{ title: 'Why you got this', value: 'You own this project and its Claude requests are stuck' }, { title: 'Project', value: project.name }].concat(project.customer ? [{ title: 'Customer', value: project.customer }] : []).concat([{ title: 'Waiting requests', value: String(x.n) }]),
     actions: [{ title: 'Open the project', url }, { title: 'Set up Claude', url: url + '/claudesetup' }] };
 }
+
+/** minutes after which a person's usage snapshot is due again (the queue task sends one at most about once an hour) */
+export const USAGE_FRESH_MIN = 55;
+const txt = (v, n) => String(v == null ? '' : v).replace(/[^\w .:+\-·\/%$€£]/g, '').trim().slice(0, n);
+const pct = v => { const x = Number(v); return Number.isFinite(x) ? Math.max(0, Math.min(100, Math.round(x))) : null; };
+/** a Claude's plan limits as it reports them (project_jobs action usage): only known fields, numbers clamped, text short and plain; null when nothing usable arrives */
+export function cleanUsage(u) {
+  const o = u && typeof u === 'object' ? u : {}; const windows = (Array.isArray(o.windows) ? o.windows : []).slice(0, 6).map(w => ({ label: txt(w && w.label, 40), percentUsed: pct(w && w.percentUsed), resetsAt: /^\d{4}-\d{2}-\d{2}T[\d:.]+Z?$/.test(String(w && w.resetsAt || '')) ? String(w.resetsAt).slice(0, 30) : '' })).filter(w => w.label && w.percentUsed !== null);
+  if (!windows.length) return null; const e = o.extra && typeof o.extra === 'object' ? o.extra : null; const num = v => { const x = Number(v); return Number.isFinite(x) && x >= 0 ? Math.round(x * 100) / 100 : null; };
+  return { plan: txt(o.plan, 20), windows, extra: e ? { enabled: !!e.enabled, spent: num(e.spent), monthlyLimit: num(e.monthlyLimit), currency: txt(e.currency, 4), percentUsed: pct(e.percentUsed) } : null };
+}
+/** which Claude account a snapshot came from: its plan and the weekday and minute its weekly limit resets (fixed per account and the same every week, so two accounts on one Studio sign-in stay apart) */
+export const usageKey = u => { const w = (u.windows || []).find(x => /weekly/i.test(x.label) && /all/i.test(x.label)) || (u.windows || []).find(x => /weekly/i.test(x.label)); return (u.plan || '') + '|' + (w && w.resetsAt ? Math.round((Date.parse(w.resetsAt) % 604800000) / 60000) : 'x'); };
+/** the person's accounts after a new snapshot: the same account is replaced, others are kept, newest first, at most twelve, none older than 36 hours */
+export function mergeUsage(list, snap, nowMs) {
+  const k = usageKey(snap), keep = (Array.isArray(list) ? list : []).filter(a => a && a.at && usageKey(a) !== k && nowMs - Date.parse(a.at) < 36 * 3600000);
+  return [snap].concat(keep).sort((a, b) => Date.parse(b.at) - Date.parse(a.at)).slice(0, 12);
+}
+/** is a new snapshot due? (no account reported yet, or the newest report is older than USAGE_FRESH_MIN); the queue task also reports in the first minutes of each hour, so every account is heard from */
+export const usageDue = (accounts, nowMs) => { const l = Array.isArray(accounts) ? accounts : []; return !l.length || nowMs - Math.max(...l.map(a => Date.parse(a.at) || 0)) > USAGE_FRESH_MIN * 60000; };
