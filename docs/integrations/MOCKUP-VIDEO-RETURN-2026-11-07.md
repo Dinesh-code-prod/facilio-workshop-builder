@@ -15,3 +15,10 @@ Open question for the user: does Comet have a Claude connector like Meteor? Unti
 Panel: Open Meteor here and Open Comet here now fill the content area beside the menu and under the top bar (no gap, the menu stays usable); Full screen covers everything.
 
 Not checked: a real Meteor or Comet run, a real Claude run.
+
+## Update 9 Nov 2026: Training page, Meteor mock-ups as guide sources, Comet links open inside the Studio
+- **What Meteor holds (read with the Meteor tools my_prototypes, project, get_prototype):** projects (a folder per customer or demo, with context), and in each project prototypes with title, kind, app, module, idea, description, the screens used (`kit.screens`), version and check status, a link, and a `walkthrough` flag. Claude reads these; the Studio never calls Meteor itself.
+- **Meteor into a guide:** on Training > Guides the person ticks Meteor mock-ups (the cards of the Mockup tab) and/or "Also read my Meteor project for this customer". The ticked names ride in the job note as `[Use Meteor: ...]`; the `make_guide` recipe tells Claude to read only, turn each prototype's screens and flow into guide steps (or a video shot list) and link the prototype. The button "Ask Claude to bring the Meteor pages" still brings the finished pages to the Mockup cards.
+- **Comet:** there is no Comet connector in Claude, so a person pastes the link of a finished video or guide (Training > Videos > Add a video or guide, kind Video or Guide). Saved links now have **Open here** (the side panel, `wfDock` with `data-url`, allow-listed hosts only) next to New tab. Claude reads these links when it writes a guide.
+- **Training page:** two tabs, Guides and Videos; a Meteor and Comet panel says what each brings; Make a guide is three numbered steps.
+Not checked: a real Meteor read by Claude, a real Comet link opening in the panel (needs sign-in there).
