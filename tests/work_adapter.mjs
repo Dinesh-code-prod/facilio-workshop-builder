@@ -308,6 +308,27 @@ await t('notes: saved per project, creator recorded and kept on edit, title requ
   r = await call(out, 'PUT', `/api/projects/${pid}/items/pnote/pn_3`, { data: { title: 'x' } }); assert.ok(r.status >= 400);
   r = await call(dinesh, 'GET', `/api/projects/${pid}/items?kinds=pnote`); assert.equal(r.data.items.length, 1);
 });
+await t('private notes: only the writer is sent, read, changed or deleted one; nobody else, not even through the connector or the project open call', async () => {
+  const tool = (who, name, body) => call(who, 'POST', '/api/', body, { 'x-work-mcp': '1', 'x-work-mcp-tool': name }); const peer = 'peer.p@facilio.com'; assert.equal((await call(dinesh, 'POST', `/api/projects/${pid}/members`, { email: peer, role: 'editor' })).status, 201); const P = `/api/projects/${pid}`, ids = r => r.data.items.map(i => i.id).sort().join(',');
+  let r = await call(dinesh, 'PUT', `${P}/items/pnote/pn_priv`, { data: { title: 'My own reminder', body: 'Chase the vendor https://example.com/x', private: true } }); assert.equal(r.status, 200); assert.equal(r.data.item.data.private, true);
+  r = await call(dinesh, 'GET', `${P}/items?kinds=pnote`); assert.equal(ids(r), 'pn_1,pn_priv', 'the writer sees it');
+  r = await call(peer, 'GET', `${P}/items?kinds=pnote`); assert.equal(ids(r), 'pn_1', 'a colleague does not get it');
+  r = await call(peer, 'GET', `${P}/open?kinds=pnote`); assert.ok(!JSON.stringify(r.data.items).includes('pn_priv'), 'not in the open call either');
+  r = await call(peer, 'PUT', `${P}/items/pnote/pn_priv`, { data: { title: 'Taken over', private: false } }); assert.equal(r.status, 404, 'a colleague cannot change it');
+  r = await call(peer, 'DELETE', `${P}/items/pnote/pn_priv`); assert.equal(r.status, 404, 'a colleague cannot delete it');
+  r = await call(out, 'GET', `${P}/items?kinds=pnote`); assert.ok(!JSON.stringify(r.data || {}).includes('pn_priv'));
+  r = await tool(peer, 'get_records', { project: pid, kind: 'pnote' }); assert.ok(!JSON.stringify(r.data).includes('My own reminder'), 'not in the connector for a colleague');
+  r = await tool(dinesh, 'get_records', { project: pid, kind: 'pnote' }); assert.ok(!JSON.stringify(r.data).includes('My own reminder'), 'Claude tools never get a private note, even the writer\'s');
+  r = await call(dinesh, 'GET', `${P}/items?kinds=pnote`); assert.equal(r.data.items.find(i => i.id === 'pn_priv').data.title, 'My own reminder', 'still unchanged');
+  // a colleague cannot make someone else's shared note private; the writer can, and then it leaves the colleague's list
+  r = await call(peer, 'PUT', `${P}/items/pnote/pn_1`, { data: { title: 'Kick-off notes v2', body: 'Agreed scope', private: true } }); assert.equal(r.status, 200); assert.notEqual(r.data.item.data.private, true, 'only the writer can make it private');
+  r = await call(dinesh, 'GET', `${P}/items?kinds=pnote`); const n1 = r.data.items.find(i => i.id === 'pn_1');
+  r = await call(dinesh, 'PUT', `${P}/items/pnote/pn_1`, { data: Object.assign({}, n1.data, { private: true }), baseVersion: n1.version }); assert.equal(r.status, 200);
+  r = await call(peer, 'GET', `${P}/items?kinds=pnote`); assert.equal(r.data.items.length, 0, 'switched to private: gone for the colleague');
+  r = await call(dinesh, 'POST', '/api/admin/projects/' + pid + '/clone', { name: 'Copy for private-note check' }); assert.equal(r.status, 201); const cp = r.data.project.id; r = await call(dinesh, 'GET', `/api/projects/${cp}/items?kinds=pnote`); assert.ok(!JSON.stringify(r.data.items).includes('My own reminder'), 'a copied project does not carry the private note');
+  r = await call(dinesh, 'DELETE', `${P}/items/pnote/pn_priv`); assert.equal(r.status, 200); r = await call(dinesh, 'PUT', `${P}/items/pnote/pn_1`, { data: Object.assign({}, n1.data, { private: false }) }); assert.equal(r.status, 200);
+  r = await call(peer, 'GET', `${P}/items?kinds=pnote`); assert.equal(ids(r), 'pn_1', 'and back to shared');
+});
 await t('Claude key in the app: needs the encryption secret, validated first, stored encrypted, removable, never returned', async () => {
   const KEY = 'sk-ant-api03-ABCDEFGHIJKLMNOPQRSTUVWXYZ'; const real = globalThis.fetch;
   let r = await call(out, 'POST', '/api/admin/ai/key', { key: KEY }); assert.equal(r.status, 403);

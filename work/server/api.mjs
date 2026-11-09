@@ -204,12 +204,14 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
 
   // ---------- items (one record each, so two people never overwrite each other) ----------
   const itemOut = (kind, id, h, data) => ({ kind, id, data, version: h.v, createdBy: h.cb, createdSide: h.cs, updatedBy: h.ub, updatedSide: h.us, createdAt: h.ca, updatedAt: h.ua });
-  async function itemsOf(pid, kind) {
+  // private notes (kind pnote, data.private) are returned only to their writer: `viewer` is the caller's email, true means an internal job that must copy everything, anything else sees none of them
+  const hidden = (kind, d, viewer) => kind === 'pnote' && d && d.private === true && viewer !== true && String(d.createdByEmail || '').toLowerCase() !== String(viewer || '').toLowerCase();
+  async function itemsOf(pid, kind, viewer) {
     const rows = await dbList('it.' + pid + '.' + kind); const out = [];
-    await Promise.all(rows.map(async r => { out.push(itemOut(kind, r.key, r.value, await unpack('ip.' + pid + '.' + kind, r.key, r.value))); }));
+    await Promise.all(rows.map(async r => { const d = await unpack('ip.' + pid + '.' + kind, r.key, r.value); if (!hidden(kind, d, viewer)) out.push(itemOut(kind, r.key, r.value, d)); }));
     return out.sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
   }
-  async function itemsFor(pid, kinds) { return [].concat(...(await Promise.all(kinds.map(k => itemsOf(pid, k))))); }
+  async function itemsFor(pid, kinds, viewer) { return [].concat(...(await Promise.all(kinds.map(k => itemsOf(pid, k, viewer))))); }
 
 
   // ---------- tickets: shared rules, numbering, Teams notices, e-mail intake ----------
@@ -1743,11 +1745,11 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     if (created) await audit(P.id, s.id, 'tkt-sync', String(created)); return ok({ created, scanned: cand.length });
   });
 
-  route('GET', '/api/projects/:id/items', async (b, P, Q) => { const s = await me(); await projectAccess(s, P.id, 'read'); const { role } = await projectAccess(s, P.id, 'read'); const kinds = kindList(Q.get('kinds')).filter(k => !(role === 'customer' && TEAM_KINDS.has(k))); if (!kinds.length) throw new HttpError(400, 'Name the kinds to load'); return ok({ items: await itemsFor(P.id, kinds) }); });
+  route('GET', '/api/projects/:id/items', async (b, P, Q) => { const s = await me(); await projectAccess(s, P.id, 'read'); const { role } = await projectAccess(s, P.id, 'read'); const kinds = kindList(Q.get('kinds')).filter(k => !(role === 'customer' && TEAM_KINDS.has(k))); if (!kinds.length) throw new HttpError(400, 'Name the kinds to load'); return ok({ items: await itemsFor(P.id, kinds, s.email) }); });
   route('GET', '/api/projects/:id/open', async (b, P, Q) => {
     const s = await me(); const { project, role } = await projectAccess(s, P.id, 'read');
     const secs = String(Q.get('sections') || '').split(',').filter(k => k && DOC_SECTIONS.test(k) && !(role === 'customer' && TEAM_DOCS.has(k))).slice(0, 40); const kq = String(Q.get('kinds') || ''); const kinds = (kq === 'all' ? KINDS : kindList(kq)).filter(k => !(role === 'customer' && TEAM_KINDS.has(k)));
-    const [docRows, items] = await Promise.all([Promise.all(secs.map(k => docRead(P.id, k))), itemsFor(P.id, kinds)]);
+    const [docRows, items] = await Promise.all([Promise.all(secs.map(k => docRead(P.id, k))), itemsFor(P.id, kinds, s.email)]);
     const docs = {}; secs.forEach((k, i) => { docs[k] = docRows[i] ? { data: docRows[i].data, version: docRows[i].head.v } : { data: null, version: 0 }; });
     return ok({ project: projectOut(project, role), members: (project.members || []).map(memberOut), docs, items, kinds });
   });
@@ -1756,6 +1758,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     if (!b || !b.data || typeof b.data !== 'object' || Array.isArray(b.data)) throw new HttpError(400, 'data is required');
     const col = 'it.' + P.id + '.' + P.kind, pcol = 'ip.' + P.id + '.' + P.kind; const curRow = await dbGet(col, P.item); const head = curRow && curRow.value; const cur = head ? await unpack(pcol, P.item, head) : null;
     if (Number.isInteger(b.baseVersion) && (head ? head.v : 0) !== b.baseVersion) throw new HttpError(409, 'Conflict: this record was changed by someone else.', { current: head ? itemOut(P.kind, P.item, head, cur) : null });
+    if (hidden(P.kind, cur, s.email)) throw new HttpError(404, 'Not found');
     let data = b.data; decisionGuard(P.kind, role, cur, data);
     // a customer can only record a result on a test case the team shared: the case itself stays as the team wrote it
     if (P.kind === 'utr' && role === 'customer') { if (!cur) throw new HttpError(403, 'Test cases are shared by the project team'); const res = ['Passed', 'Failed', 'Blocked'].includes(data.result) ? data.result : 'Pending'; const link = str(data.link || '', 500, 'Evidence link'); if (link && !/^https?:\/\//i.test(link)) throw new HttpError(400, 'The evidence link must start with https://');
@@ -1796,6 +1799,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
         by: cur ? cur.by : s.email, byName: cur ? cur.byName : (s.name || s.email), byCustomer: cur ? !!cur.byCustomer : role === 'customer', at: cur ? cur.at : now() };
     }
     if (P.kind === 'task') data = await taskSanitize(s, project, cur, data);
+    if (P.kind === 'pnote') data = Object.assign({}, data, { private: cur && cur.createdByEmail && cur.createdByEmail !== s.email ? cur.private === true : data.private === true });
     if (P.kind === 'res' || P.kind === 'pnote') data = Object.assign({}, data, { createdByName: cur ? cur.createdByName : s.name, createdByEmail: cur ? cur.createdByEmail : s.email });
     if (P.kind === 'cr' && !cur) { const all = await itemsOf(P.id, 'cr'); const mx = all.reduce((m, it) => (/^[0-9]+$/.test(String(it.data.n)) ? Math.max(m, Number(it.data.n)) : m), 0); data = Object.assign({}, data, { n: mx + 1 }); }
     else if (P.kind === 'cr' && cur) data = Object.assign({}, data, { n: cur.n });
@@ -1824,6 +1828,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   route('DELETE', '/api/projects/:id/items/:kind/:item', async (b, P) => {
     const s = await me(); if (!KINDS.includes(P.kind)) throw new HttpError(400, 'Unknown item type'); const { role } = await projectAccess(s, P.id, 'edit'); if (role === 'customer' && (TEAM_KINDS.has(P.kind) || P.kind === 'utr')) throw new HttpError(403, 'Not permitted');
     const r = await dbGet('it.' + P.id + '.' + P.kind, P.item); if (!r) throw new HttpError(404, 'Not found');
+    if (P.kind === 'pnote' && hidden('pnote', await unpack('ip.' + P.id + '.pnote', P.item, r.value), s.email)) throw new HttpError(404, 'Not found');
     if (role !== 'owner' && DECISION_MSG[P.kind]) { const cur = await unpack('ip.' + P.id + '.' + P.kind, P.item, r.value); if (decided(P.kind, cur)) throw new HttpError(403, 'Only a project owner or an admin can delete a decided record.'); }
     await dbDel('it.' + P.id + '.' + P.kind, P.item); for (let i = 0; i < (r.value.z || 0); i++) await dbDel('ip.' + P.id + '.' + P.kind, P.item + '.' + i).catch(() => { });
     await audit(P.id, s.id, P.kind + '-deleted', P.item); return ok({ ok: true });
@@ -2128,7 +2133,8 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     const s = await requireAdmin('admin'); const r = await dbGet('projects', P.id); if (!r) throw new HttpError(404, 'Project not found'); await limit('create', s.id);
     const src = r.value; const id = rid('p'); const t = now(); const name = str(b.name || 'Copy of ' + src.name, 160, 'Project name', true);
     const p = Object.assign({}, src, { id, name, archived: false, createdBy: s.id, createdAt: t, updatedAt: t, customerAccessEnabled: false, members: [{ id: s.id, email: s.email, name: s.name, role: 'owner' }], deliveryStatus: 'active', deliveryStatusHistory: [], clonedFrom: src.id });
-    let n = 0; for (const col of pcols(P.id, false)) { const rows = await dbList(col); await pmap(rows, 8, async x => { await dbPut(col.replace(P.id, id), x.key, x.value); n++; }); }
+    const priv = new Set(); for (const k of ['pnote']) { const all = await itemsOf(P.id, k, true); const open = new Set((await itemsOf(P.id, k)).map(x => x.id)); all.forEach(x => { if (!open.has(x.id)) priv.add(x.id); }); }
+    let n = 0; for (const col of pcols(P.id, false)) { const rows = (await dbList(col)).filter(x => !(priv.size && /\.pnote$/.test(col) && priv.has(String(x.key).replace(/\.\d+$/, '')))); await pmap(rows, 8, async x => { await dbPut(col.replace(P.id, id), x.key, x.value); n++; }); }
     await dbPut('projects', id, p); await audit(id, s.id, 'admin_clone_project', 'from ' + src.name); ADM = null; return ok({ project: { id, name }, copied: n }, 201);
   });
   route('POST', '/api/admin/projects/:id/delete', async (b, P) => {
