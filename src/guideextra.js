@@ -52,6 +52,8 @@
   }
 
   V.guideExtra = {
+    list: () => shown().map(x => ({ key: PFX + x.id, title: x.title, hidden: !!x.hidden })),
+    addBtn: () => (!cust() && !S.readonly ? '<button class="btn" data-act="guideAdd">+ Add a guide</button>' : ''),
     has: key => String(key).startsWith(PFX) && shown().some(x => PFX + x.id === key),
     nav(cur) { const l = shown(); return (l.length ? `<div class="wb-cap">Project guides</div>` + l.map(x => `<button class="wb-mod${cur === PFX + x.id ? ' on' : ''}" data-act="llMod" data-m="${PFX}${esc(x.id)}"><span>${esc(x.title)}${x.hidden ? ' (hidden)' : ''}</span></button>`).join('') : '') + (!cust() && !S.readonly ? `<button class="btn sm" style="margin:12px 0 0" data-act="guideAdd">+ Add a guide</button>` : ''); },
     body(key) { const g = items().find(x => PFX + x.id === key); if (!g) return ''; const team = !cust() && !S.readonly;

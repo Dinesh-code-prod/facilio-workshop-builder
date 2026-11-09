@@ -2037,3 +2037,10 @@ body.asst-open .navbar:not(#_):not(#__):not(#___) { grid-template-columns: auto 
 .pr-chk{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--cs-border,#e4e7ec);cursor:pointer}.pr-chk:first-of-type{border-top:0}.pr-chk input{margin-top:4px}
 .pr-bring{display:flex;flex-direction:column;padding:9px 0;border-top:1px solid var(--cs-border,#e4e7ec)}.pr-bring:first-of-type{border-top:0}
 .pr-w{border-top:1px solid var(--cs-border,#e4e7ec);padding:10px 0}.pr-w:first-child{border-top:0}.pr-w summary{cursor:pointer}
+
+/* Module guides: card grid and guide switcher (learnlib.js) */
+.ll-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.ll-card{text-align:left;border:1px solid var(--cs-border,#e4e7ec);border-radius:16px;background:#fff;padding:16px 18px;cursor:pointer;display:flex;flex-direction:column;gap:6px;font:inherit}
+.ll-card b{font-size:15px}.ll-card span{font-size:13px;color:#667085;line-height:1.45}.ll-card:hover,.ll-card:focus-visible{border-color:#1570EF}
+.ll-chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 14px;margin:0 0 6px}.ll-chip{flex:none;border:1px solid var(--cs-border,#e4e7ec);background:#fff;border-radius:999px;padding:6px 14px;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap}
+.ll-chip.on{background:#101828;color:#fff;border-color:#101828}.ll-all{border-style:dashed}.ll-read{max-width:920px}
