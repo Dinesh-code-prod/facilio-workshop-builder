@@ -1511,3 +1511,17 @@ body .tg2-road .tg2-ck:not(#_):not(#__) { flex: none !important; width: 28px; }
 body .tg2-chips:not(#_):not(#__) { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
 body .tg2-chips a:not(#_):not(#__) { text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 body .ws-switch a[aria-current="page"]:not(#_):not(#__) { color: #fff !important; }   /* the active Projects or Admin button keeps a white label on its dark pill (a black-text rule had made it invisible) */
+
+/* Team dashboard click-throughs, pain points and stage map (src/stagedash.js, src/dashkit.js) */
+body button.sd-kpi.sd-click { text-align: left; cursor: pointer; font: inherit; width: 100%; } body .sd-click:hover { border-color: var(--cs-st1, #d4d4d4); box-shadow: var(--cs-sh8, 0 4px 14px rgba(0, 0, 0, .08)); } body .sd-click:focus-visible { outline: 2px solid var(--cs-brand, #1570EF); outline-offset: 2px; }
+body .sd-ck li.sd-click { cursor: pointer; border-radius: 10px; } body .sd-ck li.sd-click:hover { background: rgba(0, 0, 0, .04); }
+body .sd-w > header { flex-wrap: wrap; } body .sd-go { margin-left: auto; border: 0; background: none; padding: 0; color: var(--cs-brand, #1570EF); font: 500 13px/18px var(--cs-font); cursor: pointer; white-space: nowrap; } body .sd-go:hover { text-decoration: underline; } body .sd-go i { font-style: normal; }
+body .dk-sev { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 10px; background: #f59e0b; } body .dk-sev.bad { background: #ef4444; }
+body .cs-line em.bad { color: #b42318; } body .cs-line em.warn { color: #b54708; }
+body .dk-sm { list-style: none; margin: 0; padding: 4px 0; } body .dk-sm li + li { border-top: 1px solid var(--cs-st3, #eee); }
+body .dk-sm button { display: grid; grid-template-columns: minmax(0, 1fr) 90px 44px; gap: 14px; align-items: center; width: 100%; padding: 12px 20px; border: 0; background: none; text-align: left; cursor: pointer; font: 400 14px/20px var(--cs-font); }
+body .dk-sm button:hover { background: rgba(0, 0, 0, .03); } body .dk-sm b { display: block; font: 600 14.5px/20px var(--cs-font); color: var(--cs-fg1); } body .dk-sm small { display: block; font: 400 12.5px/17px var(--cs-font); color: var(--cs-fg3); }
+body .dk-sm i { display: block; height: 8px; border-radius: 4px; background: rgba(0, 0, 0, .07); overflow: hidden; } body .dk-sm u { display: block; height: 100%; background: var(--cs-brand, #1570EF); border-radius: 4px; } body .dk-sm em { font-style: normal; text-align: right; font: 600 14px/20px var(--cs-font); color: var(--cs-fg1); }
+body .dk-sm button:not(#_):not(#__):not(#___) { border: 0 !important; background: transparent !important; box-shadow: none !important; border-radius: 0 !important; padding: 14px 22px !important; min-height: 64px; }
+body .dk-sm button:hover:not(#_):not(#__):not(#___) { background: rgba(0, 0, 0, .03) !important; }
+body .dk-sm:not(#_):not(#__):not(#___) { padding: 0; }

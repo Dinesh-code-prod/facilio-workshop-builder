@@ -59,7 +59,7 @@
   function checklist(items, empty) {
     if (!items.length) return none(empty || 'Nothing to check yet.');
     const ic = { g: '✓', a: '!', r: '✕', n: '–' };
-    return `<ul class="sd-ck">${items.map(x => `<li class="${x.s}"><span class="sd-ci" style="--c:${(RAG[x.s] || RAG.n)[1]}" aria-hidden="true">${ic[x.s] || '–'}</span><div><b>${esc(x.l)}</b>${x.d ? `<small>${esc(x.d)}</small>` : ''}</div>${rag(x.s)}</li>`).join('')}</ul>`;
+    return `<ul class="sd-ck">${items.map(x => `<li class="${x.s}${x.v ? ' sd-click' : ''}"${x.v ? ` data-act="nav" data-view="${esc(x.v)}" role="link" tabindex="0" title="Open where this is fixed"` : ''}><span class="sd-ci" style="--c:${(RAG[x.s] || RAG.n)[1]}" aria-hidden="true">${ic[x.s] || '–'}</span><div><b>${esc(x.l)}</b>${x.d ? `<small>${esc(x.d)}</small>` : ''}</div>${rag(x.s)}</li>`).join('')}</ul>`;
   }
 
   V.sdc = { RAG, donut, gauge, spark, stack, heat, funnel, rag, worst, checklist, none, legend };

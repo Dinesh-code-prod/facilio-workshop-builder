@@ -93,6 +93,38 @@
       + `<span class="dk-fc">Showing <b>${shown.length}</b> of ${all.length} project${all.length === 1 ? '' : 's'}</span>${dirty ? '<button type="button" class="dk-fr" data-act="dkAReset">Reset filters</button>' : ''}</div>`;
   }
 
+  // Pain points and pending: what is late, blocked or waiting, worst first, each one a link to where it is fixed. Team only; every figure is counted from saved records.
+  function pains(c) {
+    const out = [], D = V.sdd, add = (n, sev, one, many, view, go) => { if (n > 0) out.push({ n, sev, text: n + ' ' + (n === 1 ? one : many), view, go }); };
+    const tks = V.items && V.items.ready(['task']) ? V.items.list('task') : [], Q = ((F.S.ws && F.S.ws.questions) || []).filter(q => !q.answer && q.status !== 'Closed');
+    const rd = V.brdReadiness ? V.brdReadiness() : { blocking: 0 }, tcs = c.tcs, req = ['brd', 'uat', 'golive'].filter(id => c.sg(id).status === 'requested').length;
+    add(c.openBy('Critical'), 'bad', 'critical UAT defect is open', 'critical UAT defects are open', 'delivery', 'Open UAT');
+    add(c.failed, 'bad', 'test case failed or is blocked', 'test cases failed or are blocked', 'delivery', 'Open UAT');
+    add(c.anyLate.filter(a => a.side !== 'customer').length, 'bad', 'action of ours is past its date', 'actions of ours are past their date', 'governance', 'Open actions');
+    add(tks.filter(t => /block/i.test(t.status || '')).length, 'bad', 'task is blocked', 'tasks are blocked', 'tasks', 'Open tasks');
+    add(rd.blocking, 'bad', 'BRD check blocks sign-off', 'BRD checks block sign-off', 'brd', 'Open the BRD');
+    add(c.custLate.length, 'warn', 'customer action is past its date', 'customer actions are past their date', 'governance', 'Open actions');
+    add(c.raidHigh.length, 'warn', 'high-impact risk or issue is open', 'high-impact risks or issues are open', 'governance', 'Open RAID log');
+    add(req, 'warn', 'sign-off is waiting for the customer', 'sign-offs are waiting for the customer', 'governance', 'Open sign-offs');
+    add(c.crOpen.filter(x => (D.ageOf(x, c.today) || 0) > 14).length, 'warn', 'change request has waited over 14 days', 'change requests have waited over 14 days', 'changes', 'Change requests');
+    add(c.R.filter(r => !r.status || r.status === 'Draft').length, 'warn', 'requirement is still a draft', 'requirements are still drafts', 'brd', 'Open the BRD');
+    add(Q.length, 'warn', 'customer question has no answer', 'customer questions have no answer', 'rsquestions', 'Open questions');
+    add(c.due.length - c.hit.length, 'warn', 'plan step is due but not done', 'plan steps are due but not done', 'plan', 'Open the plan');
+    add(tcs.length && !c.run ? tcs.length : 0, 'warn', 'test case has not been run', 'test cases have not been run', 'delivery', 'Open UAT');
+    add(c.hcOpen.length, 'warn', 'hypercare issue is open', 'hypercare issues are open', 'hypercare', 'Open hypercare');
+    add(c.st.n ? 0 : 1, 'warn', 'dated plan is missing', 'dated plan is missing', 'plan', 'Open the plan');
+    return out.sort((a, b) => (a.sev === 'bad' ? 0 : 1) - (b.sev === 'bad' ? 0 : 1) || b.n - a.n);
+  }
+  // Stage map: how far each stage is, from the records it owns; each row opens that stage's dashboard tab.
+  function stageMap(c) {
+    const D = V.sdd, ppl = F.doc('people') || {}, list = k => (V.items && V.items.ready([k]) ? V.items.list(k) : []), ho = list('ho'), st = id => c.sg(id).status, so = id => (st(id) === 'signed' ? 100 : st(id) === 'requested' ? 70 : 0);
+    const conf = c.R.filter(r => r.status === 'Confirmed').length, k0 = [(ppl.team || []).length > 0, (ppl.stakeholders || []).length > 0, c.st.n > 0, !!c.st.goLive].filter(Boolean).length;
+    return [['kickoff', 'Kick-off', D.pct(k0, 4), 'team, stakeholders, dated plan, go-live date'], ['req', 'Requirements', c.R.length ? D.pct(conf, c.R.length) : null, conf + ' of ' + c.R.length + ' confirmed'], ['brd', 'BRD and sign-off', so('brd'), st('brd') === 'signed' ? 'signed' : st('brd') === 'requested' ? 'waiting for signature' : 'not signed'],
+      ['build', 'Build and UAT', c.tcs.length ? D.pct(c.passed, c.tcs.length) : null, c.passed + ' of ' + c.tcs.length + ' test cases passed'], ['live', 'Go-live and hypercare', so('golive'), st('golive') === 'signed' ? 'go-live signed' : st('golive') === 'requested' ? 'waiting for signature' : 'go-live not signed'], ['handover', 'Handover', ho.length ? D.pct(ho.filter(x => x.done).length, ho.length) : null, ho.filter(x => x.done).length + ' of ' + ho.length + ' items ticked']];
+  }
+  const painList = (rs, empty) => (rs.length ? `<ul class="cs-ul">${rs.map(r => `<li><button type="button" class="cs-line" data-act="nav" data-view="${esc(r.view)}"><span><i class="dk-sev ${r.sev}" aria-hidden="true"></i>${esc(r.text)}</span><em class="${r.sev}">${esc(r.go)} \u2192</em></button></li>`).join('')}</ul>` : none(empty));
+  const mapList = rs => `<ul class="dk-sm">${rs.map(([id, l, p, d]) => `<li><button type="button" data-act="sdTab" data-v="${id}" title="Open the ${esc(l)} dashboard"><span><b>${esc(l)}</b><small>${esc(d)}</small></span><i><u style="width:${p == null ? 0 : p}%"></u></i><em>${p == null ? '—' : p + '%'}</em></button></li>`).join('')}</ul>`;
+
   // ---------- the Overview widgets, from the numbers V.sdd.X() already computes ----------
   function overview() {
     const D = V.sdd, S = V.sd, C = V.sdc; if (!D || !S || !C) throw new Error('dashboard parts missing');
@@ -130,7 +162,8 @@
     const ev = (V.events ? V.events({ days: win }) : []).slice(0, 8), need = k ? myOpen.slice().sort((a, b) => (a.due || '9').localeCompare(b.due || '9')).slice(0, 5) : (V.attentionItems ? V.attentionItems() : []).slice(0, 6);
     const l1 = widget('Next ' + win + ' days', 'sessions and milestones', list(ev.map(e => line(e.view === 'overview' ? 'governance' : e.view, e.title, V.fmtDate(e.date))), 'Nothing is scheduled in the next 14 days.'), 6);
     const l2 = widget(k ? 'What we need from you' : 'Needs attention', k ? 'open actions, soonest first' : 'worth a look today', list(need.map(a => k ? line('governance', a.text || 'Action', a.due ? V.fmtDate(a.due) : '', isLate(a) ? 'bad' : '') : line(a.view || 'governance', a.t)), k ? 'Nothing is waiting on you right now.' : 'Nothing needs attention right now.'), k ? 5 : 6);
-    return projBar(k) + kp + grid(k ? rg + who + work + orb + l2 + dt + rw + l1 : rg + who + work + orb + sp + dt + rw + l1 + l2);
+    const top = k ? '' : widget('Pain points and pending', 'worst first, each opens where it is fixed', painList(pains(c).slice(0, 8), 'Nothing is late, blocked or waiting. The project is clear.'), 7) + widget('Stage map', 'how far each stage is, click for its dashboard', mapList(stageMap(c)), 5);
+    return projBar(k) + kp + grid(top + (k ? rg + who + work + orb + l2 + dt + rw + l1 : rg + who + work + orb + sp + dt + rw + l1 + l2));
   }
 
   // ---------- Admin: extra portfolio widgets, from the project list the Admin dashboard already has ----------
@@ -157,5 +190,5 @@
   ACT.dkFReset = () => { ui().dkF = { win: 14, focus: 'all', who: 'all' }; V.render(); };
   ACT.dkAF = el => { AF()[el.getAttribute('data-k')] = el.value; V.setMode('admin'); };
   ACT.dkAReset = () => { ui().dkA = { stage: 'all', health: 'all', customer: 'all', type: 'all', when: 'all', q: '' }; V.setMode('admin'); };
-  V.dk = { pie, rings, dots, orbit, spine, rows, overview, admin, adminBar, filterPortfolio, none };
+  V.dk = { pie, rings, dots, orbit, spine, rows, overview, admin, adminBar, filterPortfolio, pains, stageMap, none };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -27,4 +27,11 @@ t('the admin filter keeps only the projects that match every chosen filter, and 
   F.S.ui.dkA = { stage: '2', health: 'all', customer: 'all', type: 'all', when: 'all', q: 'b' }; assert.deepEqual(K.filterPortfolio(ps).map(p => p.name), ['B']);
   assert.ok(K.adminBar(ps, K.filterPortfolio(ps)).includes("Showing <b>1</b> of 3 projects"));
 });
+t('pain points list the worst first, count from records, and leave out what is fine', () => {
+  V.sdd = Object.assign(V.sdd || {}, { ageOf: x => x.age, pct: (a, b) => (b ? Math.round(a / b * 100) : 0) }); F.S = { ui: {}, ws: { questions: [{ q: 'a' }, { q: 'b', answer: 'x' }] } }; F.doc = () => ({}); V.items = { ready: () => true, list: () => [{ status: 'Blocked' }, { status: 'Done' }] };
+  const c = { openBy: s => (s === 'Critical' ? 0 : 0), failed: 2, anyLate: [{ side: 'facilio' }, { side: 'customer' }], custLate: [{}, {}, {}], raidHigh: [], sg: id => ({ status: id === 'brd' ? 'requested' : 'notdue' }), crOpen: [{ age: 20 }, { age: 3 }], R: [{ status: 'Draft' }, { status: 'Confirmed' }], tcs: [{}, {}], run: 1, due: [1, 2, 3], hit: [1], hcOpen: [], st: { n: 5 }, today: '2026-11-09' };
+  const p = K.pains(c); assert.equal(p.map(x => x.sev).join(), 'bad,bad,bad,warn,warn,warn,warn,warn,warn'); assert.equal(p[0].text, '2 test cases failed or are blocked');
+  assert.ok(p.some(x => x.text === '1 task is blocked') && p.some(x => x.text === '3 customer actions are past their date') && p.some(x => x.text === '1 change request has waited over 14 days') && p.some(x => x.text === '1 customer question has no answer'));
+  assert.ok(!p.some(x => /critical|hypercare|dated plan/.test(x.text)), 'nothing is listed for what is fine');
+});
 console.log(n + ' dashboard kit checks passed');
