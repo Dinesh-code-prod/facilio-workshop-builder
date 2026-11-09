@@ -2102,7 +2102,6 @@ body #asst .as-us u.mid { background: #D97706; } body #asst .as-us u.hi { backgr
 body #asst .as-us-x, body #asst .as-us-n { font: 500 12px/16px var(--cs-font, inherit); color: #5B6B99; }
 body #asst .as-us-l { max-height: 96px; overflow: auto; display: grid; gap: 4px; padding-top: 6px; border-top: 1px dashed var(--cs-st3, #e3e9f5); } body #asst .as-us-r { display: grid; grid-template-columns: 1fr auto auto auto; gap: 8px; align-items: center; font: 500 11px/16px var(--cs-font, inherit); color: #1D1A5E; } body #asst .as-us-r span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } body #asst .as-us-r em { font-style: normal; font-weight: 600; } body #asst .as-us-r em.mid { color: #D97706; } body #asst .as-us-r em.hi { color: #DC2626; } body #asst .as-us-r i { font-style: normal; color: #5B6B99; }
 body #asst .as-us-a { display: grid; gap: 6px; } body #asst .as-us-a + .as-us-a { padding-top: 8px; border-top: 1px dashed var(--cs-st3, #e3e9f5); }
-=======
 /* Sign-in and signed-out panel: no accent bar under the heading, and calm gaps between the heading, the product name, the message and the button */
 body .auth-form .auth-hello:not(#_):not(#__)::after { display: none !important; content: none !important; }
 body .auth-form .auth-hello:not(#_):not(#__) { margin-bottom: 10px; }
