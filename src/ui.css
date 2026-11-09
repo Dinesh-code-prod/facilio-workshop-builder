@@ -483,6 +483,11 @@ body :is(.rgdd-btn, .tl-gsel, .dkv-i, .fb-seg, .rv-box, .wn-chip):not(#_):not(#_
 body .wn-chip.on:not(#_):not(#__):not(#___) { background: var(--cs-primary) !important; color: #fff !important; }
 /* panels built by single pages: 16 px corners, a hairline, the soft shadow */
 body :is(.tl-row, .dkv-side, .dkv-h, .dkv-frame, .tg2-first, .wn-card, .ds-panel, section.mk, section.rv, .mnu-list, .pp-tile):not(#_):not(#__):not(#___) { border-radius: 16px !important; }
+/* second sweep from a scan of every project page (9 Nov 2026) */
+body :is(.xf-empty, .st-foot, .ob-nav, .notice, .dx-nav, .brd-ban, details.pg, .tg2-job, details.tg2-ph, .tg2-stage, .wf-refuse):not(#_):not(#__):not(#___) { border-radius: 16px !important; }
+body :is(.ob-nav-i, .dx-btn, .mnu-i, .blk-ask):not(#_):not(#__):not(#___) { border-radius: 10px !important; }
+body .dx-btn.on:not(#_):not(#__):not(#___), body .rs-chip.on:not(#_):not(#__):not(#___) { background: var(--cs-primary) !important; color: #fff !important; }
+body :is(.lc-num, .kpi-v, .kb-ty, .pt-st, .pt-av, .ws-clock, .ws-n, .tp-n, .tg2-h3, .tg2-lv, .tg2-lvl, .fb-seg, button.tab):not(#_):not(#__):not(#___) { font-weight: 600 !important; }
 
 /* ---- settings pages (coss ui pattern): the name and a short description on the left, the form card on the right, buttons in a footer bar ---- */
 body .st-wrap { max-width: 1040px; }
