@@ -20,6 +20,7 @@ import { installMailTasks } from './_mailapi.mjs';
 import { installJobs } from './_jobsapi.mjs';
 import { installFeedback } from './_feedback.mjs';
 import { dueWords } from './_msgfmt.mjs';
+import { addedMessage } from './_helper.mjs';
 import { installNotify, norm as nNorm, lead, hashOf } from './_notify.mjs';
 import { milestonesDue, pendingFor, teamCounts, dueOf, digestMessage, digestKey, assignKey, assignGate, assignmentNotice, BASE_URL as TW_BASE } from './_taskwatch.mjs';
 let FWB = null; // this copy of the server's own dispatcher (not looked up through a global, so two copies in one process cannot mix)
@@ -339,12 +340,19 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     await audit(P.id, s.id, 'project-updated', null); return ok({ project: projectOut(project, (await projectAccess(s, P.id, 'read')).role) });
   });
   route('DELETE', '/api/projects/:id', async (b, P) => { const s = await me(); await projectAccess(s, P.id, 'owner'); await patchProject(P.id, p => { p.archived = true; }); await audit(P.id, s.id, 'project-archived', null); return ok({ ok: true }); });
+  // the person added to a project is told in Teams: the project and customer, who added them, their role, what to do first (once per person and project; not when you add yourself)
+  async function memberAddedNotice(project, m, actor) {
+    try { if (!(await teamsOn()) || String(m.email).toLowerCase() === String(actor.email || '').toLowerCase()) return; const key = 'm' + hashOf(project.id + '|' + m.email); if ((await dbGet('twn', key)) && (await dbGet('twn', key)).value) return;
+      const c = addedMessage(project, m, actor.name || actor.email, TW_BASE); await Promise.race([CTX.teams.send({ to: [m.email], title: c.title, text: c.text, facts: c.facts, actions: c.actions }), new Promise(r => setTimeout(r, 4000))]); await dbPut('twn', key, { at: now() });
+    } catch (e) { console.log('member notice failed: ' + (e && e.message)); }
+  }
   route('POST', '/api/projects/:id/members', async (b, P) => {
     const s = await me(); const { project } = await projectAccess(s, P.id, 'owner'); const email = str(b.email, 200, 'Email', true).toLowerCase(); const role = ['owner', 'editor', 'viewer'].includes(b.role) ? b.role : 'editor';
     if (!/^[^@\s]+@[^@\s]+$/.test(email) || !email.endsWith('@' + ALLOWED_DOMAIN)) throw new HttpError(400, 'Use a Facilio office email (name@' + ALLOWED_DOMAIN + ')');
     const id = ekey(email); const u = await dbGet('usr', id); const name = (u && u.value && u.value.name) || nameFromEmail(email); const m = { id, email, name, role };
     await patchProject(P.id, p => { const ow = (p.members || []).filter(x => x.role === 'owner'); if (role !== 'owner' && ow.length === 1 && ow[0].id === id) throw new HttpError(400, 'A project needs at least one owner. Make someone else an owner first.'); p.members = (p.members || []).filter(x => x.id !== id).concat([m]); });
     if (!u) await dbPut('usr', id, { email, name, seen: null }).catch(() => { });
+    await memberAddedNotice(project, m, s);   // a Teams message that tells the person what they were added to and what to do first
     await audit(P.id, s.id, 'member-added', email + ' as ' + role); return ok({ member: memberOut(m) }, 201);
   });
   route('DELETE', '/api/projects/:id/members/:uid', async (b, P) => {

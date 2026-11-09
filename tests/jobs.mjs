@@ -64,12 +64,13 @@ await t('the open-job limit is enforced', async () => {
   assert.equal((await as(SAM, 'GET', J)).data.open, 1);
 });
 await t('project_jobs: list, claim with fixed instructions, finish; a second claim and a stranger are refused', async () => {
-  const l = await tool(KIM, 'project_jobs', { action: 'list', project: pid }); assert.equal(l.status, 200); assert.equal(l.data.jobs.length, 1); const id = l.data.jobs[0].id;
+  const l0 = await tool(KIM, 'project_jobs', { action: 'list', project: pid }); assert.equal(l0.status, 200); assert.equal(l0.data.jobs.length, 0, "Sam's pull from his own drive is not offered to Kim's Claude"); const l = await tool(SAM, 'project_jobs', { action: 'list', project: pid }); assert.equal(l.status, 200); assert.equal(l.data.jobs.length, 1); const id = l.data.jobs[0].id;
+  const kc = await tool(KIM, 'project_jobs', { action: 'claim', project: pid, id }); assert.equal(kc.status, 403); assert.match(kc.data.error, /only their own Claude/);
   assert.ok([403, 404, 400].includes((await tool(OUT, 'project_jobs', { action: 'claim', project: pid, id })).status));
-  const c = await tool(KIM, 'project_jobs', { action: 'claim', project: pid, id }); assert.equal(c.status, 200); assert.equal(c.data.instructions, KINDS.pull_msa.recipe); assert.equal(c.data.request.note, 'Mansions MSA');
+  const c = await tool(SAM, 'project_jobs', { action: 'claim', project: pid, id }); assert.equal(c.status, 200); assert.equal(c.data.instructions, KINDS.pull_msa.recipe); assert.equal(c.data.request.note, 'Mansions MSA');
   assert.equal((await tool(SAM, 'project_jobs', { action: 'claim', project: pid, id })).status, 409);
-  assert.equal((await tool(SAM, 'project_jobs', { action: 'finish', project: pid, id, status: 'done', summary: 'x' })).status, 409, 'only the claimer finishes');
-  const f = await tool(KIM, 'project_jobs', { action: 'finish', project: pid, id, status: 'needs_input', summary: 'Two MSAs match', questions: ['Which one: 2024 or 2026?'] }); assert.equal(f.status, 200); assert.equal(f.data.job.status, 'needs_input');
+  assert.equal((await tool(KIM, 'project_jobs', { action: 'finish', project: pid, id, status: 'done', summary: 'x' })).status, 409, 'only the claimer finishes');
+  const f = await tool(SAM, 'project_jobs', { action: 'finish', project: pid, id, status: 'needs_input', summary: 'Two MSAs match', questions: ['Which one: 2024 or 2026?'] }); assert.equal(f.status, 200); assert.equal(f.data.job.status, 'needs_input');
   assert.equal((await as(SAM, 'POST', J + '/' + id + '/answer', { answers: ['2026'] })).data.job.status, 'waiting');
   const c2 = await tool(SAM, 'project_jobs', { action: 'claim', project: pid, id }); assert.deepEqual(c2.data.answersFromPerson, ['2026']);
   const d = await tool(SAM, 'project_jobs', { action: 'finish', project: pid, id, status: 'done', summary: 'Extraction stored', transferId: 'xf_abc' }); assert.equal(d.data.job.status, 'done'); assert.equal((await as(SAM, 'GET', J)).data.open, 0);
