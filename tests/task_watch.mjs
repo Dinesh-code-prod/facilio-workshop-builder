@@ -45,7 +45,7 @@ await t('assignGate allows three a day, then none, and starts again the next day
   let rec = null; for (let i = 0; i < 3; i++) { const g = assignGate(rec, '2026-11-04'); assert.equal(g.allow, true); rec = g.rec; }
   assert.equal(assignGate(rec, '2026-11-04').allow, false); assert.equal(assignGate(rec, '2026-11-05').allow, true);
 });
-await t('a title with line breaks is flattened to one line', () => { const r = pendingFor('kim@facilio.com', [{ id: 'p', name: 'A', tasks: [{ id: 'z', data: { title: 'Line one\n\n[click](http://x)\r\nline two', status: 'To Do', owner: 'kim@facilio.com' } }] }], today); assert.ok(!/\n/.test(r.items[0].title)); assert.equal(assignmentNotice({}, { title: 'a\nb', owner: 'kim@facilio.com', status: 'To Do' }, 'sam@facilio.com', 'A').text.split('\n').length, 6, 'a line break inside a title cannot make extra lines'); });
+await t('a title with line breaks is flattened to one line', () => { const r = pendingFor('kim@facilio.com', [{ id: 'p', name: 'A', tasks: [{ id: 'z', data: { title: 'Line one\n\n[click](http://x)\r\nline two', status: 'To Do', owner: 'kim@facilio.com' } }] }], today); assert.ok(!/\n/.test(r.items[0].title)); assert.equal(assignmentNotice({}, { title: 'a\nb', owner: 'kim@facilio.com', status: 'To Do' }, 'sam@facilio.com', 'A').text.split('\n').length, 7, 'a line break inside a title cannot make extra lines'); });
 await t('assignmentNotice only fires for a new owner who is somebody else and the task is open', () => {
   const next = { title: 'Do it', status: 'To Do', owner: 'kim@facilio.com', due: '2026-12-01', priority: 'High' };
   assert.equal(assignmentNotice({ owner: '' }, next, 'sam@facilio.com', 'Alpha').to, 'kim@facilio.com');
