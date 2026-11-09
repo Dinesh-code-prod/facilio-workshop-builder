@@ -30,25 +30,34 @@ export function pendingFor(email, projects, today, soonDays = 3) {
 export function teamCounts(projects, today) { const out = {}; for (const p of projects || []) { const c = { open: 0, overdue: 0, done: 0 }; for (const k of p.tasks || []) { const d = k.data || {}; if (d.superseded === true) continue; if (DONE.test(String(d.status || '').trim())) { c.done++; continue; } c.open++; const due = dueOf(d); if (due && due < today) c.overdue++; } out[p.id] = c; } return out; }
 
 /** The Teams message for a digest; null when there is nothing pending (no empty DMs). */
-export function digestMessage(pending, today, { maxLines = 6, name = '', team = {} } = {}) {
-  const c = pending.counts; if (!c.open) return null; const projects = [...new Set(pending.items.map(x => x.project))];
-  const byP = projects.map(id => { const it = pending.items.filter(x => x.project === id); return { id, name: it[0].projectName, items: it }; });
+export function digestMessage(pending, today, { maxLines = 6, name = '', team = {}, milestones = [] } = {}) {
+  const ms = Array.isArray(milestones) ? milestones : []; const c = pending.counts; if (!c.open && !ms.length) return null; const projects = [...new Set(pending.items.map(x => x.project).concat(ms.map(m => m.project)))];
+  const byP = projects.map(id => { const it = pending.items.filter(x => x.project === id); return { id, name: (it[0] && it[0].projectName) || ((ms.find(m => m.project === id) || {}).projectName) || 'Project', items: it, ms: ms.filter(m => m.project === id) }; });
   const when = x => dueWords(x.due, today);
   const block = x => ['**' + (x.n ? 'T-' + x.n + ' \u00b7 ' : '') + short(x.title, 80) + '**', [when(x), x.status, x.priority ? x.priority + ' priority' : '', x.type !== 'Other' ? x.type : '', x.stage].filter(Boolean).join(' \u00b7 '), x.desc ? short(x.desc, 140) : '', x.blockerText ? 'Blocked: ' + short(x.blockerText, 120) : ''].filter(Boolean).join('\n');
   const SECTIONS = [['Overdue', x => x.overdue], ['Due today', x => x.today && !x.overdue], ['Blocked', x => x.blocked], ['Coming up in the next 3 days', x => x.soon], ['Other open tasks', () => true]];
   const tline = id => { const k = team[id]; return k ? 'Whole team on this project: ' + k.open + ' open, ' + k.overdue + ' overdue, ' + k.done + ' finished.' : ''; };
-  let room = maxLines; const out = ['**' + (name ? 'Hi ' + name + ', here' : 'Here') + ' is what is open for you' + (byP.length === 1 ? ' in ' + byP[0].name : '') + '.**'];
+  let room = maxLines; const out = ['**' + (name ? 'Hi ' + name + ', here' : 'Here') + (c.open ? ' is what is open for you' : ' is what is coming up') + (byP.length === 1 ? ' in ' + byP[0].name : '') + '.**'];
+  const msBlock = m => '**' + short(m.title, 90) + '**\n' + [dueWords(m.due, today), m.owner ? 'Owner: ' + m.owner : '', m.pct ? m.pct + '% done' : '', m.status && m.status !== 'Not started' ? m.status : ''].filter(Boolean).join(' \u00b7 ');
   if (byP.length === 1 && tline(byP[0].id)) out.push(tline(byP[0].id));
   for (const g of byP) { if (byP.length > 1) { out.push('', '**' + g.name + '**'); if (tline(g.id)) out.push(tline(g.id)); } const used = new Set();
+    if (g.ms.length) { out.push('', '**PROJECT MILESTONES DUE (' + g.ms.length + ')**'); for (const m of g.ms.slice(0, 4)) out.push('', msBlock(m)); if (g.ms.length > 4) out.push('', '...and ' + (g.ms.length - 4) + ' more milestones in the plan.'); }
     for (const [title, test] of SECTIONS) { const it = g.items.filter(x => !used.has(x) && test(x)); if (!it.length) continue; it.forEach(x => used.add(x)); out.push('', '**' + title.toUpperCase() + ' (' + it.length + ')**'); for (const x of it) { if (room <= 0) break; room--; out.push('', block(x)); } } }
   const shown = maxLines - room; if (pending.items.length > shown) out.push('', '...and ' + (pending.items.length - shown) + ' more in Delivery Studio.');
   out.push('', 'Open Delivery Studio to update them. A Done button below marks that task finished.');
   const where = byP.length === 1 ? byP[0].name : byP.length + ' projects';
-  return { title: 'TASKS \u00b7 ' + where + ' \u00b7 ' + c.open + ' open' + (c.overdue ? ', ' + c.overdue + ' overdue' : '') + (c.dueToday ? ', ' + c.dueToday + ' due today' : ''), text: out.join('\n'),
-    facts: [{ title: 'Why you got this', value: 'Your morning list of tasks that are assigned to you' }, { title: 'Open', value: String(c.open) }, { title: 'Due today', value: String(c.dueToday || 0) }, { title: 'Overdue', value: String(c.overdue) }, { title: 'Blocked', value: String(c.blocked) }],
+  return { title: (c.open ? 'TASKS' : 'MILESTONES') + ' \u00b7 ' + where + ' \u00b7 ' + (c.open ? c.open + ' open' + (c.overdue ? ', ' + c.overdue + ' overdue' : '') + (c.dueToday ? ', ' + c.dueToday + ' due today' : '') : ms.length + ' due') + (c.open && ms.length ? ', ' + ms.length + ' milestone' + (ms.length === 1 ? '' : 's') + ' due' : ''), text: out.join('\n'),
+    facts: [{ title: 'Why you got this', value: c.open ? 'Your morning list of tasks that are assigned to you' + (ms.length ? ', and the plan milestones that are due' : '') : 'Plan milestones of your project are due: everyone on the team is told' }, { title: 'Open', value: String(c.open) }, { title: 'Milestones due', value: String(ms.length) }, { title: 'Due today', value: String(c.dueToday || 0) }, { title: 'Overdue', value: String(c.overdue) }, { title: 'Blocked', value: String(c.blocked) }],
     actions: [{ title: 'Open Delivery Studio', url: projects.length === 1 ? BASE_URL + '#/p/' + projects[0] + '/tasks' : BASE_URL }].concat(pending.items.filter(x => (x.overdue || x.soon) && x.id).slice(0, 3).map(x => ({ title: 'Done: ' + (x.n ? 'T-' + x.n : oneLine(x.title, 20)), fn: 'api', data: { tool: 'task_reply', project: x.project, taskId: x.id, status: 'Done', text: 'Marked done by the owner from the Teams message.', via: 'teams' } }))) };
 }
 
+/** Plan rows (the timeline) that the whole team should know about: not done, not a phase header, ending today, in the next soonDays days, or already late (at most `max`, the latest-due last). */
+export function milestonesDue(project, rows, today, soonDays = 3, max = 8) {
+  const end = addDays(today, soonDays); const out = [];
+  for (const r of Array.isArray(rows) ? rows : []) { if (!r || r.isPhase || DONE.test(String(r.status || '').trim()) || Number(r.pct) >= 100) continue; const due = [r.end, r.start].find(x => DAY.test(x || '')) || ''; if (!due || due > end) continue;
+    out.push({ project: project && project.id, projectName: project && project.name, title: oneLine(r.title, 160), due, owner: oneLine(r.owner, 20), status: oneLine(r.status, 20), pct: Number(r.pct) || 0 }); }
+  return out.sort((a, b) => a.due.localeCompare(b.due)).slice(-max);
+}
 /** The key under which the server remembers a digest (scope = a project id, or 'all' for a person's own digest) or the assignment count of a person.
     Hashed, so two different addresses never share a key and the key is always valid; one record per key is overwritten each day, so nothing piles up. */
 export const digestKey = (email, scope) => 'd' + createHash('sha256').update(String(email || '').trim().toLowerCase() + '|' + String(scope || 'all')).digest('hex').slice(0, 40);
