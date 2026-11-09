@@ -6,3 +6,7 @@ t('a "how do I" question is answered from the tool guide; DeepSeek can say the r
 t('an unclear message gets one question with tap answers; a rough message goes to Claude with its meaning; the wait is told in minutes', () => { assert.match(ui, /plan\.route === 'unclear'/); assert.match(ui, /asstQuick/); assert.match(ui, /\(Understood as: /); assert.match(ui, /Claude will be back in about/); });
 t('a reply that arrives while the project is open opens the chat by itself (finished or failed Claude work), and the existing ways it opens stay', () => { assert.ok(ui.includes('if (ended(j) && !a.fin[j.id])') && ui.includes('a.fin = null') && ui.includes('V.asstRequested = ') && ui.includes("j.status === 'needs_input') && !a.seen[key(j)]")); });
 console.log(n + ' assistant router checks passed');
+{ const a = fs.readFileSync('src/assistant.js', 'utf8'), c = fs.readFileSync('src/ui.css', 'utf8');
+  assert.ok(a.includes("const wantEnd = (a.open && !panel._open)") && a.includes('toEnd()') && a.includes("scrollBehavior = 'auto'"), 'the chat opens on the newest message, with no smooth scroll from the top');
+  assert.ok(a.includes('class="as-opts"') && a.includes('data-act="asstPick"') && a.includes('class="as-q"'), 'what Claude asks sits above the message box in full, with its answer buttons');
+  assert.ok(c.includes('#asst .as-ask:not(#_):not(#__) { max-height: min(42vh, 320px)'), 'the question box is no longer cut at 96 px'); console.log('  ok  the chat opens on the newest message and Claude\'s question is shown in full above the message box'); }
