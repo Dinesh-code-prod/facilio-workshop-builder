@@ -6,6 +6,7 @@
    It never blocks or fails the save that caused it. Only members of the project's team are notified (never customers), and never the person who caused the event.
    The rules (EVENTS, channelsFor, makeRecord, quiet hours, the daily cap) are pure and exported; installNotify() adds the routes and returns notify() for the rest of the server. */
 import { createHash } from 'node:crypto';
+import { dueWords, personOf, NEXT } from './_msgfmt.mjs';
 
 export const EVENTS = {
   task_assigned: { label: 'A task is assigned to you', def: { inapp: true, browser: false, teams: true } },
@@ -26,7 +27,13 @@ export const CATEGORY = { task_assigned: 'TASK', task_new: 'TASK', task_due: 'TA
 export const catOf = ev => String((ev && ev.cat) || CATEGORY[ev && ev.type] || 'UPDATE').toUpperCase().slice(0, 20);
 /** the Teams card of an event: title = category and project, first line = what happened, then the text; facts carry the core details */
 export const WHY = { task_assigned: 'It is assigned to you', task_new: 'Nobody owns it yet, so the whole project team is told', task_due: 'A task of yours is due soon or late', approval_requested: 'Something waits for your approval', stage_ready: 'Every record of the stage is complete', stage_closed: 'A stage of this project was closed', customer_signoff: 'The customer acted on a sign-off', proposal_waiting: 'Claude prepared something for you to review', job_done: 'A job you asked for finished', mail_arrived: 'New customer mail needs a decision', ticket_new: 'A support ticket needs attention' };
-export function teamsCard(ev, rec, actions) { const head = String(rec.title || '').split(' \u00b7 ')[0]; return { title: rec.cat + ' \u00b7 ' + rec.pname, text: head ? '**' + head + '**' + (rec.text ? '\n' + rec.text : '') : rec.text, facts: [{ title: 'Project', value: rec.pname }, { title: 'About', value: rec.cat }].concat((ev.facts || []).slice(0, 4)).concat(WHY[ev.type] ? [{ title: 'Why you got this', value: WHY[ev.type] }] : []), actions }; }
+export function teamsCard(ev, rec, actions) {
+  const head = String(rec.title || '').split(' \u00b7 ')[0]; const dueFact = (ev.facts || []).find(f => f && f.title === 'Due'); const due = /^\d{4}-\d{2}-\d{2}$/.test(rec.due || '') ? rec.due : /^\d{4}-\d{2}-\d{2}$/.test((dueFact && dueFact.value) || '') ? dueFact.value : ''; const dueTxt = due ? dueWords(due, String(rec.at || '').slice(0, 10)) : '';
+  const proj = rec.pname ? rec.pname + (rec.cust && !rec.pname.toLowerCase().includes(rec.cust.toLowerCase()) ? ' \u00b7 ' + rec.cust : '') : '';
+  const text = [head ? '**' + head + '**' : '', rec.more || rec.text, proj ? '**Project:** ' + proj : '', dueTxt ? '**' + dueTxt + '**' : '', NEXT[ev.type] ? '**What to do:** ' + NEXT[ev.type] : ''].filter(Boolean).join('\n');
+  const facts = [{ title: 'Project', value: rec.pname }].concat(rec.cust ? [{ title: 'Customer', value: rec.cust }] : []).concat([{ title: 'About', value: rec.cat }]).concat((ev.facts || []).slice(0, 5).map(f => (f && f.title === 'Due' && dueTxt ? { title: 'Due', value: dueTxt } : f))).concat(rec.by ? [{ title: 'From', value: personOf(rec.by) }] : []).concat(WHY[ev.type] ? [{ title: 'Why you got this', value: WHY[ev.type] }] : []);
+  return { title: rec.cat + ' \u00b7 ' + rec.pname, text, facts, actions };
+}
 const flat = v => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim();
 const cut = (v, n) => { const s = flat(v); if (s.length <= n) return s; const t = s.slice(0, n - 1); const i = t.lastIndexOf(' '); return (i > n * 0.6 ? t.slice(0, i) : t).replace(/[\s,;:.\-]+$/, '') + '…'; };   // a notice never stops in the middle of a word
 /** the first full sentence of a free text (a Claude reply, a note), without the greeting, at most n characters */
@@ -56,7 +63,7 @@ export function channelsFor(type, stored, date) {
 export function teamsGate(rec, day, max = TEAMS_PER_DAY) { const n = rec && rec.day === day ? Number(rec.n) || 0 : 0; return n >= max ? { allow: false, rec: { day, n } } : { allow: true, rec: { day, n: n + 1 } }; }
 /** the record kept in the person's list */
 export function makeRecord(ev, ch, at, id) {
-  return { id, type: ev.type, pid: cut(ev.project && ev.project.id, 80), pname: cut(ev.project && ev.project.name, 120), cat: catOf(ev), title: cut(ev.title, 140), text: cut(ev.text, 300), view: cut(ev.view, 40) || 'projdash', at, read: false, browser: !!ch.browser, teams: false };
+  return { id, type: ev.type, pid: cut(ev.project && ev.project.id, 80), pname: cut(ev.project && ev.project.name, 120), cat: catOf(ev), title: cut(ev.title, 140), text: cut(ev.text, 300), more: cut(ev.detail, 600), cust: cut(ev.project && ev.project.customer, 80), due: cut(ev.due, 10), by: cut(personOf(ev.actorName || ev.actor), 80), view: cut(ev.view, 40) || 'projdash', at, read: false, browser: !!ch.browser, teams: false };
 }
 
 export function installNotify(d) {
