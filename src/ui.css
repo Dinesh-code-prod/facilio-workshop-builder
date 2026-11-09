@@ -1937,3 +1937,7 @@ body .sidebar .sb-title:not(#_):not(#__):not(#___):not(#____):not(#_____), body 
 body .sidebar .sb-ping:not(#_):not(#__):not(#___):not(#____):not(#_____) { position: absolute; inset: 0; width: auto; height: auto; margin: 0; border-radius: 8px; background: rgba(21, 112, 239, .13); pointer-events: none; animation: sbglow 1.8s ease-in-out infinite; }
 body .sidebar .sb-ping:not(#_):not(#__):not(#___):not(#____):not(#_____)::after { content: ""; position: absolute; right: 10px; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: #1570EF; }
 @media (prefers-reduced-motion: reduce) { body .sidebar .sb-ping:not(#_):not(#__):not(#___):not(#____):not(#_____) { animation: none; opacity: 1; box-shadow: inset 3px 0 0 #1570EF; } }
+
+/* Workshop plan: the session preview holds long one-line table cells; it scrolls inside its own box instead of stretching the whole page (the page grid grew to about 6000 px on a narrow window) */
+body .page-body.ko > *:not(#_):not(#__):not(#___) { min-width: 0; }
+body .page-body.ko > .sp:not(#_):not(#__):not(#___) { overflow-x: auto; }
