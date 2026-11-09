@@ -19,12 +19,12 @@
   V.learnlib = {
     html() {
       const L = root.FWBLearn; if (!L || !V.learn) return '<div class="page-body"><div class="card empty"><h3>Module guides are not available</h3></div></div>';
-      const mods = L.MODS; const cur = S.ui.llMod && L.BY[S.ui.llMod] ? S.ui.llMod : mods[0].key; const lm = L.BY[cur];
+      const mods = L.MODS; const GX = V.guideExtra; const xcur = GX && S.ui.llMod && GX.has(S.ui.llMod); const cur = xcur || (S.ui.llMod && L.BY[S.ui.llMod]) ? S.ui.llMod : mods[0].key; const lm = xcur ? null : L.BY[cur];
       const groups = [...new Set(mods.map(m => m.group))];
-      const nav = groups.map(g => `<div class="wb-cap">${esc(g)}</div>${mods.filter(m => m.group === g).map(m => `<button class="wb-mod${cur === m.key ? ' on' : ''}" data-act="llMod" data-m="${esc(m.key)}"${cur === m.key ? ' aria-current="page"' : ''}><span>${esc(m.name)}</span></button>`).join('')}`).join('');
+      const nav = groups.map(g => `<div class="wb-cap">${esc(g)}</div>${mods.filter(m => m.group === g).map(m => `<button class="wb-mod${cur === m.key ? ' on' : ''}" data-act="llMod" data-m="${esc(m.key)}"${cur === m.key ? ' aria-current="page"' : ''}><span>${esc(m.name)}</span></button>`).join('')}`).join('') + (GX ? GX.nav(cur) : '');
       const who = (S.project && S.project.customer) || 'your team';
       return `<div class="page-header"><div class="t"><h1>Module guides</h1><p>${cust() ? `The standard Facilio guide for each module ${esc(who)} will use: what it looks like, how it works, short videos and what to prepare. Read the ones that match your next session.` : 'The standard Facilio guides, the same for every customer. The customer sees this page at any time; their project guide is published separately.'}</p></div></div>
-        <div class="page-body"><div class="wb wb-side"><nav class="wb-nav" aria-label="Module guides">${nav}</nav><div class="wb-body" id="wbBody"><h2 style="margin-bottom:10px">${esc(lm.name)}</h2>${V.learn.top(lm)}${tabsOf(lm)}</div></div></div>`;
+        <div class="page-body"><div class="wb wb-side"><nav class="wb-nav" aria-label="Module guides">${nav}</nav><div class="wb-body" id="wbBody">${xcur ? GX.body(cur) : `<h2 style="margin-bottom:10px">${esc(lm.name)}</h2>${V.learn.top(lm)}${tabsOf(lm)}`}</div></div></div>`;
     },
     mount() { if (V.learn && V.learn.mount) V.learn.mount(); }
   };
