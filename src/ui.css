@@ -447,7 +447,7 @@ body .tab.active .cnt:not(#_):not(#__), body .pt-sh.on .pt-shn:not(#_):not(#__),
 body .kb-seg:not(#_):not(#__) { background: rgba(118, 118, 128, .12); border-radius: 10px; padding: 2px; } body .kb-seg button.on:not(#_):not(#__) { box-shadow: 0 1px 3px rgba(0, 0, 0, .14), 0 0 0 .5px rgba(0, 0, 0, .04); border-radius: 8px; }
 
 /* ---- data: quiet headers, hairline rows ---- */
-body .tbl th:not(#_):not(#__), body .tw th:not(#_):not(#__), body table.tbl th:not(#_):not(#__), body .cs-dg-h:not(#_):not(#__), body .pj-h:not(#_):not(#__) { background: transparent !important; color: var(--cs-fg3) !important; font: 500 12px/16px var(--cs-font) !important; letter-spacing: .01em !important; border-bottom: 1px solid var(--cs-st2) !important; }
+body .tbl th:not(#_):not(#__), body .tw th:not(#_):not(#__), body table.tbl th:not(#_):not(#__), body .cs-dg-h:not(#_):not(#__), body .pj-h:not(#_):not(#__) { background: #fff !important; z-index: 2; color: var(--cs-fg3) !important; font: 500 12px/16px var(--cs-font) !important; letter-spacing: .01em !important; border-bottom: 1px solid var(--cs-st2) !important; }
 body .tbl td:not(#_):not(#__), body .tw td:not(#_):not(#__) { border-bottom: 0 !important; border-top: 1px solid var(--cs-st3) !important; }
 body .tbl tbody tr:not(#_):not(#__):hover td, body .tw tbody tr:hover td, body .cs-dg-r:hover, body .pj-r:hover { background: rgba(0, 0, 0, .03) !important; }
 body .cs-stat-v:not(.bad):not(.warn):not(#_):not(#__), body .pt-kpis .kpi-v:not(#_):not(#__) { color: var(--cs-fg1); letter-spacing: -.03em; }
@@ -485,6 +485,8 @@ body .wn-chip.on:not(#_):not(#__):not(#___) { background: var(--cs-primary) !imp
 body :is(.tl-row, .dkv-side, .dkv-h, .dkv-frame, .tg2-first, .wn-card, .ds-panel, section.mk, section.rv, .mnu-list, .pp-tile):not(#_):not(#__):not(#___) { border-radius: 16px !important; }
 /* tab dots: one quiet grey, blue on the selected tab, instead of a colour per stage */
 body .tab .sd-dot:not(#_):not(#__):not(#___) { background: #c7c7cc !important; } body .tab.active .sd-dot:not(#_):not(#__):not(#___) { background: var(--cs-primary) !important; }
+/* tables inside a drawer or dialog keep their header in the flow: a sticky header there floated over the rows (Notification settings) */
+body :is(.drawer, .dialog) table th:not(#_):not(#__):not(#___) { position: static !important; }
 /* second sweep from a scan of every project page (9 Nov 2026) */
 body :is(.xf-empty, .st-foot, .ob-nav, .notice, .dx-nav, .brd-ban, details.pg, .tg2-job, details.tg2-ph, .tg2-stage, .wf-refuse):not(#_):not(#__):not(#___) { border-radius: 16px !important; }
 body :is(.ob-nav-i, .dx-btn, .mnu-i, .blk-ask):not(#_):not(#__):not(#___) { border-radius: 10px !important; }
