@@ -53,6 +53,11 @@ check('Reply on a finished task says it is done and quotes what was done', /^Hi 
 await p.click('.ol-tb [data-act="mlFwd"]'); await p.waitForTimeout(300);
 const f = decodeURIComponent((await p.evaluate(() => window.__opened.slice(-1)[0])) || '');
 check('Forward opens Outlook with a short note, the task and the quoted mail', /subject=Fw: SLA alert wording/.test(f) && /Forwarding this mail from Priya Nair/.test(f) && /sla-v2\.pdf/.test(f) && /Original message/.test(f), f.slice(0, 200));
+// a mail the signed-in person sent: the reply goes to the people it was sent to
+await p.evaluate(() => { const F = window.FWB; F.S.ui.mlBox.list.push({ id: 'm3', status: 'pending', scenario: 'to', title: 'Own mail', route: { label: 'Other' }, mail: { subject: 'Plan', from: { name: 'Me', email: F.S.user.email }, to: ['ravi@acme.test', F.S.user.email], cc: [], receivedAt: '2026-11-09T10:00:00Z', body: 'Here is the plan.', attachments: [] } }); F.S.ui.mlSel = 'm3'; window.FWBViews.render(); });
+await p.click('.ol-tb [data-act="mlComp"][data-all="1"]'); await p.waitForTimeout(300); await p.click('[data-act="mlOpenReply"]'); await p.waitForTimeout(300);
+const own = decodeURIComponent((await p.evaluate(() => window.__opened.slice(-1)[0])) || '');
+check('replying to your own mail goes to the people it was sent to, not back to you', /to=ravi@acme\.test(&|;)/.test(own) && !/to=[^&]*@facilio/.test(own) && /Hi there,/.test(own), own.slice(0, 160));
 await p.keyboard.press('Escape'); await p.waitForTimeout(300);
 check('Esc closes the big mail view', await p.evaluate(() => getComputedStyle(document.querySelector('.ol-wrap')).position !== 'fixed'));
 check('no page errors', !errs.length, errs.slice(0, 3).join(' | '));
