@@ -5,6 +5,7 @@ import { createAI, AIFail } from './_ai.mjs';
 import { assess, docsOf, workload, RULES as HRULES, HEALTH_LABEL, MANUAL } from './_portfolio.mjs';
 import { IMPL_SKILLS } from './_skills.mjs';
 import { installTransfer } from './_transferapi.mjs';
+import { installPrivateTasks } from './_privatetasks.mjs';
 import { installMsaExtract } from './_msaapi.mjs';
 import { installQuestions } from './_questionsapi.mjs';
 import { installRs } from './_rsapi.mjs';
@@ -2195,6 +2196,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   ['login', 'signup', 'guest', 'guest-login', 'upgrade', 'customer', 'password'].forEach(n => route('POST', '/api/auth/' + n, async () => { throw new HttpError(403, 'Sign-in is handled by your Facilio Microsoft account'); }));
 
   const TRANSFER = installTransfer({ route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbDel, dbList, save, unpack, withLock, audit, pickProject, limit, CONNECTOR, notify: (...a) => N(...a) });   // push and pull engine: routes and connector tools (_transferapi.mjs)
+  installPrivateTasks({ route, ok, HttpError, me, projectAccess, dbGet, dbPut, withLock, hashOf });   // each team member's own private day-to-day list, visible to nobody else (_privatetasks.mjs)
   installMsaExtract({ route, ok, me, HttpError, dbGet, dbPut, dbList, withLock, audit, viaApp, projectAccess, CONNECTOR }, TRANSFER);   // MSA extraction tools: msa_extraction_save, create_project_from_msa (_msaapi.mjs)
   installRs({ HttpError, projectAccess, pickProject, viaApp, audit, CONNECTOR });
   // a file the server itself stores for a project (text only, up to 25 MB): used when Claude pushes a Meteor page. Same record as a browser upload, status ready.
