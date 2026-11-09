@@ -80,7 +80,10 @@
         if (!s) continue; out.push({ id: F.uid('tr'), title: title.slice(0, 200), phase, start: s, end: e && e >= s ? e : s, owner, status, pct: status === 'Done' ? 100 : pc, ms: !e || e === s });
       }
       if (!out.length) { toast('No dated tasks were found in the plan', 6000, true); return; }
-      saveRows(out, 'Imported from ' + cur.name); TD().sourceFile = cur.fileId; toast(out.filter(r => !r.isPhase).length + ' tasks imported'); V.render();
+      // a new version of a plan that is already on the timeline is merged, not replaced: tasks still in the plan keep their id and their progress, and the message says what changed, including the current stage
+      const stageNow = () => { const p = phaseNow(); return p.cur >= 0 ? 'Stage ' + STAGE_OF_STEP[p.cur] + ' · ' + ROADMAP[STAGE_OF_STEP[p.cur]] : ''; }; const before = stageNow(); const PM = root.FWBPlanMerge; const had = TD().rows.length;
+      const m = had && PM ? PM.merge(TD().rows, out, { sheetHasProgress: !!(map.p || map.st) }) : null; saveRows(m ? m.rows : out, 'Imported from ' + cur.name); TD().sourceFile = cur.fileId;
+      toast((m ? PM.sentence(m.summary, before, stageNow()) : out.filter(r => !r.isPhase).length + ' tasks imported') + (phaseNow().forced ? ' The current phase is fixed by hand, so the stage did not follow the new dates: clear it in the phase strip to follow the plan.' : ''), 9000); V.render();
     } finally { loading(false); }
   }
   function generate() {
