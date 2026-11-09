@@ -28,7 +28,7 @@
   const val = id => (document.getElementById(id) || {}).value || '';
 
   // ---------- Workshop plan ----------
-  V.rsplan = { html() { return V.isCustomer() ? '' : head('Workshop plan', 'The requirement sessions planned from the contract: the modules, the agenda for each, and who needs to attend. It is a draft for you to adjust before it goes to the customer.') + '<div class="page-body ko">' + V.planSessions.html() + '</div>'; }, mount() { /* the sessions are made when the page opens (V.planSessions.html) */ } };
+  V.rsplan = { html() { return V.isCustomer() ? '' : head('Workshop plan', 'The requirement sessions planned from the contract: the modules, the agenda for each, and who needs to attend. It is a draft for you to adjust before it goes to the customer.') + '<div class="page-body ko">' + V.planSessions.html() + '</div>'; }, mount() { if (V.wsplan) V.wsplan.mount(); if (V.studioJobs && V.studioJobs.load) V.studioJobs.load(false); } };
 
   // ---------- Transcripts ----------
   function chat() {

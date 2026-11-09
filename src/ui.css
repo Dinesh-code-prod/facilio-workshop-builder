@@ -1613,3 +1613,20 @@ body .kb-pbar > i.s-1, body .kb-pbar > i.s-2 { background: #F79009; } body .kb-p
 body .kb-card.done .kb-t:not(#_):not(#__) { color: var(--cs-fg3, #737373); }
 body .kb-new:not(#_):not(#__) { width: 100%; border: 1.5px dashed #98A2F3; background: #EEF0FF; color: #4A55C8; border-radius: 10px; padding: 7px; font-weight: 600; } body .kb-new:hover:not(#_):not(#__) { background: #E3E6FF; }
 @media (hover: hover) and (pointer: fine) { body .kb-card .kb-mv:not(#_):not(#__) { display: none; } body .kb-card:hover .kb-mv:not(#_):not(#__), body .kb-card:focus-within .kb-mv:not(#_):not(#__) { display: block; } }
+
+/* ===== Workshop plan page: the bar, the guide, and the plan itself readable inside the app (9 Nov 2026) ===== */
+body .wp-bar:not(#_):not(#__) { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+body .wp-bar .wp-l:not(#_):not(#__) { display: flex; align-items: baseline; gap: 10px; font-size: 15px; }
+body .wp-bar .wp-r:not(#_):not(#__) { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+body .wp-guide:not(#_):not(#__) { margin-bottom: 14px; }
+body .wp-guide > summary:not(#_):not(#__) { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 12px 16px; list-style: none; }
+body .wp-guide .wp-g:not(#_):not(#__) { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 13.5px; }
+body .wp-drafts:not(#_):not(#__) { margin-bottom: 14px; }
+/* the plan inside the app: the app's own heading and text rules must not turn the banner lines and the small headings black */
+body .sp .hd h1:not(#_):not(#__):not(#___) { color: #fff !important; margin: 0 0 6px !important; }
+body .sp .hd .meta:not(#_):not(#__):not(#___) { color: #C9DCFF !important; font-size: 14px !important; }
+body .sp h3:not(#_):not(#__):not(#___) { font-size: 12px !important; letter-spacing: .06em; text-transform: uppercase; color: #E5197F !important; margin: 12px 0 4px !important; font-weight: 700 !important; }
+body .sp h3.wd:not(#_):not(#__):not(#___) { color: #1570EF !important; }
+body .sp h3:first-child:not(#_):not(#__):not(#___) { margin-top: 0 !important; }
+body .sp .sh b:not(#_):not(#__):not(#___) { font-size: 17px; color: #1D1A5E !important; }
+body .sp .sh .acts:not(#_):not(#__):not(#___) { display: flex; gap: 6px; flex: none; }
