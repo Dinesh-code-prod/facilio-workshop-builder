@@ -1930,3 +1930,10 @@ body .ki-via:not(#_):not(#__) { display: inline-flex !important; align-items: ce
 body .ki-via:not(#_):not(#__) i { width: 6px !important; height: 6px !important; border-radius: 50% !important; background: #A3A3A3 !important; }
 body .ki-via.deepseek:not(#_):not(#__) i { background: #1570EF !important; }
 body .ki-via.claude:not(#_):not(#__) i { background: #1D1A5E !important; }
+
+/* sidebar: a page (or a closed stage holding one) that was updated glows softly as a whole row until you open it. The glow is the injected .sb-ping element stretched over the row (src/navmarks.js), with a small dot kept at the right edge. */
+@keyframes sbglow { 0%, 100% { opacity: .3; box-shadow: inset 3px 0 0 rgba(21, 112, 239, .55); } 50% { opacity: 1; box-shadow: inset 3px 0 0 #1570EF, 0 0 0 3px rgba(21, 112, 239, .14); } }
+body .sidebar .sb-title:not(#_):not(#__):not(#___):not(#____):not(#_____), body .sidebar .sb-item:not(#_):not(#__):not(#___):not(#____):not(#_____) { position: relative; }
+body .sidebar .sb-ping:not(#_):not(#__):not(#___):not(#____):not(#_____) { position: absolute; inset: 0; width: auto; height: auto; margin: 0; border-radius: 8px; background: rgba(21, 112, 239, .13); pointer-events: none; animation: sbglow 1.8s ease-in-out infinite; }
+body .sidebar .sb-ping:not(#_):not(#__):not(#___):not(#____):not(#_____)::after { content: ""; position: absolute; right: 10px; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: #1570EF; }
+@media (prefers-reduced-motion: reduce) { body .sidebar .sb-ping:not(#_):not(#__):not(#___):not(#____):not(#_____) { animation: none; opacity: 1; box-shadow: inset 3px 0 0 #1570EF; } }
