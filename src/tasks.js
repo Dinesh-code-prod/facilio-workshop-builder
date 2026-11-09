@@ -144,6 +144,7 @@
       const cell = (t, c) => { const v = val(t, c); let h;
         if (c === 'n') h = `<button type="button" class="pt-id" data-act="tkOpen" data-id="${esc(t.id)}">${esc(tid(t))}</button>`;
         else if (c === 'title') h = `<span class="pt-tt">${esc(t.title)}</span>${linkedChanged(t) ? '<span class="tag warn" title="A linked record changed after this task was last updated">Review: link changed</span>' : ''}${t.flag ? `<span class="tag warn" title="${esc(t.flag)}">Check</span>` : ''}`;
+        else if (c === 'type') h = v ? '<span class="kb-ty ty-' + (TYPES.indexOf(v) % 6) + '">' + esc(String(v)) + '</span>' : '';
         else if (c === 'status') h = `<span class="pt-st s-${STATUS.indexOf(t.status)}">${esc(t.status)}</span>`;
         else if (c === 'priority') h = t.priority ? `<span class="pt-pr p-${PRIO.indexOf(t.priority)}">${esc(t.priority)}</span>` : '';
         else if (c === 'eta' || c === 'due') h = v ? `<span class="${!CLOSED.includes(t.status) && v < today() ? 'pt-late' : ''}">${esc(V.fmtDate ? V.fmtDate(v) : v)}</span>` : '';

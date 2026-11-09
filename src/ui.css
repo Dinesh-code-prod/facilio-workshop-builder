@@ -1664,3 +1664,23 @@ body .kb-open:not(#_):not(#__) { position: absolute; top: 8px; right: 8px; width
 body .kb-card:hover .kb-open:not(#_):not(#__), body .kb-card:focus-within .kb-open:not(#_):not(#__) { opacity: 1; } body .kb-open:hover:not(#_):not(#__) { background: #EAF2FF; color: #0b4fb8; }
 @media (hover: none), (pointer: coarse) { body .kb-open:not(#_):not(#__) { opacity: 1; } }
 body .pt-att-l:not(#_):not(#__) { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 4px; } body .pt-att-l li:not(#_):not(#__) { display: flex; align-items: center; gap: 10px; padding: 4px 0; border-bottom: 1px solid var(--cs-st2, #eef1f7); } body .pt-att-l li .xs { flex: 1; }
+/* Task list in the style of a Jira list (9 Nov 2026): a rounded card, no grid lines, roomy rows with a hover, small grey column heads, chips for type and status, an avatar with the owner, section bars for groups */
+body .pt-wrap:not(#_):not(#__) { background: #fff; border: 1px solid var(--cs-st2, #e5e5e5); border-radius: 14px; box-shadow: 0 1px 2px rgba(16, 24, 40, .05); overflow: auto; }
+body .pt-grid:not(#_):not(#__) { border-collapse: separate; border-spacing: 0; border: 0; background: transparent; }
+body .pt-grid th:not(#_):not(#__) { position: sticky; top: 0; z-index: 2; background: #F9FAFB; border: 0; border-bottom: 1px solid var(--cs-st2, #e5e5e5); padding: 10px 12px; font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--cs-fg3, #737373); white-space: nowrap; }
+body .pt-grid th .pt-sort:not(#_):not(#__) { font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+body .pt-grid td:not(#_):not(#__) { border: 0; border-bottom: 1px solid #F2F4F7; padding: 10px 12px; vertical-align: middle; font-size: 13.5px; color: var(--cs-fg1); background: #fff; }
+body .pt-grid tbody tr:hover td:not(#_):not(#__) { background: #F5F8FF; } body .pt-grid tbody tr.sel td:not(#_):not(#__) { background: #EAF2FF; }
+body .pt-grid tbody tr:last-child td:not(#_):not(#__) { border-bottom: 0; }
+body .pt-grid td.ed:not(#_):not(#__) { cursor: pointer; } body .pt-grid td.ed:hover:not(#_):not(#__) { box-shadow: inset 0 0 0 1.5px #8DB8FF; }
+body .pt-grid .pt-id:not(#_):not(#__) { font-size: 12px; font-weight: 600; color: #667085; background: none; border: 0; padding: 0; text-decoration: none; } body .pt-grid .pt-id:hover:not(#_):not(#__) { color: #1570EF; text-decoration: underline; }
+body .pt-grid .pt-tt:not(#_):not(#__) { font-weight: 500; line-height: 1.35; }
+body .pt-grid tr.done .pt-tt:not(#_):not(#__) { color: var(--cs-fg3, #737373); text-decoration: line-through; text-decoration-color: #98A2B3; }
+body .pt-grid .kb-ty:not(#_):not(#__) { white-space: nowrap; }
+body .pt-grid .pt-st:not(#_):not(#__) { display: inline-block; padding: 2px 9px; border-radius: 6px; border: 0; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; background: #F2F4F7; color: #475467; }
+body .pt-grid .pt-st.s-1:not(#_):not(#__) { background: #EAF2FF; color: #0b4fb8; } body .pt-grid .pt-st.s-2:not(#_):not(#__) { background: #FEE4E2; color: #B42318; } body .pt-grid .pt-st.s-3:not(#_):not(#__), body .pt-grid .pt-st.s-4:not(#_):not(#__) { background: #FDE7F1; color: #B0125F; } body .pt-grid .pt-st.s-5:not(#_):not(#__) { background: #EDE9FE; color: #5925DC; } body .pt-grid .pt-st.s-6:not(#_):not(#__) { background: #DCFAE6; color: #067647; } body .pt-grid .pt-st.s-7:not(#_):not(#__) { background: #F2F4F7; color: #667085; }
+body .pt-grid .pt-pr:not(#_):not(#__) { background: none; padding: 0; font-weight: 600; font-size: 13px; }
+body .pt-grid .pt-late:not(#_):not(#__) { color: #B42318; font-weight: 600; }
+body .pt-grid tr.pt-g td:not(#_):not(#__) { background: #F9FAFB; border-top: 1px solid var(--cs-st2, #e5e5e5); border-bottom: 1px solid var(--cs-st2, #e5e5e5); padding: 8px 12px; font-size: 13px; color: var(--cs-fg1); }
+body .pt-grid tr.pt-g td b:not(#_):not(#__) { font-weight: 600; } body .pt-grid tr.pt-g .muted { margin-left: 6px; background: #fff; border: 1px solid var(--cs-st2, #e5e5e5); border-radius: 999px; padding: 0 8px; font-size: 12px; }
+body .pt-add:not(#_):not(#__) { margin-top: 10px; } body .pt-add input:not(#_):not(#__) { width: 100%; border: 1.5px dashed #98A2F3; background: #F8F9FF; border-radius: 10px; padding: 9px 12px; }
