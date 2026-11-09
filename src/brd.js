@@ -15,7 +15,7 @@
     ['control', 'Document control (version history & approvals)'], ['toc', 'Table of contents'], ['project', 'Project information'], ['intro', 'Introduction, background & modules in scope'],
     ['conventions', 'Document conventions'], ['roles', 'User roles & responsibilities'], ['portfolio', 'Portfolio hierarchy & module dependencies'], ['modules', 'Module sections'], ['general', 'General requirements'],
     ['processes', 'End-to-end business processes'], ['usecases', 'Customer-specific use cases'], ['portals', 'Portal & cross-module mapping'], ['integration', 'Integration scope & interface specification'], ['agentops', 'Operating model: agents & rules'], ['sla', 'SLA & notifications'], ['slamatrix', 'SLA matrix'], ['kpis', 'KPIs and reporting'], ['solutions', 'Agreed solution: other areas'], ['matrix', 'Role matrix — module access'],
-    ['trace', 'Requirement traceability matrix'], ['changes', 'Proposed configuration changes'], ['sessions', 'Decisions, assumptions & dependencies from the sessions'], ['questions', 'Open questions & items to be confirmed'], ['validation', 'Appendix — validation summary'], ['sources', 'Appendix — configuration source']];
+    ['trace', 'Requirement traceability matrix'], ['changes', 'Proposed configuration changes'], ['onboarding', 'Data migration & onboarding'], ['sessions', 'Decisions, assumptions & dependencies from the sessions'], ['questions', 'Open questions & items to be confirmed'], ['validation', 'Appendix — validation summary'], ['sources', 'Appendix — configuration source']];
   // New BRDs list, for each module, only what is agreed or changed; a BRD that already has edits keeps its full content (edits are tied to blocks), and the BRD settings can switch the full standard configuration on.
   const includeStd = () => { const v = S.ws.brd.includeStandard; if (v === true || v === false) return v; const d = root_(); return Object.keys(d.edits || {}).length > 0 || Object.keys(d.inserts || {}).length > 0; };
   const APPENDIX_OFF = ['validation', 'sources'];   // describe the whole package or the tool, not the customer's solution: off by default, a person can switch them on
@@ -254,6 +254,11 @@
       else if (sid === 'changes') { H(1, ++secNo + '. Proposed Configuration Changes', 'h'); const cs = F.changeSummary();
         [['Additions', cs.additions, 'add'], ['Modifications', cs.modifications, 'mod'], ['Proposed Removals', cs.removals, 'rem'], ['Scope and Priority Decisions', cs.decisions, 'dec']].forEach(([h, rows, k]) => { H(2, h, 'h2' + k); TB(['Area', 'Module', 'Item', 'Detail'], rows.map(r => [r.area, (F.moduleView(r.module) || {}).label || r.module, r.item, r.detail]), [1, 1.4, 2, 3], k, { empty: 'None.' }); });
         P('These changes are workshop proposals. They have not been applied to the customer\'s Facilio configuration; implementation follows customer sign-off.', 'note'); }
+      else if (sid === 'onboarding') {
+        const ST = { todo: 'Not started', filling: 'Filling', sent: 'Sent to Facilio', fix: 'Needs fixes', validated: 'Validated', loaded: 'Loaded' }; const rowsO = [];
+        inScope.forEach(m => { const sheets = (V.onboardingSheetsFor ? V.onboardingSheetsFor(m.name) : []) || []; sheets.forEach(sh => { const it = V.items && V.items.get ? V.items.get('onb', F.slug(sh)) : null; rowsO.push([m.label, sh, ST[it && it.status] || 'Not started']); }); });
+        if (rowsO.length) { H(1, ++secNo + '. Data Migration & Onboarding', 'h'); P('The master data the customer provides for the modules in scope, from the Data Onboarding templates. Status is as of the day this document was generated.', 'onbnote'); TB(['Module', 'Data sheet', 'Status'], rowsO, [2, 3.5, 1.5], 'onb'); }
+      }
       else if (sid === 'sessions') {
         const has = SS && (SS.decisions.length || SS.assumptions.length || SS.dependencies.length || SS.actions.length);
         if (has) { H(1, ++secNo + '. Decisions, Assumptions & Dependencies', 'h'); P('Recorded in the requirement sessions. Each item comes from a saved call summary that a person kept.', 'sessnote');
