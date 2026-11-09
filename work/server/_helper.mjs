@@ -33,3 +33,17 @@ export function addedMessage(project, member, actorName, baseUrl) {
     facts: [{ title: 'Why you got this', value: 'A project owner added you to this project' }, { title: 'Project', value: project.name }].concat(project.customer ? [{ title: 'Customer', value: project.customer }] : []).concat([{ title: 'Your role', value: member.role || 'editor' }, { title: 'Added by', value: by || 'a project owner' }]),
     actions: [{ title: 'Open the project', url }, { title: 'Team Guide', url: page('teamhelp') }, { title: 'Set up Claude', url: page('claudesetup') }, { title: 'My tasks', url: page('tasks') }] };
 }
+
+/** the requests of a project that have waited a day while no Claude checked in: { n, hours } or null (jobs: the stored job records, now: ms) */
+export function stuckJobs(jobs, st, now) {
+  const w = (Array.isArray(jobs) ? jobs : []).filter(j => j && j.status === 'waiting' && Date.parse(j.requestedAt || '')); if (!w.length || (st && st.state === 'on')) return null;
+  const oldest = Math.max(...w.map(j => now - Date.parse(j.requestedAt))); return oldest >= 24 * 36e5 ? { n: w.length, hours: Math.floor(oldest / 36e5) } : null;
+}
+/** the Teams message to the owners of a project whose requests are stuck: how many, how long, why, and what to do */
+export function helperAlert(project, x, st, baseUrl) {
+  const url = String(baseUrl || '') + '#/p/' + project.id; const last = st && st.lastAt ? 'The last Claude check-in was ' + (st.minutesAgo >= 120 ? Math.round(st.minutesAgo / 60) + ' hours' : st.minutesAgo + ' minutes') + ' ago (' + (st.lastBy || 'a team member') + ').' : 'No Claude has ever checked in for this project.';
+  return { title: 'PROJECT \u00b7 ' + project.name, text: ['**' + x.n + ' request' + (x.n === 1 ? ' has' : 's have') + ' been waiting for Claude for ' + (x.hours >= 48 ? Math.round(x.hours / 24) + ' days' : x.hours + ' hours') + '.**', '**Project:** ' + projectLine(project), last,
+    '**What to do:** Someone on the team opens Claude desktop with the Delivery Studio task on (Claude setup has the steps). The waiting requests are then done within minutes. Drafts, imports and the morning reminders pause while no Claude runs.'].join('\n'),
+    facts: [{ title: 'Why you got this', value: 'You own this project and its Claude requests are stuck' }, { title: 'Project', value: project.name }].concat(project.customer ? [{ title: 'Customer', value: project.customer }] : []).concat([{ title: 'Waiting requests', value: String(x.n) }]),
+    actions: [{ title: 'Open the project', url }, { title: 'Set up Claude', url: url + '/claudesetup' }] };
+}

@@ -45,3 +45,18 @@ console.log(n + ' Claude helper checks passed');
   assert.match(a, /Please wait\. Your request has been sent to Claude/); assert.match(a, /etaText\(j\.size === 'heavy' \? 'heavy' : 'small'\)/); assert.match(a, /Claude has started and is analysing your request/);
   assert.match(css, /ki-row:not\(\.you\):not\(\.sys\):not\(\.bad\):not\(\.other\) \.ki-bub[^{]*\{ background: #E8F7EE !important;[^}]*border-left: 4px solid #16A34A/); assert.match(css, /\.ki-acts \.btn\.primary[^{]*\{ background: #16A34A !important/); assert.match(css, /\.ki-acts \.btn:not\(#_\)[^{]*\{[^}]*border: 1\.5px solid #16A34A/);
   console.log('  ok  Claude\u2019s side is green with a matching pair of buttons, and a waiting request says it was sent, that Claude is analysing, and how long it takes'); }
+{ const H = await import('../work/server/_helper.mjs'); const api = fs.readFileSync('work/server/api.mjs', 'utf8'), hj = fs.readFileSync('src/helper.js', 'utf8'), sh = fs.readFileSync('src/shell.js', 'utf8'); const u = (name, fn) => { fn(); console.log('  ok  ' + name); };
+  const now2 = Date.parse('2026-11-09T10:00:00Z'); const off = H.status([{ email: 'a@b.c', name: 'Sam', at: new Date(now2 - 300 * 60000).toISOString() }], now2);
+  u('requests that waited a day with no Claude checked in are flagged; fresh ones, or a running Claude, are not', () => {
+    const old = { status: 'waiting', requestedAt: new Date(now2 - 30 * 36e5).toISOString() }, fresh = { status: 'waiting', requestedAt: new Date(now2 - 2 * 36e5).toISOString() };
+    assert.deepEqual(H.stuckJobs([old, fresh, { status: 'done', requestedAt: old.requestedAt }], off, now2), { n: 2, hours: 30 }); assert.equal(H.stuckJobs([fresh], off, now2), null); assert.equal(H.stuckJobs([old], { state: 'on' }, now2), null); assert.equal(H.stuckJobs([], off, now2), null);
+  });
+  u('the owners\u2019 alert says how many, how long, why, and what to do, with two buttons', () => {
+    const m = H.helperAlert({ id: 'p1', name: 'Rollout', customer: 'Binghatti' }, { n: 3, hours: 52 }, off, 'https://x.facilio.work/'); assert.match(m.text, /^\*\*3 requests have been waiting for Claude for 2 days\.\*\*/); assert.match(m.text, /\*\*Project:\*\* Rollout \u00b7 Binghatti/); assert.match(m.text, /last Claude check-in was 5 hours ago \(Sam\)/); assert.match(m.text, /\*\*What to do:\*\*/);
+    assert.deepEqual(m.actions.map(a => a.title), ['Open the project', 'Set up Claude']); assert.ok(m.facts.some(f => f.title === 'Waiting requests' && f.value === '3'));
+  });
+  u('Phase 2 is wired: the setup banner, the window after a project is created, the owner alert once a day, and the guide says the task is needed', () => {
+    assert.match(hj, /const needBanner = \(\) => !!\(show\(\) && st && !st\.mineAt && !skipped\(\)\)/); assert.match(hj, /created: async \(\) => \{ await refresh\(true\); ACT\.helperInfo\('new'\); \}/); assert.match(sh, /V\.helper\.banner\(\)/); assert.match(sh, /V\.helper\.created\(\)/);
+    assert.match(api, /async function helperAlerts\(s, ps, today\)/); assert.match(api, /await helperAlerts\(s, ps, today\);/); assert.match(fs.readFileSync('src/claudesetup.js', 'utf8'), /Keep Claude helping: the scheduled task \(set it up once\)/); assert.match(fs.readFileSync('src/teamhelp.js', 'utf8'), /The Claude helper light in the top bar shows whether any teammate/);
+  });
+}

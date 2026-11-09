@@ -20,7 +20,7 @@ import { installMailTasks } from './_mailapi.mjs';
 import { installJobs } from './_jobsapi.mjs';
 import { installFeedback } from './_feedback.mjs';
 import { dueWords } from './_msgfmt.mjs';
-import { addedMessage } from './_helper.mjs';
+import { addedMessage, status as helperStatus, stuckJobs, helperAlert } from './_helper.mjs';
 import { installNotify, norm as nNorm, lead, hashOf } from './_notify.mjs';
 import { milestonesDue, pendingFor, teamCounts, dueOf, digestMessage, digestKey, assignKey, assignGate, assignmentNotice, BASE_URL as TW_BASE } from './_taskwatch.mjs';
 let FWB = null; // this copy of the server's own dispatcher (not looked up through a global, so two copies in one process cannot mix)
@@ -2256,12 +2256,23 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   }
   // called by a Claude task's idle check: at most once a day per person, and only in the morning window (04:00 to 18:00 UTC)
   async function briefsFromClaude(s) { const h = new Date().getUTCHours(); if (h < 4 || h >= 18) return 0; const day = now().slice(0, 10), k = hashOf(s.email); const m = await dbGet('dbru', k); if (m && m.value && m.value.day === day) return 0; await dbPut('dbru', k, { day }); return morningBriefs(s, await memberProjects(s), day); }
+  // the owners are told once a day when requests of their project have waited a day and no Claude checked in (the Studio cannot start Claude, so a person has to)
+  async function helperAlerts(s, ps, today) {
+    if (!(await teamsOn())) return;
+    for (const pj of ps.slice(0, 20)) {
+      try { const k = 'h' + hashOf(pj.id + '|' + today); const had = await dbGet('twn', k); if (had && had.value) continue; const jobs = (await dbList('jb.' + pj.id)).map(r => r.value); if (!jobs.some(j => j && j.status === 'waiting')) continue;
+        const team = (pj.members || []).filter(m => m.role !== 'customer' && m.email).slice(0, 30); const beats = await Promise.all(team.map(async m => ({ email: m.email, name: m.name, at: (((await dbGet('hb', hashOf(m.email))) || {}).value || {}).at || '' }))); const st = helperStatus(beats, Date.now()); const x = stuckJobs(jobs, st, Date.now()); if (!x) continue;
+        await dbPut('twn', k, { at: now() }); const c = helperAlert(pj, x, st, TW_BASE); for (const o of (pj.members || []).filter(m => m.role === 'owner' && m.email).slice(0, 5)) await Promise.race([CTX.teams.send({ to: [o.email], title: c.title, text: c.text, facts: c.facts, actions: c.actions }), new Promise(r => setTimeout(r, 4000))]);
+      } catch (e) { /* no alert, no error */ }
+    }
+  }
   route('POST', '/api/notifications/sweep', async () => {
     const s = await me(); const today = now().slice(0, 10); const ps = await memberProjects(s); const p = pendingFor(s.email, await taskRowsOf(ps), today); let n = 0;
     for (const pj of ps) { const due = p.items.filter(x => x.project === pj.id && (x.overdue || x.soon)); if (!due.length) continue;
       n += await notify({ type: 'task_due', project: pj, to: [s.email], actor: '', title: due.length + ' task' + (due.length === 1 ? '' : 's') + ' due or overdue · ' + pj.name, text: due.slice(0, 3).map(x => (x.n ? 'T-' + x.n + ' ' : '') + x.title + (x.overdue ? ' (overdue)' : '')).join('; '), due: due.map(x => x.due).filter(Boolean).sort()[0] || '', detail: due.slice(0, 5).map(x => (x.n ? 'T-' + x.n + ' ' : '') + x.title + ': ' + dueWords(x.due, today) + (x.priority ? ', ' + x.priority + ' priority' : '')).join('; ') + (due.length > 5 ? '; and ' + (due.length - 5) + ' more' : ''), view: 'tasks', key: 'td|' + pj.id + '|' + today }); }
     // the morning brief: the first person to open the Studio each day sends every owner of each of their projects the task digest (the digest tool keeps it to one per person per day, and Teams must be on)
-    await morningBriefs(s, ps, today); n += await lifecycleNudges(ps, today);
+    await morningBriefs(s, ps, today);
+    await helperAlerts(s, ps, today); n += await lifecycleNudges(ps, today);
     return ok({ notified: n });
   });
   installTaskTracking({ route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, itemsOf, withLock, audit, viaApp, CONNECTOR, DONE_RE, cut, rid, notify: N });   // task suggestions from Claude: routes and tools (_tasksapi.mjs)
