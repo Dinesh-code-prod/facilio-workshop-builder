@@ -82,7 +82,14 @@
     a.sig = ''; paint();
   }
   // Ask Claude from a button on a page: the request goes to the same queue as a typed message (the page is its section); Claude picks it up through the connector and answers in this box.
-  V.askClaude = async note => { if (!J() || J().guard()) return false; await J().post('/jobs', { kind: 'chat', note: String(note).slice(0, 590), ref: String(Date.now()), section: String(S.view || '') }); const a = st(); a.open = true; a.sig = ''; J().load(true); V.toast('Sent to Claude. The answer shows in the Assistant box.', 4500); return true; };
+  const COPY = {};   // the connector prompt of each request sent, for the Copy prompt button
+  V.asstSay = (text, actions) => { const a = st(); a.local = a.local || []; a.open = true; a.local.push({ who: 'sys', text, actions }); a.sig = ''; paint(); };
+  // o: { ref (the hand-off id), title, prompt (the short connector prompt), refresh (the page updates when the answer arrives) }
+  V.askClaude = async (note, o) => { o = o || {}; if (!J() || J().guard()) return false; await J().post('/jobs', { kind: 'chat', note: String(note).slice(0, 590), ref: o.ref || String(Date.now()), section: String(S.view || '') });
+    const ref = o.ref || ''; if (ref && o.prompt) COPY[ref] = o.prompt; J().load(true);
+    V.asstSay('Your request was sent to Claude' + (o.title ? ': ' + o.title : '') + '. Your Claude takes it through the connector, usually within a few minutes. Its steps and its answer show here' + (o.refresh ? ', and the page updates when it arrives' : '') + '. If nothing starts, no Claude is running the queue right now: press Copy prompt, paste it in your own Claude chat, and the answer still comes back here.', ref && o.prompt ? [{ label: 'Copy prompt for Claude', act: 'asstCopyPrompt', attrs: { ref } }] : undefined);
+    V.toast('Sent to Claude. The chat on the side shows its progress.', 4500); return true; };
+  V.ACT.asstCopyPrompt = async a => { const p = COPY[a.getAttribute('data-ref')]; if (!p) { V.toast('That prompt is no longer here. Press the button again.', 4000, true); return; } V.toast((await V.claudeCopy(p)) ? 'Prompt copied. Paste it in your own Claude chat and send.' : 'This browser blocked copying.', 5000); };
   V.ACT.asstSend = a => V.busy(a, async () => {
     const box = document.getElementById('asM'), raw = box ? box.value.trim() : '', note = raw && st().quote ? ('Following up on "' + st().quote + '": ' + raw).slice(0, 600) : raw; if (!note) { V.toast('Write your message first.', 3000, true); return; } if (J().guard()) return;
     st().quote = '';

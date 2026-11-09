@@ -49,19 +49,25 @@
     return { ok: true, prefilled: lk.prefilled, copied, ref: '', said };
   };
   // the simple case for the buttons that only need the prompt opened: copy it, open Claude with it where it fits, say what happened
-  V.claudeOpenSimple = async (prompt, o) => { o = Object.assign({ title: 'Task' }, o || {}); const r = await V.claudeLaunch(Object.assign({}, o, { prompt }), o.dest || 'web'); return r; };
+  // the main path of every Claude button: the request becomes a job in the connector queue (a chat job that carries a stored hand-off with the full prompt); the chat side opens and says so.
+  // The person's own Claude takes the job through the connector, does it, and answers here. Nothing opens Claude.
+  V.claudeSubmit = async o => { const full = L.wrap(o.prompt, meta(o)); const pk = await makePackage(o, full); const m = meta(o); const link = L.connPrompt(o.title, pk.id, { project: m.project, page: String(m.page || '').trim() });
+    const ok = await V.askClaude(String(o.title || 'Task').slice(0, 200), { ref: pk.id, title: o.title, prompt: link, refresh: !!o.onReply }); if (!ok) throw new Error('The request could not be sent'); return { id: pk.id, expires: pk.expires }; };
+  V.claudeOpenSimple = async (prompt, o) => { o = Object.assign({ title: 'Task' }, o || {});
+    if (!o.dest && !(o.files || []).length && S.project) { try { const r = await V.claudeSubmit(Object.assign({}, o, { prompt })); return { ok: true, said: 'Sent to Claude through the connector. The chat on the side shows its progress.', id: r.id }; } catch (e) { toast((e.message || 'Could not send the request') + ' Opening Claude instead.', 6000, true); } }
+    return V.claudeLaunch(Object.assign({}, o, { prompt }), o.dest || 'web'); };
 
   let HO = null; let poll = null;
   const stopPoll = () => { if (poll) { clearInterval(poll); poll = null; } };
-  function startPoll(r) { stopPoll(); if (!r.id || !HO) return; const id = r.id, pid = S.project.id; const until = Date.parse(r.expires) || Date.now() + 3600e3; let bad = 0;
+  function startPoll(r, quiet) { stopPoll(); if (!r.id || !HO) return; const id = r.id, pid = S.project.id; const until = Date.parse(r.expires) || Date.now() + 3600e3; let bad = 0;
     poll = setInterval(async () => {
-      if (!document.getElementById('hoR') || !HO) { stopPoll(); return; }
-      if (Date.now() > until) { stopPoll(); setStatus('No answer has arrived and the hand-off has expired. If Claude finished, paste its reply below.', true); return; }
-      try { const g = await API.get(`/api/projects/${pid}/handoff/${id}`); bad = 0; if (g.status === 'done') { stopPoll(); const box = document.getElementById('hoR'); if (box) box.value = g.result; setStatus('Claude\'s answer arrived. Checking it now.'); await bringBack(); } }
+      if (!HO || (!quiet && !document.getElementById('hoR'))) { stopPoll(); return; }
+      if (Date.now() > until) { stopPoll(); if (quiet) { HO = null; V.asstSay('No answer arrived and this request has expired. If Claude finished, press Import from Claude and paste its reply.'); return; } setStatus('No answer has arrived and the hand-off has expired. If Claude finished, paste its reply below.', true); return; }
+      try { const g = await API.get(`/api/projects/${pid}/handoff/${id}`); bad = 0; if (g.status === 'done') { stopPoll(); if (quiet) { V.asstSay('Claude answered' + (HO && HO.name ? ': ' + HO.name : '') + '. Checking it now; you confirm before anything is saved.'); await bringBack(g.result); } else { const box = document.getElementById('hoR'); if (box) box.value = g.result; setStatus('Claude\'s answer arrived. Checking it now.'); await bringBack(); } } }
       catch (e) { if (++bad < 4 && !(e.status && e.status < 500 && e.status !== 429)) return; stopPoll(); setStatus((e.message || 'The hand-off ended.') + ' If Claude finished, paste its reply below.', true); } }, 4000); }
-  async function bringBack() {
-    if (!HO) return; const reply = (document.getElementById('hoR') || {}).value || ''; if (!reply.trim()) { toast('Paste Claude\'s reply first', 4000, true); return; }
-    try { const r = await API.post(HO.replyUrl || HO.url, HO.replyBody ? HO.replyBody(reply) : Object.assign({}, HO.body, { reply })); const f = HO.onReply; if (!HO.into) closeDrawer(); HO = null; stopPoll(); if (f) await f(r); } catch (e) { toast(e.message || 'Could not read the reply', 6000, true); setStatus((e.message || 'Could not read the reply') + ' You can correct it in the box and press Bring the reply back.', true); } }
+  async function bringBack(given) {
+    if (!HO) return; const quiet = !!HO.quiet; const reply = given != null ? String(given) : ((document.getElementById('hoR') || {}).value || ''); if (!reply.trim()) { toast('Paste Claude\'s reply first', 4000, true); return; }
+    try { const r = await API.post(HO.replyUrl || HO.url, HO.replyBody ? HO.replyBody(reply) : Object.assign({}, HO.body, { reply })); const f = HO.onReply; if (!HO.into && !quiet) closeDrawer(); HO = null; stopPoll(); if (f) await f(r); } catch (e) { toast(e.message || 'Could not read the reply', 6000, true); setStatus((e.message || 'Could not read the reply') + ' You can correct it in the box and press Bring the reply back.', true); } }
 
   // ---------- the panel (used by every button that brings an answer back into a step) ----------
   // o: { title, url, body, task, module, expect, files, image (PNG blob, for the clipboard), prompt (ready-made), skipPack, extra, into, autoOpen, onReply(result) }
@@ -70,6 +76,7 @@
       const r = o.skipPack ? { prompt: '', title: o.title } : o.prompt ? { prompt: o.prompt, title: o.title } : await API.post(o.url, Object.assign({}, o.body, { claudePack: true }));
       const files = (o.files || []).slice(); if (o.image && !files.length) files.unshift({ name: 'flow-diagram.png', mime: 'image/png', blob: o.image });
       HO = Object.assign({}, o, { prompt: r.prompt, name: r.title || o.title, files, image: o.image || (files.find(f => /^image\//.test(f.mime)) || {}).blob || null }); stopPoll();
+      if (!o.skipPack && !files.length && !HO.image && S.project) { try { const sub = await V.claudeSubmit(Object.assign({}, o, { prompt: r.prompt, title: r.title || o.title })); HO = Object.assign({}, HO, { quiet: true, files: [] }); startPoll({ id: sub.id, expires: sub.expires }, true); return; } catch (e) { toast((e.message || 'Could not send the request') + ' Showing the Open in Claude panel instead.', 7000, true); } }
       const hasFiles = !o.skipPack && files.length > 0;
       const conn = `<label class="chk small" style="margin:6px 0;display:flex;gap:8px"><input type="checkbox" data-change="hoConn"${hasConn() ? ' checked' : ''}> <span><b>I added the Facilio Delivery Studio connector in Claude</b> (Claude > Settings > Connectors > Add custom connector, name it Facilio Delivery Studio, paste <code>${CONN_URL}</code> and sign in with your Facilio account). Works in Claude on the web, the desktop app and the phone, with nothing to download.</span></label>`;
       const ext = conn + '<div id="hoConnSt" class="xs muted" style="margin:0 0 8px"></div>';
@@ -93,8 +100,10 @@
   ACT.hoBack = a => V.busy(a, bringBack);
   // the same three ways to open Claude for the screens that keep their own reply box (the prompt is set by the screen before it draws these)
   V.claudeQuick = null;
-  V.claudeQuickLinks = () => '<button type="button" class="btn sm primary" data-act="clqGo" data-d="web">Open Claude Web</button><button type="button" class="btn sm" data-act="clqGo" data-d="desktop">Open Claude Desktop</button><button type="button" class="btn sm" data-act="clqGo" data-d="copy">Copy Prompt and Open Claude</button>';
-  ACT.clqGo = a => { const q = V.claudeQuick; if (!q || !q.prompt) return; V.claudeLaunch({ title: q.title || 'Task', task: q.task || 'task', prompt: q.prompt, expect: { format: 'text' } }, a.getAttribute('data-d')).then(r => toast(r.said, 8000)); };
+  V.claudeQuickLinks = () => '<button type="button" class="btn sm primary" data-act="clqGo" data-d="queue">Send to Claude</button><button type="button" class="btn sm" data-act="clqGo" data-d="copy" title="Copies the prompt to paste in your own Claude chat">Copy prompt</button>';
+  ACT.clqGo = a => { const q = V.claudeQuick; if (!q || !q.prompt) return;
+    if (a.getAttribute('data-d') === 'queue') { V.claudeSubmit({ title: q.title || 'Task', task: q.task || 'task', prompt: q.prompt, expect: { format: 'text' } }).catch(e => toast((e.message || 'Could not send the request') + ' Use Copy prompt instead.', 7000, true)); return; }
+    V.claudeLaunch({ title: q.title || 'Task', task: q.task || 'task', prompt: q.prompt, expect: { format: 'text' } }, a.getAttribute('data-d')).then(r => toast(r.said, 8000)); };
   // the server notes when this person's Claude last used the connector: that, not the tick box, shows whether it is really added (a seen connector also turns the tick on)
   V.claudeConnCheck = async () => { try { const r = await API.get('/api/me/connector'); S.ui.connSeen = !!r.seen; if (r.seen) ls.set('fwb_claude_conn', '1'); const el = document.getElementById('hoConnSt'); if (el) el.innerHTML = r.seen ? '&#10003; Your Claude used the connector on ' + esc(new Date(r.seen).toLocaleDateString()) + '.' : '<b>Not seen yet.</b> Add the connector first (Help &gt; Claude setup). Until then Open Claude copies the full prompt.'; return !!r.seen; } catch (e) { return null; } };
   ACT.hoConn = el => { ls.set('fwb_claude_conn', el.checked ? '1' : '0'); toast(el.checked ? 'Open Claude will now send the short connector prompt' : 'Open Claude will send the full prompt', 4000); };
