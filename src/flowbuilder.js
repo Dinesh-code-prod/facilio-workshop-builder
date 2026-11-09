@@ -129,7 +129,7 @@
       <div class="full"><label class="f">Name <span class="req">*</span></label><input type="text" id="nf_name" placeholder="Enter state flow name"></div>
       <div class="full"><label class="f">Default State <span class="req">*</span></label><input type="text" id="nf_state" list="nf_states" placeholder="Select the default state" value="${esc(states[0] ? states[0].label : 'Open')}"><datalist id="nf_states">${states.map(s => `<option value="${esc(s.label)}">`).join('')}</datalist></div>
       <div class="full"><label class="f">Description</label><textarea id="nf_desc" rows="3" placeholder="Enter state flow description"></textarea></div>
-      <div class="full"><div class="pink-label">Criteria</div><div class="xs muted" style="margin-bottom:6px">Define the criteria for this state flow</div><textarea id="nf_crit" rows="2" placeholder="e.g. Category is Electrical"></textarea></div>
+      <div class="full"><div class="pink-label">Criteria</div><div class="xs muted" style="margin-bottom:6px">Define the criteria for this state flow</div><textarea id="nf_crit" rows="2" aria-label="Criteria" placeholder="e.g. Category is Electrical"></textarea></div>
       <div class="full"><label class="chk"><input type="checkbox" id="nf_copy"> Start from a copy of the module's default stateflow</label></div></div>`, `<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="createFlow">Save</button>`);
   };
   ACT.nfModChange = el => { const st = (S.baseline && S.baseline.statuses[el.value]) || []; document.getElementById('nf_states').innerHTML = st.map(s => `<option value="${esc(s.label)}">`).join(''); };
