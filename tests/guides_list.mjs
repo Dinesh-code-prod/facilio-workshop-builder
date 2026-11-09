@@ -37,3 +37,8 @@ console.log(n + ' guides overview checks passed');
   u('the Training page has two tabs (Guides, Videos), the Meteor and Comet panel, and an Open here button on saved links', () => { const g = fs4.readFileSync('src/guideslist.js', 'utf8'), w = fs4.readFileSync('src/webframe.js', 'utf8'); assert.ok(g.includes("['guides', 'Guides'") && g.includes("['videos', 'Videos'") && g.includes('Meteor and Comet: what they bring') && g.includes('data-act="wfDock" data-url='));
     assert.ok(w.includes("a.getAttribute('data-url')") && w.includes('W.isAllowed(u)')); });
 }
+{ // Training page layout: one maker in three steps, one library, a video filter
+  const fs5 = await import('node:fs'); const g = fs5.readFileSync('src/guideslist.js', 'utf8'); const u = (name, fn) => { fn(); console.log('  ok  ' + name); };
+  u('the guide maker has three steps (Type, Sources, Send) with Back and Next, and the library holds drafts, guides made and the tools', () => { assert.ok(g.includes("[['1', 'Type'], ['2', 'Sources'], ['3', 'Send']]") && g.includes('ACT.tgStep') && g.includes('Your library') && g.includes('Guides made') && g.includes('ACT.tgOpenUg')); });
+  u('the Videos tab can show all, the ones that need a video, or the ones added', () => { assert.ok(g.includes("['all', 'need', 'added']") && g.includes('ACT.tgVF')); });
+}
