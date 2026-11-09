@@ -1860,3 +1860,19 @@ body .st-seg { margin: 0 0 8px; } .st-wrap + .st-wrap { margin-top: 0; }
 .hs-time { font-size: 12.5px; color: var(--cs-fg4); white-space: nowrap; }
 
 body .sd-step[data-act] { cursor: pointer; border-radius: 12px; transition: background 160ms; } body .sd-step[data-act]:hover { background: rgba(0, 0, 0, .04); } body .sd-step[data-act]:focus-visible { outline: 2px solid var(--cs-brand, #1570EF); outline-offset: 2px; }
+
+/* ===== Assistant: waiting animation on the status strip, and a busy button (9 Nov 2026) ===== */
+body #asst .as-now:not(#_):not(#__) { position: relative; overflow: hidden; }
+body #asst .as-now.wait:not(#_):not(#__)::after, body #asst .as-now.run:not(#_):not(#__)::after { content: ''; position: absolute; left: 0; bottom: 0; height: 2px; width: 38%; background: linear-gradient(90deg, transparent, var(--cs-accent, #1d4ed8), transparent); animation: asBar 1.7s ease-in-out infinite; }
+@keyframes asBar { 0% { transform: translateX(-110%); } 100% { transform: translateX(290%); } }
+body .btn[aria-busy="true"]:not(.icon):not(#_):not(#__) { opacity: .75; pointer-events: none; position: relative; }
+body .btn[aria-busy="true"]:not(.icon):not(#_):not(#__)::after { content: ''; display: inline-block; width: 12px; height: 12px; margin-left: 8px; vertical-align: -2px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: csSpin .8s linear infinite; }
+@media (prefers-reduced-motion: reduce) { body #asst .as-now.wait::after, body #asst .as-now.run::after, body .btn[aria-busy="true"]::after { animation: none; } }
+
+/* ===== Assistant chat: who said what is clear at a glance (9 Nov 2026). Your messages are a solid blue bubble on the right; Claude's replies sit in a pale grey-blue compartment on the left; a teammate's is white with a blue edge. ===== */
+body #asst .ki-row.you .ki-bub:not(#_):not(#__):not(#___) { background: #1570EF !important; border: 1px solid #1570EF !important; color: #fff !important; padding: 10px 14px !important; border-radius: 16px 16px 4px 16px !important; box-shadow: 0 1px 2px rgba(21, 112, 239, .25); }
+body #asst .ki-row.you .ki-bub *:not(.btn):not(#_):not(#__):not(#___) { color: #fff !important; }
+body #asst .ki-row:not(.you):not(.sys):not(.bad):not(.other) .ki-bub:not(#_):not(#__):not(#___) { background: #EEF2F8 !important; border: 1px solid #D6DEEC !important; color: #0f172a !important; padding: 10px 14px !important; border-radius: 16px 16px 16px 4px !important; font: 400 14.5px/22px var(--cs-font) !important; }
+body #asst .ki-row.other .ki-bub:not(#_):not(#__):not(#___) { background: #fff !important; border: 1px solid #1570EF !important; color: #0f172a !important; padding: 10px 14px !important; border-radius: 16px 16px 16px 4px !important; }
+body #asst .ki-row.you .ki-time:not(#_):not(#__):not(#___) { text-align: right; }
+body #asst .ki-row.you .ki-body:not(#_):not(#__):not(#___) { justify-items: end; }

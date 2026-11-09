@@ -31,3 +31,11 @@ t('the top bar shows the light, and a waiting request says so when no Claude is 
   assert.match(fs.readFileSync('src/shell.js', 'utf8'), /V\.helper \? V\.helper\.chip\(\)/); const a = fs.readFileSync('src/assistant.js', 'utf8'); assert.match(a, /No Claude is running right now, so it waits/); assert.match(a, /act: 'helperOpen'/); assert.match(fs.readFileSync('build.mjs', 'utf8'), /'src\/helper\.js'/);
 });
 console.log(n + ' Claude helper checks passed');
+{ // every Claude button opens the Assistant with a live request card; the chat bubbles say who is who (src/assistant.js, src/ui.css)
+  const a = fs.readFileSync('src/assistant.js', 'utf8'), css = fs.readFileSync('src/ui.css', 'utf8'); const u = (name, fn) => { fn(); console.log('  ok  ' + name); };
+  u('a request sent by any Claude button opens the Assistant at once: the shared post is wrapped, the card shows what was asked, the wait in seconds, and the no-Claude warning with buttons', () => {
+    assert.match(a, /V\.asstRequested = \(\) =>/); assert.match(a, /j\.post = async function \(path, body\)[^]*path === '\/jobs' && body && body\.kind && team\(\)/); assert.match(a, /String\(j\.note \|\| ''\)\.trim\(\) \? ': .{1,8}u201c/); assert.match(a, /Math\.floor\(sec \/ 15\) \* 15 \+ ' seconds'/);
+    assert.match(a, /No Claude is running right now, so this request waits[^]*act: 'helperOpen'[^]*act: 'helperCopy'/); assert.match(a, /Date\.now\(\) \/ \(open\.length \? 15e3 : 6e4\)/);
+  });
+  u('your messages are a solid blue bubble, Claude\u2019s a pale grey-blue one, a teammate\u2019s white with a blue edge', () => { assert.match(css, /\.ki-row\.you \.ki-bub[^{]*\{ background: #1570EF !important;[^}]*color: #fff !important/); assert.match(css, /\.ki-row:not\(\.you\):not\(\.sys\):not\(\.bad\):not\(\.other\) \.ki-bub[^{]*\{ background: #EEF2F8 !important/); assert.match(css, /\.ki-row\.other \.ki-bub[^{]*\{ background: #fff !important; border: 1px solid #1570EF/); });
+}
