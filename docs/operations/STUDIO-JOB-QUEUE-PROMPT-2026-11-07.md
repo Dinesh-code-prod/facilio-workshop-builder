@@ -35,3 +35,11 @@ STAGES. Delivery Studio is split into main tabs ("stages"). Every job belongs to
 9. If a job cannot be done, finish it with status failed and a short honest summary. Never leave a claimed job unfinished.
 
 10. End with one short line per job: project, job kind, result. Nothing is final: a person reviews and approves in Delivery Studio.
+
+## Update 9 Nov 2026: every 3 minutes, pause when idle, Activate Claude
+- Measured on 20 finished jobs: Claude's own work takes a median 0.7 minutes (90% under 4); the wait for pick-up is a median 7.5 minutes (it was every 5 minutes plus the app's own dispatch delay). The task now runs every 3 minutes.
+- **Idle pause (step 11 of the task prompt):** when a run finds no waiting jobs, and the 10 runs before it were also empty (about 30 idle minutes), the run switches the task off with `update_scheduled_task` (enabled false). Idle runs then cost nothing.
+- **Activate Claude:** the button in the chat and in the helper window opens Claude with a prompt that first switches the task back on (if it is paused), then does the waiting jobs. The chat says "Claude is paused to save usage" when no Claude has checked in for 15 minutes.
+- On a long break, close Claude desktop: the task only runs while it is open.
+- The daily Otto reminders (task `studio-task-reminders`, weekdays 09:12) are a separate task and are not paused by this.
+Not checked: that the scheduled-tasks tools are available inside the queue task's own run, and that the Activate Claude chat can switch the task on (both are said to be skipped quietly if not).
