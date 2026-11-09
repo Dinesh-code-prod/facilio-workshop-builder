@@ -34,6 +34,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     logo_facilio: { ext: ['png', 'jpg', 'jpeg'], max: 4e6 }, logo_customer: { ext: ['png', 'jpg', 'jpeg'], max: 4e6 }, brd_template: { ext: ['docx'], max: 30e6 },
     config_package: { ext: ['gz', 'json', 'zip'], max: MAX_FILE }, screenshot: { ext: ['png', 'jpg', 'jpeg'], max: 8e6 }, brd_export: { ext: ['docx', 'pdf'], max: MAX_FILE },
     onboarding_workbook: { ext: ['xlsx'], max: 40e6 }, onboarding_files: { ext: ['xlsx', 'xls', 'csv', 'pdf', 'docx', 'zip'], max: 60e6 },
+    task_attachment: { ext: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf', 'docx', 'xlsx', 'csv', 'txt', 'pptx', 'msg', 'eml'], max: 20e6 },   // screenshots and files attached to a task (team only)
     uat_evidence: { ext: ['png', 'jpg', 'jpeg', 'webp', 'pdf', 'docx', 'xlsx', 'mp4', 'mov', 'txt'], max: 25e6 },   // screenshots and recordings attached to a UAT test case (team only)
     uat_source: { ext: ['xlsx', 'xlsm', 'xls', 'csv', 'txt'], max: 20e6 },   // the original UAT tracker a team imported from (team only)
     ftr_workbook: { ext: ['xlsx', 'xlsm'], max: 40e6 }, kpi_workbook: { ext: ['xlsx', 'xlsm'], max: 40e6 },
@@ -988,6 +989,8 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
       owner: ownerOk(d.owner), eta: isoDay(d.eta, 'ETA'), due: isoDay(d.due, 'Due date'), stage: oneOf(d.stage, TASK_STAGES, 'Project stage', ''), module: str(d.module || '', 120, 'Module'),
       uat: d.uat && typeof d.uat === 'object' ? { status: oneOf(d.uat.status, UAT_ISSUE_ST, 'UAT issue status', 'Open'), severity: oneOf(d.uat.severity, UAT_SEV, 'Severity', '') } : undefined,   // set on issues raised in UAT: the board column and the severity
       blocker: str(d.blocker || '', 2000, 'Blocker'), notes: str(d.notes || '', 4000, 'Delivery notes'), completion: str(d.completion || '', 3000, 'Completion note'),
+      completedOn: isoDay(d.completedOn, 'Completed on'),   // the day a task was closed
+      attachments: (Array.isArray(d.attachments) ? d.attachments : []).slice(0, 40).map(x => ({ id: String(x && x.id || '').slice(0, 80), name: str(x && x.name || '', 200, 'File name'), size: Number(x && x.size) > 0 ? Math.min(Number(x.size), 2e8) : 0, at: String(x && x.at || '').slice(0, 30), by: str(x && x.by || '', 120, 'By') })).filter(x => x.id && x.name),   // files and pasted screenshots (the files are project files of kind task_attachment)
       src: { type: oneOf(d.src && d.src.type, TASK_SRC, 'Source', cur && cur.src ? cur.src.type : 'manual'), ref: str(d.src && d.src.ref || '', 300, 'Source reference'), quote: str(d.src && d.src.quote || '', 1500, 'Source excerpt'), label: str(d.src && d.src.label || '', 200, 'Source name') },
       // links to other records of this project: [{ kind, id, label }]; documents are named by section ({ kind: 'doc', id: <section> })
       links: (Array.isArray(d.links) ? d.links : []).slice(0, 30).map(l => ({ kind: String(l && l.kind || ''), id: String(l && l.id || ''), label: str(l && l.label || '', 200, 'Link label') })).filter(l => (KINDS.includes(l.kind) && ITEM_ID_RE.test(l.id)) || (l.kind === 'doc' && DOC_SECTIONS.test(l.id))),
