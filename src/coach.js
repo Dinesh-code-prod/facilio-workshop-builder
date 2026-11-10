@@ -1,7 +1,10 @@
-/* Guided start: a game-style walkthrough of all eight stages. For each stage a ring marks the stage in the menu with a card saying what happens there and
-   what you finish with, then the ring walks through every page of that stage ("click here, then here"). "Next" opens the page, a click on the ring does too.
-   Opens from the "Guide me" pill (team users, inside a project) or once on its own the first time a team member opens a project. Skip any time.
-   Nothing is saved except "seen" in this browser. Page descriptions come from the menu hints (V.NAV_HINT in shell.js). */
+/* Guided start: a game-style walkthrough of the whole menu. A ring marks the thing to click next and a small card says what it is for.
+   Works with both menu positions and follows the one in use (the Module tabs rail is the default; the side menu is the other choice):
+     rail   a ring on each stage icon in the rail (what happens in the stage, what you finish with), then on each page tab across the top of the page
+     side   a ring on each stage heading in the side menu, then on each page under it
+   "Next" opens the thing, and so does a click on the ring. Opens from the "Guide me" pill (team and customers, inside a project) or once on its own the
+   first time someone opens a project. Skip any time. Switching the menu position while it runs ends it. Nothing is saved except "seen" in this browser.
+   Page names and descriptions come from the menu itself (the rail's data-pages, V.NAV_HINT in shell.js). */
 (function (root) {
   'use strict';
   const F = root.FWB; const { S, esc } = F; const V = root.FWBViews;
@@ -17,8 +20,11 @@
     7: ['Support closely for the first weeks after go-live.', 'Hypercare reports.'],
     8: ['Hand the project to the support team and close it.', 'The handover pack and closure report.']
   };
-  // the customer menu has named groups, not numbered stages
-  const CUST = {
+  // groups without a stage number (the team's project-wide groups, and the customer's menu)
+  const GROUP = {
+    'Home': ['Where the project stands today and what needs you.', ''], 'Tasks & mail': ['Tasks, the project mailbox and hand-offs, all the way through.', ''],
+    'Reports': ['Status reports and what the AI drafted.', ''], 'Notes & Links': ['Notes, links and files kept with the project.', ''],
+    'Customer View': ['The pages the customer sees. Switch on only what they need.', ''], 'Help': ['Set up Claude, the Team Guide and what changed lately.', ''], 'Settings': ['People, access and the menu itself.', ''],
     'Your project': ['Where your project stands: the dashboard, the contract, the scope and the plan.', 'You know the plan and what is due next.'],
     'Prepare for sessions': ['Get ready for the workshops: the schedule, what to read and the data we need from you.', 'You arrive at each session prepared.'],
     'Learn Facilio': ['See what Facilio can do and read the guides for your modules.', 'You know the product before it is built.'],
@@ -26,27 +32,52 @@
     'And more': ['What changed lately, and more to explore.', '']
   };
   const CUST_HINT = { projdash: 'Where the project stands today', cust_home: 'Your welcome page', kickoff: 'The kick-off deck', contract: 'The signed contract', scope: 'What is in the project', plan: 'Dates and milestones', schedule: 'When each workshop runs', onboarding: 'The data we need from you', governance: 'Decisions and sign-offs waiting for you', changes: 'Changes to the agreed scope', delivery: 'Build progress and test results', uatrun: 'Test the system and report what you find' };
-  let list = [], at = -1, timer = 0, ring, card;
+  let list = [], at = -1, timer = 0, ring, card, how = '';
   const user = () => !!(S.user && S.project);
-  const cust = () => !!(S.user && S.user.kind === 'customer');
-  const seenKey = () => 'fwb_coach_' + ((S.project && S.project.id) || '');
   const lsGet = k => { try { return root.localStorage.getItem(k); } catch (e) { return null; } };
   const lsSet = k => { try { root.localStorage.setItem(k, '1'); } catch (e) { /* private window */ } };
-  const stageBtns = () => [...doc.querySelectorAll('.sidebar .sb-title')].filter(b => cust() || b.querySelector('.sb-no'));
-  const stageEl = g => stageBtns().find(b => b.getAttribute('data-g') === g);
-  const itemEl = id => doc.querySelector('.sidebar .sb-item[data-view="' + id + '"]');
-  const tgt = s => (s.kind === 'stage' ? stageEl(s.g) : itemEl(s.id));
+  const seenKey = () => 'fwb_coach_' + ((S.project && S.project.id) || '');
+  const mode = () => (doc.querySelector('.rl .rl-b') ? 'rail' : doc.querySelector('.sidebar .sb-title') ? 'side' : '');
+  const isCust = () => !!(S.user && S.user.kind === 'customer');
+  const pageOf = id => (V.NAV_HINT && V.NAV_HINT[id]) || CUST_HINT[id] || 'A page of this stage.';
+
+  // ---- the stages of the menu in use, with their pages ----
+  function railStages() {
+    return [...doc.querySelectorAll('.rl .rl-b')].map(b => {
+      let pages = []; try { pages = JSON.parse(b.getAttribute('data-pages') || '[]'); } catch (e) { /* none */ }
+      const n = b.querySelector('.rl-n'); const tip = b.getAttribute('data-tip') || '';
+      return { g: tip, n: n ? +n.textContent : 0, name: tip.replace(/^\d+\s·\s/, ''), first: b.getAttribute('data-view'), pages };
+    });
+  }
+  function sideStages() {
+    return [...doc.querySelectorAll('.sidebar .sb-title')].filter(b => isCust() || b.querySelector('.sb-no')).map(b => {
+      const no = b.querySelector('.sb-no'); const g = b.getAttribute('data-g');
+      const ids = (b.getAttribute('data-views') || '').split(',').filter(Boolean);
+      return { g, n: no ? +no.textContent : 0, name: g.replace(/^\d\.\s*/, ''), first: ids[0], pages: ids.map(id => [id, '', '']) };
+    });
+  }
   function build() {
-    const out = [];
-    stageBtns().forEach(b => {
-      const g = b.getAttribute('data-g'); const no = b.querySelector('.sb-no'); const n = no ? +no.textContent : 0; const name = g.replace(/^\d\.\s*/, '');
-      out.push({ kind: 'stage', g, n, name });
-      (b.getAttribute('data-views') || '').split(',').filter(Boolean).forEach(id => out.push({ kind: 'page', g, id, n }));
+    how = mode(); const out = []; const seenN = new Set();
+    (how === 'rail' ? railStages() : how === 'side' ? sideStages() : []).forEach(g => {
+      const lead = g.n && !seenN.has(g.n); if (g.n) seenN.add(g.n);
+      out.push({ kind: 'stage', g: g.g, n: g.n, name: g.name, first: g.first, lead });
+      g.pages.forEach(p => out.push({ kind: 'page', g: g.g, n: g.n, id: p[0], label: p[1], hint: p[2], first: g.first }));
     });
     return out;
   }
+
+  // ---- finding the thing a step points at ----
+  const railBtn = g => [...doc.querySelectorAll('.rl .rl-b')].find(b => b.getAttribute('data-tip') === g);
+  const sideBtn = g => [...doc.querySelectorAll('.sidebar .sb-title')].find(b => b.getAttribute('data-g') === g);
+  function tgt(s) {
+    if (s.kind === 'stage') return how === 'rail' ? railBtn(s.g) : sideBtn(s.g);
+    return how === 'rail' ? doc.querySelector('.mt-bar .mt-t[data-view="' + s.id + '"]') : doc.querySelector('.sidebar .sb-item[data-view="' + s.id + '"]');
+  }
+  // a page step needs its stage open: the rail shows a stage's tabs only while you are in it, the side menu only while its group is open
   function ensureOpen(s) {
-    if (s.kind === 'page' && !itemEl(s.id)) { const b = stageEl(s.g); if (b && b.getAttribute('data-open') !== 'true') b.click(); }
+    if (s.kind !== 'page' || tgt(s) || s.tried) return;
+    s.tried = true;
+    if (how === 'rail') { if (V.go && s.first) V.go(s.first); } else { const b = sideBtn(s.g); if (b && b.getAttribute('data-open') !== 'true') b.click(); }
   }
   function stop(markSeen) {
     clearInterval(timer); timer = 0; at = -1;
@@ -56,28 +87,34 @@
   }
   function place() {
     if (at < 0 || !ring) return;
+    if (mode() !== how) { stop(false); return; }   // the menu position was switched
     const s = list[at]; ensureOpen(s); const t = tgt(s);
     if (!t || !t.offsetParent) { ring.style.display = 'none'; return; }
-    t.scrollIntoView({ block: 'nearest' });
+    if (how === 'side') t.scrollIntoView({ block: 'nearest' });
     const r = t.getBoundingClientRect(); ring.style.display = '';
     Object.assign(ring.style, { left: r.left - 4 + 'px', top: r.top - 4 + 'px', width: r.width + 8 + 'px', height: r.height + 8 + 'px' });
-    const left = Math.min(r.right + 16, root.innerWidth - 302);
-    Object.assign(card.style, { left: Math.max(8, left) + 'px', top: Math.max(12, Math.min(r.top - 8, root.innerHeight - card.offsetHeight - 12)) + 'px' });
+    const below = how === 'rail' && s.kind === 'page';   // the page tabs run across the top, so the card goes under them
+    const left = below ? Math.min(Math.max(8, r.left), root.innerWidth - 302) : Math.max(8, Math.min(r.right + 16, root.innerWidth - 302));
+    const top = below ? r.bottom + 14 : Math.max(12, Math.min(r.top - 8, root.innerHeight - card.offsetHeight - 12));
+    Object.assign(card.style, { left: left + 'px', top: top + 'px' });
   }
   function text(s) {
-    if (s.kind === 'stage') { const d = (s.n ? STAGE[s.n] : CUST[s.name]) || ['', '']; return [s.n ? `Stage ${s.n}: ${s.name}` : s.name, d[0], d[1] ? 'You finish with: ' + d[1] : '', 'Click the stage to open it, or press Next.']; }
-    ensureOpen(s); const t = itemEl(s.id); const lab = t ? (t.querySelector('span') || t).firstChild.textContent.trim() : s.id;
-    return [lab, (V.NAV_HINT && V.NAV_HINT[s.id]) || CUST_HINT[s.id] || 'A page of this stage.', '', 'Click the glowing page to open it, or press Next.'];
+    if (s.kind === 'stage') {
+      const d = (s.n && s.lead ? STAGE[s.n] : GROUP[s.name]) || (s.n ? ['More of stage ' + s.n + ': ' + s.name + '.', ''] : ['', '']);
+      return [s.n ? `Stage ${s.n}: ${s.name}` : s.name, d[0], d[1] ? 'You finish with: ' + d[1] : '', how === 'rail' ? 'Click the glowing icon to open it, or press Next.' : 'Click the stage to open it, or press Next.'];
+    }
+    ensureOpen(s); const t = tgt(s); const lab = s.label || (t ? t.textContent.trim() : s.id);
+    return [lab, s.hint || pageOf(s.id), '', how === 'rail' ? 'Click the glowing tab at the top, or press Next.' : 'Click the glowing page to open it, or press Next.'];
   }
   function show(i) {
     at = Math.max(0, Math.min(i, list.length - 1)); const s = list[at]; const [h, p1, p2, hint] = text(s);
-    const stageNo = s.kind === 'page' && s.n ?` · stage ${s.n}` : '';
+    const stageNo = s.kind === 'page' && s.n ? ` · stage ${s.n}` : '';
     card.innerHTML = `<p class="co-n">Step ${at + 1} of ${list.length}${stageNo}</p><h3>${esc(h)}</h3><p>${esc(p1)}</p>${p2 ? `<p><b>${esc(p2)}</b></p>` : ''}<p class="co-hint">${esc(hint)}</p>
       <div class="co-b"><button class="btn sm" data-co="skip">Skip guide</button><span></span>${at ? '<button class="btn sm" data-co="back">Back</button>' : ''}<button class="btn sm primary" data-co="next">${at === list.length - 1 ? 'Finish' : 'Next'}</button></div>`;
     place();
   }
   function advance(d) { const n = at + d; if (n >= list.length) { stop(true); return; } show(Math.max(0, n)); }
-  function open(s) { if (s.kind === 'page' && V.go) V.go(s.id); }
+  function open(s) { if (V.go && (s.kind === 'page' || how === 'rail')) V.go(s.kind === 'page' ? s.id : s.first); }
   function onClick(e) {
     const b = e.target.closest && e.target.closest('[data-co]');
     if (b) {
@@ -86,9 +123,10 @@
       return;
     }
     const s = list[at]; if (!s) return;
-    const hit = s.kind === 'stage' ? e.target.closest('.sb-title') : e.target.closest('.sb-item');
-    const key = hit && (s.kind === 'stage' ? hit.getAttribute('data-g') === s.g : hit.getAttribute('data-view') === s.id);
-    if (key) setTimeout(() => advance(1), 250);
+    let hit = false;
+    if (how === 'rail') { const x = e.target.closest(s.kind === 'stage' ? '.rl-b' : '.mt-t'); hit = !!x && (s.kind === 'stage' ? x.getAttribute('data-tip') === s.g : x.getAttribute('data-view') === s.id); }
+    else { const x = e.target.closest(s.kind === 'stage' ? '.sb-title' : '.sb-item'); hit = !!x && (s.kind === 'stage' ? x.getAttribute('data-g') === s.g : x.getAttribute('data-view') === s.id); }
+    if (hit) setTimeout(() => advance(1), 250);
   }
   const onKey = e => { if (e.key === 'Escape') stop(true); };
   function start() {
@@ -100,11 +138,11 @@
     doc.addEventListener('click', onClick, true); doc.addEventListener('keydown', onKey, true);
     timer = setInterval(place, 400); show(0);
   }
-  // the "Guide me" pill, and the one-time offer the first time a team member opens a project
+  // the "Guide me" pill, and the one-time offer the first time someone opens a project
   function pill() {
-    const old = doc.getElementById('coPill'); const ok = user() && stageBtns().length;
+    const old = doc.getElementById('coPill'); const ok = user() && mode();
     if (!ok) { if (old) old.remove(); return; }
-    if (!old) { const b = doc.createElement('button'); b.id = 'coPill'; b.className = 'co-pill'; b.textContent = 'Guide me'; b.title = 'A guided walk through all eight stages, step by step'; b.addEventListener('click', start); doc.body.appendChild(b); }
+    if (!old) { const b = doc.createElement('button'); b.id = 'coPill'; b.className = 'co-pill'; b.textContent = 'Guide me'; b.title = 'A guided walk through the menu, step by step'; b.addEventListener('click', start); doc.body.appendChild(b); }
     if (!lsGet(seenKey()) && at < 0) { lsSet(seenKey()); setTimeout(start, 800); }
   }
   setInterval(pill, 1500);
