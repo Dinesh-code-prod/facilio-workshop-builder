@@ -60,6 +60,21 @@
     const out = []; arr(obj(prep).byModule).forEach(g => arr(obj(g).questions).forEach(q => { q = obj(q); const k = String(q.kind || ''); const cat = /scope|conflict|exclu/.test(k) ? 'scope' : /onboarding/.test(k) ? 'data' : /dependency/.test(k) ? 'technical' : /decision|requirement|open/.test(k) ? 'usecase' : 'module';
       out.push({ text: q.text, category: cat, module: obj(g).module || '', why: q.why, priority: q.priority, ref: arr(q.sources).slice(0, 2).map(s => obj(s).type + ' ' + obj(s).ref).join('; ') }); })); return out;
   }
+  /** the questions every integration needs, one set per system the contract names (confirmed contract facts of kind integration); no AI: the same system gives the same questions, so a second run adds nothing (merge skips equal wording) */
+  function fromIntegrations(facts) {
+    const out = [], seen = new Set();
+    arr(facts).forEach(f => { f = obj(f); const sys = str(f.system, 80); if (f.kind !== 'integration' || !sys || seen.has(sys.toLowerCase())) return; seen.add(sys.toLowerCase());
+      const serves = arr(f.serves).map(v => str(v, 60)).filter(Boolean), mod = serves[0] || '', dir = f.direction === 'in' ? ' (data comes into Facilio)' : f.direction === 'out' ? ' (data goes out of Facilio)' : f.direction === 'both' ? ' (data goes both ways)' : '';
+      const ref = 'Contract' + (f.page ? ' p.' + f.page : '') + (f.section ? ' §' + str(f.section, 30) : ''), why = 'The contract connects Facilio to ' + sys + (serves.length ? ' for ' + serves.join(', ') : '') + '.';
+      [['Which system is ' + sys + ' on the customer side: who owns it, which version, and is there a test environment we can connect to before go-live?', 'must'],
+       ['What starts the exchange with ' + sys + dir + ': which Facilio event or status, and which action on their side?', 'must'],
+       ['Which records and fields are exchanged with ' + sys + ' in each direction, and what is the key that links a record on both sides?', 'must'],
+       ['How often does ' + sys + ' exchange data (real time, scheduled, on demand) and how many records at the busiest time?', 'should'],
+       ['What happens when an exchange with ' + sys + ' fails: retries, who is told, and how is a missed record put right?', 'should'],
+       ['How does ' + sys + ' sign in (API key, OAuth, single sign-on, VPN) and who holds and renews the credentials?', 'should'],
+       ['Who builds and who tests each side of the ' + sys + ' integration, and is it inside the contract scope or a change request?', 'must']].forEach(([text, priority]) => out.push({ text, category: 'integration', module: mod, why, ref, priority })); });
+    return out;
+  }
   /** the Workshop room's prepared structure with the KEPT bank questions added (grouped by module); the rules' own questions stay as they are */
   function toPrep(bank, prep) {
     const p = JSON.parse(JSON.stringify(obj(prep).byModule ? prep : { byModule: [], gaps: [] })); const groups = p.byModule;
@@ -136,6 +151,6 @@
   /** answered questions (status and a client response) that have no requirement behind them yet; list: the Workshop room's question list */
   const noRequirement = list => arr(list).filter(q => q && q.status === 'answered' && !obj(q.made).requirement && String(q.note || '').trim());
 
-  const api = { TRACKS, CONNECTED_WORDS, trackOf, focusPack, moduleKeys, modulePrompt, connectedPrompt, generalPrompt, parseAny, CATEGORIES, PRIORITIES, GROUPS, MAX, cleanQuestion, bankOf, merge, edit, setState, remove, move, sorted, fromRules, toPrep, sourcePack, questionPrompt, parseQuestions, callPrompt, parseCall, noRequirement, norm };
+  const api = { TRACKS, CONNECTED_WORDS, trackOf, focusPack, moduleKeys, modulePrompt, connectedPrompt, generalPrompt, parseAny, CATEGORIES, PRIORITIES, GROUPS, MAX, cleanQuestion, bankOf, merge, edit, setState, remove, move, sorted, fromRules, fromIntegrations, toPrep, sourcePack, questionPrompt, parseQuestions, callPrompt, parseCall, noRequirement, norm };
   root.FWBQBank = api;
 })(typeof window !== 'undefined' ? window : globalThis);

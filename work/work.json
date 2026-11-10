@@ -1175,7 +1175,7 @@
       },
       "extraction": {
        "type": "object",
-       "description": "{ customer, projectName, contract: { start: \"YYYY-MM-DD\", end: \"YYYY-MM-DD\", durationDays, term }, scope: [{ text, status: \"confirmed\"|\"excluded\"|\"unclear\", origin: \"contract\"|\"interpreted\"|\"assumed\", source: { page, section, quote } }], modules: [{ name, origin, source }], commitments: [{ text, date, origin, source }], deliverables, customerResponsibilities, facilioResponsibilities, exclusions, dependencies, commercialConstraints, training, supportAndHandover: [{ text, origin, source }], attachments: [{ name, ref, note }] }. Other keys are dropped."
+       "description": "{ customer, projectName, contract: { start: \"YYYY-MM-DD\", end: \"YYYY-MM-DD\", durationDays, term }, scope: [{ text, status: \"confirmed\"|\"excluded\"|\"unclear\", origin: \"contract\"|\"interpreted\"|\"assumed\", source: { page, section, quote } }], modules: [{ name, origin, source }], commitments: [{ text, date, origin, source }], integrations: [{ name, direction: in | out | both, serves: [what it serves, e.g. Service Request, Procurement], origin, source }] (every system the contract connects to Facilio: ERP, ticketing, the customer portal, single sign-on, data feeds; one entry per system, name it as the contract does), deliverables, customerResponsibilities, facilioResponsibilities, exclusions, dependencies, commercialConstraints, training, supportAndHandover: [{ text, origin, source }], attachments: [{ name, ref, note }] }. Other keys are dropped."
       },
       "baseVersion": {
        "type": "number",

@@ -49,6 +49,21 @@
   const live = () => all().filter(c => c.status !== 'superseded');
   const facts = (opts) => { opts = opts || {}; const out = []; live().forEach(c => (c.facts || []).forEach(f => { if (f.state === 'rejected') return; if (opts.confirmed && f.state !== 'confirmed') return; out.push(Object.assign({}, f, { contract: c })); })); return out; };
   V.contractFacts = facts;
+  // A confirmed integration is an agreed fact, so the work it needs is opened: one Solution area per system (Integration: <system>, linked to what it serves) and the standard integration questions in the question bank.
+  // Run when a fact is confirmed or saved. Areas that already exist and questions already in the bank are skipped, so running it twice adds nothing.
+  // shortcut: an area a person removed comes back the next time an integration fact is confirmed; fine while removing an area is rare.
+  const intType = n => /sso|single sign|okta|azure ad|entra|ldap|directory/i.test(n) ? 'int_sso' : /\b(sap|oracle|netsuite|dynamics|workday|erp|coupa|ariba|quickbooks|xero|sage|odoo)\b/i.test(n) ? 'int_proc' : /portal|\bapp\b/i.test(n) ? 'int_portal' : /zoho|servicenow|freshdesk|freshservice|jira|desk|itsm|crm|salesforce/i.test(n) ? 'int_sr' : 'int_data';
+  function syncIntegrations() {
+    if (ro()) return; const fs = facts({ confirmed: true }).filter(f => f.kind === 'integration' && f.system); if (!fs.length) return;
+    const SL = root.FWBSolutionLogic, QB = root.FWBQBank, J = V.studioJobs; const by = (S.user && (S.user.name || S.user.email)) || '', at = new Date().toISOString(); let areas = 0, qs = 0;
+    if (SL && SL.addArea && J && J.setDoc) { let doc = F.doc('solutions') || { items: {} }; const seen = new Set();
+      fs.forEach(f => { const key = 'custom:int-' + String(f.system).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 28); if (key === 'custom:int-' || seen.has(key) || SL.customOf(doc).some(c => c.key === key)) return; seen.add(key);
+        try { doc = SL.addArea(doc, { key, label: 'Integration: ' + f.system, type: intType(f.system), modules: f.serves || [], keywords: [f.system] }, by, at).doc; areas++; } catch (e) { /* a name that cannot be an area is skipped */ } });
+      if (areas) J.setDoc('solutions', doc); }
+    if (QB && QB.fromIntegrations) { F.doc('rs_questions'); const r = QB.merge(QB.bankOf(S.docs.rs_questions && S.docs.rs_questions.data), QB.fromIntegrations(fs), at, by, 'rules', 'Contracts & Integrations'); if (r.added) { S.docs.rs_questions.data = r.bank; F.markDirty('rs_questions'); qs = r.added; } }
+    if (areas || qs) toast((areas ? areas + ' Solution area' + (areas === 1 ? '' : 's') + ' opened' : '') + (areas && qs ? ' and ' : '') + (qs ? qs + ' integration question' + (qs === 1 ? '' : 's') + ' added to the question bank' : '') + '.', 6000);
+  }
+  V.syncIntegrations = syncIntegrations;
   const prov = (f, c) => f.origin === 'team' ? 'Added by team' : ('From ' + (c.type === 'cr' ? 'CR' : c.type === 'msa' ? 'MSA' : 'contract') + (f.page ? ' p.' + f.page : '') + (f.section ? ' §' + f.section : ''));
   V.contractProv = prov;
   // a short fingerprint of everything the BRDs depend on, so a change can be detected
@@ -97,7 +112,7 @@
   // ---------- actions ----------
   const get = a => { const c = real(a.getAttribute('data-c')); const f = a.getAttribute('data-f') ? (c.facts || []).find(x => x.id === a.getAttribute('data-f')) : null; return { c, f }; };
   const val = id => (document.getElementById(id) || {}).value || '';
-  ACT.ctFactState = a => { const { c, f } = get(a); if (!f) return; f.state = a.getAttribute('data-s'); F.changed('Contract fact ' + (f.state === 'confirmed' ? 'confirmed' : f.state === 'rejected' ? 'rejected' : 'restored'), (f.system || f.value || f.kind) + ' · ' + c.title, { section: 'planner' }); };
+  ACT.ctFactState = a => { const { c, f } = get(a); if (!f) return; f.state = a.getAttribute('data-s'); F.changed('Contract fact ' + (f.state === 'confirmed' ? 'confirmed' : f.state === 'rejected' ? 'rejected' : 'restored'), (f.system || f.value || f.kind) + ' · ' + c.title, { section: 'planner' }); if (f.state === 'confirmed') syncIntegrations(); };
   function factForm(c, f) {
     const isNew = !f; f = f || { kind: 'integration', system: '', serves: [], direction: '', value: '', text: '', note: '' };
     drawer(isNew ? 'Add a fact' : 'Edit fact', `<div class="fgrid"><div><label class="f">Type</label><select id="cf_kind">${Object.entries(KINDS).map(([k, v]) => `<option value="${k}"${f.kind === k ? ' selected' : ''}>${v}</option>`).join('')}</select></div>
@@ -118,7 +133,7 @@
     const ref = val('cf_ref'); const pg = (ref.match(/p\.?\s*(\d+)/i) || [])[1]; const sc = (ref.match(/§\s*([\d.]+)/) || [])[1];
     const data = { kind, system: kind === 'integration' ? sys : '', value: v, direction: kind === 'integration' ? val('cf_dir') : '', serves: val('cf_serves').split(',').map(x => x.trim()).filter(Boolean), text: val('cf_text').trim(), note: val('cf_note').trim(), page: pg ? +pg : null, section: sc || '' };
     c.facts = c.facts || []; if (f) Object.assign(f, data); else { c.facts.push(Object.assign({ id: F.uid('fct'), origin: 'team', state: 'confirmed' }, data)); }
-    closeDrawer(); F.changed(f ? 'Contract fact edited' : 'Contract fact added', (sys || v) + ' · ' + c.title, { section: 'planner' });
+    closeDrawer(); F.changed(f ? 'Contract fact edited' : 'Contract fact added', (sys || v) + ' · ' + c.title, { section: 'planner' }); syncIntegrations();
   };
   function contractForm(c) {
     const isNew = !c._id && !c.id; drawer(isNew ? 'Add contract item' : 'Edit contract', `<div class="fgrid"><div class="full"><label class="f">Title</label><input id="cc_title" value="${esc(c.title || '')}" placeholder="e.g. Zoho Desk integration addendum, CR-014"></div>

@@ -18,7 +18,7 @@ const GOOD = () => ({
   facilioResponsibilities: [{ text: 'Run requirement workshops', origin: 'contract', source: { page: 8 } }], exclusions: [{ text: 'Third party licences', origin: 'contract', source: { page: 9 } }],
   dependencies: [{ text: 'Customer SSO ready', origin: 'interpreted' }], commercialConstraints: [{ text: 'Change requests priced per day', origin: 'contract' }], training: [{ text: 'Two admin training sessions', origin: 'contract' }],
   supportAndHandover: [{ text: '30 days hypercare', origin: 'contract' }], attachments: [{ name: 'Schedule A.pdf', ref: 'sites/acme/Schedule A.pdf', note: 'Fee schedule' }] });
-const KEYS = ['customer', 'projectName', 'contract', 'scope', 'modules', 'commitments', 'deliverables', 'customerResponsibilities', 'facilioResponsibilities', 'exclusions', 'dependencies', 'commercialConstraints', 'training', 'supportAndHandover', 'attachments'];
+const KEYS = ['customer', 'projectName', 'contract', 'scope', 'modules', 'commitments', 'integrations', 'deliverables', 'customerResponsibilities', 'facilioResponsibilities', 'exclusions', 'dependencies', 'commercialConstraints', 'training', 'supportAndHandover', 'attachments'];
 
 await t('a good extraction keeps its labels, its sources and a fixed key order', () => {
   const v = validateExtraction(GOOD()); assert.equal(v.ok, true); assert.deepEqual(Object.keys(v.extraction), KEYS); const x = v.extraction;
@@ -26,6 +26,14 @@ await t('a good extraction keeps its labels, its sources and a fixed key order',
   assert.deepEqual(x.scope[0].source, { page: 4, section: '2.1', quote: 'Supplier shall provide Work Order management' }); assert.deepEqual(x.contract, { start: '2026-12-01', end: '2027-02-28', durationDays: 90, term: '24 months', origin: 'contract', source: {} });
   assert.equal(x.commitments[0].date, '2027-02-28'); assert.equal(JSON.stringify(validateExtraction(JSON.parse(JSON.stringify(x))).extraction), JSON.stringify(x), 'cleaning twice changes nothing, so the same content has the same hash');
 });
+await t('integrations in the MSA are kept with their origin and land as unconfirmed facts on the original MSA record', () => {
+  const g = GOOD(); g.integrations = [{ name: 'Zoho Desk', direction: 'both', serves: ['Service Request', 'Work Order'], origin: 'contract', source: { page: 12, section: '4.2', quote: 'Facilio shall integrate with Zoho Desk' } }, { name: 'SAP', direction: 'sideways', origin: 'interpreted' }, { name: '' }, 'single sign-on'];
+  const v = validateExtraction(g); assert.equal(v.ok, true); const ig = v.extraction.integrations; assert.equal(ig.length, 3); assert.equal(ig[0].direction, 'both'); assert.equal(ig[1].direction, ''); assert.equal(ig[2].origin, 'assumed');
+  const p = planFromExtraction(v.extraction, { now: '2026-11-05T00:00:00.000Z', source: { ref: 'MSA.pdf' } }); const c = p.planner.contracts[0]; assert.equal(c.id, 'msa0'); assert.equal(c.facts.length, 3); assert.ok(c.facts.every(f => f.kind === 'integration' && f.state === 'review'), 'nothing is confirmed by the extraction');
+  assert.equal(c.facts[0].page, 12); assert.deepEqual(c.facts[0].serves, ['Service Request', 'Work Order']); assert.equal(p.counts.integrations, 3);
+  assert.equal(planFromExtraction(validateExtraction(GOOD()).extraction, {}).planner.contracts, undefined, 'no integrations, no contract record');
+});
+
 await t('hostile input: wrong types, unknown keys, huge text and lists, odd values and polluted keys are cleaned and never throw', () => {
   for (const bad of [undefined, null, 5, 'text', [], true]) { const v = validateExtraction(bad); assert.equal(v.ok, false); assert.equal(v.extraction, null); }
   assert.equal(validateExtraction({}).ok, false, 'empty'); assert.equal(validateExtraction({ scope: [], modules: 'x' }).ok, false);
@@ -124,7 +132,7 @@ let made;
 await t('after a person approves, create_project_from_msa makes a NEW project with the contract fields and scope in the records the Contract flow uses', async () => {
   assert.equal((await mv(hid(SAM), SAM, holdId, { to: 'Approved', ver: 2 })).status, 200);
   const r = await create(SAM, { id: holdId }); assert.equal(r.status, 200, JSON.stringify(r.data)); assert.equal(r.data.created, true); assert.equal(r.data.complete, true); made = r.data.project.id; assert.match(made, /^p_/); assert.notEqual(made, pid);
-  assert.deepEqual(r.data.written, { scopeItems: 5, contractFields: 4, obligations: 2, scopeLines: r.data.written.scopeLines }); assert.ok(r.data.written.scopeLines > 5);
+  assert.deepEqual(r.data.written, { scopeItems: 5, contractFields: 4, obligations: 2, integrations: 0, scopeLines: r.data.written.scopeLines }); assert.ok(r.data.written.scopeLines > 5);
   const p = (await as(SAM, 'GET', '/api/projects/' + made)).data; assert.deepEqual([p.project.name, p.project.customer, p.project.startDate, p.project.endDate, p.project.role], ['Acme CMMS rollout', 'Acme Facilities', '2026-12-01', '2027-02-28', 'owner']); assert.deepEqual(p.members.map(m => [m.email, m.role]), [[SAM, 'owner']]);
   const doc = (await tool(SAM, 'get_document', { project: made, section: 'planner', part: 'scope' })).data; assert.equal(doc.data.length, 5); assert.equal(doc.data[0].text, 'Work order management'); assert.equal(doc.data[0].status, 'matched'); assert.equal(doc.data[0].page, 4); assert.equal(doc.data[1].status, 'uncertain'); assert.equal(doc.data[2].status, 'excluded'); assert.equal(doc.data[3].origin, 'assumed');
   const cx = (await tool(SAM, 'get_document', { project: made, section: 'planner', part: 'contractX' })).data.data; assert.equal(cx.fields.effective.value, '2026-12-01'); assert.equal(cx.fields.termMonths.value, 24); assert.equal(cx.fields.effective.status, 'extracted'); assert.equal(cx.from, 'MSA signed.pdf');
