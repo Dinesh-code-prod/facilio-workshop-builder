@@ -7,7 +7,7 @@
    Page names and descriptions come from the menu itself (the rail's data-pages, V.NAV_HINT in shell.js). */
 (function (root) {
   'use strict';
-  const F = root.FWB; const { S, esc } = F; const V = root.FWBViews;
+  const F = root.FWB; const { S, esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   const doc = root.document;
   // stage number: [what happens, what you finish with]
   const STAGE = {
@@ -36,7 +36,8 @@
   const user = () => !!(S.user && S.project);
   const lsGet = k => { try { return root.localStorage.getItem(k); } catch (e) { return null; } };
   const lsSet = k => { try { root.localStorage.setItem(k, '1'); } catch (e) { /* private window */ } };
-  const seenKey = () => 'fwb_coach_' + ((S.project && S.project.id) || '');
+  // once for each person (not each project): the first project they open starts the guide by itself; "Take the tour" on the projects home replays it in the demo project
+  const seenKey = () => 'fwb_coach_u_' + String((S.user && (S.user.email || S.user.id || S.user.name)) || 'me').toLowerCase();
   const mode = () => (doc.querySelector('.rl .rl-b') ? 'rail' : doc.querySelector('.sidebar .sb-title') ? 'side' : '');
   const isCust = () => !!(S.user && S.user.kind === 'customer');
   const pageOf = id => (V.NAV_HINT && V.NAV_HINT[id]) || CUST_HINT[id] || 'A page of this stage.';
@@ -148,8 +149,11 @@
     const old = doc.getElementById('coPill'); const ok = user() && mode();
     if (!ok) { if (old) old.remove(); return; }
     if (!old) { const b = doc.createElement('button'); b.id = 'coPill'; b.className = 'co-pill'; b.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>Guide me'; b.title = 'A guided walk through the menu, step by step'; b.addEventListener('click', start); doc.body.appendChild(b); }
-    if (!lsGet(seenKey()) && at < 0) { lsSet(seenKey()); setTimeout(start, 800); }
+    let go = false; try { go = root.sessionStorage.getItem('fwb_coach_go') === '1'; if (go) root.sessionStorage.removeItem('fwb_coach_go'); } catch (e) { /* private window */ }
+    if (at < 0 && (go || !lsGet(seenKey()))) { lsSet(seenKey()); setTimeout(start, 800); }
   }
+  // the projects home button: open the demo project (Demo: Riverside Towers, with example data in every section) and start the guide there
+  ACT.takeTour = a => V.busy(a, async () => { const r = await root.FWBApi.get('/api/demo-project'); try { root.sessionStorage.setItem('fwb_coach_go', '1'); } catch (e) { /* private window */ } ACT.openProject({ getAttribute: () => r.id }); });
   setInterval(pill, 1500);
   V.coach = { start, stop };
 })(typeof window !== 'undefined' ? window : globalThis);
