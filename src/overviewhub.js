@@ -4,7 +4,7 @@
 (function (root) {
   'use strict';
   const F = root.FWB; const { S } = F; const V = root.FWBViews; const ACT = V.ACT;
-  const TABS = [['overview', 'Overview'], ['lifecycle', 'Delivery lifecycle'], ['proadmap', 'Roadmap'], ['timeline', 'Plan vs actual'], ['dashreport', 'Reports']];
+  const TABS = [['overview', 'Overview'], ['lifecycle', 'Stages'], ['proadmap', 'Roadmap'], ['timeline', 'Plan vs actual'], ['dashreport', 'Report pack']];
   const base = {}; TABS.forEach(([k]) => { base[k] = V[k]; });
   const cur = () => (base[S.ui.ovTab] ? S.ui.ovTab : 'overview');
   V.hubRoute = view => { if (S.user && S.user.kind !== 'customer' && base[view] && view !== 'overview') { S.ui.ovTab = view; return 'overview'; } if (view === 'overview') S.ui.ovTab = S.ui.ovTab && base[S.ui.ovTab] ? S.ui.ovTab : 'overview'; return view; };
