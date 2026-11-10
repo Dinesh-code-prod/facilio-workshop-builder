@@ -2471,3 +2471,6 @@ body .navbar .center:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#____
 body .uc-more:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { border: 1px solid #e5e5e5; border-radius: 12px; padding: 10px 14px; background: #fafafa; }
 body .uc-more > summary:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { cursor: pointer; font-weight: 600; font-size: 13.5px; color: #262626; }
 body .uc-more[open] > summary:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { margin-bottom: 12px; }
+
+body .tr-other:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+body .tr-other .btn.on:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #0a0a0a; color: #fff; border-color: #0a0a0a; }
