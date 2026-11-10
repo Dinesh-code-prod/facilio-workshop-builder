@@ -1,37 +1,43 @@
-/* Guided start: a game-style walkthrough. A ring pulses on the menu entry to click next, a small card says what it is for, and "Next" or a click on the
-   ring moves to the following step, in project order (stage 1 to 8). Opens from the "Guide me" button (team users, inside a project) or once, on its own,
-   the first time a team member opens a project. Skip any time. Nothing is saved except "seen" in this browser. */
+/* Guided start: a game-style walkthrough of all eight stages. For each stage a ring marks the stage in the menu with a card saying what happens there and
+   what you finish with, then the ring walks through every page of that stage ("click here, then here"). "Next" opens the page, a click on the ring does too.
+   Opens from the "Guide me" pill (team users, inside a project) or once on its own the first time a team member opens a project. Skip any time.
+   Nothing is saved except "seen" in this browser. Page descriptions come from the menu hints (V.NAV_HINT in shell.js). */
 (function (root) {
   'use strict';
   const F = root.FWB; const { S, esc } = F; const V = root.FWBViews;
   const doc = root.document;
-  // [menu page id, title, what it is for]; steps whose page is not in this person's menu are skipped
-  const STEPS = [
-    ['msaintake', 'Start with the contract', 'Drop in the signed contract. The Studio reads it and fills the project for you.'],
-    ['intro', 'Plan the kick-off', 'The kick-off deck, scope and project plan live here.'],
-    ['projdash', 'See where you are', 'Health, deadlines and what needs attention today.'],
-    ['tasks', 'Run the project', 'Tasks and the project mailbox in one place.'],
-    ['rsquestions', 'Stage 2: prepare the sessions', 'Questions to ask the customer, then run the workshops from here.'],
-    ['rstrans', 'Keep what was said', 'Add the recordings; AI turns them into requirements and open questions.'],
-    ['whiteboard', 'Draw the customer process', 'Capture each process and its steps.'],
-    ['solution', 'Stage 3: design the solution', 'Modules, flows and decisions, agreed module by module.'],
-    ['brd', 'Write the BRD', 'Built from everything above. The customer signs it off online.'],
-    ['delivery', 'Stage 4: build and test', 'Build status, UAT and test cases linked to requirements.'],
-    ['ftr', 'FTR workbook', 'The first-time-right checklist for testers.'],
-    ['guides', 'Stage 5: training guides', 'Write the guides the customer team will use.'],
-    ['golive', 'Stage 6: go-live', 'Everything that must be true before switching on.'],
-    ['hypercare', 'Stage 7: hypercare', 'Close support in the first weeks after go-live.'],
-    ['handover', 'Stage 8: hand over', 'Hand the project to support and close it.']
-  ];
+  // stage number: [what happens, what you finish with]
+  const STAGE = {
+    1: ['Read the signed contract, plan the project and run the kick-off.', 'A project plan and the kick-off deck.'],
+    2: ['Run the workshops with the customer. AI reads the recordings and drafts the notes.', 'Requirements, use cases and open questions.'],
+    3: ['Agree the solution module by module, then write the BRD from it.', 'A BRD the customer has signed off.'],
+    4: ['The customer tests. Every test links back to a requirement.', 'Test results and the FTR workbook.'],
+    5: ['Write the guides the customer\'s staff will use.', 'User guides and walkthroughs.'],
+    6: ['Check that everything is ready, then switch on.', 'A signed go-live checklist.'],
+    7: ['Support closely for the first weeks after go-live.', 'Hypercare reports.'],
+    8: ['Hand the project to the support team and close it.', 'The handover pack and closure report.']
+  };
   let list = [], at = -1, timer = 0, ring, card;
   const team = () => !!(S.user && S.user.kind !== 'customer');
   const seenKey = () => 'fwb_coach_' + ((S.project && S.project.id) || '');
   const lsGet = k => { try { return root.localStorage.getItem(k); } catch (e) { return null; } };
   const lsSet = k => { try { root.localStorage.setItem(k, '1'); } catch (e) { /* private window */ } };
-  const target = id => doc.querySelector('.sidebar .sb-item[data-view="' + id + '"]');
-  const groupOf = id => [...doc.querySelectorAll('.sidebar .sb-title')].find(b => (b.getAttribute('data-views') || '').split(',').includes(id));
-  const present = () => STEPS.filter(s => target(s[0]) || groupOf(s[0]));
-  function ensureOpen(id) { if (target(id)) return; const b = groupOf(id); if (b && b.getAttribute('data-open') !== 'true') b.click(); }
+  const stageBtns = () => [...doc.querySelectorAll('.sidebar .sb-title')].filter(b => b.querySelector('.sb-no'));
+  const stageEl = g => stageBtns().find(b => b.getAttribute('data-g') === g);
+  const itemEl = id => doc.querySelector('.sidebar .sb-item[data-view="' + id + '"]');
+  const tgt = s => (s.kind === 'stage' ? stageEl(s.g) : itemEl(s.id));
+  function build() {
+    const out = [];
+    stageBtns().forEach(b => {
+      const g = b.getAttribute('data-g'); const n = +b.querySelector('.sb-no').textContent; const name = g.replace(/^\d\.\s*/, '');
+      out.push({ kind: 'stage', g, n, name });
+      (b.getAttribute('data-views') || '').split(',').filter(Boolean).forEach(id => out.push({ kind: 'page', g, id, n }));
+    });
+    return out;
+  }
+  function ensureOpen(s) {
+    if (s.kind === 'page' && !itemEl(s.id)) { const b = stageEl(s.g); if (b && b.getAttribute('data-open') !== 'true') b.click(); }
+  }
   function stop(markSeen) {
     clearInterval(timer); timer = 0; at = -1;
     if (ring) ring.remove(); if (card) card.remove(); ring = card = null;
@@ -40,7 +46,7 @@
   }
   function place() {
     if (at < 0 || !ring) return;
-    const id = list[at][0]; ensureOpen(id); const t = target(id);
+    const s = list[at]; ensureOpen(s); const t = tgt(s);
     if (!t || !t.offsetParent) { ring.style.display = 'none'; return; }
     t.scrollIntoView({ block: 'nearest' });
     const r = t.getBoundingClientRect(); ring.style.display = '';
@@ -48,27 +54,36 @@
     const left = Math.min(r.right + 16, root.innerWidth - 302);
     Object.assign(card.style, { left: Math.max(8, left) + 'px', top: Math.max(12, Math.min(r.top - 8, root.innerHeight - card.offsetHeight - 12)) + 'px' });
   }
+  function text(s) {
+    if (s.kind === 'stage') { const d = STAGE[s.n] || ['', '']; return [`Stage ${s.n}: ${s.name}`, d[0], d[1] ? 'You finish with: ' + d[1] : '', 'Click the stage to open it, or press Next.']; }
+    ensureOpen(s); const t = itemEl(s.id); const lab = t ? (t.querySelector('span') || t).firstChild.textContent.trim() : s.id;
+    return [lab, (V.NAV_HINT && V.NAV_HINT[s.id]) || 'A page of this stage.', '', 'Click the glowing page to open it, or press Next.'];
+  }
   function show(i) {
-    at = Math.max(0, Math.min(i, list.length - 1)); const s = list[at];
-    card.innerHTML = `<p class="co-n">Step ${at + 1} of ${list.length}</p><h3>${esc(s[1])}</h3><p>${esc(s[2])}</p><p class="co-hint">Click the glowing menu entry, or press Next.</p>
+    at = Math.max(0, Math.min(i, list.length - 1)); const s = list[at]; const [h, p1, p2, hint] = text(s);
+    const stageNo = s.kind === 'page' ? ` · stage ${s.n}` : '';
+    card.innerHTML = `<p class="co-n">Step ${at + 1} of ${list.length}${stageNo}</p><h3>${esc(h)}</h3><p>${esc(p1)}</p>${p2 ? `<p><b>${esc(p2)}</b></p>` : ''}<p class="co-hint">${esc(hint)}</p>
       <div class="co-b"><button class="btn sm" data-co="skip">Skip guide</button><span></span>${at ? '<button class="btn sm" data-co="back">Back</button>' : ''}<button class="btn sm primary" data-co="next">${at === list.length - 1 ? 'Finish' : 'Next'}</button></div>`;
     place();
   }
   function advance(d) { const n = at + d; if (n >= list.length) { stop(true); return; } show(Math.max(0, n)); }
+  function open(s) { if (s.kind === 'page' && V.go) V.go(s.id); }
   function onClick(e) {
     const b = e.target.closest && e.target.closest('[data-co]');
     if (b) {
       e.preventDefault(); e.stopPropagation(); const k = b.getAttribute('data-co');
-      if (k === 'skip') stop(true); else if (k === 'back') advance(-1); else { if (V.go) V.go(list[at][0]); advance(1); }
+      if (k === 'skip') stop(true); else if (k === 'back') advance(-1); else { open(list[at]); advance(1); }
       return;
     }
-    const it = e.target.closest && e.target.closest('.sb-item');
-    if (it && at >= 0 && it.getAttribute('data-view') === list[at][0]) setTimeout(() => advance(1), 250);
+    const s = list[at]; if (!s) return;
+    const hit = s.kind === 'stage' ? e.target.closest('.sb-title') : e.target.closest('.sb-item');
+    const key = hit && (s.kind === 'stage' ? hit.getAttribute('data-g') === s.g : hit.getAttribute('data-view') === s.id);
+    if (key) setTimeout(() => advance(1), 250);
   }
   const onKey = e => { if (e.key === 'Escape') stop(true); };
   function start() {
     if (!team() || !S.project) return;
-    stop(); list = present(); if (!list.length) return;
+    stop(); list = build(); if (!list.length) return;
     ring = doc.createElement('div'); ring.className = 'co-ring'; card = doc.createElement('div'); card.className = 'co-card';
     card.setAttribute('role', 'dialog'); card.setAttribute('aria-label', 'Guided start');
     doc.body.appendChild(ring); doc.body.appendChild(card);
@@ -77,9 +92,9 @@
   }
   // the "Guide me" pill, and the one-time offer the first time a team member opens a project
   function pill() {
-    const old = doc.getElementById('coPill'); const ok = team() && S.project && doc.querySelector('.sidebar .sb-title');
+    const old = doc.getElementById('coPill'); const ok = team() && S.project && stageBtns().length;
     if (!ok) { if (old) old.remove(); return; }
-    if (!old) { const b = doc.createElement('button'); b.id = 'coPill'; b.className = 'co-pill'; b.textContent = 'Guide me'; b.title = 'A short guided walk through the project, step by step'; b.addEventListener('click', start); doc.body.appendChild(b); }
+    if (!old) { const b = doc.createElement('button'); b.id = 'coPill'; b.className = 'co-pill'; b.textContent = 'Guide me'; b.title = 'A guided walk through all eight stages, step by step'; b.addEventListener('click', start); doc.body.appendChild(b); }
     if (!lsGet(seenKey()) && at < 0) { lsSet(seenKey()); setTimeout(start, 800); }
   }
   setInterval(pill, 1500);
