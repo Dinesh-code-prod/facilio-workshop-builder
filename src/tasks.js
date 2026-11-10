@@ -11,7 +11,7 @@
   const canEdit = () => !V.isCustomer() && !S.readonly;
   (V.extraSections = V.extraSections || []).push('tasksheets');
 
-  const TYPES = ['BRD Task', 'Requirement Task', 'Customer Question', 'Customer Response Required', 'Change Request', 'FTR / Technical Task', 'User Guide Task', 'UAT Task', 'Implementation Task', 'Issue / Blocker', 'Internal Action', 'Customer Action Required', 'Meeting Follow-up', 'Go-Live / Handover Task', 'Other'];
+  const TYPES = ['BRD Task', 'Requirement Task', 'Customer Question', 'Customer Response Required', 'Change Request', 'FTR / Technical Task', 'User Guide Task', 'UAT Task', 'Implementation Task', 'Issue / Blocker', 'Internal Action', 'Customer Action Required', 'Meeting Follow-up', 'Go-Live / Handover Task', 'Hypercare Issue', 'Other'];
   const STATUS = ['To Do', 'In Progress', 'Blocked', 'Awaiting Customer', 'Awaiting Internal Input', 'In Review', 'Done', 'Cancelled'];
   const PRIO = ['Critical', 'High', 'Medium', 'Low'];
   const STAGES = ['Project Setup & Kickoff', 'Requirements & Workshops', 'Configuration & Documentation', 'Implementation & Integrations', 'Testing & UAT', 'Go-Live & Handover', 'Closure & Follow-Up'];
@@ -280,6 +280,7 @@
 
   // ---------- task drawer: details, customer question, checklist, links, comments, history, AI Task Assistant ----------
   ACT.tkNew = () => taskForm(null);
+  V.tkNewTyped = type => { S.ui.tkNewType = type; try { taskForm(null); } finally { delete S.ui.tkNewType; } };   // a new task of a given type (Hypercare Issue from the Hypercare tab)
     // ---------- attachments and pasted screenshots on a task; Excel in the shape Jira reads ----------
   const ATT_OK = /\.(png|jpe?g|gif|webp|pdf|docx|xlsx|csv|txt|pptx|msg|eml)$/i;
   async function tkUpload(id, file) {
@@ -323,7 +324,7 @@
   const linkLabel = r => String(r.title || r.name || r.text || r.subject || r.scenario || r.id).slice(0, 90);
   function taskForm(t, tab) {
     const can = canEdit(); tab = t ? (tab || S.ui.tkTab || 'details') : 'details'; S.ui.tkTab = tab; S.ui.tkAi = S.ui.tkAiFor === (t && t.id) ? S.ui.tkAi : null; S.ui.tkAiFor = t && t.id;
-    const d = t || { status: 'To Do', type: (sheet().f && sheet().f.types && sheet().f.types.length === 1) ? sheet().f.types[0] : 'Other', src: { type: 'manual' } };
+    const d = t || { status: 'To Do', type: S.ui.tkNewType || ((sheet().f && sheet().f.types && sheet().f.types.length === 1) ? sheet().f.types[0] : 'Other'), src: { type: 'manual' } };
     const dis = can ? '' : ' disabled'; const q = d.question || {};
     const tabs = t ? `<div class="tabs" role="tablist">${[['details', 'Details'], ['ai', 'AI Task Assistant'], ['history', 'History']].map(([k, l]) => `<button type="button" class="tab${tab === k ? ' active' : ''}" role="tab" aria-selected="${tab === k}" data-act="tkOpen" data-id="${esc(t.id)}" data-tab="${k}">${l}</button>`).join('')}</div>` : '';
     let body = '';

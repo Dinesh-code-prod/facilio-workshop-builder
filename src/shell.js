@@ -132,11 +132,9 @@
     { g: '3. BRD & sign-off', sec: 'Design and build', icon: 'doc', items: [['brd', 'BRD Draft'], ['governance', 'Governance & RAID'], ['changes', 'Change Requests']] },   // the BRD is written from all of the above
     { g: '4. UAT & FTR', sec: 'Design and build', icon: 'check', fi: 'delivery', items: [['delivery', 'Build, UAT & Go-Live'], ['ftr', 'FTR Report (Excel)'], ['kpi', 'KPI Workbooks']] },
     { g: '5. Training guides', sec: 'Launch and support', icon: 'book', fi: 'guide', items: [['guides', 'Guides & Videos']] },
-    { g: '6. Go-live', sec: 'Launch and support', icon: 'flag', fi: 'g_delivery', items: [['golive', 'Go-live readiness']] },   // the go-live checklist is its own stage, so the numbers run 1 to 8 without a gap
-    { g: '7. Hypercare', sec: 'Launch and support', icon: 'shield', fi: 'g_delivery', items: [['hypercare', 'Hypercare']] },
+    { g: 'Tasks & mail', sec: 'Launch and support', icon: 'mail', items: [['tasks', 'Tasks and email'], ['mailtab', 'Customer mail'], ['transfers', 'Transfers'], ['golivehc', 'Go-live & hypercare']] },
     { g: '8. Project handover', sec: 'Launch and support', icon: 'book', fi: 'g_delivery', items: [['handover', 'Handover & Closure']] },
     { g: 'Home', sec: 'Project', icon: 'home', fi: 'g_dash', items: [['projdash', 'Dashboard'], ['lifecycle', 'Project cycle']] },
-    { g: 'Tasks & mail', sec: 'Project', icon: 'mail', items: [['tasks', 'Tasks and email'], ['mailtab', 'Customer mail'], ['transfers', 'Transfers']] },
     { g: 'Reports', sec: 'Project', icon: 'doc', items: [['statusrep', 'Status report (WSR) & monthly report'], ['trace', 'Traceability & quality'], ['aiwork', 'Deliverables & AI']] },
     { g: 'Notes & Links', sec: 'Project', icon: 'clip', items: [['resources', 'Notes & Links']] },
     { g: 'Customer View', sec: 'Share with the customer', icon: 'spark', items: [['custintro', 'Customer Introduction'], ['prepare', 'Learn & Prepare'], ['learnlib', 'Module guides']] },
@@ -167,7 +165,7 @@
   V.isAgentProject = () => !!(S.project && S.project.type === 'agents');
   // REVAMP: the team menu shows only the tabs that have been built or rebuilt in the Part E revamp; every other tab stays hidden (its code, routes and data are untouched)
   // until it is rebuilt. To show a tab, add its view id to EXPOSED. Adding `alltabs=1` to the address (before the #) shows every tab again for this browser tab (for developers).
-  const EXPOSED = new Set(['trace', 'projdash', 'feedback', 'mailtab', 'lifecycle', 'msaintake', 'intro', 'rsquestions', 'onboarding', 'workshop', 'rstrans', 'whiteboard', 'rschecks', 'solution', 'modules', 'flow', 'mockup', 'brd', 'delivery', 'ftr', 'golive', 'guides', 'hypercare', 'handover', 'slakpi', 'workspace', 'templates', 'webframe', 'privacy', 'demokit', 'tasks', 'transfers', 'governance', 'changes', 'statusrep', 'roles', 'notifications', 'cfginputs', 'kpi', 'custintro', 'prepare', 'learnlib', 'integguide', 'guide', 'portal', 'claudesetup', 'teamhelp', 'settings', 'resources', 'seefacilio', 'dashboards', 'explore', 'whatsnew']);
+  const EXPOSED = new Set(['golivehc', 'trace', 'projdash', 'feedback', 'mailtab', 'lifecycle', 'msaintake', 'intro', 'rsquestions', 'onboarding', 'workshop', 'rstrans', 'whiteboard', 'rschecks', 'solution', 'modules', 'flow', 'mockup', 'brd', 'delivery', 'ftr', 'guides', 'handover', 'slakpi', 'workspace', 'templates', 'webframe', 'privacy', 'demokit', 'tasks', 'transfers', 'governance', 'changes', 'statusrep', 'roles', 'notifications', 'cfginputs', 'kpi', 'custintro', 'prepare', 'learnlib', 'integguide', 'guide', 'portal', 'claudesetup', 'teamhelp', 'settings', 'resources', 'seefacilio', 'dashboards', 'explore', 'whatsnew']);
   const showAllTabs = () => { try { if (/[?&]alltabs=1\b/.test(location.search)) sessionStorage.setItem('fwb_alltabs', '1'); else if (/[?&]alltabs=0\b/.test(location.search)) sessionStorage.removeItem('fwb_alltabs'); return sessionStorage.getItem('fwb_alltabs') === '1'; } catch (e) { return /[?&]alltabs=1\b/.test(location.search); } };
   const HIDE_UNBUILT_TABS = true;   // 6 Nov 2026: the earlier show-all was a demo for the developer; only the built tabs show again (Stage 1: Kick-off and Project Plan, plus Transfers where the extraction is approved and Contract for a manual upload)
   const tabOn = id => !HIDE_UNBUILT_TABS || EXPOSED.has(id) || showAllTabs();

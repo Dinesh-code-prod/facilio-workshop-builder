@@ -9,7 +9,7 @@ let n = 0; const t = (name, fn) => { fn(); n++; console.log('  ok  ' + name); };
 t('every plan step maps to a stage of the menu, in order, and the stages are the ones in the menu', () => {
   assert.equal(STAGE_OF_STEP.length, STEPS.length); STAGE_OF_STEP.forEach(s => assert.ok(ROADMAP[s], 'stage ' + s));
   for (let i = 1; i < STAGE_OF_STEP.length; i++) assert.ok(STAGE_OF_STEP[i] >= STAGE_OF_STEP[i - 1], 'never goes back at step ' + (i + 1));
-  const nav = read('src/shell.js'); for (const [k, name] of Object.entries(ROADMAP)) assert.ok(nav.includes("g: '" + k + '. ' + name + "'"), 'the menu has stage ' + k + ' ' + name);
+  const nav = read('src/shell.js'); for (const [k, name] of Object.entries(ROADMAP)) { if (k === '7') { assert.ok(nav.includes("['golivehc', 'Go-live & hypercare']"), 'Hypercare is a tab of Go-live & hypercare in Tasks & mail'); continue; } assert.ok(nav.includes("g: '" + k + '. ' + name + "'"), 'the menu has stage ' + k + ' ' + name); }
 });
 t('the browser copy in src/timeline.js is the same mapping', () => {
   const js = read('src/timeline.js'); const arr = JSON.parse((js.match(/const STAGE_OF_STEP = (\[[^\]]*\])/) || [])[1] || 'null'); assert.deepEqual(arr, STAGE_OF_STEP);
