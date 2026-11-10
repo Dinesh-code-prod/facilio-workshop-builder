@@ -2408,7 +2408,7 @@ body .cp-bh:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { dis
 body .cp-mchk:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; }
 
 /* the Guide me button steps aside while the Assistant chat is open, so it never covers the message box and its send button */
-body.asst-open .co-pill:not(#_):not(#__):not(#___) { display: none !important; }
+/* the Guide me button now sits in the top bar, so it no longer covers the chat */
 
 /* Training: the Library as preview cards, like the Product Tour tiles */
 body .tr-bar:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin: 4px 0 16px; }
@@ -2440,3 +2440,29 @@ body .tr-col2:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { d
 body .tr-ca .btn.primary:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______), body .tr-ca a.btn.primary:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: #0a0a0a !important; color: #fff !important; border: 1px solid #0a0a0a !important; text-decoration: none; }
 body .tr-ca .btn.primary:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: #262626 !important; }
 body .tr-ca .btn:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { height: 34px; border-radius: 10px; font-weight: 600; }
+
+/* chart options in the Guides form: two lines each, full width, never clipped */
+body .btn.ug-opt:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: block; width: 100%; height: auto; min-height: 0; padding: 12px 14px; margin-bottom: 8px; text-align: left; white-space: normal; line-height: 1.35; border-radius: 12px; }
+body .btn.ug-opt b:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: block; font-size: 14px; color: #0a0a0a; }
+body .btn.ug-opt .xs:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: block; margin-top: 2px; font-size: 12.5px; color: #525252; }
+/* Guide me in the top bar, beside the Claude helper */
+body .navbar .left:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { gap: 10px; }
+body .navbar .co-pill:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { position: static; height: 36px; padding: 0 14px 0 12px; border-radius: 10px; font-size: 13px; font-weight: 600; transform: none; box-shadow: none; }
+body .navbar .co-pill:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { transform: none; }
+@media (max-width: 1180px) { body .navbar .co-pill:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { font-size: 0; padding: 0 11px; gap: 0; } }
+
+/* Training > Create: four ways to make a guide */
+body .tr-create:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { display: grid; gap: 16px; }
+body .tr-ways:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+body .tr-way:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { display: grid; gap: 4px; text-align: left; padding: 14px 16px; border: 1px solid #d4d4d4; border-radius: 14px; background: #fff; cursor: pointer; color: #0a0a0a; }
+body .tr-way b:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { font-size: 14.5px; font-weight: 700; }
+body .tr-way span:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { font-size: 12.5px; color: #525252; line-height: 1.4; }
+body .tr-way:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { border-color: #a3a3a3; background: #fafafa; }
+body .tr-way.on:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { border-color: #0a0a0a; box-shadow: 0 0 0 1px #0a0a0a; background: #fff; }
+body .tr-sec:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { padding: 10px 0; border-bottom: 1px solid #ececec; }
+body .tr-sec b:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { display: block; font-size: 14px; color: #0a0a0a; }
+body .tr-sec p:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { margin: 4px 0 0; font-size: 13px; color: #525252; line-height: 1.45; }
+/* the left of the top bar holds the switch, the Claude helper and Guide me: the product title and its dividers make room on narrower windows */
+@media (max-width: 1700px) { body .navbar .left .title:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______), body .navbar .left .divider:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: none; } body .navbar .left:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { min-width: 0; } }
+body .navbar:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { grid-template-columns: auto minmax(0, 1fr) auto !important; gap: 12px; }
+body .navbar .center:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { justify-content: center; min-width: 0; overflow: hidden; }
