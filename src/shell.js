@@ -130,7 +130,7 @@
     { g: '3. Access & alerts', sec: 'Design and build', icon: 'roles', items: [['roles', 'Roles & Access Permissions'], ['notifications', 'Notifications']] },
     { g: '3. Configuration', sec: 'Design and build', icon: 'copy', items: [['cfginputs', 'Configuration & org package'], ['slakpi', 'KPIs & SLA matrix']] },
     { g: '3. BRD & sign-off', sec: 'Design and build', icon: 'doc', items: [['brd', 'BRD Draft'], ['governance', 'Governance & RAID'], ['changes', 'Change Requests']] },   // the BRD is written from all of the above
-    { g: '4. UAT & FTR', sec: 'Design and build', icon: 'check', fi: 'delivery', items: [['delivery', 'Build, UAT & Go-Live'], ['ftr', 'FTR Report (Excel)'], ['kpi', 'KPI Workbooks']] },
+    { g: '4. UAT & FTR', sec: 'Design and build', icon: 'check', fi: 'ftr', items: [['ftr', 'FTR Report'], ['uatguide', 'UAT guide'], ['delivery', 'Build & test tracker'], ['kpi', 'KPI Workbooks']] },
     { g: '5. Training guides', sec: 'Launch and support', icon: 'book', fi: 'guide', items: [['guides', 'Guides & Videos']] },
     { g: 'Tasks & mail', sec: 'Launch and support', icon: 'mail', items: [['tasks', 'Tasks and email'], ['mailtab', 'Customer mail'], ['transfers', 'Transfers'], ['golivehc', 'Go-live & hypercare']] },
     { g: '8. Project handover', sec: 'Launch and support', icon: 'book', fi: 'g_delivery', items: [['handover', 'Handover & Closure']] },

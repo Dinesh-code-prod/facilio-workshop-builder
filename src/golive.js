@@ -21,6 +21,8 @@
       { id: 'bad', label: 'No failed or blocked test cases', view: 'delivery', state: !cases.length ? 'gap' : bad ? 'warn' : 'ok', detail: !cases.length ? 'Nothing to judge until test cases are run.' : bad ? bad + ' failed or blocked.' : 'None failed or blocked.' },
       { id: 'issues', label: 'No open UAT issues', view: 'delivery', state: openIssues.length ? (high ? 'gap' : 'warn') : 'ok', detail: openIssues.length ? openIssues.length + ' open' + (high ? ', ' + high + ' high or blocking' : '') + '.' : 'No open UAT issue.' },
       { id: 'brd', label: 'The BRD is reviewed', view: 'brd', state: ticks >= REVIEW.length ? 'ok' : ticks ? 'warn' : 'gap', detail: ticks + ' of ' + REVIEW.length + ' review parts ticked.' },
+      { id: 'ftr', label: 'The FTR report is written and passes', view: 'ftr', state: !(d.ftr && d.ftr.total) ? 'gap' : d.ftr.fail || d.ftr.blocked || d.ftr.notrun ? 'warn' : 'ok', detail: !(d.ftr && d.ftr.total) ? 'No FTR report yet.' : d.ftr.pass + ' of ' + d.ftr.total + ' passed' + (d.ftr.fail ? ', ' + d.ftr.fail + ' failed' : '') + (d.ftr.notrun ? ', ' + d.ftr.notrun + ' not run' : '') + '.' },
+      { id: 'uatguide', label: 'The UAT guide is made', view: 'uatguide', state: d.uatGuide ? 'ok' : 'gap', detail: d.uatGuide ? 'A UAT guide is in the project.' : 'No UAT guide yet.' },
       { id: 'guides', label: 'Training guides are made', view: 'guidebuilder', state: d.guides ? 'ok' : 'gap', detail: d.guides ? d.guides + ' guide' + (d.guides === 1 ? '' : 's') + ' in the project.' : 'No guide has been made yet.' }
     ];
     const open = rows.filter(r => r.state !== 'ok').length;
@@ -33,7 +35,7 @@
     const mods = F.allModules().filter(m => m.inScope); const reqs = (F.S.ws.requirements || []).filter(r => r.status === 'Confirmed');
     const cases = I().list('utc'); const data = mods.map(m => ({ name: m.name, label: m.label, requirements: reqs.filter(r => (r.modules || []).includes(m.name)).map(r => ({ id: r.id, title: r.title })) })); data.push({ name: '__general', label: 'General requirements', requirements: reqs.filter(r => !(r.modules && r.modules.length)).map(r => ({ id: r.id, title: r.title })) }); const cov = U().coverage(data, cases);
     const issues = I().list('task').filter(t => U().isUatIssue(t)).map(t => ({ status: U().issueStatus(t), severity: (t.uat && t.uat.severity) || t.priority || '' }));
-    const b = F.doc('brddoc') || {}; return { reqTotal: cov.total, reqCovered: cov.covered, cases, issues, review: b.review || {}, guides: I().list('ugd').length };
+    const b = F.doc('brddoc') || {}; return { reqTotal: cov.total, reqCovered: cov.covered, cases, issues, review: b.review || {}, guides: I().list('ugd').length, ftr: V.ftrFacts ? V.ftrFacts().ftr : null, uatGuide: V.ftrFacts ? V.ftrFacts().uatGuide : false };
   }
   const rec = () => I().get('close', 'golive') || {};
   const can = () => !V.isCustomer() && !F.S.readonly;

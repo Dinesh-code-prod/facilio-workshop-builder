@@ -7,7 +7,7 @@ t('an empty project shows gaps, not green', () => {
   const r = readiness({}); assert.ok(r.rows.length >= 6); assert.equal(r.open, r.rows.length - 1, 'no open issue is fine'); assert.equal(row(r, 'cover').state, 'gap'); assert.equal(row(r, 'guides').state, 'gap'); assert.match(r.verdict, /still open/);
 });
 t('a finished project is all green', () => {
-  const full = { reqTotal: 4, reqCovered: 4, cases: [{ status: 'Passed' }, { status: 'Approved' }], issues: [{ status: 'Closed' }], review: { intro: { at: 1 }, requirements: { at: 1 }, flows: { at: 1 }, fields: { at: 1 }, apps: { at: 1 }, contract: { at: 1 } }, guides: 2 };
+  const full = { ftr: { total: 2, pass: 2, fail: 0, blocked: 0, notrun: 0 }, uatGuide: true, reqTotal: 4, reqCovered: 4, cases: [{ status: 'Passed' }, { status: 'Approved' }], issues: [{ status: 'Closed' }], review: { intro: { at: 1 }, requirements: { at: 1 }, flows: { at: 1 }, fields: { at: 1 }, apps: { at: 1 }, contract: { at: 1 } }, guides: 2 };
   const r = readiness(full); assert.equal(r.open, 0); assert.equal(r.verdict, 'Everything recorded is ready'); assert.ok(r.rows.every(x => x.state === 'ok'));
 });
 t('partial progress is amber, a high open issue is pink, failed cases are counted', () => {
