@@ -5,7 +5,8 @@
   'use strict';
   const F = root.FWB; const { S, esc } = F; const V = root.FWBViews; const ACT = V.ACT; const I = () => V.items; const API = root.FWBApi;
   const { tag, drawer, closeDrawer, toast, ico, confirmDialog } = V;
-  const canEdit = () => !V.isCustomer() && !S.readonly;
+  const permOk = () => { let p = 'all'; try { p = (F.doc('workspace') || {}).perm || 'all'; } catch (e) { } const role = S.project && S.project.role; return p === 'owners' ? role === 'owner' : p === 'editors' ? role !== 'viewer' : true; };   // Tabs & Layouts: who may change the menu (an owner decides)
+  const canEdit = () => !V.isCustomer() && !S.readonly && permOk();
   const KIND = { workspace: 'Workspace layout', ftr: 'FTR workbook', kpi: 'KPI definitions', brd: 'BRD structure', uat: 'UAT plan', guide: 'User guide', golive: 'Go-live review', hypercare: 'Hypercare report', handover: 'Handover pack', closure: 'Closure report', wsr: 'Weekly status report', monthly: 'Monthly report', other: 'Other document' };
   const TEXT = ['brd', 'uat', 'guide', 'golive', 'hypercare', 'handover', 'closure', 'wsr', 'monthly', 'other'];
   const SKEL = {
@@ -126,11 +127,12 @@
   //   gdel     – standard groups deleted here, each with the group its tabs went to;
   //   labels, hidden, roles – per tab: menu label, left out of the menu, who sees it; move / order / groupOrder – where tabs and groups sit;
   //   sub      – per tab, the sub-heading it sits under inside its group ('' = none; absent = the standard one);
+  //   gp       – a group shown as a sub tab (section) inside a stage: group key to the stage number; perm – who may change the menu (all, editors, owners);
   //   custom   – pages written in the workspace itself; mobile – kept from the earlier phone layout.
   // It only arranges the menu: every page still checks access on the server.
   const wsNorm = w => ({ hidden: (w && w.hidden) || [], labels: (w && w.labels) || {}, move: (w && w.move) || {}, order: (w && w.order) || {}, groupOrder: (w && w.groupOrder) || [], custom: (w && w.custom) || [],
     groups: (w && Array.isArray(w.groups) && w.groups) || [], mobile: Object.assign({ hidden: [], groupOrder: [] }, (w && w.mobile) || {}), roles: (w && w.roles) || {}, sub: (w && w.sub) || {},
-    gl: (w && w.gl) || {}, gi: (w && w.gi) || {}, gdel: (w && w.gdel) || {}, v: (w && w.v) || 0 });
+    gl: (w && w.gl) || {}, gi: (w && w.gi) || {}, gdel: (w && w.gdel) || {}, gp: (w && w.gp) || {}, perm: (w && w.perm) || 'all', v: (w && w.v) || 0 });
   // layouts saved before the menu was regrouped (28 Oct 2026) name the old groups; point them at the new ones once
   function migrate(d) {
     if (d.v >= 3) return; const A = V.NAV_ALIAS || {}; const m = n => A[n] || n; const uniq = a => a.filter((x, i) => a.indexOf(x) === i);
@@ -162,10 +164,10 @@
     const ord = stale ? names : go.filter(n => names.includes(n)).concat(names.filter(n => !go.includes(n)));
     return ord.map(n => { const arr = (w.order[n] || []); let its = items.filter(x => x.g === n && (all || !x.hidden)); its.sort((a, b) => { const ia = arr.indexOf(a.id), ib = arr.indexOf(b.id); if (ia >= 0 && ib >= 0) return ia - ib; if (ia >= 0) return -1; if (ib >= 0) return 1; return a.o - b.o; }); { let so = ['']; its.forEach(x => { if (!so.includes(x.sub)) so.push(x.sub); }); /* tabs without a sub-heading first, so they never look as if they sit under one */ const SUBORDER = ['Build the solution', 'Set up access, alerts and data', 'Agents', 'Record all configuration', 'Write the BRD']; const rk = k => { const i = SUBORDER.indexOf(k); return i < 0 ? 50 : i; }; so = [''].concat(so.slice(1).map((k, i) => [k, i]).sort((a, b) => rk(a[0]) - rk(b[0]) || a[1] - b[1]).map(x => x[0])); its = so.flatMap(k => its.filter(x => x.sub === k)); }
       const src = groups.find(g => g.g === n); const ik = (w.gi || {})[n] || (src && src.fi ? 'f:' + src.fi : 'l:' + ((src && src.icon) || 'flag'));
-      return { key: n, g: (w.gl || {})[n] || n, sec: (src && src.sec) || '', ik, icon: (src && src.icon) || 'flag', items: its, extra: !src, builtin: !!src }; }).filter(g => g.items.length || all);
+      return { key: n, g: (w.gl || {})[n] || n, sec: (src && src.sec) || '', ik, icon: (src && src.icon) || 'flag', items: its, extra: !src, builtin: !!src, parent: Number((w.gp || {})[n]) || 0, ikSet: !!(w.gi || {})[n], renamed: !!(w.gl || {})[n] }; }).filter(g => g.items.length || all);
   }
   // the menu as shown: tabs limited to roles the person does not have are left out (the server still decides access)
-  V.wsApply = (groups, opt) => { const w = ws(); opt = opt || {}; const o = { mobile: false, role: opt.role !== undefined ? opt.role : (S.project && S.project.role) }; const out = compute(groups, w, false, o); return out.map(g => ({ g: g.g, key: g.key, sec: g.sec, ik: g.ik, icon: g.icon, items: g.items.map(x => [x.id, x.l, x.t, x.sub]) })); };
+  V.wsApply = (groups, opt) => { const w = ws(); opt = opt || {}; const o = { mobile: false, role: opt.role !== undefined ? opt.role : (S.project && S.project.role) }; const out = compute(groups, w, false, o); return out.map(g => ({ g: g.g, key: g.key, sec: g.sec, ik: g.ik, icon: g.icon, parent: g.parent, ikSet: g.ikSet, renamed: g.renamed, items: g.items.map(x => [x.id, x.l, x.t, x.sub]) })); };
   V.customPage = {
     html() {
       const id = String(S.ui.view || '').replace(/^cx_/, ''); const c = ws().custom.find(x => x.id === id); if (!c) return '<div class="page-body"><div class="notice err"><span>This page was removed from the workspace.</span></div></div>';
@@ -194,7 +196,7 @@
           ${can ? `<span class="tl-rt"><button class="btn sm icon ghost" data-act="wsUp" data-id="${esc(x.id)}" ${i === 0 ? 'disabled' : ''} aria-label="Move ${esc(x.l)} up" title="Move up">${ico('up')}</button><button class="btn sm icon ghost" data-act="wsDown" data-id="${esc(x.id)}" ${i === rows.length - 1 ? 'disabled' : ''} aria-label="Move ${esc(x.l)} down" title="Move down">${ico('down')}</button><button class="btn sm icon ghost" data-act="wsRename" data-id="${esc(x.id)}" aria-label="Edit ${esc(x.l)}" title="Edit tab">${ico('edit')}</button>${KEEP.includes(x.id) ? '' : x.webHidden ? `<button class="btn sm icon ghost tl-show" data-act="wsShowTab" data-id="${esc(x.id)}" aria-label="Show ${esc(x.l)} in the menu again" title="Show in the menu">${ico('plus')}</button>` : `<button class="btn sm icon ghost tl-rm" data-act="wsHideTab" data-id="${esc(x.id)}" aria-label="Remove ${esc(x.l)} from the menu" title="Remove from the menu (the page is kept)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg></button>`}</span>` : ''}</li>`).join('') || '<li class="tl-none">This group has no tabs yet. Use Add tabs, or drag a tab onto it.</li>'}</ul></section>` : '';
       // preview of the menu as it will look
       const pv = compute(base, w, false, {}); const topMode = V.navPosNow && V.navPosNow() === 'top'; const pcur = pv.find(g => g.key === (cur && cur.key)) || pv[0]; const previewTop = `<aside class="tl-prev" aria-label="Preview"><p class="tl-pk">Preview · module tabs</p><div class="tl-pbox tl-ptop"><div class="tl-prail">${pv.map(g => `<span class="tl-pr${g === pcur ? ' on' : ''}"><i aria-hidden="true">${V.railIcon ? V.railIcon(g) : gIcon(g)}</i><em>${esc(V.railLabel ? V.railLabel(g) : g.g)}</em></span>`).join('')}</div><div class="tl-ptabs">${pcur ? pcur.items.filter(x => !x.webHidden).map(x => `<span${S.ui.view === x.id ? ' class="on"' : ''}>${esc(x.l)}</span>`).join('') : ''}</div></div><p class="xs muted">The left column shows the stages; the tabs show the pages of the selected group.</p></aside>`; const preview = topMode ? previewTop : `<aside class="tl-prev" aria-label="Preview"><p class="tl-pk">Preview · side menu</p><div class="tl-pbox">${pv.map(g => `<div class="tl-pg"><b><i aria-hidden="true">${gIcon(g)}</i>${esc(g.g)}</b>${g.items.map(x => `<span${S.ui.view === x.id ? ' class="on"' : ''}>${esc(x.l)}</span>`).join('')}</div>`).join('')}</div></aside>`;
-      return head + (V.navPosCard ? V.navPosCard() : '') + `<div class="page-body"><div class="tl-grid">${left}${right}${preview}</div></div>`;
+      return head + (V.navPosCard ? V.navPosCard() : '') + V.wsPermCard() + `<div class="page-body"><div class="tl-grid">${left}${right}${preview}</div></div>`;
     },
     mount() {
       const q = document.getElementById('wsQ'); if (q) q.addEventListener('input', () => { S.ui.wsQ = q.value; const pos = q.selectionStart; V.render(); const n = document.getElementById('wsQ'); if (n) { n.focus(); n.setSelectionRange(pos, pos); } });
@@ -232,15 +234,21 @@
   ACT.wsPreset = el => { const p = PRESETS[el.value]; if (!p) return; const w = ws(); w.hidden = p[1].slice(); commit('Workspace preset applied'); toast('Preset applied'); };
   ACT.wsReset = async () => { if (!(await confirmDialog('Reset to default', 'Restore the standard menu? Renamed and deleted groups, group icons, custom pages and extra groups are reset too.', 'Reset', true))) return; const w = F.doc('workspace'); Object.keys(w).forEach(k => delete w[k]); Object.assign(w, wsNorm({ v: 3 })); S.ui.wsGroup = null; commit('Workspace reset'); };
   // new or edited group: a name and an icon (the icon grid follows Facilio's "New Tab Group" dialog)
+  // where a group shows: its own icon on the left, or as a sub tab (a section) inside one of the stages
+  const stagesList = () => { const out = []; (V.navBase() || []).forEach(b => { const m = /^(\d)\.\s*(.*)$/.exec(b.g); if (m && !out.some(x => x[0] === Number(m[1]))) out.push([Number(m[1]), m[2]]); }); return out; };
+  const where = g => { if (g && g.builtin) return ''; const cur = g ? g.parent || 0 : 0; return '<label class="f" for="wsg_p">Where it shows</label><select id="wsg_p"><option value="0"' + (cur ? '' : ' selected') + '>Its own tab on the left (main tab)</option>' + stagesList().map(([n, nm]) => '<option value="' + n + '"' + (cur === n ? ' selected' : '') + '>A sub tab inside stage ' + n + ' · ' + esc(nm) + '</option>').join('') + '</select><p class="small muted" style="margin:6px 0 12px">A main tab gets its own icon on the left. A sub tab sits in the row of sections at the top of that stage.</p>'; };
   function groupForm(key) {
     const g = key ? gByKey(key) : null; const cur = g ? g.ik : 'l:flag'; const icons = (V.NAV_ICONS || []).slice(); if (cur && !icons.includes(cur)) icons.unshift(cur);
     const std = g && g.builtin ? `<p class="small muted" style="margin:6px 0 0">Standard group: <b>${esc(g.key)}</b>. Clear the name to restore it.</p>` : '';
     drawer(g ? 'Edit tab group' : 'New tab group', `<label class="f" for="wsg_n">Tab group name</label><input type="text" id="wsg_n" maxlength="40" placeholder="Enter group name" value="${esc(g ? g.g : '')}">${std}
-      <fieldset class="tl-icons"><legend class="f">Choose icon<span class="xs muted"> Select an icon for this tab group</span></legend><input type="hidden" id="wsg_i" value="${esc(cur)}"><div class="tl-igrid" role="radiogroup" aria-label="Group icon">${icons.map(k => `<button type="button" class="tl-ic${k === cur ? ' on' : ''}" role="radio" aria-checked="${k === cur}" aria-label="${esc(k.slice(2).replace(/^g_/, '').replace(/_/g, ' '))}" title="${esc(k.slice(2).replace(/^g_/, '').replace(/_/g, ' '))}" data-act="wsPickIcon" data-k="${esc(k)}">${V.navIcon(k)}</button>`).join('')}</div></fieldset>`,
+      ${where(g)}<fieldset class="tl-icons"><legend class="f">Choose icon<span class="xs muted"> Select an icon for this tab group</span></legend><input type="hidden" id="wsg_i" value="${esc(cur)}"><div class="tl-igrid" role="radiogroup" aria-label="Group icon">${icons.map(k => `<button type="button" class="tl-ic${k === cur ? ' on' : ''}" role="radio" aria-checked="${k === cur}" aria-label="${esc(k.slice(2).replace(/^g_/, '').replace(/_/g, ' '))}" title="${esc(k.slice(2).replace(/^g_/, '').replace(/_/g, ' '))}" data-act="wsPickIcon" data-k="${esc(k)}">${V.navIcon(k)}</button>`).join('')}</div></fieldset>`,
       `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="wsGroupSave" data-g="${esc(key || '')}">${g ? 'Save' : 'Create'}</button>`);
     const n = document.getElementById('wsg_n'); if (n) n.focus();
   }
   ACT.wsPickIcon = a => { const k = a.getAttribute('data-k'); const h = document.getElementById('wsg_i'); if (h) h.value = k; document.querySelectorAll('.tl-ic').forEach(b => { const on = b === a; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); }); };
+  V.wsPermCard = () => { const w = ws(); const owner = !V.isCustomer() && !S.readonly && S.project && S.project.role === 'owner'; const L = { all: 'Everyone on the team', editors: 'Owners and editors', owners: 'Owners only' };
+    return '<div class="card tl-pos"><div class="card-b"><div><b>Who can change the menu</b><p class="small muted">Renaming, moving, hiding and adding tabs and pages. ' + (owner ? 'You are an owner, so you decide.' : 'Only a project owner can change this setting.') + '</p></div>' + (owner ? '<select id="wsPerm" data-change="wsPerm" aria-label="Who can change the menu">' + Object.keys(L).map(k => '<option value="' + k + '"' + (w.perm === k ? ' selected' : '') + '>' + L[k] + '</option>').join('') + '</select>' : '<span class="tag">' + esc(L[w.perm] || L.all) + '</span>') + '</div></div>'; };
+  ACT.wsPerm = el => { const v = (el && el.value) || (document.getElementById('wsPerm') || {}).value; if (!['all', 'editors', 'owners'].includes(v)) return; const w = ws(); w.perm = v; commit('Menu permission changed'); toast('Saved'); };
   ACT.wsNewGroup = () => groupForm(null);
   ACT.wsGroupEdit = a => groupForm(a.getAttribute('data-g'));
   ACT.wsGroupRename = ACT.wsGroupEdit;
@@ -248,8 +256,9 @@
     const key = a.getAttribute('data-g'); const w = ws(); const val = i => ((document.getElementById(i) || {}).value || '').trim(); let name = val('wsg_n'); const icon = val('wsg_i');
     const gs = layout(); const g = key ? gs.find(x => x.key === key) : null; if (!name && g && g.builtin) name = g.key; if (!name) { toast('Name the group'); return; }
     if (gs.some(x => x.key !== key && (x.g.toLowerCase() === name.toLowerCase() || x.key.toLowerCase() === name.toLowerCase()))) { toast('A group with that name exists'); return; }
-    if (!g) { const taken = n => gs.some(x => x.key === n) || (w.gdel || {})[n] !== undefined || (V.navBase() || []).some(b => b.g === n); let k = name; for (let i = 2; taken(k); i++) k = name + ' ' + i; w.groups = (w.groups || []).concat(k); if (k !== name) w.gl[k] = name; if (icon) w.gi[k] = icon; S.ui.wsGroup = k; closeDrawer(); commit('Tab group created'); return; }
+    if (!g) { const taken = n => gs.some(x => x.key === n) || (w.gdel || {})[n] !== undefined || (V.navBase() || []).some(b => b.g === n); let k = name; for (let i = 2; taken(k); i++) k = name + ' ' + i; w.groups = (w.groups || []).concat(k); if (k !== name) w.gl[k] = name; if (icon) w.gi[k] = icon; { const pv = Number(val('wsg_p')) || 0; if (pv) { w.gp = w.gp || {}; w.gp[k] = pv; } } S.ui.wsGroup = k; closeDrawer(); commit('Tab group created'); return; }
     if (name === g.key) delete w.gl[key]; else w.gl[key] = name;
+    if (!g.builtin) { const pv = Number(val('wsg_p')) || 0; w.gp = w.gp || {}; if (pv) w.gp[key] = pv; else delete w.gp[key]; }
     const std = (V.navBase() || []).find(b => b.g === key); const dflt = std ? (std.fi ? 'f:' + std.fi : 'l:' + (std.icon || 'flag')) : ''; if (icon && icon !== dflt) w.gi[key] = icon; else delete w.gi[key];
     closeDrawer(); commit('Tab group updated');
   };

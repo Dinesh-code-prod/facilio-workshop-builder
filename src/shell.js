@@ -260,7 +260,7 @@
   const ITEM_ICO = { lifecycle: 'l:flag', tasks: 'l:check', transfers: 'l:link', mailtab: 'l:mail', aiwork: 'l:spark', reports: 'l:doc', resources: 'l:clip', rsquestions: 'l:search', whiteboard: 'l:edit', solution: 'l:spark', mockup: 'l:deck', notifications: 'l:bell', slakpi: 'l:check', ftr: 'l:doc', kpi: 'l:deck', golive: 'l:flag', guidebuilder: 'l:edit', vidguide: 'l:deck', hypercare: 'l:shield', handover: 'l:book', demokit: 'l:deck', seefacilio: 'l:eye', explore: 'l:spark', custintro: 'l:home', prepare: 'l:book', learnlib: 'l:book', integguide: 'l:link', claudesetup: 'l:spark', teamhelp: 'l:book', webframe: 'l:link', whatsnew: 'l:spark', privacy: 'l:lock', templates: 'l:doc', workspace: 'l:modules', rsplan: 'l:cal', guides: 'l:book' };
   const itemIcon = id => (FI.has(id) ? FI.svg(id) : ITEM_ICO[id] ? V.navIcon(ITEM_ICO[id]) : V.navIcon('l:flag'));
   const STAGE_C = { 1: '#1d4ed8', 2: '#1d4ed8', 3: '#1d4ed8', 4: '#1d4ed8', 5: '#1d4ed8', 7: '#475569', 8: '#64748b' };   // the stage accents of the dashboards (src/stagedash.js)
-  const stageNo = g => { const m = /^(\d)\./.exec(g.g); return m ? Number(m[1]) : 0; };
+  const stageNo = g => { if (g.parent) return g.parent; const m = /^(\d)\./.exec(g.key || g.g); return m ? Number(m[1]) : 0; };   // a custom sub tab names the stage it sits in (g.parent)
   const groupIcon = g => V.navIcon(g.ik || (g.fi ? 'f:' + g.fi : 'l:' + (g.icon || 'flag')));
   function crumbHtml() {
     const v = S.ui.view; let grp = '', item = ''; for (const g of navFor()) for (const [id, l] of g.items) if (id === v || (id === 'modules' && v === 'module')) { grp = g.g; item = l; }
@@ -279,10 +279,11 @@
   // a rail entry is one stage: the groups that share its number (stage 2 and 3 have several sections) or one group on its own
   const entriesOf = nav => { const out = []; nav.forEach(g => { const n = stageNo(g); const e = n ? out.find(x => x.no === n) : null; if (e) e.groups.push(g); else out.push({ no: n, groups: [g] }); }); return out; };
   const SECTION = { '2. Requirement sessions': 'Sessions', '2. Process & checks': 'Process & checks', '3. Solution design & BRD': 'Build the solution', '3. Access & alerts': 'Access & alerts', '3. Configuration': 'Configuration', '3. BRD & sign-off': 'BRD & sign-off' };
-  const secName = g => SECTION[g.g] || g.g.replace(/^\d+\.\s*/, '');
+  const gk = g => g.key || g.g; const strip = g => String(g.g).replace(/^\d+\.\s*/, '');
+  const secName = g => (!g.renamed && SECTION[gk(g)]) || strip(g);
   const RAIL = { 'Home': ['home', 'Home'], 'Tasks & mail': ['mail', 'Tasks'], 'Reports': ['dash', 'Reports'], 'Notes & Links': ['clip', 'Notes'], '1. Project introduction': ['flag', 'Intro'], '2. Requirement sessions': ['mic', 'Sessions'], '2. Process & checks': ['flow', 'Process'], 'Show Facilio': ['deck', 'Showcase'], '3. Solution design & BRD': ['modules', 'Solution'], '3. Access & alerts': ['roles', 'Access'], '3. Configuration': ['copy', 'Config'], '3. BRD & sign-off': ['doc', 'BRD'], '4. UAT & FTR': ['check', 'UAT'], '5. Training guides': ['book', 'Training'], '6. Go-live': ['play', 'Go-live'], '7. Hypercare': ['shield', 'Hypercare'], '8. Project handover': ['link', 'Handover'], 'Customer View': ['eye', 'Customer'], 'Customer portal': ['lock', 'Portal'], 'Help': ['search', 'Help'], 'Claude & tools': ['spark', 'Claude'], 'Settings': ['gear', 'Settings'] };
-  V.railIcon = g => { const k = RAIL[g.g]; return k ? ico(k[0]) : groupIcon(g); };
-  V.railLabel = g => (RAIL[g.g] || [])[1] || String(g.g).replace(/^\d+\.\s*/, '').split(/\s+/)[0].slice(0, 10);
+  V.railIcon = g => { const k = RAIL[gk(g)]; return k && !g.ikSet ? ico(k[0]) : groupIcon(g); };
+  V.railLabel = g => (!g.renamed && (RAIL[gk(g)] || [])[1]) || strip(g);   // a name the team gave is shown as they wrote it (long ones are cut with ...)
   V.navPosNow = () => navPos();
   const firstOf = g => (g.items.find(([id]) => id === lastPage[g.g]) || g.items[0])[0];
   function topnavHtml() {
