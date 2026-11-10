@@ -401,6 +401,9 @@ body .btn:not(.icon):not(.link):not([disabled]):not(#_):not(#__):active { backgr
 body .btn.primary:not(.icon):not(#_):not(#__) { background: var(--cs-primary) !important; color: #fff !important; }
 body .btn.primary:not(.icon):not([disabled]):not(#_):not(#__):hover { background: var(--cs-primary-h) !important; }
 body .btn.primary:not(.icon):not([disabled]):not(#_):not(#__):active { background: var(--cs-primary-p) !important; }
+/* small primary buttons are tinted (soft blue, blue text) so one solid blue button leads each screen */
+body .btn.primary.sm:not(.icon):not(#_):not(#__):not(#___) { background: rgba(21, 112, 239, .12) !important; color: var(--cs-primary-h) !important; }
+body .btn.primary.sm:not(.icon):not([disabled]):not(#_):not(#__):not(#___):hover { background: rgba(21, 112, 239, .2) !important; }
 body .btn.ghost:not(.icon):not(#_):not(#__) { background: transparent !important; }
 body .btn.ghost:not(.icon):not([disabled]):not(#_):not(#__):hover { background: rgba(0, 0, 0, .06) !important; }
 body .btn.danger:not(.icon):not(#_):not(#__) { color: var(--cs-danger) !important; background: rgba(177, 14, 28, .08) !important; }
@@ -1939,8 +1942,8 @@ body .sidebar .sb-sum b:not(#_):not(#__):not(#___):not(#____) { margin-left: 4px
 body .sidebar .sb-item.active > span:not(#_):not(#__):not(#___):not(#____) { white-space: normal; line-height: 1.3; }
 body .sidebar .sb-hint:not(#_):not(#__):not(#___):not(#____) { display: block; margin-top: 2px; font-size: 11.5px; font-weight: 400; line-height: 1.3; color: #525252; }
 /* ===== Claude helper banner (setup for a person whose Claude never checked in) (9 Nov 2026) ===== */
-body .hp-banner:not(#_):not(#__) { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; padding: 12px 16px; margin: 0 0 14px; border: 1px solid #F5C26B; border-left: 4px solid #ff9f0a; background: #FFF8EB; border-radius: 12px; }
-body .hp-banner .hp-bt:not(#_):not(#__) { min-width: 240px; flex: 1; color: #b25000; } body .hp-banner .hp-bt b { font-size: 14.5px; } body .hp-banner .hp-bt span { font-size: 12.5px; color: #b25000; margin-left: 6px; } body .hp-banner .hp-bt p { margin: 4px 0 0; font-size: 13.5px; line-height: 1.45; }
+body .hp-banner:not(#_):not(#__) { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; padding: 12px 16px; margin: 0 0 14px; border: 0; background: #FFF4E0; border-radius: 16px; }
+body .hp-banner .hp-bt:not(#_):not(#__) { min-width: 240px; flex: 1; color: var(--cs-fg2); } body .hp-banner .hp-bt b { font-size: 14.5px; } body .hp-banner .hp-bt span { font-size: 12.5px; color: #b25000; margin-left: 6px; } body .hp-banner .hp-bt p { margin: 4px 0 0; font-size: 13.5px; line-height: 1.45; }
 body .hp-banner .hp-ba:not(#_):not(#__) { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 /* who is answering in the assistant chat: DeepSeek (in the app), Claude (your own Claude) or the project records */
 body .ki-via:not(#_):not(#__) { display: inline-flex !important; align-items: center !important; gap: 6px !important; margin: 0 0 3px 2px !important; font-size: 11px !important; font-weight: 600 !important; letter-spacing: .02em !important; color: var(--cs-fg-muted, #525252) !important; }
