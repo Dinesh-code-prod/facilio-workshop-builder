@@ -122,11 +122,7 @@
   // The team menu in project order: the project home, what runs the whole project, then the stages from kick-off to hypercare and closure,
   // then support, what the customer sees, settings and the rarely needed pages. Sub-headings (subs: page id to heading) group the design pages.
   const NAV = [
-    // the project-wide tools, then the eight stages of the roadmap; a busy stage is several main tabs that share its number (2, 3), so no main tab holds more than four pages
-    { g: 'Home', sec: 'Project', icon: 'home', fi: 'g_dash', items: [['projdash', 'Dashboard'], ['lifecycle', 'Project cycle']] },
-    { g: 'Tasks & mail', sec: 'Project', icon: 'mail', items: [['tasks', 'Tasks and email'], ['mailtab', 'Customer mail'], ['transfers', 'Transfers']] },
-    { g: 'Reports', sec: 'Project', icon: 'doc', items: [['statusrep', 'Status report (WSR) & monthly report'], ['aiwork', 'Deliverables & AI']] },
-    { g: 'Notes & Links', sec: 'Project', icon: 'clip', items: [['resources', 'Notes & Links']] },
+    // the eight stages of the roadmap from the start of the project, then the project-wide tools; a busy stage is several main tabs that share its number (2, 3), so no main tab holds more than four pages
     { g: '1. Project introduction', sec: 'Discover and define', icon: 'flag', fi: 'kickoff', items: [['msaintake', 'Contract intake'], ['intro', 'Kick-off, plan and schedule']] },
     { g: '2. Requirement sessions', sec: 'Discover and define', icon: 'mic', fi: 'transcripts', items: [['rsquestions', 'Questions'], ['onboarding', 'Data onboarding'], ['workshop', 'Workshop room (live call)'], ['rstrans', 'Transcripts']] },   // Data Onboarding (the sheet shown in the first session), Transcripts and Use Cases are tabs inside the first entry (src/workshubs.js)
     { g: '2. Process & checks', sec: 'Discover and define', icon: 'flow', items: [['whiteboard', 'Process whiteboard'], ['rschecks', 'Checks & validations']] },
@@ -140,6 +136,10 @@
     { g: '6. Go-live', sec: 'Launch and support', icon: 'flag', fi: 'g_delivery', items: [['golive', 'Go-live readiness']] },   // the go-live checklist is its own stage, so the numbers run 1 to 8 without a gap
     { g: '7. Hypercare', sec: 'Launch and support', icon: 'shield', fi: 'g_delivery', items: [['hypercare', 'Hypercare']] },
     { g: '8. Project handover', sec: 'Launch and support', icon: 'book', fi: 'g_delivery', items: [['handover', 'Handover & Closure']] },
+    { g: 'Home', sec: 'Project', icon: 'home', fi: 'g_dash', items: [['projdash', 'Dashboard'], ['lifecycle', 'Project cycle']] },
+    { g: 'Tasks & mail', sec: 'Project', icon: 'mail', items: [['tasks', 'Tasks and email'], ['mailtab', 'Customer mail'], ['transfers', 'Transfers']] },
+    { g: 'Reports', sec: 'Project', icon: 'doc', items: [['statusrep', 'Status report (WSR) & monthly report'], ['aiwork', 'Deliverables & AI']] },
+    { g: 'Notes & Links', sec: 'Project', icon: 'clip', items: [['resources', 'Notes & Links']] },
     { g: 'Customer View', sec: 'Share with the customer', icon: 'spark', items: [['custintro', 'Customer Introduction'], ['prepare', 'Learn & Prepare'], ['learnlib', 'Module guides'], ['demokit', 'Facilio Screens']] },
     { g: 'Customer portal', sec: 'Share with the customer', icon: 'lock', items: [['integguide', 'Connecting Your Systems'], ['guide', 'Customer User Guide'], ['portal', 'Customer Portal']] },
     { g: 'Help', sec: 'Integrations & admin', icon: 'search', items: [['teamhelp', 'Team Guide'], ['whatsnew', "What's new"], ['feedback', 'Feedback'], ['privacy', 'Privacy & data']] },
