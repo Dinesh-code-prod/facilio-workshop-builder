@@ -3,7 +3,7 @@
    `summary` is the pure rule (tests/guides_list.mjs). */
 (function (root) {
   'use strict';
-  const F = root.FWB; const V = root.FWBViews; const I = () => V.items;
+  const F = root.FWB; const V = root.FWBViews; const I = () => V.items; const ACT = V.ACT;
   const arr = v => (Array.isArray(v) ? v : []);
   const esc = F ? F.esc : (s => String(s == null ? '' : s));
   /** in: { userGuides: [{ title, updatedAt }], recordings: [{ title }], testCases: n, walkthroughs: n, mockupVideos: n }
@@ -155,7 +155,6 @@
     } else panel = draftsCard();
     return head + '<div class="page-body tr">' + tabs + '<div id="trp" role="tabpanel" aria-labelledby="trt_' + cur + '" class="tr-panel">' + panel + '</div></div>';
   }, mount() { I().load(['ugd', 'vid', 'utc', 'ai']); srcLoad(); } };
-  const ACT = V.ACT;
   ACT.trBring = a => V.busy(a, async () => { const J = V.studioJobs; if (!J || J.guard()) return; let n = 0; for (const v of videoRows().filter(x => x.proto && !x.url).slice(0, 20)) { const r = await J.post('/jobs', { kind: 'send_video', note: v.label, ref: v.key }); if (!r.duplicate) n++; } V.toast(n ? 'Asked Claude for ' + n + ' video' + (n === 1 ? '' : 's') + '. It brings the finished ones here; anything not made yet stays as it is.' : 'Claude already has these requests.', 7000); });
   // videos the team adds for anything: kept in the workshop document (walkthroughs, key free:...) so Claude reads them with the project; the page never watches a video
   const wts = () => F.S.ws.walkthroughs || (F.S.ws.walkthroughs = {}); const byWho = () => (F.S.user && (F.S.user.name || F.S.user.email)) || '';
