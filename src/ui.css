@@ -2116,3 +2116,16 @@ body .auth-form.night .auth-box .sub:not(#_):not(#__) { margin: 0 auto 32px; max
 /* the assistant panel starts under the 68px top bar (it started at 60px and its title row was hidden behind the bar) */
 body #asst:not(#_):not(#__) { top: 68px !important; height: calc(100vh - 68px) !important; height: calc(100dvh - 68px) !important; }
 @media (max-width: 900px) { body #asst:not(#_):not(#__) { top: 60px !important; height: calc(100dvh - 60px) !important; } }
+
+/* Guided start (user, 10 Nov 2026): a pulsing ring on the next menu entry and a small card beside it */
+.co-ring{position:fixed;z-index:9998;border-radius:12px;border:2px solid #1570EF;pointer-events:none;box-shadow:0 0 0 4px rgba(21,112,239,.18);animation:coPulse 1.4s ease-in-out infinite}
+.co-card{position:fixed;z-index:9999;width:290px;background:#fff;border:1px solid #e5e5e5;border-radius:16px;padding:14px 16px;box-shadow:0 12px 32px rgba(10,10,10,.14)}
+.co-card h3{margin:2px 0 4px;font-size:15px}
+.co-card p{margin:0 0 6px;font-size:13px;line-height:1.45;color:#404040}
+.co-card .co-n{font-size:11px;color:#737373;text-transform:uppercase;letter-spacing:.04em}
+.co-card .co-hint{font-size:12px;color:#737373}
+.co-b{display:flex;gap:8px;align-items:center;margin-top:8px}.co-b span{flex:1}
+.co-pill{position:fixed;right:18px;bottom:18px;z-index:9990;border:0;border-radius:999px;padding:9px 16px;background:#0a0a0a;color:#fff;font:600 13px Geist,system-ui,sans-serif;cursor:pointer;box-shadow:0 6px 18px rgba(10,10,10,.2)}
+.co-pill:hover{background:#262626}
+@keyframes coPulse{0%,100%{box-shadow:0 0 0 3px rgba(21,112,239,.2)}50%{box-shadow:0 0 0 9px rgba(21,112,239,.08)}}
+@media (prefers-reduced-motion:reduce){.co-ring{animation:none}}
