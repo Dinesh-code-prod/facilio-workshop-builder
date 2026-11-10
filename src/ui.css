@@ -2259,3 +2259,15 @@ body .tl-pr.on:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):no
 body .tl-ptabs:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 8px; border-top: 1px solid #e5e5e5; }
 body .tl-ptabs span:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { padding: 5px 10px; border-radius: 8px; font-size: 12px; color: #262626; background: #fff; }
 body .tl-ptabs span.on:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { background: #ececec; font-weight: 700; color: #0a0a0a; }
+
+/* the list of pages beside a rail icon */
+.rl-fly:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { position: fixed; z-index: 99; width: 300px; max-height: calc(100vh - 24px); overflow-y: auto; padding: 8px; border: 1px solid #e0e0e0; border-radius: 14px; background: #fff; box-shadow: 0 8px 24px rgba(0,0,0,.08); display: none; }
+.rl-fly.on:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: grid; gap: 4px; }
+.rl-fh:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { padding: 6px 10px 8px; font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #404040; border-bottom: 1px solid #ececec; margin-bottom: 2px; }
+.rl-fi:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: grid; gap: 1px; text-align: left; width: 100%; padding: 8px 10px; border: 1px solid transparent; border-radius: 10px; background: transparent; cursor: pointer; color: #0a0a0a; }
+.rl-fi:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #f2f2f2; border-color: #d4d4d4; }
+.rl-fi.active:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #f0f0f0; border-color: #0a0a0a; }
+.rl-fi b:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { font-size: 13.5px; font-weight: 650; }
+.rl-fi small:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { font-size: 11.5px; line-height: 1.3; color: #525252; }
+body.nav-top .rl-sep { display: block; width: 36px; height: 1px; margin: 4px 0; background: #e0e0e0; }
+body.nav-top .rl-b:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { height: 54px; }
