@@ -2129,3 +2129,52 @@ body #asst:not(#_):not(#__) { top: 68px !important; height: calc(100vh - 68px) !
 .co-pill:hover{background:#262626}
 @keyframes coPulse{0%,100%{box-shadow:0 0 0 3px rgba(21,112,239,.2)}50%{box-shadow:0 0 0 9px rgba(21,112,239,.08)}}
 @media (prefers-reduced-motion:reduce){.co-ring{animation:none}}
+
+/* sidebar: the pages of an open stage are bordered tiles in the stage colour (soft border, tint on hover, a stronger tint and a bold left bar on the page you are on), and the small group labels carry a stage-colour dot */
+body .sidebar .sb-stage.open .sb-item:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { margin: 0 2px 4px 10px; padding: 7px 10px 7px 10px; border: 1px solid color-mix(in srgb, var(--sg, #1d4ed8) 16%, #e5e7eb) !important; border-left-width: 3px !important; border-left-color: color-mix(in srgb, var(--sg, #1d4ed8) 38%, #fff) !important; border-radius: 10px !important; background: #fff !important; box-shadow: none !important; transition: background-color .15s ease, border-color .15s ease; }
+body .sidebar .sb-stage.open .sb-item:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: color-mix(in srgb, var(--sg, #1d4ed8) 7%, #fff) !important; border-color: color-mix(in srgb, var(--sg, #1d4ed8) 34%, #e5e7eb) !important; border-left-color: color-mix(in srgb, var(--sg, #1d4ed8) 70%, #fff) !important; }
+body .sidebar .sb-stage.open .sb-item.active:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: color-mix(in srgb, var(--sg, #1d4ed8) 11%, #fff) !important; border-color: color-mix(in srgb, var(--sg, #1d4ed8) 55%, #fff) !important; border-left-color: var(--sg, #1d4ed8) !important; color: #0a0a0a !important; font-weight: 650 !important; }
+body .sidebar .sb-stage.open .sb-item svg:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { color: color-mix(in srgb, var(--sg, #1d4ed8) 70%, #475569) !important; }
+body .sidebar .sb-stage.open .sb-sub:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: flex; align-items: center; gap: 7px; margin: 8px 0 5px 10px; padding: 0 4px; font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: color-mix(in srgb, var(--sg, #1d4ed8) 78%, #000); }
+body .sidebar .sb-stage.open .sb-sub:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______)::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--sg, #1d4ed8); }
+
+/* sidebar: "You are here" card at the top, so the page, its stage and what it is for are always in view */
+body .sidebar .sb-here:not(#_):not(#__):not(#___):not(#____):not(#_____) { display: grid; gap: 2px; margin: 4px 2px 10px; padding: 10px 12px; border: 1px solid color-mix(in srgb, #1d4ed8 22%, #e5e7eb); border-left: 3px solid #1d4ed8; border-radius: 10px; background: color-mix(in srgb, #1d4ed8 6%, #fff); }
+body .sidebar .sb-here-k:not(#_):not(#__):not(#___):not(#____):not(#_____) { font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #1d4ed8; }
+body .sidebar .sb-here b:not(#_):not(#__):not(#___):not(#____):not(#_____) { font-size: 14px; font-weight: 700; color: #0a0a0a; line-height: 1.25; }
+body .sidebar .sb-here-s:not(#_):not(#__):not(#___):not(#____):not(#_____) { font-size: 12px; font-weight: 600; color: #404040; }
+body .sidebar .sb-here-h:not(#_):not(#__):not(#___):not(#____):not(#_____) { font-size: 11.5px; line-height: 1.35; color: #525252; }
+
+/* sidebar, Delivery Studio look: neutral tiles with hairline borders, near-black for the page you are on, blue only as a small accent (the stage dot and the "You are here" label) */
+body .sidebar .sb-stage.open .sb-item:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { border: 1px solid #e5e5e5 !important; border-left-width: 1px !important; border-left-color: #e5e5e5 !important; background: #fff !important; }
+body .sidebar .sb-stage.open .sb-item:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: #f5f5f5 !important; border-color: #d4d4d4 !important; }
+body .sidebar .sb-stage.open .sb-item.active:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: #f0f0f0 !important; border-color: #0a0a0a !important; border-left-width: 3px !important; border-left-color: #0a0a0a !important; font-weight: 650 !important; }
+body .sidebar .sb-stage.open .sb-item svg:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { color: #737373 !important; }
+body .sidebar .sb-stage.open .sb-item.active svg:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { color: #0a0a0a !important; }
+body .sidebar .sb-stage.open .sb-sub:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { color: #404040; }
+body .sidebar .sb-stage.open .sb-sub:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______)::before { background: #1570EF; }
+body .sidebar .sb-here:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { border: 1px solid #e5e5e5; border-left: 3px solid #0a0a0a; background: #fafafa; }
+body .sidebar .sb-here-k:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { color: #1570EF; }
+body .sidebar .sb-stage.sb-done .sb-no:not(#_):not(#__):not(#___):not(#____):not(#_____) { background: #ececec !important; }
+body .sidebar .sb-stage.sb-done .sb-no:not(#_):not(#__):not(#___):not(#____):not(#_____)::before { color: #0a0a0a; }
+body .sidebar .sb-stage.sb-cur .sb-no:not(#_):not(#__):not(#___):not(#____):not(#_____), body .sidebar .sb-stage.has-active .sb-no:not(#_):not(#__):not(#___):not(#____):not(#_____) { background: #0a0a0a !important; color: #fff !important; box-shadow: 0 0 0 3px rgba(0, 0, 0, .08); }
+body .sidebar .sb-sum b:not(#_):not(#__):not(#___):not(#____):not(#_____) { background: #ececec; color: #0a0a0a; }
+
+/* sidebar: stage names bolder, and a clear hover on stages and pages so you can see what you are about to open */
+body .sidebar .sb-title:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________) { font-size: 14px !important; font-weight: 700 !important; color: #0a0a0a !important; }
+body .sidebar .sb-title:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________) { background: #e8e8e8 !important; }
+body .sidebar .sb-title:hover .sb-chev:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________) { border-color: #0a0a0a; }
+body .sidebar .sb-stage.open .sb-item:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________) { background: #ececec !important; border-color: #a3a3a3 !important; border-left-color: #525252 !important; border-left-width: 3px !important; color: #0a0a0a !important; }
+body .sidebar .sb-stage.open .sb-item:hover svg:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________) { color: #0a0a0a !important; }
+body .sidebar .sb-stage.open .sb-item.active:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________) { background: #e4e4e4 !important; border-color: #0a0a0a !important; }
+
+/* sidebar: every page is its own detached card (full rounded border, a gap between cards, its own icon chip), so the list no longer reads as one joined train; the page you are on is the one dark card */
+body .sidebar .sb-stage.open .sb-item:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { margin: 0 2px 8px 8px; padding: 7px 10px 7px 7px; gap: 10px; border: 1px solid #e0e0e0 !important; border-radius: 12px !important; background: #fff !important; }
+body .sidebar .sb-stage.open .sb-item:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { background: #f2f2f2 !important; border-color: #a3a3a3 !important; border-left-width: 1px !important; }
+body .sidebar .sb-stage.open .sb-item.active:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { background: #f0f0f0 !important; border-color: #0a0a0a !important; border-width: 1px !important; box-shadow: 0 0 0 1px #0a0a0a !important; }
+body .sidebar .sb-stage.open .sb-item.active:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { background: #e8e8e8 !important; border-width: 1px !important; }
+body .sidebar .sb-stage.open .sb-item > svg:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________), body .sidebar .sb-stage.open .sb-item > .fi:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { box-sizing: content-box; flex: none; width: 16px; height: 16px; padding: 6px; border-radius: 9px; background: #f3f3f3; color: #525252 !important; }
+body .sidebar .sb-stage.open .sb-item:hover > svg:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { background: #e6e6e6; }
+body .sidebar .sb-stage.open .sb-item.active > svg:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________), body .sidebar .sb-stage.open .sb-item.active > .fi:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { background: #0a0a0a; color: #fff !important; }
+body .sidebar .sb-stage.open .sb-sub:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { margin: 12px 0 8px 8px; }
+body .sidebar .sb-stage.sb-done.has-active .sb-no:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______)::before, body .sidebar .sb-stage.sb-done.sb-cur .sb-no:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______)::before { color: #fff; }
