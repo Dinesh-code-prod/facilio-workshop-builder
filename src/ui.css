@@ -2339,3 +2339,15 @@ body .dialog.cf .btn.danger:not(#_):not(#__):not(#___):not(#____):not(#_____):no
 body .dialog.cf .btn.danger:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: #b42318 !important; border-color: #b42318 !important; }
 body .dialog.cf .btn.danger::before { background: #fff !important; }
 body .dialog.cf .btn.primary:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: #0a0a0a !important; color: #fff !important; border-color: #0a0a0a !important; }
+
+/* confirmation, Delivery Studio look (coss): header, quiet message, a light footer with the buttons; no coloured icon box */
+body .dialog.cf:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________) { padding: 0 !important; width: min(420px, calc(100vw - 32px)); border-radius: 16px !important; border: 1px solid #e5e5e5 !important; background: #fff !important; box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 16px 40px rgba(0,0,0,.12) !important; overflow: hidden; font-family: var(--cs-font, inherit); }
+body .dialog.cf .cf-top:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________) { display: block; padding: 22px 24px 18px; }
+body .dialog.cf .cf-ic:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________) { display: none; }
+body .dialog.cf .dialog-h:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________) { font-size: 16px !important; font-weight: 700 !important; letter-spacing: -.005em; color: #0a0a0a !important; margin: 0 0 6px !important; }
+body .dialog.cf .dialog-b:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________) { font-size: 14px !important; line-height: 1.5 !important; color: #525252 !important; }
+body .dialog.cf .dialog-f:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________) { display: flex; justify-content: flex-end; gap: 8px; margin: 0 !important; padding: 14px 24px !important; background: #fafafa !important; border-top: 1px solid #ececec !important; }
+body .dialog.cf .dialog-f .btn:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________) { height: 36px; padding: 0 16px; border-radius: 10px !important; font-size: 13.5px; font-weight: 600; box-shadow: none !important; }
+body .dialog.cf .dialog-f .btn:not(.primary):not(.danger):not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________) { background: #fff !important; color: #0a0a0a !important; border: 1px solid #d4d4d4 !important; }
+body .dialog.cf .dialog-f .btn:not(.primary):not(.danger):hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________) { background: #f5f5f5 !important; }
+body .scrim.center:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________) { background: rgba(10,10,10,.38); backdrop-filter: blur(2px); }
