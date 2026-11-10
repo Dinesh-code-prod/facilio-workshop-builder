@@ -2209,3 +2209,12 @@ body .tl-pos .card-b:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#____
 body .tl-pos .seg button.on:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #0a0a0a; color: #fff; }
 body.nav-top .tn .sb-no:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #ececec !important; color: #0a0a0a !important; box-shadow: none; }
 body.nav-top .tn-g.has-active .sb-no:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______), body.nav-top .tn-g.open .sb-no:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #0a0a0a !important; color: #fff !important; }
+/* Contract intake: the analysis step. Questions and Solution: the core / connected switch, the connected tag and the quoted contract words */
+body .md-an { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 14px 16px; border: 1px solid var(--cs-st2); border-radius: var(--cs-r-card); background: var(--cs-bg2); margin: 0 0 12px; }
+body .md-an.waiting, body .md-an.stale { background: #fff; border-color: #171717; } body .md-an-t { flex: 1 1 320px; font-size: 14px; line-height: 1.5; color: var(--cs-fg2); }
+body .qb-tseg, body .cs-sol-tseg { margin: 0 0 10px; } body .qb-tseg em, body .cs-sol-tseg em { font-style: normal; font-size: 11px; color: var(--cs-fg4); margin-left: 6px; }
+body .qb-trk { font: 600 11px/16px var(--cs-font); padding: 1px 8px; border-radius: 999px; background: #171717; color: #fff; } body .qb-qt { margin: 6px 0; font-size: 13px; }
+
+body .md-steps { display: flex; gap: 8px; list-style: none; margin: 0 0 12px; padding: 0; flex-wrap: wrap; } body .md-st { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border: 1px solid var(--cs-st2); border-radius: 999px; font-size: 13px; color: var(--cs-fg3); background: #fff; }
+body .md-st i { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 11px; font-weight: 600; background: var(--cs-bg4); color: var(--cs-fg3); } body .md-st em { font-style: normal; font-size: 12px; color: var(--cs-fg4); }
+body .md-st.now { border-color: #171717; color: #171717; } body .md-st.now i, body .md-st.done i { background: #171717; color: #fff; } body .md-stb { all: unset; cursor: pointer; } body .md-stb:hover { text-decoration: underline; }

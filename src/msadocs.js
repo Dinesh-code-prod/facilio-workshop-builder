@@ -17,7 +17,25 @@
     try { const r = await API.get(base() + '/docs/msa_text'); s.data = (r && r.data) || {}; s.version = r && r.version != null ? r.version : -1; } catch (e) { s.data = s.data || {}; } finally { s.loading = false; V.render(); }
   }
   async function put(data) { const s = md(); const r = await API.put(base() + '/docs/msa_text', { data, baseVersion: s.version }); s.data = data; s.version = r && r.version != null ? r.version : s.version + 1; }
-  /** the set changed: Claude re-reads everything (job), or, when the kick-off is approved, a change request carries it */
+  /** the set changed: nothing is analysed by itself; the person adds every document, then presses Analyse contracts */
+  const changed = why => toast('The document list changed (' + why + '). Nothing is analysed until you press Analyse contracts.', 6000);
+  /** the state of the analysis; a project analysed before this button existed (a kick-off draft exists) counts as analysed */
+  const astate = () => { const st = M().analysisState(md().data); return st === 'waiting' && F.doc('kickoff_pack') && (F.doc('kickoff_pack') || {}).builtAt ? 'current' : st; };
+  // the four steps of the intake, each with where it stands; the last two open the pages that hold the result
+  function stepper(docs) {
+    const st = astate(), pk = F.doc('kickoff_pack') || {}, nQ = ((F.doc('rs_questions') || {}).items || []).length; const done = (ok, now) => ok ? 'done' : now ? 'now' : 'todo';
+    const step = (n, label, state, view, hint) => '<li class="md-st ' + state + '"><i>' + (state === 'done' ? '✓' : n) + '</i>' + (view ? '<button type="button" class="md-stb" data-act="koOpen" data-view="' + view + '">' + esc(label) + '</button>' : '<span>' + esc(label) + '</span>') + (hint ? '<em>' + esc(hint) + '</em>' : '') + '</li>';
+    return '<ol class="md-steps" aria-label="Contract intake steps">' + step(1, 'Add the contract documents', done(docs.length > 0, !docs.length), '', docs.length ? docs.length + ' added' : '')
+      + step(2, 'Analyse contracts', done(st === 'current', docs.length > 0), '', st === 'current' ? 'done' : st === 'stale' ? 'out of date' : '') + step(3, 'Review the kick-off', done(pk.status === 'approved', st === 'current' && pk.status !== 'approved'), 'kickoff', pk.status === 'approved' ? 'approved' : pk.builtAt ? 'draft' : '')
+      + step(4, 'Questions and solutions', done(nQ > 0, st === 'current'), 'rsquestions', nQ ? nQ + ' question' + (nQ === 1 ? '' : 's') : '') + '</ol>';
+  }
+  function analysisBar(docs) {
+    if (!docs.length) return ''; const st = astate(), a = (md().data && md().data.analysis) || null, pages = docs.reduce((n, d) => n + d.pages.length, 0);
+    const msg = st === 'waiting' ? '<b>Not analysed yet.</b> Add every contract document first (the master agreement, amendments, order forms), then press Analyse contracts. Claude reads all ' + pages + ' page' + (pages === 1 ? '' : 's') + ' together.'
+      : st === 'stale' ? '<b>The documents changed since the last analysis.</b> Press Analyse again so the plan, the scope and the questions follow the new documents.' : '<b>Analysed</b>' + (a && a.at ? ' ' + esc(when(a.at)) : '') + (a && a.by ? ' by ' + esc(a.by) : '') + '. Adding or removing a document does not re-read anything until you press Analyse again.';
+    return '<div class="md-an ' + st + '"><div class="md-an-t">' + msg + '</div><button type="button" class="btn primary" data-act="mdAnalyse"' + (ro() || md().busy ? ' disabled' : '') + '>' + (md().busy === 'analyse' ? 'Starting…' : st === 'current' ? 'Analyse again' : 'Analyse contracts') + '</button></div>';
+  }
+  /** Claude re-reads everything (job), or, when the kick-off is approved, a change request carries it */
   async function reread(why) {
     const d = md().data; if (!M().docsOf(d).length) return; const note = M().rereadNote(d, S.project.customer, S.project.name);
     if (approved()) {
@@ -38,7 +56,7 @@
     const rows = docs.map(d => '<tr><td><b>' + esc(d.label) + '</b></td><td>' + esc(d.name) + '</td><td>' + d.pages.length + '</td><td>' + esc(when(d.at)) + '</td><td>' + chip(d) + '</td><td class="md-act">' + (d.status === 'verified' ? '<button type="button" class="btn sm" data-act="mdUnverify" data-id="' + esc(d.id) + '"' + dis + '>Undo</button>' : '<button type="button" class="btn sm" data-act="mdVerify" data-id="' + esc(d.id) + '"' + dis + '>Mark verified</button>') + '<button type="button" class="btn sm danger" data-act="mdRemove" data-id="' + esc(d.id) + '"' + dis + '>Remove</button></td></tr>').join('');
     return '<section class="card md-card" aria-label="Contract documents"><div class="card-h"><b>Contract documents</b> <span class="xs muted">' + docs.length + '</span></div><div class="card-b"><p class="small muted">A project can have several: the master agreement, amendments, order forms, statements of work. Claude reads them all together and drafts the kick-off and the plan from the set. Verify each one yourself after reading it against the draft.</p>'
       + (s.data === null ? '<p class="small muted">Loading…</p>' : docs.length ? '<div class="tbl-wrap"><table class="tbl md-tbl"><thead><tr><th>Document</th><th>File</th><th>Pages</th><th>Added</th><th>Status</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p class="small">No contract document yet. Upload the master agreement above first; further documents are added here.</p>')
-      + '<div class="row md-bar"><button type="button" class="btn primary" data-act="mdAdd"' + dis + (docs.length ? '' : ' disabled') + '>+ Add a contract document</button><button type="button" class="btn" data-act="mdCheck"' + dis + (docs.length && !s.busy ? '' : ' disabled') + '>' + (s.busy === 'check' ? 'Reading the documents…' : 'Check the documents together') + '</button><button type="button" class="btn" data-act="mdModules"' + dis + (docs.length && !s.busy ? '' : ' disabled') + '>' + (s.busy === 'mods' ? 'Reading the contract…' : 'Find the modules in the contract') + '</button><button type="button" class="btn" data-act="mdReread"' + dis + (docs.length ? '' : ' disabled') + '>Ask Claude to re-read all</button></div>'
+      + stepper(docs) + analysisBar(docs) + '<div class="row md-bar"><button type="button" class="btn" data-act="mdAdd"' + dis + (docs.length ? '' : ' disabled') + '>+ Add a contract document</button><button type="button" class="btn" data-act="mdCheck"' + dis + (docs.length && !s.busy ? '' : ' disabled') + '>' + (s.busy === 'check' ? 'Reading the documents…' : 'Check the documents together') + '</button><button type="button" class="btn" data-act="mdModules"' + dis + (docs.length && !s.busy ? '' : ' disabled') + '>' + (s.busy === 'mods' ? 'Reading the contract…' : 'Find the modules in the contract') + '</button><button type="button" class="btn" data-act="mdReread"' + dis + (docs.length ? '' : ' disabled') + '>Ask Claude to re-read all</button></div>'
       + (ck && ck.result ? '<div class="md-res">' + (cur ? '' : '<div class="notice small"><div>The documents changed after this check. Run it again before you rely on it.</div></div>') + '<p class="xs muted">Checked ' + esc(when(ck.at)) + (ck.by ? ' by ' + esc(ck.by) : '') + '. The AI reads and reports; a person decides.</p>' + result(ck.result, docs) + '</div>' : '') + '</div></section>';
   }
   V.contractDocs = () => M().docsOf(md().data).map(d => ({ id: d.id, label: d.label, name: d.name, pages: d.pages }));
@@ -61,7 +79,7 @@
       const x = await V.extractDocPages(f, V.loadingMsg); const pages = x.pages ? x.pages.map(p => ({ n: p.n, text: String(p.text || '') })) : [{ n: 1, text: String(x.text || '') }]; await load(true);
       const r = M().add(md().data, { role, name: f.name, pages }, now(), by()); if (r.error) { toast(r.error, 6000, true); return; }
       const rec = await API.uploadFile(S.project.id, f, 'msa', { role }, null, p => V.loadingMsg('Uploading… ' + Math.round(p * 100) + '%')); r.data.docs = r.data.docs.map(d => (d.id === r.doc.id ? Object.assign({}, d, { fileId: rec.id }) : d)); await put(r.data); V.closeDrawer();
-      await reread('added ' + r.doc.label + ': ' + f.name);
+      changed('added ' + r.doc.label + ': ' + f.name);
     } catch (e) { toast('The document could not be added: ' + (e.message || 'error'), 7000, true); } finally { V.loading(false); V.render(); }
   };
   ACT.mdVerify = a => V.busy(a, async () => { if (ro()) return; await load(true); await put(M().verify(md().data, a.getAttribute('data-id'), by(), now())); V.render(); });
@@ -70,7 +88,7 @@
     if (ro()) return; await load(true); const docs = M().docsOf(md().data); const d = docs.find(x => x.id === a.getAttribute('data-id')); if (!d) return;
     if (docs.length === 1) { if (ACT.koRemoveMsa) ACT.koRemoveMsa(); return; }   // the last one: the existing "remove the MSA" clears everything drafted from it
     if (!(await V.confirmDialog('Remove ' + d.label, 'Remove ' + d.name + ' from the contract documents? Claude is asked to read the remaining documents again and redraft the kick-off and plan' + (approved() ? ' (the kick-off is approved, so a change request is written instead)' : '') + '.', 'Remove', true))) return;
-    try { if (d.fileId) { try { await API.del(base() + '/files/' + encodeURIComponent(d.fileId)); } catch (e) { /* the file is already gone */ } } await put(M().remove(md().data, d.id)); await reread('removed ' + d.label + ': ' + d.name); } catch (e) { toast('It could not be removed: ' + (e.message || 'error'), 6000, true); } V.render();
+    try { if (d.fileId) { try { await API.del(base() + '/files/' + encodeURIComponent(d.fileId)); } catch (e) { /* the file is already gone */ } } await put(M().remove(md().data, d.id)); changed('removed ' + d.label + ': ' + d.name); } catch (e) { toast('It could not be removed: ' + (e.message || 'error'), 6000, true); } V.render();
   };
   ACT.mdCheck = a => V.busy(a, async () => {
     if (ro()) return; const s = md(); s.busy = 'check'; V.render();
@@ -81,6 +99,16 @@
     try { await load(true); const cat = root.FWBContractMods ? root.FWBContractMods.tidy((F.allModules() || []).map(m => ({ name: m.name, label: m.label || m.name }))) : []; const r = await API.post(base() + '/msadocs/modules', { catalogue: cat }); await put(M().setScan(s.data, r.modules, by(), now())); S.ui.cm = null;
       const n = r.modules.filter(x => x.status === 'delivered').length; toast(n + ' module' + (n === 1 ? '' : 's') + ' found in the contract. They are listed on the Solution tab, with the page and the words.', 6000);
       if (V.applyContractModules) { const ap = await V.applyContractModules({ auto: true }); if (ap && (ap.on.length || ap.made.length)) toast('From the contract: ' + (ap.on.length ? ap.on.length + ' module' + (ap.on.length === 1 ? '' : 's') + ' switched on' : '') + (ap.on.length && ap.made.length ? ', ' : '') + (ap.made.length ? ap.made.length + ' custom module' + (ap.made.length === 1 ? '' : 's') + ' created' : '') + '. Switch any off on System Modules & Form Builder.', 9000); } } finally { s.busy = ''; V.render(); }
+  });
+  ACT.mdAnalyse = a => V.busy(a, async () => {
+    if (ro()) return; await load(true); const docs = M().docsOf(md().data); if (!docs.length) { toast('Add a contract document first.', 4000, true); return; } const pages = docs.reduce((n, d) => n + d.pages.length, 0);
+    if (!(await V.confirmDialog('Analyse the contracts', 'Claude will read all ' + docs.length + ' document' + (docs.length === 1 ? '' : 's') + ' (' + pages + ' page' + (pages === 1 ? '' : 's') + ') together and draft the kick-off, the project plan and the sessions' + (approved() ? '. The kick-off is approved, so a change request is written instead of overwriting it' : '') + '. Have you added every contract document? A later document changes an earlier one.', 'Analyse'))) return;
+    const s0 = md(); s0.busy = 'analyse'; V.render();
+    try {
+      await put(M().setAnalysis(md().data, by(), now()));
+      const first = docs[0]; if (first && V.extractScope && !((F.doc('planner') || {}).scope || []).some(x => x.source === 'msa')) { try { const x = { text: first.pages.map(p => p.text).join('\n'), pages: first.pages.map(p => ({ n: p.n, text: p.text, method: 'text', conf: null })) }; V.extractScope(x); if (V.extractContract) V.extractContract(x); } catch (e) { /* the scope lines are also written by Claude's extraction */ } }
+      await reread('analysis requested');
+    } finally { s0.busy = ''; V.render(); }
   });
   ACT.mdReread = a => V.busy(a, async () => { if (ro()) return; await load(true); await reread('re-read on request'); });
 })(typeof window !== 'undefined' ? window : globalThis);

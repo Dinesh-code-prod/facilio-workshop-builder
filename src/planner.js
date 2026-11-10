@@ -87,7 +87,7 @@
       const rec = await API.uploadFile(S.project.id, f, 'msa', {}, d.msa ? d.msa.fileId : null, p => V.loadingMsg('Uploading… ' + Math.round(p * 100) + '%')); if (V.koAutoPull) V.koAutoPull(f.name, f, x);
       d.msa = { fileId: rec.id, name: f.name, size: f.size, uploadedAt: new Date().toISOString(), chars: x.text.length, pages: x.pages ? x.pages.map(p => ({ n: p.n, method: p.method, conf: p.conf, chars: p.text.length, note: p.note || '' })) : null, ocr: x.ocr };
       if (noText) { d.msaFail = { name: f.name, at: new Date().toISOString(), reason: 'No readable text was found' + (x.ocr && x.ocr.failed && x.ocr.failed.length ? ' (OCR could not read the pages)' : '') + '. The file is saved but nothing was filled in from it.', kind: 'notext' }; F.changed('MSA could not be read', f.name, { section: 'planner' }); toast(f.name + ': no readable text — nothing was filled in', 7000, true); return false; }
-      delete d.msaFail; extractScope(x); if (V.extractContract) V.extractContract(x); F.changed('MSA uploaded', f.name, { section: 'planner' }); return true;
+      delete d.msaFail; F.changed('MSA uploaded', f.name, { section: 'planner' }); toast(f.name + ' is added. Add any other contract documents, then press Analyse contracts.', 7000); return true;
     } finally { loading(false); }
   };
   ACT.uploadMsa = async () => { const f = (await V.pickFile('.pdf,.docx,.txt'))[0]; if (!f) return; await V.msaIngest(f); };

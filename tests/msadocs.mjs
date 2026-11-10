@@ -51,4 +51,11 @@ await t('the modules route sends the catalogue to the model, returns the cleaned
   const routes = {}; let role = 'owner'; const seen = []; installQbank({ route: (m, p, fn) => { routes[m + ' ' + p] = fn; }, ok: x => x, HttpError: class extends Error { constructor(s, m_) { super(m_); this.status = s; } }, me: async () => ({ id: 'u' }), projectAccess: async () => ({ role }), limit: async () => { }, aiJSON: async (q, v) => { seen.push(q.messages[0].content); return { data: v({ modules: [{ name: 'workorder', label: 'Reactive service', status: 'delivered', doc: 'd1', page: 1, quote: 'provide reactive service for all breakdowns' }] }), provider: 'deepseek' }; }, docRead: async () => ({ data: scanDoc }) });
   const route = routes['POST /api/projects/:id/msadocs/modules']; const r = await route({ catalogue: cat.concat([{ name: 'bad key!', label: 'x' }]) }, { id: 'p1' }); assert.equal(r.modules.length, 1); assert.equal(r.modules[0].quoted, true); assert.equal(r.fingerprint, M.fingerprint(scanDoc)); assert.ok(seen[0].includes('plannedmaintenance=Planned Maintenance') && !seen[0].includes('bad key')); role = 'customer'; await assert.rejects(() => route({}, { id: 'p1' }), e => e.status === 403);
 });
+await t('analysis is a step the person takes: added documents wait, an analysis stamps the set, a later change makes it stale, and the stamp survives every other change', () => {
+  assert.equal(M.analysisState({}), 'none'); let d = M.add(legacy, { role: 'amendment', name: 'Amend.pdf', pages: [page(1, 'Amendment text that changes the term.')] }, B, 'Sam').data; assert.equal(M.analysisState(d), 'waiting');
+  d = M.setAnalysis(d, 'Dinesh', B); assert.equal(M.analysisState(d), 'current'); assert.equal(d.analysis.by, 'Dinesh');
+  d = M.verify(d, d.docs[0].id, 'Dinesh', B); assert.equal(M.analysisState(d), 'current'); d = M.setCheck(d, { ok: 1 }, 'Dinesh', B); assert.equal(M.analysisState(d), 'current'); d = M.setScan(d, [], 'Dinesh', B); assert.equal(M.analysisState(d), 'current');
+  d = M.add(d, { role: 'order_form', name: 'Order.pdf', pages: [page(1, 'Order form text.')] }, B, 'Sam').data; assert.equal(M.analysisState(d), 'stale'); d = M.setAnalysis(d, 'Dinesh', B); assert.equal(M.analysisState(d), 'current');
+  d = M.remove(d, d.docs[2].id); assert.equal(M.analysisState(d), 'stale');
+});
 console.log(n + ' contract document checks passed');

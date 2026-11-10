@@ -135,7 +135,7 @@
   }
   // Two tabs: Contract intake (upload, Claude's progress, the jobs) and Kick-off (only the output: scope, deck, change requests, approval).
   function intakePage() {
-    const head = '<div class="page-header"><div class="t"><h1>Contract intake</h1><p>Upload the signed MSA. A first draft of the project plan, the requirement sessions and the kick-off deck is prepared for you, with Claude\'s help. You review, correct and approve it.</p></div></div>';
+    const head = '<div class="page-header"><div class="t"><h1>Contract intake</h1><p>Add the signed MSA and any amendments or order forms, then press Analyse contracts. A first draft of the project plan, the requirement sessions and the kick-off deck is prepared for you, with Claude\'s help. You review, correct and approve it.</p></div></div>';
     const k = K(); if (k.pid !== pid()) reset(k); return head + '<div class="page-body ko">' + chatCard(pack()) + '</div>';
   }
   function page() {
@@ -173,8 +173,7 @@
       const pages = x ? (x.pages ? x.pages.map(p => ({ n: p.n, text: String(p.text || '').slice(0, 20000) })) : [{ n: 1, text: String(x.text || '').slice(0, 20000) }]) : [];
       if (pages.some(p => p.text.trim())) { await API.put(base() + '/docs/msa_text', { data: { name: fileName, at: new Date().toISOString(), pages }, baseVersion: -1 }); kept = true; }
     } catch (e) { /* not kept: the job below then asks Claude to look in Microsoft 365 */ }
-    try { await API.post(base() + '/jobs', L().pullRequest(S.project.customer, S.project.name, fileName + (kept ? ' (text kept in the Studio: get_document msa_text)' : ''))); K().at = 0; load(true, true); toast(kept ? 'MSA stored and read. A job for Claude was created; the scheduled Claude task picks it up. Follow it on the Kick-off page.' : 'MSA stored, but its text could not be read here, so Claude will look for it in OneDrive or SharePoint. Follow it on the Kick-off page.', 9000); }
-    catch (e) { toast('MSA stored, but the Claude job could not be created: ' + (e.message || 'open Kick-off and press Pull MSA'), 8000, true); }
+    toast(kept ? 'Contract stored and read. Add any other contract documents, then press Analyse contracts.' : 'Contract stored. Press Analyse contracts when you are ready.', 7000);
   };
   ACT.koReview = el => { if (guard()) return; const p = pack(); if (!p || p.status !== 'draft') return; setDoc('kickoff_pack', L().setReview(F.doc('kickoff_pack'), el.getAttribute('data-id'), !!el.checked, S.user.email, new Date().toISOString())); F.changed(null, null, { section: 'kickoff_pack' }); };
   ACT.koRefresh = () => load(true, true);

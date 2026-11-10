@@ -17,7 +17,7 @@
     const o = obj(d); if (Array.isArray(o.docs)) return o.docs.filter(x => x && x.id && arr(x.pages).length).map(x => Object.assign({ role: 'msa', status: 'read' }, x, { pages: pagesOf(x.pages) }));
     return arr(o.pages).length ? [{ id: 'd1', role: 'msa', label: 'Master agreement', name: str(o.name, 200), at: o.at || '', pages: pagesOf(o.pages), status: 'read', verifiedBy: '', verifiedAt: '' }] : [];
   }
-  const stateOf = d => ({ docs: docsOf(d), check: obj(d).check || null, scan: obj(d).scan || null });
+  const stateOf = d => ({ docs: docsOf(d), check: obj(d).check || null, scan: obj(d).scan || null, analysis: obj(d).analysis || null });
   const nextId = docs => 'd' + (Math.max(0, ...arr(docs).map(x => parseInt(String(obj(x).id).slice(1), 10) || 0)) + 1);
   /** add a document: { role, name, pages, fileId } -> { data, doc } or { error }. The label counts per role ("Amendment 2"). */
   function add(d, raw, at, by) {
@@ -25,16 +25,16 @@
     const name = str(r.name, 200); if (st.docs.some(x => x.name === name && x.pages.length === pages.length && x.pages[0].text === pages[0].text)) return { error: name + ' is already added.' };
     const role = ROLE[r.role] ? r.role : 'other'; const same = st.docs.filter(x => x.role === role).length; const label = ROLE[role] + (same || role === 'amendment' ? ' ' + (same + 1) : '');
     const doc = { id: nextId(st.docs), role, label, name, at: at || '', by: str(by, 120), pages, status: 'read', verifiedBy: '', verifiedAt: '', fileId: str(r.fileId, 80) };
-    return { data: { docs: st.docs.concat(doc), check: st.check, scan: st.scan }, doc };
+    return { data: { docs: st.docs.concat(doc), check: st.check, scan: st.scan, analysis: st.analysis }, doc };
   }
-  const remove = (d, id) => { const st = stateOf(d); return { docs: st.docs.filter(x => x.id !== id), check: st.check, scan: st.scan }; };
+  const remove = (d, id) => { const st = stateOf(d); return { docs: st.docs.filter(x => x.id !== id), check: st.check, scan: st.scan, analysis: st.analysis }; };
   /** a person verifies a document (reading it against what was extracted); the AI never does */
-  const verify = (d, id, by, at) => { const st = stateOf(d); return { docs: st.docs.map(x => (x.id === id ? Object.assign({}, x, { status: 'verified', verifiedBy: str(by, 120), verifiedAt: at || '' }) : x)), check: st.check, scan: st.scan }; };
-  const unverify = (d, id) => { const st = stateOf(d); return { docs: st.docs.map(x => (x.id === id ? Object.assign({}, x, { status: 'read', verifiedBy: '', verifiedAt: '' }) : x)), check: st.check, scan: st.scan }; };
+  const verify = (d, id, by, at) => { const st = stateOf(d); return { docs: st.docs.map(x => (x.id === id ? Object.assign({}, x, { status: 'verified', verifiedBy: str(by, 120), verifiedAt: at || '' }) : x)), check: st.check, scan: st.scan, analysis: st.analysis }; };
+  const unverify = (d, id) => { const st = stateOf(d); return { docs: st.docs.map(x => (x.id === id ? Object.assign({}, x, { status: 'read', verifiedBy: '', verifiedAt: '' }) : x)), check: st.check, scan: st.scan, analysis: st.analysis }; };
   /** a short fingerprint of the set of documents (names and sizes), to know whether a check still describes them */
   const fingerprint = d => docsOf(d).map(x => x.id + ':' + x.name + ':' + x.pages.reduce((n, p) => n + p.text.length, 0)).join('|');
   const isCurrent = d => { const c = obj(obj(d).check); return !!c.fingerprint && c.fingerprint === fingerprint(d); };
-  const setCheck = (d, result, by, at) => ({ docs: stateOf(d).docs, check: { at, by: str(by, 120), fingerprint: fingerprint(d), result }, scan: stateOf(d).scan });
+  const setCheck = (d, result, by, at) => ({ docs: stateOf(d).docs, check: { at, by: str(by, 120), fingerprint: fingerprint(d), result }, scan: stateOf(d).scan, analysis: stateOf(d).analysis });
   /** what Claude and people read: the list of documents and parts. Parts are d<k>p<n> (document k, page n); p<n> alone is the first document, as before */
   const partList = d => docsOf(d).map((x, i) => ({ doc: 'd' + (i + 1), id: x.id, label: x.label || ROLE[x.role], name: x.name, role: x.role, status: x.status, pages: x.pages.length, parts: x.pages.map(p => 'd' + (i + 1) + 'p' + p.n) }));
   function readPart(d, part) {
@@ -58,7 +58,10 @@
       supersedes: arr(o.supersedes).slice(0, 15).map(s => ({ doc: str(obj(s).doc, 8), clause: str(obj(s).clause, 300), of: str(obj(s).of, 8) })).filter(s => ids.has(s.doc) && ids.has(s.of) && s.clause), gaps: list(o.gaps, 12, 300), recommendations: list(o.recommendations, 12, 300) };
   }
   // ---------- which modules the documents are about (the AI reads the contract; the rules in src/contractmods.js read it too) ----------
-  const setScan = (d, result, by, at) => { const st = stateOf(d); return { docs: st.docs, check: st.check, scan: { at, by: str(by, 120), fingerprint: fingerprint(d), result } }; };
+  const setScan = (d, result, by, at) => { const st = stateOf(d); return { docs: st.docs, check: st.check, scan: { at, by: str(by, 120), fingerprint: fingerprint(d), result }, analysis: st.analysis }; };
+  /** the person pressed "Analyse contracts": the documents as they are now are the ones analysed. state: none (no documents), waiting (added, not analysed), current, stale (the documents changed since) */
+  const setAnalysis = (d, by, at) => Object.assign({}, stateOf(d), { analysis: { at, by: str(by, 120), fingerprint: fingerprint(d) } });
+  const analysisState = d => { if (!docsOf(d).length) return 'none'; const a = obj(obj(d).analysis); if (!a.fingerprint) return 'waiting'; return a.fingerprint === fingerprint(d) ? 'current' : 'stale'; };
   const scanCurrent = d => { const c = obj(obj(d).scan); return !!c.fingerprint && c.fingerprint === fingerprint(d); };
   /** cat: [{ name, label }] the module catalogue (the page sends it; the server has none). The model maps what the contract delivers to a catalogue name, or leaves the name empty when Facilio has no such module. */
   function modulesPrompt(d, cat, budget) {
@@ -75,5 +78,5 @@
   /** the request text for the job that makes Claude re-read ALL the documents (the extraction is one combined extraction) */
   const rereadNote = (d, customer, project) => str([customer, project].filter(Boolean).join(' / ') + ' / ' + docsOf(d).length + ' contract documents: ' + docsOf(d).map(x => x.label + ' (' + x.name + ')').join('; ') + '. Re-read ALL of them and save ONE combined extraction (get_document msa_text lists them)', 590);
 
-  root.FWBMsaDocs = { ROLES, MAX_DOCS, docsOf, stateOf, add, remove, verify, unverify, fingerprint, isCurrent, setCheck, setScan, scanCurrent, modulesPrompt, parseModules, partList, readPart, all, checkPrompt, parseCheck, rereadNote };
+  root.FWBMsaDocs = { ROLES, MAX_DOCS, docsOf, stateOf, add, remove, verify, unverify, fingerprint, isCurrent, setCheck, setScan, scanCurrent, setAnalysis, analysisState, modulesPrompt, parseModules, partList, readPart, all, checkPrompt, parseCheck, rereadNote };
 })(typeof window !== 'undefined' ? window : globalThis);

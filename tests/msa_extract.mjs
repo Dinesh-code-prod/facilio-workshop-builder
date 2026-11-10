@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import handler from '../work/server/api.mjs';
-import { validateExtraction, planFromExtraction, holdingId, LIMITS } from '../work/server/_msaextract.mjs';
+import { validateExtraction, checkQuotes, planFromExtraction, holdingId, LIMITS } from '../work/server/_msaextract.mjs';
 
 let n = 0; const t = async (name, fn) => { await fn(); n++; console.log('  ok  ' + name); };
 
@@ -171,5 +171,16 @@ await t('in a project: editors save, approval is the owner\'s in the app and nev
 await t('the transfer routes still work for the project\'s own transfers and no tool approves', async () => {
   const names = JSON.parse(fs.readFileSync(new URL('../work/work.json', import.meta.url), 'utf8')).mcp.tools.map(x => x.name); assert.ok(!names.some(x => /approv/i.test(x)));
   assert.equal((await tool(SAM, 'transfer_list', { project: pid })).data.total, 1);
+});
+await t('the quote check: an item that says "contract" keeps that label only when its exact words are on the page it names', () => {
+  const pages = [{ n: 1, text: 'Parties. This Agreement is between Acme and Facilio.' }, { n: 4, text: '4.2 The Supplier shall deliver work order management for fourteen towers across two shifts.' }, { n: 6, text: 'Schedule B. Exclusions: IoT sensors are not included.' }];
+  const ex = { scope: [{ text: 'Work orders for fourteen towers', origin: 'contract', status: 'confirmed', source: { page: 4, section: '4.2', quote: 'Deliver  work order management for FOURTEEN towers across two shifts' } },
+    { text: 'Facilio will integrate with SAP', origin: 'contract', status: 'confirmed', source: { page: 4, quote: 'integrate with SAP over an API' } }, { text: 'Seen on another page', origin: 'contract', status: 'unclear', source: { page: 9, quote: 'IoT sensors are not included' } }, { text: 'No words', origin: 'contract', status: 'unclear', source: { page: 2 } }, { text: 'Read between the lines', origin: 'interpreted', status: 'unclear', source: { page: 4, quote: 'invented wording' } }],
+    exclusions: [{ text: 'IoT sensors', origin: 'contract', source: { page: 6, quote: 'IoT sensors are not included' } }] };
+  const r = checkQuotes(ex, pages); assert.equal(r.checked, 5); assert.equal(r.found, 3); assert.equal(r.downgraded, 1); assert.equal(r.noQuote, 1);
+  assert.equal(r.extraction.scope[0].origin, 'contract'); assert.equal(r.extraction.scope[0].source.quoteFound, true); assert.equal(r.extraction.scope[1].origin, 'interpreted'); assert.equal(r.extraction.scope[1].source.quoteFound, false);
+  assert.equal(r.extraction.scope[2].origin, 'contract', 'a page that holds no such page falls back to any page of the contract'); assert.equal(r.extraction.scope[3].source.quoteFound, undefined); assert.equal(r.extraction.scope[4].origin, 'interpreted'); assert.equal(r.extraction.exclusions[0].origin, 'contract');
+  assert.match(r.warnings.join(' '), /1 item said "contract"[\s\S]*marked interpreted/); assert.match(r.warnings.join(' '), /no quote/); assert.equal(ex.scope[1].origin, 'contract', 'the original is not changed');
+  assert.equal(checkQuotes({ scope: [] }, []).checked, 0);
 });
 console.log(n + ' MSA extraction checks passed');

@@ -92,10 +92,14 @@
   const diffHtml = (a, b) => L().diff(a, b).map(x => x.t === 'same' ? esc(x.w) : x.t === 'add' ? '<ins>' + esc(x.w) + '</ins>' : '<del>' + esc(x.w) + '</del>').join('');
   const jobsOpen = kinds => { const k = J() && J().K(); return !!(k && Array.isArray(k.jobs) && k.jobs.some(j => kinds.includes(j.kind) && ['waiting', 'claimed', 'needs_input'].includes(j.status))); };
 
+  // core = the facility-management modules and fixed areas; connected = everything about links to other systems
+  const isConnected = a => a.group === 'Integrations' || a.group === 'Connected apps' || (!!a.custom && /integration|app|connected/i.test(String(a.type || '')));
+  const trackOk = a => !ui().track || (ui().track === 'connected') === isConnected(a);
+  const trackSwitch = () => { const all = areas(), n = k => all.filter(a => (k === 'connected') === isConnected(a)).length; return '<div class="seg cs-sol-tseg" role="group" aria-label="Core or connected">' + [['', 'Everything', all.length], ['core', 'Core', n('core')], ['connected', 'Connected', n('connected')]].map(([v, l, c]) => '<button type="button" class="' + ((ui().track || '') === v ? 'on' : '') + '" aria-pressed="' + ((ui().track || '') === v) + '" data-act="solTrack" data-v="' + v + '">' + l + ' <em>' + c + '</em></button>').join('') + '</div>'; };
   function nav() {
     const d = doc(), u = cur(), ps = props();
     const qq = String(ui().q || '').trim().toLowerCase();
-    return '<input type="search" id="solQ" class="cs-sol-q" placeholder="Find a module or area" aria-label="Find a module or area" value="' + esc(ui().q || '') + '" data-change="solQ">' + L().GROUPS.map(g => { const as = areas().filter(a => a.group === g && (!qq || String(a.label).toLowerCase().includes(qq))); if (!as.length) return ''; return '<div class="cs-sol-g"><h3>' + esc(g) + '</h3>' + as.map(a => { const n = L().proposalsFor(ps, a.key).length;
+    return trackSwitch() + '<input type="search" id="solQ" class="cs-sol-q" placeholder="Find a module or area" aria-label="Find a module or area" value="' + esc(ui().q || '') + '" data-change="solQ">' + L().GROUPS.map(g => { const as = areas().filter(a => a.group === g && trackOk(a) && (!qq || String(a.label).toLowerCase().includes(qq))); if (!as.length) return ''; return '<div class="cs-sol-g"><h3>' + esc(g) + '</h3>' + as.map(a => { const n = L().proposalsFor(ps, a.key).length;
       return '<button type="button" class="cs-sol-i' + (u && a.key === u.key ? ' on' : '') + '" data-act="solPick" data-key="' + esc(a.key) + '"><span>' + esc(a.label) + '</span>' + (n ? '<em>' + n + ' proposed</em>' : chip(L().statusOf(d, a.key))) + '</button>'; }).join('') + '</div>'; }).join('');
   }
   /** one line that tells the person what Claude reads for the area (the same sources as the server context pack, work/server/_solctx.mjs) */
@@ -218,6 +222,7 @@
     return '<p class="small ' + (bad ? '' : 'muted') + '" style="margin:0"><b>' + (bad ? 'The package and this page differ.' : 'The package matches this page') + '</b> ' + k.modules + ' module' + (k.modules === 1 ? '' : 's') + ' in scope, ' + k.solutions + ' solution' + (k.solutions === 1 ? '' : 's') + ' written. Package ' + esc(String(k.hash).slice(0, 8)) + ', checked ' + esc(when(k.at)) + '.</p>' + (bad ? '<ul class="small" style="margin:6px 0 0;padding-left:18px">' + list('In scope on this page only', k.modOnlyPage) + list('In the package only', k.modOnlyPkg) + list('Solution on this page only', k.solOnlyPage) + list('Solution in the package only', k.solOnlyPkg) + '</ul>' : '');
   }
   ACT.solQ = el => { ui().q = el.value; V.render(); setTimeout(() => { const i = document.getElementById('solQ'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 0); };
+  ACT.solTrack = a => { ui().track = a.getAttribute('data-v') || ''; V.render(); };
   ACT.solPick = a => { const u = ui(); u.key = a.getAttribute('data-key'); u.draft = null; V.render(); };
   ACT.solSave = a => {
     if (guard()) return; const key = a.getAttribute('data-key'), g = i => (document.getElementById(i) || {}).value || ''; const dr = ensureDraft();

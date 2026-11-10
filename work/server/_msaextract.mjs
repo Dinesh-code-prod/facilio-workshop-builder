@@ -61,6 +61,19 @@ const fileName = (label, r) => txt(label, 200) || txt(String(r || '').split(/[\\
 
 /** Turns an approved extraction into what a new project holds. Pure: { project, planner, ctrcore, scope, counts }.
     planner is the project's planner document (the Contract flow's scope items, contractX review fields and the MSA record); ctrcore and scope are the Know Your Contract and Scope page records. */
+/** The quote check: every item that says it comes from the contract (origin "contract") must carry the exact words, and those words must be on the page it names (or on some page, when it names none),
+    in the text the Studio holds for the contract. pages: [{ n, text }] or [{ doc, n, text }]. An item whose quote cannot be found is NOT trusted as contract wording: it becomes "interpreted" and the count is reported.
+    Items with no quote at all stay as they are (they already warn). Pure: no database. Returns { extraction, checked, found, downgraded, noQuote, warnings } */
+export function checkQuotes(extraction, pages) {
+  const norm = t => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); const list = Array.isArray(pages) ? pages : []; const byPage = new Map(); list.forEach(p => { const k = Number(p && p.n); if (k) byPage.set(k, (byPage.get(k) || '') + ' ' + norm(p.text)); }); const all = norm(list.map(p => p && p.text).join(' '));
+  const out = JSON.parse(JSON.stringify(extraction || {})); const stat = { checked: 0, found: 0, downgraded: 0, noQuote: 0 };
+  const fix = it => { if (!it || typeof it !== 'object' || !it.source) return; const q = norm(it.source.quote); if (!q) { if (it.origin === 'contract') stat.noQuote++; return; } stat.checked++; const page = Number(it.source.page); const hay = page && byPage.has(page) ? byPage.get(page) : all;
+    if (hay.includes(q)) { it.source.quoteFound = true; stat.found++; } else { it.source.quoteFound = false; if (it.origin === 'contract') { it.origin = 'interpreted'; stat.downgraded++; } } };
+  ['scope', 'modules', 'commitments', 'deliverables', 'customerResponsibilities', 'facilioResponsibilities', 'exclusions', 'dependencies', 'commercialConstraints', 'training', 'supportAndHandover'].forEach(k => (Array.isArray(out[k]) ? out[k] : []).forEach(fix));
+  const warnings = []; if (stat.downgraded) warnings.push(stat.downgraded + ' item' + (stat.downgraded === 1 ? '' : 's') + ' said "contract" but the quoted words were not found on the page named, so ' + (stat.downgraded === 1 ? 'it was' : 'they were') + ' marked interpreted. Check ' + (stat.downgraded === 1 ? 'it' : 'them') + ' against the contract.');
+  if (stat.noQuote) warnings.push(stat.noQuote + ' item' + (stat.noQuote === 1 ? '' : 's') + ' marked contract ' + (stat.noQuote === 1 ? 'has' : 'have') + ' no quote, so the wording cannot be checked.');
+  return Object.assign({ extraction: out, warnings }, stat);
+}
 export function planFromExtraction(ex, o = {}) {
   const at = o.now || new Date().toISOString(); const src = o.source || {}; const by = 'Claude';
   const snippet = txt('Extracted by Claude from the MSA file ' + (src.ref || '') + (o.transferId ? ' (transfer ' + o.transferId + ')' : ''), 320);

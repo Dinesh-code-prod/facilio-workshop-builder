@@ -4,7 +4,7 @@
    onedrive with the file reference as given, destination studio), so it has a status, versions, an audit trail and a review step. A person approves it in Delivery Studio (Claude cannot).
    Only then does create_project_from_msa make a NEW project from the approved version. With no project the transfer lives in the person's own holding space (the engine's collections under
    the id _msaextract.holdingId(person)): the same code and the same routes as a project's transfers, reachable by that person alone. */
-import { SYSTEMS, validateExtraction, planFromExtraction, txt, holdingId } from './_msaextract.mjs';
+import { SYSTEMS, validateExtraction, checkQuotes, planFromExtraction, txt, holdingId } from './_msaextract.mjs';
 import { buildKickoffPack } from './_kickoffpack.mjs';
 
 const URL_BASE = 'https://facilio-delivery-studio.facilio.work/#/p/';
@@ -42,6 +42,8 @@ export function installMsaExtract(d, transfer) {
       const src = isObj(b.source) ? b.source : {}; const system = typeof src.system === 'string' ? src.system.trim().toLowerCase() : ''; if (!SYSTEMS.includes(system)) throw new HttpError(400, 'source.system must be ' + SYSTEMS.join(' or ') + ' (where Claude read the MSA).');
       const ref = typeof src.ref === 'string' ? src.ref.trim() : ''; if (!ref || ref.length > 500) throw new HttpError(400, 'source.ref is required: the file reference as the Microsoft 365 connector gave it (up to 500 characters).');
       const project = String(b.project || '').trim() || 'holding', space = project === 'holding' ? 'holding' : 'project';
+      // the quote check: an item that says "contract" must have its exact words on the page it names, in the text the Studio holds for the contract
+      if (space === 'project') { try { const cur = await viaApp('GET', '/api/projects/' + await pidOf(s, { project }) + '/docs/msa_text'); const dd = (cur && cur.data) || {}; const pgs = Array.isArray(dd.docs) ? dd.docs.flatMap(x => (Array.isArray(x.pages) ? x.pages : [])) : (Array.isArray(dd.pages) ? dd.pages : []); if (pgs.length) { const qc = checkQuotes(v.extraction, pgs); v.extraction = qc.extraction; v.warnings = v.warnings.concat(qc.warnings); } } catch (e) { /* no stored text to check against: the extraction is saved as it is */ } }
       const begun = await CONNECTOR.transfer_begin(s, { project, dir: 'pull', kind: 'msa', source: { system, ref, label: src.label, etag: src.etag }, dest: { system: 'studio', ref: 'msa-extraction' }, scope: '' }); const id = begun.transfer.id;
       let r = await CONNECTOR.transfer_store(s, { project, id, content: JSON.stringify(v.extraction), baseVersion: b.baseVersion, sourceEtag: src.etag, validation: { ok: true, checked: 'extraction structure', warnings: v.warnings.slice(0, 2) }, note: txt(b.note, 200) || 'MSA extraction saved by Claude' });
       if (b.submit !== false && ['Retrieved', 'Draft Generated'].includes(r.transfer.status)) r = await CONNECTOR.transfer_submit(s, { project, id, note: 'Extraction submitted for review by Claude' });

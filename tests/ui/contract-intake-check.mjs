@@ -1,0 +1,39 @@
+// Contract intake (9 Nov 2026) in a real browser: nothing is analysed until the person presses Analyse contracts (the page shows the four steps and the state), the Questions page groups by module with a Core / Connected
+// switch and shows the quoted contract words, and the Solution page has the same switch. Usage: node tests/ui/contract-intake-check.mjs [baseUrl]   (set PW_CHANNEL=msedge if needed)
+import { chromium } from 'playwright';
+const BASE = process.argv[2] || 'http://localhost:4173';
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const p = await (await b.newContext({ viewport: { width: 1400, height: 1000 } })).newPage();
+const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
+await p.goto(BASE + '/?nointro'); await p.waitForSelector('[data-act]');
+const pid = await p.evaluate(async () => (await (await fetch('/api/fn/api/demo-project')).json()).id);
+const api = (m, path, body) => p.evaluate(async ([pid, m, path, body]) => { const r = await fetch(`/api/fn/api/projects/${pid}${path}`, { method: m, headers: { 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }); return r.ok ? r.json() : { error: r.status }; }, [pid, m, path, body]);
+const keep = {}; for (const k of ['msa_text', 'rs_questions']) { const r = await api('GET', '/docs/' + k); keep[k] = { data: r.data || null, version: r.version == null ? -1 : r.version }; }
+const putDoc = async (k, data) => { const r = await api('GET', '/docs/' + k); return api('PUT', '/docs/' + k, { data, baseVersion: r.version == null ? -1 : r.version }); };
+await putDoc('msa_text', { docs: [{ id: 'd1', role: 'msa', label: 'Master agreement', name: 'Test MSA.pdf', at: '2026-11-09T10:00:00Z', pages: [{ n: 1, text: 'The Supplier shall provide work order management for fourteen towers.' }, { n: 2, text: 'Integration with SAP through an API.' }], status: 'read' }], analysis: { at: '2026-11-01T10:00:00Z', by: 'Sam', fingerprint: 'an older set of documents' } });
+await putDoc('rs_questions', { items: [
+  { id: 'qb_1', order: 1, state: 'kept', text: 'Which of the fourteen towers run two shifts, and who hands the open work orders over between them?', category: 'workflow', track: 'core', module: 'workorder', why: 'handover rules', ref: 'MSA 1 p.1', quote: 'work order management for fourteen towers', priority: 'must', expected: 'names and times', history: [] },
+  { id: 'qb_2', order: 2, state: 'kept', text: 'Which SAP version receives the purchase orders, who owns the API access, and what happens when it is down?', category: 'integration', track: 'connected', module: 'workorder', why: 'interface ownership', ref: 'MSA 1 p.2', quote: 'Integration with SAP through an API', priority: 'must', expected: 'version, owner, fallback', history: [] },
+  { id: 'qb_3', order: 3, state: 'suggested', text: 'Which exclusions in Schedule B change the go-live scope?', category: 'scope', track: 'core', module: '', why: 'scope boundary', ref: '', quote: '', priority: 'should', expected: '', history: [] }], summaries: [] });
+await p.goto(BASE + `/?nointro#/p/${pid}/msaintake`); await p.reload(); await p.waitForSelector('.md-card', { timeout: 25000 }); await p.waitForTimeout(1200);
+const intake = await p.evaluate(() => ({ steps: [...document.querySelectorAll('.md-steps .md-st')].map(x => x.textContent.replace(/\s+/g, ' ').trim()), bar: (document.querySelector('.md-an') || {}).className || '', msg: (document.querySelector('.md-an-t') || {}).textContent || '', btn: (document.querySelector('[data-act="mdAnalyse"]') || {}).textContent || '' }));
+check('four steps are shown: add, analyse, review the kick-off, questions and solutions', intake.steps.length === 4 && /Add the contract documents/.test(intake.steps[0]) && /Analyse contracts/.test(intake.steps[1]) && /Questions and solutions/.test(intake.steps[3]), intake.steps.join(' | '));
+check('documents changed since the last analysis: the page says so and offers Analyse contracts (nothing re-reads by itself)', /stale/.test(intake.bar) && /changed since the last analysis/i.test(intake.msg) && /Analyse contracts/.test(intake.btn), intake.bar + ' | ' + intake.btn);
+await p.click('[data-act="mdAnalyse"]'); await p.waitForTimeout(800);
+const dlg = await p.evaluate(() => document.body.innerText); check('pressing it asks first and says what will be read (documents and pages)', /Analyse the contracts/.test(dlg) && /1 document/.test(dlg) && /2 pages/.test(dlg));
+await p.getByRole('button', { name: 'Analyse', exact: true }).last().click().catch(() => { }); await p.waitForTimeout(2500);
+const after = await api('GET', '/docs/msa_text'); check('after "Analyse" the analysis is stamped with who and when, for exactly these documents', after.data && after.data.analysis && after.data.analysis.by && after.data.analysis.fingerprint !== 'an older set of documents', JSON.stringify(after.data && after.data.analysis).slice(0, 100));
+// questions: grouped by module, core / connected switch, the quoted words
+await p.goto(BASE + `/?nointro#/p/${pid}/rsquestions`); await p.reload(); await p.waitForSelector('.qb', { timeout: 25000 }); await p.waitForTimeout(1200);
+const q1 = await p.evaluate(() => ({ seg: [...document.querySelectorAll('.qb-tseg button')].map(x => x.textContent.replace(/\s+/g, ' ').trim()), heads: [...document.querySelectorAll('.qb .card-h b')].map(x => x.textContent), quotes: document.querySelectorAll('.qb-qt').length, trk: document.querySelectorAll('.qb-trk').length }));
+check('the switch counts everything, core and connected', q1.seg.length === 3 && /Everything 3/.test(q1.seg[0]) && /Core 2/.test(q1.seg[1]) && /Connected systems 1/.test(q1.seg[2]), q1.seg.join(' | '));
+check('questions are grouped by module, the contract-wide ones last; the contract words and the Connected tag show', q1.heads.length === 2 && /Contract-wide/.test(q1.heads[1]) && q1.quotes === 2 && q1.trk === 1, JSON.stringify(q1));
+await p.click('.qb-tseg button:nth-child(3)'); await p.waitForTimeout(300); const q2 = await p.evaluate(() => [...document.querySelectorAll('.qb-t')].map(x => x.textContent)); check('Connected shows only the connected question', q2.length === 1 && /SAP/.test(q2[0]), q2.length + '');
+// solution: the same switch over the list of areas
+await p.goto(BASE + `/?nointro#/p/${pid}/solution`); await p.reload(); await p.waitForSelector('.cs-sol-tseg', { timeout: 25000 }); await p.waitForTimeout(800);
+const s1 = await p.evaluate(() => [...document.querySelectorAll('.cs-sol-g h3')].map(x => x.textContent)); await p.click('.cs-sol-tseg button:nth-child(3)'); await p.waitForTimeout(300); const s2 = await p.evaluate(() => [...document.querySelectorAll('.cs-sol-g h3')].map(x => x.textContent));
+check('Solution: Connected lists only the Integrations and Connected apps areas', s2.length >= 1 && s2.every(x => /Integrations|Connected apps/.test(x)) && s1.length > s2.length, s1.join(',') + ' -> ' + s2.join(','));
+await p.click('.cs-sol-tseg button:nth-child(2)'); await p.waitForTimeout(300); const s3 = await p.evaluate(() => [...document.querySelectorAll('.cs-sol-g h3')].map(x => x.textContent)); check('Core hides them', s3.length >= 1 && !s3.some(x => /Integrations|Connected apps/.test(x)), s3.join(','));
+// put the demo project back as it was
+for (const k of ['msa_text', 'rs_questions']) { const r = await api('GET', '/docs/' + k); await api('PUT', '/docs/' + k, { data: keep[k].data || {}, baseVersion: r.version == null ? -1 : r.version }); }
+check('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
+console.log(res.filter(Boolean).length + '/' + res.length + ' checks passed'); await b.close(); process.exit(res.every(Boolean) ? 0 : 1);
