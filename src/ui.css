@@ -2379,3 +2379,7 @@ body .page-header .row .btn:not(.primary):hover:not(#_):not(#__):not(#___):not(#
 body .page-header .row .row.small .btn.link:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { height: 28px; padding: 0 10px; background: #fff; color: #1D1A5E; border-color: #fff; }
 body .page-header .row .btn.primary:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: #fff; color: #1D1A5E; border: 1px solid #fff; }
 body .page-header .row .btn.primary:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: #ececff; }
+
+/* rail stage numbers: always legible, also on the dark tile of the stage you are in (a white badge with a navy ring) */
+body.nav-top .rl-n:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________):not(#__________) { top: 3px; right: 6px; bottom: auto; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: #0a0a0a; color: #fff; font-size: 11px; font-weight: 700; line-height: 17px; font-style: normal; text-align: center; box-shadow: 0 0 0 2px #fff; }
+body.nav-top .rl-b.active .rl-n:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________):not(#__________) { background: #fff; color: #1D1A5E; box-shadow: 0 0 0 2px #1D1A5E; }
