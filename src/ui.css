@@ -2406,3 +2406,6 @@ body .cp-bl:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { dis
 body .cp-bf:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: grid; gap: 4px; padding: 12px 14px; border: 1px solid #e5e5e5; border-radius: 12px; background: #fff; }
 body .cp-bh:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
 body .cp-mchk:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; }
+
+/* the Guide me button steps aside while the Assistant chat is open, so it never covers the message box and its send button */
+body.asst-open .co-pill:not(#_):not(#__):not(#___) { display: none !important; }
