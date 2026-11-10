@@ -17,19 +17,29 @@
     7: ['Support closely for the first weeks after go-live.', 'Hypercare reports.'],
     8: ['Hand the project to the support team and close it.', 'The handover pack and closure report.']
   };
+  // the customer menu has named groups, not numbered stages
+  const CUST = {
+    'Your project': ['Where your project stands: the dashboard, the contract, the scope and the plan.', 'You know the plan and what is due next.'],
+    'Prepare for sessions': ['Get ready for the workshops: the schedule, what to read and the data we need from you.', 'You arrive at each session prepared.'],
+    'Learn Facilio': ['See what Facilio can do and read the guides for your modules.', 'You know the product before it is built.'],
+    'Review and sign off': ['Review decisions and changes, follow the build and test it.', 'You have signed off what was agreed.'],
+    'And more': ['What changed lately, and more to explore.', '']
+  };
+  const CUST_HINT = { projdash: 'Where the project stands today', cust_home: 'Your welcome page', kickoff: 'The kick-off deck', contract: 'The signed contract', scope: 'What is in the project', plan: 'Dates and milestones', schedule: 'When each workshop runs', onboarding: 'The data we need from you', governance: 'Decisions and sign-offs waiting for you', changes: 'Changes to the agreed scope', delivery: 'Build progress and test results', uatrun: 'Test the system and report what you find' };
   let list = [], at = -1, timer = 0, ring, card;
-  const team = () => !!(S.user && S.user.kind !== 'customer');
+  const user = () => !!(S.user && S.project);
+  const cust = () => !!(S.user && S.user.kind === 'customer');
   const seenKey = () => 'fwb_coach_' + ((S.project && S.project.id) || '');
   const lsGet = k => { try { return root.localStorage.getItem(k); } catch (e) { return null; } };
   const lsSet = k => { try { root.localStorage.setItem(k, '1'); } catch (e) { /* private window */ } };
-  const stageBtns = () => [...doc.querySelectorAll('.sidebar .sb-title')].filter(b => b.querySelector('.sb-no'));
+  const stageBtns = () => [...doc.querySelectorAll('.sidebar .sb-title')].filter(b => cust() || b.querySelector('.sb-no'));
   const stageEl = g => stageBtns().find(b => b.getAttribute('data-g') === g);
   const itemEl = id => doc.querySelector('.sidebar .sb-item[data-view="' + id + '"]');
   const tgt = s => (s.kind === 'stage' ? stageEl(s.g) : itemEl(s.id));
   function build() {
     const out = [];
     stageBtns().forEach(b => {
-      const g = b.getAttribute('data-g'); const n = +b.querySelector('.sb-no').textContent; const name = g.replace(/^\d\.\s*/, '');
+      const g = b.getAttribute('data-g'); const no = b.querySelector('.sb-no'); const n = no ? +no.textContent : 0; const name = g.replace(/^\d\.\s*/, '');
       out.push({ kind: 'stage', g, n, name });
       (b.getAttribute('data-views') || '').split(',').filter(Boolean).forEach(id => out.push({ kind: 'page', g, id, n }));
     });
@@ -55,13 +65,13 @@
     Object.assign(card.style, { left: Math.max(8, left) + 'px', top: Math.max(12, Math.min(r.top - 8, root.innerHeight - card.offsetHeight - 12)) + 'px' });
   }
   function text(s) {
-    if (s.kind === 'stage') { const d = STAGE[s.n] || ['', '']; return [`Stage ${s.n}: ${s.name}`, d[0], d[1] ? 'You finish with: ' + d[1] : '', 'Click the stage to open it, or press Next.']; }
+    if (s.kind === 'stage') { const d = (s.n ? STAGE[s.n] : CUST[s.name]) || ['', '']; return [s.n ? `Stage ${s.n}: ${s.name}` : s.name, d[0], d[1] ? 'You finish with: ' + d[1] : '', 'Click the stage to open it, or press Next.']; }
     ensureOpen(s); const t = itemEl(s.id); const lab = t ? (t.querySelector('span') || t).firstChild.textContent.trim() : s.id;
-    return [lab, (V.NAV_HINT && V.NAV_HINT[s.id]) || 'A page of this stage.', '', 'Click the glowing page to open it, or press Next.'];
+    return [lab, (V.NAV_HINT && V.NAV_HINT[s.id]) || CUST_HINT[s.id] || 'A page of this stage.', '', 'Click the glowing page to open it, or press Next.'];
   }
   function show(i) {
     at = Math.max(0, Math.min(i, list.length - 1)); const s = list[at]; const [h, p1, p2, hint] = text(s);
-    const stageNo = s.kind === 'page' ? ` · stage ${s.n}` : '';
+    const stageNo = s.kind === 'page' && s.n ?` · stage ${s.n}` : '';
     card.innerHTML = `<p class="co-n">Step ${at + 1} of ${list.length}${stageNo}</p><h3>${esc(h)}</h3><p>${esc(p1)}</p>${p2 ? `<p><b>${esc(p2)}</b></p>` : ''}<p class="co-hint">${esc(hint)}</p>
       <div class="co-b"><button class="btn sm" data-co="skip">Skip guide</button><span></span>${at ? '<button class="btn sm" data-co="back">Back</button>' : ''}<button class="btn sm primary" data-co="next">${at === list.length - 1 ? 'Finish' : 'Next'}</button></div>`;
     place();
@@ -82,7 +92,7 @@
   }
   const onKey = e => { if (e.key === 'Escape') stop(true); };
   function start() {
-    if (!team() || !S.project) return;
+    if (!user()) return;
     stop(); list = build(); if (!list.length) return;
     ring = doc.createElement('div'); ring.className = 'co-ring'; card = doc.createElement('div'); card.className = 'co-card';
     card.setAttribute('role', 'dialog'); card.setAttribute('aria-label', 'Guided start');
@@ -92,7 +102,7 @@
   }
   // the "Guide me" pill, and the one-time offer the first time a team member opens a project
   function pill() {
-    const old = doc.getElementById('coPill'); const ok = team() && S.project && stageBtns().length;
+    const old = doc.getElementById('coPill'); const ok = user() && stageBtns().length;
     if (!ok) { if (old) old.remove(); return; }
     if (!old) { const b = doc.createElement('button'); b.id = 'coPill'; b.className = 'co-pill'; b.textContent = 'Guide me'; b.title = 'A guided walk through all eight stages, step by step'; b.addEventListener('click', start); doc.body.appendChild(b); }
     if (!lsGet(seenKey()) && at < 0) { lsSet(seenKey()); setTimeout(start, 800); }
