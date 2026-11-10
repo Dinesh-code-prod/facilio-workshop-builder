@@ -2240,3 +2240,22 @@ body .md-st.now { border-color: #171717; color: #171717; } body .md-st.now i, bo
   body.nav-top .mt-d { width: 1px; height: 20px; margin: 0 6px; background: #d4d4d4; }
   body.nav-top .main .crumb:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________) { display: none; }
 }
+
+/* module-tab rail: icon with its short name under it */
+@media (min-width: 861px) {
+  body.nav-top .shell:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { grid-template-columns: 84px 1fr !important; }
+  body.nav-top .shell > .sidebar:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { width: 84px !important; padding: 10px 0 !important; }
+  body.nav-top .rl { gap: 4px; }
+  body.nav-top .rl-b:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { width: 74px; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 4px 2px; border-radius: 12px; }
+  body.nav-top .rl-l { max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 600; line-height: 1.1; }
+  body.nav-top .rl-n:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { right: 8px; top: 5px; bottom: auto; }
+}
+body .tl-ptop:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { display: grid; gap: 10px; }
+body .tl-prail:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 6px; }
+body .tl-pr:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { display: grid; justify-items: center; gap: 2px; padding: 6px 2px; border-radius: 10px; border: 1px solid #e5e5e5; color: #404040; }
+body .tl-pr i:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { display: grid; width: 18px; height: 18px; } body .tl-pr i svg { width: 18px; height: 18px; }
+body .tl-pr em:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { font-style: normal; font-size: 10.5px; font-weight: 600; }
+body .tl-pr.on:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { background: #1D1A5E; border-color: #1D1A5E; color: #fff; }
+body .tl-ptabs:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 8px; border-top: 1px solid #e5e5e5; }
+body .tl-ptabs span:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { padding: 5px 10px; border-radius: 8px; font-size: 12px; color: #262626; background: #fff; }
+body .tl-ptabs span.on:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { background: #ececec; font-weight: 700; color: #0a0a0a; }

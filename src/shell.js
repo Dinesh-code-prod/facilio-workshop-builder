@@ -267,10 +267,17 @@
   const navHtml = () => (navPos() === 'top' ? topnavHtml() : sidebarHtml());
   const stageAt = (nav, view) => { const v = view === 'overview' ? 'lifecycle' : view === 'module' ? 'modules' : view; return nav.find(g => g.items.some(([id]) => id === v)); };
   const lastPage = {};   // the page last opened in each stage, so the rail icon returns to it
+  // one icon of its own and a short name for every stage, so the rail can be read at a glance
+  const RAIL_IC = { 1: 'home', 2: 'mic', 3: 'modules', 4: 'check', 5: 'book', 6: 'play', 7: 'shield', 8: 'doc', 'Customer View': 'eye', Help: 'spark', Settings: 'gear' };
+  const RAIL_LB = { 1: 'Intro', 2: 'Sessions', 3: 'Solution', 4: 'UAT', 5: 'Training', 6: 'Go-live', 7: 'Hypercare', 8: 'Handover', 'Customer View': 'Customer', Help: 'Help', Settings: 'Settings' };
+  const railKey = g => { const n = stageNo(g); return n || g.g; };
+  V.railIcon = g => { const k = RAIL_IC[railKey(g)]; return k ? ico(k) : groupIcon(g); };
+  V.railLabel = g => RAIL_LB[railKey(g)] || String(g.g).replace(/^\d+\.\s*/, '').split(/\s+/)[0].slice(0, 10);
+  V.navPosNow = () => navPos();
   function topnavHtml() {
     const nav = navFor(); const cur = stageAt(nav, S.ui.view); if (cur) lastPage[cur.g] = S.ui.view === 'overview' ? 'lifecycle' : S.ui.view;
     return '<div class="rl" role="menubar" aria-label="Project stages">' + nav.map(g => { const no = stageNo(g), act = g === cur || (cur && g.g === cur.g); const nm = g.g.replace(/^\d+\.\s*/, ''); const first = (g.items.find(([id]) => id === lastPage[g.g]) || g.items[0])[0];
-      return '<button type="button" class="rl-b' + (act ? ' active' : '') + '" data-act="railGo" data-view="' + first + '" data-tip="' + esc((no ? no + ' · ' : '') + nm) + '" aria-label="' + esc((no ? 'Stage ' + no + ': ' : '') + nm) + '"' + (act ? ' aria-current="true"' : '') + '>' + groupIcon(g) + (no ? '<i class="rl-n" aria-hidden="true">' + no + '</i>' : '') + '</button>'; }).join('') + '</div>';
+      return '<button type="button" class="rl-b' + (act ? ' active' : '') + '" data-act="railGo" data-view="' + first + '" data-tip="' + esc((no ? no + ' · ' : '') + nm) + '" aria-label="' + esc((no ? 'Stage ' + no + ': ' : '') + nm) + '"' + (act ? ' aria-current="true"' : '') + '>' + V.railIcon(g) + (no ? '<i class="rl-n" aria-hidden="true">' + no + '</i>' : '') + '<span class="rl-l">' + esc(V.railLabel(g)) + '</span></button>'; }).join('') + '</div>';
   }
   // the tabs of the stage you are in, across the top of the page (the Facilio module-tab look)
   function modTabsHtml() {
