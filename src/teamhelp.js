@@ -11,7 +11,7 @@
   const HIDE_PKG = !!(V.featureHidden && V.featureHidden('orgpkg'));
   const PHASES = [
     ['1', 'Project introduction', 'Agree what is being delivered, by when, and who does what.', [
-      ['msaintake', 'Contract intake', 'Add the MSA and order form. Claude reads them with the Microsoft 365 connector; you check the extraction in Transfers and approve it. Check the scope, fees and dates before you rely on them.'],
+      ['msaintake', 'Contract intake', 'Add the MSA and order form. Claude reads them with the Microsoft 365 connector; you check the extraction in Transfers and approve it. Check the scope, fees and dates before you rely on them. Integrations named in the contract arrive as facts to confirm on Contracts & Integrations; confirming one opens its Solution area and adds the integration questions to the question bank.'],
       ['kickoff', 'Project introduction', 'Build the kick-off deck from the contract, present it and record who attended. Import a reference (a deck, plan or schedule another team made) and Claude prepares yours the same way, with the facts from this contract.'],
       ['plan', 'Project Plan', 'Import the plan workbook. The timeline, the current phase and the reminders all read from it.']],
       'The customer has seen the scope and plan, and the plan has dates.', 'Plan dates drive every reminder. A plan with no dates means nothing is ever late.'],
