@@ -2285,3 +2285,57 @@ body .tl-ptabs span.on:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#__
 .rl-fi small:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { font-size: 11.5px; line-height: 1.3; color: #525252; }
 body.nav-top .rl-sep { display: block; width: 36px; height: 1px; margin: 4px 0; background: #e0e0e0; }
 body.nav-top .rl-b:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________) { height: 54px; }
+
+/* assistant chat: each engine has its own colour so you see who answered - Claude orange, DeepSeek blue, project records (no AI) green; the whole answer is a highlighted card with a coloured edge */
+body #asst .ki-row.via-claude:not(.you):not(.sys) .ki-bub:not(#_):not(#__):not(#___):not(#____):not(#_____) { background: color-mix(in srgb, #D9632B 8%, #fff) !important; border: 1px solid color-mix(in srgb, #D9632B 32%, #fff) !important; border-left: 4px solid #D9632B !important; border-radius: 4px 14px 14px 14px !important; padding: 10px 14px 22px !important; }
+body #asst .ki-row.via-claude .ki-av:not(#_):not(#__):not(#___):not(#____):not(#_____) { background: #D9632B !important; color: #fff !important; }
+body #asst .ki-via.claude:not(#_):not(#__):not(#___):not(#____):not(#_____) { padding: 2px 9px 2px 7px !important; border-radius: 999px !important; background: color-mix(in srgb, #D9632B 13%, #fff) !important; color: color-mix(in srgb, #D9632B 85%, #000) !important; font-weight: 700 !important; }
+body #asst .ki-via.claude i:not(#_):not(#__):not(#___):not(#____):not(#_____) { background: #D9632B !important; }
+body #asst .ki-row.via-deepseek:not(.you):not(.sys) .ki-bub:not(#_):not(#__):not(#___):not(#____):not(#_____) { background: color-mix(in srgb, #3B5BDB 8%, #fff) !important; border: 1px solid color-mix(in srgb, #3B5BDB 32%, #fff) !important; border-left: 4px solid #3B5BDB !important; border-radius: 4px 14px 14px 14px !important; padding: 10px 14px 22px !important; }
+body #asst .ki-row.via-deepseek .ki-av:not(#_):not(#__):not(#___):not(#____):not(#_____) { background: #3B5BDB !important; color: #fff !important; }
+body #asst .ki-via.deepseek:not(#_):not(#__):not(#___):not(#____):not(#_____) { padding: 2px 9px 2px 7px !important; border-radius: 999px !important; background: color-mix(in srgb, #3B5BDB 13%, #fff) !important; color: color-mix(in srgb, #3B5BDB 85%, #000) !important; font-weight: 700 !important; }
+body #asst .ki-via.deepseek i:not(#_):not(#__):not(#___):not(#____):not(#_____) { background: #3B5BDB !important; }
+body #asst .ki-row.via-app:not(.you):not(.sys) .ki-bub:not(#_):not(#__):not(#___):not(#____):not(#_____) { background: color-mix(in srgb, #16803C 8%, #fff) !important; border: 1px solid color-mix(in srgb, #16803C 32%, #fff) !important; border-left: 4px solid #16803C !important; border-radius: 4px 14px 14px 14px !important; padding: 10px 14px 22px !important; }
+body #asst .ki-row.via-app .ki-av:not(#_):not(#__):not(#___):not(#____):not(#_____) { background: #16803C !important; color: #fff !important; }
+body #asst .ki-via.app:not(#_):not(#__):not(#___):not(#____):not(#_____) { padding: 2px 9px 2px 7px !important; border-radius: 999px !important; background: color-mix(in srgb, #16803C 13%, #fff) !important; color: color-mix(in srgb, #16803C 85%, #000) !important; font-weight: 700 !important; }
+body #asst .ki-via.app i:not(#_):not(#__):not(#___):not(#____):not(#_____) { background: #16803C !important; }
+
+/* the answer label fits its text */
+body #asst .ki-via:not(#_):not(#__):not(#___):not(#____):not(#_____) { width: fit-content !important; }
+
+/* top bar: one control height (36px), one corner (10px), hairline borders, a quiet white bar */
+body .navbar:not(#_):not(#__):not(#___):not(#____):not(#_____) { background: #fff !important; border-bottom: 1px solid #e5e5e5 !important; box-shadow: none !important; }
+body .navbar .title:not(#_):not(#__):not(#___):not(#____):not(#_____) { font-size: 13.5px; font-weight: 600; color: #525252; }
+body .navbar .divider:not(#_):not(#__):not(#___):not(#____):not(#_____) { width: 1px; height: 22px; background: #e5e5e5; margin: 0 14px; }
+body .navbar .ws-switch:not(#_):not(#__):not(#___):not(#____):not(#_____) { padding: 3px; border-radius: 10px; background: #f3f3f3; border: 0; height: 38px; }
+body .navbar .ws-switch a:not(#_):not(#__):not(#___):not(#____):not(#_____), body .navbar .ws-switch button:not(#_):not(#__):not(#___):not(#____):not(#_____) { border-radius: 8px; height: 32px; padding: 0 14px; font-weight: 600; }
+body .navbar .ws-switch [aria-current]:not(#_):not(#__):not(#___):not(#____):not(#_____) { background: #fff; box-shadow: 0 0 0 1px #e0e0e0; color: #0a0a0a; }
+body .navbar .nb-proj:not(#_):not(#__):not(#___):not(#____):not(#_____) { height: 40px; padding: 0 14px 0 6px; border-radius: 10px; border: 1px solid #e5e5e5; background: #fff; box-shadow: none; gap: 10px; }
+body .navbar .nb-av:not(#_):not(#__):not(#___):not(#____):not(#_____) { width: 28px; height: 28px; border-radius: 8px; background: #0a0a0a; color: #fff; font-size: 11px; font-weight: 700; }
+body .navbar .hp-chip:not(#_):not(#__):not(#___):not(#____):not(#_____), body .navbar .right .btn.sm:not(#_):not(#__):not(#___):not(#____):not(#_____), body .navbar .gs-btn:not(#_):not(#__):not(#___):not(#____):not(#_____) { height: 36px; border-radius: 10px; font-size: 13px; font-weight: 600; }
+body .navbar .bell:not(#_):not(#__):not(#___):not(#____):not(#_____) { width: 36px; height: 36px; border-radius: 10px; border: 1px solid #e5e5e5; background: #fff; }
+body .navbar .avatar:not(#_):not(#__):not(#___):not(#____):not(#_____) { width: 36px; height: 36px; border-radius: 50%; background: #0a0a0a; color: #fff; border: 0; font-size: 12px; font-weight: 700; }
+
+/* one confirmation dialog everywhere: round icon, title, message, Cancel and the action (red when it deletes) */
+body .dialog.cf:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { width: min(440px, calc(100vw - 32px)); padding: 22px 22px 18px; border-radius: 16px; background: #fff !important; backdrop-filter: none; border: 1px solid #e5e5e5; box-shadow: 0 16px 48px rgba(0,0,0,.14); }
+body .dialog.cf .cf-top:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: flex; gap: 14px; align-items: flex-start; }
+body .dialog.cf .cf-ic:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: #f3f3f3; color: #262626; }
+body .dialog.cf .cf-ic.danger:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #fef3f2; color: #b42318; }
+body .dialog.cf .dialog-h:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { font-size: 16px; font-weight: 700; color: #0a0a0a; margin: 0 0 4px; }
+body .dialog.cf .dialog-b:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { font-size: 13.5px; line-height: 1.5; color: #404040; }
+body .dialog.cf .dialog-f:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; padding: 0; border: 0; }
+/* delete buttons: one tidy style, red text on white with a soft red border; a trash icon when the button has no icon */
+body .btn.danger:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______), body .btn[data-act*="Del"]:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______), body .btn[data-act*="Remove"]:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #fff; color: #b42318; border: 1px solid #f1c3be; box-shadow: none; font-weight: 600; }
+body .btn.danger:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______), body .btn[data-act*="Del"]:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______), body .btn[data-act*="Remove"]:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #fef3f2; border-color: #e5958c; color: #912018; }
+body .dialog.cf .btn.danger:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #d92d20; color: #fff; border-color: #d92d20; }
+body .dialog.cf .btn.danger:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #b42318; border-color: #b42318; color: #fff; }
+body .btn.danger:not(.icon):not(:has(svg)):not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______)::before, body .btn[data-act*="Del"]:not(.icon):not(:has(svg)):not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______)::before, body .btn[data-act*="Remove"]:not(.icon):not(:has(svg)):not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______)::before { content: ""; display: inline-block; width: 14px; height: 14px; margin-right: 6px; vertical-align: -2px; background: currentColor; -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 6h18'/><path d='M8 6V4h8v2'/><path d='M19 6l-1 14H6L5 6'/></svg>") center/contain no-repeat; mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 6h18'/><path d='M8 6V4h8v2'/><path d='M19 6l-1 14H6L5 6'/></svg>") center/contain no-repeat; }
+body .btn.icon.danger:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______), body .btn.icon[data-act*="Del"]:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______), body .btn.icon[data-act*="Remove"]:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { color: #b42318; border-color: transparent; background: transparent; }
+body .btn.icon.danger:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______), body .btn.icon[data-act*="Del"]:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______), body .btn.icon[data-act*="Remove"]:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #fef3f2; border-color: #f1c3be; }
+body .dialog.cf .dialog-h:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { padding: 0 !important; border: 0 !important; margin: 2px 0 4px !important; background: none !important; }
+body .dialog.cf .dialog-b:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { padding: 0 !important; border: 0 !important; background: none !important; }
+body .dialog.cf .dialog-f:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { padding: 0 !important; border: 0 !important; background: none !important; margin-top: 18px !important; }
+body .dialog.cf .btn.danger:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: #d92d20 !important; color: #fff !important; border-color: #d92d20 !important; }
+body .dialog.cf .btn.danger:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: #b42318 !important; border-color: #b42318 !important; }
+body .dialog.cf .btn.danger::before { background: #fff !important; }
+body .dialog.cf .btn.primary:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: #0a0a0a !important; color: #fff !important; border-color: #0a0a0a !important; }
