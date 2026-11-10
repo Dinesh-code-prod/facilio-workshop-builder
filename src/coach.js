@@ -62,7 +62,7 @@
     (how === 'rail' ? railStages() : how === 'side' ? sideStages() : []).forEach(g => {
       const lead = g.n && !seenN.has(g.n); if (g.n) seenN.add(g.n);
       out.push({ kind: 'stage', g: g.g, n: g.n, name: g.name, first: g.first, lead });
-      g.pages.forEach(p => out.push({ kind: 'page', g: g.g, n: g.n, id: p[0], label: p[1], hint: p[2], first: g.first }));
+      g.pages.filter(p => p[0] !== '#').forEach(p => out.push({ kind: 'page', g: g.g, n: g.n, id: p[0], label: p[1], hint: p[2], first: g.first }));
     });
     return out;
   }
@@ -78,7 +78,7 @@
   function ensureOpen(s) {
     if (s.kind !== 'page' || tgt(s) || s.tried) return;
     s.tried = true;
-    if (how === 'rail') { if (V.go && s.first) V.go(s.first); } else { const b = sideBtn(s.g); if (b && b.getAttribute('data-open') !== 'true') b.click(); }
+    if (how === 'rail') { if (V.go) V.go(s.id); } else { const b = sideBtn(s.g); if (b && b.getAttribute('data-open') !== 'true') b.click(); }
   }
   function stop(markSeen) {
     clearInterval(timer); timer = 0; at = -1;

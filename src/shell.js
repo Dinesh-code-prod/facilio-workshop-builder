@@ -273,7 +273,7 @@
   // ---------- menu position: the side menu (default) or a top bar of stages whose pages open in a drop-down. A personal choice kept in this browser (Tabs & Layouts). The top bar needs a wide window; narrow windows keep the menu button and the side drawer. ----------
   const navPos = () => { let v = ''; try { v = root.localStorage.getItem('fwb_navpos') || ''; } catch (e) { } return v !== 'side' && root.innerWidth > 860 ? 'top' : 'side'; };
   const navHtml = () => (navPos() === 'top' ? topnavHtml() : sidebarHtml());
-  const viewKey = v => (v === 'overview' ? 'lifecycle' : v === 'module' ? 'modules' : v);
+  const viewKey = v => (v === 'overview' ? 'lifecycle' : v === 'module' ? 'modules' : v === 'transcripts' ? (S.ui.reqTab === 'prepq' ? 'rsquestions' : 'rstrans') : v);   // the Requirements hub page is not in the menu: it counts as Transcripts (or Questions)
   const stageAt = (nav, view) => { const v = viewKey(view); return nav.find(g => g.items.some(([id]) => id === v)); };
   const lastPage = {};   // the page last opened in each section, so an icon or a section tab returns to it
   // a rail entry is one stage: the groups that share its number (stage 2 and 3 have several sections) or one group on its own
@@ -296,7 +296,7 @@
   function modTabsHtml() {
     const nav = navFor(); const g = stageAt(nav, S.ui.view); if (!g) return ''; const grp = stageNo(g) ? nav.filter(x => stageNo(x) === stageNo(g)) : [g];
     const sec = grp.length > 1 ? '<div class="mt-sec" role="tablist" aria-label="Sections">' + grp.map(x => '<button type="button" class="mt-s' + (x === g ? ' active' : '') + '" role="tab" data-act="nav" data-view="' + firstOf(x) + '"' + (x === g ? ' aria-selected="true"' : '') + '>' + esc(secName(x)) + '<em>' + x.items.length + '</em></button>').join('') + '</div>' : '';
-    return '<nav class="mt-bar" aria-label="' + esc(secName(g)) + ' pages">' + sec + '<div class="mt-in">' + g.items.map(([id, l]) => { const act = S.ui.view === id || (id === 'modules' && S.ui.view === 'module') || (id === 'lifecycle' && S.ui.view === 'overview'); return '<button type="button" class="mt-t' + (act ? ' active' : '') + '" data-act="nav" data-view="' + id + '"' + (NAV_HINT[id] ? ' title="' + esc(NAV_HINT[id]) + '"' : '') + (act ? ' aria-current="page"' : '') + '>' + esc(l) + '</button>'; }).join('') + '</div></nav>';
+    return '<nav class="mt-bar" aria-label="' + esc(secName(g)) + ' pages">' + sec + '<div class="mt-in">' + g.items.map(([id, l]) => { const act = viewKey(S.ui.view) === id; return '<button type="button" class="mt-t' + (act ? ' active' : '') + '" data-act="nav" data-view="' + id + '"' + (NAV_HINT[id] ? ' title="' + esc(NAV_HINT[id]) + '"' : '') + (act ? ' aria-current="page"' : '') + '>' + esc(l) + '</button>'; }).join('') + '</div></nav>';
   }
   ACT.railGo = a => ACT.nav(a);
   // the rail icon lists its pages (and what each is for) beside it while the pointer or the keyboard is on it; a click on a page goes there
