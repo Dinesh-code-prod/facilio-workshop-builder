@@ -6,14 +6,14 @@ import { lead } from './_notify.mjs';
 import { OPEN, LIMITS, KINDS, cleanRequest, newJob, step, brief, leaseExpired } from './_jobs.mjs';
 
 import { hashOf } from './_notify.mjs';
-import { canTake, status as helperStatus, words as helperWords, cleanUsage, mergeUsage, usageDue } from './_helper.mjs';
+import { canTake, status as helperStatus, words as helperWords, cleanUsage, mergeUsage, usageDue, cleanSkills } from './_helper.mjs';
 export function installJobs(d) {
   const { route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, withLock, audit, CONNECTOR, rid, CTX } = d; const notify = d.notify || (async () => 0);
   const col = pid => 'jb.' + pid, JID = /^jb_[0-9a-f]{18}$/;
   /** team members with edit access only: customers and viewers are refused */
   async function access(s, pid) { const a = await projectAccess(s, pid, 'edit'); if (a.role === 'customer') throw new HttpError(403, 'The job queue is for the project team'); return a; }
   // every time a Claude checks the queue the server notes who and when (at most once a minute per person): the Studio shows whether a Claude is running, and the morning brief knows a helper is about
-  const beat = async s => { try { const k = hashOf(s.email); const cur = await dbGet('hb', k); if (cur && cur.value && Date.now() - Date.parse(cur.value.at) < 60000) return; await dbPut('hb', k, { at: new Date().toISOString(), email: String(s.email || '').toLowerCase(), name: s.name || '' }); } catch (e) { /* the check never fails the tool */ } };
+  const beat = async (s, b) => { try { const k = hashOf(s.email); const cur = await dbGet('hb', k); const sk = cleanSkills(b && b.skills); const was = (cur && cur.value && cur.value.skills) || []; const changed = sk.length && JSON.stringify(sk) !== JSON.stringify(was); if (cur && cur.value && Date.now() - Date.parse(cur.value.at) < 60000 && !changed) return; await dbPut('hb', k, { at: new Date().toISOString(), email: String(s.email || '').toLowerCase(), name: s.name || '', skills: sk.length ? sk : was }); } catch (e) { /* the check never fails the tool */ } };
   const wrap = fn => { try { return fn(); } catch (e) { if (e && e.status) throw new HttpError(e.status, e.message); throw e; } };
   const all = async pid => (await dbList(col(pid))).map(r => r.value).filter(r => r && r.id);
   /** a claimed job whose lease ran out goes back to waiting (stored, so every reader sees the same) */
@@ -58,9 +58,9 @@ export function installJobs(d) {
   // is a Claude running for this project? the team's latest check-ins, for the light in the top bar and the waiting-request line
   route('GET', '/api/projects/:id/helper', async (b, G) => {
     const s = await me(); const { project, role } = await projectAccess(s, G.id, 'read'); if (role === 'customer') throw new HttpError(403, 'Not permitted');
-    const team = (project.members || []).filter(m => m.role !== 'customer' && m.email).slice(0, 30); const beats = await Promise.all(team.map(async m => { const r = await dbGet('hb', hashOf(m.email)); return { email: m.email, name: m.name, at: (r && r.value && r.value.at) || '' }; }));
+    const team = (project.members || []).filter(m => m.role !== 'customer' && m.email).slice(0, 30); const beats = await Promise.all(team.map(async m => { const r = await dbGet('hb', hashOf(m.email)); return { email: m.email, name: m.name, at: (r && r.value && r.value.at) || '', skills: (r && r.value && r.value.skills) || [] }; }));
     const st = helperStatus(beats, Date.now()); const mine = beats.find(x => String(x.email).toLowerCase() === String(s.email || '').toLowerCase()); let waiting = 0; try { waiting = (await ops.list(s, G.id, 'waiting', '')).jobs.length; } catch (e) { }
-    return ok(Object.assign({}, st, helperWords(st), { waiting, mineAt: (mine && mine.at) || '' }));
+    return ok(Object.assign({}, st, helperWords(st), { waiting, mineAt: (mine && mine.at) || '', skills: mine && mine.skills && mine.skills.length ? mine.skills : null }));
   });
   route('GET', '/api/jobs/usage', async () => { const s = await me(); const ps = d.readableProjects ? await d.readableProjects(s) : []; const since = new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10); const byDay = {}, byKind = {}; let total = 0;
     for (const p of ps.slice(0, 50)) { for (const j of await all(p.id)) { const day = String(j.requestedAt || '').slice(0, 10); if (!day || day < since) continue; total++; byKind[j.kind] = (byKind[j.kind] || 0) + 1; (byDay[day] = byDay[day] || {})[j.kind] = ((byDay[day] || {})[j.kind] || 0) + 1; } }
@@ -69,13 +69,13 @@ export function installJobs(d) {
     // no project given: the waiting jobs of every project the person can open, in ONE call (an idle check costs one tool call); kind narrows it (for example chat)
     /** the person's Claude sends its plan limits (5-hour, weekly, extra usage) so the Studio can show them above the assistant chat; one snapshot per person, replaced each time */
     async jobs_usage(s, b) { const u = cleanUsage(b && b.usage); if (!u) throw new HttpError(400, 'usage needs windows: a list of { label, percentUsed, resetsAt } from your Claude plan limits'); const k = hashOf(s.email), cur = await dbGet('usage', k).then(r => r && r.value).catch(() => null), accounts = mergeUsage(cur && cur.accounts, { ...u, at: new Date().toISOString() }, Date.now()); await dbPut('usage', k, { name: s.name || s.email, accounts }); return { stored: true, accounts: accounts.length, note: 'Saved. The Studio shows it above the assistant chat, one block for each of your Claude accounts.' }; },
-    async jobs_list_all(s, b) { await beat(s); const ps = d.readableProjects ? await d.readableProjects(s) : []; const out = []; let waiting = 0;
+    async jobs_list_all(s, b) { await beat(s, b); const ps = d.readableProjects ? await d.readableProjects(s) : []; const out = []; let waiting = 0;
       if (d.briefs) { try { await Promise.race([d.briefs(s), new Promise(r => setTimeout(r, 5000))]); } catch (e) { /* the morning brief never blocks the idle check */ } }
       for (const p of ps.slice(0, 50)) { let r; try { r = await ops.list(s, p.id, 'waiting', String(b.stage || '').toLowerCase()); } catch (e) { continue; }
         const jobs = r.jobs.filter(j => j.status === 'waiting' && (!b.kind || j.kind === String(b.kind)) && canTake(j.kind, j.requestedBy, s.email)); if (jobs.length) { waiting += jobs.length; out.push({ project: p.name, projectId: p.id, jobs }); } }
       const snap = await dbGet('usage', hashOf(s.email)).then(r => r && r.value).catch(() => null); return { waiting, projects: out, usageDue: usageDue(snap && snap.accounts, Date.now()) || !!(snap && snap.want && Date.now() - Date.parse(snap.want) < 15 * 60000), note: waiting ? 'Claim one with action claim, its id and project (the projectId). Chat jobs first.' : 'No waiting jobs.' }; },
-    async jobs_list(s, b) { if (!String(b.project || '').trim()) return tools.jobs_list_all(s, b); await beat(s); const p = await pickProject(s, b.project); const r = await ops.list(s, p.id, String(b.status || ''), String(b.stage || '').toLowerCase()); return { project: p.name, projectId: p.id, open: r.open, jobs: r.jobs.filter(j => j.status !== 'waiting' || canTake(j.kind, j.requestedBy, s.email)), note: 'Claim one with action claim and its id. Only waiting jobs can be claimed.' }; },
-    async jobs_claim(s, b) { await beat(s); const p = await pickProject(s, b.project); const j = await ops.claim(s, p.id, String(b.id || '')); return brief(j, { id: p.id, name: p.name, customer: p.customer || '' }); },
+    async jobs_list(s, b) { if (!String(b.project || '').trim()) return tools.jobs_list_all(s, b); await beat(s, b); const p = await pickProject(s, b.project); const r = await ops.list(s, p.id, String(b.status || ''), String(b.stage || '').toLowerCase()); return { project: p.name, projectId: p.id, open: r.open, jobs: r.jobs.filter(j => j.status !== 'waiting' || canTake(j.kind, j.requestedBy, s.email)), note: 'Claim one with action claim and its id. Only waiting jobs can be claimed.' }; },
+    async jobs_claim(s, b) { await beat(s, b); const p = await pickProject(s, b.project); const j = await ops.claim(s, p.id, String(b.id || '')); return brief(j, { id: p.id, name: p.name, customer: p.customer || '' }); },
     async jobs_file_urls(s, b) {
       const p = await pickProject(s, b.project); await access(s, p.id); const r = await dbGet('fl.' + p.id, String(b.fileId || '')); const f = r && r.value; if (!f || f.deletedAt || f.status !== 'ready') throw new HttpError(404, 'That project file was not found');
       if (f.category !== 'config_package' && f.category !== 'solution_input' && f.category !== 'guide_source' && f.category !== 'handover_source' && f.category !== 'plan_source') throw new HttpError(403, 'Only an org package, a customer solution file or a guide source can be fetched this way'); const parts = []; for (const id of (f.urls || [])) { const u = await CTX.files.url(id, { private: true, expires: 3600 }); parts.push(u.url); }

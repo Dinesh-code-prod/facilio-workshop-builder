@@ -303,7 +303,7 @@
    },
    {
     "name": "project_jobs",
-    "description": "The job queue: action request asks for the daily customer-mail search (fetch_mail only, refused if one was requested in the last 20 hours); work Delivery Studio asks Claude to do (pull the MSA, apply kick-off change requests, fetch feedback or org status). action list: waiting jobs of a project, or with NO project the waiting jobs of all your projects in one call (optional kind, for example chat), so an idle check costs one call. action claim (id): take one job; you get fixed instructions for it. action finish (id, status done|needs_input|failed, summary, transferId, questions): report the result; anything you stored waits for a person to approve it. Legacy Open in Claude hand-offs: action handoff_get (id) and handoff_submit (id, result).",
+    "description": "On every list or claim call pass skills: the ids of the Facilio Studio skills your Claude has installed (video-to-user-guide, guidebook-builder, facilio-solution-document-builder, excel-analysis, ftr-generator, ftr-executor, uat-guide-generator), leaving out the ones you do not have; the Studio uses it to tell the person which skill is missing. The job queue: action request asks for the daily customer-mail search (fetch_mail only, refused if one was requested in the last 20 hours); work Delivery Studio asks Claude to do (pull the MSA, apply kick-off change requests, fetch feedback or org status). action list: waiting jobs of a project, or with NO project the waiting jobs of all your projects in one call (optional kind, for example chat), so an idle check costs one call. action claim (id): take one job; you get fixed instructions for it. action finish (id, status done|needs_input|failed, summary, transferId, questions): report the result; anything you stored waits for a person to approve it. Legacy Open in Claude hand-offs: action handoff_get (id) and handoff_submit (id, result).",
     "function": "api",
     "input_schema": {
      "type": "object",
@@ -325,6 +325,13 @@
         "file_put_done"
        ],
        "description": "Which step"
+      },
+      "skills": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "description": "The ids of the Studio skills your Claude has installed (see the tool description)"
       },
       "usage": {
        "type": "object",

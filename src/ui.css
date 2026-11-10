@@ -2474,3 +2474,8 @@ body .uc-more[open] > summary:not(#_):not(#__):not(#___):not(#____):not(#_____):
 
 body .tr-other:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 body .tr-other .btn.on:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #0a0a0a; color: #fff; border-color: #0a0a0a; }
+
+body .tr-skill:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; border: 1px solid #e5e5e5; background: #fafafa; font-size: 13px; color: #262626; }
+body .tr-skill b:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #ecfdf3; color: #067647; font-size: 12px; }
+body .tr-skill.no b:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #fffaeb; color: #b54708; }
+body .tr-skill span:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { flex: 1; min-width: 200px; }

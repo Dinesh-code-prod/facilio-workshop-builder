@@ -1,6 +1,6 @@
 // The Claude helper (work/server/_helper.mjs, wiring in _jobsapi.mjs, api.mjs, src/helper.js): is a Claude running, who may take a personal job, and what a person added to a project is told.
 import assert from 'node:assert/strict'; import fs from 'node:fs';
-import { FRESH_MIN, PERSONAL, canTake, status, words, addedMessage } from '../work/server/_helper.mjs';
+import { FRESH_MIN, PERSONAL, canTake, status, words, addedMessage, cleanSkills } from '../work/server/_helper.mjs';
 let n = 0; const t = (name, fn) => { fn(); n++; console.log('  ok  ' + name); };
 const now = Date.parse('2026-11-09T10:00:00Z'); const at = m => new Date(now - m * 60000).toISOString();
 t('a project is covered when any team member checked in within 15 minutes', () => {
@@ -12,6 +12,7 @@ t('the words tell what it means in plain language', () => {
   assert.match(words(status([{ email: 'a@b.c', name: 'Sam', at: at(1) }], now)).line, /A Claude is running for this project \(Sam, just now\)/); assert.match(words(status([{ email: 'a@b.c', at: at(45) }], now)).line, /No Claude has checked in for 45 minutes/);
   assert.match(words(status([{ email: 'a@b.c', at: at(300) }], now)).line, /for 5 hours/); assert.match(words(status([], now)).line, /ever checked in/); assert.equal(words(status([], now)).chip, 'Claude helper off');
 });
+t('skills a Claude reports are cleaned to ids', () => { assert.deepEqual(cleanSkills([' Video-To-User-Guide ', 'x', 'bad id!', 'ftr-generator', 'ftr-generator', 5, null]), ['video-to-user-guide', 'ftr-generator']); assert.deepEqual(cleanSkills('no'), []); });
 t('a job that reads a person’s own mailbox or drive is taken only by that person’s Claude', () => {
   for (const k of ['fetch_mail', 'pull_msa', 'pull_brd', 'pull_transcript', 'check_sent']) { assert.ok(PERSONAL.has(k)); assert.equal(canTake(k, 'Sam@Facilio.com', 'sam@facilio.com'), true); assert.equal(canTake(k, 'sam@facilio.com', 'kim@facilio.com'), false); }
   assert.equal(canTake('make_guide', 'sam@facilio.com', 'kim@facilio.com'), true); assert.equal(canTake('chat', 'sam@facilio.com', 'kim@facilio.com'), true); assert.equal(canTake('fetch_mail', '', 'kim@facilio.com'), true);
@@ -24,7 +25,7 @@ t('a person added to a project is told what it is, what Claude does, what to do 
 });
 t('the server records each check-in, shows the status to the team, hides personal jobs from other Claudes, and tells a person they were added', () => {
   const jobs = fs.readFileSync('work/server/_jobsapi.mjs', 'utf8'), api = fs.readFileSync('work/server/api.mjs', 'utf8');
-  assert.match(jobs, /const beat = async s =>/); assert.match(jobs, /async jobs_list_all\(s, b\) \{ await beat\(s\);/); assert.match(jobs, /async jobs_claim\(s, b\) \{ await beat\(s\);/); assert.match(jobs, /canTake\(j0\.kind, j0\.requestedBy, s\.email\)/); assert.match(jobs, /route\('GET', '\/api\/projects\/:id\/helper'/);
+  assert.match(jobs, /const beat = async \(s, b\) =>/); assert.match(jobs, /async jobs_list_all\(s, b\) \{ await beat\(s, b\);/); assert.match(jobs, /async jobs_claim\(s, b\) \{ await beat\(s, b\);/); assert.match(jobs, /canTake\(j0\.kind, j0\.requestedBy, s\.email\)/); assert.match(jobs, /route\('GET', '\/api\/projects\/:id\/helper'/);
   assert.match(api, /await memberAddedNotice\(project, m, s\);/); assert.match(api, /addedMessage\(project, m, actor\.name \|\| actor\.email, TW_BASE\)/);
 });
 t('the top bar shows the light, and a waiting request says so when no Claude is running', () => {
