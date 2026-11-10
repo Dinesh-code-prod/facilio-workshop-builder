@@ -2117,18 +2117,32 @@ body .auth-form.night .auth-box .sub:not(#_):not(#__) { margin: 0 auto 32px; max
 body #asst:not(#_):not(#__) { top: 68px !important; height: calc(100vh - 68px) !important; height: calc(100dvh - 68px) !important; }
 @media (max-width: 900px) { body #asst:not(#_):not(#__) { top: 60px !important; height: calc(100dvh - 60px) !important; } }
 
-/* Guided start (user, 10 Nov 2026): a pulsing ring on the next menu entry and a small card beside it */
-.co-ring{position:fixed;z-index:9998;border-radius:12px;border:2px solid #1570EF;pointer-events:none;box-shadow:0 0 0 4px rgba(21,112,239,.18);animation:coPulse 1.4s ease-in-out infinite}
-.co-card{position:fixed;z-index:9999;width:290px;background:#fff;border:1px solid #e5e5e5;border-radius:16px;padding:14px 16px;box-shadow:0 12px 32px rgba(10,10,10,.14)}
-.co-card h3{margin:2px 0 4px;font-size:15px}
-.co-card p{margin:0 0 6px;font-size:13px;line-height:1.45;color:#404040}
-.co-card .co-n{font-size:11px;color:#737373;text-transform:uppercase;letter-spacing:.04em}
-.co-card .co-hint{font-size:12px;color:#737373}
-.co-b{display:flex;gap:8px;align-items:center;margin-top:8px}.co-b span{flex:1}
-.co-pill{position:fixed;right:18px;bottom:18px;z-index:9990;border:0;border-radius:999px;padding:9px 16px;background:#0a0a0a;color:#fff;font:600 13px Geist,system-ui,sans-serif;cursor:pointer;box-shadow:0 6px 18px rgba(10,10,10,.2)}
-.co-pill:hover{background:#262626}
-@keyframes coPulse{0%,100%{box-shadow:0 0 0 3px rgba(21,112,239,.2)}50%{box-shadow:0 0 0 9px rgba(21,112,239,.08)}}
-@media (prefers-reduced-motion:reduce){.co-ring{animation:none}}
+/* Guided start (user, 10 Nov 2026): a spotlight on the next thing to click, and a card beside it */
+.co-ring{position:fixed;z-index:9998;border-radius:12px;border:2px solid #1570EF;pointer-events:none;box-shadow:0 0 0 9999px rgba(10,10,10,.44),0 0 0 4px rgba(21,112,239,.28);transition:left .28s cubic-bezier(.2,.8,.2,1),top .28s cubic-bezier(.2,.8,.2,1),width .28s cubic-bezier(.2,.8,.2,1),height .28s cubic-bezier(.2,.8,.2,1);animation:coPulse 1.6s ease-in-out infinite}
+.co-card{position:fixed;z-index:9999;width:300px;background:#fff;border:1px solid #e5e5e5;border-radius:16px;padding:0 18px 12px;box-shadow:0 18px 44px rgba(10,10,10,.22),0 2px 6px rgba(10,10,10,.06);animation:coIn .22s cubic-bezier(.2,.8,.2,1);transition:left .28s cubic-bezier(.2,.8,.2,1),top .28s cubic-bezier(.2,.8,.2,1)}
+.co-card::before{content:"";position:absolute;left:-7px;top:22px;width:14px;height:14px;background:#fff;border-left:1px solid #e5e5e5;border-bottom:1px solid #e5e5e5;transform:rotate(45deg);border-bottom-left-radius:3px}
+.co-card.co-below::before{left:26px;top:-7px;border:0;border-left:1px solid #e5e5e5;border-top:1px solid #e5e5e5;border-radius:3px 0 0 0}
+.co-bar{height:3px;margin:0 -18px 14px;background:#f0f0f0;border-radius:16px 16px 0 0;overflow:hidden}.co-bar i{display:block;height:100%;background:#1570EF;border-radius:0 3px 3px 0;transition:width .3s ease}
+.co-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.co-no{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#0a0a0a;color:#fff;font:700 12px Geist,system-ui,sans-serif;font-style:normal}.co-no.co-dot{background:#eef4ff;box-shadow:inset 0 0 0 5px #1570EF;width:14px;height:14px;margin:0 4px 0 0}
+.co-n{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#737373}
+.co-card h3{margin:0 0 4px;font-size:17px;line-height:1.25;letter-spacing:-.01em;color:#0a0a0a}
+.co-card .co-p{margin:0 0 10px;font-size:13px;line-height:1.5;color:#404040}
+.co-fin{display:flex;gap:8px;align-items:flex-start;margin:0 0 10px;padding:8px 10px;background:#f6f6f6;border-radius:10px;font-size:12.5px;line-height:1.4;color:#262626}.co-fin i{flex:none;width:16px;height:16px;border-radius:50%;background:#0a0a0a;color:#fff;font-size:10px;line-height:16px;text-align:center;font-style:normal}.co-fin span{font-weight:600}
+.co-hint{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:12px;color:#1570EF;font-weight:500}.co-click{flex:none;width:8px;height:8px;border-radius:50%;background:#1570EF;box-shadow:0 0 0 0 rgba(21,112,239,.5);animation:coDot 1.4s ease-out infinite}
+.co-b{display:flex;gap:8px;align-items:center}.co-b span{flex:1}
+.co-b button{font:600 13px Geist,system-ui,sans-serif;cursor:pointer;border-radius:10px;padding:8px 14px;border:1px solid transparent;transition:background .15s,transform .1s}
+.co-skip{background:none;color:#737373;padding-left:0!important}.co-skip:hover{color:#0a0a0a}
+.co-back{background:#fff;color:#0a0a0a;border-color:#e5e5e5!important}.co-back:hover{background:#f5f5f5}
+.co-next{background:#0a0a0a;color:#fff;display:inline-flex;align-items:center;gap:6px}.co-next:hover{background:#262626}.co-next:active,.co-back:active{transform:scale(.97)}.co-next b{font-weight:400;transition:transform .15s}.co-next:hover b{transform:translateX(2px)}
+.co-b button:focus-visible{outline:2px solid #1570EF;outline-offset:2px}
+.co-keys{margin:10px 0 0;font-size:11px;color:#a3a3a3;text-align:center}.co-keys kbd{display:inline-block;min-width:18px;padding:0 4px;border:1px solid #e5e5e5;border-bottom-width:2px;border-radius:5px;font:500 10px Geist,system-ui,sans-serif;color:#525252;background:#fafafa}
+.co-pill{position:fixed;right:18px;bottom:18px;z-index:9990;display:inline-flex;align-items:center;gap:7px;border:0;border-radius:999px;padding:10px 16px 10px 13px;background:#0a0a0a;color:#fff;font:600 13px Geist,system-ui,sans-serif;cursor:pointer;box-shadow:0 8px 22px rgba(10,10,10,.25);transition:transform .15s,background .15s}
+.co-pill:hover{background:#262626;transform:translateY(-1px)}.co-pill svg{color:#8ab8ff}
+@keyframes coPulse{0%,100%{border-color:#1570EF}50%{border-color:#7fb1ff}}
+@keyframes coDot{0%{box-shadow:0 0 0 0 rgba(21,112,239,.5)}100%{box-shadow:0 0 0 9px rgba(21,112,239,0)}}
+@keyframes coIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.co-ring,.co-card,.co-click{animation:none;transition:none}}
 
 /* sidebar: the pages of an open stage are bordered tiles in the stage colour (soft border, tint on hover, a stronger tint and a bold left bar on the page you are on), and the small group labels carry a stage-colour dot */
 body .sidebar .sb-stage.open .sb-item:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { margin: 0 2px 4px 10px; padding: 7px 10px 7px 10px; border: 1px solid color-mix(in srgb, var(--sg, #1d4ed8) 16%, #e5e7eb) !important; border-left-width: 3px !important; border-left-color: color-mix(in srgb, var(--sg, #1d4ed8) 38%, #fff) !important; border-radius: 10px !important; background: #fff !important; box-shadow: none !important; transition: background-color .15s ease, border-color .15s ease; }

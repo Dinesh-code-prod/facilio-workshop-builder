@@ -94,6 +94,7 @@
     const r = t.getBoundingClientRect(); ring.style.display = '';
     Object.assign(ring.style, { left: r.left - 4 + 'px', top: r.top - 4 + 'px', width: r.width + 8 + 'px', height: r.height + 8 + 'px' });
     const below = how === 'rail' && s.kind === 'page';   // the page tabs run across the top, so the card goes under them
+    card.classList.toggle('co-below', below);
     const left = below ? Math.min(Math.max(8, r.left), root.innerWidth - 302) : Math.max(8, Math.min(r.right + 16, root.innerWidth - 302));
     const top = below ? r.bottom + 14 : Math.max(12, Math.min(r.top - 8, root.innerHeight - card.offsetHeight - 12));
     Object.assign(card.style, { left: left + 'px', top: top + 'px' });
@@ -108,9 +109,13 @@
   }
   function show(i) {
     at = Math.max(0, Math.min(i, list.length - 1)); const s = list[at]; const [h, p1, p2, hint] = text(s);
-    const stageNo = s.kind === 'page' && s.n ? ` · stage ${s.n}` : '';
-    card.innerHTML = `<p class="co-n">Step ${at + 1} of ${list.length}${stageNo}</p><h3>${esc(h)}</h3><p>${esc(p1)}</p>${p2 ? `<p><b>${esc(p2)}</b></p>` : ''}<p class="co-hint">${esc(hint)}</p>
-      <div class="co-b"><button class="btn sm" data-co="skip">Skip guide</button><span></span>${at ? '<button class="btn sm" data-co="back">Back</button>' : ''}<button class="btn sm primary" data-co="next">${at === list.length - 1 ? 'Finish' : 'Next'}</button></div>`;
+    const pct = list.length > 1 ? Math.round(at / (list.length - 1) * 100) : 100; const badge = s.n ? `<i class="co-no" aria-hidden="true">${s.n}</i>` : '<i class="co-no co-dot" aria-hidden="true"></i>';
+    card.innerHTML = `<div class="co-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
+      <div class="co-top">${badge}<span class="co-n">${s.kind === 'stage' ? 'Stage' : 'Page'} · step ${at + 1} of ${list.length}</span></div>
+      <h3>${esc(h)}</h3><p class="co-p">${esc(p1)}</p>${p2 ? `<p class="co-fin"><i aria-hidden="true">&#10003;</i><span>${esc(p2)}</span></p>` : ''}
+      <p class="co-hint"><span class="co-click" aria-hidden="true"></span>${esc(hint)}</p>
+      <div class="co-b"><button class="co-skip" data-co="skip">Skip guide</button><span></span>${at ? '<button class="co-back" data-co="back" aria-label="Previous step">Back</button>' : ''}<button class="co-next" data-co="next">${at === list.length - 1 ? 'Finish' : 'Next'}<b aria-hidden="true">&rarr;</b></button></div>
+      <p class="co-keys"><kbd>&larr;</kbd> <kbd>&rarr;</kbd> to move, <kbd>Esc</kbd> to leave</p>`;
     place();
   }
   function advance(d) { const n = at + d; if (n >= list.length) { stop(true); return; } show(Math.max(0, n)); }
@@ -128,7 +133,7 @@
     else { const x = e.target.closest(s.kind === 'stage' ? '.sb-title' : '.sb-item'); hit = !!x && (s.kind === 'stage' ? x.getAttribute('data-g') === s.g : x.getAttribute('data-view') === s.id); }
     if (hit) setTimeout(() => advance(1), 250);
   }
-  const onKey = e => { if (e.key === 'Escape') stop(true); };
+  const onKey = e => { if (e.key === 'Escape') stop(true); else if (at >= 0 && (e.key === 'ArrowRight' || e.key === 'ArrowLeft') && !/INPUT|TEXTAREA|SELECT/.test((e.target && e.target.tagName) || '')) { e.preventDefault(); if (e.key === 'ArrowRight') { open(list[at]); advance(1); } else advance(-1); } };
   function start() {
     if (!user()) return;
     stop(); list = build(); if (!list.length) return;
@@ -142,7 +147,7 @@
   function pill() {
     const old = doc.getElementById('coPill'); const ok = user() && mode();
     if (!ok) { if (old) old.remove(); return; }
-    if (!old) { const b = doc.createElement('button'); b.id = 'coPill'; b.className = 'co-pill'; b.textContent = 'Guide me'; b.title = 'A guided walk through the menu, step by step'; b.addEventListener('click', start); doc.body.appendChild(b); }
+    if (!old) { const b = doc.createElement('button'); b.id = 'coPill'; b.className = 'co-pill'; b.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>Guide me'; b.title = 'A guided walk through the menu, step by step'; b.addEventListener('click', start); doc.body.appendChild(b); }
     if (!lsGet(seenKey()) && at < 0) { lsSet(seenKey()); setTimeout(start, 800); }
   }
   setInterval(pill, 1500);
