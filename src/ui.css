@@ -2383,3 +2383,26 @@ body .page-header .row .btn.primary:hover:not(#_):not(#__):not(#___):not(#____):
 /* rail stage numbers: always legible, also on the dark tile of the stage you are in (a white badge with a navy ring) */
 body.nav-top .rl-n:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________):not(#__________) { top: 3px; right: 6px; bottom: auto; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: #0a0a0a; color: #fff; font-size: 11px; font-weight: 700; line-height: 17px; font-style: normal; text-align: center; box-shadow: 0 0 0 2px #fff; }
 body.nav-top .rl-b.active .rl-n:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________):not(#__________) { background: #fff; color: #1D1A5E; box-shadow: 0 0 0 2px #1D1A5E; }
+
+/* custom pages: blocks, mini tabs, live numbers, the builder */
+body .cp-blocks:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: grid; gap: 14px; margin-top: 14px; }
+body .cp-tabs:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { margin-bottom: 0; }
+body .cp-h:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { margin: 0 0 10px; font-size: 15px; font-weight: 700; color: #0a0a0a; }
+body .cp-links:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+body .cp-tiles:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+body .cp-tile:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: grid; gap: 2px; padding: 14px 16px; border: 1px solid #e5e5e5; border-radius: 14px; background: #fafafa; }
+body .cp-tile span:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { font-size: 12px; font-weight: 600; color: #525252; }
+body .cp-tile b:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { font-size: 26px; font-weight: 700; color: #0a0a0a; line-height: 1.15; word-break: break-word; }
+body .cp-tile small:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { font-size: 12px; color: #737373; }
+body .cp-ck:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+body .cp-ck label:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: flex; gap: 10px; align-items: center; cursor: pointer; }
+body .cp-tw:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { overflow-x: auto; }
+body .cp-embed:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { width: 100%; height: 560px; border: 1px solid #e5e5e5; border-radius: 12px; background: #fff; }
+body .cp-tabrow:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+body .cp-tabrow .tab.active:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #0a0a0a; color: #fff; }
+body .cp-trow:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: flex; gap: 12px; align-items: flex-end; }
+body .cp-trow > div:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { flex: 1; }
+body .cp-bl:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: grid; gap: 12px; margin: 14px 0; }
+body .cp-bf:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: grid; gap: 4px; padding: 12px 14px; border: 1px solid #e5e5e5; border-radius: 12px; background: #fff; }
+body .cp-bh:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+body .cp-mchk:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; }
