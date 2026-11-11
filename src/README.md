@@ -12,6 +12,9 @@ The shell that draws the menu and top bar, loads the project, and the helpers ev
 | File | What it does |
 |---|---|
 | [a11y.js](a11y.js) | Keyboard access, the part the shell does not do: a "Skip to content" link and an id on the main area for it to jump to. |
+| [coach.js](coach.js) | Guide me: a guided walk through the menu. A ring marks what to click next and a small card says what it is for; it starts once for each person. |
+| [custompage.js](custompage.js) | Custom pages (Tabs & Layouts): a page the team builds itself from blocks (text, buttons, live numbers, checklist, table, Ask Claude). |
+| [features.js](features.js) | Switches for parts of the app that are built but not shown. A switch set to false hides its pages everywhere; nothing is deleted. |
 | [api.js](api.js) | API client: JSON calls with CSRF header, chunked private file upload/download, reference configuration fetch. |
 | [bell.js](bell.js) | Notification bell: a popover (not a drawer) with Needs you / Assistant / Activity. |
 | [bigview.js](bigview.js) | "Bigger view" for every generated HTML page shown in a frame (kick-off deck, project plan, mockups, onboarding page, UAT pages...): each iframe that carries its page in srcdoc gets an Expand... |
@@ -102,6 +105,7 @@ Reading the signed contract, the kick-off deck, the plan and the organisation pa
 | [contractmods.js](contractmods.js) | Which Facilio modules the contract documents are about (used by the Solution tab, src/solution.js; tests/contractmods.mjs). |
 | [contracts.js](contracts.js) | Contracts & Integrations: every contract is a source of truth (original MSA, later integration MSAs, approved CRs, other). |
 | [kickoff.js](kickoff.js) | Kick-off (roadmap E15 Stage 1, E17): the team's one big tab for the start of a project. |
+| [introhub.js](introhub.js) | Project introduction hub: one menu entry with three sub-tabs (Kick-off and agreed scope, Project plan, Requirement schedule), each showing an existing page. |
 | [kickoffhtml.js](kickoffhtml.js) | Kick-off deck as one self-contained HTML file (pure code, also run by tests/kickoff_deck.mjs). |
 | [kickofflogic.js](kickofflogic.js) | Kick-off page rules (roadmap E15 Stage 1, E17): pure code, no page, no network; run by tests/kickoff_logic.mjs and used by src/kickoff.js. |
 | [msadocs.js](msadocs.js) | Contract intake > Contract documents (plan: docs/plans/MSA-DOCUMENTS-PLAN-2026-11-08.md). |
@@ -186,6 +190,9 @@ Test plans and cases, the FTR workbook, delivery and go-live readiness.
 | [ftrhtml.js](ftrhtml.js) | FTR checklist (Final Testing Review) as one self-contained HTML file a consultant works through (pure code, also run by tests/ftr_html.mjs). |
 | [ftrresult.js](ftrresult.js) | The results file a consultant downloads from the FTR checklist page (src/ftrhtml.js), checked and summed (pure code, also run by tests/ftr_html.mjs). |
 | [golive.js](golive.js) | Go-live readiness (stage 4, fifth tab): one read-only page that says what stands between the project and go-live, read from what the Studio already holds (confirmed requirements and their test... |
+| [golivehub.js](golivehub.js) | Go-live & hypercare: one menu entry with two sub-tabs, each showing an existing page (Go-live, Hypercare). |
+| [uatftr.js](uatftr.js) | UAT = the FTR report plus the UAT guide, both written by the person's Claude: the FTR Report page and the UAT guide page. |
+| [ftrreport.js](ftrreport.js) | FTR report as a page and as one HTML file: modules, their use cases, test cases and results, read from the draft Claude saves. Pure code (tests/ftrreport.mjs). |
 | [uat.js](uat.js) | UAT test cases (Delivery > UAT, team only): the module-wise testing workspace. |
 | [uatguide.js](uatguide.js) | UAT guide, module by module, as customer-shareable HTML (pure code, also run by tests/uat_guide.mjs). |
 | [uatlogic.js](uatlogic.js) | UAT test cases: the rules that do not need a page (pure code, also run by tests/uat.mjs). |
@@ -203,6 +210,7 @@ The customer user guide builder, video to guide and the learning library.
 | [guidelearn.js](guidelearn.js) | Customer User Guide — module learning sections. |
 | [guidelib.js](guidelib.js) | Module learning library for the Customer User Guide — standard Facilio Connected CMMS content per business module: illustrative screens, overview, worked scenarios, standard fields, process, video... |
 | [guideslist.js](guideslist.js) | Training (stage 5): one simple page: make a guide with Claude (four kinds), the Comet videos (a row per prototype of the Mockup tab and per test scenario of UAT, with the brief and the link), what... |
+| [guideextra.js](guideextra.js) | Project guides: guides the team adds for one project next to the standard Module guides (Word, text, Markdown or HTML, with pictures). |
 | [guideupdate.js](guideupdate.js) | Update the user guide from an organisation configuration ZIP (tabs "Update from configuration" and "Version history" in the User Guide Builder). |
 | [learnlib.js](learnlib.js) | Module guides: the standard Facilio guide for each business module (work orders, service requests, field service, preventive maintenance, assets, inspections, vendors, inventory, budgets), ported... |
 | [vidguide.js](vidguide.js) | Video to Guide: turn a recorded walkthrough into draft user-guide steps. |
@@ -228,6 +236,8 @@ Everything that talks to Claude or DeepSeek: the Ask Claude buttons, the Assista
 |---|---|
 | [agents.js](agents.js) | Agent catalogue only (the Agent Setup, Connection & Data, Rules & Guardrails and Agent Testing tabs were removed on 7 Nov 2026). |
 | [assistant.js](assistant.js) | Project assistant panel: ONE place, on the right of every project page, where the work Claude does for the project is shown as it happens (roadmap E15). |
+| [helper.js](helper.js) | The Claude helper light in the top bar and its explanation: green while any teammate's Claude desktop is running the Studio task, amber when none is; the setup banner and the window shown after a project is created. |
+| [qengine.js](qengine.js) | Question engine: reads a question about the project's records the way a person means it and answers it exactly, with no AI (tests/qengine.mjs). |
 | [claudehand.js](claudehand.js) | Open in Claude: the ONE engine behind every Claude button in Delivery Studio (rules in src/claudelogic.js, server side in /api/projects/:id/handoff). |
 | [claudeimport.js](claudeimport.js) | Import from Claude: one place to bring back what a team member got from Claude (their own account, via Open in Claude). |
 | [claudelogic.js](claudelogic.js) | Open in Claude: the rules that every Claude button shares (pure code, also run by tests/claude_launch.mjs). |

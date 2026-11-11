@@ -6,6 +6,19 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '3.1.0', date: '2026-11-10', kind: 'UPDATE', title: 'Claude helper, a menu along the project life cycle, Guide me, a clearer chat, replies to Otto', notes: [
+      'Claude helper: a light in the top bar is green while any teammate has Claude desktop running the Studio task, and amber when nobody has. A banner asks a person to set theirs up, a window explains it after a project is created, and the owners get a Teams message when requests have waited a day.',
+      'Every Claude button sends its request to the queue and opens the Assistant with a live card: what you asked, how long it has waited and what Claude is doing. The chat shows who answered (Claude, DeepSeek or the project records) in different colours.',
+      'The Assistant understands rough wording, answers simple questions from the records with no AI, and splits a message into look-ups it answers now and work it sends to Claude.',
+      'Otto in Teams: each message says the project, the customer, what to do and the due date in words. Replying to Otto marks your task done, in progress or blocked, moves its date, adds a task, or undoes the last change. A person added to a project gets a welcome message with links.',
+      'Morning brief: every team member gets their tasks and the plan milestones that are due, whoever starts it (someone opening the Studio, or a running Claude task).',
+      'Menu: the eight stages in life-cycle order with Home, Tasks & mail, Reports and Notes & Links; a choice of the side menu or an icon rail with tabs across the top; your own groups and pages built from blocks (Tabs & Layouts).',
+      'Guide me: a guided walk through every stage and page, started once for each person, with Take the tour on the projects home.',
+      'Workshop plan: add, edit and copy sessions, import a plan for Claude to rebuild, export to Excel, HTML and PDF. Handover & Closure in four tabs with Documents for Claude. Training with Library, Create and Review.',
+      'UAT is the FTR report plus the UAT guide, both written by Claude. Go-live and Hypercare are one page. Project settings in three tabs. Contract intake analyses only when you press Analyse contracts, and records the integrations the contract names.',
+      'A new version of the project plan is merged into the timeline: tasks keep their progress and the message names the stage before and after.',
+      'The look moved to an Apple-style design: neutral greys, capsule buttons, translucent sheets. The repository has a CHANGELOG.md at the top and a short guide in every folder.'
+    ] },
     { v: '3.0.0', date: '2026-11-09', kind: 'UPDATE', title: 'Calmer tabs and side forms, a new sign-in explainer, Ask Claude in the Assistant box', notes: [
       'Tabs and mini tabs are one style everywhere: a light strip, the chosen tab a white pill with bold black text, no blue layer.',
       'Every side form (the panel that slides in from the right) has the same arrangement: the label above the field with even gaps, short fields side by side, long text full width. A saved check opens 104 different side forms and finds no cramped, overlapping or unlabelled fields.',

@@ -16,6 +16,7 @@ Rules: keys and secrets never leave the server; a person only sees the projects 
 | [server/_feedback.mjs](server/_feedback.mjs) | Team feedback (tests: tests/feedback.mjs). |
 | [server/_jobs.mjs](server/_jobs.mjs) | Job queue: the pure rules (roadmap E17, decision of 6 Nov 2026). |
 | [server/_jobsapi.mjs](server/_jobsapi.mjs) | Job queue: storage, routes and connector tools (roadmap E17). |
+| [server/_helper.mjs](server/_helper.mjs) | The Claude helper rules: is a Claude running for a project, which jobs only the requester's own Claude may take, the Teams message for a person added to a project, and the alert when requests wait a day (tests/helper_status.mjs). |
 | [server/_kickoffpack.mjs](server/_kickoffpack.mjs) | Kick-off pack (roadmap E15 Stage 1): from an approved MSA extraction, the data of the kick-off deck AND the drafted project plan, built together and kept as the project document `kickoff_pack`. |
 | [server/_mailapi.mjs](server/_mailapi.mjs) | Customer mail becomes tasks: storage, routes and connector actions (plan: docs/plans/MAIL-TO-TASKS-PLAN-2026-11-07.md). |
 | [server/_mailtasks.mjs](server/_mailtasks.mjs) | Customer mail becomes tasks: the pure rules (plan: docs/plans/MAIL-TO-TASKS-PLAN-2026-11-07.md; tests: tests/mail_tasks.mjs). |

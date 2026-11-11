@@ -16,11 +16,14 @@ How to read a name: a test is named after the thing it checks (for example `wsr.
 | [brdsessions.mjs](brdsessions.mjs) | What the requirement sessions captured, as the BRD and the checks read it (src/brdsessions.js; the BRD wiring is checked in a browser by tests/ui/brd-sessions-check.mjs). |
 | [brief_fanout.mjs](brief_fanout.mjs) | Scenario: two people work on one project and the BRD milestone is due tomorrow. |
 | [cfg_gap.mjs](cfg_gap.mjs) | Configuration gap table (src/cfggap.js): one row per component kind, missing inputs found and never guessed, setInput leaves the old table alone |
+| [changelog.mjs](changelog.mjs) | CHANGELOG.md says exactly what the app's What's new list says (run node tools/changelog.mjs after adding an entry). |
 | [chat_brief.mjs](chat_brief.mjs) | The chat brief: only the playbooks the message is about, all areas readable, scope not limited to one stage. |
 | [claude_launch.mjs](claude_launch.mjs) | Open in Claude, shared rules (src/claudelogic.js): what may travel in a link, never a silently cut prompt, the short reference prompt, the common header. |
+| [claude_submit.mjs](claude_submit.mjs) | The Claude buttons send their request through the connector queue and open nothing: a hand-off package is stored, a chat job carries its id, the chat side says so. |
 | [connector_skills.mjs](connector_skills.mjs) | Connector add-ons: the Facilio implementation skills tool, the "where are we" block of project_overview, the org id, the connector-seen note, and the hand-off start guidance. |
 | [contractmods.mjs](contractmods.mjs) | Which modules the contract documents are about (src/contractmods.js): scope part, delivery wording, exclusions, passing mentions, generic words, several documents, evidence kept, and the untidy... |
 | [customer_mail.mjs](customer_mail.mjs) | Customer emails (Project Settings): saving them, refusing shared domains and clashes, and the mailbox search that files what those customers already sent. |
+| [custompage.mjs](custompage.mjs) | Custom pages: what the team types is cleaned and limited before it is saved or drawn. |
 | [dashkit.mjs](dashkit.mjs) | The dashboard widget kit (src/dashkit.js): each shape draws from numbers, says so when there is nothing, and escapes what it prints. |
 | [demo_project.mjs](demo_project.mjs) | The shared demo project: set up once by an admin, read-only for everyone else, example data in every section including the project plan, and sample AI drafts. |
 | [design_apply.mjs](design_apply.mjs) | What Apply builds from a proposal (src/design.js): a state flow in the shape the flow builder keeps, and the panel's text is escaped. |
@@ -29,9 +32,11 @@ How to read a name: a test is named after the thing it checks (for example `wsr.
 | [eml_parse.mjs](eml_parse.mjs) | Reading an .eml in the browser: sender, subject, date, plain text, quoted-printable, base64, HTML-only and attachments. |
 | [feedback.mjs](feedback.mjs) | Team feedback: clean record, issue text, the daily sheet rows, the routes on a stand-in platform, and the GitHub fallback. |
 | [ftr_html.mjs](ftr_html.mjs) | FTR checklist HTML (src/ftrhtml.js) and the check of the downloaded results (src/ftrresult.js): items come only from the data given, configuration checks and functional tests are kept apart |
+| [ftrreport.mjs](ftrreport.mjs) | FTR report view (src/ftrreport.js): reads Claude's draft into modules, use cases, test cases and results; shows nothing that was not written. |
 | [golive.mjs](golive.mjs) | Go-live readiness (src/golive.js, rule `readiness`): read from recorded data; a gap is shown, never a refusal; green only when it is really done. |
 | [guide_intel.mjs](guide_intel.mjs) | Tests the guide intelligence (src/guideintel.js) on real ZIP packages built from Facilio-style XML: parsing, relationship evidence |
 | [guides_list.mjs](guides_list.mjs) | Training guides overview (src/guideslist.js, rule `summary`): counts what exists and says where each kind is made; nothing invented. |
+| [helper_status.mjs](helper_status.mjs) | The Claude helper: is a Claude running, who may take a personal job, what a person added to a project is told, the request card and the chat colours. |
 | [jobs.mjs](jobs.mjs) | Job queue (roadmap E17): the pure rules of work/server/_jobs.mjs, then the routes under /api/projects/:id/jobs and the connector tool project_jobs, on the stand-in platform of |
 | [jobs_all.mjs](jobs_all.mjs) | project_jobs action list with NO project: the waiting jobs of every project the person can open, in one call (the cheap idle check of the fast chat lane). |
 | [kickoff_deck.mjs](kickoff_deck.mjs) | Digital kick-off deck (src/kickoffhtml.js): built only from the data it is given, empty slides are left out and named, text is escaped, the file asks for nothing from outside. |
@@ -43,6 +48,7 @@ How to read a name: a test is named after the thing it checks (for example `wsr.
 | [load_ai.mjs](load_ai.mjs) | Load check for the facilio.work server function: 100 projects, 100 people at once, AI drafts included. |
 | [mail_api.mjs](mail_api.mjs) | Customer mail becomes tasks: the server side (_mailapi.mjs) with an in-memory database: save, dedupe, accept, resolved -> draft_reply job, reply states, customers refused, tools declared. |
 | [mail_tasks.mjs](mail_tasks.mjs) | Customer mail becomes tasks: routing, scenarios, dedupe, done-when, reply state, and the engine rule for mail tasks. |
+| [merge_markers.mjs](merge_markers.mjs) | No leftover merge-conflict markers in the code, styles or docs. |
 | [mockup_client.mjs](mockup_client.mjs) | The client mockup (src/mockuphtml.js): one self-contained HTML file; modules grouped like a Facilio organisation; sample records; state moves; the file is safe to open and share. |
 | [mockup_push.mjs](mockup_push.mjs) | Claude brings a finished Meteor page into the Studio (work/server/_dsapi.mjs, tool mockup_save_page, action save_mockup of session_questions) |
 | [mockup_spec.mjs](mockup_spec.mjs) | The prototype brief for Meteor (src/mockup.js): built only from applied or confirmed design, empty when nothing is applied, plain text, no invented parts. |
@@ -74,6 +80,7 @@ How to read a name: a test is named after the thing it checks (for example `wsr.
 | [qa_stress.mjs](qa_stress.mjs) | QA stress run for the facilio.work server function: 100 people, 100 projects, everyone adds notes, links and documents, large records, file parts, connector calls and a big hand-off answer. |
 | [qbank.mjs](qbank.mjs) | The question bank rules (work/server/_qbank.mjs): cleaning, merging without duplicates, editing with history, moving, the Workshop room's view, the prompts and the parsers of a model's answer. |
 | [qbank_api.mjs](qbank_api.mjs) | The two AI routes of the question bank (work/server/_qbankapi.mjs) with a stand-in AI and fake project documents: what is read, what is returned, who may call them. |
+| [qengine.mjs](qengine.mjs) | The question engine (src/qengine.js): a question about the project's records is read and answered exactly. |
 | [qimport.mjs](qimport.mjs) | Questions from a file (src/qimport.js): a sheet of any layout and a document both give clean questions, filed under the project's modules; non-questions are left out. |
 | [quickfacts.mjs](quickfacts.mjs) | Quick facts (src/quickfacts.js): exact answers from the loaded records with no AI; anything that is not a plain look-up returns null. |
 | [reslinks.mjs](reslinks.mjs) | Notes & Links helpers (src/reslinks.js): clickable addresses in notes, type guessing for pasted links, the private-note rule. |
