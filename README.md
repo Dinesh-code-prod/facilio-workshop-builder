@@ -22,6 +22,28 @@ A customer project has eight stages. The Studio follows them in order and keeps 
 
 **Who uses it:** the Facilio delivery team (full access to their projects) and customers (a limited view of their own project: sign-offs, questions, tests).
 
+## How the pieces fit together
+```mermaid
+flowchart LR
+  P["A team member or customer<br/>(the website in src/)"] -->|every page and button| S["The server<br/>(work/server/api.mjs)<br/>stores records, checks who may see what"]
+  S -->|quick answers and drafts| D["DeepSeek<br/>(built in, runs on the server)"]
+  S -->|waiting jobs| Q["The job queue"]
+  Q -->|picked up by the scheduled task| C["A team member's own Claude desktop<br/>(the Claude helper)"]
+  C -->|saves drafts through the connector| S
+  S -->|reminders and replies| O["Otto in Microsoft Teams"]
+  O -->|"reply: done, move to Friday, add a task"| S
+```
+The website draws the pages; the server keeps the records and decides who may see them. Quick answers come from the records or from DeepSeek straight away. Bigger work (a BRD, a guide, a handover pack, importing a plan) goes into a **job queue** and is done by **Claude on a team member's own computer**. Everything Claude writes comes back as a **draft** that a person reads and approves.
+
+## The things that make it feel alive
+| What | In plain words | Where to read more |
+|---|---|---|
+| **Assistant chat** | A panel on the right of every project page. You type a question; simple ones are answered at once from the records, work is sent to Claude, and a live card shows what was asked, how long it has waited and what Claude is doing. | [src/assistant.js](src/assistant.js), [docs/plans/](docs/plans/README.md) |
+| **Claude helper** | A small scheduled task in a team member's Claude desktop app does the waiting jobs and starts the morning reminders. The light in the top bar is green while any teammate's Claude is running it and amber when none is. | [docs/integrations/](docs/integrations/README.md), [work/server/_helper.mjs](work/server/_helper.mjs) |
+| **Otto in Teams** | A bot that sends each person their tasks and the plan milestones that are due, tells a new project member what they were added to, and takes replies ("T-4 done", "move to Friday", "add a task") that update the Studio. | [docs/integrations/](docs/integrations/README.md) |
+| **Guide me** | A guided walk through every stage and page, started once for each person. | [src/coach.js](src/coach.js) |
+| **Documents and exports** | The BRD, workshop plan, FTR report, status reports and guides open as pages and export to Word, Excel, HTML and PDF. | [src/README.md](src/README.md) |
+
 ## New here? Read in this order
 1. This page, to the end: what the product is and where things are.
 2. [CHANGELOG.md](CHANGELOG.md): what was added, version by version, in plain words.
