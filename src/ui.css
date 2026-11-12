@@ -2068,10 +2068,12 @@ body .tr-sub button { white-space: nowrap; display: inline-flex; align-items: ce
 #bellPop .bp-pj { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 1px 9px; border-radius: 999px; background: var(--cs-bg4, #f4f4f5); color: var(--cs-fg2); font: 500 12.5px/18px var(--cs-font); }
 #bellPop .bp-x2 { font: 400 13px/18px var(--cs-font); color: var(--cs-fg3); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 #bellPop .bp-un { width: 10px; height: 10px; margin-top: 6px; border-radius: 50%; background: var(--cs-brand, #1570EF); } #bellPop .bp-go { margin-top: 6px; color: var(--cs-fg3); font-size: 20px; line-height: 1; }
-#asst .as-head:not(#_):not(#__):not(#___) { background: var(--cs-fg1, #0a0a0a) !important; border-bottom: 0 !important; padding: 16px 20px !important; }
-#asst .as-t { gap: 12px; } #asst .as-logo:not(#_):not(#__):not(#___) { width: 40px; height: 40px; border-radius: 12px; background: var(--cs-brand, #1570EF) !important; color: #fff; } #asst .as-logo svg { width: 20px; height: 20px; }
-#asst .as-tt { display: grid; } #asst .as-t b:not(#_):not(#__):not(#___) { color: #fff !important; font: 600 18px/24px var(--cs-font); } #asst .as-tt small { color: rgba(255, 255, 255, .7); font: 400 13px/18px var(--cs-font); }
-#asst .as-ib:not(#_):not(#__):not(#___) { color: rgba(255, 255, 255, .85) !important; } #asst .as-ib:hover:not(#_):not(#__):not(#___) { background: rgba(255, 255, 255, .14) !important; color: #fff !important; }
+/* Assistant drawer, Apple look: a light translucent header like the top bar (it was the one black bar left), a tinted icon, dark title, grey subtitle */
+#asst .as-head:not(#_):not(#__):not(#___) { background: rgba(255, 255, 255, .86) !important; -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid var(--cs-st2, #e5e5e5) !important; padding: 14px 18px !important; color: var(--cs-fg1) !important; }
+#asst .as-t { gap: 12px; } #asst .as-logo:not(#_):not(#__):not(#___) { width: 36px; height: 36px; border-radius: 10px; background: #e8f1fe !important; color: #0d5bd7; } #asst .as-logo svg { width: 18px; height: 18px; }
+#asst .as-tt { display: grid; } #asst .as-t b:not(#_):not(#__):not(#___) { color: var(--cs-fg1, #1d1d1f) !important; font: 600 17px/22px var(--cs-font); letter-spacing: -.01em; } #asst .as-tt small { color: var(--cs-fg3, #6e6e73); font: 400 12.5px/18px var(--cs-font); }
+#asst .as-ib:not(#_):not(#__):not(#___) { color: var(--cs-fg3, #6e6e73) !important; } #asst .as-ib:hover:not(#_):not(#__):not(#___) { background: rgba(118, 118, 128, .12) !important; color: var(--cs-fg1, #1d1d1f) !important; }
+#asst .as-empty:not(#_):not(#__):not(#___) { max-width: 300px; margin: 48px auto 0; padding: 0; text-align: center; color: var(--cs-fg3, #6e6e73); font: 400 14px/21px var(--cs-font); }
 #bellPop .bp-g h4:not(#_):not(#__) { flex-direction: row; text-align: left; justify-content: flex-start; font-size: 12.5px; color: var(--cs-fg3); }
 #bellPop .bp-row .bp-m em:not(#_):not(#__) { font-style: normal; line-height: 18px; margin: 0; }
 #bellPop .bp-row .bp-tag:not(#_):not(#__), #bellPop .bp-row .bp-st:not(#_):not(#__), #bellPop .bp-row .bp-pj:not(#_):not(#__) { font-size: 12.5px; }
