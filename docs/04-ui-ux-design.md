@@ -19,16 +19,28 @@ The rules the screens follow. Colours, depth and wording are the owner's rules; 
 | Sky (soft accents, borders on hover) | `#8DB8FF` |
 | Soft surfaces and lines | `#F4F7FD`, `#E3E9F5` |
 
-Sky and the soft surfaces are for small accents only (a hover border, a selected chip). Cards, card headers, table headers and the page background stay white or neutral grey: no sky-blue fills or blue top lines (owner rule, 9 Nov 2026). Buttons, borders, radii and the type follow coss ui (https://coss.com/ui): near-black primary button, hairline borders, 10 px controls, Geist.
+Sky and the soft surfaces are for small accents only (a hover border, a selected chip). Cards, card headers, table headers and the page background stay white or neutral grey: no sky-blue fills or blue top lines (owner rule, 9 Nov 2026).
 
-Not allowed: violet or purple, neon or glow, heavy gradients. (`reference/design-reference.md` records an older external artifact that used violet; it is history, not a rule.)
+Not allowed: violet or purple, neon or glow, new gradients. (`design/design-reference.md` and the coss documents are history, not rules.)
 
-## Depth
-The look is coss ui (light theme only): hairline borders, near-black main buttons, a tinted accent per menu group, small shadows. The rules are in `docs/design/UI-COSS-LIBRARY.md`. Styles are layered in `build.mjs`; overrides use `body ...:not(#_):not(#__)` with `!important` and the last layer is `ui.css`.
+## Depth and look
+**The look is Apple** (owner rule, 9 Nov 2026; standing directive `plans/UI-TRANSFORMATION-DIRECTIVE-2026-11-12.md`): system font, weights 400/500/600, grey canvas #f5f5f7, one solid blue primary button per screen, grey capsule secondary buttons, hairline borders, 12 px controls, 20 px cards with soft layered shadows, ease `cubic-bezier(.32,.72,0,1)`, light theme only. The code is `src/ui.css`, the last of the style layers in `build.mjs`; overrides use `body ...:not(#_):not(#__)` with `!important`. Change a rule in place rather than appending a new one: appended layers are what made the look drift.
+
+## Navigation levels (each has its own look; no tab is ever removed or renamed)
+| Level | Element | Look |
+|---|---|---|
+| 0 App | Projects / Admin switch in the top bar | grey segmented control |
+| 1 Stage | left rail (`#projNav .rl-b`) | icon and label; the chosen stage is a blue-tinted tile |
+| 1b Part of a stage | `.mt-s` row (for example Build the solution / Access & alerts / BRD & sign-off) | text capsules; the chosen one is blue-tinted with its count |
+| 2 Workspace | `.mt-t` row (for example Solution / System Modules / State Flow Builder / Mockup) | plain text tabs; the chosen one is dark with a 2 px blue underline |
+| 3 Mini | `.tabs` inside a page (for example Stateflows / States / All modules) | compact grey segmented control |
+| Actions | page buttons | one blue primary, grey capsules for the rest |
+
+## Type scale
+Page title 28/36 · section heading (h2) 20/26 · card heading (h3) 16/22 · body 14/20 · meta, helper and table header 12/16 grey. All 600 or below, sentence case.
 
 ## Layout
-- **Sidebar** groups, then pages; the active page is a dark pill. Counts show what needs a person (statements to review, blocking checks).
-- **Page header**, then tabs, then content. A hub page puts its own tabs above the page's inner tabs.
+- **Page header** (dark blue gradient, kept on purpose), then a quiet "Current phase" meta line, then the page. The Claude helper notice is one slim line; its full explanation is behind "How it works".
 - **Drawers** (right side) for settings and forms; **dialogs** for confirmations (delete, replace, export with blocking issues).
 - **Banners**: red or pink for blocking, blue-grey for information. Long lists collapse; each issue has a "Fix this" link.
 - **Document editor** (BRD Draft): paper pages, a formatting bar (bold, italic, underline, undo, redo, add paragraph, heading, bullets, table), blocks with a "⋯" menu. Enter starts a new paragraph.
