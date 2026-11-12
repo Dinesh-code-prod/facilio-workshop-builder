@@ -313,6 +313,7 @@
        "enum": [
         "presence",
         "usage",
+        "delegate",
         "request",
         "list",
         "claim",
@@ -332,6 +333,10 @@
         "type": "string"
        },
        "description": "The ids of the Studio skills your Claude has installed (see the tool description)"
+      },
+      "delegate": {
+       "type": "object",
+       "description": "Only for action delegate (with project): hand a routine sub-part of your job to DeepSeek and get its answer back at once: { task (what to do, one sentence), input (only the text it needs, at most 12000 characters), format (the answer shape) }. Check the answer before you use it."
       },
       "usage": {
        "type": "object",

@@ -7,7 +7,7 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const arr = x => (Array.isArray(x) ? x : []);
   const WHO = { you: 'You', claude: 'C', sys: 'S', bad: '!', other: '' };
-  const VIA = { deepseek: 'DeepSeek', claude: 'Claude', app: 'Project records' };   // m.via: which engine wrote the reply, shown above it
+  const VIA = { project: 'Project AI', deepseek: 'DeepSeek', claude: 'Claude', app: 'Project records' };   // m.via: which engine wrote the reply, shown above it
   const attrs = a => Object.keys(a || {}).filter(k => /^[a-z][a-z0-9-]*$/.test(k)).map(k => ' data-' + k + '="' + esc(a[k]) + '"').join('');
   const btn = b => '<button type="button" class="btn sm' + (b.primary ? ' primary' : '') + (b.danger ? ' danger' : '') + '" data-act="' + esc(b.act) + '"' + attrs(b.attrs) + '>' + esc(b.label) + '</button>';
   function message(m) {
