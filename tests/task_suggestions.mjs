@@ -57,7 +57,7 @@ const rows = id => [...(store.get('tsg.' + pid) || new Map()).values()].map(x =>
 
 await t('the two tools are in work.json, need a project, and nothing in work.json applies a suggestion', () => {
   const raw = fs.readFileSync(new URL('../work/work.json', import.meta.url), 'utf8'); const all = JSON.parse(raw).mcp.tools; const names = all.map(x => x.name); assert.equal(new Set(names).size, names.length);
-  const x = all.find(y => y.name === 'task_tracking'); assert.ok(x, 'task_tracking'); assert.deepEqual(x.input_schema.required, ['action', 'project']); assert.deepEqual(x.input_schema.properties.action.enum, ['evidence', 'save', 'reply', 'add', 'mail_list', 'mail_save', 'mail_draft', 'mail_sent']); assert.ok(x.input_schema.properties.suggestions, 'save takes suggestions'); assert.ok(!x.confirm);
+  const x = all.find(y => y.name === 'task_tracking'); assert.ok(x, 'task_tracking'); assert.deepEqual(x.input_schema.required, ['action', 'project']); assert.deepEqual(x.input_schema.properties.action.enum, ['evidence', 'save', 'reply', 'add', 'mail_list', 'mail_save', 'mail_draft', 'mail_sent', 'todo_list', 'todo_add', 'todo_done']); assert.ok(x.input_schema.properties.suggestions, 'save takes suggestions'); assert.ok(!x.confirm);
   assert.ok(!names.some(x => /(accept|apply).*suggest|suggest.*(accept|apply)/i.test(x)), 'there is no tool that accepts a suggestion'); assert.equal(JSON.stringify(JSON.parse(raw), null, 1).replace(/\n/g, '\r\n') + '\r\n', raw, 'the 1-space CRLF layout is kept');
 });
 await t('task_evidence: open tasks with their ids, overdue first, plus changes, UAT, minutes and sign-offs, all marked as data', async () => {
