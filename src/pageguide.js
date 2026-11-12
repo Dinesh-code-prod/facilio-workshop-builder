@@ -27,7 +27,7 @@
   };
   V.pageGuide = key => {
     const g = PG[key]; if (!g) return '';
-    const k = 'fwb_pg_' + key; const open = lsGet(k) !== '0';
+    const k = 'fwb_pg_' + key; const open = lsGet(k) === '1';   // closed by default: the summary line already shows the first sentence
     return `<details class="pg"${open ? ' open' : ''}><summary data-act="pgToggle" data-k="${esc(k)}"><b>What is this page for?</b><span>${open ? '' : esc(g[0].split('. ')[0] + '.')}</span></summary><div class="pg-b"><p>${esc(g[0])}</p><ol>${g[1].map(s => `<li>${esc(s)}</li>`).join('')}</ol>${g[2] ? `<p class="xs muted">${esc(g[2])}</p>` : ''}</div></details>`;
   };
   ACT.pgToggle = a => { const d = a.closest('details'); lsSet(a.getAttribute('data-k'), d && d.open ? '0' : '1'); };
