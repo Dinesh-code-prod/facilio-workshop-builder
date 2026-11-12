@@ -1741,7 +1741,7 @@ body .kb-col > header span:not(#_):not(#__) { background: transparent; padding: 
 body .kb-card:not(#_):not(#__) { background: #fff; border: 0; border-left: 4px solid #D0D5DD; border-radius: 10px; padding: 12px 12px 10px; box-shadow: 0 1px 2px rgba(16, 24, 40, .08); }
 body .kb-card.p-0:not(#_):not(#__) { border-left-color: #F04438; } body .kb-card.p-1:not(#_):not(#__) { border-left-color: #F79009; } body .kb-card.p-2:not(#_):not(#__) { border-left-color: #1570EF; } body .kb-card.p-3:not(#_):not(#__) { border-left-color: #98A2B3; }
 body .kb-chips:not(#_):not(#__) { display: flex; flex-wrap: wrap; gap: 5px; margin: 0 0 8px; }
-body .kb-ty:not(#_):not(#__) { font-size: 11.5px; font-weight: 600; letter-spacing: .03em; text-transform: none; border-radius: 999px; padding: 2px 9px; background: #EEF0FF; color: #4A55C8; }
+body .kb-ty:not(#_):not(#__) { font-size: 11.5px; font-weight: 600; letter-spacing: .03em; text-transform: none; border-radius: 999px; padding: 2px 9px; background: #e8f1fe; color: #0d5bd7; }   /* was lavender #EEF0FF / #4A55C8 (no violet rule) */
 body .kb-ty.ty-1:not(#_):not(#__) { background: #fff1dc; color: #b25000; } body .kb-ty.ty-2:not(#_):not(#__) { background: #FDE7F1; color: #B0125F; } body .kb-ty.ty-3:not(#_):not(#__) { background: #DFF7EA; color: #248a3d; } body .kb-ty.ty-4:not(#_):not(#__) { background: #E0F2FE; color: #0B6AA2; } body .kb-ty.ty-5:not(#_):not(#__) { background: #F1EFE9; color: #5B5545; }
 body .kb-t:not(#_):not(#__) { font-size: 14px; font-weight: 500; line-height: 1.4; margin: 0 0 10px; }
 body .kb-prog:not(#_):not(#__) { margin: 0 0 10px; } body .kb-pc:not(#_):not(#__) { display: block; font-size: 12px; color: var(--cs-fg2, #525252); margin-bottom: 4px; }
@@ -2675,3 +2675,16 @@ body .ki-tile:not(#_):not(#__):not(#___) { border: 1px solid rgba(15, 23, 42, .0
 body .ki-tile.done:not(#_):not(#__):not(#___) { background: #f5f9ff !important; border-color: rgba(21, 112, 239, .22) !important; }
 @media (hover: hover) and (pointer: fine) { body .ki-tile:not(#_):not(#__):not(#___):hover { border-color: rgba(21, 112, 239, .35) !important; box-shadow: 0 2px 8px rgba(15, 23, 42, .08) !important; } }
 body .ki-lite .ki-tiles:not(#_):not(#__) { background: #f6f8fb; border-top: 1px solid rgba(15, 23, 42, .06); border-bottom: 1px solid rgba(15, 23, 42, .06); }
+
+/* status words, same colour on every page (set by src/a11y.js from the label text: ok, info, warn, bad, off) */
+body :is(.tag, .pl-chip, .cs-sol-chip, .ki-tr em)[data-st="ok"]:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #e7f6ec !important; color: #13693a !important; }
+body :is(.tag, .pl-chip, .cs-sol-chip, .ki-tr em)[data-st="info"]:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #e8f1fe !important; color: #0d5bd7 !important; }
+body :is(.tag, .pl-chip, .cs-sol-chip, .ki-tr em)[data-st="warn"]:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #fdf1de !important; color: #8a4b08 !important; }
+body :is(.tag, .pl-chip, .cs-sol-chip, .ki-tr em)[data-st="bad"]:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #fdecec !important; color: #a5161d !important; }
+body :is(.tag, .pl-chip, .cs-sol-chip, .ki-tr em)[data-st="off"]:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #eef2f7 !important; color: #475569 !important; }
+body :is(.tag, .pl-chip, .cs-sol-chip, .ki-tr em):not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { border-radius: 999px !important; }
+
+/* card heading icon tile (added by src/a11y.js when the heading names what the card holds) */
+body :is(.card-h, .sd-w > header, .sd-life > header) > h3[data-hi]:not(#_):not(#__):not(#___) { display: inline-flex; align-items: center; gap: 10px; }
+body .hd-ic:not(#_):not(#__):not(#___) { flex: none; display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: #e8f1fe; color: #1570EF; }
+body .hd-ic svg:not(#_):not(#__):not(#___) { width: 15px; height: 15px; }
