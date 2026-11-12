@@ -32,4 +32,16 @@ console.log('  ok  odd input gives a well-formed answer');
 // a change that reaches the customer or money is never simple; a heavy job is at least complex
 assert.ok(at(assess('Change the fee in the contract summary', 'small').tier) >= 2); assert.ok(at(assess('Redo the plan', 'heavy').tier) >= 3);
 console.log('  ok  risky changes are at least advanced, heavy work at least complex');
-console.log('3 routing evaluation checks passed');
+// the level travels with a chat job and the brief tells Claude what it asks of it; a made-up level is dropped
+const J = await import('../work/server/_jobs.mjs');
+assert.ok(TIERS.every(t => J.LEVEL_MEANS[t] && J.LEVEL_MEANS[t].length > 20));
+const c = J.cleanRequest({ kind: 'chat', note: 'Send the UAT plan to the customer', tier: 'critical' }); assert.equal(c.params.tier, 'critical'); assert.equal(J.cleanRequest({ kind: 'chat', note: 'x y z', tier: 'urgent' }).params.tier, undefined);
+const b = J.brief({ id: 'j1', kind: 'chat', params: c.params, status: 'waiting' }, { id: 'p1', name: 'P' }); assert.equal(b.level, 'critical'); assert.ok(/needs_input/.test(b.levelMeans));
+console.log('  ok  the level travels with a chat job and the brief says what it asks of Claude');
+// the admin assistant: admins only, the portfolio evidence only, and Otto reminders only by an admin who is allowed to change things
+const fs = await import('node:fs'); const api = fs.readFileSync(new URL('../work/server/api.mjs', import.meta.url), 'utf8');
+const seg = (a, b) => { const i = api.indexOf(a); assert.ok(i > 0, 'missing ' + a); return api.slice(i, api.indexOf(b, i + a.length)); };
+assert.ok(/requireAdmin\('sub'\)/.test(seg("route('POST', '/api/admin/assistant/ask'", 'route(')) && /requireAdmin\('admin'\)/.test(seg("route('POST', '/api/admin/assistant/nudge'", 'route(')) && /requireAdmin\('sub'\)/.test(seg("route('GET', '/api/admin/alerts'", 'route(')));
+assert.ok(/s\.adminRole !== 'sub'/.test(seg("route('POST', '/api/admin/assistant/ask'", 'route(')), 'a read-only admin is not offered the Send button');
+console.log('  ok  the admin assistant is for admins only, and only a full admin can send Otto reminders');
+console.log('5 routing evaluation checks passed');

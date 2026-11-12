@@ -38,3 +38,12 @@ Goal (user brief, 12 Nov 2026): one AI ecosystem where Project AI knows the proj
 4. A hand-run comparison script: the evaluation set sent to DeepSeek through `/assistant/do` and to Claude through the queue, with a person scoring accuracy and completeness.
 
 Checked: `npm test` (with the routing set), the three engines in the local preview (rewrite to DeepSeek, a pending-inputs question to Project AI, a BRD comparison to Claude). Not checked: the live DeepSeek classifier's readings against the set, a real Claude run using `delegate`.
+
+## Step 2 (same day)
+
+- **The level reaches Claude.** A chat job carries the router's level (simple to critical) and the brief says what it asks: critical means plan first, ask with needs_input before saving, drafts only.
+- **Admin > AI** shows "Assistant routing, last 30 days": requests per engine, failures, average time and levels.
+- **Admin > Assistant** (new, portfolio level, for administrators): what needs attention now (critical and high signals across active projects, failed AI calls today), a chat answered by DeepSeek from the computed portfolio (health, signals, workload by owner; never project documents), an "Ask Claude to go deeper" prompt for the admin's own Claude (portfolio_status, list_overdue, project_overview through the connector), and, when the admin asks to remind or chase, a Send button that tells the owners of the projects needing attention through Otto (Teams) and the bell. Only a full admin can send; the usual limits apply (same signals once per three days, five a day per person).
+- Fixed on the way: the Admin side menu was 800 px tall at phone width.
+
+Not checked: the live DeepSeek answers on real portfolio data, a real Otto message reaching Teams.

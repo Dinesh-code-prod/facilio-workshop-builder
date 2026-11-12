@@ -2578,3 +2578,16 @@ body .sd-prog em::after { content: ""; position: absolute; inset: 0; background:
 @keyframes sdBlink { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 @media (max-width: 1100px) { body .sd-steps::before, body .sd-steps::after { display: none; } }
 @media (prefers-reduced-motion: reduce) { body .sd-steps::after, body .sd-n, body .sd-step b, body .sd-step small, body .sd-here, body .sd-prog u, body .sd-prog em, body .sd-prog em::after, body .sd-chip::before, body .sd-n::after { animation: none !important; } }
+/* Admin assistant (src/adminassist.js): alerts on top, then the portfolio chat */
+body .aa-card:not(#_):not(#__) { margin-bottom: 16px; }
+body .aa-ah:not(#_):not(#__) { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+body .aa-list:not(#_):not(#__) { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; } body .aa-list li:not(#_):not(#__) { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 18px; }
+body .aa-sev:not(#_):not(#__) { flex: none; font: 600 11px/18px var(--cs-font, inherit); text-transform: capitalize; padding: 0 8px; border-radius: 999px; background: #FFF4E5; color: #B54708; } body .aa-sev.critical:not(#_):not(#__) { background: #FEE4E2; color: #B42318; }
+body .aa-thread:not(#_):not(#__) { max-height: 52vh; overflow: auto; display: grid; gap: 10px; padding: 4px 2px 10px; }
+body .aa-sugg:not(#_):not(#__) { display: flex; flex-wrap: wrap; gap: 8px; }
+body .aa-m.you:not(#_):not(#__) { justify-self: end; max-width: 80%; } body .aa-m.you .aa-b:not(#_):not(#__) { background: #1570EF; color: #fff; border-radius: 14px 14px 4px 14px; padding: 8px 12px; font-size: 14px; }
+body .aa-m.ai:not(#_):not(#__) { max-width: 92%; } body .aa-m.ai .aa-b:not(#_):not(#__) { background: #f5f5f7; border-radius: 4px 14px 14px 14px; padding: 10px 14px; font-size: 14px; line-height: 20px; } body .aa-m.bad .aa-b:not(#_):not(#__) { background: #FEF3F2; color: #B42318; }
+body .aa-via:not(#_):not(#__) { font: 600 11px/16px var(--cs-font, inherit); color: #6e6e73; margin: 0 0 4px 2px; } body .aa-acts:not(#_):not(#__) { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+body .aa-in:not(#_):not(#__) { display: flex; gap: 8px; align-items: flex-end; margin-top: 8px; } body .aa-in textarea:not(#_):not(#__) { flex: 1; resize: vertical; min-height: 44px; }
+/* Admin side menu on a phone: it turns into one scrolling row, so it must not keep the full-height column (it was 800 px tall with every item stretched) */
+@media (max-width: 860px) { body .adm-nav:not(#_):not(#__):not(#___):not(#____) { height: auto !important; min-height: 0 !important; max-height: none !important; align-items: center !important; position: static !important; } body .adm-ni:not(#_):not(#__):not(#___):not(#____) { height: auto !important; min-height: 36px !important; align-self: center !important; } }

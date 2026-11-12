@@ -73,6 +73,7 @@ Where a project stands: the dashboard, the roadmap, status reports and the admin
 | File | What it does |
 |---|---|
 | [admdiscover.js](admdiscover.js) | Admin > Discover more: one library of product highlights for all projects. |
+| [adminassist.js](adminassist.js) | Admin > Assistant: a chat over the whole portfolio (not one project), what needs attention now, and Otto reminders to project owners. |
 | [admin.js](admin.js) | Admin console: dashboard (portfolio KPIs and insights), projects, users, access (who may use the console) and activity. |
 | [admlayout.js](admlayout.js) | Admin dashboard layout: choose which widgets show, move them and change their width, per dashboard tab. |
 | [admviz.js](admviz.js) | Admin dashboard visuals: sparklines, RAG boards, donuts, pivots, delivery trackers and stacked bars. |
