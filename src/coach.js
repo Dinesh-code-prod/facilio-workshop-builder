@@ -90,15 +90,17 @@
     if (at < 0 || !ring) return;
     if (mode() !== how) { stop(false); return; }   // the menu position was switched
     const s = list[at]; ensureOpen(s); const t = tgt(s);
-    if (!t || !t.offsetParent) { ring.style.display = 'none'; return; }
+    // no visible target (on a tablet or phone the menu is folded away): keep the card on screen, bottom right
+    if (!t || !t.offsetParent) { ring.style.display = 'none'; Object.assign(card.style, { left: Math.max(8, root.innerWidth - card.offsetWidth - 16) + 'px', top: Math.max(12, root.innerHeight - card.offsetHeight - 16) + 'px' }); return; }
     if (how === 'side') t.scrollIntoView({ block: 'nearest' });
     const r = t.getBoundingClientRect(); ring.style.display = '';
     Object.assign(ring.style, { left: r.left - 4 + 'px', top: r.top - 4 + 'px', width: r.width + 8 + 'px', height: r.height + 8 + 'px' });
     const below = how === 'rail' && s.kind === 'page';   // the page tabs run across the top, so the card goes under them
     card.classList.toggle('co-below', below);
     const left = below ? Math.min(Math.max(8, r.left), root.innerWidth - 302) : Math.max(8, Math.min(r.right + 16, root.innerWidth - 302));
-    const top = below ? r.bottom + 14 : Math.max(12, Math.min(r.top - 8, root.innerHeight - card.offsetHeight - 12));
-    Object.assign(card.style, { left: left + 'px', top: top + 'px' });
+    const top = below ? r.bottom + 14 : r.top - 8;
+    // the card always stays on screen (on a tablet or phone the target can sit below the fold)
+    Object.assign(card.style, { left: Math.max(8, Math.min(left, root.innerWidth - card.offsetWidth - 8)) + 'px', top: Math.max(12, Math.min(top, root.innerHeight - card.offsetHeight - 12)) + 'px' });
   }
   function text(s) {
     if (s.kind === 'stage') {

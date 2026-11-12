@@ -12,3 +12,4 @@ How the app should look and move: the coss style library, page-by-page progress,
 | [motion-and-design.md](motion-and-design.md) | Motion Kit and Facilio design resources: what was actually inspected |
 
 The animation kit data is in [motionkit/](motionkit/).
+- `UI-AUDIT-2026-11-12.md`: app-wide audit against the Apple look (360 screens, 4 widths), what was fixed and what is open.

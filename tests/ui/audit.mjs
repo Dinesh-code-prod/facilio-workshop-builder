@@ -11,7 +11,7 @@ const ONLY = process.env.UI_VIEWPORTS ? process.env.UI_VIEWPORTS.split(',').map(
 const VIEWPORTS = [{ n: 'desktop', w: 1440, h: 900 }, { n: 'laptop', w: 1280, h: 800 }, { n: 'tablet', w: 768, h: 1024 }, { n: 'mobile', w: 390, h: 844 }].filter(v => !ONLY || ONLY.includes(v.w));
 const SHOTS = process.env.UI_SHOTS !== '0'; const PARTS = (process.env.UI_PARTS || 'home,admin,project').split(',');
 fs.mkdirSync(path.join(OUT, 'shots'), { recursive: true });
-const checks = fs.readFileSync(path.join(here, 'checks.js'), 'utf8');
+const checks = fs.readFileSync(path.join(here, 'checks.js'), 'utf8'); const design = fs.readFileSync(path.join(here, 'design-checks.js'), 'utf8');   // the Apple look rules
 const LONG = 'Emirates National Engineering Consolidated Facilities Management Programme Phase Two (Abu Dhabi & Al Ain)';
 
 async function seed(page) {
@@ -29,7 +29,7 @@ async function seed(page) {
 const report = []; const seen = new Set();
 async function audit(page, vp, screen, scope) {
   await page.waitForTimeout(250); await page.waitForSelector('#loading', { state: 'detached', timeout: 8000 }).catch(() => { }); await page.waitForTimeout(150);
-  const issues = await page.evaluate(s => window.__uiAudit(s), scope || null).catch(e => [{ rule: 'audit-error', sig: '', text: '', detail: e.message }]);
+  const issues = await page.evaluate(s => window.__uiAudit(s).concat(window.__designAudit ? window.__designAudit() : []), scope || null).catch(e => [{ rule: 'audit-error', sig: '', text: '', detail: e.message }]);
   report.push({ vp: vp.n, screen, issues });
   const file = `${screen.replace(/[^a-z0-9]+/gi, '_')}__${vp.n}.png`;
   if (SHOTS) await page.screenshot({ path: path.join(OUT, 'shots', file) }).catch(() => { });
@@ -51,7 +51,7 @@ async function tryDialog(page, vp, screen) {
 }
 const browser = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined });
 for (const vp of VIEWPORTS) {
-  const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, deviceScaleFactor: 1 }); await ctx.addInitScript(checks);
+  const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, deviceScaleFactor: 1 }); await ctx.addInitScript(checks); await ctx.addInitScript(design);
   const page = await ctx.newPage(); page.on('pageerror', e => { if (!seen.has(e.message)) { seen.add(e.message); console.log('PAGE ERROR', e.message); } });
   page.on('dialog', d => d.dismiss());
   await page.goto(BASE + '/'); await page.waitForSelector('[data-act]', { timeout: 15000 }); await audit(page, vp, 'auth');
