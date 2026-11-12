@@ -500,7 +500,8 @@ body :is(.drawer, .dialog) table th:not(#_):not(#__):not(#___) { position: stati
 /* second sweep from a scan of every project page (9 Nov 2026) */
 body :is(.xf-empty, .st-foot, .ob-nav, .notice, .dx-nav, .brd-ban, details.pg, .tg2-job, details.tg2-ph, .tg2-stage, .wf-refuse):not(#_):not(#__):not(#___) { border-radius: 16px !important; }
 body :is(.ob-nav-i, .dx-btn, .mnu-i, .blk-ask):not(#_):not(#__):not(#___) { border-radius: 10px !important; }
-body .dx-btn.on:not(#_):not(#__):not(#___), body .rs-chip.on:not(#_):not(#__):not(#___) { background: var(--cs-primary) !important; color: #fff !important; }
+body .dx-btn.on:not(#_):not(#__):not(#___), body .rs-chip.on:not(#_):not(#__):not(#___) { background: #e8f1fe !important; border-color: transparent !important; color: #0d5bd7 !important; }   /* chosen filter chip: blue tint, never a second solid primary */
+body .rs-chip.on em:not(#_):not(#__):not(#___) { color: #0d5bd7 !important; }
 body :is(.lc-num, .kpi-v, .kb-ty, .pt-st, .pt-av, .ws-clock, .ws-n, .tp-n, .tg2-h3, .tg2-lv, .tg2-lvl, .fb-seg, button.tab):not(#_):not(#__):not(#___) { font-weight: 600 !important; }
 
 /* ---- settings pages (coss ui pattern): the name and a short description on the left, the form card on the right, buttons in a footer bar ---- */
@@ -1958,6 +1959,7 @@ body .sidebar .sb-hint:not(#_):not(#__):not(#___):not(#____) { display: block; m
 body .hp-banner:not(#_):not(#__) { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; padding: 8px 10px 8px 16px; margin: 0 0 12px; border: 1px solid #f3dcb5; background: #fffaf2; border-radius: 12px; }
 body .hp-banner .hp-bt:not(#_):not(#__) { min-width: 240px; flex: 1; display: flex; align-items: baseline; gap: 8px; color: var(--cs-fg2); overflow: hidden; } body .hp-banner .hp-bt b { flex: none; font-size: 13.5px; } body .hp-banner .hp-bt span { flex: none; font-size: 12px; color: #9a4400; margin: 0; } body .hp-banner .hp-bt p { margin: 0; min-width: 0; font-size: 13px; line-height: 1.4; color: var(--cs-fg3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 body .hp-banner .hp-ba .btn:not(#_):not(#__) { height: 30px; padding: 0 12px; font-size: 13px; }
+body .hp-banner .hp-ba .btn.primary:not(#_):not(#__):not(#___) { background: #e8f1fe !important; color: #0d5bd7 !important; border-color: transparent !important; box-shadow: none !important; }   /* the notice never takes the page's one solid primary */
 body .hp-banner .hp-ba:not(#_):not(#__) { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 /* who is answering in the assistant chat: DeepSeek (in the app), Claude (your own Claude) or the project records */
 body .ki-via:not(#_):not(#__) { display: inline-flex !important; align-items: center !important; gap: 6px !important; margin: 0 0 3px 2px !important; font-size: 11px !important; font-weight: 600 !important; letter-spacing: .02em !important; color: var(--cs-fg-muted, #525252) !important; }
@@ -2432,8 +2434,8 @@ body .tr-chips:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { 
 body .tr-chip:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border: 1px solid #d4d4d4; border-radius: 999px; background: #fff; color: #262626; font-size: 13px; font-weight: 600; cursor: pointer; }
 body .tr-chip b:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { font-size: 11px; min-width: 18px; height: 18px; line-height: 18px; padding: 0 5px; border-radius: 9px; background: #ececec; color: #0a0a0a; text-align: center; }
 body .tr-chip:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #f5f5f5; border-color: #a3a3a3; }
-body .tr-chip.on:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #0a0a0a; border-color: #0a0a0a; color: #fff; }
-body .tr-chip.on b:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: rgba(255,255,255,.2); color: #fff; }
+body .tr-chip.on:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #e8f1fe; border-color: transparent; color: #0d5bd7; }   /* chosen filter: blue tint, as everywhere else */
+body .tr-chip.on b:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #fff; color: #0d5bd7; }
 body .tr-tools:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 body .tr-cards:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
 body .tr-card:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: flex; flex-direction: column; background: #fff; border: 1px solid #e5e5e5; border-radius: 16px; overflow: hidden; transition: border-color .15s ease; }
@@ -2442,7 +2444,7 @@ body .tr-card.dim:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______)
 body .tr-po:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { position: relative; display: grid; place-items: center; height: 128px; background: #f3f3f3; color: #525252; }
 body .tr-po.video:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #111; color: #fff; }
 body .tr-po.steps:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #f3f3f3; }
-body .tr-card.dim .tr-po.video:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #3a3a3a; color: #d4d4d4; }
+body .tr-card.dim .tr-po.video:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #f2f2f4; color: #8e8e93; }   /* a video still to make is a light placeholder; only real videos are dark */
 body .tr-kind:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { position: absolute; left: 12px; top: 12px; font-size: 11.5px; font-weight: 600; letter-spacing: 0; text-transform: none; opacity: .85; }
 body .tr-st:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { position: absolute; right: 12px; top: 10px; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 11px; font-weight: 600; line-height: 22px; background: #fff; color: #404040; }
 body .tr-st.ok:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #ecfdf3; color: #067647; }
@@ -2453,9 +2455,10 @@ body .tr-cb p:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { m
 body .tr-ca:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 body .tr-empty:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { text-align: left; }
 body .tr-col2:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: grid; gap: 16px; align-items: start; }
-body .tr-ca .btn.primary:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______), body .tr-ca a.btn.primary:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: #0a0a0a !important; color: #fff !important; border: 1px solid #0a0a0a !important; text-decoration: none; }
-body .tr-ca .btn.primary:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: #262626 !important; }
-body .tr-ca .btn:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { height: 34px; border-radius: 10px; font-weight: 600; }
+/* card actions are small primaries, so they are tinted blue capsules (the old near-black coss button is gone) */
+body .tr-ca .btn.primary:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______), body .tr-ca a.btn.primary:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: #e8f1fe !important; color: #0d5bd7 !important; border: 1px solid transparent !important; text-decoration: none; }
+body .tr-ca .btn.primary:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: #dbe9fd !important; }
+body .tr-ca .btn:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { height: 32px; border-radius: 999px; font-weight: 600; }
 
 /* chart options in the Guides form: two lines each, full width, never clipped */
 body .btn.ug-opt:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { display: block; width: 100%; height: auto; min-height: 0; padding: 12px 14px; margin-bottom: 8px; text-align: left; white-space: normal; line-height: 1.35; border-radius: 12px; }
