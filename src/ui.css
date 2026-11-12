@@ -2541,3 +2541,40 @@ body :is(.ws-seg, .fb-seg):is(.on, [aria-pressed="true"]):not(#_):not(#__):not(#
 /* standalone actions that were plain words: the phase strip Timeline link, Open the plan, Fix this */
 body :is(a.ps-a, button.sd-go, a[data-act="goNav"]:not(.btn):not([data-ref])):not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { display: inline-flex !important; align-items: center !important; gap: 6px !important; height: 28px !important; padding: 0 12px !important; border-radius: 999px !important; background: rgba(0, 0, 0, .055) !important; color: #1d1d1f !important; font-size: 13px !important; font-weight: 500 !important; text-decoration: none !important; border: 0 !important; white-space: nowrap; cursor: pointer; }
 body :is(a.ps-a, button.sd-go, a[data-act="goNav"]:not(.btn):not([data-ref])):hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: rgba(0, 0, 0, .09) !important; }
+
+/* Project health lifecycle (user, 12 Nov 2026): one blue track that fills up to the current step, nodes that pop in one after another,
+   a pulsing ring and a "You are here" marker on the step the project is in, and bars that grow in. Motion only, no new colours. */
+body .sd-life { position: relative; overflow: hidden; padding: 18px 20px 18px; }
+body .sd-life > header { margin-bottom: 8px; }
+body .sd-chip.warn::before, body .sd-chip.bad::before, body .sd-chip.ok::before { content: ""; display: inline-block; width: 6px; height: 6px; margin: 0 6px 1px 0; border-radius: 50%; background: currentColor; animation: sdBlink 1.8s ease-in-out infinite; }
+body .sd-steps { position: relative; padding-top: 30px; --track-top: 43px; }
+/* the rail behind the nodes: grey for the whole plan, blue up to the current step */
+body .sd-steps::before, body .sd-steps::after { content: ""; position: absolute; top: var(--track-top); left: calc(100% / 24); height: 3px; border-radius: 2px; }
+body .sd-steps::before { right: calc(100% / 24); background: rgba(0, 0, 0, .09); }
+body .sd-steps::after { width: calc((100% - 100% / 12) * var(--cur, 0) / 11); background: var(--cs-brand, #1570EF); animation: sdFill 1.3s cubic-bezier(.32, .72, 0, 1) .2s both; }
+body .sd-step::before { display: none; }
+body .sd-step { animation: none; }
+body .sd-n { width: 30px; height: 30px; font-size: 12px; border-width: 2px; background: #fff; transition: transform 220ms cubic-bezier(.32, .72, 0, 1), background 200ms, border-color 200ms; animation: sdPop 520ms cubic-bezier(.32, .72, 0, 1) calc(var(--i, 0) * 70ms + 150ms) both; }
+body .sd-step b, body .sd-step small { animation: sdRise 420ms cubic-bezier(.32, .72, 0, 1) calc(var(--i, 0) * 70ms + 300ms) both; }
+body .sd-step.done .sd-n { background: var(--cs-brand, #1570EF); border-color: var(--cs-brand, #1570EF); color: #fff; font-size: 13px; }
+body .sd-step.now .sd-n, body .sd-step.late .sd-n { transform: scale(1.18); background: #fff; border-color: var(--cs-brand, #1570EF); color: var(--cs-brand, #1570EF); box-shadow: none; }
+body .sd-step.late .sd-n { border-color: #ff3b30; color: #ff3b30; }
+body .sd-step.now .sd-n::after, body .sd-step.late .sd-n::after { content: ""; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid currentColor; opacity: 0; animation: sdPing 2.2s cubic-bezier(.2, .6, .3, 1) 1.4s infinite; }
+body .sd-step.now b, body .sd-step.late b { color: var(--cs-fg1); }
+body .sd-here { position: absolute; top: -30px; left: 50%; z-index: 2; transform: translateX(-50%); padding: 3px 9px; border-radius: 999px; background: #1d1d1f; color: #fff; font: 600 10px/14px var(--cs-font); font-style: normal; white-space: nowrap; animation: sdBob 2.4s ease-in-out 1.6s infinite; }
+body .sd-here::after { content: ""; position: absolute; left: 50%; bottom: -3px; width: 7px; height: 7px; background: #1d1d1f; transform: translateX(-50%) rotate(45deg); border-radius: 1px; }
+body .sd-step.late .sd-here, body .sd-step.late .sd-here::after { background: #ff3b30; }
+body .sd-step[data-act]:hover { background: transparent; } body .sd-step[data-act]:hover .sd-n { transform: scale(1.15); } body .sd-step.now[data-act]:hover .sd-n, body .sd-step.late[data-act]:hover .sd-n { transform: scale(1.28); } body .sd-step[data-act]:hover b { color: var(--cs-brand, #1570EF); }
+body .sd-prog { margin-top: 16px; } body .sd-prog i { height: 10px; border-radius: 5px; }
+body .sd-prog u { animation: sdGrow 1.1s cubic-bezier(.32, .72, 0, 1) .5s both; transform-origin: left; } body .sd-prog em { background: var(--cs-brand, #1570EF); transform-origin: left; animation: sdGrow 1.3s cubic-bezier(.32, .72, 0, 1) .7s both; }
+body .sd-prog em::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, .55) 50%, transparent 70%); background-size: 200% 100%; animation: sdShine 2.8s ease-in-out 2s infinite; }
+@keyframes sdFill { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes sdPop { 0% { opacity: 0; scale: .3; } 65% { opacity: 1; scale: 1.22; } 100% { opacity: 1; scale: 1; } }
+@keyframes sdRise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes sdPing { 0% { opacity: .55; transform: scale(1); } 80%, 100% { opacity: 0; transform: scale(1.9); } }
+@keyframes sdBob { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -4px); } }
+@keyframes sdGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes sdShine { 0% { background-position: 160% 0; } 60%, 100% { background-position: -60% 0; } }
+@keyframes sdBlink { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@media (max-width: 1100px) { body .sd-steps::before, body .sd-steps::after { display: none; } }
+@media (prefers-reduced-motion: reduce) { body .sd-steps::after, body .sd-n, body .sd-step b, body .sd-step small, body .sd-here, body .sd-prog u, body .sd-prog em, body .sd-prog em::after, body .sd-chip::before, body .sd-n::after { animation: none !important; } }
