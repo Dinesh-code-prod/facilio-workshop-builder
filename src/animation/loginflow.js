@@ -64,7 +64,7 @@
     const aria = 'How Delivery Studio works: one project holds the files, AI drafts and shows its sources, people review and approve, the customer signs off online, build and test stay linked to the requirements, tasks and mail keep the team on track, then go-live, hypercare and handover.';
     return `<div class="lsx lsn" data-aud="team"><div class="lsx-top"><div class="lsx-cap" aria-live="polite"><b>${esc(CH[0][2])}</b><span>${esc(CH[0][3])}</span></div></div>`
       + `<div class="lsn-fit"><div class="lsn-win" role="img" aria-label="${esc(aria)}"><div class="lsn-bar"><b>Riverside Towers rollout</b><i>/</i><span class="lsn-crumb">${esc(CH[0][4])}</span><em>${av('MS')}${av('DR')}${av('PN')}</em></div><div class="lsn-body" aria-hidden="true">${scenes()}</div></div></div>`
-      + `<ol class="lsn-rail">${CH.map((c, i) => `<li><button type="button" data-i="${i}"><u><i></i></u><span>${esc(c[1])}</span></button></li>`).join('')}</ol>`
+      + `<ol class="lsn-rail">${CH.map((c, i) => `<li><button type="button" data-i="${i}" aria-label="${esc(c[1])}"><u><i></i></u><span>${esc(c[1])}</span></button></li>`).join('')}</ol>`
       + '<div class="lsx-row"><button type="button" class="lsx-rp">Replay</button><small>Illustrative: sample names and data</small></div></div>';
   }
 
