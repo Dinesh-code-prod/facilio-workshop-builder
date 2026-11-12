@@ -1866,7 +1866,7 @@ button { font-family: var(--font, Inter, Roboto, system-ui, sans-serif) !importa
 .btn.link, .btn.sm.ghost, .btn.ghost { background: #EEF3FB; border: 1px solid #e5e5e5; color: #1d1d1f; min-height: 30px; padding: 0 12px; border-radius: 8px; text-decoration: none; }
 .btn.link:hover, .btn.sm.ghost:hover, .btn.ghost:hover { background: #f0f0f0; border-color: #1570EF; color: #1570EF; }
 .dr-ev { background: #fff; } .dr-ev:hover { background: #fafafa; }
-.ob-nav-i, .wb-mod { background: #fafafa; border: 1px solid #e5e5e5; border-radius: 8px; min-height: 32px; } .ob-nav-i:hover, .wb-mod:hover { background: #f0f0f0; } .wb-mod.on, .ob-nav-i.on { background: #1570EF; border-color: #1570EF; color: #fff; }
+.ob-nav-i, .wb-mod { background: transparent; border: 1px solid transparent; border-radius: 8px; min-height: 32px; } .ob-nav-i:hover, .wb-mod:hover { background: #f0f0f2; } .wb-mod.on, .ob-nav-i.on { background: #e8f1fe; border-color: transparent; color: #0d5bd7; }   /* side lists: flat rows, the chosen one blue-tinted like the stage rail */
 .main button:not([class]) { background: #fafafa; border: 1px solid #e5e5e5; border-radius: 8px; min-height: 30px; padding: 0 12px; color: #1d1d1f; font-weight: 600; cursor: pointer; } .main button:not([class]):hover { background: #f0f0f0; border-color: #1570EF; }
 .avatar { flex: none; min-width: 36px; min-height: 36px; }
 .navbar .right { flex-wrap: nowrap; } 

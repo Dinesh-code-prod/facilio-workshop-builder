@@ -873,6 +873,9 @@ body .main[data-sec] > .page > .page-header .tag:not(#_):not(#__), body .main[da
 body .main[data-sec] > .page > .page-header .btn:not(.primary):not(#_):not(#__) { background: rgba(255, 255, 255, .14) !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, .34) !important; box-shadow: none !important; }
 body .main[data-sec] > .page > .page-header .btn:not(.primary):hover:not(#_):not(#__) { background: rgba(255, 255, 255, .24) !important; }
 body .main[data-sec] > .page > .page-header .btn.primary:not(#_):not(#__) { background: #1570EF !important; color: #fff !important; border-color: #1570EF !important; }
+body .main[data-sec] > .page > .page-header :is(.muted, .small, small):not(.btn):not(.tag):not(#_):not(#__):not(#___) { color: #e3e9fb !important; }   /* grey text on the navy header failed contrast */
+/* one primary per screen: in a header, later primaries take the quiet header style */
+body .main[data-sec] > .page > .page-header .btn.primary ~ .btn.primary:not(#_):not(#__):not(#___) { background: rgba(255, 255, 255, .14) !important; border-color: rgba(255, 255, 255, .34) !important; }
 body .main[data-sec] > .page > .page-header a:not(.btn):not(#_):not(#__) { color: #fff !important; text-decoration: underline; text-decoration-color: rgba(255, 255, 255, .6); }
 body .main[data-stage] > .page > .page-header .t:not(#_):not(#__)::before { background: rgba(255, 255, 255, .14) !important; border: 1px solid rgba(255, 255, 255, .3) !important; color: #fff !important; }
 body .main[data-sec] > .page > .page-header .t:not(#_):not(#__)::before { background-color: #1570EF; }
