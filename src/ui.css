@@ -400,12 +400,13 @@ body .main h2:not(#_):not(#__), body .cs-sub:not(#_):not(#__) { letter-spacing: 
 body .main h3:not(#_):not(#__), body .cs-card-h:not(#_):not(#__) { letter-spacing: -.011em !important; font-weight: 600 !important; }
 body .xs:not(#_):not(#__), body .small:not(#_):not(#__) { letter-spacing: .008em; }
 
-/* ---- buttons: capsules; secondary is a soft grey tint, primary is Facilio blue; the press scales to .97 on pointer-down ---- */
-body .btn:not(.icon):not(.link):not(#_):not(#__) { border-radius: 999px !important; min-height: 34px; padding: 0 16px !important; font: 500 14px/20px var(--cs-font) !important; letter-spacing: -.006em !important; text-transform: none !important; color: var(--cs-fg1) !important; background: rgba(0, 0, 0, .055) !important; background-image: none !important; border: 0 !important; box-shadow: none !important; transition: background-color var(--cs-fast) var(--cs-ease), color var(--cs-fast) var(--cs-ease), transform 120ms var(--cs-ease) !important; }
+/* ---- buttons: capsules; secondary is white with a hairline ring and a light lift (a grey tint did not read as a button, user 12 Nov 2026), primary is Facilio blue; the press scales to .97 on pointer-down ---- */
+body .btn:not(.icon):not(.link):not(#_):not(#__) { border-radius: 999px !important; min-height: 34px; padding: 0 16px !important; font: 500 14px/20px var(--cs-font) !important; letter-spacing: -.006em !important; text-transform: none !important; color: var(--cs-fg1) !important; background: #fff !important; background-image: none !important; border: 0 !important; box-shadow: 0 0 0 1px rgba(0, 0, 0, .14), 0 1px 2px rgba(0, 0, 0, .08) !important; transition: background-color var(--cs-fast) var(--cs-ease), color var(--cs-fast) var(--cs-ease), transform 120ms var(--cs-ease) !important; }
 body .btn:not(.icon):not(.link).sm:not(#_):not(#__) { min-height: 28px; padding: 0 12px !important; font-size: 13px !important; line-height: 18px !important; }
-body .btn:not(.icon):not(.link):not([disabled]):not(#_):not(#__):hover { background: rgba(0, 0, 0, .09) !important; }
-body .btn:not(.icon):not(.link):not([disabled]):not(#_):not(#__):active { background: rgba(0, 0, 0, .13) !important; transform: scale(.97); }
+body .btn:not(.icon):not(.link):not([disabled]):not(#_):not(#__):hover { background: #f5f5f7 !important; box-shadow: 0 0 0 1px rgba(0, 0, 0, .22), 0 1px 3px rgba(0, 0, 0, .1) !important; }
+body .btn:not(.icon):not(.link):not([disabled]):not(#_):not(#__):active { background: #ebebed !important; transform: scale(.97); }
 body .btn.primary:not(.icon):not(#_):not(#__) { background: var(--cs-primary) !important; color: #fff !important; }
+body .btn:is(.primary, .ghost, .danger):not(.icon):not(#_):not(#__), body .btn:is(.primary, .ghost, .danger):not(.icon):not([disabled]):not(#_):not(#__):hover { box-shadow: none !important; }   /* filled and ghost kinds carry no ring */
 body .btn.primary:not(.icon):not([disabled]):not(#_):not(#__):hover { background: var(--cs-primary-h) !important; }
 body .btn.primary:not(.icon):not([disabled]):not(#_):not(#__):active { background: var(--cs-primary-p) !important; }
 /* small primary buttons are tinted (soft blue, blue text) so one solid blue button leads each screen */
@@ -2554,8 +2555,8 @@ body .hp-spin:not(#_):not(#__) { width: 12px; height: 12px; border-radius: 50%; 
 /* the floating Assistant tab (33 px, right edge) covered right-aligned buttons on laptops and tablets: keep the page clear of it */
 @media (max-width: 1279px) { body:has(#asstTab) .main > .page:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { padding-right: 48px !important; } }
 /* actions that looked like plain text are buttons: the grey capsule of .btn.sm (user, 12 Nov 2026) */
-body :is(.btn.link, button.link):not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { display: inline-flex !important; align-items: center !important; gap: 6px !important; height: 28px !important; min-height: 28px !important; padding: 0 12px !important; border: 0 !important; border-radius: 999px !important; background: rgba(0, 0, 0, .055) !important; color: #1d1d1f !important; font-size: 13px !important; font-weight: 500 !important; line-height: 1 !important; text-decoration: none !important; white-space: nowrap; vertical-align: middle; cursor: pointer; transition: background-color .16s cubic-bezier(.32, .72, 0, 1), transform .16s cubic-bezier(.32, .72, 0, 1); }
-body :is(.btn.link, button.link):not([disabled]):hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: rgba(0, 0, 0, .09) !important; text-decoration: none !important; }
+body :is(.btn.link, button.link):not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { display: inline-flex !important; align-items: center !important; gap: 6px !important; height: 28px !important; min-height: 28px !important; padding: 0 12px !important; border: 0 !important; border-radius: 999px !important; background: #fff !important; box-shadow: 0 0 0 1px rgba(0, 0, 0, .14), 0 1px 2px rgba(0, 0, 0, .08) !important; color: #1d1d1f !important; font-size: 13px !important; font-weight: 500 !important; line-height: 1 !important; text-decoration: none !important; white-space: nowrap; vertical-align: middle; cursor: pointer; transition: background-color .16s cubic-bezier(.32, .72, 0, 1), transform .16s cubic-bezier(.32, .72, 0, 1); }
+body :is(.btn.link, button.link):not([disabled]):hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: #f5f5f7 !important; text-decoration: none !important; }
 body :is(.btn.link, button.link):not([disabled]):active:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { transform: scale(.97); }
 body :is(.btn.link, button.link):focus-visible:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { outline: 2px solid #1570EF !important; outline-offset: 2px !important; }
 /* filter groups that were plain words (question status, feedback type) use the segmented control look */
@@ -2563,8 +2564,8 @@ body :is(.ws-segs, .fb-segs):not(#_):not(#__):not(#___):not(#____):not(#_____):n
 body :is(.ws-seg, .fb-seg):not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { height: 28px !important; padding: 0 12px !important; border: 0 !important; border-radius: 8px !important; background: transparent !important; color: #404040 !important; font-size: 13px !important; font-weight: 500 !important; cursor: pointer; }
 body :is(.ws-seg, .fb-seg):is(.on, [aria-pressed="true"]):not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: #fff !important; color: #0a0a0a !important; font-weight: 600 !important; box-shadow: 0 1px 2px rgba(0, 0, 0, .14), 0 0 0 1px rgba(0, 0, 0, .05) !important; }
 /* standalone actions that were plain words: the phase strip Timeline link, Open the plan, Fix this */
-body :is(a.ps-a, button.sd-go, a[data-act="goNav"]:not(.btn):not([data-ref])):not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { display: inline-flex !important; align-items: center !important; gap: 6px !important; height: 28px !important; padding: 0 12px !important; border-radius: 999px !important; background: rgba(0, 0, 0, .055) !important; color: #1d1d1f !important; font-size: 13px !important; font-weight: 500 !important; text-decoration: none !important; border: 0 !important; white-space: nowrap; cursor: pointer; }
-body :is(a.ps-a, button.sd-go, a[data-act="goNav"]:not(.btn):not([data-ref])):hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: rgba(0, 0, 0, .09) !important; }
+body :is(a.ps-a, button.sd-go, a[data-act="goNav"]:not(.btn):not([data-ref])):not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { display: inline-flex !important; align-items: center !important; gap: 6px !important; height: 28px !important; padding: 0 12px !important; border-radius: 999px !important; background: #fff !important; box-shadow: 0 0 0 1px rgba(0, 0, 0, .14), 0 1px 2px rgba(0, 0, 0, .08) !important; color: #1d1d1f !important; font-size: 13px !important; font-weight: 500 !important; text-decoration: none !important; border: 0 !important; white-space: nowrap; cursor: pointer; }
+body :is(a.ps-a, button.sd-go, a[data-act="goNav"]:not(.btn):not([data-ref])):hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: #f5f5f7 !important; }
 
 /* Project health lifecycle (user, 12 Nov 2026): one blue track that fills up to the current step, nodes that pop in one after another,
    a pulsing ring and a "You are here" marker on the step the project is in, and bars that grow in. Motion only, no new colours. */
@@ -2615,3 +2616,62 @@ body .aa-via:not(#_):not(#__) { font: 600 11px/16px var(--cs-font, inherit); col
 body .aa-in:not(#_):not(#__) { display: flex; gap: 8px; align-items: flex-end; margin-top: 8px; } body .aa-in textarea:not(#_):not(#__) { flex: 1; resize: vertical; min-height: 44px; }
 /* Admin side menu on a phone: it turns into one scrolling row, so it must not keep the full-height column (it was 800 px tall with every item stretched) */
 @media (max-width: 860px) { body .adm-nav:not(#_):not(#__):not(#___):not(#____) { height: auto !important; min-height: 0 !important; max-height: none !important; align-items: center !important; position: static !important; } body .adm-ni:not(#_):not(#__):not(#___):not(#____) { height: auto !important; min-height: 36px !important; align-self: center !important; } }
+
+/* ===== Depth and type pass (user, 12 Nov 2026: "boring fonts and white backgrounds, all looks boring whites", every tab, side tab and form).
+   One block so it reaches every page: Inter as the UI font, a deeper canvas so white cards stand out, real card depth, card headers as a quiet band,
+   clearer heading steps, fuller form fields, status chips that carry their colour again, the Intro stepper and draft tiles. No gradients, no glow. ===== */
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 100 900; font-display: swap; src: url("fonts/inter-latin-wght-normal.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 100 900; font-display: swap; src: url("fonts/inter-latin-ext-wght-normal.woff2") format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+:root, body { --cs-font: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; }
+html body:not(#_) { font-family: var(--cs-font); font-feature-settings: "cv11", "ss03"; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body :is(button, input, select, textarea):not(#_) { font-family: inherit; }
+body .tbl td:not(#_), body :is(.kpi-v, .sd-kpi b, .mk-c b, .dk-kpi b):not(#_) { font-variant-numeric: tabular-nums; }
+
+/* canvas: a touch deeper, so the white cards read as surfaces instead of one white sheet */
+html body:not(#_):not(#__) { background: #eef0f4 !important; }
+body .main:not(#_):not(#__), body .adm-main:not(#_):not(#__) { background: transparent; }
+
+/* cards: hairline plus a two-layer lift */
+body :is(.card:not(.dark):not([class*="night"]), .cs-card, .st-card, .ds-panel, section.mk, section.rv, .ki-chat, .dk-card, .sd-w, .tbl-wrap):not(.card .card):not(#_):not(#__):not(#___):not(#____) { background: #fff; border: 1px solid rgba(15, 23, 42, .07) !important; box-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 6px 20px -8px rgba(15, 23, 42, .10) !important; }
+/* a card header is a quiet band with a real heading, so each card has a top and a name */
+body .card > .card-h:not(#_):not(#__):not(#___) { background: #f8f9fb; border-bottom: 1px solid rgba(15, 23, 42, .07) !important; border-radius: var(--cs-r-card) var(--cs-r-card) 0 0; }
+
+/* headings: clear steps (page 28, section 20, card 17, label 13); Inter wants slight negative tracking at display sizes */
+body .main h1:not(#_):not(#__):not(#___), body .page-header h1:not(#_):not(#__):not(#___) { font: 600 28px/34px var(--cs-font) !important; letter-spacing: -.022em !important; }
+body .main h2:not(#_):not(#__):not(#___) { font-weight: 600 !important; letter-spacing: -.017em !important; color: #0f172a; }
+body .main :is(.card-h h3, .card > h3, .cs-card-h, .st-side h3, .ds-top b, .rv-h b, .tg2-first h2):not(#_):not(#__):not(#___) { font: 600 17px/24px var(--cs-font) !important; letter-spacing: -.014em !important; color: #0f172a !important; }
+body .main h4:not(#_):not(#__):not(#___) { font: 600 14px/20px var(--cs-font) !important; letter-spacing: -.006em !important; }
+body .main :is(.muted, .small.muted, .xs.muted):not(#_):not(#__):not(#___) { color: #5b6474 !important; }
+
+/* forms, in every tab, drawer and dialog: labels that read as labels, fields with a soft fill and a firm edge, a clear focus ring */
+body :is(label.f, .f > label, .fgrid label, .drawer label.f, .dk-f > span):not(#_):not(#__):not(#___) { display: block; margin-bottom: 6px; font: 600 13px/18px var(--cs-font) !important; color: #1e293b !important; letter-spacing: -.003em; }
+body input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="hidden"]):not(#_):not(#__):not(#___), body select:not(#_):not(#__):not(#___), body textarea:not(#_):not(#__):not(#___) { background-color: #f8f9fb !important; border: 1px solid #d5d9e0 !important; box-shadow: inset 0 1px 1px rgba(15, 23, 42, .03) !important; }
+body input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="hidden"]):not(#_):not(#__):not(#___), body select:not(#_):not(#__):not(#___) { min-height: 38px; }
+body :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(#_):not(#__):not(#___):hover { border-color: #b8bfca !important; }
+body :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(#_):not(#__):not(#___):focus { background-color: #fff !important; border-color: #1570EF !important; box-shadow: 0 0 0 4px rgba(21, 112, 239, .16) !important; }
+body :is(input, select, textarea)[disabled]:not(#_):not(#__):not(#___), body :is(input, textarea)[readonly]:not(#_):not(#__):not(#___) { background-color: #f1f3f6 !important; color: #5b6474 !important; }
+body .fgrid:not(#_):not(#__) { row-gap: 18px; }
+body input[type="checkbox"]:not(#_):not(#__), body input[type="radio"]:not(#_):not(#__) { accent-color: #1570EF; }
+
+/* tables: a tinted head row, a soft row hover */
+body .tbl thead th:not(#_):not(#__):not(#___) { background: #f4f6f9 !important; color: #475569 !important; font: 600 12px/16px var(--cs-font) !important; letter-spacing: .01em !important; }
+body .tbl tbody tr:hover td:not(#_):not(#__) { background: #f8fafc; }
+
+/* status chips carry their meaning in colour again (a later "no coloured text" pass had turned them all grey) */
+body .tag:not(#_):not(#__):not(#___):not(#____):not(#_____) { padding: 2px 9px; border-radius: 999px; font: 600 12px/16px var(--cs-font) !important; background: #eef2f7 !important; color: #334155 !important; }
+body .tag:is(.green, .done, .ok, .verified, .configured):not(#_):not(#__):not(#___):not(#____):not(#_____) { background: #e7f6ec !important; color: #13693a !important; }
+body .tag:is(.amber, .warn, .medium, .orange, .modified, .tbc, .mand):not(#_):not(#__):not(#___):not(#____):not(#_____) { background: #fdf1de !important; color: #8a4b08 !important; }
+body .tag:is(.red, .high, .removed):not(#_):not(#__):not(#___):not(#____):not(#_____) { background: #fdecec !important; color: #a5161d !important; }
+body .tag:is(.blue, .info, .proposed, .custom, .inferred):not(#_):not(#__):not(#___):not(#____):not(#_____) { background: #e8f1fe !important; color: #0d5bd7 !important; }
+body .tag:is(.low, .system):not(#_):not(#__):not(#___):not(#____):not(#_____) { background: #eef2f7 !important; color: #475569 !important; }
+
+/* Intro: the contract steps are a stepper (done steps filled blue, the current one ringed), the draft documents are tiles you can see */
+body .md-steps:not(#_):not(#__) { gap: 6px; padding: 6px; background: #f1f4f8; border-radius: 999px; width: fit-content; max-width: 100%; }
+body .md-st:not(#_):not(#__):not(#___) { border: 0 !important; background: transparent !important; border-radius: 999px !important; padding: 6px 14px 6px 6px !important; color: #475569 !important; }
+body .md-st.now:not(#_):not(#__):not(#___) { background: #fff !important; color: #0f172a !important; box-shadow: 0 1px 2px rgba(15, 23, 42, .08), 0 0 0 1px rgba(21, 112, 239, .35) !important; }
+body .md-st.done i:not(#_):not(#__):not(#___) { background: #1570EF !important; color: #fff !important; }
+body .md-st.now i:not(#_):not(#__):not(#___) { background: #e8f1fe !important; color: #0d5bd7 !important; box-shadow: 0 0 0 2px #1570EF; }
+body .ki-tile:not(#_):not(#__):not(#___) { border: 1px solid rgba(15, 23, 42, .08) !important; background: #fff !important; box-shadow: 0 1px 2px rgba(15, 23, 42, .04) !important; transition: box-shadow .15s ease, border-color .15s ease; }
+body .ki-tile.done:not(#_):not(#__):not(#___) { background: #f5f9ff !important; border-color: rgba(21, 112, 239, .22) !important; }
+@media (hover: hover) and (pointer: fine) { body .ki-tile:not(#_):not(#__):not(#___):hover { border-color: rgba(21, 112, 239, .35) !important; box-shadow: 0 2px 8px rgba(15, 23, 42, .08) !important; } }
+body .ki-lite .ki-tiles:not(#_):not(#__) { background: #f6f8fb; border-top: 1px solid rgba(15, 23, 42, .06); border-bottom: 1px solid rgba(15, 23, 42, .06); }

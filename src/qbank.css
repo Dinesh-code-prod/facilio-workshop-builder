@@ -13,8 +13,7 @@ body .qb-act { display: flex; flex-wrap: wrap; gap: 6px; }
 /* one question reads as: tags, the question, why, then a compact status switch, a two-line answer that grows, and quiet text actions */
 body .qb-q .ws-segs:not(#_):not(#__):not(#___) { display: inline-flex !important; width: fit-content; align-self: flex-start; margin: 4px 0 0 !important; }
 body .qb-q .ws-note:not(#_):not(#__) { min-height: 40px; field-sizing: content; max-height: 220px; margin: 0; border-color: var(--cs-st2, #e5e5e5); }
-body .qb-q .qb-act .btn:not(.primary):not(#_):not(#__):not(#___) { height: 28px; padding: 0 8px !important; background: transparent !important; border-color: transparent !important; box-shadow: none !important; color: var(--cs-fg3, #6e6e73) !important; font-weight: 500 !important; }
-body .qb-q .qb-act .btn:not(.primary):not([disabled]):hover:not(#_):not(#__):not(#___) { background: rgba(118, 118, 128, .12) !important; color: var(--cs-fg1, #1d1d1f) !important; }
+body .qb-q .qb-act .btn:not(.primary):not(#_):not(#__):not(#___) { height: 28px; padding: 0 12px !important; font-weight: 500 !important; }   /* small, but still real buttons (white, ringed) */
 body .qb-q .qb-act .btn.danger:not(#_):not(#__):not(#___) { color: #b42318 !important; }
 body .qb-q .qb-act .btn[disabled]:not(#_):not(#__):not(#___) { opacity: .35; }
 body .wl-res { border-top: 1px solid var(--cs-st2, #e5e5e5); margin-top: 12px; padding-top: 4px; }
