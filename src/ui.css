@@ -19,6 +19,9 @@ body .main h1:not(#_):not(#__), body .page-header h1:not(#_):not(#__) { font: 60
 body h2:not(#_):not(#__) { font-weight: 600 !important; letter-spacing: -.01em !important; }
 body .main .page > .card > h2:not(#_):not(#__), body .main .page > h2:not(#_):not(#__), body .main .card-h h2:not(#_):not(#__) { font-size: 20px !important; line-height: 26px !important; }
 body .page-header .t p:not(#_):not(#__) { max-width: 76ch; }
+body .page-header .t > p[data-clamp]:not(.open):not(#_):not(#__) { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+body .page-header .t > .ph-more:not(#_):not(#__) { margin: 2px 0 0; padding: 0; border: 0; background: none; color: inherit; font: 600 13px/18px var(--cs-font); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; opacity: .9; }
+body .page-header .t > .ph-more:focus-visible { outline: 2px solid #8DB8FF; outline-offset: 2px; border-radius: 4px; }
 body .main h3:not(#_):not(#__), body .card-h h3:not(#_):not(#__) { font: 600 16px/22px var(--cs-font) !important; letter-spacing: 0 !important; }
 body .main .card:not(.dark):not([class*="night"]) h3:not(#_):not(#__) { color: var(--cs-fg1); }
 body .page-header p:not(#_):not(#__) { font-size: 14px !important; line-height: 20px !important; color: var(--cs-fg3) !important; }
@@ -1115,6 +1118,8 @@ body .main[data-sec] .tp-segs > .tab:not(#_):not(#__),
 body .main[data-sec] .pt-sheets > button:not(#_):not(#__),
 body .main[data-sec] .pt-sheets > a:not(#_):not(#__),
 body .main[data-sec] .pt-sheets > .tab:not(#_):not(#__) { position: relative; flex: none; display: inline-flex; align-items: center; gap: 6px; height: auto !important; padding: 6px 14px !important; border: 0 !important; border-radius: 8px !important; background: transparent !important; box-shadow: none !important; color: #404040 !important; font: 500 13px/20px var(--cs-font) !important; letter-spacing: 0 !important; text-decoration: none !important; cursor: pointer; white-space: nowrap; transition: background .15s, color .15s, box-shadow .15s; }
+/* filters (.seg, .ws-segs, .fb-segs) are toolbar controls: a size smaller than the mini-tabs (.tabs) so the two never read as the same level */
+body .main[data-sec] :is(.seg, .ws-segs, .fb-segs) > :is(button, a, .tab):not(#_):not(#__):not(#___) { padding: 4px 11px !important; font-size: 12.5px !important; line-height: 18px !important; }
 body .tabs > button:hover:not(#_):not(#__),
 body .tabs > a:hover:not(#_):not(#__),
 body .tabs > .tab:hover:not(#_):not(#__),

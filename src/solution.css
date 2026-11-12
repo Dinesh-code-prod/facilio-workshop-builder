@@ -19,6 +19,7 @@ body .cs-sol-r h4, body .cs-sol-h h4 { margin: 0 0 4px; font: 600 14px/20px var(
 body .cs-sol-r ul { margin: 0; padding-left: 18px; font: 400 14px/20px var(--cs-font); }
 body .cs-sol-sv { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 body .cs-sol-sv input { flex: 1 1 220px; }
+body .cs-sol-sv select:not(#_):not(#__) { flex: 0 0 200px; width: 200px !important; }   /* reason, status and Save sit on one line */
 body .cs-sol-ask { border-top: 1px solid var(--cs-st2); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }
 body .cs-sol-ps { display: flex; flex-direction: column; gap: 12px; }
 body .cs-sol-p { border: 1px solid var(--cs-brand); border-radius: var(--cs-r-card); padding: 12px; display: flex; flex-direction: column; gap: 8px; background: var(--cs-bg1); }
@@ -78,8 +79,15 @@ body details.cs-sol-ct { padding: 0 0 4px; border-bottom: 1px solid var(--cs-st2
 body .cs-sol-d { gap: 16px; } body .cs-sol-d > label.f { margin-bottom: -8px; font-weight: 600; }
 
 /* Solution tab layout pass (8 Nov 2026): more air, a full-width contract card, a wider list with a search box, the detail as one calm card, document drop and Ask Claude side by side. */
-body .card.cs-sol-all { gap: 20px; }
-body .cs-sol-all > .cs-cmd-bar { padding: 14px 18px; gap: 12px 16px; align-items: center; background: var(--cs-bg1); border: 1px solid var(--cs-st2); border-radius: var(--cs-r-card); }
+body .card.cs-sol-all:not(#_):not(#__):not(#___) { gap: 16px; background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; }   /* a wrapper, not a card: the list and the detail are the cards */
+/* the page's command row: plain buttons on the canvas (no card), Ask Claude about all areas opens in the row, the drop hint on its own muted line */
+body .cs-sol-all > .cs-cmd-bar:not(#_):not(#__) { padding: 0; gap: 8px; align-items: center; background: transparent; border: 0; box-shadow: none; }
+body .cs-sol-all > .cs-cmd-bar .cs-sol-hint { flex: 1 1 100%; margin-top: 2px; }
+body .cs-sol-all > .cs-cmd-bar .cs-sol-all-ask:not(#_) { padding: 0; border: 0; background: transparent; }
+body .cs-sol-all > .cs-cmd-bar .cs-sol-all-ask > summary { display: inline-flex; align-items: center; height: 36px; padding: 0 16px; border-radius: 999px; background: rgba(118, 118, 128, .12); font: 500 14px/20px var(--cs-font); list-style: none; }
+body .cs-sol-all > .cs-cmd-bar .cs-sol-all-ask > summary::-webkit-details-marker { display: none; }
+body .cs-sol-all > .cs-cmd-bar .cs-sol-all-ask[open] { flex: 1 1 100%; order: 9; padding: 14px 16px; background: var(--cs-bg1); border: 1px solid var(--cs-st2); border-radius: var(--cs-r-card); }
+body .cs-sol-all > .cs-cmd-bar .cs-sol-all-ask[open] > summary { background: transparent; padding: 0; height: auto; font-weight: 600; }
 body .cs-sol { grid-template-columns: 320px minmax(0, 1fr); gap: 24px; }
 body .cs-sol-n { padding: 16px; gap: 20px; top: 12px; max-height: calc(100vh - 40px); }
 body .cs-sol-q { width: 100%; box-sizing: border-box; height: 40px; padding: 0 14px; border: 1px solid var(--cs-st2); border-radius: 10px; background: var(--cs-bg1); font: 400 14px/20px var(--cs-font); }
@@ -93,8 +101,11 @@ body .cs-sol-r { padding: 12px 16px; border-radius: 10px; }
 body .cs-sol-r summary { cursor: pointer; font: 600 14px/20px var(--cs-font); }
 body .cs-sol-sv { position: sticky; bottom: 0; z-index: 2; padding: 14px 0 4px; background: var(--cs-bg1); border-top: 1px solid var(--cs-st2); }
 body .cs-sol-tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
-body .cs-sol-tools > div { border: 1px solid var(--cs-st2); border-radius: var(--cs-r-card); padding: 18px; background: var(--cs-bg2); }
-body .cs-sol-tools .cs-sol-ask { border-top: 1px solid var(--cs-st2); padding-top: 18px; }
+/* document drop and Ask Claude: two quiet columns under a hairline, no boxes inside the card */
+body .cs-sol-tools { padding-top: 20px; border-top: 1px solid var(--cs-st2); }
+body .cs-sol-tools > div { border: 0; padding: 0; background: transparent; }
+body .cs-sol-tools .cs-sol-ask:not(#_) { border-top: 0; padding-top: 0; }
+body .cs-sol-tools .cs-sol-drop { padding: 16px; }
 body .cs-sol-ct { background: var(--cs-bg1); border: 1px solid var(--cs-st2); border-radius: var(--cs-r-card); padding: 16px 20px; }
 body .cs-sol-ct > summary { cursor: pointer; font: 600 15px/24px var(--cs-font); }
 body .cs-sol-ct > summary em { font-style: normal; font-weight: 500; color: var(--cs-fg3); margin-left: 8px; }
@@ -106,8 +117,10 @@ body .cs-sol-ct .cs-sol-wk { display: flex; align-items: center; justify-content
 body .cs-sol-ct .cs-sol-wk em { display: block; font-style: normal; font-size: 12px; color: var(--cs-fg3); }
 body .cs-sol-cov { padding: 12px 18px; }
 @media (max-width: 1100px) { body .cs-sol { grid-template-columns: 1fr; } body .cs-sol-tools { grid-template-columns: 1fr; } body .cs-sol-d { padding: 20px; } }
-body .cs-sol-all > .cs-sol-g { background: var(--cs-bg1); border: 1px solid var(--cs-st2); border-radius: var(--cs-r-card); padding: 16px 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
-body .cs-sol-all > .cs-sol-g h3 { padding: 0; margin: 0; font: 600 15px/24px var(--cs-font); color: var(--cs-fg1); }
+/* no contract yet: one notice line (label, sentence, button), not a card */
+body .cs-sol-all > .cs-sol-g { background: var(--cs-bg1); border: 1px solid var(--cs-st2); border-radius: 12px; padding: 10px 12px 10px 16px; display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+body .cs-sol-all > .cs-sol-g h3:not(#_):not(#__) { padding: 0; margin: 0; font: 600 14px/20px var(--cs-font) !important; color: var(--cs-fg1); }
+body .cs-sol-all > .cs-sol-g p { flex: 1 1 320px; margin: 0; }
 
 /* Draft with AI on a BRD heading (9 Nov 2026): next to Ask Claude */
 body .paper .blk > .blk-draft { position: absolute; right: 118px; top: 2px; z-index: 2; height: 30px; padding: 0 12px; border: 1px solid var(--cs-st1, #ccc); border-radius: 4px; background: var(--cs-bg1); color: var(--cs-fg1, #111); font: 600 13px/20px var(--cs-font); white-space: nowrap; cursor: pointer; }
