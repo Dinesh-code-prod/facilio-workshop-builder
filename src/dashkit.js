@@ -99,8 +99,8 @@
   // Admin: the filters apply to every Admin tab, so a portfolio of hundreds of projects can be cut down to the part you are looking at
   function filterPortfolio(ps) {
     const f = AF(), D = V.sdd, today = V.today(), q = String(f.q || '').trim().toLowerCase();
-    const sp = V.range ? V.range.span(RGA()) : ['', ''];
-    return ps.filter(p => { const m = p.metrics || {}; if (V.range && !V.range.inRange(m.lastActivity, sp)) return false;
+    // the time range is the one in the Admin header (applied before this, to every Admin tab); the filter bar no longer has a second one
+    return ps.filter(p => { const m = p.metrics || {};
       if (f.stage !== 'all' && String(D.rstageOf(p)) !== f.stage) return false; if (f.health !== 'all' && p.health !== f.health) return false;
       if (f.customer !== 'all' && (p.customer || 'No customer') !== f.customer) return false; if (f.type !== 'all' && typeOf(p) !== f.type) return false;
       if (q && !((p.name || '') + ' ' + (p.customer || '')).toLowerCase().includes(q)) return false;
@@ -108,8 +108,8 @@
       return true; });
   }
   function adminBar(all, shown) {
-    const f = AF(), D = V.sdd, dirty = RGA().period !== 'all' || Object.keys(f).some(k => f[k] !== (k === 'q' ? '' : 'all')); const cu = [...new Set(all.map(p => p.customer || 'No customer'))].sort(), ty = [...new Set(all.map(typeOf).filter(Boolean))].sort();
-    return `<div class="dk-fbar" role="group" aria-label="Portfolio filters">${V.range ? V.range.bar('dka', RGA(), { note: 'Projects with activity in this period' }) : ''}<label class="dk-f dk-fq"><span>Search</span><input type="search" data-change="dkAF" data-k="q" value="${esc(f.q || '')}" placeholder="Project or customer" aria-label="Search projects"></label>`
+    const f = AF(), D = V.sdd, dirty = Object.keys(f).some(k => f[k] !== (k === 'q' ? '' : 'all')); const cu = [...new Set(all.map(p => p.customer || 'No customer'))].sort(), ty = [...new Set(all.map(typeOf).filter(Boolean))].sort();
+    return `<div class="dk-fbar" role="group" aria-label="Portfolio filters"><label class="dk-f dk-fq"><span>Search</span><input type="search" data-change="dkAF" data-k="q" value="${esc(f.q || '')}" placeholder="Project or customer" aria-label="Search projects"></label>`
       + sel('dkAF', 'stage', 'Stage', [['all', 'All stages']].concat(D.RSTG.slice(1).map(([id, l]) => [String(id), l]), [['0', 'No dated plan yet']]), f.stage)
       + sel('dkAF', 'health', 'Health', [['all', 'Any health']].concat(D.ORDER.map(h => [h, D.HL[h]])), f.health)
       + sel('dkAF', 'customer', 'Customer', [['all', 'All customers']].concat(cu.map(c => [c, c])), f.customer) + (ty.length ? sel('dkAF', 'type', 'Type', [['all', 'All types']].concat(ty.map(t => [t, t])), f.type) : '')

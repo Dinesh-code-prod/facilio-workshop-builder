@@ -70,7 +70,9 @@ Each page: understand, evaluate, design, implement, screenshot at 1440 / 1024 / 
 | Training | Light placeholders for videos still to make; tinted card actions |
 | Assistant drawer | Light header (was the one black bar), neutral body, centred empty state |
 
-Open: the projects home and sign-in still carry the older art (kept on purpose); Admin has two date ranges (Admin area and Overview widgets) that look alike; Team Guide step buttons are solid blue inside a long guide; Settings has a Save per section. Not checked: keyboard-only walk, every dialog and menu, the customer view, the live site.
+Fixed after the first pass (12 Nov 2026): Admin has one date range (the header one, for every Admin tab; the second one in the Overview filter bar is gone); Team Guide step buttons are small tinted primaries; Settings has one Save (Project), and the sections that save as you type show the live save state (Saving…, Saved, or an error) instead of their own Save buttons (`tests/ui/settings-save-check.mjs` updated).
+
+Open: the projects home and sign-in still carry the older art (kept on purpose). Not checked: keyboard-only walk, every dialog and menu, the customer view, the live site.
 
 ## Stage C: pilot
 Shared chrome and navigation levels, because they appear on every project page: workspace tabs, page header, helper banner, phase strip, section headings. Verified on State Flow Builder, Solution and Home. The user approves the direction before Stage D.

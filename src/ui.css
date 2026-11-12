@@ -1853,6 +1853,9 @@ body .drawer-b .row:not(#_):not(#__) { gap: 8px; }
 body .drawer.compact .drawer-b:not(#_):not(#__) { gap: 0; } body .drawer.compact .drawer-b > * + *:not(label.f + *):not(#_):not(#__) { margin-top: 10px; }   /* small dialogs: the gap comes from the same label rules, not from the grid */
 /* Project settings (9 Nov 2026): the hint beside each section's Save button */
 body .st-foot .st-hint { margin-right: auto; font-size: 13px; color: var(--cs-fg4); }
+body .st-foot .st-live::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 8px; border-radius: 50%; background: #34c759; vertical-align: 1px; }   /* live save state: green saved, grey saving, red error */
+body .st-foot .st-live:is([data-s="dirty"], [data-s="saving"])::before { background: #aeaeb2; }
+body .st-foot .st-live[data-s="error"] { color: #b42318; } body .st-foot .st-live[data-s="error"]::before { background: #d92d20; }
 /* the team and stakeholder tables: fixed, even columns; inputs fill their cell; a clear empty state */
 body .st-card .tbl:has(> thead th:nth-child(6)):not(#_):not(#__) { width: 100%; table-layout: fixed; }
 body .st-card .tbl:has(> thead th:nth-child(6)) th:nth-child(1) { width: 19%; } body .st-card .tbl:has(> thead th:nth-child(6)) th:nth-child(2) { width: 22%; } body .st-card .tbl:has(> thead th:nth-child(6)) th:nth-child(3) { width: 27%; }

@@ -68,7 +68,10 @@
   // ---------- persistence (server, versioned per section) ----------
   let saveTimer = null; const saveState = { status: 'saved', at: null, error: null, conflict: null };
   function markDirty(section) { if (!S.docs[section]) doc(section); S.docs[section].dirty = true; saveState.status = 'dirty'; paintSave(); clearTimeout(saveTimer); saveTimer = setTimeout(flush, 1200); }
-  function paintSave() { const el = document.getElementById('saveState'); if (!el) return; el.className = 'save-state' + (saveState.status === 'dirty' || saveState.status === 'saving' ? ' dirty' : saveState.status === 'error' ? ' err' : ''); el.textContent = saveState.status === 'dirty' ? 'Unsaved changes' : saveState.status === 'saving' ? 'Saving…' : saveState.status === 'error' ? (saveState.conflict ? 'Conflict — reload to merge' : 'Save failed — retrying') : saveState.at ? 'All changes saved ' + saveState.at.toLocaleTimeString() : 'All changes saved'; el.title = saveState.error || ''; }
+  function paintSave() {
+    // the Settings sections that save as you type show the same live state on one quiet line (src/settings.js, .st-live)
+    if (typeof document !== 'undefined') document.querySelectorAll('.st-live').forEach(x => { const s = saveState.status; x.setAttribute('data-s', s); x.textContent = s === 'dirty' || s === 'saving' ? 'Saving…' : s === 'error' ? 'Could not save, retrying' : 'Saved automatically as you type'; });
+    const el = document.getElementById('saveState'); if (!el) return; el.className = 'save-state' + (saveState.status === 'dirty' || saveState.status === 'saving' ? ' dirty' : saveState.status === 'error' ? ' err' : ''); el.textContent = saveState.status === 'dirty' ? 'Unsaved changes' : saveState.status === 'saving' ? 'Saving…' : saveState.status === 'error' ? (saveState.conflict ? 'Conflict — reload to merge' : 'Save failed — retrying') : saveState.at ? 'All changes saved ' + saveState.at.toLocaleTimeString() : 'All changes saved'; el.title = saveState.error || ''; }
   let flushing = null, again = false;
   async function flush() { if (flushing) { again = true; return flushing; } flushing = doFlush(); try { await flushing; } finally { flushing = null; } if (again) { again = false; return flush(); } }
   async function doFlush() {
