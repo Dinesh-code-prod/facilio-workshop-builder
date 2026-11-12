@@ -57,5 +57,20 @@ Page title 26/32 600 · section heading 17/24 600 · subsection 15/20 600 · bod
 8. Admin, projects home, sign-in (sign-in art and night city stay).
 Each page: understand, evaluate, design, implement, screenshot at 1440 / 1024 / 768 / 390, refine.
 
-## Stage C: pilot (this pass)
+## Stage D status (12 Nov 2026, first pass, checked in the browser at 1440 px and by script at 375 px)
+| Page | Done |
+|---|---|
+| All project pages | Header description 2 lines with More; one solid primary in a header; grey header text readable on navy; helper notice button tinted; "What is this page for?" folded; card-header filters size to their options; filter switches a size below mini-tabs; side lists and the rail page list use the blue tint; chosen filter chips tinted |
+| Solution | One command row (Ask Claude about all areas in it), contract notice one line, no card around the work area, reason/status/Save on one line, drop and Ask Claude as quiet columns; module list's Everything/Core/Connected switch was squashed to 6 px, fixed; no sideways scroll on phones |
+| Modules, State Flow | Proposals panel one line when nothing is open |
+| Mockup | Counts as a summary strip; actions in Prototype and Customer mockup groups; exports in More |
+| Home | Pain points and stage map right under the figures |
+| Sessions: Questions | Compact status switch, two-line answer, quiet text actions |
+| BRD | Six approval checks in a three-column grid |
+| Training | Light placeholders for videos still to make; tinted card actions |
+| Assistant drawer | Light header (was the one black bar), neutral body, centred empty state |
+
+Open: the projects home and sign-in still carry the older art (kept on purpose); Admin has two date ranges (Admin area and Overview widgets) that look alike; Team Guide step buttons are solid blue inside a long guide; Settings has a Save per section. Not checked: keyboard-only walk, every dialog and menu, the customer view, the live site.
+
+## Stage C: pilot
 Shared chrome and navigation levels, because they appear on every project page: workspace tabs, page header, helper banner, phase strip, section headings. Verified on State Flow Builder, Solution and Home. The user approves the direction before Stage D.

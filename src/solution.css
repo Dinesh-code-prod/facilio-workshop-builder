@@ -33,7 +33,7 @@ body .cs-sol-old { white-space: pre-wrap; font: 400 13px/18px var(--cs-font); co
 body .cs-sol-all-ask, body .cs-sol-cov { background: var(--cs-bg1); border: 1px solid var(--cs-st2); border-radius: var(--cs-r-card); padding: 8px 12px; }
 body .cs-sol-all-ask summary, body .cs-sol-cov summary, body .cs-sol-h summary { cursor: pointer; font: 600 14px/20px var(--cs-font); }
 body .cs-sol-all-ask textarea { width: 100%; box-sizing: border-box; margin: 8px 0; }
-@media (max-width: 900px) { body .cs-sol { grid-template-columns: 1fr; } body .cs-sol-n { position: static; max-height: none; } }
+@media (max-width: 900px) { body .cs-sol { grid-template-columns: minmax(0, 1fr); } body .cs-sol-n { position: static; max-height: none; } }
 
 /* BRD Draft tidy-up: block tools only when the pointer or keyboard is on the block; the section button is one compact icon; the design proposals fold into one line. */
 body .paper .blk .blk-tools { left: -64px; display: flex; gap: 2px; opacity: 0; transition: opacity var(--cs-fast, 100ms); }
@@ -90,6 +90,7 @@ body .cs-sol-all > .cs-cmd-bar .cs-sol-all-ask[open] { flex: 1 1 100%; order: 9;
 body .cs-sol-all > .cs-cmd-bar .cs-sol-all-ask[open] > summary { background: transparent; padding: 0; height: auto; font-weight: 600; }
 body .cs-sol { grid-template-columns: 320px minmax(0, 1fr); gap: 24px; }
 body .cs-sol-n { padding: 16px; gap: 20px; top: 12px; max-height: calc(100vh - 40px); }
+body .cs-sol-n > * { flex: none; }   /* the list scrolls; its parts never shrink (the Everything / Core / Connected switch was squashed to 6 px) */
 body .cs-sol-q { width: 100%; box-sizing: border-box; height: 40px; padding: 0 14px; border: 1px solid var(--cs-st2); border-radius: 10px; background: var(--cs-bg1); font: 400 14px/20px var(--cs-font); }
 body .cs-sol-g h3 { padding: 0 12px; margin: 0 0 8px; }
 body .cs-sol-i { min-height: 40px; padding: 8px 12px; border-radius: 8px; font: 500 14px/20px var(--cs-font); }
@@ -116,7 +117,7 @@ body .cs-sol-ct[open] > .cs-sol-more { flex: 1 1 280px; background: var(--cs-bg2
 body .cs-sol-ct .cs-sol-wk { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--cs-st2); }
 body .cs-sol-ct .cs-sol-wk em { display: block; font-style: normal; font-size: 12px; color: var(--cs-fg3); }
 body .cs-sol-cov { padding: 12px 18px; }
-@media (max-width: 1100px) { body .cs-sol { grid-template-columns: 1fr; } body .cs-sol-tools { grid-template-columns: 1fr; } body .cs-sol-d { padding: 20px; } }
+@media (max-width: 1100px) { body .cs-sol { grid-template-columns: minmax(0, 1fr); } body .cs-sol-tools { grid-template-columns: 1fr; } body .cs-sol-d { padding: 20px; } }
 /* no contract yet: one notice line (label, sentence, button), not a card */
 body .cs-sol-all > .cs-sol-g { background: var(--cs-bg1); border: 1px solid var(--cs-st2); border-radius: 12px; padding: 10px 12px 10px 16px; display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
 body .cs-sol-all > .cs-sol-g h3:not(#_):not(#__) { padding: 0; margin: 0; font: 600 14px/20px var(--cs-font) !important; color: var(--cs-fg1); }
