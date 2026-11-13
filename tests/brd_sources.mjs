@@ -19,4 +19,10 @@ t('configuration counts add up across modules and an empty project holds nothing
   assert.match(row(g, 'State flows').have, /^3 /); assert.match(row(g, 'Fields and forms').have, /^3 /); assert.match(row(g, 'Notifications').have, /^3 /);
   assert.equal(counts({}).flatMap(x => x.rows).reduce((a, r) => a + r.held, 0), 0);
 });
+import { readFileSync } from 'node:fs';
+t('the chain: a new transcript asks Claude to read it, and saved findings queue the flows, forms and BRD draft', () => {
+  const j = readFileSync(new URL('../work/server/_jobsapi.mjs', import.meta.url), 'utf8'), r = readFileSync(new URL('../src/requirements.js', import.meta.url), 'utf8');
+  assert.ok(/kind === 'extract_findings' \|\| j\.kind === 'pull_clari'\) && j\.status === 'done'/.test(j) && j.includes("['capture_flows', 'fill_forms', 'draft_brd']"));
+  assert.ok(r.includes("J().post('/jobs', { kind: 'extract_findings' }); } catch (e) { }"));
+});
 console.log(n + ' BRD sources checks passed');

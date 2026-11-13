@@ -77,7 +77,8 @@
     const id = 'tr_' + (Math.max(0, ...items.map(x => parseInt(String(x.id).slice(3), 10) || 0)) + 1); const prev = F.doc('rs_transcripts');
     J().setDoc('rs_transcripts', { items: items.concat({ id, title: String(title || 'Transcript').slice(0, 200), date: '', source: source === 'document' ? 'document' : 'upload', ref: ref || '', text, at: new Date().toISOString() }) }); F.changed(null, null, { section: 'rs_transcripts' });
     if (!(await J().saved('rs_transcripts'))) { J().setDoc('rs_transcripts', prev); S.docs.rs_transcripts.dirty = false; V.render(); toast('Not saved: the server refused it or the connection failed. Nothing was changed.', 7000, true); return false; }
-    toast(source === 'document' ? 'Document imported. Ask for the promises and asks, or for a check against the BRD or the contract, and Claude will use it.' : 'Transcript added. You can add your own checks from it, or ask for a first list of the promises and asks.', 7000); return true;
+    let q = null; try { q = await J().post('/jobs', { kind: 'extract_findings' }); } catch (e) { }   // a new transcript or document is read by Claude without a click; the flows, forms and BRD draft follow by themselves when the findings are saved
+    toast((source === 'document' ? 'Document imported.' : 'Transcript added.') + (q ? ' Claude will read it on its next run, find the promises and asks, then draft the state flows, the forms and the BRD for you to approve.' : ' Ask for the promises and asks when you are ready.'), 8000); return true;
   }
   ACT.rsAddFile = async () => {
     if (J().guard()) return; const f = (await V.pickFile('.vtt,.srt,.txt,.json'))[0]; if (!f) return; if (f.size > 4 * 1024 * 1024) { toast('That file is larger than 4 MB.', 5000, true); return; }
