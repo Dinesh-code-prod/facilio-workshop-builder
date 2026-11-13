@@ -173,6 +173,7 @@ The agreed solution of each module, the BRD with sign-off, mockups and traceabil
 | [brdimport.js](brdimport.js) | BRD import: bring a team's own BRD (Word, PDF, text or Markdown, or a blank one) into the BRD Draft page as a new BRD with its own structure. |
 | [brdreview.js](brdreview.js) | Stage 3, BRD review checklist (roadmap E20): before a BRD can be approved, a person checks each part and ticks it off with their name. |
 | [brdview.js](brdview.js) | BRD Draft — Word-like editor. |
+| [brdsources.js](brdsources.js) | Above the BRD draft: what the BRD is built from (sessions, solution, configuration, processes, use cases, governance), how much reaches it and what is held back, with the page to fix it. |
 | [design.js](design.js) | Stage 3, Solution design and BRD: what Claude proposes for the design, shown on the Process whiteboard (Requirement sessions) and on the State flow builder (roadmap E20). |
 | [mockup.js](mockup.js) | Stage 3, Mockup tab (roadmap E20): the prototype brief for Meteor, built ONLY from what the team has already applied or confirmed. |
 | [mockuphtml.js](mockuphtml.js) | Client mockup: ONE self-contained HTML file built from the confirmed design (no Meteor, no sign-in, nothing outside the file), arranged the way a Facilio organisation looks: a left menu (Portfolio,... |
