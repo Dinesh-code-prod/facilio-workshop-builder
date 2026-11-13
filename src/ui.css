@@ -2704,3 +2704,10 @@ body .brd-src .bs-s:not(#_):not(#__) { font-size: 12px; color: #6e6e73; }
 body .rs-simple .rs-lvl:not(#_):not(#__) { height: 30px; padding: 0 8px; border-radius: 10px; border: 1px solid rgba(0, 0, 0, .08); background: #fff; font-size: 13px; min-width: 112px; }
 body .rs-simple .rs-lvl.lv-none:not(#_):not(#__) { color: #86868b; } body .rs-simple .rs-lvl.lv-view:not(#_):not(#__) { background: #f5f5f7; }
 body .rs-simple .rs-lvl.lv-edit:not(#_):not(#__) { background: rgba(21, 112, 239, .08); color: #0b4fae; } body .rs-simple .rs-lvl.lv-full:not(#_):not(#__) { background: rgba(52, 199, 89, .12); color: #1a7f37; }
+
+/* suggestions from the state flows: a dashed box until kept; More views on Roles; the notification suggestion list */
+body .rs-simple .rs-lvl.lv-auto:not(#_):not(#__) { border-style: dashed; border-color: #1570EF; }
+body .tabs .rl-more:not(#_):not(#__) { margin-left: 8px; height: 30px; border-radius: 10px; border: 1px solid rgba(0, 0, 0, .08); background: #fff; padding: 0 10px; font-size: 13px; color: #1d1d1f; }
+body .nt-sugg .nt-sl:not(#_):not(#__) { list-style: none; margin: 0; padding: 0; border-radius: 14px; background: #f5f5f7; }
+body .nt-sugg .nt-sl li:not(#_):not(#__) { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; border-top: 1px solid rgba(0, 0, 0, .06); font-size: 13px; }
+body .nt-sugg .nt-sl li:first-child:not(#_):not(#__) { border-top: 0; }
