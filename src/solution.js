@@ -167,6 +167,7 @@
 
   // ---------- read first: the solution as it will read in the BRD, what the design already says about the module, and Claude to write or change it; the form opens only on Edit ----------
   function designStrip(a) {
+    return '';   // user, 13 Nov 2026: the builders these tiles opened are no longer pages people use; the Solution page shows the same counts read-only
     if (!a.key.startsWith('module:')) return ''; const m = a.key.slice(7); const n = f => { try { return f(); } catch (e) { return 0; } };
     const flows = n(() => ((F.moduleView(m) || {}).flowIds || []).map(F.flowModel).filter(f => f && (f.origin === 'proposed' || ((F.flowDiff(f.id) || {}).changes || []).length)).length);
     const fields = n(() => F.effFields(m).filter(f => ['proposed', 'modified', 'removed'].includes(f.status)).length);
