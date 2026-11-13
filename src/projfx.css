@@ -348,3 +348,7 @@ body.in-proj .main > .mt-bar .mt-in.here .mt-cap:not(#q#q#q#q#q#q#q#q#q#q#q#q) {
   body.in-proj .main > .mt-bar.mt-all .mt-t:not(.active):not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: rgba(118, 118, 128, .1) !important; }
 }
 @media (min-width: 901px) { body.in-proj .main > .mt-bar.mt-all .mt-cap:not(#q#q#q#q#q#q#q#q#q#q#q#q) { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; } }
+
+/* one Back chip above the page tabs: returns to the page you came from */
+body.in-proj .main > .nav-back:not(#q#q#q#q#q#q#q#q#q#q#q#q) { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: 6px; margin: 0 0 8px; padding: 6px 12px; border-radius: 999px; background: #fff; box-shadow: 0 0 0 1px rgba(15, 23, 42, .1), 0 1px 2px rgba(15, 23, 42, .06); color: #1570EF; font-size: 13px; font-weight: 500; cursor: pointer; }
+body.in-proj .main > .nav-back:hover:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #f5f8ff; } body.in-proj .main > .nav-back:active { transform: scale(.97); } body.in-proj .main > .nav-back:focus-visible { outline: 2px solid #1570EF; outline-offset: 2px; }

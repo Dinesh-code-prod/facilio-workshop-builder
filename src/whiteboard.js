@@ -630,10 +630,10 @@
     const model = toFlowModel(ns, es);
     if (mode === 'replace') { const id = document.getElementById('sv_f').value; const cur = id && F.flowModel(id); if (!cur) { V.toast('Choose the flow to replace', 4000, true); return; }
       if (!(await V.confirmDialog('Replace flow', 'Replace "' + (cur.name || id) + '" with this drawing (' + model.states.length + ' states, ' + model.transitions.length + ' transitions)? Its current states and transitions are overwritten.', 'Replace', true))) return;
-      const keep = F.clone(cur); const next = Object.assign({}, keep, { states: model.states, transitions: model.transitions, initial: model.initial, workshopCopy: true, layoutDir: keep.layoutDir || 'h' }); S.ws.flows[id] = next; V.closeDrawer(); F.changed('Stateflow replaced from the whiteboard', (cur.name || id)); if (ACT.roleUseSugg) ACT.roleUseSugg(); V.toast('"' + (cur.name || id) + '" now follows this drawing; the roles who press its buttons get access to the module'); return; }
+      const keep = F.clone(cur); const next = Object.assign({}, keep, { states: model.states, transitions: model.transitions, initial: model.initial, workshopCopy: true, layoutDir: keep.layoutDir || 'h' }); S.ws.flows[id] = next; V.closeDrawer(); F.changed('Stateflow replaced from the whiteboard', (cur.name || id)); if (ACT.roleUseSugg) ACT.roleUseSugg(); if (ACT.ntAddSugg) ACT.ntAddSugg(); V.toast('"' + (cur.name || id) + '" now follows this drawing; the roles who press its buttons get access to the module'); return; }
     const name = String((document.getElementById('sv_n') || {}).value || '').trim(); if (!name) { V.toast('Give the flow a name', 4000, true); return; }
     const id = m + '::proposed_' + Math.random().toString(36).slice(2, 7); S.ws.flows[id] = Object.assign(model, { id, module: m, name, description: 'Drawn on the Process Whiteboard "' + (W.B.name || '') + '"', criteria: '', origin: 'proposed', enabled: true, workshopCopy: true, isDefault: false });
-    V.closeDrawer(); F.changed('Stateflow created from the whiteboard', name); if (ACT.roleUseSugg) ACT.roleUseSugg(); V.toast('Saved as a new state flow: ' + name + '; the roles who press its buttons get access to the module'); });
+    V.closeDrawer(); F.changed('Stateflow created from the whiteboard', name); if (ACT.roleUseSugg) ACT.roleUseSugg(); if (ACT.ntAddSugg) ACT.ntAddSugg(); V.toast('Saved as a new state flow: ' + name + '; the roles who press its buttons get access to the module'); });
 
   // ---------- import from image ----------
   ACT.wbImg = () => {
