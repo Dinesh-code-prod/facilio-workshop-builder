@@ -7,6 +7,8 @@ import { OPEN, LIMITS, KINDS, cleanRequest, newJob, step, brief, leaseExpired } 
 
 import { hashOf } from './_notify.mjs';
 import { canTake, status as helperStatus, words as helperWords, cleanUsage, mergeUsage, usageDue, cleanSkills } from './_helper.mjs';
+// customer mail is switched off (user, 13 Nov 2026): no daily mail search is queued, so no Claude run is spent on it; the mail code stays for a later return
+const MAIL_OFF = true;
 export function installJobs(d) {
   const { route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, withLock, audit, CONNECTOR, rid, CTX } = d; const notify = d.notify || (async () => 0);
   const col = pid => 'jb.' + pid, JID = /^jb_[0-9a-f]{18}$/;
@@ -99,6 +101,7 @@ export function installJobs(d) {
     async jobs_presence(s) { const rows = await dbList('presence'); const since = Date.now() - 10 * 60 * 1000; const here = rows.filter(r => r.value && Date.parse(r.value.at) > since).length; return { open: here, note: here ? 'Someone has the Studio open: keep working the queue.' : 'Nobody has had the Studio open for 10 minutes: stop now and say the Studio is not open.' }; },
     async jobs_request(s, b) {
       const p = await pickProject(s, b.project); const kind = String(b.kind || 'fetch_mail'); if (kind !== 'fetch_mail') throw new HttpError(400, 'Only fetch_mail can be requested this way.');
+      if (MAIL_OFF) return { project: p.name, requested: false, note: 'Customer mail search is switched off for every project (user, 13 Nov 2026). Do nothing for mail.' };
       const rows = await all(p.id); const last = rows.filter(j => j.kind === 'fetch_mail').map(j => Date.parse(j.requestedAt)).filter(Boolean).sort((a, c) => c - a)[0];
       if (last && Date.now() - last < 20 * 3600e3) return { project: p.name, requested: false, note: 'A mail search was already requested in the last 20 hours. Do the waiting one, if there is one.' };
       if ((((await dbGet('mlcfg', p.id)) || {}).value || {}).muted) return { project: p.name, requested: false, note: 'Mail is muted for this project (handed over or switched off), so no search was requested.' };
