@@ -253,6 +253,7 @@
       }
       else if (sid === 'changes') { H(1, ++secNo + '. Proposed Configuration Changes', 'h'); const cs = F.changeSummary();
         [['Additions', cs.additions, 'add'], ['Modifications', cs.modifications, 'mod'], ['Proposed Removals', cs.removals, 'rem'], ['Scope and Priority Decisions', cs.decisions, 'dec']].forEach(([h, rows, k]) => { H(2, h, 'h2' + k); TB(['Area', 'Module', 'Item', 'Detail'], rows.map(r => [r.area, (F.moduleView(r.module) || {}).label || r.module, r.item, r.detail]), [1, 1.4, 2, 3], k, { empty: 'None.' }); });
+        const crs = (V.items && V.items.ready(['cr']) ? V.items.list('cr') : []).filter(c => ['CR Converted', 'Delivered', 'Proposed'].includes(c.status)); if (crs.length) { H(2, 'Change Requests', 'h2cr'); TB(['Change', 'Description', 'Status'], crs.map(c => [c.title || '', c.description || '', c.status]), [2, 4, 1.2], 'cr'); }
         P('These changes are workshop proposals. They have not been applied to the customer\'s Facilio configuration; implementation follows customer sign-off.', 'note'); }
       else if (sid === 'onboarding') {
         const ST = { todo: 'Not started', filling: 'Filling', sent: 'Sent to Facilio', fix: 'Needs fixes', validated: 'Validated', loaded: 'Loaded' }; const rowsO = [];
@@ -260,15 +261,21 @@
         if (rowsO.length) { H(1, ++secNo + '. Data Migration & Onboarding', 'h'); P('The master data the customer provides for the modules in scope, from the Data Onboarding templates. Status is as of the day this document was generated.', 'onbnote'); TB(['Module', 'Data sheet', 'Status'], rowsO, [2, 3.5, 1.5], 'onb'); }
       }
       else if (sid === 'sessions') {
-        const has = SS && (SS.decisions.length || SS.assumptions.length || SS.dependencies.length || SS.actions.length);
-        if (has) { H(1, ++secNo + '. Decisions, Assumptions & Dependencies', 'h'); P('Recorded in the requirement sessions. Each item comes from a saved call summary that a person kept.', 'sessnote');
-          [['Decisions', SS.decisions, 'dec'], ['Assumptions', SS.assumptions, 'asm'], ['Dependencies', SS.dependencies, 'dep']].forEach(([h, rows, k]) => { if (rows.length) { H(2, h, 'h2' + k); UL(rows.map(x => x.text + (x.at ? ' (' + String(x.at).slice(0, 10) + ')' : '')), k); } });
-          if (SS.actions.length) { H(2, 'Agreed Actions', 'h2act'); TB(['Action', 'Owner', 'Date'], SS.actions.map(x => [x.text, x.owner || 'To be assigned', String(x.at || '').slice(0, 10)]), [4.5, 1.6, 1], 'act'); } }
+        const GI = k => (V.items && V.items.ready([k]) ? V.items.list(k) : []); const modOk = x => !x.mod || scopeNames.has(x.mod);   // Governance: agreed decisions and the open RAID log join what the sessions recorded
+        const gDec = GI('decision').filter(x => x.status === 'Agreed' && modOk(x)).map(x => ({ text: x.title + (x.detail ? ': ' + x.detail : '') + (x.why ? ' (why: ' + x.why + ')' : ''), at: x.date }));
+        const raid = GI('raid').filter(x => x.status !== 'Closed'); const rOf = t => raid.filter(x => x.type === t).map(x => ({ text: x.title + (x.mitigation ? ' (' + x.mitigation + ')' : '') }));
+        const S0 = SS || { decisions: [], assumptions: [], dependencies: [], actions: [] }; const dec = S0.decisions.concat(gDec), asm = S0.assumptions.concat(rOf('A')), dep = S0.dependencies.concat(rOf('D')), risks = raid.filter(x => x.type === 'R' || x.type === 'I');
+        const has = dec.length || asm.length || dep.length || S0.actions.length || risks.length;
+        if (has) { H(1, ++secNo + '. Decisions, Assumptions & Dependencies', 'h'); P('Recorded in the requirement sessions (saved call summaries) and in the Governance decisions and RAID log.', 'sessnote');
+          if (risks.length) { H(2, 'Risks and Issues', 'h2risk'); TB(['Type', 'Item', 'Impact', 'Mitigation', 'Owner'], risks.map(x => [x.type === 'R' ? 'Risk' : 'Issue', x.title || '', x.impact || '', x.mitigation || '', x.owner || '']), [0.8, 3, 0.9, 2.4, 1.2], 'risk'); }
+          [['Decisions', dec, 'dec'], ['Assumptions', asm, 'asm'], ['Dependencies', dep, 'dep']].forEach(([h, rows, k]) => { if (rows.length) { H(2, h, 'h2' + k); UL(rows.map(x => x.text + (x.at ? ' (' + String(x.at).slice(0, 10) + ')' : '')), k); } });
+          if (S0.actions.length) { H(2, 'Agreed Actions', 'h2act'); TB(['Action', 'Owner', 'Date'], S0.actions.map(x => [x.text, x.owner || 'To be assigned', String(x.at || '').slice(0, 10)]), [4.5, 1.6, 1], 'act'); } }
       }
       else if (sid === 'questions') {
         H(1, ++secNo + '. Open Questions & Items to Be Confirmed', 'h');
         inScope.forEach(m => { const w = S.ws.modules[m.name] || {}; (w.questions || '').split('\n').map(x => x.trim()).filter(Boolean).forEach(x => addQ(m.label, x)); if (!w.purpose && !w.objective) addQ(m.label, 'Confirm the business purpose and objective of the ' + m.label + ' module.'); });
         confirmed.forEach(r => { if (r.openQuestions) addQ(r.id, r.openQuestions); }); S.ws.questions.filter(x => x.status !== 'closed' || (x.answer && (x.ver || 'Unverified') === 'Unverified')).forEach(x => addQ(x.area || 'General', x.text + (x.answer && (x.ver || 'Unverified') === 'Unverified' ? ' (an answer was given but has not been verified)' : '')));
+        { const fd = F.doc('rs_findings'); ((fd && fd.items) || []).filter(x => x && x.status === 'open' && x.text).forEach(x => addQ('Session finding', 'Confirm: ' + String(x.text).slice(0, 300))); }   // findings nobody has confirmed yet stay visible for the customer to confirm
         if (SS) SS.open.forEach(x => addQ(x.area, x.text + (x.priority === 'must' ? ' (must be confirmed in the sessions)' : '')));   // the questions prepared for the sessions that are still to ask or have no answer
         TB(['#', 'Area', 'Question / item to be confirmed'], allQuestions.map((x, i) => [String(i + 1), x.area, x.text]), [0.4, 1.6, 6], 'q', { empty: 'No open questions.' });
         if (SS && SS.answered.length) { H(2, 'Answered in the Requirement Sessions', 'h2ans'); TB(['#', 'Area', 'Question', 'Client response'], SS.answered.map((x, i) => [String(i + 1), x.area, x.text, x.response || 'Answered in the session (no response text recorded).']), [0.4, 1.3, 3, 3.6], 'ans'); }

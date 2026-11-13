@@ -66,7 +66,7 @@
   const logoUrls = {}; function logoUrl(k) { const l = BD().logos[k]; if (!l || !l.fileId) return null; if (logoUrls[l.fileId] && logoUrls[l.fileId] !== 'loading') return logoUrls[l.fileId]; if (!logoUrls[l.fileId]) { logoUrls[l.fileId] = 'loading'; V.fileBlob(l.fileId).then(b => { logoUrls[l.fileId] = URL.createObjectURL(b); V.render(); }).catch(() => { delete logoUrls[l.fileId]; }); } return null; }
 
   V.brd = { html() {
-    if (V.items && !V.items.ready(['cflow'])) V.items.load(['cflow']);
+    if (V.items && !V.items.ready(['cflow', 'decision', 'raid', 'cr'])) V.items.load(['cflow', 'decision', 'raid', 'cr']);
     const d = BD(); const { blocks: bl, stats } = blocks(); const ro = S.readonly || d.status === 'approved'; const edit = !ro && S.ui.brdEdit !== false;
     const ready = V.brdReadiness ? V.brdReadiness() : null; const rc = R().activeRec(); const own = !!rc.imported;
     const stale = bl.filter(b => b.stale).length; const nEd = Object.keys(d.edits).length + Object.values(d.inserts).reduce((a, x) => a + x.length, 0) + Object.keys(d.hidden).length;

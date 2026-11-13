@@ -16,7 +16,7 @@
     const row = (label, have, held, section, view, why) => ({ label, have, held, section, view, why });
     return [
       { group: 'Requirement sessions', rows: [
-        row('Findings from the transcripts', fConf + ' confirmed', fOpen, 'Module requirements', 'checks', fOpen ? fOpen + ' not confirmed yet: they are not in the BRD' : ''),
+        row('Findings from the transcripts', fConf + ' confirmed', fOpen, 'Module requirements', 'checks', fOpen ? fOpen + ' not confirmed yet: listed as open questions, not as requirements' : ''),
         row('Requirements', rConf.length + ' confirmed', rPend, 'Functional requirements, traceability', 'reqs', rPend ? rPend + ' awaiting confirmation' : ''),
         row('Requirements without a module', noMod ? noMod + ' in General requirements' : 'none', noMod, 'General requirements', 'reqs', noMod ? 'Give them a module to place them in the module section' : ''),
         row('Decisions and actions from call summaries', arr(d.decisions).length + ' items', 0, 'Decisions, assumptions & dependencies', 'rsquestions', '')] },
