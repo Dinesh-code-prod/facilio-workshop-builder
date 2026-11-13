@@ -42,4 +42,6 @@
     F.changed('BRD requirements updated from confirmations', r.add.length ? r.add.map(x => x.id).join(', ') : String(r.n)); return r.n;
   }
   if (V) V.brdDraft.sync = sync;
+  /** in-scope modules a finding's text names (the same matching the BRD draft uses to place it) */
+  if (V) V.brdDraft.modulesOf = f => (root.FWB ? root.FWB.allModules().filter(m => m.inScope) : []).filter(m => hits(String((f && f.text) || '') + ' ' + String((f && f.quote) || ''), m)).map(m => m.name);
 })(typeof window !== 'undefined' ? window : globalThis);
