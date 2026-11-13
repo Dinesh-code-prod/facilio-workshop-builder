@@ -7,7 +7,8 @@
   const vis = el => { if (!el.isConnected) return false; const r = el.getBoundingClientRect(); if (r.width < 2 || r.height < 2) return false; if (el.checkVisibility && !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) return false; return r.bottom > 0 && r.top < innerHeight * 6; };
   const sig = el => { const parts = []; let e = el; for (let i = 0; e && e !== document.body && i < 3; i++, e = e.parentElement) { let s = e.tagName.toLowerCase(); const c = [...e.classList].filter(x => !/^(on|active|open|sel|is-)/.test(x)).slice(0, 2); if (c.length) s += '.' + c.join('.'); parts.unshift(s); } return parts.join('>'); };
   const txt = el => (el.innerText || el.getAttribute('aria-label') || el.title || el.value || '').replace(/\s+/g, ' ').trim().slice(0, 50);
-  const SYS = /^(-apple-system|blinkmacsystemfont|"?sf pro|system-ui|"?segoe ui|"?helvetica neue|ui-monospace|menlo|consolas|monospace|"?sf mono|"?cascadia|courier)/i;
+  // the UI font is Inter (user, 12 Nov 2026; public/fonts), plus the system and monospace faces
+  const SYS = /^("?inter"?$|"?inter var|-apple-system|blinkmacsystemfont|"?sf pro|system-ui|"?segoe ui|"?helvetica neue|ui-monospace|menlo|consolas|monospace|"?sf mono|"?cascadia|courier)/i;
   const rgb = s => { const m = /rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?/.exec(s || ''); return m ? { r: +m[1], g: +m[2], b: +m[3], a: m[4] == null ? 1 : +m[4] } : null; };
   const hue = c => { const r = c.r / 255, g = c.g / 255, b = c.b / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; if (!d) return { h: 0, s: 0 }; let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h *= 60; if (h < 0) h += 360; const l = (mx + mn) / 2; return { h, s: d / (1 - Math.abs(2 * l - 1)) }; };
   const violet = s => { const c = rgb(s); if (!c || c.a < .2) return false; const x = hue(c); return x.s > .3 && x.h >= 255 && x.h <= 320; };
