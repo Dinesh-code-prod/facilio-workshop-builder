@@ -65,6 +65,8 @@
       const e = pull(res.strong, x.name) || pull(res.weak, x.name) || pull(res.excluded, x.name) || { name: x.name, label: (catalogue().find(m => m.name === x.name) || {}).label || x.label, hits: [] };
       if (kind === 'strong') res.strong.push(e); else if (kind === 'excluded') (e.hits.some(h => h.strong) ? res.strong : res.excluded).push(e); else (e.hits.some(h => h.strong) ? res.strong : res.weak).push(e);
       e.hits = e.hits.concat(hit); e.useCases = (e.useCases || []).concat(x.useCases).filter((u, i, a) => a.indexOf(u) === i).slice(0, 8); });
+    // once the AI has read the contract, a module counts as delivered only when the AI quoted the contract for it: a word that merely appears (a module name in a list of examples) is not scope (user, 13 Nov 2026: pick the contract's modules accurately)
+    const aiOk = e => (e.hits || []).some(h => h.ai && h.strong); const demote = res.strong.filter(e => !aiOk(e)); res.strong = res.strong.filter(aiOk); res.weak = demote.concat(res.weak);
     res.strong.sort((a, b) => a.label.localeCompare(b.label)); return res;
   }
   function ctr() {
