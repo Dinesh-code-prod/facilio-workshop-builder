@@ -1,0 +1,250 @@
+/* Customer-specific configuration inputs (roadmap phase 5b): descriptions of custom modules, relationships between modules,
+   and connected apps with their tabs. Structured entry, free text, file evidence, import from the loaded org package or a CSV / Excel table.
+   These are stored as project records (kinds cmodx, cfgrel, capp) and are added as sources to the existing AI tasks; nothing here calls AI itself. */
+(function (root) {
+  'use strict';
+  const F = root.FWB; const { S, esc } = F; const V = root.FWBViews; const ACT = V.ACT; const I = () => V.items; const API = root.FWBApi;
+  const { tag, drawer, closeDrawer, toast, ico, confirmDialog } = V;
+  const canEdit = () => !V.isCustomer() && !S.readonly;
+  const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const RTYPES = ['Creates a record', 'Parent and child', 'Reference (lookup)', 'Triggers a workflow', 'Depends on', 'Other'];
+  const CONF = ['Proposed', 'Confirmed'];
+  const gv = id => ((document.getElementById(id) || {}).value || '').trim();
+  const sid = s => String(s).replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 70);
+  const pkg = () => (S.baseline && V.pkgAnalyse ? V.pkgAnalyse(S.baseline) : null);
+  const mods = () => I().list('cmodx'); const rels = () => I().list('cfgrel'); const apps = () => I().list('capp');
+  const ta = (id, v, rows, ph) => `<textarea id="${id}" rows="${rows || 2}" maxlength="3000" placeholder="${esc(ph || '')}">${esc(v || '')}</textarea>`;
+  const sel = (id, opts, v) => `<select id="${id}">${opts.map(o => `<option${o === v ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+  function known() { const s = new Set(); const p = pkg(); if (S.baseline) Object.values(S.baseline.modules || {}).forEach(m => { s.add(norm(m.name)); s.add(norm(m.label)); }); (S.ws.customModules || []).forEach(m => { s.add(norm(m.name)); s.add(norm(m.label)); }); mods().forEach(m => { s.add(norm(m.name)); s.add(norm(m.label)); }); void p; return s; }
+  // Facilio's own org keeps templates, documents and tools as "custom modules" (PDF builder templates, VBA files, the BRD document, plan and onboarding templates...). They are not the customer's business modules, so they are listed apart.
+  const SUPPORT = /pdf|template|vba|document|brd|test ?case|module ?list|estimator|training ?guide|^others?$/i;
+  const kindOf = (name, label) => (SUPPORT.test(String(label || '')) || SUPPORT.test(String(name || '').replace(/^custom_/, '')) ? 'support' : 'custom');
+  function moduleList() {
+    const out = []; const seen = new Set(); const x = {}; mods().forEach(m => { x[norm(m.name)] = m; });
+    const push = (name, label, desc, origin) => { const k = norm(name); if (seen.has(k)) return; seen.add(k); out.push({ name, label: label || name, desc: desc || '', origin, kind: origin === 'Package' ? kindOf(name, label) : 'custom', x: x[k] || null }); };
+    const p = pkg(); if (p) p.custom.forEach(c => push(c.name, c.label, c.description, 'Package'));
+    (S.ws.customModules || []).forEach(c => push(c.name, c.label, c.description, 'Workshop proposal'));
+    mods().forEach(m => push(m.name, m.label, m.purpose, 'Added here'));
+    return out;
+  }
+  const FILLED = ['purpose', 'usage', 'tabs', 'actions', 'roles', 'workflow'];
+  const filled = m => (m ? FILLED.filter(k => String(m[k] || '').trim()).length : 0);
+  const filesHtml = (it, kind, id) => `<label class="f">Files (screenshots, PDFs, Excel)</label><div class="small">${(it.files || []).map((f, i) => `<div class="ev-row"><span class="ev-t">${esc(f.name)}</span><button class="btn sm" data-act="ciFileDl" data-k="${kind}" data-id="${esc(id)}" data-i="${i}">Download</button><button class="btn sm danger" data-act="ciFileDel" data-k="${kind}" data-id="${esc(id)}" data-i="${i}">Remove</button></div>`).join('') || '<span class="muted">No files yet.</span>'}</div><button class="btn sm" data-act="ciFileAdd" data-k="${kind}" data-id="${esc(id)}" style="margin-top:6px">${ico('upl')}Add file</button>`;
+  const OPEN = { cmodx: id => ACT.ciModOpen({ getAttribute: k => (k === 'data-id' ? id : null) }), cfgrel: id => ACT.ciRelOpen({ getAttribute: k => (k === 'data-id' ? id : null) }), capp: id => ACT.ciAppOpen({ getAttribute: k => (k === 'data-id' ? id : null) }) };
+  ACT.ciFileAdd = async a => { const k = a.getAttribute('data-k'), id = a.getAttribute('data-id'); const f = (await V.pickFile('.pdf,.xlsx,.csv,.docx,.pptx,.png,.jpg,.jpeg,.txt'))[0]; if (!f) return; try { toast('Uploading…'); const rec = await API.uploadFile(S.project.id, f, 'config_evidence', { kind: k, ref: id }); const it = I().get(k, id); await I().put(k, id, Object.assign({}, it, { files: (it.files || []).concat([{ id: rec.id, name: f.name }]) })); closeDrawer(); OPEN[k](id); } catch (e) { toast(e.message || 'Upload failed', 5000, true); } };
+  ACT.ciFileDel = a => V.busy(a, async () => { const k = a.getAttribute('data-k'), id = a.getAttribute('data-id'); const it = I().get(k, id); await I().put(k, id, Object.assign({}, it, { files: (it.files || []).filter((x, i) => i !== Number(a.getAttribute('data-i'))) })); closeDrawer(); OPEN[k](id); });
+  ACT.ciFileDl = a => V.busy(a, async () => { const it = I().get(a.getAttribute('data-k'), a.getAttribute('data-id')); const x = it.files[Number(a.getAttribute('data-i'))]; const f = await API.downloadFile(S.project.id, x.id); V.download(x.name, f.blob); });
+
+  // ---------- checks ----------
+  function checks() {
+    const out = []; const add = (sev, area, item, detail) => out.push({ sev, area, item, detail }); const k = known();
+    moduleList().filter(m => m.kind === 'custom').forEach(m => { const x = m.x; if (!x || !String(x.purpose || m.desc).trim()) add('medium', 'Custom module', m.label, 'Purpose is not described.'); if (!x || !String(x.usage || '').trim()) add('low', 'Custom module', m.label, 'No usage instructions yet (needed for the user guide and training).'); if (!x || !String(x.roles || '').trim()) add('low', 'Custom module', m.label, 'Roles that use it are not listed.'); });
+    const seen = {}; rels().forEach(r => { [r.from, r.to].forEach(n => { if (n && !k.has(norm(n))) add('medium', 'Relationship', (r.from || '?') + ' → ' + (r.to || '?'), 'Module "' + n + '" is not in the package, the workshop modules or the custom module list.'); }); if (!String(r.outcome || '').trim()) add('low', 'Relationship', (r.from || '?') + ' → ' + (r.to || '?'), 'Expected outcome is not described (needed to write UAT steps).'); const key = norm(r.from) + '|' + norm(r.to) + '|' + norm(r.type); if (seen[key]) add('low', 'Relationship', (r.from || '?') + ' → ' + (r.to || '?'), 'Listed more than once with the same type.'); seen[key] = 1; });
+    apps().forEach(a => { if (!String(a.purpose || '').trim()) add('low', 'App', a.name, 'Purpose is not described.'); if (!(a.tabs || []).length) add('medium', 'App', a.name, 'No tabs listed.'); (a.tabs || []).forEach(t => { if (!String(t.purpose || t.functionality || '').trim()) add('low', 'App tab', a.name + ' › ' + t.name, 'Purpose or functionality is not described.'); if (!String(t.roles || '').trim()) add('medium', 'App tab', a.name + ' › ' + t.name, 'Who can see it (roles / permissions) is not listed.'); if (t.modules) String(t.modules).split(/[,;]/).map(x => x.trim()).filter(Boolean).forEach(n => { if (!k.has(norm(n))) add('low', 'App tab', a.name + ' › ' + t.name, 'Related module "' + n + '" is not known.'); }); }); });
+    const o = { medium: 0, low: 1 }; return out.sort((a, b) => o[a.sev] - o[b.sev]);
+  }
+  V.cfgChecks = checks;
+
+  // ---------- relationship diagram (read-only, roadmap 5b P3) ----------
+  // Drawn from the cfgrel records with the shared diagram helper (src/diagrams.js, flowSvg) so it looks like the State Flow Builder.
+  // Line style shows the status: solid = confirmed, dashed = proposed (teal with ◆ when it came from the org package). Modules that are
+  // not in the package, the workshop modules or the custom module list are drawn with an orange dashed box. Nothing here can be edited.
+  const RSHORT = { 'Creates a record': 'Creates', 'Parent and child': 'Parent / child', 'Reference (lookup)': 'Lookup', 'Triggers a workflow': 'Triggers', 'Depends on': 'Depends on', 'Other': 'Other' };
+  const relState = r => (r.status === 'Confirmed' ? 'confirmed' : /^package/i.test(String(r.source || '')) ? 'package' : 'manual');
+  const REL_STATE = { confirmed: 'Confirmed', package: 'From package, not confirmed', manual: 'Manual or imported, not confirmed' };
+  function relGraph(list, k) {
+    const nodes = new Map(); const edges = []; const incomplete = [];
+    const node = n => { const key = norm(n); if (!nodes.has(key)) nodes.set(key, { id: 'n' + nodes.size, key, label: String(n).trim(), unknown: !k.has(key) }); return nodes.get(key); };
+    list.forEach(r => { if (!norm(r.from) || !norm(r.to)) { incomplete.push(r); return; } const a = node(r.from), b = node(r.to); edges.push({ id: 'e' + edges.length, from: a.id, to: b.id, r, state: relState(r) }); });
+    // columns by longest path from the modules nothing points to; capped so a cycle cannot loop for ever
+    const ns = [...nodes.values()]; const layer = {}; ns.forEach(n => { layer[n.id] = 0; }); const cap = Math.max(0, ns.length - 1);
+    for (let pass = 0; pass < ns.length; pass++) { let moved = false; edges.forEach(e => { if (e.from !== e.to && layer[e.to] < layer[e.from] + 1 && layer[e.from] + 1 <= cap) { layer[e.to] = layer[e.from] + 1; moved = true; } }); if (!moved) break; }
+    const rows = {}; ns.forEach(n => { const c = layer[n.id]; rows[c] = (rows[c] || 0) + 1; n.x = 40 + c * 270; n.y = 40 + (rows[c] - 1) * 84; });
+    return { nodes: ns, edges, incomplete, unknown: ns.filter(n => n.unknown) };
+  }
+  function relDiagramSvg(G) {
+    const D = root.FWBDiagrams; if (!D || !G.edges.length) return '';
+    const model = { initial: null, states: G.nodes.map(n => ({ id: n.id, label: n.label, x: n.x, y: n.y, origin: n.unknown ? 'proposed' : undefined })),
+      transitions: G.edges.map(e => ({ id: e.id, from: e.from, to: e.to, name: RSHORT[e.r.type] || e.r.type || 'Link', type: e.state === 'package' ? 'automatic' : 'user', origin: e.state === 'confirmed' ? undefined : 'proposed', actors: [{ actor: 'rel', status: 'ok' }] })) };   // actors: keeps the helper's "role to be confirmed" outline off
+    let s = D.flowSvg(model, { idSuffix: '-cfgrel' });
+    // crop to the drawing: the helper keeps a 600×320 minimum, which leaves a large empty area for a small register
+    try { const g = D.flowGeometry(model, {}); const P = [].concat(...Object.values(g.st).map(b => [[b.x, b.y], [b.x + b.w, b.y + b.h]]), ...g.edges.map(e => e.pts.concat([[e.lx - 55, e.ly - 13], [e.lx + 55, e.ly + 13]])));
+      const x0 = Math.min(...P.map(q => q[0])) - 20, y0 = Math.min(...P.map(q => q[1])) - 20, w = Math.max(...P.map(q => q[0])) + 20 - x0, h = Math.max(...P.map(q => q[1])) + 20 - y0;
+      if ([x0, y0, w, h].every(isFinite)) { const f = n => Math.round(n); s = s.replace(/width="\d+" height="\d+" viewBox="[^"]*" data-ox="[^"]*" data-oy="[^"]*"/, `width="${f(w)}" height="${f(h)}" viewBox="${f(x0)} ${f(y0)} ${f(w)} ${f(h)}" data-ox="${f(x0)}" data-oy="${f(y0)}"`).replace(/<rect x="[^"]*" y="[^"]*" width="[^"]*" height="[^"]*" fill="#ffffff"\/>/, `<rect x="${f(x0)}" y="${f(y0)}" width="${f(w)}" height="${f(h)}" fill="#ffffff"/>`); } } catch (x) { }
+    // fuller tooltips than the flow helper writes, and the orange box for unknown modules
+    const lab = Object.fromEntries(G.nodes.map(n => [n.id, n.label]));
+    G.edges.forEach(e => { const t = `${lab[e.from]} → ${lab[e.to]}: ${e.r.type || 'Link'} · ${REL_STATE[e.state]}${e.r.trigger ? ' · When: ' + e.r.trigger : ''}${e.r.outcome ? ' · Expected: ' + e.r.outcome : ''}`;
+      s = s.replace(new RegExp(`(<g class="edge[^"]*" data-edge="${e.id}"><title>)[^<]*(</title>)`), (m, a, b) => a + esc(t) + b).replace(`data-edge="${e.id}"`, `data-edge="${e.id}" data-rel-state="${e.state}"`); });
+    G.nodes.forEach(n => { s = s.replace(new RegExp(`<g class="state" data-state="${n.id}"([^>]*)><title>[^<]*</title>([\\s\\S]*?)</g>`), (m, attrs, inner) => `<g class="state${n.unknown ? ' unknown' : ''}" data-state="${n.id}"${attrs}><title>${esc(n.label + (n.unknown ? ' — not in the package, the workshop modules or the custom module list' : ''))}</title>${n.unknown ? inner.replace(/#3995e2/g, D.COLORS.tbc).replace(/fill="#f3f8fe"/, 'fill="#fff8e8"') : inner}</g>`); });
+    return s.replace('<svg ', `<svg role="img" aria-label="${esc('Module relationship diagram: ' + G.nodes.length + ' modules, ' + G.edges.length + ' relationships')}" `);
+  }
+  function relDiagramCard() {
+    const list = rels(); const G = relGraph(list, known());
+    const head = `<div class="card-h"><h3>Relationship diagram</h3><span class="small muted">Read only. Change relationships in the table above.</span></div>`;
+    if (!list.length) return `<div class="card ci-rel-diagram" style="margin-top:14px">${head}<div class="card-b"><div class="empty ci-rel-empty">No relationships to draw yet. Add one, bring them in from the package or import a table, and the diagram appears here.</div></div></div>`;
+    const legend = `<div class="ci-rel-legend small" aria-label="Legend"><span><i class="ci-ln" style="border-top:2px solid #6071db"></i>Confirmed</span><span><i class="ci-ln" style="border-top:2px dashed #6071db"></i>Manual or imported, not confirmed</span><span><i class="ci-ln" style="border-top:2px dashed #45bec4"></i>◆ From package, not confirmed</span><span><i class="ci-bx" style="border:1.5px dashed ${root.FWBDiagrams ? root.FWBDiagrams.COLORS.tbc : '#f5a623'}"></i>Module not in the module list</span></div>`;
+    const warn = (G.unknown.length ? `<div class="notice ci-rel-unknown"><span><b>${G.unknown.length} module${G.unknown.length > 1 ? 's' : ''} not in the module list:</b> ${G.unknown.map(n => esc(n.label)).join(', ')}. Check the spelling, or add ${G.unknown.length > 1 ? 'them' : 'it'} under Custom modules.</span></div>` : '')
+      + (G.incomplete.length ? `<div class="notice ci-rel-incomplete"><span><b>${G.incomplete.length} relationship${G.incomplete.length > 1 ? 's' : ''} not drawn</b> because the From or To module is empty. Open ${G.incomplete.length > 1 ? 'them' : 'it'} in the table to complete.</span></div>` : '');
+    const svg = relDiagramSvg(G);
+    const asList = `<details class="ci-rel-list"><summary class="small">Relationships as a list (${G.edges.length})</summary><ul class="small">${G.edges.map(e => `<li><b>${esc(e.r.from)}</b> → <b>${esc(e.r.to)}</b> · ${esc(e.r.type || 'Link')} · <span class="muted">${esc(REL_STATE[e.state])}</span></li>`).join('')}</ul></details>`;
+    return `<div class="card ci-rel-diagram" style="margin-top:14px">${head}<div class="card-b">${warn}${legend}${svg ? `<div class="ci-rel-scroll" tabindex="0" aria-label="Relationship diagram, scroll to see all of it">${svg}</div>` : ''}${G.edges.length ? asList : ''}</div></div>`;
+  }
+  V.cfgRelDiagram = { graph: () => relGraph(rels(), known()), svg: () => relDiagramSvg(relGraph(rels(), known())), state: relState };
+
+  // ---------- reuse in training and support handover (roadmap 5b "Reuse across deliverables") ----------
+  // Plain functions over the same records, used by the Guides & Video Studio briefs and the Handover & Closure page. No AI is called here.
+  const CFG_KINDS = ['cmodx', 'cfgrel', 'capp'];
+  const splitList = s => String(s || '').split(/[,;\n]/).map(x => x.trim()).filter(Boolean);
+  const cell = s => String(s == null ? '' : s).replace(/\|/g, '/').replace(/\s*\n\s*/g, ' ').trim() || '—';
+  const relLine = r => `${r.from} → ${r.to} (${r.type || 'link'})${r.trigger ? ', when ' + r.trigger : ''}${r.outcome ? '. Expected outcome: ' + r.outcome : ''}${r.status === 'Confirmed' ? '' : ' [proposed, to confirm]'}`;
+  const allTabs = () => apps().flatMap(a => (a.tabs || []).map(t => Object.assign({ app: a.name }, t)));
+  V.cfgInputs = {
+    kinds: CFG_KINDS,
+    load() { I().load(CFG_KINDS); return I().ready(CFG_KINDS); },
+    // what the inputs say about one module (matched on name or label, ignoring case and spacing)
+    forModule(label, name) {
+      const keys = new Set([norm(label), norm(name)].filter(Boolean)); const hit = n => keys.has(norm(n));
+      return { mod: mods().find(m => hit(m.name) || hit(m.label)) || null, rels: rels().filter(r => hit(r.from) || hit(r.to)), tabs: allTabs().filter(t => splitList(t.modules).some(hit)), relLine };
+    },
+    // training: which tabs each role sees and what each does
+    rolePath() {
+      const by = new Map(); const add = (role, t) => { if (!by.has(role)) by.set(role, []); by.get(role).push(t); };
+      allTabs().forEach(t => { const rs = splitList(t.roles); if (rs.length) rs.forEach(r => add(r, t)); else add('', t); });
+      return [...by.entries()].sort((a, b) => (!a[0]) - (!b[0]) || a[0].localeCompare(b[0])).map(([role, tabs]) => ({ role: role || 'Role not recorded', missing: !role, tabs }));
+    },
+    rolePathMd() {
+      const rp = V.cfgInputs.rolePath(); if (!rp.length) return '';
+      return '## Role-based path (from Configuration Inputs)\n\n' + rp.map(g => `### ${g.role}\n` + g.tabs.map(t => `- ${t.app} › ${t.name}: ${[t.purpose, t.functionality].filter(Boolean).join('. ') || 'what it does is not recorded yet'}${t.navigation ? ' (open: ' + t.navigation + ')' : ''}${t.modules ? ' · modules: ' + t.modules : ''}`).join('\n')).join('\n\n');
+    },
+    // support handover: register of custom modules, relationships, apps and tabs, integration behaviour and known limits
+    registerMd() {
+      const M = mods(), R = rels(), A = apps(); if (!M.length && !R.length && !A.length) return '';
+      const out = ['# Configuration register (from Configuration Inputs)', 'Internal. Items marked Proposed are not confirmed with the customer yet.'];
+      if (M.length) out.push('## Custom modules\n\n| Module | Status | Purpose | Who uses it | Workflow |\n|---|---|---|---|---|\n' + M.map(m => `| ${cell(m.label || m.name)} | ${cell(m.status || 'Proposed')} | ${cell(m.purpose)} | ${cell(m.roles)} | ${cell(m.workflow)} |`).join('\n'));
+      if (R.length) out.push('## Module relationships\n\n| From | To | Type | Trigger or condition | Expected outcome | Status |\n|---|---|---|---|---|---|\n' + R.map(r => `| ${cell(r.from)} | ${cell(r.to)} | ${cell(r.type)} | ${cell(r.trigger)} | ${cell(r.outcome)} | ${cell(REL_STATE[relState(r)])} |`).join('\n'));
+      if (A.length) out.push('## Connected apps and tabs\n\n' + A.map(a => `### ${a.name}${a.status === 'Confirmed' ? '' : ' (proposed)'}\n${a.audience ? 'Audience: ' + a.audience + '\n' : ''}${a.purpose ? a.purpose + '\n' : ''}` + ((a.tabs || []).length ? '\n| Tab | Purpose | Modules | Roles |\n|---|---|---|---|\n' + a.tabs.map(t => `| ${cell(t.name)} | ${cell(t.purpose || t.functionality)} | ${cell(t.modules)} | ${cell(t.roles)} |`).join('\n') : 'No tabs listed.')).join('\n\n'));
+      const integ = A.filter(a => String(a.integration || '').trim()); if (integ.length) out.push('## Integration behaviour\n\n' + integ.map(a => `- ${a.name}: ${cell(a.integration)}`).join('\n'));
+      const notes = [].concat(M.filter(m => String(m.notes || '').trim()).map(m => `- ${m.label || m.name}: ${cell(m.notes)}`), R.filter(r => String(r.notes || '').trim()).map(r => `- ${r.from} → ${r.to}: ${cell(r.notes)}`), A.filter(a => String(a.notes || '').trim()).map(a => `- ${a.name}: ${cell(a.notes)}`));
+      if (notes.length) out.push('## Known limits and notes\n\n' + notes.join('\n'));
+      const open = checks().filter(c => c.sev === 'medium'); if (open.length) out.push('## Open points to confirm\n\n' + open.map(c => `- ${c.area} · ${c.item}: ${c.detail}`).join('\n'));
+      return out.join('\n\n');
+    },
+    counts: () => ({ mods: mods().length, rels: rels().length, apps: apps().length, tabs: allTabs().length })
+  };
+
+  // ---------- view ----------
+  const TABS = [['all', 'Overview'], ['mods', 'Modules'], ['rels', 'Module relationships'], ['apps', 'Connected apps and tabs'], ['checks', 'Checks']];
+  const sysMods = () => (F.allModules ? F.allModules() : []).filter(m => m && !m.custom && m.origin !== 'proposed' && !(m.name || '').startsWith('custom_'));
+  V.cfginputs = {
+    html() {
+      I().load(['cmodx', 'cfgrel', 'capp']); if (!I().ready(['cmodx', 'cfgrel', 'capp'])) return '<div class="page-body"><div class="muted" style="padding:20px">Loading…</div></div>';
+      const tab = S.ui.cfgTab || 'all'; const can = canEdit(); const ml = moduleList(); const ck = checks(); const sm = sysMods(); const cm = ml.filter(m => m.kind === 'custom'); const sp = ml.filter(m => m.kind === 'support');
+      const bar = `<div class="tabs" role="tablist">${TABS.map(([k, l]) => `<button class="tab${tab === k ? ' active' : ''}" role="tab" data-act="ciTab" data-v="${k}">${esc(l)}${k === 'checks' && ck.length ? ` <span class="xs">(${ck.length})</span>` : ''}</button>`).join('')}</div>`;
+      let body = '';
+      if (tab === 'all') { const box = (n, t, sub, tabk, view) => `<div class="cfh-box"><b>${n}</b><span>${esc(t)}</span><small>${esc(sub)}</small><button class="btn sm" data-act="${view ? 'nav' : 'ciTab'}" ${view ? 'data-view' : 'data-v'}="${tabk}">Open</button></div>`;
+        const dsc = cm.filter(m => filled(m.x) >= 3).length; const appTabs = apps().reduce((n, x) => n + (x.tabs || []).length, 0);
+        body = `<div class="cfh-grid">${box(sm.length, 'System modules', 'Standard Facilio modules. Set up in System Modules & Form Builder.', 'modules', 1)}${box(cm.length, 'Custom modules', dsc + ' described well. Describe the rest here.', 'mods')}${box(rels().length, 'Module relationships', 'How the modules work together.', 'rels')}${box(apps().length, 'Connected apps', appTabs + ' tabs recorded.', 'apps')}${box(sp.length, 'Templates, documents and tools', 'Held as modules in the Facilio org but not business modules. Listed apart.', 'mods')}${box(ck.length, 'Checks', ck.length ? 'Things to fix before the BRD.' : 'Nothing flagged.', 'checks')}</div>
+        <div class="card"><div class="card-h"><h3>How the configuration comes together</h3></div><div class="card-b"><ol class="small" style="line-height:1.8;margin:0;padding-left:18px"><li><b>Build</b> the modules and forms, state flows and process whiteboard.</li><li><b>Set up</b> roles, notifications and data onboarding.</li><li><b>Record</b> here what is specific to the customer: custom modules, relationships, connected apps and their tabs. Add files and notes.</li><li><b>Check</b> the flags on the Checks tab.</li><li><b>Write the BRD</b>: it reads all of the above, so it comes last.</li></ol></div></div>`; }
+      if (tab === 'mods') { const kf = S.ui.cfgKind || 'all'; const rows = [].concat(kf === 'all' || kf === 'custom' ? cm.map(m => [m, 'Custom']) : [], kf === 'all' || kf === 'system' ? sm.slice(0, 200).map(m => [{ name: m.name, label: m.label, origin: 'Facilio', sys: 1, x: null, desc: m.desc || '' }, 'System']) : [], kf === 'support' ? sp.map(m => [m, 'Template or document']) : []);
+        const chip = (k, l, n) => `<button type="button" class="btn sm${kf === k ? ' primary' : ''}" data-act="ciKind" data-v="${k}">${l} <span class="xs">${n}</span></button>`;
+        body = `<div class="card"><div class="card-h"><h3>Modules</h3><span class="row" style="gap:8px">${chip('all', 'Custom and system', cm.length + sm.length)}${chip('custom', 'Custom', cm.length)}${chip('system', 'System', sm.length)}${chip('support', 'Templates and documents', sp.length)}${can ? `<button class="btn sm" data-act="ciModNew">${ico('plus')}Add custom module</button>` : ''}</span></div>
+          <div class="tq-key">${kf === 'support' ? 'These are templates, documents and tools that live as modules in the Facilio org (for example PDF templates, VBA files, the BRD document). They are not business modules and are left out of the checks.' : kf === 'system' ? 'Standard Facilio modules. Their fields, forms and flows are built in System Modules & Form Builder.' : 'Custom modules are described here. System modules are listed so that everything is in one place.'}</div>
+          <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Module</th><th>Kind</th><th>Source</th><th>Purpose</th><th>Described</th><th></th></tr></thead><tbody>${rows.map(([m, kind]) => m.sys ? `<tr><td><b>${esc(m.label)}</b><div class="xs muted">${esc(m.name)}</div></td><td>${tag('low', kind)}</td><td class="small">Facilio</td><td class="small">${esc(m.desc || '—')}</td><td class="muted small">—</td><td style="text-align:right"><button class="btn sm" data-act="nav" data-view="modules">Open</button></td></tr>` : `<tr><td><b>${esc(m.label)}</b><div class="xs muted">${esc(m.name)}</div></td><td>${tag(kind === 'Custom' ? 'blue' : 'low', kind)}</td><td class="small">${esc(m.origin)}</td><td class="small">${esc((m.x && m.x.purpose) || m.desc || '—')}</td><td>${filled(m.x)} / ${FILLED.length}${m.x && m.x.status === 'Confirmed' ? ' ' + tag('green', 'Confirmed') : ''}</td><td style="text-align:right"><button class="btn sm" data-act="ciModOpen" data-id="${esc(m.x ? m.x._id || m.x.id || sid('m_' + m.name) : sid('m_' + m.name))}" data-n="${esc(m.name)}">${can ? 'Describe' : 'Open'}</button></td></tr>`).join('') || '<tr><td colspan="6" class="muted" style="padding:14px">Nothing here yet.</td></tr>'}</tbody></table></div></div>`; }
+      if (false) body = `<div class="card"><div class="card-h"><h3>Custom modules (${ml.length})</h3>${can ? `<button class="btn sm" data-act="ciModNew">${ico('plus')}Add module</button>` : ''}</div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Module</th><th>Source</th><th>Purpose</th><th>Described</th><th></th></tr></thead><tbody>${ml.map(m => `<tr><td><b>${esc(m.label)}</b><div class="xs muted">${esc(m.name)}</div></td><td class="small">${esc(m.origin)}</td><td class="small">${esc((m.x && m.x.purpose) || m.desc || '—')}</td><td>${filled(m.x)} / ${FILLED.length}${m.x && m.x.status === 'Confirmed' ? ' ' + tag('green', 'Confirmed') : ''}</td><td style="text-align:right"><button class="btn sm" data-act="ciModOpen" data-id="${esc(m.x ? m.x._id || m.x.id || sid('m_' + m.name) : sid('m_' + m.name))}" data-n="${esc(m.name)}">${can ? 'Describe' : 'Open'}</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted" style="padding:14px">No custom modules yet. Load an org package, create a module in System Modules, or add one here.</td></tr>'}</tbody></table></div></div>`;
+      if (tab === 'rels') body = `<div class="card"><div class="card-h"><h3>Module relationships (${rels().length})</h3>${can ? `<span class="row" style="gap:6px"><button class="btn sm" data-act="ciRelNew">${ico('plus')}Add</button><button class="btn sm" data-act="ciRelPkg">From package</button><button class="btn sm" data-act="ciImport" data-k="cfgrel">${ico('upl')}Import CSV / Excel</button></span>` : ''}</div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>From</th><th>To</th><th>Type</th><th>Trigger / condition</th><th>Expected outcome</th><th>Status</th><th></th></tr></thead><tbody>${rels().map(r => `<tr><td><b>${esc(r.from)}</b></td><td><b>${esc(r.to)}</b></td><td class="small">${esc(r.type)}</td><td class="small">${esc(r.trigger || '—')}</td><td class="small">${esc(r.outcome || '—')}</td><td>${r.status === 'Confirmed' ? tag('green', 'Confirmed') : tag('tbc', 'Proposed')}<div class="xs muted">${esc(r.source || 'manual')}</div></td><td style="text-align:right"><button class="btn sm" data-act="ciRelOpen" data-id="${esc(r._id || r.id)}">Open</button></td></tr>`).join('') || '<tr><td colspan="7" class="muted" style="padding:14px">None yet. Add one, import the package relationships, or import a table.</td></tr>'}</tbody></table></div></div>` + relDiagramCard();
+      if (tab === 'apps') body = `<div class="card"><div class="card-h"><h3>Connected apps and tabs (${apps().length})</h3>${can ? `<span class="row" style="gap:6px"><button class="btn sm" data-act="ciAppNew">${ico('plus')}Add</button><button class="btn sm" data-act="ciAppPkg">From package</button><button class="btn sm" data-act="ciImport" data-k="capp">${ico('upl')}Import CSV / Excel</button></span>` : ''}</div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>App</th><th>Audience</th><th>Purpose</th><th>Tabs</th><th>Integration behaviour</th><th>Status</th><th></th></tr></thead><tbody>${apps().map(a => `<tr><td><b>${esc(a.name)}</b></td><td class="small">${esc(a.audience || '—')}</td><td class="small">${esc(a.purpose || '—')}</td><td class="small">${(a.tabs || []).length}${(a.tabs || []).length ? ': ' + esc((a.tabs || []).slice(0, 4).map(t => t.name).join(', ')) + ((a.tabs || []).length > 4 ? '…' : '') : ''}</td><td class="small">${esc(a.integration || '—')}</td><td>${a.status === 'Confirmed' ? tag('green', 'Confirmed') : tag('tbc', 'Proposed')}<div class="xs muted">${esc(a.source || 'manual')}</div></td><td style="text-align:right"><button class="btn sm" data-act="ciAppOpen" data-id="${esc(a._id || a.id)}">Open</button></td></tr>`).join('') || '<tr><td colspan="7" class="muted" style="padding:14px">None yet.</td></tr>'}</tbody></table></div></div>`;
+      if (tab === 'checks') body = `<div class="card"><div class="card-h"><h3>Checks on these inputs (${ck.length})</h3></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Level</th><th>Area</th><th>Item</th><th>Finding</th></tr></thead><tbody>${ck.map(f => `<tr><td>${tag(f.sev === 'medium' ? 'tbc' : '', f.sev === 'medium' ? 'Medium' : 'Low')}</td><td class="small">${esc(f.area)}</td><td><b>${esc(f.item)}</b></td><td class="small">${esc(f.detail)}</td></tr>`).join('') || '<tr><td colspan="4" class="muted" style="padding:14px">Nothing flagged.</td></tr>'}</tbody></table></div><div class="xs muted" style="padding:8px 14px">These checks look only at what is entered here. Package checks are on the Package Analysis page.</div></div>`;
+      const ai = can && V.aiPanel ? V.aiPanel([['gaps', 'Gap check', 'Finds what is missing or unclear in these inputs'], ['guide', 'User guide', 'A first draft of the customer user guide'], ['uat', 'UAT plan', 'Test plan and test cases from these inputs'], ['training', 'Training outline', 'A role-based training outline'], ['handover', 'Support handover', 'The pack the support team receives']], { title: 'Draft documents from these inputs', intro: 'Everything on this page is read as a source. Pick a document, and choose how to write it.' }) : '';
+      return `<div class="page-header"><div class="t"><h1>Configuration Hub</h1><p>One place for everything configured for this customer: system modules, custom modules, how they relate, and the connected apps and their tabs. It is the last step before the BRD, which is written from it. Internal only; the AI reads it as a source for guides, UAT, FTR scenarios, training and handover.</p></div></div><div class="page-body">${ai}${bar}<div style="margin-top:12px">${body}</div></div>`;
+    }
+  };
+  ACT.ciKind = a => { S.ui.cfgKind = a.getAttribute('data-v'); V.render(); };
+  ACT.ciTab = a => { S.ui.cfgTab = a.getAttribute('data-v'); V.render(); };
+
+  // ---------- custom module ----------
+  ACT.ciModNew = () => drawer('Add a custom module', `<label class="f">Module name</label><input type="text" id="cm_n" maxlength="80" placeholder="e.g. Fleet Inspections"><p class="small muted">Use this for a customer module that is not in the loaded package or the workshop modules.</p>`, `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="ciModAdd">Add</button>`);
+  ACT.ciModAdd = a => V.busy(a, async () => { const n = gv('cm_n'); if (!n) { V.ui.field('cm_n', 'Enter the module name'); return; } const id = sid('m_' + n); if (I().get('cmodx', id)) { toast('Already listed'); return; } await I().put('cmodx', id, { name: n, label: n, purpose: '', usage: '', tabs: '', actions: '', statuses: '', workflow: '', roles: '', notes: '', files: [], status: 'Proposed', source: 'manual' }); closeDrawer(); OPEN.cmodx(id); });
+  ACT.ciModOpen = a => {
+    const name = a.getAttribute('data-n'); let id = a.getAttribute('data-id'); const m = moduleList().find(x => name ? x.name === name : x.x && (x.x._id === id || x.x.id === id)); if (!m) return; id = m.x ? (m.x._id || m.x.id) : sid('m_' + m.name);
+    const x = m.x || { name: m.name, label: m.label, purpose: m.desc || '', usage: '', tabs: '', actions: '', statuses: '', workflow: '', roles: '', notes: '', files: [], status: 'Proposed', source: m.origin }; const can = canEdit();
+    const p = pkg(); const pc = p && p.custom.find(c => c.name === m.name);
+    const fromPkg = pc ? `<div class="notice"><span><b>From the package:</b> ${pc.fields.filter(f => f.origin !== 'System').length} custom fields (${esc(pc.fields.filter(f => f.origin !== 'System').slice(0, 8).map(f => f.label).join(', '))}${pc.fields.length > 8 ? '…' : ''}); tabs: ${esc(pc.tabs.map(t => t.app + ' › ' + t.tab).join(', ') || 'none')}; state flows: ${esc(pc.flows.map(f => f.name).join(', ') || 'none')}. The notes below add the customer's meaning on top.</span></div>` : '';
+    drawer(m.label, `${fromPkg}<div class="fgrid"><div><label class="f">Status</label>${sel('cm_st', CONF, x.status)}</div></div><label class="f">Purpose</label>${ta('cm_p', x.purpose || m.desc, 2, 'What the module is for in this customer\'s operation')}<label class="f">Usage instructions</label>${ta('cm_u', x.usage, 4, 'How a user works with it, step by step')}<label class="f">Tabs and where it appears</label>${ta('cm_t', x.tabs, 2, 'App › tab names')}<label class="f">Actions (buttons, bulk actions, approvals)</label>${ta('cm_a', x.actions, 3)}<label class="f">Statuses</label>${ta('cm_s', x.statuses, 2)}<label class="f">Workflow</label>${ta('cm_w', x.workflow, 3, 'Who moves it from one status to the next, and what happens')}<label class="f">Roles</label>${ta('cm_r', x.roles, 2, 'Which roles create, view, edit, approve')}<label class="f">Other notes</label>${ta('cm_x', x.notes, 3)}${m.x ? filesHtml(x, 'cmodx', id) : '<p class="small muted">Save first, then attach files.</p>'}`,
+      `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Close</button>${can ? `<button class="btn primary" data-act="ciModSave" data-id="${esc(id)}" data-n="${esc(m.name)}" data-l="${esc(m.label)}">Save</button>` : ''}`, { wide: true });
+  };
+  ACT.ciModSave = a => V.busy(a, async () => { const id = a.getAttribute('data-id'); const cur = I().get('cmodx', id) || {}; await I().put('cmodx', id, Object.assign({ files: [], source: 'package' }, cur, { name: a.getAttribute('data-n'), label: a.getAttribute('data-l'), status: gv('cm_st'), purpose: gv('cm_p'), usage: gv('cm_u'), tabs: gv('cm_t'), actions: gv('cm_a'), statuses: gv('cm_s'), workflow: gv('cm_w'), roles: gv('cm_r'), notes: gv('cm_x') })); closeDrawer(); toast('Saved'); });
+
+  // ---------- relationships ----------
+  const modOpts = () => { const o = new Set(); const p = pkg(); moduleList().forEach(m => o.add(m.label)); if (S.baseline) Object.values(S.baseline.modules || {}).forEach(m => o.add(m.label || m.name)); void p; return [...o].sort(); };
+  ACT.ciRelNew = () => ACT.ciRelOpen({ getAttribute: () => null });
+  ACT.ciRelOpen = a => {
+    const id = a.getAttribute('data-id'); const r = id ? I().get('cfgrel', id) : { from: '', to: '', type: RTYPES[0], trigger: '', outcome: '', notes: '', files: [], status: 'Proposed', source: 'manual' }; if (!r) return; const can = canEdit();
+    drawer(id ? 'Relationship' : 'Add a relationship', `<datalist id="cr_dl">${modOpts().map(o => `<option value="${esc(o)}">`).join('')}</datalist><div class="fgrid"><div><label class="f">From module</label><input type="text" id="cr_f" list="cr_dl" maxlength="80" value="${esc(r.from)}"></div><div><label class="f">To module</label><input type="text" id="cr_t" list="cr_dl" maxlength="80" value="${esc(r.to)}"></div><div><label class="f">Type</label>${sel('cr_ty', RTYPES, r.type)}</div><div><label class="f">Status</label>${sel('cr_st', CONF, r.status)}</div></div>
+      <label class="f">Trigger or condition</label>${ta('cr_tr', r.trigger, 2, 'e.g. When a work order is closed with a failure code')}<label class="f">Expected outcome</label>${ta('cr_o', r.outcome, 3, 'What should exist or change afterwards')}<label class="f">Notes</label>${ta('cr_n', r.notes, 3)}${id ? filesHtml(r, 'cfgrel', id) : '<p class="small muted">Save first, then attach files.</p>'}`,
+      `${id && can ? `<button class="btn danger" data-act="ciDel" data-k="cfgrel" data-id="${esc(id)}">Delete</button>` : ''}<span class="spacer"></span><button class="btn" data-act="closeDrawer">Close</button>${can ? `<button class="btn primary" data-act="ciRelSave" data-id="${esc(id || '')}">Save</button>` : ''}`, { wide: true });
+  };
+  ACT.ciRelSave = a => V.busy(a, async () => { if (!gv('cr_f') || !gv('cr_t')) { toast('Enter both modules'); return; } const id = a.getAttribute('data-id') || I().uid('cr'); const cur = I().get('cfgrel', id) || { files: [], source: 'manual' }; await I().put('cfgrel', id, Object.assign({}, cur, { from: gv('cr_f'), to: gv('cr_t'), type: gv('cr_ty'), status: gv('cr_st'), trigger: gv('cr_tr'), outcome: gv('cr_o'), notes: gv('cr_n') })); closeDrawer(); toast('Saved'); });
+  ACT.ciDel = a => V.busy(a, async () => { if (!(await confirmDialog('Delete', 'Remove this entry? Files stay in the project file list.', 'Delete', true))) return; await I().del(a.getAttribute('data-k'), a.getAttribute('data-id')); closeDrawer(); });
+
+  // ---------- connected apps and tabs ----------
+  const tabRow = t => `<div class="ci-tab card" style="padding:10px;margin-bottom:8px"><div class="fgrid"><div><label class="f">Tab name</label><input type="text" class="ct-n" maxlength="80" value="${esc(t.name || '')}"></div><div><label class="f">Related modules</label><input type="text" class="ct-m" maxlength="200" value="${esc(t.modules || '')}" placeholder="comma separated"></div></div><label class="f">Purpose</label><textarea class="ct-p" rows="2" maxlength="1500">${esc(t.purpose || '')}</textarea><label class="f">Navigation (how a user gets there)</label><input type="text" class="ct-v" maxlength="300" value="${esc(t.navigation || '')}"><label class="f">Functionality</label><textarea class="ct-f" rows="2" maxlength="1500">${esc(t.functionality || '')}</textarea><label class="f">Roles / permissions</label><input type="text" class="ct-r" maxlength="300" value="${esc(t.roles || '')}"><button class="btn sm danger" data-act="ciTabDel" style="margin-top:6px">Remove tab</button></div>`;
+  ACT.ciTabAdd = () => { const h = document.getElementById('ca_tabs'); if (h) h.insertAdjacentHTML('beforeend', tabRow({})); };
+  ACT.ciTabDel = a => { const r = a.closest('.ci-tab'); if (r) r.remove(); };
+  ACT.ciAppNew = () => ACT.ciAppOpen({ getAttribute: () => null });
+  ACT.ciAppOpen = a => {
+    const id = a.getAttribute('data-id'); const x = id ? I().get('capp', id) : { name: '', audience: '', purpose: '', navigation: '', integration: '', notes: '', tabs: [], files: [], status: 'Proposed', source: 'manual' }; if (!x) return; const can = canEdit();
+    drawer(id ? x.name : 'Add an app', `<div class="fgrid"><div><label class="f">App name</label><input type="text" id="ca_n" maxlength="80" value="${esc(x.name)}"></div><div><label class="f">Audience</label><input type="text" id="ca_a" maxlength="80" value="${esc(x.audience || '')}" placeholder="e.g. Technicians, tenants, vendors"></div><div><label class="f">Status</label>${sel('ca_st', CONF, x.status)}</div></div><label class="f">Purpose</label>${ta('ca_p', x.purpose, 2)}<label class="f">Navigation (how people open the app)</label>${ta('ca_v', x.navigation, 2)}<label class="f">Integration behaviour</label>${ta('ca_i', x.integration, 3, 'What it reads or writes in Facilio or other systems, and when')}<label class="f">Notes</label>${ta('ca_x', x.notes, 3)}
+      <label class="f">Tabs</label><div id="ca_tabs">${(x.tabs || []).map(tabRow).join('')}</div><button class="btn sm" data-act="ciTabAdd">${ico('plus')}Add tab</button>${id ? filesHtml(x, 'capp', id) : '<p class="small muted" style="margin-top:10px">Save first, then attach files.</p>'}`,
+      `${id && can ? `<button class="btn danger" data-act="ciDel" data-k="capp" data-id="${esc(id)}">Delete</button>` : ''}<span class="spacer"></span><button class="btn" data-act="closeDrawer">Close</button>${can ? `<button class="btn primary" data-act="ciAppSave" data-id="${esc(id || '')}">Save</button>` : ''}`, { wide: true });
+  };
+  ACT.ciAppSave = a => V.busy(a, async () => {
+    if (!gv('ca_n')) { V.ui.field('ca_n', 'Enter the app name'); return; } const id = a.getAttribute('data-id') || I().uid('ap'); const cur = I().get('capp', id) || { files: [], source: 'manual' };
+    const tabs = [...document.querySelectorAll('.ci-tab')].map(r => { const q = c => ((r.querySelector('.' + c) || {}).value || '').trim(); return { name: q('ct-n'), modules: q('ct-m'), purpose: q('ct-p'), navigation: q('ct-v'), functionality: q('ct-f'), roles: q('ct-r') }; }).filter(t => t.name);
+    await I().put('capp', id, Object.assign({}, cur, { name: gv('ca_n'), audience: gv('ca_a'), status: gv('ca_st'), purpose: gv('ca_p'), navigation: gv('ca_v'), integration: gv('ca_i'), notes: gv('ca_x'), tabs })); closeDrawer(); toast('Saved');
+  });
+
+  // ---------- imports (package or table) ----------
+  let CANDS = [];
+  function preview(title, cands, kind) {
+    CANDS = cands; drawer(title, cands.length ? `<p class="small">Tick what to bring in. Nothing is saved until you choose Import. Items already listed are not shown again, and existing entries are never overwritten.</p><div class="tbl-wrap" style="max-height:380px;overflow:auto"><table class="tbl"><tbody>${cands.map((c, i) => `<tr><td style="width:28px"><input type="checkbox" data-ci-c="${i}" checked></td><td><b>${esc(c.label)}</b><div class="xs muted">${esc(c.detail || '')}</div></td></tr>`).join('')}</tbody></table></div>` : '<div class="notice"><span>Nothing new to import.</span></div>',
+      `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button>${cands.length ? `<button class="btn primary" data-act="ciImportGo" data-k="${kind}">Import selected</button>` : ''}`, { wide: true });
+  }
+  ACT.ciImportGo = a => V.busy(a, async () => { const k = a.getAttribute('data-k'); const pick = [...document.querySelectorAll('[data-ci-c]')].filter(c => c.checked).map(c => CANDS[Number(c.getAttribute('data-ci-c'))]); for (const c of pick) await I().put(k, I().uid(k === 'cfgrel' ? 'cr' : 'ap'), c.obj); closeDrawer(); toast(pick.length + ' imported'); });
+  const relKey = r => norm(r.from) + '|' + norm(r.to) + '|' + norm(r.type);
+  ACT.ciRelPkg = () => {
+    const p = pkg(); if (!p) { toast('No configuration is loaded', 4000, true); return; } const have = new Set(rels().map(relKey)); const c = [];
+    p.rels.forEach(r => { const o = { from: modLabel(r.fromModule), to: modLabel(r.toModule), type: 'Parent and child', trigger: '', outcome: '', notes: [r.description, r.forward ? 'Forward: ' + r.forward : '', r.reverse ? 'Reverse: ' + r.reverse : ''].filter(Boolean).join(' · '), files: [], status: 'Proposed', source: 'package' }; if (r.fromModule === r.toModule) o.type = 'Parent and child'; else o.type = 'Reference (lookup)'; if (!have.has(relKey(o))) { have.add(relKey(o)); c.push({ label: r.name + ': ' + o.from + ' → ' + o.to, detail: o.notes, obj: o }); } });
+    p.custom.forEach(m => m.lookups.forEach(l => { const o = { from: m.label, to: modLabel(l.to), type: 'Reference (lookup)', trigger: '', outcome: '', notes: 'Field "' + l.field + '" on ' + m.label, files: [], status: 'Proposed', source: 'package' }; if (!have.has(relKey(o))) { have.add(relKey(o)); c.push({ label: m.label + ' → ' + o.to + ' (field ' + l.field + ')', detail: 'Lookup field from the package', obj: o }); } }));
+    preview('Relationships found in the package', c, 'cfgrel');
+  };
+  const modLabel = n => { const m = S.baseline && S.baseline.modules && S.baseline.modules[n]; return (m && m.label) || n; };
+  ACT.ciAppPkg = () => {
+    const p = pkg(); if (!p) { toast('No configuration is loaded', 4000, true); return; } const have = new Set(apps().map(a => norm(a.name))); const c = [];
+    p.apps.forEach(a => { if (have.has(norm(a.name))) return; const tabs = p.webtabs.filter(w => w.app === a.link && (w.inMenu || (w.modules || []).length)).slice(0, 60).map(w => ({ name: w.name, modules: (w.modules || []).map(x => modLabel(x.name || x)).join(', '), purpose: '', navigation: 'Menu › ' + w.name, functionality: '', roles: '' })); c.push({ label: a.name + ' (' + a.category + (a.enabled ? '' : ', switched off') + ')', detail: tabs.length + ' tab(s): ' + tabs.slice(0, 6).map(t => t.name).join(', ') + (tabs.length > 6 ? '…' : ''), obj: { name: a.name, audience: a.category, purpose: a.description || '', navigation: '', integration: '', notes: '', tabs, files: [], status: 'Proposed', source: 'package' } }); });
+    preview('Apps and tabs found in the package', c, 'capp');
+  };
+  function csvRows(t) { const out = []; let row = [], cur = '', q = false; for (let i = 0; i < t.length; i++) { const ch = t[i]; if (q) { if (ch === '"' && t[i + 1] === '"') { cur += '"'; i++; } else if (ch === '"') q = false; else cur += ch; } else if (ch === '"') q = true; else if (ch === ',') { row.push(cur); cur = ''; } else if (ch === '\n' || ch === '\r') { if (ch === '\r' && t[i + 1] === '\n') i++; row.push(cur); cur = ''; if (row.some(x => x !== '')) out.push(row); row = []; } else cur += ch; } if (cur !== '' || row.length) { row.push(cur); out.push(row); } return out; }
+  async function readTable(f) {
+    if (/\.csv$/i.test(f.name)) return csvRows(await f.text());
+    const ExcelJS = await V.loadExcelJS(); const wb = new ExcelJS.Workbook(); await wb.xlsx.load(await f.arrayBuffer()); const ws = wb.worksheets[0]; const rows = [];
+    ws.eachRow({ includeEmpty: false }, row => { const v = []; row.eachCell({ includeEmpty: true }, (c, n) => { let x = c.value; if (x && typeof x === 'object') x = x.text || x.result || (x.richText ? x.richText.map(r => r.text).join('') : ''); v[n - 1] = x == null ? '' : String(x); }); rows.push(v); }); return rows;
+  }
+  const col = (hdr, names) => hdr.findIndex(h => names.includes(norm(h)));
+  ACT.ciImport = async a => {
+    const k = a.getAttribute('data-k'); const f = (await V.pickFile('.csv,.xlsx'))[0]; if (!f) return;
+    try {
+      const rows = await readTable(f); if (rows.length < 2) { toast('The file has no data rows', 5000, true); return; } const hdr = rows[0]; const g = (r, i) => (i >= 0 ? String(r[i] || '').trim() : '');
+      if (k === 'cfgrel') {
+        const ix = { f: col(hdr, ['from', 'frommodule', 'source', 'parent']), t: col(hdr, ['to', 'tomodule', 'target', 'child']), ty: col(hdr, ['type', 'relationship', 'relationtype']), tr: col(hdr, ['trigger', 'condition', 'triggercondition']), o: col(hdr, ['outcome', 'expectedoutcome', 'result']), n: col(hdr, ['notes', 'description', 'comments']) };
+        if (ix.f < 0 || ix.t < 0) { toast('The file needs "From" and "To" columns', 6000, true); return; } const have = new Set(rels().map(relKey)); const c = [];
+        rows.slice(1).forEach(r => { const o = { from: g(r, ix.f), to: g(r, ix.t), type: RTYPES.find(x => norm(x) === norm(g(r, ix.ty))) || (g(r, ix.ty) ? 'Other' : RTYPES[0]), trigger: g(r, ix.tr), outcome: g(r, ix.o), notes: g(r, ix.n) + (RTYPES.find(x => norm(x) === norm(g(r, ix.ty))) || !g(r, ix.ty) ? '' : ' (type given: ' + g(r, ix.ty) + ')'), files: [], status: 'Proposed', source: 'import: ' + f.name }; if (!o.from || !o.to || have.has(relKey(o))) return; have.add(relKey(o)); c.push({ label: o.from + ' → ' + o.to + ' (' + o.type + ')', detail: o.outcome || o.trigger, obj: o }); });
+        preview('Relationships in ' + f.name, c, 'cfgrel');
+      } else {
+        const ix = { a: col(hdr, ['app', 'appname', 'application']), au: col(hdr, ['audience', 'users']), ap: col(hdr, ['apppurpose']), t: col(hdr, ['tab', 'tabname']), p: col(hdr, ['purpose', 'tabpurpose']), v: col(hdr, ['navigation']), fn: col(hdr, ['functionality', 'function']), m: col(hdr, ['modules', 'relatedmodules']), r: col(hdr, ['roles', 'permissions']), i: col(hdr, ['integration', 'integrationbehaviour', 'integrationbehavior']) };
+        if (ix.a < 0) { toast('The file needs an "App" column', 6000, true); return; } const by = {}; const have = new Set(apps().map(x => norm(x.name)));
+        rows.slice(1).forEach(r => { const n = g(r, ix.a); if (!n || have.has(norm(n))) return; const o = by[n] = by[n] || { name: n, audience: g(r, ix.au), purpose: g(r, ix.ap), navigation: '', integration: g(r, ix.i), notes: '', tabs: [], files: [], status: 'Proposed', source: 'import: ' + f.name }; if (g(r, ix.t)) o.tabs.push({ name: g(r, ix.t), modules: g(r, ix.m), purpose: g(r, ix.p), navigation: g(r, ix.v), functionality: g(r, ix.fn), roles: g(r, ix.r) }); });
+        preview('Apps in ' + f.name, Object.values(by).map(o => ({ label: o.name, detail: o.tabs.length + ' tab(s)', obj: o })), 'capp');
+      }
+    } catch (e) { toast('The file could not be read: ' + (e.message || e), 7000, true); }
+  };
+})(typeof window !== 'undefined' ? window : globalThis);

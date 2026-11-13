@@ -74,6 +74,7 @@ The website draws the pages; the server keeps the records and decides who may se
 | `work/` | The server: the part that stores data, talks to the AI and decides who may see what |
 | `tests/` | Automatic checks that the app still works after every change |
 | `tools/` | Scripts developers run by hand (they build icons, reference data and animations; they do not run in the app) |
+| `archive/hidden-tabs/` | Copies of the tabs taken out of the menu, with an index of why and how to bring each back (`archive/hidden-tabs/README.md`). Not built or deployed. |
 | `public/` | Pictures, logos and files the website serves as they are. See [public/README.md](public/README.md) |
 | `vendor/` | Third-party libraries the app uses (PDF, Word, Excel, animation). See [vendor/README.md](vendor/README.md) |
 | `data/` | The cleaned-up reference configuration that is built into the app |

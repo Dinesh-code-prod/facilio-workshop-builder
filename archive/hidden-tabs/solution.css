@@ -1,0 +1,129 @@
+/* Solution tab (src/solution.js). Design tokens only: no gradients, no custom shadows. Loaded before ui.css, so the --cs-* tokens win where they overlap. */
+body .card.cs-sol-all { background: none; border: 0; box-shadow: none; padding: 0; display: flex; flex-direction: column; gap: 16px; }
+body .cs-sol { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 16px; align-items: start; }
+body .cs-sol-n { background: var(--cs-bg1); border: 1px solid var(--cs-st2); border-radius: var(--cs-r-card); padding: 8px; display: flex; flex-direction: column; gap: 12px; position: sticky; top: 8px; max-height: calc(100vh - 32px); overflow: auto; }
+body .cs-sol-g h3 { margin: 0 0 4px; padding: 0 8px; font: 600 12px/16px var(--cs-font); color: var(--cs-fg3); }
+body .cs-sol-i { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 32px; padding: 4px 8px; border: 0; border-radius: 4px; background: transparent; color: var(--cs-fg1); font: 400 14px/20px var(--cs-font); text-align: left; cursor: pointer; }
+body .cs-sol-i:hover { background: var(--cs-bg3); }
+body .cs-sol-i.on { background: var(--cs-brand-soft); color: var(--cs-brand-text); font-weight: 600; }
+body .cs-sol-i:focus-visible { outline: 2px solid var(--cs-brand); outline-offset: -2px; }
+body .cs-sol-i em { font: 600 12px/16px var(--cs-font); font-style: normal; color: var(--cs-brand-text); }
+body .cs-sol-chip { font: 600 12px/16px var(--cs-font); padding: 0 6px; border-radius: 4px; background: var(--cs-bg6); color: var(--cs-fg2); white-space: nowrap; }
+body .cs-sol-chip[data-s="agreed"] { background: var(--cs-success-soft); color: var(--cs-success); }
+body .cs-sol-chip[data-s="changed-by-customer"] { background: var(--cs-warn-soft); color: var(--cs-fg1); }
+body .cs-sol-dh { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+body .cs-sol-dh .cs-card-h { margin-right: auto; }
+body .cs-sol-d textarea { width: 100%; box-sizing: border-box; font: 400 14px/20px var(--cs-font); }
+body .cs-sol-r { background: var(--cs-bg2); border-radius: 4px; padding: 8px 12px; }
+body .cs-sol-r h4, body .cs-sol-h h4 { margin: 0 0 4px; font: 600 14px/20px var(--cs-font); color: var(--cs-fg1); }
+body .cs-sol-r ul { margin: 0; padding-left: 18px; font: 400 14px/20px var(--cs-font); }
+body .cs-sol-sv { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+body .cs-sol-sv input { flex: 1 1 220px; }
+body .cs-sol-sv select:not(#_):not(#__) { flex: 0 0 200px; width: 200px !important; }   /* reason, status and Save sit on one line */
+body .cs-sol-ask { border-top: 1px solid var(--cs-st2); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+body .cs-sol-ps { display: flex; flex-direction: column; gap: 12px; }
+body .cs-sol-p { border: 1px solid var(--cs-brand); border-radius: var(--cs-r-card); padding: 12px; display: flex; flex-direction: column; gap: 8px; background: var(--cs-bg1); }
+body .cs-sol-ph { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+body .cs-sol-warn { font: 600 12px/16px var(--cs-font); color: var(--cs-fg1); background: var(--cs-warn-soft); border-radius: 4px; padding: 0 6px; }
+body .cs-sol-diff { white-space: pre-wrap; font: 400 14px/20px var(--cs-font); background: var(--cs-bg2); border-radius: 4px; padding: 8px 12px; }
+body .cs-sol-diff ins { background: var(--cs-success-soft); text-decoration: none; }
+body .cs-sol-diff del { background: var(--cs-danger-soft); color: var(--cs-danger); }
+body .cs-sol-h ol { margin: 8px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 12px; }
+body .cs-sol-old { white-space: pre-wrap; font: 400 13px/18px var(--cs-font); color: var(--cs-fg2); margin: 2px 0 4px; }
+body .cs-sol-all-ask, body .cs-sol-cov { background: var(--cs-bg1); border: 1px solid var(--cs-st2); border-radius: var(--cs-r-card); padding: 8px 12px; }
+body .cs-sol-all-ask summary, body .cs-sol-cov summary, body .cs-sol-h summary { cursor: pointer; font: 600 14px/20px var(--cs-font); }
+body .cs-sol-all-ask textarea { width: 100%; box-sizing: border-box; margin: 8px 0; }
+@media (max-width: 900px) { body .cs-sol { grid-template-columns: minmax(0, 1fr); } body .cs-sol-n { position: static; max-height: none; } }
+
+/* BRD Draft tidy-up: block tools only when the pointer or keyboard is on the block; the section button is one compact icon; the design proposals fold into one line. */
+body .paper .blk .blk-tools { left: -64px; display: flex; gap: 2px; opacity: 0; transition: opacity var(--cs-fast, 100ms); }
+body .paper .blk:hover .blk-tools, body .paper .blk:focus-within .blk-tools, body .paper .blk-tools:focus-within { opacity: 1; }
+body .paper .blk { position: relative; }
+body .paper .blk > .blk-ask { position: absolute; right: 0; top: 2px; z-index: 2; height: 30px; padding: 0 12px; border: 1px solid var(--cs-brand); border-radius: 4px; background: var(--cs-bg1); color: var(--cs-brand-text); font: 600 13px/20px var(--cs-font); white-space: nowrap; cursor: pointer; }
+body .paper .blk > .blk-ask:hover { background: var(--cs-brand-soft); }
+body .paper .blk:has(> .blk-ask) > h1 { padding-right: 140px; }
+body .ds-fold { background: var(--cs-bg1); border: 1px solid var(--cs-st2); border-radius: var(--cs-r-card); padding: 8px 12px; margin: 0 0 12px; }
+body .ds-fold > summary { cursor: pointer; font: 600 14px/20px var(--cs-font); color: var(--cs-fg1); }
+body .ds-fold[open] > summary { margin-bottom: 8px; }
+
+body .cs-sol-mods { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 4px 0 8px; font: 400 14px/20px var(--cs-font); }
+body .cs-sol-mods label { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Solution tables: one row per topic or item, columns by kind of solution. */
+body .cs-sol-th { margin: 4px 0 0; font: 600 16px/22px var(--cs-font); color: var(--cs-fg1); }
+body .cs-sol-tw { overflow-x: auto; border: 1px solid var(--cs-st2); border-radius: var(--cs-r-card); }
+body .cs-sol-tbl { width: 100%; table-layout: fixed; border-collapse: collapse; min-width: 720px; font: 400 14px/20px var(--cs-font); }
+body .cs-sol-tbl th { text-align: left; padding: 8px 8px; background: var(--cs-bg3); color: var(--cs-fg2); font: 600 12px/16px var(--cs-font); border-bottom: 1px solid var(--cs-st2); white-space: nowrap; }
+body .cs-sol-tbl td { padding: 4px; vertical-align: top; border-bottom: 1px solid var(--cs-st2); }
+body .cs-sol-tbl tr:last-child td { border-bottom: 0; }
+body .cs-sol-tbl textarea:not(#_):not(#__) { width: 100%; box-sizing: border-box; min-height: 40px; field-sizing: content; max-height: 260px; resize: none; border: 1px solid transparent !important; background: transparent !important; box-shadow: none !important; padding: 6px 8px; border-radius: 4px; font: 400 14px/20px var(--cs-font); overflow: auto; }
+body .cs-sol-tbl textarea:hover:not(#_):not(#__) { border-color: var(--cs-st2) !important; } body .cs-sol-tbl textarea:focus:not(#_):not(#__) { border-color: var(--cs-brand) !important; background: var(--cs-bg1) !important; outline: none; }
+body .cs-sol-tbl td:first-child textarea:not(#_):not(#__) { font-weight: 600; }
+body .cs-sol-tbl select { width: 100%; max-width: 130px; } body .cs-sol-tbl td { border-right: 1px solid var(--cs-bg3); } body .cs-sol-tbl td:last-child, body .cs-sol-tbl td:nth-last-child(2) { border-right: 0; }
+body .cs-sol-dt td { padding: 6px 8px; } body .cs-sol-dt tr.add td { background: var(--cs-success-soft); } body .cs-sol-dt tr.del td { background: var(--cs-danger-soft); } body .cs-sol-dt tr.chg td { background: var(--cs-warn-soft); }
+body .cs-sol-dt ins { text-decoration: none; background: var(--cs-success-soft); } body .cs-sol-dt del { color: var(--cs-danger); }
+body .cs-sol-r summary { cursor: pointer; font: 600 14px/20px var(--cs-font); }
+
+body .cs-sol-more { margin-top: 6px; } body .cs-sol-more summary { cursor: pointer; font: 600 13px/18px var(--cs-font, inherit); }
+body .cs-sol-wk { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0; font: 400 13px/18px var(--cs-font, inherit); } body .cs-sol-wk em { display: block; font-style: normal; color: var(--cs-fg3, #666); font-size: 12px; }
+
+/* the solution area: drop zone, folded contract panel, calmer sections */
+body .cs-sol-dz { display: flex; flex-direction: column; gap: 6px; }
+body .cs-sol-drop { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; padding: 20px 16px; border: 1.5px dashed var(--cs-st3, #c8c8c8); border-radius: 12px; background: var(--cs-bg2, #fafafa); color: var(--cs-fg1, #111); cursor: pointer; text-align: center; font: 400 14px/20px var(--cs-font, inherit); }
+body .cs-sol-drop b { font-weight: 600; } body .cs-sol-drop span { color: var(--cs-fg3, #666); max-width: 62ch; }
+body .cs-sol-drop:hover, body .cs-sol-drop.drop-ready { border-color: var(--cs-brand, #1570EF); background: var(--cs-brand-soft, #EAF2FF); }
+body .cs-sol-drop:disabled { opacity: .5; cursor: default; }
+body details.cs-sol-ct > summary { cursor: pointer; font: 600 12px/16px var(--cs-font, inherit); color: var(--cs-fg3, #666); display: flex; justify-content: space-between; padding: 0 8px 4px; list-style: none; }
+body details.cs-sol-ct > summary::-webkit-details-marker { display: none; } body details.cs-sol-ct > summary em { font-style: normal; color: var(--cs-brand, #1570EF); }
+body details.cs-sol-ct { padding: 0 0 4px; border-bottom: 1px solid var(--cs-st2, #e5e5e5); margin-bottom: 4px; } body details.cs-sol-ct > *:not(summary) { padding: 0 8px; }
+body .cs-sol-d { gap: 16px; } body .cs-sol-d > label.f { margin-bottom: -8px; font-weight: 600; }
+
+/* Solution tab layout pass (8 Nov 2026): more air, a full-width contract card, a wider list with a search box, the detail as one calm card, document drop and Ask Claude side by side. */
+body .card.cs-sol-all:not(#_):not(#__):not(#___) { gap: 16px; background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; }   /* a wrapper, not a card: the list and the detail are the cards */
+/* the page's command row: plain buttons on the canvas (no card), Ask Claude about all areas opens in the row, the drop hint on its own muted line */
+body .cs-sol-all > .cs-cmd-bar:not(#_):not(#__) { padding: 0; gap: 8px; align-items: center; background: transparent; border: 0; box-shadow: none; }
+body .cs-sol-all > .cs-cmd-bar .cs-sol-hint { flex: 1 1 100%; margin-top: 2px; }
+body .cs-sol-all > .cs-cmd-bar .cs-sol-all-ask:not(#_) { padding: 0; border: 0; background: transparent; }
+body .cs-sol-all > .cs-cmd-bar .cs-sol-all-ask > summary { display: inline-flex; align-items: center; height: 36px; padding: 0 16px; border-radius: 999px; background: rgba(118, 118, 128, .12); font: 500 14px/20px var(--cs-font); list-style: none; }
+body .cs-sol-all > .cs-cmd-bar .cs-sol-all-ask > summary::-webkit-details-marker { display: none; }
+body .cs-sol-all > .cs-cmd-bar .cs-sol-all-ask[open] { flex: 1 1 100%; order: 9; padding: 14px 16px; background: var(--cs-bg1); border: 1px solid var(--cs-st2); border-radius: var(--cs-r-card); }
+body .cs-sol-all > .cs-cmd-bar .cs-sol-all-ask[open] > summary { background: transparent; padding: 0; height: auto; font-weight: 600; }
+body .cs-sol { grid-template-columns: 320px minmax(0, 1fr); gap: 24px; }
+body .cs-sol-n { padding: 16px; gap: 20px; top: 12px; max-height: calc(100vh - 40px); }
+body .cs-sol-n > * { flex: none; }   /* the list scrolls; its parts never shrink (the Everything / Core / Connected switch was squashed to 6 px) */
+body .cs-sol-q { width: 100%; box-sizing: border-box; height: 40px; padding: 0 14px; border: 1px solid var(--cs-st2); border-radius: 10px; background: var(--cs-bg1); font: 400 14px/20px var(--cs-font); }
+body .cs-sol-g h3 { padding: 0 12px; margin: 0 0 8px; }
+body .cs-sol-i { min-height: 40px; padding: 8px 12px; border-radius: 8px; font: 500 14px/20px var(--cs-font); }
+body .cs-sol-d { padding: 28px 32px; display: flex; flex-direction: column; gap: 22px; }
+body .cs-sol-dh { gap: 10px 12px; padding-bottom: 14px; border-bottom: 1px solid var(--cs-st2); }
+body .cs-sol-d .cs-sol-th { margin: 0; font: 600 16px/24px var(--cs-font); }
+body .cs-sol-d textarea { min-height: 120px; padding: 12px 14px; border: 1px solid var(--cs-st2); border-radius: 10px; }
+body .cs-sol-r { padding: 12px 16px; border-radius: 10px; }
+body .cs-sol-r summary { cursor: pointer; font: 600 14px/20px var(--cs-font); }
+body .cs-sol-sv { position: sticky; bottom: 0; z-index: 2; padding: 14px 0 4px; background: var(--cs-bg1); border-top: 1px solid var(--cs-st2); }
+body .cs-sol-tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+/* document drop and Ask Claude: two quiet columns under a hairline, no boxes inside the card */
+body .cs-sol-tools { padding-top: 20px; border-top: 1px solid var(--cs-st2); }
+body .cs-sol-tools > div { border: 0; padding: 0; background: transparent; }
+body .cs-sol-tools .cs-sol-ask:not(#_) { border-top: 0; padding-top: 0; }
+body .cs-sol-tools .cs-sol-drop { padding: 16px; }
+body .cs-sol-ct { background: var(--cs-bg1); border: 1px solid var(--cs-st2); border-radius: var(--cs-r-card); padding: 16px 20px; }
+body .cs-sol-ct > summary { cursor: pointer; font: 600 15px/24px var(--cs-font); }
+body .cs-sol-ct > summary em { font-style: normal; font-weight: 500; color: var(--cs-fg3); margin-left: 8px; }
+body .cs-sol-ct[open] { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: flex-start; }
+body .cs-sol-ct[open] > summary { flex: 1 1 100%; }
+body .cs-sol-ct[open] > p { flex: 1 1 100%; margin: 0; }
+body .cs-sol-ct[open] > .cs-sol-more { flex: 1 1 280px; background: var(--cs-bg2); border-radius: 10px; padding: 10px 14px; }
+body .cs-sol-ct .cs-sol-wk { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--cs-st2); }
+body .cs-sol-ct .cs-sol-wk em { display: block; font-style: normal; font-size: 12px; color: var(--cs-fg3); }
+body .cs-sol-cov { padding: 12px 18px; }
+@media (max-width: 1100px) { body .cs-sol { grid-template-columns: minmax(0, 1fr); } body .cs-sol-tools { grid-template-columns: 1fr; } body .cs-sol-d { padding: 20px; } }
+/* no contract yet: one notice line (label, sentence, button), not a card */
+body .cs-sol-all > .cs-sol-g { background: var(--cs-bg1); border: 1px solid var(--cs-st2); border-radius: 12px; padding: 10px 12px 10px 16px; display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+body .cs-sol-all > .cs-sol-g h3:not(#_):not(#__) { padding: 0; margin: 0; font: 600 14px/20px var(--cs-font) !important; color: var(--cs-fg1); }
+body .cs-sol-all > .cs-sol-g p { flex: 1 1 320px; margin: 0; }
+
+/* Draft with AI on a BRD heading (9 Nov 2026): next to Ask Claude */
+body .paper .blk > .blk-draft { position: absolute; right: 118px; top: 2px; z-index: 2; height: 30px; padding: 0 12px; border: 1px solid var(--cs-st1, #ccc); border-radius: 4px; background: var(--cs-bg1); color: var(--cs-fg1, #111); font: 600 13px/20px var(--cs-font); white-space: nowrap; cursor: pointer; }
+body .paper .blk > .blk-draft:hover { background: var(--cs-bg2, #f5f5f5); }
+body .paper .blk:has(> .blk-draft) > h1 { padding-right: 270px; }
