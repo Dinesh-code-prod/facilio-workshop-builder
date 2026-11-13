@@ -80,6 +80,13 @@ export function installDs(d) {
     throw new HttpError(409, 'The ' + sec + ' document was changed by someone else at the same moment. Try again.');
   };
   const tools = {
+    /** Claude adds workshop questions to the project's question bank (rs_questions). They arrive as suggestions; a person keeps or drops each one. */
+    async rs_save_questions(s, b) {
+      const p = await pickProject(s, b.project); const { role } = await projectAccess(s, p.id, 'edit'); if (role === 'customer') throw new HttpError(403, 'The question bank is for the project team');
+      const QB = globalThis.FWBQBank; if (!QB || !QB.merge) throw new HttpError(500, 'The question bank is not available'); const list = Array.isArray(b.questions) ? b.questions.slice(0, 120) : []; if (!list.length) throw new HttpError(400, 'questions must be a list of { module, text, why, expected, priority, category }');
+      const r = await update(p.id, 'rs_questions', doc => { const m = QB.merge(doc, list, new Date().toISOString(), (s.name || s.email || '') + ' (Claude)', 'ai', 'Claude field questions'); return { doc: m.bank, added: m.added, skipped: m.skipped }; });
+      await audit(p.id, s.id, 'rs-questions', 'added ' + r.added); return { project: p.name, added: r.added, skipped: r.skipped, note: 'Saved as suggestions on the Questions tab; a person keeps the ones to ask. Same wording twice is skipped.' };
+    },
     /** Claude brings the finished Meteor page (the index.html of a prototype) into the Studio. url is the one-hour file link Meteor gives (get_prototype with files); only that storage host is fetched. */
     async mockup_save_page(s, b) {
       const p = await pickProject(s, b.project); const { role } = await projectAccess(s, p.id, 'edit'); if (role === 'customer') throw new HttpError(403, 'Mockup pages are for the project team');

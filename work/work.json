@@ -1230,7 +1230,7 @@
    },
    {
     "name": "session_questions",
-    "description": "Questions for a workshop. action prepare: the questions to ask per module, each with its reason and source, built from the project's own records (optional module). action live: give transcript chunks [{speaker, at, text}] (up to 500) and get which prepared questions look answered (possible or likely, with the evidence) and what to ask next.",
+    "description": "Questions for a workshop. action prepare: the questions to ask per module, each with its reason and source, built from the project's own records (optional module). action live: give transcript chunks [{speaker, at, text}] (up to 500) and get which prepared questions look answered (possible or likely, with the evidence) and what to ask next. action save_questions: add workshop questions to the question bank (questions: [{ module, text, why, expected, priority must|should, category }]); they arrive as suggestions a person keeps.",
     "function": "api",
     "input_schema": {
      "type": "object",
@@ -1293,7 +1293,8 @@
         "save_transcript",
         "save_findings",
         "save_design",
-        "save_mockup"
+        "save_mockup",
+        "save_questions"
        ],
        "description": "Which step: prepare, live, save_transcript, save_findings, save_design (flow proposals), save_mockup (a finished Meteor page)"
       },
@@ -1319,6 +1320,13 @@
       "pageName": {
        "type": "string",
        "description": "Only for save_mockup: the file name to keep, default index.html"
+      },
+      "questions": {
+       "type": "array",
+       "description": "Only for save_questions: the questions to add",
+       "items": {
+        "type": "object"
+       }
       }
      },
      "required": [
