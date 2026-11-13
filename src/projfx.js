@@ -15,6 +15,7 @@
     const byView = () => { const lv = L && L.STAGES && L.STAGES.find(x => x.views.includes(m[1])); return STAGE[m[1]] || (lv && ST7[lv.k]) || 'home'; };
     const st = act ? act.getAttribute('data-stage') : byView();
     if (b.getAttribute('data-stage') !== st) b.setAttribute('data-stage', st);
+    saveBars();
     // entrance only when the page or its selected tab changes, never on a re-render after a tick or a save
     const tab = d.querySelector('.main [role="tab"][aria-selected="true"], .main .seg > button.on, .main .tabs > .on, .main .tabs > .active');
     const key = location.hash.split('?')[0] + '|' + (tab ? tab.textContent.trim().slice(0, 40) : '');
@@ -23,6 +24,29 @@
     if (!el || root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     el.classList.remove('fx-in'); void el.offsetWidth; el.classList.add('fx-in'); clearTimeout(fxT); fxT = setTimeout(() => el.classList.remove('fx-in'), 900);
   }
+  // Save bars: a Save button that ends a form, card or side panel (its row holds only buttons) becomes a bar across the bottom of that form,
+  // kept in view while the form scrolls, with a status on the left: no unsaved changes / unsaved changes / saving. Inline saves next to one field are left alone.
+  const SAVE = /^save( changes| and close| draft| as draft| settings| details| version| workbook)?$/i;
+  const FORM = '.card, form, .drawer, .dlg, .modal, [role="dialog"], .side-panel, .sd-w';
+  function saveBars() {
+    d.querySelectorAll('.main button.btn, [role="dialog"] button.btn, .drawer button.btn').forEach(btn => {
+      const row = btn.parentElement; if (!row || row.classList.contains('fx-savebar') || !SAVE.test(btn.textContent.trim())) return;
+      if ([...row.children].some(c => !/^(BUTTON|A|SPAN|SMALL|I)$/.test(c.tagName)) || row.querySelector('input, select, textarea')) return;
+      const form = row.closest(FORM); if (!form || !form.querySelector('input:not([type="checkbox"]):not([type="radio"]), select, textarea')) return;
+      if (row.nextElementSibling && row.nextElementSibling.offsetHeight > 0) return;   // only the last row of the form
+      row.classList.add('fx-savebar'); const st = d.createElement('span'); st.className = 'fx-sv-st'; st.setAttribute('role', 'status'); st.textContent = btn.disabled ? 'Read only' : 'No unsaved changes'; row.insertBefore(st, row.firstChild);
+    });
+  }
+  const barOf = el => { const f = el.closest && el.closest(FORM); return f && f.querySelector(':scope .fx-savebar'); };
+  const mark = (bar, state, text) => { if (!bar) return; bar.setAttribute('data-state', state); const s = bar.querySelector('.fx-sv-st'); if (s) s.textContent = text; };
+  d.addEventListener('input', e => { if (d.body.classList.contains('in-proj')) mark(barOf(e.target), 'dirty', 'Unsaved changes'); }, true);
+  d.addEventListener('change', e => { if (d.body.classList.contains('in-proj')) mark(barOf(e.target), 'dirty', 'Unsaved changes'); }, true);
+  // after Save: an error message means "Not saved"; otherwise "Saved" once the request has had time to finish (a re-render replaces the bar anyway)
+  d.addEventListener('click', e => { const b = e.target.closest && e.target.closest('.fx-savebar button.btn'); if (!b || !SAVE.test(b.textContent.trim()) || b.disabled) return;
+    const bar = b.parentElement, errsBefore = d.querySelectorAll('.toast.err').length; mark(bar, 'saving', 'Saving…'); let n = 0;
+    const tick = setInterval(() => { n++; if (!bar.isConnected) return clearInterval(tick);
+      if (d.querySelectorAll('.toast.err').length > errsBefore) { clearInterval(tick); return mark(bar, 'error', 'Not saved. See the message and try again.'); }
+      if (n >= 8 && !b.disabled && !b.classList.contains('busy')) { clearInterval(tick); mark(bar, 'saved', 'Saved'); } }, 300); }, true);
   const later = () => { if (!timer) timer = setTimeout(() => { timer = 0; patch(); }, 30); };   // throttled, not debounced: a page that keeps changing still gets patched
   function start() { patch(); new MutationObserver(later).observe(d.body, { childList: true, subtree: true }); root.addEventListener('hashchange', later); }
   if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', start); else start();

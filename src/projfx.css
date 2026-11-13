@@ -1,20 +1,20 @@
-/* Project pages only (body.in-proj, set by src/projfx.js). Each stage of the project has its own colour pair, washed softly through the
+/* Project pages only (body.in-proj, set by src/projfx.js). Each stage has its own shade of Facilio blue, navy or slate (no other hues: user, 13 Nov 2026), washed softly through the
    rail, the page header, the tabs, card headings, progress and the main button; one short entrance plays when a page or tab opens.
    Loaded after ui.css. :not(#q#q#q#q#q#q#q#q#q#q#q#q) only lifts specificity above the older layers. */
 
 body.in-proj { --st: #2B5BB0; --st2: #3E72C9; }
-body.in-proj[data-stage="s1"], body.in-proj .rl-b[data-stage="s1"] { --st: #2B5BB0; --st2: #3E72C9; }   /* Project introduction: muted Facilio blue */
-body.in-proj[data-stage="s2"], body.in-proj .rl-b[data-stage="s2"] { --st: #1E6B73; --st2: #2D8189; }   /* Requirement sessions: deep teal */
-body.in-proj[data-stage="s3"], body.in-proj .rl-b[data-stage="s3"] { --st: #2F5577; --st2: #41698E; }   /* Solution design and BRD: steel blue */
-body.in-proj[data-stage="s4"], body.in-proj .rl-b[data-stage="s4"] { --st: #3D5A6E; --st2: #4F6F85; }   /* UAT and FTR: slate teal */
-body.in-proj[data-stage="s5"], body.in-proj .rl-b[data-stage="s5"] { --st: #2E6152; --st2: #3F7565; }   /* Training guides: sage */
-body.in-proj[data-stage="s6"], body.in-proj .rl-b[data-stage="s6"] { --st: #46546A; --st2: #5A6982; }   /* Tasks and mail: slate */
-body.in-proj[data-stage="s7"], body.in-proj .rl-b[data-stage="s7"] { --st: #8A2C5A; --st2: #A0406F; }   /* Handover: muted Facilio pink */
-body.in-proj[data-stage="home"], body.in-proj .rl-b[data-stage="home"] { --st: #1D1A5E; --st2: #2E3D8F; }   /* Home: navy */
+body.in-proj[data-stage="s1"], body.in-proj .rl-b[data-stage="s1"] { --st: #2B5BB0; --st2: #3E72C9; }
+body.in-proj[data-stage="s2"], body.in-proj .rl-b[data-stage="s2"] { --st: #225E77; --st2: #33748F; }
+body.in-proj[data-stage="s3"], body.in-proj .rl-b[data-stage="s3"] { --st: #2F5577; --st2: #41698E; }
+body.in-proj[data-stage="s4"], body.in-proj .rl-b[data-stage="s4"] { --st: #35587A; --st2: #486E93; }
+body.in-proj[data-stage="s5"], body.in-proj .rl-b[data-stage="s5"] { --st: #2A5470; --st2: #3B6A88; }
+body.in-proj[data-stage="s6"], body.in-proj .rl-b[data-stage="s6"] { --st: #3F5470; --st2: #526A89; }
+body.in-proj[data-stage="s7"], body.in-proj .rl-b[data-stage="s7"] { --st: #2B4A8A; --st2: #3D5FA3; }
+body.in-proj[data-stage="home"], body.in-proj .rl-b[data-stage="home"] { --st: #1D1A5E; --st2: #2E3D8F; }
 body.in-proj[data-stage="rep"], body.in-proj .rl-b[data-stage="rep"] { --st: #2D4F8F; --st2: #4065A8; }
-body.in-proj[data-stage="notes"], body.in-proj .rl-b[data-stage="notes"] { --st: #5B5545; --st2: #706957; }
-body.in-proj[data-stage="show"], body.in-proj .rl-b[data-stage="show"] { --st: #8A2C5A; --st2: #2B5BB0; }
-body.in-proj[data-stage="set"], body.in-proj .rl-b[data-stage="set"] { --st: #344054; --st2: #475467; }
+body.in-proj[data-stage="notes"], body.in-proj .rl-b[data-stage="notes"] { --st: #3F5470; --st2: #526A89; }
+body.in-proj[data-stage="show"], body.in-proj .rl-b[data-stage="show"] { --st: #2B5BB0; --st2: #3E72C9; }
+body.in-proj[data-stage="set"], body.in-proj .rl-b[data-stage="set"] { --st: #2D4F8F; --st2: #4065A8; }
 body.in-proj[data-stage="help"], body.in-proj .rl-b[data-stage="help"], body.in-proj[data-stage="claude"], body.in-proj .rl-b[data-stage="claude"] { --st: #2D4F6B; --st2: #3F6481; }
 body.in-proj { --st-t: color-mix(in srgb, var(--st) 6%, #fff); --st-r: color-mix(in srgb, var(--st) 20%, transparent); --fx-ease: cubic-bezier(.32, .72, 0, 1); }
 
@@ -57,7 +57,7 @@ body.in-proj nav.sidebar .rl-b.active > svg:not(#q#q#q#q#q#q#q#q#q#q#q#q) { colo
 body.in-proj nav.sidebar .rl-b:active:not(#q#q#q#q#q#q#q#q#q#q#q#q) { transform: scale(.96); }
 
 /* ---------- page header: navy into the stage colour, a soft light in the corner ---------- */
-body.in-proj .main .page-header:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: radial-gradient(55% 140% at 100% 0%, color-mix(in srgb, var(--st2) 32%, transparent), transparent 62%), radial-gradient(35% 120% at 0% 120%, rgba(229, 25, 127, .07), transparent 60%), linear-gradient(120deg, #1D1A5E 0%, color-mix(in srgb, var(--st) 45%, #1D1A5E) 100%) !important; transition: background .5s var(--fx-ease); }
+body.in-proj .main .page-header:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: radial-gradient(55% 140% at 100% 0%, color-mix(in srgb, var(--st2) 32%, transparent), transparent 62%), linear-gradient(120deg, #1D1A5E 0%, color-mix(in srgb, var(--st) 45%, #1D1A5E) 100%) !important; transition: background .5s var(--fx-ease); }
 
 /* ---------- tabs inside a page: the selected one is a gradient pill (segmented) or a gradient underline ---------- */
 body.in-proj .main :is(.seg, .tabs, .tr-tabs) > :is(button, a, .tab):not(#q#q#q#q#q#q#q#q#q#q#q#q) { transition: background .25s var(--fx-ease), color .2s, box-shadow .25s !important; }
@@ -158,3 +158,16 @@ body.in-proj .ho-empty p { margin: 0; max-width: 52ch; color: #475467; }
 @media (max-width: 900px) { body.in-proj .ho-sum { grid-template-columns: auto 1fr; } body.in-proj .ho-figs { grid-column: 1 / -1; } body.in-proj .ho-figs > div { flex: 1; min-width: 0; } }
 @media (max-width: 560px) { body.in-proj .ho-grps { grid-template-columns: 1fr; } body.in-proj .ho-sum { padding: 16px; gap: 14px; } body.in-proj .ho-ring { width: 60px; height: 60px; } body.in-proj .ho-meta { margin-left: 0; } }
 body.in-proj .ho-done { padding: 3px 8px; border-radius: 99px; background: #e7f6ec; color: #13693a; font-weight: 500; }
+
+/* ---------- Save bars (src/projfx.js saveBars): the Save that ends a form sits in a bar across the bottom of the form, in view while it scrolls ---------- */
+body.in-proj .fx-savebar:not(#q#q#q#q#q#q#q#q#q#q#q#q) { display: flex !important; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px; position: sticky; bottom: 12px; z-index: 3; margin: 18px 0 0 !important; padding: 10px 12px 10px 16px !important; border: 0 !important; border-radius: 14px; background: rgba(255, 255, 255, .94); backdrop-filter: saturate(160%) blur(12px); box-shadow: 0 0 0 1px rgba(15, 23, 42, .08), 0 8px 20px -14px rgba(15, 23, 42, .35); }
+body.in-proj .fx-sv-st { margin-right: auto; display: inline-flex; align-items: center; gap: 8px; font: 500 13px/1.3 var(--cs-font); color: #475467; }
+body.in-proj .fx-sv-st::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #98a2b3; flex: none; transition: background .2s; }
+body.in-proj .fx-savebar[data-state="dirty"] .fx-sv-st { color: #8a4b08; } body.in-proj .fx-savebar[data-state="dirty"] .fx-sv-st::before { background: #F79009; }
+body.in-proj .fx-savebar[data-state="saving"] .fx-sv-st::before { background: var(--st); animation: fxPulse 1s ease-in-out infinite; }
+body.in-proj .fx-savebar[data-state="saved"] .fx-sv-st { color: #13693a; } body.in-proj .fx-savebar[data-state="saved"] .fx-sv-st::before { background: #12B76A; }
+body.in-proj .fx-savebar[data-state="error"] .fx-sv-st { color: #a5161d; } body.in-proj .fx-savebar[data-state="error"] .fx-sv-st::before { background: #F04438; }
+body.in-proj .fx-savebar .btn:not(#q#q#q#q#q#q#q#q#q#q#q#q) { height: 36px !important; padding: 0 16px !important; border-radius: 10px !important; font: 500 13.5px/1 var(--cs-font) !important; }
+@keyframes fxPulse { 50% { opacity: .35; } }
+@media (max-width: 560px) { body.in-proj .fx-savebar:not(#q#q#q#q#q#q#q#q#q#q#q#q) { bottom: 8px; } body.in-proj .fx-sv-st { flex-basis: 100%; } }
+body.in-proj .drawer-f.fx-savebar:not(#q#q#q#q#q#q#q#q#q#q#q#q) { position: static; margin: 0 !important; border-radius: 0; padding: 12px 20px !important; background: #fff; backdrop-filter: none; box-shadow: 0 -1px 0 rgba(15, 23, 42, .08); }
