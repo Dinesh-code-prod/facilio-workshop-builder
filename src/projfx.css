@@ -265,3 +265,10 @@ body.in-proj .main :is(table, .tbl) td:not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-bo
 body.in-proj .main :is(table, .tbl) tbody tr:hover > td { background: #f9f9fb; }
 body.in-proj .main .tbl-wrap:not(#q#q#q#q#q#q#q#q#q#q#q#q) { border: 0 !important; border-radius: 14px !important; background: #fff !important; box-shadow: 0 0 0 1px rgba(0, 0, 0, .05), 0 1px 3px rgba(0, 0, 0, .05) !important; }
 body.in-proj .main .page > .page-body:not(#q#q#q#q#q#q#q#q#q#q#q#q) { padding-top: 20px !important; }
+
+/* every page of the stage as a tab: each section is a small caption followed by its pages, sections side by side and wrapping on narrow windows */
+body.in-proj .main > .mt-bar.mt-all:not(#q#q#q#q#q#q#q#q#q#q#q#q) { gap: 6px 18px; }
+body.in-proj .main > .mt-bar.mt-all > .mt-in:not(#q#q#q#q#q#q#q#q#q#q#q#q) { gap: 2px; flex-wrap: wrap; }
+body.in-proj .main > .mt-bar.mt-all > .mt-in + .mt-in::before { content: ""; width: 1px; height: 20px; margin: 0 12px 0 0; background: rgba(15, 23, 42, .12); }
+body.in-proj .main > .mt-bar .mt-cap:not(#q#q#q#q#q#q#q#q#q#q#q#q) { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #8a94a6; margin-right: 6px; white-space: nowrap; }
+body.in-proj .main > .mt-bar .mt-in.here .mt-cap:not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: #1570EF; }
