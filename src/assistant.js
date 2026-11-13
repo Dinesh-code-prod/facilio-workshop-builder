@@ -191,6 +191,8 @@
   document.addEventListener('click', e => { const mu = document.getElementById('asMenu'); if (mu && !mu.hidden && !(e.target.closest && e.target.closest('.as-modewrap'))) mu.hidden = true; });
   V.ACT.asstSearch = () => { const a = st(); a.sq = !a.sq; if (!a.sq) a.q = ''; a.sig = ''; const s = document.querySelector('#asst .as-search'); if (s) { s.hidden = !a.sq; const i = document.getElementById('asQ'); if (a.sq && i) i.focus(); else if (i) i.value = ''; } paint(); };
   V.ACT.asstQuote = a => { const a1 = st(); a1.quote = String(a.getAttribute('data-q') || '').slice(0, 70); a1.sig = ''; paint(); const m = document.getElementById('asM'); if (m && a1.quote) m.focus(); };   // Reply under an answer: your next message says what it follows up on
+  // the one Claude button (top bar): open the chat ready to type; the message carries the page you are on, so Claude works on it
+  V.ACT.askClaude = () => { const a = st(); if (!a.open) { a.open = true; a.sig = ''; paint(); askUsage(); } setTimeout(() => { const m = document.getElementById('asM'); if (m) { const pg = (document.querySelector('.main h1') || {}).textContent || 'this page'; m.placeholder = 'What should Claude do on ' + pg.trim() + '? For example: export it as a document, analyse the file, update the solution.'; m.focus(); } }, 60); };
   V.ACT.asstToggle =() => { const a = st(); a.open = !a.open; a.sig = ''; paint(); if (a.open) askUsage(); };
   V.ACT.asstUsage = () => { askUsage(); };
   document.addEventListener('input', e => { if (e.target && e.target.id === 'asM') { e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 140) + 'px'; } });   // the message box grows with the text
