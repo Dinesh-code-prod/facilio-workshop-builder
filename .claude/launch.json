@@ -1,6 +1,24 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "studio-dev", "runtimeExecutable": "node", "runtimeArgs": ["tests/ui/devserver.mjs", "4181"], "port": 4181 }
+    {
+      "name": "studio-dev",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "tests/ui/devserver.mjs",
+        "4181"
+      ],
+      "port": 4181
+    },
+    {
+      "name": "studio-live",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "tests/ui/devserver.mjs",
+        "4182",
+        "tests/ui/.devdata-live.json"
+      ],
+      "port": 4182
+    }
   ]
 }

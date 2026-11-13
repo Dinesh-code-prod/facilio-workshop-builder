@@ -8,7 +8,7 @@ const here = path.dirname(fileURLToPath(import.meta.url)); const dist = process.
 const port = Number(process.argv[2] || process.env.PORT || 4173);
 const store = new Map(), blobs = new Map(); let fileSeq = 0;
 // Keep the local data between restarts (records only; uploaded files stay in memory). Delete tests/ui/.devdata.json to start empty, or set NO_PERSIST=1.
-const dataFile = path.join(here, '.devdata.json'); let saveT = 0;
+const dataFile = process.argv[3] ? path.resolve(process.argv[3]) : path.join(here, '.devdata.json'); let saveT = 0;   // optional 2nd argument: another data file (e.g. a git-ignored copy of live data)
 if (!process.env.NO_PERSIST) { try { for (const [c, rows] of Object.entries(JSON.parse(fs.readFileSync(dataFile, 'utf8')))) store.set(c, new Map(Object.entries(rows))); } catch (e) { /* first run */ } }
 const persist = () => { if (process.env.NO_PERSIST) return; clearTimeout(saveT); saveT = setTimeout(() => { try { fs.writeFileSync(dataFile, JSON.stringify(Object.fromEntries([...store].map(([c, m]) => [c, Object.fromEntries(m)])))); } catch (e) { } }, 400); };
 // FAKE_CLAUDE=1: a local test double for Anthropic, so the image-to-flow review can be exercised without a key. It returns a fixed answer that
