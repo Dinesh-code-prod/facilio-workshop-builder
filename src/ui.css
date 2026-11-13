@@ -2720,3 +2720,16 @@ body .sol-read-card .sol-body:not(#_):not(#__) { margin: 4px 0 8px; } body .sol-
 body .sol-read-card .sol-empty:not(#_):not(#__) { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; border-radius: 14px; border: 1px dashed rgba(21, 112, 239, .35); background: rgba(21, 112, 239, .04); font-size: 13.5px; color: #475467; }
 body .sol-read-card .sol-empty b { color: #101828; font-weight: 600; } body .sol-read-card .cs-sol-dh .spacer { flex: 1; }
 @media (max-width: 900px) { body .sol-design:not(#_):not(#__) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Solution map: one card per module, branches as quiet disclosure rows with a count and an Open link */
+body .sm-page .sm-m:not(#_):not(#__) { padding: 0; margin-bottom: 12px; overflow: hidden; }
+body .sm-page .sm-m > summary:not(#_):not(#__) { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 14px 18px; cursor: pointer; list-style: none; }
+body .sm-page .sm-m > summary::-webkit-details-marker { display: none; }
+body .sm-page .sm-m > summary b { font-size: 16px; font-weight: 600; color: #101828; }
+body .sm-page .sm-k, body .sm-page .sm-s { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #f2f4f7; color: #475467; } body .sm-page .sm-s { background: rgba(21, 112, 239, .08); color: #0b4fae; }
+body .sm-page .sm-c { margin-left: auto; font-size: 12.5px; color: #667085; }
+body .sm-page .sm-body:not(#_):not(#__) { padding: 0 18px 14px; display: grid; gap: 6px; }
+body .sm-page .sm-b:not(#_):not(#__) { border-radius: 12px; background: #f7f8fb; }
+body .sm-page .sm-b > summary:not(#_):not(#__) { display: flex; align-items: center; gap: 10px; padding: 9px 12px; cursor: pointer; font-size: 13.5px; font-weight: 500; color: #1d2939; }
+body .sm-page .sm-b > summary em { font-style: normal; font-size: 12px; color: #667085; } body .sm-page .sm-b > summary .ki-link { margin-left: auto; }
+body .sm-page .sm-in:not(#_):not(#__) { padding: 0 12px 12px; } body .sm-page .sm-p { margin: 0 0 8px; font-size: 14px; line-height: 1.55; max-width: 80ch; } body .sm-page .sm-h { margin: 10px 0 2px; font-size: 13.5px; }

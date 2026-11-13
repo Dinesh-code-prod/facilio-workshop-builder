@@ -174,6 +174,7 @@ The agreed solution of each module, the BRD with sign-off, mockups and traceabil
 | [brdreview.js](brdreview.js) | Stage 3, BRD review checklist (roadmap E20): before a BRD can be approved, a person checks each part and ticks it off with their name. |
 | [brdview.js](brdview.js) | BRD Draft — Word-like editor. |
 | [brdsources.js](brdsources.js) | Above the BRD draft: what the BRD is built from (sessions, solution, configuration, processes, use cases, governance), how much reaches it and what is held back, with the page to fix it. |
+| [solmap.js](solmap.js) | Solution map: the whole design per module in one tree (solution, fields, forms, state flows, roles, notifications), with a Word download and print to PDF. |
 | [autosuggest.js](autosuggest.js) | Read from the saved state flows: the access each role needs per module and the notifications for each state (who acts next), shown as suggestions on Roles and Notifications. |
 | [design.js](design.js) | Stage 3, Solution design and BRD: what Claude proposes for the design, shown on the Process whiteboard (Requirement sessions) and on the State flow builder (roadmap E20). |
 | [mockup.js](mockup.js) | Stage 3, Mockup tab (roadmap E20): the prototype brief for Meteor, built ONLY from what the team has already applied or confirmed. |
