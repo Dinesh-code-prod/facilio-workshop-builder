@@ -2684,10 +2684,6 @@ body :is(.tag, .pl-chip, .cs-sol-chip, .ki-tr em)[data-st="bad"]:not(#_):not(#__
 body :is(.tag, .pl-chip, .cs-sol-chip, .ki-tr em)[data-st="off"]:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { background: #eef2f7 !important; color: #475569 !important; }
 body :is(.tag, .pl-chip, .cs-sol-chip, .ki-tr em):not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______) { border-radius: 999px !important; }
 
-/* card heading icon tile (added by src/a11y.js when the heading names what the card holds) */
-body :is(.card-h, .sd-w > header, .sd-life > header) > h3[data-hi]:not(#_):not(#__):not(#___) { display: inline-flex; align-items: center; gap: 10px; }
-body .hd-ic:not(#_):not(#__):not(#___) { flex: none; display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: #e8f1fe; color: #1570EF; }
-body .hd-ic svg:not(#_):not(#__):not(#___) { width: 15px; height: 15px; }
 
 /* BRD sources panel above the draft: a soft card, rows with a status dot (green reaches the BRD, amber held back), the BRD section on the right */
 body .brd-src:not(#_):not(#__) { margin: 0 0 12px; border-radius: 20px; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 4px 16px rgba(0, 0, 0, .04); overflow: hidden; }

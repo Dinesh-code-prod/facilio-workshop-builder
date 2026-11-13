@@ -68,7 +68,6 @@ body.in-proj .main .tabs > :is(.on, .active, [aria-selected="true"]):not(#q#q#q#
 
 /* ---------- cards: heading band tinted from the corner, icon tile in the stage gradient ---------- */
 body.in-proj .main .card > .card-h:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: linear-gradient(100deg, var(--st-t) 0%, #fff 55%) !important; }
-body.in-proj .main .hd-ic:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: var(--st) !important; color: #fff !important; box-shadow: 0 1px 2px rgba(15, 23, 42, .12); }
 body.in-proj .main .bar:not(#q#q#q#q#q#q#q#q#q#q#q#q) { height: 8px; border-radius: 99px; background: color-mix(in srgb, var(--st) 10%, #eef2f6) !important; overflow: hidden; }
 body.in-proj .main .bar > i:not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-radius: 99px; background: var(--st) !important; transition: width .7s var(--fx-ease); }
 body.in-proj .main .empty:not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-radius: 14px !important; background: radial-gradient(80% 120% at 50% 0%, var(--st-t), #fff 70%) !important; border: 1px dashed var(--st-r) !important; color: #475467 !important; padding: 22px !important; text-align: center; }
@@ -238,3 +237,31 @@ body.in-proj .main .page-header .btn.primary:not(#q#q#q#q#q#q#q#q#q#q#q#q) { bac
 body.in-proj .main .page-header .pt-ag:not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-right-color: rgba(255, 255, 255, .2) !important; }
 body.in-proj .main .page-header .pt-ag > :not(.pt-agb):not(#q#q#q#q#q#q#q#q#q#q#q#q), body.in-proj .main .page-header :is(.muted, small, .small, .xs):not(.btn):not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: rgba(255, 255, 255, .72) !important; }
 @media (max-width: 900px) { body.in-proj .main .page-header:not(#q#q#q#q#q#q#q#q#q#q#q#q) { padding: 14px 16px !important; margin-top: 10px !important; } }
+
+/* ---------- Apple surfaces (user, 13 Nov 2026: "Apple design"; HIG layout.md, buttons.md, color.md; macOS System Settings as the model)
+   grouped background, plain white cards with soft depth, plain headings (no tinted bands, no icon tiles), macOS fields, capsule buttons, quiet tables ---------- */
+body.in-proj { --ap-ink: #1d1d1f; --ap-ink2: #6e6e73; --ap-line: rgba(0, 0, 0, .08); --ap-field: #d2d2d7; }
+body.in-proj .shell:not(#q#q#q#q#q#q#q#q#q#q#q#q), body.in-proj .main:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #f2f2f7 !important; }
+body.in-proj .main .card:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; border: 0 !important; border-radius: 14px !important; box-shadow: 0 0 0 1px rgba(0, 0, 0, .05), 0 1px 3px rgba(0, 0, 0, .05) !important; }
+body.in-proj .main .card > .card-h:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: transparent !important; border-bottom: 1px solid var(--ap-line) !important; }
+body.in-proj .main :is(.card > .card-h, .sd-w > header) h3:not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: var(--ap-ink) !important; font: 600 15px/20px var(--cs-font) !important; letter-spacing: -.01em !important; }
+body.in-proj .main :is(.muted, .small.muted, .xs.muted, .hint):not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: var(--ap-ink2) !important; }
+/* fields: white, a firm 1 px edge, 8 px corners, the accent ring on focus (macOS text field) */
+body.in-proj .main :is(input:is([type="text"], [type="search"], [type="email"], [type="number"], [type="date"], [type="url"], [type="tel"], :not([type])), select, textarea):not(#q#q#q#q#q#q#q#q#q#q#q#q) { background-color: #fff !important; border: 1px solid var(--ap-field) !important; border-radius: 8px !important; color: var(--ap-ink) !important; box-shadow: 0 1px 1px rgba(0, 0, 0, .03) !important; }
+body.in-proj .main :is(input:is([type="text"], [type="search"], [type="email"], [type="number"], [type="date"], [type="url"], [type="tel"], :not([type])), select, textarea):hover:not(:disabled):not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-color: #a1a1a6 !important; }
+body.in-proj .main :is(input, select, textarea):focus:not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-color: #1570EF !important; box-shadow: 0 0 0 3px rgba(21, 112, 239, .22) !important; }
+body.in-proj .main :is(input, select, textarea)::placeholder { color: #a1a1a6 !important; }
+body.in-proj .main :is(input, select, textarea):disabled:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background-color: #f5f5f7 !important; color: var(--ap-ink2) !important; }
+body.in-proj .main :is(label.f, .fld > label, .form label > b, .card-b > label):not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: var(--ap-ink) !important; font: 500 13px/18px var(--cs-font) !important; }
+/* buttons: capsules; secondary white with a hairline, destructive as red text, the main one solid */
+body.in-proj .main .page-body .btn:not(.primary):not(.icon):not(.link):not(.ghost):not(.ph-more):not(.seg *):not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-radius: 999px !important; background: #fff !important; color: var(--ap-ink) !important; border: 0 !important; box-shadow: 0 0 0 1px rgba(0, 0, 0, .12), 0 1px 1px rgba(0, 0, 0, .04) !important; font-weight: 500 !important; }
+body.in-proj .main .page-body .btn:not(.primary):not(.icon):not(.link):not(.ghost):not(.ph-more):not(.seg *):hover:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #f5f5f7 !important; }
+body.in-proj .main .page-body .btn:is(.danger, .del, [data-act*="Del"], [data-act*="del"]):not(.primary):not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: #d70015 !important; }
+body.in-proj .main .page-body .btn.primary:not(.sm):not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-radius: 999px !important; }
+body.in-proj .main .page-body .btn.sm.primary:not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-radius: 999px !important; }
+/* tables: no grey header band, small grey column titles, hairline rows */
+body.in-proj .main :is(table, .tbl) th:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: transparent !important; color: var(--ap-ink2) !important; font: 600 12px/16px var(--cs-font) !important; letter-spacing: 0 !important; text-transform: none !important; border-bottom: 1px solid rgba(0, 0, 0, .1) !important; }
+body.in-proj .main :is(table, .tbl) td:not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-bottom: 1px solid rgba(0, 0, 0, .05) !important; color: var(--ap-ink); }
+body.in-proj .main :is(table, .tbl) tbody tr:hover > td { background: #f9f9fb; }
+body.in-proj .main .tbl-wrap:not(#q#q#q#q#q#q#q#q#q#q#q#q) { border: 0 !important; border-radius: 14px !important; background: #fff !important; box-shadow: 0 0 0 1px rgba(0, 0, 0, .05), 0 1px 3px rgba(0, 0, 0, .05) !important; }
+body.in-proj .main .page > .page-body:not(#q#q#q#q#q#q#q#q#q#q#q#q) { padding-top: 20px !important; }

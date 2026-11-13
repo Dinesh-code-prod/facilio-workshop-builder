@@ -12,7 +12,7 @@
     d.querySelectorAll('nav.sidebar .rl-b:not([data-stage])').forEach(x => x.setAttribute('data-stage', STAGE[x.getAttribute('data-view')] || 'help'));
     // the open rail entry gives the stage; on a phone the rail is folded away, so the page name is looked up in the lifecycle stages instead
     const act = d.querySelector('nav.sidebar .rl-b.active'), L = root.FWBLife, ST7 = { intro: 's1', sessions: 's2', design: 's3', uat: 's4', training: 's5', hypercare: 's7', handover: 's7' };
-    const byView = () => { const lv = L && L.STAGES && L.STAGES.find(x => x.views.includes(m[1])); return STAGE[m[1]] || (lv && ST7[lv.k]) || 'home'; };
+    const byView = () => { const lv = L && L.STAGES && L.STAGES.find(x => x.views.includes(m[1])); return STAGE[m[1]] || (lv && ST7[lv.k]) || (m[1] === 'portals' ? 's3' : 'help'); };   // Home only for the dashboard itself
     const st = act ? act.getAttribute('data-stage') : byView();
     if (b.getAttribute('data-stage') !== st) b.setAttribute('data-stage', st);
     saveBars();
