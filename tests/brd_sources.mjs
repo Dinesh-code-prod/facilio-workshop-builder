@@ -22,7 +22,7 @@ t('configuration counts add up across modules and an empty project holds nothing
 import { readFileSync } from 'node:fs';
 t('the chain: a new transcript asks Claude to read it, and saved findings queue the flows, forms and BRD draft', () => {
   const j = readFileSync(new URL('../work/server/_jobsapi.mjs', import.meta.url), 'utf8'), r = readFileSync(new URL('../src/requirements.js', import.meta.url), 'utf8');
-  assert.ok(/kind === 'extract_findings' \|\| j\.kind === 'pull_clari'\) && j\.status === 'done'/.test(j) && j.includes("['capture_flows', 'fill_forms', 'draft_brd']"));
+  assert.ok(j.includes("(j.kind === 'extract_findings' || j.kind === 'pull_clari' || j.kind === 'pull_transcript') && j.status === 'done'") && j.includes("['capture_flows', 'fill_forms', 'draft_brd']"), 'a Clari, Teams or transcript reading that finishes starts the chain');
   assert.ok(r.includes("J().post('/jobs', { kind: 'extract_findings' }); } catch (e) { }"));
 });
 console.log(n + ' BRD sources checks passed');

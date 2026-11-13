@@ -1,5 +1,5 @@
 /* Requirement sessions, stage 2: what the project keeps from its workshop recordings (roadmap E15 stage 2). Two project documents, both team only:
-     rs_transcripts  { items: [{ id, title, date, source: 'clari'|'upload', ref, text, at }] }       the transcript text, as read from Clari or from a file a person added
+     rs_transcripts  { items: [{ id, title, date, source: 'clari'|'teams'|'upload', ref, text, at }] }       the transcript text, as read from Clari or from a file a person added
      rs_findings     { items: [{ id, transcriptId, kind, text, quote, speaker, at, status, by, byAt }] }   what was promised, asked, decided ... each with the quote it rests on
    Claude saves them through the existing tool session_questions (actions save_transcript and save_findings; no new tool). Findings are PROPOSALS: status starts as open; only a person confirms or
    dismisses one (the Checks & validations tab), and a confirmed or dismissed finding is never overwritten by a later save. A spoken statement is data: nothing here makes a requirement of it.
@@ -31,7 +31,7 @@ export function mergeFindings(existing, transcriptId, incoming, now) {
 /** the transcripts after a save: a transcript with the same source and reference is replaced, so pulling twice does not double it */
 export function upsertTranscript(existing, t, now) {
   const items = arr(existing).filter(Boolean); const text = String(t.text == null ? '' : t.text).replace(/\u0000/g, '').trim(); if (text.length < 20) throw Object.assign(new Error('The transcript text is empty or too short to be a transcript.'), { status: 400 });
-  const ref = cut(t.ref, 300), source = t.source === 'upload' ? 'upload' : t.source === 'document' ? 'document' : 'clari'; const same = ref ? items.find(x => x.source === source && x.ref === ref) : null;
+  const ref = cut(t.ref, 300), source = t.source === 'upload' ? 'upload' : t.source === 'document' ? 'document' : t.source === 'teams' ? 'teams' : 'clari'; const same = ref ? items.find(x => x.source === source && x.ref === ref) : null;
   const id = same ? same.id : 'tr_' + (Math.max(0, ...items.map(x => parseInt(String(x.id).slice(3), 10) || 0)) + 1); const truncated = text.length > LIMITS.transcript;
   const rec = { id, title: cut(t.title, LIMITS.title) || 'Transcript', date: /^\d{4}-\d{2}-\d{2}/.test(String(t.date || '')) ? String(t.date).slice(0, 10) : '', source, ref, text: text.slice(0, LIMITS.transcript), at: now };
   const next = same ? items.map(x => (x.id === id ? rec : x)) : items.concat(rec); if (next.length > LIMITS.transcripts) throw Object.assign(new Error('There are ' + LIMITS.transcripts + ' transcripts already.'), { status: 409 });

@@ -1264,7 +1264,7 @@
       },
       "source": {
        "type": "string",
-       "description": "Only for save_transcript: clari, upload or document"
+       "description": "Only for save_transcript: clari, teams, upload or document"
       },
       "ref": {
        "type": "string",

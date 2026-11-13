@@ -23,7 +23,7 @@
   const curFilter = () => S.ui.rsFilter || (fds().some(x => x.status === 'open') ? 'open' : 'all');
   const ro = () => !!S.readonly || (S.project && S.project.role === 'viewer');
   const head = (h, p) => '<div class="page-header"><div class="t"><h1>' + esc(h) + '</h1><p>' + esc(p) + '</p></div></div>';
-  const jobsOf = () => L().jobRows(J().K().jobs || []).filter(x => (x.kind === 'pull_clari' || x.kind === 'extract_findings') && x.status !== 'cancelled');
+  const jobsOf = () => L().jobRows(J().K().jobs || []).filter(x => (x.kind === 'pull_clari' || x.kind === 'pull_transcript' || x.kind === 'extract_findings') && x.status !== 'cancelled');
   const lastJob = kind => L().jobRows(J().K().jobs || []).filter(x => x.kind === kind && x.status !== 'cancelled')[0];
   const val = id => (document.getElementById(id) || {}).value || '';
 
@@ -51,7 +51,7 @@
     const composer = '<button type="button" class="btn" data-act="rsAddFile"' + dis + '>Add a transcript file</button><button type="button" class="btn" data-act="rsPaste"' + dis + '>Paste a transcript</button><span class="spacer"></span>'
       + (T.length && !busy ? '<button type="button" class="btn primary" data-act="rsFind"' + dis + ' title="Claude reads the transcripts you added and lists what was promised and asked">Read my transcripts</button>' : '')
       + (busy ? (jobs.find(x => x.open) ? '<button type="button" class="btn" data-act="koCancel" data-id="' + esc(jobs.find(x => x.open).id) + '"' + dis + '>Cancel</button>' : '') + (pulling && T.length ? '<button type="button" class="btn primary" data-act="rsReadMine"' + dis + ' title="Stops the Clari pull and has Claude read the transcripts you added">Stop the pull and read mine</button>' : '') : '')
-      + '<button type="button" class="btn' + (T.length ? '' : ' primary') + '" data-act="rsPull"' + dis + (busy ? ' disabled' : '') + '>' + (busy ? 'Working…' : 'Pull my Clari transcripts') + '</button>';
+      + '<button type="button" class="btn' + (T.length ? '' : ' primary') + '" data-act="rsPull"' + dis + (busy ? ' disabled' : '') + '>' + (busy ? 'Working…' : 'Pull my Clari transcripts') + '</button><button type="button" class="btn" data-act="rsPullTeams"' + dis + (busy ? ' disabled' : '') + ' title="Claude finds the Teams transcript of each recorded session in your OneDrive or SharePoint">Pull Teams transcripts</button>';
     return root.FWBWorkChat.html({ lite: true, title: 'Your transcripts', hint: j && j.claimedAt ? "Prepared with Claude's help, on " + (who ? who + "'s" : 'your') + ' computer. ' + (j.progressAt ? 'Last update ' + when(j.progressAt) + '.' : '') : "You can add transcripts yourself, or have them pulled for you with Claude's help. You review and decide.", messages: msgs, tiles, tilesTitle: 'From your transcripts', composer });
   }
   function list() {
@@ -63,6 +63,7 @@
     mount() { if (V.isCustomer()) return; J().load(false); J().poll(); } };
 
   // ---------- actions: Claude's way ----------
+  ACT.rsPullTeams = a => V.busy(a, async () => { if (J().guard()) return; const r = await J().post('/jobs', { kind: 'pull_transcript', note: [S.project.customer, S.project.name].filter(Boolean).join(' / ').slice(0, 200) }); toast(r.duplicate ? 'A request for the Teams transcripts is already waiting.' : 'Requested. Your Claude finds the Teams transcripts of the recorded sessions, reads them and drafts the findings.', 7000); });
   ACT.rsPull = a => V.busy(a, async () => { if (J().guard()) return; const r = await J().post('/jobs', { kind: 'pull_clari', note: [S.project.customer, S.project.name].filter(Boolean).join(' / ').slice(0, 200) }); toast(r.duplicate ? 'A request to pull your transcripts is already waiting.' : 'Requested. Claude picks it up at its next check; follow it here.', 6000); });
   ACT.rsReadMine = a => V.busy(a, async () => {   // the pull is stuck or not wanted: stop it, then have Claude read what the person added
     if (J().guard()) return; const stuck = jobsOf().filter(x => x.open && x.kind === 'pull_clari'); for (const x of stuck) await J().post('/jobs/' + encodeURIComponent(x.id) + '/cancel', {});
