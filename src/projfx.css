@@ -325,3 +325,26 @@ body.in-proj .main > .mt-bar .mt-t:focus-visible:not(#q#q#q#q#q#q#q#q#q#q#q#q) {
 body.in-proj .main .page-header .t > p:not(#q#q#q#q#q#q#q#q#q#q#q#q) { max-width: none !important; }
 body.in-proj .main .page-header h1:not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: #1D1A5E !important; }
 body.in-proj .main :is(.page-body h2, .page-body h3, .page-body h4, .card > .card-h h3, .sd-w > header h3, .ho-sum-t h3, .ho-grp h4):not(.empty *):not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: #1D1A5E !important; }
+/* the all-pages tab bar laid out as a neat table (user, 13 Nov 2026: "design this ui neatly"): one row per section, captions in a fixed column
+   in sentence case, every track starting at the same left edge; no stray dividers where rows wrap */
+@media (min-width: 901px) {
+  body.in-proj .main > .mt-bar.mt-all:not(#q#q#q#q#q#q#q#q#q#q#q#q) { display: grid !important; grid-template-columns: 1fr; gap: 8px !important; padding-top: 14px !important; }
+  body.in-proj .main > .mt-bar.mt-all > .mt-in:not(#q#q#q#q#q#q#q#q#q#q#q#q) { display: grid !important; grid-template-columns: 190px auto; justify-content: start; align-items: center; }
+  body.in-proj .main > .mt-bar.mt-all > .mt-in > .mt-tabs-row, body.in-proj .main > .mt-bar.mt-all > .mt-in + .mt-in::before { display: none !important; content: none !important; }
+}
+body.in-proj .main > .mt-bar .mt-cap:not(#q#q#q#q#q#q#q#q#q#q#q#q) { text-transform: none !important; letter-spacing: 0 !important; font: 500 13px/1.3 var(--cs-font) !important; color: #86868b !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 12px; }
+body.in-proj .main > .mt-bar .mt-in.here .mt-cap:not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: #1D1A5E !important; font-weight: 600 !important; }
+/* sections read as sections: the bar is one white panel, one row per section (name as a bold label, then its pages), hairlines between rows,
+   the section you are in on a light blue band with a blue marker (user, 13 Nov 2026: "users don't know whether these are sections at all") */
+@media (min-width: 901px) {
+  body.in-proj .main > .mt-bar.mt-all:not(#q#q#q#q#q#q#q#q#q#q#q#q) { display: block !important; margin: 14px 0 0 !important; padding: 4px 0 !important; background: #fff !important; border-radius: 14px !important; box-shadow: 0 0 0 1px rgba(0, 0, 0, .05), 0 1px 3px rgba(0, 0, 0, .05) !important; }
+  body.in-proj .main > .mt-bar.mt-all > .mt-in:not(#q#q#q#q#q#q#q#q#q#q#q#q) { display: flex !important; flex-wrap: wrap; align-items: center; gap: 6px 0 !important; padding: 8px 14px !important; margin: 0 !important; position: relative; border-radius: 0 !important; background: none !important; }
+  body.in-proj .main > .mt-bar.mt-all > .mt-in + .mt-in:not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-top: 1px solid rgba(0, 0, 0, .06) !important; }
+  body.in-proj .main > .mt-bar.mt-all > .mt-in.here:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #f5f9ff !important; }
+  body.in-proj .main > .mt-bar.mt-all > .mt-in.here::after { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: #1570EF; }
+  body.in-proj .main > .mt-bar.mt-all > .mt-in:first-child { border-radius: 14px 14px 0 0 !important; } body.in-proj .main > .mt-bar.mt-all > .mt-in:last-child { border-radius: 0 0 14px 14px !important; }
+  body.in-proj .main > .mt-bar.mt-all .mt-cap:not(#q#q#q#q#q#q#q#q#q#q#q#q) { flex: 0 0 200px; padding-right: 14px; color: #1D1A5E !important; font: 600 13.5px/1.3 var(--cs-font) !important; }
+  body.in-proj .main > .mt-bar.mt-all .mt-in:not(.here) .mt-cap:not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: #475467 !important; font-weight: 500 !important; }
+  body.in-proj .main > .mt-bar.mt-all .mt-t:not(.active):not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: rgba(118, 118, 128, .1) !important; }
+}
+@media (min-width: 901px) { body.in-proj .main > .mt-bar.mt-all .mt-cap:not(#q#q#q#q#q#q#q#q#q#q#q#q) { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; } }
