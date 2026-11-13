@@ -306,3 +306,18 @@ body.in-proj .ho-grp.all .ho-gn:not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: #248a3d !
 body.in-proj .ho-box:not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-radius: 50% !important; }
 body.in-proj .ho-ev-chip:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #f5f5f7 !important; color: var(--ap-ink) !important; }
 body.in-proj .ho-empty:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; }
+/* page tabs read as tabs: each section's pages form an Apple segmented control (grey track, the open page a raised white segment in blue);
+   the caption stays a plain label in front of its track (user, 13 Nov 2026: "people cannot understand that this is a clickable tab") */
+body.in-proj .main > .mt-bar > .mt-in:not(#q#q#q#q#q#q#q#q#q#q#q#q) { gap: 0 !important; background: none !important; padding: 0 !important; align-items: center; }
+body.in-proj .main > .mt-bar .mt-cap:not(#q#q#q#q#q#q#q#q#q#q#q#q) { margin-right: 8px !important; color: #86868b !important; }
+body.in-proj .main > .mt-bar .mt-in.here .mt-cap:not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: #1d1d1f !important; }
+body.in-proj .main > .mt-bar .mt-t:not(#q#q#q#q#q#q#q#q#q#q#q#q) { height: 32px !important; padding: 0 14px !important; border-radius: 0 !important; background: rgba(118, 118, 128, .12) !important; color: #1d1d1f !important; font: 500 13px/1 var(--cs-font) !important; cursor: pointer !important; position: relative; }
+body.in-proj .main > .mt-bar :is(.mt-cap + .mt-t, .mt-in > .mt-t:first-child):not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-radius: 9px 0 0 9px !important; }
+body.in-proj .main > .mt-bar .mt-t:last-child:not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-radius: 0 9px 9px 0 !important; }
+body.in-proj .main > .mt-bar :is(.mt-cap + .mt-t:last-child, .mt-in > .mt-t:only-child):not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-radius: 9px !important; }
+body.in-proj .main > .mt-bar .mt-t + .mt-t::before { content: ""; position: absolute; left: 0; top: 9px; bottom: 9px; width: 1px; background: rgba(60, 60, 67, .18); }
+body.in-proj .main > .mt-bar :is(.mt-t.active, .mt-t.active + .mt-t)::before { display: none; }
+body.in-proj .main > .mt-bar .mt-t:hover:not(.active):not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: rgba(118, 118, 128, .2) !important; color: #1d1d1f !important; }
+body.in-proj .main > .mt-bar .mt-t:active:not(.active):not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: rgba(118, 118, 128, .26) !important; }
+body.in-proj .main > .mt-bar .mt-t.active:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; color: #1570EF !important; font-weight: 600 !important; border-radius: 9px !important; box-shadow: inset 0 0 0 2px rgba(118, 118, 128, .12), 0 1px 3px rgba(0, 0, 0, .12) !important; z-index: 1; }
+body.in-proj .main > .mt-bar .mt-t:focus-visible:not(#q#q#q#q#q#q#q#q#q#q#q#q) { outline: 2px solid #1570EF !important; outline-offset: 2px; z-index: 2; }
