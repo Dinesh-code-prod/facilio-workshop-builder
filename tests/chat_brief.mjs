@@ -12,3 +12,7 @@ const c1 = cleanRequest({ kind: 'chat', note: 'revamp the BRD', size: 'heavy' })
 assert.equal(c1.params.size, 'heavy'); assert.notEqual(c1.key, c2.key); assert.equal(c3.params.size, undefined, 'only chat jobs carry a size');
 assert.equal(brief({ id: 'j', kind: 'chat', params: { note: 'x', size: 'small' }, requestedBy: 'a@b.c' }, 'P').size, 'small'); assert.equal(b('x').size, 'none');
 console.log('3 chat size checks passed');
+// a missing skill, connector or browser in the Claude that took the job: every job's brief says what to do instead of an apology, and the chat is pointed at the skills list
+for (const kind of ['chat', 'pull_msa', 'fetch_mail', 'make_guide', 'build_solution_doc']) { const x = brief({ id: 'j', kind, params: { note: 'x' }, requestedBy: 'a@b.c' }, 'P'); assert.match(x.blocked, /needs_input/); assert.match(x.blocked, /SKILL\.md/); assert.match(x.blocked, /which Claude you are/); assert.match(x.blocked, /Never claim a skill or tool was used when it was not/); }
+assert.match(b('generate the FTR').instructions, /get_impl_skills first/); assert.match(b('generate the FTR').instructions, /blocked field/);
+console.log('2 missing-skill checks passed');

@@ -18,6 +18,9 @@
   }
   const CHANGE = /\b(update|change|make|create|write|draft|fix|add|remove|delete|build|redo|improve|rewrite|generate|prepare|replace|rename|translate|nicer|better)\b/i;
   const key = j => j.id + ':' + (j.status === 'needs_input' ? 'q' : 'c') + ':' + (j.claimedAt || '');
+  // a reply that says something is missing in the Claude that took the request (a skill, a connector, the browser): the page offers the setup help next to it, whatever status Claude gave it
+  const BLOCK = /\b(not installed|isn.t installed|not available in this|could not be completed|cannot (?:access|find|reach|open)|can.t (?:access|find|reach|open)|not connected|isn.t connected|no access to|please install|install them)\b/i;
+  const SETUP = { label: 'Open Claude setup', act: 'koOpen', attrs: { view: 'claudesetup' } };
   const nice = e => String(e || '').split('@')[0].split(/[._-]+/).filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join(' ') || 'A teammate';
   const ago = ts => { const m = Math.round((Date.now() - Date.parse(ts)) / 6e4); return m < 2 ? 'just now' : m < 60 ? m + ' minutes ago' : m < 1440 ? Math.round(m / 60) + ' hours ago' : Math.round(m / 1440) + ' days ago'; };
   const split = qs => { const lines = qs.join('\n').split('\n').map(x => x.trim()).filter(Boolean); return { text: lines.filter(x => !/^[-•]\s/.test(x)).join(' '), opts: lines.filter(x => /^[-•]\s/.test(x)).map(x => x.replace(/^[-•]\s+/, '').slice(0, 120)).slice(0, 4) }; };   // the question, and its options when Claude offered some
@@ -60,9 +63,9 @@
     const act = j.activity.slice(-12); act.forEach((a, i, all) => out.push({ who: 'claude', text: a.text, at: when(a.at), typing: j.status === 'claimed' && i === all.length - 1 }));
     if (j.status === 'claimed' && !act.length) out.push({ who: 'claude', text: '⚙ ' + (j.progress || 'Working on it…') + ' (' + mins(j.claimedAt) + ' so far)', typing: true });
     if (j.status === 'needs_input') { const q = split(j.questions); out.push({ who: 'claude', text: q.text, at: when(j.finishedAt), actions: q.opts.map(o => ({ label: o, act: 'asstPick', attrs: { job: j.id, v: o }, primary: false })) }); }   // the question is a normal message; the options are buttons, or type your own answer below
-    if (j.status === 'failed') out.push({ who: 'bad', text: 'This could not be completed: ' + (j.summary || 'unknown reason'), at: when(j.finishedAt) });
+    if (j.status === 'failed') out.push({ who: 'bad', text: 'This could not be completed: ' + (j.summary || 'unknown reason'), at: when(j.finishedAt), actions: BLOCK.test(String(j.summary || '')) ? [SETUP] : [] });
     if (j.status === 'done') { let sum = String(j.summary || 'Done.'), o = OPEN[j.kind]; const m = /\n?\s*Tab:\s*([a-z_]{2,24})\s*$/i.exec(sum); if (m) { sum = sum.slice(0, m.index).trim() || 'Done.'; const id = m[1].toLowerCase(); if (V[id] && V[id].html) o = [id, 'Open it to review what changed']; }   // chat: Claude names the tab where the change is; only a real page gets a button
-    out.push({ who: 'claude', text: sum, at: when(j.finishedAt), actions: o ? [{ label: LABEL[o[0]] && j.kind === 'chat' ? 'Open ' + LABEL[o[0]] : o[1], act: 'koOpen', attrs: { view: o[0] }, primary: true }] : [] }); }
+    out.push({ who: 'claude', text: sum, at: when(j.finishedAt), actions: (o ? [{ label: LABEL[o[0]] && j.kind === 'chat' ? 'Open ' + LABEL[o[0]] : o[1], act: 'koOpen', attrs: { view: o[0] }, primary: true }] : []).concat(BLOCK.test(sum) ? [SETUP] : []) }); }
     const q = String(j.kind === 'chat' ? j.note : j.label || '').replace(/\s+/g, ' ').trim(), vw = V.asstViewOf(j), area = vw && LABEL[vw] ? LABEL[vw].replace(/^the /, '') : (j.stage && j.stage !== 'other' ? STAGE[j.stage] || '' : ''), t0 = when(j.claimedAt || j.at);   // every Claude reply says which question it answers and where; every line has a time
     out.forEach((m, i) => { if (!m.at && m.who !== 'sys') m.at = t0; if (m.who === 'claude' && !m.via) m.via = 'claude'; if (q && m.who === 'claude' && (!i || out[i - 1].who !== 'claude')) m.head = { q: q.length > 70 ? q.slice(0, 70) + '…' : q, full: q.slice(0, 70), area, view: vw && V[vw] && V[vw].html ? vw : '' }; });
     return out;
