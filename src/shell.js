@@ -292,7 +292,12 @@
   }
   // across the top of the page: the sections of the stage you are in (when it has several), then the pages of the section you are in
   function modTabsHtml() {
-    const nav = navFor(); const g = stageAt(nav, S.ui.view); if (!g) return ''; const grp = stageNo(g) ? nav.filter(x => stageNo(x) === stageNo(g)) : [g];
+    const nav = navFor(); const g = stageAt(nav, S.ui.view) || (S.ui.view === 'solmap' ? nav.find(x => stageNo(x) === 3) : null); if (!g) return ''; const grp = stageNo(g) ? nav.filter(x => stageNo(x) === stageNo(g)) : [g];
+    // a business analyst's path through stage 3 (user, 13 Nov 2026: fewer tabs): the solution in one place, the BRD, the sign-off. The detailed editors (fields and forms, state flows, roles, notifications, KPIs and SLA, mockup)
+    // open from the Solution page's links; when you are in one, it shows as a fourth tab so you always see where you are
+    const BA = { 3: [['solmap', 'Solution'], ['brd', 'BRD draft'], ['governance', 'Sign-off & changes']] }[stageNo(g)];
+    if (BA) { const here = viewKey(S.ui.view); const list = BA.some(([id]) => id === here) ? BA : BA.concat([[here, (grp.flatMap(x => x.items).find(([id]) => id === here) || [here, here])[1]]]);
+      return '<nav class="mt-bar" aria-label="Pages of this stage"><div class="mt-in">' + list.map(([id, l]) => { const act = here === id; return '<button type="button" class="mt-t' + (act ? ' active' : '') + '" data-act="nav" data-view="' + id + '"' + (NAV_HINT[id] ? ' title="' + esc(NAV_HINT[id]) + '"' : '') + (act ? ' aria-current="page"' : '') + '>' + esc(l) + '</button>'; }).join('') + '</div></nav>'; }
     const secs = []; grp.forEach(x => { const last = secs[secs.length - 1]; if (last && x.items.length < 2) last.gs.push(x); else secs.push({ gs: [x] }); });   // a section with one page joins the one before it
     const here = secs.find(x => x.gs.includes(g)); const secLab = x => x.gs.map((y, i) => (i ? secName(y).toLowerCase() : secName(y))).join(', '); const items = here.gs.flatMap(y => y.items);
     const sec = secs.length > 1 ? '<div class="mt-sec" role="tablist" aria-label="Sections">' + secs.map(x => '<button type="button" class="mt-s' + (x === here ? ' active' : '') + '" role="tab" data-act="nav" data-view="' + firstOf(x.gs[0]) + '"' + (x === here ? ' aria-selected="true"' : '') + '>' + esc(secLab(x)) + '<em>' + x.gs.reduce((n, y) => n + y.items.length, 0) + '</em></button>').join('') + '</div>' : '';
