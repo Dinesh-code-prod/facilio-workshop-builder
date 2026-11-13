@@ -54,7 +54,7 @@
   }
   async function askClaude(t, name, notes) {
     if (t === 'kickoff' && approved()) { V.toast('Saved. The kick-off is already approved, so nothing was changed: raise a change request or ask Claude from the assistant.', 7000); return; }
-    await API.post(rbase() + '/jobs', { kind: 'make_from_reference', note: 'Reference "' + name + '" for the ' + LABEL[t] + '. ' + String(notes || '').slice(0, 400) + ' [target ' + t + ']' });
+    await API.post(rbase() + '/jobs', { kind: 'make_from_reference', note: 'Reference "' + name + '" for the ' + LABEL[t] + '. ' + String(notes || '').slice(0, 400) + ' [target ' + t + ']' }); if (V.studioJobs) await V.studioJobs.load(true, true); if (V.asstRequested) V.asstRequested();
     const st = S.ui.asst; if (st) { st.open = true; st.sig = ''; } if (V.studioJobs) V.studioJobs.load(true);
     V.toast('Claude was asked to read the reference and prepare the ' + LABEL[t] + ' the same way from the contract. Follow it in the assistant panel.', 7000);
   }

@@ -40,8 +40,8 @@
     const d = md().data; if (!M().docsOf(d).length) return; const note = M().rereadNote(d, S.project.customer, S.project.name);
     if (approved()) {
       const cr = await API.get(base() + '/docs/kickoff_cr').catch(() => null); const r = L().addChange((cr && cr.data) || { items: [] }, 'The contract documents changed (' + why + '). Re-read every contract document (get_document msa_text) and apply what changed to the kick-off deck and the project plan; keep the contract dates.', by(), now());
-      if (r.ok) { await API.put(base() + '/docs/kickoff_cr', { data: r.doc, baseVersion: cr && cr.version != null ? cr.version : -1 }); await API.post(base() + '/jobs', L().changeRequest()); toast('The kick-off is approved, so nothing was overwritten: a change request was written and Claude applies it.', 7000); }
-    } else { await API.post(base() + '/jobs', { kind: 'pull_msa', note }); toast('Claude was asked to re-read all the contract documents and redraft the kick-off and the plan. Follow it in the assistant panel.', 7000); }
+      if (r.ok) { await API.put(base() + '/docs/kickoff_cr', { data: r.doc, baseVersion: cr && cr.version != null ? cr.version : -1 }); await API.post(base() + '/jobs', L().changeRequest()); if (V.asstRequested) V.asstRequested(); toast('The kick-off is approved, so nothing was overwritten: a change request was written and Claude applies it.', 7000); }
+    } else { await API.post(base() + '/jobs', { kind: 'pull_msa', note }); if (V.asstRequested) V.asstRequested(); toast('Claude was asked to re-read all the contract documents and redraft the kick-off and the plan. Follow it in the assistant panel.', 7000); }
     const st = S.ui.asst; if (st) { st.open = true; st.sig = ''; } if (V.studioJobs) V.studioJobs.load(true);
   }
   const chip = d => '<span class="md-chip" data-s="' + esc(d.status) + '">' + (d.status === 'verified' ? 'Verified' + (d.verifiedBy ? ' by ' + esc(d.verifiedBy) : '') : 'Read, not verified') + '</span>';

@@ -151,7 +151,7 @@
 
   // ---------- actions ----------
   const guard = () => { if (ro()) { toast('This project is read-only for you.', 4000, true); return true; } return false; };
-  const post = async (path, body) => { const r = await API.post(base() + path, body); K().at = 0; await load(true, true); return r; };
+  const post = async (path, body) => { const r = await API.post(base() + path, body); K().at = 0; await load(true, true); if (path === '/jobs' && root.FWBViews.asstRequested) { try { root.FWBViews.asstRequested(); } catch (e) { /* the panel never blocks the request */ } } return r; };
   // F.flush never throws: a failed save only leaves the document dirty. So look at the document after the flush, before saying it was saved.
   const saved = async sec => { for (let i = 0; i < 3 && S.docs[sec] && (S.docs[sec].dirty || S.docs[sec].inflight); i++) await F.flush(); return !!S.docs[sec] && !S.docs[sec].dirty && !S.docs[sec].inflight; };
   const NOT_SAVED = 'Not saved: the server refused it or the connection failed. Nothing was changed. See the save indicator at the top.';

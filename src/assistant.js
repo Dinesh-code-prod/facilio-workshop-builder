@@ -198,7 +198,5 @@
     try { ticks++; if (team() && J()) { const k = J().K(); if (k.pid !== S.project.id || !k.jobs) J().load(false); else if (ticks % 7 === 0 && (st().open || k.jobs.some(j => ['waiting', 'claimed', 'needs_input'].includes(j.status)))) J().load(true); } paint(); } catch (e) { /* the panel is optional: never break a page */ }
   }, 2000);
   // every Claude button shares J.post('/jobs'): when a request is sent the Assistant opens at once, so the person sees it was taken, what was asked, and how long it has waited
-  V.asstRequested = () => { const a = st(); a.open = true; a.sig = ''; paint(); const b = panel && panel.querySelector('.as-body'); if (b) b.scrollTop = b.scrollHeight; };
-  const wrapJobs = () => { const j = J(); if (!j || !j.post || j.post.__asst) return; const o = j.post; j.post = async function (path, body) { const r = await o.apply(this, arguments); try { if (path === '/jobs' && body && body.kind && team() && !(r && r.duplicate)) V.asstRequested(); } catch (e) { /* the panel never blocks the request */ } return r; }; j.post.__asst = true; };
-  wrapJobs(); setTimeout(wrapJobs, 0); setTimeout(wrapJobs, 1500);
+  V.asstRequested = () => { if (!team()) return; const a = st(); a.open = true; a.sig = ''; paint(); const b = panel && panel.querySelector('.as-body'); if (b) b.scrollTop = b.scrollHeight; };
 })(typeof window !== 'undefined' ? window : globalThis);
