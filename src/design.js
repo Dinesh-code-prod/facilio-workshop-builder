@@ -84,7 +84,7 @@
     const ok = await decide(id, 'applied', p => {
       if (p.kind === 'flow') {
         const m = modKey(p.module); if (!m) return 'This project has no module called “' + p.module + '”. Dismiss it, or add the module first.';
-        const f = V.designLogic.flowFromProposal(p, m, F.uid, F.autoLayout); S.ws.flows[f.id] = f; undo = () => { delete S.ws.flows[f.id]; };
+        const f = V.designLogic.flowFromProposal(p, m, F.uid, F.autoLayout); S.ws.flows[f.id] = f; setTimeout(() => { if (V.ACT.roleUseSugg) V.ACT.roleUseSugg(); if (V.ACT.ntAddSugg) V.ACT.ntAddSugg(); }, 0); undo = () => { delete S.ws.flows[f.id]; };
         F.changed('State flow applied', modLabel(m) + ' › ' + p.name); return '';
       }
       if (p.kind === 'brdintro') {

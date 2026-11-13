@@ -8,7 +8,8 @@
   const arr = v => (Array.isArray(v) ? v : []); const safe = (f, d) => { try { return f(); } catch (e) { return d; } };
   function tree() {
     const SOL = root.FWBSolutionLogic, sd = F.doc('solutions');
-    return F.allModules().filter(m => m.inScope).map(m => {
+    const rank = m => (m.origin === 'proposed' ? 2 : m.custom ? 1 : 0);   // system modules first, then custom, then proposed custom; connected apps come last as their own cards
+    return F.allModules().filter(m => m.inScope).sort((a, b) => rank(a) - rank(b) || String(a.label).localeCompare(String(b.label))).map(m => {
       const flows = safe(() => arr(m.flowIds).map(F.flowModel).filter(f => f && (f.enabled !== false || f.origin === 'proposed')), []).map(f => {
         const st = id => ((arr(f.states).find(s => s.id === id) || {}).label || id);
         return { name: f.name + (f.origin === 'proposed' ? ' (proposed)' : ''), states: arr(f.states).map(s => s.label || s.id), steps: arr(f.transitions).filter(t => !t.removed && t.enabled !== false).map(t => ({ name: t.name, from: st(t.from), to: st(t.to), by: t.type !== 'user' ? 'System' : arr(t.actors).map(a => F.actorLabel(a.actor)).join(', ') || 'To be confirmed', approval: t.approval && t.approval.required ? arr(t.approval.approvers).map(F.actorLabel).join(', ') : '' })) };
@@ -28,16 +29,23 @@
       if (V.isCustomer && V.isCustomer()) return ''; const T = tree(); const all = !!S.ui.smAll;
       const head = `<div class="page-header"><div class="t"><h1>Solution map</h1><p>Everything about each contracted module in one place. The state flows come from the Process whiteboard; the roles and notifications follow from them; Claude writes the solution.</p></div><div class="row">${S.readonly ? '' : '<button class="btn primary" data-act="solExpert" title="Claude, as a solution architect, writes every contracted area from the contract and the sessions, proposes the flows and lists the gaps. You accept each proposal.">✦ AI solution expert</button><button class="btn" data-act="nav" data-view="solution">Review the solution text</button>'}<button class="btn" data-act="smToggle">${all ? 'Collapse all' : 'Expand all'}</button><button class="btn" data-act="smPrint">Print or PDF</button><button class="btn" data-act="smWord">Download Word</button></div></div>`;
       if (!T.length) return head + '<div class="page-body"><div class="card empty"><h3>No module in scope yet</h3><p>Choose the modules the project covers on System Modules &amp; Form Builder.</p></div></div>';
-      return head + '<div class="page-body sm-page">' + T.map((m, i) => `<details class="card sm-m"${all || i === 0 ? ' open' : ''}><summary><b>${esc(m.label)}</b><span class="sm-k">${esc(m.kind)}</span>${m.status ? `<span class="sm-s">${esc(m.status)}</span>` : ''}<span class="sm-c">${cnt(m.flows.length, 'flow')} · ${cnt(m.fields.length, 'field change')} · ${cnt(m.roles.length, 'role')} · ${cnt(m.notes.length, 'notification')}</span></summary><div class="sm-body">
+      return head + '<div class="page-body sm-page">' + T.map((m, i) => `<details class="card sm-m"${all || i === 0 ? ' open' : ''}><summary><b>${esc(m.label)}</b><span class="sm-k">${esc(m.kind)}</span>${m.status ? `<span class="sm-s">${esc(m.status)}</span>` : ''}${S.readonly ? '' : `<button type="button" class="btn sm sm-ai" data-act="smModClaude" data-m="${esc(m.name)}" title="Claude reads only this module: the contract, the sessions and its records, then proposes its solution, state flow, fields and forms. Roles and notifications follow from the flow when you accept it.">✦ Solution with Claude</button>`}<span class="sm-c">${cnt(m.flows.length, 'flow')} · ${cnt(m.fields.length, 'field change')} · ${cnt(m.roles.length, 'role')} · ${cnt(m.notes.length, 'notification')}</span></summary><div class="sm-body">
         ${branch('Solution', m.solution ? '' : 'not written', 'solution', m.solution ? String(m.solution).split(/\n{2,}/).map(p => `<p class="sm-p">${esc(p)}</p>`).join('') : '', all || !!m.solution)}
         ${branch('Fields', m.fields.length, 'modules', tbl(['Field', 'Type', 'Change', 'Mandatory'], m.fields.map(f => [f.label, f.type, f.status, f.required ? 'Yes' : ''])), all)}
         ${branch('Forms', m.forms.length, 'modules', tbl(['Form', 'Sections'], m.forms.map(f => [f.name + (f.proposed ? ' (proposed)' : ''), f.sections.join(', ')])), all)}
         ${branch('State flows', m.flows.length, 'whiteboard', m.flows.map(f => `<h4 class="sm-h">${esc(f.name)}</h4><p class="xs muted">States: ${esc(f.states.join(' → '))}</p>` + tbl(['Action', 'From', 'To', 'Done by', 'Approval'], f.steps.map(s => [s.name, s.from, s.to, s.by, s.approval]))).join(''), all)}
         ${branch('Roles and access', m.roles.length, 'roles', tbl(['Role', 'Access'], m.roles.map(r => [r.role + (r.proposed ? ' (proposed)' : ''), r.access])), all)}
         ${branch('Notifications', m.notes.length, 'notifications', tbl(['Notification', 'When', 'Who is told'], m.notes.map(n => [n.name + (n.on ? '' : ' (off)'), n.when, n.to])), all)}
-      </div></details>`).join('') + '</div>';
+      </div></details>`).join('') + appsCards() + '</div>';
     }
   };
+  function appsCards() {
+    const SOL = root.FWBSolutionLogic, sd = F.doc('solutions'); if (!SOL || !SOL.areasFor) return ''; const areas = safe(() => SOL.areasFor([], sd).filter(a => (a.group === 'Integrations' || a.group === 'Connected apps' || a.key === 'area:apps') && SOL.hasContent(sd, a.key)), []);
+    return areas.map(a => `<details class="card sm-m"><summary><b>${esc(a.label)}</b><span class="sm-k">Connected app</span>${S.readonly ? '' : `<button type="button" class="btn sm sm-ai" data-act="smAreaClaude" data-k="${esc(a.key)}">✦ Solution with Claude</button>`}</summary><div class="sm-body">${String(SOL.textOf(sd, a.key) || '').split(/\n{2,}/).map(p => `<p class="sm-p">${esc(p)}</p>`).join('')}</div></details>`).join('');
+  }
+  const askModule = (section, label) => { const J = V.studioJobs; if (!J || J.guard()) return; return J.post('/jobs', { kind: 'update_solution', section, note: 'Work on ' + label + ' ONLY (keep the reading to this one area to save effort): read get_document solutions part context:' + section + ', the contract scope for it and what the sessions said about it. Propose its solution (save_design kind solution) and, where the sessions changed it, its state flow with who presses each button and who approves (kind flow), and new or changed fields and forms (kinds field and form). Roles and notifications follow from the flow when a person accepts it.' }).then(r => V.toast(r && r.duplicate ? 'Claude is already on ' + label + '.' : 'Claude is working on ' + label + ' only. The proposals come back here for you to accept.', 7000)); };
+  ACT.smModClaude = a => { const n = a.getAttribute('data-m'); askModule('module:' + n, ((F.moduleView(n) || {}).label || n)); };
+  ACT.smAreaClaude = a => { const k = a.getAttribute('data-k'); askModule(k, k.replace(/^area:/, '')); };
   ACT.smToggle = () => { S.ui.smAll = !S.ui.smAll; V.render(); };
   // the report: the same tree as one document (Word opens this HTML as a .doc; print gives a PDF)
   function reportHtml() {
