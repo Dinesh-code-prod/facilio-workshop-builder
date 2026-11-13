@@ -43,14 +43,30 @@
   // ================= VIEW =================
   V.roles = { html() {
     if (S.ui.roleEdit) return permEditor(S.ui.roleEdit);
-    const tab = S.ui.rolesTab || 'roles'; const issues = permIssues();
-    const tabs = [['roles', 'Roles', F.allActors().filter(a => a.roleName || a.origin === 'proposed').length], ['actors', 'Actors by category'], ['resp', 'Transition responsibility'], ['portals', 'Portal workflows', S.ws.processes.length], ['matrix', 'Access matrix'], ['issues', 'Permission checks', issues.filter(i => i.sev !== 'info').length]];
+    const tab = S.ui.rolesTab || 'simple'; const issues = permIssues();
+    const tabs = [['simple', 'Who can do what'], ['roles', 'Roles', F.allActors().filter(a => a.roleName || a.origin === 'proposed').length], ['actors', 'Actors by category'], ['resp', 'Transition responsibility'], ['portals', 'Portal workflows', S.ws.processes.length], ['matrix', 'Access matrix'], ['issues', 'Permission checks', issues.filter(i => i.sev !== 'info').length]];
     return `<div class="page-header"><div class="t"><h1>Roles &amp; Permissions</h1><p>Configured internal and portal roles, actors whose role is not specified, and roles proposed in the workshop. Roles are never invented: when the configuration does not name one, the action is shown as “User / Role to Be Confirmed”.</p></div>
       <div class="row">${V.reviewWidget('_roles', 'roles', 'Review')}<button class="btn" data-act="exportRolesJson">${ico('dl')}Roles JSON</button>${S.readonly ? '' : `<button class="btn primary" data-act="newRole">New Role</button>`}</div></div>
       <div class="tabs">${tabs.map(([k, l, c]) => `<button class="tab${tab === k ? ' active' : ''}" data-act="rolesTab" data-v="${k}">${esc(l)}${c ? `<span class="cnt">${c}</span>` : ''}</button>`).join('')}</div><div class="page-body">${(RT[tab] || RT.roles)()}</div>`;
   }, mount() { const q = document.getElementById('permq'); if (q) q.addEventListener('input', () => { S.ui.permq = q.value; document.querySelectorAll('[data-permnav]').forEach(x => { x.style.display = !q.value || x.textContent.toLowerCase().includes(q.value.toLowerCase()) ? '' : 'none'; }); }); } };
   ACT.rolesTab = a => { S.ui.rolesTab = a.getAttribute('data-v'); V.render(); };
   const RT = {};
+  // Who can do what: one row per role, one simple access level per module in scope. It writes the same proposals the detailed editor writes (S.ws.rolePermOps, or the proposed role's perms), so the BRD role matrix shows it.
+  const LEVELS = [['none', 'No access'], ['view', 'View'], ['edit', 'Create & edit'], ['full', 'Full']];
+  const FLAGS = { none: {}, view: { view: true }, edit: { view: true, create: true, edit: true }, full: { view: true, create: true, edit: true, delete: true, export: true } };
+  const levelOf = (aid, m) => { const b = effBits(aid, m); if (b === 'full') return 'full'; const g = generic(m, b); return g.delete ? 'full' : (g.create || g.edit) ? 'edit' : g.view ? 'view' : 'none'; };
+  RT.simple = () => {
+    const mods = F.allModules().filter(m => m.inScope); const acts = F.allActors().filter(a => !a.privileged && (a.roleName || a.origin === 'proposed'));
+    if (!mods.length) return '<div class="card"><div class="card-b"><p>Choose the modules in scope first; then give each role its access here.</p></div></div>';
+    const dis = S.readonly ? ' disabled' : ''; const where = a => (a.apps && a.apps.length ? a.apps.map(humanize).join(', ') : humanize(a.category || '')) || '—';
+    return `<div class="card rs-simple"><div class="card-h"><h3>Who can do what</h3><span class="xs muted">One level per module. It goes into the BRD role matrix. Use the Roles tab for fine detail (team or own records, special actions).</span></div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Role</th><th>Works in</th>${mods.map(m => `<th>${esc(m.label)}</th>`).join('')}</tr></thead><tbody>
+      ${acts.map(a => `<tr><td><b>${esc(a.label)}</b>${a.origin === 'proposed' ? ' <span class="tag blue">proposed</span>' : ''}</td><td class="small muted">${esc(where(a))}</td>${mods.map(m => { const v = levelOf(a.id, m.name); return `<td><select class="rs-lvl lv-${v}" data-change="roleLevel" data-id="${esc(a.id)}" data-m="${esc(m.name)}" aria-label="${esc(a.label + ' on ' + m.label)}"${dis}>${LEVELS.map(([k, l]) => `<option value="${k}"${k === v ? ' selected' : ''}>${l}</option>`).join('')}</select></td>`; }).join('')}</tr>`).join('')}
+      </tbody></table></div>${S.readonly ? '' : '<div class="row" style="margin-top:12px"><button class="btn sm" data-act="newRole">+ Add a role</button></div>'}</div>`;
+  };
+  ACT.roleLevel = el => { const aid = el.getAttribute('data-id'), m = el.getAttribute('data-m'), v = el.value; const prop = S.ws.roles.find(x => x.id === aid);
+    const store = prop ? (prop.perms = prop.perms || {}) : (S.ws.rolePermOps[aid] = S.ws.rolePermOps[aid] || {}); store[m] = Object.assign({}, FLAGS[v] || {});
+    F.changed('Role permissions proposed', (F.actor(aid) || {}).label + ': ' + ((F.moduleView(m) || {}).label || m) + ' ' + v); V.render(); };
   RT.roles = () => {
     const q = (S.ui.roleq || '').toLowerCase(); const cat = S.ui.roleCat || 'all';
     const rank = a => /super administrator/i.test(a.label) ? 0 : /^administrator$/i.test(a.label) || /\badministrator$/i.test(a.label) && a.privileged ? 1 : 2;
