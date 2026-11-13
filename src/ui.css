@@ -2733,3 +2733,6 @@ body .sm-page .sm-b:not(#_):not(#__) { border-radius: 12px; background: #f7f8fb;
 body .sm-page .sm-b > summary:not(#_):not(#__) { display: flex; align-items: center; gap: 10px; padding: 9px 12px; cursor: pointer; font-size: 13.5px; font-weight: 500; color: #1d2939; }
 body .sm-page .sm-b > summary em { font-style: normal; font-size: 12px; color: #667085; } body .sm-page .sm-b > summary .ki-link { margin-left: auto; }
 body .sm-page .sm-in:not(#_):not(#__) { padding: 0 12px 12px; } body .sm-page .sm-p { margin: 0 0 8px; font-size: 14px; line-height: 1.55; max-width: 80ch; } body .sm-page .sm-h { margin: 10px 0 2px; font-size: 13.5px; }
+/* whiteboard: who presses an arrow (a role list) */
+body .wb-who-l:not(#_):not(#__) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px; max-height: 320px; overflow: auto; }
+body .wb-cb.wb-who:not(#_):not(#__) { width: auto; padding: 0 10px; font-size: 12px; white-space: nowrap; }

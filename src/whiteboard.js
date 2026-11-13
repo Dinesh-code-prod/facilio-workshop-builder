@@ -612,7 +612,7 @@
   function toFlowModel(ns, es, label) { const used = new Set(); const sid = n => { let b = 's_' + (F.slug(n.text || 'state') || 'state'), id = b, i = 2; while (used.has(id)) id = b + '_' + i++; used.add(id); return id; };
     const ids = {}; ns.forEach(n => { ids[n.id] = sid(n); }); const minX = Math.min(...ns.map(n => n.x)), minY = Math.min(...ns.map(n => n.y)); const lab = n => String(n.text || '').replace(/\s+/g, ' ').trim().slice(0, 80) || 'State';
     const states = ns.map(n => ({ id: ids[n.id], name: F.slug(lab(n)) || ids[n.id], label: lab(n), x: Math.round((n.x - minX) / 10) * 10 + 60, y: Math.round((n.y - minY) / 10) * 10 + 60, origin: 'proposed' }));
-    const trans = es.map(e => ({ id: F.uid('t'), name: String(e.label || '').trim().slice(0, 80) || 'Move to ' + states.find(x => x.id === ids[e.to]).label, from: ids[e.from], to: ids[e.to], type: 'user', buttonType: 0, enabled: true, actors: [{ actor: 'tbc:any', status: 'tbc', note: '' }], condition: '', conditionFields: [], commentRequired: false, approval: { required: false, approvers: [] }, actions: [], notifications: [], portals: [], notes: '', origin: 'proposed', removed: false }));
+    const trans = es.map(e => ({ id: F.uid('t'), name: String(e.label || '').trim().slice(0, 80) || 'Move to ' + states.find(x => x.id === ids[e.to]).label, from: ids[e.from], to: ids[e.to], type: 'user', buttonType: 0, enabled: true, actors: (Array.isArray(e.by) && e.by.length ? e.by.map(a => ({ actor: a, status: 'proposed', note: '' })) : [{ actor: 'tbc:any', status: 'tbc', note: '' }]), condition: '', conditionFields: [], commentRequired: false, approval: { required: Array.isArray(e.appr) && e.appr.length > 0, approvers: Array.isArray(e.appr) ? e.appr.slice() : [] }, actions: [], notifications: [], portals: [], notes: '', origin: 'proposed', removed: false }));
     const first = ns.find(n => n.t === 'ellipse' && !es.some(e => e.to === n.id)) || ns.find(n => !es.some(e => e.to === n.id)) || ns[0]; return { states, transitions: trans, initial: ids[first.id] }; }
   ACT.wbSaveFlow = () => { if (ro()) return; const { ns, es, whole } = pickFlowParts(); if (!ns.length) { V.toast('There are no states or steps on the board to save', 5000, true); return; }
     const mods = F.allModules().filter(x => x.inUse || x.origin === 'proposed' || x.inScope).sort((p, q) => String(p.label).localeCompare(String(q.label))); W.sv = { ns, es };
@@ -630,10 +630,10 @@
     const model = toFlowModel(ns, es);
     if (mode === 'replace') { const id = document.getElementById('sv_f').value; const cur = id && F.flowModel(id); if (!cur) { V.toast('Choose the flow to replace', 4000, true); return; }
       if (!(await V.confirmDialog('Replace flow', 'Replace "' + (cur.name || id) + '" with this drawing (' + model.states.length + ' states, ' + model.transitions.length + ' transitions)? Its current states and transitions are overwritten.', 'Replace', true))) return;
-      const keep = F.clone(cur); const next = Object.assign({}, keep, { states: model.states, transitions: model.transitions, initial: model.initial, workshopCopy: true, layoutDir: keep.layoutDir || 'h' }); S.ws.flows[id] = next; V.closeDrawer(); F.changed('Stateflow replaced from the whiteboard', (cur.name || id)); V.toast('"' + (cur.name || id) + '" now follows this drawing'); return; }
+      const keep = F.clone(cur); const next = Object.assign({}, keep, { states: model.states, transitions: model.transitions, initial: model.initial, workshopCopy: true, layoutDir: keep.layoutDir || 'h' }); S.ws.flows[id] = next; V.closeDrawer(); F.changed('Stateflow replaced from the whiteboard', (cur.name || id)); if (ACT.roleUseSugg) ACT.roleUseSugg(); V.toast('"' + (cur.name || id) + '" now follows this drawing; the roles who press its buttons get access to the module'); return; }
     const name = String((document.getElementById('sv_n') || {}).value || '').trim(); if (!name) { V.toast('Give the flow a name', 4000, true); return; }
     const id = m + '::proposed_' + Math.random().toString(36).slice(2, 7); S.ws.flows[id] = Object.assign(model, { id, module: m, name, description: 'Drawn on the Process Whiteboard "' + (W.B.name || '') + '"', criteria: '', origin: 'proposed', enabled: true, workshopCopy: true, isDefault: false });
-    V.closeDrawer(); F.changed('Stateflow created from the whiteboard', name); V.toast('Saved as a new state flow: ' + name); });
+    V.closeDrawer(); F.changed('Stateflow created from the whiteboard', name); if (ACT.roleUseSugg) ACT.roleUseSugg(); V.toast('Saved as a new state flow: ' + name + '; the roles who press its buttons get access to the module'); });
 
   // ---------- import from image ----------
   ACT.wbImg = () => {
@@ -797,7 +797,7 @@
     } else { const e = es[0], r = e.route || W.B.route || 'straight', ah = e.ah || 'end';
       h += `<div class="wb-cseg" role="group" aria-label="Connector style"><button type="button" class="${r !== 'elbow' && r !== 'curve' ? 'on' : ''}" data-act="wbEdgeRoute" data-v="straight" title="Straight">${IC.line}</button><button type="button" class="${r === 'elbow' ? 'on' : ''}" data-act="wbEdgeRoute" data-v="elbow" title="Right-angle">${IC.elbow}</button><button type="button" class="${r === 'curve' ? 'on' : ''}" data-act="wbEdgeRoute" data-v="curve" title="Curved">${IC.curve}</button></div>`
         + `<select class="wb-csel" data-change="wbArrow" aria-label="Arrowheads"><option value="end"${ah === 'end' ? ' selected' : ''}>→ End arrow</option><option value="both"${ah === 'both' ? ' selected' : ''}>↔ Both ends</option><option value="none"${ah === 'none' ? ' selected' : ''}>— No arrow</option></select>`
-        + sep + B('wbEdgeLabel', IC.text, 'Label') + B('wbDel', IC.trash, 'Delete (Del)') + B('wbMore', IC.more, 'More'); }
+        + sep + B('wbEdgeLabel', IC.text, 'Label') + `<button type="button" class="wb-cb wb-who" data-act="wbWho" title="Who presses this button">${(e.by || []).length ? esc((e.by || []).map(F.actorLabel).join(', ').slice(0, 28)) : 'Who presses it?'}</button>` + B('wbDel', IC.trash, 'Delete (Del)') + B('wbMore', IC.more, 'More'); }
     return h;
   }
   const edit = (label, fn) => { if (ro()) return; pushUndo(); fn(); changed(); popsClose(); draw(); };
@@ -813,6 +813,11 @@
   ACT.wbDupB = () => duplicate();
   ACT.wbEdgeRoute = a => edit('route', () => selEdges().forEach(e => { e.route = a.getAttribute('data-v'); }));
   ACT.wbArrow = el => edit('ah', () => selEdges().forEach(e => { if (el.value === 'end') delete e.ah; else e.ah = el.value; }));
+  // who presses this arrow (the button) and who must approve it: plain role ticks; saved on the arrow and carried into the state flow, the roles and the notifications
+  ACT.wbWho = () => { const e = selEdges()[0]; if (!e) return; W.whoId = e.id; const acts = F.allActors().filter(a => !a.privileged && !/^tbc:/.test(a.id)).sort((a, b) => String(a.label).localeCompare(String(b.label)));
+    const row = (a, k, on) => `<label class="chk"><input type="checkbox" data-k="${k}" value="${esc(a.id)}"${on ? ' checked' : ''}> ${esc(a.label)}</label>`;
+    V.drawer('Who presses "' + (e.label || 'this button') + '"', `<p class="small muted" style="margin-top:0">Tick the roles that press this button. It goes into the state flow, the roles and the notifications.</p><div class="wb-who-l">${acts.map(a => row(a, 'by', (e.by || []).includes(a.id))).join('')}</div><details style="margin-top:12px"${(e.appr || []).length ? ' open' : ''}><summary class="small">Needs an approval?</summary><div class="wb-who-l">${acts.map(a => row(a, 'appr', (e.appr || []).includes(a.id))).join('')}</div></details>`, '<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="wbWhoSave">Save</button>'); };
+  ACT.wbWhoSave = () => { const e = W.B && W.B.edges.find(x => x.id === W.whoId); if (!e) { V.closeDrawer(); return; } const pick = k => Array.from(document.querySelectorAll('.wb-who-l input[data-k="' + k + '"]:checked')).map(x => x.value).slice(0, 12); pushUndo(); e.by = pick('by'); e.appr = pick('appr'); if (!e.by.length) delete e.by; if (!e.appr.length) delete e.appr; V.closeDrawer(); changed(); paint(); };
   ACT.wbEdgeLabel = () => { const e = selEdges()[0]; if (e) startEdit(e, true); };
   ACT.wbMore = a => { const r = a.getBoundingClientRect(); ctxOpen({ clientX: r.left, clientY: r.bottom + 4, target: document.querySelector(`#wbSvg [data-id="${CSS.escape([...W.sel][0] || '')}"]`) || document.getElementById('wbSvg'), preventDefault() { } }); };
 
