@@ -2711,3 +2711,12 @@ body .tabs .rl-more:not(#_):not(#__) { margin-left: 8px; height: 30px; border-ra
 body .nt-sugg .nt-sl:not(#_):not(#__) { list-style: none; margin: 0; padding: 0; border-radius: 14px; background: #f5f5f7; }
 body .nt-sugg .nt-sl li:not(#_):not(#__) { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; border-top: 1px solid rgba(0, 0, 0, .06); font-size: 13px; }
 body .nt-sugg .nt-sl li:first-child:not(#_):not(#__) { border-top: 0; }
+/* Solution, read first: the design summary strip, the solution as it reads in the BRD, quiet empty state */
+body .sol-design:not(#_):not(#__) { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 4px 0 14px; }
+body .sol-design .sd-i:not(#_):not(#__) { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 14px; background: #f5f7fb; border: 1px solid rgba(15, 23, 42, .06); }
+body .sol-design .sd-i:hover:not(#_):not(#__) { background: #eef3fd; } body .sol-design .sd-i:focus-visible { outline: 2px solid #1570EF; outline-offset: 2px; }
+body .sol-design .sd-i b { font-size: 18px; font-weight: 600; color: #101828; } body .sol-design .sd-i span { font-size: 12px; color: #667085; } body .sol-design .sd-i.none b { color: #98a2b3; }
+body .sol-read-card .sol-body:not(#_):not(#__) { margin: 4px 0 8px; } body .sol-read-card .sol-p:not(#_):not(#__) { margin: 0 0 10px; font-size: 14.5px; line-height: 1.6; color: #1d1d1f; max-width: 78ch; }
+body .sol-read-card .sol-empty:not(#_):not(#__) { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; border-radius: 14px; border: 1px dashed rgba(21, 112, 239, .35); background: rgba(21, 112, 239, .04); font-size: 13.5px; color: #475467; }
+body .sol-read-card .sol-empty b { color: #101828; font-weight: 600; } body .sol-read-card .cs-sol-dh .spacer { flex: 1; }
+@media (max-width: 900px) { body .sol-design:not(#_):not(#__) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
