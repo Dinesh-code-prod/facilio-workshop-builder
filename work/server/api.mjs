@@ -300,9 +300,11 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
 
   route('GET', '/api/health', async () => ok({ ok: true, openMode: false, runMode: true, time: now() }));
   route('GET', '/api/auth/me', async () => {
-    const s = await me(); const ar = await adminRole(s);
-    return ok({ openMode: false, runMode: true, user: { id: s.id, email: s.email, name: s.name, kind: 'consultant', projectId: null, guest: false, superAdmin: ar === 'super', adminRole: ar }, signupEnabled: false, signupNeedsCode: false, domains: [ALLOWED_DOMAIN] });
+    const s = await me(); const ar = await adminRole(s); const seen = await dbGet('useen', s.id).catch(() => null);
+    return ok({ openMode: false, runMode: true, user: { id: s.id, email: s.email, name: s.name, kind: 'consultant', projectId: null, guest: false, superAdmin: ar === 'super', adminRole: ar, coachSeen: !!(seen && seen.value && seen.value.coach) }, signupEnabled: false, signupNeedsCode: false, domains: [ALLOWED_DOMAIN] });
   });
+  // the guided walk-through opens by itself once per person (saved on the account, not in one browser); "Guide me" opens it any time
+  route('PUT', '/api/me/coach-seen', async () => { const s = await me(); await dbPut('useen', s.id, { coach: true, at: now() }); return ok({ ok: true }); });
   route('POST', '/api/auth/logout', async () => ok({ ok: true }));
 
   // projects

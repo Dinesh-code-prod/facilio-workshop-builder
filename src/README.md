@@ -12,6 +12,7 @@ The shell that draws the menu and top bar, loads the project, and the helpers ev
 | File | What it does |
 |---|---|
 | [a11y.js](a11y.js) | Keyboard access, the part the shell does not do: a "Skip to content" link and an id on the main area for it to jump to. |
+| [projfx.js](projfx.js) | Project pages only: marks the page with its stage (for projfx.css) and plays one short entrance when a page or tab opens. |
 | [coach.js](coach.js) | Guide me: a guided walk through the menu. A ring marks what to click next and a small card says what it is for; it starts once for each person. |
 | [custompage.js](custompage.js) | Custom pages (Tabs & Layouts): a page the team builds itself from blocks (text, buttons, live numbers, checklist, table, Ask Claude). |
 | [features.js](features.js) | Switches for parts of the app that are built but not shown. A switch set to false hides its pages everywhere; nothing is deleted. |
@@ -253,6 +254,7 @@ CSS files. The look is the coss style in ui.css (the last layer, see docs/design
 | File | What it does |
 |---|---|
 | [a11y.css](a11y.css) | Keyboard focus and the skip link. |
+| [projfx.css](projfx.css) | Project pages only: each stage's muted colour (rail, page header, tabs, card headings, buttons, forms), the desktop top bar, the Handover checklist, the full-width Home dashboard and the tab entrance. |
 | [authclay.css](authclay.css) | Welcome and sign-in screen in the Facilio palette: navy, Facilio blue, pink accents. |
 | [bell.css](bell.css) | Notification bell popover |
 | [brdword.css](brdword.css) | BRD Draft: tidy toolbar, menus, formatting bar and sign-off banner. |
