@@ -181,4 +181,32 @@
       return { nodes, edges, ids: nodes.filter(n => !n.fr).map(n => n.id), bottom: Math.max(...nodes.map(n => n.y + n.h)) }; }
     return null;
   };
+
+  // ---------- long processes go to Claude; its drawing comes back as a draft that the team reviews and adds ----------
+  const API = root.FWBApi;
+  X.isBig = t => String(t).length > 1500 || String(t).split(/\n+/).filter(l => l.trim()).length > 14;   // the app's own AI answers in about 25 seconds with a short reply, so a long description would be cut off
+  const jobsOf = () => { const J = V.studioJobs, k = J && J.K && J.K(); return k && Array.isArray(k.jobs) ? k.jobs.filter(j => j.kind === 'draw_flow') : []; };
+  X.sendToClaude = async function (text, out, why) {
+    const J = V.studioJobs; if (!J || J.guard()) return;
+    try { const r = await J.post('/jobs', { kind: 'draw_flow', note: text, ref: (W.B && W.B.id) || '' });
+      out.innerHTML = '<div class="notice">' + (why === 'fallback' ? 'The app\'s AI could not finish this one, so it was sent to Claude. ' : 'This is a long process, so it was sent to Claude. ') + (r && r.duplicate ? 'Claude already has this request. ' : '') + 'Claude draws it when it works through the queue (open your Claude with the Delivery Studio connector if it is not running). The drawing then appears at the top of this page for you to review and add. Nothing is added to the board without you.</div>'; V.render(); }
+    catch (e) { out.innerHTML = '<div class="notice err">' + esc(e.message || 'Could not send it to Claude') + '</div>'; }
+  };
+  ACT.wbAiQueue = a => V.busy(a, async () => { const t = String((document.getElementById('wbAiT') || {}).value || '').trim(); if (t.length < 10) { V.toast('Describe the process first', 4000, true); return; } await X.sendToClaude(t, document.getElementById('wbAiOut') || { innerHTML: '' }, 'ask'); });
+  X.claudeBar = function () {
+    if (ro() || !W.B || !V.items) return '';
+    if (!V.items.ready(['ai'])) { if (!W.aiAsked) { W.aiAsked = true; V.items.load(['ai']).then(() => V.render()).catch(() => { }); } return ''; }
+    const ds = V.items.list('ai').filter(d => d.task === 'wbflow' && d.status !== 'approved' && d.status !== 'dismissed'), pend = jobsOf().filter(j => ['waiting', 'claimed', 'needs_input'].includes(j.status));
+    if (!ds.length && !pend.length) return '';
+    const title = d => { try { return JSON.parse(d.content).title || 'Process from Claude'; } catch (e) { return 'Process from Claude'; } };
+    return '<div class="wb-claude" role="status">' + (pend.length ? '<div class="wb-cl-row"><span class="wb-dot"></span><b>Claude is drawing ' + (pend.length === 1 ? 'a flow' : pend.length + ' flows') + '</b><span class="xs muted">' + (pend.some(j => j.status === 'needs_input') ? 'Claude has a question: see the Assistant.' : 'It appears here when ready.') + '</span></div>' : '')
+      + ds.map(d => '<div class="wb-cl-row"><b>' + esc(title(d)) + '</b><span class="xs muted">Drawn by Claude · waiting for your review</span><button class="btn sm primary" data-act="wbCdOpen" data-id="' + esc(d.id) + '">Review and add</button><button class="btn sm" data-act="wbCdDismiss" data-id="' + esc(d.id) + '">Dismiss</button></div>').join('') + '</div>';
+  };
+  ACT.wbCdOpen = a => V.busy(a, async () => {
+    const d = V.items.get('ai', a.getAttribute('data-id')); if (!d) return;
+    const r = await API.post(X.aiUrl(), { reply: d.content, flows: X.flowIdx() });   // the same check the app applies to any Claude reply: the draft is rebuilt field by field
+    ACT.wbAiText(); const out = document.getElementById('wbAiOut'), t = document.getElementById('wbAiT'); if (t) t.value = ''; if (out) out.innerHTML = X.aiReview(r, 'Claude'); X.aiReady(); W.cdFrom = d.id;
+  });
+  ACT.wbCdDismiss = a => V.busy(a, async () => { const id = a.getAttribute('data-id'), d = V.items.get('ai', id); if (!d) return; await V.items.put('ai', id, Object.assign({}, d, { status: 'dismissed' })); V.render(); });
+  { const orig = ACT.wbAiAdd; ACT.wbAiAdd = async function (a) { const n0 = W.B ? W.B.nodes.length : 0; const r = await orig(a); if (W.cdFrom && W.B && W.B.nodes.length > n0) { const id = W.cdFrom, d = V.items.get('ai', id); W.cdFrom = null; if (d) { await V.items.put('ai', id, Object.assign({}, d, { status: 'approved' })); V.render(); } } return r; }; }
 })(typeof window !== 'undefined' ? window : globalThis);

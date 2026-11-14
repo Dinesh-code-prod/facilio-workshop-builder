@@ -258,7 +258,7 @@
         <div class="wb-grp" role="group" aria-label="Combined flows"><button class="btn sm" type="button" data-act="wbFull" title="${W.full ? 'Leave full screen (Esc)' : 'Fill the whole window with the board (Ctrl+Shift+F)'}">${W.full ? 'Exit full screen' : 'Full screen'}</button>${FOCUS() ? '' : '<button class="btn sm" type="button" data-act="wbPop" title="Open this board in its own browser tab">New tab</button>'}<button class="btn sm" type="button" data-act="wbCflows">Combined flows${nCf ? ` <span class="wb-cnt">${nCf}</span>` : ''}</button>${ro() ? '' : '<button class="btn sm primary" type="button" data-act="wbCflowSave">Save as combined flow</button>'}</div>
       </div>`;   // in full screen the toolbar moves INTO the board, so its buttons are not hidden behind it
     return (FOCUS() ? '<div class="wb-focus-page">' + slim : head) + `<div class="page-body wb-page">
-      ${W.full ? '' : TB}
+      ${W.full ? '' : (V.wbx && V.wbx.claudeBar ? V.wbx.claudeBar() : '') + TB}
       <div class="wb-host${W.full ? ' wb-full' : ''}" id="wbHost" tabindex="0" aria-label="Whiteboard canvas. Pick a tool on the left, drag to pan, Ctrl and scroll to zoom, double-click to add or edit text.">
         ${W.full ? TB : ''}
         <svg id="wbSvg" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Roboto, Arial, sans-serif">${DEFS}<rect id="wbGridR" x="-10000" y="-10000" width="20000" height="20000" fill="url(#wbGrid)" pointer-events="none"/><rect id="wbGridMR" x="-10000" y="-10000" width="20000" height="20000" fill="url(#wbGridM)" pointer-events="none"/><g id="wbWorld"></g></svg>
@@ -599,15 +599,16 @@
   function aiReady() { const go = document.querySelector('#drawer .drawer-f .btn.primary'); if (go) { go.textContent = 'Add to board'; go.setAttribute('data-act', 'wbAiAdd'); go.disabled = false; } }
   ACT.wbAiText = () => { W.imp = null;
     V.drawer('Describe a process, Claude draws it', `<p class="small muted" style="margin-top:0">Type what the process is, in plain words. Draw it here lets the AI of this app draw the steps and connections now, pointing at your project's existing state flows that belong in it. Or press Ask my own Claude: your Claude gets the description with a ready-made prompt, and Add from Claude brings its answer back. You check the result before anything is added to the board.</p>
-      <label class="f" for="wbAiT">The process</label><textarea id="wbAiT" rows="6" maxlength="4000" placeholder="e.g. A tenant raises a request. If it is urgent it becomes a work order straight away, otherwise the manager approves it first. The work order is assigned, worked, and closed after the tenant confirms. Link the asset to the work order."></textarea>
+      <label class="f" for="wbAiT">The process</label><textarea id="wbAiT" rows="6" maxlength="6000" placeholder="e.g. A tenant raises a request. If it is urgent it becomes a work order straight away, otherwise the manager approves it first. The work order is assigned, worked, and closed after the tenant confirms. Link the asset to the work order."></textarea>
       <div class="xs muted" style="margin-top:4px">Use as much detail as you have. Claude uses only what you write.</div><div id="wbAiOut"></div>`,
-      `<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="wbAiBuild" title="The AI of this app reads the description and draws the steps here, for you to check">Draw it here</button><button class="btn" data-act="wbAiClaude" title="Send the description and a ready-made prompt to your own Claude">Ask my own Claude</button><button class="btn" data-act="wbAiClaude" data-add="1" title="Bring back what Claude drew">Add from Claude</button>`, { wide: true });
+      `<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="wbAiBuild" title="The AI of this app reads the description and draws the steps here, for you to check">Draw it here</button><button class="btn" data-act="wbAiClaude" title="Send the description and a ready-made prompt to your own Claude">Ask my own Claude</button><button class="btn" data-act="wbAiClaude" data-add="1" title="Bring back what Claude drew">Add from Claude</button><button class="btn" data-act="wbAiQueue" title="Best for long processes: Claude draws it in your Claude app and the drawing appears at the top of this page for you to review">Let Claude draw it</button>`, { wide: true });
     const t = document.getElementById('wbAiT'); if (t) t.focus(); };
   const aiText = () => String((document.getElementById('wbAiT') || {}).value || '').trim();
   ACT.wbAiBuild = a => V.busy(a, async () => { const text = aiText(); if (text.length < 10) { V.toast('Describe the process in a sentence or two first', 4000, true); return; }
     const out = document.getElementById('wbAiOut'); out.innerHTML = '<p class="small muted">The AI is reading your description… this can take up to half a minute.</p>';
+    if (V.wbx.isBig && V.wbx.isBig(text)) { await V.wbx.sendToClaude(text, out, 'big'); return; }   // a long description is drawn by Claude, not by the app's short-answer AI
     try { const r = await API.post(aiUrl(), { text, flows: flowIdx() }); out.innerHTML = aiReview(r, r.provider); aiReady(); }
-    catch (e) { out.innerHTML = `<div class="notice err">${esc(e.message || 'The description could not be turned into a flow')}</div>`; } });
+    catch (e) { if (V.wbx.sendToClaude && (e.status >= 500 || e.status === 429 || /time|unavailable|busy|too long|limit/i.test(String(e.message || '')))) { await V.wbx.sendToClaude(text, out, 'fallback'); return; } out.innerHTML = `<div class="notice err">${esc(e.message || 'The description could not be turned into a flow')}</div>`; } });
   ACT.wbAiClaude = a => { const out = document.getElementById('wbAiOut'); if (!out) return; const add = !!(a && a.getAttribute && a.getAttribute('data-add') === '1'); const text = aiText();
     if (!add && text.length < 10) { V.toast('Describe the process first, so Claude gets it', 4000, true); return; }
     V.claudeHandoff({ skipPack: add, task: 'flow-text', module: 'Process Whiteboard', expect: { format: 'json', note: 'Delivery Studio flow shape plus useFlows', schema: root.FWBClaude.FLOW_SHAPE }, title: 'Process from a description', url: aiUrl(), body: { text, flows: flowIdx() }, extra: 'Claude can reply with JSON (best), or draw a flowchart picture: save the picture and use Import from image.', into: 'wbAiOut', onReply: r => { out.innerHTML = aiReview(r, r.provider); aiReady(); } }); };
@@ -913,7 +914,7 @@
   ACT.wbFit = () => fit();
   ACT.wbReset = () => { const v = W.B.view, svg = document.getElementById('wbSvg'), r = svg.getBoundingClientRect(), mx = r.width / 2, my = r.height / 2; v.x = mx - (mx - v.x) / v.z; v.y = my - (my - v.y) / v.z; v.z = 1; draw(); changedView(); };
 
-  V.wbx = { W, node, uid, snapV, pushUndo, changed, draw, centre, startEdit, edgePts, ro, fit, bbox, placeFlow, flowCatalogue, cflows };   // the helpers src/whiteboard2.js builds on
+  V.wbx = { W, node, uid, snapV, pushUndo, changed, draw, centre, startEdit, edgePts, ro, fit, bbox, placeFlow, flowCatalogue, cflows, aiReview, aiReady, aiUrl, flowIdx };   // the helpers src/whiteboard2.js builds on
   V.whiteboard = { html, mount };
   V.whiteboardState = W;
 })(typeof window !== 'undefined' ? window : globalThis);

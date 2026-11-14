@@ -99,7 +99,7 @@ await t('every job kind has a stage and allowed documents; the brief carries the
 });
 await t('setting up the project workspace is a job of the intake stage that reads no project documents, and it is one job per project', async () => {
   const J = await import('../work/server/_jobs.mjs'); assert.equal(J.KINDS.setup_workspace.stage, 'intake'); assert.deepEqual(J.KINDS.setup_workspace.docs, []); assert.match(J.KINDS.setup_workspace.recipe, /CLAUDE\.md/);
-  assert.equal(J.KINDS.backup_project.stage, 'other'); assert.match(J.KINDS.backup_project.recipe, /sharepoint_upload_file/); assert.ok(cleanRequest({ kind: 'backup_project' }).ok);
+  assert.equal(J.KINDS.backup_project.stage, 'other'); assert.match(J.KINDS.backup_project.recipe, /sharepoint_upload_file/); assert.ok(cleanRequest({ kind: 'backup_project' }).ok); assert.equal(J.KINDS.draw_flow.stage, 'requirements'); assert.match(J.KINDS.draw_flow.recipe, /save_draft: task wbflow/); const long = 'x'.repeat(4000); assert.equal(cleanRequest({ kind: 'draw_flow', note: long }).params.note.length, 4000, 'a long process description is kept whole'); assert.equal(cleanRequest({ kind: 'chat', note: long }).params.note.length, 600, 'other kinds keep the short note');
   const a = cleanRequest({ kind: 'setup_workspace' }), b = cleanRequest({ kind: 'setup_workspace' }); assert.ok(a.ok && a.key === b.key, 'the same request is the same job');
 });
 console.log('\n' + n + ' job-queue checks passed');
