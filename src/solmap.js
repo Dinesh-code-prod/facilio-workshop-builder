@@ -22,7 +22,7 @@
     });
   }
   const cnt = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
-  function branch(title, n, view, body, open) { return `<details class="sm-b"${open ? ' open' : ''}><summary><span>${esc(title)}</span><em>${n}</em>${view === 'whiteboard' ? '<button type="button" class="ki-link" data-act="nav" data-view="whiteboard">Change on the whiteboard</button>' : ''}</summary><div class="sm-in">${body || '<p class="xs muted">Nothing recorded.</p>'}</div></details>`; }
+  function branch(title, n, view, body, open) { return `<details class="sm-b" data-b="${esc(String(title).toLowerCase().replace(/[^a-z]+/g, '-'))}"${open ? ' open' : ''}><summary><i class="sm-ic" aria-hidden="true"></i><span>${esc(title)}</span><em>${n}</em>${view === 'whiteboard' ? '<button type="button" class="ki-link" data-act="nav" data-view="whiteboard">Change on the whiteboard</button>' : ''}</summary><div class="sm-in">${body || '<p class="xs muted">Nothing recorded.</p>'}</div></details>`; }
   const tbl = (h, rows) => rows.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr>${h.map(x => `<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : '';
   V.solmap = {
     html() {
