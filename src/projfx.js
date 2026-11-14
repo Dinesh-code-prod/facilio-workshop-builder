@@ -15,7 +15,7 @@
     const byView = () => { const lv = L && L.STAGES && L.STAGES.find(x => x.views.includes(m[1])); return STAGE[m[1]] || (lv && ST7[lv.k]) || (m[1] === 'portals' ? 's3' : 'help'); };   // Home only for the dashboard itself
     const st = act ? act.getAttribute('data-stage') : byView();
     if (b.getAttribute('data-stage') !== st) b.setAttribute('data-stage', st);
-    saveBars();
+    saveBars(); railTiles();
     // entrance only when the page or its selected tab changes, never on a re-render after a tick or a save
     const tab = d.querySelector('.main [role="tab"][aria-selected="true"], .main .seg > button.on, .main .tabs > .on, .main .tabs > .active');
     const key = location.hash.split('?')[0] + '|' + (tab ? tab.textContent.trim().slice(0, 40) : '');
@@ -28,6 +28,20 @@
   // kept in view while the form scrolls, with a status on the left: no unsaved changes / unsaved changes / saving. Inline saves next to one field are left alone.
   const SAVE = /^save( changes| and close| draft| as draft| settings| details| version| workbook)?$/i;
   const FORM = '.card, form, .drawer, .dlg, .modal, [role="dialog"], .side-panel, .sd-w';
+  // rail entries as macOS System Settings: each its own colour tile (from its label), entries of one group on one panel (first/last marked)
+  const TILE = { intro: '#0a84ff', sessions: '#ff9500', solution: '#30b0c7', uat: '#34c759', training: '#a2845e', tasks: '#ff453a', handover: '#00a99d', home: '#1D1A5E', reports: '#32ade6', notes: '#f2a900', showcase: '#E5197F', help: '#64748b', claude: '#cc785c', settings: '#8e8e93' };
+  function railTiles() {
+    const rl = d.querySelector('nav.sidebar .rl'); if (!rl || rl.getAttribute('data-tiled') === String(rl.children.length)) return; rl.setAttribute('data-tiled', String(rl.children.length));
+    let prev = null;
+    [...rl.children].forEach(x => {
+      if (x.classList.contains('rl-sep')) { if (prev) prev.setAttribute('data-glast', ''); prev = null; return; }
+      if (!x.classList.contains('rl-b')) return;
+      const lab = ((x.querySelector('.rl-l') || x).textContent || '').trim().toLowerCase();
+      x.style.setProperty('--tile', TILE[lab] || '#8e8e93'); x.removeAttribute('data-gfirst'); x.removeAttribute('data-glast');
+      if (!prev) x.setAttribute('data-gfirst', ''); prev = x;
+    });
+    if (prev) prev.setAttribute('data-glast', '');
+  }
   function saveBars() {
     d.querySelectorAll('.main button.btn, [role="dialog"] button.btn, .drawer button.btn').forEach(btn => {
       const row = btn.parentElement; if (!row || row.classList.contains('fx-savebar') || !SAVE.test(btn.textContent.trim())) return;

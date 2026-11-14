@@ -355,3 +355,41 @@ body.in-proj .main > .nav-back:hover:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background:
 /* one Claude button (user, 13 Nov 2026): the scattered Open in Claude / Add from Claude / Ask Claude / fetch buttons are hidden on project pages; the top-bar Ask Claude opens the chat, which knows the page. The page's main automation (AI solution expert, Update the BRD, FTR and UAT writing, Describe with Claude, Field questions) stays */
 body.in-proj [data-act="aiRun"], body.in-proj [data-act="brdAsk"], body.in-proj [data-act="drClaude"], body.in-proj [data-act="dgClaude"], body.in-proj [data-act="ugClaude"], body.in-proj [data-act="mkBringAll"], body.in-proj [data-act="mkBring"], body.in-proj [data-act="tgSend"], body.in-proj [data-act="tgGo"], body.in-proj [data-act="refRun"], body.in-proj [data-act="aiClaude"], body.in-proj [data-act="aiAddFrom"], body.in-proj [data-act="claudeImport"], body.in-proj [data-act="hcClaude"], body.in-proj [data-act="hoPackAsk"], body.in-proj [data-act="repClaude"], body.in-proj [data-act="momClaude"], body.in-proj [data-act="mdReread"], body.in-proj [data-act="opkClaude"], body.in-proj [data-act="rsPullTeams"], body.in-proj [data-act="solAsk"], body.in-proj [data-act="solOpenClaude"], body.in-proj [data-act="slkAsk"], body.in-proj [data-act="tkClassifyClaude"], body.in-proj [data-act="tkClaude"], body.in-proj [data-act="tkClaudeAdd"], body.in-proj [data-act="tkExtractAdd"], body.in-proj [data-act="xfClaude"], body.in-proj [data-act="ftrChangeGo"], body.in-proj [data-act="uatgChangeGo"], body.in-proj [data-act="kiReadClaude"], body.in-proj [data-act="wbAiClaude"], body.in-proj [data-act="wbImgClaude"], body.in-proj [data-act="wsClaude"], body.in-proj [data-act="srAsk"] { display: none !important; }
 body .navbar .ask-claude:not(#_):not(#__):not(#___) { background: #1570EF !important; color: #fff !important; box-shadow: none !important; border-radius: 999px !important; font-weight: 600; }
+
+/* ---------- Sidebar as macOS System Settings (user, 14 Nov 2026): every entry its own colour tile with a white icon, bold labels,
+   each group of entries on its own white panel over a light rail; the open entry on a blue band. Colours per label in src/projfx.js (TILE). ---------- */
+body.in-proj nav.sidebar:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #ececf0 !important; border-right: 1px solid rgba(0, 0, 0, .06) !important; }
+body.in-proj nav.sidebar .rl:not(#q#q#q#q#q#q#q#q#q#q#q#q) { gap: 0 !important; padding: 10px 5px !important; }
+body.in-proj nav.sidebar .rl-sep:not(#q#q#q#q#q#q#q#q#q#q#q#q) { width: 100% !important; height: 0 !important; margin: 5px 0 !important; background: none !important; }
+body.in-proj nav.sidebar .rl-b:not(#q#q#q#q#q#q#q#q#q#q#q#q) { width: 74px !important; height: 62px !important; margin: 0 !important; border-radius: 0 !important; background: #fff !important; color: #1d1d1f !important; gap: 4px !important; box-shadow: none !important; }
+body.in-proj nav.sidebar .rl-b[data-gfirst]:not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-radius: 12px 12px 0 0 !important; padding-top: 4px !important; }
+body.in-proj nav.sidebar .rl-b[data-glast]:not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-radius: 0 0 12px 12px !important; padding-bottom: 4px !important; }
+body.in-proj nav.sidebar .rl-b[data-gfirst][data-glast]:not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-radius: 12px !important; }
+body.in-proj nav.sidebar .rl-b > svg:not(#q#q#q#q#q#q#q#q#q#q#q#q) { width: 30px !important; height: 30px !important; padding: 6px !important; border-radius: 8px !important; background: var(--tile, #8e8e93) !important; color: #fff !important; stroke-width: 2.2 !important; box-shadow: inset 0 0 0 .5px rgba(0, 0, 0, .12), 0 1px 1px rgba(0, 0, 0, .08) !important; transition: transform .2s var(--fx-ease) !important; }
+body.in-proj nav.sidebar .rl-b .rl-l:not(#q#q#q#q#q#q#q#q#q#q#q#q) { font: 600 11px/1.15 var(--cs-font) !important; color: #1d1d1f !important; letter-spacing: -.005em !important; }
+body.in-proj nav.sidebar .rl-b:hover:not(.active):not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #f5f5f7 !important; }
+body.in-proj nav.sidebar .rl-b:hover > svg:not(#q#q#q#q#q#q#q#q#q#q#q#q) { transform: scale(1.06); }
+body.in-proj nav.sidebar .rl-b.active:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #e3eefd !important; }
+body.in-proj nav.sidebar .rl-b.active .rl-l:not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: #1570EF !important; font-weight: 700 !important; }
+body.in-proj nav.sidebar .rl-b.active > svg:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: var(--tile, #1570EF) !important; color: #fff !important; box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px var(--tile, #1570EF) !important; }
+body.in-proj nav.sidebar .rl-b .rl-n:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #ff3b30 !important; color: #fff !important; }
+@media (prefers-reduced-motion: reduce) { body.in-proj nav.sidebar .rl-b > svg { transition: none !important; } }
+
+/* the hover menu of a rail entry: a clean popover, the group name as a quiet caption, each page a row (bold name, grey line) */
+body.in-proj .rl-fly:not(#q#q#q#q#q#q#q#q#q#q#q#q) { width: 320px !important; padding: 6px !important; border: 0 !important; border-radius: 16px !important; background: rgba(255, 255, 255, .97) !important; backdrop-filter: saturate(180%) blur(20px); box-shadow: 0 0 0 1px rgba(0, 0, 0, .06), 0 12px 40px rgba(0, 0, 0, .16) !important; }
+body.in-proj .rl-fly.on:not(#q#q#q#q#q#q#q#q#q#q#q#q) { gap: 2px !important; animation: flyIn .18s var(--fx-ease) both; }
+@keyframes flyIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+body.in-proj .rl-fly .rl-fh:not(#q#q#q#q#q#q#q#q#q#q#q#q) { padding: 8px 12px 6px !important; margin: 0 !important; font: 600 12px/1.2 var(--cs-font) !important; color: #86868b !important; text-transform: none !important; letter-spacing: 0 !important; border: 0 !important; }
+body.in-proj .rl-fly .rl-fi:not(#q#q#q#q#q#q#q#q#q#q#q#q) { display: grid !important; gap: 2px !important; width: 100%; text-align: left; padding: 9px 12px !important; border: 0 !important; border-radius: 10px !important; background: transparent !important; cursor: pointer; position: relative; }
+body.in-proj .rl-fly .rl-fi b:not(#q#q#q#q#q#q#q#q#q#q#q#q) { font: 600 13.5px/1.3 var(--cs-font) !important; color: #1D1A5E !important; }
+body.in-proj .rl-fly .rl-fi small:not(#q#q#q#q#q#q#q#q#q#q#q#q) { font: 400 12px/1.35 var(--cs-font) !important; color: #6e6e73 !important; }
+body.in-proj .rl-fly .rl-fi:hover:not(#q#q#q#q#q#q#q#q#q#q#q#q), body.in-proj .rl-fly .rl-fi:focus-visible:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #f2f2f7 !important; outline: none; }
+body.in-proj .rl-fly .rl-fi:hover::after { content: "›"; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font: 600 18px/1 var(--cs-font); color: #1570EF; }
+body.in-proj .rl-fly .rl-fi + .rl-fi:not(#q#q#q#q#q#q#q#q#q#q#q#q) { box-shadow: 0 -1px 0 rgba(0, 0, 0, .05) !important; }
+
+/* leftovers found by the scan: empty boxes plain, What's new and Showcase heroes light (Discover more stays as designed) */
+body.in-proj .main .empty:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; border: 1px dashed rgba(0, 0, 0, .12) !important; color: #6e6e73 !important; }
+body.in-proj .main :is(.wn-hero, .tp-hero):not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; color: #1d1d1f !important; border: 0 !important; box-shadow: 0 0 0 1px rgba(0, 0, 0, .05), 0 4px 24px rgba(0, 0, 0, .06) !important; }
+body.in-proj .main :is(.wn-hero, .tp-hero) :is(h1, h2, h3):not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: #1D1A5E !important; }
+body.in-proj .main :is(.wn-hero, .tp-hero) :is(p, span, small, li, div):not(.btn):not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: #6e6e73 !important; }
+body.in-proj .navbar :is(.btn, button, #coPill, #hpChip):not(#q#q#q#q#q#q#q#q#q#q#q#q) { white-space: nowrap !important; flex-shrink: 0; }
