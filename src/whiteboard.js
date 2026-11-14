@@ -21,7 +21,7 @@
   const W = { boardId: null, B: null, sel: new Set(), tool: 'select', undo: [], redo: [], dirty: false, saveT: 0, saving: false, lastSaved: null, edit: null, imgUrl: {} };
   const ro = () => !!S.readonly;
   const boards = () => I().list('wb').sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
-  const blank = name => ({ name: name || 'Process board', miro: '', nodes: [], edges: [], grid: true, snap: true, route: 'straight', view: { x: 40, y: 40, z: 1 } });
+  const blank = name => ({ name: name || 'Process board', miro: '', nodes: [], edges: [], grid: true, snap: true, route: 'straight', dir: 'v', view: { x: 40, y: 40, z: 1 } });
   // Boards are shared project records that any editor (or a direct API call) can write, so everything that reaches the SVG markup is
   // normalised on load: known shape types, finite numbers, hex colours, plain ids and fixed confidence words. Text is escaped when drawn.
   const ID = /^[A-Za-z0-9_-]{1,48}$/, HEXC = /^#[0-9A-Fa-f]{3,8}$/, NT = ['note', 'rect', 'ellipse', 'diamond', 'text', 'state', 'frame', 'image', 'tri', 'para', 'hex', 'ink'];
@@ -42,7 +42,7 @@
       lo: e.lo && typeof e.lo === 'object' ? { x: num(e.lo.x, 0, -4000, 4000), y: num(e.lo.y, 0, -4000, 4000) } : undefined,
       ref: refClean(e.ref) }));
     B.nodes.forEach(n => { n.fr = ID.test(n.fr) ? n.fr : undefined; n.ref = refClean(n.ref); if (n.src && typeof n.src === 'object') n.src = { kind: n.src.kind === 'image' ? 'image' : 'flow', flowId: str(n.src.flowId, 80), module: str(n.src.module, 80), origin: n.src.origin === 'proposed' ? 'proposed' : 'existing', sig: str(n.src.sig, 64) }; else delete n.src; });
-    B.route = ['elbow', 'curve'].includes(B.route) ? B.route : 'straight';
+    B.route = ['elbow', 'curve'].includes(B.route) ? B.route : 'straight'; B.dir = B.dir === 'h' ? 'h' : 'v';
     // Boards saved before 27 Oct grouped an imported flow (frame + every state) under one group id, so a click on any state selected and
     // moved the whole diagram. The frame now carries its contents on its own, so that automatic group is turned into frame membership.
     B.nodes.filter(n => n.t === 'frame' && n.src && n.g).forEach(fr => { const g = fr.g; B.nodes.forEach(m => { if (m.g === g) { if (m !== fr) m.fr = m.fr || fr.id; delete m.g; } }); B.edges.forEach(e => { if (e.g === g) { e.fr = e.fr || fr.id; delete e.g; } }); });
@@ -65,7 +65,7 @@
   async function save() {
     if (!W.B || !W.dirty || ro()) return; if (W.saving) { W.saveT = setTimeout(save, 400); return; }
     W.saving = true; W.dirty = false; paintState();
-    const data = { name: W.B.name, miro: W.B.miro || '', nodes: W.B.nodes, edges: W.B.edges, grid: W.B.grid, snap: W.B.snap, route: W.B.route, view: W.B.view };
+    const data = { name: W.B.name, miro: W.B.miro || '', nodes: W.B.nodes, edges: W.B.edges, grid: W.B.grid, snap: W.B.snap, route: W.B.route, dir: W.B.dir === 'h' ? 'h' : 'v', view: W.B.view };
     try { await I().put('wb', W.B.id, data, { silent: true }); W.lastSaved = new Date(); } catch (e) { W.dirty = true; V.toast('The board could not be saved: ' + (e.message || 'try again'), 6000, true); }
     finally { W.saving = false; paintState(); }
   }
@@ -128,7 +128,7 @@
       return `<g class="wb-n" data-id="${id}"><rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="transparent" stroke="${sel ? SEL : 'none'}" stroke-dasharray="4 3"/><path d="${d}" fill="none" stroke="${n.tc || '#1D1F3D'}" stroke-width="${n.sw || 3}" stroke-linecap="round" stroke-linejoin="round"/>${!forExport && sel && !ro() && !n.lock ? handle(n) : ''}</g>`; }
     else if (n.t === 'text') shape = sel ? `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="none" stroke="${SEL}" stroke-width="1.5" stroke-dasharray="4 3"/>` : '';
     else if (n.t === 'note') shape = `<rect x="${n.x + 3}" y="${n.y + 4}" width="${n.w}" height="${n.h}" rx="4" fill="rgba(16,24,40,.08)"/><rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="4" fill="${n.fill || COLORS.note[0]}" stroke="${stroke}" stroke-width="${sw}"/>`;
-    else { const rx = 3, fill = n.fill || COLORS.shape;
+    else { const rx = n.rx != null ? n.rx : 3, fill = n.fill || COLORS.shape;
       shape = `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="${rx}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"${dash}/>`; }
     let label = '';
     if (n.t !== 'frame') {
@@ -172,11 +172,11 @@
     return s + '</g>';
   }
   const DEFS = `<defs><marker id="wbArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="${C.line}"/></marker><marker id="wbArrS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="${SEL}"/></marker>${Object.keys(KCOL).map(k => `<marker id="wbArr${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="${KCOL[k]}"/></marker>`).join('')}
-    <pattern id="wbGrid" width="${GRID}" height="${GRID}" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#dde3ea"/></pattern></defs>`;
+    <pattern id="wbGrid" width="${GRID}" height="${GRID}" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".75" fill="#d3d9e2"/></pattern><pattern id="wbGridM" width="${GRID * 5}" height="${GRID * 5}" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1.35" fill="#bcc4d1"/></pattern></defs>`;
   function worldSvg(forExport) {
     const ns = W.B.nodes, frames = ns.filter(n => n.t === 'frame'), imgs = ns.filter(n => n.t === 'image'), rest = ns.filter(n => n.t !== 'frame' && n.t !== 'image');
     const sb = forExport ? '' : (() => { const s = [...W.sel].map(node).filter(n => n && !n.hidden && n.t !== 'image'); if (s.length < 2) return ''; const b = bbox(s), pd = 10; return `<rect class="wb-selbox" data-selbox="1" x="${b.x - pd}" y="${b.y - pd}" width="${b.w + pd * 2}" height="${b.h + pd * 2}" rx="8" fill="rgba(57,149,226,.05)" stroke="${C.line}" stroke-width="1.2" stroke-dasharray="6 4"/>`; })();
-    return imgs.map(n => nodeSvg(n, forExport)).join('') + frames.map(n => nodeSvg(n, forExport)).join('') + sb + W.B.edges.map(e => edgeSvg(e, forExport)).join('') + rest.map(n => nodeSvg(n, forExport)).join('') + (forExport ? '' : endHandles() + delChip());
+    return imgs.map(n => nodeSvg(n, forExport)).join('') + frames.map(n => nodeSvg(n, forExport)).join('') + sb + W.B.edges.map(e => edgeSvg(e, forExport)).join('') + rest.map(n => nodeSvg(n, forExport)).join('') + (forExport ? '' : endHandles() + (V.wbx && V.wbx.overlay ? V.wbx.overlay() : '') + delChip());
   }
   // the two ends of a single selected connector, drawn above the shapes so they can always be grabbed
   function endHandles() {
@@ -189,18 +189,24 @@
     if (ro() || W.dragging || W.edit || W.tool !== 'select') return ''; let id = W.hover; if (!id && W.sel.size === 1) id = [...W.sel][0]; if (!id) return '';
     const z = Math.max(.2, W.B.view.z); let x, y; const n = node(id);
     if (n) { if (n.lock || n.hidden) return ''; x = n.x + n.w; y = n.y; }
-    else { const e = W.B.edges.find(q => q.id === id); const p = e && edgePts(e); if (!p) return ''; const lo = e.lo || { x: 0, y: 0 }; x = (p.lx != null ? p.lx : (p.p0[0] + p.p1[0]) / 2) + lo.x + 14 / z; y = (p.ly != null ? p.ly : (p.p0[1] + p.p1[1]) / 2) + lo.y - 14 / z; }
+    else { const e = W.B.edges.find(q => q.id === id); const p = e && edgePts(e); if (!p) return ''; x = (p.lx != null ? p.lx : (p.p0[0] + p.p1[0]) / 2) + 14 / z; y = (p.ly != null ? p.ly : (p.p0[1] + p.p1[1]) / 2) - 14 / z; }
     return `<g class="wb-hdel" data-del="${esc(id)}" transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(1 / z).toFixed(4)})" role="button" aria-label="Delete"><circle r="11" fill="#fff" stroke="#D92D20" stroke-width="1.5"/><path d="M-4 -4L4 4M4 -4L-4 4" stroke="#D92D20" stroke-width="2" stroke-linecap="round"/><title>Delete (Del) · Ctrl+Z to undo</title></g>`;
   }
   function delOne(id) {
     const n = node(id); if (n && n.lock) { V.toast('Unlock it first to delete it'); return; }
     pushUndo(); W.B.nodes = W.B.nodes.filter(q => q.id !== id); W.B.edges = W.B.edges.filter(e => e.id !== id && e.from !== id && e.to !== id); W.sel.delete(id); W.hover = null; changed(); draw(); V.toast('Deleted. Press Ctrl+Z to undo.', 3000);
   }
+  function applyView() {
+    const svg = document.getElementById('wbSvg'); if (!svg || !W.B) return; const v = W.B.view, wr = svg.querySelector('#wbWorld'), gr = svg.querySelector('#wbGridR'), gm = svg.querySelector('#wbGridMR'); if (!wr || !gr || !gm) return;
+    wr.setAttribute('transform', `translate(${v.x.toFixed(1)} ${v.y.toFixed(1)}) scale(${v.z.toFixed(4)})`);
+    const on = W.B.grid, big = GRID * 5; gr.setAttribute('visibility', on && v.z >= .55 ? 'visible' : 'hidden'); gr.setAttribute('transform', `translate(${(v.x % (GRID * v.z)).toFixed(2)} ${(v.y % (GRID * v.z)).toFixed(2)}) scale(${v.z.toFixed(4)})`);
+    gm.setAttribute('visibility', on ? 'visible' : 'hidden'); gm.setAttribute('transform', `translate(${(v.x % (big * v.z)).toFixed(2)} ${(v.y % (big * v.z)).toFixed(2)}) scale(${v.z.toFixed(4)})`);
+    const z = document.getElementById('wbZoom'); if (z) z.textContent = Math.round(v.z * 100) + '%';
+  }
   function draw() {
     const svg = document.getElementById('wbSvg'); if (!svg || !W.B) return;
     const v = W.B.view; const wr = svg.querySelector('#wbWorld'); const gr = svg.querySelector('#wbGridR');
-    wr.setAttribute('transform', `translate(${v.x.toFixed(1)} ${v.y.toFixed(1)}) scale(${v.z.toFixed(4)})`);
-    gr.setAttribute('visibility', W.B.grid ? 'visible' : 'hidden'); gr.setAttribute('transform', `translate(${v.x % (GRID * v.z)} ${v.y % (GRID * v.z)}) scale(${v.z})`);
+    applyView();
     wr.innerHTML = worldSvg(false) + (W.marquee ? `<rect x="${Math.min(W.marquee.x0, W.marquee.x1)}" y="${Math.min(W.marquee.y0, W.marquee.y1)}" width="${Math.abs(W.marquee.x1 - W.marquee.x0)}" height="${Math.abs(W.marquee.y1 - W.marquee.y0)}" fill="rgba(21,112,239,.08)" stroke="#1570EF" stroke-dasharray="4 3" pointer-events="none"/>` : '') + (W.ink && W.ink.length > 1 ? `<path d="${W.ink.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' ')}" fill="none" stroke="${W.inkCol || '#1D1F3D'}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>` : '') + (W.link ? `<path d="M${W.link.x0} ${W.link.y0} L${W.link.x1} ${W.link.y1}" stroke="#1570EF" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#wbArrS)" pointer-events="none"/>` : '') + (W.guides || []).map(g => g.x != null ? `<line class="wb-guide" x1="${g.x}" x2="${g.x}" y1="${g.a}" y2="${g.b}" stroke="#F04438" stroke-width="${1 / v.z}" stroke-dasharray="${4 / v.z} ${3 / v.z}" pointer-events="none"/>` : `<line class="wb-guide" y1="${g.y}" y2="${g.y}" x1="${g.a}" x2="${g.b}" stroke="#F04438" stroke-width="${1 / v.z}" stroke-dasharray="${4 / v.z} ${3 / v.z}" pointer-events="none"/>`).join('');
     const z = document.getElementById('wbZoom'); if (z) z.textContent = Math.round(v.z * 100) + '%';
     const sc = document.getElementById('wbSelInfo'); if (sc) sc.textContent = W.sel.size ? W.sel.size + ' selected' : '';
@@ -247,7 +253,7 @@
       <div class="wb-pop-h">Shapes</div><div class="wb-pop-g">${[['rect', IC.rect, 'Rectangle'], ['ellipse', IC.oval, 'Oval'], ['diamond', IC.rhombus, 'Decision (rhombus)'], ['tri', IC.tri, 'Triangle'], ['para', IC.para, 'Input / output'], ['hex', IC.hex, 'Hexagon'], ['frame', IC.frame, 'Frame']].map(([t, ic, l]) => `<button type="button" role="menuitem" data-act="wbTool" data-wbtool="${t}" title="${l}" aria-label="${l}">${ic}</button>`).join('')}</div></div>`;
     const slim = `<div class="wb-focus-bar"><b>${esc(B.name || 'Process board')}</b><span class="xs muted">${esc((S.project && S.project.name) || '')}</span>${list.length > 1 ? `<select data-change="wbPick" aria-label="Board">${list.map(b => `<option value="${esc(b.id)}"${b.id === W.boardId ? ' selected' : ''}>${esc(b.name || 'Untitled board')}</option>`).join('')}</select>` : ''}</div>`;
     const TB = `      <div class="wb-tb wb-tb-slim" role="toolbar" aria-label="Board">
-        <div class="wb-grp" role="group" aria-label="Processes"><button class="btn sm" type="button" data-act="wbFlows"${dis}>${V.ico('plus')}Add State Flow</button><button class="btn sm" type="button" data-act="wbAiText"${dis} title="Describe a process in words and the AI draws it">Describe with Claude</button><button class="btn sm" type="button" data-act="wbImg"${dis}>Import from image</button><button class="btn sm" type="button" data-act="wbSaveFlow"${dis} title="Save the selected flow (or the whole board) as a State Flow">Save as state flow</button></div>
+        <div class="wb-grp" role="group" aria-label="Processes"><button class="btn sm" type="button" data-act="wbFlows"${dis}>${V.ico('plus')}Add State Flow</button><button class="btn sm" type="button" data-act="wbCreate"${dis} title="Add a table, timeline, kanban, matrix or process starter">Create</button><button class="btn sm" type="button" data-act="wbTidy"${dis} title="Arrange the selection, or the whole board, neatly with no crossing lines where possible">Tidy up</button><button class="btn sm" type="button" data-act="wbDirT" id="wbDirB"${dis} title="Switch between top to bottom and left to right, then tidy">${B.dir === 'h' ? 'Left to right' : 'Top to bottom'}</button><button class="btn sm" type="button" data-act="wbAiText"${dis} title="Describe a process in words and the AI draws it">Describe with Claude</button><button class="btn sm" type="button" data-act="wbImg"${dis}>Import from image</button><button class="btn sm" type="button" data-act="wbSaveFlow"${dis} title="Save the selected flow (or the whole board) as a State Flow">Save as state flow</button></div>
         <span class="spacer"></span><span class="xs muted" id="wbSelInfo"></span><span class="wb-save" id="wbSave"></span>
         <div class="wb-grp" role="group" aria-label="Combined flows"><button class="btn sm" type="button" data-act="wbFull" title="${W.full ? 'Leave full screen (Esc)' : 'Fill the whole window with the board (Ctrl+Shift+F)'}">${W.full ? 'Exit full screen' : 'Full screen'}</button>${FOCUS() ? '' : '<button class="btn sm" type="button" data-act="wbPop" title="Open this board in its own browser tab">New tab</button>'}<button class="btn sm" type="button" data-act="wbCflows">Combined flows${nCf ? ` <span class="wb-cnt">${nCf}</span>` : ''}</button>${ro() ? '' : '<button class="btn sm primary" type="button" data-act="wbCflowSave">Save as combined flow</button>'}</div>
       </div>`;   // in full screen the toolbar moves INTO the board, so its buttons are not hidden behind it
@@ -255,7 +261,7 @@
       ${W.full ? '' : TB}
       <div class="wb-host${W.full ? ' wb-full' : ''}" id="wbHost" tabindex="0" aria-label="Whiteboard canvas. Pick a tool on the left, drag to pan, Ctrl and scroll to zoom, double-click to add or edit text.">
         ${W.full ? TB : ''}
-        <svg id="wbSvg" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Roboto, Arial, sans-serif">${DEFS}<rect id="wbGridR" x="-10000" y="-10000" width="20000" height="20000" fill="url(#wbGrid)" pointer-events="none"/><g id="wbWorld"></g></svg>
+        <svg id="wbSvg" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Roboto, Arial, sans-serif">${DEFS}<rect id="wbGridR" x="-10000" y="-10000" width="20000" height="20000" fill="url(#wbGrid)" pointer-events="none"/><rect id="wbGridMR" x="-10000" y="-10000" width="20000" height="20000" fill="url(#wbGridM)" pointer-events="none"/><g id="wbWorld"></g></svg>
         <div class="wb-rail" role="toolbar" aria-orientation="vertical" aria-label="Tools">
           ${RB('select', IC.cursor, 'Select', 'V')}${RB('hand', IC.hand, 'Hand: move the board', 'H')}${RB('note', IC.note, 'Sticky note', 'N')}
           <button class="wb-rb" type="button" data-act="wbShapesT" id="wbShapesB" aria-haspopup="menu" aria-expanded="false" title="Shapes and lines (S)" aria-label="Shapes and lines"${dis}>${IC.shapes}</button>
@@ -311,6 +317,10 @@
       const dEl = ev.target.closest('[data-del]'); if (dEl && !ro()) { ev.preventDefault(); ev.stopPropagation(); delOne(dEl.getAttribute('data-del')); return; }   // the chip never starts a drag
       const p = toWorld(ev), hEl = ev.target.closest('[data-h]'), nEl = ev.target.closest('[data-id]'), eEl = ev.target.closest('[data-e]'), ehEl = ev.target.closest('[data-eh]'), elEl = ev.target.closest('[data-el]');
       svg.setPointerCapture(ev.pointerId);
+      { const ahEl = ev.target.closest('[data-ah]'), mdEl = ev.target.closest('[data-mid]');
+        if (W.pend && !ro()) { const from = W.pend.from; W.pend = null; ev.preventDefault(); const tId = (nEl && nEl.getAttribute('data-id')) || (ahEl && ahEl.getAttribute('data-ah')); svg.releasePointerCapture && svg.releasePointerCapture(ev.pointerId); if (tId && tId !== from) V.wbx.link(from, tId); else if (!tId && !hEl && !mdEl) V.wbx.linkNew(from, p); draw(); return; }
+        if (mdEl && !ro()) { ev.preventDefault(); svg.releasePointerCapture && svg.releasePointerCapture(ev.pointerId); V.wbx.midMenu(mdEl.getAttribute('data-mid'), ev); return; }
+        if (ahEl && !ro()) { ev.preventDefault(); const n = node(ahEl.getAttribute('data-ah')); if (n) { drag = { kind: 'link', from: n.id, handle: true, cx: ev.clientX, cy: ev.clientY }; W.link = { x0: n.x + n.w / 2, y0: n.y + n.h / 2, x1: p.x, y1: p.y }; W.dragging = true; return; } } }
       if (W.tool === 'hand' || ev.button === 1) { drag = { kind: 'pan', sx: ev.clientX, sy: ev.clientY, vx: W.B.view.x, vy: W.B.view.y }; host.classList.add('panning'); W.dragging = true; return; }
       if (PLACE_TOOLS.includes(W.tool) && !ro()) { ev.preventDefault(); const t = W.tool, [w, h] = SIZES[t]; if (!ev.shiftKey) W.tool = 'select'; svg.releasePointerCapture && svg.releasePointerCapture(ev.pointerId); addNode(t, p.x - w / 2, p.y - h / 2, false); const n = W.B.nodes[W.B.nodes.length - 1]; if (t === 'note' || t === 'text') setTimeout(() => { if (W.edit) return; startEdit(n); }, 30); return; }
       if (W.tool === 'pen' && !ro()) { W.ink = [[p.x, p.y]]; drag = { kind: 'ink' }; W.dragging = true; return; }
@@ -339,14 +349,14 @@
       W.marquee = { x0: p.x, y0: p.y, x1: p.x, y1: p.y }; drag = { kind: 'marquee' }; draw();
     });
     svg.addEventListener('pointermove', ev => {
-      if (!drag) { const t = ev.target.closest && ev.target.closest('[data-del],[data-id],[data-e]'); const h = t ? (t.getAttribute('data-del') || t.getAttribute('data-id') || t.getAttribute('data-e')) : null; if (h !== W.hover) { W.hover = h; paint(); } return; }
+      if (!drag) { const t = ev.target.closest && ev.target.closest('[data-del],[data-id],[data-ah],[data-mid],[data-e]'); const h = t ? (t.getAttribute('data-del') || t.getAttribute('data-id') || t.getAttribute('data-ah') || t.getAttribute('data-mid') || t.getAttribute('data-e')) : null; if (h !== W.hover) { W.hover = h; paint(); } return; }
       const p = toWorld(ev);
       if (drag.kind === 'ink') { const l = W.ink[W.ink.length - 1]; if (Math.hypot(p.x - l[0], p.y - l[1]) * W.B.view.z >= 2 && W.ink.length < 4000) { W.ink.push([p.x, p.y]); paint(); } return; }
       if (drag.kind === 'move' || drag.kind === 'resize') W.dragging = true;
-      if (drag.kind === 'pan') { W.B.view.x = drag.vx + ev.clientX - drag.sx; W.B.view.y = drag.vy + ev.clientY - drag.sy; paint(); }
-      else if (drag.kind === 'move') { const dx = p.x - drag.x, dy = p.y - drag.y; if (!drag.moved && Math.hypot(dx, dy) < 3) return; if (!drag.moved) { pushUndo(); drag.moved = true; }
+      if (drag.kind === 'pan') { W.B.view.x = drag.vx + ev.clientX - drag.sx; W.B.view.y = drag.vy + ev.clientY - drag.sy; applyView(); }
+      else if (drag.kind === 'move') { const dx = p.x - drag.x, dy = p.y - drag.y; if (!drag.moved && Math.hypot(dx, dy) * W.B.view.z < 4) return; if (!drag.moved) { pushUndo(); drag.moved = true; }
         moveWithGuides(drag, dx, dy); paint(); }
-      else if (drag.kind === 'label') { if (!drag.moved) { pushUndo(); drag.moved = true; } drag.e.lo = { x: Math.round(drag.lx + p.x - drag.x), y: Math.round(drag.ly + p.y - drag.y) }; paint(); }
+      else if (drag.kind === 'label') { if (!drag.moved && Math.hypot(p.x - drag.x, p.y - drag.y) * W.B.view.z < 4) return; if (!drag.moved) { pushUndo(); drag.moved = true; } let lx = Math.round(drag.lx + p.x - drag.x), ly = Math.round(drag.ly + p.y - drag.y); if (Math.hypot(lx, ly) * W.B.view.z < 28) { lx = 0; ly = 0; } drag.e.lo = { x: lx, y: ly }; paint(); }   // a label dropped near its line snaps back onto it
       else if (drag.kind === 'relink') { if (W.link.rev) { W.link.x0 = p.x; W.link.y0 = p.y; } else { W.link.x1 = p.x; W.link.y1 = p.y; } paint(); }
       else if (drag.kind === 'resize') { const n = drag.n, hd = drag.hd; let dx = p.x - drag.x, dy = p.y - drag.y; if (n.rot) { const a = -n.rot * Math.PI / 180, c = Math.cos(a), s2 = Math.sin(a); [dx, dy] = [dx * c - dy * s2, dx * s2 + dy * c]; }   // a rotated shape is resized along its own sides
         let w = drag.w, h = drag.h; if (hd.includes('e')) w = drag.w + dx; if (hd.includes('w')) w = drag.w - dx; if (hd.includes('s')) h = drag.h + dy; if (hd.includes('n')) h = drag.h - dy;
@@ -372,6 +382,7 @@
         selectWithGroups(W.B.nodes.filter(n => !n.hidden && n.t !== 'image' && n.x >= x0 && n.y >= y0 && n.x + n.w <= x1 && n.y + n.h <= y1).map(n => n.id));
         W.B.edges.forEach(e => { const fr = node(e.from), to = node(e.to); if (!fr || !to || fr.hidden || to.hidden) return; const p = edgePts(e); const labelIn = p && p.lx >= x0 && p.lx <= x1 && p.ly >= y0 && p.ly <= y1; if (labelIn || (W.sel.has(e.from) && W.sel.has(e.to))) W.sel.add(e.id); });   // arrows and their labels are part of the flow: a box around a flow takes them too
         W.marquee = null; draw(); }
+      else if (d.kind === 'link' && d.handle && Math.hypot(ev.clientX - d.cx, ev.clientY - d.cy) < 5) { W.link = null; W.pend = { from: d.from }; V.toast('Now click the box to connect to, or click empty space to add a new box. Esc cancels.', 5000); draw(); }
       else if (d.kind === 'link') { const hit = document.elementFromPoint(ev.clientX, ev.clientY), t = hit && hit.closest && hit.closest('#wbSvg [data-id]'); W.link = null;   // pointer capture makes ev.target the canvas, so look up what is under the pointer
         if (t) { const to = t.getAttribute('data-id'); if (!W.B.edges.some(e => e.from === d.from && e.to === to)) { pushUndo(); const ne = { id: uid('e'), from: d.from, to, label: '' }; if (W.tool === 'connect-elbow') ne.route = 'elbow'; if (W.tool === 'connect-curve') ne.route = 'curve'; if (W.tool === 'connect-both') ne.ah = 'both'; if (W.tool === 'connect-line') ne.ah = 'none'; W.B.edges.push(ne); W.sel = new Set([ne.id]); changed(); const k = edgeKind(ne).k; if (k === 'manual') V.toast('Connected. This link between two flows is a drawing only: it is not recorded in Configuration Inputs.', 5000); else if (k === 'confirmed') V.toast('Connected. The relationship register confirms this link.'); } }
         draw(); }
@@ -386,12 +397,12 @@
     });
     svg.addEventListener('wheel', ev => {
       ev.preventDefault(); const v = W.B.view;
-      if (ev.ctrlKey || ev.metaKey) { const r = svg.getBoundingClientRect(), mx = ev.clientX - r.left, my = ev.clientY - r.top, z = clamp(v.z * Math.exp(-ev.deltaY * .0015), MINZ, MAXZ); v.x = mx - (mx - v.x) * z / v.z; v.y = my - (my - v.y) * z / v.z; v.z = z; }
+      if (ev.ctrlKey || ev.metaKey) { const r = svg.getBoundingClientRect(), mx = ev.clientX - r.left, my = ev.clientY - r.top, z = clamp(v.z * Math.exp(-clamp(ev.deltaY, -120, 120) * .0016), MINZ, MAXZ); v.x = mx - (mx - v.x) * z / v.z; v.y = my - (my - v.y) * z / v.z; v.z = z; }
       else { v.x -= ev.deltaX; v.y -= ev.deltaY; }
-      draw(); changedView();
+      applyView(); const hz = document.getElementById('wbHost'); if (hz) { hz.classList.add('zooming'); clearTimeout(W.zT); W.zT = setTimeout(() => { hz.classList.remove('zooming'); draw(); }, 150); } changedView();
     }, { passive: false });
     svg.addEventListener('contextmenu', ev => { ev.preventDefault(); ctxOpen(ev); });
-    const hostEl = document.getElementById('wbHost'); hostEl.addEventListener('keydown', key);
+    const hostEl = document.getElementById('wbHost'); hostEl.addEventListener('keydown', key); hostEl.addEventListener('keydown', e => { if (e.key === 'Escape' && W.pend) { W.pend = null; draw(); } });
     hostEl.addEventListener('keydown', e => { if (e.code === 'Space' && !W.edit && !/^(INPUT|TEXTAREA|SELECT)$/.test((e.target || {}).tagName || '')) { e.preventDefault(); if (!W.space) { W.space = true; hostEl.classList.add('spacepan'); } } });
     hostEl.addEventListener('keyup', e => { if (e.code === 'Space') { W.space = false; hostEl.classList.remove('spacepan'); } }); hostEl.addEventListener('blur', () => { W.space = false; hostEl.classList.remove('spacepan'); });
   }
@@ -554,6 +565,7 @@
     const ids = {}; const nodes = f.states.map(s => { const b = D.boxSize(s.label, true); const id = uid('n'); ids[s.id] = id;
       const typ = s.typeCode === 2 ? 'closed' : s.typeCode === 6 ? 'skipped' : 'open'; return { id, t: 'state', stype: typ, fr, x: snapV(ox + 30 + ((s.x || 0) - minx) * .9), y: snapV(oy + 70 + ((s.y || 0) - miny) * .9), w: Math.max(120, b.w), h: 40, text: s.label || s.name || 'State', ref: { flow: fid, state: s.id } }; });
     const edges = (f.transitions || []).filter(t => !t.removed && ids[t.from] && ids[t.to]).map(t => ({ id: uid('e'), from: ids[t.from], to: ids[t.to], label: t.name || '', fr, route: 'straight', ref: { flow: fid, transition: t.id } }));
+    if (V.wbx && V.wbx.layoutNodes) V.wbx.layoutNodes(nodes, edges, ox + 30, oy + 70);
     const bb = bbox(nodes); const mv = F.moduleView ? F.moduleView(f.module) : null;
     const frame = { id: fr, t: 'frame', x: snapV(ox), y: snapV(oy), w: snapV(bb.x + bb.w - ox + 50), h: snapV(bb.y + bb.h - oy + 40), text: `${(mv && (mv.label || mv.displayName)) || f.module} · ${f.name || 'State flow'}`, src: { kind: 'flow', flowId: fid, module: f.module, origin: f.origin || 'existing', sig: flowSig(f) } };
     return { nodes: [frame].concat(nodes), edges, frame };
@@ -562,19 +574,19 @@
     const cat = flowCatalogue(); W.pick = new Set();
     if (!cat.length) { V.toast('This project has no state flows yet. Load the configuration under Project Settings, or create one in the State Flow Builder.', 6000, true); return; }
     V.drawer('Add state flows to the board', `<p class="small muted" style="margin-top:0">Pick one or more flows from this project. Each is placed as an editable copy inside a frame; the flow itself is not changed.</p>
-      <input type="search" id="wbFq" placeholder="Search modules or flows" aria-label="Search modules or flows">
-      <div class="wb-flist" id="wbFlist" role="listbox" aria-multiselectable="true">${cat.map(c => `<label class="wb-fi" data-q="${esc((c.moduleLabel + ' ' + c.name + ' ' + c.module).toLowerCase())}"><input type="checkbox" value="${esc(c.id)}" data-change="wbFlowTick"><span><b>${esc(c.moduleLabel)}</b> · ${esc(c.name)}<br><span class="xs muted">${c.states} states · ${c.transitions} transitions${c.enabled ? '' : ' · disabled in the org'}${c.origin === 'proposed' ? ' · proposed in workshops' : ''}</span></span></label>`).join('')}</div>
+      <input type="search" id="wbFq" placeholder="Search modules or flows" aria-label="Search modules or flows">${V.wbx.dirSeg ? V.wbx.dirSeg() : ''}
+      <div class="wb-flist" id="wbFlist" role="listbox" aria-multiselectable="true">${V.wbx.combinedList ? V.wbx.combinedList() : ''}${cat.map(c => `<label class="wb-fi" data-q="${esc((c.moduleLabel + ' ' + c.name + ' ' + c.module).toLowerCase())}"><input type="checkbox" value="${esc(c.id)}" data-change="wbFlowTick"><span><b>${esc(c.moduleLabel)}</b> · ${esc(c.name)}<br><span class="xs muted">${c.states} states · ${c.transitions} transitions${c.enabled ? '' : ' · disabled in the org'}${c.origin === 'proposed' ? ' · proposed in workshops' : ''}</span></span></label>`).join('')}</div>
       <div class="wb-prev" id="wbPrev"><p class="xs muted">Tick a flow to preview it here.</p></div>`,
       `<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="wbFlowsGo" id="wbFlowsGo" disabled>Add to board</button>`, { wide: true });
     const q = document.getElementById('wbFq'); q.addEventListener('input', () => { const v = q.value.trim().toLowerCase(); document.querySelectorAll('#wbFlist .wb-fi').forEach(l => { l.hidden = v && !l.getAttribute('data-q').includes(v); }); }); q.focus();
   };
   ACT.wbFlowTick = el => { el.checked ? W.pick.add(el.value) : W.pick.delete(el.value); const go = document.getElementById('wbFlowsGo'); if (go) { go.disabled = !W.pick.size; go.textContent = W.pick.size > 1 ? `Add ${W.pick.size} flows to the board` : 'Add to board'; }
     const pv = document.getElementById('wbPrev'); if (!pv) return; const last = [...W.pick].pop(); if (!last) { pv.innerHTML = '<p class="xs muted">Tick a flow to preview it here.</p>'; return; }
-    try { pv.innerHTML = `<div class="xs muted" style="margin-bottom:6px">Preview: ${esc(F.flowModel(last).name || '')}</div><div class="wb-prev-svg">${D.flowSvg(F.flowModel(last), { full: true, zoom: .6 })}</div>`; } catch (e) { pv.innerHTML = '<p class="xs muted">No preview for this flow.</p>'; } };
+    try { pv.innerHTML = V.wbx.previewAny(last); } catch (e) { pv.innerHTML = '<p class="xs muted">No preview for this flow.</p>'; } };
   ACT.wbFlowsGo = () => {
     if (!W.pick || !W.pick.size) return; pushUndo(); const c = centre(); let x = snapV(c.x - 200), y = snapV(c.y - 150); const added = [];
     const right = W.B.nodes.length ? bbox(W.B.nodes.filter(n => !n.hidden)) : null; if (right && right.w) { x = snapV(right.x + right.w + 80); y = snapV(right.y); }
-    [...W.pick].forEach(fid => { const p = placeFlow(fid, x, y); if (!p) return; W.B.nodes.push(...p.nodes); W.B.edges.push(...p.edges); added.push(p.frame.id); y = snapV(p.frame.y + p.frame.h + 60); });
+    [...W.pick].forEach(fid => { const p = /^(pre|cf):/.test(fid) ? V.wbx.placeCombined(fid, x, y) : placeFlow(fid, x, y); if (!p) return; W.B.nodes.push(...p.nodes); W.B.edges.push(...p.edges); (p.ids || [p.frame.id]).forEach(i => added.push(i)); y = snapV((p.bottom != null ? p.bottom : p.frame.y + p.frame.h) + 60); });
     V.closeDrawer(); W.sel = new Set(added); changed(); fit(); V.toast(added.length + ' flow' + (added.length === 1 ? '' : 's') + ' added as editable copies');
   };
 
@@ -717,6 +729,7 @@
       const id = uid('n'); map[n.id] = id; const w = t === 'diamond' ? 160 : Math.max(130, Math.min(240, 18 + n.label.length * 7.4));
       W.B.nodes.push({ id, t, stype: 'open', fr: grp, x: snapV(fx + 30 + L * 240), y: snapV(oy + 70 + (r - 1) * 110), w, h: t === 'diamond' ? 90 : t === 'ellipse' ? 56 : 44, text: n.label, conf: n.confidence }); added.push(id); });
     edges.forEach(e => W.B.edges.push(Object.assign({ id: uid('e'), from: map[e.from], to: map[e.to], label: e.label, conf: e.confidence }, sf ? { fr: grp, route: 'straight' } : {})));
+    if (V.wbx && V.wbx.layoutNodes) { const addedSet = new Set(added); V.wbx.layoutNodes(added.map(node), W.B.edges.filter(e => addedSet.has(e.from) && addedSet.has(e.to)), fx + 30, oy + 70); }   // the described or imported flow is laid out neatly, top to bottom unless the board says otherwise
     const bb = bbox(added.map(node)); const frame = { id: grp, t: 'frame', x: snapV(fx), y: snapV(oy), w: snapV(bb.x + bb.w - fx + 50), h: snapV(bb.y + bb.h - oy + 40), text: g.title || 'Imported flow', src: { kind: 'image' } };
     W.B.nodes.push(frame); W.sel = new Set([frame.id]); V.closeDrawer(); changed(); fit(); loadImages();
     V.toast(`${nodes.length} steps and ${edges.length} connections added. Dashed outlines mark parts to double-check.`, 6000);
@@ -900,6 +913,7 @@
   ACT.wbFit = () => fit();
   ACT.wbReset = () => { const v = W.B.view, svg = document.getElementById('wbSvg'), r = svg.getBoundingClientRect(), mx = r.width / 2, my = r.height / 2; v.x = mx - (mx - v.x) / v.z; v.y = my - (my - v.y) / v.z; v.z = 1; draw(); changedView(); };
 
+  V.wbx = { W, node, uid, snapV, pushUndo, changed, draw, centre, startEdit, edgePts, ro, fit, bbox, placeFlow, flowCatalogue, cflows };   // the helpers src/whiteboard2.js builds on
   V.whiteboard = { html, mount };
   V.whiteboardState = W;
 })(typeof window !== 'undefined' ? window : globalThis);

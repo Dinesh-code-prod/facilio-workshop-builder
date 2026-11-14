@@ -157,6 +157,7 @@ Workshops, transcripts, questions, requirements, use cases and the process white
 | [transcripts.js](transcripts.js) | Transcripts & Requirement Confirmation: upload meeting transcripts per session, rule-based analysis against the configuration, review queue (accept / reject / edit / merge / clarify) with history,... |
 | [usecases.js](usecases.js) | Use Cases, Discrepancy register and the Session → BRD view. |
 | [whiteboard.js](whiteboard.js) | Process Whiteboard: a pannable, zoomable board per project for composing individual processes into one end-to-end process. |
+| [whiteboard2.js](whiteboard2.js) | Process Whiteboard, Miro-style helpers: arrow handles on a box, the insert dot on a connector, the Create menu (table, timeline, kanban, matrix, swimlanes), neat top-to-bottom layout (or left to right) with Tidy up, and ready-made and saved combined flows in the Add State Flow list. |
 | [workshop.js](workshop.js) | Workshop room (roadmap E2 workspace 3, team only): the page the consultant keeps open during a requirements workshop. |
 | [workshoplive.js](workshoplive.js) | Workshop room > Live assistant (plan: docs/plans/REQUIREMENTS-INTELLIGENCE-PLAN-2026-11-08.md, phases 3 and 4). |
 | [workshoplogic.js](workshoplogic.js) | Workshop room logic (roadmap E2 workspace 3): pure code for the browser and for Node, run by tests/workshop_logic.mjs. |
@@ -296,6 +297,7 @@ CSS files. The look is the coss style in ui.css (the last layer, see docs/design
 | [webframe.css](webframe.css) | Facilio tools (src/webframe.js): a slim bar over a frame that fills the page. |
 | [whatsnew.css](whatsnew.css) | What's new: a release timeline in the same black dot-grid style as Discover more. |
 | [whiteboard.css](whiteboard.css) | Process Whiteboard full screen: the board fills the window below the top bar (the page header and toolbar above it left only about 550 px on a 950 px screen). |
+| [wbapple.css](wbapple.css) | Process Whiteboard in the Apple look (light canvas, floating white tools, one blue) and the styles for the Miro-style helpers; the last layer for the board. |
 | [workshop.css](workshop.css) | Workshop room (src/workshop.js). |
 
 ## Other

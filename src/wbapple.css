@@ -1,0 +1,57 @@
+/* Process Whiteboard in the Apple look (Direction A): a light grey canvas, white floating tools with a hairline and a soft shadow, one blue for the active tool and the connectors,
+   capsule buttons from ui.css. This is the last word for the board and its drawers (it loads after projfx.css). Also styles the Miro-style helpers from whiteboard2.js. */
+body .wb-host:not(#_):not(#__) { background: #f6f7f9 !important; border: 1px solid rgba(16, 24, 40, .08) !important; border-radius: 18px !important; box-shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 8px 28px -12px rgba(16, 24, 40, .12) !important; }
+body .wb-host.wb-full:not(#_):not(#__) { border-radius: 0 !important; box-shadow: none !important; }
+body .wb-host svg:not(#_) { text-rendering: geometricPrecision; }
+body .wb-host.zooming svg:not(#_) text { text-rendering: optimizeSpeed; }
+body .wb-host.zooming .wb-hdel, body .wb-host.zooming .wb-ah, body .wb-host.zooming .wb-mid, body .wb-host.zooming .wb-eh { display: none; }
+body #wbWorld:not(#_) { will-change: transform; }
+
+/* top toolbar: one calm white bar */
+body .wb-tb:not(#_):not(#__) { background: #fff !important; border: 1px solid rgba(16, 24, 40, .08) !important; border-radius: 16px !important; box-shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 6px 20px -10px rgba(16, 24, 40, .14) !important; padding: 8px 12px !important; gap: 8px 16px !important; }
+body .wb-tb .wb-grp:not(#_) { gap: 6px; }
+body .wb-tb .wb-grp + .wb-grp:not(#_) { padding-left: 16px; box-shadow: inset 1px 0 0 rgba(16, 24, 40, .08); }
+body .wb-save:not(#_) { font-size: 12px; color: #86868b; }
+
+/* floating tools */
+body .wb-rail:not(#_):not(#__) { left: 14px; padding: 6px; gap: 3px; border-radius: 16px; background: rgba(255, 255, 255, .92); backdrop-filter: saturate(180%) blur(14px); -webkit-backdrop-filter: saturate(180%) blur(14px); box-shadow: 0 0 0 1px rgba(16, 24, 40, .07), 0 10px 30px -8px rgba(16, 24, 40, .2); }
+body .wb-rb:not(#_):not(#__) { width: 38px; height: 38px; border-radius: 11px; color: #424245; transition: background .14s cubic-bezier(.32, .72, 0, 1), color .14s, transform .12s; }
+body .wb-rb:not(#_):hover { background: #f0f2f5; color: #1d1d1f; }
+body .wb-rb:not(#_):active { transform: scale(.94); }
+body .wb-rb[aria-pressed="true"]:not(#_):not(#__) { background: #EAF2FF; color: #1570EF; box-shadow: inset 0 0 0 1px rgba(21, 112, 239, .22); }
+body .wb-rb:focus-visible:not(#_), body .wb-zb:focus-visible:not(#_), body .wb-cb:focus-visible:not(#_) { outline: 2px solid #1570EF; outline-offset: 1px; }
+body .wb-zoombar:not(#_):not(#__) { padding: 4px; border-radius: 14px; background: rgba(255, 255, 255, .92); backdrop-filter: saturate(180%) blur(14px); -webkit-backdrop-filter: saturate(180%) blur(14px); box-shadow: 0 0 0 1px rgba(16, 24, 40, .07), 0 8px 24px -8px rgba(16, 24, 40, .18); }
+body .wb-zb:not(#_):hover, body .wb-zp:not(#_):hover { background: #f0f2f5; }
+body .wb-zp:not(#_):not(#__) { font: 600 12.5px/1 var(--cs-font, inherit); color: #424245; }
+body .wb-ctxbar:not(#_):not(#__) { padding: 5px; border-radius: 14px; background: rgba(255, 255, 255, .95); backdrop-filter: saturate(180%) blur(14px); -webkit-backdrop-filter: saturate(180%) blur(14px); box-shadow: 0 0 0 1px rgba(16, 24, 40, .07), 0 12px 32px -8px rgba(16, 24, 40, .22); }
+body .wb-pop:not(#_):not(#__) { border-radius: 14px; padding: 10px; box-shadow: 0 0 0 1px rgba(16, 24, 40, .07), 0 14px 36px -10px rgba(16, 24, 40, .24); }
+body .wb-pop-h:not(#_):not(#__) { font: 600 11px/1.2 var(--cs-font, inherit); letter-spacing: .02em; color: #86868b; text-transform: none; }
+body .wb-pop-g button:not(#_):hover, body .wb-pop-g button[aria-pressed="true"]:not(#_) { background: #EAF2FF; color: #1570EF; }
+body .wb-legend:not(#_) { left: 70px; bottom: 14px; padding: 5px 12px; border-radius: 999px; background: rgba(255, 255, 255, .86); box-shadow: 0 0 0 1px rgba(16, 24, 40, .06); color: #6e6e73; }
+body .wb-mode:not(#_) { color: #1570EF; font-weight: 600; }
+body .wb-edit:not(#_):not(#__) { border: 2px solid #1570EF; border-radius: 10px; box-shadow: 0 8px 24px -8px rgba(21, 112, 239, .35); }
+
+/* arrow handles and the dot on a connector */
+body .wb-ah, body .wb-mid { cursor: pointer; }
+body .wb-ah circle { transition: fill .12s; filter: drop-shadow(0 1px 2px rgba(16, 24, 40, .18)); } body .wb-ah:hover circle { fill: #EAF2FF; }
+body .wb-mid circle { filter: drop-shadow(0 1px 3px rgba(21, 112, 239, .45)); } body .wb-mid:hover circle { r: 9; }
+body .wb-eh { cursor: crosshair; }
+
+/* insert and create menus */
+body .wb-insmenu:not(#_):not(#__) { z-index: 9; width: 232px; }
+body .wb-insgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+body .wb-insgrid button, body .wb-crlist button { border: 0; background: none; border-radius: 10px; padding: 8px 10px; text-align: left; font: inherit; color: #1d1d1f; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+body .wb-insgrid button:hover, body .wb-crlist button:hover { background: #EAF2FF; }
+body .wb-insgrid b, body .wb-crlist b { font-weight: 600; font-size: 13px; } body .wb-crlist span { font-size: 12px; color: #6e6e73; }
+body .wb-crlist { display: grid; gap: 2px; width: 240px; }
+body .wb-insmenu:has(.wb-crlist) { width: 264px; }
+
+/* Add State Flow drawer */
+body .wb-fgroup { font: 600 11px/1.2 var(--cs-font, inherit); letter-spacing: .02em; color: #86868b; padding: 10px 10px 4px; }
+body .wb-flist:not(#_):not(#__) { border: 1px solid rgba(16, 24, 40, .08); border-radius: 14px; padding: 6px; max-height: 340px; background: #fff; }
+body .wb-fi:not(#_):not(#__) { border-radius: 10px; padding: 9px 10px; } body .wb-fi:not(#_):hover { background: #f3f6fb; }
+body .wb-prev:not(#_):not(#__) { border: 1px solid rgba(16, 24, 40, .08); border-style: solid; border-radius: 14px; background: #fafbfc; padding: 12px; }
+body .wb-pvbox { background: #fff; border: 1px solid rgba(16, 24, 40, .08); border-radius: 12px; padding: 10px; }
+body .wb-then { text-align: center; color: #1570EF; font: 600 11.5px/1 var(--cs-font, inherit); padding: 7px 0; }
+body .wb-dirseg { margin: 10px 0 4px; }
+body .wb-dirseg button.on { background: #fff; box-shadow: 0 1px 3px rgba(16, 24, 40, .18); color: #1d1d1f; }
