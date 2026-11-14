@@ -2738,3 +2738,5 @@ body .wb-who-l:not(#_):not(#__) { display: grid; grid-template-columns: repeat(2
 body .wb-cb.wb-who:not(#_):not(#__) { width: auto; padding: 0 10px; font-size: 12px; white-space: nowrap; }
 /* Solution page: the per-module Claude button sits next to the module name */
 body .sm-page .sm-m > summary .sm-ai:not(#_):not(#__) { margin-left: 4px; height: 28px; padding: 0 12px; font-size: 12.5px; }
+/* Add a document: two big choices */
+body .sm-doc:not(#_):not(#__) { display: grid; gap: 10px; } body .sm-doc .btn:not(#_):not(#__) { height: auto; padding: 14px 16px; border-radius: 14px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; white-space: normal; } body .sm-doc .btn span { font-size: 12.5px; font-weight: 400; color: #667085; }
