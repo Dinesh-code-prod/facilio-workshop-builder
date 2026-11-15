@@ -88,6 +88,8 @@
   ACT.opkClosed = el => { const u = U(); const k = el.getAttribute('data-k'); u.closed = el.checked ? u.closed.concat(k) : u.closed.filter(x => x !== k); V.render(); };
   ACT.opkPick = el => { const u = U(); const k = el.getAttribute('data-k'); u.off = el.checked ? u.off.filter(x => x !== k) : u.off.concat(k); V.render(); };
   function current() { const model = collect(); const u = U(); const all = O().build(model, { includeDrafts: u.drafts, closedStates: new Set(u.closed), now: Date.now() }); const sel = new Set(all.items.filter(i => i.included && !u.off.includes(i.key)).map(i => i.key)); return { model, res: O().build(model, { includeDrafts: u.drafts, closedStates: new Set(u.closed), selected: sel, now: Date.now() }) }; }
+  /** the package built from the project as it is now, and its structural check, without downloading (the BRD shows it; tests and checks use it) */
+  V.orgpkgCheck = () => { const { model, res } = current(); const pre = O().verify(res.files, model, root.DOMParser); return { counts: res.counts, items: res.items.length, included: res.items.filter(i => i.included).length, draft: !!res.draft, ok: pre.ok, errors: pre.errors.slice(0, 3), files: Object.keys(res.files).length }; };
   ACT.opkZip = a => V.busy(a, async () => {
     const { model, res } = current(); if (!res.items.some(i => i.included)) { toast('Nothing is selected for the package', 5000, true); return; }
     const pre = O().verify(res.files, model, root.DOMParser); if (!pre.ok) { toast('The package failed its structural check, so it was not downloaded: ' + pre.errors.slice(0, 2).join('; '), 9000, true); return; }

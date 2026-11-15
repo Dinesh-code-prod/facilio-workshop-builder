@@ -11,7 +11,8 @@
   const SYM = '<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5h12A1.5 1.5 0 0 1 17.5 6v6a1.5 1.5 0 0 1-1.5 1.5H9.5L6 16.5v-3H4A1.5 1.5 0 0 1 2.5 12V6A1.5 1.5 0 0 1 4 4.5z"/><path d="M10 7.2l.7 1.5 1.5.7-1.5.7-.7 1.5-.7-1.5-1.5-.7 1.5-.7z" fill="currentColor" stroke="none"/></svg>';   // the Assistant symbol: a chat bubble with a spark
   const st = () => S.ui.asst || (S.ui.asst = { open: false, seen: {}, init: '', sig: '' });
   const L = () => root.FWBKickoffLogic, W = () => root.FWBWorkChat, J = () => V.studioJobs, I = () => V.items;
-  const team = () => !!(S.user && S.user.kind !== 'customer' && S.project && S.project.id && (!V.isCustomer || !V.isCustomer()));
+  const inProject = () => { const h = String((root.location && root.location.hash) || ''); return h.indexOf('#/p/') === 0; };   // the projects home keeps the last project loaded: the chat shows on project pages only
+  const team = () => !!(S.user && S.user.kind !== 'customer' && S.project && S.project.id && inProject() && (!V.isCustomer || !V.isCustomer()));
   let panel = null, tab = null, ticks = 0;
   function ensure() {
     if (panel) return; panel = document.createElement('aside'); panel.id = 'asst'; panel.setAttribute('aria-label', 'Project assistant'); tab = document.createElement('button'); tab.id = 'asstTab'; tab.type = 'button'; tab.setAttribute('data-act', 'asstToggle'); tab.setAttribute('aria-label', 'Open or close the project assistant');
