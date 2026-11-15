@@ -176,3 +176,11 @@ Last updated: 2 Nov 2026 (evening), Claude Code session `vigilant-euclid`. Pushe
 - Deploys need a Claude session with the `facilio work` connector signed in with the Facilio account (any Claude account type works). Run `/deploy`.
 
 - Second Nov 2026 (deploys 107 and 108): see docs/reports/master-prompt-compliance-2026-11-02.md for the section-by-section status against the master prompt. Merged the other account's BRD scope commits first. Admin > AI > Check image reading must be run once on the live app to learn whether the platform accepts picture input.
+
+## Open requests from the user (15 Nov 2026, session agent-ae078c81287e45558; all earlier work is deployed)
+1. Workshop room: each planned session shows only the questions of the modules it covers, grouped by module (today every session shows all 188). Questions tab and Workshop room stay both, but share one record so a status set in one shows in the other (src/workshop.js prepared()/questionList, src/workshoplogic.js, qbank items .module, planner.sessions modules/items).
+2. Workshop room look: nicer and fuller (side list of the session's questions by module next to the question card, clearer session cards, coloured progress). Float the questions button is now on the session header (ACT.wsPip, src/workshoplive.js): check it opens over Teams/Zoom with that session's questions.
+3. Rail: groups switched on in Settings > Tabs & Layouts (Notes & Links, Customer View, Show Facilio, Customer portal, Help, Claude & tools, Settings) do not all show in the side rail; find why (src/shell.js rail/RAIL, tab layout prefs) and show them.
+4. Project Settings (src/settings.js stSec): forms use the full page width; every section (Customer, Background and objectives, RACI, People & access team table) gets a Save bar like Project details; decide whether the separate Add a person section is needed (team table already gives access) and remove it if not.
+5. Contract-to-BRD plan (docs/plans/CONTRACT-TO-BRD-PLAN-2026-11-15.md): step 4 automatic flow checks on the Solution map State flows tile; step 5 one source per compartment; step 7 waits for the user: retire the old Transcripts statements view for new projects?
+Deploy after each item (user said deploy automatically), log in docs/operations/DEPLOYS.md, check on live (user is signed in in the browser pane).
