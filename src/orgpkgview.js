@@ -91,7 +91,8 @@
   /** the package built from the project as it is now, and its structural check, without downloading (the BRD shows it; tests and checks use it) */
   V.orgpkgCheck = () => { const { model, res } = current(); const pre = O().verify(res.files, model, root.DOMParser); return { counts: res.counts, items: res.items.length, included: res.items.filter(i => i.included).length, draft: !!res.draft, ok: pre.ok, errors: pre.errors.slice(0, 3), files: Object.keys(res.files).length }; };
   ACT.opkZip = a => V.busy(a, async () => {
-    const { model, res } = current(); if (!res.items.some(i => i.included)) { toast('Nothing is selected for the package', 5000, true); return; }
+    const fromBrd = a && a.getAttribute && a.getAttribute('data-drafts') === '1', u0 = U(), was = u0.drafts; if (fromBrd) u0.drafts = true;   // from the BRD draft: drafts go in, and the package says DRAFT until sign-off
+    let cur; try { cur = current(); } finally { if (fromBrd) u0.drafts = was; } const { model, res } = cur; if (!res.items.some(i => i.included)) { toast('Nothing is selected for the package', 5000, true); return; }
     const pre = O().verify(res.files, model, root.DOMParser); if (!pre.ok) { toast('The package failed its structural check, so it was not downloaded: ' + pre.errors.slice(0, 2).join('; '), 9000, true); return; }
     await V.loadScript('vendor/jszip.min.js'); const z = new root.JSZip(); Object.entries(res.files).forEach(([k, v]) => z.file(k, v)); z.folder('metafiles');
     const blob = await z.generateAsync({ type: 'blob', compression: 'DEFLATE' });
