@@ -18,9 +18,10 @@
 
   // ================= VIEW =================
   V.transcripts = { html() {
-    const tab = S.ui.trTab || 'review'; const d = T(); const pend = d.candidates.filter(c => c.status === 'pending' || c.status === 'clarify').length;
-    const tabs = [['upload', 'Transcripts', d.items.filter(live).length], ['review', 'Review queue', pend], ['register', 'Requirements register', S.ws.requirements.length], ['questions', 'Open questions', S.ws.questions.filter(q => q.status !== 'closed').length], ['history', 'Review history']].concat(V.trExtra ? V.trExtra() : []);
-    return `<div class="page-header"><div class="t"><h1>Transcripts &amp; Requirement Confirmation</h1><p>Upload workshop transcripts, review what was said against the configuration, and confirm requirements. Analysis runs in your browser using rules — transcripts are not sent to external AI services. Only requirements marked Confirmed are included in the BRD.</p></div>
+    const old = legacy(); const tab = !old && /^(review|history)$/.test(S.ui.trTab || 'review') ? 'upload' : (S.ui.trTab || 'review'); const d = T();
+    // the Review queue and its history exist only in projects that still have statements from the retired pipeline, to read
+    const tabs = [['upload', 'Transcripts', d.items.filter(live).length]].concat(old ? [['review', 'Old statements (read only)', 0]] : [], [['register', 'Requirements register', S.ws.requirements.length], ['questions', 'Open questions', S.ws.questions.filter(q => q.status !== 'closed').length]], old ? [['history', 'Review history']] : []).concat(V.trExtra ? V.trExtra() : []);
+    return `<div class="page-header"><div class="t"><h1>Transcripts &amp; Requirement Confirmation</h1><p>Keep the transcripts of the requirement sessions here. Claude reads them and what was promised or asked appears as findings on Checks &amp; validations. Only requirements marked Confirmed are included in the BRD.</p></div>
       <div class="row"><button class="btn" data-act="nav" data-view="demokit" title="The real Facilio screens, to show in the session">Facilio screens</button><button class="btn" data-act="tpStart" data-ci="0" title="Play the guided tour of real Facilio screens in the session">Show Facilio</button><button class="btn" data-act="nav" data-view="whiteboard" title="Draw the customer's process and drop in a standard module flow">Requirements whiteboard</button>${V.howtoButton('transcripts')}${S.readonly ? '' : `<button class="btn" data-act="newReq">${ico('plus')}Requirement</button><button class="btn primary" data-act="uploadTranscript">${ico('upl')}Upload transcript</button>`}</div></div>
       <div class="tabs">${tabs.map(([k, l, c]) => `<button class="tab${tab === k ? ' active' : ''}" data-act="trTab" data-v="${k}">${esc(l)}${c ? `<span class="cnt">${c}</span>` : ''}</button>`).join('')}</div><div class="page-body">${V.tabHint('transcripts', tab)}${(TT[tab] || (V.trExtraBody && V.trExtraBody[tab]) || TT.review)()}</div>`;
   } };
@@ -30,9 +31,9 @@
   // ---------- uploads ----------
   TT.upload = () => {
     const d = T();
-    return `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Transcript</th><th>Session</th><th>Modules</th><th>Uploaded</th><th>Candidates</th><th>Status</th><th></th></tr></thead><tbody>${d.items.filter(live).map(i => { const n = d.candidates.filter(c => c.transcriptId === i.id); return `<tr><td><b>${esc(i.name)}</b>${i.version > 1 ? ' ' + tag('blue', 'v' + i.version) : ''}${i.notes ? `<div class="xs muted">${esc(i.notes)}</div>` : ''}</td><td class="small">${esc(sessLabel(i.sessionId))}</td><td class="small">${esc((i.modules || []).map(m => (F.moduleView(m) || {}).label || m).join(', ')) || '<span class="dash">All in scope</span>'}</td><td class="small">${esc(V.fmtDate(i.uploadedAt))}<div class="xs muted">${esc(i.by || '')}</div></td>
-      <td class="small">${n.length} (${n.filter(c => c.status === 'pending').length} pending)</td><td>${tag(i.status === 'reviewed' ? 'green' : i.status === 'analysed' ? 'blue' : 'low', humanize(i.status || 'uploaded'))}</td>
-      <td class="acts"><div class="tr-acts">${S.readonly ? '' : `<button class="btn sm" data-act="trMom" data-id="${esc(i.id)}" title="Write the minutes of this meeting">Create MOM</button><button class="btn sm${i.status === 'uploaded' ? ' primary' : ''}" data-act="analyseTranscript" data-id="${esc(i.id)}" title="${i.status === 'uploaded' ? 'Read the transcript and suggest requirements' : 'Run the analysis again'}">${i.status === 'uploaded' ? 'Analyse' : 'Re-analyse'}</button><button class="btn sm" data-act="editTranscript" data-id="${esc(i.id)}" title="Change the session, the modules or the notes">${ico('edit')}Edit details</button><button class="btn sm" data-act="replaceTranscript" data-id="${esc(i.id)}" title="Upload a corrected file; the old version is kept">${ico('upl')}Replace file</button>`}<button class="btn sm" data-act="dlTranscript" data-id="${esc(i.id)}" title="Download the file">${ico('dl')}Download</button>${S.readonly ? '' : `<button class="btn sm danger" data-act="removeTranscript" data-id="${esc(i.id)}" title="Remove this transcript from the project">${ico('trash') || ''}Remove</button>`}</div></td></tr>`; }).join('') || `<tr><td colspan="7" class="empty">No transcripts uploaded. Supported: .vtt, .srt, .txt, .docx, .json (Teams / Zoom exports).</td></tr>`}</tbody></table></div>`;
+    return `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Transcript</th><th>Session</th><th>Modules</th><th>Uploaded</th>${legacy() ? '<th>Old statements</th>' : ''}<th>Status</th><th></th></tr></thead><tbody>${d.items.filter(live).map(i => { const n = d.candidates.filter(c => c.transcriptId === i.id); return `<tr><td><b>${esc(i.name)}</b>${i.version > 1 ? ' ' + tag('blue', 'v' + i.version) : ''}${i.notes ? `<div class="xs muted">${esc(i.notes)}</div>` : ''}</td><td class="small">${esc(sessLabel(i.sessionId))}</td><td class="small">${esc((i.modules || []).map(m => (F.moduleView(m) || {}).label || m).join(', ')) || '<span class="dash">All in scope</span>'}</td><td class="small">${esc(V.fmtDate(i.uploadedAt))}<div class="xs muted">${esc(i.by || '')}</div></td>
+      ${legacy() ? `<td class="small">${n.length}</td>` : ''}<td>${tag(i.status === 'reviewed' ? 'green' : i.status === 'analysed' ? 'blue' : 'low', humanize(i.status || 'uploaded'))}</td>
+      <td class="acts"><div class="tr-acts">${S.readonly ? '' : `<button class="btn sm" data-act="trMom" data-id="${esc(i.id)}" title="Write the minutes of this meeting">Create MOM</button><button class="btn sm" data-act="editTranscript" data-id="${esc(i.id)}" title="Change the session, the modules or the notes">${ico('edit')}Edit details</button><button class="btn sm" data-act="replaceTranscript" data-id="${esc(i.id)}" title="Upload a corrected file; the old version is kept">${ico('upl')}Replace file</button>`}<button class="btn sm" data-act="dlTranscript" data-id="${esc(i.id)}" title="Download the file">${ico('dl')}Download</button>${S.readonly ? '' : `<button class="btn sm danger" data-act="removeTranscript" data-id="${esc(i.id)}" title="Remove this transcript from the project">${ico('trash') || ''}Remove</button>`}</div></td></tr>`; }).join('') || `<tr><td colspan="7" class="empty">No transcripts uploaded. Supported: .vtt, .srt, .txt, .docx, .json (Teams / Zoom exports).</td></tr>`}</tbody></table></div>`;
   };
   function transcriptForm(i) {
     const mods = F.allModules().filter(m => m.inScope || (i.modules || []).includes(m.name)).sort((a, b) => a.label.localeCompare(b.label));
@@ -41,7 +42,7 @@
       <div class="full"><label class="f">Notes</label><textarea id="tr_notes" rows="3">${esc(i.notes || '')}</textarea></div></div>`;
   }
   const trForm = () => ({ sessionId: document.getElementById('tr_sess').value, modules: Array.from(document.getElementById('tr_mods').selectedOptions).map(o => o.value), notes: document.getElementById('tr_notes').value.trim() });
-  ACT.uploadTranscript = () => { const sess = S.ui.trSession || ''; drawer('Upload transcript', `<div class="drop" data-act="trPick"><div>${ico('upl')}</div><div><b>Choose a transcript file</b></div><div class="xs muted">.vtt · .srt · .txt · .docx · .json — up to 20 MB</div><div id="tr_file" class="small" style="margin-top:8px"></div></div><div style="margin-top:14px">${transcriptForm({ sessionId: sess })}</div>`, `<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="trUpload">Upload and analyse</button>`); };
+  ACT.uploadTranscript = () => { const sess = S.ui.trSession || ''; drawer('Upload transcript', `<div class="drop" data-act="trPick"><div>${ico('upl')}</div><div><b>Choose a transcript file</b></div><div class="xs muted">.vtt · .srt · .txt · .docx · .json — up to 20 MB</div><div id="tr_file" class="small" style="margin-top:8px"></div></div><div style="margin-top:14px">${transcriptForm({ sessionId: sess })}</div>`, `<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="trUpload">Upload transcript</button>`); };
   let picked = null;
   ACT.trPick = async () => { const f = (await V.pickFile('.vtt,.srt,.txt,.docx,.json'))[0]; if (!f) return; picked = f; document.getElementById('tr_file').textContent = f.name + ' · ' + V.fmtSize(f.size); };
   ACT.trUpload = async a => { if (!picked) { toast('Choose a file first'); return; } const meta = trForm(); const replaces = a.getAttribute('data-replace') || null; const f = picked; picked = null; closeDrawer(); await trSave(f, meta, replaces); };
@@ -53,10 +54,10 @@
       const item = Object.assign({ id: F.uid('tr'), fileId: rec.id, name: f.name, uploadedAt: new Date().toISOString(), by: S.user.name, status: 'uploaded', version: old ? (old.version || 1) + 1 : 1, replaces: old ? old.id : null, chars: text.length }, meta);
       d.items.unshift(item); hist(old ? 'Transcript replaced' : 'Transcript uploaded', f.name); saveText(item.id, text);
       if (old) d.candidates.filter(c => c.transcriptId === old.id && c.status === 'pending').forEach(c => { c.status = 'rejected'; c.reason = 'Superseded by a newer transcript version'; });
-      analyse(item, text); F.changed('Transcript uploaded', f.name, { section: 'transcripts' }); S.ui.trTab = 'review'; S.ui.trFilter = { transcript: item.id }; V.render();
+      analyse(item); F.changed('Transcript uploaded', f.name, { section: 'transcripts' }); S.ui.trTab = 'upload'; toast('Transcript saved. Claude reads it for the findings on Checks & validations.', 6000); V.render();
     } finally { loading(false); } }
   V.trSave = trSave;
-  ACT.replaceTranscript = a => { const i = T().items.find(x => x.id === a.getAttribute('data-id')); drawer('Replace transcript file', `<div class="notice" style="margin-bottom:12px"><span>Upload a corrected or newer file for <b>${esc(i.name)}</b>. The previous version is kept. Pending suggestions from it are closed; decisions you already made are kept.</span></div><div class="drop" data-act="trPick"><div>${ico('upl')}</div><div><b>Choose the new file</b></div><div class="xs muted">.vtt · .srt · .txt · .docx · .json — up to 20 MB</div><div id="tr_file" class="small" style="margin-top:8px"></div></div><details style="margin-top:14px"><summary class="small" style="cursor:pointer">Same session, modules and notes as before. Change them too</summary><div style="margin-top:10px">${transcriptForm(i)}</div></details>`, `<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="trUpload" data-replace="${esc(i.id)}">Upload new file and analyse</button>`); };
+  ACT.replaceTranscript = a => { const i = T().items.find(x => x.id === a.getAttribute('data-id')); drawer('Replace transcript file', `<div class="notice" style="margin-bottom:12px"><span>Upload a corrected or newer file for <b>${esc(i.name)}</b>. The previous version is kept. Pending suggestions from it are closed; decisions you already made are kept.</span></div><div class="drop" data-act="trPick"><div>${ico('upl')}</div><div><b>Choose the new file</b></div><div class="xs muted">.vtt · .srt · .txt · .docx · .json — up to 20 MB</div><div id="tr_file" class="small" style="margin-top:8px"></div></div><details style="margin-top:14px"><summary class="small" style="cursor:pointer">Same session, modules and notes as before. Change them too</summary><div style="margin-top:10px">${transcriptForm(i)}</div></details>`, `<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="trUpload" data-replace="${esc(i.id)}">Upload new file</button>`); };
   ACT.editTranscript = a => { const i = T().items.find(x => x.id === a.getAttribute('data-id')); drawer('Edit transcript details', `<div class="notice" style="margin-bottom:12px"><span>Change which requirement session <b>${esc(i.name)}</b> belongs to, the modules discussed, or the notes. To upload a corrected file instead, use <b>Replace file</b>.</span></div>${transcriptForm(i)}`, `<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="saveTranscript" data-id="${esc(i.id)}">Save</button>`); };
   ACT.saveTranscript = a => { const i = T().items.find(x => x.id === a.getAttribute('data-id')); Object.assign(i, trForm()); T().candidates.filter(c => c.transcriptId === i.id).forEach(c => { c.sessionId = i.sessionId; }); closeDrawer(); hist('Transcript details updated', i.name); F.changed('Transcript updated', i.name, { section: 'transcripts' }); };
   ACT.removeTranscript = async a => { const id = a.getAttribute('data-id'); const d = T(); const i = d.items.find(x => x.id === id); if (!i) return;
@@ -70,9 +71,6 @@
       hist('Transcript removed', i.name); F.changed('Transcript removed', i.name, { section: 'transcripts' }); toast('Removed ' + i.name); V.render();
     } catch (e) { toast(e.message || 'Could not remove the transcript', 5000, true); } finally { loading(false); } };
   ACT.dlTranscript = async a => { const i = T().items.find(x => x.id === a.getAttribute('data-id')); loading(true, 'Downloading…'); try { const d = await API.downloadFile(S.project.id, i.fileId); V.download(i.name, d.blob); } finally { loading(false); } };
-  ACT.analyseTranscript = async a => { const i = T().items.find(x => x.id === a.getAttribute('data-id')); const pend = T().candidates.filter(c => c.transcriptId === i.id && c.status === 'pending');
-    if (pend.length && !(await confirmDialog('Re-analyse transcript', `Re-run the analysis? ${pend.length} pending candidate(s) from this transcript are replaced; reviewed ones are kept.`, 'Re-analyse'))) return;
-    loading(true, 'Analysing…'); try { const d = await API.downloadFile(S.project.id, i.fileId); const text = await extractText(new File([d.blob], i.name)); saveText(i.id, text); const D = T(); D.candidates = D.candidates.filter(c => !(c.transcriptId === i.id && c.status === 'pending')); analyse(i, text); F.changed('Transcript analysed', i.name, { section: 'transcripts' }); S.ui.trTab = 'review'; S.ui.trFilter = { transcript: i.id }; V.render(); } finally { loading(false); } };
 
   // ---------- text extraction ----------
   const saveText = (id, text) => API.put('/api/projects/' + S.project.id + '/items/trtext/' + id, { data: { text: String(text || '').slice(0, 400000) } }).catch(() => { });   // best effort; Create MOM and the connector use it
@@ -87,93 +85,11 @@
   }
   V.extractTranscriptText = extractText;
 
-  // ---------- rule-based analysis ----------
-  const RX = {
-    request: /\b(should|shouldn't|we need|we'd need|we want|we would like|we'd like|need to|needs to|should be able|should have|must|required to|requirement is|can we|could we|it would be (good|nice|helpful)|please add|has to|have to)\b/i,
-    explanation: /\b(currently|right now|at the moment|today we|today,? we|we use|we are using|the process is|our process|normally|usually|what happens is|as of now|existing process)\b/i,
-    tentative: /\b(maybe|might|probably|not sure|i think|we think|possibly|perhaps|could be|let me check|to be decided|tbd|consider)\b/i,
-    confirmed: /\b(agreed|confirmed|confirm that|yes,? (let'?s|we will|that'?s fine|go ahead)|final(ise|ize|ised|ized)?|go ahead|approved|sign(ed)? off|that works|let'?s do that)\b/i,
-    change: /\b(change|rename|instead of|replace|make (it )?(mandatory|optional|read.?only)|(be|is|as) (mandatory|optional|read.?only|compulsory)|remove|hide|add (an? )?(option|value|field|status|state|button)|split|merge|move)\b/i,
-    link: /\b(creates?|raise[sd]?|generates?|converts?|auto.?creates?|spawns?|linked to|link (it|them) to|turns? into)\b/i,
-    followup: /^(yes|yeah|no|maybe|also|and|but|that|this|it|they|those|then|so|ok|okay)\b/i,
-    negative: /\b(should not|shouldn't|don't need|do not need|no need|not required|never|must not|not needed)\b/i,
-    missing: /\b(tbd|to be decided|need to check|will check|get back|follow up|follow-up|not decided|need to confirm|will confirm|don't know|do not know)\b/i,
-    custom: /\b(integration|integrate|api\b|sap\b|erp\b|oracle|sso\b|active directory|custom report|script|webhook|sync|automatically calculate|custom (logic|code|development)|connector|middleware|third.?party)\b/i
-  };
-  // Vocabulary. Modules are matched everywhere (by label, technical name and singular/plural); fields, states and
-  // transitions only for the modules a statement is actually about, so common words ("Assign", "Phone", "Vendor")
-  // no longer pull in every module that happens to have them.
-  const GENERIC = /^(assign|assigned|close|closed|open|submit|submitted|request|requested|approve|approved|reject|rejected|resolve|resolved|start|cancel|phone|email|vendor|site|space|group|team|category|priority|location|owner|amount|comments?|subject|title|summary)$/i;
-  const rxFor = l => new RegExp('\\b' + l.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+') + '(s|es)?\\b', 'i');
-  function moduleVocab() {
-    const out = []; const seen = new Set();
-    F.allModules().filter(m => m.inUse || m.inScope).forEach(m => { [m.label, humanize(m.name), m.label.replace(/s$/i, ''), m.label.replace(/ies$/i, 'y')].forEach(l => { l = String(l || '').trim(); const k = m.name + '|' + l.toLowerCase(); if (l.length < 3 || seen.has(k)) return; seen.add(k); out.push({ kind: 'module', label: m.label, rx: rxFor(l), module: m.name, ref: m.name, words: l.split(/\s+/).length }); }); });
-    return out;
-  }
-  const detailCache = {};
-  function detailVocab(m) {
-    if (detailCache[m]) return detailCache[m]; const out = []; const seen = new Set();
-    const add = (kind, label, ref) => { const l = String(label || '').trim(); if (l.length < 3 || /^(name|id|status|type|date|time|description|notes?)$/i.test(l)) return; const k = kind + '|' + l.toLowerCase(); if (seen.has(k)) return; seen.add(k); out.push({ kind, label: l, rx: rxFor(l), ref, module: m, generic: GENERIC.test(l) }); };
-    F.effFields(m).filter(f => f.status !== 'removed' && (f.onForms || []).length || f.status === 'proposed').forEach(f => add('field', f.label, f.name));
-    F.flowsForModule(m).forEach(x => { const fm = F.flowModel(x.id); fm.states.forEach(st => add('state', st.label, st.id)); fm.transitions.filter(t => !t.removed).forEach(t => add('transition', t.name, fm.id + '|' + t.id)); });
-    return (detailCache[m] = out);
-  }
-  function analyse(item, text) {
-    Object.keys(detailCache).forEach(k => delete detailCache[k]);
-    const sess = sessions().find(x => x.id === item.sessionId);
-    const scopeMods = item.modules && item.modules.length ? item.modules : (sess && (sess.modules || []).length ? sess.modules.filter(m => F.moduleView(m)) : []);
-    const MV = moduleVocab(); const roles = F.allActors().filter(a => a.roleName || a.origin === 'proposed').map(a => ({ kind: 'role', label: a.label, rx: rxFor(a.label), ref: a.id })).filter(r => r.label.length > 3);
-    const d = T();
-    // utterances: "Speaker: text" lines; long lines split into sentences
-    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean); const utt = []; let speaker = '';
-    lines.forEach((l, li) => { const m = l.match(/^([A-Z][\w .'()&-]{1,50}?)\s*[:：]\s+(.*)$/); let body = l; if (m && m[1].split(' ').length <= 6) { speaker = m[1].trim(); body = m[2]; }
-      body.split(/(?<=[.!?])\s+(?=[A-Z])/).forEach(x => { if (x.trim().length > 14) utt.push({ speaker, text: x.trim(), line: li + 1 }); }); });
-    let n = 0; let prevTopic = [];
-    utt.forEach((u, idx) => {
-      const t = u.text; const why = [];
-      // 1. which modules is this about? explicitly named first (longest label wins), then a follow-up inherits the previous topic, then the session's modules
-      let named = []; const spans = {}; const rank = m => { const mv = F.moduleView(m) || {}; return (mv.inScope ? 0 : 1000) + F.businessRank(m); };
-      MV.filter(v => v.rx.test(t)).sort((a, b) => b.words - a.words || rank(a.module) - rank(b.module)).forEach(v => { const said = (t.match(v.rx) || [''])[0].toLowerCase().replace(/(es|s)$/, ''); if (named.includes(v.module)) return; if (spans[said] && spans[said] !== v.module) return; spans[said] = v.module; named.push(v.module); });
-      let topic = named.slice(), how = named.length ? 'named' : '';
-      if (!topic.length && prevTopic.length && (RX.followup.test(t) || (idx > 0 && utt[idx - 1].speaker === u.speaker && utt[idx - 1].line >= u.line - 1))) { topic = prevTopic.slice(); how = 'follows on from the previous statement'; }
-      if (!topic.length && scopeMods.length && scopeMods.length <= 3) { topic = scopeMods.slice(); how = 'the session\'s modules'; }
-      // 2. configuration elements of those modules mentioned in the statement (one entry per label)
-      const det = []; topic.forEach(m => detailVocab(m).forEach(v => { if (v.rx.test(t) && !det.some(x => x.kind === v.kind && x.label.toLowerCase() === v.label.toLowerCase())) det.push(v); }));
-      const specific = det.filter(x => !x.generic); const known = det;
-      const roleHits = roles.filter((r, i) => r.rx.test(t) && roles.findIndex(x => x.label.toLowerCase() === r.label.toLowerCase()) === i).slice(0, 3);
-      const isQ = /\?\s*$/.test(t) || /^(what|how|can|could|does|do|is|are|will|who|when|where|why|should)\b/i.test(t);
-      const kind = RX.confirmed.test(t) ? 'confirmed' : RX.tentative.test(t) ? 'tentative' : RX.request.test(t) ? 'request' : RX.explanation.test(t) ? 'explanation' : null;
-      const neg = RX.negative.test(t); const custom = RX.custom.test(t); const missing = RX.missing.test(t);
-      const relevant = kind || isQ || neg || custom || missing;
-      if (named.length) prevTopic = named.slice();
-      if (!relevant || (!topic.length && !custom && !isQ && kind !== 'request' && kind !== 'explanation')) return;
-      // 3. category, with the reason written down so a reviewer can check it
-      const word = rx => (t.match(rx) || [''])[0];
-      let cat;
-      if (custom) { cat = 'custom'; why.push(`Mentions "${word(RX.custom)}" — likely integration or custom work`); }
-      else if ((/\?\s*$/.test(t) || isQ && kind !== 'request') && kind !== 'confirmed') { cat = 'question'; why.push('Phrased as a question'); }
-      else if (missing) { cat = 'missing'; why.push(`Still open: "${word(RX.missing)}"`); }
-      else if (kind === 'tentative') { cat = 'unconfirmed'; why.push(`Tentative wording: "${word(RX.tentative)}"`); }
-      else if (kind === 'explanation' && !RX.request.test(t)) { cat = known.length ? 'covered' : 'context'; why.push(`Describes the current process ("${word(RX.explanation)}")`); if (known.length) why.push('Mentions configured items'); }
-      else if (neg && (specific.length || named.some(m => (F.moduleView(m) || {}).inUse))) { cat = 'contradiction'; why.push(`Says "${word(RX.negative)}" about something that is configured`); }
-      else if (named.length > 1 && RX.link.test(t)) { cat = 'cross'; why.push(`One record ${word(RX.link)} another: ${named.map(m => (F.moduleView(m) || {}).label || m).join(' and ')}`); }
-      else if (known.length && RX.change.test(t)) { cat = 'change'; why.push(`Changes a configured item ("${word(RX.change)}")`); }
-      else if (known.length) { cat = 'change'; why.push('Request about configured items'); }
-      else { cat = 'new'; why.push(kind === 'confirmed' ? 'Agreed in the session' : 'Request with no matching configuration'); }
-      if (kind === 'confirmed' && cat !== 'custom') why.push(`Agreed in the session ("${word(RX.confirmed)}")`);
-      // contradiction with an existing confirmed requirement: same configured item, opposite polarity
-      if (cat !== 'contradiction' && specific.length) { const conf = S.ws.requirements.filter(r => r.status === 'Confirmed' && specific.some(k => (r.title + ' ' + (r.objective || '')).toLowerCase().includes(k.label.toLowerCase()))); if (conf.length && neg !== RX.negative.test(conf.map(r => r.title + ' ' + (r.objective || '')).join(' '))) { cat = 'contradiction'; why.push('Opposes confirmed requirement ' + conf.map(r => r.id).join(', ')); } }
-      if (topic.length) why.push('Module ' + (how === 'named' ? 'named' : 'from ' + how) + ': ' + topic.map(m => (F.moduleView(m) || {}).label || m).join(', '));
-      if (specific.length) why.push('Matches ' + specific.slice(0, 4).map(x => x.kind + ' "' + x.label + '"').join(', '));
-      const confidence = how === 'named' && (specific.length || kind === 'request' || kind === 'confirmed' || cat === 'custom' || cat === 'question') ? 'high' : topic.length ? 'medium' : 'low';
-      const ctx = utt.slice(Math.max(0, idx - 1), idx + 2).map(x => (x.speaker ? x.speaker + ': ' : '') + x.text).join(' ');
-      d.candidates.push({ id: F.uid('cand'), transcriptId: item.id, sessionId: item.sessionId || '', speaker: u.speaker, line: u.line, text: t, context: ctx, kind: kind || (isQ ? 'request' : 'explanation'), category: cat,
-        modules: topic.slice(0, 4), matches: specific.concat(det.filter(x => x.generic)).slice(0, 6).map(h => ({ kind: h.kind, label: h.label, ref: h.ref, module: h.module })).concat(roleHits.map(r => ({ kind: 'role', label: r.label, ref: r.ref }))),
-        why, confidence, title: t.length > 110 ? t.slice(0, 107) + '…' : t, status: 'pending', reqId: null, notes: '', createdAt: new Date().toISOString() }); n++;
-    });
-    item.status = 'analysed'; item.analysedAt = new Date().toISOString(); item.candidateCount = n; hist('Transcript analysed', item.name + ' — ' + n + ' candidate(s) from ' + utt.length + ' statements');
-    toast(n + ' statement(s) to review from ' + utt.length + ' in the transcript');
-  }
+  // ---------- the old statements pipeline is retired (plan CONTRACT-TO-BRD step 7, user 15 Nov 2026) ----------
+  // A transcript is stored and its text kept (Create MOM, Claude and the findings on Checks & validations read it); no statements are made from it any more.
+  // Projects that already have statements keep them to read in the Review queue; nothing there can be changed and nothing blocks the BRD.
+  function analyse(item) { item.status = 'stored'; }
+  const legacy = () => (T().candidates || []).length > 0; V.trLegacy = legacy;
   V.analyseTranscriptText = analyse;
 
   // ---------- review queue ----------
@@ -181,7 +97,9 @@
   // the decision on the right. Category chips show only categories present, with counts that match the list.
   const ORDER = ['contradiction', 'custom', 'question', 'change', 'new', 'cross', 'missing', 'unconfirmed', 'covered', 'context'];
   const CONF = { high: ['green', 'High confidence'], medium: ['tbc', 'Medium confidence'], low: ['low', 'Low confidence'] };
-  TT.review = () => {
+  // read only: the decision buttons hide as for a viewer, and a note says where findings are now
+  TT.review = () => { const ro = S.readonly; S.readonly = true; try { return '<div class="notice small" style="margin-bottom:12px"><span>These statements come from the old transcript analysis, now retired. They are kept to read; nothing here can be changed and none of them blocks the BRD. What the sessions promised or asked now appears as findings on <a href="#" data-act="nav" data-view="rschecks">Checks &amp; validations</a>.</span></div>' + reviewHtml(); } finally { S.readonly = ro; } };
+  const reviewHtml = () => {
     const d = T(); const fl = S.ui.trFilter || {}; const st = fl.status || 'open';
     const byStatus = c => st === 'all' || (st === 'open' ? (c.status === 'pending' || c.status === 'clarify') : c.status === st);
     let base = d.candidates.filter(byStatus);

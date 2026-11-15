@@ -21,7 +21,6 @@
       [mods > 0, 'Modules in scope marked', mods + ' module(s) in scope', 'modules'],
       [sessions > 0, 'Requirement sessions planned', sessions + ' session(s)', 'planner'],
       [items > 0, 'Workshop transcripts uploaded', items + ' transcript(s), ' + cand.length + ' statement(s) read', 'transcripts'],
-      [cand.length > 0 && pending === 0, 'Every transcript statement reviewed', pending + ' still to review (accept, merge, clarify or reject each one)', 'transcripts'],
       [conf > 0, 'Requirements confirmed with the customer', conf + ' Confirmed, ' + (reqs.length - conf) + ' still Draft. Only Confirmed ones reach the BRD', 'transcripts'],
       [qs.length > 0 && openQ === 0, 'Open questions answered', openQ + ' open of ' + qs.length, 'transcripts'],
       [ucs == null ? false : ucs > 0, 'Use cases written', ucs == null ? 'Open Use cases to load them' : ucs + ' use case(s)', 'transcripts'],
@@ -35,7 +34,7 @@
     ['UAT plan and test cases', 'Confirmed requirements; use cases with steps; build status; go-live checklist', 'Prepare the UAT plan for this project from the use cases and requirements. Use get_task_pack task uat.'],
     ['User guide or training outline', 'Modules and roles; use cases; configuration loaded; published guide settings', 'Draft the user guide for the module "Work Orders". Use get_task_pack task guide.'],
     ['Issue tracker or status report', 'Tickets (also by e-mail); risks and issues; actions; change requests; recent activity', 'Give me the open issues by priority, then a weekly status report. Use get_tickets and get_records raid.'],
-    ['Gap check before BRD sign-off', 'Everything above, plus open questions and statements still to review', 'Run the review pack for this project and list the five biggest gaps with sources.'],
+    ['Gap check before BRD sign-off', 'Everything above, plus open questions and findings still to decide', 'Run the review pack for this project and list the five biggest gaps with sources.'],
     ['Hand-over and closure', 'Build records; hypercare issues; lessons learned; sign-offs', 'Prepare the hand-over summary from hypercare issues and sign-offs.']
   ];
   const HABITS = [
@@ -45,10 +44,10 @@
     ['Close questions', 'Give every question an owner and a date. Close it with the answer so the BRD and Claude do not treat it as open.'],
     ['Record decisions and risks the day they happen', 'Decision: what, who decided, when. Risk or issue: impact, owner, next step. Change request: what changed and why.'],
     ['Keep names the same', 'Use the module names Delivery Studio shows. Use the customer\'s name for a role the same way every time.'],
-    ['Update after every session', 'Upload the transcript the same day, review the statements within two days, and send the open questions to the customer.'],
+    ['Update after every session', 'Upload the transcript the same day, decide its findings on Checks & validations within two days, and send the open questions to the customer.'],
     ['Check before you export', 'Open Checks &amp; Validations. Fix what is marked blocking before you send the BRD for sign-off.']
   ];
-  const PROMPTS = ['Call connector_help, then give me an overview of this project.', 'What is still missing before the BRD can be signed off? Use the review pack.', 'List the transcript statements that are still pending and suggest which to accept.', 'Show the open questions and who owns them.', 'Prepare the UAT plan from the confirmed requirements and save it as a draft.', 'Summarise what changed in this project in the last week.'];
+  const PROMPTS = ['Call connector_help, then give me an overview of this project.', 'What is still missing before the BRD can be signed off? Use the review pack.', 'List the findings from the transcripts that still need a decision, and suggest an answer for each.', 'Show the open questions and who owns them.', 'Prepare the UAT plan from the confirmed requirements and save it as a draft.', 'Summarise what changed in this project in the last week.'];
   V.projectKeepHtml = () => {
     const rows = checks(); const done = rows.filter(r => r[0]).length;
     const pid = (S.project || {}).id || '';

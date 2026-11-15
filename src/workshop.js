@@ -178,7 +178,7 @@
   ACT.wsSaveTranscript = a => V.busy(a, async () => {
     if (ro()) return; const u = U(); const text = String(u.live || '').trim(); if (text.length < 40) { toast('There is no call text yet. Listen with the microphone, or paste the transcript first.', 5000, true); return; } if (!V.trSave) return;
     const day = new Date().toISOString().slice(0, 10); const name = 'live-call-' + day + (u.sessionId ? '-' + String(u.sessionId).replace(/[^a-z0-9]+/gi, '-').slice(0, 30) : '') + '.txt';
-    await V.trSave(new File([text], name, { type: 'text/plain' }), { sessionId: u.sessionId || '', modules: [], notes: 'Saved from the Workshop room (live call).' }, null); toast('The call is saved as a transcript. Find it, download it or review its suggestions in Transcripts.', 8000);
+    await V.trSave(new File([text], name, { type: 'text/plain' }), { sessionId: u.sessionId || '', modules: [], notes: 'Saved from the Workshop room (live call).' }, null); toast('The call is saved as a transcript. Find it or download it in Transcripts; Claude reads it for the findings on Checks & validations.', 8000);
   });
   ACT.wsTimer = () => { const t = U().t; if (t.run) { t.acc += Date.now() - t.start; t.run = false; } else { t.start = Date.now(); t.run = true; } rerender(); };
   ACT.wsTimerReset = () => { U().t = { run: false, start: 0, acc: 0 }; rerender(); };

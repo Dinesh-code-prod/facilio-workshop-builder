@@ -59,10 +59,12 @@ S.ws.modules.workorder.agreedAutomation = '   '; bl = globalThis.FWBBrd.buildBlo
 }
 console.log('11 BRD scope and format checks passed');
 {   // the BRD reads the Solution tab (document `solutions`): module text under Solution Proposal, the other areas in their own section, nothing typed in the BRD
-  F.doc('solutions').items = { 'module:workorder': { text: 'Solution para one.\n\nSolution para two.', status: 'Agreed' }, 'area:sla': { text: 'The SLA wording.', status: 'Draft' } };
+  F.doc('solutions').items = { 'module:workorder': { text: 'Solution para one.\n\nSolution para two.', status: 'Agreed' }, 'area:sla': { text: 'The SLA wording.', status: 'Draft' }, 'area:other': { text: 'The other commitment.', status: 'Agreed' } };
   const bs = build(['workorder']); const ix = bs.findIndex(b => b.t === 'p' && b.text === 'Solution para one.');
   assert.ok(ix > 0 && bs[ix + 1].text === 'Solution para two.' && bs.slice(0, ix).reverse().find(b => b.t === 'h').text.includes('Solution Proposal'), 'module solution paragraphs sit under Solution Proposal');
-  const oh = bs.findIndex(b => b.t === 'h' && /Agreed Solution: Other Areas/.test(b.text)); assert.ok(oh > 0 && bs.slice(oh).some(b => b.text === 'SLA and escalation matrix') && bs.slice(oh).some(b => b.text === 'The SLA wording.'), 'other areas with text get a section');
+  const oh = bs.findIndex(b => b.t === 'h' && /Agreed Solution: Other Areas/.test(b.text)); assert.ok(oh > 0 && bs.slice(oh).some(b => b.text === 'The other commitment.'), 'other areas with text get a section');
+  // one version per compartment (plan step 5): the SLA words print once, in the SLA section, not again under Other areas
+  assert.equal(bs.filter(b => b.text === 'The SLA wording.').length, 1, 'the SLA words print once'); assert.ok(!bs.slice(oh).some(b => b.text === 'The SLA wording.'), 'not under Other areas');
   F.doc('solutions').items = {}; assert.ok(!build(['workorder']).some(b => /Agreed Solution: Other Areas|Solution para/.test(b.text || '')), 'no solution text: no section');
   console.log('BRD built from the solution records');
 }

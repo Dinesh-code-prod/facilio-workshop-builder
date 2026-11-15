@@ -8,7 +8,7 @@
     if (!S.project || S.user.kind === 'customer') return {};
     const out = {}; try {
       const un = V.uncoveredModules ? V.uncoveredModules().length : 0; if (un) out.planner = { n: un, cls: 'warn' };
-      const tr = (F.doc('transcripts').candidates || []).filter(c => c.status === 'pending' || c.status === 'clarify').length; if (tr) out.transcripts = { n: tr };
+      // the old transcript statements are retired (read only), so they are no longer a to-do
       const fb = V.feedbackItems ? (V.feedbackItems() || []).filter(x => x.status === 'open' || x.status === 'follow-up').length : 0; if (fb) out.guide = { n: fb };
       const r = V.brdReadiness ? V.brdReadiness() : null; if (r && r.blocking) out.checks = { n: r.blocking, cls: 'warn' };
       const ts = V.traceSummary ? V.traceSummary() : null; if (ts && ts.gaps) out.trace = { n: ts.gaps, cls: ts.high ? 'crit' : 'pend', why: ts.gaps + ' gap(s) between requirements, build and testing' + (ts.high ? ', ' + ts.high + ' to fix first' : '') };

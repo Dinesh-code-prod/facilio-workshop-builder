@@ -422,8 +422,7 @@ body.in-proj .main :is(.pt-kpis .kpi .kpi-v, .card.stat .v, .sd-kpi .sd-kv, .pl-
 body.in-proj .main section.mk b:not(#q#q#q#q#q#q#q#q#q#q#q#q) { font-size: 24px !important; }
 body.in-proj .main :is(.pt-kpis .kpi .kpi-l, .card.stat .l, .card.stat .k, .sd-kpi .sd-kl, .pl-kpis > div > span, .tq-tile > span, .ho-figs dt):not(#q#q#q#q#q#q#q#q#q#q#q#q) { font: 500 12.5px/1.3 var(--cs-font) !important; color: #6e6e73 !important; text-transform: none !important; letter-spacing: 0 !important; }
 body.in-proj .main .tq-tile:hover:not(#q#q#q#q#q#q#q#q#q#q#q#q) { box-shadow: 0 0 0 1px rgba(21, 112, 239, .3), 0 2px 8px rgba(0, 0, 0, .06) !important; }
-@media (max-width: 1180px) { body.in-proj .navbar .center:not(#q#q#q#q#q#q#q#q#q#q#q#q) { flex: 0 0 auto !important; } body.in-proj .navbar .nb-proj:not(#q#q#q#q#q#q#q#q#q#q#q#q) { padding: 0 !important; min-width: 34px !important; } body.in-proj .navbar .nb-proj .nb-pt:not(#q#q#q#q#q#q#q#q#q#q#q#q) { display: none !important; } }
-@media (max-width: 1180px) { body.in-proj .navbar :is(#hpChip, #coPill):not(#q#q#q#q#q#q#q#q#q#q#q#q) { font-size: 0 !important; gap: 0 !important; padding: 0 10px !important; } body.in-proj .navbar :is(#hpChip, #coPill) > :is(svg, i):not(#q#q#q#q#q#q#q#q#q#q#q#q) { font-size: 13px; } }
+@media (max-width: 1180px) { body.in-proj .navbar .center:not(#q#q#q#q#q#q#q#q#q#q#q#q) { flex: 0 0 auto !important; } body.in-proj .navbar .nb-pt:not(#q#q#q#q#q#q#q#q#q#q#q#q) { max-width: 140px; } }
 body.in-proj .main :is(td, th).mono:not(#q#q#q#q#q#q#q#q#q#q#q#q) { white-space: nowrap !important; }
 /* Solution page, Apple Settings style (user, 14 Nov 2026): white inset-grouped cards on the grey canvas, rows with a small colour tile, the count right, a chevron; hairline separators; one blue primary */
 body.in-proj .sm-page:not(#q#q#q#q#q#q#q#q#q#q#q#q) { display: grid; gap: 16px; }
@@ -454,3 +453,8 @@ body.in-proj .sm-page .sm-p:not(#q#q#q#q#q#q#q#q#q#q#q#q) { font-size: 15px; lin
 body.in-proj .sm-page .sm-in .tbl-wrap:not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-radius: 12px; box-shadow: 0 0 0 1px rgba(15, 23, 42, .08); overflow: auto; }
 @media (prefers-reduced-motion: reduce) { body.in-proj .sm-page .sm-b > summary::after { transition: none; } }
 body.in-proj .main :is(button.ki-link, button:not([class])):not(#q#q#q#q#q#q#q#q#q#q#q#q) { -webkit-appearance: none; appearance: none; background: none !important; border: 0 !important; padding: 4px 6px !important; border-radius: 6px !important; color: #1570EF !important; font: 500 13px/1.3 var(--cs-font) !important; cursor: pointer; } body.in-proj .main :is(button.ki-link, button:not([class])):hover:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: rgba(21, 112, 239, .08) !important; }   /* plain link-style buttons, never the browser default box */
+/* top bar in words (user, 15 Nov 2026): the helper chip, Guide me and the project name keep their words at every desktop width; the bell says Updates where it fits */
+body.in-proj .navbar .bell:not(#q#q#q#q#q#q#q#q#q#q#q#q) { width: auto !important; min-width: 36px; gap: 6px; padding: 0 12px !important; border-radius: 10px !important; display: inline-flex; align-items: center; position: relative; }
+body.in-proj .navbar .bell-t { font: 500 13px/1 var(--cs-font); color: #1D2939; }
+@media (max-width: 1239px) { body.in-proj .navbar .bell-t { display: none; } body.in-proj .navbar .bell:not(#q#q#q#q#q#q#q#q#q#q#q#q) { padding: 0 !important; width: 36px !important; justify-content: center; } }
+@media (min-width: 1240px) { body.in-proj .navbar .bell .bell-n:not(#q#q#q#q#q#q#q#q#q#q#q#q) { position: static !important; transform: none !important; margin: 0 !important; } }
