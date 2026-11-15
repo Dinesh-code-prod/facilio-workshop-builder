@@ -21,9 +21,9 @@
   const tbcOf = hint => TBC + (hint ? ' (' + hint + ')' : '');
   const mdTable = (head, rows) => rows.length ? '| ' + head.join(' | ') + ' |\n|' + head.map(() => '---').join('|') + '|\n' + rows.map(r => '| ' + r.map(c => String(c == null ? '' : c).replace(/\|/g, '/').replace(/\n/g, ' ')).join(' | ') + ' |').join('\n') : '';
   /** Markdown -> sections. A text with one "# Title" on top (what toMd and Claude write) splits at ## and ###; any other text splits at # and ##. Text before the first heading becomes an Introduction section. */
-  function toSections(md, src) {
+  function toSections(md, src, title) {   // title: for an imported file, a lone "# X" on top is only the title when X is the document's name
     let lines = String(md || '').replace(ID_LINE, '').split(/\r?\n/);
-    const first = lines.find(l => l.trim()) || ''; const shift = /^#\s/.test(first) && lines.filter(l => /^#\s/.test(l)).length === 1;
+    const first = lines.find(l => l.trim()) || ''; const shift = /^#\s/.test(first) && lines.filter(l => /^#\s/.test(l)).length === 1 && (!title || first.replace(/^#\s+/, '').trim().toLowerCase() === String(title).trim().toLowerCase());
     if (shift) lines = lines.filter(l => l !== first);
     const re = shift ? /^(#{2,3})\s+(.*\S)\s*$/ : /^(#{1,2})\s+(.*\S)\s*$/; const out = []; let cur = null;
     lines.forEach(l => { const m = l.match(re);
@@ -89,13 +89,16 @@
     return out;
   }
   const open = sections => (sections || []).filter(s => /\[To be confirmed/.test(s.md || '')).length;
-  V.soldocLogic = { toSections, toMd, blocksToMd, partFor, fromStudio, merge, open, ID_LINE, KIND };
+  /** pure: pictures (inline data or empty links) become a short marker, so an imported file stays text */
+  const noPictures = md => String(md || '').replace(/!\[[^\]]*\]\((?:data:[^)]*)?\)/g, '_[Picture]_').replace(/<img[^>]*>/gi, '_[Picture]_');
+  V.soldocLogic = { toSections, toMd, blocksToMd, partFor, fromStudio, merge, open, noPictures, ID_LINE, KIND };
 
   // ---------- page ----------
   const can = () => !V.isCustomer() && !S.readonly && !(S.project && S.project.role === 'viewer');
   const docs = () => I().list('sdoc').sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
   const cur = () => { const l = docs(); return l.find(d => d.id === S.ui.sdId) || l[0] || null; };
-  const save = async (d, what) => { d.updatedAt = new Date().toISOString(); d.by = (S.user && (S.user.name || S.user.email)) || ''; await I().put('sdoc', d.id, d); if (what && F.changed) F.changed('Solution document', d.title + ': ' + what, { render: false }); V.render(); };
+  const LIMIT = 3e6;   // characters of one saved document; a request near the platform's ~6 MB cap is refused with 413
+  const save = async (d, what) => { if (JSON.stringify(d).length > LIMIT) { V.toast('This document is too large to save (over about 3 MB of text). Split it into two documents, for example one per module set.', 9000, true); I().load(['sdoc'], true); return; } d.updatedAt = new Date().toISOString(); d.by = (S.user && (S.user.name || S.user.email)) || ''; await I().put('sdoc', d.id, d); if (what && F.changed) F.changed('Solution document', d.title + ': ' + what, { render: false }); V.render(); };
   const mods = () => (F.allModules ? F.allModules() : []).filter(m => m.inScope).map(m => ({ name: m.name, label: m.label }));
   const apps = () => I().list('capp').filter(x => x && x.app);
   const brdMd = () => { try { const B = root.FWBBrd; return B && B.document ? blocksToMd(B.document().blocks) : ''; } catch (e) { return ''; } };
@@ -192,9 +195,11 @@
     if (v === 'approved' && open(d.sections)) { V.toast(open(d.sections) + ' section(s) are still To be confirmed.', 6000, true); V.render(); return; }
     d.status = v; if (v === 'approved') { d.approvedBy = S.user.name || S.user.email; d.approvedAt = new Date().toISOString(); } else { delete d.approvedBy; delete d.approvedAt; } await save(d, 'status ' + v); });
   ACT.sdImport = a => V.busy(a, async () => { S.ui.sdMore = false; const d = cur(); if (need(d)) return; const file = (await V.pickFile('.docx,.md,.txt,.markdown'))[0]; if (!file) { V.render(); return; }
-    let md = ''; try { if (/\.docx$/i.test(file.name)) { await V.loadScript('vendor/mammoth.browser.min.js'); md = (await root.mammoth.convertToMarkdown({ arrayBuffer: await file.arrayBuffer() })).value.replace(/\\([.#()\-_*[\]!+])/g, '$1').replace(/__(.+?)__/g, '**$1**'); } else md = await file.text(); }
+    // pictures stay out of the text: the converter would inline each one as base64, and a Word file with screenshots then exceeds what one save can carry (it failed with 413)
+    let md = ''; try { if (/\.docx$/i.test(file.name)) { await V.loadScript('vendor/mammoth.browser.min.js'); const M = root.mammoth; md = (await M.convertToMarkdown({ arrayBuffer: await file.arrayBuffer() }, { convertImage: M.images.imgElement(() => Promise.resolve({ src: '' })) })).value.replace(/\\([.#()\-_*[\]!+])/g, '$1').replace(/__(.+?)__/g, '**$1**'); } else md = await file.text(); }
     catch (e) { V.toast('Could not read ' + file.name + '.', 6000, true); return; }
-    const n = toSections(md, 'import'); if (!n.length) { V.toast('Nothing to import in ' + file.name + '.', 5000, true); return; }
+    md = noPictures(md);
+    const n = toSections(md, 'import', d.title); if (!n.length) { V.toast('Nothing to import in ' + file.name + '.', 5000, true); return; }
     d.sections = merge(d.sections, n); await save(d, file.name + ' imported'); V.toast(n.length + ' section' + (n.length === 1 ? '' : 's') + ' imported from ' + file.name + '.'); });
   const fname = (d, ext) => (d.title.replace(/[^\w .-]+/g, '').trim() || 'Solution document') + ext;
   ACT.sdWord = a => V.busy(a, async () => { S.ui.sdMore = false; const d = cur(); if (!d) return; const blob = await V.mdDocx({ title: d.title, content: toMd(d.title, d.sections), status: d.status === 'approved' ? 'approved' : 'draft', approvedBy: d.approvedBy, approvedAt: d.approvedAt });

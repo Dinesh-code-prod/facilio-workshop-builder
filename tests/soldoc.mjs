@@ -11,7 +11,10 @@ assert.deepEqual(s.map(x => [x.title, x.lvl]), [['Project Information', 1], ['Wo
 ok('Claude’s Markdown splits into sections and sub-sections');
 s = L.toSections('Opening words\n# One\nA\n## Two\nB\n# Three\nC', 'import'); assert.deepEqual(s.map(x => [x.title, x.lvl, x.src]), [['Introduction', 1, 'import'], ['One', 1, 'import'], ['Two', 2, 'import'], ['Three', 1, 'import']]);
 ok('an imported file with several # headings splits at # and ##');
+assert.deepEqual(L.toSections('# Work Orders\nRaised by tenants.\n## Field List\nSubject', 'import', 'Acme Solution').map(x => [x.title, x.lvl, x.md]), [['Work Orders', 1, 'Raised by tenants.'], ['Field List', 2, 'Subject']]);
+assert.deepEqual(L.toSections('# Acme Solution\n## Field List\nSubject', 'import', 'Acme Solution').map(x => [x.title, x.lvl]), [['Field List', 1]]); ok('an imported file keeps a lone top heading unless it is the document’s name');
 const back = L.toSections(L.toMd('Doc', s)); assert.deepEqual(back.map(x => [x.title, x.lvl, x.md]), s.map(x => [x.title, x.lvl, x.md])); ok('toMd and toSections round-trip');
+assert.equal(L.noPictures('A ![logo](data:image/png;base64,' + 'A'.repeat(5000) + ') B ![]() C <img src="x.png"> D'), 'A _[Picture]_ B _[Picture]_ C _[Picture]_ D'); ok('pictures in an imported file become a short marker (a Word file with screenshots failed to save with 413)');
 assert.equal(L.open([{ md: '[To be confirmed] x' }, { md: 'done' }, { md: '[To be confirmed (roles)]' }]), 2); ok('open counts sections still to be confirmed');
 
 // BRD blocks -> Markdown, and the part of one module
