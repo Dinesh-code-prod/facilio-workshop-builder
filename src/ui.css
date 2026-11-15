@@ -2861,3 +2861,6 @@ body .sm-scl:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(
 body .sm-sc:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px 5px 8px; border: 1px solid rgba(0, 0, 0, .1); border-radius: 999px; background: #fff; cursor: pointer; font-size: 13px; }
 body .sm-sc:has(input:checked):not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { border-color: #1570EF; background: #eaf2ff; } body .sm-sc span:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { color: #1d1d1f; display: grid; } body .sm-sc small:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { font-size: 11.5px; color: #6e6e73; max-width: 260px; }
 body .sm-scope-f:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(0, 0, 0, .06); }
+
+/* a module's open decisions (plan step 2) */
+body .sm-ex:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: #fff4f2 !important; color: #b42318 !important; box-shadow: inset 0 0 0 1px rgba(180, 35, 24, .25) !important; }
