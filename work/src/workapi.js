@@ -12,10 +12,10 @@
   const gzText = async t => b64(new Uint8Array(await new Response(new Blob([t]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer()));
   const gunzText = async s => new Response(new Blob([unb64(s)]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
   async function rpc(method, path, body) {
-    const h = { 'x-fwb-gz': '1' }; let b;
+    const h = {}; let b; const p = path.replace(/^\/api/, ''); const url = '/api/fn/api' + p + (p.includes('?') ? '&' : '?') + '__gz=1';   // __gz=1: this page can unpack a packed answer (the platform drops custom headers)
     if (body !== undefined) { h['content-type'] = 'application/json'; b = JSON.stringify(body);
       if (b.length > GZ_FROM && typeof CompressionStream === 'function') { const z = await gzText(b); if (z.length > GZ_MAX) return { status: 413, data: { error: 'This is too large to save in one go (' + Math.round(b.length / 1e6) + ' MB of text, still too large after compression). Split it into smaller parts, for example one document per module set, or leave pictures out.' } }; b = JSON.stringify({ __gz: z }); } }
-    let r; try { r = await fetch('/api/fn/api' + path.replace(/^\/api/, ''), { method, headers: h, body: b, credentials: 'same-origin' }); }
+    let r; try { r = await fetch(url, { method, headers: h, body: b, credentials: 'same-origin' }); }
     catch (e) { return { status: 0, data: { error: 'Network error — check your connection' } }; }
     let data = null; try { data = await r.json(); if (data && typeof data.__gz === 'string') data = JSON.parse(await gunzText(data.__gz)); } catch (e) { data = { error: r.status === 413 ? 'This is too large for one request. Split it into smaller parts.' : 'Request failed (' + r.status + ')' }; }
     return { status: r.status, data };

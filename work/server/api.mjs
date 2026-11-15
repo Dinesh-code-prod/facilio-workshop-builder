@@ -2385,7 +2385,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
 }
 
 // Big bodies (user, 16 Nov 2026): a JSON body over 1 MB travels gzipped as { __gz: base64 } both ways (src/api.js), so it stays under the platform's ~6 MB request and 5.5 MB response caps.
-// Responses are packed only for callers that say they can unpack (x-fwb-gz); the connector and other callers get plain JSON as before.
+// Responses are packed only for callers that say they can unpack (__gz=1 in the address, work/src/workapi.js); the connector and other callers get plain JSON as before.
 const GZ_FROM = 1e6, GZ_UNPACKED_MAX = 60e6;
 const gzB64 = async t => Buffer.from(await new Response(new Blob([t]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer()).toString('base64');
 async function gunzB64(s) { const r = new Response(new Blob([Buffer.from(s, 'base64')]).stream().pipeThrough(new DecompressionStream('gzip'))).body.getReader(); const out = []; let n = 0;
@@ -2393,12 +2393,14 @@ async function gunzB64(s) { const r = new Response(new Blob([Buffer.from(s, 'bas
 export default async function handler(req, ctx) {
   CTX = ctx; HDR = (req && req.headers) || {}; FWB.reset();
   let query = req.query; if (query && typeof query === 'object') query = new URLSearchParams(query).toString(); query = String(query || '').replace(/^\?/, '');
+  // __gz=1 in the address (the platform drops custom headers): the page can unpack a packed answer; taken out before the routes see the query
+  const wantGz = /(^|&)__gz=1(&|$)/.test(query) || String(HDR['x-fwb-gz'] || '') === '1'; query = query.split('&').filter(x => x && x !== '__gz=1').join('&');
   let body; if (req.method !== 'GET' && req.method !== 'DELETE') { const t = req.text ? await req.text() : ''; if (t) { try { body = JSON.parse(t); } catch (e) { body = {}; } } else body = {}; }
   if (body && typeof body.__gz === 'string' && Object.keys(body).length === 1) { try { body = JSON.parse(await gunzB64(body.__gz)); } catch (e) { return new Response(JSON.stringify({ error: e.tooLarge ? 'This is too large to save (over 60 MB of text).' : 'The compressed request could not be read.' }), { status: e.tooLarge ? 413 : 400, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } }); } }
   const sub = String(req.path || '/').startsWith('/') ? req.path : '/' + req.path;
   const res = (await FWB.dispatch(req.method, '/api' + sub, query, body)) || { status: 500, data: { error: 'Something went wrong on the server.' } };
   const headers = { 'content-type': 'application/json', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
   if (res.status === 429 && res.data && res.data.retryAfter) headers['retry-after'] = String(res.data.retryAfter);
-  let out = JSON.stringify(res.data); if (out && out.length > GZ_FROM && String((HDR || {})['x-fwb-gz'] || '') === '1') out = JSON.stringify({ __gz: await gzB64(out) });
+  let out = JSON.stringify(res.data); if (out && out.length > GZ_FROM && wantGz) out = JSON.stringify({ __gz: await gzB64(out) });
   return new Response(out, { status: res.status, headers });
 }

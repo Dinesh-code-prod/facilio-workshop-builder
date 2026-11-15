@@ -23,7 +23,7 @@ const rec = { title: 'Big', kind: 'full', sections: [{ id: 's1', title: 'Huge', 
 let r = await raw('PUT', `/api/projects/${pid}/items/sdoc/sd_big`, JSON.stringify({ __gz: await gz(JSON.stringify({ data: rec })) }), { 'x-fwb-gz': '1' });
 assert.equal(r.status, 200, r.text.slice(0, 200)); const packed = JSON.parse(r.text); assert.ok(typeof packed.__gz === 'string', 'a big answer is packed for a caller that can unpack'); assert.ok(r.text.length < 6e6);
 assert.equal(JSON.parse(await gunz(packed.__gz)).item.data.sections[0].md, big); ok('an 8 MB solution document arrives gzipped, is saved and comes back gzipped');
-r = await raw('GET', `/api/projects/${pid}/items?kinds=sdoc`, '', { 'x-fwb-gz': '1' }); assert.equal(JSON.parse(await gunz(JSON.parse(r.text).__gz)).items[0].data.sections[0].md, big);
+r = await raw('GET', `/api/projects/${pid}/items?kinds=sdoc&__gz=1`, '', {});   // the page asks in the address: the platform drops custom headers assert.equal(JSON.parse(await gunz(JSON.parse(r.text).__gz)).items[0].data.sections[0].md, big);
 r = await raw('GET', `/api/projects/${pid}/items?kinds=sdoc`, '', {}); assert.equal(JSON.parse(r.text).items[0].data.sections[0].md, big, 'callers without x-fwb-gz (the connector) get plain JSON'); ok('it loads back the same, packed only for the page');
 r = await raw('PUT', `/api/projects/${pid}/docs/brddoc`, JSON.stringify({ __gz: await gz(JSON.stringify({ data: { text: big }, baseVersion: 0 })) }), { 'x-fwb-gz': '1' }); assert.equal(r.status, 200, r.text.slice(0, 200)); ok('a document section over the old 5 MB cap saves');
 r = await raw('PUT', `/api/projects/${pid}/docs/brddoc`, JSON.stringify({ __gz: 'not gzip' }), {}); assert.equal(r.status, 400); ok('a broken packed body is refused, nothing saved');
