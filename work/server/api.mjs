@@ -73,7 +73,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
 
   // ---------- storage (ctx.db) ----------
   async function dbGet(col, key) { return (await CTX.db.get(col, key)) || null; }
-  async function dbPut(col, key, value) { try { await CTX.db.put(col, key, value); } catch (e) { throw new HttpError(e && e.status === 413 ? 413 : 502, e && e.status === 413 ? 'Record too large' : 'Could not save the record. Try again.'); } }
+  async function dbPut(col, key, value) { try { await CTX.db.put(col, key, value); } catch (e) { console.error('db.put failed', col, key, e && e.status, String((e && e.message) || e).slice(0, 200)); throw new HttpError(e && e.status === 413 ? 413 : 502, e && e.status === 413 ? 'Record too large' : 'Could not save the record. Try again.'); } }
   async function dbDel(col, key) { await CTX.db.delete(col, key); }
   // ---------- rate limits ----------
   // Per signed-in person, per action group, fixed 10-minute windows counted in ctx.db so every server instance shares them.
@@ -108,7 +108,9 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     if (te.encode(text).length <= MAX_VALUE) await dbPut(col, key, Object.assign({}, meta, { d: obj }));
     else {
       const b64 = await gz(text); const parts = []; for (let i = 0; i < b64.length; i += PART_CHARS) parts.push(b64.slice(i, i + PART_CHARS)); z = parts.length;
-      await Promise.all(parts.map((p, i) => dbPut(pcol, key + '.' + i, { p })));
+      // a few parts at a time, each tried up to three times: dozens of parallel writes of a big record were refused by the platform database
+      const putPart = async i => { for (let a = 0; ; a++) { try { return await dbPut(pcol, key + '.' + i, { p: parts[i] }); } catch (e) { if (e.status === 413 || a >= 2) throw e; await new Promise(r => setTimeout(r, 300 * (a + 1))); } } };
+      for (let i = 0; i < parts.length; i += 6) await Promise.all(parts.slice(i, i + 6).map((_, j) => putPart(i + j)));
       await dbPut(col, key, Object.assign({}, meta, { z }));
     }
     for (let i = z; i < (prevZ || 0); i++) await dbDel(pcol, key + '.' + i).catch(() => { });
