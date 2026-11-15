@@ -97,8 +97,10 @@
       await V.refreshProjectMeta();
     } catch (e) { toast(e.status === 404 ? 'They need an account first: share the site link and invitation code, then pick the access again' : e.message, 6000, true); V.render(); }
   };
-  // sections that save as you type show the live save state on one quiet line (painted by paintSave in src/core.js); the page has one Save button, on Project
-  const saveFoot = () => S.readonly ? '' : '<span class="st-hint st-live" role="status" aria-live="polite">Saved automatically as you type</span>';
+  // every section ends in a Save bar like Project (src/projfx.js builds the bar round a Save button). These sections also save as you type: Save writes at once,
+  // and the bar follows the real save (unsaved changes, saving, saved, not saved; paintSave in src/core.js) (user, 15 Nov 2026)
+  const saveFoot = () => S.readonly ? '' : '<button class="btn primary" data-act="stSave">Save</button>';
+  ACT.stSave = async () => { await F.flush(); toast('Saved'); };
   // typing an email in a team row (or changing it) redraws the row so the App access picker appears or points at the new address
   document.addEventListener('change', e => { const b = e.target && e.target.getAttribute && e.target.getAttribute('data-bind'); if (b && /^@people:team\.\d+\.email$/.test(b) && document.querySelector('.st-page')) setTimeout(() => V.render(), 60); });
   ACT.grantAccess = async a => { try { await API.post(`/api/projects/${S.project.id}/members`, { email: a.getAttribute('data-email'), role: 'editor' }); toast('Access given'); await V.refreshProjectMeta(); } catch (e) { toast(e.status === 404 ? 'They need an account first — share the site link and invitation code, then try again' : e.message, 6000, true); } };
@@ -148,11 +150,10 @@
     const sub = S.ui.accTab === 'customer' ? 'customer' : 'team';
     const seg = `<div class="seg st-seg" role="group">${ACC_TABS.map(([k, l]) => `<button type="button" class="${sub === k ? 'on' : ''}" aria-pressed="${sub === k}" data-act="accTab" data-v="${k}">${l}</button>`).join('')}</div>`;
     if (sub === 'customer') return seg + ST.project(owner, 'customer') + `<div class="st-wrap st-more">${custAccess()}</div>` + portalCard();
-    const add = owner ? stSec('Add a person', 'Type a work email and pick a role. They can open the project at once and are added to the team list. They need a Delivery Studio account first.', '<div class="card-b small muted">Owner: manages members and settings. Editor: changes project data. Viewer: read only.</div>', `<input type="email" id="mb_email" placeholder="consultant@facilio.com" style="flex:1;min-width:200px"><select id="mb_role" style="width:120px"><option value="editor">Editor</option><option value="viewer">Viewer</option><option value="owner">Owner</option></select><button class="btn primary" data-act="addMember">Add and give access</button>`) : '';
-    return seg + ST.project(owner, 'team') + (add ? `<div class="st-wrap st-more">${add}</div>` : '');
+    // no separate "Add a person" form: a row in the team table with an email and an App access does the same (user, 15 Nov 2026)
+    return seg + ST.project(owner, 'team');
   };
   ACT.accTab = a => { S.ui.accTab = a.getAttribute('data-v'); V.render(); };
-  ACT.addMember = async () => { const email = document.getElementById('mb_email').value.trim(); if (!email) { toast('Enter an email'); return; } await API.post(`/api/projects/${S.project.id}/members`, { email, role: document.getElementById('mb_role').value }); toast('Added with access: ' + email); await V.refreshProjectMeta(); const ppl = F.doc('people'), l = ppl.team = ppl.team || [], low = email.toLowerCase(); if (!l.some(x => String(x.email || '').toLowerCase() === low)) { const m = (S.members || []).find(x => String(x.email).toLowerCase() === low); l.push({ name: m ? m.name : '', role: '', email: low, phone: '' }); F.changed('Person added', 'team', { section: 'people' }); } };
   ACT.memberRole = async el => { await API.post(`/api/projects/${S.project.id}/members`, { email: el.getAttribute('data-email'), role: el.value }); toast('Role updated'); await V.refreshProjectMeta(); };
   ACT.rmMember = async a => { if (!(await confirmDialog('Remove member', 'Remove this member from the project?', 'Remove', true))) return; await API.del(`/api/projects/${S.project.id}/members/${a.getAttribute('data-id')}`); toast('Member removed'); await V.refreshProjectMeta(); };
   ACT.copyLink = async () => { const i = document.getElementById('cust_link'); try { await navigator.clipboard.writeText(i.value); toast('Link copied'); } catch (e) { i.select(); toast('Select and copy the link'); } };

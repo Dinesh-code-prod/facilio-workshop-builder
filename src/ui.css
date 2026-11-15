@@ -1854,9 +1854,6 @@ body .drawer-b .row:not(#_):not(#__) { gap: 8px; }
 body .drawer.compact .drawer-b:not(#_):not(#__) { gap: 0; } body .drawer.compact .drawer-b > * + *:not(label.f + *):not(#_):not(#__) { margin-top: 10px; }   /* small dialogs: the gap comes from the same label rules, not from the grid */
 /* Project settings (9 Nov 2026): the hint beside each section's Save button */
 body .st-foot .st-hint { margin-right: auto; font-size: 13px; color: var(--cs-fg4); }
-body .st-foot .st-live::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 8px; border-radius: 50%; background: #34c759; vertical-align: 1px; }   /* live save state: green saved, grey saving, red error */
-body .st-foot .st-live:is([data-s="dirty"], [data-s="saving"])::before { background: #aeaeb2; }
-body .st-foot .st-live[data-s="error"] { color: #b42318; } body .st-foot .st-live[data-s="error"]::before { background: #d92d20; }
 /* the team and stakeholder tables: fixed, even columns; inputs fill their cell; a clear empty state */
 body .st-card .tbl:has(> thead th:nth-child(6)):not(#_):not(#__) { width: 100%; table-layout: fixed; }
 body .st-card .tbl:has(> thead th:nth-child(6)) th:nth-child(1) { width: 19%; } body .st-card .tbl:has(> thead th:nth-child(6)) th:nth-child(2) { width: 22%; } body .st-card .tbl:has(> thead th:nth-child(6)) th:nth-child(3) { width: 27%; }
@@ -2886,3 +2883,22 @@ body .ds-more[open]:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#_____
 /* Back to … stands out as a way back and keeps clear of the section heading below it (user, 15 Nov 2026) */
 body .nav-back:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________) { display: inline-flex !important; align-items: center; gap: 6px; margin: 4px 0 18px !important; padding: 7px 14px 7px 11px !important; border-radius: 999px !important; background: #eaf2ff !important; color: #0e4a9a !important; border: 1px solid rgba(21,112,239,.35) !important; font-weight: 600 !important; font-size: 13px !important; box-shadow: 0 1px 2px rgba(21,112,239,.12) !important; position: relative; z-index: 2; }
 body .nav-back:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________) { background: #1570EF !important; color: #fff !important; }
+
+/* Tabs & Layouts (15 Nov 2026): the page's settings in one card, a row each (label left, control right); no preview column (the side rail shows the result);
+   a group's edit and delete buttons show on hover, focus or when it is open, so the names fit; a group with every page hidden says it is not in the rail */
+body .tl-set:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: #fff; border-radius: 20px; box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 14px rgba(0,0,0,.05); margin: 0 0 16px; overflow: hidden; }
+body .tl-set > .tl-pos:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { margin: 0 !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: transparent !important; }
+body .tl-set > .tl-pos + .tl-pos:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { box-shadow: inset 0 1px 0 #eef0f4 !important; }
+body .tl-set .tl-pos .card-b:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { flex-wrap: nowrap; padding: 14px 20px !important; }
+body .tl-set .tl-pos .card-b > div:first-child:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { flex: 1; min-width: 0; max-width: 640px; }
+body .tl-set .tl-pos .card-b p:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { margin: 2px 0 0 !important; }
+body .tl-set .tl-pos select:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { width: auto !important; min-width: 220px; flex: none; }
+body .tl-set .tl-tools:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { gap: 8px; flex-wrap: wrap; justify-content: flex-end; flex: none; }
+body .tl-grid:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { grid-template-columns: 320px minmax(0, 1fr) !important; }
+body .tl-g:not(.on):not(:hover):not(:focus-within) .tl-gact:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { display: none !important; }
+body .tl-goff:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { flex: none; font-size: 11px; font-weight: 500; padding: 2px 7px; border-radius: 999px; background: #FFF4E5; color: #9A5B00; }
+body .tl-offn:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { display: flex !important; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px !important; }
+body .tl-offn .btn:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { flex: none; }
+@media (max-width: 900px) { body .tl-grid:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { grid-template-columns: 1fr !important; } body .tl-set .tl-pos .card-b:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { flex-wrap: wrap; } }
+/* Project Settings (15 Nov 2026): the forms use the full page width */
+body .st-wrap:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { max-width: none !important; }

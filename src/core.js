@@ -69,8 +69,9 @@
   let saveTimer = null; const saveState = { status: 'saved', at: null, error: null, conflict: null };
   function markDirty(section) { if (!S.docs[section]) doc(section); S.docs[section].dirty = true; saveState.status = 'dirty'; paintSave(); clearTimeout(saveTimer); saveTimer = setTimeout(flush, 1200); }
   function paintSave() {
-    // the Settings sections that save as you type show the same live state on one quiet line (src/settings.js, .st-live)
-    if (typeof document !== 'undefined') document.querySelectorAll('.st-live').forEach(x => { const s = saveState.status; x.setAttribute('data-s', s); x.textContent = s === 'dirty' || s === 'saving' ? 'Saving…' : s === 'error' ? 'Could not save, retrying' : 'Saved automatically as you type'; });
+    // the Save bar of a Settings section that saves as you type (src/settings.js stSave) follows the real save: a bar the person typed in (marked unsaved by src/projfx.js) goes saving, then saved or not saved
+    if (typeof document !== 'undefined') { const s = saveState.status; const to = s === 'saving' ? ['saving', 'Saving…'] : s === 'saved' ? ['saved', 'Saved'] : s === 'error' ? ['error', 'Not saved, trying again'] : null;
+      if (to) document.querySelectorAll('.st-page .fx-savebar:has([data-act="stSave"])').forEach(b => { if (!/^(dirty|saving)$/.test(b.getAttribute('data-state') || '')) return; b.setAttribute('data-state', to[0]); const t = b.querySelector('.fx-sv-st'); if (t) t.textContent = to[1]; }); }
     const el = document.getElementById('saveState'); if (!el) return; el.className = 'save-state' + (saveState.status === 'dirty' || saveState.status === 'saving' ? ' dirty' : saveState.status === 'error' ? ' err' : ''); el.textContent = saveState.status === 'dirty' ? 'Unsaved changes' : saveState.status === 'saving' ? 'Saving…' : saveState.status === 'error' ? (saveState.conflict ? 'Conflict — reload to merge' : 'Save failed — retrying') : saveState.at ? 'All changes saved ' + saveState.at.toLocaleTimeString() : 'All changes saved'; el.title = saveState.error || ''; }
   let flushing = null, again = false;
   async function flush() { if (flushing) { again = true; return flushing; } flushing = doFlush(); try { await flushing; } finally { flushing = null; } if (again) { again = false; return flush(); } }
