@@ -254,7 +254,7 @@
    },
    {
     "name": "get_review_pack",
-    "description": "The whole project as one pack, to review for gaps, contradictions and missing information.",
+    "description": "The whole project as one pack, to review for gaps, contradictions and missing information. It includes the automatic state-flow checks (a state nothing reaches, a button nobody can press, an approval with no approver, a key step that tells nobody).",
     "function": "api",
     "input_schema": {
      "type": "object",

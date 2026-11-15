@@ -13,7 +13,7 @@
     return F.allModules().filter(m => m.inScope).sort((a, b) => rank(a) - rank(b) || String(a.label).localeCompare(String(b.label))).map(m => {
       const flows = safe(() => arr(m.flowIds).map(F.flowModel).filter(f => f && (f.enabled !== false || f.origin === 'proposed')), []).map(f => {
         const st = id => ((arr(f.states).find(s => s.id === id) || {}).label || id);
-        const checks = SOL && SOL.flowChecks ? SOL.flowChecks(f, (S.ws.notifications || []).filter(n => n.module === m.name)) : [];
+        const checks = root.FWBFlowChecks ? root.FWBFlowChecks.check(f, (S.ws.notifications || []).filter(n => n.module === m.name)) : [];
         return { name: f.name + (f.origin === 'proposed' ? ' (proposed)' : ''), checks, states: arr(f.states).map(s => s.label || s.id), steps: arr(f.transitions).filter(t => !t.removed && t.enabled !== false).map(t => ({ name: t.name, from: st(t.from), to: st(t.to), by: t.type !== 'user' ? 'System' : arr(t.actors).map(a => F.actorLabel(a.actor)).join(', ') || 'To be confirmed', approval: t.approval && t.approval.required ? arr(t.approval.approvers).map(F.actorLabel).join(', ') : '' })) };
       });
       const fields = safe(() => F.effFields(m.name).filter(f => ['proposed', 'modified', 'removed'].includes(f.status)), []).map(f => ({ label: f.label || f.name, type: f.type || '', status: f.status === 'proposed' ? 'Added' : f.status === 'modified' ? 'Changed' : 'Removed', required: !!f.required }));

@@ -467,8 +467,8 @@ body.in-proj .navbar .bell-t { font: 500 13px/1 var(--cs-font); color: #1D2939; 
   body.in-proj .navbar .nb-pt:not(#q#q#q#q#q#q#q#q#q#q#q#q) { max-width: 110px; }
 }
 .nb-short { display: none; }
+@media (min-width: 901px) and (max-width: 1439px) { body .navbar .nb-long:not(#q#q#q#q#q#q#q#q#q#q#q#q) { display: none !important; } body .navbar .nb-short:not(#q#q#q#q#q#q#q#q#q#q#q#q) { display: inline !important; } }
 @media (min-width: 901px) and (max-width: 1100px) {
-  body .navbar .nb-long:not(#q#q#q#q#q#q#q#q#q#q#q#q) { display: none !important; } body .navbar .nb-short:not(#q#q#q#q#q#q#q#q#q#q#q#q) { display: inline !important; }
   body.in-proj .navbar :is(#hpChip, [data-act="custPreview"]):not(#q#q#q#q#q#q#q#q#q#q#q#q) { font-size: 13px !important; gap: 6px !important; }
 }
 /* every desktop width: one row (left buttons, the project name centred in the space left, right buttons); a long name ends in an ellipsis instead of running under the buttons */
@@ -477,4 +477,13 @@ body.in-proj .navbar .bell-t { font: 500 13px/1 var(--cs-font); color: #1D2939; 
   body.in-proj .navbar > :is(.left, .right):not(#q#q#q#q#q#q#q#q#q#q#q#q) { flex: none !important; }
   body.in-proj .navbar > .center:not(#q#q#q#q#q#q#q#q#q#q#q#q) { flex: 0 1 auto !important; min-width: 0 !important; overflow: hidden; margin: 0 auto !important; }
   body.in-proj .navbar .nb-proj:not(#q#q#q#q#q#q#q#q#q#q#q#q) { min-width: 0 !important; max-width: 100%; }
+}
+/* 901 to 1239 px: Search and the bell keep their words too; the small icons beside buttons that already have words make room (the helper's coloured dot stays: it is the status) */
+@media (min-width: 901px) and (max-width: 1239px) {
+  body.in-proj .navbar :is(#coPill, [data-act="custPreview"], .gs-btn, .bell) > svg:not(#q#q#q#q#q#q#q#q#q#q#q#q) { display: none !important; }
+  body.in-proj .navbar .gs-btn .gs-t:not(#q#q#q#q#q#q#q#q#q#q#q#q) { display: inline !important; }
+  body.in-proj .navbar .bell-t:not(#q#q#q#q#q#q#q#q#q#q#q#q) { display: inline !important; }
+  body.in-proj .navbar .bell:not(#q#q#q#q#q#q#q#q#q#q#q#q) { width: auto !important; padding: 0 9px !important; gap: 5px; }
+  body.in-proj .navbar .bell .bell-n:not(#q#q#q#q#q#q#q#q#q#q#q#q) { position: static !important; transform: none !important; margin: 0 !important; }
+  body.in-proj .navbar .gs-btn:not(#q#q#q#q#q#q#q#q#q#q#q#q) { width: auto !important; padding: 0 9px !important; }
 }

@@ -2,7 +2,7 @@
 // plus the server side: a solution proposal is cleaned, kept per area, never touched once decided.
 import assert from 'node:assert/strict'; import { createRequire } from 'node:module';
 import { cleanProposal, mergeProposals } from '../work/server/_dsapi.mjs';
-const L = createRequire(import.meta.url)('../src/sollogic.js'); let n = 0; const t = (name, fn) => { fn(); n++; console.log('  ok  ' + name); };
+const L = createRequire(import.meta.url)('../src/sollogic.js'); await import('../work/server/_flowchecks.mjs'); const FC = globalThis.FWBFlowChecks; let n = 0; const t = (name, fn) => { fn(); n++; console.log('  ok  ' + name); };
 const A = '2026-11-07T10:00:00Z', B = '2026-11-07T11:00:00Z';
 t('areas: modules in scope first, then the fixed areas', () => { const a = L.areasFor([{ name: 'workorder', label: 'Work Order' }]); assert.equal(a[0].key, 'module:workorder'); assert.equal(a[0].group, 'Modules'); assert.ok(a.some(x => x.key === 'area:sla')); assert.ok(a.every(x => L.GROUPS.includes(x.group))); });
 t('requirement lines: only confirmed ones of that module, read live', () => {
@@ -111,13 +111,13 @@ t('flow checks: unreachable state, nobody to press, approval without approver, k
     transitions: [{ name: 'Submit', from: 'o', to: 'a', type: 'user', actors: [{ actor: 'tbc:1', status: 'tbc' }], approval: { required: true, approvers: [] } },
       { name: 'Close', from: 'a', to: 'c', type: 'user', actors: [{ actor: 'tech' }] }, { name: 'Old', from: 'c', to: 'x', removed: true }] };
   const kinds = r => r.map(x => x.kind).sort();
-  assert.deepEqual(kinds(L.flowChecks(flow, [])), ['approver', 'nobody', 'silent', 'silent', 'unreachable']);
-  assert.ok(L.flowChecks(flow, []).some(x => x.kind === 'unreachable' && x.text.includes('"Lost"')));
+  assert.deepEqual(kinds(FC.check(flow, [])), ['approver', 'nobody', 'silent', 'silent', 'unreachable']);
+  assert.ok(FC.check(flow, []).some(x => x.kind === 'unreachable' && x.text.includes('"Lost"')));
   const told = [{ trigger: 'state', state: 'Approved' }, { trigger: 'state', state: 'Closed' }];
-  assert.deepEqual(kinds(L.flowChecks(flow, told)), ['approver', 'nobody', 'unreachable'], 'a notification on the state counts');
-  assert.deepEqual(L.flowChecks({ initial: 'o', states: [{ id: 'o' }], transitions: [] }, []), []); assert.deepEqual(L.flowChecks(null, null), []);
+  assert.deepEqual(kinds(FC.check(flow, told)), ['approver', 'nobody', 'unreachable'], 'a notification on the state counts');
+  assert.deepEqual(FC.check({ initial: 'o', states: [{ id: 'o' }], transitions: [] }, []), []); assert.deepEqual(FC.check(null, null), []);
   const std = { initial: 'o', states: [{ id: 'o' }, { id: 'c', label: 'Closed' }, { id: 'z', label: 'Elsewhere' }], transitions: [{ name: 'Close', from: 'o', to: 'c', type: 'user', actors: [] }, { name: 'Reject', from: 'o', to: 'c', type: 'user', actors: [], approval: { required: true, approvers: [] } }] };
-  assert.deepEqual(kinds(L.flowChecks(std, [])), ['approver'], 'an untouched standard flow: only an approval without approver is reported');
-  assert.deepEqual(kinds(L.flowChecks(Object.assign({}, std, { workshopCopy: true }), [])), ['approver', 'nobody', 'nobody', 'silent', 'unreachable'], 'once edited it is judged in full, one line per silent state');
+  assert.deepEqual(kinds(FC.check(std, [])), ['approver'], 'an untouched standard flow: only an approval without approver is reported');
+  assert.deepEqual(kinds(FC.check(Object.assign({}, std, { workshopCopy: true }), [])), ['approver', 'nobody', 'nobody', 'silent', 'unreachable'], 'once edited it is judged in full, one line per silent state');
 });
 console.log(n + ' solution logic checks passed');

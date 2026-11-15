@@ -101,4 +101,10 @@ await t('connector_help lists the MSA, prepared question and task tracking tools
   for (const [topic, recipe, step] of [['msa', 'MSA to project', /msa_extraction_save[\s\S]*create_project_from_msa/], ['prepared questions', 'Prepared questions', /session_questions \(action prepare\)[\s\S]*session_questions \(action live\)/], ['track tasks', 'Track tasks', /task_tracking \(action evidence\)[\s\S]*task_tracking \(action save\)/], ['job queue', 'Job queue', /project_jobs with action list[\s\S]*pull_msa[\s\S]*msa_extraction_save[\s\S]*needs_input/], ['jobs', 'Job queue', /action claim/]]) { const r = (await tool('connector_help', { topic })).data; assert.equal(r.recipe, recipe); assert.match(r.steps, step); }
   assert.match(JSON.stringify(h.tools), /approved the extraction in Delivery Studio/); assert.match(h.recipes['Track tasks'], /never say a task was changed/);
 });
+await t('the review pack Claude reads carries the automatic state-flow checks of the flows the team designs', async () => {
+  const cur = (await call('GET', `/api/projects/${pid}/docs/workshop`)).data; const flow = { id: 'pf1', module: 'workorder', name: 'Approval flow', origin: 'proposed', initial: 'o', states: [{ id: 'o', label: 'Open' }, { id: 'a', label: 'Approved' }], transitions: [{ id: 't1', name: 'Approve', from: 'o', to: 'a', type: 'user', actors: [{ actor: 'tech' }], approval: { required: true, approvers: [] } }] };
+  const w = await call('PUT', `/api/projects/${pid}/docs/workshop`, { data: Object.assign({}, cur.data, { flows: { pf1: flow } }), baseVersion: cur.version }); assert.ok(w.status < 300, 'workshop saved: ' + w.status);
+  const r = (await call('POST', `/api/projects/${pid}/ai/review-pack`, {})).data; assert.ok(r.sources.some(x => /Automatic state-flow checks/.test(x.label)), JSON.stringify(r.sources));
+  assert.match(r.prompt, /Approve.{0,4} needs an approval but has no approver/); assert.match(r.prompt, /Nobody is told when a record moves to .{0,4}Approved/);
+});
 console.log(`${n} connector add-on checks passed`);
