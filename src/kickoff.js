@@ -258,20 +258,33 @@
     setDoc('plan_struct', { rows: raw.rows.map(r => Object.assign({}, r)), versions: d.versions || [], fromPack: raw.builtAt }); F.changed(null, null, { section: 'plan_struct', render: false });
   }
   async function planBook(raw) {
-    const E = await V.loadExcelJS(); const wb = new E.Workbook(); const ws = wb.addWorksheet('Project plan', { views: [{ state: 'frozen', xSplit: 5, ySplit: 3 }] });
+    const E = await V.loadExcelJS(); const wb = new E.Workbook(); const ws = wb.addWorksheet('Project plan', { views: [{ state: 'frozen', xSplit: 2, ySplit: 3 }] });
     const rows = raw.rows.slice().sort((a, b) => String(a.start).localeCompare(String(b.start))); const day = x => new Date(x + 'T00:00:00Z'); const DAY = 864e5;
     const t0 = day(rows[0].start); const t1 = rows.reduce((m, r) => { const e = day(r.end || r.start); return e > m ? e : m; }, t0); const weeks = Math.max(1, Math.min(60, Math.ceil(((t1 - t0) / DAY + 1) / 7)));
     ws.addRow([(S.project.customer || '') + ' × Facilio: ' + (S.project.name || '') + ' - Project plan']).font = { bold: true, size: 14, color: { argb: 'FF1D1A5E' } };
     ws.addRow(['Status: ' + (raw.status === 'approved' ? 'Approved' : 'Draft, not yet approved') + '. Dates that are not written in the contract are Facilio suggestions.']).font = { italic: true, color: { argb: 'FF4A5784' } };
-    const head = ['Phase', 'Start', 'End', 'Owner', 'Where it comes from']; for (let w = 0; w < weeks; w++) head.push(new Date(t0.getTime() + w * 7 * DAY));
-    ws.addRow(head).eachCell((c, n) => { c.font = { bold: true, color: { argb: 'FFFFFFFF' } }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1D1A5E' } }; c.alignment = { horizontal: 'center' }; if (n > 5) c.numFmt = 'dd/mm'; });
-    rows.forEach(r => { const a0 = day(r.start), e0 = day(r.end || r.start); const row = ws.addRow([r.title, a0, e0, r.owner || '', L().originLabel(r.origin)]); row.getCell(2).numFmt = 'dd/mm/yyyy'; row.getCell(3).numFmt = 'dd/mm/yyyy';
-      for (let w = 0; w < weeks; w++) { const a = t0.getTime() + w * 7 * DAY, b = a + 7 * DAY; if (a0.getTime() < b && e0.getTime() + DAY > a) row.getCell(6 + w).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: r.origin === 'contract' ? 'FF1D1A5E' : 'FF1570EF' } }; } });
-    [34, 12, 12, 11, 28].forEach((w, n) => { ws.getColumn(n + 1).width = w; }); for (let w = 0; w < weeks; w++) ws.getColumn(6 + w).width = 6;
+    // headings (phases) with their tasks; a task starts the working day after the tasks it depends on, a heading spans its tasks: change a duration or a date in Excel and the plan moves
+    const PB = root.FWBPlanBook, O = PB ? PB.outline(rows, (F.allModules() || []).filter(m => m.inScope).map(m => m.label || m.name)) : [];
+    const head = ['ID', 'Task', 'Start', 'End', 'Working days', 'Depends on', 'Owner', 'Where it comes from']; const G = head.length + 1; for (let w = 0; w < weeks; w++) head.push(new Date(t0.getTime() + w * 7 * DAY));
+    ws.addRow(head).eachCell((c, n) => { c.font = { bold: true, color: { argb: 'FFFFFFFF' } }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1D1A5E' } }; c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }; if (n >= G) c.numFmt = 'dd/mm'; });
+    const at = {}; O.forEach((o, i) => { at[o.key] = 4 + i; }); const col = n => { let x = ''; while (n > 0) { const m = (n - 1) % 26; x = String.fromCharCode(65 + m) + x; n = Math.floor((n - 1) / 26); } return x; };
+    O.forEach((o, i) => { const r = 4 + i, kids = O.filter(x => x.level === 1 && x.key.indexOf(o.key + '.') === 0);
+      const row = ws.addRow([o.key, o.title, null, null, null, o.deps.join(', '), o.owner, L().originLabel(o.origin)]);
+      if (o.level === 0 && kids.length) { const f0 = at[kids[0].key], f1 = at[kids[kids.length - 1].key];
+        row.getCell(3).value = { formula: 'MIN(C' + f0 + ':C' + f1 + ')', result: day(o.start) }; row.getCell(4).value = { formula: 'MAX(D' + f0 + ':D' + f1 + ')', result: day(o.end) }; row.getCell(5).value = { formula: 'NETWORKDAYS(C' + r + ',D' + r + ')', result: o.days };
+        row.eachCell(c => { c.font = { bold: true, color: { argb: 'FF1D1A5E' } }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEAF2FF' } }; }); }
+      else { row.getCell(2).alignment = { indent: 2 };
+        row.getCell(3).value = o.deps.length ? { formula: 'WORKDAY(MAX(' + o.deps.map(k => 'D' + at[k]).join(',') + '),1)', result: day(o.start) } : day(o.start);
+        row.getCell(4).value = { formula: 'WORKDAY(C' + r + ',E' + r + '-1)', result: day(o.end) }; row.getCell(5).value = o.days; }
+      row.getCell(3).numFmt = 'dd/mm/yyyy'; row.getCell(4).numFmt = 'dd/mm/yyyy'; });
+    // the bars follow the Start and End cells (conditional formatting), so they move when the dates move
+    if (O.length) ws.addConditionalFormatting({ ref: col(G) + '4:' + col(G + weeks - 1) + (3 + O.length), rules: [{ type: 'expression', formulae: ['AND(' + col(G) + '$3<=$D4,' + col(G) + '$3+6>=$C4)'], style: { fill: { type: 'pattern', pattern: 'solid', bgColor: { argb: 'FF1570EF' } } } }] });
+    [8, 40, 12, 12, 9, 14, 11, 24].forEach((w, n) => { ws.getColumn(n + 1).width = w; }); for (let w = 0; w < weeks; w++) ws.getColumn(G + w).width = 6;
     const n2 = wb.addWorksheet('Assumptions and gaps'); n2.getColumn(1).width = 22; n2.getColumn(2).width = 120; n2.addRow(['Type', 'Note']).font = { bold: true };
     const pl = raw.plan || {}; (pl.conflicts || []).forEach(x => n2.addRow(['Conflict', (x && x.message) || String(x)])); (pl.gaps || []).forEach(x => n2.addRow(['Missing from the contract', x])); (pl.assumptions || []).forEach(x => n2.addRow(['Assumption', x]));
     return wb.xlsx.writeBuffer();
   }
+  V.koPlanBook = raw => planBook(raw);   // the plan workbook as a buffer (checks and tests)
   async function syncWorkbook() {
     const raw = packRaw(); if (planBusy || !raw || !V.loadExcelJS || S.ui.koPlanTried === raw.builtAt) return;
     F.doc('plan'); let d = S.docs.plan.data; if (!d || typeof d !== 'object') d = S.docs.plan.data = {}; d.versions = d.versions || [];
