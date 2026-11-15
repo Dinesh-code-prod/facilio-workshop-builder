@@ -9,7 +9,7 @@
   const OPEN = { pull_msa: ['kickoff', 'Review the kick-off'], apply_change: ['kickoff', 'Review the kick-off'], pull_clari: ['rschecks', 'Review the checks'], extract_findings: ['rschecks', 'Review the checks'], check_brd: ['rschecks', 'Review the checks'], check_msa: ['rschecks', 'Review the checks'], capture_flows: ['whiteboard', 'Review the proposed flows'], fill_forms: ['modules', 'Review the proposed fields and forms'], draft_brd: ['brd', 'Review the proposed BRD content'], capture_apps: ['brd', 'Review the proposed connected apps'], update_solution: ['solution', 'Review the proposed solution'], compare_solution: ['solution', 'Review the proposed updates'] };
   const SYM = '<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5h12A1.5 1.5 0 0 1 17.5 6v6a1.5 1.5 0 0 1-1.5 1.5H9.5L6 16.5v-3H4A1.5 1.5 0 0 1 2.5 12V6A1.5 1.5 0 0 1 4 4.5z"/><path d="M10 7.2l.7 1.5 1.5.7-1.5.7-.7 1.5-.7-1.5-1.5-.7 1.5-.7z" fill="currentColor" stroke="none"/></svg>';   // the Assistant symbol: a chat bubble with a spark
   const st = () => S.ui.asst || (S.ui.asst = { open: false, seen: {}, init: '', sig: '' });
-  const L = () => root.FWBKickoffLogic, W = () => root.FWBWorkChat, J = () => V.studioJobs;
+  const L = () => root.FWBKickoffLogic, W = () => root.FWBWorkChat, J = () => V.studioJobs, I = () => V.items;
   const team = () => !!(S.user && S.user.kind !== 'customer' && S.project && S.project.id && (!V.isCustomer || !V.isCustomer()));
   let panel = null, tab = null, ticks = 0;
   function ensure() {
@@ -55,6 +55,15 @@
   async function loadUsage(force) { if (!team() || (!force && Date.now() - USE.at < 6e4)) return; USE.at = Date.now(); try { const r = await root.FWBApi.get('/api/usage'); USE.d = r && r.usage && Array.isArray(r.usage.accounts) ? r.usage.accounts : null; } catch (e) { return; } paintUsage(); }
   setInterval(() => { if (document.body && document.body.classList.contains('asst-open')) loadUsage(); }, 6e4);   // while the chat is open the usage line follows the 3-minute reports of the queue task
   const mins = ts => { const sec = Math.max(0, Math.floor((Date.now() - Date.parse(ts)) / 1000)); if (sec < 60) return sec < 15 ? 'a few seconds' : Math.floor(sec / 15) * 15 + ' seconds'; const m = Math.floor(sec / 60); return m === 1 ? '1 minute' : m + ' minutes'; };   // seconds under a minute, so the waiting time visibly moves
+  // the draft a finished run saved (the ai record made while it ran): a preview, the FTR counts, and the buttons to read, approve or change it
+  function draftCard(j) {
+    try { I().load(['ai']); if (!I().ready(['ai'])) return null; const t0 = Date.parse(j.claimedAt || j.at) - 6e4, t1 = Date.parse(j.finishedAt || 0) + 12e4; if (!t0 || !t1) return null;
+      const d = I().list('ai').filter(x => { const c = Date.parse(x._created || x.updatedAt || 0); return c >= t0 && c <= t1; }).sort((x, y) => String(y._created || '').localeCompare(String(x._created || '')))[0]; if (!d) return null;
+      const R = V.ftrReport, c = d.task === 'ftr' && R ? R.parse(d.content).counts : null;
+      const prev = String(d.content || '').replace(/^#+\s*/gm, '').replace(/[|*_\x60>-]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 260);
+      return { who: 'claude', text: '\ud83d\udcc4 Draft saved: ' + (d.title || d.task) + ' (v' + (d.version || 1) + ', ' + (d.status === 'approved' ? 'approved' : 'not approved yet') + ')' + (c && c.total ? '. ' + c.pass + ' of ' + c.total + ' test cases passed, ' + c.fail + ' failed, ' + c.notrun + ' not run' : '') + '.\n' + prev + (String(d.content || '').length > 260 ? '\u2026' : ''),
+        actions: [{ label: 'Open and approve', act: 'aiOpen', attrs: { id: d.id }, primary: true }, { label: 'Ask for a change', act: 'asstQuote', attrs: { q: String(d.title || d.task).slice(0, 70) } }] }; } catch (e) { return null; }
+  }
   function runMsgs(j, k) {
     const when = J().when, who = String(j.claimedBy || '').split('@')[0], out = []; const mine = !j.by || !S.user || String(j.by).toLowerCase() === String(S.user.email || '').toLowerCase(), nm = nice(j.by); if (j.kind === 'chat') out.push(mine ? { who: 'you', text: j.note, at: when(j.at) } : { who: 'other', name: nm, text: j.note, at: when(j.at) }); else out.push({ who: 'sys', text: (mine ? 'You asked' : nm.split(' ')[0] + ' asked') + ' for this, ' + when(j.at) + (String(j.note || '').trim() ? ': \u201c' + String(j.note).replace(/\s+/g, ' ').trim().slice(0, 160) + (String(j.note).length > 160 ? '\u2026' : '') + '\u201d' : '.') });   // a request is a quiet line, not a chat bubble
     if (j.status !== 'needs_input' && j.answers && j.answers.length) { (j.asked || []).forEach(q => out.push({ who: 'claude', text: q })); j.answers.forEach(x => out.push(mine ? { who: 'you', text: x } : { who: 'other', name: nm, text: x })); }   // the earlier question and your answer, above whatever Claude says next
@@ -65,7 +74,7 @@
     if (j.status === 'needs_input') { const q = split(j.questions); out.push({ who: 'claude', text: q.text, at: when(j.finishedAt), actions: q.opts.map(o => ({ label: o, act: 'asstPick', attrs: { job: j.id, v: o }, primary: false })) }); }   // the question is a normal message; the options are buttons, or type your own answer below
     if (j.status === 'failed') out.push({ who: 'bad', text: 'This could not be completed: ' + (j.summary || 'unknown reason'), at: when(j.finishedAt), actions: BLOCK.test(String(j.summary || '')) ? [SETUP] : [] });
     if (j.status === 'done') { let sum = String(j.summary || 'Done.'), o = OPEN[j.kind]; const m = /\n?\s*Tab:\s*([a-z_]{2,24})\s*$/i.exec(sum); if (m) { sum = sum.slice(0, m.index).trim() || 'Done.'; const id = m[1].toLowerCase(); if (V[id] && V[id].html) o = [id, 'Open it to review what changed']; }   // chat: Claude names the tab where the change is; only a real page gets a button
-    out.push({ who: 'claude', text: sum, at: when(j.finishedAt), actions: (o ? [{ label: LABEL[o[0]] && j.kind === 'chat' ? 'Open ' + LABEL[o[0]] : o[1], act: 'koOpen', attrs: { view: o[0] }, primary: true }] : []).concat(BLOCK.test(sum) ? [SETUP] : []) }); }
+    out.push({ who: 'claude', text: sum, at: when(j.finishedAt), actions: (o ? [{ label: LABEL[o[0]] && j.kind === 'chat' ? 'Open ' + LABEL[o[0]] : o[1], act: 'koOpen', attrs: { view: o[0] }, primary: true }] : []).concat(BLOCK.test(sum) ? [SETUP] : []) }); const dc = draftCard(j); if (dc) out.push(dc); }
     const q = String(j.kind === 'chat' ? j.note : j.label || '').replace(/\s+/g, ' ').trim(), vw = V.asstViewOf(j), area = vw && LABEL[vw] ? LABEL[vw].replace(/^the /, '') : (j.stage && j.stage !== 'other' ? STAGE[j.stage] || '' : ''), t0 = when(j.claimedAt || j.at);   // every Claude reply says which question it answers and where; every line has a time
     out.forEach((m, i) => { if (!m.at && m.who !== 'sys') m.at = t0; if (m.who === 'claude' && !m.via) m.via = 'claude'; if (q && m.who === 'claude' && (!i || out[i - 1].who !== 'claude')) m.head = { q: q.length > 70 ? q.slice(0, 70) + '…' : q, full: q.slice(0, 70), area, view: vw && V[vw] && V[vw].html ? vw : '' }; });
     return out;
@@ -158,12 +167,32 @@
     for (const p of looks) await askDeepSeek(p.text, box, { route: p.route, task: p.task, view: p.view, label: '', intent: '', quiet: true });
     a.sig = ''; paint();
   }
+  // ---- commands the Studio does itself (src/chatcmds.js): a page opens at once; a task or a Claude job waits for Do it; a draft is opened for the person to approve ----
+  const CMDS = {}; const hhmm = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const navPages = () => { try { return V.navFor().flatMap(g => g.items.map(x => [x[0], x[1]])).filter(x => V[x[0]] && V[x[0]].html); } catch (e) { return []; } };
+  const say = (text, actions) => { const a = st(); a.local = a.local || []; a.open = true; const m = { who: 'sys', ts: Date.now() + 1, text, actions }; a.local.push(m); a.sig = ''; paint(); return m; };
+  function runCmd(c, note, box) {
+    const a = st(); a.local = a.local || []; a.open = true; box.value = ''; a.local.push({ who: 'you', text: note, at: hhmm(), ts: Date.now() }); const id = 'c' + Date.now();
+    if (c.type === 'nav') { V.go(c.view); say('Opened ' + c.label + '.'); return; }
+    if (c.type === 'task') { CMDS[id] = { c, m: say('Add this task to the project? \u201c' + c.title + '\u201d (To Do, assigned to you)', [{ label: 'Add task', act: 'asstCmdGo', attrs: { id }, primary: true }, { label: 'Cancel', act: 'asstCmdNo', attrs: { id } }]) }; return; }
+    if (c.type === 'job') { CMDS[id] = { c, m: say('I can start this now: ' + c.label + '. Your Claude does it through the connector and its progress shows here.', [{ label: 'Do it', act: 'asstCmdGo', attrs: { id }, primary: true }, { label: 'Cancel', act: 'asstCmdNo', attrs: { id } }]) }; return; }
+    if (c.type === 'draft') { I().load(['ai']); const d = I().list('ai').filter(x => x.task === c.task).sort((x, y) => String(y._created || '').localeCompare(String(x._created || '')))[0];
+      say(d ? 'The latest ' + c.label + ' is ' + (d.status === 'approved' ? 'already approved' : 'a draft') + ' (v' + (d.version || 1) + '). Read it and press Approve in the window that opens: approving is always your click.' : 'There is no ' + c.label + ' draft yet. Ask me to make one, for example \u201cmake the ' + c.label + '\u201d.', d ? [{ label: 'Open and approve', act: 'aiOpen', attrs: { id: d.id }, primary: true }] : []); }
+  }
+  V.ACT.asstCmdGo = el => V.busy(el, async () => { const id = el.getAttribute('data-id'), x = CMDS[id]; if (!x) return; delete CMDS[id]; x.m.actions = [];
+    if (x.c.type === 'job') { if (J().guard()) { CMDS[id] = x; return; } const out = await J().post('/jobs', x.c.job); say(out && out.duplicate ? 'Claude already has this request; its progress shows here.' : 'Sent to Claude: ' + x.c.label + '.'); return; }
+    if (x.c.type === 'task') { const tid = I().uid('t'); await I().put('task', tid, { title: x.c.title.slice(0, 200), type: 'Internal Action', status: 'To Do', priority: 'Medium', owner: (S.user && S.user.email) || '', src: { type: 'manual', label: 'From the Assistant chat' } });
+      say('Added the task \u201c' + x.c.title + '\u201d.', [{ label: 'Undo', act: 'asstCmdUndo', attrs: { id: tid } }, { label: 'Open Tasks', act: 'koOpen', attrs: { view: 'tasks' } }]); }
+  });
+  V.ACT.asstCmdNo = el => { const id = el.getAttribute('data-id'), x = CMDS[id]; if (!x) return; delete CMDS[id]; x.m.actions = []; say('Cancelled. Nothing was changed.'); };
+  V.ACT.asstCmdUndo = el => V.busy(el, async () => { const tid = el.getAttribute('data-id'); if (!tid || !I().get('task', tid)) { say('That task is already gone.'); return; } await I().del('task', tid); say('Removed the task again.'); });
   V.ACT.asstSend = a => V.busy(a, async () => {
     const box = document.getElementById('asM'), raw = box ? box.value.trim() : '', note = raw && st().quote ? ('Following up on "' + st().quote + '": ' + raw).slice(0, 600) : raw; if (!note) { V.toast('Write your message first.', 3000, true); return; } if (J().guard()) return;
     st().quote = '';
     const k = J().K(), ask = k && Array.isArray(k.jobs) ? L().jobRows(k.jobs).find(j => j.status === 'needs_input') : null;   // when Claude has asked something, this box IS the answer
     if (ask) { const a3 = st(); a3.local = a3.local || []; const sent = { who: 'you', text: raw, at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), ts: Date.now(), pend: raw }; a3.local.push(sent); box.value = ''; a3.sig = ''; paint();   // your answer is a bubble at once
       try { await J().post('/jobs/' + encodeURIComponent(ask.id) + '/answer', { answers: [raw] }); } catch (e) { a3.local = a3.local.filter(x => x !== sent); box.value = raw; a3.sig = ''; paint(); throw e; } a3.sig = ''; J().load(true); V.toast('Sent. Claude will continue.', 3500); return; }
+    if ((st().mode || 'auto') === 'auto' && V.chatCmd) { const c = V.chatCmd.match(note, { pages: navPages(), today: new Date() }); if (c) { runCmd(c, note, box); return; } }
     if ((st().mode || 'auto') !== 'cl') { const q = V.quickFacts && V.quickFacts(note); if (q) { const a0 = st(); a0.local = a0.local || []; a0.open = true; box.value = ''; a0.local.push({ who: 'you', text: note, at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }); const r0 = { who: 'claude', via: 'app', text: q.text }; if (q.view && V[q.view] && V[q.view].html) r0.actions = [{ label: 'Open ' + q.view, act: 'koOpen', attrs: { view: q.view } }]; a0.local.push(r0); a0.sig = ''; paint(); return; } }   // an exact answer from the records: no AI, no wait
     let mode = st().mode || 'auto', plan = { route: mode === 'cl' ? 'small' : 'lookup', task: '', view: '' };
     if (mode === 'auto') { try { plan = await root.FWBApi.post('/api/projects/' + S.project.id + '/assistant/route', { message: note, section: String(S.view || '') }); } catch (e) { plan = { route: CHANGE.test(note) ? 'small' : 'lookup', task: '', view: '' }; } }   // the size decides who works: look-ups at once, changes by Claude
