@@ -68,4 +68,15 @@ t('sameQuestion, evidenceLine, agendaOf and fmtClock', () => {
   assert.deepEqual(a.map(x => x.id), ['a', 'b', 'c']); assert.equal(a[0].minutes, 120); assert.deepEqual(L.agendaOf('x'), []);
   assert.equal(L.fmtClock(0), '0:00'); assert.equal(L.fmtClock(65000), '1:05'); assert.equal(L.fmtClock(3725000), '1:02:05'); assert.equal(L.fmtClock(-5), '0:00'); assert.equal(L.fmtClock('x'), '0:00');
 });
+t('a session asks only the questions of its modules (items stand in for modules)', () => {
+  const ses = L.agendaOf([{ id: 's1', title: 'Session 1', modules: [], items: ['Asset Management', 'Client Management'] }, { id: 's9', title: 'Follow-up', items: ['Follow-up on outstanding requirements'] }]);
+  assert.deepEqual(ses[0].modules, ['Asset Management', 'Client Management']);
+  const qs = [{ id: 'a', module: 'Asset Management', moduleLabel: 'Asset Management' }, { id: 'c', module: 'client', moduleLabel: 'Clients' }, { id: 'r', module: 'Reactive Maintenance', moduleLabel: 'Reactive Maintenance' }, { id: 'g', module: '', moduleLabel: 'General' }];
+  assert.deepEqual(L.forSession(qs, ses[0]).map(q => q.id), ['a', 'c']);
+  assert.deepEqual(L.forSession(qs, ses[1]).map(q => q.id), ['g'], 'a session with none of the modules takes the contract-wide questions');
+  assert.equal(L.forSession(qs, null).length, 4);
+  assert.deepEqual(L.byModule(L.forSession(qs, ses[0])).map(g => [g.label, g.questions.length]), [['Asset Management', 1], ['Clients', 1]]);
+  const portal = { id: 's3', title: 'Session 3', modules: ['Client Portal (web and mobile)', 'Reactive Maintenance'] };
+  assert.deepEqual(L.forSession(qs, portal, ses.concat([portal])).map(q => q.id), ['r'], 'the client questions belong to Client Management, not also to Client Portal');
+});
 console.log(n + ' workshop logic checks passed');

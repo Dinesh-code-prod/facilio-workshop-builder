@@ -66,3 +66,24 @@
 .ws-fq { font-size: 20px; line-height: 1.35; font-weight: 600; color: #1d1d1f; margin: 2px 0 8px; }
 .ws-next2 { margin-top: 14px; padding-top: 10px; border-top: 1px solid #eef1f7; display: grid; gap: 2px; }
 .ws-all { margin-top: 14px; }
+/* the session view: the session's questions by module on the left, the question on screen on the right; coloured progress (answered green, asked amber, skipped grey) */
+.ws-ask { display: grid; grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); gap: 16px; align-items: start; }
+.ws-side { background: #fff; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 14px rgba(0,0,0,.05); padding: 6px; max-height: 72vh; overflow: auto; position: sticky; top: 8px; }
+.ws-sg + .ws-sg { border-top: 1px solid #eef1f7; margin-top: 4px; padding-top: 4px; }
+.ws-sgh { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 8px 8px 4px; font-size: 13px; color: #1D1A5E; }
+.ws-si { display: flex; gap: 9px; align-items: flex-start; width: 100%; text-align: left; font: inherit; font-size: 13px; line-height: 1.35; padding: 6px 8px; border: 0; background: none; border-radius: 8px; color: #1d1d1f; cursor: pointer; }
+.ws-si span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ws-si i { flex: 0 0 10px; height: 10px; margin-top: 4px; border-radius: 50%; border: 2px solid #C7C7CC; box-sizing: border-box; }
+.ws-si.ws-st-answered i { background: #34C759; border-color: #34C759; } .ws-si.ws-st-asked i { background: #FF9F0A; border-color: #FF9F0A; } .ws-si.ws-st-skipped i { background: #C7C7CC; }
+.ws-si.ws-st-answered span, .ws-si.ws-st-skipped span { color: #6e6e73; }
+.ws-si:hover { background: #F2F2F7; } .ws-si.on { background: #EAF2FF; box-shadow: inset 3px 0 0 #1570EF; }
+.ws-pbar { display: flex; height: 8px; background: #E5E5EA; border-radius: 6px; overflow: hidden; margin: 6px 0 4px; }
+.ws-pbar i { display: block; height: 100%; } .ws-pbar i.a, .ws-legend i.a { background: #34C759; } .ws-pbar i.k, .ws-legend i.k { background: #FF9F0A; } .ws-pbar i.s, .ws-legend i.s { background: #AEAEB2; }
+.ws-legend { display: flex; gap: 4px 12px; flex-wrap: wrap; color: #6e6e73; } .ws-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #E5E5EA; margin-right: 5px; }
+.ws-prog { min-width: 260px; }
+.ws-mods { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; } .ws-mods span { font-size: 12px; padding: 3px 10px; border-radius: 999px; background: #fff; color: #1D1A5E; box-shadow: 0 0 0 1px #DCE4F3; }
+.ws-chip { align-items: flex-start; min-width: 210px; } .ws-chip-t { flex: 1; min-width: 0; } .ws-chip .ws-pbar { height: 5px; margin: 6px 0 3px; }
+.ws-chip-m { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ws-stchip { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; margin-left: 6px; background: #E5E5EA; color: #3a3a3c; } .ws-stchip.ws-st-answered { background: #E3F7E8; color: #1E7F3A; }
+.ws-nx { display: block; text-align: left; font: inherit; background: none; border: 0; padding: 4px 0; color: #1570EF; cursor: pointer; } .ws-nx:hover { text-decoration: underline; }
+@media (max-width: 900px) { .ws-ask { grid-template-columns: minmax(0, 1fr); } .ws-side { position: static; max-height: 40vh; } }

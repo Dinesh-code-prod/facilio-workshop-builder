@@ -88,14 +88,31 @@
   /** true when an open question with the same words is already recorded (so the button does not add a copy) */
   const sameQuestion = (existing, text) => { const k = str(text, 600).toLowerCase(); return !!k && arr(existing).some(x => str(obj(x).text, 600).toLowerCase() === k); };
 
-  /** the planned sessions in date order for the agenda panel */
+  /** the planned sessions in date order for the agenda panel. A session planned from the contract keeps its modules in `items` (modules stays empty), so items stand in for them. */
   function agendaOf(sessions) {
-    return arr(sessions).filter(s => s && typeof s === 'object' && str(s.title, 200)).slice(0, 100).map(s => ({ id: str(s.id, 80), no: s.no == null ? '' : str(s.no, 10), title: str(s.title, 200), date: str(s.date, 10), start: str(s.start, 8), minutes: Number(s.minutes) > 0 ? Math.min(Number(s.minutes), 1440) : 0, status: str(s.status, 30) || 'planned', modules: arr(s.modules).map(m => str(m, 120)).filter(Boolean).slice(0, 12), topics: str(s.topics, 600) }))
+    const mods = s => { const m = arr(s.modules).map(x => str(x, 120)).filter(Boolean); return (m.length ? m : arr(s.items).map(x => str(x, 160)).filter(Boolean)).slice(0, 12); };
+    return arr(sessions).filter(s => s && typeof s === 'object' && str(s.title, 200)).slice(0, 100).map(s => ({ id: str(s.id, 80), no: s.no == null ? '' : str(s.no, 10), title: str(s.title, 200), date: str(s.date, 10), start: str(s.start, 8), minutes: Number(s.minutes) > 0 ? Math.min(Number(s.minutes), 1440) : 0, status: str(s.status, 30) || 'planned', modules: mods(s), topics: str(s.topics, 600) }))
       .sort((a, b) => (a.date || '9999') < (b.date || '9999') ? -1 : (a.date || '9999') > (b.date || '9999') ? 1 : String(a.no).localeCompare(String(b.no), undefined, { numeric: true }));
   }
   /** a clock from milliseconds: m:ss, or h:mm:ss from an hour on */
   function fmtClock(ms) { const t = Math.max(0, Math.floor((Number(ms) || 0) / 1000)); const p = n => String(n).padStart(2, '0'); return t >= 3600 ? Math.floor(t / 3600) + ':' + p(Math.floor(t % 3600 / 60)) + ':' + p(t % 60) : Math.floor(t / 60) + ':' + p(t % 60); }
 
-  const api = { STATUSES, LABEL, KINDS, notesOf, questionList, mergeLive, counts, setNote, evidenceLine, basisOf, sourceOf, draftRecord, sameQuestion, agendaOf, fmtClock };
+  // ---------- which questions a session asks ----------
+  const nz = s => str(s, 200).toLowerCase().replace(/[^a-z0-9]/g, '').replace(/s$/, '');
+  /** a module of the session matches the question's module key or label; a short key ("client") also matches a longer session name ("Client Management") */
+  const sameMod = (m, k) => k === m || (k.length >= 5 && m.includes(k)) || (m.length >= 5 && k.includes(m));
+  /** the questions a planned session covers: those of its modules. Each question module belongs to ONE module of the plan (`sessions`, all of them): the same name, else the shortest name holding it,
+      so "client" goes to Client Management and not also to Client Portal. A session that names none of the questions' modules (a follow-up session) takes the contract-wide questions. No session: every question. */
+  function forSession(list, session, sessions) {
+    list = arr(list); if (!session) return list; const mine = new Set(arr(session.modules).map(nz).filter(Boolean));
+    const names = [...new Set(arr(sessions).concat([session]).flatMap(s => arr(obj(s).modules).map(nz)).filter(Boolean))];
+    const home = k => names.includes(k) ? k : names.filter(m => sameMod(m, k)).sort((a, b) => a.length - b.length)[0] || '';
+    const hit = list.filter(q => q.module && [q.module, q.moduleLabel].map(nz).filter(Boolean).some(k => mine.has(home(k))));
+    return hit.length ? hit : list.filter(q => !q.module);
+  }
+  /** the questions grouped by module, in first-seen order: [{ module, label, questions }] */
+  function byModule(list) { const out = []; arr(list).forEach(q => { let g = out.find(x => x.module === q.module); if (!g) out.push(g = { module: q.module, label: q.module ? q.moduleLabel : 'Contract-wide', questions: [] }); g.questions.push(q); }); return out; }
+
+  const api = { STATUSES, LABEL, KINDS, notesOf, questionList, mergeLive, counts, setNote, evidenceLine, basisOf, sourceOf, draftRecord, sameQuestion, agendaOf, fmtClock, forSession, byModule };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBWorkshopLogic = api;
 })(typeof window !== 'undefined' ? window : globalThis);

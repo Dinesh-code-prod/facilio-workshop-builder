@@ -22,33 +22,16 @@
 
   // ---------- panels ----------
   const evidenceHtml = (q, can) => q.live ? `<div class="ws-ev ws-ev-${q.live.confidence}"><b>${q.live.confidence === 'likely' ? 'Likely answered' : 'Possibly answered'}</b> <span class="xs muted">a guess from matching words; a person decides</span><div>${esc(q.live.speaker || 'Speaker not named')}${q.live.at ? ' (' + esc(q.live.at) + ')' : ''}: &ldquo;${esc(q.live.quote)}&rdquo;</div>${can ? `<button type="button" class="btn sm" data-act="wsAccept" data-id="${esc(q.id)}">Mark answered with this quote</button>` : ''}</div>` : '';
-  function qRow(q) {
+  // quick capture: the answer of the question on screen becomes a draft record (a person approves it later)
+  function makeRow(q) {
     const dis = ro() ? ' disabled' : '';
-    const seg = L().STATUSES.map(s => `<button type="button" class="ws-seg${q.status === s ? ' on' : ''}" data-act="wsStatus" data-id="${esc(q.id)}" data-v="${s}" aria-pressed="${q.status === s}"${dis}>${esc(L().LABEL[s])}</button>`).join('');
     const mk = (k, label, made) => q.made[k] ? `<span class="ws-made" title="Already made from this question">${esc(made)}${k === 'requirement' ? ' ' + esc(q.made[k]) : ''}</span>` : `<button type="button" class="btn sm" data-act="wsMake" data-id="${esc(q.id)}" data-k="${k}"${dis}>${esc(label)}</button>`;
-    const src = q.sources.filter(s => s.type !== 'statement').slice(0, 2).map(s => `<div class="xs muted">Source: ${esc(s.type)} ${esc(s.ref)}${s.quote ? ': &ldquo;' + esc(s.quote) + '&rdquo;' : ''}</div>`).join('');
-    return `<div class="ws-q ws-st-${q.status}"><div class="ws-qt">${tag(PC[q.priority] || 'low', esc(q.priority))} ${esc(q.text)}</div>${evidenceHtml(q, !ro())}
-      <div class="ws-segs" role="group" aria-label="Status of this question">${seg}</div>
-      <textarea class="ws-note" rows="2" maxlength="2000" placeholder="The customer's answer, in your own words" aria-label="Note for this question" data-bind="@workshop_room:q.${esc(q.id)}.note"${dis}>${esc(q.note)}</textarea>
-      <details class="ws-help"><summary>Why ask this, and quick capture</summary><div class="small muted">Why: ${esc(q.why)}</div>${src}${q.evidence ? `<div class="xs muted">Kept: ${esc(L().evidenceLine(q.evidence))}</div>` : ''}
-        <p class="xs muted" style="margin:8px 0 4px">Turn this answer into a draft record (a person approves it later):</p>
-        <div class="ws-mk row" style="gap:6px;flex-wrap:wrap">${mk('requirement', 'Make requirement (draft)', 'Requirement draft')}${mk('decision', 'Make decision (draft)', 'Decision draft made')}${mk('action', 'Make action', 'Action made')}${mk('question', 'Make open question', 'Open question added')}</div></details></div>`;
+    return `<details class="ws-help"><summary>Turn this answer into a draft record</summary><p class="xs muted" style="margin:8px 0 6px">A person approves it later; the question and the answer are kept as its source.</p><div class="ws-mk row" style="gap:6px;flex-wrap:wrap">${mk('requirement', 'Make requirement (draft)', 'Requirement draft')}${mk('decision', 'Make decision (draft)', 'Decision draft made')}${mk('action', 'Make action', 'Action made')}${mk('question', 'Make open question', 'Open question added')}</div></details>`;
   }
-  // the planned session being run narrows the questions to its modules (and the general ones); none picked shows every question
-  const nzs = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '').replace(/s$/, '');
-  function sessionScope() { const u = U(); if (!u.sessionId) return null; const s = L().agendaOf(V.plannerDoc ? V.plannerDoc().sessions : []).find(x => x.id === u.sessionId); return s && s.modules.length ? { title: s.title, mods: new Set(s.modules.map(nzs)) } : null; }
+  // the planned session being run narrows the questions to its modules (src/workshoplogic.js forSession); none picked shows every question
   const RANK = { must: 0, should: 1, could: 2 };
-  const visible = all => { const sc = sessionScope(), u = U(); return all.filter(q => (!sc || !q.module || sc.mods.has(nzs(q.module)) || sc.mods.has(nzs(q.moduleLabel))) && (!u.mod || q.module === u.mod)); };
-  function questionsPanel(prep, all) {
-    const u = U(); const sc = sessionScope(); const c = L().counts(visible(all)); const groups = prep.byModule.filter(g => (!u.mod || g.module === u.mod) && (!sc || !g.module || sc.mods.has(nzs(g.module)) || sc.mods.has(nzs(g.label))));
-    const byId = new Map(all.map(q => [q.id, q]));
-    const strip = `<div class="ws-sum"><b>${c.total}</b> question${c.total === 1 ? '' : 's'}<span>${c.toask} to ask</span><span>${c.asked} asked</span><span>${c.answered} answered</span><span>${c.skipped} skipped</span>${c.likely + c.possible ? `<span class="ws-hint">${c.likely} likely and ${c.possible} possibly answered in the transcript</span>` : ''}</div>`;
-    const filter = `<label class="ws-mod xs muted">Module <select data-change="wsMod" aria-label="Show one module"><option value="">All modules</option>${prep.byModule.map(g => `<option value="${esc(g.module)}"${u.mod === g.module ? ' selected' : ''}>${esc(g.label || 'General')}</option>`).join('')}</select></label>`;
-    const cards = groups.map(g => { const qs = g.questions.map(x => byId.get(x.id)).filter(Boolean); const done = qs.filter(x => x.status === 'answered' || x.status === 'skipped').length;
-      return `<div class="card ws-card"><div class="card-h"><b>${esc(g.label || 'General')}</b> <span class="xs muted">${done} of ${qs.length} done</span></div><div class="card-b">${qs.map(qRow).join('')}</div></div>`; }).join('');
-    const gaps = prep.gaps.length ? `<div class="notice small"><div><b>Not worked out</b>${prep.gaps.map(g => `<div>${esc(g.message)}</div>`).join('')}</div></div>` : '';
-    return `<section aria-label="Prepared questions">${sc ? `<p class="small" style="margin:0 0 8px">Questions for <b>${esc(sc.title)}</b> <button type="button" class="btn sm" data-act="wsSession" data-id="${esc(u.sessionId)}">Show all sessions</button></p>` : ''}<div class="row" style="justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">${strip}${filter}</div>${cards || '<div class="empty">No questions yet: add scope items, requirements or open questions first (Requirements > Prepare questions shows why).</div>'}${gaps}</section>`;
-  }
+  const curSession = () => { const id = U().sessionId; return id ? sessionList().find(x => x.id === id) || null : null; };
+  const visible = all => L().forSession(all, curSession(), sessionList());
   function livePanel(all) {
     const u = U(); const dis = ro() ? ' disabled' : ''; const r = u.res; const info = u.info;
     const nextRows = r ? r.next.map(x => { const q = all.find(y => y.id === x.id); return q ? `<li><b>${esc(q.text)}</b><div class="xs muted">${esc(q.moduleLabel)}. ${esc(x.why)}</div></li>` : ''; }).join('') : '';
@@ -72,34 +55,53 @@
   }
   // ---------- the roadmap: one chip per planned requirement session, then one workspace for the chosen session ----------
   const sessionList = () => L().agendaOf(V.plannerDoc ? V.plannerDoc().sessions : []);
-  const forSession = (all, s) => { const mods = s && s.modules.length ? new Set(s.modules.map(nzs)) : null; return all.filter(q => !mods || !q.module || mods.has(nzs(q.module)) || mods.has(nzs(q.moduleLabel))); };
+  const forSession = (all, s) => L().forSession(all, s, sessionList());
   const isOpenQ = q => q.status === 'toask' || q.status === 'asked';
   const byPriority = (a, b) => (RANK[a.priority] == null ? 1 : RANK[a.priority]) - (RANK[b.priority] == null ? 1 : RANK[b.priority]);
+  // the next question: not yet asked before asked-and-waiting, then by priority
+  const askOrder = (a, b) => (a.status === 'asked') - (b.status === 'asked') || byPriority(a, b);
+  // one coloured bar: answered green, asked amber, skipped grey, still to ask the empty track
+  function progBar(qs) {
+    const c = L().counts(qs); const w = k => qs.length ? (c[k] * 100 / qs.length).toFixed(1) : 0;
+    return `<span class="ws-pbar" role="img" aria-label="${c.answered} answered, ${c.asked} asked, ${c.skipped} skipped, ${c.toask} to ask"><i class="a" style="width:${w('answered')}%"></i><i class="k" style="width:${w('asked')}%"></i><i class="s" style="width:${w('skipped')}%"></i></span>`;
+  }
+  const modNames = s => s.modules.length ? s.modules.slice(0, 2).join(', ') + (s.modules.length > 2 ? ' +' + (s.modules.length - 2) : '') : 'Contract-wide questions';
   function roadmap(all) {
     const u = U(); const ses = sessionList(); const dis = ro() ? ' disabled' : ''; const c = L().counts(all);
     const chips = ses.map((s, i) => { const qs = forSession(all, s); const done = qs.filter(q => !isOpenQ(q)).length; const full = qs.length && done === qs.length; const on = u.sessionId === s.id;
-      return `<button type="button" class="ws-chip${on ? ' on' : ''}${full ? ' done' : ''}" data-act="wsPick" data-id="${esc(s.id)}"${on ? ' aria-current="step"' : ''}><span class="ws-n">${full ? '&#10003;' : esc(s.no || i + 1)}</span><span><b>${esc(s.title)}</b><span class="xs muted">${esc(s.date ? V.fmtDate(s.date) : 'No date')} &middot; ${done} of ${qs.length} done</span></span></button>`; }).join('');
-    const allChip = `<button type="button" class="ws-chip${!u.sessionId ? ' on' : ''}" data-act="wsPick" data-id=""><span class="ws-n">&#8734;</span><span><b>All questions</b><span class="xs muted">${c.total - c.toask - c.asked} of ${c.total} done</span></span></button>`;
+      return `<button type="button" class="ws-chip${on ? ' on' : ''}${full ? ' done' : ''}" data-act="wsPick" data-id="${esc(s.id)}"${on ? ' aria-current="step"' : ''} title="${esc(s.modules.join(', '))}"><span class="ws-n">${full ? '&#10003;' : esc(s.no || i + 1)}</span><span class="ws-chip-t"><b>${esc(s.title)}</b><span class="xs muted ws-chip-m">${esc(modNames(s))}</span>${progBar(qs)}<span class="xs muted">${esc(s.date ? V.fmtDate(s.date) : 'No date')} &middot; ${done} of ${qs.length} done</span></span></button>`; }).join('');
+    const allChip = `<button type="button" class="ws-chip${!u.sessionId ? ' on' : ''}" data-act="wsPick" data-id=""><span class="ws-n">&#8734;</span><span class="ws-chip-t"><b>All questions</b><span class="xs muted ws-chip-m">Every session</span>${progBar(all)}<span class="xs muted">${c.total - c.toask - c.asked} of ${c.total} done</span></span></button>`;
     return `<section class="ws-prep" aria-label="Roadmap of the requirement sessions"><div class="ws-prep-h"><b>Your requirement sessions</b><span class="small muted">Pick the session you are running. Its questions are asked one by one; answers are kept as you go.</span>
       <span class="spacer"></span><button type="button" class="btn sm" data-act="wsGoQuestions">Review the questions</button><button type="button" class="btn sm" data-act="qbImport"${dis} title="Add your own questions from an Excel sheet, a Word or PDF document, or a text file">Import questions</button></div>
       <div class="ws-road" role="group">${chips}${allChip}</div>${ses.length ? '' : '<p class="small muted" style="margin:8px 0 0">No sessions are planned yet. Plan them under Workshop plan, and they appear here as a roadmap.</p>'}</section>`;
   }
   function briefCard(vis) {
-    const u = U(); const s = sessionList().find(x => x.id === u.sessionId); const open = vis.filter(isOpenQ).length; const done = vis.length - open; const pc = vis.length ? Math.round(done * 100 / vis.length) : 0;
-    const meta = s ? [s.date ? V.fmtDate(s.date) + (s.start ? ' ' + s.start : '') : '', s.minutes ? s.minutes + ' min' : '', s.modules.length ? 'Modules: ' + s.modules.join(', ') : ''].filter(Boolean).map(esc).join(' &middot; ') : 'Every prepared question, across all sessions';
-    return `<div class="ws-brief"><div><h2 class="ws-bt">${esc(s ? s.title : 'All questions')}</h2><div class="small muted">${meta}${s && s.topics ? '<br>Topics: ' + esc(s.topics) : ''}</div></div><div class="ws-brief-r"><button type="button" class="btn primary" data-act="wsPip" title="A small window that stays on top of Teams, Meet or Zoom and shows this session's questions still to ask">Float the questions over Teams or Zoom</button><div class="ws-prog" title="${done} of ${vis.length} asked or answered"><div class="ws-bar2"><i style="width:${pc}%"></i></div><span class="xs muted">${done} of ${vis.length} done</span></div></div></div>`;
+    const u = U(); const s = sessionList().find(x => x.id === u.sessionId); const c = L().counts(vis); const done = c.answered + c.skipped;
+    const meta = s ? [s.date ? V.fmtDate(s.date) + (s.start ? ' ' + s.start : '') : '', s.minutes ? s.minutes + ' min' : ''].filter(Boolean).map(esc).join(' &middot; ') : 'Every prepared question, across all sessions';
+    const mods = s && s.modules.length ? `<div class="ws-mods">${s.modules.map(m => `<span>${esc(m)}</span>`).join('')}</div>` : '';
+    const legend = `<div class="ws-legend xs"><span><i class="a"></i>${c.answered} answered</span><span><i class="k"></i>${c.asked} asked</span><span><i class="s"></i>${c.skipped} skipped</span><span><i></i>${c.toask} to ask</span></div>`;
+    return `<div class="ws-brief"><div><h2 class="ws-bt">${esc(s ? s.title : 'All questions')}</h2><div class="small muted">${meta}${s && s.topics ? ' &middot; Topics: ' + esc(s.topics) : ''}</div>${mods}</div><div class="ws-brief-r"><div class="ws-prog"><div class="row" style="justify-content:space-between;gap:8px"><b class="small">${done} of ${vis.length} done</b><span class="xs muted">${vis.length ? Math.round(done * 100 / vis.length) : 0}%</span></div>${progBar(vis)}${legend}</div><button type="button" class="btn primary" data-act="wsPip" title="A small window that stays on top of Teams, Meet or Zoom and shows this session's questions still to ask">Float the questions over Teams or Zoom</button></div></div>`;
+  }
+  // the question on screen: the one picked in the side list, else the next to ask
+  const pickCur = vis => vis.find(q => q.id === U().cur) || vis.filter(isOpenQ).sort(askOrder)[0] || null;
+  function sideList(vis, cur) {
+    return `<aside class="ws-side" aria-label="Questions of this session by module">${L().byModule(vis).map(g => { const done = g.questions.filter(q => !isOpenQ(q)).length;
+      const label = g.module && g.label === g.module ? ((() => { try { return (F.moduleView(g.module) || {}).label; } catch (e) { return ''; } })() || g.label) : g.label;
+      return `<div class="ws-sg"><div class="ws-sgh"><b>${esc(label)}</b><span class="xs muted">${done} of ${g.questions.length}</span></div>${g.questions.map(q => `<button type="button" class="ws-si ws-st-${q.status}${cur && cur.id === q.id ? ' on' : ''}" data-act="wsCur" data-id="${esc(q.id)}" aria-label="${esc(L().LABEL[q.status] + ': ' + q.text)}"${cur && cur.id === q.id ? ' aria-current="true"' : ''}><i aria-hidden="true"></i><span>${esc(q.text)}</span></button>`).join('')}</div>`; }).join('')}</aside>`;
   }
   function focusCard(vis) {
-    const dis = ro() ? ' disabled' : ''; const open = vis.filter(isOpenQ).sort(byPriority);
+    const dis = ro() ? ' disabled' : ''; const q = pickCur(vis);
     if (!vis.length) return `<div class="card ws-card"><div class="card-b"><b>No questions for this session yet.</b><p class="small muted">Create them from the contract, or import your own from Excel or a document, using the buttons above.</p></div></div>`;
-    if (!open.length) return `<div class="card ws-card"><div class="card-b"><b>&#10003; Every question here is asked or answered.</b><p class="small muted">Open the Finish tab to write the summary, keep the call and send the answers to the Solution tab.</p><button type="button" class="btn primary" data-act="wsTab" data-v="finish">Go to Finish</button></div></div>`;
-    const q = open[0]; const n = vis.length - open.length + 1; const next = open.slice(1, 4);
-    const btn = (v, label, cls) => `<button type="button" class="btn${cls ? ' ' + cls : ''}" data-act="wsStatus" data-id="${esc(q.id)}" data-v="${v}"${dis}>${label}</button>`;
-    return `<div class="card ws-card ws-focus-card"><div class="card-h"><b>Question ${n} of ${vis.length}</b><span class="xs muted">${tag(PC[q.priority] || 'low', esc(q.priority))} ${q.moduleLabel && q.moduleLabel !== 'General' ? esc(q.moduleLabel) : 'General'}</span></div><div class="card-b">
+    if (!q) return `<div class="card ws-card"><div class="card-b"><b>&#10003; Every question here is asked or answered.</b><p class="small muted">Open the Finish tab to write the summary, keep the call and send the answers to the Solution tab.</p><button type="button" class="btn primary" data-act="wsTab" data-v="finish">Go to Finish</button></div></div>`;
+    const n = vis.indexOf(q) + 1; const next = vis.filter(x => x !== q && isOpenQ(x)).sort(askOrder).slice(0, 3);
+    const btn = (v, label, cls) => `<button type="button" class="btn${cls ? ' ' + cls : ''}" data-act="wsStatus" data-id="${esc(q.id)}" data-v="${v}" aria-pressed="${q.status === v}"${dis}>${label}</button>`;
+    const st = isOpenQ(q) ? '' : ` <span class="ws-stchip ws-st-${q.status}">${esc(L().LABEL[q.status])}</span>`;
+    return `<div class="card ws-card ws-focus-card"><div class="card-h"><b>Question ${n} of ${vis.length}${st}</b><span class="xs muted">${tag(PC[q.priority] || 'low', esc(q.priority))} ${q.module ? esc(q.moduleLabel) : 'Contract-wide'}</span></div><div class="card-b">
       <div class="ws-fq">${esc(q.text)}</div>${q.why ? `<div class="small muted">Why ask: ${esc(q.why)}</div>` : ''}${q.expected ? `<div class="small muted">A good answer: ${esc(q.expected)}</div>` : ''}${evidenceHtml(q, !ro())}
       <label class="f" for="wsAns">What the customer answered</label><textarea id="wsAns" class="ws-note" rows="3" maxlength="2000" placeholder="Type the answer in your own words" data-bind="@workshop_room:q.${esc(q.id)}.note"${dis}>${esc(q.note)}</textarea>
       <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">${btn('answered', 'Answered &#10003;', 'primary')}${btn('asked', q.status === 'asked' ? 'Asked, still waiting' : 'Asked, waiting for the answer')}${btn('skipped', 'Skip')}</div>
-      ${next.length ? `<div class="ws-next2"><div class="xs muted">Up next</div>${next.map(x => `<div class="small">${esc(x.text)}</div>`).join('')}</div>` : ''}</div></div>`;
+      ${makeRow(q)}
+      ${next.length ? `<div class="ws-next2"><div class="xs muted">Up next</div>${next.map(x => `<button type="button" class="ws-nx small" data-act="wsCur" data-id="${esc(x.id)}">${esc(x.text)}</button>`).join('')}</div>` : ''}</div></div>`;
   }
   function sessionTabs(vis, tab) {
     const open = vis.filter(isOpenQ).length; const defs = [['ask', 'Ask the questions', open + ' to go'], ['listen', 'Listen to the call', 'Optional'], ['finish', 'Finish the session', 'Summary and answers']];
@@ -116,21 +118,22 @@
     const vis = visible(all); const tab = u.tab || 'ask';
     const pane = tab === 'listen' ? `<div class="ws-one">${livePanel(all)}${V.wsLiveExtra ? V.wsLiveExtra(all, 'call') : ''}</div>`
       : tab === 'finish' ? `<div class="ws-one">${V.wsLiveExtra ? V.wsLiveExtra(all, 'after') : ''}</div>`
-      : `<div class="ws-one">${focusCard(vis)}<details class="ws-help ws-all"><summary>All questions for this session (${vis.length})</summary>${questionsPanel(prep, all)}</details></div>`;
+      : vis.length ? `<div class="ws-ask">${sideList(vis, pickCur(vis))}<div class="ws-one">${focusCard(vis)}</div></div>` : `<div class="ws-one">${focusCard(vis)}</div>`;
     const main = `${roadmap(all)}${briefCard(vis)}${sessionTabs(vis, tab)}${pane}${toolsRow()}`;
     const lead = 'Go through your requirement sessions one by one: ask the questions, note what the customer answers, then finish the session. Nothing said here becomes an approved requirement: every record made is a draft with its source.';
     if (FOCUS()) return `<div class="wb-focus-page ws-room ws-focus"><div class="wb-focus-bar"><b>Workshop room</b><span class="xs muted">${esc((S.project && S.project.name) || '')}</span></div>${bar()}${main}</div>`;
     return (u.full ? '' : `<div class="page-header"><div class="t"><h1>Workshop room</h1><p>${lead}</p></div></div>`) + `<div class="page-body"><div class="ws-room${u.full ? ' ws-full ws-scroll' : ''}">${u.full ? '<div class="wb-focus-bar"><b>Workshop room</b><span class="xs muted">' + esc((S.project && S.project.name) || '') + '</span></div>' : ''}${bar()}${main}</div></div>`;
   } };
-  ACT.wsPick = a => { const u = U(); u.sessionId = a.getAttribute('data-id') || ''; u.tab = 'ask'; rerender(); };
+  ACT.wsPick = a => { const u = U(); u.sessionId = a.getAttribute('data-id') || ''; u.tab = 'ask'; u.cur = ''; rerender(); };
+  ACT.wsCur = a => { U().cur = a.getAttribute('data-id') || ''; rerender(); const t = document.getElementById('wsAns'); if (t && !t.disabled) t.focus({ preventScroll: true }); };
   ACT.wsTab = a => { U().tab = a.getAttribute('data-v'); rerender(); };
   ACT.wsGoQuestions = () => V.go('rsquestions');
 
   // ---------- actions ----------
   const save = (id, patch) => { L().setNote(doc(), id, patch, (S.user && S.user.name) || '', new Date().toISOString()); F.markDirty('workshop_room'); };
-  ACT.wsStatus = a => { if (ro()) return; save(a.getAttribute('data-id'), { status: a.getAttribute('data-v') }); rerender(); };
+  // a status set on the question on screen moves on to the next question to ask
+  ACT.wsStatus = a => { if (ro()) return; save(a.getAttribute('data-id'), { status: a.getAttribute('data-v') }); U().cur = ''; rerender(); };
   ACT.wsAccept = a => { if (ro()) return; const q = questions().find(x => x.id === a.getAttribute('data-id')); if (!q || !q.live) return; save(q.id, { status: 'answered', evidence: q.live, note: q.note || L().evidenceLine(q.live) }); toast('Marked answered with the quote kept', 3000); rerender(); };
-  ACT.wsMod = el => { U().mod = el.value; rerender(); };
   ACT.wsSession = a => { const u = U(); const id = a.getAttribute('data-id'); u.sessionId = u.sessionId === id ? '' : id; rerender(); };
   ACT.wsMake = a => V.busy(a, async () => {
     if (ro()) return; const kind = a.getAttribute('data-k'); if (!L().KINDS.includes(kind)) return; const q = questions().find(x => x.id === a.getAttribute('data-id')); if (!q || q.made[kind]) return; const u = U(); const iso = new Date().toISOString(); const I = V.items;
@@ -157,7 +160,7 @@
   let pip = null;
   function pipDraw() {
     if (!pip || pip.closed) { pip = null; return; } const d = pip.document; let all = []; try { all = questions(); } catch (e) { return; } const open = visible(all).filter(q => q.status === 'toask' || q.status === 'asked').sort((a, b) => (RANK[a.priority] == null ? 1 : RANK[a.priority]) - (RANK[b.priority] == null ? 1 : RANK[b.priority])); const done = visible(all).length - open.length;
-    d.getElementById('pqHead').textContent = open.length + ' to go, ' + done + ' done'; const list = d.getElementById('pqList'); list.textContent = '';
+    const s = curSession(); d.getElementById('pqHead').textContent = (s ? s.title + ': ' : 'All questions: ') + open.length + ' to go, ' + done + ' done'; const list = d.getElementById('pqList'); list.textContent = '';
     open.slice(0, 40).forEach(q => { const row = d.createElement('div'); row.className = 'q'; const t = d.createElement('div'); t.className = 't'; t.textContent = (q.priority === 'must' ? '(must) ' : '') + (q.moduleLabel && q.moduleLabel !== 'General' ? q.moduleLabel + ': ' : '') + q.text; if (q.why) t.title = q.why; row.appendChild(t); const b = d.createElement('div'); b.className = 'b';
       [['asked', q.status === 'asked' ? 'Asked' : 'Mark asked'], ['answered', 'Answered'], ['skipped', 'Skip']].forEach(([s, label]) => { const x = d.createElement('button'); x.type = 'button'; x.textContent = label; x.setAttribute('data-q', q.id); x.setAttribute('data-s', s); if (q.status === s) x.disabled = true; b.appendChild(x); }); row.appendChild(b); list.appendChild(row); });
     if (!open.length) list.textContent = 'Every prepared question has been asked or answered.';
