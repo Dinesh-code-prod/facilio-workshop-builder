@@ -259,6 +259,7 @@
   ACT.shPkg = a => V.busy(a, async () => { if (!canEdit()) return; const J = V.studioJobs; if (!J || J.guard()) return; const file = (await V.pickFile('.zip'))[0]; if (!file) return; if (!/[.]zip$/i.test(file.name)) { toast('Choose the organisation package .zip', 5000, true); return; }
     try { V.loading(true, 'Uploading ' + file.name + '…'); const rec = await API.uploadFile(S.project.id, file, 'config_package', { for: 'solution_doc' }, null, p => V.loadingMsg && V.loadingMsg('Uploading… ' + Math.round(p * 100) + '%'));
       await I().put('close', 'soldoc', { file: { id: rec.id, name: file.name, size: file.size }, by: (S.user && (S.user.name || S.user.email)) || '', at: new Date().toISOString() }); V.loading(false);
+      if (S.ui.view === 'soldoc') { toast('Package saved. Press Write with Claude to build the document from it.', 6000); V.render(); return; }
       const r = await J.post('/jobs', { kind: 'build_solution_doc', note: file.name, ref: rec.id }); toast(r.duplicate ? 'That request is already waiting.' : 'Package saved. Claude builds the Solution Document; follow it in the assistant.', 7000); J.load(true); }
     catch (e) { V.loading(false); toast(e.message || 'Could not upload the package', 7000, true); } V.render(); });
   ACT.shDl = a => V.busy(a, async () => { const d = (S.ui.solDocs || []).find(x => x.id === a.getAttribute('data-id')); if (!d) return; const r = await API.downloadFile(S.project.id, d.id); V.download(d.name, r.blob, d.mime); });

@@ -47,7 +47,8 @@
       ['hypercare', 'Hypercare', 'Log issues raised after launch and their fixes. Claude can turn open UAT issues and e-mails into hypercare items for you to accept. Share the status.']],
       'Issues are fixed or handed to support, and the customer knows who to call.', 'Keep one list. An issue in e-mail only is an issue nobody owns.'],
     ['8', 'Project handover', 'Hand over cleanly and close.', [
-      ['handover', 'Handover & Closure', 'Record who owns what, hand over to support, review lessons learned, close the project.' + (HIDE_PKG ? '' : ' Drop the org package here and Claude builds the Solution Document.')]],
+      ['handover', 'Handover & Closure', 'Record who owns what, hand over to support, review lessons learned, close the project.'],
+      ['soldoc', 'Solution document', 'The client-ready description of what was built. Draft it from the studio, import one, or let Claude write it from the org package or the Org ID; then review each section and export to Word.']],
       'Support owns the steady state and the project is formally closed.', 'Closing with open actions loses the history. Close or move every open item first.']
   ];
 
@@ -123,7 +124,7 @@
     ['Get your open tasks, or a reminder, in Teams', 'Otto', 'Ask Otto for your tasks. It can also message you about tasks that are due. Reply Done, or press the button.'],
     ['Ask what is open on a project, or find one', 'Connector', 'Ask Claude for a project overview, the open questions, the requirements or the latest activity. It includes task and overdue counts, UAT cases, risks, change requests, sign-offs and the org id.'],
     ['Carry on a deliverable with the Facilio tools (FTR, UAT guide, configuration)', 'Skills: Facilio toolbox', 'Ask Claude which Facilio skill fits this. It asks the connector (get_impl_skills), then you start it with /facilio-impl-toolbox. Needs the one-time setup in Project Settings > Implementation skills.'],
-    ...(HIDE_PKG ? [] : [['Build the Solution Document at the end', 'Handover & Closure', 'Drop the org package. Claude builds the Solution Document with the Facilio skill; you read it and accept it.']]),
+    ['Build the Solution Document at the end', 'Project handover > Solution document', 'Add the org package or the Facilio Org ID and region, press Write with Claude: Claude builds it with the Facilio skill and it comes back as sections you review, edit and export to Word. One document for the whole solution, or one per module set or integration.'],
     ['Raise or suggest a support ticket', 'Connector', 'Ask Claude to suggest a ticket first; it creates it only when you confirm.'],
     ['Guide steps from a recording you already have', 'Skill: video-to-user-guide', 'Then bring the steps into the Video to Guide tab.'],
     ['Make a video or a walkthrough clip', 'Skills: demo-video, ui-mockup-video, video-editing, remotion-create, remotion-captions', 'Optional.'],
