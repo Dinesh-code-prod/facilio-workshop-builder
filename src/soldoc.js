@@ -97,8 +97,8 @@
   const can = () => !V.isCustomer() && !S.readonly && !(S.project && S.project.role === 'viewer');
   const docs = () => I().list('sdoc').sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
   const cur = () => { const l = docs(); return l.find(d => d.id === S.ui.sdId) || l[0] || null; };
-  const LIMIT = 3e6;   // characters of one saved document; a request near the platform's ~6 MB cap is refused with 413
-  const save = async (d, what) => { if (JSON.stringify(d).length > LIMIT) { V.toast('This document is too large to save (over about 3 MB of text). Split it into two documents, for example one per module set.', 9000, true); I().load(['sdoc'], true); return; } d.updatedAt = new Date().toISOString(); d.by = (S.user && (S.user.name || S.user.email)) || ''; await I().put('sdoc', d.id, d); if (what && F.changed) F.changed('Solution document', d.title + ': ' + what, { render: false }); V.render(); };
+  const LIMIT = 30e6;   // characters of one saved document (big saves travel gzipped, src/api.js; the API refuses with a plain message if it is still too big)
+  const save = async (d, what) => { if (JSON.stringify(d).length > LIMIT) { V.toast('This document is too large to save (over 30 MB of text). Split it into two documents, for example one per module set.', 9000, true); I().load(['sdoc'], true); return; } d.updatedAt = new Date().toISOString(); d.by = (S.user && (S.user.name || S.user.email)) || ''; await I().put('sdoc', d.id, d); if (what && F.changed) F.changed('Solution document', d.title + ': ' + what, { render: false }); V.render(); };
   const mods = () => (F.allModules ? F.allModules() : []).filter(m => m.inScope).map(m => ({ name: m.name, label: m.label }));
   const apps = () => I().list('capp').filter(x => x && x.app);
   const brdMd = () => { try { const B = root.FWBBrd; return B && B.document ? blocksToMd(B.document().blocks) : ''; } catch (e) { return ''; } };

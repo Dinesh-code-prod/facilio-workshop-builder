@@ -200,7 +200,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   function withLock(key, fn) { const prev = LOCKS.get(key) || Promise.resolve(); const run = prev.catch(() => { }).then(fn); const tail = run.catch(() => { }); LOCKS.set(key, tail); tail.then(() => { if (LOCKS.get(key) === tail) LOCKS.delete(key); }); return run; }
   async function docWrite(s, pid, section, data, baseVersion) { return withLock('doc.' + pid + '.' + section, () => docWriteInner(s, pid, section, data, baseVersion)); }
   async function docWriteInner(s, pid, section, data, baseVersion) {
-    const text = JSON.stringify(data); if (text.length > 5000000) throw new HttpError(413, 'Section too large');
+    const text = JSON.stringify(data); if (text.length > 40000000) throw new HttpError(413, 'This section is too large to save (over 40 MB of text). Split it into smaller parts.');
     const cur = await docHead(pid, section); const curV = cur ? cur.v : 0;
     if (baseVersion === 0 ? !!cur : (baseVersion >= 0 && curV !== baseVersion)) throw new HttpError(409, 'Conflict: this section was changed by someone else.', { current: cur ? { version: cur.v, updated_by: cur.by, updated_at: cur.at } : null });
     const v = curV + 1; await save('doc.' + pid, 'dp.' + pid, section, { v, by: s.id, at: now() }, data, cur && cur.z);
@@ -1850,7 +1850,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     const prevHist = cur && Array.isArray(cur.hist) ? cur.hist : [];
     const changed = Object.keys(data).filter(k => k !== 'hist' && JSON.stringify(data[k]) !== JSON.stringify(cur ? cur[k] : undefined));
     data = Object.assign({}, data, { hist: prevHist.concat(changed.length || !cur ? [{ at: now(), who: s.name || 'Implementation team', side: 'facilio', event: cur ? 'Updated ' + changed.slice(0, 6).join(', ') + (data.status && changed.includes('status') ? ' → ' + data.status : '') : 'Created' }] : []).slice(-40) });
-    if (JSON.stringify(data).length > (P.kind === 'onbws' ? 2000000 : (P.kind === 'ugd' || P.kind === 'ugv' || P.kind === 'ugu') ? 400000 : P.kind === 'vid' ? 200000 : P.kind === 'tkt' ? 150000 : P.kind === 'task' ? 120000 : 60000)) throw new HttpError(413, 'Record too large');
+    if (JSON.stringify(data).length > (P.kind === 'sdoc' ? 30000000 : P.kind === 'onbws' ? 2000000 : (P.kind === 'ugd' || P.kind === 'ugv' || P.kind === 'ugu') ? 400000 : P.kind === 'vid' ? 200000 : P.kind === 'tkt' ? 150000 : P.kind === 'task' ? 120000 : 60000)) throw new HttpError(413, 'Record too large');
     const t = now(); const nh = { v: head ? head.v + 1 : 1, cb: head ? head.cb : s.id, cs: head ? head.cs : 'facilio', ub: s.id, us: 'facilio', ca: head ? head.ca : t, ua: t };
     await save(col, pcol, P.item, nh, data, head && head.z); await touchProject(P.id);
     if (P.kind === 'tkt') await ticketNotify(project, P.item, cur, data, s);
@@ -2382,13 +2382,21 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   FWB = globalThis.__fwb = { dispatch, reset() { ME = null; ROLE = null; OWN = null; } /* OWN too: a warm server must not keep a previous owner after a handover */, ekey, nameFromEmail };
 }
 
+// Big bodies (user, 16 Nov 2026): a JSON body over 1 MB travels gzipped as { __gz: base64 } both ways (src/api.js), so it stays under the platform's ~6 MB request and 5.5 MB response caps.
+// Responses are packed only for callers that say they can unpack (x-fwb-gz); the connector and other callers get plain JSON as before.
+const GZ_FROM = 1e6, GZ_UNPACKED_MAX = 60e6;
+const gzB64 = async t => Buffer.from(await new Response(new Blob([t]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer()).toString('base64');
+async function gunzB64(s) { const r = new Response(new Blob([Buffer.from(s, 'base64')]).stream().pipeThrough(new DecompressionStream('gzip'))).body.getReader(); const out = []; let n = 0;
+  for (;;) { const { done, value } = await r.read(); if (done) break; n += value.length; if (n > GZ_UNPACKED_MAX) { r.cancel().catch(() => { }); const e = new Error('too large'); e.tooLarge = true; throw e; } out.push(value); } return Buffer.concat(out).toString('utf8'); }
 export default async function handler(req, ctx) {
   CTX = ctx; HDR = (req && req.headers) || {}; FWB.reset();
   let query = req.query; if (query && typeof query === 'object') query = new URLSearchParams(query).toString(); query = String(query || '').replace(/^\?/, '');
   let body; if (req.method !== 'GET' && req.method !== 'DELETE') { const t = req.text ? await req.text() : ''; if (t) { try { body = JSON.parse(t); } catch (e) { body = {}; } } else body = {}; }
+  if (body && typeof body.__gz === 'string' && Object.keys(body).length === 1) { try { body = JSON.parse(await gunzB64(body.__gz)); } catch (e) { return new Response(JSON.stringify({ error: e.tooLarge ? 'This is too large to save (over 60 MB of text).' : 'The compressed request could not be read.' }), { status: e.tooLarge ? 413 : 400, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } }); } }
   const sub = String(req.path || '/').startsWith('/') ? req.path : '/' + req.path;
   const res = (await FWB.dispatch(req.method, '/api' + sub, query, body)) || { status: 500, data: { error: 'Something went wrong on the server.' } };
   const headers = { 'content-type': 'application/json', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
   if (res.status === 429 && res.data && res.data.retryAfter) headers['retry-after'] = String(res.data.retryAfter);
-  return new Response(JSON.stringify(res.data), { status: res.status, headers });
+  let out = JSON.stringify(res.data); if (out && out.length > GZ_FROM && String((HDR || {})['x-fwb-gz'] || '') === '1') out = JSON.stringify({ __gz: await gzB64(out) });
+  return new Response(out, { status: res.status, headers });
 }
