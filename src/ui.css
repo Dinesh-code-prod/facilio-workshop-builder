@@ -2864,3 +2864,7 @@ body .sm-scope-f:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):
 
 /* a module's open decisions (plan step 2) */
 body .sm-ex:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: #fff4f2 !important; color: #b42318 !important; box-shadow: inset 0 0 0 1px rgba(180, 35, 24, .25) !important; }
+/* Workshop room uses the full width (user, 15 Nov 2026): the cards are no longer capped at 760 px; the float button sits on the session header */
+body .ws-one:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { max-width: none !important; }
+body .ws-brief-r:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: flex-end; }
+body .ws-brief-r .ws-prog:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { min-width: 180px; }

@@ -87,7 +87,7 @@
   function briefCard(vis) {
     const u = U(); const s = sessionList().find(x => x.id === u.sessionId); const open = vis.filter(isOpenQ).length; const done = vis.length - open; const pc = vis.length ? Math.round(done * 100 / vis.length) : 0;
     const meta = s ? [s.date ? V.fmtDate(s.date) + (s.start ? ' ' + s.start : '') : '', s.minutes ? s.minutes + ' min' : '', s.modules.length ? 'Modules: ' + s.modules.join(', ') : ''].filter(Boolean).map(esc).join(' &middot; ') : 'Every prepared question, across all sessions';
-    return `<div class="ws-brief"><div><h2 class="ws-bt">${esc(s ? s.title : 'All questions')}</h2><div class="small muted">${meta}${s && s.topics ? '<br>Topics: ' + esc(s.topics) : ''}</div></div><div class="ws-prog" title="${done} of ${vis.length} asked or answered"><div class="ws-bar2"><i style="width:${pc}%"></i></div><span class="xs muted">${done} of ${vis.length} done</span></div></div>`;
+    return `<div class="ws-brief"><div><h2 class="ws-bt">${esc(s ? s.title : 'All questions')}</h2><div class="small muted">${meta}${s && s.topics ? '<br>Topics: ' + esc(s.topics) : ''}</div></div><div class="ws-brief-r"><button type="button" class="btn primary" data-act="wsPip" title="A small window that stays on top of Teams, Meet or Zoom and shows this session's questions still to ask">Float the questions over Teams or Zoom</button><div class="ws-prog" title="${done} of ${vis.length} asked or answered"><div class="ws-bar2"><i style="width:${pc}%"></i></div><span class="xs muted">${done} of ${vis.length} done</span></div></div></div>`;
   }
   function focusCard(vis) {
     const dis = ro() ? ' disabled' : ''; const open = vis.filter(isOpenQ).sort(byPriority);
