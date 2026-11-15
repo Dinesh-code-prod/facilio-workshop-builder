@@ -8,11 +8,11 @@ const arr = x => (Array.isArray(x) ? x : []);
 const src = s => (s && s.page ? 'MSA p.' + s.page + (s.section ? ' §' + s.section : '') : s && s.section ? 'MSA §' + s.section : 'MSA');
 const names = a => [...new Set(arr(a).map(x => x.name || x.text).filter(Boolean))];
 
-/** ex: a validated extraction (_msaextract.validateExtraction). o: { now, transferId, version }. Returns the pack object. */
+/** ex: a validated extraction (_msaextract.validateExtraction). o: { now, transferId, version, prevStart (the start of the plan already drafted, kept when the contract has no date) }. Returns the pack object. */
 export function buildKickoffPack(ex, o = {}) {
   const P = globalThis.FWBPlanFromMsa; const c = ex.contract || {}; const sure = c.origin === 'contract';
   const input = {
-    start: sure ? c.start || '' : '', durationDays: sure && c.durationDays ? c.durationDays : undefined,
+    start: (sure && c.start) || (/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(String(o.prevStart || '')) ? o.prevStart : ''), durationDays: sure && c.durationDays ? c.durationDays : undefined,
     commitments: arr(ex.commitments).map(m => ({ text: m.text, date: m.date || '', origin: m.origin, source: src(m.source) })),
     modules: names(ex.modules), customerResponsibilities: arr(ex.customerResponsibilities).map(x => x.text), exclusions: arr(ex.exclusions).map(x => x.text)
   };

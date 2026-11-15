@@ -36,4 +36,9 @@ t('hostile text in the extraction stays escaped in the deck HTML', () => {
   const h = K.build(buildKickoffPack(ex({ customer: '<img src=x onerror=alert(1)>', scope: [{ text: '<script>alert(1)</script>', status: 'confirmed', origin: 'contract', source: { page: 1 } }] }), { today: '2026-11-06' }).deck).html;
   assert.ok(!/<script>alert|<img src=x/.test(h));
 });
+t('a re-read with no contract date keeps the first plan start instead of moving to today', () => {
+  const ex = { customer: 'C', projectName: 'P', contract: {}, modules: [{ name: 'Work Order' }] };
+  const a = buildKickoffPack(ex, { today: '2026-11-08' }), b = buildKickoffPack(ex, { today: '2026-11-20', prevStart: a.deck.date });
+  assert.equal(b.deck.date, a.deck.date); assert.notEqual(buildKickoffPack(ex, { today: '2026-11-20' }).deck.date, a.deck.date);
+});
 console.log('\n' + n + ' kick-off pack checks passed');

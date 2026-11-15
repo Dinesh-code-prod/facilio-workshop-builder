@@ -26,7 +26,8 @@ export function installMsaExtract(d, transfer) {
       if (!extraction.customer || !extraction.projectName) return { filled: false, why: 'The extraction has no ' + (!extraction.customer ? 'customer' : 'project name') + ', so no kick-off was drafted. Save a new version with it.' };
       const plan = planFromExtraction(extraction, { now: new Date().toISOString(), source, transferId: id, version });
       const pl = await viaApp('GET', base + '/docs/planner'); if (!pl || !pl.data || !Object.keys(pl.data).length) { await putDoc(base, 'planner', plan.planner); if (plan.ctrcore) await viaApp('PUT', base + '/items/ctrcore/main', '', { data: plan.ctrcore }); if (plan.scope) await viaApp('PUT', base + '/items/scope/main', '', { data: plan.scope }); }
-      await putDoc(base, 'kickoff_pack', buildKickoffPack(extraction, { now: new Date().toISOString(), transferId: id, version })); await audit(pid, s.id, 'kickoff-drafted', id + ' v' + version);
+      const prevPack = await viaApp('GET', base + '/docs/kickoff_pack').catch(() => null); const prevStart = (prevPack && prevPack.data && prevPack.data.deck && prevPack.data.deck.date) || '';   // a re-read keeps the plan's start when the contract has no date
+      await putDoc(base, 'kickoff_pack', buildKickoffPack(extraction, { now: new Date().toISOString(), transferId: id, version, prevStart })); await audit(pid, s.id, 'kickoff-drafted', id + ' v' + version);
       return { filled: true };
     } catch (e) { return { filled: false, why: 'The extraction was saved but the kick-off could not be drafted: ' + (e.message || 'error') }; }
   }
@@ -85,7 +86,7 @@ export function installMsaExtract(d, transfer) {
           await putDoc(base, 'planner', plan.planner);
           if (plan.ctrcore) { step = 'ctrcore'; await viaApp('PUT', base + '/items/ctrcore/main', '', { data: plan.ctrcore }); }
           if (plan.scope) { step = 'scope'; await viaApp('PUT', base + '/items/scope/main', '', { data: plan.scope }); }
-          step = 'kickoff_pack'; await putDoc(base, 'kickoff_pack', buildKickoffPack(v.extraction, { now: new Date().toISOString(), transferId: id, version: cur.approvedVer }));   // the kick-off deck data and the drafted plan, a draft for a person to approve
+          step = 'kickoff_pack'; const prevPack = await viaApp('GET', base + '/docs/kickoff_pack').catch(() => null); await putDoc(base, 'kickoff_pack', buildKickoffPack(v.extraction, { now: new Date().toISOString(), transferId: id, version: cur.approvedVer, prevStart: (prevPack && prevPack.data && prevPack.data.deck && prevPack.data.deck.date) || '' }));   // the kick-off deck data and the drafted plan, a draft for a person to approve
         } catch (e) { throw new HttpError(e.status || 500, 'The project was created (id ' + np + ') but writing the ' + step + ' record failed: ' + e.message + '. Call create_project_from_msa again with the same id to finish it.', { projectId: np, resume: true, step }); }
         await link(pid, id, s, { projectComplete: true }, 'Project ' + np + ' filled from the extraction');
         return { created: !resumed, resumed, project: { id: np, name: plan.project.name, url: URL_BASE + np }, transferId: id, complete: true, written: plan.counts, warnings: v.warnings,
