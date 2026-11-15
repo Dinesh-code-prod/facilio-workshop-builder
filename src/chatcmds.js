@@ -6,12 +6,16 @@
   const low = s => String(s == null ? '' : s).toLowerCase().replace(/\s+/g, ' ').trim();
   const forMod = t => { const m = /\b(?:for|on|about)\s+(?:the\s+)?([a-z0-9][a-z0-9 &/-]{2,40}?)(?:\s+module)?\s*[.?!]?$/i.exec(t); return m && !/^(this|the project|everything|all)$/i.test(m[1].trim()) ? m[1].trim() : ''; };
   const ymd = d => d.toISOString().slice(0, 10);
+  const TOOLS = {"meteor":"the Meteor connector tools, READ only (project, my_prototypes, get_prototype)","comet":"the Comet connector tools, READ only (my_work, comets, get_creation)"};
   const GUIDES = [[/\buat guide|tester'?s? guide/, 'uat', 'the UAT guide'], [/\buser guide/, 'user', 'a user guide'], [/\btraining (guide|outline|plan)/, 'training', 'a training guide'], [/\bvideo script|shot list/, 'video', 'a video script']];
   const DRAFTS = [[/\bftr\b/, 'ftr', 'FTR report'], [/\buat guide/, 'uat', 'UAT guide'], [/\buser guide/, 'guide', 'user guide'], [/\btraining/, 'training', 'training guide'], [/\bbrd\b/, 'brd', 'BRD'], [/\b(weekly|status) report|\bwsr\b/, 'wsr', 'weekly status report']];
   /** text -> null | { type: 'nav', view, label } | { type: 'task', title } | { type: 'job', job: { kind, section, note }, label } | { type: 'draft', task, label }
       ctx: { pages: [[id, label]] (the menu of this project), today: Date } */
   function match(text, ctx) {
     const raw = String(text || '').trim(), t = low(raw), c = ctx || {}; if (!t || t.length > 300) return null;
+    // Meteor and Comet: open one docked inside the Studio, or ask it something through Claude (the Studio cannot call another facilio.work app itself; Claude can, with its connectors)
+    let mc = /^(?:please\s+)?(?:open|show|launch)\s+(meteor|comet)\b\s*[.!]?$/i.exec(raw); if (mc) return { type: 'dock', site: mc[1].toLowerCase(), label: mc[1][0].toUpperCase() + mc[1].slice(1).toLowerCase() };
+    mc = /\b(meteor|comet)\b/i.exec(raw); if (mc && raw.length >= 12 && !/^(open|go to|show me the)\b.*\b(page|tab)\b/i.test(raw)) { const site = mc[1].toLowerCase(), name = site[0].toUpperCase() + site.slice(1); return { type: 'job', job: { kind: 'chat', section: 'chat', note: ('Use ' + TOOLS[site] + ' to do this, then answer here in the Studio chat with the facts and links you found: ' + raw).slice(0, 590) }, label: 'Ask ' + name + ' through your Claude' }; }
     // add a task: "add task: call the customer", "new task follow up on the SLA"
     let m = /^(?:please\s+)?(?:add|create|new|make)\s+(?:a\s+)?(?:new\s+)?(?:task|to-?do)\s*(?::|-|to|called)?\s+(.{3,200})$/i.exec(raw);
     if (m) return { type: 'task', title: m[1].replace(/[.\s]+$/, '') };

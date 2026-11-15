@@ -176,6 +176,7 @@
   function runCmd(c, note, box) {
     const a = st(); a.local = a.local || []; a.open = true; box.value = ''; a.local.push({ who: 'you', text: note, at: hhmm(), ts: Date.now() }); const id = 'c' + Date.now();
     if (c.type === 'nav') { V.go(c.view); say('Opened ' + c.label + '.'); return; }
+    if (c.type === 'dock') { if (V.ACT.wfDock) V.ACT.wfDock({ getAttribute: k => (k === 'data-v' ? c.site : null) }); say('Opened ' + c.label + ' inside the Studio. Sign in there once. To ask ' + c.label + ' something, write for example “ask ' + c.site + ' for the latest prototype of this customer”: your Claude reads it through its connector and answers here.'); return; }
     if (c.type === 'task') { CMDS[id] = { c, m: say('Add this task to the project? \u201c' + c.title + '\u201d (To Do, assigned to you)', [{ label: 'Add task', act: 'asstCmdGo', attrs: { id }, primary: true }, { label: 'Cancel', act: 'asstCmdNo', attrs: { id } }]) }; return; }
     if (c.type === 'job') { CMDS[id] = { c, m: say('I can start this now: ' + c.label + '. Your Claude does it through the connector and its progress shows here.', [{ label: 'Do it', act: 'asstCmdGo', attrs: { id }, primary: true }, { label: 'Cancel', act: 'asstCmdNo', attrs: { id } }]) }; return; }
     if (c.type === 'draft') { I().load(['ai']); const d = I().list('ai').filter(x => x.task === c.task).sort((x, y) => String(y._created || '').localeCompare(String(x._created || '')))[0];

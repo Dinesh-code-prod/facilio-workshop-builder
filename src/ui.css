@@ -2775,3 +2775,8 @@ body #asst .ap-card { display: grid; grid-template-columns: 1fr auto; gap: 2px 1
 body #asst .ap-card b { font: 600 14px Inter, system-ui, sans-serif; color: #1d1d1f; }
 body #asst .ap-card span { grid-column: 1; font-size: 12.5px; color: #6e6e73; line-height: 1.4; }
 body #asst .ap-card .btn { grid-column: 2; grid-row: 1 / span 2; white-space: nowrap; }
+/* the chat floats over every page, docked Meteor or Comet included; a drawer it opens (a draft to approve) comes in front of it */
+body #asst:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { z-index: 5500 !important; }
+body #asstTab:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { z-index: 5600 !important; }
+body:has(.scrim) #asst:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______), body:has(.scrim) #asstTab:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { z-index: 590 !important; }
+#ntPops { z-index: 5700; }
