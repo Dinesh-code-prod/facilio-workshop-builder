@@ -34,6 +34,11 @@ const cur = [{ id: 'a', title: 'Background', lvl: 1, md: 'Mine', edited: true },
 const m = L.merge(cur, [{ title: 'Background', lvl: 1, md: 'Claude', src: 'claude' }, { title: 'Key Terms', lvl: 1, md: 'PPM: planned maintenance', src: 'claude' }, { title: 'Glossary note', lvl: 2, md: 'x', src: 'claude' }]);
 assert.equal(m[0].md, 'Mine'); assert.equal(m[0].proposal.md, 'Claude'); assert.equal(m[1].md, 'PPM: planned maintenance'); assert.equal(m[2].title, 'Glossary note'); assert.equal(cur[0].proposal, undefined, 'the input is not changed');
 assert.equal(L.merge(cur, [{ title: 'Background', lvl: 1, md: 'Mine' }])[0].proposal, undefined, 'the same text is no proposal'); ok('a person’s edit is kept and Claude’s text waits as a proposal');
+// two modules: each keeps its own sub-sections (found live on Al Moallam: the second module's Use Case overwrote the first one's)
+const two = L.fromStudio(Object.assign({}, ctx, { kind: 'modules', modules: [{ name: 'workorder', label: 'Work Orders' }, { name: 'client', label: 'Clients' }] }));
+const m2 = L.merge([], two); assert.equal(m2.length, two.length); assert.deepEqual(m2.map(x => x.title), two.map(x => x.title));
+const uc = m2.filter(x => x.title === 'Use Case'); assert.equal(uc.length, 2); assert.match(uc[0].md, /Track repairs/); assert.match(uc[1].md, /To be confirmed/);
+const again = L.merge(m2, two); assert.equal(again.length, two.length, 'drafting twice adds nothing'); ok('two modules keep their own sub-sections and a second draft adds nothing');
 
 // wiring: the page is on the menu, built, a team-only record kind, a Claude task and the job writes it back
 const read = p => fs.readFileSync(new URL('../' + p, import.meta.url), 'utf8');

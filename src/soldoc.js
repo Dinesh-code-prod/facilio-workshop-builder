@@ -59,8 +59,9 @@
     out.push(sec('Background', 1, String(p.background || '').trim() || tbcOf('from the BRD introduction')));
     if (String(p.objective || '').trim()) out.push(sec('Business Objectives', 1, String(p.objective).trim()));
     out.push(sec('Introduction and Modules in Scope', 1, 'This document describes the Facilio solution configured for ' + (p.client || 'the customer') + '.\n\n' + (mods.length ? mods.map(m => '- ' + m.label).join('\n') : tbcOf('the modules in scope'))));
+    const brdOf = (...ts) => ts.map(t => partFor(ctx.brdMd, t)).find(Boolean) || '';   // the BRD's own text for a section of the same name
     out.push(sec('Key Terms', 1, tbcOf('terms the customer uses')));
-    out.push(sec('User Roles & Responsibilities', 1, tbcOf('from the roles in the org configuration')));
+    out.push(sec('User Roles & Responsibilities', 1, brdOf('User Roles & Responsibilities') || tbcOf('from the roles in the org configuration')));
     mods.forEach(m => {
       out.push(sec(m.label, 1, ''));
       const brd = partFor(ctx.brdMd, m.label); const purpose = brd ? brd.split(/\n(?=#{2,3}\s)/).map(x => x.replace(/^#{2,3}\s.*\n?/, '').trim()).find(Boolean) || '' : '';
@@ -69,17 +70,19 @@
     });
     if (ctx.kind === 'full') {
       const ml = n => (!n || n === '*') ? 'General (all modules)' : ((mods.find(m => m.name === n) || {}).label || n);
-      out.push(sec('SLA & Notifications', 1, (ctx.sla || []).length ? mdTable(['Module', 'Priority', 'Response within', 'Resolution within', 'Business hours'], ctx.sla.map(r => [ml(r.module), r.priority, r.response, r.resolution, r.hours || ''])) : tbcOf('no SLA matrix recorded')));
+      out.push(sec('SLA & Notifications', 1, (ctx.sla || []).length ? mdTable(['Module', 'Priority', 'Response within', 'Resolution within', 'Business hours'], ctx.sla.map(r => [ml(r.module), r.priority, r.response, r.resolution, r.hours || ''])) : brdOf('SLA & Notifications', 'SLA Matrix') || tbcOf('no SLA matrix recorded')));
       if ((ctx.apps || []).length) out.push(sec('Integrations', 1, mdTable(['System', 'Purpose', 'Trigger', 'Data in', 'Data out'], ctx.apps.map(a => [a.app, a.purpose, a.trigger, a.dataIn, a.dataOut]))));
       out.push(sec('Reports and Dashboards', 1, (ctx.kpis || []).length ? mdTable(['KPI', 'Module', 'Frequency', 'Target', 'How Facilio delivers it'], ctx.kpis.map(k => [k.name, k.module, k.frequency, k.target, k.solution])) : tbcOf('dashboards and reports in the org configuration')));
-      out.push(sec('Role Matrix – Module Access', 1, tbcOf('from the roles in the org configuration')));
+      out.push(sec('Role Matrix – Module Access', 1, brdOf('Role Matrix – Module Access', 'Role Matrix — Module Access') || tbcOf('from the roles in the org configuration')));
     }
     return out;
   }
   /** pure: bring new sections into a document. A section a person edited keeps its text and gets the new one as a proposal; others are replaced; new titles are added after the last matched one */
   function merge(cur, incoming) {
-    const out = (cur || []).map(s => Object.assign({}, s)); const key = s => s.lvl + ':' + String(s.title).toLowerCase(); let last = out.length - 1, seen = false;
-    (incoming || []).forEach(n => { const i = out.findIndex(s => key(s) === key(n));
+    // a sub-section is matched inside its own section ("Use Case" of Clients is not "Use Case" of Service Request)
+    const keys = list => { let parent = ''; return list.map(s => { const t = String(s.title).toLowerCase(); if (s.lvl === 1) parent = t; return (s.lvl === 1 ? '' : parent + '>') + s.lvl + ':' + t; }); };
+    const out = (cur || []).map(s => Object.assign({}, s)); const inKeys = keys(incoming || []); let last = out.length - 1, seen = false;
+    (incoming || []).forEach((n, j) => { const i = keys(out).indexOf(inKeys[j]);
       if (i < 0) { const at = seen ? last + 1 : out.length; out.splice(at, 0, Object.assign({}, n)); last = at; seen = true; return; } last = i; seen = true;
       if (out[i].edited) { if ((out[i].md || '').trim() !== (n.md || '').trim()) out[i].proposal = { md: n.md, src: n.src }; }
       else { out[i] = Object.assign({}, out[i], { md: n.md, src: n.src }); delete out[i].proposal; } });
