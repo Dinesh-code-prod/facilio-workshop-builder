@@ -165,6 +165,7 @@
       '<span class="spacer"></span><button type="button" class="btn" data-act="closeDrawer">Cancel</button><button type="button" class="btn primary" data-act="sdNewGo">Create</button>'); };
   ACT.sdNewGo = a => V.busy(a, async () => { if (!can()) return; const t = ((document.getElementById('sd_t') || {}).value || '').trim(); if (!t) { V.toast('Give the document a title.', 4000, true); return; }
     const k = (document.querySelector('input[name="sd_k"]:checked') || {}).value || 'full'; const ms = Array.from(document.querySelectorAll('.sd_m:checked')).map(x => x.value); const app = (document.getElementById('sd_a') || {}).value || '';
+    if (docs().some(x => String(x.title).trim().toLowerCase() === t.toLowerCase())) { V.toast('A document called “' + t + '” already exists. Open it from the list, or give the new one another name (for example “… Integration”).', 7000, true); return; }
     if (k === 'modules' && !ms.length) { V.toast('Tick the modules this document covers.', 4000, true); return; }
     if (k === 'integration' && !app) { V.toast('Choose the connected system.', 4000, true); return; }
     const d = { id: 'sd_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), title: t.slice(0, 90), kind: k, modules: k === 'modules' ? ms : [], app: k === 'integration' ? app : '', status: 'draft', sections: [], used: [], createdAt: new Date().toISOString() };
