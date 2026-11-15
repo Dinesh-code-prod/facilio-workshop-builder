@@ -14,6 +14,7 @@ Rules: keys and secrets never leave the server; a person only sees the projects 
 | [server/_ai.mjs](server/_ai.mjs) | Delivery Studio AI layer: one provider-neutral service used by every AI feature on the server. |
 | [server/_dsapi.mjs](server/_dsapi.mjs) | Stage 3, Solution design and BRD: what Claude PROPOSES for the design (roadmap E20). |
 | [server/_feedback.mjs](server/_feedback.mjs) | Team feedback (tests: tests/feedback.mjs). |
+| [server/_flowchecks.mjs](server/_flowchecks.mjs) | The automatic state-flow checks (plan CONTRACT-TO-BRD step 4), ONE copy for the page and the server. |
 | [server/_jobs.mjs](server/_jobs.mjs) | Job queue: the pure rules (roadmap E17, decision of 6 Nov 2026). |
 | [server/_jobsapi.mjs](server/_jobsapi.mjs) | Job queue: storage, routes and connector tools (roadmap E17). |
 | [server/_helper.mjs](server/_helper.mjs) | The Claude helper rules: is a Claude running for a project, which jobs only the requester's own Claude may take, the Teams message for a person added to a project, and the alert when requests wait a day (tests/helper_status.mjs). |
