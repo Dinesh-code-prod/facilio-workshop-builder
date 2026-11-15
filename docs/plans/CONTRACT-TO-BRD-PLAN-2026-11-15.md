@@ -71,8 +71,8 @@ Contract → Scope → Sessions → Solution (per module) → BRD. Each layer is
    - no Keep step;
    - set "answered" automatically from the transcript and live matches;
    - merge the Workshop room status into the same record.
-4. **Whiteboard checks:** the four automatic flow checks, shown on the module's State flows tile.
-5. **One source per compartment:** the Solution text for roles, notifications, KPIs and SLA is generated from the editors; the BRD prints one version.
+4. **Whiteboard checks:** the four automatic flow checks, shown on the module's State flows tile. Done 15 Nov (deploy 470): `flowChecks` in src/sollogic.js, a "to check" count on the tile and the list above each flow. All four run on flows the team designs (proposed or edited); an untouched standard Facilio flow reports only an approval without approver, because its package has no notifications and a button with no role is open to anyone with access.
+5. **One source per compartment:** the Solution text for roles, notifications, KPIs and SLA is generated from the editors; the BRD prints one version. Done 15 Nov (deploy 470), the BRD part: the agreed words of the KPIs, SLA, Notifications and Roles areas print once, at the top of the section with that editor's table, and leave Other areas (a section that is off or empty keeps them there). Not done: writing those area texts from the editors (Claude has no proposal kind for roles or notifications yet).
 6. **BRD ticks from facts:** set from the open counts that `brdreview.js` already computes; a person keeps the final sign-off.
 7. **Retire the old transcripts pipeline** for new projects (read-only for old ones; contradictions no longer block).
 

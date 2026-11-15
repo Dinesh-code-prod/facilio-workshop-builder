@@ -2902,3 +2902,7 @@ body .tl-offn .btn:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______
 @media (max-width: 900px) { body .tl-grid:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { grid-template-columns: 1fr !important; } body .tl-set .tl-pos .card-b:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { flex-wrap: wrap; } }
 /* Project Settings (15 Nov 2026): the forms use the full page width */
 body .st-wrap:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { max-width: none !important; }
+/* Solution map: the automatic state-flow checks (plan CONTRACT-TO-BRD step 4), a count on the State flows tile and a short list above each flow */
+body .sm-chkn:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { display: inline-block; margin-top: 4px; font-style: normal; font-size: 11.5px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: #FFF4E5; color: #9A5B00; }
+body .sm-chk:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { margin: 6px 0 10px; padding: 10px 14px; border-radius: 12px; background: #FFF8EC; box-shadow: inset 0 0 0 1px #F5D9A8; font-size: 13px; color: #5c3b00; }
+body .sm-chk ul:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { margin: 4px 0 0; padding-left: 18px; }

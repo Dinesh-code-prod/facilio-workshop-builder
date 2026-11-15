@@ -106,3 +106,18 @@ console.log(n + ' solution checks passed');
     assert.ok(L.flatText(ag, 'module:workorder').includes('Approvals: Two levels')); assert.equal(L.wordRows(L.areasFor(mods, ag), ag, [])[0][2].includes('Approvals: Two levels'), true);
   });
 }
+t('flow checks: unreachable state, nobody to press, approval without approver, key step that tells nobody', () => {
+  const flow = { origin: 'proposed', initial: 'o', states: [{ id: 'o', label: 'Open' }, { id: 'a', label: 'Approved' }, { id: 'c', label: 'Closed' }, { id: 'x', label: 'Lost' }],
+    transitions: [{ name: 'Submit', from: 'o', to: 'a', type: 'user', actors: [{ actor: 'tbc:1', status: 'tbc' }], approval: { required: true, approvers: [] } },
+      { name: 'Close', from: 'a', to: 'c', type: 'user', actors: [{ actor: 'tech' }] }, { name: 'Old', from: 'c', to: 'x', removed: true }] };
+  const kinds = r => r.map(x => x.kind).sort();
+  assert.deepEqual(kinds(L.flowChecks(flow, [])), ['approver', 'nobody', 'silent', 'silent', 'unreachable']);
+  assert.ok(L.flowChecks(flow, []).some(x => x.kind === 'unreachable' && x.text.includes('"Lost"')));
+  const told = [{ trigger: 'state', state: 'Approved' }, { trigger: 'state', state: 'Closed' }];
+  assert.deepEqual(kinds(L.flowChecks(flow, told)), ['approver', 'nobody', 'unreachable'], 'a notification on the state counts');
+  assert.deepEqual(L.flowChecks({ initial: 'o', states: [{ id: 'o' }], transitions: [] }, []), []); assert.deepEqual(L.flowChecks(null, null), []);
+  const std = { initial: 'o', states: [{ id: 'o' }, { id: 'c', label: 'Closed' }, { id: 'z', label: 'Elsewhere' }], transitions: [{ name: 'Close', from: 'o', to: 'c', type: 'user', actors: [] }, { name: 'Reject', from: 'o', to: 'c', type: 'user', actors: [], approval: { required: true, approvers: [] } }] };
+  assert.deepEqual(kinds(L.flowChecks(std, [])), ['approver'], 'an untouched standard flow: only an approval without approver is reported');
+  assert.deepEqual(kinds(L.flowChecks(Object.assign({}, std, { workshopCopy: true }), [])), ['approver', 'nobody', 'nobody', 'silent', 'unreachable'], 'once edited it is judged in full, one line per silent state');
+});
+console.log(n + ' solution logic checks passed');

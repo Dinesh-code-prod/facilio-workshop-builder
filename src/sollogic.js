@@ -138,6 +138,26 @@
   }
   const proposalsFor = (props, key) => arr(props).filter(p => p && p.kind === 'solution' && p.status === 'open' && (!key || p.module === key));
 
-  const api = { mergeProposals, LAYOUTS, ROW_STATUS, kindOfKey, layoutOf, cleanRows, rowFilled, hasContent, flatText, table, diffRows, integrationsFor, TYPES, INT_HINT, customOf, addArea, removeArea, linkedModules, relatedFor, STATUSES, GROUPS, FIXED, KEY_RE, areasFor, itemsOf, recOf, textOf, statusOf, reqLines, save, restore, accept, diff, paras, otherAreas, wordRows, proposalsFor };
+  /** the four automatic checks of a state flow (plan CONTRACT-TO-BRD step 4), shown on the module's State flows tile: a state nothing reaches, a user button nobody can press,
+      an approval with no approver, a key step (an approval, or the move into a final state) that tells nobody. flow: the flow model; notes: the module's notifications.
+      Returns [{ kind, text }]. A transition with no from state counts as "from any state".
+      Only flows the team designs (proposed, or a standard flow it edited) get all four: in an untouched standard Facilio flow a button with no role is open to anyone
+      with access, states can be set outside the flow and the package carries no notifications, so there only an approval without approver is reported. */
+  function flowChecks(flow, notes) {
+    const f = flow && typeof flow === 'object' ? flow : {}; const states = arr(f.states); const lab = id => ((states.find(s => s.id === id) || {}).label || id || '?');
+    const ts = arr(f.transitions).filter(t => t && !t.removed && t.enabled !== false); const out = [];
+    const ours = f.origin === 'proposed' || !!f.workshopCopy;
+    const seen = new Set(f.initial ? [f.initial] : []); for (let grew = true; grew;) { grew = false; ts.forEach(t => { if ((!t.from || seen.has(t.from)) && t.to && !seen.has(t.to)) { seen.add(t.to); grew = true; } }); }
+    if (ours && f.initial) states.filter(s => !seen.has(s.id)).forEach(s => out.push({ kind: 'unreachable', text: 'No transition leads to "' + lab(s.id) + '", so a record never reaches it.' }));
+    const tbc = a => !a || a.status === 'tbc' || /^tbc:/.test(String(a.actor || ''));
+    if (ours) ts.filter(t => (t.type || 'user') === 'user' && arr(t.actors).every(tbc)).forEach(t => out.push({ kind: 'nobody', text: 'Nobody is named to press "' + (t.name || lab(t.from) + ' to ' + lab(t.to)) + '".' }));
+    ts.filter(t => t.approval && t.approval.required && !arr(t.approval.approvers).length).forEach(t => out.push({ kind: 'approver', text: '"' + (t.name || lab(t.to)) + '" needs an approval but has no approver.' }));
+    const final = id => !ts.some(t => t.from === id);
+    const told = t => arr(t.notifications).length || arr(notes).some(n => n && n.trigger === 'state' && n.status !== 'off' && [t.to, lab(t.to)].includes(n.state));
+    const silent = new Set(); if (ours) ts.filter(t => t.to && ((t.approval && t.approval.required) || final(t.to)) && !told(t)).forEach(t => silent.add(t.to));
+    silent.forEach(id => out.push({ kind: 'silent', text: 'Nobody is told when a record moves to "' + lab(id) + '".' }));
+    return out.filter((x, i) => out.findIndex(y => y.text === x.text) === i);   // buttons with the same name in several places read as one line
+  }
+  const api = { flowChecks, mergeProposals, LAYOUTS, ROW_STATUS, kindOfKey, layoutOf, cleanRows, rowFilled, hasContent, flatText, table, diffRows, integrationsFor, TYPES, INT_HINT, customOf, addArea, removeArea, linkedModules, relatedFor, STATUSES, GROUPS, FIXED, KEY_RE, areasFor, itemsOf, recOf, textOf, statusOf, reqLines, save, restore, accept, diff, paras, otherAreas, wordRows, proposalsFor };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBSolutionLogic = api;
 })(typeof window !== 'undefined' ? window : globalThis);
