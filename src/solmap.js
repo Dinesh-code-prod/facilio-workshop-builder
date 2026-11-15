@@ -77,4 +77,7 @@
   ACT.smWord = () => V.download(fileName('doc'), '﻿' + reportHtml(), 'application/msword');
   ACT.smPrint = () => { const w = window.open('', '_blank'); if (!w) { V.toast('The browser blocked the new window. Allow pop-ups for this site, or use Download Word.', 6000, true); return; } w.document.write(reportHtml()); w.document.close(); w.focus(); setTimeout(() => w.print(), 300); };
   V.solmapTree = tree;
+  // the chat's approve cards (render hook for src/assistant.js): one card per module with Claude proposals waiting (solution, flow, fields, forms), so after the transcript chain a person approves module by module
+  V.moduleApproveCards = () => { const by = {}; (((F.doc('design_proposals') || {}).items) || []).filter(p => p && p.status === 'open').forEach(p => { const n = String(p.module || p.area || '').replace(/^module:/, ''); if (!n) return; (by[n] = by[n] || { name: n, label: (F.moduleView(n) || {}).label || n, n: 0, kinds: {} }).n++; by[n].kinds[p.kind] = (by[n].kinds[p.kind] || 0) + 1; }); return Object.values(by).sort((a, b) => b.n - a.n); };
+  V.moduleApproveCardsHtml = () => V.moduleApproveCards().map(c => `<div class="ap-card"><b>${esc(c.label)}</b><span>${c.n} proposal${c.n === 1 ? '' : 's'} from Claude: ${esc(Object.entries(c.kinds).map(([k, n]) => n + ' ' + k).join(', '))}</span><button type="button" class="btn sm primary" data-act="smReview" data-k="module:${esc(c.name)}">Review and approve</button></div>`).join('');
 })(typeof window !== 'undefined' ? window : globalThis);
