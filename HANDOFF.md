@@ -188,3 +188,5 @@ Deploy after each item (user said deploy automatically), log in docs/operations/
 
 ## Solution document page (15 Nov 2026, deploy 474)
 Project handover > Solution document (src/soldoc.js, record kind sdoc, AI task soldoc). Draft from the studio, import, export Word/Markdown, Write with Claude (build_solution_doc job names the document; Claude reads the org package or the org by Org ID and region with the facilio-solution-document-builder skill and saves back with save_draft task soldoc). Not yet checked: a real Claude run end to end (needs the skill installed and the org package or Org ID set on a project).
+
+Solution document (deploy 481): the page now runs the BRD Draft editor on its own store F.doc(soldocs) (src/brd.js isSol, src/soldoc.js). The earlier section editor (record kind sdoc) is retired; its one Al Moallam record stays in the data, unused. Not yet checked: a real Claude run (Al Moallam has no org yet).
