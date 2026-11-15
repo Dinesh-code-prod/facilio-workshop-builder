@@ -19,7 +19,7 @@
   }
   function chip() {
     if (!show()) return ''; refresh(false); const on = st && st.state === 'on';
-    return '<button type="button" class="hp-chip' + (st ? (on ? ' on' : ' off') : '') + '" id="hpChip" data-act="helperInfo" title="Whether a Claude is running for this project. Click to see what it means."><i aria-hidden="true"></i>' + esc(st ? st.chip : 'Claude helper') + '</button>';
+    return '<button type="button" class="hp-chip' + (st ? (on ? ' on' : ' off') : '') + '" id="hpChip" data-act="helperInfo" title="Whether a Claude is running for this project. Click to see what it means."><i aria-hidden="true"></i>' + esc(st ? st.chip : 'Claude helper').replace('Claude helper', 'Claude <span class="nb-long">helper </span>') + '</button>';   // narrow bars drop "helper", never the words
   }
   V.helper = { banner, created: async () => { await refresh(true); ACT.helperInfo('new'); }, chip, refresh, off: () => !!(st && st.state !== 'on'), state: () => st, prompt: PROMPT };
   ACT.helperOpen = () => { if (V.claudeNav) V.claudeNav('claude://claude.ai/new?q=' + encodeURIComponent(PROMPT)); else window.open('https://claude.ai/new?q=' + encodeURIComponent(PROMPT), '_blank'); };
