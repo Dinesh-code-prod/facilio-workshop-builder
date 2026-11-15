@@ -17,4 +17,10 @@ globalThis.FWB.S.user.kind = 'customer'; assert.equal(V.brdReviewPanel(), '', 'c
 assert.ok(V.brd.html().includes('<div>BRD</div>') && V.brd.html().includes('class="rv"'), 'the BRD tab shows the checklist above the document');
 rec = { review: {} }; await V.ACT.brdStatus({ value: 'approved' }); assert.equal(statusCalls, 0, 'approving with parts not ticked is stopped'); assert.ok(toasted.includes('6 left'));
 await V.ACT.brdStatus({ value: 'review' }); assert.equal(statusCalls, 1, 'other status changes pass through'); rec = { review: Object.fromEntries(ITEMS.map(x => [x[0], { by: 'a', at: 'x' }])) }; await V.ACT.brdStatus({ value: 'approved' }); assert.equal(statusCalls, 2, 'approving with every part ticked passes through');
-console.log('7 BRD review checks passed');
+{ const { auto } = V.brdReviewLogic; const zero = { intro: 0, requirements: 0, flows: 0, fields: 0, apps: 0, contract: 0 };
+  const r1 = auto({}, zero, 3); assert.ok(r1.requirements.auto && r1.contract.auto && !r1.intro, 'provable parts tick themselves, the introduction never');
+  assert.equal(auto({}, zero, 0), null, 'a BRD with no requirement proves nothing');
+  const r2 = auto(r1, Object.assign({}, zero, { flows: 2 }), 3); assert.equal(r2.flows, undefined, 'an automatic tick goes when something opens');
+  assert.equal(auto({ flows: { by: 'Sam' } }, Object.assign({}, zero, { flows: 2 }), 3).flows.by, 'Sam', 'a person’s tick stays'); assert.equal(auto(r1, zero, 3), null, 'nothing to change gives null');
+  console.log('  ok  provable parts tick themselves'); }
+console.log('8 BRD review checks passed');

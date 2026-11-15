@@ -20,14 +20,26 @@
     (findings || []).forEach(f => { if (f && f.status === 'open' && FIND.includes(f.kind)) out.contract++; });
     return out;
   }
-  V.brdReviewLogic = { ITEMS, missing, facts };
+  /** pure: the review with the provable parts ticked automatically and stale automatic ticks removed; null when nothing changes */
+  const AUTO_BY = 'Checked automatically (nothing open)';
+  function auto(review, fa, nReq) {
+    const r = Object.assign({}, review || {}); let ch = false;
+    ['requirements', 'flows', 'fields', 'apps', 'contract'].forEach(id => { const ok = !fa[id] && nReq > 0, t = r[id];   // a BRD with no requirement proves nothing yet
+      if (ok && !(t && t.by)) { r[id] = { by: AUTO_BY, at: new Date().toISOString(), auto: true }; ch = true; }
+      else if (!ok && t && t.auto) { delete r[id]; ch = true; } });
+    return ch ? r : null;
+  }
+  V.brdReviewLogic = { ITEMS, missing, facts, auto };
 
   const rec = () => (root.FWBBrd && root.FWBBrd.state ? root.FWBBrd.state() : null);
   const team = () => !!(S.user && S.user.kind !== 'customer' && S.project && S.project.id && (!V.isCustomer || !V.isCustomer()));
   const ro = () => !!S.readonly || (S.project && S.project.role === 'viewer');
   const items = sec => { const d = F.doc(sec); return d && Array.isArray(d.items) ? d.items : []; };
   V.brdReviewPanel = () => {
-    const d = rec(); if (!team() || !d) return ''; const rv = d.review || {}, fa = facts(S.ws.requirements, items('design_proposals'), items('rs_findings')), todo = missing(rv).length;
+    const d = rec(); if (!team() || !d) return ''; const fa = facts(S.ws.requirements, items('design_proposals'), items('rs_findings'));
+    // the parts the facts can prove tick themselves (nothing open; requirements need at least one); an automatic tick goes again when something opens. The introduction stays a person's tick.
+    if (!ro()) { const now = auto(d.review, fa, (S.ws.requirements || []).length); if (now) { d.review = now; F.changed(null, null, { section: 'brddoc', render: false }); } }
+    const rv = d.review || {}, todo = missing(rv).length;
     const row = x => { const id = x[0], t = rv[id], n = fa[id]; return '<div class="rv-row' + (t && t.by ? ' on' : '') + '"><button type="button" class="rv-box" data-act="brdRvTick" data-id="' + id + '" aria-label="Mark ' + esc(x[1]) + ' as reviewed" aria-pressed="' + !!(t && t.by) + '"' + (ro() ? ' disabled' : '') + '>' + (t && t.by ? '✓' : '') + '</button><div><b>' + esc(x[1]) + '</b><span>' + esc(x[2]) + '</span>'
       + (n ? '<em>' + n + (id === 'requirements' ? ' still a Draft' : id === 'contract' ? ' open check' + (n === 1 ? '' : 's') : ' proposal' + (n === 1 ? '' : 's') + ' not applied or dismissed') + '</em>' : '') + (t && t.by ? '<small>Checked by ' + esc(t.by) + '</small>' : '') + '</div></div>'; };
     return '<section class="rv"><div class="rv-h"><div><b>Before this BRD is approved</b><span>' + (todo ? 'Check each part and tick it off with your name. ' + todo + ' of ' + ITEMS.length + ' still to do. The owner can approve when all are ticked.' : 'Every part is checked. The owner can approve the BRD.') + '</span></div></div>' + ITEMS.map(row).join('') + '</section>';
