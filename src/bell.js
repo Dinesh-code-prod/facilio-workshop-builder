@@ -45,6 +45,17 @@
   const isRead = (x, rs) => (x.srv ? !!x.read : rs.has(x.id));   // a server notification is read on the server, the others in this browser
   function count() { const rs = readSet(); return all().filter(x => !isRead(x, rs)).length; }
   V.bellCount = count;
+  const POP = 'fwb_notif_popped'; let firstPop = true;
+  const popped = () => { try { return new Set(JSON.parse(sessionStorage.getItem(POP) || '[]')); } catch (e) { return new Set(); } };
+  function popNew() {
+    if (!S.project || !S.user || document.hidden || document.getElementById('bellPop')) return; const rs = readSet(), ps = popped();
+    const fresh = all().filter(x => !isRead(x, rs) && !ps.has(x.id)); if (!fresh.length) return; fresh.forEach(x => ps.add(x.id)); try { sessionStorage.setItem(POP, JSON.stringify([...ps].slice(-400))); } catch (e) { }
+    let box = document.getElementById('ntPops'); if (!box) { box = document.createElement('div'); box.id = 'ntPops'; box.setAttribute('role', 'status'); box.setAttribute('aria-live', 'polite'); document.body.appendChild(box); }
+    const show = firstPop && fresh.length > 2 ? [{ id: '', text: 'You have ' + fresh.length + ' new notifications' }] : fresh.slice(0, 3); firstPop = false;
+    show.forEach(x => { const el = document.createElement('div'); el.className = 'nt-pop'; el.innerHTML = '<span class="nt-pop-i" aria-hidden="true"></span><p>' + esc(String(x.text || x.title || 'New notification').slice(0, 160)) + '</p><button type="button" class="nt-pop-v" data-act="bellOpen">View</button><button type="button" class="nt-pop-x" aria-label="Dismiss">\u00d7</button>';
+      el.querySelector('.nt-pop-x').onclick = () => el.remove(); el.querySelector('.nt-pop-v').addEventListener('click', () => el.remove()); box.appendChild(el); setTimeout(() => el.remove(), 9000); });
+  }
+  setInterval(() => { try { popNew(); } catch (e) { } }, 15000); setTimeout(() => { try { popNew(); } catch (e) { } }, 4000);
   V.bellHtml = () => { if (!S.project || !S.user) return ''; I().load(['action', 'signoff', 'cr', 'onb', 'raid', 'decision', 'minutes', 'onbsub']); const n = count(); return `<button class="bell" data-act="bellOpen" aria-haspopup="true" aria-label="Notifications${n ? ', ' + n + ' unread' : ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></svg>${n ? `<span class="bell-n">${n > 9 ? '9+' : n}</span>` : ''}</button>`; };
 
   function close() { const p = document.getElementById('bellPop'); if (p) p.remove(); document.removeEventListener('keydown', onKey); document.removeEventListener('mousedown', onOut, true); }
