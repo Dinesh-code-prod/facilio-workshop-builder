@@ -32,7 +32,7 @@
   V.brdReviewLogic = { ITEMS, missing, facts, auto };
 
   const rec = () => (root.FWBBrd && root.FWBBrd.state ? root.FWBBrd.state() : null);
-  const team = () => !!(S.user && S.user.kind !== 'customer' && S.project && S.project.id && (!V.isCustomer || !V.isCustomer()));
+  const team = () => !(root.FWBBrd && root.FWBBrd.isSol && root.FWBBrd.isSol()) && !!(S.user && S.user.kind !== 'customer' && S.project && S.project.id && (!V.isCustomer || !V.isCustomer()));
   const ro = () => !!S.readonly || (S.project && S.project.role === 'viewer');
   const items = sec => { const d = F.doc(sec); return d && Array.isArray(d.items) ? d.items : []; };
   V.brdReviewPanel = () => {
@@ -50,5 +50,5 @@
     if (d.review[id] && d.review[id].by) delete d.review[id]; else d.review[id] = { by: S.user.name || S.user.email, at: new Date().toISOString() };
     F.changed('BRD review', it[1] + (d.review[id] ? ' checked' : ' unchecked'), { section: 'brddoc' }); V.render();
   };
-  { const was = ACT.brdStatus; if (typeof was === 'function') ACT.brdStatus = async el => { const d = rec(); if (el && el.value === 'approved' && d && missing(d.review).length) { toast('Check each part of the BRD and tick it off first (the list above the document): ' + missing(d.review).length + ' left.', 7000, true); V.render(); return; } return was(el); }; }
+  { const was = ACT.brdStatus; if (typeof was === 'function') ACT.brdStatus = async el => { const d = rec(); if (el && el.value === 'approved' && team() && d && missing(d.review).length) { toast('Check each part of the BRD and tick it off first (the list above the document): ' + missing(d.review).length + ' left.', 7000, true); V.render(); return; } return was(el); }; }
 })(typeof window !== 'undefined' ? window : globalThis);

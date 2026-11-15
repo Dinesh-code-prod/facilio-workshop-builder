@@ -17,7 +17,7 @@
     ['processes', 'End-to-end business processes'], ['usecases', 'Customer-specific use cases'], ['portals', 'Portal & cross-module mapping'], ['integration', 'Integration scope & interface specification'], ['agentops', 'Operating model: agents & rules'], ['sla', 'SLA & notifications'], ['slamatrix', 'SLA matrix'], ['kpis', 'KPIs and reporting'], ['solutions', 'Agreed solution: other areas'], ['matrix', 'Role matrix — module access'],
     ['trace', 'Requirement traceability matrix'], ['changes', 'Proposed configuration changes'], ['onboarding', 'Data migration & onboarding'], ['sessions', 'Decisions, assumptions & dependencies from the sessions'], ['questions', 'Open questions & items to be confirmed'], ['validation', 'Appendix — validation summary'], ['sources', 'Appendix — configuration source']];
   // New BRDs list, for each module, only what is agreed or changed; a BRD that already has edits keeps its full content (edits are tied to blocks), and the BRD settings can switch the full standard configuration on.
-  const includeStd = () => { const v = S.ws.brd.includeStandard; if (v === true || v === false) return v; const d = root_(); return Object.keys(d.edits || {}).length > 0 || Object.keys(d.inserts || {}).length > 0; };
+  const includeStd = () => { const v = cfg().includeStandard; if (v === true || v === false) return v; const d = root_(); return Object.keys(d.edits || {}).length > 0 || Object.keys(d.inserts || {}).length > 0; };
   const APPENDIX_OFF = ['validation', 'sources'];   // describe the whole package or the tool, not the customer's solution: off by default, a person can switch them on
   // ---------- several BRDs per project ----------
   // brddoc.list is the register of BRDs ('main' is the original one, whose edits/status/exports stay at the top level so older projects keep working).
@@ -31,16 +31,25 @@
   TYPES.import = { label: 'Imported or blank BRD', short: 'Own BRD', integ: false, hint: 'A BRD you brought in or started blank. It keeps your own structure; nothing is generated into it.', pick: () => false };
   const INTEG_RE = /servicerequest|^workorder$|^asset$|inventory|^item$|^tool$|storeroom|purchase|requestforquotation|vendorquotes|^quote$|invoice|vendors/i;
   const exchangeHint = n => /servicerequest/i.test(n) ? 'Tickets from the service desk create service requests; status and comments sync back' : /^workorder$/i.test(n) ? 'Work orders created from approved requests; status and completion sync back' : /^asset$/i.test(n) ? 'Asset master data shared or synchronised' : /inventory|^item$|^tool$|storeroom/i.test(n) ? 'Stock levels, issues and receipts' : /purchase|requestforquotation|vendorquotes|quote|invoice|vendors/i.test(n) ? 'Procurement documents and vendor master data' : 'Records exchanged';
-  const root_ = () => { const d = F.doc('brddoc'); d.logos = d.logos || {}; if (!Array.isArray(d.list) || !d.list.length) d.list = [{ id: 'main', name: 'Main BRD', type: 'core', modules: [] }], d.mainRemoved = false; if (!d.mainRemoved && !d.list.some(x => x.id === 'main')) d.list.unshift({ id: 'main', name: 'Main BRD', type: 'core', modules: [] }); d.docs = d.docs || {}; return d; };
+  // Solution documents (user, 16 Nov 2026): the same engine and editor run on their own store, F.doc('soldocs'), while the Solution document page (Project handover) is open.
+  // BRDs and solution documents never mix: each has its own list, selection, settings (version history, approvals, sections), logos, status and exports.
+  const isSol = () => !!(S.ui && S.ui.view === 'soldoc');
+  const store = () => isSol() ? 'soldocs' : 'brddoc'; const selKey = () => isSol() ? 'solDocId' : 'brdId';
+  const MAIN_NAME = () => isSol() ? 'Solution Document' : 'Main BRD';
+  const docOf = k => F.doc(k) || (S.docs[k].data = {});   // a store never saved comes back from the server as null
+  const cfg = () => { if (!isSol()) return S.ws.brd; const d = docOf('soldocs'); const c = d.cfg = d.cfg || {}; c.versionHistory = Array.isArray(c.versionHistory) ? c.versionHistory : []; c.approvals = Array.isArray(c.approvals) ? c.approvals : []; return c; };
+  const cfgPath = () => isSol() ? '@soldocs:cfg.' : 'brd.'; const cfgSec = () => isSol() ? 'soldocs' : 'workshop';
+  const root_ = () => { const d = docOf(store()); if (!d.logos && isSol()) d.logos = JSON.parse(JSON.stringify(F.doc('brddoc').logos || {}));   // a new solution document starts with the BRD's logos
+    d.logos = d.logos || {}; if (!Array.isArray(d.list) || !d.list.length) d.list = [{ id: 'main', name: MAIN_NAME(), type: 'core', modules: [] }], d.mainRemoved = false; if (!d.mainRemoved && !d.list.some(x => x.id === 'main')) d.list.unshift({ id: 'main', name: MAIN_NAME(), type: 'core', modules: [] }); d.docs = d.docs || {}; return d; };
   const brdList = () => root_().list;
-  const activeId = () => { const l = brdList(); return l.some(x => x.id === S.ui.brdId) ? S.ui.brdId : l[0].id; };
+  const activeId = () => { const l = brdList(), k = S.ui[selKey()]; return l.some(x => x.id === k) ? k : l[0].id; };
   const activeRec = () => { const id = activeId(); return brdList().find(x => x.id === id); };
   const BD = (id) => { const d = root_(); id = id || activeId(); let x = d; if (id !== 'main') { x = d.docs[id] = d.docs[id] || {}; x.logos = d.logos; if (!x.status) x.status = 'draft'; }
     x.edits = x.edits || {}; x.inserts = x.inserts || {}; x.hidden = x.hidden || {}; x.exports = x.exports || []; x.logos = x.logos || {}; return x; };
   // delete a BRD; the main one is cleared (and dropped from the list when others exist), the last one left is never removed
   function removeBrd(id) { const d = root_(); const rec = d.list.find(x => x.id === id); if (!rec) return; if (id === 'main') { ['edits', 'inserts', 'hidden', 'exports', 'figSize', 'figPct', 'profile', 'reviewedBy', 'reviewedAt'].forEach(k => { delete d[k]; }); d.status = 'draft'; if (d.list.length > 1) { d.list = d.list.filter(x => x.id !== 'main'); d.mainRemoved = true; } } else { d.list = d.list.filter(x => x.id !== id); delete d.docs[id]; } }
   const scopeSet = () => { const r = activeRec(); return r && r.modules && r.modules.length ? new Set(r.modules) : null; };
-  const titleOf = () => { const r = activeRec(); return r.id === 'main' ? (S.ws.project.docTitle || 'Business Requirements Document') : r.name; };
+  const titleOf = () => { const r = activeRec(); return r.id === 'main' ? (isSol() ? 'Solution Document' : (S.ws.project.docTitle || 'Business Requirements Document')) : r.name; };
   const slug = t => String(t || '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40);
   // The profile comes from an uploaded sample .docx and is stored in the shared BRD record, so every value is normalised here before
   // it reaches HTML, styles or exports: colours are 6 hex digits, fonts plain names, sizes numbers.
@@ -53,8 +62,8 @@
   }
   // a style saved earlier that is just the old built-in look (Calibri, blue table headers, purple headings) is not a customised style: the new default applies
   const oldDefault = p => !!p && p.font === 'Calibri' && p.tableHeaderFill === '8DB3E2' && p.h1 && p.h1.color === '351C75';
-  function profile() { const saved = BD().profile || root_().profile || S.ws.brd.template || {}; return cleanProfile(Object.assign(JSON.parse(JSON.stringify(DEFAULT_PROFILE)), oldDefault(saved) ? {} : saved)); }
-  function sectionOrder() { const saved = S.ws.brd.sections; if (saved && saved.length) { const out = saved.filter(s => SECTIONS.some(x => x[0] === s.id)).map(s => Object.assign({}, s)); SECTIONS.forEach((s, i) => { if (out.some(o => o.id === s[0])) return; const prev = SECTIONS[i - 1] && out.findIndex(o => o.id === SECTIONS[i - 1][0]); out.splice(prev >= 0 ? prev + 1 : out.length, 0, { id: s[0], on: !APPENDIX_OFF.includes(s[0]) }); }); return out; } return SECTIONS.map(s => ({ id: s[0], on: !APPENDIX_OFF.includes(s[0]) })); }
+  function profile() { const saved = BD().profile || root_().profile || cfg().template || {}; return cleanProfile(Object.assign(JSON.parse(JSON.stringify(DEFAULT_PROFILE)), oldDefault(saved) ? {} : saved)); }
+  function sectionOrder() { const saved = cfg().sections; if (saved && saved.length) { const out = saved.filter(s => SECTIONS.some(x => x[0] === s.id)).map(s => Object.assign({}, s)); SECTIONS.forEach((s, i) => { if (out.some(o => o.id === s[0])) return; const prev = SECTIONS[i - 1] && out.findIndex(o => o.id === SECTIONS[i - 1][0]); out.splice(prev >= 0 ? prev + 1 : out.length, 0, { id: s[0], on: !APPENDIX_OFF.includes(s[0]) }); }); return out; } return SECTIONS.map(s => ({ id: s[0], on: !APPENDIX_OFF.includes(s[0]) })); }
 
   // ---------- sample BRD profile (.docx) ----------
   async function profileTemplate(file) {
@@ -97,7 +106,7 @@
     const TB = (headers, rows, widths, k, o) => add(Object.assign({ id: id(k || 'tbl'), t: 'table', headers, rows, widths }, o || {}));
     const FIG = (svg, caption, k) => add({ id: id(k || 'fig'), t: 'figure', svg, caption });
     const BR = () => add({ id: id('br'), t: 'pagebreak' });
-    const pr = S.ws.project; const tech = S.ws.brd.includeTechnical !== false; const q = s => '“' + s + '”'; const B = S.baseline;
+    const pr = S.ws.project; const tech = cfg().includeTechnical !== false; const q = s => '“' + s + '”'; const B = S.baseline;
     const order = sectionOrder().filter(s => s.on).map(s => s.id);
     const CHAIN = ['site', 'building', 'floor', 'space', 'asset', 'serviceRequest', 'workorder', 'plannedmaintenance', 'preventivemaintenance', 'inspectionResponse', 'inspectionTemplate', 'workpermit', 'quote', 'requestForQuotation', 'vendorQuotes', 'inventoryrequest', 'purchaserequest', 'purchaseorder', 'invoice', 'vendors', 'insurance', 'tenant', 'client', 'people', 'employee', 'facilitybooking', 'spacebooking', 'invitevisitor', 'visitorlog'];
     const rank = m => { const i = CHAIN.indexOf(m.name); return i < 0 ? 100 + { high: 0, medium: 1, low: 2 }[m.priority] : i; };
@@ -116,10 +125,10 @@
     const pkgDate = imported && B && B.meta && B.meta.exportTimestamp ? new Date(+B.meta.exportTimestamp).toISOString().slice(0, 10) : '';
     let secNo = 0;
 
-    ctx = 'cover'; add({ id: 'cover', t: 'cover', title: rec.id === 'main' ? (pr.docTitle && pr.docTitle !== 'Business Requirements Document' ? pr.docTitle : 'Facilio CAFM') : rec.name, subtitle: rec.id === 'main' ? 'Business Requirement Document For' : (ty.label + (rec.system ? ' · ' + rec.system : '') + ' · Facilio Implementation'), customer: pr.client || (S.project && S.project.customer) || TBC, version: pr.version || 'V1.0', date: pr.date || new Date().toISOString().slice(0, 10), status: ({ draft: 'Draft', review: 'In review', approved: 'Approved' })[BD().status || 'draft'] }); BR();
+    ctx = 'cover'; add({ id: 'cover', t: 'cover', title: rec.id === 'main' ? (!isSol() && pr.docTitle && pr.docTitle !== 'Business Requirements Document' ? pr.docTitle : 'Facilio CAFM') : rec.name, subtitle: rec.id === 'main' ? (isSol() ? 'Solution Document' : 'Business Requirement Document For') : (ty.label + (rec.system ? ' · ' + rec.system : '') + ' · Facilio Implementation'), customer: pr.client || (S.project && S.project.customer) || TBC, version: pr.version || 'V1.0', date: pr.date || new Date().toISOString().slice(0, 10), status: ({ draft: 'Draft', review: 'In review', approved: 'Approved' })[BD().status || 'draft'] }); BR();
     for (const sid of order) {
       ctx = sid; try {
-      if (sid === 'control') { H(1, 'Document Control', 'h'); H(2, 'Version History', 'h2v'); TB(['Version', 'Date', 'Author', 'Description of change'], (S.ws.brd.versionHistory || []).map(v => [v.version, v.date, v.author || pr.consultant || '', v.change]), [1, 1.2, 1.6, 4], 'versions'); H(2, 'Review and Approval', 'h2a'); TB(['Name', 'Role', 'Signature', 'Date'], (S.ws.brd.approvals || []).map(a => [a.name || '', a.role || '', '', a.date || '']), [2, 2, 2, 1.2], 'approvals'); BR(); }
+      if (sid === 'control') { H(1, 'Document Control', 'h'); H(2, 'Version History', 'h2v'); TB(['Version', 'Date', 'Author', 'Description of change'], (cfg().versionHistory || []).map(v => [v.version, v.date, v.author || pr.consultant || '', v.change]), [1, 1.2, 1.6, 4], 'versions'); H(2, 'Review and Approval', 'h2a'); TB(['Name', 'Role', 'Signature', 'Date'], (cfg().approvals || []).map(a => [a.name || '', a.role || '', '', a.date || '']), [2, 2, 2, 1.2], 'approvals'); BR(); }
       else if (sid === 'toc') { add({ id: 'toc', t: 'toc' }); BR(); }
       else if (sid === 'project') { H(1, ++secNo + '. Project Information', 'h'); TB(['Item', 'Detail'], [['Project Title', 'Facilio CAFM Implementation – ' + (pr.client || TBC)], ['Customer', pr.client || TBC], ['Org ID', pr.orgId || TBC], ['Region', pr.region || TBC], ['Document Version', pr.version || 'V1.0'], ['Facilio Consultant', pr.consultant || TBC], ['Project Manager', pr.pm || TBC], ['Implementation Members', pr.members || TBC], ['Configuration source', cfgName + (pkgDate ? ' (exported ' + pkgDate + ')' : '')]], [1, 2.4], 'info'); }
       else if (sid === 'intro') {
@@ -319,12 +328,12 @@
           FIG(D.flowSvg(f, { full: true }), 'Figure: ' + m.label + ' — ' + f.name, k + ':fig'); T.flowNarrative(f).forEach((p, i) => P(p, k + ':n' + i)); });
         H(2, 'State Flow Details', 'h2d');
         flows.forEach(f => { const st = x => (f.states.find(s => s.id === x) || {}).label || x; const k = 'flow:' + F.slug(f.id).slice(-30); if (flows.length > 1) P(f.name, k + ':dt', { bold: true });
-          const ts = f.transitions.filter(t => (t.enabled !== false || S.ws.brd.includeDisabled) && !(t.removed && t.origin === 'proposed'));
+          const ts = f.transitions.filter(t => (t.enabled !== false || cfg().includeDisabled) && !(t.removed && t.origin === 'proposed'));
           TB(['Transition', 'From', 'To', 'Performed By', 'Conditions / Inputs', 'Actions & Notifications', 'Status'], ts.map(t => [q(t.name), q(st(t.from)), q(st(t.to)), t.type !== 'user' ? 'System (automatic)' : (t.actors || []).map(a => F.actorLabel(a.actor) + (a.status === 'proposed' ? ' (proposed)' : a.status === 'confirmed' ? ' (confirmed)' : '')).join('\n') || 'User / Role to Be Confirmed', T.transitionConditions(t).join('\n'), (t.actions || []).concat(t.createRecord ? ['Creates ' + ((F.moduleView(t.createRecord.module) || {}).label || t.createRecord.module)] : []).concat((t.notifications || []).length ? ['Notifies: ' + t.notifications.join(', ')] : []).join('\n'), t.removed ? 'Proposed removal' : t.origin === 'proposed' ? 'Proposed' : t.enabled === false ? 'Switched off' : 'Existing']), [1.2, 1, 1, 1.5, 2, 1.7, 0.8], k + ':tbl');
           f.transitions.filter(t => !t.removed && t.enabled !== false && t.type === 'user' && (t.actors || []).every(F.isTbc)).forEach(t => addQ(m.label, 'Confirm the responsible role for ' + q(t.name) + ' (' + st(t.from) + ' → ' + st(t.to) + ') — currently ' + ((t.actors || []).map(a => F.actorLabel(a.actor)).join(' / ') || 'User / Role to Be Confirmed') + '.')); }); }
       const appr = B && std ? B.approvals.filter(a => a.module === m.name && a.enabled) : []; const tAp = flows.flatMap(f => f.transitions.filter(t => !t.removed && t.approval && t.approval.required).map(t => ({ f, t })));
       if (appr.length || tAp.length) { H(2, 'Approval Routing', 'h2a'); TB(['Approval', 'Condition', 'Approver(s)', 'On Approve', 'On Reject'], appr.map(a => [a.name, a.criteria && a.criteria.text || 'All records', a.approvers.map(x => x.type === 'ROLE' ? x.name : x.type === 'FIELD' ? 'User in the ' + F.fieldLabel(m.name, x.name) + ' field' : x.name).join(', ') + (a.allRequired ? '\n(all must approve)' : '\n(any one)'), F.actionsText(a.onApprove).join('\n') || '—', F.actionsText(a.onReject).join('\n') || '—']).concat(tAp.map(x => [q(x.t.name) + ' (stateflow)', x.t.condition || '—', (x.t.approval.approvers || []).map(F.actorLabel).join(', ') || TBC, 'Moves to ' + q((x.f.states.find(s => s.id === x.t.to) || {}).label || ''), x.t.approval.rejectTo ? 'Moves to ' + q((x.f.states.find(s => s.id === x.t.approval.rejectTo) || {}).label || '') : TBC])), [1.4, 1.8, 1.7, 1.7, 1.7], 'appr'); }
-      const fields = F.effFields(m.name).filter(f => S.ws.brd.includeFormOnly !== false || !f.formOnly).filter(f => std || f.status === 'proposed' || f.status === 'modified' || f.status === 'removed');
+      const fields = F.effFields(m.name).filter(f => cfg().includeFormOnly !== false || !f.formOnly).filter(f => std || f.status === 'proposed' || f.status === 'modified' || f.status === 'removed');
       if (std || fields.length) {
       H(2, std ? 'Field List' : 'Fields Added, Changed or Removed', 'h2fl'); const rules = T.fieldRules(m.name);
       const reqOf = n => confirmed.filter(r => (r.fields || []).indexOf(m.name + '.' + n) >= 0).map(r => r.id);
@@ -337,7 +346,7 @@
       if (primary && std) { rows.push({ sub: 'Form: ' + (primary.label || primary.name) + (primary.proposed ? ' (proposed layout)' : '') }); (primary.sections || []).forEach(s => { const vis = s.fields.filter(x => !x.hidden); if (!vis.length) return; rows.push({ sub: s.name }); vis.forEach(ff => { const f = fields.find(x => x.name === ff.field) || (ff.field && { name: ff.field, label: ff.label || ff.field, type: '', status: 'proposed' }); if (f && !done.has(f.name)) { done.add(f.name); rows.push(row(f, ff)); } }); }); }
       const rest = fields.filter(f => !done.has(f.name)); const onOther = rest.filter(f => (f.onForms || []).length || f.status === 'proposed'), modelOnly = rest.filter(f => !(f.onForms || []).length && f.status !== 'proposed');
       if (!std) { rows.push({ sub: 'Added, changed or removed for this customer' }); rest.forEach(f => rows.push(row(f))); } else if (onOther.length) { rows.push({ sub: 'Fields on other forms' }); onOther.forEach(f => rows.push(row(f))); }
-      if (std && modelOnly.length && S.ws.brd.includeModelOnly !== false) { rows.push({ sub: 'Data-model fields not shown on any form' }); modelOnly.forEach(f => rows.push(row(f))); }
+      if (std && modelOnly.length && cfg().includeModelOnly !== false) { rows.push({ sub: 'Data-model fields not shown on any form' }); modelOnly.forEach(f => rows.push(row(f))); }
       P('Mandatory fields are shown in red' + (tech ? '; the API name is shown under each field name' : '') + '.', 'fnote', { style: 'caption' });
       TB(['Field Name', 'Field Type', 'Mandatory', 'Options / Lookup / Default', 'Visibility, Editability & Validation', 'Business Description', 'Status'], rows, [1.7, 1.1, 0.7, 1.8, 1.8, 1.6, 0.9], 'fields');
       }
@@ -486,5 +495,5 @@
     return { blob, stats: docm.stats };
   }
 
-  root.FWBBrd = { includeStd, remove: removeBrd, cleanHtml, figSize, figPct, titleOf, TYPES, INTEG_RE, list: brdList, activeId, activeRec, state: BD, scopeSet, slug, buildBlocks, applyEdits, document: document_, toDocx, toPdf, profileTemplate, profile, SECTIONS, sectionOrder, DEFAULT_PROFILE, cellText, logoData, fit };
+  root.FWBBrd = { isSol, store, selKey, cfg, cfgPath, cfgSec, includeStd, remove: removeBrd, cleanHtml, figSize, figPct, titleOf, TYPES, INTEG_RE, list: brdList, activeId, activeRec, state: BD, scopeSet, slug, buildBlocks, applyEdits, document: document_, toDocx, toPdf, profileTemplate, profile, SECTIONS, sectionOrder, DEFAULT_PROFILE, cellText, logoData, fit };
 })(typeof window !== 'undefined' ? window : globalThis);

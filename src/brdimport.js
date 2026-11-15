@@ -38,8 +38,9 @@
     const rec = { id: F.uid('brd'), name: nm, type: 'import', imported: true, modules: [], system: '', direction: '', notes: '' }; list.push(rec);
     const d = R().state(rec.id); const at = new Date().toISOString();
     d.inserts['imp:title'] = blocks.slice(0, MAX_BLOCKS).map(b => Object.assign({ id: 'ins_' + F.uid('p'), by: S.user.name, at }, b));
-    S.ui.brdId = rec.id; closeDrawer(); F.changed('BRD imported', nm, { section: 'brddoc' }); toast(blocks.length > MAX_BLOCKS ? 'Imported the first ' + MAX_BLOCKS + ' blocks' : blocks.length ? 'Imported "' + nm + '". Click in the text to edit it.' : 'Blank BRD created. Use "Add below" to start writing.');
+    S.ui[R().selKey()] = rec.id; closeDrawer(); F.changed('BRD imported', nm, { section: R().store() }); toast(blocks.length > MAX_BLOCKS ? 'Imported the first ' + MAX_BLOCKS + ' blocks' : blocks.length ? 'Imported "' + nm + '". Click in the text to edit it.' : 'Blank BRD created. Use "Add below" to start writing.');
   }
+  V.brdImportCreate = create;   // src/soldoc.js: Claude's solution document comes in as an imported document
   ACT.brdImport = () => { if (S.readonly) return;
     drawer('Import your own BRD', `<div class="notice small" style="margin-bottom:12px">Bring in a BRD your team already has, or start a blank one. It is added as a new BRD with its own structure; nothing is generated into it. It can be empty or only partly filled, and you edit it on the page afterwards.</div>
       <label class="f">Name</label><input id="bi_name" maxlength="80" placeholder="e.g. Customer BRD (from the client)">

@@ -1,52 +1,33 @@
-// The Solution document page (src/soldoc.js): Markdown <-> sections, BRD blocks -> Markdown, the studio draft, and that a person's edits are never overwritten.
+// The Solution document page (src/soldoc.js) runs the BRD Draft editor on its own store (src/brd.js isSol): Claude's Markdown becomes editor blocks,
+// the page says "solution document" for "BRD", and BRDs and solution documents never share a list, selection or settings.
 import assert from 'node:assert/strict'; import { createRequire } from 'node:module'; import fs from 'node:fs';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-globalThis.FWB = { S: { user: { kind: 'consultant' }, project: { id: 'p1' }, ws: { project: {} }, ui: {} }, esc, doc: () => ({}) };
+const docs = {}; globalThis.FWB = { S: { user: { kind: 'consultant' }, project: { id: 'p1' }, ws: { project: {}, brd: { versionHistory: [], approvals: [] } }, ui: {} }, esc, doc: k => (docs[k] = docs[k] || {}) };
 globalThis.FWBViews = { ACT: {}, isCustomer: () => false };
-createRequire(import.meta.url)('../src/soldoc.js'); const L = globalThis.FWBViews.soldocLogic; let n = 0; const ok = m => { n++; console.log('  ok  ' + m); };
+const req = createRequire(import.meta.url); req('../src/soldoc.js'); const V = globalThis.FWBViews, L = V.soldocLogic; let n = 0; const ok = m => { n++; console.log('  ok  ' + m); };
 
-// Markdown -> sections: a single "# Title" on top shifts ## to sections and ### to sub-sections; the id line is dropped
-let s = L.toSections('# Acme Solution\nSolution document id: sd_abc\n\n## 1. Project Information\n| a | b |\n\n## Work Orders\n### Use Case\nText\n### Field List\n[To be confirmed]');
-assert.deepEqual(s.map(x => [x.title, x.lvl]), [['Project Information', 1], ['Work Orders', 1], ['Use Case', 2], ['Field List', 2]]); assert.equal(s[2].md, 'Text'); assert.ok(!s.some(x => /sd_abc/.test(x.md)));
-ok('Claude’s Markdown splits into sections and sub-sections');
-s = L.toSections('Opening words\n# One\nA\n## Two\nB\n# Three\nC', 'import'); assert.deepEqual(s.map(x => [x.title, x.lvl, x.src]), [['Introduction', 1, 'import'], ['One', 1, 'import'], ['Two', 2, 'import'], ['Three', 1, 'import']]);
-ok('an imported file with several # headings splits at # and ##');
-assert.deepEqual(L.toSections('# Work Orders\nRaised by tenants.\n## Field List\nSubject', 'import', 'Acme Solution').map(x => [x.title, x.lvl, x.md]), [['Work Orders', 1, 'Raised by tenants.'], ['Field List', 2, 'Subject']]);
-assert.deepEqual(L.toSections('# Acme Solution\n## Field List\nSubject', 'import', 'Acme Solution').map(x => [x.title, x.lvl]), [['Field List', 1]]); ok('an imported file keeps a lone top heading unless it is the document’s name');
-const back = L.toSections(L.toMd('Doc', s)); assert.deepEqual(back.map(x => [x.title, x.lvl, x.md]), s.map(x => [x.title, x.lvl, x.md])); ok('toMd and toSections round-trip');
-assert.equal(L.noPictures('A ![logo](data:image/png;base64,' + 'A'.repeat(5000) + ') B ![]() C <img src="x.png"> D'), 'A _[Picture]_ B _[Picture]_ C _[Picture]_ D'); ok('pictures in an imported file become a short marker (a Word file with screenshots failed to save with 413)');
-assert.equal(L.open([{ md: '[To be confirmed] x' }, { md: 'done' }, { md: '[To be confirmed (roles)]' }]), 2); ok('open counts sections still to be confirmed');
+const b = L.mdToBlocks('# Acme Solution Document\nSolution document id: brd_x\n\n## Project Information\n| Item | Detail |\n|---|---|\n| Customer | Acme |\n\n## Work Orders\n### Use Case\nRepairs are **raised** by tenants.\nThey are assigned.\n\n- One\n- Two\n1. Three');
+assert.deepEqual(b.map(x => x.t + (x.lvl || '')), ['h1', 'table', 'h1', 'h2', 'p', 'ul']);
+assert.deepEqual(b[1].headers, ['Item', 'Detail']); assert.deepEqual(b[1].rows, [['Customer', 'Acme']]); assert.equal(b[4].text, 'Repairs are raised by tenants. They are assigned.'); assert.deepEqual(b[5].items, ['One', 'Two', 'Three']);
+assert.ok(!JSON.stringify(b).includes('brd_x') && !JSON.stringify(b).includes('Acme Solution Document'), 'the title and id lines stay out');
+ok('Claude’s Markdown becomes headings, paragraphs, bullets and tables for the editor');
 
-// BRD blocks -> Markdown, and the part of one module
-const md = L.blocksToMd([{ t: 'cover' }, { t: 'h', lvl: 1, text: '3. WORK ORDERS' }, { t: 'h', lvl: 2, text: 'Module Purpose' }, { t: 'p', text: 'Track repairs.' }, { t: 'ul', items: ['a', 'b'] }, { t: 'table', headers: ['X', 'Y'], rows: [['1', '2'], { sub: 'Group' }] }, { t: 'figure', caption: 'Flow' }, { t: 'h', lvl: 1, text: '4. ASSETS' }, { t: 'p', text: 'Other', hiddenBlock: true }]);
-assert.match(md, /^# 3\. WORK ORDERS/); assert.match(md, /\| X \| Y \|/); assert.match(md, /_Diagram: Flow_/); assert.ok(!md.includes('Other'));
-assert.match(L.partFor(md, 'Work Orders'), /Track repairs/); assert.ok(!L.partFor(md, 'Work Orders').includes('ASSETS')); ok('BRD blocks become Markdown and a module part is found');
+assert.equal(L.swap('Import a BRD (Word, PDF, text)'), 'Import a solution document (Word, PDF, text)'); assert.equal(L.swap('BRD settings'), 'Solution document settings');
+assert.equal(L.swap('Another BRD already has that name. Other BRDs are not affected.'), 'Another solution document already has that name. Other solution documents are not affected.');
+assert.equal(L.swap('Business Requirement Document For'), 'Solution Document For'); assert.equal(L.swap('data-act="brdNew"'), 'data-act="brdNew"', 'action names stay');
+FWB.S.ui.view = 'brd'; assert.equal(V.wordSwap('New BRD'), 'New BRD', 'the BRD page keeps its words'); FWB.S.ui.view = 'soldoc'; assert.equal(V.wordSwap('New BRD'), 'New solution document');
+ok('the page and its drawers and messages say solution document; the BRD page is unchanged');
 
-// the studio draft
-const ctx = { kind: 'full', modules: [{ name: 'workorder', label: 'Work Orders' }], project: { client: 'Acme', orgId: '123', facilioRegion: 'AE', name: 'P' }, brdMd: md, reqs: [{ id: 'WO-1', title: 'Assign by trade', status: 'Confirmed', modules: ['workorder'] }, { id: 'WO-2', title: 'Old', status: 'Rejected', modules: ['workorder'] }], sla: [{ module: 'workorder', priority: 'High', response: '1 h', resolution: '4 h' }], kpis: [], apps: [{ app: 'SAP', purpose: 'Costs' }] };
-const f = L.fromStudio(ctx); const t = f.map(x => x.title);
-assert.ok(t.includes('Project Information') && t.includes('Work Orders') && t.includes('SLA & Notifications') && t.includes('Integrations') && t.includes('Role Matrix – Module Access'));
-assert.match(f.find(x => x.title === 'Project Information').md, /\| Facilio org ID \| 123 \|/); assert.match(f.find(x => x.title === 'Use Case').md, /Track repairs/);
-const fr = f.find(x => x.title === 'Functional Requirements').md; assert.ok(fr.includes('WO-1') && !fr.includes('WO-2'), 'rejected requirements stay out'); assert.match(f.find(x => x.title === 'SLA & Notifications').md, /Work Orders \| High/);
-ok('the studio draft fills project information, use case, requirements, SLA and integrations');
-const mods = L.fromStudio(Object.assign({}, ctx, { kind: 'modules' })); assert.ok(!mods.some(x => x.title === 'SLA & Notifications')); ok('a module document has no closing sections');
-const integ = L.fromStudio({ kind: 'integration', app: { app: 'SAP', purpose: 'Send costs', dataOut: 'Work order cost' }, project: {} }); assert.deepEqual(integ.map(x => x.title).slice(0, 3), ['Project Information', 'Overview', 'Systems and Direction']); assert.match(integ.find(x => x.title === 'Data Exchanged').md, /Work order cost/); ok('an integration document has its own sections');
+// the engine: two stores, two selections, two settings
+globalThis.FWBText = { TBC: '[To be confirmed]' }; globalThis.FWBDiagrams = {}; FWB.allModules = () => []; FWB.humanize = s => s; req('../src/brd.js'); const R = globalThis.FWBBrd;
+FWB.S.ui.view = 'brd'; assert.equal(R.store(), 'brddoc'); assert.equal(R.list()[0].name, 'Main BRD'); assert.equal(R.cfg(), FWB.S.ws.brd); assert.equal(R.cfgPath(), 'brd.');
+FWB.S.ui.view = 'soldoc'; assert.equal(R.store(), 'soldocs'); assert.equal(R.list()[0].name, 'Solution Document'); assert.notEqual(R.cfg(), FWB.S.ws.brd); assert.equal(R.cfgPath(), '@soldocs:cfg.'); assert.equal(R.selKey(), 'solDocId');
+R.list().push({ id: 'brd_int', name: 'SAP integration', type: 'erp', modules: [] }); FWB.S.ui.view = 'brd'; assert.ok(!R.list().some(x => x.id === 'brd_int'), 'a solution document never shows in the BRD list');
+assert.ok(docs.soldocs && Array.isArray(docs.soldocs.list) && docs.brddoc && docs.brddoc.list.length === 1); ok('BRDs and solution documents keep their own list, selection and settings');
 
-// merge: a person's edit stays and the new text waits as a proposal
-const cur = [{ id: 'a', title: 'Background', lvl: 1, md: 'Mine', edited: true }, { id: 'b', title: 'Key Terms', lvl: 1, md: '[To be confirmed]' }];
-const m = L.merge(cur, [{ title: 'Background', lvl: 1, md: 'Claude', src: 'claude' }, { title: 'Key Terms', lvl: 1, md: 'PPM: planned maintenance', src: 'claude' }, { title: 'Glossary note', lvl: 2, md: 'x', src: 'claude' }]);
-assert.equal(m[0].md, 'Mine'); assert.equal(m[0].proposal.md, 'Claude'); assert.equal(m[1].md, 'PPM: planned maintenance'); assert.equal(m[2].title, 'Glossary note'); assert.equal(cur[0].proposal, undefined, 'the input is not changed');
-assert.equal(L.merge(cur, [{ title: 'Background', lvl: 1, md: 'Mine' }])[0].proposal, undefined, 'the same text is no proposal'); ok('a person’s edit is kept and Claude’s text waits as a proposal');
-// two modules: each keeps its own sub-sections (found live on Al Moallam: the second module's Use Case overwrote the first one's)
-const two = L.fromStudio(Object.assign({}, ctx, { kind: 'modules', modules: [{ name: 'workorder', label: 'Work Orders' }, { name: 'client', label: 'Clients' }] }));
-const m2 = L.merge([], two); assert.equal(m2.length, two.length); assert.deepEqual(m2.map(x => x.title), two.map(x => x.title));
-const uc = m2.filter(x => x.title === 'Use Case'); assert.equal(uc.length, 2); assert.match(uc[0].md, /Track repairs/); assert.match(uc[1].md, /To be confirmed/);
-const again = L.merge(m2, two); assert.equal(again.length, two.length, 'drafting twice adds nothing'); ok('two modules keep their own sub-sections and a second draft adds nothing');
-
-// wiring: the page is on the menu, built, a team-only record kind, a Claude task and the job writes it back
 const read = p => fs.readFileSync(new URL('../' + p, import.meta.url), 'utf8');
-assert.match(read('src/shell.js'), /\['soldoc', 'Solution document'\]/); assert.match(read('build.mjs'), /'src\/soldoc\.js'/);
-const api = read('work/server/api.mjs'); assert.match(api, /'trtext', 'sdoc'\]/); assert.match(api, /TEAM_KINDS = new Set\(\[[^\]]*'sdoc'/); assert.match(api, /soldoc: \{ title: 'Solution document'/);
-const jobs = read('work/server/_jobs.mjs'); assert.match(jobs, /save_draft with task soldoc/); assert.match(jobs, /Org ID and region/); assert.match(read('src/settings.js'), /project\.facilioRegion/);
-ok('the page, record kind, AI task, Claude job and the Org ID field are wired');
+assert.match(read('src/shell.js'), /\['soldoc', 'Solution document'\]/); assert.match(read('build.mjs'), /'src\/soldoc\.js'/); assert.match(read('src/shell.js'), /if \(V\.wordSwap\) msg = V\.wordSwap\(msg\)/);
+const api = read('work/server/api.mjs'); assert.match(api, /TEAM_DOCS = new Set\(\['soldocs'/); assert.match(api, /\['soldocs', 'Solution documents/); assert.match(api, /soldoc: \{ title: 'Solution document'/);
+const jobs = read('work/server/_jobs.mjs'); assert.match(jobs, /save_draft with task soldoc/); assert.match(jobs, /get_document soldocs/); assert.match(read('src/settings.js'), /project\.facilioRegion/);
+ok('page, store, connector document, AI task, Claude job and the Org ID field are wired');
 console.log(n + ' solution document page checks passed');
