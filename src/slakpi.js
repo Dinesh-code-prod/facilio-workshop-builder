@@ -25,6 +25,16 @@
     const noSla = general ? [] : ms.filter(m => !s.some(r => r.module === m.name)); const noKpi = ms.filter(m => !k.some(x => x.module === m.name));
     const noSol = k.filter(x => !String(x.solution || '').trim()); return { ms, noSla, noKpi, noSol, general };
   }
+  // the start: three ways to build both matrices, and one line that says what is missing
+  function startCard() {
+    const c = coverage(), ro = !can(); const miss = [c.noSla.length ? c.noSla.length + ' module' + (c.noSla.length === 1 ? '' : 's') + ' without an SLA row' : '', c.noKpi.length ? c.noKpi.length + ' without a KPI' : '', I().list('kpi').length && c.noSol.length ? c.noSol.length + ' KPI' + (c.noSol.length === 1 ? '' : 's') + ' without how Facilio delivers it' : ''].filter(Boolean);
+    const way = (t, d, btn) => '<div class="slk-way"><b>' + t + '</b><span>' + d + '</span>' + btn + '</div>';
+    return '<div class="card slk-start"><div class="card-b">' + (ro ? '' : '<div class="slk-ways">'
+      + way('From the contract', 'The AI reads the pages of the MSA that speak about service levels and KPIs and suggests both matrices. You tick what to keep.', '<button type="button" class="btn primary" data-act="slkContract" data-want="both">\u2726 Fill from the contract</button>')
+      + way('The customer\u2019s own matrix', 'An Excel, Word or PDF they sent. The AI finds each SLA and KPI, the module it belongs to and how each KPI is calculated.', '<button type="button" class="btn" data-act="slkPick" data-want="both">Import a file</button>')
+      + way('Add it yourself', 'One SLA row (module, priority, response and resolution) or one KPI (what, target, how Facilio shows it).', '<span class="slk-two"><button type="button" class="btn" data-act="slaEdit">+ SLA row</button><button type="button" class="btn" data-act="kpiEdit">+ KPI</button></span>') + '</div>')
+      + '<p class="slk-cov">' + (miss.length ? '<span class="slk-warn">Still to do:</span> ' + esc(miss.join(' \u00b7 ')) : '<span class="slk-ok">\u2713</span> Every module in scope has an SLA row and a KPI.') + ' <span class="muted">Both matrices flow into the Solution, the BRD, the UAT test cases and the FTR.</span></p></div></div>';
+  }
   function linkCard() {
     const c = coverage(); const k0 = I().list('kpi').length; const chip = (n, ok, bad) => '<span class="md-chip"' + (n ? '' : ' data-s="verified"') + '>' + (n ? n + ' ' + bad : ok) + '</span>';
     const names = a => a.length ? '<div class="xs muted" style="margin-top:4px">' + a.slice(0, 8).map(m => esc(m.label)).join(', ') + (a.length > 8 ? ' and ' + (a.length - 8) + ' more' : '') + '</div>' : '';
@@ -49,15 +59,16 @@
   }
   function tools(which) {
     const add = which === 'sla' ? 'slaEdit' : 'kpiEdit';
-    return '<span class="spacer"></span>' + (can() ? '<button class="btn sm primary" data-act="' + add + '">+ Add ' + (which === 'sla' ? 'SLA row' : 'KPI') + '</button><button class="btn sm" data-act="slkImport" data-want="' + which + '">Import</button>' : '')
-      + '<button class="btn sm" data-act="slkExport" data-fmt="xlsx">Export Excel</button><button class="btn sm" data-act="slkExport" data-fmt="csv" data-want="' + which + '">Export CSV</button>'
-      + (can() ? '<button class="btn sm" data-act="slkAsk" data-want="' + which + '">Ask Claude</button>' : '') + (which === 'kpi' ? '<button class="btn sm" data-act="nav" data-view="kpi">KPI workbooks</button>' : '');
+    const it = (act, t, d, extra) => '<button type="button" data-act="' + act + '"' + (extra || '') + '><b>' + t + '</b><span>' + d + '</span></button>';
+    return '<span class="spacer"></span>' + (can() ? '<button class="btn sm primary" data-act="' + add + '">+ Add ' + (which === 'sla' ? 'SLA row' : 'KPI') + '</button>' : '')
+      + '<details class="ds-more"><summary class="btn sm">More</summary><div class="ds-menu">' + (can() ? it('slkImport', 'Import or paste', 'A file or pasted text, for this matrix only', ' data-want="' + which + '"') + it('slkAsk', 'Ask Claude to check it', 'Claude compares the matrix with the contract and the solution, in the chat', ' data-want="' + which + '"') : '')
+      + it('slkExport', 'Export Excel', 'Both matrices in one workbook', ' data-fmt="xlsx"') + it('slkExport', 'Export CSV', 'This matrix only', ' data-fmt="csv" data-want="' + which + '"') + (which === 'kpi' ? it('nav', 'KPI workbooks', 'The customer’s KPI Excel files', ' data-view="kpi"') : '') + '</div></details>';
   }
   V.slakpi = { html() {
     if (V.isCustomer()) return ''; I().load(['kpi']); const head = '<div class="page-header"><div class="t"><h1>KPIs &amp; SLA matrix</h1><p>What has to be tracked, and how Facilio delivers it. Written once here, it flows into the Solution tab, the BRD, the UAT test cases and the FTR checklist.</p></div></div>';
     if (!I().ready(['kpi'])) return head + '<div class="page-body"><div class="muted" style="padding:20px">Loading…</div></div>';
     const t = ui().tab === 'kpi' ? 'kpi' : 'sla'; const tk = (id, l, n) => '<button type="button" role="tab" class="tab' + (t === id ? ' active' : '') + '" aria-selected="' + (t === id) + '" data-act="slkTab" data-v="' + id + '">' + l + ' <span class="pt-shn">' + n + '</span></button>';
-    return head + '<div class="page-body">' + linkCard() + '<div class="tabs pt-tabs" role="tablist" aria-label="Matrix">' + tk('sla', 'SLA matrix', sla().length) + tk('kpi', 'KPI matrix', I().list('kpi').length) + '</div>' + (t === 'kpi' ? kpiCard() : slaCard()) + '</div>';
+    return head + '<div class="page-body">' + startCard() + '<div class="tabs pt-tabs" role="tablist" aria-label="Matrix">' + tk('sla', 'SLA matrix', sla().length) + tk('kpi', 'KPI matrix', I().list('kpi').length) + '</div>' + (t === 'kpi' ? kpiCard() : slaCard()) + '</div>';
   }, mount() { I().load(['kpi']); } };
   ACT.slkTab = a => { ui().tab = a.getAttribute('data-v') === 'kpi' ? 'kpi' : 'sla'; V.render(); };
 
@@ -87,7 +98,7 @@
     ui().found = { sla: r.sla || [], kpis: r.kpis || [], file: fileName, want, truncated: !!r.truncated }; showFound();
   }
   ACT.slkImport = a => {
-    if (!can()) return; const want = a.getAttribute('data-want') === 'kpi' ? 'kpi' : 'sla'; const what = want === 'kpi' ? 'KPIs' : 'SLA rows';
+    if (!can()) return; const w0 = a.getAttribute('data-want'), want = w0 === 'kpi' || w0 === 'both' ? w0 : 'sla'; const what = want === 'kpi' ? 'KPIs' : want === 'both' ? 'SLA rows and KPIs' : 'SLA rows';
     drawer('Import ' + what, '<p class="small">Choose the contract, an SLA schedule, a KPI sheet or an e-mail (Word, PDF, Excel, CSV or text), or paste text, for example the answer Claude gave you. The AI reads it and <b>suggests</b> ' + what + '. Nothing is added until you tick the rows and press Add.</p>'
       + '<div class="cs-cmd"><button type="button" class="btn primary" data-act="slkContract" data-want="' + want + '">Read the project contract</button><button type="button" class="btn" data-act="slkPick" data-want="' + want + '">Choose a file</button></div><p class="xs muted" style="margin:6px 0 0">Read the project contract takes the pages of the contract documents already in this project that speak about service levels, response times, priorities or KPIs.</p><label class="f" for="slkPaste" style="margin-top:14px">Or paste text</label><textarea id="slkPaste" rows="7" maxlength="40000" placeholder="Paste a table or the clause here"></textarea>',
       '<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="slkPasteGo" data-want="' + want + '">Read the pasted text</button>', {});

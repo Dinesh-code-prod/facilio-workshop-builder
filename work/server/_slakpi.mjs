@@ -14,7 +14,7 @@ export function slakpiPrompt({ text, fileName, modules, want }) {
   return { system: SYS, user: 'DOCUMENT (' + str(fileName, 100) + '):\n' + String(text || '').slice(0, 22000) + '\n\nPROJECT MODULES (name = label): ' + (mods || 'none listed')
     + '\n\n' + (want === 'kpi' ? 'List only KPIs. ' : want === 'sla' ? 'List only SLA rows. ' : 'List SLA rows and KPIs. ')
     + 'SLA row: one per module and priority: {"module":"module name from the list, or empty for all modules","priority":"","response":"e.g. 30 minutes","resolution":"e.g. 4 hours","hours":"business hours","esc":[{"after":"","to":""}],"quote":"exact words from the document"}. '
-    + 'KPI: {"name":"","group":"","description":"","source":"data it is calculated from","freq":"Daily|Weekly|Monthly|Quarterly","unit":"","target":"number or empty","module":"module name from the list or empty","solution":"how Facilio can deliver it: dashboard, report, field or formula, only if the document says or implies it","quote":"exact words from the document"}. '
+    + 'KPI: {"name":"","group":"","description":"what it measures and how it is calculated, e.g. work orders closed within SLA / all closed work orders x 100","source":"data it is calculated from","freq":"Daily|Weekly|Monthly|Quarterly","unit":"","target":"number or empty","module":"module name from the list or empty","solution":"how Facilio can deliver it: dashboard, report, field or formula, only if the document says or implies it","quote":"exact words from the document"}. '
     + 'Reply: {"sla":[...],"kpis":[...]}.' };
 }
 
