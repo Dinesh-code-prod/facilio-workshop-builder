@@ -1,5 +1,7 @@
 // On this PC run with the Edge channel: PW_CHANNEL=msedge node tests/ui/claude-handoff-check.mjs
 // Open in Claude from the Process Whiteboard "Describe with AI" box: the panel opens, the three Open buttons and Copy work, a pasted reply comes back as a checked preview.
+// One Claude button (user, 13 Nov 2026, src/projfx.css): the box shows Draw it here and Let Claude draw it; its Ask my own Claude and Add from Claude buttons are hidden,
+// so the panel is opened through its action here (the panel code is still used), after checking that the hidden buttons are hidden.
 import { chromium } from 'playwright';
 const BASE = process.argv[2] || 'http://localhost:4173'; const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, permissions: ['clipboard-read', 'clipboard-write'] }); const p = await ctx.newPage();
 const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); }); const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
@@ -10,7 +12,9 @@ await p.route('**/me/connector', r => r.fulfill({ contentType: 'application/json
 await p.click('[data-act="wbNew"]'); await p.fill('#wbName', 'Handoff'); await p.click('#drawer .btn.primary'); await p.waitForSelector('#wbSvg'); await p.waitForTimeout(400);
 await p.click('[data-act="wbAiText"]'); await p.fill('#wbAiT', 'A client raises a request, the approver approves or rejects it, approved becomes a work order.');
 await p.evaluate(() => { window.__opened = []; window.open = (u) => { window.__opened.push(String(u)); return null; }; window.FWBViews.claudeNav = u => window.__opened.push('NAV ' + u); window.FWBViews.claudeSubmit = async () => { throw new Error('The queue is off in this check.'); }; });   // a text-only click normally goes to the job queue; with the queue refused the page falls back to the Open in Claude panel, which is what these checks are about
-await p.click('#drawer [data-act="wbAiClaude"]:not([data-add])'); await p.waitForSelector('[data-act="hoGo"]', { timeout: 8000 });
+{ const vis = await p.evaluate(() => [...document.querySelectorAll('#drawer .drawer-f button')].filter(x => x.offsetParent).map(x => x.textContent.trim()));
+  check('one Claude button: the box shows Draw it here and Let Claude draw it; Ask my own Claude and Add from Claude are hidden', vis.includes('Draw it here') && vis.includes('Let Claude draw it') && !vis.includes('Ask my own Claude') && !vis.includes('Add from Claude'), vis.join(' | ')); }
+await p.evaluate(() => window.FWBViews.ACT.wbAiClaude(document.querySelector('#drawer [data-act="wbAiClaude"]:not([data-add])'))); await p.waitForSelector('[data-act="hoGo"]', { timeout: 8000 });
 check('the Open in Claude panel shows the three open buttons and the reply box', (await p.locator('[data-act="hoGo"]').count()) === 3 && (await p.locator('#hoR').count()) === 1);
 await p.evaluate(() => { localStorage.removeItem('fwb_claude_conn'); window.__opened = []; }); await p.click('[data-act="hoGo"][data-d="web"]'); await p.waitForTimeout(1800); { const od = await p.evaluate(() => window.__opened.map(u => { try { return decodeURIComponent(u); } catch (e) { return u; } })); check('by default (connector not turned off) Open Claude Web sends the short prompt that tells Claude to use the connector and fetch everything itself', od.some(u => /handoff_get/.test(u) && /fetch everything/.test(u) && u.length < 1500), od.map(u => u.length).join(',')); }
 await p.evaluate(() => { localStorage.setItem('fwb_claude_conn', '0'); window.__opened = []; });
