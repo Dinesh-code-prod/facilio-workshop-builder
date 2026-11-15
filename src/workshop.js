@@ -188,6 +188,8 @@
     const u = U(); const info = TP().parseTranscriptInfo(u.live, hint || ''); u.info = { n: info.chunks.length, format: info.format, truncated: info.truncated };
     if (!info.chunks.length) { u.res = null; return; } const prep = prepared(); const base = L().questionList(prep, doc(), {});
     u.res = L().mergeLive(base, Q().liveAsk(prep, info.chunks.map(c => ({ speaker: c.speaker, at: TP().fmtAt(c.at), text: c.text }))));
+    // a question the call likely answered is marked answered with the quote; a person can set it back
+    if (!ro()) (Array.isArray(u.res) ? u.res : []).forEach(q => { if (q && q.id && q.live && q.live.confidence === 'likely' && !['answered', 'skipped'].includes(q.status)) save(q.id, { status: 'answered', note: 'Marked answered from the call: ' + String(q.live.quote || q.live.text || '').slice(0, 400), evidence: q.live }); });
   }
   V.wsRerender = rerender; V.wsRunLive = runLive;   // the live assistant (src/workshoplive.js) refreshes the room and re-checks the questions
   ACT.wsLive = el => { U().live = el.value; };
