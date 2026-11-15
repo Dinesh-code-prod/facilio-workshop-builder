@@ -2769,3 +2769,9 @@ body.asst-open #app > .shell:not(#_):not(#__):not(#___):not(#____):not(#_____):n
 @media (prefers-reduced-motion: reduce) { #ntPops .nt-pop { animation: none; } }
 body.asst-open #ntPops { right: 460px; }
 @media (max-width: 900px) { body.asst-open #ntPops { display: none; } }
+/* one approve card per module in the Assistant chat (proposals Claude made after a transcript; V.moduleApproveCardsHtml in src/solmap.js) */
+body #asst .as-ap .as-topic { margin: 0 0 8px; font: 600 12px Inter, system-ui, sans-serif; color: #6e6e73; }
+body #asst .ap-card { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center; padding: 12px 14px; margin: 0 0 8px; background: #fff; border: 1px solid rgba(0, 0, 0, .08); border-left: 3px solid #1570EF; border-radius: 14px; box-shadow: 0 1px 2px rgba(0, 0, 0, .04); }
+body #asst .ap-card b { font: 600 14px Inter, system-ui, sans-serif; color: #1d1d1f; }
+body #asst .ap-card span { grid-column: 1; font-size: 12.5px; color: #6e6e73; line-height: 1.4; }
+body #asst .ap-card .btn { grid-column: 2; grid-row: 1 / span 2; white-space: nowrap; }
