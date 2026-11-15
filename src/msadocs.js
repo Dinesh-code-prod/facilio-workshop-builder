@@ -62,6 +62,8 @@
   V.contractDocs = () => M().docsOf(md().data).map(d => ({ id: d.id, label: d.label, name: d.name, pages: d.pages }));
   V.contractScan = () => (md().data && M().scanCurrent(md().data) ? md().data.scan.result : null);   // the AI's reading of the contract for modules, while it still describes the documents   // the contract documents (once loaded) for the Solution tab
   V.contractLoad = () => load(false);
+  // the scope confirmation (src/solmap.js) also sits on Contract intake, right after the contract is read
+  setTimeout(() => { const v = V.msaintake; if (!v || !v.html || v._scope) return; const h = v.html; v._scope = 1; v.html = function () { const out = h.apply(this, arguments); const add = V.scopeCard ? V.scopeCard() : ''; return typeof out === 'string' && add ? out.replace('<div class="page-body">', () => '<div class="page-body">' + add) : out; }; }, 0);
   const ROLE = r => (M().ROLES.find(x => x[0] === r) || [r, r])[1];
   const old = V.msaintake; if (old) V.msaintake = Object.assign({}, old, {
     html() { const h = old.html.apply(this, arguments); if (V.isCustomer() || typeof h !== 'string') return h; const i = h.lastIndexOf('</div>'); return i < 0 ? h + card() : h.slice(0, i) + card() + h.slice(i); },

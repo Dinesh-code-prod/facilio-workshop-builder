@@ -61,7 +61,31 @@
   ACT.smPartClaude = a => { const m = a.getAttribute('data-m'), p = a.getAttribute('data-p'), J = V.studioJobs; if (!J || J.guard()) return; const lab = (F.moduleView(m) || {}).label || m;
     return J.post('/jobs', { kind: 'update_solution', section: 'module:' + m, note: ('Work on ' + lab + ' ONLY and only on ' + PART_ASK[p] + '. Base it only on the MSA contract and what Facilio offers for this module; add nothing the contract does not ask for. Read get_document solutions part context:module:' + m + ' and what the sessions said. Everything you save is a proposal a person accepts.').slice(0, 590) }).then(() => V.toast('Sent to Claude. Its proposal appears on this module to accept.', 5000)); };
   // ---- what the contract names that is not on the map yet ----
-  function contractStrip() {
+  // ---- the scope, confirmed once from the contract: delivered and custom modules ticked, mentioned-only ones not; one button ----
+  V.scopeCard = () => {
+    if (V.contractLoad) V.contractLoad(); const p = V.contractPlan ? V.contractPlan() : null; if (!p || !p.docs || S.readonly) return '';
+    const done = S.ws.scopeConfirmed, pending = p.off.length + p.make.length + p.weak.length, open = !!S.ui.scopeOpen;
+    if (done && !open) return '<div class="card sm-scope ok"><span class="sm-scope-i" aria-hidden="true">\u2713</span><div><b>Scope confirmed from the contract</b><span>' + esc((done.n || 0) + ' module' + (done.n === 1 ? '' : 's') + ' \u00b7 by ' + (done.by || '') + (done.at ? ' on ' + String(done.at).slice(0, 10) : '')) + (pending ? ' \u00b7 ' + pending + ' more named in the contract' : '') + '</span></div><button type="button" class="btn sm" data-act="smScopeOpen">Change the scope</button></div>';
+    if (!pending && !open) return '';
+    const box = (k, v, lab, on, note) => '<label class="sm-sc"><input type="checkbox" data-sc="' + k + '" value="' + esc(v) + '"' + (on ? ' checked' : '') + '><span>' + esc(lab) + (note ? '<small>' + esc(note) + '</small>' : '') + '</span></label>';
+    const grp = (t, d, html) => html ? '<div class="sm-scg"><b>' + t + '</b><span class="xs muted">' + d + '</span><div class="sm-scl">' + html + '</div></div>' : '';
+    const on = (F.allModules() || []).filter(m => m.inScope);
+    return '<div class="card sm-scope"><div class="sm-scope-h"><div><b>Confirm the scope from the contract</b><span>Claude read the MSA. Tick what the project delivers and press Confirm: the modules switch on and every page, the solution and the BRD follow this scope.</span></div>' + (open ? '<button type="button" class="btn sm" data-act="smScopeClose">Close</button>' : '') + '</div>'
+      + grp('Already in scope', on.length + ' module' + (on.length === 1 ? '' : 's') + ' on now', on.map(m => box('on', m.name, m.label, true)).join(''))
+      + grp('The contract delivers', 'Named as delivered in the MSA', p.off.map(x => box('off', x.name, x.label, true)).join(''))
+      + grp('Custom modules the contract names', 'Facilio does not have them; they are created as custom modules', p.make.map(x => box('make', x.label, x.label, true, (x.useCases && x.useCases[0]) || '')).join(''))
+      + grp('Mentioned in passing', 'Not clearly delivered: tick only if the project covers it', p.weak.map(x => box('weak', x.name, x.label, false)).join(''))
+      + '<div class="sm-scope-f"><span class="xs muted">You can change it later here or on System Modules.</span><button type="button" class="btn primary" data-act="smScopeGo">Confirm the scope</button></div></div>';
+  };
+  ACT.smScopeOpen = () => { S.ui.scopeOpen = true; V.render(); }; ACT.smScopeClose = () => { S.ui.scopeOpen = false; V.render(); };
+  ACT.smScopeGo = a => { if (S.readonly) return; const p = V.contractPlan ? V.contractPlan() : { make: [] }; let n = 0;
+    document.querySelectorAll('.sm-scope input[data-sc]').forEach(el => { const k = el.getAttribute('data-sc'), v = el.value;
+      if (k === 'make') { if (el.checked) { const x = p.make.find(y => y.label === v); if (V.makeCustomModule && V.makeCustomModule(v, (x && x.useCases && x.useCases[0]) || ('Named in the contract: ' + v), true)) n++; } return; }
+      const w = F.wsMod(v); if (el.checked) { w.inScope = true; n++; } else if (k === 'on') w.inScope = false; });
+    S.ws.scopeConfirmed = { by: (S.user && (S.user.name || S.user.email)) || '', at: new Date().toISOString(), n: (F.allModules() || []).filter(m => m.inScope).length };
+    S.ui.scopeOpen = false; F.changed('Scope confirmed from the contract', S.ws.scopeConfirmed.n + ' modules in scope'); V.toast('Scope confirmed: ' + S.ws.scopeConfirmed.n + ' modules in scope.', 5000); V.render(); };
+  function contractStrip() { return V.scopeCard(); }
+  function contractStripOld() {
     if (V.contractLoad) V.contractLoad();   // the contract documents load on first use; the page redraws when they arrive
     const p = V.contractPlan ? V.contractPlan() : null; if (!p || !p.docs || S.readonly) return ''; const off = p.off.length + p.make.length;
     return (off ? '<div class="card sm-ctr"><div><b>The contract delivers ' + off + ' more module' + (off === 1 ? '' : 's') + ' that ' + (off === 1 ? 'is' : 'are') + ' not on the map yet</b><span>' + esc(p.off.map(x => x.label).concat(p.make.map(x => x.label + ' (custom)')).join(', ')) + '</span></div><button type="button" class="btn primary" data-act="solSwitchOn">Add them to the map</button></div>' : '')
