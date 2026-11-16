@@ -121,7 +121,7 @@
   V.extractDocPages = extractDocPages;
   async function extractDoc(file) { return (await extractDocPages(file)).text; }
   V.extractDoc = extractDoc;
-  const SYN = { workorder: ['work order', 'work orders', 'reactive maintenance', 'corrective maintenance', 'helpdesk', 'help desk'], serviceRequest: ['service request', 'service requests'], plannedmaintenance: ['planned maintenance', 'preventive maintenance', 'ppm'], preventivemaintenance: ['preventive maintenance'], asset: ['asset', 'assets', 'asset register', 'asset management'], inventory: ['inventory', 'store', 'storeroom'], inventoryrequest: ['inventory request', 'material request'], purchaserequest: ['purchase request', 'pr '], purchaseorder: ['purchase order', 'po '], quote: ['quotation', 'quote'], invoice: ['invoice', 'invoicing'], workpermit: ['work permit', 'permit to work', 'ptw'], vendors: ['vendor', 'vendors', 'contractor'], tenant: ['tenant', 'tenants', 'lease'], inspectionResponse: ['inspection', 'inspections', 'audit'], budget: ['budget'], site: ['portfolio', 'site'], people: ['people', 'employees', 'staff'], visitorlog: ['visitor'] };
+  const SYN = { workorder: ['work order', 'work orders', 'reactive maintenance', 'corrective maintenance', 'helpdesk', 'help desk'], serviceRequest: ['service request', 'service requests'], plannedmaintenance: ['planned maintenance', 'preventive maintenance', 'ppm'], preventivemaintenance: ['preventive maintenance'], asset: ['asset', 'assets', 'asset register', 'asset management'], inventory: ['inventory', 'store', 'storeroom'], inventoryrequest: ['inventory request', 'material request'], purchaserequest: ['purchase request', 'pr '], purchaseorder: ['purchase order', 'po '], quote: ['quotation', 'quote'], invoice: ['invoice', 'invoicing'], workpermit: ['work permit', 'permit to work', 'ptw'], vendors: ['vendor', 'vendors', 'contractor'], tenant: ['tenant', 'tenants', 'lease'], inspectionResponse: ['inspection', 'inspections', 'audit'], budget: ['budget'], site: ['portfolio', 'site'], item: ['item', 'items', 'inventory', 'spare parts'], storeRoom: ['storeroom', 'store room'], people: ['people', 'employees', 'staff'], visitorlog: ['visitor'] };
   // Section heading detection: a numbered heading ("3.2 Planned maintenance") or Schedule / Annex / Appendix / Clause titles.
   const HEAD = /^((?:schedule|annex(?:ure)?|appendix|exhibit|part)\s+[A-Z0-9]+\b.{0,70}|(?:clause|section|article)\s+\d+(?:\.\d+)*\b.{0,60}|\d+(?:\.\d+){0,3}\.?\s+[A-Z][A-Za-z&/,' -]{2,70})$/;
   const CLAUSE = /^(\d+(?:\.\d+){1,4})[.)]?\s+\S/;
@@ -130,14 +130,32 @@
     const d = P(); d.scope = d.scope.filter(z => z.source === 'manual'); if (typeof x === 'string') x = { text: x, pages: null };
     const mods = F.allModules().filter(m => m.inUse || m.inScope);
     const src = x.pages ? x.pages.flatMap(pg => pg.text.split(/\r?\n/).map(l => ({ l, page: pg.n, ocr: pg.method === 'ocr', conf: pg.conf }))) : x.text.split(/\r?\n/).map(l => ({ l, page: null, ocr: false, conf: null }));
-    let heading = ''; const all = src.map(o => ({ l: o.l.replace(/\s+/g, ' ').trim(), page: o.page, ocr: o.ocr, conf: o.conf })).filter(o => o.l.length > 3 && o.l.length < 400);
+    let heading = ''; const all = src.map(o => ({ l: o.l.replace(/\s+/g, ' ').trim(), page: o.page, ocr: o.ocr, conf: o.conf })).filter(o => o.l.length > 2 && o.l.length < 400);   // > 2: a licence table row can end on a line that says only Yes
     all.forEach(o => { const hm = HEAD.test(o.l) && o.l.length < 90 && !/[.;:]$/.test(o.l.replace(/^\d+(\.\d+)*\.?\s+/, '')); if (hm) heading = o.l; const cl = o.l.match(CLAUSE); o.section = cl ? cl[1] + (heading && !heading.startsWith(cl[1]) ? ' (' + heading.replace(/^\S+\s+/, '').slice(0, 40) + ')' : '') : heading ? heading.slice(0, 60) : ''; });
     const lines = all;
     let start = lines.findIndex(o => /\b(scope of (work|services)|services scope|in.?scope|deliverables|modules)\b/i.test(o.l)); let end = lines.length;
     if (start >= 0) { const e = lines.slice(start + 1).findIndex(o => /^(\d+(\.\d+)*\.?\s+)?(fees|payment|pricing|commercial|term(ination)?|confidential|liabilit|governing law|warrant)/i.test(o.l)); if (e > 5) end = start + 1 + e; } else start = 0;
     const seg = lines.slice(start, end); const seen = new Set();
+    const bestOf = (low, list) => { let best = null; (list || mods).forEach(m => { const names = [m.label.toLowerCase(), humanize(m.name).toLowerCase()].concat(SYN[m.name] || []); names.forEach(n => { if (n.length < 3) return; const exact = new RegExp('\\b' + n.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(low); if (exact) { const score = n.length + (m.inScope ? 3 : 0) + (m.priority === 'high' ? 2 : 0); if (!best || score > best.score) best = { m: m.name, score, conf: n === m.label.toLowerCase() ? 'high' : 'medium' }; } }); }); return best; };
+    // the contract's licence tables ("Module | Included in License | Description", wherever they are): a row marked Yes is in scope, No is excluded.
+    // 16 Nov 2026: Al Moallam's first scope part was the order form on page 2, so the module table on page 13 was never read and only Clients and Service Request were found.
+    // A row's name is the text before its Yes plus the Title Case lines right above it ("Centralised Help Desk (Service" / "Requests) Yes"); the lower-case
+    // description lines of the row before stop it.
+    const titleLine = s => !/[.,;:]$/.test(s) && /^[A-Z(]/.test(s) && (w => w.filter(x => /^[A-Z(&\-\d]/.test(x)).length / w.length >= 0.6)(s.split(' ').filter(Boolean));
+    const tabMods = F.allModules().filter(m => m.inUse || m.inScope || SYN[m.name]);   // a licence row can name a module the org does not use yet; generic catalogue names (State, Point) stay out
+    let inTab = false, buf = [];
+    lines.forEach(o => { const l = o.l;
+      if (/included in licen[cs]e/i.test(l) && /module|portal|add.?on/i.test(l)) { inTab = true; buf = []; return; }
+      if (!inTab) return;
+      if (/labell?ed|^(note|assumption|exclusion|use.?cases?)\b/i.test(l)) { inTab = false; return; }
+      if (/^page \d+ of \d+|^unit no:|^facilio, inc|^docusign envelope/i.test(l)) return;   // page header and footer lines inside a table that runs over a page break
+      const m = l.match(/^(.*?)\b(Yes|No)\b/); if (!m) { buf = buf.concat(l).slice(-3); return; }
+      const head = []; for (let k = buf.length - 1; k >= 0 && titleLine(buf[k]); k--) head.unshift(buf[k]);
+      const name = head.concat(m[1]).join(' ').replace(/\s+/g, ' ').trim(); buf = []; if (!name || name.length > 160) return;
+      const best = bestOf(' ' + name.toLowerCase() + ' ', tabMods); const key = (best ? best.m : '') + '|tab|' + name.toLowerCase(); if (seen.has(key)) return; seen.add(key);
+      d.scope.push({ id: F.uid('sc'), text: name + ' (licence table: ' + m[2] + ')', module: best ? best.m : '', confidence: best ? 'high' : 'low', status: !best ? 'uncertain' : m[2] === 'No' ? 'excluded' : 'matched', source: 'msa', page: o.page || null, section: 'Licensed modules table', ctx: l.slice(0, 500), read: o.ocr ? 'ocr' : 'text', ocrConf: o.ocr ? o.conf : null }); });
     seg.forEach((o, ix) => { const l = o.l; const bullet = /^([•\-–*·▪●o]|\(?[a-z0-9ivx]{1,4}[.)])\s+/i.test(l) || l.length < 120; if (!bullet) return; const low = ' ' + l.toLowerCase() + ' ';
-      let best = null; mods.forEach(m => { const names = [m.label.toLowerCase(), humanize(m.name).toLowerCase()].concat(SYN[m.name] || []); names.forEach(n => { if (n.length < 3) return; const exact = new RegExp('\\b' + n.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(low); if (exact) { const score = n.length + (m.inScope ? 3 : 0) + (m.priority === 'high' ? 2 : 0); if (!best || score > best.score) best = { m: m.name, score, conf: n === m.label.toLowerCase() ? 'high' : 'medium' }; } }); });
+      const best = bestOf(low);
       const key = (best ? best.m : '') + '|' + l.toLowerCase(); if (seen.has(key)) return; seen.add(key);
       const ref = { page: o.page || null, section: o.section || '', ctx: [seg[ix - 1], o, seg[ix + 1]].filter(Boolean).map(z => z.l).join('\n').slice(0, 500), read: o.ocr ? 'ocr' : 'text', ocrConf: o.ocr ? o.conf : null };
       // text read by OCR below 70% confidence is never auto-matched: a person has to look at it

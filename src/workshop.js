@@ -31,7 +31,8 @@
   // the planned session being run narrows the questions to its modules (src/workshoplogic.js forSession); none picked shows every question
   const RANK = { must: 0, should: 1, could: 2 };
   const curSession = () => { const id = U().sessionId; return id ? sessionList().find(x => x.id === id) || null : null; };
-  const visible = all => L().forSession(all, curSession(), sessionList());
+  // the same question worded the same way is asked once (16 Nov 2026: the rules and the question bank could both hold it)
+  const visible = all => { const seen = new Set(); return L().forSession(all, curSession(), sessionList()).filter(q => { const k = String(q.text || '').toLowerCase().replace(/\s+/g, ' ').trim(); if (seen.has(k)) return false; seen.add(k); return true; }); };
   function livePanel(all) {
     const u = U(); const dis = ro() ? ' disabled' : ''; const r = u.res; const info = u.info;
     const nextRows = r ? r.next.map(x => { const q = all.find(y => y.id === x.id); return q ? `<li><b>${esc(q.text)}</b><div class="xs muted">${esc(q.moduleLabel)}. ${esc(x.why)}</div></li>` : ''; }).join('') : '';
@@ -155,7 +156,7 @@
     const pd = F.doc('design_proposals') || { items: [] }; const r = SL.mergeProposals(pd.items || [], incoming, now); S.docs.design_proposals.data = Object.assign({}, pd, { items: r.items }); F.markDirty('design_proposals');
     mods.forEach(m => by[m].forEach(q => save(q.id, { made: Object.assign({}, q.made, { solution: true }) }))); toast(r.added + ' proposal' + (r.added === 1 ? '' : 's') + ' sent to the Solution tab' + (skipped ? ' (' + skipped + ' answers without a module in scope were left out)' : '') + '. Open Solution to review and accept.', 8000); rerender();
   });
-  let pip = null;
+  let pip = null, pipSel = '';   // pipSel: the module tab open in the floating window
   // The floating question window (user, 16 Nov 2026: "neater, module wise, in the session's timing"): the questions still to ask, grouped by module in the
   // order the session takes them, each module with its share of the session's time; Must first inside a module; one tap for Answered, Asked or Skip.
   function pipDraw() {
@@ -172,13 +173,15 @@
     d.getElementById('pqTitle').textContent = s ? s.title : 'All questions';
     d.getElementById('pqSub').textContent = [s && s.date ? V.fmtDate(s.date) : '', t0 != null ? clock(t0) + (total ? '–' + clock(t0 + total) : '') : '', open.length + ' to go', done + ' done'].filter(Boolean).join(' · ');
     d.getElementById('pqBar').style.width = (vis.length ? Math.round(done / vis.length * 100) : 0) + '%';
-    const list = d.getElementById('pqList'); list.textContent = '';
+    const list = d.getElementById('pqList'); list.textContent = ''; const tabs = d.getElementById('pqTabs'); tabs.textContent = '';
     if (!open.length) { list.appendChild(el('div', 'empty', vis.length ? 'Every question of this session is asked or answered.' : 'No questions for this session yet.')); return; }
-    let at = t0;
-    groups.forEach(g => {
+    // one tab per module, in the session's order, with its time slot; only the open tab's questions are listed
+    let at = t0; const slot = {}; groups.forEach(g => { const share = total ? Math.max(5, Math.round(total * g.qs.length / open.length)) : 0; slot[g.label] = { share, from: at }; if (at != null) at += share; });
+    if (!groups.some(g => g.label === pipSel)) pipSel = groups[0].label;
+    groups.forEach(g => { const b = el('button', 'tab' + (g.label === pipSel ? ' on' : ''), ''); b.type = 'button'; b.setAttribute('data-g', g.label); b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', g.label === pipSel ? 'true' : 'false'); b.appendChild(el('span', '', g.label)); b.appendChild(el('em', '', String(g.qs.length))); tabs.appendChild(b); });
+    groups.filter(g => g.label === pipSel).forEach(g => {
       const box = el('section', 'grp'); const gh = el('div', 'gh'); gh.appendChild(el('b', '', g.label));
-      const share = total ? Math.max(5, Math.round(total * g.qs.length / open.length)) : 0;
-      gh.appendChild(el('span', '', [share ? (at != null ? clock(at) + '–' + clock(at + share) : '≈ ' + share + ' min') : '', g.qs.length + ' question' + (g.qs.length === 1 ? '' : 's')].filter(Boolean).join(' · '))); if (at != null) at += share;
+      const sl = slot[g.label]; gh.appendChild(el('span', '', [sl.share ? (sl.from != null ? clock(sl.from) + '–' + clock(sl.from + sl.share) : '≈ ' + sl.share + ' min') : '', g.qs.length + ' question' + (g.qs.length === 1 ? '' : 's')].filter(Boolean).join(' · ')));
       box.appendChild(gh);
       g.qs.forEach(q => {
         const row = el('div', 'q ' + (q.priority || 'could') + (q.status === 'asked' ? ' asked' : '')); const t = el('div', 't'); t.appendChild(el('i', 'dot')); const tx = el('span', '', q.text); if (q.why) tx.title = 'Why ask: ' + q.why; t.appendChild(tx);
@@ -204,10 +207,12 @@
       + '.must .dot{background:#F04438}.should .dot{background:#F79009}.must-tag{flex:none;font-style:normal;font-size:10.5px;font-weight:600;color:#B42318;background:#FEF3F2;border-radius:99px;padding:1px 7px;margin-top:2px}.asked .t span{color:#475467}'
       + '.b{display:flex;gap:6px;margin:8px 0 0 16px;flex-wrap:wrap}button{font:inherit;font-size:12px;font-weight:500;padding:5px 12px;border-radius:999px;border:1px solid #D0D5DD;background:#fff;color:#344054;cursor:pointer}'
       + 'button:hover{border-color:#1570EF;color:#1570EF}button.ans{background:#1570EF;border-color:#1570EF;color:#fff}button.ans:hover{background:#175CD3;color:#fff}button.on{background:#EFF6FF;border-color:#1570EF;color:#1570EF}button.skip{border-color:transparent;color:#667085}button:disabled{opacity:.5;cursor:default}'
-      + '.empty{margin:24px 16px;text-align:center;color:#475467}';
+      + '.empty{margin:24px 16px;text-align:center;color:#475467}'
+      + '.tabs{display:flex;gap:6px;overflow-x:auto;margin:10px -2px 0;padding:2px;scrollbar-width:thin}.tab{flex:none;display:flex;align-items:center;gap:6px;border-radius:999px;padding:5px 12px;font-size:12.5px;background:#F2F4F7;border:1px solid transparent;color:#344054}.tab em{font-style:normal;font-size:11px;background:#fff;border-radius:99px;padding:0 6px;color:#475467}'
+      + '.tab:hover{border-color:#B2D2FB;color:#1570EF}.tab.on{background:#1570EF;color:#fff;border-color:#1570EF}.tab.on em{background:rgba(255,255,255,.25);color:#fff}';
     d.head.appendChild(st); d.title = 'Questions for the call';
-    const h = d.createElement('header'); h.innerHTML = '<h1 id="pqTitle"></h1><div class="sub" id="pqSub"></div><div class="bar"><i id="pqBar"></i></div>'; d.body.appendChild(h); const l = d.createElement('div'); l.id = 'pqList'; d.body.appendChild(l);
-    d.addEventListener('click', e => { const b = e.target.closest && e.target.closest('button[data-q]'); if (!b || ro()) return; save(b.getAttribute('data-q'), { status: b.getAttribute('data-s') }); pipDraw(); rerender(); });
+    const h = d.createElement('header'); h.innerHTML = '<h1 id="pqTitle"></h1><div class="sub" id="pqSub"></div><div class="bar"><i id="pqBar"></i></div><nav class="tabs" id="pqTabs" role="tablist" aria-label="Modules"></nav>'; d.body.appendChild(h); const l = d.createElement('div'); l.id = 'pqList'; d.body.appendChild(l);
+    d.addEventListener('click', e => { const t = e.target.closest && e.target.closest('button[data-g]'); if (t) { pipSel = t.getAttribute('data-g'); pipDraw(); d.getElementById('pqList').scrollTop = 0; return; } const b = e.target.closest && e.target.closest('button[data-q]'); if (!b || ro()) return; save(b.getAttribute('data-q'), { status: b.getAttribute('data-s') }); pipDraw(); rerender(); });
     const tm = setInterval(pipDraw, 3000); pip.addEventListener('pagehide', () => { clearInterval(tm); pip = null; }); pipDraw();
   };
   // keep the call text of the live box as a transcript of the project (Requirement sessions > Transcripts: stored, listed, downloadable, analysed like an uploaded file)
