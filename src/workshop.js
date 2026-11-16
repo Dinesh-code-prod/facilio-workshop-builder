@@ -15,7 +15,7 @@
   const doc = () => { let d = F.doc('workshop_room'); if (!d || typeof d !== 'object') { S.docs.workshop_room.data = d = {}; } return L().notesOf(d); };   // a document nobody has saved yet reads as null
   const PC = { must: 'red', should: 'tbc', could: 'low' };
   const elapsed = () => { const t = U().t; return t.acc + (t.run ? Date.now() - t.start : 0); };
-  const prepared = () => { const p = Q().prepareQuestions(V.prepqInput ? V.prepqInput() : {}); if (!root.FWBQBank) return p; F.doc('rs_questions'); return root.FWBQBank.toPrep(S.docs.rs_questions && S.docs.rs_questions.data, p); };
+  const prepared = () => { const p = Q().prepareQuestions(V.prepqInput ? V.prepqInput() : {}); if (!root.FWBQBank) return p; F.doc('rs_questions'); const b = S.docs.rs_questions && S.docs.rs_questions.data; const kept = b && Array.isArray(b.items) ? Object.assign({}, b, { items: b.items.map(x => x && x.state === 'suggested' ? Object.assign({}, x, { state: 'kept' }) : x) }) : b; return root.FWBQBank.toPrep(kept, p); };
   const questions = prep => L().questionList(prep || prepared(), doc(), U().res ? U().res.byId : {});
   function rerender() { const sc = document.querySelector('.ws-scroll'); const top = sc ? sc.scrollTop : 0; const y = window.scrollY; V.render(); const n = document.querySelector('.ws-scroll'); if (n) n.scrollTop = top; if (FOCUS()) window.scrollTo(0, y); }
   const projUrl = (q, view) => location.pathname + (q || '') + '#/p/' + encodeURIComponent(S.project.id) + '/' + view;
@@ -51,7 +51,7 @@
   function bar() {
     const u = U(); const t = u.t;
     return `<div class="ws-bar" role="toolbar" aria-label="Workshop room"><div class="ws-timer"><span class="ws-clock" id="wsClock" role="timer" aria-label="Workshop timer">${esc(L().fmtClock(elapsed()))}</span><button type="button" class="btn sm" data-act="wsTimer">${t.run ? 'Pause' : t.acc ? 'Resume' : 'Start timer'}</button>${t.acc || t.run ? '<button type="button" class="btn sm" data-act="wsTimerReset">Reset</button>' : ''}</div>
-      <div class="row" style="gap:6px;flex-wrap:wrap">${FOCUS() ? '' : `<button type="button" class="btn sm" data-act="wsFull" title="Fill the window with the workshop room (Esc leaves)">${u.full ? 'Exit full screen' : 'Full screen'}</button><button type="button" class="btn sm" data-act="wsNewTab" title="Open the workshop room alone in its own browser tab">Open in a new tab</button>`}</div></div>`;
+      <div class="row" style="gap:6px;flex-wrap:wrap"><button type="button" class="btn sm primary" data-act="wsPip" title="A small window that stays above Teams, Meet or Zoom with this session's questions">Float the questions</button>${FOCUS() ? '' : `<button type="button" class="btn sm" data-act="wsFull" title="Fill the window with the workshop room (Esc leaves)">${u.full ? 'Exit full screen' : 'Full screen'}</button><button type="button" class="btn sm" data-act="wsNewTab" title="Open the workshop room alone in its own browser tab">Open in a new tab</button>`}</div></div>`;
   }
   // ---------- the roadmap: one chip per planned requirement session, then one workspace for the chosen session ----------
   const sessionList = () => L().agendaOf(V.plannerDoc ? V.plannerDoc().sessions : []);
@@ -72,7 +72,7 @@
       return `<button type="button" class="ws-chip${on ? ' on' : ''}${full ? ' done' : ''}" data-act="wsPick" data-id="${esc(s.id)}"${on ? ' aria-current="step"' : ''} title="${esc(s.modules.join(', '))}"><span class="ws-n">${full ? '&#10003;' : esc(s.no || i + 1)}</span><span class="ws-chip-t"><b>${esc(s.title)}</b><span class="xs muted ws-chip-m">${esc(modNames(s))}</span>${progBar(qs)}<span class="xs muted">${esc(s.date ? V.fmtDate(s.date) : 'No date')} &middot; ${done} of ${qs.length} done</span></span></button>`; }).join('');
     const allChip = `<button type="button" class="ws-chip${!u.sessionId ? ' on' : ''}" data-act="wsPick" data-id=""><span class="ws-n">&#8734;</span><span class="ws-chip-t"><b>All questions</b><span class="xs muted ws-chip-m">Every session</span>${progBar(all)}<span class="xs muted">${c.total - c.toask - c.asked} of ${c.total} done</span></span></button>`;
     return `<section class="ws-prep" aria-label="Roadmap of the requirement sessions"><div class="ws-prep-h"><b>Your requirement sessions</b><span class="small muted">Pick the session you are running. Its questions are asked one by one; answers are kept as you go.</span>
-      <span class="spacer"></span><button type="button" class="btn sm" data-act="wsGoQuestions">Review the questions</button><button type="button" class="btn sm" data-act="qbImport"${dis} title="Add your own questions from an Excel sheet, a Word or PDF document, or a text file">Import questions</button></div>
+      <span class="spacer"></span><button type="button" class="btn sm" data-act="wsAddQ"${dis}>Add a question</button><button type="button" class="btn sm" data-act="qbImport" data-mods="${esc(((curSession() || {}).modules || []).join('|'))}"${dis} title="Add questions from an Excel sheet, a Word or PDF document, or a text file. With a session picked, questions that name no module go to its module.">Import questions</button><button type="button" class="btn sm" data-act="qbField"${dis} title="Your Claude writes questions for each module in scope; they appear here">Ask Claude for questions</button></div>
       <div class="ws-road" role="group">${chips}${allChip}</div>${ses.length ? '' : '<p class="small muted" style="margin:8px 0 0">No sessions are planned yet. Plan them under Workshop plan, and they appear here as a roadmap.</p>'}</section>`;
   }
   function briefCard(vis) {
@@ -92,11 +92,11 @@
   function focusCard(vis) {
     const dis = ro() ? ' disabled' : ''; const q = pickCur(vis);
     if (!vis.length) return `<div class="card ws-card"><div class="card-b"><b>No questions for this session yet.</b><p class="small muted">Create them from the contract, or import your own from Excel or a document, using the buttons above.</p></div></div>`;
-    if (!q) return `<div class="card ws-card"><div class="card-b"><b>&#10003; Every question here is asked or answered.</b><p class="small muted">Open the Finish tab to write the summary, keep the call and send the answers to the Solution tab.</p><button type="button" class="btn primary" data-act="wsTab" data-v="finish">Go to Finish</button></div></div>`;
+    if (!q) return `<div class="card ws-card"><div class="card-b"><b>&#10003; Every question here is asked or answered.</b><p class="small muted">Send the answers to the Solution tab, where each one comes in as a proposal to accept. The call itself is analysed under Transcripts.</p><button type="button" class="btn primary" data-act="wsSolution"${dis}>Send the answers to the Solution tab</button></div></div>`;
     const n = vis.indexOf(q) + 1; const next = vis.filter(x => x !== q && isOpenQ(x)).sort(askOrder).slice(0, 3);
     const btn = (v, label, cls) => `<button type="button" class="btn${cls ? ' ' + cls : ''}" data-act="wsStatus" data-id="${esc(q.id)}" data-v="${v}" aria-pressed="${q.status === v}"${dis}>${label}</button>`;
     const st = isOpenQ(q) ? '' : ` <span class="ws-stchip ws-st-${q.status}">${esc(L().LABEL[q.status])}</span>`;
-    return `<div class="card ws-card ws-focus-card"><div class="card-h"><b>Question ${n} of ${vis.length}${st}</b><span class="xs muted">${tag(PC[q.priority] || 'low', esc(q.priority))} ${q.module ? esc(q.moduleLabel) : 'Contract-wide'}</span></div><div class="card-b">
+    return `<div class="card ws-card ws-focus-card"><div class="card-h"><b>Question ${n} of ${vis.length}${st}</b><span class="xs muted">${tag(PC[q.priority] || 'low', esc(q.priority))} ${q.module ? esc(q.moduleLabel) : 'Contract-wide'}${/^bank:/.test(q.kind || '') && !ro() ? ` <button type="button" class="btn sm ghost" data-act="qbEdit" data-id="${esc(q.id)}">Edit</button>` : ''}</span></div><div class="card-b">
       <div class="ws-fq">${esc(q.text)}</div>${q.why ? `<div class="small muted">Why ask: ${esc(q.why)}</div>` : ''}${q.expected ? `<div class="small muted">A good answer: ${esc(q.expected)}</div>` : ''}${evidenceHtml(q, !ro())}
       <label class="f" for="wsAns">What the customer answered</label><textarea id="wsAns" class="ws-note" rows="3" maxlength="2000" placeholder="Type the answer in your own words" data-bind="@workshop_room:q.${esc(q.id)}.note"${dis}>${esc(q.note)}</textarea>
       <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">${btn('answered', 'Answered &#10003;', 'primary')}${btn('asked', q.status === 'asked' ? 'Asked, still waiting' : 'Asked, waiting for the answer')}${btn('skipped', 'Skip')}</div>
@@ -109,25 +109,25 @@
   }
   function toolsRow() {
     const dis = ro() ? ' disabled' : '';
-    return `<details class="ws-help ws-more"><summary>More tools</summary><div class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px"><button type="button" class="btn sm" data-act="wsOpenFlow" title="Opens the State Flow Builder for this project in a new tab">Open State Flow Builder</button><button type="button" class="btn sm" data-act="wsOpenWb" title="Opens the Process Whiteboard for this project in a new tab">Open Process Whiteboard</button><button type="button" class="btn sm" data-act="wsClaude"${dis}>Open in Claude</button></div></details>`;
+    return `<div class="row ws-endrow" style="gap:8px;flex-wrap:wrap;margin-top:12px"><button type="button" class="btn sm" data-act="wsSolution"${dis} title="Answered questions with a note become proposals on the Solution tab">Send the answers to the Solution tab</button><button type="button" class="btn sm" data-act="wsClaude"${dis}>Open in Claude</button></div>`;
   }
   V.workshop = { html() {
     if (V.isCustomer()) return '<div class="page-body"><div class="empty">This page is for the project team.</div></div>';
     const u = U(); const prep = prepared(); const all = questions(prep);
     if (!u.picked) { u.picked = true; if (!u.sessionId) { const first = sessionList().find(s => { const qs = forSession(all, s); return qs.length && qs.some(isOpenQ); }); if (first) u.sessionId = first.id; } }
-    const vis = visible(all); const tab = u.tab || 'ask';
-    const pane = tab === 'listen' ? `<div class="ws-one">${livePanel(all)}${V.wsLiveExtra ? V.wsLiveExtra(all, 'call') : ''}</div>`
-      : tab === 'finish' ? `<div class="ws-one">${V.wsLiveExtra ? V.wsLiveExtra(all, 'after') : ''}</div>`
-      : vis.length ? `<div class="ws-ask">${sideList(vis, pickCur(vis))}<div class="ws-one">${focusCard(vis)}</div></div>` : `<div class="ws-one">${focusCard(vis)}</div>`;
-    const main = `${roadmap(all)}${briefCard(vis)}${sessionTabs(vis, tab)}${pane}${toolsRow()}`;
-    const lead = 'Go through your requirement sessions one by one: ask the questions, note what the customer answers, then finish the session. Nothing said here becomes an approved requirement: every record made is a draft with its source.';
+    const vis = visible(all);
+    const pane = vis.length ? `<div class="ws-ask">${sideList(vis, pickCur(vis))}<div class="ws-one">${focusCard(vis)}</div></div>` : `<div class="ws-one">${focusCard(vis)}</div>`;
+    const main = `${roadmap(all)}${briefCard(vis)}${pane}${toolsRow()}`;
+    const lead = 'Go through your requirement sessions one by one: ask the questions and note what the customer answers. The call recording is analysed under Transcripts. Nothing said here becomes an approved requirement: every record made is a draft with its source.';
     if (FOCUS()) return `<div class="wb-focus-page ws-room ws-focus"><div class="wb-focus-bar"><b>Workshop room</b><span class="xs muted">${esc((S.project && S.project.name) || '')}</span></div>${bar()}${main}</div>`;
     return (u.full ? '' : `<div class="page-header"><div class="t"><h1>Workshop room</h1><p>${lead}</p></div></div>`) + `<div class="page-body"><div class="ws-room${u.full ? ' ws-full ws-scroll' : ''}">${u.full ? '<div class="wb-focus-bar"><b>Workshop room</b><span class="xs muted">' + esc((S.project && S.project.name) || '') + '</span></div>' : ''}${bar()}${main}</div></div>`;
   } };
   ACT.wsPick = a => { const u = U(); u.sessionId = a.getAttribute('data-id') || ''; u.tab = 'ask'; u.cur = ''; rerender(); };
   ACT.wsCur = a => { U().cur = a.getAttribute('data-id') || ''; rerender(); const t = document.getElementById('wsAns'); if (t && !t.disabled) t.focus({ preventScroll: true }); };
   ACT.wsTab = a => { U().tab = a.getAttribute('data-v'); rerender(); };
-  ACT.wsGoQuestions = () => V.go('rsquestions');
+  ACT.wsGoQuestions = () => V.go('workshop');
+  // a new question for the session on screen: filed under its first module (the drawer lets the person change it)
+  ACT.wsAddQ = a => { const s = curSession(); const nz = x => String(x || '').toLowerCase().replace(/[^a-z0-9]/g, ''); const m = s ? (F.allModules() || []).find(x => (s.modules || []).some(w => nz(w) === nz(x.name) || nz(w) === nz(x.label))) : null; (S.ui.qb = S.ui.qb || {}).mod = m ? m.name : ''; return ACT.qbEdit(a); };
 
   // ---------- actions ----------
   const save = (id, patch) => { L().setNote(doc(), id, patch, (S.user && S.user.name) || '', new Date().toISOString()); F.markDirty('workshop_room'); };
@@ -155,22 +155,58 @@
     const pd = F.doc('design_proposals') || { items: [] }; const r = SL.mergeProposals(pd.items || [], incoming, now); S.docs.design_proposals.data = Object.assign({}, pd, { items: r.items }); F.markDirty('design_proposals');
     mods.forEach(m => by[m].forEach(q => save(q.id, { made: Object.assign({}, q.made, { solution: true }) }))); toast(r.added + ' proposal' + (r.added === 1 ? '' : 's') + ' sent to the Solution tab' + (skipped ? ' (' + skipped + ' answers without a module in scope were left out)' : '') + '. Open Solution to review and accept.', 8000); rerender();
   });
-  // A small always-on-top window (the browser's own Document Picture-in-Picture, Chrome and Edge) that stays above Teams, Meet or Zoom while the call runs: the questions still to ask, one tap to mark asked or answered.
-  // Nothing leaves the browser and no meeting is joined; where the browser has no such window it says so.
   let pip = null;
+  // The floating question window (user, 16 Nov 2026: "neater, module wise, in the session's timing"): the questions still to ask, grouped by module in the
+  // order the session takes them, each module with its share of the session's time; Must first inside a module; one tap for Answered, Asked or Skip.
   function pipDraw() {
-    if (!pip || pip.closed) { pip = null; return; } const d = pip.document; let all = []; try { all = questions(); } catch (e) { return; } const open = visible(all).filter(q => q.status === 'toask' || q.status === 'asked').sort((a, b) => (RANK[a.priority] == null ? 1 : RANK[a.priority]) - (RANK[b.priority] == null ? 1 : RANK[b.priority])); const done = visible(all).length - open.length;
-    const s = curSession(); d.getElementById('pqHead').textContent = (s ? s.title + ': ' : 'All questions: ') + open.length + ' to go, ' + done + ' done'; const list = d.getElementById('pqList'); list.textContent = '';
-    open.slice(0, 40).forEach(q => { const row = d.createElement('div'); row.className = 'q'; const t = d.createElement('div'); t.className = 't'; t.textContent = (q.priority === 'must' ? '(must) ' : '') + (q.moduleLabel && q.moduleLabel !== 'General' ? q.moduleLabel + ': ' : '') + q.text; if (q.why) t.title = q.why; row.appendChild(t); const b = d.createElement('div'); b.className = 'b';
-      [['asked', q.status === 'asked' ? 'Asked' : 'Mark asked'], ['answered', 'Answered'], ['skipped', 'Skip']].forEach(([s, label]) => { const x = d.createElement('button'); x.type = 'button'; x.textContent = label; x.setAttribute('data-q', q.id); x.setAttribute('data-s', s); if (q.status === s) x.disabled = true; b.appendChild(x); }); row.appendChild(b); list.appendChild(row); });
-    if (!open.length) list.textContent = 'Every prepared question has been asked or answered.';
+    if (!pip || pip.closed) { pip = null; return; } const d = pip.document; let all = []; try { all = questions(); } catch (e) { return; }
+    const vis = visible(all), open = vis.filter(q => q.status === 'toask' || q.status === 'asked'), done = vis.length - open.length, s = curSession();
+    const nz = x => String(x || '').toLowerCase().replace(/[^a-z0-9]/g, ''); const order = s ? (s.modules || []).map(nz).filter(Boolean) : [];
+    const near = (x, m) => x === m || (x.length >= 5 && m.includes(x)) || (m.length >= 5 && x.includes(m));
+    const rank = q => { const ks = [q.module, q.moduleLabel].map(nz).filter(Boolean); const i = order.findIndex(m => ks.some(k => near(k, m))); return i < 0 ? 999 : i; };
+    const pr = q => (RANK[q.priority] == null ? 1 : RANK[q.priority]);
+    const groups = []; open.slice().sort((a, b) => rank(a) - rank(b) || pr(a) - pr(b)).forEach(q => { const label = q.module ? q.moduleLabel : 'Contract-wide'; let g = groups.find(x => x.label === label); if (!g) groups.push(g = { label, qs: [] }); g.qs.push(q); });
+    const el = (tag, cls, text) => { const e = d.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+    const clock = m => { const h = Math.floor(m / 60) % 24, mm = Math.round(m % 60); return String(h).padStart(2, '0') + ':' + String(mm).padStart(2, '0'); };
+    const t0 = s && /^\d{1,2}:\d{2}/.test(s.start || '') ? Number(s.start.split(':')[0]) * 60 + Number(s.start.split(':')[1]) : null; const total = s && s.minutes ? s.minutes : 0;
+    d.getElementById('pqTitle').textContent = s ? s.title : 'All questions';
+    d.getElementById('pqSub').textContent = [s && s.date ? V.fmtDate(s.date) : '', t0 != null ? clock(t0) + (total ? '–' + clock(t0 + total) : '') : '', open.length + ' to go', done + ' done'].filter(Boolean).join(' · ');
+    d.getElementById('pqBar').style.width = (vis.length ? Math.round(done / vis.length * 100) : 0) + '%';
+    const list = d.getElementById('pqList'); list.textContent = '';
+    if (!open.length) { list.appendChild(el('div', 'empty', vis.length ? 'Every question of this session is asked or answered.' : 'No questions for this session yet.')); return; }
+    let at = t0;
+    groups.forEach(g => {
+      const box = el('section', 'grp'); const gh = el('div', 'gh'); gh.appendChild(el('b', '', g.label));
+      const share = total ? Math.max(5, Math.round(total * g.qs.length / open.length)) : 0;
+      gh.appendChild(el('span', '', [share ? (at != null ? clock(at) + '–' + clock(at + share) : '≈ ' + share + ' min') : '', g.qs.length + ' question' + (g.qs.length === 1 ? '' : 's')].filter(Boolean).join(' · '))); if (at != null) at += share;
+      box.appendChild(gh);
+      g.qs.forEach(q => {
+        const row = el('div', 'q ' + (q.priority || 'could') + (q.status === 'asked' ? ' asked' : '')); const t = el('div', 't'); t.appendChild(el('i', 'dot')); const tx = el('span', '', q.text); if (q.why) tx.title = 'Why ask: ' + q.why; t.appendChild(tx);
+        if (q.priority === 'must') t.appendChild(el('em', 'must-tag', 'Must')); row.appendChild(t);
+        const b = el('div', 'b');
+        [['answered', 'Answered', 'ans'], ['asked', q.status === 'asked' ? 'Asked, waiting' : 'Asked', q.status === 'asked' ? 'on' : ''], ['skipped', 'Skip', 'skip']].forEach(([v, label, cls]) => { const x = el('button', cls, label); x.type = 'button'; x.setAttribute('data-q', q.id); x.setAttribute('data-s', v); if (ro()) x.disabled = true; b.appendChild(x); });
+        row.appendChild(b); box.appendChild(row);
+      });
+      list.appendChild(box);
+    });
   }
   ACT.wsPip = async () => {
     if (!('documentPictureInPicture' in window)) { toast('This browser cannot float a window above the call. Use Chrome or Edge, or put this page in its own window beside the call.', 7000, true); return; }
     if (pip && !pip.closed) { pip.focus(); return; }
-    try { pip = await window.documentPictureInPicture.requestWindow({ width: 380, height: 560 }); } catch (e) { toast('The floating window was not opened: ' + (e.message || 'blocked'), 6000, true); return; }
-    const d = pip.document; const st = d.createElement('style'); st.textContent = 'body{margin:0;font:14px/1.4 system-ui,Segoe UI,Arial,sans-serif;color:#1D1A5E;background:#fff}h1{font-size:14px;margin:0;padding:10px 12px;border-bottom:1px solid #DCE4F3;position:sticky;top:0;background:#fff}#pqList{padding:8px 12px}.q{padding:8px 0;border-bottom:1px solid #E3E9F5}.t{margin-bottom:6px}.b{display:flex;gap:6px;flex-wrap:wrap}button{font:inherit;font-size:12px;padding:4px 10px;border:1px solid #8DB8FF;background:#fff;color:#1570EF;border-radius:8px;cursor:pointer}button:disabled{opacity:.5;cursor:default}';
-    d.head.appendChild(st); d.title = 'Questions for the call'; const h = d.createElement('h1'); h.id = 'pqHead'; d.body.appendChild(h); const l = d.createElement('div'); l.id = 'pqList'; d.body.appendChild(l);
+    try { pip = await window.documentPictureInPicture.requestWindow({ width: 400, height: 600 }); } catch (e) { toast('The floating window was not opened: ' + (e.message || 'blocked'), 6000, true); return; }
+    const d = pip.document; const st = d.createElement('style');
+    st.textContent = 'body{margin:0;font:14px/1.45 Inter,system-ui,"Segoe UI",Arial,sans-serif;color:#101828;background:#F2F4F7}'
+      + 'header{position:sticky;top:0;z-index:2;background:#fff;padding:12px 14px 10px;border-bottom:1px solid #EAECF0}h1{font-size:15px;line-height:1.3;margin:0;color:#1D1A5E}.sub{font-size:12px;color:#667085;margin-top:2px}'
+      + '.bar{height:6px;background:#EAECF0;border-radius:99px;margin-top:8px;overflow:hidden}.bar i{display:block;height:100%;background:#12B76A;border-radius:99px;transition:width .3s}'
+      + '#pqList{padding:2px 0 12px}.grp{margin:10px 10px 0;background:#fff;border-radius:14px;box-shadow:0 0 0 1px #EAECF0,0 1px 2px rgba(16,24,40,.04);overflow:hidden}'
+      + '.gh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:9px 12px;background:#F5F9FF;border-bottom:1px solid #E4ECF7}.gh b{font-size:13px;color:#1D1A5E}.gh span{font-size:11.5px;color:#475467;white-space:nowrap}'
+      + '.q{padding:10px 12px;border-top:1px solid #F2F4F7}.gh+.q{border-top:0}.t{display:flex;gap:8px;align-items:flex-start}.t span{flex:1}.dot{flex:none;width:8px;height:8px;border-radius:50%;margin-top:7px;background:#98A2B3}'
+      + '.must .dot{background:#F04438}.should .dot{background:#F79009}.must-tag{flex:none;font-style:normal;font-size:10.5px;font-weight:600;color:#B42318;background:#FEF3F2;border-radius:99px;padding:1px 7px;margin-top:2px}.asked .t span{color:#475467}'
+      + '.b{display:flex;gap:6px;margin:8px 0 0 16px;flex-wrap:wrap}button{font:inherit;font-size:12px;font-weight:500;padding:5px 12px;border-radius:999px;border:1px solid #D0D5DD;background:#fff;color:#344054;cursor:pointer}'
+      + 'button:hover{border-color:#1570EF;color:#1570EF}button.ans{background:#1570EF;border-color:#1570EF;color:#fff}button.ans:hover{background:#175CD3;color:#fff}button.on{background:#EFF6FF;border-color:#1570EF;color:#1570EF}button.skip{border-color:transparent;color:#667085}button:disabled{opacity:.5;cursor:default}'
+      + '.empty{margin:24px 16px;text-align:center;color:#475467}';
+    d.head.appendChild(st); d.title = 'Questions for the call';
+    const h = d.createElement('header'); h.innerHTML = '<h1 id="pqTitle"></h1><div class="sub" id="pqSub"></div><div class="bar"><i id="pqBar"></i></div>'; d.body.appendChild(h); const l = d.createElement('div'); l.id = 'pqList'; d.body.appendChild(l);
     d.addEventListener('click', e => { const b = e.target.closest && e.target.closest('button[data-q]'); if (!b || ro()) return; save(b.getAttribute('data-q'), { status: b.getAttribute('data-s') }); pipDraw(); rerender(); });
     const tm = setInterval(pipDraw, 3000); pip.addEventListener('pagehide', () => { clearInterval(tm); pip = null; }); pipDraw();
   };

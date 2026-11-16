@@ -124,8 +124,8 @@
   const NAV = [
     // the eight stages of the roadmap from the start of the project, then the project-wide tools; a busy stage is several main tabs that share its number (2, 3), so no main tab holds more than four pages
     { g: '1. Project introduction', sec: 'Discover and define', icon: 'flag', fi: 'kickoff', items: [['msaintake', 'Contract intake'], ['intro', 'Kick-off, plan and schedule']] },
-    { g: '2. Requirement sessions', sec: 'Discover and define', icon: 'mic', fi: 'transcripts', items: [['rsquestions', 'Questions'], ['onboarding', 'Data onboarding'], ['workshop', 'Workshop room (live call)'], ['rstrans', 'Transcripts']] },   // Data Onboarding (the sheet shown in the first session), Transcripts and Use Cases are tabs inside the first entry (src/workshubs.js)
-    { g: '2. Process & checks', sec: 'Discover and define', icon: 'flow', items: [['whiteboard', 'Process whiteboard'], ['rschecks', 'Checks & validations']] },
+    { g: '2. Requirement sessions', sec: 'Discover and define', icon: 'mic', fi: 'transcripts', items: [['onboarding', 'Data onboarding'], ['workshop', 'Workshop room (live call)'], ['rstrans', 'Transcripts']] },   // Data Onboarding (the sheet shown in the first session), Transcripts and Use Cases are tabs inside the first entry (src/workshubs.js)
+    { g: '2. Process & checks', sec: 'Discover and define', icon: 'flow', items: [['whiteboard', 'Process whiteboard'], ['flow', 'State flow builder'], ['rschecks', 'Checks & validations']] },
     { g: '3. Solution design & BRD', sec: 'Design and build', icon: 'modules', fi: 'g_config', items: [['solmap', 'Solution'], ['mockup', 'Mockup (Meteor)'], ['slakpi', 'KPIs & SLA']] },   // user, 13 Nov 2026: no input pages here; the whiteboard flow and Claude fill the solution (modules, flow builder, roles, notifications and configuration still open from links)
     { g: '3. BRD & sign-off', sec: 'Design and build', icon: 'doc', items: [['brd', 'BRD Draft'], ['governance', 'Governance & RAID'], ['changes', 'Change Requests']] },   // the BRD is written from all of the above
     { g: '4. UAT & FTR', sec: 'Design and build', icon: 'check', fi: 'ftr', items: [['ftr', 'FTR Report'], ['uatguide', 'UAT guide'], ['delivery', 'Build & test tracker'], ['kpi', 'KPI Workbooks']] },
@@ -163,7 +163,7 @@
   V.isAgentProject = () => !!(S.project && S.project.type === 'agents');
   // REVAMP: the team menu shows only the tabs that have been built or rebuilt in the Part E revamp; every other tab stays hidden (its code, routes and data are untouched)
   // until it is rebuilt. To show a tab, add its view id to EXPOSED. Adding `alltabs=1` to the address (before the #) shows every tab again for this browser tab (for developers).
-  const EXPOSED = new Set(['golivehc', 'trace', 'projdash', 'feedback', 'lifecycle', 'msaintake', 'intro', 'rsquestions', 'onboarding', 'workshop', 'rstrans', 'whiteboard', 'solmap', 'rschecks', 'mockup', 'brd', 'delivery', 'ftr', 'guides', 'handover', 'soldoc', 'slakpi', 'workspace', 'templates', 'webframe', 'privacy', 'demokit', 'tasks', 'transfers', 'governance', 'changes', 'statusrep', 'kpi', 'custintro', 'prepare', 'learnlib', 'integguide', 'guide', 'portal', 'claudesetup', 'teamhelp', 'settings', 'resources', 'seefacilio', 'dashboards', 'explore', 'whatsnew']);
+  const EXPOSED = new Set(['golivehc', 'trace', 'projdash', 'feedback', 'lifecycle', 'msaintake', 'intro', 'onboarding', 'workshop', 'flow', 'rstrans', 'whiteboard', 'solmap', 'rschecks', 'mockup', 'brd', 'delivery', 'ftr', 'guides', 'handover', 'soldoc', 'slakpi', 'workspace', 'templates', 'webframe', 'privacy', 'demokit', 'tasks', 'transfers', 'governance', 'changes', 'statusrep', 'kpi', 'custintro', 'prepare', 'learnlib', 'integguide', 'guide', 'portal', 'claudesetup', 'teamhelp', 'settings', 'resources', 'seefacilio', 'dashboards', 'explore', 'whatsnew']);
   const showAllTabs = () => { try { if (/[?&]alltabs=1\b/.test(location.search)) sessionStorage.setItem('fwb_alltabs', '1'); else if (/[?&]alltabs=0\b/.test(location.search)) sessionStorage.removeItem('fwb_alltabs'); return sessionStorage.getItem('fwb_alltabs') === '1'; } catch (e) { return /[?&]alltabs=1\b/.test(location.search); } };
   const HIDE_UNBUILT_TABS = true;   // 6 Nov 2026: the earlier show-all was a demo for the developer; only the built tabs show again (Stage 1: Kick-off and Project Plan, plus Transfers where the extraction is approved and Contract for a manual upload)
   const tabOn = id => !HIDE_UNBUILT_TABS || EXPOSED.has(id) || showAllTabs();
@@ -175,6 +175,7 @@
   const ALIAS = { module: 'modules', search: 'overview' };
   function go(view, extra) {
     if (V.beforeLeave && V.beforeLeave() === false) return;
+    if (view === 'rsquestions') view = 'workshop';   // the Questions tab is part of the Workshop room now (user, 16 Nov 2026); old links land there
     V.beforeLeave = null;
     if (S.user && S.user.kind !== 'customer' && V.mfRoute && ['contract', 'scope', 'planner', 'msaflow'].includes(view)) { if (extra && extra.plTab) S.ui.plTab = extra.plTab; view = V.mfRoute(view, extra); } // one Contract section; old links and #/p/<id>/planner land in it
     if (S.user && S.user.kind !== 'customer' && V.hubRoute) view = V.hubRoute(view);   // Delivery lifecycle, Roadmap, Plan vs actual and Reports are tabs of Project Overview
@@ -214,6 +215,7 @@
     if (V.wfKeep && V.wfKeep()) { const sb = document.querySelector('.sidebar'); if (sb) { sb.innerHTML = navHtml(); render._sb = null; } return; } // a Facilio tools frame is open on the same site: re-rendering would reload it
     const main = document.querySelector('.main'); const scroll = main ? main.scrollTop : 0;
     const active = document.activeElement; const activeBind = active && active.getAttribute && active.getAttribute('data-bind'); const caret = active && active.selectionStart;
+    if (S.ui.view === 'rsquestions') S.ui.view = 'workshop';   // an old #/p/<id>/rsquestions link
     const key = ALIAS[S.ui.view] && !V[S.ui.view] ? ALIAS[S.ui.view] : S.ui.view; const view = V[key] || (/^cx_/.test(key) && V.customPage) || V.overview;
     let body; if (V.ui && V.ui.blocked(key)) body = `<div class="page-body">${V.ui.denied('this page')}</div>`; else try { body = view.html(); } catch (e) { console.error(e); body = `<div class="page-body">${V.ui ? V.ui.error('This page could not be displayed', 'Something went wrong while drawing this page. Your work is safe. Try again, or go back to the overview. (' + String((e && e.message) || e).slice(0, 140) + ')') : '<div class="notice err">This view could not be displayed.</div>'}</div>`; }
     const sbOld = document.querySelector('.sidebar'); const sbTop = sbOld ? sbOld.scrollTop : (S.ui.navScroll || 0); // the whole shell is rebuilt on every render: carry the sidebar's scroll position across so a click never moves it

@@ -13,7 +13,8 @@ Each file is a **copy taken on 13 Nov 2026** of the source that draws the tab. T
 | View id | Tab | Who saw it | Copy here | Why it was hidden | Live code still used by |
 |---|---|---|---|---|---|
 | modules | System Modules & Form Builder | Team | `module.js` | Stage 3 trimmed: fields and forms come from Claude's reading of the transcripts | Solution page, BRD (fields, forms), Claude jobs |
-| flow | State Flow Builder | Team | `flowbuilder.js` | Stage 3 trimmed: state flows come from the Process whiteboard (Save as state flow) | Whiteboard, BRD, Solution page |
+| ~~flow~~ | State Flow Builder | Team | `flowbuilder.js` | **Back in the menu on 16 Nov 2026** as "State flow builder" next to the Process whiteboard, which keeps a saved flow in step | Whiteboard, BRD, Solution page |
+| rsquestions | Questions (Requirement sessions) | Team | `qbank.js` | 16 Nov 2026: folded into the Workshop room (Add a question, Import questions per session, Ask Claude for questions, Edit); old links open the Workshop room | Workshop room (its actions), floating window |
 | roles | Roles & Access Permissions | Team | `roles.js` | Stage 3 trimmed: roles follow the whiteboard flow (who presses each arrow) | BRD role matrix, Solution page |
 | notifications | Notifications | Team | `notifications.js` | Stage 3 trimmed: notifications are added when a whiteboard flow is saved | BRD, Org package |
 | cfginputs | Configuration & org package | Team | `cfginputs.js` | Stage 3 trimmed | Org package export |

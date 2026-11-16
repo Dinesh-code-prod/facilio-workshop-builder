@@ -65,9 +65,20 @@
   async function save() {
     if (!W.B || !W.dirty || ro()) return; if (W.saving) { W.saveT = setTimeout(save, 400); return; }
     W.saving = true; W.dirty = false; paintState();
-    const data = { name: W.B.name, miro: W.B.miro || '', nodes: W.B.nodes, edges: W.B.edges, grid: W.B.grid, snap: W.B.snap, route: W.B.route, dir: W.B.dir === 'h' ? 'h' : 'v', view: W.B.view };
+    const data = { name: W.B.name, miro: W.B.miro || '', nodes: W.B.nodes, edges: W.B.edges, grid: W.B.grid, snap: W.B.snap, route: W.B.route, dir: W.B.dir === 'h' ? 'h' : 'v', view: W.B.view, flowId: W.B.flowId || '' };
+    syncFlow();
     try { await I().put('wb', W.B.id, data, { silent: true }); W.lastSaved = new Date(); } catch (e) { W.dirty = true; V.toast('The board could not be saved: ' + (e.message || 'try again'), 6000, true); }
     finally { W.saving = false; paintState(); }
+  }
+  // the State flow builder follows the board it was saved from (user, 16 Nov 2026)
+  function syncFlow() {
+    const id = W.B && W.B.flowId; const cur = id && S.ws.flows && S.ws.flows[id]; if (!cur) return;
+    const ns = W.B.nodes.filter(n => FLOWISH.includes(n.t) && !n.hidden); if (!ns.length) return; const ids = new Set(ns.map(n => n.id)); const m = toFlowModel(ns, W.B.edges.filter(e => ids.has(e.from) && ids.has(e.to)));
+    const states = m.states.map(x => { const o = (cur.states || []).find(y => y.id === x.id); return o ? Object.assign({}, o, { label: x.label, name: x.name }) : x; });
+    const transitions = m.transitions.map(t => { const o = (cur.transitions || []).find(y => y.from === t.from && y.to === t.to); return o ? Object.assign({}, o, { name: t.name }) : t; });
+    const sig = f => JSON.stringify([(f.states || []).map(x => [x.id, x.label]), (f.transitions || []).map(t => [t.from, t.to, t.name]), f.initial]);
+    const next = Object.assign({}, cur, { states, transitions, initial: m.initial }); if (sig(next) === sig(cur)) return;
+    S.ws.flows[id] = next; F.changed('State flow kept in step with the whiteboard', cur.name || id, { render: false });
   }
   function paintState() { const el = document.getElementById('wbSave'); if (!el) return; el.textContent = ro() ? 'Read-only' : W.saving ? 'Saving…' : W.dirty ? 'Unsaved changes' : W.lastSaved ? 'Saved' : 'All changes saved'; el.className = 'wb-save' + (W.dirty ? ' dirty' : ''); }
 
@@ -643,10 +654,10 @@
     const model = toFlowModel(ns, es);
     if (mode === 'replace') { const id = document.getElementById('sv_f').value; const cur = id && F.flowModel(id); if (!cur) { V.toast('Choose the flow to replace', 4000, true); return; }
       if (!(await V.confirmDialog('Replace flow', 'Replace "' + (cur.name || id) + '" with this drawing (' + model.states.length + ' states, ' + model.transitions.length + ' transitions)? Its current states and transitions are overwritten.', 'Replace', true))) return;
-      const keep = F.clone(cur); const next = Object.assign({}, keep, { states: model.states, transitions: model.transitions, initial: model.initial, workshopCopy: true, layoutDir: keep.layoutDir || 'h' }); S.ws.flows[id] = next; V.closeDrawer(); F.changed('Stateflow replaced from the whiteboard', (cur.name || id)); if (ACT.roleUseSugg) ACT.roleUseSugg(); if (ACT.ntAddSugg) ACT.ntAddSugg(); V.toast('"' + (cur.name || id) + '" now follows this drawing; the roles who press its buttons get access to the module'); return; }
+      const keep = F.clone(cur); const next = Object.assign({}, keep, { states: model.states, transitions: model.transitions, initial: model.initial, workshopCopy: true, layoutDir: keep.layoutDir || 'h' }); S.ws.flows[id] = next; W.B.flowId = id; W.dirty = true; save(); V.closeDrawer(); F.changed('Stateflow replaced from the whiteboard', (cur.name || id)); if (ACT.roleUseSugg) ACT.roleUseSugg(); if (ACT.ntAddSugg) ACT.ntAddSugg(); V.toast('"' + (cur.name || id) + '" now follows this drawing; the roles who press its buttons get access to the module'); return; }
     const name = String((document.getElementById('sv_n') || {}).value || '').trim(); if (!name) { V.toast('Give the flow a name', 4000, true); return; }
     const id = m + '::proposed_' + Math.random().toString(36).slice(2, 7); S.ws.flows[id] = Object.assign(model, { id, module: m, name, description: 'Drawn on the Process Whiteboard "' + (W.B.name || '') + '"', criteria: '', origin: 'proposed', enabled: true, workshopCopy: true, isDefault: false });
-    V.closeDrawer(); F.changed('Stateflow created from the whiteboard', name); if (ACT.roleUseSugg) ACT.roleUseSugg(); if (ACT.ntAddSugg) ACT.ntAddSugg(); V.toast('Saved as a new state flow: ' + name + '; the roles who press its buttons get access to the module'); });
+    W.B.flowId = id; W.dirty = true; save(); V.closeDrawer(); F.changed('Stateflow created from the whiteboard', name); if (ACT.roleUseSugg) ACT.roleUseSugg(); if (ACT.ntAddSugg) ACT.ntAddSugg(); V.toast('Saved as a new state flow: ' + name + '; the roles who press its buttons get access to the module'); });
 
   // ---------- import from image ----------
   ACT.wbImg = () => {
