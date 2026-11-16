@@ -1958,6 +1958,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     if (VERSIONED.has(f.category) && f.meta && f.meta.docKey) {
       const same = (await dbList('fl.' + P.id)).map(r => r.value).filter(x => x && x.id !== f.id && !x.deletedAt && x.status === 'ready' && (x.meta || {}).docKey === f.meta.docKey).sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt)));
       for (const x of same.filter(x => !x.supersededBy && String(x.createdAt) <= String(f.createdAt))) { x.supersededBy = f.id; await dbPut('fl.' + P.id, x.id, x); }
+      const newer = same.find(x => !x.supersededBy && String(x.createdAt) > String(f.createdAt)); if (newer) { f.supersededBy = newer.id; await dbPut('fl.' + P.id, f.id, f); }   // a newer save finished first: this one becomes its earlier version
       for (const x of same.filter(x => x.supersededBy).slice(3)) { x.deletedAt = now(); await dbPut('fl.' + P.id, x.id, x); for (const u of x.urls || []) { try { await CTX.files.delete(u, { private: true }); } catch (e) { } } }
     }
     await audit(P.id, s.id, 'file-uploaded', f.category + ': ' + f.name); return ok({ file: fileOut(f) });
