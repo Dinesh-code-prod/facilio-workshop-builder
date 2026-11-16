@@ -21,7 +21,8 @@
         row('Requirements without a module', noMod ? noMod + ' in General requirements' : 'none', noMod, 'General requirements', 'reqs', noMod ? 'Give them a module to place them in the module section' : ''),
         row('Decisions and actions from call summaries', arr(d.decisions).length + ' items', 0, 'Decisions, assumptions & dependencies', 'rsquestions', '')] },
       { group: 'Solution', rows: [
-        row('Agreed solution per module', (mods.length - noSol.length) + ' of ' + mods.length + ' modules written', noSol.length, 'Solution proposal (each module)', 'solution', noSol.length ? 'No solution text: ' + noSol.slice(0, 4).join(', ') + (noSol.length > 4 ? ' and ' + (noSol.length - 4) + ' more' : '') : '')] },
+        row('Agreed solution per module', (mods.length - noSol.length) + ' of ' + mods.length + ' modules written', noSol.length, 'Solution proposal (each module)', 'solution', noSol.length ? 'No solution text: ' + noSol.slice(0, 4).join(', ') + (noSol.length > 4 ? ' and ' + (noSol.length - 4) + ' more' : '') : ''),
+        row('Claude proposals waiting', (d.proposals || 0) + ' waiting', d.proposals || 0, 'Solution, flows, fields and forms', 'solmap', d.proposals ? 'Not in the BRD until a person accepts them' : '')] },
       { group: 'Configuration', rows: [
         row('State flows', sum('flowsChanged') + ' proposed or changed', 0, 'Process state flow, state flow details', 'flow', ''),
         row('Fields and forms', sum('fieldsChanged') + ' fields added, changed or removed', 0, 'Fields, forms agreed', 'modules', ''),
@@ -47,7 +48,8 @@
       return { name: m.name, label: m.label, sol: !!(SOL && SOL.textOf && SOL.textOf(sol, 'module:' + m.name)), flowsChanged, fieldsChanged, notes: (S.ws.notifications || []).filter(n => n.module === m.name).length }; });
     let SS = null; try { SS = root.FWBBrdSessions ? root.FWBBrdSessions.rows({ bank: S.docs.rs_questions && S.docs.rs_questions.data, room: S.docs.workshop_room && S.docs.workshop_room.data, label: n => ((F.moduleView(n) || {}).label || n) }) : null; } catch (e) { }
     const fd = F.doc('rs_findings');
-    return { findings: fd && fd.items, reqs: S.ws.requirements, mods, procs: S.ws.processes, cflows: list('cflow'), usecases: list('usecase'), kpis: list('kpi'), sla: S.ws.slaMatrix,
+    const proposals = ((((F.doc('design_proposals') || {}).items) || []).filter(p => p && p.status === 'open')).length;
+    return { proposals, findings: fd && fd.items, reqs: S.ws.requirements, mods, procs: S.ws.processes, cflows: list('cflow'), usecases: list('usecase'), kpis: list('kpi'), sla: S.ws.slaMatrix,
       decisions: SS ? [].concat(SS.decisions, SS.assumptions, SS.dependencies, SS.actions) : [], gov: { decision: list('decision'), raid: list('raid'), cr: list('cr') } };
   }
   V.brdSources = () => {
