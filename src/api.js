@@ -36,7 +36,10 @@
     ApiError,
     get: (p, o) => call('GET', p, undefined, o), post: (p, b, o) => call('POST', p, b === undefined ? {} : b, o), put: (p, b) => call('PUT', p, b), patch: (p, b) => call('PATCH', p, b), del: p => call('DELETE', p),
     async uploadFile(projectId, file, category, meta, replaces, onProgress) {
-      const init = await call('POST', `/api/projects/${projectId}/files`, { category, name: file.name, mime: file.type || 'application/octet-stream', size: file.size, meta: meta || {}, replaces: replaces || null });
+      // the file's fingerprint: the server keeps one file per document and does not save the same content twice (work/server/_sharepoint.mjs VERSIONED)
+      meta = Object.assign({}, meta || {}); if (!meta.hash && root.crypto && root.crypto.subtle && file.size <= 100e6) { try { meta.hash = Array.from(new Uint8Array(await root.crypto.subtle.digest('SHA-256', await file.arrayBuffer())), b => b.toString(16).padStart(2, '0')).join(''); } catch (e) { } }
+      const init = await call('POST', `/api/projects/${projectId}/files`, { category, name: file.name, mime: file.type || 'application/octet-stream', size: file.size, meta, replaces: replaces || null });
+      if (init.existing) return init.file;   // nothing changed since the last save
       for (let n = 0; n < init.chunks; n++) {
         const part = file.slice(n * init.chunkSize, Math.min(file.size, (n + 1) * init.chunkSize));
         let tries = 0; for (;;) { try { await call('PUT', `/api/projects/${projectId}/files/${init.id}/chunks/${n}`, new Uint8Array(await part.arrayBuffer())); break; } catch (e) { if (++tries > 2 || (e.status && e.status < 500)) throw e; await new Promise(r => setTimeout(r, 800 * tries)); } }
@@ -48,7 +51,8 @@
       const meta = await call('GET', `/api/projects/${projectId}/files/${fileId}`);
       const parts = [];
       for (let n = 0; n < meta.file.chunks; n++) { parts.push(await call('GET', `/api/projects/${projectId}/files/${fileId}/chunks/${n}`)); if (onProgress) onProgress((n + 1) / meta.file.chunks); }
-      return { file: meta.file, blob: new Blob(parts, { type: meta.file.mime }) };
+      const blob = new Blob(parts, { type: meta.file.mime }); blob.fromProject = true;   // already in the project: src/sharepoint.js does not keep it again when it is downloaded
+      return { file: meta.file, blob };
     },
     async reference() {
       if (root.FWBRun) return root.FWBRun.reference();

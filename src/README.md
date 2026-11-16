@@ -80,6 +80,7 @@ Where a project stands: the dashboard, the roadmap, status reports and the admin
 | [admviz.js](admviz.js) | Admin dashboard visuals: sparklines, RAG boards, donuts, pivots, delivery trackers and stacked bars. |
 | [dashboards.js](dashboards.js) | Bento dashboards: one tile grid for each point of view, every number computed from saved project records (nothing invented). |
 | [dashreport.js](dashreport.js) | Dashboard Report — the project analytics hub. |
+| [sharepoint.js](sharepoint.js) | SharePoint project folders: copies every project file to the project's SharePoint folder in the background, keeps downloaded exports in the project (one file per document), shows the folder and Update access in Project Settings > Team, and the assistant gives the link. Server: work/server/_sharepoint.mjs. |
 | [soldoc.js](soldoc.js) | Solution document (Project handover): the BRD Draft editor (brd.js, brdview.js) on its own store, soldocs, so a solution document is drafted, edited, imported and exported exactly like a BRD; Facilio Org ID and region, the org package and Write with Claude above it. |
 | [lifecycle.js](lifecycle.js) | Delivery lifecycle + AI assistant: Deliverables & AI workspace, Hypercare, Handover & Closure. |
 | [lifelogic.js](lifelogic.js) | Lifecycle tracker rules (pure code, also run by tests/life.mjs). |

@@ -228,8 +228,9 @@
     await F.flush(); loading(true, kind === 'docx' ? 'Generating the Word document…' : 'Generating the PDF…');
     try { const r = kind === 'docx' ? await R().toDocx(V.loadingMsg) : await R().toPdf(V.loadingMsg); const pr = S.ws.project; const d = BD();
       const name = (pr.client || S.project.customer || 'Customer').replace(/\W+/g, '_') + (R().isSol() ? '_Solution_Document_' : '_BRD_') + (R().activeId() === 'main' ? '' : R().slug(R().activeRec().name) + '_') + (pr.version || 'V1.0').replace(/\W+/g, '') + (d.status === 'approved' ? '' : '_' + (d.status || 'draft').toUpperCase()) + '.' + kind;
-      V.download(name, r.blob); V.loadingMsg('Saving a copy to the project…');
-      let fileId = null; try { const rec = await API.uploadFile(S.project.id, new File([r.blob], name, { type: r.blob.type }), 'brd_export', { status: d.status || 'draft' }); fileId = rec.id; } catch (e) { toast('Exported, but the copy could not be saved to the project: ' + e.message, 5000, true); }
+      r.blob.fromProject = true; V.download(name, r.blob); V.loadingMsg('Saving a copy to the project…');   // fromProject: it is saved below, so src/sharepoint.js does not save it again
+      const src = JSON.stringify([kind, d.status || 'draft', blocks().blocks, R().profile()]); const srcHash = root.crypto && root.crypto.subtle ? Array.from(new Uint8Array(await root.crypto.subtle.digest('SHA-256', new TextEncoder().encode(src))), b => b.toString(16).padStart(2, '0')).join('') : '';   // the document's content, so an unchanged export is not saved again
+      let fileId = null; try { const rec = await API.uploadFile(S.project.id, new File([r.blob], name, { type: r.blob.type }), 'brd_export', { status: d.status || 'draft', hash: srcHash }); fileId = rec.id; } catch (e) { toast('Exported, but the copy could not be saved to the project: ' + e.message, 5000, true); }
       d.exports.unshift({ at: new Date().toISOString(), by: S.user.name, kind, name, fileId, status: d.status || 'draft', size: r.blob.size }); d.exports = d.exports.slice(0, 50); F.changed('BRD exported', name, { section: R().store() });
       toast('Exported ' + name + (kind === 'docx' ? ' — in Word, update the table of contents with Update Field' : ''), 5000);
     } finally { loading(false); }

@@ -101,7 +101,7 @@
    },
    {
     "name": "project_overview",
-    "description": "One project at a glance: team, requirement counts by status, open questions, use cases, sessions, BRD status and open tickets, with a link.",
+    "description": "One project at a glance: team, requirement counts by status, open questions, use cases, sessions, BRD status and open tickets, with a link, and sharepointFolder: the project's SharePoint folder (name and link) where every project file is copied, or null when it is not set up.",
     "function": "api",
     "input_schema": {
      "type": "object",

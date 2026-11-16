@@ -19,6 +19,7 @@ import './_msadocs.mjs';
 import { installTaskTracking } from './_tasksapi.mjs';
 import { installMailTasks } from './_mailapi.mjs';
 import { installJobs } from './_jobsapi.mjs';
+import { installSharePoint, docKeyOf, VERSIONED } from './_sharepoint.mjs';
 import './_flowchecks.mjs';   // sets globalThis.FWBFlowChecks: the state-flow checks the Solution map shows, for the review pack
 import { installFeedback } from './_feedback.mjs';
 import { dueWords } from './_msgfmt.mjs';
@@ -27,6 +28,7 @@ import { addedMessage, status as helperStatus, stuckJobs, helperAlert } from './
 import { installNotify, norm as nNorm, lead, hashOf } from './_notify.mjs';
 import { milestonesDue, pendingFor, teamCounts, dueOf, digestMessage, digestKey, assignKey, assignGate, assignmentNotice, BASE_URL as TW_BASE } from './_taskwatch.mjs';
 let FWB = null; // this copy of the server's own dispatcher (not looked up through a global, so two copies in one process cannot mix)
+let SP = null;   // SharePoint project folders (_sharepoint.mjs), set when the routes are installed
 let CTX = null, HDR = {};   // set at the start of every request (a Lambda handles one request at a time)
 {
   'use strict';
@@ -55,6 +57,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     guide_media: { ext: ['png', 'jpg', 'jpeg'], max: 8e6 }, flow_image: { ext: ['png', 'jpg', 'jpeg', 'webp'], max: 8e6 }, showcase_image: { ext: ['png', 'jpg', 'jpeg', 'webp'], max: 5e6 },
     ticket_attachment: { ext: ['pdf', 'xlsx', 'xls', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'csv', 'txt', 'msg', 'eml'], max: 20e6 },
     report_attachment: { ext: ['pdf', 'xlsx', 'xls', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'csv', 'txt'], max: 20e6 },
+    export: { ext: ['docx', 'pdf', 'xlsx', 'xlsm', 'xls', 'csv', 'pptx', 'txt', 'md', 'html', 'htm', 'json', 'zip', 'png', 'svg'], max: MAX_FILE },   // a file the team exported from a page, kept so it reaches the project's SharePoint folder (team only)
     signoff_evidence: { ext: ['pdf', 'png', 'jpg', 'jpeg', 'msg', 'eml', 'docx'], max: 20e6 }, brd_signed: { ext: ['docx', 'pdf', 'json'], max: MAX_FILE }
   };
   // record kinds the team can store (customer-only rules come with the customer page)
@@ -359,13 +362,14 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     const id = ekey(email); const u = await dbGet('usr', id); const name = (u && u.value && u.value.name) || nameFromEmail(email); const m = { id, email, name, role };
     await patchProject(P.id, p => { const ow = (p.members || []).filter(x => x.role === 'owner'); if (role !== 'owner' && ow.length === 1 && ow[0].id === id) throw new HttpError(400, 'A project needs at least one owner. Make someone else an owner first.'); p.members = (p.members || []).filter(x => x.id !== id).concat([m]); });
     if (!u) await dbPut('usr', id, { email, name, seen: null }).catch(() => { });
+    if (SP) await SP.syncAccess(P.id).catch(() => { });
     await memberAddedNotice(project, m, s);   // a Teams message that tells the person what they were added to and what to do first
     await audit(P.id, s.id, 'member-added', email + ' as ' + role); return ok({ member: memberOut(m) }, 201);
   });
   route('DELETE', '/api/projects/:id/members/:uid', async (b, P) => {
     const s = await me(); await projectAccess(s, P.id, 'owner');
     await patchProject(P.id, project => { const owners = (project.members || []).filter(m => m.role === 'owner'); if (owners.length === 1 && owners[0].id === P.uid) throw new HttpError(400, 'A project needs at least one owner');
-      project.members = (project.members || []).filter(m => m.id !== P.uid); }); await audit(P.id, s.id, 'member-removed', P.uid); return ok({ ok: true });
+      project.members = (project.members || []).filter(m => m.id !== P.uid); }); if (SP) await SP.syncAccess(P.id).catch(() => { }); await audit(P.id, s.id, 'member-removed', P.uid); return ok({ ok: true });
   });
   // the solution package for other tools (the same document as get_document solution_package, in full); the delivery team only, read only
   route('GET', '/api/projects/:id/solution-package', async (b, P) => { const s = await me(); const a = await projectAccess(s, P.id, 'edit'); if (a && a.role === 'customer') throw new HttpError(403, 'The solution package is for the delivery team.'); return ok(await solPackageOf(await pickProject(s, P.id))); });
@@ -1529,7 +1533,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     async project_overview(s, b) { const p = await pickProject(s, b.project); await projectAccess(s, p.id, 'read'); const w = await wsOf(p.id); const reqs = Array.isArray(w.requirements) ? w.requirements : []; const qs = Array.isArray(w.questions) ? w.questions : [];
       const [pl, bd, ucs, tk, tr] = await Promise.all([docRead(p.id, 'planner').catch(() => null), docRead(p.id, 'brddoc').catch(() => null), itemsOf(p.id, 'usecase').catch(() => []), itemsOf(p.id, 'tkt').catch(() => []), docRead(p.id, 'transcripts').catch(() => null)]); const trd = (tr && tr.data) || {}; const cands = Array.isArray(trd.candidates) ? trd.candidates : [];
       const by = (arr, f) => arr.reduce((o, x) => { const k = f(x) || 'None'; o[k] = (o[k] || 0) + 1; return o; }, {}); const sessions = ((pl && pl.data && pl.data.sessions) || []);
-      return { project: p.name, projectId: p.id, customer: p.customer || '', organisation: { orgId: String((w.project || {}).orgId || ''), region: String((w.project || {}).region || ''), facilioRegion: String((w.project || {}).facilioRegion || ''), configFolder: String((w.project || {}).orgFolder || ''), note: 'Facilio org id and region as set in Project Settings > Project details (filled from the org package when one is imported). configFolder, when set, is where this org\'s package is inside the person\'s local facilio-config-data clone (for the Facilio skills and for you to read).' }, dates: { start: p.startDate || '', end: p.endDate || '' }, team: (p.members || []).filter(m => m.role !== 'customer').map(m => ({ name: m.name || m.email, role: m.role })).slice(0, 30),
+      return { project: p.name, projectId: p.id, customer: p.customer || '', sharepointFolder: SP ? await SP.folderOf(p.id).catch(() => null) : null, organisation: { orgId: String((w.project || {}).orgId || ''), region: String((w.project || {}).region || ''), facilioRegion: String((w.project || {}).facilioRegion || ''), configFolder: String((w.project || {}).orgFolder || ''), note: 'Facilio org id and region as set in Project Settings > Project details (filled from the org package when one is imported). configFolder, when set, is where this org\'s package is inside the person\'s local facilio-config-data clone (for the Facilio skills and for you to read).' }, dates: { start: p.startDate || '', end: p.endDate || '' }, team: (p.members || []).filter(m => m.role !== 'customer').map(m => ({ name: m.name || m.email, role: m.role })).slice(0, 30),
         modulesInScope: Object.entries(w.modules && typeof w.modules === 'object' ? w.modules : {}).filter(([, m]) => m && m.inScope).map(([k]) => k).slice(0, 60), requirements: { total: reqs.length, byStatus: by(reqs, r => r.status) }, transcripts: { uploaded: (Array.isArray(trd.items) ? trd.items : []).length, statements: cands.length, byStatus: by(cands, c => c.status), toReview: cands.filter(c => c.status === 'pending' || c.status === 'clarify').length, note: 'Statements from the workshop transcripts. Accepting one in Delivery Studio creates a Draft requirement.' }, openQuestions: qs.filter(q => q.status !== 'closed').length, useCases: { total: ucs.length, byStatus: by(ucs, u => u.data && u.data.status) },
         sessions: { total: sessions.length }, brd: { status: (bd && bd.data && bd.data.status) || 'draft', note: 'Only requirements with status Confirmed reach the BRD.' }, tickets: { open: tk.filter(t => t.data && !/^(Resolved|Closed)$/i.test(t.data.status || '')).length },
         progress: await progressOf(p.id), link: 'https://facilio-delivery-studio.facilio.work/#/p/' + p.id + '/overview' }; },
@@ -1905,7 +1909,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   });
 
   // files: bytes go to the app's private file store in parts of 16 MB; the project keeps the part ids
-  const fileOut = f => ({ id: f.id, category: f.category, name: f.name, mime: f.mime, size: f.size, chunks: f.chunks, status: f.status, meta: f.meta, replaces: f.replaces, supersededBy: f.supersededBy, createdBy: f.createdBy, createdAt: f.createdAt });
+  const fileOut = f => ({ id: f.id, category: f.category, name: f.name, mime: f.mime, size: f.size, chunks: f.chunks, status: f.status, meta: f.meta, replaces: f.replaces, supersededBy: f.supersededBy, createdBy: f.createdBy, createdAt: f.createdAt, sp: f.sp && f.sp.url ? { url: f.sp.url, folder: f.sp.folder, at: f.sp.at } : null });
   route('GET', '/api/projects/:id/files', async (b, P, Q) => {
     const s = await me(); await projectAccess(s, P.id, 'read'); const cat = Q.get('category'), all = Q.get('versions') === '1';
     const rows = (await dbList('fl.' + P.id)).map(r => r.value).filter(f => !f.deletedAt && f.status === 'ready' && (!cat || f.category === cat) && (all || !f.supersededBy));
@@ -1916,7 +1920,11 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     const name = str(b.name, 255, 'File name', true); if (/[\u0000-\u001f\u007f\/\\]/.test(name)) throw new HttpError(400, 'The file name has characters that are not allowed'); const ext = (name.split('.').pop() || '').toLowerCase(); if (!rule.ext.includes(ext)) throw new HttpError(415, 'Unsupported file type .' + ext + ' — allowed: ' + rule.ext.join(', '));
     const size = Number(b.size); if (!(size > 0) || size > rule.max) throw new HttpError(413, 'File is empty or too large (max ' + Math.round(rule.max / 1e6) + ' MB)');
     const meta = b.meta && typeof b.meta === 'object' ? b.meta : {}; if (JSON.stringify(meta).length > 20000) throw new HttpError(400, 'Metadata too large');
-    if (b.replaces) { const old = await dbGet('fl.' + P.id, b.replaces); if (!old) throw new HttpError(404, 'File to replace not found'); }
+    let replaces = b.replaces || null; const docKey = docKeyOf(b.category, name, meta);
+    if (docKey) { meta.docKey = docKey; const prev = (await dbList('fl.' + P.id)).map(r => r.value).filter(f => f && f.status === 'ready' && !f.deletedAt && !f.supersededBy && (f.meta || {}).docKey === docKey).sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt)))[0];
+      if (prev && meta.hash && (prev.meta || {}).hash === meta.hash) return ok({ id: prev.id, existing: true, file: fileOut(prev) });   // nothing changed since the last save
+      if (prev && !replaces) replaces = prev.id; }
+    if (replaces) { const old = await dbGet('fl.' + P.id, replaces); if (!old) throw new HttpError(404, 'File to replace not found'); }
     // file space: bytes go straight to storage, so what needs a limit is the total a project keeps and the uploads a person leaves half done
     const FILE_SPACE = 1e9, MAX_OPEN = 6, STALE = 864e5; const rows = (await dbList('fl.' + P.id)).map(r => r.value).filter(f => f && !f.deletedAt), old = f => f.status === 'uploading' && Date.now() - Date.parse(f.createdAt) > STALE;
     for (const f of rows.filter(old)) { for (const u of (f.urls || []).concat(Object.values(f.mint || {}))) { try { await CTX.files.delete(u, { private: true }); } catch (e) { } } await dbDel('fl.' + P.id, f.id); }   // an upload left unfinished for a day is cleaned up
@@ -1924,7 +1932,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     if (live.filter(f => f.status === 'uploading' && f.createdBy === s.id).length >= MAX_OPEN) throw new HttpError(429, 'You have ' + MAX_OPEN + ' uploads in progress. Wait for them to finish, then add more.', { retryAfter: 60 });
     const used = live.reduce((n, f) => n + (f.size || 0), 0); if (used + size > FILE_SPACE) throw new HttpError(413, 'This project already holds ' + Math.round(used / 1e6) + ' MB of files (the limit is ' + Math.round(FILE_SPACE / 1e6) + ' MB). Remove files you no longer need, or ask an admin.');
     const chunks = Math.ceil(size / CHUNK), id = rid('f');
-    await dbPut('fl.' + P.id, id, { id, category: b.category, name, mime: /^[\w.+-]{1,60}\/[\w.+-]{1,60}$/.test(String(b.mime || '')) ? String(b.mime) : 'application/octet-stream', size, chunks, status: 'uploading', meta, replaces: b.replaces || null, supersededBy: null, createdBy: s.id, createdAt: now(), deletedAt: null, urls: [] });
+    await dbPut('fl.' + P.id, id, { id, category: b.category, name, mime: /^[\w.+-]{1,60}\/[\w.+-]{1,60}$/.test(String(b.mime || '')) ? String(b.mime) : 'application/octet-stream', size, chunks, status: 'uploading', meta, replaces, supersededBy: null, createdBy: s.id, createdAt: now(), deletedAt: null, urls: [] });
     return ok({ id, chunkSize: CHUNK, chunks }, 201);
   });
   // bytes never pass through this function: the page asks for a one-time upload link, PUTs the part straight to storage, then tells us it is done
@@ -1946,6 +1954,12 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     if (verdict === null) console.log('file content not checked', P.id, P.fid);
     f.contentCheck = verdict === true ? 'ok' : 'unchecked'; f.status = 'ready'; await dbPut('fl.' + P.id, P.fid, f);
     if (f.replaces) { const o = await dbGet('fl.' + P.id, f.replaces); if (o) { o.value.supersededBy = f.id; await dbPut('fl.' + P.id, f.replaces, o.value); } }
+    // two people saving the same document at once: the newest is the current file and the others become its earlier versions; only the last 3 earlier versions keep their bytes
+    if (VERSIONED.has(f.category) && f.meta && f.meta.docKey) {
+      const same = (await dbList('fl.' + P.id)).map(r => r.value).filter(x => x && x.id !== f.id && !x.deletedAt && x.status === 'ready' && (x.meta || {}).docKey === f.meta.docKey).sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt)));
+      for (const x of same.filter(x => !x.supersededBy && String(x.createdAt) <= String(f.createdAt))) { x.supersededBy = f.id; await dbPut('fl.' + P.id, x.id, x); }
+      for (const x of same.filter(x => x.supersededBy).slice(3)) { x.deletedAt = now(); await dbPut('fl.' + P.id, x.id, x); for (const u of x.urls || []) { try { await CTX.files.delete(u, { private: true }); } catch (e) { } } }
+    }
     await audit(P.id, s.id, 'file-uploaded', f.category + ': ' + f.name); return ok({ file: fileOut(f) });
   });
   // ---------- upload content check ----------
@@ -1970,7 +1984,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     if (['txt', 'csv', 'vtt', 'srt', 'json', 'eml'].includes(ext)) return !b.includes(0) && !starts(b, SIG.zip) && !starts(b, SIG.ole);  // text: no NUL bytes, not a binary package
     return null;
   }
-  const TEAM_FILES = new Set(['uat_source', 'uat_evidence', 'mockup_html', 'solution_doc', 'solution_input', 'guide_source', 'handover_source', 'plan_source']);   // file categories customers cannot open
+  const TEAM_FILES = new Set(['export', 'uat_source', 'uat_evidence', 'mockup_html', 'solution_doc', 'solution_input', 'guide_source', 'handover_source', 'plan_source']);   // file categories customers cannot open
   const fileForRead = async (s, P) => { const acc = await projectAccess(s, P.id, 'read'); const r = await dbGet('fl.' + P.id, P.fid); if (!r || r.value.deletedAt || r.value.status !== 'ready') throw new HttpError(404, 'File not found'); if (acc.role === 'customer' && TEAM_FILES.has(r.value.category)) throw new HttpError(404, 'File not found'); return r.value; };
   route('GET', '/api/projects/:id/files/:fid', async (b, P) => { const s = await me(); return ok({ file: fileOut(await fileForRead(s, P)), chunkSize: CHUNK }); });
   route('GET', '/api/projects/:id/files/:fid/chunks/:n', async (b, P) => {
@@ -2359,6 +2373,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   installTaskTracking({ route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, itemsOf, withLock, audit, viaApp, CONNECTOR, DONE_RE, cut, rid, notify: N });   // task suggestions from Claude: routes and tools (_tasksapi.mjs)
   installQbank({ route, ok, HttpError, me, projectAccess, limit, aiJSON, docRead, itemsOf });   // AI requirements intelligence: generate questions from the documents, analyse a call (_qbankapi.mjs)
   installMailTasks({ route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, withLock, audit, viaApp, CONNECTOR, docRead, cut, notify: N });   // customer mail becomes tasks: inbox records, routes and task_tracking actions (_mailapi.mjs)
+  SP = installSharePoint({ route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbList, withLock, audit, CTX: () => CTX, CHUNK });   // SharePoint project folders: copies, subfolders, access (_sharepoint.mjs)
   installJobs({ briefs: briefsFromClaude, route, ok, HttpError, me, projectAccess, pickProject, readableProjects, dbGet, dbPut, dbList, withLock, audit, CONNECTOR, rid, CTX, notify: N });   // job queue: Studio buttons write jobs, Claude in the person's own session claims and finishes them (_jobsapi.mjs)
   // The platform allows at most 40 MCP tools per app, so related tools share one public entry with an `action`; the old tool names stay as the implementations.
   /** Claude orchestrates: a routine sub-part (rewording, a short summary, reformatting, simple extraction) can be handed to DeepSeek; Claude gets the answer back and must check it before using it */
