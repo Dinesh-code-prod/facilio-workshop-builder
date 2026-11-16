@@ -166,7 +166,9 @@
     const near = (x, m) => x === m || (x.length >= 5 && m.includes(x)) || (m.length >= 5 && x.includes(m));
     const rank = q => { const ks = [q.module, q.moduleLabel].map(nz).filter(Boolean); const i = order.findIndex(m => ks.some(k => near(k, m))); return i < 0 ? 999 : i; };
     const pr = q => (RANK[q.priority] == null ? 1 : RANK[q.priority]);
-    const groups = []; open.slice().sort((a, b) => rank(a) - rank(b) || pr(a) - pr(b)).forEach(q => { const label = q.module ? q.moduleLabel : 'Contract-wide'; let g = groups.find(x => x.label === label); if (!g) groups.push(g = { label, qs: [] }); g.qs.push(q); });
+    // a tab is named after the session's own module ("Centralised Help Desk (Service Requests)"), so a question filed as "Service Request" joins it instead of making a second tab
+    const raw = s ? (s.modules || []) : []; const labelOf = q => { const i = rank(q); return i < 999 && raw[i] ? String(raw[i]) : q.module ? q.moduleLabel : 'Contract-wide'; };
+    const groups = []; open.slice().sort((a, b) => rank(a) - rank(b) || pr(a) - pr(b)).forEach(q => { const label = labelOf(q); let g = groups.find(x => x.label === label); if (!g) groups.push(g = { label, qs: [] }); g.qs.push(q); });
     const el = (tag, cls, text) => { const e = d.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
     const clock = m => { const h = Math.floor(m / 60) % 24, mm = Math.round(m % 60); return String(h).padStart(2, '0') + ':' + String(mm).padStart(2, '0'); };
     const t0 = s && /^\d{1,2}:\d{2}/.test(s.start || '') ? Number(s.start.split(':')[0]) * 60 + Number(s.start.split(':')[1]) : null; const total = s && s.minutes ? s.minutes : 0;
