@@ -2950,8 +2950,21 @@ body .sd-strip .sd-chips:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#
 body .sd-strip .sd-acts:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { display: flex; gap: 8px; margin-left: auto; opacity: 1; }
 body .sd-note:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { margin-top: 10px; padding: 9px 12px; border-radius: 12px; background: #EEF5FF; font-size: 13px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 /* chat box mic (16 Nov 2026): a white round button beside Send; red while it listens */
-body #asst .as-mic:not(#_):not(#__) { width: 38px !important; height: 38px !important; border-radius: 50% !important; background: #fff !important; color: #1d1d1f !important; border: 0 !important; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14) !important; display: grid; place-items: center; flex: none; cursor: pointer; margin-right: 6px; }
+body #asst .as-mic:not(#_):not(#__) { width: 38px !important; height: 38px !important; border-radius: 50% !important; background: #fff !important; color: #1d1d1f !important; border: 0 !important; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14) !important; display: grid; place-items: center; flex: none; cursor: pointer; margin: 0 -2px 0 auto; }
 body #asst .as-mic:hover:not(#_):not(#__) { background: #f5f5f7 !important; }
 body #asst .as-mic.on:not(#_):not(#__) { background: #FEE4E2 !important; color: #B42318 !important; box-shadow: inset 0 0 0 1.5px #F04438 !important; animation: asMicPulse 1.4s ease-in-out infinite; }
 @keyframes asMicPulse { 50% { box-shadow: inset 0 0 0 1.5px #F04438, 0 0 0 5px rgba(240, 68, 56, .15); } }
 @media (prefers-reduced-motion: reduce) { body #asst .as-mic.on:not(#_):not(#__) { animation: none; } }
+/* Claude's answers (18 Nov 2026): headings, numbered rows and bullets instead of raw Markdown marks */
+body .ki-bub.ki-fmt:not(#_):not(#__) { white-space: normal !important; }
+body .ki-fmt p:not(#_):not(#__) { margin: 0 0 8px; }
+body .ki-fmt .ki-h:not(#_):not(#__) { margin: 12px 0 6px; font-weight: 600; font-size: 14.5px; color: #1D1A5E; }
+body .ki-fmt > :first-child:not(#_):not(#__) { margin-top: 0; }
+body .ki-fmt > :last-child:not(#_):not(#__) { margin-bottom: 0; }
+body .ki-fmt ol:not(#_):not(#__), body .ki-fmt ul:not(#_):not(#__) { margin: 0 0 8px; padding-left: 22px; }
+body .ki-fmt li:not(#_):not(#__) { margin: 0 0 5px; padding-left: 2px; }
+body .ki-fmt:not(#_):not(#__) ol li::marker { color: #1570EF; font-weight: 600; }
+body .ki-fmt:not(#_):not(#__) ul li::marker { color: #86868b; }
+body .ki-fmt b:not(#_):not(#__) { font-weight: 600; }
+body .ki-fmt code:not(#_):not(#__) { font: 12.5px ui-monospace, Consolas, monospace; background: rgba(0, 0, 0, .05); padding: 1px 5px; border-radius: 5px; }
+body .ki-fmt .ki-src:not(#_):not(#__) { display: inline-block; vertical-align: 1px; margin-left: 2px; padding: 0 5px; border-radius: 6px; background: #EAF2FF; color: #1570EF; font-size: 10.5px; font-weight: 600; line-height: 16px; }

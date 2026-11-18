@@ -32,4 +32,10 @@ t('a reply names who wrote it: DeepSeek, Claude or the project records; your own
   assert.match(W.feed([{ who: 'claude', via: 'claude', text: 'a' }]), />Claude</); assert.match(W.feed([{ who: 'claude', via: 'app', text: 'a' }]), />Project records</);
   assert.ok(!W.feed([{ who: 'you', via: 'deepseek', text: 'a' }]).includes('ki-via') && !W.feed([{ who: 'claude', via: '<b>', text: 'a' }]).includes('ki-via'));
 });
+t('Claude answers show headings, numbered rows, bullets and source tags, still escaped; your own text stays plain', () => {
+  const h = W.fmt('Intro line.\n\n**High Priority Tasks:**\n1. **T-1 Kick-off** [S5] - due\n2. T-2 <x>\n\n### Other\n*   **Open Action:** one [S2][S4]');
+  assert.match(h, /<p>Intro line\.<\/p><div class="ki-h">High Priority Tasks<\/div><ol><li value="1"><b>T-1 Kick-off<\/b> <sup class="ki-src">S5<\/sup> - due<\/li><li value="2">T-2 &lt;x&gt;<\/li><\/ol>/);
+  assert.match(h, /<div class="ki-h">Other<\/div><ul><li><b>Open Action:<\/b> one <sup class="ki-src">S2<\/sup><sup class="ki-src">S4<\/sup><\/li><\/ul>$/);
+  assert.ok(W.feed([{ who: 'claude', text: '**a**' }]).includes('ki-fmt') && W.feed([{ who: 'you', text: '**a**' }]).includes('>**a**'));
+});
 console.log(n + ' work chat checks passed');

@@ -198,11 +198,15 @@
   V.ACT.asstMic = () => {
     if (rec) { micOff(); return; }
     const R = SRec(), box = document.getElementById('asM'); if (!R || !box) { V.toast('This browser cannot turn speech into text. Use Chrome or Edge, or press Windows + H.', 6000, true); return; }
-    const r = new R(); r.lang = navigator.language || 'en-US'; r.continuous = true; r.interimResults = true;
-    const start = box.value ? box.value.replace(/\s*$/, ' ') : '';
-    r.onresult = e => { box.value = (start + Array.from(e.results).map(x => x[0].transcript).join('')).slice(0, 580); };
-    r.onerror = e => { micOff(); V.toast(e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'The microphone is blocked. Allow it with the icon in the address bar, then press the mic again. Windows + H also types what you say.' : e.error === 'no-speech' ? 'No speech heard. Press the mic and speak.' : 'Speech to text stopped (' + e.error + '). Windows + H also types what you say.', 7000, e.error !== 'no-speech'); };
-    r.onend = () => { if (rec === r) micOff(); };
+    const r = new R(), nl = navigator.language || 'en-US';
+    // accuracy (user, 18 Nov 2026): Indian English model for an English browser on India time; best of 3 guesses; keeps listening through pauses
+    let tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { }
+    r.lang = /^en/i.test(nl) && /Calcutta|Kolkata/.test(tz) ? 'en-IN' : nl; r.continuous = true; r.interimResults = true; r.maxAlternatives = 3;
+    let start = box.value ? box.value.replace(/\s*$/, ' ') : '';
+    const best = x => x.isFinal ? Array.from(x).reduce((a, b) => (b.confidence || 0) > (a.confidence || 0) ? b : a, x[0]).transcript : x[0].transcript;
+    r.onresult = e => { const t = (start + Array.from(e.results).map(best).join('')).replace(/\s+/g, ' ').replace(/^\s+/, ''); box.value = (t.charAt(0).toUpperCase() + t.slice(1)).slice(0, 580); };
+    r.onerror = e => { if (e.error === 'no-speech' && box.value.trim()) return; micOff(); V.toast(e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'The microphone is blocked. Allow it with the icon in the address bar, then press the mic again. Windows + H also types what you say.' : e.error === 'no-speech' ? 'No speech heard. Press the mic and speak.' : 'Speech to text stopped (' + e.error + '). Windows + H also types what you say.', 7000, e.error !== 'no-speech'); };
+    r.onend = () => { if (rec !== r) return; start = box.value ? box.value.replace(/\s*$/, ' ') : ''; try { r.start(); } catch (e) { micOff(); } };   // the browser stops after a pause; carry on until the person presses Stop or Send
     try { r.start(); } catch (e) { V.toast('Could not start the microphone. Windows + H also types what you say.', 6000, true); return; }
     rec = r; const b = document.getElementById('asMic'); if (b) { b.classList.add('on'); b.setAttribute('aria-pressed', 'true'); b.title = 'Stop'; } box.focus();
   };

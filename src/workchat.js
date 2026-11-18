@@ -10,12 +10,28 @@
   const VIA = { project: 'Project AI', deepseek: 'DeepSeek', claude: 'Claude', app: 'Project records' };   // m.via: which engine wrote the reply, shown above it
   const attrs = a => Object.keys(a || {}).filter(k => /^[a-z][a-z0-9-]*$/.test(k)).map(k => ' data-' + k + '="' + esc(a[k]) + '"').join('');
   const btn = b => '<button type="button" class="btn sm' + (b.primary ? ' primary' : '') + (b.danger ? ' danger' : '') + '" data-act="' + esc(b.act) + '"' + attrs(b.attrs) + '>' + esc(b.label) + '</button>';
+  // Claude's answers (user, 18 Nov 2026): Markdown becomes headings, numbered rows, bullets, bold and small source tags instead of raw ** and * marks
+  const inl = t => esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\s*\[(S\d+)\](?:\s*\[(S\d+)\])*/g, s => ' ' + s.match(/S\d+/g).map(x => '<sup class="ki-src">' + x + '</sup>').join(''));
+  function fmt(text) {
+    let out = '', list = '';
+    const close = () => { if (list) { out += '</' + list + '>'; list = ''; } };
+    const open = k => { if (list !== k) { close(); out += '<' + k + '>'; list = k; } };
+    String(text == null ? '' : text).split('\n').forEach(ln => {
+      const t = ln.trim(); let x;
+      if (!t) { close(); return; }
+      if ((x = t.match(/^#{1,4}\s+(.+)/)) || (x = t.match(/^\*\*([^*]+?):?\*\*:?$/))) { close(); out += '<div class="ki-h">' + inl(x[1].replace(/:$/, '')) + '</div>'; }
+      else if ((x = t.match(/^(\d+)[.)]\s+(.+)/))) { open('ol'); out += '<li value="' + x[1] + '">' + inl(x[2]) + '</li>'; }
+      else if ((x = t.match(/^[-*•]\s+(.+)/))) { open('ul'); out += '<li>' + inl(x[1]) + '</li>'; }
+      else { close(); out += '<p>' + inl(t) + '</p>'; }
+    });
+    close(); return out;
+  }
   function message(m) {
     const who = Object.prototype.hasOwnProperty.call(WHO, m.who) ? m.who : 'claude';
     const reply = m.reply ? '<div class="ki-reply">' + arr(m.reply.fields).map(f => '<textarea rows="2" maxlength="600" placeholder="Your answer"' + attrs(f.attrs) + '>' + esc(f.value) + '</textarea>').join('') + (m.reply.send ? btn(Object.assign({ primary: true }, m.reply.send)) : '') + '</div>' : '';
     const hd = m.head && who === 'claude' ? '<div class="ki-re"><div class="ki-reQ">Re: “' + esc(m.head.q) + '”</div>' + (m.head.area ? '<span class="ki-area">' + esc(m.head.area) + '</span>' : '') + (m.head.view ? '<button type="button" class="ki-link" data-act="koOpen"' + attrs({ view: m.head.view }) + '>Open page</button>' : '') + '<button type="button" class="ki-link" data-act="asstQuote"' + attrs({ q: m.head.full }) + '>Reply</button></div>' : '';   // which question this answers, in which area, with a way to open the page or follow up
     const av = who === 'other' ? esc(String(m.name || '?').split(' ').map(x => x[0]).join('').slice(0, 2).toUpperCase()) : esc(WHO[who]);   // a teammate's message shows their initials and name
-    return '<div class="ki-row ' + who + (VIA[m.via] && (who === 'claude' || who === 'bad') ? ' via-' + m.via : '') + '"><div class="ki-av" aria-hidden="true">' + av + '</div><div class="ki-body">' + (who === 'other' && m.name ? '<div class="ki-name">' + esc(m.name) + '</div>' : '') + (VIA[m.via] && (who === 'claude' || who === 'bad') ? '<div class="ki-via ' + m.via + '"><i></i>' + VIA[m.via] + '</div>' : '') + hd + '<div class="ki-bub">' + esc(m.text) + (m.typing ? '<span class="ko-typing" aria-hidden="true"><i></i><i></i><i></i></span>' : '') + reply
+    return '<div class="ki-row ' + who + (VIA[m.via] && (who === 'claude' || who === 'bad') ? ' via-' + m.via : '') + '"><div class="ki-av" aria-hidden="true">' + av + '</div><div class="ki-body">' + (who === 'other' && m.name ? '<div class="ki-name">' + esc(m.name) + '</div>' : '') + (VIA[m.via] && (who === 'claude' || who === 'bad') ? '<div class="ki-via ' + m.via + '"><i></i>' + VIA[m.via] + '</div>' : '') + hd + (who === 'claude' ? '<div class="ki-bub ki-fmt">' + fmt(m.text) : '<div class="ki-bub">' + esc(m.text)) + (m.typing ? '<span class="ko-typing" aria-hidden="true"><i></i><i></i><i></i></span>' : '') + reply
       + (arr(m.actions).length ? '<div class="ki-acts">' + arr(m.actions).map(btn).join('') + '</div>' : '') + '</div>' + (m.at ? '<div class="ki-time">' + esc(m.at) + '</div>' : '') + '</div></div>';
   }
   const STATE = { todo: 'Waiting', now: 'Preparing…', done: 'Ready', bad: 'Needs attention' };
@@ -32,6 +48,6 @@
       + '<div class="ki-feed-wrap"><div class="ki-feed" role="log" aria-live="polite">' + arr(o.messages).map(message).join('') + '</div>' + (o.composer ? '<div class="ki-comp">' + o.composer + '</div>' : '') + '</div>'
       + '<div class="ki-side"><div class="ki-st">' + esc(o.tilesTitle || 'What Claude prepares') + '</div>' + arr(o.tiles).map(tile).join('') + '</div></div></section>';
   }
-  const api = { html, feed };
+  const api = { html, feed, fmt };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBWorkChat = api;
 })(typeof window !== 'undefined' ? window : globalThis);
