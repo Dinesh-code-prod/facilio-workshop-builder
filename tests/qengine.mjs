@@ -33,6 +33,8 @@ t('requirements and open questions (kept in the project document) are read the s
   assert.match(ask('what are the open questions').text, /2 open questions:/); assert.match(ask('unanswered questions for sam').text, /1 open question assigned to Sam K:\n- Who approves above 500\?/s);
   assert.equal(ask('draft the requirements for the work order module'), null);   // a request to write is still left for the AI
 });
+t('a stray word that matches nothing (dictation: "just dance just pending task") is left out and the rest is answered, and the reply says so', () => {
+  const r = ask('just dance just pending task'); assert.ok(r, 'answered'); assert.deepEqual(r.dropped, ['dance']); assert.match(r.text, /No task mentions "dance", so I left that out\./); assert.match(r.text, /open tasks?:\n- T-/); });
 t('a word that names something specific filters the title; an unknown word with no match goes to the AI', () => { assert.match(ask('tasks about mockup').text, /mentioning "mockup":\n- T-7/); assert.equal(ask('tasks about zebra'), null); });
 t('follow-ups reuse the last question', () => {
   const first = ask('what are the pending tasks'); const f2 = ask('only mine', tasks, first.intent); assert.match(f2.text, /open tasks assigned to you/);

@@ -92,9 +92,12 @@
   const SHOW = 8;
   function answer(msg, ctx, last) {
     const m = word(msg); const k0 = kindOf(m) || (last && last.kind) || 'task'; const rows0 = ctx.rowsFor ? ctx.rowsFor(k0) : [];
-    const intent = parse(msg, Object.assign({}, ctx, { rows: rows0 }), last); if (!intent) return null;
-    const def = KINDS[intent.kind], rows = intent.kind === k0 ? rows0 : (ctx.rowsFor ? ctx.rowsFor(intent.kind) : []); const hit = apply(intent, rows, ctx);
-    if (!hit.length && intent.f.text.length) return null;   // an unknown word matched nothing: do not claim "none", let the AI look
+    let intent = parse(msg, Object.assign({}, ctx, { rows: rows0 }), last); if (!intent) return null;
+    const def = KINDS[intent.kind], rows = intent.kind === k0 ? rows0 : (ctx.rowsFor ? ctx.rowsFor(intent.kind) : []); let hit = apply(intent, rows, ctx), dropped = [];
+    // a stray word matched nothing (often a mis-heard word from dictation: "just dance just pending tasks"): answer the rest of the question and say which word was left out; with nothing left to answer, let the AI look
+    if (!hit.length && intent.f.text.length && /\b(about|mention\w*|regarding|related to|called|named|titled|containing|on the)\b/.test(m)) return null;   // a topic the person named on purpose: the AI looks further
+    if (!hit.length && (intent.f.text.length > 1 || /^(when|where|why|how)\b/.test(m))) return null;   // several words, or a when/where question: it is about something else (plan dates, a page), not a stray word
+    if (!hit.length && intent.f.text.length) { const f2 = Object.assign({}, intent.f, { text: [] }); const h2 = apply({ kind: intent.kind, f: f2 }, rows, ctx); if (!h2.length) return null; dropped = intent.f.text; intent = Object.assign({}, intent, { f: f2 }); hit = h2; }
     const fmt = ctx.fmtDate || (d => d);
     const line = r => { const meta = [pick(r, def.owner) ? local(pick(r, def.owner)) : '', pick(r, def.due) ? 'due ' + fmt(String(pick(r, def.due)).slice(0, 10)) : '', pick(r, def.prio) || '', pick(r, def.status) && !intent.f.status ? pick(r, def.status) : ''].filter(Boolean); return '- ' + [def.id(r), String(pick(r, def.title) || '(no title)').slice(0, 90)].filter(Boolean).join(' ') + (meta.length ? ' (' + meta.join(' · ') + ')' : ''); };
     const said = describe(intent); let t;
@@ -102,7 +105,7 @@
     else if (!hit.length) { let alt = ''; if (intent.f.prio && intent.f.prio !== 'none' && def.prio.length) { const open = apply({ kind: intent.kind, f: Object.assign({}, intent.f, { prio: '' }) }, rows, ctx); const nop = open.filter(r => !String(pick(r, def.prio)).trim()).length; if (open.length) alt = '\n' + open.length + ' ' + describe({ kind: intent.kind, f: Object.assign({}, intent.f, { prio: '' }) }) + (nop === open.length ? ' in all, and none of them has a ' + (def.prio[0] === 'impact' ? 'impact' : 'priority') + ' set.' : nop ? ' in all, ' + nop + ' of them with no ' + (def.prio[0] === 'impact' ? 'impact' : 'priority') + ' set.' : ' in all.'); } t = 'None: no ' + said + '.' + alt; }
     else if (intent.ask === 'next') { const s = hit.filter(r => pick(r, def.due)).sort((a, b) => String(pick(a, def.due)).localeCompare(String(pick(b, def.due)))); t = s.length ? 'The next one due:\n' + line(s[0]) : 'None of the ' + hit.length + ' ' + said + ' has a due date.'; }
     else t = hit.length + ' ' + describe(intent, hit.length) + ':\n' + hit.slice(0, SHOW).map(line).join('\n') + (hit.length > SHOW ? '\n…and ' + (hit.length - SHOW) + ' more (open the page for all).' : '');
-    return { text: 'I read this as: ' + said + '.\n' + t, view: def.view, intent: { kind: intent.kind, f: intent.f }, said };
+    return { text: 'I read this as: ' + said + '.' + (dropped.length ? ' No ' + def.one + ' mentions "' + dropped.join(' ') + '", so I left that out.' : '') + '\n' + t, dropped, view: def.view, intent: { kind: intent.kind, f: intent.f }, said };
   }
   const api = { parse, apply, describe, answer, KINDS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; root.FWBQuery = api;
