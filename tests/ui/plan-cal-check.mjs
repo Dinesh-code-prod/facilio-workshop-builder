@@ -32,6 +32,16 @@ await p.keyboard.press('Escape'); await p.waitForTimeout(300); check('Escape clo
 await p.evaluate(() => document.querySelector('[data-act="calAi"]').click()); await p.waitForTimeout(300); await p.evaluate(() => document.querySelector('[data-act="calAiRun"]').click());
 let draft = false; for (let i = 0; i < 40 && !draft; i++) { await p.waitForTimeout(1000); draft = await p.evaluate(() => /Calendar briefing/.test((document.querySelector('#drawer .drawer') || {}).innerText || '')); }
 check('the DeepSeek briefing opens as a draft for review', draft);
+await p.keyboard.press('Escape'); await p.evaluate(() => { const x = document.querySelector('[data-act="closeDrawer"]'); if (x) x.click(); }); await p.waitForTimeout(400);
+// agenda, hover preview, one-click chips, drag to reschedule with undo (19 Nov 2026)
+await mode(p, 'agenda'); check('agenda view lists dated items', await p.evaluate(() => document.querySelectorAll('.cal-agenda .cal-row').length > 0));
+await mode(p, 'month'); await p.hover('.cal-ev'); await p.waitForTimeout(300); check('pointing at an item shows its preview card', await p.evaluate(() => { const k = document.querySelector('.cal-hc'); return !!k && !k.hidden && /When/.test(k.textContent); }));
+const nBefore = await evs(p); await p.evaluate(() => document.querySelector('.cal-fchip[data-act="calChip"]').click()); await p.waitForTimeout(500); const nOff = await evs(p); await p.evaluate(() => document.querySelector('.cal-fchip[data-act="calChip"]').click()); await p.waitForTimeout(500);
+check('a phase chip hides and shows its items in one click', nOff < nBefore && (await evs(p)) === nBefore, `${nBefore} -> ${nOff}`);
+const dragged = await p.evaluate(() => { const el = document.querySelector('.cal-ev[draggable="true"]'); if (!el) return null; const wk = el.closest('.cal-wk'); const r = el.getBoundingClientRect(), w = wk.getBoundingClientRect(); const dt = new DataTransfer(); const at = (t, x, y) => (t === 'dragstart' ? el : wk).dispatchEvent(new DragEvent(t, { bubbles: true, cancelable: true, clientX: x, clientY: y, dataTransfer: dt }));
+  const x0 = r.left + 6, y = r.top + r.height / 2; const x1 = Math.min(w.right - 4, x0 + w.width / 7); at('dragstart', x0, y); at('dragover', x1, y); at('drop', x1, y); el.dispatchEvent(new DragEvent('dragend', { bubbles: true, dataTransfer: dt })); return el.getAttribute('aria-label'); });
+await p.waitForTimeout(900); const undo = await p.$('.cal-undo button'); check('dragging an item to the next day moves it and offers Undo', !!dragged && !!undo, dragged || 'no draggable item');
+if (undo) { await undo.click(); await p.waitForTimeout(900); check('Undo puts the dates back', !(await p.$('.cal-undo'))); }
 await p.close();
 // measures the calendar itself: the top bar spilling sideways at tablet width is a separate, page-wide matter (see the roadmap)
 for (const w of [390, 768, 1500]) { const q = await open(w, 900); const bad = []; for (const m of ['month', 'week', 'day', 'year']) { await mode(q, m); if (await q.evaluate(() => { const c = document.querySelector('.cal'); return c.getBoundingClientRect().right > innerWidth + 1 || c.scrollWidth > c.clientWidth + 1; })) bad.push(m); } check(`the calendar fits the screen at ${w}px in every view`, !bad.length, bad.join(', ')); await q.close(); }
