@@ -113,6 +113,19 @@
   /** the questions grouped by module, in first-seen order: [{ module, label, questions }] */
   function byModule(list) { const out = []; arr(list).forEach(q => { let g = out.find(x => x.module === q.module); if (!g) out.push(g = { module: q.module, label: q.module ? q.moduleLabel : 'Contract-wide', questions: [] }); g.questions.push(q); }); return out; }
 
-  const api = { STATUSES, LABEL, KINDS, notesOf, questionList, mergeLive, counts, setNote, evidenceLine, basisOf, sourceOf, draftRecord, sameQuestion, agendaOf, fmtClock, forSession, byModule };
+  /** After a session, per module of the session: the questions the transcript answered, the ones still open, what was said (promises, asks, decisions) and what is missing or off
+      (said but not in the BRD, outside or against the contract, in scope but never discussed). Pure: findings are rs_findings items, questions the session's questions. A finding goes to the
+      module it names, else the first session module its words mention, else "General"; dismissed findings are left out. */
+  const SAID = ['promise', 'ask', 'usecase', 'custom_usecase', 'additional', 'decision', 'risk'], MISSED = ['gap', 'conflict', 'outside_contract', 'contract_conflict', 'not_discussed'];
+  function afterReport(session, questions, findings) {
+    const mods = arr(obj(session).modules).filter(Boolean); const groups = mods.map(m => ({ module: m, label: m, answered: [], open: [], said: [], missed: [] })); const general = { module: '', label: 'General', answered: [], open: [], said: [], missed: [] };
+    const pick = (...names) => { const ks = names.map(nz).filter(Boolean); return groups.find(g => ks.some(k => sameMod(nz(g.module), k))) || null; };
+    arr(questions).forEach(q => { const g = pick(q.module, q.moduleLabel) || general; if (q.status === 'answered') g.answered.push(q); else if (q.status !== 'skipped') g.open.push(q); });   /* a skipped question was chosen not to be asked: neither answered nor missed */
+    arr(findings).filter(f => f && f.status !== 'dismissed' && f.text).forEach(f => {
+      const hay = (f.text + ' ' + (f.quote || '')).toLowerCase(); const g = pick(f.module) || groups.find(x => hay.includes(String(x.module).toLowerCase())) || general;
+      if (SAID.includes(f.kind)) g.said.push(f); else if (MISSED.includes(f.kind)) g.missed.push(f); });
+    return groups.concat(general.answered.length || general.open.length || general.said.length || general.missed.length ? [general] : []);
+  }
+  const api = { STATUSES, LABEL, KINDS, notesOf, questionList, mergeLive, counts, setNote, evidenceLine, basisOf, sourceOf, draftRecord, sameQuestion, agendaOf, fmtClock, forSession, byModule, afterReport };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBWorkshopLogic = api;
 })(typeof window !== 'undefined' ? window : globalThis);

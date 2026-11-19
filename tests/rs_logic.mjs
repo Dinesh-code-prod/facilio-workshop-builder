@@ -2,7 +2,8 @@
 import assert from 'node:assert/strict'; import { cleanFinding, mergeFindings, upsertTranscript, KINDS, LIMITS } from '../work/server/_rsapi.mjs';
 let n = 0; const t = (name, fn) => { fn(); n++; console.log('  ok  ' + name); }; const NOW = '2026-11-06T10:00:00Z';
 t('a finding is cleaned; an unknown kind or an empty text is dropped', () => {
-  assert.deepEqual(cleanFinding({ kind: ' PROMISE ', text: '  We will\nmigrate  assets ', quote: 'q', speaker: 'Asha', at: '00:12:03' }), { kind: 'promise', text: 'We will migrate assets', quote: 'q', speaker: 'Asha', at: '00:12:03', ref: '' });
+  assert.deepEqual(cleanFinding({ kind: ' PROMISE ', text: '  We will\nmigrate  assets ', quote: 'q', speaker: 'Asha', at: '00:12:03' }), { kind: 'promise', text: 'We will migrate assets', quote: 'q', speaker: 'Asha', at: '00:12:03', ref: '', module: '' });
+  assert.equal(cleanFinding({ kind: 'gap', text: 'x', module: '  Work   Orders ' }).module, 'Work Orders', 'a finding may name its module');
   assert.equal(cleanFinding({ kind: 'idea', text: 'x' }), null); assert.equal(cleanFinding({ kind: 'ask', text: '   ' }), null); assert.equal(cleanFinding(null), null); assert.equal(cleanFinding({ kind: 'ask', text: 'x'.repeat(2000) }).text.length, LIMITS.text);
 });
 t('saving findings again replaces the open ones of that transcript but keeps decided ones and other transcripts', () => {

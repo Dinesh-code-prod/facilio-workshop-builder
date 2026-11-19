@@ -112,13 +112,25 @@
     const dis = ro() ? ' disabled' : '';
     return `<div class="row ws-endrow" style="gap:8px;flex-wrap:wrap;margin-top:12px"><button type="button" class="btn sm" data-act="wsSolution"${dis} title="Answered questions with a note become proposals on the Solution tab">Send the answers to the Solution tab</button><button type="button" class="btn sm" data-act="wsClaude"${dis}>Open in Claude</button></div>`;
   }
+  // After the session: per module of the picked session, what the transcript answered and what is still missing (src/workshoplogic.js afterReport). Reads the findings; changes nothing.
+  const MISS_LABEL = { gap: 'Said, not in the BRD', conflict: 'BRD differs from what was said', outside_contract: 'Outside the contract', contract_conflict: 'Against the contract', not_discussed: 'In the contract, not discussed yet' };
+  function afterCard(vis) {
+    const ses = curSession(); if (!ses || !ses.modules.length) return ''; const fd = F.doc('rs_findings'); const fs = fd && Array.isArray(fd.items) ? fd.items : [];
+    const rows = L().afterReport(ses, vis, fs); const sum = rows.reduce((a, g) => ({ done: a.done + g.answered.length, open: a.open + g.open.length, miss: a.miss + g.missed.length }), { done: 0, open: 0, miss: 0 });
+    if (!sum.done && !sum.open && !sum.miss && !fs.length) return '';
+    const li = (t, sub) => `<li>${esc(t)}${sub ? `<div class="xs muted">${esc(sub)}</div>` : ''}</li>`;
+    const body = rows.map(g => `<div class="ws-after-m"><b>${esc(g.label)}</b> <span class="xs muted">${g.answered.length} answered, ${g.open.length} still open, ${g.said.length} said in the call</span>
+      ${g.open.length ? `<div class="xs muted" style="margin-top:6px">Not answered yet</div><ul class="small">${g.open.slice(0, 8).map(q => li(q.text)).join('')}</ul>` : ''}
+      ${g.missed.length ? `<div class="xs muted" style="margin-top:6px">Missing or to decide</div><ul class="small">${g.missed.slice(0, 8).map(f => li(f.text, (MISS_LABEL[f.kind] || f.kind) + (f.quote ? ': "' + String(f.quote).slice(0, 140) + '"' : ''))).join('')}</ul>` : ''}</div>`).join('');
+    return `<div class="card ws-card ws-after"><div class="card-h"><b>After the session: ${esc(ses.title)}</b><span class="xs muted">${sum.done} answered, ${sum.open} not answered, ${sum.miss} missing or to decide</span></div><div class="card-b">${body || '<div class="muted small">Nothing to compare yet. Pull the transcript and let Claude read it, then the answers and gaps show here.</div>'}<p class="xs muted" style="margin:10px 0 0">Built from the transcript, the contract and the questions. Confirm or dismiss each item under Checks &amp; validations.</p></div></div>`;
+  }
   V.workshop = { html() {
     if (V.isCustomer()) return '<div class="page-body"><div class="empty">This page is for the project team.</div></div>';
     const u = U(); const prep = prepared(); const all = questions(prep);
     if (!u.picked) { u.picked = true; if (!u.sessionId) { const first = sessionList().find(s => { const qs = forSession(all, s); return qs.length && qs.some(isOpenQ); }); if (first) u.sessionId = first.id; } }
     const vis = visible(all);
     const pane = vis.length ? `<div class="ws-ask">${sideList(vis, pickCur(vis))}<div class="ws-one">${focusCard(vis)}</div></div>` : `<div class="ws-one">${focusCard(vis)}</div>`;
-    const main = `${roadmap(all)}${briefCard(vis)}${pane}${toolsRow()}`;
+    const main = `${roadmap(all)}${briefCard(vis)}${pane}${afterCard(vis)}${toolsRow()}`;
     const lead = 'Go through your requirement sessions one by one: ask the questions and note what the customer answers. The call recording is analysed under Transcripts. Nothing said here becomes an approved requirement: every record made is a draft with its source.';
     if (FOCUS()) return `<div class="wb-focus-page ws-room ws-focus"><div class="wb-focus-bar"><b>Workshop room</b><span class="xs muted">${esc((S.project && S.project.name) || '')}</span></div>${bar()}${main}</div>`;
     return (u.full ? '' : `<div class="page-header"><div class="t"><h1>Workshop room</h1><p>${lead}</p></div></div>`) + `<div class="page-body"><div class="ws-room${u.full ? ' ws-full ws-scroll' : ''}">${u.full ? '<div class="wb-focus-bar"><b>Workshop room</b><span class="xs muted">' + esc((S.project && S.project.name) || '') + '</span></div>' : ''}${bar()}${main}</div></div>`;

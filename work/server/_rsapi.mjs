@@ -16,7 +16,7 @@ export const LIMITS = { transcript: 120000, perCall: 200, total: 1000, title: 20
 export function cleanFinding(x) {
   if (!x || typeof x !== 'object') return null; const kind = String(x.kind || '').trim().toLowerCase(); if (!KINDS.includes(kind)) return null;
   const text = cut(x.text, LIMITS.text); if (!text) return null;
-  return { kind, text, quote: cut(x.quote, LIMITS.quote), speaker: cut(x.speaker, LIMITS.speaker), at: cut(x.at, 40), ref: cut(x.ref, LIMITS.ref) };
+  return { kind, text, quote: cut(x.quote, LIMITS.quote), speaker: cut(x.speaker, LIMITS.speaker), at: cut(x.at, 40), ref: cut(x.ref, LIMITS.ref), module: cut(x.module, 80) };   // module: the Facilio module the finding is about (the After the session report groups by it)
 }
 
 /** The findings after a save for one transcript: other transcripts' findings and every finding a person already decided are kept; this transcript's still-open ones are replaced by the new, cleaned, de-duplicated list. */

@@ -79,4 +79,14 @@ t('a session asks only the questions of its modules (items stand in for modules)
   const portal = { id: 's3', title: 'Session 3', modules: ['Client Portal (web and mobile)', 'Reactive Maintenance'] };
   assert.deepEqual(L.forSession(qs, portal, ses.concat([portal])).map(q => q.id), ['r'], 'the client questions belong to Client Management, not also to Client Portal');
 });
+t('after a session: answered, open, said and missed, per module of the session', () => {
+  const ses = { id: 's1', modules: ['Work Orders', 'Asset Management'] };
+  const qs = [{ id: 'a', module: 'workorder', moduleLabel: 'Work Orders', status: 'answered' }, { id: 'b', module: 'workorder', moduleLabel: 'Work Orders', status: 'toask' }, { id: 'c', module: 'asset', moduleLabel: 'Asset Management', status: 'skipped' }, { id: 'g', module: '', status: 'asked' }];
+  const fs = [{ kind: 'promise', text: 'SLA by priority', module: 'Work Orders', status: 'open' }, { kind: 'gap', text: 'QR scan on assets was asked, not in the BRD', status: 'open' , quote: 'we need QR for Asset Management'}, { kind: 'outside_contract', text: 'Payroll export', status: 'confirmed' }, { kind: 'ask', text: 'dismissed one', module: 'Work Orders', status: 'dismissed' }];
+  const r = L.afterReport(ses, qs, fs); const by = m => r.find(g => g.module === m);
+  assert.deepEqual(r.map(g => g.label), ['Work Orders', 'Asset Management', 'General']);
+  assert.equal(by('Work Orders').answered.length, 1); assert.equal(by('Work Orders').open.length, 1); assert.equal(by('Work Orders').said.length, 1, 'the dismissed finding is left out');
+  assert.equal(by('Asset Management').answered.length + by('Asset Management').open.length, 0, 'a skipped question is neither answered nor missed'); assert.equal(by('Asset Management').missed.length, 1, 'a finding goes to the module its words mention');
+  assert.equal(by('').open.length, 1); assert.equal(by('').missed.length, 1); assert.deepEqual(L.afterReport(null, [], []), []);
+});
 console.log(n + ' workshop logic checks passed');

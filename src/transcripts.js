@@ -49,6 +49,8 @@
   /** stores one transcript file and analyses it; also used by the Workshop room to keep a live call as a transcript (V.trSave) */
   async function trSave(f, meta, replaces) {
     loading(true, 'Uploading transcript…'); try {
+      // a transcript of a planned session covers that session's modules, whoever saves it (the live call saved none)
+      if (meta.sessionId && !(meta.modules && meta.modules.length)) { const WL = root.FWBWorkshopLogic; const ses = WL && V.plannerDoc ? WL.agendaOf(V.plannerDoc().sessions).find(x => x.id === meta.sessionId) : null; if (ses && ses.modules.length) meta = Object.assign({}, meta, { modules: ses.modules }); }
       const text = await extractText(f); const rec = await API.uploadFile(S.project.id, f, 'transcript', { sessionId: meta.sessionId }, replaces ? (T().items.find(x => x.id === replaces) || {}).fileId : null, p => V.loadingMsg('Uploading… ' + Math.round(p * 100) + '%'));
       const d = T(); const old = replaces && d.items.find(x => x.id === replaces); if (old) old.superseded = true;
       const item = Object.assign({ id: F.uid('tr'), fileId: rec.id, name: f.name, uploadedAt: new Date().toISOString(), by: S.user.name, status: 'uploaded', version: old ? (old.version || 1) + 1 : 1, replaces: old ? old.id : null, chars: text.length }, meta);
