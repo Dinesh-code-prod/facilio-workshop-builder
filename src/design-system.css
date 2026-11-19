@@ -119,9 +119,6 @@ body .page-header > .row, body .page-header > .acts, body .page-header .hd-acts,
 /* every header button has the same size; one solid primary, the rest outlined on navy */
 body .page-header .btn:not(#_), body .adm-hero .btn:not(#_), body .adm-hero .hm-btn:not(#_) { height: 36px !important; min-height: 36px !important; padding: 0 14px !important; border-radius: var(--ds-r) !important; font-size: 13.5px !important; font-weight: 600 !important; box-shadow: none !important; transform: none !important; background: rgba(255,255,255,.06) !important; color: #E8EDFA !important; border: 1px solid rgba(255,255,255,.24) !important; display: inline-flex; align-items: center; gap: 8px; }
 body .page-header .btn:not(#_):hover, body .adm-hero .btn:not(#_):hover, body .adm-hero .hm-btn:not(#_):hover { background: rgba(255,255,255,.12) !important; color: #fff !important; }
-body .page-header .btn.primary:not(#_), body .page-header .btn.pri:not(#_) { background: var(--ds-blue) !important; border-color: var(--ds-blue) !important; color: #fff !important; }
-body .page-header .btn.primary:not(#_):hover { background: var(--ds-blue-h) !important; border-color: var(--ds-blue-h) !important; }
-body .page-header .btn.danger { color: #FDA29B !important; border-color: rgba(253,162,155,.45) !important; }
 body .page-header .btn svg, body .adm-hero .btn svg, body .adm-hero .hm-btn svg { width: 16px !important; height: 16px !important; }
 body .page-header .tag, body .page-header .chip, body .page-header .pill, body .adm-hero .chip { background: rgba(255,255,255,.1) !important; color: #fff !important; border: 1px solid rgba(255,255,255,.22) !important; }
 body .page-header select, body .page-header input:not([type=checkbox]) { height: 36px !important; min-height: 36px !important; background-color: rgba(255,255,255,.06) !important; color: #fff !important; border: 1px solid rgba(255,255,255,.24) !important; border-radius: var(--ds-r) !important; }
@@ -147,24 +144,13 @@ body .page-body > .tabs:first-child, body .page > .tabs { margin-top: -8px; }
    Sizes: .btn.lg (40, prominent), .btn (36, standard), .btn.sm (32, compact), .btn.icon (square, any size).
    Emphasis: .primary (solid blue, one per group), default (outlined), .ghost / .link (text only), .danger (red outline).
    A label never wraps; groups wrap instead. Comparable buttons in one row share a size. */
-body .btn:not(#_) { height: var(--ds-btn); min-height: var(--ds-btn); padding: 0 var(--ds-btn-px); border-radius: var(--ds-r) !important; font-size: 13.5px !important; font-weight: 600 !important; line-height: 1.2 !important; letter-spacing: 0 !important; text-transform: none !important; background: #fff; color: var(--ds-ink-2); border: 1px solid var(--ds-line-2) !important; box-shadow: var(--ds-sh) !important; display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; flex-shrink: 0; max-width: 100%; vertical-align: middle; cursor: pointer; transition: background .15s, border-color .15s, color .15s; transform: none !important; background-image: none !important; text-decoration: none !important; }
-body .btn:hover { background: var(--ds-hover); color: var(--ds-ink); }
-body .btn:active { background: var(--ds-soft); }
-body .btn:focus-visible { outline: 2px solid var(--ds-blue) !important; outline-offset: 2px; }
-body .btn.sm:not(#_) { height: var(--ds-btn-sm); min-height: var(--ds-btn-sm); padding: 0 var(--ds-btn-px-sm); font-size: 13px !important; }
-body .btn.lg:not(#_) { height: var(--ds-btn-lg); min-height: var(--ds-btn-lg); padding: 0 var(--ds-btn-px-lg); font-size: 14px !important; }
 body .btn.icon:not(#_) { width: var(--ds-btn); min-width: var(--ds-btn); padding: 0 !important; }
 body .btn.icon.sm:not(#_) { width: var(--ds-btn-sm); min-width: var(--ds-btn-sm); }
-body .btn.primary { background: var(--ds-blue) !important; border-color: var(--ds-blue) !important; color: #fff !important; }
-body .btn.primary:hover { background: var(--ds-blue-h) !important; border-color: var(--ds-blue-h) !important; }
-body .btn.danger { background: #fff !important; color: var(--ds-bad) !important; border-color: var(--ds-bad-line) !important; }
-body .btn.danger:hover { background: var(--ds-bad-bg) !important; }
 body .btn.ghost, body .btn.link { background: transparent !important; border-color: transparent !important; box-shadow: none !important; color: var(--ds-blue) !important; }
 body .btn.ghost:hover, body .btn.link:hover { background: var(--ds-blue-50) !important; }
 body .btn.link:not(.sm):not(.lg) { padding: 0 8px; }
 body .btn[disabled], body .btn.disabled, body .btn[aria-disabled="true"] { opacity: .5 !important; cursor: not-allowed; pointer-events: none; }
 body .btn[aria-busy="true"] { cursor: progress; opacity: .75; }
-body .btn::after { display: none !important; }
 body .btn svg { width: 16px; height: 16px; flex: none; }
 body .btn.sm svg { width: 15px; height: 15px; }
 /* a card's own action is a quiet compact text button, so it never competes with the page action */

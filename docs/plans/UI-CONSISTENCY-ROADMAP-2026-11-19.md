@@ -26,3 +26,6 @@ Goal: keep every layout as it is, and make the parts people touch perfect and th
 4. Gradient accents.
 5. Admin, customer view, Team Guide, What's new, Guide me and tour player checked and covered.
 6. Re-run the audit, screenshots, `npm test`, push.
+
+## Status (19 Nov 2026, later)
+Phases 1 to 6 done in the page-by-page pass: the old button rules were removed from the older layers and one button set and one components set now sit at the end of `src/ui.css`; boxes inside pages have the blue-cornered hairline and soft wash; every page uses the same 28 px side margin and header order. Report with before/after screenshots: `docs/reports/REF-THEME-PAGE-PASS-2026-11-19.md`.

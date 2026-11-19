@@ -94,23 +94,11 @@ body .page-header a:not(.btn), body .adm-hero a:not(.btn) { color: var(--th-viol
 @media (max-width: 760px) { body .page-header h1:not(#_), body .adm-hero h1:not(#_) { font-size: 30px !important; letter-spacing: -.03em !important; } }
 
 /* ---------- buttons: outlined white pills; primary = the reference's violet pill with mono capitals (an icon sits in a white circle on the right) ---------- */
-body .btn:not(#_) { border-radius: var(--th-r-full) !important; border-color: var(--th-line-2); font-weight: 600 !important; letter-spacing: -.05px; transition: transform .1s, background .15s, box-shadow .15s, border-color .15s; }
-body .btn:not(.primary):not(.danger):not(.ghost):not(.link):not(#_) { background: #fff; color: var(--th-ink); }
-body .btn:not(.primary):not(.danger):not(.ghost):not(.link):not(#_):hover { background: var(--th-soft) !important; border-color: var(--th-line-2) !important; }
-body .btn:active { transform: translateY(1px); }
-body .btn.primary:not(#_) { background: var(--th-violet) !important; border-color: var(--th-violet) !important; color: #fff !important; box-shadow: none !important; font-family: var(--th-mono) !important; font-size: 12.5px !important; font-weight: 600 !important; text-transform: none; letter-spacing: .1px !important; }
-body .btn.primary.sm:not(#_) { font-size: 11.5px !important; }
 /* the sign-in and welcome screens keep their own button lettering */
 body .auth .btn.primary:not(#_) { font-family: var(--th-font) !important; text-transform: none; font-size: 15px !important; letter-spacing: -.1px !important; }
-body .btn.primary:hover:not([disabled]) { background: var(--th-violet-2) !important; border-color: var(--th-violet-2) !important; }
-body .btn.danger:not(#_) { background: #fff !important; color: var(--th-red) !important; border-color: #F4B9B3 !important; }
-body .btn.danger:not(#_):hover { background: var(--th-red-soft) !important; }
 body .btn.ghost:not(#_), body .btn.link:not(#_) { color: var(--th-ink) !important; background: transparent !important; border-color: transparent !important; }
-body .btn.ghost:not(#_):hover { background: var(--th-soft) !important; }
 body .btn.link:not(#_) { color: var(--th-violet) !important; }
 body .btn.icon:not(#_) { border-radius: 50% !important; }
-body .btn[disabled]:not(#_) { opacity: .45; }
-body .btn:focus-visible { outline: 2px solid var(--th-violet) !important; outline-offset: 2px; }
 
 /* ---------- surfaces: hairline cards, no shadow; clickable cards lift on hover ---------- */
 body .card:not(#_), body .adm-card:not(#_) { border-radius: var(--th-r-lg) !important; border: 1px solid var(--th-line) !important; box-shadow: none !important; background: #fff !important; }
@@ -342,7 +330,6 @@ body .pl-tg svg { transition: transform .15s; } body .pl-tg[aria-expanded="true"
 body .page-header .t > :not(h1):not(h2):not(.btn):not(#_), body .page-header .t > * *:not(.btn):not(.tag):not(#_), body .page-header h2:not(#_), body .page-header .title:not(#_), body .page-header .sub:not(#_) { color: inherit !important; }
 body .page-header .t:not(#_) { color: var(--th-muted) !important; }
 body .page-header .t b:not(#_), body .page-header .t strong:not(#_) { color: var(--th-ink) !important; }
-body .page-header .btn.primary:not(#_), body .page-header .btn.pri:not(#_) { background: var(--th-violet) !important; border-color: var(--th-violet) !important; color: #fff !important; }
 body .page-header .rgdd-btn:not(#_), body .adm-hero .rgdd-btn:not(#_) { background: #fff !important; color: var(--th-ink) !important; border: 1px solid var(--th-line-2) !important; border-radius: var(--th-r-full) !important; }
 body .page-header .rgdd-btn i, body .adm-hero .rgdd-btn i { color: var(--th-muted) !important; }
 body .page-header .rg-clear, body .adm-hero .rg-clear { color: var(--th-violet) !important; }

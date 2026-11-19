@@ -239,8 +239,6 @@ body .cs-mail-reply { width: 100%; box-sizing: border-box; min-height: 96px; pad
 body .cs-mail-reply:focus-visible { outline: 2px solid var(--cs-brand); outline-offset: 0; }
 /* ======== controls and headings, one scale everywhere (colour pass, 7 Nov 2026) ======== */
 /* buttons: medium 32, small 24, icon buttons are rounded squares, link buttons are plain text */
-body .btn:not(.icon):not(.link):not(#_):not(#__) { height: 32px !important; min-height: 32px !important; }
-body .btn.sm:not(.icon):not(.link):not(#_):not(#__) { height: 28px !important; min-height: 28px !important; }
 body .btn.icon:not(#_):not(#__) { border-radius: var(--cs-r-ctl) !important; min-width: 32px; height: 32px !important; }
 body .btn.icon.sm:not(#_):not(#__) { min-width: 28px; height: 28px !important; }
 body .btn.link:not(#_):not(#__) { border-radius: 4px !important; height: auto !important; }
@@ -401,25 +399,11 @@ body .main h3:not(#_):not(#__), body .cs-card-h:not(#_):not(#__) { letter-spacin
 body .xs:not(#_):not(#__), body .small:not(#_):not(#__) { letter-spacing: .008em; }
 
 /* ---- buttons: capsules; secondary is white with a hairline ring and a light lift (a grey tint did not read as a button, user 12 Nov 2026), primary is Facilio blue; the press scales to .97 on pointer-down ---- */
-body .btn:not(.icon):not(.link):not(#_):not(#__) { border-radius: 999px !important; min-height: 34px; padding: 0 16px !important; font: 500 14px/20px var(--cs-font) !important; letter-spacing: -.006em !important; text-transform: none !important; color: var(--cs-fg1) !important; background: #fff !important; background-image: none !important; border: 0 !important; box-shadow: 0 0 0 1px rgba(0, 0, 0, .14), 0 1px 2px rgba(0, 0, 0, .08) !important; transition: background-color var(--cs-fast) var(--cs-ease), color var(--cs-fast) var(--cs-ease), transform 120ms var(--cs-ease) !important; }
-body .btn:not(.icon):not(.link).sm:not(#_):not(#__) { min-height: 28px; padding: 0 12px !important; font-size: 13px !important; line-height: 18px !important; }
-body .btn:not(.icon):not(.link):not([disabled]):not(#_):not(#__):hover { background: #f5f5f7 !important; box-shadow: 0 0 0 1px rgba(0, 0, 0, .22), 0 1px 3px rgba(0, 0, 0, .1) !important; }
-body .btn:not(.icon):not(.link):not([disabled]):not(#_):not(#__):active { background: #ebebed !important; transform: scale(.97); }
-body .btn.primary:not(.icon):not(#_):not(#__) { background: var(--cs-primary) !important; color: #fff !important; }
 body .btn:is(.primary, .ghost, .danger):not(.icon):not(#_):not(#__), body .btn:is(.primary, .ghost, .danger):not(.icon):not([disabled]):not(#_):not(#__):hover { box-shadow: none !important; }   /* filled and ghost kinds carry no ring */
-body .btn.primary:not(.icon):not([disabled]):not(#_):not(#__):hover { background: var(--cs-primary-h) !important; }
-body .btn.primary:not(.icon):not([disabled]):not(#_):not(#__):active { background: var(--cs-primary-p) !important; }
 /* small primary buttons are tinted (soft blue, blue text) so one solid blue button leads each screen */
-body .btn.primary.sm:not(.icon):not(#_):not(#__):not(#___) { background: rgba(21, 112, 239, .12) !important; color: var(--cs-primary-h) !important; }
-body .btn.primary.sm:not(.icon):not([disabled]):not(#_):not(#__):not(#___):hover { background: rgba(21, 112, 239, .2) !important; }
-body .btn.ghost:not(.icon):not(#_):not(#__) { background: transparent !important; }
-body .btn.ghost:not(.icon):not([disabled]):not(#_):not(#__):hover { background: rgba(0, 0, 0, .06) !important; }
-body .btn.danger:not(.icon):not(#_):not(#__) { color: var(--cs-danger) !important; background: rgba(177, 14, 28, .08) !important; }
-body .btn.danger:not(.icon):not([disabled]):not(#_):not(#__):hover { background: rgba(177, 14, 28, .14) !important; }
 body .btn.icon:not(#_):not(#__) { border-radius: 999px !important; color: var(--cs-fg3) !important; transition: background-color var(--cs-fast) var(--cs-ease), transform 120ms var(--cs-ease) !important; }
 body .btn.icon:not([disabled]):not(#_):not(#__):active { transform: scale(.94); }
 body .btn.icon.ghost:not([disabled]):not(#_):not(#__):hover { background: rgba(0, 0, 0, .06) !important; color: var(--cs-fg1) !important; }
-body .btn[disabled]:not(#_):not(#__) { background: rgba(0, 0, 0, .04) !important; color: var(--cs-fg-dis) !important; box-shadow: none !important; cursor: not-allowed; }
 
 /* ---- fields: 12 px corners, a hairline, a soft blue ring when focused ---- */
 body input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="hidden"]):not(#_):not(#__), body select:not(#_):not(#__), body textarea:not(#_):not(#__) { font: 400 14px/20px var(--cs-font) !important; color: var(--cs-fg1); background: #fff; border: 1px solid rgba(0, 0, 0, .12) !important; border-radius: var(--cs-r-ctl) !important; box-shadow: none !important; transition: border-color var(--cs-fast) var(--cs-ease), box-shadow var(--cs-fast) var(--cs-ease); }
@@ -734,15 +718,10 @@ body #asst .ki-acts .btn:hover:not(#_):not(#__){border-color:var(--cs-brand)!imp
 @keyframes csSkel { to { background-position: -200% 0; } }
 @keyframes csRise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 /* buttons: a press, a loading state, a danger that reads as danger */
-body .btn:not(.link):not(#_):not(#__) { cursor: pointer; transition: transform 110ms var(--cs-ease), background-color 150ms var(--cs-ease), border-color 150ms var(--cs-ease), box-shadow 150ms var(--cs-ease), opacity 150ms var(--cs-ease); }
-body .btn[disabled]:not(#_):not(#__) { cursor: not-allowed; }
 body .btn:not([disabled]):not([aria-busy="true"]):not(#_):not(#__):active { transform: scale(.97); }
 body .btn[aria-busy="true"]:not(#_):not(#__) { position: relative; pointer-events: none; opacity: .82; }
 body .btn[aria-busy="true"]:not(.icon):not(#_):not(#__)::after { content: ""; display: inline-block; width: 13px; height: 13px; margin-left: 8px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; vertical-align: -2px; animation: csSpin .7s linear infinite; }
 body .btn.icon[aria-busy="true"]:not(#_):not(#__) svg { animation: csSpin .9s linear infinite; }
-body .btn.danger:not(.icon):not([disabled]):not(#_):not(#__):hover { border-color: color-mix(in srgb, var(--cs-destructive) 40%, transparent) !important; color: var(--cs-destructive-ink) !important; }
-body .btn.danger.primary:not(#_):not(#__), body .btn.primary.danger:not(#_):not(#__) { background: var(--cs-destructive) !important; border-color: var(--cs-destructive) !important; color: #fff !important; box-shadow: inset 0 1px rgba(255, 255, 255, .16), 0 1px 2px color-mix(in srgb, var(--cs-destructive) 28%, transparent) !important; }
-body .btn.danger.primary:not([disabled]):not(#_):not(#__):hover, body .btn.primary.danger:not([disabled]):not(#_):not(#__):hover { background: color-mix(in srgb, var(--cs-destructive) 90%, #000) !important; }
 body :focus-visible:not(#_):not(#__) { outline: 2px solid color-mix(in srgb, var(--cs-accent, #1570EF) 60%, transparent); outline-offset: 2px; }
 /* pop-ups come in, they do not appear: dialog pops, drawer slides, toast pops (error shakes), menus rise */
 body .dialog:not(#_):not(#__), body .modal:not(#_):not(#__) { animation: csPop 180ms var(--cs-out) both; }
@@ -777,7 +756,7 @@ body .sidebar .sb-stage.open .sb-item:not(#_):not(#__) { margin-left: 10px; bord
 body .sidebar .sb-stage.open .sb-item.active:not(#_):not(#__) { border-left-color: var(--sg); background: color-mix(in srgb, var(--sg) 10%, #fff) !important; }
 body .sidebar .sb-stage.open .sb-item.active svg:not(#_):not(#__) { color: color-mix(in srgb, var(--sg) 70%, #000) !important; }
 body .sidebar .sb-item svg:not(#_):not(#__), body .sidebar .sb-title svg:not(#_):not(#__) { flex: none; width: 16px; height: 16px; }
-@media (prefers-reduced-motion: reduce) { body .dialog, body .modal, body .drawer, body .toast, body .ui-toast, body #userPop, body .menu, body .popover, body .sidebar .sb-group.open > .sb-item, body .ui-loading i { animation: none !important; } body .btn:active { transform: none !important; } }
+@media (prefers-reduced-motion: reduce) { body .dialog, body .modal, body .drawer, body .toast, body .ui-toast, body #userPop, body .menu, body .popover, body .sidebar .sb-group.open > .sb-item, body .ui-loading i { animation: none !important; } }
 
 body .main[data-sec] .mnu-h:not(#_):not(#__) { font-size: 11px !important; } body .main[data-sec] .small.muted:not(#_):not(#__), body .main[data-sec] .page-header .t p:not(#_):not(#__) { overflow-wrap: anywhere; }
 /* admin: nothing may push the page wider than the window; long names cut with an ellipsis instead of breaking the row */
@@ -874,12 +853,8 @@ body .main[data-sec] > .page > .page-header:not(#_):not(#__) { position: relativ
 body .main[data-sec] > .page > .page-header h1:not(#_):not(#__), body .main[data-sec] > .page > .page-header h2:not(#_):not(#__) { color: #fff !important; font-weight: 600 !important; }
 body .main[data-sec] > .page > .page-header .t p:not(#_):not(#__), body .main[data-sec] > .page > .page-header .t *:not(.btn):not(.tag):not(h1):not(h2):not(#_):not(#__) { color: #e3e9fb !important; }
 body .main[data-sec] > .page > .page-header .tag:not(#_):not(#__), body .main[data-sec] > .page > .page-header .pill:not(#_):not(#__) { background: rgba(255, 255, 255, .14) !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, .3) !important; }
-body .main[data-sec] > .page > .page-header .btn:not(.primary):not(#_):not(#__) { background: rgba(255, 255, 255, .14) !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, .34) !important; box-shadow: none !important; }
-body .main[data-sec] > .page > .page-header .btn:not(.primary):hover:not(#_):not(#__) { background: rgba(255, 255, 255, .24) !important; }
-body .main[data-sec] > .page > .page-header .btn.primary:not(#_):not(#__) { background: #1570EF !important; color: #fff !important; border-color: #1570EF !important; }
 body .main[data-sec] > .page > .page-header :is(.muted, .small, small):not(.btn):not(.tag):not(#_):not(#__):not(#___) { color: #e3e9fb !important; }   /* grey text on the navy header failed contrast */
 /* one primary per screen: in a header, later primaries take the quiet header style */
-body .main[data-sec] > .page > .page-header .btn.primary ~ .btn.primary:not(#_):not(#__):not(#___) { background: rgba(255, 255, 255, .14) !important; border-color: rgba(255, 255, 255, .34) !important; }
 body .main[data-sec] > .page > .page-header a:not(.btn):not(#_):not(#__) { color: #fff !important; text-decoration: underline; text-decoration-color: rgba(255, 255, 255, .6); }
 body .main[data-stage] > .page > .page-header .t:not(#_):not(#__)::before { background: rgba(255, 255, 255, .14) !important; border: 1px solid rgba(255, 255, 255, .3) !important; color: #fff !important; }
 body .main[data-sec] > .page > .page-header .t:not(#_):not(#__)::before { background-color: #1570EF; }
@@ -1469,11 +1444,8 @@ body :is(.mdb, .adx) .sd-gb u:not(#_):not(#__) { position: absolute; top: -2px; 
 .av-play:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
 .bf-i:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
 .brd-add:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
-.btn.ghost:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
 .btn.link:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
 .btn.link:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
-.btn.sm.ghost:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
-.btn:hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
 .cal-col.today .cal-ch b:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
 .dk-b small:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
 .dkv-t small:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
@@ -1584,12 +1556,10 @@ body .adm-nav .adm-ni.on svg:not(#_):not(#__):not(#_):not(#__) { color: var(--cs
 body .adm-nav .adm-ni.on:not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
 body .brd-ban-b li a:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
 body .brd-ban-h em:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
-body .btn.ghost:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
 body .btn.link:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
 body .btn.link:not([disabled]):not(#_):not(#__):hover:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
 body .cal .cal-link:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
 body .cal .cal-more:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
-body .card-h .btn:not(.primary):not(.danger):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
 body .cs-sol-i em:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
 body .cs-sol-i.on:not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
 body .cs-stat-v:not(.bad):not(.warn):not(#_):not(#__):not(#_):not(#__) { color: var(--cs-fg1, #111) !important; }
@@ -1690,8 +1660,6 @@ body .lc-more[open] > summary:not(#_):not(#__) { margin-bottom: 8px; }
 body .dr-fdet:not(#_):not(#__) { border-top: 1px solid var(--cs-st2, #eef1f7); } body .dr-fdet > summary:not(#_):not(#__) { cursor: pointer; padding: 10px 16px; font-weight: 600; font-size: 14px; color: var(--cs-fg1); }
 body .dr-actions:not(#_):not(#__) { display: inline-flex; gap: 6px; flex-wrap: wrap; align-self: end; }
 
-/* ===== Buttons on the dark banners: the icon takes the colour of the label (white), never the dark ink of the page (9 Nov 2026) ===== */
-body .page-header .btn:not(#_):not(#__):not(#___):not(#____) svg, body .page-header .btn:not(#_):not(#__):not(#___):not(#____) .fi, body .adm-hero .btn:not(#_):not(#__):not(#___):not(#____) svg, body .adm-hero .hm-btn:not(#_):not(#__):not(#___):not(#____) svg, body .main[data-sec] > .page > .page-header .btn:not(#_):not(#__):not(#___):not(#____) svg { color: #fff !important; stroke: currentColor !important; }
 body .btn.primary:not(#_):not(#__):not(#___):not(#____) svg, body .btn.primary:not(#_):not(#__):not(#___):not(#____) .fi { color: currentColor !important; stroke: currentColor; }
 
 /* Dashboard export bar, calendar bar inside the filter bar, click-anywhere widgets */
@@ -2086,7 +2054,7 @@ body .tr-sub button { white-space: nowrap; display: inline-flex; align-items: ce
 
 /* Accessibility fallbacks (9 Nov 2026): solid surfaces when transparency is reduced, firmer borders for more contrast, no press scale for reduced motion */
 @media (prefers-reduced-transparency: reduce) { body .navbar:not(#_):not(#__), body .sidebar:not(#_):not(#__), body .drawer:not(#_):not(#__), body .toast:not(#_):not(#__), body .dialog:not(#_):not(#__) { background: #fff !important; -webkit-backdrop-filter: none; backdrop-filter: none; } }
-@media (prefers-contrast: more) { body .card:not(.dark):not([class*="night"]):not(#_):not(#__), body .proj-card:not(#_):not(#__), body .kpi:not(#_):not(#__), body .adm-card:not(#_):not(#__), body .tbl-wrap:not(#_):not(#__), body .cs-card:not(#_):not(#__), body .cs-stat:not(#_):not(#__), body .ki-chat:not(#_):not(#__), body .cs-dg:not(#_):not(#__), body .pj-list:not(#_):not(#__), body .adx-c:not(#_):not(#__), body .adx-stat:not(#_):not(#__), body .list-item:not(#_):not(#__), body .gl-q:not(#_):not(#__), body .gl-box:not(#_):not(#__), body .tg2-tile:not(#_):not(#__), body .tg2-box:not(#_):not(#__), body .mf-step:not(#_):not(#__), body .dk-card:not(#_):not(#__), body .empty:not(#_):not(#__) { border-color: rgba(0, 0, 0, .4) !important; } body .btn:not(.icon):not(.link):not(#_):not(#__) { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .5) !important; } }
+@media (prefers-contrast: more) { body .card:not(.dark):not([class*="night"]):not(#_):not(#__), body .proj-card:not(#_):not(#__), body .kpi:not(#_):not(#__), body .adm-card:not(#_):not(#__), body .tbl-wrap:not(#_):not(#__), body .cs-card:not(#_):not(#__), body .cs-stat:not(#_):not(#__), body .ki-chat:not(#_):not(#__), body .cs-dg:not(#_):not(#__), body .pj-list:not(#_):not(#__), body .adx-c:not(#_):not(#__), body .adx-stat:not(#_):not(#__), body .list-item:not(#_):not(#__), body .gl-q:not(#_):not(#__), body .gl-box:not(#_):not(#__), body .tg2-tile:not(#_):not(#__), body .tg2-box:not(#_):not(#__), body .mf-step:not(#_):not(#__), body .dk-card:not(#_):not(#__), body .empty:not(#_):not(#__) { border-color: rgba(0, 0, 0, .4) !important; } }
 /* press feedback on clickable cards, tiles and rows: they sink a hair the moment the pointer goes down */
 body :is(.card.click, .proj-card, .cs-stat-btn, .tg2-tile, .dk-card, .kb-card, .bp-row):active:not(#_):not(#__):not(#___) { transform: scale(.985) !important; transition: transform 100ms var(--cs-ease) !important; }
 @media (prefers-reduced-motion: reduce) { body .btn:not([disabled]):not(#_):not(#__):active, body :is(.card.click, .proj-card, .cs-stat-btn, .tg2-tile, .dk-card, .kb-card, .bp-row):active:not(#_):not(#__):not(#___) { transform: none !important; } }
@@ -2394,12 +2362,6 @@ body .page-header .row .row.small:not(#_):not(#__):not(#___):not(#____):not(#___
 body .page-header .row .row.small .muted:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { color: rgba(255,255,255,.82) !important; font-weight: 600; font-size: 12.5px; }
 body .page-header .row .row.small .xs.muted:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { color: rgba(255,255,255,.7) !important; }
 body .page-header .row .tag:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { height: 24px; display: inline-flex; align-items: center; border-radius: 8px; font-weight: 600; }
-body .page-header .row .btn:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______), body .page-header .row .btn.link:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 10px; font-size: 13.5px; font-weight: 600; text-decoration: none; }
-body .page-header .row .btn:not(.primary):not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.3); }
-body .page-header .row .btn:not(.primary):hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: rgba(255,255,255,.2); }
-body .page-header .row .row.small .btn.link:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { height: 28px; padding: 0 10px; background: #fff; color: #1D1A5E; border-color: #fff; }
-body .page-header .row .btn.primary:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: #fff; color: #1D1A5E; border: 1px solid #fff; }
-body .page-header .row .btn.primary:hover:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______) { background: #ececff; }
 
 /* rail stage numbers: always legible, also on the dark tile of the stage you are in (a white badge with a navy ring) */
 body.nav-top .rl-n:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________):not(#__________) { top: 3px; right: 6px; bottom: auto; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: #0a0a0a; color: #fff; font-size: 11px; font-weight: 600; line-height: 17px; font-style: normal; text-align: center; box-shadow: 0 0 0 2px #fff; }
@@ -3000,7 +2962,7 @@ html body .pd-hero .pd-card li small:not(#_):not(#__):not(#___) { grid-column: 1
 @media (max-width: 1100px) { html body .pd-hero:not(#_):not(#__):not(#___) { grid-template-columns: 1fr; padding: 28px 24px; } html body .pd-hero .pd-card:not(#_):not(#__):not(#___) { transform: none; } }
 @media (prefers-reduced-transparency: reduce) { html body .pd-hero .pd-card:not(#_):not(#__):not(#___) { background: #fff; -webkit-backdrop-filter: none; backdrop-filter: none; } }
 /* Reference theme (user, 19 Nov 2026), taken from the Workshop Hub, Implementation Studio and BRD Academy pages the user liked: applied to every page with a .main area.
-   Their tokens: ink #0B0B12, text #33333D, muted #6B6B78, line #ECECF1, violet #623CF6, brand gradient orange-red-violet-cyan, Plus Jakarta display, Inter body, IBM Plex Mono labels. */
+   Their tokens: ink #0B0B12, text #33333D, muted #6B6B78, line #ECECF1 (their accent is replaced by Facilio blue here), Plus Jakarta display, Inter body, IBM Plex Mono labels. */
 html body:has(.main) { --rf-ink: #0B0B12; --rf-text: #33333D; --rf-muted: #6B6B78; --rf-faint: #9A9AA6; --rf-line: #ECECF1; --rf-soft: #F7F7FA; --rf-violet: #1570EF; --rf-violet-dk: #115cc0; --rf-violet-soft: #EAF2FF; --rf-grad: linear-gradient(100deg, #0B0B12 0%, #1D1A5E 45%, #1570EF 100%); --rf-shadow: 0 1px 2px rgba(11,11,18,.05), 0 12px 32px -12px rgba(11,11,18,.16); }
 html body:has(.main) .main:not(#q#q#q#q#q#q#q#q#q#q#q#q#q), html body:has(.main) .shell:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; }
 html body:has(.main) .main .cs-page:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { border-top: 1px solid var(--rf-line); }
@@ -3026,7 +2988,6 @@ html body:has(.main) .main .tabs:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: t
 html body:has(.main) .main .tab:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { border-radius: 0 !important; background: transparent !important; box-shadow: none !important; height: 40px; padding: 0 14px; font: 600 12px/1 "IBM Plex Mono", monospace !important; letter-spacing: .06em; text-transform: uppercase; color: var(--rf-muted) !important; border-bottom: 2px solid transparent !important; }
 html body:has(.main) .main .tab.active:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: var(--rf-ink) !important; border-bottom-color: var(--rf-violet) !important; }
 html body:has(.main) .main :is(.card, .sd-life, .dk-card, .sd-kpi, .sd-w, .cs-stat, .dk-fbar):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; border: 1px solid var(--rf-line) !important; border-radius: 16px !important; box-shadow: var(--rf-shadow) !important; }
-html body:has(.main) .main .btn.primary:not(.icon):not(.pd-cta .btn):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: var(--rf-violet) !important; color: #fff !important; }
 html body:has(.main) .main a:not(.btn):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: var(--rf-violet); }
 html body:has(.main) .main :is(h2, h3):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font-family: "Plus Jakarta Sans", Inter, sans-serif !important; letter-spacing: -.02em !important; color: var(--rf-ink); }
 html body:has(.main) .main :is(.sd-kpi, .cs-stat) :is(b, strong, .v):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font-family: "Plus Jakarta Sans", Inter, sans-serif !important; }
@@ -3038,7 +2999,6 @@ html body:has(.main) .main .page-header :is(.sd-chip, .chip, .tag, .ph-stage, sm
 html body:has(.main) .navbar:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: rgba(255, 255, 255, .9) !important; border-bottom: 1px solid var(--rf-line) !important; }
 html body:has(.main) .hp-banner:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: var(--rf-soft) !important; border: 1px solid var(--rf-line) !important; border-radius: 14px !important; }
 html body:has(.main) .hp-banner .hp-bt b:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font: 600 11.5px/16px "IBM Plex Mono", monospace !important; letter-spacing: .08em; text-transform: uppercase; color: var(--rf-ink) !important; }
-html body:has(.main) .main .btn:not(.icon):not(.primary):not(.link):not(.ghost):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; color: var(--rf-ink) !important; box-shadow: inset 0 0 0 1px var(--rf-line), 0 1px 2px rgba(11, 11, 18, .05) !important; border-radius: 999px !important; }
 html body:has(.main) .navbar .btn.primary:not(.icon):not(#q#q#q#q#q#q#q#q#q#q#q#q#q), html body:has(.main) .hp-banner .btn.primary:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: var(--rf-ink) !important; color: #fff !important; }
 html body:has(.main) .main :is(.sd-kpi, .cs-stat, .kpi) :is(.v, .kpi-v, .cs-stat-v, .sd-kv, b):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font-family: "Plus Jakarta Sans", Inter, sans-serif !important; font-weight: 700 !important; letter-spacing: -.035em !important; color: var(--rf-ink); }
 html body:has(.main) .main :is(.sd-kpi, .cs-stat, .kpi) :is(.l, .kpi-l, .cs-stat-l, .sd-kl, span:first-child):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font-family: "IBM Plex Mono", monospace !important; font-size: 11px !important; letter-spacing: .08em; text-transform: uppercase; color: var(--rf-muted) !important; }
@@ -3050,12 +3010,6 @@ html body:has(.main) .main .cs-bar i, html body:has(.main) .main .sd-bar i { bac
 html body:has(.main) :focus-visible:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { outline-color: var(--rf-violet) !important; }
 
 /* Reference theme, part 3: the reference buttons and toggles. Buttons: pill, mono caps label, the main one with a round arrow badge that turns on hover. Toggles: outlined pills, the selected one filled in ink. */
-html body:has(.main) .main .btn:not(.icon):not(.link):not(.sm):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { height: 42px; min-height: 42px; padding: 0 18px !important; border-radius: 999px !important; font: 600 12.5px/1 "IBM Plex Mono", ui-monospace, monospace !important; letter-spacing: .02em !important; text-transform: uppercase !important; gap: 10px; transition: background-color .15s ease, transform .15s ease !important; }
-html body:has(.main) .main .btn.primary:not(.icon):not(.link):not(.sm):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { padding: 0 18px !important; background: #1570EF !important; color: #fff !important; box-shadow: none !important; }
-html body:has(.main) .main .btn.primary:not(.icon):not(.link):not(.sm):not([disabled]):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):hover { background: #115cc0 !important; }
-html body:has(.main) .main .btn.primary:not(.icon):not(.link):not(.sm):not([disabled]):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):hover::after { transform: rotate(45deg); }
-html body:has(.main) .main .btn:not(.icon):not(.link):not(.primary):not(.sm):not(.ghost):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; color: #0B0B12 !important; box-shadow: inset 0 0 0 1.5px #0B0B12 !important; }
-html body:has(.main) .main .btn:not(.icon):not(.link):not(.primary):not(.sm):not(.ghost):not([disabled]):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):hover { background: #F7F7FA !important; }
 /* the hero's own arrow badges (real markup) */
 html body .pd-hero .pd-cta .btn:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { padding: 0 6px 0 20px !important; height: 46px; }
 html body .pd-hero .pd-cta .btn .arr { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: #0B0B12; color: #fff; transition: transform .2s ease; }
@@ -3075,12 +3029,8 @@ html body:has(.main) .main .tabs .tab .sd-dot:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { 
 /* Consistency pass (user, 19 Nov 2026; roadmap docs/plans/UI-CONSISTENCY-ROADMAP-2026-11-19.md): one button system, one toggle system, one type scale inside boxes, calm gradients. Applies to project pages, the customer view, Admin, drawers and dialogs. */
 /* 1. buttons: label centred, one size per kind */
 html body :is(.main, .adm-main, .drawer, .dialog) :is(.btn, summary.btn, .rs-chip, .dx-btn, .tr-chip, .brd-add, .sd-go, .dx-npill, .tg2-pg, .wn-chip, .fb-seg, .nav-back, .dk-fr, .ph-more, .md-stb):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { display: inline-flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; line-height: 1 !important; white-space: nowrap; vertical-align: middle; }
-html body :is(.main, .adm-main, .drawer, .dialog) .btn:not(.icon):not(.link):not(.sm):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { height: 40px !important; min-height: 40px !important; font: 600 12px/1 "IBM Plex Mono", ui-monospace, monospace !important; letter-spacing: .03em !important; text-transform: uppercase !important; }
 html body :is(.main, .adm-main, .drawer, .dialog) :is(.btn.sm, summary.btn.sm):not(.icon):not(.link):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q), html body :is(.main, .adm-main, .drawer, .dialog) :is(.rs-chip, .dx-btn, .tr-chip, .brd-add, .sd-go, .dx-npill, .tg2-pg, .wn-chip, .fb-seg, .dk-fr):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { height: 32px !important; min-height: 32px !important; padding: 0 14px !important; border-radius: 999px !important; font: 500 13px/1 Inter, system-ui, sans-serif !important; letter-spacing: 0 !important; text-transform: none !important; }
 html body :is(.main, .adm-main, .drawer, .dialog) .nav-back:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { height: 32px; padding: 0 14px !important; font: 500 13px/1 Inter, sans-serif !important; gap: 6px; }
-html body :is(.main, .adm-main, .drawer, .dialog) .btn.primary:not(.icon):not(.link):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: linear-gradient(135deg, #1570EF 0%, #3D8BFF 100%) !important; color: #fff !important; }
-html body :is(.main, .adm-main, .drawer, .dialog) .btn.primary:not(.icon):not(.link):not([disabled]):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):hover { background: linear-gradient(135deg, #115cc0 0%, #2f7cf0 100%) !important; }
-html body :is(.main, .adm-main, .drawer, .dialog) .btn.sm.primary:not(.icon):not(.link):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #EAF2FF !important; color: #115cc0 !important; }
 /* 2. mini tabs and toggles: one outlined pill */
 html body :is(.main, .adm-main, .drawer, .dialog) :is(.tab, .mt-t, .pt-sh, .ko-chipb, .dtab, .seg button, .kb-seg button, [role="tab"]):not(.brd-tab):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { display: inline-flex !important; align-items: center !important; justify-content: center !important; gap: 8px; height: 34px !important; min-height: 34px; padding: 0 14px !important; border-radius: 999px !important; background: #fff !important; border: 1px solid #DEDEE6 !important; box-shadow: none !important; color: #33333D !important; font: 500 13px/1 Inter, system-ui, sans-serif !important; letter-spacing: 0 !important; text-transform: none !important; white-space: nowrap; }
 html body :is(.main, .adm-main, .drawer, .dialog) :is(.tab.active, .tab.on, .mt-t.active, .pt-sh.on, .ko-chipb.on, .dtab.on, .seg button.on, .seg button.active, .kb-seg button.on, [role="tab"][aria-selected="true"]):not(.brd-tab):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #0B0B12 !important; border-color: #0B0B12 !important; color: #fff !important; font-weight: 600 !important; }
@@ -3166,7 +3116,7 @@ html body .ll-card:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#
 html body .ll-card:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):hover::before { opacity: 1; }
 html body .ll-card :is(b, strong, h3, h4):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font: 700 16px/1.3 "Plus Jakarta Sans", Inter, sans-serif !important; letter-spacing: -.015em !important; color: #0B0B12 !important; }
 /* rail labels: never cut off; two short lines at most */
-html body .sidebar .rl-l:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { display: block; max-width: 70px; white-space: normal !important; text-align: center; overflow-wrap: anywhere; font-size: 9px !important; line-height: 11px !important; letter-spacing: .04em !important; }
+html body .sidebar .rl-l:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { display: block; max-width: 60px; margin-left: auto; margin-right: auto; white-space: normal !important; text-align: center; overflow-wrap: normal; word-break: normal; font-size: 9px !important; line-height: 11px !important; letter-spacing: .04em !important; }
 @media (prefers-reduced-motion: reduce) { html body .gl-vcard:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q), html body .ll-card:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { transition: none; } html body .gl-vcard:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):hover, html body .ll-card:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):hover { transform: none; } }
 
 /* Module guide cards as in the Workshop Hub (user, 19 Nov 2026): a dark gradient band with a white icon tile and a mono caps label, then the module name, its line and a mono footer link. */
@@ -3193,6 +3143,103 @@ html body :is(.main, .adm-main, .drawer, .dialog) :is(.seg, .kb-seg, .tabs, .pt-
 /* the current stage segment is ringed in blue, not the old orange */
 html body .lc-bar i.cur:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #1570EF !important; }
 /* one look for every secondary button, small or regular, so a toolbar never mixes two styles (19 Nov 2026); only the main action keeps the mono caps */
-html body :is(.main, .adm-main, .drawer, .dialog) .btn:not(.icon):not(.link):not(.primary):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { height: 34px !important; min-height: 34px !important; padding: 0 14px !important; font: 500 13px/1 Inter, system-ui, sans-serif !important; letter-spacing: 0 !important; text-transform: none !important; border-radius: 999px !important; background: #fff !important; color: #0B0B12 !important; box-shadow: inset 0 0 0 1px #DEDEE6, 0 1px 2px rgba(11, 11, 18, .04) !important; }
-html body :is(.main, .adm-main, .drawer, .dialog) .btn:not(.icon):not(.link):not(.primary):not([disabled]):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):hover { box-shadow: inset 0 0 0 1px #9A9AA6, 0 1px 2px rgba(11, 11, 18, .06) !important; }
-html body :is(.main, .adm-main, .drawer, .dialog) .btn.primary.sm:not(.icon):not(.link):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { height: 34px !important; min-height: 34px !important; padding: 0 14px !important; font: 600 13px/1 Inter, system-ui, sans-serif !important; letter-spacing: 0 !important; text-transform: none !important; }
+
+/* Buttons, one set for the whole app (user, 19 Nov 2026: "clean old button styles and add the new ones"). The older layers (styles, design-system, theme, polish and the
+   earlier ui.css passes) no longer style .btn on their own; this block is the only place for the plain kinds. Secondary: one 34 px white pill, Inter 13.
+   Main: Facilio blue; regular is 40 px with the mono caps label, small is 34 px in Inter. Ghost: no ring. Danger: red text, or solid red when it is also the main action.
+   Page-specific designs (the dashboard hero, the sign-in page) keep their own rules; icon and link buttons keep theirs. */
+body .btn:not(#_):not(#__) { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; cursor: pointer; white-space: nowrap; text-decoration: none; vertical-align: middle; font-family: Inter, system-ui, sans-serif; transition: background-color .15s ease, box-shadow .15s ease, color .15s ease, transform .11s ease; }
+body .btn:not(.icon):not(.link):not(#_):not(#__) { height: 34px; min-height: 34px; padding: 0 14px; border-radius: 999px; font: 500 13px/1 Inter, system-ui, sans-serif; letter-spacing: 0; text-transform: none; background: #fff; color: #0B0B12; box-shadow: inset 0 0 0 1px #DEDEE6, 0 1px 2px rgba(11, 11, 18, .04); }
+body .btn:not(.icon):not(.link):not([disabled]):not(#_):not(#__):hover { box-shadow: inset 0 0 0 1px #9A9AA6, 0 1px 2px rgba(11, 11, 18, .06); }
+body .btn:not([disabled]):not([aria-busy="true"]):not(#_):not(#__):active { transform: scale(.97); }
+body .btn.primary:not(.icon):not(.link):not(#_):not(#__) { background: linear-gradient(135deg, #1570EF 0%, #3D8BFF 100%); color: #fff; box-shadow: 0 1px 2px rgba(21, 112, 239, .25); }
+body .btn.primary:not(.icon):not(.link):not(.sm):not(#_):not(#__) { height: 40px; min-height: 40px; padding: 0 20px; font: 600 12px/1 "IBM Plex Mono", ui-monospace, monospace; letter-spacing: .03em; text-transform: uppercase; }
+body .btn.primary.sm:not(.icon):not(.link):not(#_):not(#__) { font-weight: 600; }
+body .btn.primary:not(.icon):not(.link):not([disabled]):not(#_):not(#__):hover { background: linear-gradient(135deg, #115cc0 0%, #2f7cf0 100%); box-shadow: 0 4px 12px -4px rgba(21, 112, 239, .55); }
+body .btn.ghost:not(.icon):not(.link):not(#_):not(#__) { background: transparent; box-shadow: none; }
+body .btn.ghost:not(.icon):not(.link):not([disabled]):not(#_):not(#__):hover { background: #F1F1F6; box-shadow: none; }
+body .btn.danger:not(.icon):not(.link):not(#_):not(#__) { color: #B42318; box-shadow: inset 0 0 0 1px #F4C7C3; }
+body .btn.danger:not(.icon):not(.link):not([disabled]):not(#_):not(#__):hover { background: #FFF4F2; box-shadow: inset 0 0 0 1px #E59A93; }
+body .btn.danger.primary:not(.icon):not(#_):not(#__) { background: #D92D20; color: #fff; box-shadow: none; }
+body .btn.danger.primary:not(.icon):not([disabled]):not(#_):not(#__):hover { background: #B42318; }
+body .btn[disabled]:not(#_):not(#__) { opacity: .5; cursor: not-allowed; transform: none; }
+/* inside pages, Admin, drawers and dialogs the set wins over each page's older button rules (the hero keeps its arrow buttons) */
+html body :is(.main, .adm-main, .drawer, .dialog) .btn:not(.icon):not(.link):not(.pd-cta .btn):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { display: inline-flex !important; align-items: center !important; justify-content: center !important; height: 34px !important; min-height: 34px !important; padding: 0 14px !important; border: 0 !important; border-radius: 999px !important; font: 500 13px/1 Inter, system-ui, sans-serif !important; letter-spacing: 0 !important; text-transform: none !important; background: #fff !important; color: #0B0B12 !important; box-shadow: inset 0 0 0 1px #DEDEE6, 0 1px 2px rgba(11, 11, 18, .04) !important; }
+html body :is(.main, .adm-main, .drawer, .dialog) .btn:not(.icon):not(.link):not(.pd-cta .btn):not([disabled]):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):hover { box-shadow: inset 0 0 0 1px #9A9AA6, 0 1px 2px rgba(11, 11, 18, .06) !important; }
+html body :is(.main, .adm-main, .drawer, .dialog) .btn.primary:not(.icon):not(.link):not(.pd-cta .btn):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: linear-gradient(135deg, #1570EF 0%, #3D8BFF 100%) !important; color: #fff !important; box-shadow: 0 1px 2px rgba(21, 112, 239, .25) !important; font-weight: 600 !important; }
+html body :is(.main, .adm-main, .drawer, .dialog) .btn.primary:not(.sm):not(.icon):not(.link):not(.pd-cta .btn):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { height: 40px !important; min-height: 40px !important; padding: 0 20px !important; font: 600 12px/1 "IBM Plex Mono", ui-monospace, monospace !important; letter-spacing: .03em !important; text-transform: uppercase !important; }
+html body :is(.main, .adm-main, .drawer, .dialog) .btn.primary:not(.icon):not(.link):not(.pd-cta .btn):not([disabled]):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):hover { background: linear-gradient(135deg, #115cc0 0%, #2f7cf0 100%) !important; box-shadow: 0 4px 12px -4px rgba(21, 112, 239, .55) !important; }
+html body :is(.main, .adm-main, .drawer, .dialog) .btn.ghost:not(.primary):not(.icon):not(.link):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: transparent !important; box-shadow: none !important; }
+html body :is(.main, .adm-main, .drawer, .dialog) .btn.danger:not(.primary):not(.icon):not(.link):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: #B42318 !important; box-shadow: inset 0 0 0 1px #F4C7C3 !important; }
+html body :is(.main, .adm-main, .drawer, .dialog) .btn.danger.primary:not(.icon):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #D92D20 !important; color: #fff !important; box-shadow: none !important; }
+html body :is(.main, .adm-main, .drawer, .dialog) .btn[disabled]:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { opacity: .5 !important; cursor: not-allowed !important; }
+html body :is(.main, .adm-main, .drawer, .dialog) .btn :is(svg, .fi):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { flex: none; color: inherit !important; }
+
+/* Components, one set (user, 19 Nov 2026). Placement: every project page keeps the same order and the same 28 px side margin: back link, the page-sections card,
+   the header (mono caps eyebrow, display title, lede, then the actions row under a hairline), then the page body. */
+html body .main > .nav-back:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin: 14px 28px 12px !important; height: 34px !important; padding: 0 14px 0 12px !important; border: 0 !important; border-radius: 999px !important; background: #fff !important; box-shadow: inset 0 0 0 1px #DEDEE6 !important; color: #33333D !important; font: 500 13px/1 Inter, system-ui, sans-serif !important; }
+html body .main > .nav-back:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):hover { box-shadow: inset 0 0 0 1px #9A9AA6 !important; color: #0B0B12 !important; }
+html body .main > .mt-bar:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin: 0 28px 20px !important; }
+html body .main > .page-body:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { padding-left: 28px !important; padding-right: 28px !important; }
+html body .main .page-header .t:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q)::before { font: 500 11.5px/16px "IBM Plex Mono", ui-monospace, monospace !important; letter-spacing: .1em !important; text-transform: uppercase !important; color: #6B6B78 !important; }
+html body .main .page-header > :is(.pt-acts, .row, .ph-acts):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin-top: 22px !important; padding-top: 18px !important; border-top: 1px solid #F1F1F6 !important; display: flex !important; flex-wrap: wrap; align-items: flex-end; gap: 10px 22px !important; }
+/* boxes inside a page: white, a hairline that warms to Facilio blue at the top-left corner, a faint blue wash in that corner, a soft lift */
+html body :is(.main, .adm-main) :is(.card:not(.dark):not(.empty):not([class*="night"]), .sd-w, .tbl-wrap, .ds-panel, .st-card, .lc-stage, .lc-att, .lc-now, .ws-card, .ws-side, .ho-grp, .ho-sum, .tr-card, .tg2-box, .pv-fold, .md-card, .slk-way, .rp-tile, .adm-card, .adx-c, .dk-card, .sd-life, .ki-chat):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: radial-gradient(110% 90% at 0% 0%, rgba(21, 112, 239, .055) 0%, rgba(21, 112, 239, 0) 50%) padding-box, linear-gradient(#fff, #fff) padding-box, linear-gradient(140deg, #B9D2FA 0%, #E4E8F0 30%, #ECECF1 100%) border-box !important; border: 1px solid transparent !important; border-radius: 16px !important; box-shadow: 0 1px 2px rgba(11, 11, 18, .04), 0 12px 32px -20px rgba(11, 11, 18, .2) !important; }
+html body :is(.main, .adm-main) :is(.card, .sd-w, .tbl-wrap, .ds-panel, .st-card, .lc-stage, .ws-card, .ho-grp, .tg2-box, .pv-fold, .adm-card, .dk-card) :is(.card, .sd-w, .tbl-wrap, .ds-panel, .st-card, .ws-card, .tg2-box, .dk-card):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { box-shadow: none !important; background: #fff !important; border: 1px solid #ECECF1 !important; }
+/* the number tiles: mono caps label, display number, the thin blue bar */
+html body :is(.main, .adm-main) :is(.kpi .kpi-l, .sd-kpi .sd-kl, .cs-stat .cs-stat-l, .card.stat .l, .adx-stat .l):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font: 500 11px/14px "IBM Plex Mono", ui-monospace, monospace !important; letter-spacing: .08em !important; text-transform: uppercase !important; color: #6B6B78 !important; }
+html body :is(.main, .adm-main) :is(.kpi .kpi-v, .sd-kpi .sd-kv, .cs-stat .cs-stat-v):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font-family: "Plus Jakarta Sans", Inter, sans-serif !important; font-weight: 700 !important; letter-spacing: -.03em !important; }
+/* fields: one height, one radius, one ring */
+html body :is(.main, .adm-main, .drawer, .dialog) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not([type=hidden]), select):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { min-height: 36px; border: 1px solid #DEDEE6 !important; border-radius: 10px !important; background-color: #fff !important; font-family: Inter, system-ui, sans-serif !important; font-size: 14px !important; color: #0B0B12 !important; box-shadow: 0 1px 2px rgba(11, 11, 18, .03) !important; }
+html body :is(.main, .adm-main, .drawer, .dialog) textarea:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { border: 1px solid #DEDEE6 !important; border-radius: 12px !important; background-color: #fff !important; font: 400 14px/1.5 Inter, system-ui, sans-serif !important; color: #0B0B12 !important; }
+html body :is(.main, .adm-main, .drawer, .dialog) :is(input, select, textarea):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):hover { border-color: #C4C4CE !important; }
+html body :is(.main, .adm-main, .drawer, .dialog) :is(input, select, textarea):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):focus { border-color: #1570EF !important; box-shadow: 0 0 0 4px #EAF2FF !important; outline: none !important; }
+html body :is(.main, .adm-main, .drawer, .dialog) :is(input, textarea):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q)::placeholder { color: #9A9AA6 !important; }
+html body :is(.main, .adm-main, .drawer, .dialog) :is(.f, .field, .fld) > :is(label, span:first-child, b:first-child):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font: 500 12.5px/16px Inter, system-ui, sans-serif !important; color: #33333D !important; }
+/* status pills and tags: one shape, colours kept by kind */
+html body :is(.main, .adm-main, .drawer, .dialog) :is(.tag, .sd-chip, .pt-st, .kb-ty, .tr-st, .lc-badge, .pl-chip, .badge, .pill, .st-pill):not(.page-header *):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { display: inline-flex !important; align-items: center !important; gap: 5px; height: 22px !important; min-height: 0 !important; padding: 0 9px !important; border-radius: 999px !important; font: 600 11.5px/1 Inter, system-ui, sans-serif !important; letter-spacing: 0 !important; text-transform: none !important; white-space: nowrap !important; vertical-align: middle; }
+/* the chat assistant (#asst) in the same look: a white head with the blue icon tile, display title and mono caps line; a quiet body; the composer as one rounded card */
+html body #asst:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; border-left: 1px solid #ECECF1 !important; box-shadow: -24px 0 60px -30px rgba(11, 11, 18, .25) !important; font-family: Inter, system-ui, sans-serif !important; }
+html body #asst .as-head:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: linear-gradient(180deg, #F5F9FF 0%, #fff 100%) !important; color: #0B0B12 !important; border-bottom: 1px solid #ECECF1 !important; box-shadow: none !important; }
+html body #asst .as-logo:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: linear-gradient(135deg, #1570EF 0%, #3D8BFF 100%) !important; color: #fff !important; border-radius: 12px !important; box-shadow: 0 6px 14px -6px rgba(21, 112, 239, .7) !important; }
+html body #asst .as-tt b:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font: 700 17px/22px "Plus Jakarta Sans", Inter, sans-serif !important; letter-spacing: -.02em !important; color: #0B0B12 !important; }
+html body #asst .as-tt small:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font: 500 10.5px/16px "IBM Plex Mono", ui-monospace, monospace !important; letter-spacing: .08em !important; text-transform: uppercase !important; color: #6B6B78 !important; }
+html body #asst .as-ib:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: #33333D !important; border-radius: 10px !important; background: transparent !important; }
+html body #asst .as-ib:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):hover { background: #F1F1F6 !important; color: #0B0B12 !important; }
+html body #asst .as-usage:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #F7F7FA !important; border-bottom: 1px solid #ECECF1 !important; color: #6B6B78 !important; font-size: 12px !important; }
+html body #asst .as-body:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #FBFBFD !important; }
+html body #asst .as-now:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; border: 1px solid #ECECF1 !important; border-radius: 12px !important; box-shadow: 0 1px 2px rgba(11, 11, 18, .04) !important; }
+html body #asst .as-empty:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: #6B6B78 !important; font-size: 14px !important; }
+html body #asst .as-comp:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; border-top: 1px solid #ECECF1 !important; }
+html body #asst .as-crow:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; border: 1px solid #DEDEE6 !important; border-radius: 16px !important; box-shadow: 0 1px 2px rgba(11, 11, 18, .04), 0 10px 24px -18px rgba(11, 11, 18, .25) !important; }
+html body #asst .as-crow:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):focus-within { border-color: #1570EF !important; box-shadow: 0 0 0 4px #EAF2FF !important; }
+html body #asst .as-crow textarea:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { border: 0 !important; box-shadow: none !important; background: transparent !important; }
+html body #asst .as-send:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: linear-gradient(135deg, #1570EF 0%, #3D8BFF 100%) !important; color: #fff !important; border-radius: 50% !important; }
+html body #asst .as-mic:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; border: 1px solid #DEDEE6 !important; border-radius: 50% !important; color: #33333D !important; }
+html body #asst :is(.as-chip, .as-topic, .as-modewrap > button):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { border-radius: 999px !important; font: 500 12.5px/1 Inter, system-ui, sans-serif !important; }
+html body #asst .ki-row.claude .ki-bub:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; border: 1px solid #ECECF1 !important; border-radius: 4px 16px 16px 16px !important; box-shadow: 0 1px 2px rgba(11, 11, 18, .04) !important; color: #33333D !important; }
+html body #asst .ki-row.you .ki-bub:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: linear-gradient(135deg, #1570EF 0%, #3D8BFF 100%) !important; border: 0 !important; border-radius: 16px 4px 16px 16px !important; color: #fff !important; }
+/* Admin pages open with the same header as a project page: mono caps eyebrow, display title, one plain line */
+html body .adm-main .adm-crumb:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font: 500 11.5px/16px "IBM Plex Mono", ui-monospace, monospace !important; letter-spacing: .1em !important; text-transform: uppercase !important; color: #6B6B78 !important; margin: 0 0 6px !important; }
+html body .adm-main .adm-hero-t h1:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font: 700 40px/1.06 "Plus Jakarta Sans", Inter, sans-serif !important; letter-spacing: -.04em !important; margin: 0 0 8px !important; }
+html body .adm-main .adm-sub:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font: 400 15px/1.55 Inter, system-ui, sans-serif !important; color: #33333D !important; }
+/* the Team Guide stage boxes join the page box look */
+html body .main :is(.tg2-ph, .tg2-first, .tg2-prog):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: radial-gradient(110% 90% at 0% 0%, rgba(21, 112, 239, .055) 0%, rgba(21, 112, 239, 0) 50%) padding-box, linear-gradient(#fff, #fff) padding-box, linear-gradient(140deg, #B9D2FA 0%, #E4E8F0 30%, #ECECF1 100%) border-box !important; border: 1px solid transparent !important; border-radius: 16px !important; box-shadow: 0 1px 2px rgba(11, 11, 18, .04), 0 12px 32px -20px rgba(11, 11, 18, .2) !important; }
+/* drawer and dialog titles in the display face */
+html body :is(.drawer-h, .dialog > header, .dialog .dlg-h, .modal-h) :is(h2, h3):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font: 700 20px/1.25 "Plus Jakarta Sans", Inter, sans-serif !important; letter-spacing: -.025em !important; color: #0B0B12 !important; }
+/* Guide me: Next is the main action, so it is Facilio blue like every other main action */
+html body .co-card .co-next:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: linear-gradient(135deg, #1570EF 0%, #3D8BFF 100%) !important; color: #fff !important; border: 0 !important; box-shadow: 0 4px 12px -4px rgba(21, 112, 239, .55) !important; }
+/* filter chips: outlined pill, the chosen one filled ink like every other toggle */
+html body :is(.main, .adm-main, .drawer, .dialog) :is(.tr-chip, .rs-chip, .wn-chip, .fb-seg):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; color: #33333D !important; border: 1px solid #DEDEE6 !important; box-shadow: none !important; }
+html body :is(.main, .adm-main, .drawer, .dialog) :is(.tr-chip, .rs-chip, .wn-chip, .fb-seg):is(.on, .active, [aria-pressed="true"]):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #0B0B12 !important; color: #fff !important; border-color: #0B0B12 !important; font-weight: 600 !important; }
+html body :is(.main, .adm-main, .drawer, .dialog) :is(.tr-chip, .rs-chip, .wn-chip):is(.on, .active, [aria-pressed="true"]) :is(b, i, em, span):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: rgba(255, 255, 255, .7) !important; background: transparent !important; }
+/* training cards still to be made: a calm navy-to-blue poster with a fine hatch instead of flat grey */
+html body .main .tr-card .tr-po:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { position: relative; overflow: hidden; background: linear-gradient(135deg, #1D1A5E 0%, #1570EF 100%) !important; color: #fff !important; }
+html body .main .tr-card:nth-child(3n+2) .tr-po:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: linear-gradient(135deg, #13203A 0%, #0E7490 100%) !important; }
+html body .main .tr-card:nth-child(3n+3) .tr-po:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: linear-gradient(135deg, #2E4BC9 0%, #4FA3E0 100%) !important; }
+html body .main .tr-card .tr-po:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q)::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(135deg, rgba(255, 255, 255, .07) 0 1px, transparent 1px 14px); }
+html body .main .tr-card .tr-po *:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: #fff !important; }
+html body .main .tr-card .tr-po .tr-st:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: rgba(255, 255, 255, .92) !important; color: #0B0B12 !important; }
+html body .main .tr-card .tr-po .tr-st.ok:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: #027A48 !important; } html body .main .tr-card .tr-po .tr-st.wait:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: #B54708 !important; }
+/* any other toggle group (plan-tabs, ob-tabs and the like): no grey track behind the pills */
+html body :is(.main, .adm-main, .drawer, .dialog) :is([class$="-tabs"], [class*="-tabs "]):not(.brd-tabs):not(.tabs):has(> button:is(.on, .active, [aria-selected="true"])):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 2px 0 !important; gap: 6px !important; height: auto !important; overflow: visible !important; }

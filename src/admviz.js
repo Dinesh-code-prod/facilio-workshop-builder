@@ -94,7 +94,7 @@
       const dow = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']; const perDay = dow.map(() => 0); (i.heat || []).forEach(c => { perDay[c.d] += c.n; });
       const hrs = ['Night 0-6', 'Morning 6-12', 'Afternoon 12-18', 'Evening 18-24']; const pv = [1, 2, 3, 4, 5, 6, 0].map(d => ({ l: dow[d], cells: hrs.map((_, b) => (i.heat || []).filter(c => c.d === d && c.h >= b * 6 && c.h < b * 6 + 6).reduce((a, c) => a + c.n, 0)) }));
       return `<h2 class="adm-sec">Team insights</h2>
-      <div class="sp-row">${spark('Staff active per day', i.daily.map(d => d.staff), i.daily.map(d => d.day.slice(5)), '#1570EF', 'people')}${spark('Customer visits per day', i.daily.map(d => d.customers), i.daily.map(d => d.day.slice(5)), '#6B4EE6', 'visits')}${spark('Sign-ups per week', i.signups.map(w => w.staff + w.guests), i.signups.map(w => w.week.slice(5)), '#E5197F', 'accounts')}</div>
+      <div class="sp-row">${spark('Staff active per day', i.daily.map(d => d.staff), i.daily.map(d => d.day.slice(5)), '#1570EF', 'people')}${spark('Customer visits per day', i.daily.map(d => d.customers), i.daily.map(d => d.day.slice(5)), '#1D1A5E', 'visits')}${spark('Sign-ups per week', i.signups.map(w => w.staff + w.guests), i.signups.map(w => w.week.slice(5)), '#E5197F', 'accounts')}</div>
       <div class="adm-row two">${card('Project health by owner', 'Stacked RAG', stack(rows, [['Green', RC.g], ['Amber', RC.a], ['Red', RC.r]]))}${card('Activity by day and time', 'Pivot: recorded sessions', pivot('Day', hrs, pv, '#1570EF'))}</div>`;
     }
     if (tab === 'quality') {
@@ -106,7 +106,7 @@
       return `<h2 class="adm-sec">Quality insights</h2>
       <div class="sp-row">${spark('New customer questions', q.map(w => w.n), q.map(w => w.week.slice(5)), '#E5197F', 'questions')}${spark('Storage added per month', i.storage.map(m => Math.round(m.bytes / 1e5) / 10), i.storage.map(m => m.month), '#12A594', 'MB')}</div>
       <div class="adm-row two">${card('Records by state', 'Stacked: done, in progress, open or failing', stack(rows, [['Done', RC.g], ['In progress', '#1570EF'], ['Open or failing', RC.r]]))}${card('Quality RAG', 'Same rule as the portfolio', donut(ragParts, act.length, 'projects'))}</div>
-      ${card('Project records matrix', 'Pivot: what each project has captured (top 12)', pivot('Project', ['Requirements', 'State flows', 'Open actions', 'Open risks', 'UAT cases', 'Sign-offs'], mat, '#6B4EE6'))}`;
+      ${card('Project records matrix', 'Pivot: what each project has captured (top 12)', pivot('Project', ['Requirements', 'State flows', 'Open actions', 'Open risks', 'UAT cases', 'Sign-offs'], mat, '#1D1A5E'))}`;
     }
     return '';
   }

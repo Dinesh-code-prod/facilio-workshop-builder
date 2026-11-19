@@ -22,7 +22,7 @@
   const rchip = r => { const x = ROLE[r]; return x ? chip(x[1], x[0]) : ''; };
   const ownerName = o => { const x = String(o || '').split(',')[0].trim(); return !x ? '—' : /guest\.local$/.test(x) ? 'Office team' : x; };
   const initials = n => String(n || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase();
-  const TONE = ['#1570EF', '#e91e84', '#14a8a8', '#6b4ee6', '#e08a00'];
+  const TONE = ['#1570EF', '#e91e84', '#14a8a8', '#1D1A5E', '#e08a00'];
   const tone = s => TONE[Math.abs([...String(s)].reduce((a, c) => a * 31 + c.charCodeAt(0), 7)) % TONE.length];
 
   // the other sections are fetched quietly once the first screen is up, so clicking one opens at once
@@ -181,7 +181,7 @@
     </div>
     <div class="adm-row two">
       ${dcard('Sign-ups per week', 'Staff and guests, 12 weeks', stackBars(i.signups.map(w => ({ l: w.week.slice(5), staff: w.staff, guests: w.guests })), ['staff', 'guests'], ['#1570EF', '#e91e84'], ['Staff', 'Guests']))}
-      ${dcard('Daily activity', 'People signed in, 14 days', stackBars(i.daily.map(d => ({ l: d.day.slice(8), staff: d.staff, customers: d.customers })), ['staff', 'customers'], ['#14a8a8', '#6b4ee6'], ['Staff', 'Customer visits']))}
+      ${dcard('Daily activity', 'People signed in, 14 days', stackBars(i.daily.map(d => ({ l: d.day.slice(8), staff: d.staff, customers: d.customers })), ['staff', 'customers'], ['#14a8a8', '#1D1A5E'], ['Staff', 'Customer visits']))}
     </div>
     ${dcard('When the team works', 'Weekday by hour', heatmap(i.heat))}
     <div class="adm-row two">
@@ -198,7 +198,7 @@
     const SC = { open: '#F79009', answered: '#1570EF', resolved: '#079455', closed: '#98A2B3' }; const PC = { urgent: '#D92D20', high: '#F79009', normal: '#1570EF', low: '#98A2B3' };
     const kindRows = k => { const m = {}; i.items.filter(r => r.kind === k).forEach(r => { m[r.st || 'No status'] = (m[r.st || 'No status'] || 0) + r.n; }); return Object.keys(m).map(x => ({ l: cap(x), v: m[x], c: /done|closed|signed|resolved|passed|mitigated/i.test(x) ? '#14a8a8' : /block|fail|open|risk/i.test(x) ? '#e08a00' : '#1570EF' })).sort((a, b) => b.v - a.v); };
     const tot = f => act.filter(f).length; const pct = c => Math.round(c / n * 100);
-    const comp = [['Modules in scope', tot(p => p.modulesInScope > 0)], ['Workshop sessions planned', tot(p => p.sessions.total > 0)], ['Requirements captured', tot(p => p.requirements > 0)], ['State flows proposed', tot(p => p.flows > 0)], ['BRD exported', tot(p => p.brdExports > 0)], ['Customer access on', tot(p => p.customerAccessEnabled)]].map(([l, c]) => ({ l, v: pct(c), sub: c + ' of ' + act.length, c: '#6b4ee6' }));
+    const comp = [['Modules in scope', tot(p => p.modulesInScope > 0)], ['Workshop sessions planned', tot(p => p.sessions.total > 0)], ['Requirements captured', tot(p => p.requirements > 0)], ['State flows proposed', tot(p => p.flows > 0)], ['BRD exported', tot(p => p.brdExports > 0)], ['Customer access on', tot(p => p.customerAccessEnabled)]].map(([l, c]) => ({ l, v: pct(c), sub: c + ' of ' + act.length, c: '#1D1A5E' }));
     const totQ = Object.values(st).reduce((a, b) => a + b, 0);
     return `<div class="kpi-grid">
       ${kpi('Customer questions', totQ, `${st.open || 0} open`, 'k-pink')}
@@ -207,7 +207,7 @@
       ${kpi('Open risks and issues', i.items.filter(r => r.kind === 'raid' && !/closed|resolved|done|mitigated/i.test(r.st)).reduce((a, r) => a + r.n, 0), 'Across active and archived projects', '')}
     </div>
     <div class="adm-row three">
-      ${dcard('Customer questions by status', '', donutOf(Object.keys(st).map(k => ({ l: cap(k), v: st[k], c: SC[k] || '#6b4ee6' })), 'questions'))}
+      ${dcard('Customer questions by status', '', donutOf(Object.keys(st).map(k => ({ l: cap(k), v: st[k], c: SC[k] || '#1D1A5E' })), 'questions'))}
       ${dcard('Questions by priority', '', hbars(Object.keys(pr).map(k => ({ l: cap(k), v: pr[k], c: PC[k] || '#1570EF' })).sort((a, b) => b.v - a.v)))}
       ${dcard('New questions per week', 'Last 8 weeks', bars(i.feedback.weekly.map(w => ({ v: w.n, l: w.week.slice(5), tip: 'Week of ' + w.week })), null, 'pink'))}
     </div>
