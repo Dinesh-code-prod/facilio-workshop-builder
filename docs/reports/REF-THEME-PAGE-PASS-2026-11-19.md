@@ -108,6 +108,14 @@ What is left, and why it stays:
 |---|---|
 | ![tasks drawer before](ref-theme-2026-11-19/before-overlay-tasks.jpg) | ![tasks drawer after](ref-theme-2026-11-19/after-overlay-tasks.jpg) |
 
+## Second pass (same day): one face, one colour hierarchy
+
+- **Type.** Every button, tab, chip, menu item, dropdown, field label and small caps label now uses the heading face (Plus Jakarta Sans), sentence case for controls; IBM Plex Mono is gone from every page of the team view, the customer view and Admin (checked element by element). Reading text moved to the reference scale: 15 px body, 17 px leads, 14 px tables, 13 px meta.
+- **Colour.** The reference hierarchy: ink titles, #33333D text, #6B6B78 muted, hairlines #ECECF1 / #DEDEE6, soft surfaces #F7F7FA / #F1F1F6; selected toggles ink; one solid accent (Facilio blue) for the main action, links and focus; status pills as a soft tint behind strong text (green, red, amber, blue, grey). Gradient page titles, tile washes and gradient buttons removed.
+- **Filter bars and button rows.** Labels above, every control on one bottom-aligned 40 px row, exports at the end of the same row; dropdowns show an arrow again; the date-range picker is a plain white pill.
+- **Switches** rebuilt: 38 x 22 track, the knob always inside it, grey off, blue on, a lighter shape when read-only. **Confirm dialogs**: title in the heading face, the confirming action filled (red when it removes something).
+- Sweep after the second pass: 144 screens, no page errors, no violet, overlaps 5 to 2.
+
 ## Not checked
 
 - Screens below the first 1080 px of each page were measured but only the top was screenshotted.
