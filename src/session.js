@@ -14,11 +14,12 @@
   // text in open forms: drawers, dialogs, text areas, and editable text on a page
   function fields() {
     const out = []; const seen = new Set();
-    d.querySelectorAll('#drawer input, #drawer textarea, .dialog input, .dialog textarea, main textarea, main [contenteditable="true"]').forEach((el, i) => {
+    d.querySelectorAll('#drawer input, #drawer textarea, .dialog input, .dialog textarea, main textarea, main [contenteditable="true"], #asst textarea').forEach((el, i) => {
       if (out.length >= 40) return; const type = (el.getAttribute('type') || 'text').toLowerCase(); if (el.tagName === 'INPUT' && !/^(text|email|url|tel|search|number|date)$/.test(type)) return;
       const v = String(el.isContentEditable ? el.innerText : el.value || '').trim(); if (v.length < 3 || v.length > 20000) return;
       const lab = (el.id && d.querySelector('label[for="' + el.id + '"]')) || el.closest('label') || null; const label = (lab ? lab.textContent : el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.id || 'Text').trim().slice(0, 60);
-      const k = (el.id || el.getAttribute('data-txt') || el.getAttribute('data-cell') || '') + '|' + v.slice(0, 40); if (seen.has(k)) return; seen.add(k); out.push({ label, value: v });
+      const key = el.id ? '#' + el.id : el.getAttribute('data-txt') ? '[data-txt="' + el.getAttribute('data-txt') + '"]' : '';   // how to find this field again; none: only the Copy list can give it back
+      const k = (el.id || el.getAttribute('data-txt') || el.getAttribute('data-cell') || '') + '|' + v.slice(0, 40); if (seen.has(k)) return; seen.add(k); out.push({ label, value: v, key, drawer: !!el.closest('#drawer, .dialog'), chat: !!el.closest('#asst'), bound: el.hasAttribute('data-bind') });
     });
     return out;
   }
@@ -49,7 +50,23 @@
 
   // a 401 from the platform, or closing the tab with unsaved work
   if (root.FWBShell && !root.FWBShell.__keep) { const orig = root.FWBShell.sessionExpired; root.FWBShell.sessionExpired = function (msg) { try { keep(); } catch (e) { } return orig.call(this, msg); }; root.FWBShell.__keep = true; }
-  root.addEventListener('pagehide', () => { try { if (F.hasUnsaved() || d.querySelector('#drawer textarea, #drawer input')) keep(); } catch (e) { } });
+  root.addEventListener('pagehide', () => { try { keep(); } catch (e) { } });
+  d.addEventListener('visibilitychange', () => { try { if (d.hidden) keep(); } catch (e) { } });
+  // while typing: kept a moment after each pause, so a crash or a killed tab loses at most a second or two (the same 24-hour, this-browser-only rule)
+  let kt = 0; d.addEventListener('input', () => { clearTimeout(kt); kt = setTimeout(() => { try { keep(); } catch (e) { } }, 1200); }, { passive: true, capture: true });
+  // after the project opens again, the text goes back into the same field, on the page it was typed on (only into an empty field; fields the page already saves, and drawers, are not touched)
+  let place = null;
+  V.keepPlace = () => {
+    if (!place || !S.project || S.project.id !== place.pid) return;
+    if (Date.now() > place.until) { const left = place.fields, vn = place.viewName; place = null; if (left.length) offerCopy(vn, left); return; }   // not found in 20 seconds: the Copy list
+    const onView = place.view === (S.ui && S.ui.view); const now = place.fields.filter(f => f.chat || onView); if (!now.length) return; let n = 0; const stay = [];
+    now.forEach(f => { const el = f.key ? d.querySelector(f.key) : null; if (!el) { stay.push(f); return; } if (String(el.isContentEditable ? el.innerText : el.value || '').trim()) return;   // a field that already has text is left alone
+      if (el.isContentEditable) el.innerText = f.value; else { el.value = f.value; el.dispatchEvent(new Event('input', { bubbles: true })); } n++; });
+    place.fields = place.fields.filter(f => !now.includes(f)).concat(stay);
+    if (n) V.toast('Put back what you were typing (' + n + ' field' + (n > 1 ? 's' : '') + '). Check it, then save or send.', 8000);
+    if (!place.fields.length) place = null;
+  };
+
 
   // after the person signs in and opens the project again
   V.keepRestore = projectId => {
@@ -60,7 +77,12 @@
       if (x.version === s.base && !S.readonly) { if (k === 'workshop') { Object.keys(S.ws).forEach(p => { delete S.ws[p]; }); Object.assign(S.ws, s.data); } else x.data = s.data; F.markDirty(k); restored++; } else lost[k] = s.data; });
     if (restored) setTimeout(() => V.toast('Restored ' + restored + ' section' + (restored > 1 ? 's' : '') + ' you had changed but not saved before you were signed out. They are being saved now.', 9000), 600);
     if (Object.keys(lost).length) setTimeout(async () => { if (await V.confirmDialog('Unsaved changes could not be restored', 'Someone else changed the same part of the project after you were signed out, so your unsaved version was not put back over theirs. You can download your copy and compare.', 'Download my copy')) V.download('my-unsaved-changes.json', JSON.stringify(lost, null, 2), 'application/json'); }, 900);
-    const ff = (snap.fields || []).filter(f => f && f.value);
-    if (ff.length) setTimeout(() => V.drawer('Text you had not saved', `<p class="small" style="margin-top:0">You were signed out while you were typing in <b>${esc(snap.view || 'the project')}</b>. Here is what was in the open forms. Copy it back where it belongs.</p>${ff.map((f, i) => `<div style="margin:10px 0"><label class="f">${esc(f.label)}</label><textarea rows="${Math.min(8, 2 + Math.floor(f.value.length / 90))}" readonly style="width:100%">${esc(f.value)}</textarea><button type="button" class="btn sm" data-act="hoCopyVal" data-val="${esc(f.value)}">Copy</button></div>`).join('')}`, '<button class="btn" data-act="closeDrawer">Done</button>'), 1200);
+    // a field with no id cannot be found again: it stays in the Copy list
+    const all = (snap.fields || []).filter(f => f && f.value); const inPlace = all.filter(f => f.key && !f.drawer && !f.bound); const ff = all.filter(f => !inPlace.includes(f) && !f.bound);
+    if (inPlace.length && snap.view) { place = { pid: projectId, view: snap.view, fields: inPlace, viewName: snap.view, until: Date.now() + 20000 }; const tk = setInterval(() => { try { V.keepPlace(); } catch (e) { } if (!place) clearInterval(tk); }, 500); if (S.ui && S.ui.view !== snap.view && V.go && /^(projdash|overview)$/.test(S.ui.view || '')) setTimeout(() => { try { V.go(snap.view); } catch (e) { } }, 300); }
+    if (ff.length) offerCopy(snap.view, ff);
+  };
+  function offerCopy(view, ff) {
+    if (ff.length) setTimeout(() => V.drawer('Text you had not saved', `<p class="small" style="margin-top:0">You were typing in <b>${esc(view || 'the project')}</b> when the page closed. Here is what was in the open forms. Copy it back where it belongs.</p>${ff.map((f, i) => `<div style="margin:10px 0"><label class="f">${esc(f.label)}</label><textarea rows="${Math.min(8, 2 + Math.floor(f.value.length / 90))}" readonly style="width:100%">${esc(f.value)}</textarea><button type="button" class="btn sm" data-act="hoCopyVal" data-val="${esc(f.value)}">Copy</button></div>`).join('')}`, '<button class="btn" data-act="closeDrawer">Done</button>'), 1200);
   };
 })(typeof window !== 'undefined' ? window : globalThis);
