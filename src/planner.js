@@ -153,7 +153,7 @@
       const head = []; for (let k = buf.length - 1; k >= 0 && titleLine(buf[k]); k--) head.unshift(buf[k]);
       const name = head.concat(m[1]).join(' ').replace(/\s+/g, ' ').trim(); buf = []; if (!name || name.length > 160) return;
       const best = bestOf(' ' + name.toLowerCase() + ' ', tabMods); const key = (best ? best.m : '') + '|tab|' + name.toLowerCase(); if (seen.has(key)) return; seen.add(key);
-      d.scope.push({ id: F.uid('sc'), text: name + ' (licence table: ' + m[2] + ')', module: best ? best.m : '', confidence: best ? 'high' : 'low', status: !best ? 'uncertain' : m[2] === 'No' ? 'excluded' : 'matched', source: 'msa', page: o.page || null, section: 'Licensed modules table', ctx: l.slice(0, 500), read: o.ocr ? 'ocr' : 'text', ocrConf: o.ocr ? o.conf : null }); });
+      d.scope.push({ id: F.uid('sc'), text: name, module: best ? best.m : '', confidence: best ? 'high' : 'low', status: !best ? 'uncertain' : m[2] === 'No' ? 'excluded' : 'matched', source: 'msa', page: o.page || null, section: 'Licensed modules table (' + m[2] + ')', ctx: l.slice(0, 500), read: o.ocr ? 'ocr' : 'text', ocrConf: o.ocr ? o.conf : null }); });
     seg.forEach((o, ix) => { const l = o.l; const bullet = /^([•\-–*·▪●o]|\(?[a-z0-9ivx]{1,4}[.)])\s+/i.test(l) || l.length < 120; if (!bullet) return; const low = ' ' + l.toLowerCase() + ' ';
       const best = bestOf(low);
       const key = (best ? best.m : '') + '|' + l.toLowerCase(); if (seen.has(key)) return; seen.add(key);

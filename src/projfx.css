@@ -518,3 +518,9 @@ body.in-proj ol.ob-steps > li:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { display: flex; g
 body.in-proj ol.ob-steps b:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { display: block; color: #1D1A5E; font-size: 14px; } body.in-proj ol.ob-steps li span:not(.obs-n):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { display: block; color: #667085; font-size: 13px; margin-top: 2px; }
 body.in-proj .obs-n:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: #EFF6FF; color: #1570EF; font-weight: 600; font-size: 13px; }
 body.in-proj .ob-more:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { position: relative; } body.in-proj .ob-more .mnu-list:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { right: 0; left: auto; min-width: 260px; }
+
+/* three groups in a stage (user, 16 Nov 2026): on a wide screen the third (Module design) sits on the right of the first two */
+@media (min-width: 1200px) { body.in-proj .main > .mt-bar.mt-all:has(> .mt-in:nth-child(3):last-child):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  body.in-proj .main > .mt-bar.mt-all > .mt-in:nth-child(3):last-child:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { grid-column: 2; grid-row: 1 / span 2; border-top: 0 !important; border-left: 1px solid rgba(0, 0, 0, .06); flex-wrap: wrap !important; align-content: center; align-items: center !important; gap: 8px !important; }
+  body.in-proj .main > .mt-bar.mt-all > .mt-in:nth-child(3):last-child .mt-cap:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { flex: 0 0 100% !important; padding: 0 !important; }
+  body.in-proj .main > .mt-bar.mt-all > .mt-in:nth-child(-n+2):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { grid-column: 1; } }

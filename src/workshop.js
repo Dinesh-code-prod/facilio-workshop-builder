@@ -32,7 +32,8 @@
   const RANK = { must: 0, should: 1, could: 2 };
   const curSession = () => { const id = U().sessionId; return id ? sessionList().find(x => x.id === id) || null : null; };
   // the same question worded the same way is asked once (16 Nov 2026: the rules and the question bank could both hold it)
-  const visible = all => { const seen = new Set(); return L().forSession(all, curSession(), sessionList()).filter(q => { const k = String(q.text || '').toLowerCase().replace(/\s+/g, ' ').trim(); if (seen.has(k)) return false; seen.add(k); return true; }); };
+  const visible = all => uniq(L().forSession(all, curSession(), sessionList()));
+  const uniq = list => { const seen = new Set(); return list.filter(q => { const k = String(q.text || '').toLowerCase().replace(/\s+/g, ' ').trim(); if (seen.has(k)) return false; seen.add(k); return true; }); };
   function livePanel(all) {
     const u = U(); const dis = ro() ? ' disabled' : ''; const r = u.res; const info = u.info;
     const nextRows = r ? r.next.map(x => { const q = all.find(y => y.id === x.id); return q ? `<li><b>${esc(q.text)}</b><div class="xs muted">${esc(q.moduleLabel)}. ${esc(x.why)}</div></li>` : ''; }).join('') : '';
@@ -52,7 +53,7 @@
   function bar() {
     const u = U(); const t = u.t;
     return `<div class="ws-bar" role="toolbar" aria-label="Workshop room"><div class="ws-timer"><span class="ws-clock" id="wsClock" role="timer" aria-label="Workshop timer">${esc(L().fmtClock(elapsed()))}</span><button type="button" class="btn sm" data-act="wsTimer">${t.run ? 'Pause' : t.acc ? 'Resume' : 'Start timer'}</button>${t.acc || t.run ? '<button type="button" class="btn sm" data-act="wsTimerReset">Reset</button>' : ''}</div>
-      <div class="row" style="gap:6px;flex-wrap:wrap"><button type="button" class="btn sm primary" data-act="wsPip" title="A small window that stays above Teams, Meet or Zoom with this session's questions">Float the questions</button>${FOCUS() ? '' : `<button type="button" class="btn sm" data-act="wsFull" title="Fill the window with the workshop room (Esc leaves)">${u.full ? 'Exit full screen' : 'Full screen'}</button><button type="button" class="btn sm" data-act="wsNewTab" title="Open the workshop room alone in its own browser tab">Open in a new tab</button>`}</div></div>`;
+      <div class="row" style="gap:6px;flex-wrap:wrap">${FOCUS() ? '' : `<button type="button" class="btn sm" data-act="wsFull" title="Fill the window with the workshop room (Esc leaves)">${u.full ? 'Exit full screen' : 'Full screen'}</button><button type="button" class="btn sm" data-act="wsNewTab" title="Open the workshop room alone in its own browser tab">Open in a new tab</button>`}</div></div>`;
   }
   // ---------- the roadmap: one chip per planned requirement session, then one workspace for the chosen session ----------
   const sessionList = () => L().agendaOf(V.plannerDoc ? V.plannerDoc().sessions : []);
@@ -68,8 +69,8 @@
   }
   const modNames = s => s.modules.length ? s.modules.slice(0, 2).join(', ') + (s.modules.length > 2 ? ' +' + (s.modules.length - 2) : '') : 'Contract-wide questions';
   function roadmap(all) {
-    const u = U(); const ses = sessionList(); const dis = ro() ? ' disabled' : ''; const c = L().counts(all);
-    const chips = ses.map((s, i) => { const qs = forSession(all, s); const done = qs.filter(q => !isOpenQ(q)).length; const full = qs.length && done === qs.length; const on = u.sessionId === s.id;
+    const u = U(); const ses = sessionList(); const dis = ro() ? ' disabled' : ''; all = uniq(all); const c = L().counts(all);
+    const chips = ses.map((s, i) => { const qs = uniq(forSession(all, s)); const done = qs.filter(q => !isOpenQ(q)).length; const full = qs.length && done === qs.length; const on = u.sessionId === s.id;
       return `<button type="button" class="ws-chip${on ? ' on' : ''}${full ? ' done' : ''}" data-act="wsPick" data-id="${esc(s.id)}"${on ? ' aria-current="step"' : ''} title="${esc(s.modules.join(', '))}"><span class="ws-n">${full ? '&#10003;' : esc(s.no || i + 1)}</span><span class="ws-chip-t"><b>${esc(s.title)}</b><span class="xs muted ws-chip-m">${esc(modNames(s))}</span>${progBar(qs)}<span class="xs muted">${esc(s.date ? V.fmtDate(s.date) : 'No date')} &middot; ${done} of ${qs.length} done</span></span></button>`; }).join('');
     const allChip = `<button type="button" class="ws-chip${!u.sessionId ? ' on' : ''}" data-act="wsPick" data-id=""><span class="ws-n">&#8734;</span><span class="ws-chip-t"><b>All questions</b><span class="xs muted ws-chip-m">Every session</span>${progBar(all)}<span class="xs muted">${c.total - c.toask - c.asked} of ${c.total} done</span></span></button>`;
     return `<section class="ws-prep" aria-label="Roadmap of the requirement sessions"><div class="ws-prep-h"><b>Your requirement sessions</b><span class="small muted">Pick the session you are running. Its questions are asked one by one; answers are kept as you go.</span>
@@ -85,10 +86,12 @@
   }
   // the question on screen: the one picked in the side list, else the next to ask
   const pickCur = vis => vis.find(q => q.id === U().cur) || vis.filter(isOpenQ).sort(askOrder)[0] || null;
+  // the list shows a short title; the full question is on the card (16 Nov 2026: the same long sentence repeated down the list was hard to scan)
+  const short = q => { const t = String(q.text || ''); let m; if ((m = t.match(/^Who on your side owns requirement ([\w.-]+)\?/))) return 'Owner and sign-off of ' + m[1]; if ((m = t.match(/^What exactly do you need from "(.+?)"/))) return 'How it works today: ' + m[1]; if (/^No workshop is planned for /.test(t)) return 'No workshop planned yet: when can we meet?'; return t; };
   function sideList(vis, cur) {
     return `<aside class="ws-side" aria-label="Questions of this session by module">${L().byModule(vis).map(g => { const done = g.questions.filter(q => !isOpenQ(q)).length;
       const label = g.module && g.label === g.module ? ((() => { try { return (F.moduleView(g.module) || {}).label; } catch (e) { return ''; } })() || g.label) : g.label;
-      return `<div class="ws-sg"><div class="ws-sgh"><b>${esc(label)}</b><span class="xs muted">${done} of ${g.questions.length}</span></div>${g.questions.map(q => `<button type="button" class="ws-si ws-st-${q.status}${cur && cur.id === q.id ? ' on' : ''}" data-act="wsCur" data-id="${esc(q.id)}" aria-label="${esc(L().LABEL[q.status] + ': ' + q.text)}"${cur && cur.id === q.id ? ' aria-current="true"' : ''}><i aria-hidden="true"></i><span>${esc(q.text)}</span></button>`).join('')}</div>`; }).join('')}</aside>`;
+      return `<div class="ws-sg"><div class="ws-sgh"><b>${esc(label)}</b><span class="xs muted">${done} of ${g.questions.length}</span></div>${g.questions.map(q => `<button type="button" class="ws-si ws-st-${q.status}${cur && cur.id === q.id ? ' on' : ''}" data-act="wsCur" data-id="${esc(q.id)}" aria-label="${esc(L().LABEL[q.status] + ': ' + q.text)}"${cur && cur.id === q.id ? ' aria-current="true"' : ''}><i aria-hidden="true"></i><span title="${esc(q.text)}">${esc(short(q))}</span>${q.priority === 'must' ? '<em class="ws-must">Must</em>' : ''}</button>`).join('')}</div>`; }).join('')}</aside>`;
   }
   function focusCard(vis) {
     const dis = ro() ? ' disabled' : ''; const q = pickCur(vis);

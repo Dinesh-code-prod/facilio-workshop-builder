@@ -9,7 +9,7 @@
   const label = m => { try { return (F.moduleView(m) || {}).label || m; } catch (e) { return m; } };
   function input() {
     const d = V.plannerDoc ? V.plannerDoc() : {}; const reqs = S.ws.requirements || []; const by = {}; const mod = n => (by[n] = by[n] || { name: n, label: n ? label(n) : '', scopeItems: [], requirements: [], openQuestions: [] });
-    (d.scope || []).forEach(x => { if (x.module) mod(x.module).scopeItems.push({ id: x.id || x.text, text: x.text, status: x.status }); });
+    (d.scope || []).forEach(x => { if (x.module) mod(x.module).scopeItems.push({ id: x.id || x.text, text: String(x.text || '').replace(/ \(licence table: (Yes|No)\)$/, ''), status: x.status }); });   // the suffix an extraction of 16 Nov 2026 saved into the wording
     reqs.forEach(r => { const text = [r.title, r.objective].filter(Boolean).join('. '); (r.modules && r.modules.length ? r.modules : ['']).forEach(m => mod(m).requirements.push({ id: r.id, text, status: r.status, owner: r.owner || r.users, acceptance: r.acceptance })); });
     (S.ws.questions || []).forEach(q => { const r = reqs.find(x => x.id === q.reqId); const area = String(q.area || '').toLowerCase(); const m = (r && r.modules && r.modules[0]) || Object.keys(by).find(k => k && (area.includes(k.toLowerCase()) || area.includes(label(k).toLowerCase()))) || ''; mod(m).openQuestions.push({ id: q.id, text: q.text, from: q.owner === 'internal' ? 'facilio' : 'customer', status: q.status }); });
     const T = F.doc('transcripts') || {};

@@ -87,3 +87,7 @@
 .ws-stchip { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; margin-left: 6px; background: #E5E5EA; color: #3a3a3c; } .ws-stchip.ws-st-answered { background: #E3F7E8; color: #1E7F3A; }
 .ws-nx { display: block; text-align: left; font: inherit; background: none; border: 0; padding: 4px 0; color: #1570EF; cursor: pointer; } .ws-nx:hover { text-decoration: underline; }
 @media (max-width: 900px) { .ws-ask { grid-template-columns: minmax(0, 1fr); } .ws-side { position: static; max-height: 40vh; } }
+/* neater list (16 Nov 2026): short titles, a Must tag on the right, module headers stay in view while the list scrolls */
+.ws-si span { flex: 1; min-width: 0; }
+.ws-si .ws-must { flex: none; font-style: normal; font-size: 10.5px; font-weight: 600; color: #B42318; background: #FEF3F2; border-radius: 99px; padding: 1px 7px; margin-top: 1px; }
+.ws-sgh { position: sticky; top: -6px; z-index: 1; background: #fff; border-bottom: 1px solid #F2F2F7; }

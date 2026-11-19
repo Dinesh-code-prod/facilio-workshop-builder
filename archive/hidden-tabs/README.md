@@ -12,11 +12,11 @@ Each file is a **copy taken on 13 Nov 2026** of the source that draws the tab. T
 
 | View id | Tab | Who saw it | Copy here | Why it was hidden | Live code still used by |
 |---|---|---|---|---|---|
-| modules | System Modules & Form Builder | Team | `module.js` | Stage 3 trimmed: fields and forms come from Claude's reading of the transcripts | Solution page, BRD (fields, forms), Claude jobs |
+| ~~modules~~ | System Modules & Form Builder (back 16 Nov 2026 as Forms & templates, stage 2 Module design) | Team | `module.js` | Stage 3 trimmed: fields and forms come from Claude's reading of the transcripts | Solution page, BRD (fields, forms), Claude jobs |
 | ~~flow~~ | State Flow Builder | Team | `flowbuilder.js` | **Back in the menu on 16 Nov 2026** as "State flow builder" next to the Process whiteboard, which keeps a saved flow in step | Whiteboard, BRD, Solution page |
 | rsquestions | Questions (Requirement sessions) | Team | `qbank.js` | 16 Nov 2026: folded into the Workshop room (Add a question, Import questions per session, Ask Claude for questions, Edit); old links open the Workshop room | Workshop room (its actions), floating window |
-| roles | Roles & Access Permissions | Team | `roles.js` | Stage 3 trimmed: roles follow the whiteboard flow (who presses each arrow) | BRD role matrix, Solution page |
-| notifications | Notifications | Team | `notifications.js` | Stage 3 trimmed: notifications are added when a whiteboard flow is saved | BRD, Org package |
+| ~~roles~~ | Roles & Access Permissions (back 16 Nov 2026 as Roles & access, stage 2 Module design) | Team | `roles.js` | Stage 3 trimmed: roles follow the whiteboard flow (who presses each arrow) | BRD role matrix, Solution page |
+| ~~notifications~~ | Notifications (back 16 Nov 2026, stage 2 Module design) | Team | `notifications.js` | Stage 3 trimmed: notifications are added when a whiteboard flow is saved | BRD, Org package |
 | cfginputs | Configuration & org package | Team | `cfginputs.js` | Stage 3 trimmed | Org package export |
 | solution | Solution (text editor) | Team | `solution.js` | Replaced in the menu by the Solution page (`solmap.js`); still opens from "Review the solution text" | Solution page, BRD |
 | mailtab | Customer mail | Team | `mailinbox.js` | Customer email removed; the daily mail search is switched off (`MAIL_OFF` in `work/server/_jobsapi.mjs`) | none in the menu |
