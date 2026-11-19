@@ -67,4 +67,9 @@ await t('engine: an accepted mail task is wanted until its check is met; then it
   const r = reconcile(desired({}), made, 'n', { 'mail:ml_1': 'a BRD version was saved after this task was made' }); assert.equal(r.resolve.length, 1); assert.equal(r.resolve[0].why, 'a BRD version was saved after this task was made');
   const byPerson = [Object.assign({}, made[0], { status: 'Done' })]; assert.deepEqual(reconcile(want, byPerson, 'n').reopen, []); assert.deepEqual(reconcile(desired({}), byPerson, 'n').resolve, []);
 });
+await t('a mail keeps its Outlook on the web link (reply in the thread, attachments) and nothing else', async () => {
+  assert.equal(mk({ webLink: 'https://outlook.office365.com/owa/?ItemID=AAMk%2Bx&exvsurl=1&viewmodel=ReadMessageItem' }).webLink, 'https://outlook.office365.com/owa/?ItemID=AAMk%2Bx&exvsurl=1&viewmodel=ReadMessageItem');
+  assert.equal(mk({ webLink: 'https://outlook.office.com/mail/deeplink/read/AAMk' }).webLink, 'https://outlook.office.com/mail/deeplink/read/AAMk');
+  for (const bad of ['http://outlook.office.com/x', 'https://evil.com/?outlook.office.com', 'https://outlook.office.com.evil.com/x', 'javascript:alert(1)', '', 42]) assert.equal(mk({ webLink: bad }).webLink, '', String(bad));
+});
 console.log('\nmail_tasks: ' + n + ' passed');

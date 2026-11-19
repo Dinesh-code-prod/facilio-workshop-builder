@@ -1412,7 +1412,7 @@
       },
       "mails": {
        "type": "array",
-       "description": "mail_save: at most 20 of { messageId (the Internet message id header, not the Outlook item id), conversationId, from { name, email }, to [addresses], cc [addresses], subject, body (plain text, first 4000 characters), receivedAt }",
+       "description": "mail_save: at most 20 of { messageId (the Internet message id header, not the Outlook item id), conversationId, from { name, email }, to [addresses], cc [addresses], subject, body (plain text, first 4000 characters, each hyperlink as its text then <address>), receivedAt, webLink (the Outlook on the web address of that mail, opens it and its thread), attachments [{ name, size, type }] names only }",
        "items": {
         "type": "object"
        }

@@ -21,7 +21,8 @@
     const body = txt(raw.body, LIMITS.body); const subject = line(raw.subject, LIMITS.subject) || '(no subject)'; if (!body && subject === '(no subject)') return { ok: false, error: 'The mail has no subject and no text.' };
     let when = ''; if (raw.receivedAt) { const d = new Date(raw.receivedAt); if (!isNaN(d)) when = d.toISOString(); }
     const attachments = (Array.isArray(raw.attachments) ? raw.attachments : []).slice(0, 12).map(a => (a && typeof a === 'object' ? { name: line(a.name, 160), size: Math.max(0, Math.min(Number(a.size) || 0, 5e9)), type: line(a.type, 80) } : null)).filter(a => a && a.name);   // names only: the file stays in Outlook
-    return { ok: true, mail: { messageId, conversationId: line(raw.conversationId, 300), from, to: mails(raw.to), cc: mails(raw.cc), subject, body, receivedAt: when, attachments } };
+    let webLink = ''; try { const u = new URL(line(raw.webLink, 2000)); if (u.protocol === 'https:' && /^outlook\.(office|office365|live)\.com$/i.test(u.hostname)) webLink = u.href; } catch (e) { /* no link, or not an Outlook one */ }   // opens this exact mail in Outlook on the web (reply in the thread, attachments)
+    return { ok: true, mail: { messageId, conversationId: line(raw.conversationId, 300), from, to: mails(raw.to), cc: mails(raw.cc), subject, body, receivedAt: when, attachments, webLink } };
   }
   /** the record id: the same message id in any spelling (case, angle brackets) always gives the same id */
   const idOf = messageId => { const k = String(messageId || '').trim().replace(/^<|>$/g, '').toLowerCase(); return 'ml_' + hash(k, 5381, 33) + hash(k.split('').reverse().join(''), 52711, 31); };
