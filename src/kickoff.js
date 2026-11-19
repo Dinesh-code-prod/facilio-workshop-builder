@@ -84,8 +84,7 @@
         msgs.push({ who: 'claude', text: c.ok ? 'The drafts are ready and your review is complete. Do you want to approve the kick-off and the plan now?' : 'The drafts are ready for your review. ' + c.why, actions: c.ok ? [{ label: 'Yes, approve', act: 'koApproveIntake', primary: true }, { label: 'Not yet, let me review', act: 'koOpen', attrs: { view: 'kickoff' } }] : [{ label: 'Review the kick-off', act: 'koOpen', attrs: { view: 'kickoff' } }] }); }
     }
     const dis = ro() ? ' disabled' : '';
-    const composer = file || j || p ? '<span class="ki-file" title="' + esc(file) + '">' + esc(file || 'MSA') + '</span><span class="spacer"></span><button type="button" class="btn sm" data-act="koReplaceMsa"' + dis + '>Replace MSA</button><button type="button" class="btn sm danger" data-act="koRemoveMsa"' + dis + '>Remove MSA</button>'
-      : '<button type="button" class="btn primary" data-act="uploadMsa"' + dis + '>Upload the MSA</button><span class="xs muted">PDF, Word or text</span>';
+    const composer = ''; // the contract file, Replace, Remove and the first upload live in Contract documents above
     return root.FWBWorkChat.html({ lite: true, title: 'Your drafts', hint: j && j.claimedAt ? "Prepared with Claude's help, on " + (who ? who + "'s" : 'your') + ' computer (scheduled task "Delivery Studio job queue"). ' + (j.progressAt ? 'Last update ' + when(j.progressAt) + '.' : '') : "Drafts are prepared for you with Claude's help, on your own computer. You can leave this page; you review and decide.", messages: msgs, tiles, tilesTitle: 'Draft documents for your review', composer });
   }
   const list = (items, cls) => items.length ? `<ul class="ko-list ${cls || ''}">${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : '';
