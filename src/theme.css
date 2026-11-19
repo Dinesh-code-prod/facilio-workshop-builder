@@ -20,7 +20,7 @@
   --th-night: #1D1A5E; --th-night-2: #1A1446; --th-mint: #7CF3C6;
   --th-grad: linear-gradient(90deg, #F2780D, #DB0000 33.3%, #1D1A5E 66.6%, #38D7FF);
   --th-hatch: repeating-linear-gradient(-45deg, var(--th-line) 0 1px, transparent 1px 9px);
-  --th-display: "Plus Jakarta Sans", Inter, system-ui, sans-serif; --th-font: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --th-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --th-display: "Plus Jakarta Sans", Inter, system-ui, sans-serif; --th-font: Inter, system-ui, "Segoe UI", sans-serif; --th-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   --th-r-sm: 6px; --th-r-md: 10px; --th-r-lg: 16px; --th-r-xl: 24px; --th-r-full: 999px;
   --th-sh-1: 0 0 0 0 transparent; --th-sh-2: 0 1px 2px rgba(11,11,18,.05), 0 12px 32px -12px rgba(11,11,18,.16);
 

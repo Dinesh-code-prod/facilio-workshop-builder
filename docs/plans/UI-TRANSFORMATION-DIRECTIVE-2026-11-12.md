@@ -3,7 +3,7 @@
 Standing master directive for Delivery Studio's look and feel. Every UI session reads this first, together with `docs/design/design-reference.md` and the "Look and feel" rules in `CLAUDE.md`.
 
 ## Goal
-A genuine, app-wide design and UX transformation into a premium, Apple-inspired enterprise product. Not a colour refresh, not a few dashboard cards.
+A genuine, app-wide design and UX transformation into a premium, clean enterprise product. Not a colour refresh, not a few dashboard cards.
 
 ## Problems to fix
 - Too much information at once; tabs and sections feel cluttered.
@@ -17,7 +17,7 @@ A genuine, app-wide design and UX transformation into a premium, Apple-inspired 
 ## Rules
 1. **Skills.** Discover the installed skills, read the relevant ones in full and follow them. Mandatory: `tastemaker`, `emil-design-eng`, `ui-taste`, `ui-ux-pro-max`. Also use the relevant ones for typography, layout, accessibility, motion, browser testing. Never claim a skill was used unless it was read and followed.
 2. **Design document.** The repo's design reference is the implementation reference. Check why the code drifts from it (legacy CSS layers, hard-coded page styles, bypassed components). Reconcile, do not invent a competing system.
-3. **Apple-inspired**, not an Apple copy: hierarchy, typography, whitespace, restrained colour, subtle depth, purposeful motion, minimal noise. Not "rounded cards, gradients and glass everywhere".
+3. **Clean and premium**, not a copy of any product: hierarchy, typography, whitespace, restrained colour, subtle depth, purposeful motion, minimal noise. Not "rounded cards, gradients and glass everywhere".
 4. **Audit every page**, route, tab, nested tab, modal, drawer, menu and empty/loading/error/success state, top to bottom.
 5. **Preserve every tab.** Never remove, hide, merge or rename tabs. Fix how they look, not how many there are. Each level gets its own visual identity:
    - main app navigation: clear, strong active state, aligned icons and labels;

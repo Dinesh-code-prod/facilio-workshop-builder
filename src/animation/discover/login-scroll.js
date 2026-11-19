@@ -1,4 +1,4 @@
-/* Sign-in page "Discover more" (src/discoverlogin.js): pinned scenes, in the manner of Apple's product pages.
+/* Sign-in page "Discover more" (src/discoverlogin.js): pinned scenes, in the manner of premium product pages.
    Every solution area becomes one scene that stays pinned while you scroll through it:
      it zooms up as it arrives, its art slides in and assembles, the heading and description light up word by word with the scroll,
      the module chips appear one after another, then the scene shrinks and dims as the next one arrives.

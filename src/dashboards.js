@@ -41,10 +41,15 @@
     const stage = cur ? 'Stage ' + V.stageOfStep(cur.i) + ' · ' + V.roadmapName(V.stageOfStep(cur.i)) : 'Plan not started';
     const lede = [late ? late + ' item' + (late === 1 ? ' is' : 's are') + ' overdue' : 'Nothing is overdue', wait ? wait + ' waiting on the customer' : 'nothing waiting on the customer', c.st.n ? c.st.actual + '% of the plan done against ' + c.st.planned + '% planned' : 'no dated plan yet'].join(', ') + '.';
     const stat = (n, l, tone) => '<div class="pd-stat' + (tone ? ' ' + tone : '') + '"><b>' + n + '</b><span>' + l + '</span></div>';
-    return '<section class="pd-hero" aria-label="Project summary"><p class="pd-eye">' + esc([p.customer, stage].filter(Boolean).join('  ·  ')) + '</p>'
-      + '<h1 class="pd-title">' + esc(p.name || 'Project') + '</h1><p class="pd-lede">' + esc(lede) + '</p>'
-      + '<div class="pd-cta"><button type="button" class="btn primary" data-act="nav" data-view="tasks">Open the task board</button><button type="button" class="btn" data-act="nav" data-view="intro">Plan and schedule</button></div>'
-      + '<div class="pd-stats">' + stat(openT.length, 'Open tasks') + stat(late, 'Overdue', late ? 'bad' : '') + stat(risks, 'Open risks', risks ? 'warn' : '') + stat(conf + '<small>/' + reqs.length + '</small>', 'Requirements confirmed') + '</div></section>';
+    const doneT = c.tasks.filter(t => t.status === 'Done').length, closedR = c.raid.filter(r => r.status === 'Closed').length;
+    const pc = (n, d) => (d ? Math.round(n / d * 100) : 0);
+    const bar = (l, v, sub) => '<li><span class="pd-bl">' + esc(l) + '</span><span class="pd-bt"><i style="width:' + v + '%"></i></span><b>' + v + '%</b>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</li>';
+    const ready = '<aside class="pd-card" aria-label="Readiness"><header><b>Readiness</b><span>across plan, requirements, tasks and risks</span></header><ul>'
+      + bar('Plan done', c.st.n ? c.st.actual : 0, c.st.n ? c.st.planned + '% planned' : 'no dated plan') + bar('Requirements confirmed', pc(conf, reqs.length), conf + ' of ' + reqs.length) + bar('Tasks done', pc(doneT, c.tasks.length), doneT + ' of ' + c.tasks.length) + bar('Risks closed', pc(closedR, c.raid.length), closedR + ' of ' + c.raid.length) + '</ul></aside>';
+    return '<section class="pd-hero" aria-label="Project summary"><div class="pd-main"><p class="pd-eye">' + esc([p.customer, stage].filter(Boolean).join('  ·  ')) + '</p>'
+      + '<h1 class="pd-title"><span class="pd-grad">' + esc(p.name || 'Project') + '</span></h1><p class="pd-lede">' + esc(lede) + '</p>'
+      + '<div class="pd-cta"><button type="button" class="btn primary" data-act="nav" data-view="tasks">Open the task board<span class="arr" aria-hidden="true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></span></button><button type="button" class="btn" data-act="nav" data-view="intro">Plan and schedule<span class="arr" aria-hidden="true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></span></button></div>'
+      + '<div class="pd-stats">' + stat(openT.length, 'Open tasks') + stat(late, 'Overdue', late ? 'bad' : '') + stat(risks, 'Open risks', risks ? 'warn' : '') + stat(conf + '<small>/' + reqs.length + '</small>', 'Requirements confirmed') + '</div></div>' + ready + '</section>';
   }
   V.projdash = { html() {
     I().load(KINDS); const c = ctx(); const k = c.k; const p = S.project || {}; const cur = c.ph.cur >= 0 ? c.ph.info[c.ph.cur] : null; const gl = goLive(c.st); const gv = c.st.actual - c.st.planned;

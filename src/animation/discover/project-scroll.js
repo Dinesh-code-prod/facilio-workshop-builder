@@ -1,4 +1,4 @@
-/* "Discover more" tab inside a project (src/explore.js): pinned sideways galleries, in the manner of Apple's card carousels.
+/* "Discover more" tab inside a project (src/explore.js): pinned sideways galleries, in the manner of product-site card carousels.
    Every solution area becomes one pinned chapter: its number and heading stay put while scrolling down slides the module cards sideways;
    the card in focus grows and sharpens, the others step back, a thin line under the heading shows how far through the chapter you are,
    and the big chapter number drifts the other way. The hero headline assembles word by word and the isometric stack turns as you leave it (CSS, project-scroll.css).

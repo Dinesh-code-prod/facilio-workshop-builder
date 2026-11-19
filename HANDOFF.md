@@ -113,7 +113,7 @@ Last updated: 2 Nov 2026 (evening), Claude Code session `vigilant-euclid`. Pushe
 - Next slices: Inbox like Outlook and Tickets like a ticketing tool (slice 2), tickets linked to Tasks with AI suggestions (slice 3), and a full-app UI consistency sweep the user asked for on 3 Nov.
 
 ## Pushed but not deployed (3 Nov 2026)
-- Discover more got two new Apple-style scroll effects in one folder, `src/animation/discover/` (`core.js`, `login-scroll.*` for the sign-in page, `project-scroll.*` for the project tab). They replace `src/animation/explorefx.*`. Pushed as 34fb96c (`discover-login-check` 9/9, `explore-scroll-check` 11/11, `npm test` passes); the live deploy is still waiting.
+- Discover more got two new clean scroll effects in one folder, `src/animation/discover/` (`core.js`, `login-scroll.*` for the sign-in page, `project-scroll.*` for the project tab). They replace `src/animation/explorefx.*`. Pushed as 34fb96c (`discover-login-check` 9/9, `explore-scroll-check` 11/11, `npm test` passes); the live deploy is still waiting.
 
 - Training & Guides revamp and Team Guide update (3 Nov 2026), also not pushed: the four pages are separate tabs with their own content (`src/pageguide.js`, `src/studio.js`, `src/tracequal.css`); Team Guide rebuilt on the menu levels with a live menu map and a "Set up your Claude" section (`src/teamhelp.js`, `src/teamhelp.css`, recoloured from violet to Facilio blue). New check: `tests/ui/training-tabs-check.mjs` (19/19). The Document guide option was removed from the Studio (the User Guide Builder covers it); the Training outline stays there.
 - Deploy 130 is the last live one. The deploy of 34fb96c was blocked by the permission check and still needs the user's approval.

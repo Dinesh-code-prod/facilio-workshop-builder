@@ -22,7 +22,7 @@ Looking for something else? Every deploy to the live site is in [docs/operations
 - Workshop plan: add, edit and copy sessions, import a plan for Claude to rebuild, export to Excel, HTML and PDF. Handover & Closure in four tabs with Documents for Claude. Training with Library, Create and Review.
 - UAT is the FTR report plus the UAT guide, both written by Claude. Go-live and Hypercare are one page. Project settings in three tabs. Contract intake analyses only when you press Analyse contracts, and records the integrations the contract names.
 - A new version of the project plan is merged into the timeline: tasks keep their progress and the message names the stage before and after.
-- The look moved to an Apple-style design: neutral greys, capsule buttons, translucent sheets. The repository has a CHANGELOG.md at the top and a short guide in every folder.
+- The look moved to an clean design: neutral greys, capsule buttons, translucent sheets. The repository has a CHANGELOG.md at the top and a short guide in every folder.
 
 ## 3.0.0 · 9 November 2026 · New
 

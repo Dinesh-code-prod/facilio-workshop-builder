@@ -9,7 +9,7 @@
   --fc-pink: #E5197F; --fc-success: #12a35b; --fc-danger: #d92d20; --fc-warning: #f26b1d; --fc-avatar: #0a5fcc;
   --sf-line: #3995e2; --sf-active: #ff6660; --sf-user: #6071db; --sf-cond: #45bec4; --sf-time: #4eb871; --sf-initial: #60a9a6;
   --fc-violet: #6171db; --fc-yellow-bg: #FFF6E5; --fc-yellow: #B54708;
-  --font: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font: Inter, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --r: 3px; --shadow: 0 2px 6px rgba(48, 64, 88, .08); --shadow-2: 0 8px 24px rgba(48, 64, 88, .16);
 }
 /* Facilio's own colours are kept inside the Form Builder and State Flow Builder (approved colour update #19). */
@@ -1426,7 +1426,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #1570EF
    Font: Roboto, as used by the FDS gallery (https://fds-motion-kit.facilio.run/components.html, --font). Self-hosted (OFL) in vendor/fonts; Inter stays as fallback.
    Button dimensions are NOT published in the FDS resources supplied, so the values below are this app's own central tokens: change them here only. */
 :root {
-  --font: Roboto, Inter, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font: Roboto, Inter, system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
   --fs-xs: 11px; --fs-sm: 12px; --fs-md: 13px; --fs-lg: 14px; --fs-xl: 16px; --lh-body: 1.5; --lh-tight: 1.25;
   --btn-h-sm: 28px; --btn-h: 36px; --btn-h-lg: 44px; --btn-px-sm: 10px; --btn-px: 16px; --btn-px-lg: 22px; --btn-r: 6px; --btn-icon: 14px; --btn-gap: 6px;
   --btn-primary: var(--fds-text-link); --btn-primary-hover: #1058c9; --btn-primary-active: #0d46a1; --btn-danger: var(--fds-text-error);
@@ -2211,7 +2211,7 @@ body { min-height: 100%; height: auto; }
    FACILIO PRODUCT SKIN (final layer): white surfaces, hairline borders, one royal blue,
    text tabs with a thin underline, flat cards. Matches the Facilio app's look.
    ===================================================================== */
-:root { --fp: #0A36D8; --fp-d: #0828A8; --fp-t: #fafafa; --fx: #1F2430; --fx-2: #4B5565; --fx-3: #7A8496; --fl: #E4E7EC; --fbg: #F5F6F8; --font: Roboto, Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif; }
+:root { --fp: #0A36D8; --fp-d: #0828A8; --fp-t: #fafafa; --fx: #1F2430; --fx-2: #4B5565; --fx-3: #7A8496; --fl: #E4E7EC; --fbg: #F5F6F8; --font: Roboto, Inter, system-ui, "Segoe UI", Arial, sans-serif; }
 html, body, button, input, select, textarea { font-family: var(--font) !important; }
 body { background: var(--fbg) !important; color: var(--fx) !important; font-size: 14px !important; font-weight: 400 !important; letter-spacing: 0 !important; background-image: none !important; }
 .main, .shell { background: var(--fbg) !important; }
@@ -2338,7 +2338,7 @@ label.f, .lbl { font-weight: 600; color: var(--fx); }
 .cn.ti .ti-off{font-size:13px;color:rgba(220,230,255,.8);display:flex;gap:8px;align-items:center;cursor:pointer}
 .cn.ti .hello{margin:0;font-size:14px;font-weight:600;color:var(--sky)}
 @media (prefers-reduced-motion: reduce){.cn.ti,.cn.ti *{transition-duration:.01s !important;transition-delay:0s !important}}
-.cn.ti body{margin:0; height:100%; background:var(--deep); color:var(--ink); font-family: Roboto, Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif; overflow:hidden;}
+.cn.ti body{margin:0; height:100%; background:var(--deep); color:var(--ink); font-family: Roboto, Inter, system-ui, "Segoe UI", Arial, sans-serif; overflow:hidden;}
 .cn.ti canvas{position:absolute; inset:0; width:100%; height:100%; display:block;}
 .cn.ti .top{position:absolute; left:0; right:0; top:0; display:flex; align-items:center; gap:14px; padding:18px clamp(16px,3vw,44px); z-index:5;}
 .cn.ti .top img{height:26px; display:block;}
@@ -2790,7 +2790,7 @@ body .pp-journey { background: #F3F7FF !important; }
 
 /* ---- Road intro (src/animation/roadintro.js): customer introduction shown before the customer sign-in. Everything is scoped under .ri. ---- */
 .ri { --ri-night: #1D1A5E; --ri-navy: #1D1A5E; --ri-blue: #1570EF; --ri-sky: #8DB8FF; --ri-teal: #2EC9C4; --ri-pink: #E5197F; --ri-ink: #F4F7FF; --ri-soft: rgba(220, 230, 255, .8);
-  position: fixed; inset: 0; z-index: 10000; overflow: hidden; background: var(--ri-night); color: var(--ri-ink); font-family: Inter, Roboto, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  position: fixed; inset: 0; z-index: 10000; overflow: hidden; background: var(--ri-night); color: var(--ri-ink); font-family: Inter, Roboto, system-ui, "Segoe UI", Arial, sans-serif;
   -webkit-font-smoothing: antialiased; transform: translate3d(0, 0, 0); opacity: 1; }
 /* the exit (drawn in src/animation/roadintro.js): while lifting, the layer's own background is removed so only the rising elements cover the sign-in page beneath */
 .ri.lifting { background: transparent; pointer-events: none; }

@@ -11,7 +11,7 @@ const ONLY = process.env.UI_VIEWPORTS ? process.env.UI_VIEWPORTS.split(',').map(
 const VIEWPORTS = [{ n: 'desktop', w: 1440, h: 900 }, { n: 'laptop', w: 1280, h: 800 }, { n: 'tablet', w: 768, h: 1024 }, { n: 'mobile', w: 390, h: 844 }].filter(v => !ONLY || ONLY.includes(v.w));
 const SHOTS = process.env.UI_SHOTS !== '0'; const PARTS = (process.env.UI_PARTS || 'home,admin,project').split(',');
 fs.mkdirSync(path.join(OUT, 'shots'), { recursive: true });
-const checks = fs.readFileSync(path.join(here, 'checks.js'), 'utf8'); const design = fs.readFileSync(path.join(here, 'design-checks.js'), 'utf8');   // the Apple look rules
+const checks = fs.readFileSync(path.join(here, 'checks.js'), 'utf8'); const design = fs.readFileSync(path.join(here, 'design-checks.js'), 'utf8');   // the house look rules
 const LONG = 'Emirates National Engineering Consolidated Facilities Management Programme Phase Two (Abu Dhabi & Al Ain)';
 
 async function seed(page) {

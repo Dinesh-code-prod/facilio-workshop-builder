@@ -12,19 +12,19 @@ Carries out `UI-TRANSFORMATION-DIRECTIVE-2026-11-12.md`. One stage at a time, ea
 | ui-taste (operate, distill, craft, anti-slop) | Product UI disappears into the task; group with spacing before borders/cards; one primary action; progressive disclosure for the infrequent; one accent, one grey family, one radius scale; verify by rendering, not by build. |
 | ui-ux-pro-max | Priority order: accessibility, touch targets, layout/responsive, type (14-16 px body, 1.5 line height), navigation hierarchy (`nav-hierarchy`), forms with visible labels. |
 
-Not available: image generation for a concept target (ui-taste "image first") and the paid Uizze MCP. We work from the incumbent screens and the Apple rules instead, and say so.
+Not available: image generation for a concept target (ui-taste "image first") and the paid Uizze MCP. We work from the incumbent screens and the house rules instead, and say so.
 
 ### The design documents disagree (main cause of drift)
 | Document | Says | Status |
 |---|---|---|
-| `CLAUDE.md` Look and feel (9 Nov) | Apple look, `src/ui.css` | **Current rule** |
+| `CLAUDE.md` Look and feel (9 Nov) | house look, `src/ui.css` | **Current rule** |
 | `docs/04-ui-ux-design.md` | coss ui, Geist, near-black primary button, "active page is a dark pill" | Stale, contradicts CLAUDE.md |
 | `docs/design/design-reference.md` (27 Oct) | violet, Plus Jakarta, mono uppercase headers | History only |
 | `docs/design/UI-COSS-*` | coss | History only |
 
 The code shows the same layering: 42 CSS files load in order and `src/ui.css` (2,593 lines) overrides them with `!important` and `:not(#_)` chains. Inside `ui.css` the page header alone is restyled at lines 56, 60, 276, 430, 834 and 864, and the workspace tabs at 2251 and 2364 (the later one turns the active tab into a black pill). Each pass appended a layer instead of replacing the last, so the newest rule wins by accident.
 
-Fix: `docs/04-ui-ux-design.md` is rewritten to the Apple system (done in this pass), and new rules replace the old ones in place where possible.
+Fix: `docs/04-ui-ux-design.md` is rewritten to the house system (done in this pass), and new rules replace the old ones in place where possible.
 
 ## Stage B: what the audit shows (State Flow Builder at 1440 px, typical of every project page)
 Before the first table row the user scrolls past **four full-width bands**: the gradient page header with a 3-line paragraph, the "Set up your Claude helper" banner (which repeats the top-bar chip), the "Current phase" strip, then the page's own proposals box. The workspace tabs (Solution / System Modules & Form Builder / State Flow Builder / Mockup) are a **black filled pill**, the loudest thing on the screen, louder than the stage rail. The mini-tabs (Stateflows / States / All modules) are a grey segmented control, close in weight to the workspace tabs. Section headings ("Proposals for the design") are 14 px bold, the same as body labels.

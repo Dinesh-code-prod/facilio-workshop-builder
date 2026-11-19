@@ -103,7 +103,7 @@ New sidebar entry **Contract & Workshop Planning** (`src/msaflow.js`), six steps
 - Routes: `/api/admin/{setup,overview,users,users/:id,projects/:id,projects/:id/members,audit}`. Tests: `tests/admin_ui.mjs`, `tests/admin_open_ui.mjs`.
 
 ## #24 Facilio-style sign-in page and opening animation
-- Sign-in page restyled (dark navy panel, wordmark, headline, skyline illustration, rounded white card). Sign-in methods are unchanged: guest access, email and password, create account, customer access. No Apple, Google or Microsoft buttons.
+- Sign-in page restyled (dark navy panel, wordmark, headline, skyline illustration, rounded white card). Sign-in methods are unchanged: guest access, email and password, create account, customer access. No third-party sign-in buttons.
 - Opening screen (`src/animation/intro.js`): plays `public/brand/intro.mp4` (logo wipe), then tagline, loading line and drifting brand squares, then wipes up to the sign-in page. Once per browser session; skipped for reduced-motion and automated browsers (`?intro=1` forces it, `?nointro` disables it). Falls back to an animated still logo if the video cannot play.
 
 ## #25 UX polish, sign-out, AI-FM style animation

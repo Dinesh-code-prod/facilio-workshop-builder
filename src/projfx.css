@@ -218,19 +218,19 @@ body.in-proj .main .page-header .pt-agb:not(#q#q#q#q#q#q#q#q#q#q#q#q) { display:
 body.in-proj .main .page-header :is(.muted, small, .small, .xs):not(.btn):not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: #667085 !important; }
 body.in-proj .main .page-header:has(.pt-acts):not(#q#q#q#q#q#q#q#q#q#q#q#q) { flex-wrap: wrap !important; }
 body.in-proj .main .page-header .t > p :is(b, strong, em, i, span, a):not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: #1D2939 !important; }
-/* small main buttons are tinted, not solid (one solid main action per screen; HIG toolbars.md "Only specify one primary action"); Save bars keep theirs */
+/* small main buttons are tinted, not solid (one solid main action per screen); Save bars keep theirs */
 body.in-proj .main .btn.sm.primary:not(.fx-savebar .btn):not(.page-header .btn):not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: var(--st-t) !important; color: var(--st) !important; border: 0 !important; box-shadow: inset 0 0 0 1px var(--st-r) !important; filter: none !important; }
 body.in-proj .main .btn.sm.primary:not(.fx-savebar .btn):not(.page-header .btn):hover:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: color-mix(in srgb, var(--st) 14%, #fff) !important; }
 
-/* ---------- Apple surfaces (user, 13 Nov 2026: "Apple design"; HIG layout.md, buttons.md, color.md; macOS System Settings as the model)
-   grouped background, plain white cards with soft depth, plain headings (no tinted bands, no icon tiles), macOS fields, capsule buttons, quiet tables ---------- */
+/* ---------- Clean surfaces (user, 13 Nov 2026: "house design"; layout, buttons, color.md; a settings app as the model)
+   grouped background, plain white cards with soft depth, plain headings (no tinted bands, no icon tiles), soft fields, capsule buttons, quiet tables ---------- */
 body.in-proj { --ap-ink: #1d1d1f; --ap-ink2: #6e6e73; --ap-line: rgba(0, 0, 0, .08); --ap-field: #d2d2d7; }
 body.in-proj .shell:not(#q#q#q#q#q#q#q#q#q#q#q#q), body.in-proj .main:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #f2f2f7 !important; }
 body.in-proj .main .card:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; border: 0 !important; border-radius: 14px !important; box-shadow: 0 0 0 1px rgba(0, 0, 0, .05), 0 1px 3px rgba(0, 0, 0, .05) !important; }
 body.in-proj .main .card > .card-h:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: transparent !important; border-bottom: 1px solid var(--ap-line) !important; }
 body.in-proj .main :is(.card > .card-h, .sd-w > header) h3:not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: var(--ap-ink) !important; font: 600 15px/20px var(--cs-font) !important; letter-spacing: -.01em !important; }
 body.in-proj .main :is(.muted, .small.muted, .xs.muted, .hint):not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: var(--ap-ink2) !important; }
-/* fields: white, a firm 1 px edge, 8 px corners, the accent ring on focus (macOS text field) */
+/* fields: white, a firm 1 px edge, 8 px corners, the accent ring on focus (text field) */
 body.in-proj .main :is(input:is([type="text"], [type="search"], [type="email"], [type="number"], [type="date"], [type="url"], [type="tel"], :not([type])), select, textarea):not(#q#q#q#q#q#q#q#q#q#q#q#q) { background-color: #fff !important; border: 1px solid var(--ap-field) !important; border-radius: 8px !important; color: var(--ap-ink) !important; box-shadow: 0 1px 1px rgba(0, 0, 0, .03) !important; }
 body.in-proj .main :is(input:is([type="text"], [type="search"], [type="email"], [type="number"], [type="date"], [type="url"], [type="tel"], :not([type])), select, textarea):hover:not(:disabled):not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-color: #a1a1a6 !important; }
 body.in-proj .main :is(input, select, textarea):focus:not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-color: #1570EF !important; box-shadow: 0 0 0 3px rgba(21, 112, 239, .22) !important; }
@@ -257,12 +257,12 @@ body.in-proj .main > .mt-bar.mt-all > .mt-in + .mt-in::before { content: ""; wid
 body.in-proj .main > .mt-bar .mt-cap:not(#q#q#q#q#q#q#q#q#q#q#q#q) { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #8a94a6; margin-right: 6px; white-space: nowrap; }
 body.in-proj .main > .mt-bar .mt-in.here .mt-cap:not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: #1570EF; }
 
-/* ---------- Direction A, Apple Settings / Reminders (user's choice, 13 Nov 2026). Light throughout: a large black title on Apple's light grey,
-   white cards, one blue for actions and selection (Facilio blue #1570EF), colour only in small icon tiles (as macOS System Settings), round ticks.
+/* ---------- Direction A, settings-style (user's choice, 13 Nov 2026). Light throughout: a large black title on the light grey,
+   white cards, one blue for actions and selection (Facilio blue #1570EF), colour only in small icon tiles (as a settings app), round ticks.
    This block is the last word for project pages; the stage shades above no longer colour anything. ---------- */
 body.in-proj, body.in-proj[data-stage], body.in-proj .rl-b[data-stage] { --st: #1570EF; --st2: #1570EF; --st-t: #eaf2fe; --st-r: rgba(21, 112, 239, .22); }
 body.in-proj .shell:not(#q#q#q#q#q#q#q#q#q#q#q#q), body.in-proj .main:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #f5f5f7 !important; }
-/* title: Apple's large title, no band or card */
+/* title: large title, no band or card */
 body.in-proj .main .page-header:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: none !important; box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; padding: 26px 0 6px !important; color: var(--ap-ink) !important; align-items: flex-end !important; }
 body.in-proj .main .page-header .t:not(#q#q#q#q#q#q#q#q#q#q#q#q)::before { color: #86868b !important; font: 600 13px/1.25 var(--cs-font) !important; margin-bottom: 2px !important; }
 body.in-proj .main .page-header h1:not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: var(--ap-ink) !important; font: 700 34px/40px var(--cs-font) !important; letter-spacing: -.025em !important; }
@@ -275,7 +275,7 @@ body.in-proj .main .page-header .btn.primary:not(#q#q#q#q#q#q#q#q#q#q#q#q) { bac
 body.in-proj .main .page-header .pt-ag:not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-right-color: rgba(0, 0, 0, .1) !important; }
 body.in-proj .main .page-header .pt-ag > :not(.pt-agb):not(#q#q#q#q#q#q#q#q#q#q#q#q), body.in-proj .main .page-header :is(.muted, small, .small, .xs):not(.btn):not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: #86868b !important; }
 @media (max-width: 900px) { body.in-proj .main .page-header h1:not(#q#q#q#q#q#q#q#q#q#q#q#q) { font-size: 28px !important; line-height: 34px !important; } }
-/* tabs and rail: the selected one in Apple blue */
+/* tabs and rail: the selected one in system blue */
 body.in-proj .main .seg > :is(button.on, [aria-selected="true"]):not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: var(--ap-ink) !important; }
 body.in-proj nav.sidebar .rl-b.active > svg:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #1570EF !important; color: #fff !important; }
 body.in-proj nav.sidebar .rl-b.active:not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: #1570EF !important; }
@@ -291,7 +291,7 @@ body.in-proj .ho-ring b:not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: var(--ap-ink) !im
 body.in-proj .ho-figs > div:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #f5f5f7 !important; box-shadow: none !important; }
 body.in-proj .ho-figs dt:not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: var(--ap-ink2) !important; }
 body.in-proj .ho-figs dd:not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: var(--ap-ink) !important; }
-/* area cards: white, coloured icon tiles in Apple's system colours (orange, blue, teal, green, red; no purple) */
+/* area cards: white, coloured icon tiles in system colours (orange, blue, teal, green, red; no purple) */
 body.in-proj .ho-grp:not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-radius: 18px !important; box-shadow: 0 0 0 1px rgba(0, 0, 0, .05), 0 2px 12px rgba(0, 0, 0, .04) !important; }
 body.in-proj .ho-grp > header:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; }
 body.in-proj .ho-gic:not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-radius: 8px !important; box-shadow: none !important; }
@@ -302,11 +302,11 @@ body.in-proj .ho-grp:nth-child(5n+4) .ho-gic:not(#q#q#q#q#q#q#q#q#q#q#q#q) { bac
 body.in-proj .ho-grp:nth-child(5n+5) .ho-gic:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #ff453a !important; }
 body.in-proj .ho-gn:not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: #1570EF !important; background: #f5f5f7 !important; box-shadow: none !important; }
 body.in-proj .ho-grp.all .ho-gn:not(#q#q#q#q#q#q#q#q#q#q#q#q) { color: #248a3d !important; }
-/* round ticks, as Apple Reminders */
+/* round ticks, as in a reminders list */
 body.in-proj .ho-box:not(#q#q#q#q#q#q#q#q#q#q#q#q) { border-radius: 50% !important; }
 body.in-proj .ho-ev-chip:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #f5f5f7 !important; color: var(--ap-ink) !important; }
 body.in-proj .ho-empty:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; }
-/* page tabs read as tabs: each section's pages form an Apple segmented control (grey track, the open page a raised white segment in blue);
+/* page tabs read as tabs: each section's pages form an segmented control (grey track, the open page a raised white segment in blue);
    the caption stays a plain label in front of its track (user, 13 Nov 2026: "people cannot understand that this is a clickable tab") */
 body.in-proj .main > .mt-bar > .mt-in:not(#q#q#q#q#q#q#q#q#q#q#q#q) { gap: 0 !important; background: none !important; padding: 0 !important; align-items: center; }
 body.in-proj .main > .mt-bar .mt-cap:not(#q#q#q#q#q#q#q#q#q#q#q#q) { margin-right: 8px !important; color: #86868b !important; }
@@ -356,7 +356,7 @@ body.in-proj .main > .nav-back:hover:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background:
 body.in-proj [data-act="aiRun"], body.in-proj [data-act="brdAsk"], body.in-proj [data-act="drClaude"], body.in-proj [data-act="dgClaude"], body.in-proj [data-act="ugClaude"], body.in-proj [data-act="mkBringAll"], body.in-proj [data-act="mkBring"], body.in-proj [data-act="refRun"], body.in-proj [data-act="aiClaude"], body.in-proj [data-act="aiAddFrom"], body.in-proj [data-act="claudeImport"], body.in-proj [data-act="hcClaude"], body.in-proj [data-act="hoPackAsk"], body.in-proj [data-act="repClaude"], body.in-proj [data-act="momClaude"], body.in-proj [data-act="mdReread"], body.in-proj [data-act="opkClaude"], body.in-proj [data-act="rsPullTeams"], body.in-proj [data-act="solAsk"], body.in-proj [data-act="solOpenClaude"], body.in-proj [data-act="slkAsk"], body.in-proj [data-act="tkClassifyClaude"], body.in-proj [data-act="tkClaude"], body.in-proj [data-act="tkClaudeAdd"], body.in-proj [data-act="tkExtractAdd"], body.in-proj [data-act="xfClaude"], body.in-proj [data-act="ftrChangeGo"], body.in-proj [data-act="uatgChangeGo"], body.in-proj [data-act="kiReadClaude"], body.in-proj [data-act="wbAiClaude"], body.in-proj [data-act="wbImgClaude"], body.in-proj [data-act="wsClaude"], body.in-proj [data-act="srAsk"] { display: none !important; }
 body .navbar .ask-claude:not(#_):not(#__):not(#___) { background: #1570EF !important; color: #fff !important; box-shadow: none !important; border-radius: 999px !important; font-weight: 600; }
 
-/* ---------- Sidebar as macOS System Settings (user, 14 Nov 2026): every entry its own colour tile with a white icon, bold labels,
+/* ---------- Sidebar as a settings app (user, 14 Nov 2026): every entry its own colour tile with a white icon, bold labels,
    each group of entries on its own white panel over a light rail; the open entry on a blue band. Colours per label in src/projfx.js (TILE). ---------- */
 body.in-proj nav.sidebar:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #ececf0 !important; border-right: 1px solid rgba(0, 0, 0, .06) !important; }
 body.in-proj nav.sidebar .rl:not(#q#q#q#q#q#q#q#q#q#q#q#q) { gap: 0 !important; padding: 10px 5px !important; }
@@ -395,7 +395,7 @@ body.in-proj .main :is(.wn-hero, .tp-hero) :is(p, span, small, li, div):not(.btn
 @media (min-width: 901px) { body.in-proj .navbar :is(.btn, button, #coPill, #hpChip):not(#q#q#q#q#q#q#q#q#q#q#q#q) { white-space: nowrap !important; flex-shrink: 0; } }
 @media (max-width: 900px) { body.in-proj .navbar .ask-claude:not(#q#q#q#q#q#q#q#q#q#q#q#q) { font-size: 0 !important; gap: 0 !important; padding: 0 10px !important; } body.in-proj .navbar .ask-claude > svg:not(#q#q#q#q#q#q#q#q#q#q#q#q) { width: 15px; height: 15px; } body.in-proj .navbar :is(.left, .right):not(#q#q#q#q#q#q#q#q#q#q#q#q) { gap: 6px !important; min-width: 0; } }   /* phones: the top bar fits 390 px */
 
-/* ---------- Search fields, one component (user, 14 Nov 2026: two overlapping boxes): the wrapper draws nothing, the field is the Apple
+/* ---------- Search fields, one component (user, 14 Nov 2026: two overlapping boxes): the wrapper draws nothing, the field is the house
    search field (grey fill, magnifier inside, blue ring on focus); a live preview lists what matches on the page (src/projfx.js) ---------- */
 body.in-proj .main .fx-qw:not(#q#q#q#q#q#q#q#q#q#q#q#q) { position: relative !important; display: flex !important; align-items: center; background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; min-height: 0 !important; height: auto !important; }
 body.in-proj .main .fx-qw > :is(svg, i, .ico):not(#q#q#q#q#q#q#q#q#q#q#q#q) { position: absolute !important; left: 12px !important; top: 50% !important; transform: translateY(-50%); width: 15px !important; height: 15px !important; margin: 0 !important; color: #8e8e93 !important; pointer-events: none; z-index: 1; }
@@ -424,7 +424,7 @@ body.in-proj .main :is(.pt-kpis .kpi .kpi-l, .card.stat .l, .card.stat .k, .sd-k
 body.in-proj .main .tq-tile:hover:not(#q#q#q#q#q#q#q#q#q#q#q#q) { box-shadow: 0 0 0 1px rgba(21, 112, 239, .3), 0 2px 8px rgba(0, 0, 0, .06) !important; }
 @media (max-width: 1180px) { body.in-proj .navbar .center:not(#q#q#q#q#q#q#q#q#q#q#q#q) { flex: 0 0 auto !important; } body.in-proj .navbar .nb-pt:not(#q#q#q#q#q#q#q#q#q#q#q#q) { max-width: 140px; } }
 body.in-proj .main :is(td, th).mono:not(#q#q#q#q#q#q#q#q#q#q#q#q) { white-space: nowrap !important; }
-/* Solution page, Apple Settings style (user, 14 Nov 2026): white inset-grouped cards on the grey canvas, rows with a small colour tile, the count right, a chevron; hairline separators; one blue primary */
+/* Solution page, settings style (user, 14 Nov 2026): white inset-grouped cards on the grey canvas, rows with a small colour tile, the count right, a chevron; hairline separators; one blue primary */
 body.in-proj .sm-page:not(#q#q#q#q#q#q#q#q#q#q#q#q) { display: grid; gap: 16px; }
 body.in-proj .sm-page .sm-m:not(#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; border: 0 !important; border-radius: 20px !important; box-shadow: 0 1px 2px rgba(15, 23, 42, .05), 0 6px 20px rgba(15, 23, 42, .05) !important; padding: 0 !important; margin: 0 !important; overflow: hidden; }
 body.in-proj .sm-page .sm-m > summary:not(#q#q#q#q#q#q#q#q#q#q#q#q) { padding: 16px 20px !important; gap: 10px !important; align-items: center; }

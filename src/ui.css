@@ -1,4 +1,4 @@
-/* UI layer: the one place that sets the look of the app (tokens, type, buttons, fields, cards, tabs, tables, settings sections, shared work panel). The look is Apple (9 Nov 2026, replacing coss ui): system font with size-specific tracking, neutral greys on a #f5f5f7 canvas, capsule buttons, large soft corners, layered soft shadows, translucent top bar / drawers / toasts, press feedback on pointer-down, one spring-like ease. Light theme only. Facilio blue #1570EF is the primary and the focus colour; each sidebar group has its own accent (--cs-accent).
+/* UI layer: the one place that sets the look of the app (tokens, type, buttons, fields, cards, tabs, tables, settings sections, shared work panel). The look is the house look (9 Nov 2026, replacing coss ui): system font with size-specific tracking, neutral greys on a #f5f5f7 canvas, capsule buttons, large soft corners, layered soft shadows, translucent top bar / drawers / toasts, press feedback on pointer-down, one spring-like ease. Light theme only. Facilio blue #1570EF is the primary and the focus colour; each sidebar group has its own accent (--cs-accent).
    Part 1 is the base (tokens, resets and shared patterns); part 2 is the component layer that restyles them. */
 /* ===== part 1: base ===== */
 :root {
@@ -380,7 +380,7 @@ body .cs-cmd-bar.ko-btns { margin-top: 0; }
 
 /* ===== part 2: coss components ===== */
 :root {
-  --cs-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI Variable Text", "Segoe UI", system-ui, "Helvetica Neue", sans-serif;
+  --cs-font: "Segoe UI Variable Text", "Segoe UI", system-ui, "Helvetica Neue", sans-serif;
   --cs-fg1: #1d1d1f; --cs-fg2: #424245; --cs-fg3: #6e6e73; --cs-fg4: #86868b; --cs-fg-dis: #c7c7cc;
   --cs-bg1: #ffffff; --cs-bg2: #f5f5f7; --cs-bg3: #fafafc; --cs-bg4: rgba(0, 0, 0, .04); --cs-bg5: rgba(0, 0, 0, .06); --cs-bg6: rgba(0, 0, 0, .08);
   --cs-st1: rgba(0, 0, 0, .14); --cs-st2: rgba(0, 0, 0, .08); --cs-st3: rgba(0, 0, 0, .05); --cs-st-acc: rgba(0, 0, 0, .25);
@@ -482,7 +482,7 @@ body *::-webkit-scrollbar { width: 10px; height: 10px; } body *::-webkit-scrollb
 /* switches and tick boxes use the blue; links are blue and underline only on hover */
 body input[type="checkbox"], body input[type="radio"], body input[type="range"] { accent-color: var(--cs-primary); }
 body .main a:not(.btn):not([class*="card"]):not(#_):not(#__) { text-underline-offset: 3px; }
-/* weights: Apple carries hierarchy with semibold (600), not 700 or 800 */
+/* weights: The UI carries hierarchy with semibold (600), not 700 or 800 */
 body :is(b, strong, h2, h3, h4, th, .pink-label, .sd-kv, .tr-n, .wf-title, .dkv-gl, .tg2-n, .pp-step, .pp-stage-label, .iso-chip, .wn-v, .wn-k, .wn-a, .small b, .v):not(#_):not(#__):not(#___) { font-weight: 600 !important; }
 body .upnext-k:not(#_):not(#__) { text-transform: none !important; letter-spacing: .01em !important; }
 /* dashed empty states and add-boxes become soft solid panels */
@@ -1380,7 +1380,7 @@ body #asst .ki-time:not(#_):not(#__) { position: absolute !important; right: 10p
 body #asst .ki-row.you .ki-time:not(#_):not(#__)::after { content: " \2713"; color: var(--cs-accent); }
 body #asst .ki-row.sys:not(#_):not(#__) { max-width: 100% !important; margin: 8px auto !important; justify-content: center !important; }
 body #asst .ki-row.sys .ki-bub:not(#_):not(#__) { background: rgba(255, 255, 255, .7) !important; border: 0 !important; border-radius: 10px !important; padding: 4px 12px !important; font: 400 12.5px/18px var(--cs-font) !important; color: var(--cs-fg2) !important; text-align: center; }
-/* Assistant as an Apple sheet: translucent panel, message-style bubbles (grey for Claude, blue for you), no coloured outlines */
+/* Assistant as a sheet: translucent panel, message-style bubbles (grey for Claude, blue for you), no coloured outlines */
 body #asst:not(#_):not(#__) { background: rgba(255, 255, 255, .88) !important; -webkit-backdrop-filter: saturate(180%) blur(28px); backdrop-filter: saturate(180%) blur(28px); border-left: 1px solid rgba(0, 0, 0, .06) !important; box-shadow: var(--cs-sh16) !important; }
 body #asst .ki-row:not(.you):not(.sys):not(.bad) .ki-bub:not(#_):not(#__):not(#___) { background: #f2f2f7 !important; border: 0 !important; border-radius: 20px 20px 20px 6px !important; color: var(--cs-fg1) !important; }
 body #asst .ki-row.you .ki-bub:not(#_):not(#__):not(#___) { background: var(--cs-primary) !important; border: 0 !important; border-radius: 20px 20px 6px 20px !important; color: #fff !important; }
@@ -2069,7 +2069,7 @@ body .tr-sub button { white-space: nowrap; display: inline-flex; align-items: ce
 #bellPop .bp-pj { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 1px 9px; border-radius: 999px; background: var(--cs-bg4, #f4f4f5); color: var(--cs-fg2); font: 500 12.5px/18px var(--cs-font); }
 #bellPop .bp-x2 { font: 400 13px/18px var(--cs-font); color: var(--cs-fg3); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 #bellPop .bp-un { width: 10px; height: 10px; margin-top: 6px; border-radius: 50%; background: var(--cs-brand, #1570EF); } #bellPop .bp-go { margin-top: 6px; color: var(--cs-fg3); font-size: 20px; line-height: 1; }
-/* Assistant drawer, Apple look: a light translucent header like the top bar (it was the one black bar left), a tinted icon, dark title, grey subtitle */
+/* Assistant drawer, house look: a light translucent header like the top bar (it was the one black bar left), a tinted icon, dark title, grey subtitle */
 #asst .as-head:not(#_):not(#__):not(#___) { background: rgba(255, 255, 255, .86) !important; -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid var(--cs-st2, #e5e5e5) !important; padding: 14px 18px !important; color: var(--cs-fg1) !important; }
 #asst .as-t { gap: 12px; } #asst .as-logo:not(#_):not(#__):not(#___) { width: 36px; height: 36px; border-radius: 10px; background: #e8f1fe !important; color: #0d5bd7; } #asst .as-logo svg { width: 18px; height: 18px; }
 #asst .as-tt { display: grid; } #asst .as-t b:not(#_):not(#__):not(#___) { color: var(--cs-fg1, #1d1d1f) !important; font: 600 17px/22px var(--cs-font); letter-spacing: -.01em; } #asst .as-tt small { color: var(--cs-fg3, #6e6e73); font: 400 12.5px/18px var(--cs-font); }
@@ -2084,7 +2084,7 @@ body .tr-sub button { white-space: nowrap; display: inline-flex; align-items: ce
 #bellPop .bp-row span:not(#_):not(#__) { flex: none; }
 
 
-/* Apple fallbacks (9 Nov 2026): solid surfaces when transparency is reduced, firmer borders for more contrast, no press scale for reduced motion */
+/* Accessibility fallbacks (9 Nov 2026): solid surfaces when transparency is reduced, firmer borders for more contrast, no press scale for reduced motion */
 @media (prefers-reduced-transparency: reduce) { body .navbar:not(#_):not(#__), body .sidebar:not(#_):not(#__), body .drawer:not(#_):not(#__), body .toast:not(#_):not(#__), body .dialog:not(#_):not(#__) { background: #fff !important; -webkit-backdrop-filter: none; backdrop-filter: none; } }
 @media (prefers-contrast: more) { body .card:not(.dark):not([class*="night"]):not(#_):not(#__), body .proj-card:not(#_):not(#__), body .kpi:not(#_):not(#__), body .adm-card:not(#_):not(#__), body .tbl-wrap:not(#_):not(#__), body .cs-card:not(#_):not(#__), body .cs-stat:not(#_):not(#__), body .ki-chat:not(#_):not(#__), body .cs-dg:not(#_):not(#__), body .pj-list:not(#_):not(#__), body .adx-c:not(#_):not(#__), body .adx-stat:not(#_):not(#__), body .list-item:not(#_):not(#__), body .gl-q:not(#_):not(#__), body .gl-box:not(#_):not(#__), body .tg2-tile:not(#_):not(#__), body .tg2-box:not(#_):not(#__), body .mf-step:not(#_):not(#__), body .dk-card:not(#_):not(#__), body .empty:not(#_):not(#__) { border-color: rgba(0, 0, 0, .4) !important; } body .btn:not(.icon):not(.link):not(#_):not(#__) { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .5) !important; } }
 /* press feedback on clickable cards, tiles and rows: they sink a hair the moment the pointer goes down */
@@ -2619,7 +2619,7 @@ body .aa-in:not(#_):not(#__) { display: flex; gap: 8px; align-items: flex-end; m
    clearer heading steps, fuller form fields, status chips that carry their colour again, the Intro stepper and draft tiles. No gradients, no glow. ===== */
 @font-face { font-family: "Inter"; font-style: normal; font-weight: 100 900; font-display: swap; src: url("fonts/inter-latin-wght-normal.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 @font-face { font-family: "Inter"; font-style: normal; font-weight: 100 900; font-display: swap; src: url("fonts/inter-latin-ext-wght-normal.woff2") format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
-:root, body { --cs-font: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; }
+:root, body { --cs-font: "Inter", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; }
 html body:not(#_) { font-family: var(--cs-font); font-feature-settings: "cv11", "ss03"; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 body :is(button, input, select, textarea):not(#_) { font-family: inherit; }
 body .tbl td:not(#_), body :is(.kpi-v, .sd-kpi b, .mk-c b, .dk-kpi b):not(#_) { font-variant-numeric: tabular-nums; }
@@ -2969,7 +2969,7 @@ body .ki-fmt b:not(#_):not(#__) { font-weight: 600; }
 body .ki-fmt code:not(#_):not(#__) { font: 12.5px ui-monospace, Consolas, monospace; background: rgba(0, 0, 0, .05); padding: 1px 5px; border-radius: 5px; }
 body .ki-fmt .ki-src:not(#_):not(#__) { display: inline-block; vertical-align: 1px; margin-left: 2px; padding: 0 5px; border-radius: 6px; background: #EAF2FF; color: #1570EF; font-size: 10.5px; font-weight: 600; line-height: 16px; }
 
-/* Pilot (19 Nov 2026), team project dashboard: the reference pages' type system (display title, mono labels, one lede, one main action, a number strip) on the Apple canvas. Facilio blue only. */
+/* Pilot (19 Nov 2026), team project dashboard: the reference pages' type system (display title, mono labels, one lede, one main action, a number strip) on the light canvas. Facilio blue only. */
 html body .pd-hero:not(#_):not(#__):not(#___) { padding: 18px 0 30px; margin: 0 0 8px; background: none; border: 0; box-shadow: none; }
 html body .pd-hero .pd-eye:not(#_):not(#__):not(#___) { margin: 0; font: 500 12px/16px "IBM Plex Mono", ui-monospace, monospace !important; letter-spacing: .08em; text-transform: uppercase; color: #6e6e73; }
 html body .pd-hero .pd-title:not(#_):not(#__):not(#___) { margin: 12px 0 12px; font: 600 52px/1.04 "Plus Jakarta Sans", Inter, system-ui, sans-serif !important; letter-spacing: -.035em !important; color: #1d1d1f; text-wrap: balance; }
@@ -2982,3 +2982,93 @@ html body .pd-hero .pd-stat b small:not(#_):not(#__):not(#___) { font-size: .5em
 html body .pd-hero .pd-stat span:not(#_):not(#__):not(#___) { display: block; margin-top: 10px; font: 500 11.5px/15px "IBM Plex Mono", ui-monospace, monospace !important; letter-spacing: .06em; text-transform: uppercase; color: #6e6e73; }
 html body .pd-hero .pd-stat.bad b:not(#_):not(#__):not(#___) { color: #d70015; } html body .pd-hero .pd-stat.warn b:not(#_):not(#__):not(#___) { color: #b25000; }
 @media (max-width: 760px) { html body .pd-hero .pd-title:not(#_):not(#__):not(#___) { font-size: 36px; } html body .pd-hero .pd-stats:not(#_):not(#__):not(#___) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* Pilot, part 2 (user asked for the gradients of the reference pages, 19 Nov 2026): a soft blue-to-pink light wash behind the hero, the project name in a navy-to-blue-to-pink gradient, and a floating Readiness card. Brand colours only, no violet. */
+html body .pd-hero:not(#_):not(#__):not(#___) { position: relative; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); gap: 40px; align-items: center; padding: 36px 40px 34px; border-radius: 28px; overflow: hidden; isolation: isolate;
+  background: radial-gradient(60% 80% at 100% 0%, rgba(21, 112, 239, .14), transparent 60%), radial-gradient(50% 70% at 85% 100%, rgba(229, 25, 127, .10), transparent 65%), linear-gradient(180deg, #ffffff, #f7f9fd); border: 1px solid rgba(0, 0, 0, .05); box-shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 12px 32px rgba(29, 26, 94, .06); }
+html body .pd-hero .pd-grad:not(#_):not(#__):not(#___) { background: linear-gradient(100deg, #1D1A5E 0%, #1570EF 55%, #E5197F 100%); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
+html body .pd-hero .pd-stats:not(#_):not(#__):not(#___) { max-width: none; }
+html body .pd-hero .pd-card:not(#_):not(#__):not(#___) { background: rgba(255, 255, 255, .86); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border: 1px solid rgba(0, 0, 0, .06); border-radius: 22px; padding: 22px 24px; box-shadow: 0 2px 6px rgba(0, 0, 0, .04), 0 24px 60px rgba(29, 26, 94, .12); transform: rotate(-.6deg); }
+html body .pd-hero .pd-card header b:not(#_):not(#__):not(#___) { display: block; font: 600 18px/24px "Plus Jakarta Sans", Inter, sans-serif !important; letter-spacing: -.02em; color: #1d1d1f; }
+html body .pd-hero .pd-card header span:not(#_):not(#__):not(#___) { display: block; margin: 2px 0 16px; font: 400 13px/18px Inter, sans-serif !important; color: #6e6e73; }
+html body .pd-hero .pd-card ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+html body .pd-hero .pd-card li { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: center; }
+html body .pd-hero .pd-card .pd-bl:not(#_):not(#__):not(#___) { font: 500 13.5px/18px Inter, sans-serif !important; color: #1d1d1f; }
+html body .pd-hero .pd-card li b:not(#_):not(#__):not(#___) { font: 600 13.5px/18px "IBM Plex Mono", monospace !important; color: #1d1d1f; text-align: right; }
+html body .pd-hero .pd-card .pd-bt { grid-column: 1 / -1; grid-row: 2; height: 8px; border-radius: 999px; background: rgba(0, 0, 0, .06); overflow: hidden; }
+html body .pd-hero .pd-card .pd-bt i { display: block; height: 100%; min-width: 4px; border-radius: inherit; background: linear-gradient(90deg, #1570EF, #8DB8FF); }
+html body .pd-hero .pd-card li small:not(#_):not(#__):not(#___) { grid-column: 1 / -1; font: 400 12px/16px Inter, sans-serif !important; color: #86868b; }
+@media (max-width: 1100px) { html body .pd-hero:not(#_):not(#__):not(#___) { grid-template-columns: 1fr; padding: 28px 24px; } html body .pd-hero .pd-card:not(#_):not(#__):not(#___) { transform: none; } }
+@media (prefers-reduced-transparency: reduce) { html body .pd-hero .pd-card:not(#_):not(#__):not(#___) { background: #fff; -webkit-backdrop-filter: none; backdrop-filter: none; } }
+/* Reference theme (user, 19 Nov 2026), taken from the Workshop Hub, Implementation Studio and BRD Academy pages the user liked: applied to every page with a .main area.
+   Their tokens: ink #0B0B12, text #33333D, muted #6B6B78, line #ECECF1, violet #623CF6, brand gradient orange-red-violet-cyan, Plus Jakarta display, Inter body, IBM Plex Mono labels. */
+html body:has(.main) { --rf-ink: #0B0B12; --rf-text: #33333D; --rf-muted: #6B6B78; --rf-faint: #9A9AA6; --rf-line: #ECECF1; --rf-soft: #F7F7FA; --rf-violet: #1570EF; --rf-violet-dk: #115cc0; --rf-violet-soft: #EAF2FF; --rf-grad: linear-gradient(100deg, #0B0B12 0%, #1D1A5E 45%, #1570EF 100%); --rf-shadow: 0 1px 2px rgba(11,11,18,.05), 0 12px 32px -12px rgba(11,11,18,.16); }
+html body:has(.main) .main:not(#q#q#q#q#q#q#q#q#q#q#q#q#q), html body:has(.main) .shell:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; }
+html body:has(.main) .main .cs-page:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { border-top: 1px solid var(--rf-line); }
+/* hero */
+html body .pd-hero:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; padding: 40px 8px 44px !important; grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr); gap: 56px; }
+html body .pd-hero .pd-eye:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: var(--rf-muted); font-size: 11.5px !important; letter-spacing: .1em; }
+html body .pd-hero .pd-title:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font: 700 64px/1.02 "Plus Jakarta Sans", Inter, sans-serif !important; letter-spacing: -.045em !important; color: var(--rf-ink); }
+html body .pd-hero .pd-grad:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: var(--rf-grad); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
+html body .pd-hero .pd-lede:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: var(--rf-text); font-size: 16px !important; }
+html body .pd-hero .pd-cta .btn:not(.icon):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { min-height: 46px; padding: 0 22px !important; border-radius: 999px !important; font: 600 12.5px/1 "IBM Plex Mono", monospace !important; letter-spacing: .06em !important; text-transform: uppercase !important; background: #fff !important; color: var(--rf-ink) !important; box-shadow: inset 0 0 0 1.5px var(--rf-ink) !important; }
+html body .pd-hero .pd-cta .btn.primary:not(.icon):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: var(--rf-ink) !important; color: #fff !important; box-shadow: none !important; }
+html body .pd-hero .pd-stats:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { border-top: 0; padding-top: 4px; gap: 28px; }
+html body .pd-hero .pd-stat b:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font: 700 38px/1 "Plus Jakarta Sans", Inter, sans-serif !important; color: var(--rf-ink); }
+html body .pd-hero .pd-stat span:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: var(--rf-muted); font-size: 10.5px !important; letter-spacing: .1em; }
+/* the readiness card as their floating product panel */
+html body .pd-hero .pd-card:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { position: relative; transform: none; background: #fff !important; border: 1px solid var(--rf-line) !important; border-radius: 20px !important; box-shadow: var(--rf-shadow), 0 40px 80px -40px rgba(21, 112, 239, .30) !important; }
+html body .pd-hero .pd-card:not(#q#q#q#q#q#q#q#q#q#q#q#q#q)::before { content: ""; position: absolute; inset: -60px -40px -60px -40px; z-index: -1; background: radial-gradient(45% 45% at 70% 30%, rgba(56, 215, 255, .22), transparent 70%), radial-gradient(45% 50% at 30% 80%, rgba(21, 112, 239, .16), transparent 70%); filter: blur(10px); }
+html body .pd-hero .pd-card .pd-bt i { background: var(--rf-violet) !important; }
+html body .pd-hero .pd-card li b:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: var(--rf-muted); font-weight: 500 !important; }
+/* below the hero: hatch divider, tabs, cards and accents in their style */
+html body:has(.main) .main .cs-page:not(#q#q#q#q#q#q#q#q#q#q#q#q#q)::before { content: ""; display: block; height: 32px; margin: 0 0 24px; border-bottom: 1px solid var(--rf-line); background: repeating-linear-gradient(-45deg, var(--rf-line) 0 1px, transparent 1px 9px); }
+html body:has(.main) .main .tabs:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: transparent !important; padding: 0 !important; gap: 4px; border-bottom: 1px solid var(--rf-line) !important; border-radius: 0 !important; }
+html body:has(.main) .main .tab:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { border-radius: 0 !important; background: transparent !important; box-shadow: none !important; height: 40px; padding: 0 14px; font: 600 12px/1 "IBM Plex Mono", monospace !important; letter-spacing: .06em; text-transform: uppercase; color: var(--rf-muted) !important; border-bottom: 2px solid transparent !important; }
+html body:has(.main) .main .tab.active:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: var(--rf-ink) !important; border-bottom-color: var(--rf-violet) !important; }
+html body:has(.main) .main :is(.card, .sd-life, .dk-card, .sd-kpi, .sd-w, .cs-stat, .dk-fbar):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; border: 1px solid var(--rf-line) !important; border-radius: 16px !important; box-shadow: var(--rf-shadow) !important; }
+html body:has(.main) .main .btn.primary:not(.icon):not(.pd-cta .btn):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: var(--rf-violet) !important; color: #fff !important; }
+html body:has(.main) .main a:not(.btn):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: var(--rf-violet); }
+html body:has(.main) .main :is(h2, h3):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font-family: "Plus Jakarta Sans", Inter, sans-serif !important; letter-spacing: -.02em !important; color: var(--rf-ink); }
+html body:has(.main) .main :is(.sd-kpi, .cs-stat) :is(b, strong, .v):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font-family: "Plus Jakarta Sans", Inter, sans-serif !important; }
+/* Reference theme, part 2: page titles, top bar, helper notice, buttons, numbers, tables, fields and cards. */
+html body:has(.main) .main .page-header:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; border: 0 !important; border-bottom: 1px solid var(--rf-line) !important; border-radius: 0 !important; box-shadow: none !important; padding: 28px 8px 26px !important; color: var(--rf-ink) !important; }
+html body:has(.main) .main .page-header h1:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font: 700 46px/1.04 "Plus Jakarta Sans", Inter, sans-serif !important; letter-spacing: -.045em !important; color: var(--rf-ink) !important; background: none !important; -webkit-text-fill-color: currentColor; }
+html body:has(.main) .main .page-header p:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font: 400 16px/1.55 Inter, sans-serif !important; color: var(--rf-text) !important; max-width: 680px; }
+html body:has(.main) .main .page-header :is(.sd-chip, .chip, .tag, .ph-stage, small):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font: 500 11px/16px "IBM Plex Mono", monospace !important; letter-spacing: .1em; text-transform: uppercase; background: transparent !important; border: 0 !important; color: var(--rf-muted) !important; padding: 0 !important; }
+html body:has(.main) .navbar:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: rgba(255, 255, 255, .9) !important; border-bottom: 1px solid var(--rf-line) !important; }
+html body:has(.main) .hp-banner:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: var(--rf-soft) !important; border: 1px solid var(--rf-line) !important; border-radius: 14px !important; }
+html body:has(.main) .hp-banner .hp-bt b:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font: 600 11.5px/16px "IBM Plex Mono", monospace !important; letter-spacing: .08em; text-transform: uppercase; color: var(--rf-ink) !important; }
+html body:has(.main) .main .btn:not(.icon):not(.primary):not(.link):not(.ghost):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; color: var(--rf-ink) !important; box-shadow: inset 0 0 0 1px var(--rf-line), 0 1px 2px rgba(11, 11, 18, .05) !important; border-radius: 999px !important; }
+html body:has(.main) .navbar .btn.primary:not(.icon):not(#q#q#q#q#q#q#q#q#q#q#q#q#q), html body:has(.main) .hp-banner .btn.primary:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: var(--rf-ink) !important; color: #fff !important; }
+html body:has(.main) .main :is(.sd-kpi, .cs-stat, .kpi) :is(.v, .kpi-v, .cs-stat-v, .sd-kv, b):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font-family: "Plus Jakarta Sans", Inter, sans-serif !important; font-weight: 700 !important; letter-spacing: -.035em !important; color: var(--rf-ink); }
+html body:has(.main) .main :is(.sd-kpi, .cs-stat, .kpi) :is(.l, .kpi-l, .cs-stat-l, .sd-kl, span:first-child):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font-family: "IBM Plex Mono", monospace !important; font-size: 11px !important; letter-spacing: .08em; text-transform: uppercase; color: var(--rf-muted) !important; }
+html body:has(.main) .main :is(.tbl, table) th:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font: 500 11px/16px "IBM Plex Mono", monospace !important; letter-spacing: .08em !important; text-transform: uppercase !important; color: var(--rf-muted) !important; background: var(--rf-soft) !important; }
+html body:has(.main) .main :is(select, input:not([type=checkbox]):not([type=radio]), textarea):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { border: 1px solid var(--rf-line) !important; background: #fff !important; border-radius: 12px !important; }
+html body:has(.main) .main :is(select, input:not([type=checkbox]):not([type=radio]), textarea):focus:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { border-color: var(--rf-violet) !important; box-shadow: 0 0 0 4px var(--rf-violet-soft) !important; }
+html body:has(.main) .main :is(.card-h, .dk-h, .sd-w > header) :is(h3, b):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font-family: "Plus Jakarta Sans", Inter, sans-serif !important; font-weight: 700 !important; letter-spacing: -.02em; color: var(--rf-ink) !important; }
+html body:has(.main) .main .cs-bar i, html body:has(.main) .main .sd-bar i { background: var(--rf-violet) !important; }
+html body:has(.main) :focus-visible:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { outline-color: var(--rf-violet) !important; }
+
+/* Reference theme, part 3: the reference buttons and toggles. Buttons: pill, mono caps label, the main one with a round arrow badge that turns on hover. Toggles: outlined pills, the selected one filled in ink. */
+html body:has(.main) .main .btn:not(.icon):not(.link):not(.sm):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { height: 42px; min-height: 42px; padding: 0 18px !important; border-radius: 999px !important; font: 600 12.5px/1 "IBM Plex Mono", ui-monospace, monospace !important; letter-spacing: .02em !important; text-transform: uppercase !important; gap: 10px; transition: background-color .15s ease, transform .15s ease !important; }
+html body:has(.main) .main .btn.primary:not(.icon):not(.link):not(.sm):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { padding: 0 6px 0 18px !important; background: #1570EF !important; color: #fff !important; box-shadow: none !important; }
+html body:has(.main) .main .btn.primary:not(.icon):not(.link):not(.sm):not(:has(.arr)):not(#q#q#q#q#q#q#q#q#q#q#q#q#q)::after { content: ""; width: 28px; height: 28px; flex: none; border-radius: 50%; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231570EF' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17L17 7M8 7h9v9'/%3E%3C/svg%3E") center / 15px no-repeat; transition: transform .2s ease; }
+html body:has(.main) .main .btn.primary:not(.icon):not(.link):not(.sm):not([disabled]):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):hover { background: #115cc0 !important; }
+html body:has(.main) .main .btn.primary:not(.icon):not(.link):not(.sm):not([disabled]):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):hover::after { transform: rotate(45deg); }
+html body:has(.main) .main .btn:not(.icon):not(.link):not(.primary):not(.sm):not(.ghost):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; color: #0B0B12 !important; box-shadow: inset 0 0 0 1.5px #0B0B12 !important; }
+html body:has(.main) .main .btn:not(.icon):not(.link):not(.primary):not(.sm):not(.ghost):not([disabled]):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):hover { background: #F7F7FA !important; }
+/* the hero's own arrow badges (real markup) */
+html body .pd-hero .pd-cta .btn:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { padding: 0 6px 0 20px !important; height: 46px; }
+html body .pd-hero .pd-cta .btn .arr { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: #0B0B12; color: #fff; transition: transform .2s ease; }
+html body .pd-hero .pd-cta .btn.primary:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #0B0B12 !important; }
+html body .pd-hero .pd-cta .btn.primary .arr { background: #fff; color: #0B0B12; }
+html body .pd-hero .pd-cta .btn:hover .arr { transform: rotate(45deg); }
+/* toggles: page sub-tabs, tab strips, filter chips, segmented controls */
+html body:has(.main) .main :is(.mt-t, .pt-sh, .ko-chipb, .tabs .tab, .seg button, .kb-seg button):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { height: 34px; padding: 0 14px !important; border-radius: 999px !important; background: #fff !important; border: 1px solid #DEDEE6 !important; box-shadow: none !important; color: #33333D !important; font: 500 13.5px/1 Inter, sans-serif !important; letter-spacing: 0 !important; text-transform: none !important; }
+html body:has(.main) .main :is(.mt-t, .pt-sh, .ko-chipb, .tabs .tab, .seg button, .kb-seg button):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):hover { border-color: #9A9AA6 !important; }
+html body:has(.main) .main :is(.mt-t.active, .pt-sh.on, .ko-chipb.on, .tabs .tab.active, .seg button.on, .seg button.active, .kb-seg button.on):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #0B0B12 !important; border-color: #0B0B12 !important; color: #fff !important; }
+html body:has(.main) .main :is(.tabs, .pt-sheets, .cs-filters, .kb-seg, .seg):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: transparent !important; border: 0 !important; padding: 0 !important; gap: 6px !important; box-shadow: none !important; }
+html body:has(.main) .main :is(.tab .cnt, .pt-shn, .ko-chipb b):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: transparent !important; font: 500 11px/1 "IBM Plex Mono", monospace !important; color: #6B6B78 !important; }
+html body:has(.main) .main :is(.tab.active .cnt, .pt-sh.on .pt-shn, .ko-chipb.on b):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: rgba(255, 255, 255, .65) !important; }
+html body:has(.main) .main .tabs .tab .sd-dot:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { display: none; }
+@media (prefers-reduced-motion: reduce) { html body .pd-hero .pd-cta .btn .arr, html body:has(.main) .main .btn::after { transition: none !important; } }

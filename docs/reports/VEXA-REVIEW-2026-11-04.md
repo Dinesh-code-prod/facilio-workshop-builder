@@ -13,7 +13,7 @@ Verdict from both reviewers: **no malware, no backdoor, no obfuscation, no hidde
 
 Things that must change before anyone runs it:
 1. **Never run `make all` or `make lite`:** they pull prebuilt `vexaai/*` Docker images that cannot be audited from this source and are not digest-pinned. Build from source only (`make dev`) and pin the base images yourself.
-2. The `runtime` service mounts the Docker socket (host-root equivalent) and the host's `~/.claude` folder. Run only on a dedicated machine, never one holding real credentials, and do not run `deploy/bin/claude-creds-sync` (macOS only; exports Claude credentials).
+2. The `runtime` service mounts the Docker socket (host-root equivalent) and the host's `~/.claude` folder. Run only on a dedicated machine, never one holding real credentials, and do not run `deploy/bin/claude-creds-sync` (only; exports Claude credentials).
 3. `POST /api/ai/chat` in the dashboard has no authentication and spends an LLM key if `AI_MODEL` and `AI_API_KEY` are set: leave them unset or delete the route.
 4. Google Analytics is off unless an ID is set at build: leave unset. Postgres uses unverified TLS in "prefer" mode: use verify-full. Set every password and `ADMIN_TOKEN` explicitly (some default to empty or a dev value).
 5. Remove what a transcript bot does not need: `core/agent` (spawns Claude and Codex subprocesses), `core/flows`, `core/crm`, `clients/terminal` (includes a `new Function` on JSX), `clients/extension`, `clients/slim`, `.github`, `.githooks`, the `prepare` script, and the stale 5 KB `.tgz` in the dashboard.

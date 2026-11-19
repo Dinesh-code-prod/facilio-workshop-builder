@@ -212,7 +212,7 @@
   async function drawPng(M, tab, fl, logoImg) {
     const W = 1400, PAD = 40, SC = 2; const sp = spec(tab, M); const col = n => css(n) || '#000';
     const render = (ctx, dry) => {
-      let y = PAD; const font = (sz, w) => { ctx.font = `${w || 400} ${sz}px system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif`; };
+      let y = PAD; const font = (sz, w) => { ctx.font = `${w || 400} ${sz}px system-ui, "Segoe UI", Roboto, Arial, sans-serif`; };
       const fit = (t, w) => { t = String(t); if (ctx.measureText(t).width <= w) return t; while (t.length > 1 && ctx.measureText(t + '…').width > w) t = t.slice(0, -1); return t + '…'; };
       const wrap = (t, w) => { const out = []; let line = ''; String(t).split(/\s+/).forEach(wd => { const tt = line ? line + ' ' + wd : wd; if (ctx.measureText(tt).width > w && line) { out.push(line); line = wd; } else line = tt; }); if (line) out.push(line); return out; };
       if (!dry) { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, 4000); }

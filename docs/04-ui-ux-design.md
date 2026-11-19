@@ -24,7 +24,7 @@ Sky and the soft surfaces are for small accents only (a hover border, a selected
 Not allowed: violet or purple, neon or glow, new gradients. (`design/design-reference.md` and the coss documents are history, not rules.)
 
 ## Depth and look
-**The look is Apple** (owner rule, 9 Nov 2026; standing directive `plans/UI-TRANSFORMATION-DIRECTIVE-2026-11-12.md`): system font, weights 400/500/600, grey canvas #f5f5f7, one solid blue primary button per screen, grey capsule secondary buttons, hairline borders, 12 px controls, 20 px cards with soft layered shadows, ease `cubic-bezier(.32,.72,0,1)`, light theme only. The code is `src/ui.css`, the last of the style layers in `build.mjs`; overrides use `body ...:not(#_):not(#__)` with `!important`. Change a rule in place rather than appending a new one: appended layers are what made the look drift.
+**The look is the house look** (owner rule, 9 Nov 2026; standing directive `plans/UI-TRANSFORMATION-DIRECTIVE-2026-11-12.md`): system font, weights 400/500/600, grey canvas #f5f5f7, one solid blue primary button per screen, grey capsule secondary buttons, hairline borders, 12 px controls, 20 px cards with soft layered shadows, ease `cubic-bezier(.32,.72,0,1)`, light theme only. The code is `src/ui.css`, the last of the style layers in `build.mjs`; overrides use `body ...:not(#_):not(#__)` with `!important`. Change a rule in place rather than appending a new one: appended layers are what made the look drift.
 
 ## Navigation levels (each has its own look; no tab is ever removed or renamed)
 | Level | Element | Look |
@@ -57,7 +57,7 @@ Real buttons and inputs, labelled fields, `role="tablist"` on tab bars with `ari
 ## Motion
 The opening animation (tree growth) and small transitions use the Facilio Motion Kit (`docs/design/motionkit/animations.json`). Motion must be reduced or off when the browser asks for it, and must never block the page: the animation clamps sizes so a tiny window cannot stop it.
 
-Discover more has two different Apple-style scroll effects, both in `src/animation/discover/`. The sign-in page (`login-scroll.*`): every solution area is a pinned scene that zooms in, its words light up with the scroll, then it shrinks away. Inside a project (`project-scroll.*`): every chapter is a dark pinned stage whose cards slide sideways while the card in focus grows. Both are switched off for reduced motion and on phones, tablets and short windows.
+Discover more has two different clean scroll effects, both in `src/animation/discover/`. The sign-in page (`login-scroll.*`): every solution area is a pinned scene that zooms in, its words light up with the scroll, then it shrinks away. Inside a project (`project-scroll.*`): every chapter is a dark pinned stage whose cards slide sideways while the card in focus grows. Both are switched off for reduced motion and on phones, tablets and short windows.
 
 ## Tab groups and the Team Guide
 - **5. Training & Guides** is four separate tabs under one bar (`V.trainTop` in `src/pageguide.js`): Guides & Video Studio (briefs for videos, walkthroughs, step-by-step guides and training outlines), User Guide Builder (the written guide, Word or PDF), Video to Guide (steps from an existing recording), Notes & Links. Each page shows only its own work: no button points at another tab, and the "What the drafts read" panel appears on the User Guide Builder only. Checked by `tests/ui/training-tabs-check.mjs`.

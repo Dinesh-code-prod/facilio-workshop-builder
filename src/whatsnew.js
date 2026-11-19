@@ -17,7 +17,7 @@
       'Workshop plan: add, edit and copy sessions, import a plan for Claude to rebuild, export to Excel, HTML and PDF. Handover & Closure in four tabs with Documents for Claude. Training with Library, Create and Review.',
       'UAT is the FTR report plus the UAT guide, both written by Claude. Go-live and Hypercare are one page. Project settings in three tabs. Contract intake analyses only when you press Analyse contracts, and records the integrations the contract names.',
       'A new version of the project plan is merged into the timeline: tasks keep their progress and the message names the stage before and after.',
-      'The look moved to an Apple-style design: neutral greys, capsule buttons, translucent sheets. The repository has a CHANGELOG.md at the top and a short guide in every folder.'
+      'The look moved to an clean design: neutral greys, capsule buttons, translucent sheets. The repository has a CHANGELOG.md at the top and a short guide in every folder.'
     ] },
     { v: '3.0.0', date: '2026-11-09', kind: 'UPDATE', title: 'Calmer tabs and side forms, a new sign-in explainer, Ask Claude in the Assistant box', notes: [
       'Tabs and mini tabs are one style everywhere: a light strip, the chosen tab a white pill with bold black text, no blue layer.',

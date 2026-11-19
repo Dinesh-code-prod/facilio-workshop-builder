@@ -1,4 +1,4 @@
-// In-page design checks for the UI audit: does what is on screen follow the Apple look of src/ui.css (CLAUDE.md, Look and feel)?
+// In-page design checks for the UI audit: does what is on screen follow the house look of src/ui.css (CLAUDE.md, Look and feel)?
 // Injected next to tests/ui/checks.js; window.__designAudit() returns findings { rule, sig, text, detail } like window.__uiAudit.
 // Rules: system font, weights 400/500/600, capsule .btn, 12 px fields, 20 px cards, no gradients/glow/uppercase/violet. Art kept on purpose is skipped.
 (function () {
@@ -8,7 +8,7 @@
   const sig = el => { const parts = []; let e = el; for (let i = 0; e && e !== document.body && i < 3; i++, e = e.parentElement) { let s = e.tagName.toLowerCase(); const c = [...e.classList].filter(x => !/^(on|active|open|sel|is-)/.test(x)).slice(0, 2); if (c.length) s += '.' + c.join('.'); parts.unshift(s); } return parts.join('>'); };
   const txt = el => (el.innerText || el.getAttribute('aria-label') || el.title || el.value || '').replace(/\s+/g, ' ').trim().slice(0, 50);
   // the UI font is Inter (user, 12 Nov 2026; public/fonts), plus the system and monospace faces
-  const SYS = /^("?inter"?$|"?inter var|-apple-system|blinkmacsystemfont|"?sf pro|system-ui|"?segoe ui|"?helvetica neue|ui-monospace|menlo|consolas|monospace|"?sf mono|"?cascadia|courier)/i;
+  const SYS = /^("?inter"?$|"?inter var|system-ui|"?segoe ui|"?helvetica neue|ui-monospace|menlo|consolas|monospace|"?sf mono|"?cascadia|courier)/i;
   const rgb = s => { const m = /rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?/.exec(s || ''); return m ? { r: +m[1], g: +m[2], b: +m[3], a: m[4] == null ? 1 : +m[4] } : null; };
   const hue = c => { const r = c.r / 255, g = c.g / 255, b = c.b / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; if (!d) return { h: 0, s: 0 }; let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h *= 60; if (h < 0) h += 360; const l = (mx + mn) / 2; return { h, s: d / (1 - Math.abs(2 * l - 1)) }; };
   const violet = s => { const c = rgb(s); if (!c || c.a < .2) return false; const x = hue(c); return x.s > .3 && x.h >= 255 && x.h <= 320; };
@@ -29,7 +29,7 @@
       if (cs.boxShadow && cs.boxShadow !== 'none' && cs.boxShadow.split(/,(?![^(]*\))/).some(p => { const c = rgb(p); return c && tinted(p) && c.a > .15 && !/inset/.test(p) && !/\b0px 0px 0px [123]px\b/.test(p); })) add('d-glow', el, cs.boxShadow.slice(0, 60));
     }
     const r = el => parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0;
-    // buttons: capsules (Apple) unless inside a segmented control, tab list or menu
+    // buttons: capsules unless inside a segmented control, tab list or menu
     for (const b of document.querySelectorAll('.btn')) { if (!vis(b) || skipped(b) || b.closest('.seg, [role=tablist], [role=menu], .tabs')) continue; const h = b.getBoundingClientRect().height; if (r(b) < Math.min(h / 2, 30) - 1.5) add('d-btn-shape', b, 'radius ' + r(b) + ' for height ' + Math.round(h)); }
     // buttons that are not .btn but look like old square buttons
     for (const b of document.querySelectorAll('main button:not(.btn), .drawer button:not(.btn), #drawer button:not(.btn)')) { if (!vis(b) || skipped(b) || b.closest('.seg, [role=tablist], [role=menu], .tabs, nav, .rail, .sidebar, table, .fl-dg, .wb, .flow')) continue; const cs = getComputedStyle(b); if (cs.borderStyle !== 'none' && parseFloat(cs.borderWidth) > 0 && cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && r(b) < 6 && b.getBoundingClientRect().height >= 24) add('d-old-button', b, 'radius ' + r(b)); }

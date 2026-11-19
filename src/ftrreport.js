@@ -54,7 +54,7 @@
   /** one self-contained HTML file (no outside request) */
   function html(rep, project) {
     const n = (project && (project.customer || project.name)) || 'Project';
-    return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src data:"><title>FTR report: ' + esc(n) + '</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;margin:0;background:#fafafa;color:#0a0a0a}main{max-width:1100px;margin:0 auto;padding:32px 20px}h1{font-size:24px;margin:0 0 4px}.sub{color:#525252;margin:0 0 20px}' + CSS + '</style></head><body><main><h1>FTR report</h1><p class="sub">' + esc(n) + '</p>' + body(rep) + '</main></body></html>';
+    return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src data:"><title>FTR report: ' + esc(n) + '</title><style>body{font-family:"Segoe UI",system-ui,sans-serif;margin:0;background:#fafafa;color:#0a0a0a}main{max-width:1100px;margin:0 auto;padding:32px 20px}h1{font-size:24px;margin:0 0 4px}.sub{color:#525252;margin:0 0 20px}' + CSS + '</style></head><body><main><h1>FTR report</h1><p class="sub">' + esc(n) + '</p>' + body(rep) + '</main></body></html>';
   }
   V.ftrReport = { parse, body, html, CSS, result, LABEL };
   if (typeof module !== 'undefined' && module.exports) module.exports = V.ftrReport;

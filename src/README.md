@@ -299,7 +299,7 @@ CSS files. The look is the coss style in ui.css (the last layer, see docs/design
 | [webframe.css](webframe.css) | Facilio tools (src/webframe.js): a slim bar over a frame that fills the page. |
 | [whatsnew.css](whatsnew.css) | What's new: a release timeline in the same black dot-grid style as Discover more. |
 | [whiteboard.css](whiteboard.css) | Process Whiteboard full screen: the board fills the window below the top bar (the page header and toolbar above it left only about 550 px on a 950 px screen). |
-| [wbapple.css](wbapple.css) | Process Whiteboard in the Apple look (light canvas, floating white tools, one blue) and the styles for the Miro-style helpers; the last layer for the board. |
+| [wbsurface.css](wbsurface.css) | Process Whiteboard in the house look (light canvas, floating white tools, one blue) and the styles for the Miro-style helpers; the last layer for the board. |
 | [workshop.css](workshop.css) | Workshop room (src/workshop.js). |
 
 ## Other
@@ -330,9 +330,9 @@ The sign-in explainer (`loginflow.js`, drawn in SVG and sequenced with GSAP), th
 | [animation/custintro.js](animation/custintro.js) | Customer introduction (prompt section 7): an optional, per-project, customer-safe page built from existing project data and exported as ONE standalone HTML file. |
 | [animation/discover/core.js](animation/discover/core.js) | Discover more scroll effects, shared helpers. |
 | [animation/discover/login-scroll.css](animation/discover/login-scroll.css) | Sign-in page "Discover more": pinned scenes (src/animation/discover/login-scroll.js). |
-| [animation/discover/login-scroll.js](animation/discover/login-scroll.js) | Sign-in page "Discover more" (src/discoverlogin.js): pinned scenes, in the manner of Apple's product pages. |
+| [animation/discover/login-scroll.js](animation/discover/login-scroll.js) | Sign-in page "Discover more" (src/discoverlogin.js): pinned scenes, in the manner of premium product pages. |
 | [animation/discover/project-scroll.css](animation/discover/project-scroll.css) | Discover more tab inside a project: pinned sideways galleries (src/animation/discover/project-scroll.js). |
-| [animation/discover/project-scroll.js](animation/discover/project-scroll.js) | "Discover more" tab inside a project (src/explore.js): pinned sideways galleries, in the manner of Apple's card carousels. |
+| [animation/discover/project-scroll.js](animation/discover/project-scroll.js) | "Discover more" tab inside a project (src/explore.js): pinned sideways galleries, in the manner of product-site card carousels. |
 | [animation/intro.js](animation/intro.js) | Opening page (before sign-in), shown on every fresh load: the customer journey (src/animation/roadintro.js) on customer invite links, the tree intro (src/animation/treeintro.js) for everyone else. |
 | [animation/loginflow.js](animation/loginflow.js) | Sign-in page, left side (team view): "How Delivery Studio works", seven short scenes in ONE product window, sequenced by one GSAP timeline (vendor/gsap.min.js, free standard licence). |
 | [animation/loginstory.js](animation/loginstory.js) | Sign-in page, left side: a canvas story that fills the left column of the sign-in page (replaces the earlier CSS story). |

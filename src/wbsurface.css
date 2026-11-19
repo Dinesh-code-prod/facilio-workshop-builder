@@ -1,4 +1,4 @@
-/* Process Whiteboard in the Apple look (Direction A): a light grey canvas, white floating tools with a hairline and a soft shadow, one blue for the active tool and the connectors,
+/* Process Whiteboard in the house look (Direction A): a light grey canvas, white floating tools with a hairline and a soft shadow, one blue for the active tool and the connectors,
    capsule buttons from ui.css. This is the last word for the board and its drawers (it loads after projfx.css). Also styles the Miro-style helpers from whiteboard2.js. */
 body .wb-host:not(#_):not(#__) { background: #f6f7f9 !important; border: 1px solid rgba(16, 24, 40, .08) !important; border-radius: 18px !important; box-shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 8px 28px -12px rgba(16, 24, 40, .12) !important; }
 body .wb-host.wb-full:not(#_):not(#__) { border-radius: 0 !important; box-shadow: none !important; }
