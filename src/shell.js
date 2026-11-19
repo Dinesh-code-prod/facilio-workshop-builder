@@ -122,6 +122,8 @@
   // The team menu in project order: the project home, what runs the whole project, then the stages from kick-off to hypercare and closure,
   // then support, what the customer sees, settings and the rarely needed pages. Sub-headings (subs: page id to heading) group the design pages.
   const NAV = [
+    // Home is the first tab (user, 19 Nov 2026); a project created with a contract still opens on Contract intake (ACT.createProject)
+    { g: 'Home', sec: 'Project', icon: 'home', fi: 'g_dash', items: [['projdash', 'Dashboard'], ['lifecycle', 'Project cycle']] },
     // the eight stages of the roadmap from the start of the project, then the project-wide tools; a busy stage is several main tabs that share its number (2, 3), so no main tab holds more than four pages
     { g: '1. Project introduction', sec: 'Discover and define', icon: 'flag', fi: 'kickoff', items: [['msaintake', 'Contract intake'], ['intro', 'Kick-off, plan and schedule']] },
     { g: '2. Requirement sessions', sec: 'Discover and define', icon: 'mic', fi: 'transcripts', items: [['onboarding', 'Data onboarding'], ['workshop', 'Workshop room (live call)'], ['rstrans', 'Transcripts']] },   // Data Onboarding (the sheet shown in the first session), Transcripts and Use Cases are tabs inside the first entry (src/workshubs.js)
@@ -133,7 +135,6 @@
     { g: '5. Training guides', sec: 'Launch and support', icon: 'book', fi: 'guide', items: [['guides', 'Guides & Videos']] },
     { g: 'Tasks & mail', sec: 'Launch and support', icon: 'mail', items: [['tasks', 'Tasks and email'], ['mailtab', 'Customer mail'], ['transfers', 'Transfers'], ['golivehc', 'Go-live & hypercare']] },
     { g: '8. Project handover', sec: 'Launch and support', icon: 'book', fi: 'g_delivery', items: [['handover', 'Handover & Closure'], ['soldoc', 'Solution document']] },   // soldoc: user, 15 Nov 2026
-    { g: 'Home', sec: 'Project', icon: 'home', fi: 'g_dash', items: [['projdash', 'Dashboard'], ['lifecycle', 'Project cycle']] },
     { g: 'Reports', sec: 'Project', icon: 'doc', items: [['statusrep', 'Status report (WSR) & monthly report'], ['trace', 'Traceability & quality'], ['aiwork', 'Deliverables & AI']] },
     { g: 'Notes & Links', sec: 'Project', icon: 'clip', items: [['resources', 'Notes & Links']] },
     { g: 'Customer View', sec: 'Share with the customer', icon: 'spark', items: [['custintro', 'Customer Introduction'], ['prepare', 'Learn & Prepare'], ['learnlib', 'Module guides']] },
@@ -230,7 +231,7 @@
     if (view.mount) try { view.mount(); } catch (e) { console.error(e); }
     if (V.motion) V.motion.route(key + '|' + (S.project ? S.project.id : ''));
     if (activeBind) { const el = document.querySelector(`[data-bind="${CSS.escape(activeBind)}"]`); if (el && el.tagName !== 'SELECT') { el.focus(); try { if (caret != null) el.setSelectionRange(caret, caret); } catch (e) { } } }
-    F.paintSave();
+    F.paintSave(); if (V.keepPlace) V.keepPlace();   // text kept from before the page closed goes back into its field (src/session.js)
   }
   V.render = render; F.on(render);
 
