@@ -126,6 +126,6 @@
       if (SAID.includes(f.kind)) g.said.push(f); else if (MISSED.includes(f.kind)) g.missed.push(f); });
     return groups.concat(general.answered.length || general.open.length || general.said.length || general.missed.length ? [general] : []);
   }
-  const api = { STATUSES, LABEL, KINDS, notesOf, questionList, mergeLive, counts, setNote, evidenceLine, basisOf, sourceOf, draftRecord, sameQuestion, agendaOf, fmtClock, forSession, byModule, afterReport };
+  const api = { STATUSES, LABEL, KINDS, notesOf, questionList, mergeLive, counts, setNote, evidenceLine, basisOf, sourceOf, draftRecord, sameQuestion, agendaOf, fmtClock, forSession, byModule, afterReport, SAID, MISSED };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBWorkshopLogic = api;
 })(typeof window !== 'undefined' ? window : globalThis);

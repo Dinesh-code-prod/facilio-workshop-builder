@@ -55,6 +55,10 @@
   const tabsHtml = (cur, items) => `<div class="tabs sd-tabs" role="tablist" aria-label="Dashboard stages">${items.map(([id, l, c]) => `<button type="button" role="tab" aria-selected="${cur === id}" class="tab${cur === id ? ' active' : ''}" data-act="sdTab" data-v="${esc(id)}">${c ? `<i class="sd-dot" style="background:${c}"></i>` : ''}${esc(l)}</button>`).join('')}</div>`;
 
   // ---------- the numbers every widget and report shares, computed once per draw ----------
+  // what the transcripts settled against the contract (findings; the Workshop room lists them by module). A project with no transcript read yet shows the empty line.
+  const sessionsVsContract = () => { const WL = root.FWBWorkshopLogic, fd = F.doc('rs_findings'), fl = (fd && Array.isArray(fd.items) ? fd.items : []).filter(x => x && x.status !== 'dismissed'); if (!WL) return '';
+    const said = fl.filter(x => WL.SAID.includes(x.kind)).length, nd = fl.filter(x => x.kind === 'not_discussed').length, miss = fl.filter(x => WL.MISSED.includes(x.kind) && x.kind !== 'not_discussed').length;
+    return widget('Sessions against the contract', 'from the transcripts, by finding', C.stack([['Said in the sessions', said, OK], ['Missing or to decide', miss, WARN], ['Contract modules not discussed', nd, GREY]], 'No transcript has been read yet. Pull it, and the gaps show here.'), 4, STG[1].c); };
   const reqs = () => (S.ws && S.ws.requirements) || [];
   const planRows = () => ((F.doc('plan_struct') || {}).rows || []).filter(r => !r.isPhase && /^\d{4}-\d{2}-\d{2}$/.test(String(r.start || '')));
   const CR_ENDED = /^(approved|rejected|implemented|withdrawn|closed|done|cancelled|declined)$/i;
@@ -138,7 +142,7 @@
         widget(c.k ? 'Confirmed share' : 'Traceability coverage', c.k ? 'requirements the customer has confirmed' : 'requirement to use case to module to test', c.k ? C.gauge(R.length ? pct(conf, R.length) : null, pct(conf, R.length) + '%', conf + ' of ' + R.length + ' confirmed', STG[1].c, 'No requirements yet.') : C.gauge(tcov, tcov == null ? '' : tcov + '%', c.trace ? c.trace.traced + ' of ' + c.trace.total + ' requirements fully traced · ' + c.trace.gaps + ' gaps' : '', tcov >= 80 ? OK : tcov >= 50 ? WARN : BAD, 'Needs requirements, use cases and test cases first.'), 4, STG[1].c) +
         widget('Sessions held against planned', 'requirement workshops', C.stack([['Held', held, OK], ['Still to hold', Math.max(0, sess.length - held), '#d4d4d4']], 'No sessions planned yet. Plan them in the session planner.'), 4, STG[1].c) +
         widget('Session timeline', 'planned requirement sessions, soonest first', table('Session timeline', ['Session', 'Date', 'Status'], sess.slice().sort((a, b) => String(a.date || a.start || '9').localeCompare(String(b.date || b.start || '9'))).slice(0, 6).map(s => [String(s.title || s.name || s.module || 'Session').slice(0, 60), s.date || s.start ? fd(dayOf(s.date || s.start)) : '—', chipT(s.status || 'Planned', tone(s.status || 'Planned'))]), 'No sessions planned yet. Plan them in the workshop plan.'), 6, STG[1].c) +
-        widget('Latest requirements', 'first eight', table('Requirements', ['ID', 'Requirement', 'Status'], rows, 'No requirements yet.'), 8, STG[1].c) + widget('Questions waiting', 'no answer recorded', table('Open questions', ['Question', 'Owner'], qrows, 'No open questions.'), 4, STG[1].c) };
+        widget('Latest requirements', 'first eight', table('Requirements', ['ID', 'Requirement', 'Status'], rows, 'No requirements yet.'), 8, STG[1].c) + widget('Questions waiting', 'no answer recorded', table('Open questions', ['Question', 'Owner'], qrows, 'No open questions.'), 4, STG[1].c) + (c.k ? '' : sessionsVsContract()) };
   };
   B.brd = c => {
     const rd = !c.k && V.brdReadiness ? V.brdReadiness() : { blocking: 0, warning: 0, info: 0 }; const uc = list('usecase'); const L = { notdue: 'Not due', requested: 'Waiting for signature', signed: 'Signed', concern: 'Concern raised' };
