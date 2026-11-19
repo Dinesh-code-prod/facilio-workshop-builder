@@ -7,8 +7,9 @@ import { OPEN, LIMITS, KINDS, cleanRequest, newJob, step, brief, leaseExpired } 
 
 import { hashOf } from './_notify.mjs';
 import { canTake, status as helperStatus, words as helperWords, cleanUsage, mergeUsage, usageDue, cleanSkills } from './_helper.mjs';
-// customer mail is switched off (user, 13 Nov 2026): no daily mail search is queued, so no Claude run is spent on it; the mail code stays for a later return
-const MAIL_OFF = true;
+// customer mail: switched off 13 Nov 2026, back on 19 Nov 2026 (user): each team member's Claude searches their own Outlook once an hour; turning a mail into a task stays a person's click
+const MAIL_OFF = false;
+const MAIL_EVERY_MIN = 60;
 export function installJobs(d) {
   const { route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, withLock, audit, CONNECTOR, rid, CTX } = d; const notify = d.notify || (async () => 0);
   const col = pid => 'jb.' + pid, JID = /^jb_[0-9a-f]{18}$/;
@@ -67,15 +68,26 @@ export function installJobs(d) {
   route('GET', '/api/jobs/usage', async () => { const s = await me(); const ps = d.readableProjects ? await d.readableProjects(s) : []; const since = new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10); const byDay = {}, byKind = {}; let total = 0;
     for (const p of ps.slice(0, 50)) { for (const j of await all(p.id)) { const day = String(j.requestedAt || '').slice(0, 10); if (!day || day < since) continue; total++; byKind[j.kind] = (byKind[j.kind] || 0) + 1; (byDay[day] = byDay[day] || {})[j.kind] = ((byDay[day] || {})[j.kind] || 0) + 1; } }
     return ok({ since, total, byKind, byDay }); });
+  // the hourly mail search (user, 19 Nov 2026): when a person's queue task checks in, their own mailbox search is queued if their last one is an hour old; per person, because each Claude reads only its own Outlook
+  const mailDue = async (s, p) => {
+    if (MAIL_OFF) return { due: false, why: 'off' };
+    const em = String(s.email || '').toLowerCase(); if (!em || !(p.members || []).some(m => m.role !== 'customer' && String(m.email || '').toLowerCase() === em)) return { due: false, why: 'not on the team' };
+    if ((((await dbGet('mlcfg', p.id)) || {}).value || {}).muted) return { due: false, why: 'muted' };
+    const mine = (await all(p.id)).filter(j => j.kind === 'fetch_mail' && String(j.requestedBy || '').toLowerCase() === em);
+    if (mine.some(j => j.status === 'waiting' || j.status === 'claimed')) return { due: false, why: 'one is waiting' };
+    const last = mine.map(j => Date.parse(j.requestedAt)).filter(Boolean).sort((a, c) => c - a)[0];
+    return last && Date.now() - last < MAIL_EVERY_MIN * 60e3 ? { due: false, why: 'recent', next: new Date(last + MAIL_EVERY_MIN * 60e3).toISOString() } : { due: true };
+  };
+  const autoMail = async (s, p) => { try { if ((await mailDue(s, p)).due) await ops.create(s, p.id, { kind: 'fetch_mail', ref: 'mailbox:' + String(s.email || '').toLowerCase(), note: 'Hourly search for customer mail' }); } catch (e) { /* a full queue never blocks the check-in */ } };
   const tools = {
     // no project given: the waiting jobs of every project the person can open, in ONE call (an idle check costs one tool call); kind narrows it (for example chat)
     /** the person's Claude sends its plan limits (5-hour, weekly, extra usage) so the Studio can show them above the assistant chat; one snapshot per person, replaced each time */
     async jobs_usage(s, b) { const u = cleanUsage(b && b.usage); if (!u) throw new HttpError(400, 'usage needs windows: a list of { label, percentUsed, resetsAt } from your Claude plan limits'); const k = hashOf(s.email), cur = await dbGet('usage', k).then(r => r && r.value).catch(() => null), accounts = mergeUsage(cur && cur.accounts, { ...u, at: new Date().toISOString() }, Date.now()); await dbPut('usage', k, { name: s.name || s.email, accounts }); return { stored: true, accounts: accounts.length, note: 'Saved. The Studio shows it above the assistant chat, one block for each of your Claude accounts.' }; },
     async jobs_list_all(s, b) { await beat(s, b); const ps = d.readableProjects ? await d.readableProjects(s) : []; const out = []; let waiting = 0;
       if (d.briefs) { try { await Promise.race([d.briefs(s), new Promise(r => setTimeout(r, 5000))]); } catch (e) { /* the morning brief never blocks the idle check */ } }
-      for (const p of ps.slice(0, 50)) { let r; try { r = await ops.list(s, p.id, 'waiting', String(b.stage || '').toLowerCase()); } catch (e) { continue; }
+      for (const p of ps.slice(0, 50)) { await autoMail(s, p); let r; try { r = await ops.list(s, p.id, 'waiting', String(b.stage || '').toLowerCase()); } catch (e) { continue; }
         const jobs = r.jobs.filter(j => j.status === 'waiting' && (!b.kind || j.kind === String(b.kind)) && canTake(j.kind, j.requestedBy, s.email)); if (jobs.length) { waiting += jobs.length; out.push({ project: p.name, projectId: p.id, jobs }); } }
-      const snap = await dbGet('usage', hashOf(s.email)).then(r => r && r.value).catch(() => null); return { waiting, projects: out, usageDue: usageDue(snap && snap.accounts, Date.now()) || !!(snap && snap.want && Date.now() - Date.parse(snap.want) < 15 * 60000), note: waiting ? 'Claim one with action claim, its id and project (the projectId). Chat jobs first.' : 'No waiting jobs.' }; },
+      const snap = await dbGet('usage', hashOf(s.email)).then(r => r && r.value).catch(() => null); return { waiting, projects: out, usageDue: usageDue(snap && snap.accounts, Date.now()) || !!(snap && snap.want && Date.now() - Date.parse(snap.want) < 15 * 60000), mailHourly: !MAIL_OFF, note: (waiting ? 'Claim one with action claim, its id and project (the projectId). Chat jobs first.' : 'No waiting jobs.') + (MAIL_OFF ? '' : ' Customer-mail searches (fetch_mail) are queued by this check-in once an hour per person; the hourly task "Delivery Studio mail (hourly)" does them even while this queue task is paused.') }; },
     async jobs_list(s, b) { if (!String(b.project || '').trim()) return tools.jobs_list_all(s, b); await beat(s, b); const p = await pickProject(s, b.project); const r = await ops.list(s, p.id, String(b.status || ''), String(b.stage || '').toLowerCase()); return { project: p.name, projectId: p.id, open: r.open, jobs: r.jobs.filter(j => j.status !== 'waiting' || canTake(j.kind, j.requestedBy, s.email)), note: 'Claim one with action claim and its id. Only waiting jobs can be claimed.' }; },
     async jobs_claim(s, b) { await beat(s, b); const p = await pickProject(s, b.project); const j = await ops.claim(s, p.id, String(b.id || '')); return brief(j, { id: p.id, name: p.name, customer: p.customer || '' }); },
     async jobs_file_urls(s, b) {
@@ -97,15 +109,13 @@ export function installJobs(d) {
       if (!f.mint || !f.mint[0]) throw new HttpError(400, 'The upload link was never issued'); f.urls = [f.mint[0]]; f.status = 'ready'; f.contentCheck = 'unchecked'; await dbPut('fl.' + p.id, f.id, f); await audit(p.id, s.id, 'file-uploaded', 'solution_doc: ' + f.name);
       return { name: f.name, note: 'Saved to the project. It shows on the Handover page under Solution document.' };
     },
-    /** the background Claude asks for the daily mail search; only this kind, and not again within 20 hours (whoever asked, however it ended) */
+    /** the background Claude asks for its mail search; only this kind, at most once an hour per person (the check-in also queues it by itself) */
     async jobs_presence(s) { const rows = await dbList('presence'); const since = Date.now() - 10 * 60 * 1000; const here = rows.filter(r => r.value && Date.parse(r.value.at) > since).length; return { open: here, note: here ? 'Someone has the Studio open: keep working the queue.' : 'Nobody has had the Studio open for 10 minutes: stop now and say the Studio is not open.' }; },
     async jobs_request(s, b) {
       const p = await pickProject(s, b.project); const kind = String(b.kind || 'fetch_mail'); if (kind !== 'fetch_mail') throw new HttpError(400, 'Only fetch_mail can be requested this way.');
       if (MAIL_OFF) return { project: p.name, requested: false, note: 'Customer mail search is switched off for every project (user, 13 Nov 2026). Do nothing for mail.' };
-      const rows = await all(p.id); const last = rows.filter(j => j.kind === 'fetch_mail').map(j => Date.parse(j.requestedAt)).filter(Boolean).sort((a, c) => c - a)[0];
-      if (last && Date.now() - last < 20 * 3600e3) return { project: p.name, requested: false, note: 'A mail search was already requested in the last 20 hours. Do the waiting one, if there is one.' };
-      if ((((await dbGet('mlcfg', p.id)) || {}).value || {}).muted) return { project: p.name, requested: false, note: 'Mail is muted for this project (handed over or switched off), so no search was requested.' };
-      const r = await ops.create(s, p.id, { kind: 'fetch_mail', note: 'Daily search for customer mail' }); return { project: p.name, requested: !r.duplicate, job: r.job.id, note: 'Queued. Claim it with action list and claim, then follow its instructions.' };
+      const due = await mailDue(s, p); if (!due.due) return { project: p.name, requested: false, note: due.why === 'muted' ? 'Mail is muted for this project (handed over or switched off), so no search was requested.' : due.why === 'not on the team' ? 'You are not on this project team, so your mailbox is not searched for it.' : 'Your mail search for this project ran or was queued within the last hour (one per person per hour). Do the waiting one, if there is one.' };
+      const r = await ops.create(s, p.id, { kind: 'fetch_mail', ref: 'mailbox:' + String(s.email || '').toLowerCase(), note: 'Hourly search for customer mail' }); return { project: p.name, requested: !r.duplicate, job: r.job.id, note: 'Queued. Claim it with action list and claim, then follow its instructions.' };
     },
     async jobs_progress(s, b) { const p = await pickProject(s, b.project); const j = await ops.progress(s, p.id, String(b.id || ''), b.summary); return { job: view(j), note: 'Shown to the person in Delivery Studio. Keep going.' }; },
     async jobs_finish(s, b) {   // notices: jobTitle / jobText below

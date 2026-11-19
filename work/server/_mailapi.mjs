@@ -20,9 +20,11 @@ export function installMailTasks(d) {
     const p = (await dbGet('projects', pid)).value || {}; let modules = []; try { const w = await docRead(pid, 'workshop'); modules = ((w && w.data && w.data.modules) || []).map(m => (m && (m.name || m.label)) || (typeof m === 'string' ? m : '')).filter(Boolean).slice(0, 60); } catch (e) { /* no workshop document yet */ }
     return { me: s.email, team: (p.members || []).map(m => m.email).filter(Boolean), customer: p.customer || '', project: p.name || '', modules, keywords: (Array.isArray(extra) ? extra : []).map(x => String(x).slice(0, 80)).slice(0, 20) };
   }
+  // mail text keeps its paragraphs (the shared cut() makes one line): spaces and blank lines tidied, then cut
+  const keepLines = (v, n) => String(v == null ? '' : v).replace(/\r\n?/g, '\n').replace(/[ \t\f\v]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim().slice(0, n);
   /** a row as the page and the tools show it; the mail text is cut */
   const view = (r, full) => ({ id: r.id, status: r.status, scenario: r.scenario, hit: r.hit, route: r.route, title: r.title, savedAt: r.savedAt, acceptedBy: r.acceptedBy || '', acceptedAt: r.acceptedAt || '', doneWhen: r.doneWhen, resolvedAt: r.resolvedAt || '', resolvedWhy: r.resolvedWhy || '', compare: r.compare || null, reply: r.reply || null,
-    mail: Object.assign({}, r.mail, { body: cut(r.mail && r.mail.body, full ? 8000 : 600) }) });
+    mail: Object.assign({}, r.mail, { body: keepLines(r.mail && r.mail.body, full ? 8000 : 600) }) });
 
   const ops = {
     async list(s, pid, status, id) {
