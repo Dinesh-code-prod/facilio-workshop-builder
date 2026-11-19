@@ -43,7 +43,7 @@
     const rag = rank === 2 ? ['bad', 'Red · needs attention'] : rank === 1 ? ['warn', 'Amber · watch'] : (!st.n && !acts.length && !raid.length && !dec.length && !crs.length && !sos.some(x => x.status && x.status !== 'notdue')) ? ['', 'Grey · not enough recorded yet'] : ['ok', 'Green · on track'];   // nothing recorded is not the same as on track
     const wk = V.addDays ? V.addDays(t, -14) : '';
     const done = []
-      .concat(sos.filter(x => x.status === 'signed').map(x => ({ at: (x.signedAt || '').slice(0, 10), what: x.label + ' signed', who: x.signer || '' })))
+      .concat(sos.filter(x => x.status === 'signed').map(x => ({ at: (x.signedAt || '').slice(0, 10), what: (V.signoffName ? V.signoffName(x) : (x.label || 'Sign-off')) + ' signed', who: x.signer || '' })))
       .concat(acts.filter(a => a.status === 'Done').map(a => ({ at: (a.doneAt || '').slice(0, 10), what: a.text || a.title || 'Action without a description', who: a.owner || '' })))
       .concat(dec.filter(d => d.status === 'Agreed').map(d => ({ at: d.date || '', what: 'Decision: ' + d.title, who: '' })))
       .concat(raid.filter(r => r.status === 'Closed').map(r => ({ at: '', what: RT[tk(r)] + ' closed: ' + r.title, who: r.owner || '' })))

@@ -164,22 +164,31 @@
   V.moduleOwner = m => I().get('owner', F.slug(m));
 
   // ----- weekly digest (built from the records; nothing invented) -----
+  // a stored sign-off keeps only its id; its name comes from SIGNOFFS
+  function soName(s) { return (s && s.label) || ((SIGNOFFS.find(x => x[0] === (s && s.id)) || [])[1]) || 'Sign-off'; }
+  // phaseNow() gives { cur, info, note }: cur is the 0-based plan step, -1 when nothing has started
+  function stageLine(p) {
+    if (!p || !(p.cur >= 0) || !p.info || !p.info[p.cur]) return '';
+    const n = p.cur + 1, title = p.info[p.cur].title || ('Step ' + n), st = V.stageOfStep ? V.stageOfStep(p.cur) : null;
+    return 'Current stage: ' + (st != null ? 'Stage ' + st + ' · ' + V.roadmapName(st) + ' (plan step ' + n + ' of 12: ' + title + ')' : 'Plan step ' + n + ' of 12: ' + title) + (p.note ? ' (' + p.note + ')' : '') + '\n';
+  }
+  V.weeklyStageLine = stageLine;
   function digestDraft() {
     const t = V.today(), wk = V.addDays(t, -7), next = V.addDays(t, 14), in7 = V.addDays(t, 7); const acts = I().list('action'); const cn = custName();
     const L = (h, arr) => arr.length ? `${h}\n${arr.slice(0, 10).map(x => '• ' + x).join('\n')}\n` : '';
-    const doneWk = acts.filter(a => a.status === 'Done' && (a.doneAt || '').slice(0, 10) >= wk).map(a => a.text).concat(I().list('signoff').filter(s => s.status === 'signed' && (s.signedAt || '').slice(0, 10) >= wk).map(s => s.label + ' signed by ' + s.signer));
+    const doneWk = acts.filter(a => a.status === 'Done' && (a.doneAt || '').slice(0, 10) >= wk).map(a => a.text).concat(I().list('signoff').filter(s => s.status === 'signed' && (s.signedAt || '').slice(0, 10) >= wk).map(s => soName(s) + ' signed by ' + (s.signer || 'the customer')));
     const due = side => acts.filter(a => a.side === side && a.status !== 'Done' && a.due && a.due <= in7).map(a => (a.due < t ? 'OVERDUE (was due ' + V.fmtDate(a.due) + '): ' : V.fmtDate(a.due) + ': ') + a.text + (a.owner ? ' — ' + a.owner : ''));
     const sessions = (F.doc('planner').sessions || []).filter(s => s.status !== 'cancelled' && s.date && s.date >= t && s.date <= next).map(s => V.fmtDate(s.date) + ': Session ' + s.no + ' — ' + s.title);
-    const waiting = I().list('signoff').filter(s => s.status === 'requested' || s.status === 'concern').map(s => s.label + (s.status === 'concern' ? ' — concern raised' : s.due ? ' — due ' + V.fmtDate(s.due) : ''));
+    const waiting = I().list('signoff').filter(s => s.status === 'requested' || s.status === 'concern').map(s => soName(s) + (s.status === 'concern' ? ' — concern raised' : s.due ? ' — due ' + V.fmtDate(s.due) : ''));
     const crs = I().list('cr').filter(c => c.status === 'Proposed' && c.published).map(c => 'CR-' + String(c.n || '').padStart(3, '0') + ' ' + c.title);
     const risks = V.openRisks().filter(r => r.impact === 'High').map(r => r.title + (r.mitigation ? ' — ' + r.mitigation : ''));
     const onb = V.onboardingDigest ? V.onboardingDigest() : [];
     const phase = V.phaseNow ? V.phaseNow() : null;
     const subject = `${cn} × Facilio · Weekly Update · ${V.fmtDate(t)}`;
-    const body = [phase ? `Current stage: ${V.stageOfStep ? 'Stage ' + V.stageOfStep(phase.n - 1) + ' · ' + V.roadmapName(V.stageOfStep(phase.n - 1)) + ' (plan step ' + phase.n + ' of 12: ' + phase.title + ')' : 'Step ' + phase.n + ' of 12: ' + phase.title}${phase.note ? ' (' + phase.note + ')' : ''}\n` : '', L('Done this week', doneWk), L('Coming up (next two weeks)', sessions), L('Due from ' + cn, due('customer')), L('Due from Facilio', due('facilio')), L('Waiting on sign-off', waiting), L('Change requests awaiting your approval', crs), L('High risks', risks), L('Data onboarding', onb)].filter(Boolean).join('\n') + '\nKind regards,\nFacilio Implementation Team';
+    const body = [stageLine(phase), L('Done this week', doneWk), L('Coming up (next two weeks)', sessions), L('Due from ' + cn, due('customer')), L('Due from Facilio', due('facilio')), L('Waiting on sign-off', waiting), L('Change requests awaiting your approval', crs), L('High risks', risks), L('Data onboarding', onb)].filter(Boolean).join('\n') + '\nKind regards,\nFacilio Implementation Team';
     return { subject, body };
   }
-  V.digestDraft = digestDraft;
+  V.digestDraft = digestDraft; V.signoffName = soName;
   GT.digest = () => { const d = digestDraft(); const posted = I().list('digest').sort((a, b) => (b.at || '').localeCompare(a.at || ''))[0];
     return `<div class="grid g2"><div class="card"><div class="card-h"><h3>This week's update</h3><span class="small muted">Built from actions, sessions, sign-offs, change requests, risks and onboarding</span></div><div class="card-b"><label class="f">Subject</label><input type="text" id="dg_subj" value="${esc(d.subject)}"><label class="f" style="margin-top:10px">Message</label><textarea id="dg_body" rows="18" style="font-family:inherit">${esc(d.body)}</textarea>
       <div class="row" style="margin-top:10px"><button class="btn primary" data-act="dgPost">Post to the customer Overview</button><button class="btn" data-act="dgMail">Open in email</button><button class="btn" data-act="dgOutlook" title="Opens a draft in Outlook on the web. Nothing is sent.">Compose in Outlook</button><button class="btn" data-act="openOutlook">Open Outlook</button><button class="btn" data-act="dgCopy">${ico('copy')}Copy</button></div>${canEdit() && !cust() && !S.readonly ? `<div class="row" style="margin-top:8px"><button class="btn sm ai-btn" data-act="dgAi" title="DeepSeek rewrites the text above in plain words. Nothing is posted or sent.">✦ Polish with DeepSeek</button><button class="btn sm" data-act="dgClaude" title="Claude writes it and saves it as a draft under Deliverables & AI">Ask Claude</button><span class="xs muted">Nothing is posted or sent. You still press Post or send.</span></div>` : ''}</div></div>
@@ -256,4 +265,5 @@
   ACT.crImpactGo = a => { const c = I().get('cr', a.getAttribute('data-id')); const x = impactOf(c)[Number(a.getAttribute('data-i'))]; closeDrawer(); if (!x) return; Object.assign(S.ui, x.ui || {}); V.go(x.view); };
   ACT.crImpactDone = a => V.busy(a, async () => { const cid = a.getAttribute('data-id'); await I().put('cr', cid, Object.assign({}, I().get('cr', cid), { impactReviewedBy: S.user.name || S.user.email, impactReviewedAt: new Date().toISOString() })); closeDrawer(); toast('Impact review recorded'); });
   V.crNo = crNo;
+  if (typeof module !== 'undefined' && module.exports) module.exports = { soName, stageLine };
 })(typeof window !== 'undefined' ? window : globalThis);
