@@ -31,9 +31,25 @@
   const soTone = s => (s === 'signed' ? 'ok' : s === 'requested' ? 'warn' : s === 'concern' ? 'bad' : '');
   const goLive = (st) => { if (!st.goLive) return null; const n = V.daysBetween(V.today(), st.goLive); return { date: st.goLive, n }; };
 
+  // Pilot (19 Nov 2026): the team dashboard opens like the reference pages the user liked: a small mono line (customer and stage), the project name as a large display title,
+  // one plain sentence of where it stands, one main action, and four numbers in a strip. Every figure comes from data the page already loads; nothing is invented.
+  function pilotHero(c, p, cur) {
+    const openT = c.tasks.filter(t => !['Done', 'Cancelled'].includes(t.status));
+    const late = openT.filter(t => (t.due && t.due < c.today) || (t.eta && t.eta < c.today)).length + c.open.filter(c.late).length;
+    const risks = c.raid.filter(r => r.status !== 'Closed').length, wait = c.custOpen.length;
+    const reqs = (S.ws && S.ws.requirements) || [], conf = reqs.filter(r => r.status === 'Confirmed').length;
+    const stage = cur ? 'Stage ' + V.stageOfStep(cur.i) + ' · ' + V.roadmapName(V.stageOfStep(cur.i)) : 'Plan not started';
+    const lede = [late ? late + ' item' + (late === 1 ? ' is' : 's are') + ' overdue' : 'Nothing is overdue', wait ? wait + ' waiting on the customer' : 'nothing waiting on the customer', c.st.n ? c.st.actual + '% of the plan done against ' + c.st.planned + '% planned' : 'no dated plan yet'].join(', ') + '.';
+    const stat = (n, l, tone) => '<div class="pd-stat' + (tone ? ' ' + tone : '') + '"><b>' + n + '</b><span>' + l + '</span></div>';
+    return '<section class="pd-hero" aria-label="Project summary"><p class="pd-eye">' + esc([p.customer, stage].filter(Boolean).join('  ·  ')) + '</p>'
+      + '<h1 class="pd-title">' + esc(p.name || 'Project') + '</h1><p class="pd-lede">' + esc(lede) + '</p>'
+      + '<div class="pd-cta"><button type="button" class="btn primary" data-act="nav" data-view="tasks">Open the task board</button><button type="button" class="btn" data-act="nav" data-view="intro">Plan and schedule</button></div>'
+      + '<div class="pd-stats">' + stat(openT.length, 'Open tasks') + stat(late, 'Overdue', late ? 'bad' : '') + stat(risks, 'Open risks', risks ? 'warn' : '') + stat(conf + '<small>/' + reqs.length + '</small>', 'Requirements confirmed') + '</div></section>';
+  }
   V.projdash = { html() {
     I().load(KINDS); const c = ctx(); const k = c.k; const p = S.project || {}; const cur = c.ph.cur >= 0 ? c.ph.info[c.ph.cur] : null; const gl = goLive(c.st); const gv = c.st.actual - c.st.planned;
-    const head = '<div class="page-header"><div class="t"><h1>' + (k ? 'Your project dashboard' : 'Project dashboard') + '</h1><p>' + (k ? 'Where ' + esc(p.name || 'your project') + ' stands today, what is waiting on you, and what is coming next.' : 'The state of ' + esc(p.name || 'the project') + ' at a glance: progress, what is late, what is waiting on the customer and what is next.') + '</p></div></div>';
+    let head = '<div class="page-header"><div class="t"><h1>' + (k ? 'Your project dashboard' : 'Project dashboard') + '</h1><p>' + (k ? 'Where ' + esc(p.name || 'your project') + ' stands today, what is waiting on you, and what is coming next.' : 'The state of ' + esc(p.name || 'the project') + ' at a glance: progress, what is late, what is waiting on the customer and what is next.') + '</p></div></div>';
+    if (!k) { head = pilotHero(c, p, cur); }
     const hero = fcard(k ? 'Your project' : 'Delivery progress', '<div class="cs-hero-row"><div>' + fring(c.st.actual, 104) + '</div><div class="cs-hero-t"><b>' + (cur ? 'Stage ' + V.stageOfStep(cur.i) + ' · ' + esc(V.roadmapName(V.stageOfStep(cur.i))) : 'Plan not started') + '</b><span>' + (c.st.n ? c.st.actual + '% done against ' + c.st.planned + '% planned' + (gv ? ' · ' + (gv > 0 ? gv + ' points ahead' : -gv + ' points behind') : ' · on plan') : 'No dated plan yet') + '</span><span>' + (gl ? 'Go-live ' + esc(fd(gl.date)) + (gl.n >= 0 ? ' · ' + gl.n + ' day' + (gl.n === 1 ? '' : 's') + ' to go' : ' · date has passed') : '') + '</span></div></div>');
     const secs = [fsec('Where we are', hero)];
     if (k) {

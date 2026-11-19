@@ -2968,3 +2968,17 @@ body .ki-fmt:not(#_):not(#__) ul li::marker { color: #86868b; }
 body .ki-fmt b:not(#_):not(#__) { font-weight: 600; }
 body .ki-fmt code:not(#_):not(#__) { font: 12.5px ui-monospace, Consolas, monospace; background: rgba(0, 0, 0, .05); padding: 1px 5px; border-radius: 5px; }
 body .ki-fmt .ki-src:not(#_):not(#__) { display: inline-block; vertical-align: 1px; margin-left: 2px; padding: 0 5px; border-radius: 6px; background: #EAF2FF; color: #1570EF; font-size: 10.5px; font-weight: 600; line-height: 16px; }
+
+/* Pilot (19 Nov 2026), team project dashboard: the reference pages' type system (display title, mono labels, one lede, one main action, a number strip) on the Apple canvas. Facilio blue only. */
+html body .pd-hero:not(#_):not(#__):not(#___) { padding: 18px 0 30px; margin: 0 0 8px; background: none; border: 0; box-shadow: none; }
+html body .pd-hero .pd-eye:not(#_):not(#__):not(#___) { margin: 0; font: 500 12px/16px "IBM Plex Mono", ui-monospace, monospace !important; letter-spacing: .08em; text-transform: uppercase; color: #6e6e73; }
+html body .pd-hero .pd-title:not(#_):not(#__):not(#___) { margin: 12px 0 12px; font: 600 52px/1.04 "Plus Jakarta Sans", Inter, system-ui, sans-serif !important; letter-spacing: -.035em !important; color: #1d1d1f; text-wrap: balance; }
+html body .pd-hero .pd-lede:not(#_):not(#__):not(#___) { margin: 0; max-width: 640px; font: 400 17px/1.55 Inter, system-ui, sans-serif !important; color: #424245; text-wrap: pretty; }
+html body .pd-hero .pd-cta:not(#_):not(#__):not(#___) { display: flex; flex-wrap: wrap; gap: 10px; margin: 24px 0 30px; }
+html body .pd-hero .pd-cta .btn:not(#_):not(#__):not(#___) { min-height: 42px; padding: 0 20px !important; font-size: 15px !important; }
+html body .pd-hero .pd-stats:not(#_):not(#__):not(#___) { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; padding-top: 22px; border-top: 1px solid rgba(0, 0, 0, .08); max-width: 880px; }
+html body .pd-hero .pd-stat b:not(#_):not(#__):not(#___) { display: block; font: 600 40px/1 "Plus Jakarta Sans", Inter, system-ui, sans-serif !important; letter-spacing: -.035em; color: #1d1d1f; font-variant-numeric: tabular-nums; }
+html body .pd-hero .pd-stat b small:not(#_):not(#__):not(#___) { font-size: .5em; letter-spacing: 0; color: #86868b; font-weight: 500; }
+html body .pd-hero .pd-stat span:not(#_):not(#__):not(#___) { display: block; margin-top: 10px; font: 500 11.5px/15px "IBM Plex Mono", ui-monospace, monospace !important; letter-spacing: .06em; text-transform: uppercase; color: #6e6e73; }
+html body .pd-hero .pd-stat.bad b:not(#_):not(#__):not(#___) { color: #d70015; } html body .pd-hero .pd-stat.warn b:not(#_):not(#__):not(#___) { color: #b25000; }
+@media (max-width: 760px) { html body .pd-hero .pd-title:not(#_):not(#__):not(#___) { font-size: 36px; } html body .pd-hero .pd-stats:not(#_):not(#__):not(#___) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
