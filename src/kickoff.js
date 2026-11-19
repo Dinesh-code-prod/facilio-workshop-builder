@@ -37,7 +37,7 @@
       if (mine !== pid()) return;
       if (V.assistantPaint) V.assistantPaint();
       if (changed || paint) repaint();
-    } catch (e) { if (mine !== pid()) return; k.err = e.message || 'The job list could not be loaded'; k.at = Date.now(); k.loading = false; k.jobs = k.jobs || []; repaint(); }
+    } catch (e) { if (mine !== pid()) return; const was = k.err; k.err = e.message || 'The job list could not be loaded'; k.at = Date.now(); k.loading = false; k.jobs = k.jobs || []; if (was !== k.err || paint) repaint(); }   // the same failure is not painted again on every poll (it re-rendered the page every 15 s)
   }
   function repaint() { if (!ours()) return; const a = document.activeElement; if (a && a.tagName === 'TEXTAREA' && a.closest('.ko')) { K().sig = ''; return; } V.render(); }   // skipped while typing: the next poll paints it
 
