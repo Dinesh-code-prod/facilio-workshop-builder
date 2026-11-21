@@ -44,8 +44,9 @@ export function installQuestions(d) {
     async live_ask(s, b) {
       if (!Array.isArray(b.chunks)) throw new HttpError(400, 'chunks must be a list of { speaker, at, text } pieces of the call, oldest first (up to ' + MAX_CHUNKS + ' per call).');
       const used = b.chunks.slice(-MAX_CHUNKS), dropped = b.chunks.length - used.length; const { p, prepared } = await prepare(s, b); const r = Q().liveAsk(prepared, used);
-      const text = new Map(), mod = new Map(); prepared.byModule.forEach(g => g.questions.forEach(q => { text.set(q.id, q.text); mod.set(q.id, g.label || g.module); }));
-      const row = x => ({ id: x.id, module: mod.get(x.id) || '', question: cut(text.get(x.id), 300) });
+      const text = new Map(), mod = new Map(), pri = new Map(); prepared.byModule.forEach(g => g.questions.forEach(q => { text.set(q.id, q.text); mod.set(q.id, g.label || g.module); pri.set(q.id, q.priority); }));
+      const row = x => ({ id: x.id, module: mod.get(x.id) || '', question: cut(text.get(x.id), 300), priority: pri.get(x.id) || '' });
+      r.stillOpen.sort((a, c) => (pri.get(a) === 'must' ? 0 : 1) - (pri.get(c) === 'must' ? 0 : 1));   // must-ask first, so the 30 shown carry the follow-ups the pull_clari recipe saves
       return { project: p.name, untrusted: UNTRUSTED, chunksUsed: used.length, droppedOlder: dropped, answered: r.answered.slice(0, 100).map(x => Object.assign(row(x), { confidence: x.confidence, evidence: x.evidence })), answeredCount: r.answered.length,
         nextSuggested: r.nextSuggested.map(x => Object.assign(row(x), { why: x.why })), stillOpenCount: r.stillOpen.length, stillOpen: r.stillOpen.slice(0, 30).map(id => row({ id })),
         note: 'A hint, not a decision: "likely" is the strongest claim and a person confirms. Nothing was changed in the project, and a spoken statement never becomes a requirement.' + (dropped ? ' Only the last ' + MAX_CHUNKS + ' pieces were used; ' + dropped + ' older ones were left out.' : '') };

@@ -40,7 +40,7 @@ Claude (web or Desktop): Settings, Connectors, Add custom connector, name `Facil
 
 **MSA to project.** Claude lists and reads the MSA with the Microsoft 365 connector, extracts it, calls `msa_extraction_save` (the "holding" space before a project exists); a person approves; `create_project_from_msa` creates the project and fills the contract and scope records. Code: `work/server/_msaextract.mjs`, `_msaapi.mjs`. Stage 1 is being rebuilt around this (E15, half done, see HANDOFF.md).
 
-**Prepared questions and live matching.** `session_questions` builds workshop questions from the project's records (every question cites its source) and matches live transcript lines to them (never certain: possible or likely). Rules: `work/server/_sessionquestions.mjs`; page `src/workshop.js`.
+**Prepared questions and live matching.** `session_questions` builds workshop questions from the project's records (every question cites its source) and matches live transcript lines to them (never certain: possible or likely). Rules: `work/server/_sessionquestions.mjs`; page `src/workshop.js`. Clari transcripts (21 Nov 2026): Facilio has no Clari connector; the job `pull_clari` reads the SharePoint folder Transcripts Clari (site SAMAI) with the Microsoft 365 connector, runs the live check on each saved transcript and suggests the still-open must-ask questions as follow-ups for the next session.
 
 **Task tracking and reminders.** `task_tracking` gives Claude the open tasks plus evidence and stores UNAPPROVED suggestions that a person accepts; `send_task_digest` and an assignment message send Teams DMs through Otto (needs the platform secret `teams_notify = on`). Code: `_tasksuggest.mjs`, `_tasksapi.mjs`, `_taskwatch.mjs`.
 

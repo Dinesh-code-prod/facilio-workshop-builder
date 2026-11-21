@@ -6,6 +6,10 @@
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   // kind: UPDATE (a new capability) or FIXES (something that was wrong now works)
   const RELEASES = [
+    { v: '3.2.0', date: '2026-11-21', kind: 'UPDATE', title: 'Pull my Clari transcripts reads SharePoint and checks your questions', notes: [
+      'Pull my Clari transcripts now reads the Transcripts Clari folder in SharePoint through the Microsoft 365 connector, checks which prepared questions were answered, and suggests follow-ups for the next session.',
+      'No Clari connector is needed. The job summary lists the questions that look answered, with the quote, and the ones still open; the must-ask questions still open arrive on the Questions tab as suggestions you keep or drop.'
+    ] },
     { v: '3.1.0', date: '2026-11-10', kind: 'UPDATE', title: 'Claude helper, a menu along the project life cycle, Guide me, a clearer chat, replies to Otto', notes: [
       'Claude helper: a light in the top bar is green while any teammate has Claude desktop running the Studio task, and amber when nobody has. A banner asks a person to set theirs up, a window explains it after a project is created, and the owners get a Teams message when requests have waited a day.',
       'Every Claude button sends its request to the queue and opens the Assistant with a live card: what you asked, how long it has waited and what Claude is doing. The chat shows who answered (Claude, DeepSeek or the project records) in different colours.',

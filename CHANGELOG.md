@@ -6,7 +6,14 @@ This file is written from the app's own **What's new** list ([src/whatsnew.js](s
 
 Looking for something else? Every deploy to the live site is in [docs/operations/DEPLOYS.md](docs/operations/DEPLOYS.md), what is planned next is in [docs/ROADMAP-REQUIREMENTS.md](docs/ROADMAP-REQUIREMENTS.md), and every single change is in the commit history on GitHub.
 
-**Versions:** 39, from 27 October 2026 to 10 November 2026. *New* marks something added; *Fix* marks something that was wrong and now works.
+**Versions:** 40, from 27 October 2026 to 21 November 2026. *New* marks something added; *Fix* marks something that was wrong and now works.
+
+## 3.2.0 · 21 November 2026 · New
+
+**Pull my Clari transcripts reads SharePoint and checks your questions**
+
+- Pull my Clari transcripts now reads the Transcripts Clari folder in SharePoint through the Microsoft 365 connector, checks which prepared questions were answered, and suggests follow-ups for the next session.
+- No Clari connector is needed. The job summary lists the questions that look answered, with the quote, and the ones still open; the must-ask questions still open arrive on the Questions tab as suggestions you keep or drop.
 
 ## 3.1.0 · 10 November 2026 · New
 

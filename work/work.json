@@ -1268,7 +1268,7 @@
       },
       "ref": {
        "type": "string",
-       "description": "Only for save_transcript: the Clari id or link, so saving again replaces it"
+       "description": "Only for save_transcript: the Clari call id, or the SharePoint or OneDrive file link of the transcript, so saving again replaces it"
       },
       "text": {
        "type": "string",

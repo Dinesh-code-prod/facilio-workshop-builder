@@ -8,6 +8,7 @@ Audits, reviews and status reports, each with a date. They describe how things w
 | [GUIDES-AND-DOCUMENTS-ANALYSIS-2026-11-08.md](GUIDES-AND-DOCUMENTS-ANALYSIS-2026-11-08.md) | Guides, UAT guide, solution document and imported documents: what exists, what was missing (8 Nov 2026) |
 | [MASTER-ASSESSMENT-2026-11-06.md](MASTER-ASSESSMENT-2026-11-06.md) | Master transformation: assessment and plan (6 Nov 2026) |
 | [REPORTS-AI-AUDIT-2026-11-07.md](REPORTS-AI-AUDIT-2026-11-07.md) | Reports: DeepSeek and Open in Claude audit (7 Nov 2026, roadmap A1c) |
+| [REQUIREMENT-SESSIONS-MAP-2026-11-21.md](REQUIREMENT-SESSIONS-MAP-2026-11-21.md) | Requirement sessions: every function and route from the session plan to questions, transcripts, findings and the job queue, with gaps (21 Nov 2026) |
 | [TABS-BACKUP-2026-11-07.md](TABS-BACKUP-2026-11-07.md) | Tabs backup (7 Nov 2026) |
 | [VEXA-REVIEW-2026-11-04.md](VEXA-REVIEW-2026-11-04.md) | Vexa as the base of a Facilio call bot: review of 4 Nov 2026 |
 | [audit-2026-11-01.md](audit-2026-11-01.md) | Delivery Studio: audit against the master prompt (1 Nov 2026) |
