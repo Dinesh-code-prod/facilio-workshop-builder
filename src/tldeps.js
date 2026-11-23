@@ -80,9 +80,9 @@
 
   // the extra controls sit in the timeline's own toolbar
   function toolbar() {
-    const bar = document.querySelector('.pl-tools'); if (!bar || bar.querySelector('.pl-dep-tools')) return; const edit = A().canEdit();
+    const bar = document.querySelector('.pl-opts-b') || document.querySelector('.pl-tools'); if (!bar || bar.querySelector('.pl-dep-tools')) return; const edit = A().canEdit();   // inside the Options menu (calm pass, 23 Nov 2026)
     const box = document.createElement('div'); box.className = 'pl-dep-tools';
-    box.innerHTML = `<label class="chk small"><input type="checkbox" data-change="tlCrit"${S.ui.tlCrit ? ' checked' : ''}> Critical path</label>${edit ? `<label class="chk small" title="When a task moves later, the tasks that wait for it move too"><input type="checkbox" data-change="tlFollow"${S.ui.tlFollow === false ? '' : ' checked'}> Move dependent tasks</label>` : ''}<button type="button" class="btn sm" data-act="tlCompact" aria-pressed="${S.ui.tlCompact !== false}">${S.ui.tlCompact !== false ? 'Show all columns' : 'Timeline only'}</button>${edit ? '<span class="xs muted">Link tasks: drag the dot at the end of a bar onto another bar. Keyboard: focus a bar and press L, choose with the arrow keys, Enter to link. Tab to a line and press Delete to remove it.</span>' : ''}<span id="plDepLive" class="sr-only" role="status" aria-live="polite"></span>`;
+    box.innerHTML = `<label class="chk small"><input type="checkbox" data-change="tlCrit"${S.ui.tlCrit ? ' checked' : ''}> Critical path</label>${edit ? `<label class="chk small" title="When a task moves later, the tasks that wait for it move too"><input type="checkbox" data-change="tlFollow"${S.ui.tlFollow === false ? '' : ' checked'}> Move dependent tasks</label>` : ''}<button type="button" class="btn sm" data-act="tlCompact" aria-pressed="${S.ui.tlCompact !== false}">${S.ui.tlCompact !== false ? 'Show all columns' : 'Timeline only'}</button>${edit ? '' : ''}<span id="plDepLive" class="sr-only" role="status" aria-live="polite"></span>`;
     bar.appendChild(box);
   }
 

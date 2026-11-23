@@ -11,7 +11,7 @@ async function open(w, h) {
   await p.evaluate(() => document.querySelector('[data-act="planTab"][data-t="cal"]').click()); await p.waitForSelector('.cal-title'); await p.waitForTimeout(1500); return p;
 }
 const mode = async (p, m) => { await p.evaluate(m => { const s = document.querySelector(`.cal-seg [data-m="${m}"], .cal-seg button[data-v="${m}"]`); if (s) s.click(); }, m); await p.waitForTimeout(700); };
-const title = p => p.evaluate(() => document.querySelector('.cal-title').textContent.trim()); const evs = p => p.evaluate(() => document.querySelectorAll('.cal-ev,.cal-chip,.cal-row').length);
+const title = p => p.evaluate(() => document.querySelector('.cal-title').textContent.trim()); const evs = p => p.evaluate(() => document.querySelectorAll('.cal-ev,.cal-chip,.cal-row,.cal-fcev').length);   // .cal-fcev: Month, Week and Day on FullCalendar (23 Nov 2026)
 const p = await open(1500, 950); const t0 = await title(p);
 check('month view shows plan items', (await evs(p)) > 0, String(await evs(p)));
 for (const m of ['week', 'day', 'year', 'month']) { await mode(p, m); check(`${m} view loads`, !!(await title(p))); }
@@ -35,11 +35,12 @@ check('the DeepSeek briefing opens as a draft for review', draft);
 await p.keyboard.press('Escape'); await p.evaluate(() => { const x = document.querySelector('[data-act="closeDrawer"]'); if (x) x.click(); }); await p.waitForTimeout(400);
 // agenda, hover preview, one-click chips, drag to reschedule with undo (19 Nov 2026)
 await mode(p, 'agenda'); check('agenda view lists dated items', await p.evaluate(() => document.querySelectorAll('.cal-agenda .cal-row').length > 0));
-await mode(p, 'month'); await p.hover('.cal-ev'); await p.waitForTimeout(300); check('pointing at an item shows its preview card', await p.evaluate(() => { const k = document.querySelector('.cal-hc'); return !!k && !k.hidden && /When/.test(k.textContent); }));
+await mode(p, 'month'); await p.waitForSelector('.cal-fcev, .cal-ev'); await p.hover('.cal-fcev, .cal-ev'); await p.waitForTimeout(300); check('pointing at an item shows its preview card', await p.evaluate(() => { const k = document.querySelector('.cal-hc'); return !!k && !k.hidden && /When/.test(k.textContent); }));
 const nBefore = await evs(p); await p.evaluate(() => document.querySelector('.cal-fchip[data-act="calChip"]').click()); await p.waitForTimeout(500); const nOff = await evs(p); await p.evaluate(() => document.querySelector('.cal-fchip[data-act="calChip"]').click()); await p.waitForTimeout(500);
 check('a phase chip hides and shows its items in one click', nOff < nBefore && (await evs(p)) === nBefore, `${nBefore} -> ${nOff}`);
-const dragged = await p.evaluate(() => { const el = document.querySelector('.cal-ev[draggable="true"]'); if (!el) return null; const wk = el.closest('.cal-wk'); const r = el.getBoundingClientRect(), w = wk.getBoundingClientRect(); const dt = new DataTransfer(); const at = (t, x, y) => (t === 'dragstart' ? el : wk).dispatchEvent(new DragEvent(t, { bubbles: true, cancelable: true, clientX: x, clientY: y, dataTransfer: dt }));
-  const x0 = r.left + 6, y = r.top + r.height / 2; const x1 = Math.min(w.right - 4, x0 + w.width / 7); at('dragstart', x0, y); at('dragover', x1, y); at('drop', x1, y); el.dispatchEvent(new DragEvent('dragend', { bubbles: true, dataTransfer: dt })); return el.getAttribute('aria-label'); });
+// FullCalendar drags with the pointer (not HTML drag and drop): press on a movable item and move it one day to the right
+const dragged = await (async () => { const h = await p.$('.cal-fcev.fc-event-draggable'); if (!h) return null; await h.scrollIntoViewIfNeeded(); const r = await h.boundingBox(), cell = await p.$('.cal-fc .fc-daygrid-day'); const w = cell ? (await cell.boundingBox()).width : 120;
+  const x0 = r.x + Math.min(20, r.width / 2), y = r.y + r.height / 2; await p.mouse.move(x0, y); await p.mouse.down(); await p.mouse.move(x0 + 10, y, { steps: 3 }); await p.mouse.move(x0 + w, y, { steps: 8 }); await p.mouse.up(); return h.getAttribute('aria-label'); })();
 await p.waitForTimeout(900); const undo = await p.$('.cal-undo button'); check('dragging an item to the next day moves it and offers Undo', !!dragged && !!undo, dragged || 'no draggable item');
 if (undo) { await undo.click(); await p.waitForTimeout(900); check('Undo puts the dates back', !(await p.$('.cal-undo'))); }
 await p.close();

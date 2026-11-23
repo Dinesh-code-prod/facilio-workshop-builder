@@ -14,8 +14,12 @@
   const monday = d => add(d, -dow(d)); const addMonths = (d, n) => { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(1); x.setUTCMonth(x.getUTCMonth() + n); return x.toISOString().slice(0, 10); };
   const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   // four phases (the same grouping the portfolio health uses): an accent for the edge and a soft tint for the fill, both from the Facilio palette
-  const PHASES = [['Discover and define', 0, 4, '#1570EF', '#EAF2FF', '#5FA0F7'], ['Build and validate', 4, 7, '#1D1A5E', '#E8EBF6', '#1570EF'], ['Launch', 7, 10, '#E5197F', '#FDEAF3', '#FF6FAE'], ['Hand over', 10, 12, '#8DB8FF', '#F0F6FF', '#C3D9FF']];   // the four Facilio colours: blue, navy, pink and sky; each with a pale tint and a second stop for the few gradients (edge, progress)
+  const PHASES = [['Discover and define', 0, 4, '#1570EF', '#EEF4FF', '#5FA0F7'], ['Build and validate', 4, 7, '#0E9384', '#E6F7F4', '#5CC7B8'], ['Launch', 7, 10, '#E8710A', '#FFF4E8', '#F7A35C'], ['Hand over', 10, 12, '#12A35B', '#EAF7EF', '#6BCB94']];   // the four Facilio colours: blue, navy, pink and sky; each with a pale tint and a second stop for the few gradients (edge, progress)
   const OTHER = { a: '#5B6B99', t: '#EEF2F8', g: '#8C9AC2' };
+  // light, energetic redesign (user, 23 Nov 2026): colour says what KIND of item it is; the phase strip above still shows the phases
+  const CATS = [['meeting', 'Meetings and workshops', '#E8710A', '#FFF4E8'], ['milestone', 'Milestones and sign-offs', '#B7791F', '#FFF6DB'], ['uat', 'UAT', '#0E9384', '#E6F7F4'], ['training', 'Training', '#12A35B', '#EAF7EF'],
+    ['activity', 'Plan activities', '#1570EF', '#EEF4FF'], ['deadline', 'Deadlines (tasks and actions)', '#D92D20', '#FEF0EF'], ['mine', 'My reminders and events', '#64748B', '#F1F3F6']];
+  const catOf = e => (e.src === 'cal' ? 'mine' : e.src === 'action' || e.src === 'task' ? 'deadline' : e.src === 'session' || e.step === 1 ? 'meeting' : e.src === 'signoff' || [2, 8, 11].includes(e.step) || /go-?live|sign-?off|milestone/i.test(e.title) ? 'milestone' : e.step >= 5 && e.step <= 8 ? 'uat' : e.step === 9 ? 'training' : 'activity');
   const phaseOf = i => PHASES.findIndex(p => i >= p[1] && i < p[2]);
   const SO_STEP = { brd: 2, uat: 8, golive: 11 };
   const st = () => { const c = S.ui.cal = S.ui.cal || { mode: 'month', date: V.today(), hide: [], q: '' }; return c; };
@@ -23,12 +27,13 @@
 
   function events() {
     const out = []; const c = st(); const td = F.doc('plan_struct') || {}; const meet = new Set(); steps = V.planSteps ? V.planSteps() : [];
-    const mk = e => { const p = e.step >= 0 ? phaseOf(e.step) : -1; const col = p >= 0 ? { a: PHASES[p][3], t: PHASES[p][4], g: PHASES[p][5] } : OTHER; e.g = col.g; e.ph = p; e.a = col.a; e.t = col.t; e.key = e.kind === 'ghost' ? 'action' : e.kind === 'mine' ? 'mine' : p >= 0 ? 'p' + p : 'other'; out.push(e); };
+    const mk = e => { e.ph = e.step >= 0 ? phaseOf(e.step) : -1; const k = CATS.find(x => x[0] === catOf(e)); e.a = k[2]; e.t = k[3]; e.g = k[2]; e.key = k[0]; out.push(e); };
     (td.rows || []).filter(r => !r.isPhase && D(r.start)).forEach((r, i) => { const end = D(r.end) && r.end >= r.start ? r.end : r.start; const step = V.planStepOf ? V.planStepOf(r) : -1; if (step === 1) meet.add(r.start); mk({ id: 'p' + i, src: 'plan', step, grp: String(r.phase || '').trim(), title: r.title || 'Task', start: r.start, end, done: r.status === 'Done', late: r.status !== 'Done' && end < V.today(), r }); });
     const sess = cust() ? ((F.doc('schedule_published') || {}).sessions || []) : ((F.doc('planner') || {}).sessions || []);
     sess.forEach((s, i) => { if (D(s.date) && s.status !== 'cancelled' && !meet.has(s.date)) mk({ id: 's' + i, src: 'session', step: 1, title: 'Workshop: ' + (s.title || 'Session ' + (s.no || '')), start: s.date, end: s.date, done: s.status === 'completed', time: s.time || '' }); });
     if (I().ready(['action'])) I().list('action').forEach(a => { if (a.status !== 'Done' && D(a.due) && (!cust() || a.side === 'customer')) mk({ id: 'a' + a.id, src: 'action', kind: 'ghost', step: -1, title: a.text || 'Action', start: a.due, end: a.due, late: a.due < V.today(), who: a.owner, side: a.side }); });
     if (!cust() && I().ready(['signoff'])) I().list('signoff').forEach(x => { if (x.status !== 'signed' && D(x.due)) mk({ id: 'g' + x.id, src: 'signoff', step: SO_STEP[x.id] != null ? SO_STEP[x.id] : -1, mark: '◆ ', title: ({ brd: 'BRD sign-off', uat: 'UAT sign-off', golive: 'Go-live acceptance' })[x.id] || 'Sign-off', start: x.due, end: x.due, late: x.due < V.today() }); });
+    if (!cust() && I().ready(['task'])) I().list('task').forEach(t => { const d = D(t.due) || D(t.eta); if (d && !['Done', 'Cancelled'].includes(t.status)) mk({ id: 't' + t.id, src: 'task', kind: 'ghost', step: -1, title: t.title || 'Task', start: d, end: d, late: d < V.today(), who: t.owner, tid: t.id }); });
     if (!cust() && I().ready(['cal'])) I().list('cal').forEach(x => { if (D(x.date)) mk({ id: 'c' + x.id, src: 'cal', kind: 'mine', step: -1, title: x.title || 'Reminder', start: x.date, end: D(x.end) && x.end >= x.date ? x.end : x.date, time: x.time || '', done: !!x.done, item: x }); });
     const q = (c.q || '').trim().toLowerCase(); const list = out.filter(e => !c.hide.includes(e.key) && (!c.own || [c.own, 'b'].includes(ownOf(e))) && (!q || e.title.toLowerCase().includes(q)));
     cache = {}; list.forEach(e => { cache[e.id] = e; }); return list.sort((a, b) => a.start.localeCompare(b.start) || (b.end > b.start) - (a.end > a.start) || (a.time || '99').localeCompare(b.time || '99') || a.title.localeCompare(b.title));
@@ -85,9 +90,9 @@
   const chipRow = (rows, c) => { const cn = String((S.project && S.project.customer) || '').trim().split(/\s+/).slice(0, 2).join(' ') || 'Customer';
     return `<div class="cal-chips" role="group" aria-label="Show on the calendar">${rows.map(r => `<button type="button" class="cal-fchip${c.hide.includes(r.key) ? ' off' : ''}" data-act="calChip" data-t="${r.key}" aria-pressed="${!c.hide.includes(r.key)}">${r.sw}${esc(r.name)}</button>`).join('')}<span class="cal-chips-sep" aria-hidden="true"></span>${[['', 'Everyone'], ['f', 'Facilio'], ['c', cn]].map(([v, l]) => `<button type="button" class="cal-fchip own${(c.own || '') === v ? ' on' : ''}" data-act="calOwn" data-v="${v}" aria-pressed="${(c.own || '') === v}">${esc(l)}</button>`).join('')}</div>`; };
   V.planCalendar = { html() {
-    const c = st(); const need = ['action', 'signoff'].concat(cust() ? [] : ['cal']); if (!I().ready(need) && !asked[need.join()]) { asked[need.join()] = 1; I().load(need).then(() => V.render()); }
+    const c = st(); const need = ['action', 'signoff'].concat(cust() ? [] : ['cal', 'task']); if (!I().ready(need) && !asked[need.join()]) { asked[need.join()] = 1; I().load(need).then(() => V.render()); }
     const evs = events();
-    const rows = PHASES.map((p, k) => ({ key: 'p' + k, name: p[0], sw: `<i style="background:${p[3]}"></i>` })).concat([{ key: 'other', name: 'Other plan items', sw: `<i style="background:${OTHER.a}"></i>` }, { key: 'action', name: 'Actions due', sw: '<i class="g"></i>' }].concat(cust() ? [] : [{ key: 'mine', name: 'My reminders and events', sw: '<i class="m"></i>' }]));
+    const rows = CATS.filter(k => !cust() || k[0] !== 'mine').map(k => ({ key: k[0], name: k[1], sw: `<i style="background:${k[2]}"></i>` }));
     const hid = c.hide.filter(k => rows.some(r => r.key === k)).length;
     const fpop = c.filt ? `<div class="cal-pop cal-fp" role="dialog" aria-label="Choose what the calendar shows"><div class="cal-fh"><b>Show on the calendar</b><button type="button" class="cal-link" data-act="calAll">Show all</button></div>${rows.map(r => `<label class="cal-fi${c.hide.includes(r.key) ? ' off' : ''}"><input type="checkbox" data-change="calType" data-t="${r.key}"${c.hide.includes(r.key) ? '' : ' checked'}>${r.sw}<span>${esc(r.name)}</span></label>`).join('')}</div><button type="button" class="cal-scrim" data-act="calFilter" aria-label="Close"></button>` : '';
     const filt = `<div class="cal-tw cal-ft"><button type="button" class="cal-fb${hid ? ' on' : ''}" data-act="calFilter" aria-haspopup="dialog" aria-expanded="${!!c.filt}">Filter${hid ? ' · ' + hid + ' hidden' : ''}<span aria-hidden="true">▾</span></button>${fpop}</div>`;
@@ -97,13 +102,32 @@
       <button type="button" class="cal-today" data-act="calToday" title="Today (T)">Today</button><span class="cal-gap"></span>
       <div class="cal-seg" role="tablist">${['day', 'week', 'month', 'year', 'agenda'].map(m => `<button type="button" role="tab" aria-selected="${c.mode === m}" class="${c.mode === m ? 'on' : ''}" data-act="calMode" data-m="${m}" title="${m[0].toUpperCase() + m.slice(1)} (${m[0].toUpperCase()})">${m[0].toUpperCase() + m.slice(1)}</button>`).join('')}</div>
       ${filt}${ai}<input class="cal-q" type="search" placeholder="Search" aria-label="Search the calendar" value="${esc(c.q)}" data-change="calSearch">${canEdit() ? '<button class="cal-new" data-act="calAdd" title="New reminder (N)">+ Reminder</button>' : ''}</div></div>`;
-    const body = c.mode === 'agenda' ? agenda(evs, c.date) : c.mode === 'month' ? monthGrid(evs, c.date) : c.mode === 'week' ? weekGrid(evs, c.date) : c.mode === 'day' ? dayList(evs, c.date) : `<div class="cal-year">${Array.from({ length: 12 }, (_, m) => mini(evs, c.date.slice(0, 4) + '-' + String(m + 1).padStart(2, '0') + '-01', c.date)).join('')}</div>`;
+    // Month, Week and Day are drawn by FullCalendar (vendor/fullcalendar.min.js, MIT standard bundle) from the same events; the older grids stay as the fallback if it cannot load
+    const fcv = FCV[c.mode]; if (fcv && !fcFail) setTimeout(() => mountFc(evs, c), 0);
+    const body = fcv && !fcFail ? `<div class="cal-fc" id="calFc" aria-label="Calendar"></div>` : c.mode === 'agenda' ? agenda(evs, c.date) : c.mode === 'month' ? monthGrid(evs, c.date) : c.mode === 'week' ? weekGrid(evs, c.date) : c.mode === 'day' ? dayList(evs, c.date) : `<div class="cal-year">${Array.from({ length: 12 }, (_, m) => mini(evs, c.date.slice(0, 4) + '-' + String(m + 1).padStart(2, '0') + '-01', c.date)).join('')}</div>`;
     const none = !evs.length && !(F.doc('plan_struct') || {}).rows ? '<div class="cal-note">There is no dated plan yet, so only your own reminders will show. Import the plan in the Workbook tab, then it appears here.</div>' : '';
     const anim = c.anim; c.anim = false;
     return `<div class="cal"><div class="cal-main">${bar}<div class="cal-in-wrap">${phaseStrip()}${chipRow(rows, c)}${none}<div class="cal-body${anim ? ' cal-in' : ''}">${body}</div></div></div></div>`;
   } };
 
   const go = () => { st().anim = true; V.render(); };
+  // FullCalendar: our toolbar drives it (mode and date live in S.ui.cal), it only draws; a click opens the same drawer (data-act="calOpen"), a drag calls the same moveBy with Undo
+  const FCV = { month: 'dayGridMonth', week: 'timeGridWeek', day: 'timeGridDay' }; let fcFail = false;
+  async function mountFc(evs, c) {
+    const el = document.getElementById('calFc'); if (!el || el.dataset.on) return; el.dataset.on = '1';
+    try { await V.loadScript('vendor/fullcalendar.min.js'); } catch (x) { fcFail = true; V.render(); return; }
+    if (!document.body.contains(el) || !root.FullCalendar) return;
+    const fc = new root.FullCalendar.Calendar(el, {
+      initialView: FCV[c.mode], initialDate: c.date, headerToolbar: false, firstDay: 1, height: 'auto', dayMaxEvents: 3, nowIndicator: true, slotMinTime: '07:00:00', slotMaxTime: '20:00:00', scrollTime: '08:00:00', allDayText: 'All day',
+      editable: canEdit(), eventDurationEditable: false, fixedWeekCount: false,
+      events: evs.map(e => ({ id: e.id, title: (e.mark || '') + e.title, start: e.time ? e.start + 'T' + e.time : e.start, end: e.time ? undefined : add(e.end, 1), allDay: !e.time, editable: dragOk(e), classNames: ['cal-fcev', 'c-' + e.key].concat(e.done ? ['done'] : [], e.late ? ['late'] : []) })),
+      eventDidMount: info => { const e = cache[info.event.id]; if (!e) return; const a = info.el; a.style.setProperty('--a', e.a); a.style.setProperty('--t', e.t); a.setAttribute('data-act', 'calOpen'); a.setAttribute('data-id', e.id); a.setAttribute('role', 'button'); a.setAttribute('tabindex', '0'); a.setAttribute('aria-label', e.title + ' · ' + stepName(e)); },
+      eventDrop: info => { const e = cache[info.event.id]; const to = info.event.startStr.slice(0, 10); info.revert(); if (e && to !== e.start) moveBy(e, dif(e.start, to)); },
+      dateClick: info => { if (canEdit()) form({ date: info.dateStr.slice(0, 10), time: info.allDay ? '' : info.dateStr.slice(11, 16) }); },
+      navLinks: true, navLinkDayClick: d => { const x = st(); x.date = d.toISOString().slice(0, 10); x.mode = 'day'; go(); }
+    });
+    fc.render();
+  }
   ACT.calStep = a => { const c = st(), n = Number(a.getAttribute('data-s')); c.date = c.mode === 'day' ? add(c.date, n) : c.mode === 'week' ? add(c.date, 7 * n) : c.mode === 'month' ? addMonths(c.date, n) : c.mode === 'agenda' ? add(c.date, 42 * n) : addMonths(c.date, 12 * n); go(); };
   ACT.calToday = () => { st().date = V.today(); go(); };
   ACT.calMode = a => { st().mode = a.getAttribute('data-m'); go(); };
@@ -127,7 +151,7 @@
     await V.claudeHandoff({ title: 'Calendar briefing with Claude', task, url: `/api/projects/${S.project.id}/ai/pack`, body, replyUrl: `/api/projects/${S.project.id}/ai/import`, replyBody: reply => ({ task, content: reply }), expect: { format: 'text', note: 'A short Markdown briefing with the headings the prompt asks for' },
       extra: 'The prompt holds the plan, actions and sign-offs of this project for the period. It runs in your own Claude account. The reply becomes an unapproved draft that a person reviews.', onReply: async r => { await I().load(['ai'], true); toast('Briefing imported for review'); if (V.ACT.aiOpen) V.ACT.aiOpen({ getAttribute: () => r.item.id }); } }); });
   ACT.calSearch = el => { st().q = el.value; V.render(); };
-  ACT.calOpen = a => { const e = cache[a.getAttribute('data-id')]; if (!e) return; if (e.src === 'cal') return form(e.item);
+  ACT.calOpen = a => { const e = cache[a.getAttribute('data-id')]; if (!e) return; if (e.src === 'cal') return form(e.item); if (e.src === 'task') { S.ui.tkOpenOnce = e.tid; return V.go('tasks'); }
     const r = e.r || {}; const rows = [['When', V.fmtDate(e.start) + (e.end > e.start ? ' to ' + V.fmtDate(e.end) : '') + (e.time ? ' · ' + e.time : '')], r.owner ? ['Owner', r.owner] : null, r.status ? ['Status', r.status + (Number(r.pct) ? ' · ' + r.pct + '%' : '')] : null, e.who ? ['Owner', e.who] : null, e.late ? ['Note', 'Past its date and not done'] : null].filter(Boolean);
     const go2 = e.src === 'plan' ? 'plan' : e.src === 'action' || e.src === 'signoff' ? 'governance' : 'planner';
     drawer(e.title, `<div class="cal-dh" style="${sty(e)}"><i></i><span>${esc(stepName(e))}</span></div><dl class="cal-dl">${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl><p class="xs muted">This comes from the project ${e.src === 'plan' ? 'plan' : e.src === 'session' ? 'workshop schedule' : e.src === 'action' ? 'actions' : 'sign-offs'}. Change it there and the calendar follows.</p>`, `<span class="spacer"></span><button class="btn" data-act="closeDrawer">Close</button><button class="btn primary" data-act="calGo" data-v="${go2}">Open ${e.src === 'plan' ? 'the plan' : e.src === 'action' || e.src === 'signoff' ? 'Governance' : 'the schedule'}</button>`); };
