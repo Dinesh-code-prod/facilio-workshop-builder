@@ -36,8 +36,8 @@
     html() {
       const c = cust(); const who = (S.project && S.project.customer) || 'your team';
       return `<div class="page-header"><div class="t"><h1>Product Tour</h1><p>${c ? `This is how Facilio will look and work for ${esc(who)}. Real Facilio screens, shown with sample data.` : 'Use this in requirement sessions: show the customer how Facilio looks and how each action works. They see the same page.'}</p></div></div>
-        <div class="page-body"><div class="notice">These are Facilio's own screens with sample data (Acme Facilities), not ${esc(who)}'s data. Your own setup is shaped in the workshops, so the fields and steps you see here can be changed to fit how you work.</div>
-        ${V.sfBody(!c)}${journeys()}</div>`;
+        <div class="page-body"><details class="sf-more" open><summary>Every screen, to open at full size</summary><div class="notice">These are Facilio's own screens with sample data (Acme Facilities), not ${esc(who)}'s data. Your own setup is shaped in the workshops, so the fields and steps you see here can be changed to fit how you work.</div>
+        ${V.sfBody(!c)}${journeys()}</details></div>`;   // calm pass (user, 23 Nov 2026): src/tourplayer.js closes this fold when the guided tour leads the page
     }
   };
   // opens one screen: the full-size picture, or (team only) the live clickable screen, which needs Facilio sign-in in this browser
