@@ -230,7 +230,10 @@
   async function moveTo(id, status, focus) {
     const t = I().get('task', id); if (!t || !status || t.status === status || !STATUS.includes(status)) return;
     if (status === 'Done' && t.question && !(t.question.final || '').trim()) { toast('Record the final response to the customer question first (open the task).', 6000, true); V.render(); if (focus) refocus(id, focus === 'sel'); return; }
-    try { await save(t, { status }, tid(t) + ' moved to ' + status); } catch (e) { toast(e.message, 6000, true); V.render(); } if (focus) refocus(id, focus === 'sel'); }
+    try { await save(t, { status }, tid(t) + ' moved to ' + status); } catch (e) { toast(e.message, 6000, true); V.render(); if (focus) refocus(id, focus === 'sel'); return; } if (focus) refocus(id, focus === 'sel'); land(id); }
+  // the moved card settles into its new column with a small spring (Motion, vendor/motion.min.js); skipped when the person asks for less motion
+  const land = id => setTimeout(() => { if (document.visibilityState !== 'visible' || (root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches)) return; const c = document.querySelector('.kb-card[data-id="' + (root.CSS && CSS.escape ? CSS.escape(id) : id) + '"]'); if (!c) return;
+    V.loadScript('vendor/motion.min.js').then(() => { if (root.Motion && document.body.contains(c)) root.Motion.animate(c, { scale: [0.94, 1], opacity: [0.55, 1] }, { type: 'spring', bounce: 0.35, duration: 0.45 }); }).catch(() => { }); }, 120);
   ACT.tkClearQ = () => { S.ui.tkQ = ''; V.render(); };
   ACT.tkToTeams = a => V.busy(a, async () => { const r = await API.post(`/api/projects/${S.project.id}/tasks/${encodeURIComponent(a.getAttribute('data-id'))}/to-my-teams`, {}); toast(r.sent ? 'Sent to your Teams chat. Nobody else was messaged.' : (r.why || 'Nothing was sent.'), r.sent ? 4000 : 7000, !r.sent); });
   ACT.tkBrief = a => V.busy(a, async () => { const on = S.ui.tkBrief !== true; const r = await API.post(`/api/projects/${S.project.id}/daily-brief`, { on }); S.ui.tkBrief = !!r.on; V.render(); toast(r.on ? 'Daily brief is on for this project: owners get their tasks in Teams each morning.' : 'Daily brief is off for this project.', 5000); });

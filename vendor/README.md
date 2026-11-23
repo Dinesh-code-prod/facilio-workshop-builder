@@ -11,6 +11,7 @@ Ready-made code from other people that the app loads when it needs it. Nothing h
 | `pdfmake.min.js`, `vfs_fonts.js`, `pdfjs/` | Makes PDFs and reads PDFs |
 | `pptx-renderer.es.js` | Reads PowerPoint decks (the kick-off deck) |
 | `jszip.min.js` | Opens and builds ZIP files |
+| `motion.min.js` (+ `motion.LICENSE.md`) | Motion 14.14.0, the plain-browser build (MIT, no React), for the few animations CSS cannot do: the Home tiles counting up and a task card settling into its new column; about 190 KB, loaded only when used |
 | `fullcalendar.min.js` | FullCalendar 6.1.22 Standard Bundle (MIT, the free plugins only: month, week, day, list, drag and drop; no premium plugin), draws the Month, Week and Day views of the project calendar (`src/plancal.js`); about 280 KB, loaded only when the calendar opens |
 | `tesseract/` | Reads text out of pictures (offline) |
 | `fonts/` | The fonts, each with its licence (Carlito is the PDF body font: same widths as Calibri, SIL OFL, from Google Fonts) |

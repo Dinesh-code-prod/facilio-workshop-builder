@@ -35,7 +35,15 @@
   // three soft colour tiles, the three things to do next and a seven-part stage bar. Everything else (readiness, lifecycle, charts) sits behind
   // "Show charts and details" (src/stagedash.js). Every figure comes from data the page already loads; nothing is invented.
   const ROAD = [1, 2, 3, 4, 5, 7, 8];
+  // the three tile numbers count up once per project visit (Motion, vendor/motion.min.js); skipped when the person asks for less motion
+  function countUp() {
+    const els = [...document.querySelectorAll('.ca-hero .ca-tile b')]; if (!els.length || document.visibilityState !== 'visible' || (root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+    V.loadScript('vendor/motion.min.js').then(() => { const M = root.Motion; if (!M) return; els.forEach(el => { const final = el.textContent.trim(), m = /^(\d+)(%?)$/.exec(final); if (!m || !+m[1]) return;
+      M.animate(0, +m[1], { duration: 0.8, ease: [0.32, 0.72, 0, 1], onUpdate: v => { el.textContent = Math.round(v) + m[2]; } });
+      setTimeout(() => { el.textContent = final; }, 1000); }); }).catch(() => { });   // the real figure always wins, even if the page was hidden and frames never ran
+  }
   function calmHero(c, p, cur) {
+    if (S.project && S.ui.caCount !== S.project.id) { S.ui.caCount = S.project.id; setTimeout(countUp, 30); }
     const openT = c.tasks.filter(t => !['Done', 'Cancelled'].includes(t.status));
     const lateT = openT.filter(t => (t.due && t.due < c.today) || (t.eta && t.eta < c.today)), lateA = c.open.filter(c.late);
     const late = lateT.length + lateA.length, risks = c.raid.filter(r => r.status !== 'Closed').length, wait = c.custOpen.length;
