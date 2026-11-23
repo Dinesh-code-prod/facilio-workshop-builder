@@ -16,3 +16,10 @@ console.log('3 chat size checks passed');
 for (const kind of ['chat', 'pull_msa', 'fetch_mail', 'make_guide', 'build_solution_doc']) { const x = brief({ id: 'j', kind, params: { note: 'x' }, requestedBy: 'a@b.c' }, 'P'); assert.match(x.blocked, /needs_input/); assert.match(x.blocked, /SKILL\.md/); assert.match(x.blocked, /which Claude you are/); assert.match(x.blocked, /Never claim a skill or tool was used when it was not/); }
 assert.match(b('generate the FTR').instructions, /get_impl_skills first/); assert.match(b('generate the FTR').instructions, /blocked field/);
 console.log('2 missing-skill checks passed');
+// skill plans: every job kind planned exists, every job carries a plan in order, and a chat job gets the skills of the area it is about
+{ const { KINDS, skillPlan } = await import('../work/server/_jobs.mjs'); const { IMPL_SKILLS } = await import('../work/server/_skills.mjs');
+  for (const k of Object.keys(IMPL_SKILLS.jobSkills)) assert.ok(KINDS[k], 'a skill plan names a job kind that does not exist: ' + k);
+  const ftr = brief({ id: 'j', kind: 'make_ftr', params: {}, requestedBy: 'a@b.c' }, 'P').skills; assert.deepEqual(ftr.plan.map(x => x.skill), ['ftr-generator', 'ftr-executor', 'xlsx']); assert.equal(ftr.plan[0].needed, true); assert.match(ftr.plan[0].where, /facilio-impl-ai-skills\/ftr-generator\/SKILL\.md/); assert.match(ftr.rule, /Skills used:/);
+  assert.equal(skillPlan('build_solution_doc').plan[0].from, 'studio'); assert.deepEqual(skillPlan('fetch_mail').plan, []); assert.match(skillPlan('fetch_mail').rule, /No skill fits/);
+  assert.ok(skillPlan('chat', 'update the training guide').plan.some(x => x.skill === 'guidebook-builder')); assert.deepEqual(skillPlan('chat', 'hello').plan, []);
+  console.log('5 skill plan checks passed'); }

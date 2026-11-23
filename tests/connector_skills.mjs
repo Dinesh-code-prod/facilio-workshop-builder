@@ -40,6 +40,10 @@ await t('get_impl_skills narrows by deliverable and by words', async () => {
   const q = (await tool('get_impl_skills', { query: 'dashboard' })).data.skills.map(s => s.name); assert.deepEqual(q, ['Dashboard Builder']);
   const all = (await tool('get_impl_skills', {})).data.skills.length; assert.equal((await tool('get_impl_skills', { task: 'nothing-like-this' })).data.skills.length, all, 'an unknown deliverable returns the whole menu');
 });
+await t('get_impl_skills gives a job kind its skill plan in order, with versions', async () => {
+  const f = (await tool('get_impl_skills', { task: 'make_ftr' })).data; assert.deepEqual(f.jobPlan.map(x => x.skill), ['ftr-generator', 'ftr-executor', 'xlsx']); assert.deepEqual(f.skills.map(s => s.name), ['FTR Generator', 'FTR Executor']); assert.ok(f.skills.every(s => /^\d{4}\.\d\d\.\d\d$/.test(s.version)));
+  const b = (await tool('get_impl_skills', { task: 'draft_brd' })).data; assert.deepEqual(b.skills, [], 'no repository skill writes a BRD'); assert.deepEqual(b.jobPlan.map(x => x.skill), ['docx']);
+});
 await t('a hand-off from the UAT page tells Claude to confirm the project and offers the UAT recipes', async () => {
   const h = await call('POST', `/api/projects/${pid}/handoff`, { title: 'UAT plan and test cases', task: 'uat', view: 'delivery', page: 'Delivery', prompt: 'Do the UAT task now please', expect: { format: 'text' } }); assert.equal(h.status, 200);
   const g = await tool('project_jobs', { action: 'handoff_get', id: h.data.id }); assert.equal(g.status, 200);
