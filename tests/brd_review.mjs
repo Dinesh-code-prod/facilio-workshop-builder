@@ -10,9 +10,9 @@ assert.deepEqual(ITEMS.map(x => x[0]), ['intro', 'requirements', 'flows', 'field
 assert.equal(missing({}).length, 6); assert.equal(missing(null).length, 6); assert.deepEqual(missing({ intro: { by: 'a' }, flows: { by: '' }, apps: { by: 'b' } }), ['requirements', 'flows', 'fields', 'contract']); assert.deepEqual(missing(Object.fromEntries(ITEMS.map(x => [x[0], { by: 'a', at: 'x' }]))), []);
 const f = facts([{ status: 'Draft' }, { status: 'Confirmed' }, { status: 'Draft' }], [{ kind: 'flow', status: 'open' }, { kind: 'crosslink', status: 'open' }, { kind: 'field', status: 'applied' }, { kind: 'form', status: 'open' }, { kind: 'connectedapp', status: 'open' }, { kind: 'brdintro', status: 'open' }, { kind: 'weird', status: 'open' }], [{ kind: 'gap', status: 'open' }, { kind: 'ask', status: 'open' }, { kind: 'conflict', status: 'dismissed' }, { kind: 'outside_contract', status: 'open' }]);
 assert.deepEqual(f, { intro: 1, requirements: 2, flows: 2, fields: 1, apps: 1, contract: 2 });
-let h = V.brdReviewPanel(); assert.ok(h.includes('6 of 6 still to do') && h.includes('data-act="brdRvTick"') && !h.includes('Checked by'));
-rec = { review: { intro: { by: 'Asha <b>R</b>', at: 'x' } } }; h = V.brdReviewPanel(); assert.ok(h.includes('5 of 6 still to do') && h.includes('Checked by Asha &lt;b&gt;R&lt;/b&gt;') && !h.includes('<b>R</b>'), 'names are escaped');
-rec = { review: Object.fromEntries(ITEMS.map(x => [x[0], { by: 'a', at: 'x' }])) }; assert.ok(V.brdReviewPanel().includes('Every part is checked'));
+let h = V.brdReviewPanel(); assert.ok(h.includes('0 of 6 checked') && h.includes('data-act="brdRvTick"') && !h.includes('Checked by'));
+rec = { review: { intro: { by: 'Asha <b>R</b>', at: 'x' } } }; h = V.brdReviewPanel(); assert.ok(h.includes('1 of 6 checked') && h.includes('Checked by Asha &lt;b&gt;R&lt;/b&gt;') && !h.includes('<b>R</b>'), 'names are escaped');
+rec = { review: Object.fromEntries(ITEMS.map(x => [x[0], { by: 'a', at: 'x' }])) }; assert.ok(V.brdReviewPanel().includes('All checked'));
 globalThis.FWB.S.user.kind = 'customer'; assert.equal(V.brdReviewPanel(), '', 'customers never see it'); globalThis.FWB.S.user.kind = 'consultant';
 assert.ok(V.brd.html().includes('<div>BRD</div>') && V.brd.html().includes('class="rv"'), 'the BRD tab shows the checklist above the document');
 rec = { review: {} }; await V.ACT.brdStatus({ value: 'approved' }); assert.equal(statusCalls, 0, 'approving with parts not ticked is stopped'); assert.ok(toasted.includes('6 left'));

@@ -40,9 +40,11 @@
     // the parts the facts can prove tick themselves (nothing open; requirements need at least one); an automatic tick goes again when something opens. The introduction stays a person's tick.
     if (!ro()) { const now = auto(d.review, fa, (S.ws.requirements || []).length); if (now) { d.review = now; F.changed(null, null, { section: 'brddoc', render: false }); } }
     const rv = d.review || {}, todo = missing(rv).length;
-    const row = x => { const id = x[0], t = rv[id], n = fa[id]; return '<div class="rv-row' + (t && t.by ? ' on' : '') + '"><button type="button" class="rv-box" data-act="brdRvTick" data-id="' + id + '" aria-label="Mark ' + esc(x[1]) + ' as reviewed" aria-pressed="' + !!(t && t.by) + '"' + (ro() ? ' disabled' : '') + '>' + (t && t.by ? '✓' : '') + '</button><div><b>' + esc(x[1]) + '</b><span>' + esc(x[2]) + '</span>'
-      + (n ? '<em>' + n + (id === 'requirements' ? ' still a Draft' : id === 'contract' ? ' open check' + (n === 1 ? '' : 's') : ' proposal' + (n === 1 ? '' : 's') + ' not applied or dismissed') + '</em>' : '') + (t && t.by ? '<small>Checked by ' + esc(t.by) + '</small>' : '') + '</div></div>'; };
-    return '<section class="rv"><div class="rv-h"><div><b>Before this BRD is approved</b><span>' + (todo ? 'Check each part and tick it off with your name. ' + todo + ' of ' + ITEMS.length + ' still to do. The owner can approve when all are ticked.' : 'Every part is checked. The owner can approve the BRD.') + '</span></div></div>' + ITEMS.map(row).join('') + '</section>';
+    // calm pass (user, 23 Nov 2026): a compact grid of six ticks, one short fact each; the long description is the tooltip
+    const row = x => { const id = x[0], t = rv[id], n = fa[id], by = t && t.by;
+      const fact = n ? '<em>' + n + (id === 'requirements' ? ' still a Draft' : id === 'contract' ? ' open check' + (n === 1 ? '' : 's') : ' not applied') + '</em>' : by ? '<small>' + (t.auto ? 'Auto-checked' : 'Checked by ' + esc(by)) + '</small>' : '<small>To check</small>';
+      return '<div class="rv-row' + (by ? ' on' : '') + '" title="' + esc(x[2]) + '"><button type="button" class="rv-box" data-act="brdRvTick" data-id="' + id + '" aria-label="Mark ' + esc(x[1]) + ' as reviewed" aria-pressed="' + !!by + '"' + (ro() ? ' disabled' : '') + '>' + (by ? '✓' : '') + '</button><div><b>' + esc(x[1]) + '</b>' + fact + '</div></div>'; };
+    return '<section class="rv"><div class="rv-h"><div><b>Before approval</b><span>' + (todo ? (ITEMS.length - todo) + ' of ' + ITEMS.length + ' checked.' : 'All checked. Ready for the owner to approve.') + '</span></div></div><div class="rv-grid">' + ITEMS.map(row).join('') + '</div></section>';
   };
   const v = V.brd; if (v && typeof v.html === 'function') { const h = v.html; v.html = function () { const out = h.apply(this, arguments); return typeof out === 'string' ? V.brdReviewPanel() + out : out; }; }
   ACT.brdRvTick = a => {
