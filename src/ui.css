@@ -3835,3 +3835,28 @@ html body #asst .as-claude .hp-chip:hover:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q
 html body #asst .as-claude .ask-claude:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #1570EF; color: #fff; box-shadow: none; }
 html body #asst .as-claude .ask-claude:hover:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #125FCC; }
 html body #asst .as-claude :is(.hp-chip, .ask-claude):focus-visible { outline: 2px solid #1570EF; outline-offset: 2px; }
+/* side rail: room for every name and a neat scrollbar (user, 23 Nov 2026: "give sufficient space and make the scrollbar neat").
+   96 px wide, names in sentence case without letter-spacing so "Sessions", "Solution" and "Handover" fit whole; a thin rounded scrollbar that only darkens on hover */
+@media (min-width: 861px) {
+  html body.nav-top .shell:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________):not(#__________) { grid-template-columns: 96px 1fr !important; }
+  html body.nav-top .shell > .sidebar:not(#_):not(#__):not(#___):not(#____):not(#_____):not(#______):not(#_______):not(#________):not(#_________):not(#__________) { width: 96px !important; padding: 12px 0 16px !important; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: transparent transparent; scrollbar-gutter: stable; }
+  html body.nav-top .shell > .sidebar:hover { scrollbar-color: #C9D3E3 transparent; }
+  html body.nav-top .shell > .sidebar::-webkit-scrollbar { width: 6px; }
+  html body.nav-top .shell > .sidebar::-webkit-scrollbar-track { background: transparent; }
+  html body.nav-top .shell > .sidebar::-webkit-scrollbar-thumb { background: transparent; border-radius: 999px; }
+  html body.nav-top .shell > .sidebar:hover::-webkit-scrollbar-thumb { background: #C9D3E3; }
+  html body.nav-top .shell > .sidebar::-webkit-scrollbar-thumb:hover { background: #A9B7CE; }
+  html body.nav-top nav.sidebar .rl-b:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { width: 84px !important; margin: 0 auto !important; }
+  html body.nav-top nav.sidebar .rl-l:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { max-width: 82px !important; text-transform: none !important; letter-spacing: 0 !important; font: 600 11.5px/1.15 "Plus Jakarta Sans", Inter, sans-serif !important; }
+}
+/* updates on the rail, the page tabs and the rail's page list (user, 23 Nov 2026: "tabs which get updated ... blink"; src/notifyclient.js updPages/updMark).
+   A dot with the count, in the bell's orange, while an update of this project waits on that page; it blinks (the tile flashes three times, the dot keeps a soft pulse) for what came since you last opened it */
+html body .sidebar .rl-b > .upd-dot { position: absolute; top: 4px; right: 16px; z-index: 1; }
+html body .upd-dot { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: #BC4B09; color: #fff; font: 700 10.5px/1 "Plus Jakarta Sans", Inter, sans-serif; font-style: normal; box-shadow: 0 0 0 2px #fff; letter-spacing: 0; text-transform: none; }
+html body .mt-bar .mt-t > .upd-dot, html body .rl-fly .rl-fi b > .upd-dot { margin-left: 7px; vertical-align: 1px; min-width: 16px; height: 16px; font-size: 10px; box-shadow: none; }
+html body .upd-dot.new { animation: upd-pulse 1.6s cubic-bezier(.32, .72, 0, 1) infinite; }
+html body .sidebar .rl-b:has(> .upd-dot.new):not(.active) { animation: upd-flash .9s ease-in-out 3; }
+html body .mt-bar .mt-t:has(> .upd-dot.new):not(.active) { animation: upd-flash .9s ease-in-out 3; }
+@keyframes upd-pulse { 0% { box-shadow: 0 0 0 2px #fff, 0 0 0 2px rgba(188, 75, 9, .55); } 70% { box-shadow: 0 0 0 2px #fff, 0 0 0 9px rgba(188, 75, 9, 0); } 100% { box-shadow: 0 0 0 2px #fff, 0 0 0 9px rgba(188, 75, 9, 0); } }
+@keyframes upd-flash { 0%, 100% { background-color: transparent; } 50% { background-color: #FFEBDD; } }
+@media (prefers-reduced-motion: reduce) { html body .upd-dot.new, html body .sidebar .rl-b:has(> .upd-dot.new), html body .mt-bar .mt-t:has(> .upd-dot.new) { animation: none; } }

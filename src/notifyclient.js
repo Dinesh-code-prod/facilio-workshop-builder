@@ -18,8 +18,28 @@
   const popSeen = () => { try { return new Set(JSON.parse(root.sessionStorage.getItem(popKey()) || '[]')); } catch (e) { return new Set(); } };
   V.notifyUrgent = () => { if (!team()) return 0; const s = popSeen(); return st.items.filter(x => !x.read && !x.done && URGENT.has(x.type) && !s.has(x.id)).length; };
   V.notifySeen = () => { const s = popSeen(); st.items.forEach(x => s.add(x.id)); try { root.sessionStorage.setItem(popKey(), JSON.stringify([...s].slice(-300))); } catch (e) { } paint(); };
+  // where the updates are (user, 23 Nov 2026: "tabs which get updated ... blink"): each unread update of this project names its page (x.view). The rail stage, the page tab and the
+  // rail's page list show a dot with the count while it is unread; the dot blinks for what came since you last opened that page (kept for this browser tab)
+  const blKey = () => 'fwb_nt_blink_' + ((S.user && S.user.id) || '');
+  const blSeen = () => { try { return new Set(JSON.parse(root.sessionStorage.getItem(blKey()) || '[]')); } catch (e) { return new Set(); } };
+  const vk = v => (V.viewKey ? V.viewKey(v) : v);   // older page names (overview, module) count as the menu entry that holds them
+  const mine = () => (team() && S.project ? st.items.filter(x => !x.read && !x.done && x.view && x.pid === S.project.id).map(x => Object.assign({}, x, { view: vk(x.view) })) : []);
+  V.updPages = ids => { const xs = mine().filter(x => ids.includes(x.view)); if (!xs.length) return { n: 0, fresh: false }; const s = blSeen(); return { n: xs.length, fresh: xs.some(x => !s.has(x.id)) }; };
+  V.updVisit = view => { const xs = mine().filter(x => x.view === view); if (!xs.length) return; const s = blSeen(); const k = s.size; xs.forEach(x => s.add(x.id)); if (s.size !== k) try { root.sessionStorage.setItem(blKey(), JSON.stringify([...s].slice(-300))); } catch (e) { } };
+  V.updMark = u => (u && u.n ? '<i class="upd-dot' + (u.fresh ? ' new' : '') + '" aria-hidden="true">' + (u.n > 9 ? '9+' : u.n) + '</i>' : '');
+  // a new update arrives while the page is open: mark the rail and the page tabs in place (the next page draw makes the same marks)
+  function paintUpd() {
+    if (S.ui && S.ui.view && V.updVisit) V.updVisit(S.ui.view);
+    document.querySelectorAll('.sidebar .rl-b[data-pages], .mt-bar .mt-t[data-view]').forEach(b => {
+      let ids; if (b.hasAttribute('data-pages')) { try { ids = JSON.parse(b.getAttribute('data-pages')).map(p => p[0]).filter(id => id !== '#'); } catch (e) { return; } } else ids = [b.getAttribute('data-view')];
+      const u = V.updPages(ids), html = V.updMark(u), old = b.querySelector(':scope > .upd-dot');
+      if (!html) { if (old) old.remove(); b.classList.remove('has-upd'); return; }
+      b.classList.add('has-upd'); if (old && old.outerHTML === html) return; if (old) old.remove(); b.insertAdjacentHTML('beforeend', html);
+    });
+  }
   /** the badge and the blink change without drawing the whole page again */
   function paint() {
+    paintUpd();
     const b = document.querySelector('.bell'); if (!b || !V.bellCount) return; const n = V.bellCount(); let el = b.querySelector('.bell-n');
     if (n) { if (!el) { el = document.createElement('span'); el.className = 'bell-n'; b.appendChild(el); } el.textContent = n > 9 ? '9+' : String(n); } else if (el) el.remove();
     const u = V.notifyUrgent(); b.classList.toggle('bell-alert', !!u);
