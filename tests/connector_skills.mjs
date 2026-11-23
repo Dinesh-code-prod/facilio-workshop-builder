@@ -26,6 +26,7 @@ await t('project_overview says where the project stands', async () => {
   const r = await tool('project_overview', { project: pid }); assert.equal(r.status, 200); const g = r.data.progress;
   assert.equal(g.tasks.total, 3); assert.equal(g.tasks.open, 2); assert.equal(g.tasks.overdue, 1, 'only the open task with a past date is overdue');
   assert.equal(g.risksAndIssues.open, 1); assert.equal(g.uatTestCases.total, 2); assert.equal(g.uatTestCases.byStatus.Failed, 1);
+  assert.deepEqual(g.tasks.overdueList.map(x => [x.title, x.due]), [['Late one', '2020-01-01']], 'the overdue tasks themselves come with the overview (one call)');
   assert.equal(r.data.projectId, pid); assert.deepEqual([r.data.organisation.orgId, r.data.organisation.region, r.data.organisation.configFolder], ['400000077', 'US', 'us/400000077-Acme']);
 });
 await t('using a tool leaves a note that the connector works', async () => { const r = await call('GET', '/api/me/connector'); assert.ok(r.data.seen && !Number.isNaN(Date.parse(r.data.seen))); });
@@ -111,4 +112,9 @@ await t('the review pack Claude reads carries the automatic state-flow checks of
   const r = (await call('POST', `/api/projects/${pid}/ai/review-pack`, {})).data; assert.ok(r.sources.some(x => /Automatic state-flow checks/.test(x.label)), JSON.stringify(r.sources));
   assert.match(r.prompt, /Approve.{0,4} needs an approval but has no approver/); assert.match(r.prompt, /Nobody is told when a record moves to .{0,4}Approved/);
 });
-console.log(`${n} connector add-on checks passed`);
+await t('the tool list stays short and connector_help topic <tool> gives the full text', async () => {
+  const fs = await import('node:fs'); const tools = JSON.parse(fs.readFileSync('work/work.json', 'utf8')).mcp.tools; assert.ok(JSON.stringify(tools).length < 36000, 'Claude reads the whole tool list every turn: keep it short');
+  const r = await tool('connector_help', { topic: 'session_questions' }); assert.equal(r.status, 200); assert.equal(r.data.tool, 'session_questions'); assert.match(r.data.inputs.proposals, /kind: solution/); assert.match(r.data.description, /save_questions/);
+  const g = await tool('connector_help', { topic: 'uat' }); assert.equal(g.status, 200); assert.ok(!g.data.tool, 'other topics keep the recipes');
+});
+console.log(`\n${n} connector add-on checks passed`);
