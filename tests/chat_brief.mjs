@@ -23,3 +23,8 @@ console.log('2 missing-skill checks passed');
   assert.equal(skillPlan('build_solution_doc').plan[0].from, 'studio'); assert.deepEqual(skillPlan('fetch_mail').plan, []); assert.match(skillPlan('fetch_mail').rule, /No skill fits/);
   assert.ok(skillPlan('chat', 'update the training guide').plan.some(x => x.skill === 'guidebook-builder')); assert.deepEqual(skillPlan('chat', 'hello').plan, []);
   console.log('5 skill plan checks passed'); }
+// make it as a Claude item: reports as Slides, the BRD as Docs, FTR and UAT as Sheets; other jobs carry no such step
+{ const { makeAs } = await import('../work/server/_jobs.mjs'); const k = kind => brief({ id: 'j', kind, params: {}, requestedBy: 'a@b.c' }, 'P').makeAs;
+  assert.match(k('make_wsr'), /Slides/); assert.match(k('draft_brd'), /Docs/); assert.match(k('make_ftr'), /Sheets/); assert.equal(k('fetch_mail'), undefined);
+  assert.match(makeAs('uat'), /Sheets/); assert.match(makeAs('monthly'), /skip this step/); assert.equal(makeAs('guide'), '');
+  console.log('3 make-as checks passed'); }
