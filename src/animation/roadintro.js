@@ -1,6 +1,6 @@
 /* "Your road to go-live": the Delivery Studio story told along a road. A car drives through a mountain valley at dawn; at each of seven milestones the camera
    settles beside a roadside post whose sign names a real customer challenge and what Delivery Studio does about it (workspace, workshops to BRD,
-   mockups and the BRD, UAT and FTR, AI-drafted guides, hypercare and handover). The closing view says how it relates to Facilio:
+   mockups and the BRD, UAT and FTR, Claude-drafted guides, go-live and hypercare, handover). The closing view says how it relates to Facilio:
    Delivery Studio organises the implementation, Facilio is the platform the customer's teams use every day.
    Played on customer invitation links and by "See how Delivery Studio helps" on both sign-in pages. When the journey ends (or Skip / Esc) it leaves
    through the shared liquid reveal (src/liquid.js), the same exit as the tree intro's Get started, and uncovers the sign-in page underneath.
@@ -18,8 +18,8 @@
     { h: 'Requirement sessions', c: 'What was agreed in a workshop is lost before it reaches the document.', f: 'Workshops are planned, transcripts are captured and requirements are confirmed one by one, with checks on what was said.' },
     { h: 'Solution design & BRD', c: 'Modules, forms and state flows are hard to picture until they are built.', f: 'Modules, state flows, roles and the KPIs & SLA matrix are laid out, mockups show the screens, and the BRD is written from all of it.' },
     { h: 'UAT & FTR', c: 'It is unclear what passed, what is blocked and whether the go-live is safe.', f: 'UAT cases and issues, the FTR report and KPI workbooks each have a status and an owner, and go-live readiness is checked in one list.' },
-    { h: 'Training guides', c: 'Writing user guides takes days and goes out of date.', f: 'AI drafts guides from what is recorded in your project. Every draft cites its sources and is reviewed before anyone uses it.' },
-    { h: 'Hypercare', c: 'The first weeks after launch are when small problems pile up.', f: 'Hypercare issues are tracked with a status and an owner until the exit is recorded.' },
+    { h: 'Training', c: 'Writing user guides takes days and goes out of date.', f: 'Claude drafts user and UAT guides from what is recorded in your project. Every draft cites its sources and is reviewed before anyone uses it.' },
+    { h: 'Go-live & hypercare', c: 'Launch day and the first weeks after it are when small problems pile up.', f: 'Go-live readiness is confirmed in one list, then hypercare issues are tracked with a status and an owner until the exit is recorded.' },
     { h: 'Project handover', c: 'Handover and closure feel uncertain.', f: 'The handover pack and the Solution Document are ready, so your team runs day to day in Facilio with confidence.' }
   ];
   const N = STEPS.length;

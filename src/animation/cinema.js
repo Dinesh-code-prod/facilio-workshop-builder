@@ -32,7 +32,7 @@
   const FLOW = { public: ['brand', 'journey', 'platform', 'ai', 'cta'], team: ['brand', 'people', 'ai', 'platform', 'cta'], customer: ['brand', 'journey', 'people', 'ai', 'cta'] };
   const MS = { brand: 3300, journey: 7600, platform: 4800, people: 8000, ai: 8200, cta: 0 };
   const HEAD = {
-    journey: { public: 'Twelve stages. One connected journey.', team: 'Twelve stages. One connected journey.', customer: 'Twelve stages. One shared journey.' },
+    journey: { public: 'Eight stages. One connected journey.', team: 'Eight stages. One connected journey.', customer: 'Eight stages. One shared journey.' },
     platform: { public: 'One platform, every module connected.', team: 'One platform, every module connected.', customer: 'One platform, every module connected.' },
     people: { team: 'Built for the people who deliver.', customer: 'Built around your project.', public: 'Built for every project.' },
     ai: { public: 'AI that helps. People who decide.', team: 'AI drafts. You review and decide.', customer: 'Clearer answers, guided by AI.' },

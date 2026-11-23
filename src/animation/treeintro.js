@@ -1,5 +1,5 @@
-/* Tree-growth introduction: one continuous animation. A Facilio seed (the logo's two squares) drops into the ground, roots spread, a tree grows through the twelve
-   delivery stages (each label sits beside its marker on the tree), then the Facilio Delivery Studio brand and Get Started appear.
+/* Tree-growth introduction: one continuous animation. A Facilio seed (the logo's two squares) drops into the ground, roots spread, a tree grows through twelve
+   steps of the eight delivery stages, in the order of the app menu (each label sits beside its marker on the tree, with its stage number), then the Facilio Delivery Studio brand and Get Started appear.
    V.treeIntro(opts) has the same contract as V.cinema (opts: aud, name, cta, off, wipe) and resolves { how: 'go' | 'skip', off }.
    Nothing here reads project data; the stage timing is illustrative only. Canvas 2D, no filters, paused while the tab is hidden, simplified when reduced motion is on.
    V.cinema uses this by default; the earlier five-scene engine is kept as V.cinemaClassic (add ?intro=classic, or set localStorage fwb_intro_classic=1). */
@@ -23,20 +23,22 @@
         <div class="fade"></div>`;
 
       const AUTO = !!opts.wipe && !opts.liquid;   // liquid: the tree finishes on the brand + Get started screen, and Get started pours the Facilio liquid reveal into the next page   // opening page: the tree's leaves open straight into the sign-in page (no brand screen). Roadmap after sign-in keeps the brand + Get started ending.
-      /* ---------- the 12 delivery stages ---------- */
+      /* ---------- twelve growth steps, in the order of the app's eight stages (user, 23 Nov 2026: "update the tree ... according to our latest changes") ----------
+         the tree keeps its twelve milestones (timing, branches, camera); each now names a step of the current menu, and STAGE_NO says which of the eight stages it belongs to */
+      const STAGE_NO = [1, 2, 2, 3, 3, 3, 4, 4, 5, 6, 7, 8];
       const STAGES = [
-        ['Project Kick-off & Discovery', 'Establish the project vision, scope, stakeholders, and delivery approach.'],
-        ['Workshops', 'Capture business processes, expectations, and implementation needs.'],
-        ['Requirements', 'Organize business needs into clear, actionable requirements.'],
-        ['BRD & Sign-off', 'Review and approve the documented requirements.'],
-        ['Configuration & Implementation', 'Configure the solution to match agreed requirements.'],
-        ['FTR & KPI Validation', 'Validate functional readiness and agreed performance measures.'],
-        ['UAT & Defect Management', 'Validate the solution and resolve identified issues.'],
-        ['Customer Training & User Guides', 'Prepare users to work confidently with the solution.'],
-        ['Go-Live Readiness', 'Confirm readiness for production launch.'],
-        ['Hypercare', 'Provide focused support following go-live.'],
-        ['Support Transition & Handover', 'Transfer operational knowledge, documentation, and responsibilities.'],
-        ['Project Closure', 'Confirm completion and formally close the implementation.']
+        ['Contract & kick-off', 'Claude reads the contract into the project; the kick-off deck and the plan are set.'],
+        ['Requirement sessions', 'Workshops are planned and run; transcripts and notes are captured.'],
+        ['Requirements confirmed', 'What was said becomes requirements the customer confirms one by one.'],
+        ['Solution design', 'Modules, state flows, roles and the KPIs & SLA matrix are laid out, with mockups.'],
+        ['Configuration', 'The agreed solution is configured in Facilio and checked against the design.'],
+        ['BRD & sign-off', 'The BRD is written from the solution and signed off by the customer.'],
+        ['FTR & KPI checks', 'Functional readiness and the agreed measures are checked.'],
+        ['UAT & defects', 'The customer tests; every issue has a status and an owner until it closes.'],
+        ['Training & guides', 'Claude drafts user and UAT guides from the project; people review them.'],
+        ['Go-live', 'Readiness is confirmed in one list and the launch goes ahead.'],
+        ['Hypercare', 'Focused support in the first weeks after launch, tracked to the exit.'],
+        ['Handover & closure', 'The handover pack and Solution Document are delivered and the project closes.']
       ];
       // when each stage becomes the active one (seconds). Every stage owns one visible growth event:
       // 1 seed drops in · 2 roots spread · 3 trunk rises · 4 trunk thickens/foundation ring · 5 primary branches · 6 secondary branches
@@ -47,7 +49,7 @@
         [5.0, 14.4, 'Strong roots, a steady trunk', 'Workshops · Requirements · BRD sign-off'],
         [14.4, 26.6, 'Branching into the build', 'Configuration · FTR · UAT · Training'],
         [26.6, 38.2, 'Fully grown', 'Go-live · Hypercare · Handover · Closure'],
-        [38.2, 44, 'Twelve stages, one connected journey', 'From kick-off to closure']
+        [38.2, 44, 'Eight stages, one connected journey', 'From the contract to handover']
       ];
       const END = AUTO ? 38 : 44, REVEAL = AUTO ? 1e9 : 38.2;
       // real seconds -> timeline seconds. The whole intro is about 6.8s: growth 5s, then (opening page) the leaves open into the sign-in page in about 1.8s.
@@ -199,12 +201,12 @@
       /* ---------- stage labels: each one is pinned to its milestone node on the tree ---------- */
       const $ = id => o.querySelector('[data-i="' + id + '"]');
       const bars = $('bars'), labelsEl = $('labels');
-      const SHORT = ['Kick-off & discovery', 'Workshops', 'Requirements', 'BRD & sign-off', 'Configuration', 'FTR & KPI validation', 'UAT & defects', 'Training & guides', 'Go-live readiness', 'Hypercare', 'Support handover', 'Project closure'];
+      const SHORT = STAGES.map(s => s[0]);
       const TICK = '<svg viewBox="0 0 12 12"><path d="M2.4 6.4l2.5 2.5 4.7-5.2"/></svg>';
       const labels = STAGES.map(([t, d], i) => {
         const el = document.createElement('div'); el.className = 'lbl'; el.tabIndex = -1; el.setAttribute('role', 'button');
-        el.setAttribute('aria-label', 'Stage ' + (i + 1) + ': ' + t);
-        el.innerHTML = `<div class="in"><span class="n">${i + 1}</span><div><div class="t" data-no="${i + 1}">${SHORT[i]}</div><div class="d">${d}</div></div></div>`;
+        el.setAttribute('aria-label', 'Stage ' + STAGE_NO[i] + ': ' + t);
+        el.innerHTML = `<div class="in"><span class="n" title="Stage ${STAGE_NO[i]} of 8">${STAGE_NO[i]}</span><div><div class="t" data-no="${STAGE_NO[i]}">${SHORT[i]}</div><div class="d">${d}</div></div></div>`;
         el.addEventListener('click', () => seek(nodes[i].t + .2));
         el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); seek(nodes[i].t + .2); } });
         labelsEl.appendChild(el);
@@ -843,7 +845,7 @@
         const cs = stageAt(t);
         if (cs !== lastStage) {
           lastStage = cs;
-          sr.textContent = cs >= 12 ? 'All twelve delivery stages shown' : cs >= 0 ? `Stage ${cs + 1} of 12: ${STAGES[cs][0]}. ${STAGES[cs][1]}` : '';
+          sr.textContent = cs >= 12 ? 'All eight delivery stages shown' : cs >= 0 ? `Stage ${STAGE_NO[cs]} of 8: ${STAGES[cs][0]}. ${STAGES[cs][1]}` : '';
         }
       }
 
