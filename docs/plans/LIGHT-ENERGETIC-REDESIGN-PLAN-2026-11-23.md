@@ -29,7 +29,11 @@ The app is plain JavaScript bundled by esbuild. There is no React, no Tailwind a
 
 All of the above are free; no paid component subscription or outside API is involved.
 
-## 3. Decisions needed from the user
+## 3. Decisions (user, 23 Nov 2026: "Yes, use them", the recommendations below)
+
+Purple only as a second accent for AI and Stateflow; the night scenes become light; Stateflow stays our own builder (option A); the screenshots are still to come, so the samples follow the written brief until then.
+
+### As asked
 
 1. **Purple.** The brief asks for blue and purple accents. The standing rule (CLAUDE.md, 19 Nov) says no violet or purple. Proposal: purple as a second accent for AI and Stateflow items only, Facilio blue stays the main action colour.
 2. **Dark art that stays today.** The projects home has a night-city banner and the sign-in page a night scene, both kept on purpose. The brief says no dark backgrounds. Lighten them, or keep them as the only exceptions?

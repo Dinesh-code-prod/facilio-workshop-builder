@@ -18,7 +18,7 @@
       if (out.length >= 40) return; const type = (el.getAttribute('type') || 'text').toLowerCase(); if (el.tagName === 'INPUT' && !/^(text|email|url|tel|search|number|date)$/.test(type)) return;
       const v = String(el.isContentEditable ? el.innerText : el.value || '').trim(); if (v.length < 3 || v.length > 20000) return;
       const lab = (el.id && d.querySelector('label[for="' + el.id + '"]')) || el.closest('label') || null; const label = (lab ? lab.textContent : el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.id || 'Text').trim().slice(0, 60);
-      const key = el.id ? '#' + el.id : el.getAttribute('data-txt') ? '[data-txt="' + el.getAttribute('data-txt') + '"]' : '';   // how to find this field again; none: only the Copy list can give it back
+      const key = el.id ? '#' + (root.CSS && root.CSS.escape ? root.CSS.escape(el.id) : el.id) : el.getAttribute('data-txt') ? '[data-txt="' + el.getAttribute('data-txt') + '"]' : '';   // how to find this field again; none: only the Copy list can give it back
       const k = (el.id || el.getAttribute('data-txt') || el.getAttribute('data-cell') || '') + '|' + v.slice(0, 40); if (seen.has(k)) return; seen.add(k); out.push({ label, value: v, key, drawer: !!el.closest('#drawer, .dialog'), chat: !!el.closest('#asst'), bound: el.hasAttribute('data-bind') });
     });
     return out;
@@ -60,7 +60,7 @@
     if (!place || !S.project || S.project.id !== place.pid) return;
     if (Date.now() > place.until) { const left = place.fields, vn = place.viewName; place = null; if (left.length) offerCopy(vn, left); return; }   // not found in 20 seconds: the Copy list
     const onView = place.view === (S.ui && S.ui.view); const now = place.fields.filter(f => f.chat || onView); if (!now.length) return; let n = 0; const stay = [];
-    now.forEach(f => { const el = f.key ? d.querySelector(f.key) : null; if (!el) { stay.push(f); return; } if (String(el.isContentEditable ? el.innerText : el.value || '').trim()) return;   // a field that already has text is left alone
+    now.forEach(f => { let el = null; try { el = f.key ? d.querySelector(f.key) : null; } catch (e) { /* a key saved before ids were escaped (BRD ids like b_control:h) */ } if (!el) { stay.push(f); return; } if (String(el.isContentEditable ? el.innerText : el.value || '').trim()) return;   // a field that already has text is left alone
       if (el.isContentEditable) el.innerText = f.value; else { el.value = f.value; el.dispatchEvent(new Event('input', { bubbles: true })); } n++; });
     place.fields = place.fields.filter(f => !now.includes(f)).concat(stay);
     if (n) V.toast('Put back what you were typing (' + n + ' field' + (n > 1 ? 's' : '') + '). Check it, then save or send.', 8000);
