@@ -11,8 +11,9 @@ export function lifecycleMessage(project, health, today) {
   return {
     key: 'nud|' + project.id + '|' + sigs.map(g => g.code).sort().join(',') + '|' + Math.floor(day / 3),
     title: n + ' thing' + (n === 1 ? '' : 's') + ' need' + (n === 1 ? 's' : '') + ' attention · ' + project.name,
-    text: top.map(g => g.title).join('; '),
-    detail: top.map(g => g.title + (g.action ? '. Next step: ' + g.action : '')).join(' • ') + (n > top.length ? ' • and ' + (n - top.length) + ' more' : ''),
+    text: crit ? crit + ' critical, ' + (n - crit) + ' high.' : n + ' high.',
+    // one line per signal with its next step (user, 23 Nov 2026: no wall of text): the shared card shows them as a list under a heading
+    sections: [{ head: 'Needs attention', total: n, items: top.map(g => g.title + (g.action ? ' → Next: ' + g.action : '')) }],
     facts: [{ title: 'Project health', value: HEALTH_LABEL[health.health] || String(health.health || '') }, { title: 'Critical', value: String(crit) }, { title: 'High', value: String(n - crit) }]
   };
 }

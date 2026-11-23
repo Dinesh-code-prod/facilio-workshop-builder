@@ -44,8 +44,8 @@ await t('the auto block and the auto source survive the normal task save, and th
 await t('the Teams digest gets a Done button for tasks due soon or overdue, run by the clicker, and only task_reply is allowed from a button', async () => {
   const { digestMessage, pendingFor } = await import('../work/server/_taskwatch.mjs'); const today = '2026-11-07';
   const P = [{ id: 'p1', name: 'Alpha', tasks: [{ id: 't_a', data: { n: 12, title: 'Send data', owner: 'kim@facilio.com', status: 'To Do', due: '2026-11-05' } }, { id: 't_b', data: { n: 13, title: 'Later', owner: 'kim@facilio.com', status: 'To Do', due: '2026-12-30' } }] }];
-  const m = digestMessage(pendingFor('kim@facilio.com', P, today), today); assert.equal(m.actions.length, 2); assert.deepEqual(m.actions[1], { title: 'Done: T-12', fn: 'api', data: { tool: 'task_reply', project: 'p1', taskId: 't_a', status: 'Done', text: 'Marked done by the owner from the Teams message.', via: 'teams' } });
-  assert.match(src('work/server/api.mjs'), /viaButton \? \(b\.tool === 'task_reply' \? 'task_reply' : ''\)/);
+  const m = digestMessage(pendingFor('kim@facilio.com', P, today), today); assert.deepEqual(m.actions.map(a => a.title), ['Open Delivery Studio', 'Done: T-12', 'My tasks']); assert.deepEqual(m.actions[1], { title: 'Done: T-12', fn: 'api', data: { tool: 'task_reply', project: 'p1', taskId: 't_a', via: 'teams', status: 'Done', text: 'Marked done by the owner from the Teams message.' } });
+  assert.match(src('work/server/api.mjs'), /viaButton \? \(\['task_reply', 'my_tasks'\]\.includes\(b\.tool\) \? b\.tool : ''\)/);
 });
 await t('change request waiting, BRD in review and a Claude question each become one task, and resolve when the fact is gone', () => {
   const f = { crsWaiting: [{ id: 'c1', label: 'CR-001 Extra report' }], brdApproval: true, claudeAsks: [{ id: 'jb_1', q: 'Which file is the MSA?', by: 'kim@facilio.com' }] };

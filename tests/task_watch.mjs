@@ -5,8 +5,8 @@ import handler from '../work/server/api.mjs';
 import { pendingFor, digestMessage, digestKey, assignKey, assignGate, assignmentNotice, dueOf } from '../work/server/_taskwatch.mjs';
 
 let n = 0; const t = async (name, fn) => { await fn(); n++; { const m = assignmentNotice({ owner: '' }, { owner: 'kim@facilio.com', title: 'Send data', n: 12, status: 'To Do' }, 'lead@facilio.com', 'Alpha', { project: 'p1', id: 't_a' });
-  assert.deepEqual(m.done, { title: 'Done: T-12', fn: 'api', data: { tool: 'task_reply', project: 'p1', taskId: 't_a', status: 'Done', text: 'Marked done by the owner from the Teams message.', via: 'teams' } });
-  assert.equal(assignmentNotice({ owner: '' }, { owner: 'kim@facilio.com', title: 'x', n: 1, status: 'To Do' }, 'lead@facilio.com', 'Alpha').done, null); console.log('  ok  the assignment message carries a Done button for the owner'); }
+  assert.deepEqual(m.actions[0], { title: 'Done: T-12', fn: 'api', data: { tool: 'task_reply', project: 'p1', taskId: 't_a', via: 'teams', status: 'Done', text: 'Marked done by the owner from the Teams message.' } }); assert.ok(m.actions.some(a => a.title === 'My tasks'));
+  assert.ok(!assignmentNotice({ owner: '' }, { owner: 'kim@facilio.com', title: 'x', n: 1, status: 'To Do' }, 'lead@facilio.com', 'Alpha').actions.some(a => a.data && a.data.tool === 'task_reply'), 'no task id: no task buttons'); console.log('  ok  the assignment message carries Done and new-date buttons for the owner'); }
 console.log('  ok  ' + name); };
 const today = new Date().toISOString().slice(0, 10); const day = k => new Date(Date.now() + k * 864e5).toISOString().slice(0, 10);
 
@@ -29,13 +29,13 @@ await t('pendingFor lists only the person\'s open tasks, overdue and blocked fir
 await t('dueOf uses the earlier of due and eta and ignores bad dates', () => { assert.equal(dueOf({ due: '2026-03-01', eta: '2026-02-01' }), '2026-02-01'); assert.equal(dueOf({ due: 'soon', eta: '' }), ''); });
 await t('digestMessage is null with nothing pending, and says what is overdue', () => {
   assert.equal(digestMessage(pendingFor('nobody@facilio.com', [P1], today), today), null);
-  const m = digestMessage(pendingFor('kim@facilio.com', [P1], today), today); assert.match(m.title, /5 open, 2 overdue/); assert.match(m.text, /\*\*OVERDUE \(2\)\*\*\n\n\*\*T-1 · Late\*\*\nOVERDUE since Wed 1 Jan 2020 \(\d+ days late\)/); assert.match(m.text, /\*\*BLOCKED/); assert.match(m.text, /^\*\*Here is what is open for you in Alpha\.\*\*/); assert.ok(m.facts.some(f => f.title === 'Why you got this'));
+  const m = digestMessage(pendingFor('kim@facilio.com', [P1], today), today); assert.match(m.title, /5 open, 2 overdue/); assert.match(m.text, /\*\*OVERDUE \(2\)\*\*\n- T-1 · Late — OVERDUE since Wed 1 Jan 2020 \(\d+ days late\)/); assert.match(m.text, /\*\*BLOCKED/); assert.match(m.text, /^\*\*Here is what is open for you in Alpha\.\*\*/); assert.ok(m.facts.some(f => f.title === 'Why you got this'));
   assert.match(digestMessage(pendingFor('kim@facilio.com', [P1], today), today, { name: 'Kim' }).text, /^\*\*Hi Kim, here is what is open for you in Alpha\.\*\*/);
   assert.equal(m.facts.find(f => f.title === 'Overdue').value, '2'); assert.match(m.actions[0].url, /#\/p\/p1\/tasks$/);
 });
 await t('a long list is cut and says how many more', () => {
   const many = { id: 'p2', name: 'Big', tasks: Array.from({ length: 12 }, (_, i) => ({ id: 'x' + i, data: { n: i + 1, title: 'T' + i, status: 'To Do', owner: 'kim@facilio.com' } })) };
-  const m = digestMessage(pendingFor('kim@facilio.com', [many, P1], today), today); assert.ok(m.text.includes('**Big**')); assert.ok(m.title.startsWith('TASKS · 2 projects')); assert.match(m.text, /\.\.\.and \d+ more in Delivery Studio/); assert.equal(m.text.split('\n').filter(l => l.startsWith('**T-')).length, 6, 'six tasks with their details, the rest counted'); assert.ok(!/#\/p\//.test(m.actions[0].url), 'two projects: link to the app, not one project');
+  const m = digestMessage(pendingFor('kim@facilio.com', [many, P1], today), today); assert.ok(m.text.includes('**BIG · OVERDUE') || m.text.includes('**BIG · OTHER OPEN TASKS')); assert.ok(m.title.startsWith('TASKS · 2 projects')); assert.match(m.text, /…and \d+ more in Delivery Studio/); assert.equal(m.text.split('\n').filter(l => l.startsWith('- T-')).length, 6, 'six tasks with their details, the rest counted'); assert.ok(!/#\/p\//.test(m.actions[0].url), 'two projects: link to the app, not one project');
 });
 await t('digestKey is a valid key per person and scope, and two addresses never share one', () => {
   const k = digestKey('Kim.R@Facilio.com', 'p1'); assert.ok(/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(k)); assert.equal(k, digestKey('kim.r@facilio.com', 'p1'));
@@ -45,7 +45,7 @@ await t('assignGate allows three a day, then none, and starts again the next day
   let rec = null; for (let i = 0; i < 3; i++) { const g = assignGate(rec, '2026-11-04'); assert.equal(g.allow, true); rec = g.rec; }
   assert.equal(assignGate(rec, '2026-11-04').allow, false); assert.equal(assignGate(rec, '2026-11-05').allow, true);
 });
-await t('a title with line breaks is flattened to one line', () => { const r = pendingFor('kim@facilio.com', [{ id: 'p', name: 'A', tasks: [{ id: 'z', data: { title: 'Line one\n\n[click](http://x)\r\nline two', status: 'To Do', owner: 'kim@facilio.com' } }] }], today); assert.ok(!/\n/.test(r.items[0].title)); assert.equal(assignmentNotice({}, { title: 'a\nb', owner: 'kim@facilio.com', status: 'To Do' }, 'sam@facilio.com', 'A').text.split('\n').length, 7, 'a line break inside a title cannot make extra lines'); });
+await t('a title with line breaks is flattened to one line', () => { const r = pendingFor('kim@facilio.com', [{ id: 'p', name: 'A', tasks: [{ id: 'z', data: { title: 'Line one\n\n[click](http://x)\r\nline two', status: 'To Do', owner: 'kim@facilio.com' } }] }], today); assert.ok(!/\n/.test(r.items[0].title)); assert.equal(assignmentNotice({}, { title: 'a\nb', owner: 'kim@facilio.com', status: 'To Do' }, 'sam@facilio.com', 'A').text.split('\n').length, 5, 'a line break inside a title cannot make extra lines'); });
 await t('assignmentNotice only fires for a new owner who is somebody else and the task is open', () => {
   const next = { title: 'Do it', status: 'To Do', owner: 'kim@facilio.com', due: '2026-12-01', priority: 'High' };
   assert.equal(assignmentNotice({ owner: '' }, next, 'sam@facilio.com', 'Alpha').to, 'kim@facilio.com');
@@ -115,7 +115,7 @@ await t('a message Teams did not deliver is not counted and does not block a ret
 });
 await t('saving a task with a new owner sends that person one direct message', async () => {
   sent = []; assert.equal((await put(SAM, pid, 't5', { title: 'Brand new', status: 'To Do', owner: KIM, due: day(5) })).status, 200);
-  assert.equal(sent.length, 1); assert.deepEqual(sent[0].to, [KIM]); assert.match(sent[0].title, /^TASK · /); assert.match(sent[0].text, /^\*\*You have been given a task by Sam K\.\*\*\n\*\*T-4 · Brand new\*\*\n\*\*Project:\*\* .+\n\*\*Due .+\(in \d+ days\)\*\*\nTo Do[\s\S]*\*\*What to do:\*\*/); assert.ok(sent[0].facts.some(f => f.title === 'Assigned by' && f.value === 'Sam K')); assert.ok(sent[0].facts.some(f => f.title === 'Why you got this'));
+  assert.equal(sent.length, 1); assert.deepEqual(sent[0].to, [KIM]); assert.match(sent[0].title, /^TASK · /); assert.match(sent[0].text, /^\*\*New task for you: T-4 · Brand new\*\*\nGiven to you by Sam K · Due .+\(in \d+ days\) · To Do[\s\S]*\*\*What to do:\*\*/); assert.ok(sent[0].actions.some(a => a.title === 'Done: T-4') && sent[0].actions.some(a => /^Move to /.test(a.title)), 'Done and new-date buttons'); assert.ok(sent[0].facts.some(f => f.title === 'Assigned by' && f.value === 'Sam K')); assert.ok(sent[0].facts.some(f => f.title === 'Why you got this'));
   assert.equal((await put(SAM, pid, 't5', { title: 'Brand new, edited', status: 'To Do', owner: KIM, due: day(5) })).status, 200); assert.equal(sent.length, 1, 'same owner: no second message');
   assert.equal((await put(SAM, pid, 't6', { title: 'Mine', status: 'To Do', owner: SAM })).status, 200); assert.equal(sent.length, 1, 'assigning to yourself: no message');
   teamsOn = false; assert.equal((await put(SAM, pid, 't7', { title: 'Quiet', status: 'To Do', owner: KIM })).status, 200); assert.equal(sent.length, 1, 'Teams notices off: no message');
@@ -128,13 +128,13 @@ await t('Send to my Teams: one task goes to the caller only; Teams off, a finish
   assert.equal((await as(SAM, 'POST', `/api/projects/${pid}/tasks/nope/to-my-teams`, {})).status, 404);
   await put(SAM, pid, 'm2', { title: 'Finished', status: 'Done' }); assert.equal((await as(SAM, 'POST', `/api/projects/${pid}/tasks/m2/to-my-teams`, {})).data.sent, false); assert.equal(sent.length, 1, 'nothing more was sent');
 });
-await t('the morning brief: the first sweep of a day sends each owner of the project the digest (stage and DUE TODAY shown), a second sweep the same day sends nothing', async () => {
+await t('the morning brief: the first sweep of a day sends each member ONE digest for all their projects (DUE TODAY shown), a second sweep the same day sends nothing', async () => {
   teamsOn = true; store.get('twn').clear(); if (store.get('dbr')) store.get('dbr').clear(); sent = [];
   assert.equal((await as(SAM, 'GET', `/api/projects/${pid}/daily-brief`)).data.on, true, 'on unless switched off'); await as(SAM, 'POST', `/api/projects/${pid}/daily-brief`, { on: false }); assert.equal((await as(SAM, 'GET', `/api/projects/${pid}/daily-brief`)).data.on, false); sent = []; await as(SAM, 'POST', '/api/notifications/sweep', {}); assert.equal(sent.filter(x => /^TASKS/.test(x.title) && /Reminder Test/.test(x.title)).length, 0, 'switched off: no brief for this project (the others still get theirs)'); if (store.get('dbr')) store.get('dbr').clear();
   assert.equal((await as(SAM, 'POST', `/api/projects/${pid}/daily-brief`, { on: true })).data.on, true); assert.equal((await as(SAM, 'GET', `/api/projects/${pid}/daily-brief`)).data.on, true);
   assert.equal((await put(SAM, pid, 'br1', { title: 'Brief me', status: 'To Do', owner: KIM, due: day(0), stage: 'Testing & UAT' })).status, 200); sent = []; store.get('twn').clear();
   const r = await as(SAM, 'POST', '/api/notifications/sweep', {}); assert.equal(r.status, 200, JSON.stringify(r.data));
-  const toKim = sent.filter(x => x.to && x.to[0] === KIM && /^TASKS/.test(x.title) && /due today/.test(x.title)); assert.equal(toKim.length, 1, 'Kim gets one brief that counts what is due today'); assert.equal(toKim[0].facts.find(f => f.title === 'Due today').value, '1'); assert.match(toKim[0].text, /\*\*DUE TODAY \(1\)\*\*\n\n\*\*T-\d+ · Brief me\*\*\nDue today \(\w{3} \d+ \w{3} \d{4}\) · To Do · Testing & UAT/); assert.match(toKim[0].text, /Whole team on this project: \d+ open/);
+  const toKim = sent.filter(x => x.to && x.to[0] === KIM && /^TASKS/.test(x.title) && /due today/.test(x.title)); assert.equal(toKim.length, 1, 'Kim gets one brief that counts what is due today'); assert.equal(toKim[0].facts.find(f => f.title === 'Due today').value, '1'); assert.match(toKim[0].text, /\*\*([^*\n]+ · )?DUE TODAY \(1\)\*\*\n- T-\d+ · Brief me — Due today \(\w{3} \d+ \w{3} \d{4}\) · To Do/); assert.match(toKim[0].text, /Whole team on [^:]+: \d+ open/); assert.ok(toKim[0].actions.some(a => a.title === 'My tasks'));
   sent = []; await as(SAM, 'POST', '/api/notifications/sweep', {}); assert.equal(sent.filter(x => /^TASKS/.test(x.title)).length, 0, 'once a day');
 });
 await t('Send my list now: the caller gets their own digest again on request, nobody else is messaged; the brief also posts a summary to the project channel', async () => {

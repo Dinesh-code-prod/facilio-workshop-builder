@@ -7,7 +7,7 @@ import { missedSteps, missedEvent, isMissed } from '../work/server/_missed.mjs';
 let n = 0; const t = async (name, fn) => { await fn(); n++; console.log('  ok  ' + name); };
 
 await t('defaults: every event is in-app; browser only where it matters; Teams only for the ones that need a person quickly', () => {
-  const p = prefsFor(null); for (const k of Object.keys(EVENTS)) assert.equal(p.types[k].inapp, true, k);
+  const p = prefsFor(null); for (const k of Object.keys(EVENTS)) assert.equal(p.types[k].inapp, !['daily_digest', 'project_added'].includes(k), k);   // the morning list and the welcome are Teams-only
   assert.deepEqual(channelsFor('customer_signoff', null), { inapp: true, browser: true, teams: true }); assert.deepEqual(channelsFor('mail_arrived', null), { inapp: true, browser: true, teams: true }); assert.deepEqual(channelsFor('ticket_new', null), { inapp: true, browser: true, teams: false }); assert.deepEqual(channelsFor('nope', null), { inapp: false, browser: false, teams: false });
 });
 await t('a person can turn a channel off; bad values are ignored; quiet hours (also across midnight) silence the pop-up and Teams but never the in-app record', () => {
@@ -78,7 +78,7 @@ await t('a notice text is a complete sentence: the greeting is dropped, the firs
 await t('a Teams message opens with its category and the project (BRD, TASK, SIGN-OFF...), then what happened, with the project and category as facts', () => {
   assert.equal(catOf({ type: 'customer_signoff', cat: 'BRD' }), 'BRD'); assert.equal(catOf({ type: 'task_assigned' }), 'TASK'); assert.equal(catOf({ type: 'nope' }), 'UPDATE');
   const rec = makeRecord({ type: 'customer_signoff', cat: 'BRD', title: 'Customer signed off · Al Moallam', text: 'BRD sign-off was signed by Bayan.', project: { id: 'p1', name: 'Al Moallam' } }, { browser: false }, 'now', 'id');
-  const c = teamsCard({ type: 'customer_signoff', facts: [{ title: 'Due', value: 'Nov 12' }] }, rec, []); assert.equal(c.title, 'BRD · Al Moallam'); assert.equal(c.text, '**Customer signed off**\nBRD sign-off was signed by Bayan.\n**Project:** Al Moallam\n**What to do:** Read it under Governance, then reply to the customer or follow up on the concern.'); assert.deepEqual(c.facts.map(f => f.title), ['Project', 'About', 'Due', 'Why you got this']);
+  const c = teamsCard({ type: 'customer_signoff', facts: [{ title: 'Due', value: 'Nov 12' }] }, rec, []); assert.equal(c.title, 'BRD · Al Moallam'); assert.equal(c.text, '**Customer signed off**\nBRD sign-off was signed by Bayan.\n\n**What to do:** Read it under Governance, then reply to the customer or follow up on the concern.'); assert.deepEqual(c.facts.map(f => f.title), ['Project', 'Why you got this']);
 });
 await t('a new task with no owner is told to the whole project team once, except the person who added it; with an owner only the owner is told', async () => {
   const before = async who => (await list(who)).items.filter(x => x.type === 'task_new').length; const k0 = await before(KIM), v0 = await before(VIC), s0 = await before(SAM);
@@ -98,7 +98,8 @@ await t('missed steps: only past-due, unfinished records with a due date; the ow
   assert.deepEqual(m[0].to, [KIM]); assert.equal(m[0].ref, 'T-4'); assert.equal(m[0].daysLate, 3); assert.deepEqual(m[0].x, { tkPageId: 'a' }); assert.equal(m[0].view, 'taskpage');
   assert.deepEqual(m[1].to, [SAM], 'a customer-side owner: the project owner chases it'); assert.equal(m[1].assigned, false); assert.match(m[1].ownerText, /not on the team/); assert.deepEqual(m[1].x, { govTab: 'actions', focus: 'e' });
   assert.deepEqual(m[2].to, [KIM]); assert.equal(isMissed('task', { due: '2026-11-22' }, '2026-11-23'), true); assert.equal(isMissed('task', { due: '2026-11-23' }, '2026-11-23'), false);
-  const ev = missedEvent(m[0], pj); assert.match(ev.title, /^Overdue task: T-4 Late$/); assert.equal(ev.key, 'ms|p_9|task|a'); assert.equal(ev.remind, 2);
+  const ev = missedEvent(m[0], pj, '2026-11-23'); assert.equal(ev.title, 'Task T-4 \u201cLate\u201d is 3 days late'); assert.equal(ev.text, 'Owner: Kim R \u00b7 OVERDUE since Fri 20 Nov 2026 (3 days late)'); assert.equal(ev.key, 'ms|p_9|task|a'); assert.equal(ev.remind, 2); assert.equal(ev.teamsRemind, true);
+  assert.deepEqual(ev.buttons.map(b => b.title), ['Done: T-4', 'Move to Wed 25 Nov', 'Move to Mon 30 Nov'], 'the owner can finish it or move it from the message'); assert.deepEqual(missedEvent(m[1], pj, '2026-11-23').buttons, [], 'no buttons for someone else\'s item');
 });
 await t('the notice lifecycle: unread, acknowledged, completed; a repeat is skipped, reminded after two days, brought back when the item is missed again; the page path opens the task', () => {
   assert.equal(repeatOf({ at: '2026-11-22T08:00:00Z' }, { key: 'k', remind: 2 }, '2026-11-23T08:00:00Z'), null); assert.deepEqual(repeatOf({ at: '2026-11-21T08:00:00Z' }, { key: 'k', remind: 2 }, '2026-11-23T08:00:00Z'), { mode: 'remind' });
@@ -112,7 +113,7 @@ await t('the sweep tells the owner of an overdue task once, with the link to the
   await as(SAM, 'PUT', `/api/projects/${pid}/items/action/a-late`, { data: { text: 'Customer to send the asset register', status: 'Open', owner: 'Ahmed from Acme', due: y } });
   await as(KIM, 'POST', '/api/notifications/sweep', {}); await as(KIM, 'POST', '/api/notifications/sweep', {});
   const mine = (await list(KIM)).items.filter(x => x.type === 'missed_step'); assert.equal(mine.length, 1, 'told once, however often the sweep runs'); const ms = mine[0];
-  assert.equal(ms.cat, 'MISSED'); assert.equal(ms.view, 'taskpage'); assert.deepEqual(ms.x, { tkPageId: 't-late' }); assert.equal(ms.state, 'unread'); assert.equal(ms.overdue, true); assert.match(ms.text, /Owner: .* due/);
+  assert.equal(ms.cat, 'OVERDUE'); assert.equal(ms.view, 'taskpage'); assert.deepEqual(ms.x, { tkPageId: 't-late' }); assert.equal(ms.state, 'unread'); assert.equal(ms.overdue, true); assert.match(ms.text, /Owner: .* OVERDUE since/);
   const own = (await list(SAM)).items.filter(x => x.type === 'missed_step'); assert.equal(own.length, 1, 'the customer-side action goes to the project owner'); assert.deepEqual(own[0].x, { govTab: 'actions', focus: 'a-late' });
   assert.equal((await list(VIC)).items.filter(x => x.type === 'missed_step').length, 0, 'nobody else');
   const od = (await tool(SAM, 'list_overdue', { project: pid })).data; assert.equal(od.missedSteps.length, 2); assert.match(od.missedSteps.find(x => x.kind === 'task').link, /#\/p\/.+\/taskpage\/t-late$/); assert.equal(od.notified, 0);
@@ -123,5 +124,24 @@ await t('the sweep tells the owner of an overdue task once, with the link to the
   await as(SAM, 'PUT', `/api/projects/${pid}/items/action/a-late`, { data: { text: 'Customer to send the asset register', status: 'Open', owner: 'Ahmed from Acme', due: new Date(Date.now() + 5 * 864e5).toISOString().slice(0, 10) } });
   assert.equal((await list(SAM)).items.find(x => x.type === 'missed_step').state, 'completed', 'a new date closes the notice too');
   const team = (await as(SAM, 'GET', `/api/projects/${pid}/missed`)).data; assert.equal(team.items.length, 0); assert.equal((await as(CUS, 'GET', `/api/projects/${pid}/missed`)).status, 403);
+});
+// ---------- Otto messages (user, 23 Nov 2026): milestones and deliverables, the escalation list, the My tasks button ----------
+await t('plan milestones and deliverables: due in 2 days tells the named owner and the project owners; overdue is a missed step for the owners; 5+ days late reaches the owners as one list; phases and ordinary steps are left out', async () => {
+  const d = k => new Date(Date.now() + k * 864e5).toISOString().slice(0, 10);
+  const r = await as(SAM, 'PUT', `/api/projects/${pid}/docs/plan_struct`, { data: { rows: [{ id: 'r1', title: 'BRD sign-off', end: d(1), owner: 'kim.r', status: 'In progress', pct: 40 }, { id: 'r2', title: 'Go-live', ms: true, end: d(-6), owner: 'Both', status: 'Not started' },
+    { id: 'r3', title: 'Configure assets', end: d(1), owner: 'kim.r', status: 'Not started' }, { id: 'r4', title: 'Design phase', isPhase: true, end: d(-9) }], versions: [] } }); assert.equal(r.status, 200, JSON.stringify(r.data));
+  await as(VIC, 'POST', '/api/notifications/sweep', {});
+  const kim = (await list(KIM)).items, sam = (await list(SAM)).items;
+  assert.deepEqual(kim.filter(x => x.type === 'milestone_due').map(x => x.title), [kim.find(x => x.type === 'milestone_due').title]); assert.match(kim.find(x => x.type === 'milestone_due').title, /^Deliverable \u201cBRD sign-off\u201d \u2014 Due tomorrow/);
+  assert.ok(sam.some(x => x.type === 'milestone_due' && /BRD sign-off/.test(x.title)), 'the project owner hears it too'); assert.ok(!kim.concat(sam).some(x => /Configure assets|Design phase/.test(x.title)), 'ordinary steps and phases are left out');
+  const live = sam.find(x => x.type === 'missed_step' && /Go-live/.test(x.title)); assert.ok(live, 'an overdue milestone is a missed step for the project owner'); assert.equal(live.cat, 'MILESTONE'); assert.equal(live.view, 'planner'); assert.ok(!kim.some(x => x.type === 'missed_step' && /Go-live/.test(x.title)), 'owned by Both: the project owners chase it');
+  const esc = sam.find(x => x.type === 'escalation'); assert.ok(esc, 'work 5+ days late is listed for the project owners'); assert.match(esc.title, /^1 item is 5 or more days late/); assert.match(esc.text, /Go-live/); assert.ok(!kim.some(x => x.type === 'escalation'), 'only the project owners');
+  await as(VIC, 'POST', '/api/notifications/sweep', {}); assert.equal((await list(SAM)).items.filter(x => x.type === 'escalation').length, 1, 'the same list is not sent twice');
+});
+await t('the My tasks button answers in Teams with the ready list, as the person who pressed it; other button tools are refused', async () => {
+  await as(SAM, 'PUT', `/api/projects/${pid}/items/task/t-mine`, { data: { title: 'Prepare the UAT room', status: 'To Do', owner: KIM, due: new Date(Date.now() + 864e5).toISOString().slice(0, 10) } });
+  const b = await as(KIM, 'POST', '/api/', { tool: 'my_tasks' }, { 'x-work-teams-action': '1' }); assert.equal(b.status, 200, JSON.stringify(b.data)); assert.match(b.data.text, /^\*\*Kim, you have \d+ open task/); assert.match(b.data.text, /Prepare the UAT room/); assert.match(b.data.text, /\*\*What to do:\*\*/);
+  assert.equal((await as(KIM, 'POST', '/api/', { tool: 'send_task_digest' }, { 'x-work-teams-action': '1' })).status, 404, 'a button can only run task_reply or my_tasks');
+  const m = await tool(KIM, 'my_tasks', {}); assert.equal(m.status, 200); assert.equal(typeof m.data.message, 'string'); assert.ok(Array.isArray(m.data.milestones));
 });
 console.log(n + ' notification checks passed');

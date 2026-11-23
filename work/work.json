@@ -806,7 +806,7 @@
    },
    {
     "name": "my_tasks",
-    "description": "Your own pending tasks across the projects you work on (overdue and blocked first, due in 3 days), each with its project, due date, status and priority. For \"what are my pending tasks\". In Teams answer with the project, the due date in words and a link.",
+    "description": "Your own pending tasks across the projects you work on (overdue and blocked first), each with its project, due date in words, status and priority, plus the plan milestones of your projects in the next 7 days. For \"my tasks\", \"what is due this week\" and \"milestones\". The message field is the finished Teams answer (heading, sections, what to do): send it as it is.",
     "function": "api",
     "input_schema": {
      "type": "object",

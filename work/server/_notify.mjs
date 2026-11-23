@@ -6,7 +6,7 @@
    It never blocks or fails the save that caused it. Only members of the project's team are notified (never customers), and never the person who caused the event.
    The rules (EVENTS, channelsFor, makeRecord, quiet hours, the daily cap) are pure and exported; installNotify() adds the routes and returns notify() for the rest of the server. */
 import { createHash } from 'node:crypto';
-import { dueWords, personOf, NEXT } from './_msgfmt.mjs';
+import { dueWords, personOf, NEXT, card } from './_msgfmt.mjs';
 
 export const EVENTS = {
   task_assigned: { label: 'A task is assigned to you', def: { inapp: true, browser: false, teams: true } },
@@ -21,20 +21,23 @@ export const EVENTS = {
   proposal_waiting: { label: 'A Claude proposal is waiting for you', def: { inapp: true, browser: true, teams: false } },
   job_done: { label: 'A job you asked for finished or needs input', def: { inapp: true, browser: true, teams: false } },
   mail_arrived: { label: 'Customer mail arrived for a project', def: { inapp: true, browser: true, teams: true } },
-  ticket_new: { label: 'A support ticket needs attention', def: { inapp: true, browser: true, teams: false } }
+  ticket_new: { label: 'A support ticket needs attention', def: { inapp: true, browser: true, teams: false } },
+  milestone_due: { label: 'A plan milestone or deliverable you are responsible for is due soon', def: { inapp: true, browser: false, teams: true } },
+  escalation: { label: 'Work on a project you own is 5 or more days late', def: { inapp: true, browser: true, teams: true } },
+  daily_digest: { label: 'Your morning list of tasks and milestones (Teams)', def: { inapp: false, browser: false, teams: true } },
+  project_added: { label: 'You were added to a project (Teams welcome)', def: { inapp: false, browser: false, teams: true } }
 };
 export const TEAMS_PER_DAY = 5, KEEP = 100;
 /** the label that opens a Teams message and the bell line: what the message is about */
-export const CATEGORY = { task_assigned: 'TASK', task_new: 'TASK', task_due: 'TASK', missed_step: 'MISSED', lifecycle_nudge: 'PROJECT', approval_requested: 'APPROVAL', stage_ready: 'STAGE', stage_closed: 'STAGE', customer_signoff: 'SIGN-OFF', proposal_waiting: 'CLAUDE', job_done: 'JOB', mail_arrived: 'MAIL', ticket_new: 'TICKET' };
+export const CATEGORY = { task_assigned: 'TASK', task_new: 'TASK', task_due: 'TASK', missed_step: 'MISSED', lifecycle_nudge: 'PROJECT', approval_requested: 'APPROVAL', stage_ready: 'STAGE', stage_closed: 'STAGE', customer_signoff: 'SIGN-OFF', proposal_waiting: 'CLAUDE', job_done: 'JOB', mail_arrived: 'MAIL', ticket_new: 'TICKET', milestone_due: 'MILESTONE', escalation: 'LATE WORK', daily_digest: 'TASKS', project_added: 'PROJECT' };
 export const catOf = ev => String((ev && ev.cat) || CATEGORY[ev && ev.type] || 'UPDATE').toUpperCase().slice(0, 20);
 /** the Teams card of an event: title = category and project, first line = what happened, then the text; facts carry the core details */
-export const WHY = { task_assigned: 'It is assigned to you', task_new: 'Nobody owns it yet, so the whole project team is told', task_due: 'A task of yours is due soon', missed_step: 'You are responsible for it (or own the project) and it is past its due date', lifecycle_nudge: 'You own this project and its records show it needs attention', approval_requested: 'Something waits for your approval', stage_ready: 'Every record of the stage is complete', stage_closed: 'A stage of this project was closed', customer_signoff: 'The customer acted on a sign-off', proposal_waiting: 'Claude prepared something for you to review', job_done: 'A job you asked for finished', mail_arrived: 'New customer mail needs a decision', ticket_new: 'A support ticket needs attention' };
+export const WHY = { task_assigned: 'It is assigned to you', task_new: 'Nobody owns it yet, so the whole project team is told', task_due: 'A task of yours is due soon', missed_step: 'You are responsible for it (or own the project) and it is past its due date', lifecycle_nudge: 'You own this project and its records show it needs attention', approval_requested: 'Something waits for your approval', stage_ready: 'Every record of the stage is complete', stage_closed: 'A stage of this project was closed', customer_signoff: 'The customer acted on a sign-off', proposal_waiting: 'Claude prepared something for you to review', job_done: 'A job you asked for finished', mail_arrived: 'New customer mail needs a decision', ticket_new: 'A support ticket needs attention', milestone_due: 'A plan milestone or deliverable of yours (or of your project) is due soon', escalation: 'You own this project and work on it is 5 or more days late', daily_digest: 'Your morning list', project_added: 'A project owner added you to a project' };
 export function teamsCard(ev, rec, actions) {
-  const head = String(rec.title || '').split(' \u00b7 ')[0]; const dueFact = (ev.facts || []).find(f => f && f.title === 'Due'); const due = /^\d{4}-\d{2}-\d{2}$/.test(rec.due || '') ? rec.due : /^\d{4}-\d{2}-\d{2}$/.test((dueFact && dueFact.value) || '') ? dueFact.value : ''; const dueTxt = due ? dueWords(due, String(rec.at || '').slice(0, 10)) : '';
-  const proj = rec.pname ? rec.pname + (rec.cust && !rec.pname.toLowerCase().includes(rec.cust.toLowerCase()) ? ' \u00b7 ' + rec.cust : '') : '';
-  const text = [head ? '**' + head + '**' : '', rec.more || rec.text, proj ? '**Project:** ' + proj : '', dueTxt ? '**' + dueTxt + '**' : '', NEXT[ev.type] ? '**What to do:** ' + NEXT[ev.type] : ''].filter(Boolean).join('\n');
-  const facts = [{ title: 'Project', value: rec.pname }].concat(rec.cust ? [{ title: 'Customer', value: rec.cust }] : []).concat([{ title: 'About', value: rec.cat }]).concat((ev.facts || []).slice(0, 5).map(f => (f && f.title === 'Due' && dueTxt ? { title: 'Due', value: dueTxt } : f))).concat(rec.by ? [{ title: 'From', value: personOf(rec.by) }] : []).concat(WHY[ev.type] ? [{ title: 'Why you got this', value: WHY[ev.type] }] : []);
-  return { title: rec.cat + ' \u00b7 ' + rec.pname, text, facts, actions };
+  const dueFact = (ev.facts || []).find(f => f && f.title === 'Due'); const due = /^\d{4}-\d{2}-\d{2}$/.test(rec.due || '') ? rec.due : /^\d{4}-\d{2}-\d{2}$/.test((dueFact && dueFact.value) || '') ? dueFact.value : '';
+  const head = String(rec.title || '').split(' \u00b7 ')[0]; const intro = ev.intro || [rec.text].concat(rec.more && rec.more !== rec.text ? [rec.more] : []);
+  return card({ cat: rec.cat, project: { name: rec.pname, customer: rec.cust }, heading: (rec.reminders ? 'Reminder: ' : '') + head, intro, sections: ev.sections, todo: ev.todo || NEXT[ev.type], due, today: String(rec.at || '').slice(0, 10),
+    facts: (ev.facts || []).filter(f => f && f.title !== 'Due' && f.title !== 'Project').slice(0, 3).concat(rec.by ? [{ title: 'From', value: personOf(rec.by) }] : []), why: WHY[ev.type], actions: (ev.buttons || []).concat(actions || []) });
 }
 const flat = v => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim();
 const cut = (v, n) => { const s = flat(v); if (s.length <= n) return s; const t = s.slice(0, n - 1); const i = t.lastIndexOf(' '); return (i > n * 0.6 ? t.slice(0, i) : t).replace(/[\s,;:.\-]+$/, '') + '…'; };   // a notice never stops in the middle of a word
@@ -102,13 +105,23 @@ export function installNotify(d) {
         if (ch.inapp) { const had = ev.key ? ((await dbGet('nt', h + '.' + id)) || {}).value : null;   // the same event (same key) is told once, unless it is reminded or comes back
           if (had) { again = repeatOf(had, ev, at); if (!again) continue; rec = Object.assign({}, had, rec, { reminders: again.mode === 'remind' ? (Number(had.reminders) || 0) + 1 : 0, done: false, doneAt: null }); }
           await dbPut('nt', h + '.' + id, rec); n++; }
-        if (ch.teams && sendTeams && !(again && again.mode === 'remind')) {   // a reminder fills the bell again; Teams heard about it the first time
-          try { const g = teamsGate((await dbGet('tnc', h) || {}).value, day); if (g.allow) { await dbPut('tnc', h, g.rec); await Promise.race([c.teams.send(Object.assign({ to: [email] }, teamsCard(ev, rec, [{ title: 'Open in Delivery Studio', url: (BASE_URL || '') + pathOf(rec) }]))), new Promise(r => setTimeout(r, 4000))]); } } catch (e) { console.log('notify teams failed: ' + (e && e.message)); }
+        if (ch.teams && sendTeams && (!(again && again.mode === 'remind') || (ev.teamsRemind && rec.reminders === 1))) {   // a reminder fills the bell again; Teams hears it the first time, and once more (day 3) for an overdue item
+          try { const g = ev.urgent ? { allow: true } : teamsGate((await dbGet('tnc', h) || {}).value, day); if (g.allow) { if (g.rec) await dbPut('tnc', h, g.rec); await Promise.race([c.teams.send(Object.assign({ to: [email] }, teamsCard(ev, rec, [{ title: 'Open in Delivery Studio', url: (BASE_URL || '') + pathOf(rec) }]))), new Promise(r => setTimeout(r, 4000))]); } } catch (e) { console.log('notify teams failed: ' + (e && e.message)); }
         }
         if (ch.inapp) { try { if (c.broadcast) await c.broadcast({ type: 'notify', for: h }); } catch (e) { /* over the realtime budget: the page polls */ } }
       }
       return n;
     } catch (e) { console.log('notify failed: ' + (e && e.message)); return 0; }
+  }
+  /** a Teams message built elsewhere (the morning digest, a task assignment, a helper alert, added to a project) goes through the same rules as notify(): Teams on, the person's
+      setting for that kind and their quiet hours, and 5 a day per person. o.own: the person asked for it themselves (no setting, no quiet hours, no count); o.urgent: no count.
+      Resolves to { status: sent | off | setting | daily limit | failed, teams: what Teams answered }. */
+  async function teamsTo(email, type, msg, o = {}) {
+    const e = norm(email); if (!e || !(await teamsOn())) return { status: 'off' }; const c = ctx(); const h = hashOf(e);
+    try { if (!o.own && !channelsFor(type, await prefsOf(e), new Date()).teams) return { status: 'setting' };
+      if (!o.own && !o.urgent) { const g = teamsGate(((await dbGet('tnc', h)) || {}).value, now().slice(0, 10)); if (!g.allow) return { status: 'daily limit' }; await dbPut('tnc', h, g.rec); }
+      const r = await Promise.race([c.teams.send(Object.assign({}, msg, { to: [e] })), new Promise(res => setTimeout(() => res(null), 4000))]); return { status: 'sent', teams: r || {} };
+    } catch (err) { console.log('teams send failed: ' + (err && err.message)); return { status: 'failed', why: String((err && err.message) || err).slice(0, 120) }; }
   }
   const idOf = (type, key, h) => (key ? createHash('sha256').update(type + '|' + key + '|' + h).digest('hex').slice(0, 20) : '');
   /** the thing a notice is about is done: its notice is Completed (and read) for everyone on the team who has it. Resolves to how many changed. */
@@ -140,5 +153,5 @@ export function installNotify(d) {
     const n = await notify({ type: 'stage_ready', project, to: 'team', actor: s.email, title: 'Ready to close: ' + (name || stage), text: 'Every record of this stage is complete. A project owner or admin can close it on the Project cycle page.', view: 'lifecycle', key: stage + '|' + now().slice(0, 10) });
     return ok({ notified: n });
   });
-  return { notify, resolve };
+  return { notify, resolve, teamsTo };
 }

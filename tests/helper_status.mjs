@@ -19,9 +19,9 @@ t('a job that reads a person’s own mailbox or drive is taken only by that pers
 });
 t('a person added to a project is told what it is, what Claude does, what to do first, with the project link and three more buttons', () => {
   const m = addedMessage({ id: 'p1', name: 'Rollout', customer: 'Binghatti' }, { role: 'editor', email: 'kim@facilio.com' }, 'sam.k@facilio.com', 'https://x.facilio.work/');
-  assert.equal(m.title, 'PROJECT · Rollout'); assert.match(m.text, /^\*\*You have been added to a project by Sam K\.\*\*/); assert.match(m.text, /\*\*Project:\*\* Rollout · Binghatti/); assert.match(m.text, /\*\*Your role:\*\* an editor/); assert.match(m.text, /\*\*What Delivery Studio is:\*\*/); assert.match(m.text, /\*\*How Claude helps:\*\*/); assert.match(m.text, /\*\*What to do first:\*\* 1\)/);
-  assert.deepEqual(m.actions.map(a => a.title), ['Open the project', 'Team Guide', 'Set up Claude', 'My tasks']); assert.deepEqual(m.actions.map(a => a.url), ['https://x.facilio.work/#/p/p1', 'https://x.facilio.work/#/p/p1/teamhelp', 'https://x.facilio.work/#/p/p1/claudesetup', 'https://x.facilio.work/#/p/p1/tasks']);
-  assert.ok(m.facts.some(f => f.title === 'Customer' && f.value === 'Binghatti') && m.facts.some(f => f.title === 'Added by' && f.value === 'Sam K'));
+  assert.equal(m.title, 'PROJECT · Rollout'); assert.match(m.text, /^\*\*You have been added to Rollout as an editor\*\*\nAdded by Sam K\. Delivery Studio is where/); assert.match(m.text, /Claude drafts; people decide and approve\./); assert.match(m.text, /\*\*START HERE \(4\)\*\*\n- Open the project/); assert.match(m.text, /\*\*What to do:\*\* Do the first two steps today\./);
+  assert.deepEqual(m.actions.map(a => a.title), ['Open the project', 'Team Guide', 'Set up Claude', 'My tasks']); assert.deepEqual(m.actions.slice(0, 3).map(a => a.url), ['https://x.facilio.work/#/p/p1', 'https://x.facilio.work/#/p/p1/teamhelp', 'https://x.facilio.work/#/p/p1/claudesetup']); assert.deepEqual(m.actions[3].data, { tool: 'my_tasks' }, 'My tasks answers in Teams');
+  assert.ok(m.facts.some(f => f.title === 'Project' && f.value === 'Rollout · Binghatti') && m.facts.some(f => f.title === 'Added by' && f.value === 'Sam K'));
 });
 t('the server records each check-in, shows the status to the team, hides personal jobs from other Claudes, and tells a person they were added', () => {
   const jobs = fs.readFileSync('work/server/_jobsapi.mjs', 'utf8'), api = fs.readFileSync('work/server/api.mjs', 'utf8');
@@ -55,7 +55,7 @@ console.log(n + ' Claude helper checks passed');
     assert.deepEqual(H.stuckJobs([old, fresh, { status: 'done', requestedAt: old.requestedAt }], off, now2), { n: 2, hours: 30 }); assert.equal(H.stuckJobs([fresh], off, now2), null); assert.equal(H.stuckJobs([old], { state: 'on' }, now2), null); assert.equal(H.stuckJobs([], off, now2), null);
   });
   u('the owners\u2019 alert says how many, how long, why, and what to do, with two buttons', () => {
-    const m = H.helperAlert({ id: 'p1', name: 'Rollout', customer: 'Binghatti' }, { n: 3, hours: 52 }, off, 'https://x.facilio.work/'); assert.match(m.text, /^\*\*3 requests have been waiting for Claude for 2 days\.\*\*/); assert.match(m.text, /\*\*Project:\*\* Rollout \u00b7 Binghatti/); assert.match(m.text, /last Claude check-in was 5 hours ago \(Sam\)/); assert.match(m.text, /\*\*What to do:\*\*/);
+    const m = H.helperAlert({ id: 'p1', name: 'Rollout', customer: 'Binghatti' }, { n: 3, hours: 52 }, off, 'https://x.facilio.work/'); assert.match(m.text, /^\*\*3 requests have waited 2 days for Claude\*\*/); assert.ok(m.facts.some(f => f.title === 'Project' && f.value === 'Rollout \u00b7 Binghatti')); assert.match(m.text, /last Claude check-in was 5 hours ago \(Sam\)/); assert.match(m.text, /\*\*What to do:\*\*/);
     assert.deepEqual(m.actions.map(a => a.title), ['Open the project', 'Set up Claude']); assert.ok(m.facts.some(f => f.title === 'Waiting requests' && f.value === '3'));
   });
   u('Phase 2 is wired: the setup banner, the window after a project is created, the owner alert once a day, and the guide says the task is needed', () => {

@@ -504,8 +504,8 @@ await t('Explore Facilio: editors draft, only owners and admins publish; request
   r = await call(ed, 'PUT', `/api/projects/${P}/items/interest/in2`, { data: { newsId: 'nw1', title: 'Inspections on mobile' } }); assert.equal(r.data.notice, 'none'); assert.equal(globalThis.__SENT.length, 0, 'nothing is sent while notices are off');
   r = await call(dinesh, 'PUT', '/api/mail/settings', { teamsOn: true, teamsChannel: 'delivery-sales' }); assert.equal(r.status, 200);
   r = await call(ed, 'PUT', `/api/projects/${P}/items/interest/in3`, { data: { newsId: 'nw1', title: 'Inspections on mobile', note: 'Demo please' } }); assert.equal(r.data.notice, 'teams');
-  const m = globalThis.__SENT.find(x => /Interest in Inspections on mobile/.test(x.title)); assert.ok(m, 'a Teams notice is sent'); assert.equal(m.channel, 'delivery-sales'); assert.deepEqual(m.to, [own], 'direct message to the project owners only');
-  assert.ok(/Automated Delivery Studio notification/.test(m.text) && /Demo please/.test(m.text)); assert.ok(/\/#\/p\/.+\/showcase$/.test(m.actions[0].url), 'links to the request');
+  const m = globalThis.__SENT.find(x => /^INTEREST · /.test(x.title) && /Inspections on mobile/.test(x.text)); assert.ok(m, 'a Teams notice is sent'); assert.equal(m.channel, 'delivery-sales'); assert.deepEqual(m.to, [own], 'direct message to the project owners only');
+  assert.ok(!/Automated Delivery Studio notification/.test(m.text) && m.text.startsWith('**') && m.text.split(String.fromCharCode(10))[0].includes('wants to hear more about') && m.text.split(String.fromCharCode(10))[0].includes('Inspections on mobile') && /Demo please/.test(m.text), "a heading, no automated-notice line"); assert.ok(/\/#\/p\/.+\/showcase$/.test(m.actions[0].url), 'links to the request');
   const n = globalThis.__SENT.length; r = await call(own, 'PUT', `/api/projects/${P}/items/interest/in3`, { data: Object.assign({}, r.data.item.data, { status: 'contacted' }) }); assert.equal(globalThis.__SENT.length, n, 'updating a request sends nothing');
   r = await call(dinesh, 'PUT', '/api/mail/settings', { teamsOn: false });
 });
@@ -549,8 +549,8 @@ await t('project Inbox: emails filed by project address, conversation and sender
   r = await call(dinesh, 'POST', '/api/mail/sync'); assert.equal(r.status, 200); assert.deepEqual([r.data.result.filed, r.data.result.unrouted, r.data.result.notices], [2, 1, 3]);
   assert.ok(graph.calls[0].includes('%24filter') || graph.calls[0].includes('$filter'), 'reads only new mail (received since the last check)');
   const notes = globalThis.__SENT; const n1 = notes.find(x => /Mail Co/.test(x.title)); assert.ok(n1, 'project notice sent'); assert.equal(n1.channel, 'delivery-mail', 'the configured channel');
-  assert.match(n1.text, /Automated Delivery Studio notification/); assert.deepEqual(n1.facts.map(f => f.title), ['From', 'Subject', 'Received', 'Project']); assert.match(n1.actions[0].url, new RegExp('/#/p/' + P + '/inbox/[0-9a-f]{40}$'));
-  assert.ok(notes.some(x => /waiting to be assigned/.test(x.title)), 'unassigned email noticed for review');
+  assert.ok(n1.text.startsWith('**New customer email: Kick-off agenda**') && !/Automated Delivery Studio notification/.test(n1.text) && /From Client M1/.test(n1.text), 'a heading, then who sent it'); assert.deepEqual(n1.facts.map(f => f.title), ['Project', 'Why you got this']); assert.match(n1.actions[0].url, new RegExp('/#/p/' + P + '/inbox/[0-9a-f]{40}$'));
+  assert.ok(notes.some(x => /waiting to be assigned/i.test(x.title)), 'unassigned email noticed for review');
   r = await call(own, 'GET', `/api/projects/${P}/mail`); assert.equal(r.data.items.length, 2, 'M1 by project address, M2 by conversation'); const m1 = r.data.items.find(x => x.subject === 'Kick-off agenda');
   assert.equal(m1.routedBy, 'sent to the project address'); assert.equal(r.data.items.find(x => x.subject !== 'Kick-off agenda').routedBy, 'same conversation');
   assert.deepEqual(m1.attachments.map(a => a.name), ['agenda.pdf', 'big.zip'], 'inline images are not listed as attachments'); assert.equal(m1.ticket, null, 'no ticket when automatic tickets are off');
