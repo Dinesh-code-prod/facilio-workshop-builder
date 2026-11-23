@@ -99,7 +99,7 @@
       if (tab === 'content') body = contentHtml(can);
       if (tab === 'versions') body = (V.guideUpdate ? V.guideUpdate.versionsHtml() : '') + ((V.featureHidden && V.featureHidden('orgpkg')) ? '' : '<h3 style="margin:18px 0 8px">Update from configuration</h3>' + (V.guideUpdate ? V.guideUpdate.html() : ''));
       if (tab === 'brand') body = brandHtml(can);
-      if (tab === 'checks') body = checksHtml(ck) + '<h3 style="margin:18px 0 8px">Export</h3>' + `<div class="card" style="padding:16px"><p class="small">Exports use the branding and the current content. ${W.status === 'approved' ? 'This guide is approved.' : 'This guide is a <b>draft</b>: the cover says so.'} AI source tags are removed. ${ck.filter(c => c.sev === 'medium').length ? `<b>${ck.filter(c => c.sev === 'medium').length} medium finding(s)</b> are still open on the Quality checks tab.` : ''}</p><div class="row" style="gap:8px"><button class="btn primary" data-act="ugDocx">${ico('dl')}Word (.docx)</button><button class="btn" data-act="ugPdf">${ico('dl')}PDF</button></div></div>`;
+      if (tab === 'checks') body = checksHtml(ck) + '<h3 style="margin:18px 0 8px">Export</h3>' + `<div class="card" style="padding:16px"><p class="small">Exports use the branding and the current content. ${W.status === 'approved' ? 'This guide is approved.' : 'This guide is a <b>draft</b>: the cover says so.'} AI source tags are removed. ${ck.filter(c => c.sev === 'medium').length ? `<b>${ck.filter(c => c.sev === 'medium').length} medium finding(s)</b> are still open on the Quality checks tab.` : ''}</p><div class="row" style="gap:8px"><button class="btn primary" data-act="ugDocx">${ico('dl')}Word (.docx)</button><button class="btn" data-act="ugPdf">${ico('dl')}PDF</button><button class="btn" data-act="ugHtml">${ico('dl')}HTML</button></div></div>`;
       return head + `<div class="page-body">${bar}<div style="margin-top:12px">${body}</div></div>`;
     },
     mount() { if (V.guideUpdate && V.guideUpdate.mount) V.guideUpdate.mount(); document.querySelectorAll('[data-ugimg]').forEach(async img => { try { const b = await V.fileBlob(img.getAttribute('data-ugimg')); img.src = URL.createObjectURL(b); } catch (e) { img.alt = 'Image not available'; } }); }
@@ -251,6 +251,27 @@
       const dd = { pageSize: 'A4', pageMargins: [56, 56, 56, 56], content, defaultStyle: { fontSize: 10.5, lineHeight: 1.25 }, styles: { h1: { fontSize: 18, bold: true, color: acc, margin: [0, 0, 0, 8] }, h2: { fontSize: 14, bold: true, color: acc, margin: [0, 8, 0, 4] }, h3: { fontSize: 12, bold: true, color: acc, margin: [0, 6, 0, 3] } },
         footer: (cur, total) => (cur === 1 && W.brand.cover !== false ? null : { text: (W.brand.footer ? W.brand.footer + '  ·  ' : '') + 'Page ' + cur + ' of ' + total, alignment: 'center', fontSize: 8, color: '#7B91B0', margin: [0, 18, 0, 0] }) };
       await new Promise((res, rej) => { try { pm.createPdf(dd).getBlob(b => { V.download((W.title || 'User guide').replace(/[^\w-]+/g, '_') + '.pdf', b); res(); }); } catch (e) { rej(e); } }); toast('PDF ready');
+    } catch (e) { console.error(e); toast('Export failed: ' + (e.message || e), 7000, true); } finally { V.loading(false); }
+  });
+  // HTML: the same guide as one web page (cover, contents, sections, screenshots written in), built from the sections like the Word and PDF files
+  ACT.ugHtml = a => V.busy(a, async () => {
+    if (emptyGuide()) return; await flush(); V.loading(true, 'Writing the web page…');
+    try {
+      const acc = '#' + hex(W.brand.accent); const rt = t => runs(t).map(x => x.bold ? '<b>' + esc(x.text) + '</b>' : esc(x.text)).join(''); const h = [];
+      if (W.brand.cover !== false) { let logo = ''; if (W.brand.logo) { try { logo = '<img src="' + (await media(W.brand.logo.fileId)).dataUrl + '" alt="Logo">'; } catch (e) { } }
+        h.push('<div class="paper cover">' + logo + '<h1 style="color:' + acc + '">' + esc(W.title) + '</h1>' + (W.customer ? '<p>for ' + esc(W.customer) + '</p>' : '') + (W.audience ? '<p class="muted">' + esc(W.audience) + '</p>' : '') + '<p class="muted">Version ' + esc(W.version || '') + ' · ' + esc(dateStr()) + ' · ' + (W.status === 'approved' ? 'Approved' : 'DRAFT') + '</p></div>'); }
+      h.push('<div class="paper"><h2 style="color:' + acc + '">Contents</h2><ol>' + W.sections.map((sec, si) => '<li><a href="#s' + si + '">' + esc(sec.title) + '</a></li>').join('') + '</ol></div>');
+      for (let si = 0; si < W.sections.length; si++) { const sec = W.sections[si]; const p = ['<h2 id="s' + si + '" style="color:' + acc + '">' + esc(sec.title) + '</h2>'];
+        for (const b of sec.blocks || []) {
+          if (b.t === 'img') { try { p.push('<figure><img src="' + (await media(b.fileId)).dataUrl + '" alt="' + esc(b.caption || 'Screenshot') + '">' + (b.caption ? '<figcaption class="caption">' + esc(b.caption) + '</figcaption>' : '') + '</figure>'); } catch (e) { } continue; }
+          for (const x of parseMd(b.text)) {
+            if (x.t === 'h') p.push(x.lvl === 1 ? '<h3>' + esc(x.text) + '</h3>' : '<h4>' + esc(x.text) + '</h4>'); else if (x.t === 'p') p.push('<p>' + rt(x.text) + '</p>');
+            else if (x.t === 'ul' || x.t === 'ol') p.push('<' + x.t + '>' + x.items.map(y => '<li>' + rt(y) + '</li>').join('') + '</' + x.t + '>');
+            else if (x.t === 'table') p.push('<table>' + x.rows.map((r, ri) => '<tr>' + r.map(c => ri ? '<td>' + rt(c) + '</td>' : '<th>' + rt(c) + '</th>').join('') + '</tr>').join('') + '</table>');
+          } }
+        h.push('<div class="paper">' + p.join('') + '</div>'); }
+      if (W.brand.footer) h.push('<p class="pfoot">' + esc(W.brand.footer) + '</p>');
+      await V.saveHtml((W.title || 'User guide').replace(/[^\w-]+/g, '_'), W.title || 'User guide', h.join('')); toast('Web page ready');
     } catch (e) { console.error(e); toast('Export failed: ' + (e.message || e), 7000, true); } finally { V.loading(false); }
   });
 })(typeof window !== 'undefined' ? window : globalThis);

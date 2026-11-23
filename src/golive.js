@@ -40,7 +40,7 @@
   const rec = () => I().get('close', 'golive') || {};
   const can = () => !V.isCustomer() && !F.S.readonly;
   V.golive = { html() {
-    if (V.isCustomer()) return ''; I().load(['utc', 'task', 'close', 'ugd']); const head = '<div class="page-header"><div class="t"><h1>Go-live readiness</h1><p>What stands between this project and go-live, read from what the Studio already holds. Nothing here blocks you: record the decision when the team is ready.</p></div></div>';
+    if (V.isCustomer()) return ''; I().load(['utc', 'task', 'close', 'ugd']); const head = '<div class="page-header"><div class="t"><h1>Go-live readiness</h1><p>What stands between this project and go-live, read from what the Studio already holds. Nothing here blocks you: record the decision when the team is ready.</p></div><div class="row"><button class="btn" data-act="glHtml" title="This page as one web page that opens in any browser">Download HTML</button></div></div>';
     if (!I().ready(['utc', 'task', 'close', 'ugd'])) return head + '<div class="page-body"><div class="muted" style="padding:20px">Loading…</div></div>';
     const r = readiness(gather()), d = rec();
     const rows = r.rows.map(x => '<div class="ev-row" style="align-items:center">' + dot(x.state) + '<span class="ev-t"><b>' + esc(x.label) + '</b><div class="xs muted">' + esc(x.detail) + '</div></span><button class="btn sm" data-act="nav" data-view="' + esc(x.view) + '">Open</button></div>').join('');
@@ -50,6 +50,7 @@
       + '<div class="card"><div class="card-h"><h3>Go-live decision</h3></div><div class="card-b">' + decided + box + '</div></div></div>';
   }, mount() { I().load(['utc', 'task', 'close', 'ugd']); } };
   V.goliveLogic.rows = () => readiness(gather()).rows;
+  V.ACT.glHtml = a => V.busy(a, () => V.saveHtml('Go-live_readiness_' + String(F.S.project.name || 'project').replace(/[^\w-]+/g, '_'), 'Go-live readiness · ' + (F.S.project.name || ''), a.closest('.page-header').parentElement));
   V.ACT.glDecide = a => V.busy(a, async () => {
     if (!can()) return; const go = a.getAttribute('data-go') === '1'; const note = (document.getElementById('gl_note') || {}).value || '';
     if (!(await V.confirmDialog(go ? 'Record go-live' : 'Record hold', 'This is saved with your name and today' + String.fromCharCode(39) + 's date. You can record a different decision later.', go ? 'Record go-live' : 'Record hold', false))) return;

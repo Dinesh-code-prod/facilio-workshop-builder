@@ -49,6 +49,18 @@
   }
   // files are never handed over empty; the object URL stays alive long enough for large files to finish saving
   function download(name, data, mime) { const blob = data instanceof Blob ? data : new Blob([data], { type: mime || 'application/octet-stream' }); if (!blob.size) throw new Error('The file came out empty, so it was not downloaded. Please report this.'); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 60000); }
+  // Download HTML: one self-contained page from what the Studio shows (an HTML string or an element). Buttons, inputs and edit handles are left out and
+  // images (blob: or project files) are written in as data, so the file opens anywhere, offline, and prints like the page.
+  const HTML_CSS = 'body{margin:0;background:#f4f5f7;color:#33333D;font:15px/1.55 Inter,"Segoe UI",system-ui,sans-serif}main{max-width:900px;margin:0 auto;padding:32px 20px}h1,h2,h3,h4{color:#0B0B12;line-height:1.25;margin:1.2em 0 .5em}h1{font-size:28px}h2{font-size:21px}h3{font-size:17px}table{border-collapse:collapse;width:100%;margin:8px 0 14px;font-size:13.5px}th,td{border:1px solid #DEDEE6;padding:6px 8px;text-align:left;vertical-align:top}th{background:#F1F1F6}img,svg{max-width:100%;height:auto}figure{margin:12px 0;text-align:center}.paper{background:#fff;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:48px 56px;margin:0 0 24px}.cover{text-align:center;padding:40px 0}.cover .logos,.ph{display:flex;justify-content:space-between;align-items:center;gap:12px}.ph,.pfoot{font-size:11px;color:#6B6B78}.ph img,.cover img{max-height:56px}.pfoot{text-align:center;margin-top:24px}.card{background:#fff;border:1px solid #ECECF1;border-radius:12px;padding:16px;margin:0 0 14px}.muted,.xs.muted,.small.muted{color:#6B6B78}.caption{text-align:center;font-style:italic;color:#6B6B78}@media print{body{background:#fff}main{padding:0}.paper{box-shadow:none;page-break-after:always;padding:0}}';
+  async function saveHtml(name, title, src) {
+    const d = new DOMParser().parseFromString('<main>' + (typeof src === 'string' ? src : src.outerHTML) + '</main>', 'text/html'); const m = d.querySelector('main');
+    m.querySelectorAll('button,input,select,textarea,script,details>summary,.blk-tools,.fig-size,.hidden-note,.is-hidden,.hidden-blk,[data-noexport]').forEach(x => x.remove());
+    m.querySelectorAll('[contenteditable]').forEach(x => x.removeAttribute('contenteditable')); m.querySelectorAll('[data-act]').forEach(x => x.removeAttribute('data-act')); m.querySelectorAll('details').forEach(x => x.setAttribute('open', ''));
+    const dataUrl = b => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.onerror = () => r(''); fr.readAsDataURL(b); });
+    for (const im of m.querySelectorAll('img[src]')) { const u = im.getAttribute('src'); if (/^data:/.test(u)) continue; try { im.setAttribute('src', await dataUrl(await (await fetch(u)).blob())); } catch (e) { im.remove(); } }
+    const t = String(title || name).replace(/[<&>]/g, c => ({ '<': '&lt;', '&': '&amp;', '>': '&gt;' })[c]);
+    V.download(String(name).replace(/\.html?$/i, '') + '.html', '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + t + '</title><style>' + HTML_CSS + '</style></head><body>' + m.outerHTML + '</body></html>', 'text/html');
+  }
   // images for Word and Excel files: those formats take PNG or JPEG only, so the real type is read from the bytes and
   // anything else (WebP, GIF, SVG, BMP) is redrawn as PNG. Returns { u8, type: 'png' | 'jpg', ext: 'png' | 'jpeg', mime, w, h }.
   async function docImage(blob) {
@@ -111,7 +123,7 @@
   const fmtDate = d => { if (!d) return ''; const x = new Date(d); return isNaN(x) ? String(d) : x.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }); };
   const fmtSize = n => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
   function requireEdit() { if (S.readonly) { toast('You have read-only access to this project'); return false; } return true; }
-  Object.assign(V, { docImage, xmlSafe, loadDocx, loadPdfMake, pdfArabic, sheetName, ico, toast, loading, loadingMsg, tag, statusTag, sel, inp, ta, sw, drawer, closeDrawer, confirmDialog, download, pickFile, loadScript, zipTexts, getPath, setPath, fmtDate, fmtSize, requireEdit, bindTarget });
+  Object.assign(V, { docImage, xmlSafe, loadDocx, loadPdfMake, pdfArabic, sheetName, ico, toast, loading, loadingMsg, tag, statusTag, sel, inp, ta, sw, drawer, closeDrawer, confirmDialog, download, saveHtml, pickFile, loadScript, zipTexts, getPath, setPath, fmtDate, fmtSize, requireEdit, bindTarget });
   V.confirmInline = () => true; // legacy callers: destructive actions now use confirmDialog where it matters
 
   // ---------- routing ----------
