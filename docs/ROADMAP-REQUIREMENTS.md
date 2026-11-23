@@ -269,6 +269,7 @@ Plan and decisions: `docs/plans/CR-AFTER-GOLIVE-2026-11-23.md` (agreed with the 
 - [x] Job `pull_cr` (Claude finds the new document in the project folder, every subfolder, by content; saves only what changes as transfer kind `cr_delta`); `project_jobs` request allows it; the chat command "pull my new MSA" starts it after kick-off approval.
 - [x] Change requests: Change track per CR (steps, the reading, Review on Transfers, Set up the change); new contracts not tied to a CR can start one.
 - [x] Set up adds scope lines, requirement sessions, a plan phase and a BRD addendum (type addendum), all tagged with the CR number; the current-phase strip skips CR rows; UAT test cases can carry the CR and be filtered by it.
+- [x] Deployed in 508 (23 Nov 2026).
 - [ ] Checked with a real new contract in the live app (not done).
 
 ### C5. Digital HTML output for every document, not only the kick-off deck (added 4 Nov 2026)

@@ -1,6 +1,6 @@
 # A new contract after kick-off or go-live: its own change track (plan, 23 Nov 2026)
 
-Status: agreed with the user on 23 Nov 2026 (ask on Analyse with change track first; the project owner approves the delta; the change has its own track and the main stages stay closed). Being built.
+Status: agreed with the user on 23 Nov 2026 (ask on Analyse with change track first; the project owner approves the delta; the change has its own track and the main stages stay closed). Built and deployed in 508; not yet checked with a real new contract.
 
 ## The problem
 A project is live (or its kick-off is approved). The customer signs something new: a change request with its own MSA or order form, an integration MSA, an amendment, a renewal. Someone says to the chat assistant "pull my new MSA, it is in the drive".
