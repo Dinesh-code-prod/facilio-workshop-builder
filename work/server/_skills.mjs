@@ -6,31 +6,35 @@ export const IMPL_SKILLS = {
    "id": "facilio-rules-optimizer",
    "label": "Rules Optimizer",
    "does": "Read-only advisory analysis of an account's automation configuration (workflow rules, stateflows, approvals, SLAs) producing a prioritized opportunity report.",
-   "runsIn": "Claude Cowork",
-   "needs": []
+   "runsIn": "Claude Cowork or Claude Code",
+   "needs": [],
+   "version": "2026.07.10"
   },
   {
    "id": "ftr-generator",
    "label": "FTR Generator",
    "does": "Generate a Functional Test Report (xlsx) from a BRD, optionally cross-checked against an org package.",
-   "runsIn": "Claude Cowork",
-   "needs": []
+   "runsIn": "Claude Cowork or Claude Code",
+   "needs": [],
+   "version": "2026.07.12"
   },
   {
    "id": "ftr-executor",
    "label": "FTR Executor",
    "does": "Execute an FTR against a live org and write Pass/Fail/Partial/Blocked verdicts back.",
-   "runsIn": "Claude Cowork",
+   "runsIn": "Claude Cowork or Claude Code",
    "needs": [
     "Claude in Chrome (a connected browser)"
-   ]
+   ],
+   "version": "2026.07.12"
   },
   {
    "id": "facilio-org-configuration-assistant",
    "label": "Org Configuration Assistant",
    "does": "Answer config questions, troubleshoot workflows, and draft customer replies from an org package, the per-org Org Docs KB, and Training Data — with optional read-only live checks via MCP.",
-   "runsIn": "Claude Cowork",
-   "needs": []
+   "runsIn": "Claude Cowork or Claude Code",
+   "needs": [],
+   "version": "2026.07.11"
   },
   {
    "id": "facilio-configuration-builder",
@@ -39,80 +43,90 @@ export const IMPL_SKILLS = {
    "runsIn": "Claude Cowork or Claude Code",
    "needs": [
     "the Facilio MCP connection"
-   ]
+   ],
+   "version": "2026.09.24"
   },
   {
    "id": "connected-app-code-reviewer",
    "label": "Connected App Code Reviewer (L1)",
    "does": "Level-1 safety/correctness review of a Connected App widget from uploaded code, a live org, or the org's exported code in facilio-config-data.",
-   "runsIn": "Claude Cowork",
+   "runsIn": "Claude Cowork or Claude Code",
    "needs": [
     "the Facilio MCP connection"
-   ]
+   ],
+   "version": "2026.07.03"
   },
   {
    "id": "facilio-connected-apps-builder",
    "label": "Connected App Builder",
    "does": "Build, debug, deploy, and wire a Connected App widget end-to-end (code -> sandbox -> logs -> prod).",
-   "runsIn": "Claude Cowork",
+   "runsIn": "Claude Cowork or Claude Code",
    "needs": [
     "the Facilio MCP connection"
-   ]
+   ],
+   "version": "2026.08.01"
   },
   {
    "id": "facilio-dashboard-builder",
    "label": "Dashboard Builder",
    "does": "Build and lay out Facilio analytics dashboards (KPI tiles, charts, filters) for facilities/ops teams.",
-   "runsIn": "Claude Cowork",
+   "runsIn": "Claude Cowork or Claude Code",
    "needs": [
     "the Facilio MCP connection"
-   ]
+   ],
+   "version": "2026.07.07"
   },
   {
    "id": "facilio-script-builder",
    "label": "Script Builder",
    "does": "Author, validate, embed, and verify Facilio WorkflowV2 scripts end-to-end.",
-   "runsIn": "Claude Cowork",
+   "runsIn": "Claude Cowork or Claude Code",
    "needs": [
     "the Facilio MCP connection"
-   ]
+   ],
+   "version": "2026.07.07"
   },
   {
    "id": "form-package-to-connected-app",
    "label": "Form Package to Connected App",
    "does": "Convert a Facilio form (plus its form/subform rules) into a self-contained Connected App form; delegates deploy to the Connected App Builder.",
-   "runsIn": "Claude Cowork",
+   "runsIn": "Claude Cowork or Claude Code",
    "needs": [
     "the Facilio MCP connection"
-   ]
+   ],
+   "version": "2026.07.05"
   },
   {
    "id": "facilio-script-optimizer",
    "label": "Script Optimizer",
    "does": "Read-only account sweep: where WorkflowV2 scripts could be used or used better — opportunities and existing-script improvements, reported with evidence and severity.",
-   "runsIn": "Claude Cowork",
-   "needs": []
+   "runsIn": "Claude Cowork or Claude Code",
+   "needs": [],
+   "version": "2026.07.10"
   },
   {
    "id": "org-knowledgebase-builder",
    "label": "Org Knowledgebase Builder",
    "does": "Ingest an org's implementation documents into the distilled per-org Org Docs KB on SharePoint at implementation→support handoff, with engineer checkpoints and a validation gate before publish.",
-   "runsIn": "Claude Cowork",
-   "needs": []
+   "runsIn": "Claude Cowork or Claude Code",
+   "needs": [],
+   "version": "2026.07.11"
   },
   {
    "id": "uat-guide-generator",
    "label": "UAT Guide Generator",
    "does": "Generate a customer-facing UAT guide or end-user workflow manual (checklist workbook, flow-review workbook, narrative persona guide, topic-card manual, or role-journey workflow manual) from an FTR/BRD or a recorded session, grounded in the org package XML.",
-   "runsIn": "Claude Cowork",
-   "needs": []
+   "runsIn": "Claude Cowork or Claude Code",
+   "needs": [],
+   "version": "2026.07.26"
   },
   {
    "id": "onboarding-data-converter",
    "label": "Onboarding Data Converter",
    "does": "Convert a customer's raw data (Excel/CSV exports, filled templates) into Facilio import files, validated against their org schema.",
    "runsIn": "Claude Code",
-   "needs": []
+   "needs": [],
+   "version": "2026.06.01"
   },
   {
    "id": "facilio-import-runner",
@@ -121,25 +135,43 @@ export const IMPL_SKILLS = {
    "runsIn": "Claude Code",
    "needs": [
     "the Facilio MCP connection with the facilio-import connection"
-   ]
+   ],
+   "version": "2026.07.26"
   },
   {
    "id": "spreadsheet-transformer",
    "label": "Spreadsheet Transformer",
    "does": "Clean, filter, dedupe or reshape large spreadsheets with locally-run code — a license-free replacement for desktop spreadsheet tooling.",
    "runsIn": "Claude Code",
-   "needs": []
+   "needs": [],
+   "version": "2026.07.11"
   },
   {
    "id": "support-ticket-responder",
    "label": "Support Ticket Responder",
    "does": "Classify and answer support tickets grounded in the org's knowledge base and distilled configuration, with cited sources and abstain-and-escalate behavior. Modes: eval replay with LLM-judged metrics, single ticket, live Freshdesk drafter (private notes only).",
-   "runsIn": "Claude Cowork",
+   "runsIn": "Claude Cowork or Claude Code",
    "needs": [
     "linked facilio-config-data clone",
     "Org Docs KB published for the org (degrades to config-only)",
     "FRESHDESK_DOMAIN/FRESHDESK_API_KEY env for live mode"
-   ]
+   ],
+   "version": "2026.07.17"
+  },
+  {
+   "id": "account-deep-dive",
+   "label": "Account Deep Dive",
+   "does": "Produce a deep, evidence-based report on a Facilio account or an external sales prospect — AI-agent opportunities, a role-by-role Copilot prompt table, and an account-details or deal-room page — published to the account-deep-dive report library.",
+   "runsIn": "Claude Cowork or Claude Code",
+   "needs": [
+    "SQL Lab / Superset",
+    "Clari",
+    "Salesforce",
+    "Facilio Run",
+    "PostHog + Kenny (existing-client mode)",
+    "web search (external-prospect mode)"
+   ],
+   "version": "2026.11.06"
   }
  ],
  "taskSkills": {
@@ -184,6 +216,232 @@ export const IMPL_SKILLS = {
    "onboarding-data-converter",
    "spreadsheet-transformer",
    "facilio-import-runner"
+  ]
+ },
+ "jobSkills": {
+  "pull_msa": [
+   {
+    "skill": "pdf",
+    "from": "claude",
+    "use": "read a contract or document that is a PDF"
+   },
+   {
+    "skill": "docx",
+    "from": "claude",
+    "use": "read or write a Word document"
+   }
+  ],
+  "check_msa": [
+   {
+    "skill": "pdf",
+    "from": "claude",
+    "use": "read a contract or document that is a PDF"
+   },
+   {
+    "skill": "docx",
+    "from": "claude",
+    "use": "read or write a Word document"
+   }
+  ],
+  "check_brd": [
+   {
+    "skill": "docx",
+    "from": "claude",
+    "use": "read or write a Word document"
+   },
+   {
+    "skill": "pdf",
+    "from": "claude",
+    "use": "read a contract or document that is a PDF"
+   }
+  ],
+  "pull_brd": [
+   {
+    "skill": "docx",
+    "from": "claude",
+    "use": "read or write a Word document"
+   },
+   {
+    "skill": "pdf",
+    "from": "claude",
+    "use": "read a contract or document that is a PDF"
+   }
+  ],
+  "pull_clari": [
+   {
+    "skill": "docx",
+    "from": "claude",
+    "use": "read or write a Word document"
+   }
+  ],
+  "pull_transcript": [
+   {
+    "skill": "docx",
+    "from": "claude",
+    "use": "read or write a Word document"
+   }
+  ],
+  "make_from_reference": [
+   {
+    "skill": "pptx",
+    "from": "claude",
+    "use": "read or write the kick-off deck"
+   },
+   {
+    "skill": "xlsx",
+    "from": "claude",
+    "use": "read or write a spreadsheet"
+   },
+   {
+    "skill": "docx",
+    "from": "claude",
+    "use": "read or write a Word document"
+   }
+  ],
+  "apply_change": [
+   {
+    "skill": "pptx",
+    "from": "claude",
+    "use": "change the kick-off deck when it is a file"
+   }
+  ],
+  "draft_brd": [
+   {
+    "skill": "docx",
+    "from": "claude",
+    "use": "read or write a Word document"
+   }
+  ],
+  "compare_solution": [
+   {
+    "skill": "xlsx",
+    "from": "claude",
+    "use": "read or write a spreadsheet"
+   },
+   {
+    "skill": "docx",
+    "from": "claude",
+    "use": "read or write a Word document"
+   }
+  ],
+  "fetch_feedback": [
+   {
+    "skill": "xlsx",
+    "from": "claude",
+    "use": "read or write a spreadsheet"
+   }
+  ],
+  "import_workshop_plan": [
+   {
+    "skill": "xlsx",
+    "from": "claude",
+    "use": "read or write a spreadsheet"
+   }
+  ],
+  "solution_expert": [
+   {
+    "skill": "facilio-org-configuration-assistant",
+    "from": "impl",
+    "use": "read what is already configured in the org (only when the org has a package)"
+   }
+  ],
+  "update_solution": [
+   {
+    "skill": "facilio-org-configuration-assistant",
+    "from": "impl",
+    "use": "read what is already configured in the org (only when the org has a package)"
+   }
+  ],
+  "fetch_org_status": [
+   {
+    "skill": "facilio-org-configuration-assistant",
+    "from": "impl",
+    "use": "read what is already configured in the org (only when the org has a package)"
+   }
+  ],
+  "fetch_hypercare": [
+   {
+    "skill": "support-ticket-responder",
+    "from": "impl",
+    "use": "classify a hypercare ticket and draft the answer from the org knowledge"
+   }
+  ],
+  "build_solution_doc": [
+   {
+    "skill": "facilio-solution-document-builder",
+    "from": "studio",
+    "use": "build the Solution Document from the org package .zip",
+    "needed": true
+   }
+  ],
+  "make_ftr": [
+   {
+    "skill": "ftr-generator",
+    "from": "impl",
+    "use": "write or refresh the FTR from the BRD and the package",
+    "needed": true
+   },
+   {
+    "skill": "ftr-executor",
+    "from": "impl",
+    "use": "only when asked to run the FTR in the live org (needs Claude in Chrome)"
+   },
+   {
+    "skill": "xlsx",
+    "from": "claude",
+    "use": "read or write a spreadsheet"
+   }
+  ],
+  "make_guide": [
+   {
+    "skill": "guidebook-builder",
+    "from": "studio",
+    "use": "a user guide and admin guide for a feature"
+   },
+   {
+    "skill": "video-to-user-guide",
+    "from": "studio",
+    "use": "a guide from a recording and what was said"
+   },
+   {
+    "skill": "uat-guide-generator",
+    "from": "impl",
+    "use": "a customer UAT guide or workflow manual"
+   },
+   {
+    "skill": "docx",
+    "from": "claude",
+    "use": "read or write a Word document"
+   }
+  ],
+  "change_guide": [
+   {
+    "skill": "guidebook-builder",
+    "from": "studio",
+    "use": "keep the guide structure and tone"
+   },
+   {
+    "skill": "docx",
+    "from": "claude",
+    "use": "read or write a Word document"
+   }
+  ],
+  "make_handover": [
+   {
+    "skill": "org-knowledgebase-builder",
+    "from": "impl",
+    "use": "the support team knowledge base from the implementation documents"
+   },
+   {
+    "skill": "facilio-solution-document-builder",
+    "from": "studio",
+    "use": "the Solution Document, when it is not in the pack yet"
+   },
+   {
+    "skill": "docx",
+    "from": "claude",
+    "use": "read or write a Word document"
+   }
   ]
  }
 };

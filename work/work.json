@@ -416,14 +416,14 @@
    },
    {
     "name": "get_impl_skills",
-    "description": "The Facilio implementation skills (FTR Generator, UAT Guide Generator, Configuration Builder and the rest of the toolbox): what each does, where it runs and what it needs. Pass a task (brd, ftr, uat, guide, training, config, pkg, golive, hypercare, handover, onboarding) to get the ones that carry on from a Delivery Studio deliverable. These run in the person's own Claude from their local copy of the skills repository; this tool says which fits and how to start it.",
+    "description": "The Facilio implementation skills (FTR Generator, UAT Guide Generator, Configuration Builder and the rest of the toolbox): what each does, where it runs and what it needs. Pass a task (brd, ftr, uat, guide, training, config, pkg, golive, hypercare, handover, onboarding) to get the ones that carry on from a Delivery Studio deliverable, or a job kind (draft_brd, make_ftr, make_guide, make_handover, build_solution_doc and the other project_jobs kinds) to get that job's skill plan in order. These run in the person's own Claude from their local copy of the skills repository; this tool says which fits and how to start it.",
     "function": "api",
     "input_schema": {
      "type": "object",
      "properties": {
       "task": {
        "type": "string",
-       "description": "A Delivery Studio deliverable: brd, ftr, uat, guide, training, config, pkg, golive, hypercare, handover, onboarding"
+       "description": "A Delivery Studio deliverable: brd, ftr, uat, guide, training, config, pkg, golive, hypercare, handover, onboarding; or a project_jobs job kind"
       },
       "query": {
        "type": "string",
