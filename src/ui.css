@@ -3559,3 +3559,66 @@ html body .main .nt-focus:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { outline: 2px solid #
 #ntPops .nt-pop.miss .nt-pop-i { background: #E5197F; box-shadow: 0 0 0 4px rgba(229, 25, 127, .14); }
 #ntPops .nt-pop p b { display: block; font-weight: 600; color: #0B0B12; }
 #ntPops .nt-pop p small { display: block; margin-top: 2px; font-size: 12px; color: #6B6B78; }
+/* Calm pass (user, 23 Nov 2026, direction A, chosen from two mock-ups): more room, fewer words, colour as flat soft tints, no gradients.
+   Replaces the blue corner wash and the poster gradients of 19 Nov. The project Home top is src/dashboards.js calmHero; the rest of the dashboard sits behind "Show charts and details". */
+html body .main .ca-hero:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { display: block; max-width: 1080px; padding: 40px 0 8px; margin: 0 0 36px; background: none !important; border: 0 !important; box-shadow: none !important; }
+html body .main .ca-hero .ca-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
+html body .main .ca-hero .ca-eye:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin: 0 0 10px !important; font: 500 13px/18px Inter, system-ui, sans-serif !important; letter-spacing: 0 !important; text-transform: none !important; color: #6B6B78 !important; }
+html body .main .ca-hero .ca-title:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin: 0 !important; font: 700 44px/1.08 "Plus Jakarta Sans", Inter, system-ui, sans-serif !important; letter-spacing: -.03em !important; color: #0B0B12 !important; background: none !important; -webkit-text-fill-color: currentColor !important; }
+html body .main .ca-hero .ca-status:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin: 10px 0 0 !important; font: 400 17px/1.5 Inter, system-ui, sans-serif !important; color: #33333D !important; }
+html body .main .ca-hero .ca-acts { display: flex; gap: 10px; }
+html body .main .ca-hero .ca-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 36px 0 44px; }
+html body .main .ca-hero .ca-tile:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { display: block; text-align: left; padding: 22px 24px !important; border: 0 !important; border-radius: 18px !important; background: var(--ca-bg) !important; box-shadow: none !important; cursor: pointer; transition: transform .25s cubic-bezier(.32, .72, 0, 1); }
+html body .main .ca-hero .ca-tile:hover { transform: translateY(-2px); }
+html body .main .ca-hero .ca-tile:focus-visible { outline: 2px solid #1570EF; outline-offset: 3px; }
+html body .main .ca-hero .ca-tile b:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { display: block; font: 700 34px/1 "Plus Jakarta Sans", Inter, sans-serif !important; letter-spacing: -.03em; color: var(--ca-ink) !important; }
+html body .main .ca-hero .ca-tile span:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { display: block; margin-top: 8px; font: 500 14px/18px "Plus Jakarta Sans", Inter, sans-serif !important; color: var(--ca-mid) !important; text-transform: none !important; letter-spacing: 0 !important; }
+html body .main :is(.ca-tile, .ca-ic).blue { --ca-bg: #EAF2FE; --ca-ink: #0B3F8F; --ca-mid: #1D5FC7; }
+html body .main :is(.ca-tile, .ca-ic).amber { --ca-bg: #FEF3E2; --ca-ink: #6B4100; --ca-mid: #9A5B00; }
+html body .main :is(.ca-tile, .ca-ic).green { --ca-bg: #E7F6EE; --ca-ink: #0E5530; --ca-mid: #1F7A47; }
+html body .main :is(.ca-tile, .ca-ic).red { --ca-bg: #FDECEC; --ca-ink: #84191A; --ca-mid: #B42318; }
+html body .main :is(.ca-tile, .ca-ic).teal { --ca-bg: #E2F5F3; --ca-ink: #0B524C; --ca-mid: #0E7068; }
+html body .main .ca-hero .ca-h:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin: 0 0 8px !important; font: 600 18px/24px "Plus Jakarta Sans", Inter, sans-serif !important; letter-spacing: -.01em !important; color: #0B0B12 !important; text-transform: none !important; }
+html body .main .ca-hero .ca-list { list-style: none; margin: 0; padding: 0; }
+html body .main .ca-hero .ca-do:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { display: flex; align-items: center; gap: 16px; width: 100%; min-height: 64px; padding: 12px 8px !important; border: 0 !important; border-top: 1px solid #ECECF1 !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; text-align: left; font: 500 16px/22px Inter, system-ui, sans-serif !important; color: #0B0B12 !important; cursor: pointer; }
+html body .main .ca-hero .ca-list li:last-child .ca-do:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { border-bottom: 1px solid #ECECF1 !important; }
+html body .main .ca-hero .ca-do:hover:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #F7F7FA !important; }
+html body .main .ca-hero .ca-do:focus-visible { outline: 2px solid #1570EF; outline-offset: -2px; }
+html body .main .ca-hero .ca-ic { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 12px; background: var(--ca-bg); color: var(--ca-mid); font-style: normal; }
+html body .main .ca-hero .ca-do > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html body .main .ca-hero .ca-do > em { flex: none; font: 500 14px/1 Inter, sans-serif; font-style: normal; color: #1570EF; }
+html body .main .ca-hero .ca-none { margin: 8px 0 0; font: 400 15px/1.5 Inter, sans-serif; color: #6B6B78; }
+html body .main .ca-hero .ca-road { display: flex; gap: 6px; margin-top: 36px; }
+html body .main .ca-hero .ca-road i { flex: 1; height: 6px; border-radius: 3px; background: #ECECF1; }
+html body .main .ca-hero .ca-road i.done { background: #1570EF; }
+html body .main .ca-hero .ca-road i.now { background: #F5A524; }
+html body .main .ca-more { margin: 32px 0 0; }
+html body .main .ca-more > summary { display: inline-flex; align-items: center; gap: 8px; padding: 10px 0; list-style: none; cursor: pointer; font: 600 14px/20px "Plus Jakarta Sans", Inter, sans-serif; color: #1570EF; }
+html body .main .ca-more > summary::-webkit-details-marker { display: none; }
+html body .main .ca-more > summary::after { content: ""; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform .25s cubic-bezier(.32, .72, 0, 1); }
+html body .main .ca-more[open] > summary::after { transform: translateY(2px) rotate(-135deg); }
+html body .main .ca-more > summary:focus-visible { outline: 2px solid #1570EF; outline-offset: 2px; border-radius: 6px; }
+html body .main .ca-ready { list-style: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; margin: 20px 0 36px; padding: 0; }
+html body .main .ca-ready li { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: baseline; }
+html body .main .ca-ready span { font: 500 14px/18px Inter, sans-serif; color: #33333D; }
+html body .main .ca-ready b { font: 700 15px/18px "Plus Jakarta Sans", Inter, sans-serif; color: #0B0B12; }
+html body .main .ca-ready i { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: #ECECF1; overflow: hidden; }
+html body .main .ca-ready u { display: block; height: 100%; border-radius: inherit; background: #1570EF; text-decoration: none; }
+html body .main .ca-ready small { grid-column: 1 / -1; font: 400 13px/16px Inter, sans-serif; color: #6B6B78; }
+@media (max-width: 900px) { html body .main .ca-hero .ca-tiles, html body .main .ca-ready { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { html body .main .ca-hero .ca-title:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font-size: 32px !important; } html body .main .ca-hero .ca-tiles, html body .main .ca-ready { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { html body .main .ca-hero .ca-tile, html body .main .ca-more > summary::after { transition: none; } html body .main .ca-hero .ca-tile:hover { transform: none; } }
+/* boxes on every tab: plain white with a hairline, no blue corner wash (the 19 Nov wash rules above stay for history; these win) */
+html body :is(.main, .adm-main) :is(.card:not(.dark):not(.empty):not([class*="night"]), .sd-w, .tbl-wrap, .ds-panel, .st-card, .lc-stage, .lc-att, .lc-now, .ws-card, .ws-side, .ho-grp, .ho-sum, .tr-card, .tg2-box, .pv-fold, .md-card, .slk-way, .rp-tile, .adm-card, .adx-c, .dk-card, .sd-life, .ki-chat, .tg2-ph, .tg2-first, .tg2-prog, .kpi, .sd-kpi, .cs-stat, .adx-stat, .pt-wrap, .pt-qfbar, .dk-fbar, .pl-kpis > div):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #fff !important; border: 1px solid #ECECF1 !important; }
+html body .main .mt-in.here:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #F2F7FF !important; }
+/* training posters: flat soft tints in three colours instead of dark gradients with a hatch */
+html body .main .tr-card .tr-po:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #EAF2FE !important; color: #0B3F8F !important; }
+html body .main .tr-card:nth-child(3n+2) .tr-po:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #E2F5F3 !important; color: #0B524C !important; }
+html body .main .tr-card:nth-child(3n+3) .tr-po:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #FEF3E2 !important; color: #6B4100 !important; }
+html body .main .tr-card .tr-po:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q)::after { background: none !important; }
+/* the main buttons that still carried a gradient: plain Facilio blue */
+html body :is(header.navbar .ask-claude, .co-card .co-next):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #1570EF !important; box-shadow: none !important; }
+/* calm pass: the hero spans the page like the rest, and the hatched band under it goes */
+html body .main .ca-hero:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { max-width: none; }
+html body:has(.main) .main .cs-page:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q)::before { display: none !important; }
+html body .main .tr-card .tr-po :is(svg, .tr-kind):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: inherit !important; }

@@ -63,7 +63,7 @@
   // put the strips at the top of the page body without touching each page's own code
   const wrap = (name, key, fn) => { const o = V[name]; if (!o || !o.html || o._pg) return; const h = o.html; o._pg = 1; o.html = function () { const out = h.apply(this, arguments); const add = fn(); return typeof out === 'string' && add ? out.replace('<div class="page-body">', () => '<div class="page-body">' + add) : out; }; };
   // the team project dashboard had no export: a bar above it prints the whole page as it looks
-  ACT.pdPrint = () => V.range.printLive(document.querySelector('.page-body'), ((S.project && S.project.name) || 'Project') + ' · Dashboard');
+  ACT.pdPrint = () => { document.querySelectorAll('.ca-more').forEach(d => { d.open = true; }); V.range.printLive(document.querySelector('.page-body'), ((S.project && S.project.name) || 'Project') + ' · Dashboard'); };   // the folded charts print too
   wrap('projdash', 'projdash', () => (V.isCustomer() ? '' : '<div class="row no-print" style="justify-content:flex-end;margin:0 0 10px"><button class="btn sm" data-act="pdPrint" title="Print the whole dashboard, or save it as a PDF">Export dashboard as PDF</button></div>'));
   const train = k => () => V.trainTop(k) + V.pageGuide(k) + (k === 'guidebuilder' ? V.trainSources() : '');
   wrap('guidebuilder', 'guidebuilder', train('guidebuilder')); wrap('vidguide', 'vidguide', train('vidguide'));

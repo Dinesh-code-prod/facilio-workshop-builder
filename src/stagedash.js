@@ -202,12 +202,15 @@
     I().load(KINDS); const items = cust() ? STG.filter(s => CUST_STG.includes(s.id)) : STG; const all = [['overview', 'Overview']].concat(items.map(s => [s.id, s.label, s.c]), [['reports', 'Reports']]);
     let cur = S.ui.sdTab || 'overview'; if (!all.some(x => x[0] === cur)) cur = 'overview';
     const html = base.call(this); const mark = '<div class="cs-page">';
-    if (cur === 'overview') { const i0 = html.indexOf(mark); if (V.dk && i0 >= 0) { try { return html.slice(0, i0) + mark + tabsHtml(cur, all) + lifecycle() + V.dk.overview() + '</div>'; } catch (e) { console.error(e); } }   // the widget Overview (src/dashkit.js); the older bento below is the fallback
+    // team view: readiness, the lifecycle and the widgets wait behind one fold (calm top, user 23 Nov 2026); a native <details> keeps them in the page for print and checks
+    const fold = inner => (cust() ? inner : `<details class="ca-more"${S.ui.pdMore ? ' open' : ''}><summary>Show charts and details</summary>${V.pdReadiness ? V.pdReadiness() : ''}${inner}</details>`);
+    if (cur === 'overview') { const i0 = html.indexOf(mark); if (V.dk && i0 >= 0) { try { return html.slice(0, i0) + mark + tabsHtml(cur, all) + fold(lifecycle() + V.dk.overview()) + '</div>'; } catch (e) { console.error(e); } }   // the widget Overview (src/dashkit.js); the older bento below is the fallback
       let ex = ''; try { ex = overviewExtra(); } catch (e) { console.error(e); } return html.replace(mark, () => mark + tabsHtml(cur, all) + lifecycle() + ex); }
     const i = html.indexOf(mark); let body; try { body = cur === 'reports' ? (V.sdReports ? V.sdReports.page() : none('Reports are not available.')) : stagePage(cur); } catch (e) { console.error(e); body = none('This tab could not be drawn.'); }
     return (i < 0 ? html : html.slice(0, i)) + mark + tabsHtml(cur, all) + (V.dk && cur !== 'reports' ? '<div class="dk-fbar">' + V.dk.exportBar('dk', true) + '</div>' : '') + body + '</div>';
   };
   ACT.sdTab = a => { S.ui.sdTab = a.getAttribute('data-v'); V.render(); };
+  if (root.document) root.document.addEventListener('toggle', e => { if (e.target.classList && e.target.classList.contains('ca-more')) S.ui.pdMore = e.target.open; }, true);   // the fold stays as the person left it
 
   // ---------- admin: the stages across every active project ----------
   const RSTG = [[0, 'All stages'], [1, 'Project introduction'], [2, 'Requirement sessions'], [3, 'Solution design and BRD'], [4, 'UAT and FTR'], [5, 'Training guides'], [7, 'Hypercare'], [8, 'Handover']];
