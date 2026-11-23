@@ -1,7 +1,8 @@
 // Hand-run: write the daytime versions of the sign-in night scene (public/brand/login-scene.svg is left as it is).
 //   day  -> public/brand/login-scene-day.svg   flat light blue sky, pale blue buildings, white windows (light redesign, user 23 Nov 2026)
 //   blue -> public/brand/login-scene-blue.svg  Facilio blue sky, lighter blue buildings, white windows (user 23 Nov 2026: "facilio blue as the background")
-// Usage: node tools/day-scene.mjs [day|blue]   (default: both)
+//   brand -> public/brand/login-scene-brand.svg  the violet-blue of the Facilio logo (used now on the sign-in page)
+// Usage: node tools/day-scene.mjs [day|blue|brand]   (default: all)
 import fs from 'node:fs';
 const src = 'public/brand/login-scene.svg';
 const MAPS = {
@@ -9,6 +10,9 @@ const MAPS = {
     '#0A0F3F': '#BCD1F3', '#5E7DC8': '#A9C3EE', '#8DB8FF': '#B6CCF2', '#FFD58A': '#FFFFFF', '#C6D1FF': '#E9F0FC', '#C0D4FF': '#FFFFFF', '#4C9BFF': '#FFFFFF' },
   blue: { '#121A52': '#1570EF', '#1B2A78': '#1570EF', '#2A5BB0': '#1366E0', '#1D3A86': '#1366E0', '#101A57': '#1366E0',
     '#0A0F3F': '#2E7FF2', '#5E7DC8': '#4A92F5', '#8DB8FF': '#3A88F4', '#FFD58A': '#FFFFFF', '#C6D1FF': '#DCE9FF', '#C0D4FF': '#FFFFFF', '#4C9BFF': '#FFFFFF' },
+  // brand -> public/brand/login-scene-brand.svg  the violet-blue of the Facilio logo (#201C5B) (user, 23 Nov 2026: "the violet blue on the login page which is from facilio")
+  brand: { '#121A52': '#201C5B', '#1B2A78': '#201C5B', '#2A5BB0': '#1B1850', '#1D3A86': '#1B1850', '#101A57': '#1B1850',
+    '#0A0F3F': '#2C2775', '#5E7DC8': '#3B3590', '#8DB8FF': '#332E82', '#FFD58A': '#FFFFFF', '#C6D1FF': '#C9D4FF', '#C0D4FF': '#FFFFFF', '#4C9BFF': '#8DB8FF' },
 };
 for (const name of (process.argv[2] ? [process.argv[2]] : Object.keys(MAPS))) {
   const MAP = MAPS[name]; if (!MAP) throw new Error('unknown scene ' + name);
