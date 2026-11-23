@@ -2,14 +2,14 @@
 // the copy in 10 MB pieces across 16 MB stored parts, one file per document (same content is not saved again, a new save is a version), and nothing without set-up.
 import assert from 'node:assert/strict';
 import handler from '../work/server/api.mjs';
-import { subfolderOf, safeName, folderName, docKeyOf } from '../work/server/_sharepoint.mjs';
+import { subfolderOf, safeName, folderName, docKeyOf, FOLDERS, indexMarkdown } from '../work/server/_sharepoint.mjs';
 const store = new Map(), fileStore = new Map(); let seq = 0; let SITE = '';
-const graphLog = [], puts = []; let perm = 0;
+const graphLog = [], puts = [], texts = new Map(); let perm = 0;
 const items = new Map(); // "parent|name" -> id
 const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' }, secrets: { async get(k) { if (k === 'sharepoint_site' && SITE) return SITE; throw new Error('no secret'); } },
   llm: async () => ({ choices: [{ message: { content: '' } }] }),
   async fetch(cred, url, init) {   // stand-in Microsoft Graph
-    assert.equal(cred, 'graph_files'); const body = init.body ? JSON.parse(init.body) : null; graphLog.push([init.method, url.replace('https://graph.microsoft.com/v1.0', ''), body]);
+    assert.equal(cred, 'graph_files'); const isJson = /json/.test((init.headers || {})['content-type'] || ''); const body = init.body && isJson ? JSON.parse(init.body) : init.body || null; graphLog.push([init.method, url.replace('https://graph.microsoft.com/v1.0', ''), body]);
     const res = (status, j) => ({ status, ok: status < 300, json: async () => j, text: async () => JSON.stringify(j) });
     let m;
     if (/\/sites\/acme\.sharepoint\.com:\/sites\/DS$/.test(url)) return res(200, { id: 'site1' });
@@ -17,6 +17,7 @@ const mkctx = email => ({ viewer: { email, role: 'viewer' }, app: { name: 'fwb' 
     if ((m = url.match(/\/drives\/drv\/items\/([^/:]+)\/children$/))) { const k = m[1] + '|' + body.name; if (items.has(k)) return res(409, {}); const id = 'it' + items.size; items.set(k, id); return res(201, { id, name: body.name, webUrl: 'https://acme.sharepoint.com/sites/DS/' + encodeURIComponent(body.name) }); }
     if ((m = url.match(/\/drives\/drv\/items\/([^/:]+):\/([^:]+)$/)) && init.method === 'GET') return res(200, { id: items.get(m[1] + '|' + decodeURIComponent(m[2])) });
     if ((m = url.match(/\/drives\/drv\/items\/([^/:]+):\/([^:]+):\/createUploadSession$/))) return res(200, { uploadUrl: 'https://acme.sharepoint.com/upload/' + encodeURIComponent(decodeURIComponent(m[2])) + '?c=' + body.item['@microsoft.graph.conflictBehavior'] });
+    if ((m = url.match(/\/drives\/drv\/items\/([^/:]+):\/PROJECT_INDEX\.md:\/content$/)) && init.method === 'PUT') { assert.ok(!isJson); texts.set(m[1], body); return res(200, { id: 'idx-' + m[1], webUrl: 'https://acme.sharepoint.com/sites/DS/PROJECT_INDEX.md' }); }
     if (/\/invite$/.test(url)) return res(200, { value: [{ id: 'perm' + (++perm), roles: body.roles }] });
     if (/\/permissions\//.test(url) && init.method === 'DELETE') return res(204, null);
     return res(404, { error: { message: 'unexpected ' + url } });
@@ -40,12 +41,15 @@ const me = 'sam.k@facilio.com';
 const call = async (method, path, body, who) => { const [p, q] = path.split('?'); const r = await handler({ method, path: p.replace(/^\/api/, ''), query: q || '', headers: {}, text: async () => (body === undefined ? '' : JSON.stringify(body)) }, mkctx(who || me)); return { status: r.status, data: await r.json() }; };
 let n = 0; const t = async (name, fn) => { await fn(); n++; console.log('  ok  ' + name); };
 
-assert.equal(subfolderOf('export', { view: 'brd' }), '03 BRD'); assert.equal(subfolderOf('export', { view: 'guidesList' }), '05 Guides and training'); assert.equal(subfolderOf('uat_evidence'), '07 UAT and FTR'); assert.equal(subfolderOf('whatever'), 'Other');
-assert.equal(safeName('A/B: "x"?.'), 'A-B- -x--'); assert.equal(folderName({ id: 'p_123456789', name: 'CAFM', customer: 'Al Moallam' }), 'Al Moallam – CAFM (456789)');
+assert.deepEqual(FOLDERS, ['01_Project Governance', '02_Requirements & Design', '03_Project Tracking & Reporting', '04_Testing & UAT', '05_Data Onboarding', '06_Training & Enablement', '07_Handover', '08_Archive']);
+assert.equal(subfolderOf('export', { view: 'brd' }), '02_Requirements & Design'); assert.equal(subfolderOf('export', { view: 'guidesList' }), '06_Training & Enablement'); assert.equal(subfolderOf('uat_evidence'), '04_Testing & UAT'); assert.equal(subfolderOf('msa'), '01_Project Governance'); assert.equal(subfolderOf('onboarding_workbook'), '05_Data Onboarding'); assert.equal(subfolderOf('whatever'), '01_Project Governance'); assert.equal(subfolderOf('export', { view: 'xyz' }), '03_Project Tracking & Reporting');
+assert.equal(safeName('A/B: "x"?.'), 'A-B- -x--'); assert.equal(folderName({ id: 'p_123456789', name: 'Al Moallam', customer: 'Al Moallam' }), 'Al Moallam');
+{ const md = indexMarkdown({ project: { name: 'Al Moallam', id: 'p_1', orgId: '42' }, folder: { url: 'https://x/F' }, documents: [{ name: 'BRD | v2.docx', folder: '02_Requirements & Design', at: '2026-11-23T10:00:00Z', url: 'https://x/F/b' }], tasks: { open: 3, overdue: 1, done: 2 }, missed: [{ label: 'Task', title: 'Send the asset list', ownerText: 'Sam', due: '2026-11-20' }], at: '2026-11-23' });
+  assert.match(md, /\| Facilio Organization ID \| 42 \|/); assert.match(md, /BRD \/ v2\.docx/); assert.match(md, /\[08_Archive\]\(https:\/\/x\/F\/08_Archive\)/); assert.match(md, /Open 3 · overdue 1 · finished 2/); assert.match(md, /Task: Send the asset list \| Sam \| 2026-11-20/); }
 assert.equal(docKeyOf('uat_evidence', 'a.png'), ''); assert.equal(docKeyOf('export', 'BRD.DOCX', { view: 'brd' }), 'export|brd|brd.docx');
 console.log('  ok  subfolders, safe names and document keys');
 
-const pid = (await call('POST', '/api/projects', { name: 'CAFM', customer: 'Al Moallam' })).data.project.id;
+const pid = (await call('POST', '/api/projects', { name: 'Al Moallam', customer: 'Al Moallam' })).data.project.id;
 const ravi = (await call('POST', `/api/projects/${pid}/members`, { email: 'ravi.m@facilio.com', role: 'viewer' })).data.member.id;
 // an upload the way the page does it: ask, store the parts, complete
 async function upload(name, category, bytes, meta) {
@@ -62,13 +66,15 @@ await t('without set-up nothing is copied and the page is told so', async () => 
 SITE = 'https://acme.sharepoint.com/sites/DS';
 const big = Buffer.alloc(25 * 1024 * 1024); for (let i = 0; i < big.length; i++) big[i] = (i * 7 + (i >> 11)) & 255; big.set([0x50, 0x4B, 3, 4]);   // a .docx starts like a ZIP (the upload checks it)
 let f1;
-await t('a 25 MB export goes to the project folder, subfolder 03 BRD, in three pieces that match the file', async () => {
+await t('a 25 MB export goes to the project folder, subfolder 02_Requirements & Design, in three pieces that match the file', async () => {
   f1 = (await upload('Al_Moallam_BRD_V10_DRAFT.docx', 'export', big, { view: 'brd', hash: 'h1' })).file;
   const pend = await call('GET', `/api/projects/${pid}/sharepoint`); assert.equal(pend.data.configured, true); assert.deepEqual(pend.data.pending.map(x => x.id), [f1.id]);
-  const r = await copy(f1.id); assert.equal(r.parts, 3); assert.equal(r.last.done, true); assert.equal(r.last.folder, '03 BRD'); assert.match(r.last.url, /Al_Moallam_BRD_V10_DRAFT\.docx$/);
+  const r = await copy(f1.id); assert.equal(r.parts, 3); assert.equal(r.last.done, true); assert.equal(r.last.folder, '02_Requirements & Design'); assert.match(r.last.url, /Al_Moallam_BRD_V10_DRAFT\.docx$/);
   assert.equal(Buffer.concat(puts.map(p => p.body)).compare(big), 0, 'the pieces put together are the file'); assert.deepEqual(puts.map(p => p.a), [0, 10485760, 20971520]);
   assert.ok(puts[0].url.includes('c=replace'), 'a document overwrites its earlier version');
-  assert.ok(items.has('root|Al Moallam – CAFM (' + pid.slice(-6) + ')') && [...items.keys()].some(k => k.endsWith('|03 BRD')));
+  const root = items.get('root|Facilio Onboarding'), pf = items.get(root + '|Al Moallam'); assert.ok(root && pf, 'Facilio Onboarding / Al Moallam');
+  assert.deepEqual(FOLDERS.filter(n => items.has(pf + '|' + n)), FOLDERS, 'all eight standard folders, not only the one the file needed');
+  assert.match(texts.get(pf), /# Project index: Al Moallam/); assert.match(texts.get(pf), /Al_Moallam_BRD_V10_DRAFT\.docx/, 'the index lists the copied document');
   const pend2 = await call('GET', `/api/projects/${pid}/sharepoint`); assert.equal(pend2.data.pending.length, 0); assert.match(pend2.data.folder.url, /sharepoint\.com/);
   const fl = await call('GET', `/api/projects/${pid}/files?category=export`); assert.match(fl.data.files[0].sp.url, /sharepoint\.com/); assert.ok(!JSON.stringify(fl.data).includes('/upload/'), 'the upload link never leaves the server');
 });
@@ -100,6 +106,14 @@ await t('a member removed from the project loses the folder', async () => {
   const before = graphLog.length; await call('DELETE', `/api/projects/${pid}/members/${uid}`);
   assert.ok(graphLog.slice(before).some(g => g[0] === 'DELETE' && /\/permissions\/perm/.test(g[1])));
   const r = await call('GET', `/api/projects/${pid}/sharepoint`); assert.equal(r.data.folder.people, 1);
+});
+await t('a new project gets Facilio Onboarding / its name / the eight folders and the index at once; a second project with the same name gets its own folder', async () => {
+  const p2 = (await call('POST', '/api/projects', { name: 'Riyadh Towers', customer: 'RT' })).data.project.id; const root = items.get('root|Facilio Onboarding'); const f2 = items.get(root + '|Riyadh Towers');
+  assert.ok(f2); assert.deepEqual(FOLDERS.filter(n => items.has(f2 + '|' + n)), FOLDERS); assert.match(texts.get(f2), /Delivery Studio project ID \| p/);
+  const p3 = (await call('POST', '/api/projects', { name: 'Riyadh Towers', customer: 'RT2' })).data.project.id; assert.ok(items.has(root + '|Riyadh Towers (' + p3.slice(-6) + ')'), 'no two projects share a folder');
+  items.set(root + '|Hand Made', 'manual1'); await call('POST', '/api/projects', { name: 'Hand Made', customer: 'HM' }); assert.ok(items.has('manual1|01_Project Governance'), 'a folder made by hand with that name is adopted, not duplicated');
+  const r = await handler({ method: 'POST', path: '/', query: '', headers: { 'x-work-mcp': '1', 'x-work-mcp-tool': 'get_document' }, text: async () => JSON.stringify({ project: p2, section: 'project_index' }) }, mkctx(me));
+  const j = await r.json(); assert.equal(j.data.configured, true); assert.equal(j.data.folder.folders.length, 8); assert.match(j.data.index, /Riyadh Towers/);
 });
 await t('the connector overview names the project folder', async () => {
   const r = await handler({ method: 'POST', path: '/', query: '', headers: { 'x-work-mcp': '1', 'x-work-mcp-tool': 'project_overview' }, text: async () => JSON.stringify({ project: pid }) }, mkctx(me));

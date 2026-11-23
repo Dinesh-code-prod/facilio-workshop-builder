@@ -17,7 +17,7 @@
       if (body) Array.from(body.children).slice(0, 10).forEach(el => { el.classList.add('si-item'); n++; });
       else page.querySelectorAll('.proj-card').forEach(el => { el.classList.add('si-item'); n++; });
       if (n) playStagger(page);
-      const rows = page.querySelectorAll('table tbody tr'); if (rows.length && rows.length < 80) { const wrap = rows[0].closest('table').parentElement; rows.forEach(r => r.classList.add('ll-row')); playListStagger(wrap); }
+      const rows = page.querySelectorAll('table tbody tr'); if (rows.length && rows.length < 80) { rows.forEach(r => r.classList.add('ll-row')); new Set([...rows].map(r => r.closest('table').parentElement)).forEach(w => playListStagger(w)); }   // every table plays, not only the first (rows of a second table stayed hidden)
     } catch (e) { /* motion must never break the app */ }
   }
   function reset() { last = null; t0 = 0; }

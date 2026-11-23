@@ -21,6 +21,7 @@ Rules: keys and secrets never leave the server; a person only sees the projects 
 | [server/_kickoffpack.mjs](server/_kickoffpack.mjs) | Kick-off pack (roadmap E15 Stage 1): from an approved MSA extraction, the data of the kick-off deck AND the drafted project plan, built together and kept as the project document `kickoff_pack`. |
 | [server/_mailapi.mjs](server/_mailapi.mjs) | Customer mail becomes tasks: storage, routes and connector actions (plan: docs/plans/MAIL-TO-TASKS-PLAN-2026-11-07.md). |
 | [server/_mailtasks.mjs](server/_mailtasks.mjs) | Customer mail becomes tasks: the pure rules (plan: docs/plans/MAIL-TO-TASKS-PLAN-2026-11-07.md; tests: tests/mail_tasks.mjs). |
+| [server/_missed.mjs](server/_missed.mjs) | Missed steps (tests: tests/notify.mjs): work with an owner and a due date that is past due and not finished; the alert to the person responsible, reminders, Completed when done. |
 | [server/_msaapi.mjs](server/_msaapi.mjs) | MSA extraction, storage and connector tools (roadmap E2 workspace 1, E11 step 2). |
 | [server/_msadocs.mjs](server/_msadocs.mjs) | Several contract documents per project (plan: docs/plans/MSA-DOCUMENTS-PLAN-2026-11-08.md). |
 | [server/_msaextract.mjs](server/_msaextract.mjs) | MSA extraction: the pure rules (roadmap E2 workspace 1 and E11 step 2). |

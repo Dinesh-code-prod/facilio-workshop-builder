@@ -1,5 +1,7 @@
 /* SharePoint project folders (user, 16 Nov 2026): every project file (uploads, exports, what Claude saves) is copied to one shared SharePoint library,
    one folder per project with subfolders by document type, shared with the project's members (owners and editors edit, viewers read).
+   Layout (user, 23 Nov 2026): Facilio Onboarding / <project name> / 01_Project Governance … 08_Archive, all made when the project is made, plus PROJECT_INDEX.md
+   (project id, Facilio Org ID, document links, tasks, missed steps, decisions, recent updates), rewritten after each copy. Delivery Studio is the master; SharePoint is the shared copy.
    One file per document: an export that is saved again overwrites the same name, so SharePoint keeps versions instead of copies.
    Needs (owner action, see docs/integrations/SHAREPOINT-2026-11-16.md): an OAuth2 credential "graph_files" (Entra app, Graph Sites.Selected with full control
    on one site) granted to this app, and a plain secret "sharepoint_site" (https://<tenant>.sharepoint.com/sites/<site>). Without them nothing is copied.
@@ -7,40 +9,54 @@
    Routes: GET /api/sharepoint/status, GET /api/projects/:id/sharepoint, POST /api/projects/:id/sharepoint/access, POST /api/projects/:id/files/:fid/sharepoint. */
 
 // ---------- pure ----------
+/** the one root folder of every project (user, 23 Nov 2026): Facilio Onboarding / <project name> / the eight standard folders, all made when the project is made */
+export const ROOT = 'Facilio Onboarding';
 export const SUBFOLDERS = [
-  ['01 Contracts and kick-off', ['msa', 'kickoff']],
-  ['02 Workshops and transcripts', ['transcript', 'plan_source']],
-  ['03 BRD', ['brd_export', 'brd_signed']],
-  ['04 Solution document', ['solution_doc', 'solution_input']],
-  ['05 Guides and training', ['guide_source', 'guide_media']],
-  ['06 Configuration', ['config_package', 'config_evidence', 'flow_image', 'mockup_html']],
-  ['07 UAT and FTR', ['uat_source', 'uat_evidence', 'ftr_workbook']],
-  ['08 Plans and onboarding', ['plan', 'schedule', 'onboarding_workbook', 'onboarding_files', 'kpi_workbook']],
-  ['09 Handover', ['handover_source', 'signoff_evidence', 'report_attachment']],
-  ['10 Tickets and tasks', ['ticket_attachment', 'task_attachment']],
-  ['11 Dashboards and reports', ['dashboard', 'showcase_image']]
+  ['01_Project Governance', ['msa', 'kickoff', 'signoff_evidence']],
+  ['02_Requirements & Design', ['transcript', 'brd_export', 'brd_signed', 'solution_doc', 'solution_input', 'config_package', 'config_evidence', 'flow_image', 'mockup_html']],
+  ['03_Project Tracking & Reporting', ['plan', 'schedule', 'plan_source', 'report_attachment', 'ticket_attachment', 'task_attachment', 'dashboard', 'showcase_image', 'kpi_workbook']],
+  ['04_Testing & UAT', ['uat_source', 'uat_evidence', 'ftr_workbook']],
+  ['05_Data Onboarding', ['onboarding_workbook', 'onboarding_files']],
+  ['06_Training & Enablement', ['guide_source', 'guide_media']],
+  ['07_Handover', ['handover_source']],
+  ['08_Archive', []]   // filled by people (old versions, closed material); Delivery Studio never writes here
 ];
+export const FOLDERS = SUBFOLDERS.map(([n]) => n);
+const [GOV, REQ, TRACK, UAT, ONB, TRAIN, HAND] = FOLDERS;
 // an export saved from a page (category "export") goes by the page it came from
-const VIEW_FOLDER = [[/brd/i, '03 BRD'], [/soldoc|solution/i, '04 Solution document'], [/guide|train|video/i, '05 Guides and training'], [/config|flow|mockup|module|form|role|notif/i, '06 Configuration'],
-  [/uat|ftr|test|golive/i, '07 UAT and FTR'], [/plan|onboard|schedule|timeline|task/i, '08 Plans and onboarding'], [/handover|close|signoff|govern|raid|cr\b/i, '09 Handover'],
-  [/ticket|support|mail/i, '10 Tickets and tasks'], [/dash|report|kpi|sla|overview/i, '11 Dashboards and reports'], [/kickoff|msa|contract|session|workshop|transcript|requirement/i, '02 Workshops and transcripts']];
+const VIEW_FOLDER = [[/guide|train|video/i, TRAIN], [/uat|ftr|test/i, UAT], [/onboard/i, ONB], [/handover|close/i, HAND], [/kickoff|msa|contract|govern|raid|cr\b|signoff/i, GOV],
+  [/brd|soldoc|solution|config|flow|mockup|module|form|role|notif|session|workshop|transcript|requirement/i, REQ], [/plan|schedule|timeline|task|ticket|support|mail|dash|report|kpi|sla|overview|golive/i, TRACK]];
 export const SKIP = new Set(['logo_facilio', 'logo_customer', 'brd_template', 'screenshot']);   // settings files, not project documents
 /** documents kept as one file with versions: a new save of the same name replaces the last one, in the app and in SharePoint */
 export const VERSIONED = new Set(['export', 'brd_export', 'solution_doc']);
 export function subfolderOf(category, meta) {
-  if (category === 'export') { const v = String((meta && meta.view) || ''); return (VIEW_FOLDER.find(([re]) => re.test(v)) || [, 'Exports'])[1]; }
-  return (SUBFOLDERS.find(([, cats]) => cats.includes(category)) || ['Other'])[0];
+  if (category === 'export') { const v = String((meta && meta.view) || ''); return (VIEW_FOLDER.find(([re]) => re.test(v)) || [, TRACK])[1]; }
+  return (SUBFOLDERS.find(([, cats]) => cats.includes(category)) || [GOV])[0];   // a file type with no folder of its own sits with the project's governance papers
 }
 /** SharePoint refuses " * : < > ? / \ | # % and a name ending in a dot or space */
 export const safeName = s => String(s || '').replace(/["*:<>?/\\|#%]/g, '-').replace(/[\u0000-\u001f]/g, '').replace(/[.\s]+$/, '').trim().slice(0, 120) || 'file';
-export const folderName = p => safeName(((p.customer ? p.customer + ' – ' : '') + (p.name || 'Project')).slice(0, 100) + ' (' + String(p.id || '').slice(-6) + ')');
+/** the project's own name; a second project with the same name gets the end of its id added (see projectFolder) */
+export const folderName = p => safeName(String(p.name || 'Project').slice(0, 100));
+const cell = v => String(v == null || v === '' ? '—' : v).replace(/\|/g, '/').replace(/\s+/g, ' ').trim().slice(0, 200);
+/** PROJECT_INDEX.md: where everything of the project is, so Claude and people find a document without opening every folder. x comes from indexData() in api.mjs. */
+export function indexMarkdown(x) {
+  const p = x.project || {}, f = x.folder || {}, t = x.tasks || {};
+  const rows = (h, list) => list.length ? ['| ' + h.join(' | ') + ' |', '|' + h.map(() => '---').join('|') + '|'].concat(list.map(r => '| ' + r.map(cell).join(' | ') + ' |')) : ['None recorded.'];
+  return ['# Project index: ' + cell(p.name), '', '_Kept by Facilio Delivery Studio, updated ' + cell(x.at) + '. Do not edit by hand: the next update replaces it, and SharePoint keeps the earlier versions._', '', '## Project']
+    .concat(rows(['Field', 'Value'], [['Project', p.name], ['Delivery Studio project ID', p.id], ['Customer', p.customer], ['Facilio Organization ID', p.orgId || 'Not set yet'], ['Region', p.region], ['Delivery status', p.status], ['Start', p.start], ['End', p.end], ['Open in Delivery Studio', p.link], ['Repository folder', f.url]]),
+      ['', '## Folders'], FOLDERS.map(n => '- [' + n + '](' + (f.url ? f.url + '/' + encodeURIComponent(n) : '') + ')'),
+      ['', '## Documents (latest version of each)'], rows(['Document', 'Folder', 'Saved', 'Link'], (x.documents || []).map(d => [d.name, d.folder, String(d.at || '').slice(0, 10), d.url])),
+      ['', '## Tasks', 'Open ' + (t.open || 0) + ' · overdue ' + (t.overdue || 0) + ' · finished ' + (t.done || 0) + '.', '', '### Missed steps (past due, not finished)'], rows(['Item', 'Owner', 'Due'], (x.missed || []).map(m => [m.label + ': ' + m.title, m.ownerText, m.due])),
+      ['', '## Decisions'], rows(['Decision', 'Status', 'Date'], (x.decisions || []).map(d => [d.title, d.status, d.date])),
+      ['', '## Recent updates'], rows(['When', 'What'], (x.activity || []).map(a => [String(a.at || '').slice(0, 16).replace('T', ' '), a.what])), ['']).join('\n');
+}
 /** the key that makes two saves "the same document": category, page and name, without case */
 export const docKeyOf = (category, name, meta) => VERSIONED.has(category) ? [category, (meta && meta.view) || '', String(name || '').toLowerCase()].join('|') : '';
 export const SEG = 10 * 1024 * 1024;   // 32 × 320 KiB: Microsoft takes upload pieces in multiples of 320 KiB, and a piece must fit the 25-second request
 export const accessRole = m => (m.role === 'viewer' ? 'read' : 'write');
 
 export function installSharePoint(d) {
-  const { route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbList, withLock, audit, CTX, CHUNK } = d;
+  const { route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbList, withLock, audit, CTX, CHUNK, indexData } = d;
   const CRED = 'graph_files', G = 'https://graph.microsoft.com/v1.0';
   const ctx = () => CTX();
   const siteUrl = async () => { try { return String(await ctx().secrets.get('sharepoint_site') || '').trim().replace(/\/+$/, ''); } catch (e) { return ''; } };
@@ -48,7 +64,8 @@ export function installSharePoint(d) {
 
   async function graph(method, path, body) {
     if (!ctx().fetch) throw new HttpError(503, 'This platform build cannot call Microsoft');
-    let r; try { r = await ctx().fetch(CRED, path.startsWith('https://') ? path : G + path, { method, headers: body ? { 'content-type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined }); }
+    const text = typeof body === 'string';   // a text file's content (PROJECT_INDEX.md), sent as it is
+    let r; try { r = await ctx().fetch(CRED, path.startsWith('https://') ? path : G + path, { method, headers: body ? { 'content-type': text ? 'text/markdown; charset=utf-8' : 'application/json' } : {}, body: body ? (text ? body : JSON.stringify(body)) : undefined }); }
     catch (e) { throw new HttpError(424, 'The Microsoft credential "' + CRED + '" is missing or not granted to this app. See the SharePoint set-up note.'); }
     if (r.ok || r.status === 409) { let j = null; try { j = r.status === 204 ? null : await r.json(); } catch (e) { } return { status: r.status, j }; }
     let why = ''; try { why = String(((await r.json()).error || {}).message || '').slice(0, 200); } catch (e) { }
@@ -59,10 +76,11 @@ export function installSharePoint(d) {
   // the library: the site's default document library, found once and kept
   async function drive() {
     const site = await siteUrl(); if (!site) throw new HttpError(409, 'SharePoint is not set up yet');
-    const c = ((await dbGet('cfg', 'sharepoint')) || {}).value; if (c && c.site === site && c.driveId) return c;
+    const c = ((await dbGet('cfg', 'sharepoint')) || {}).value; if (c && c.site === site && c.driveId && c.rootId) return c;
     const u = new URL(site); const s1 = await graph('GET', '/sites/' + u.hostname + ':' + (u.pathname || '/'));
     const dr = await graph('GET', '/sites/' + encodeURIComponent(s1.j.id) + '/drive');
-    const v = { site, siteId: s1.j.id, driveId: dr.j.id, webUrl: dr.j.webUrl || site }; await dbPut('cfg', 'sharepoint', v); return v;
+    const root = await child(dr.j.id, 'root', ROOT);   // "Facilio Onboarding", made once, or the one that is already there
+    const v = { site, siteId: s1.j.id, driveId: dr.j.id, webUrl: dr.j.webUrl || site, rootId: root.id, rootUrl: root.webUrl || '' }; await dbPut('cfg', 'sharepoint', v); return v;
   }
   async function child(driveId, parentId, name) {   // a folder by name under a parent, created when missing
     const c = await graph('POST', '/drives/' + driveId + '/items/' + parentId + '/children', { name, folder: {}, '@microsoft.graph.conflictBehavior': 'fail' });
@@ -70,12 +88,24 @@ export function installSharePoint(d) {
     return (await graph('GET', '/drives/' + driveId + '/items/' + parentId + ':/' + encodeURIComponent(name))).j;
   }
   const recOf = async pid => ((await dbGet('spp', pid)) || {}).value || null;
+  // the project folder under Facilio Onboarding with all eight standard folders. A folder of that name that no project owns yet (made by hand) is adopted, so nothing is duplicated;
+  // one another project already owns gets a second folder with the end of this project's id.
   async function projectFolder(p) {
     return withLock('spp.' + p.id, async () => {
-      let rec = await recOf(p.id); const dv = await drive(); if (rec && rec.driveId === dv.driveId && rec.folderId) return rec;
-      const f = await child(dv.driveId, 'root', folderName(p)); rec = { driveId: dv.driveId, folderId: f.id, url: f.webUrl, name: f.name, subs: {}, granted: {} };
-      await dbPut('spp', p.id, rec); await syncAccess(p, rec).catch(() => { }); return rec;
+      let rec = await recOf(p.id); const dv = await drive(); if (rec && rec.driveId === dv.driveId && rec.root === dv.rootId && rec.folderId) return rec;
+      let f = await child(dv.driveId, dv.rootId, folderName(p));
+      if ((await dbList('spp')).some(r => r.key !== p.id && r.value && r.value.folderId === f.id)) f = await child(dv.driveId, dv.rootId, safeName(folderName(p) + ' (' + String(p.id).slice(-6) + ')'));
+      rec = { driveId: dv.driveId, root: dv.rootId, folderId: f.id, url: f.webUrl, name: f.name, subs: {}, granted: {} };
+      for (const n of FOLDERS) { const s = await child(rec.driveId, rec.folderId, n); rec.subs[n] = s.id; }
+      await dbPut('spp', p.id, rec); await syncAccess(p, rec).catch(() => { }); await writeIndex(p, rec).catch(e => console.log('project index failed: ' + e.message)); return rec;
     });
+  }
+  // PROJECT_INDEX.md in the project folder: rewritten (a new SharePoint version) when the folder is made, after each copy and on Update access
+  async function writeIndex(p, rec) {
+    if (!indexData) return; const files = (await dbList('fl.' + p.id)).map(r => r.value).filter(f => f && f.sp && f.sp.url && !f.deletedAt && !f.supersededBy).sort((a, b) => String(b.sp.at).localeCompare(String(a.sp.at)));
+    const md = indexMarkdown(Object.assign({}, await indexData(p.id), { folder: { url: rec.url }, documents: files.slice(0, 200).map(f => ({ name: f.name, folder: f.sp.folder, at: f.sp.at, url: f.sp.url })), at: new Date().toISOString() }));
+    const r = await graph('PUT', '/drives/' + rec.driveId + '/items/' + rec.folderId + ':/PROJECT_INDEX.md:/content', md);
+    rec.index = { url: (r.j && r.j.webUrl) || '', at: new Date().toISOString() }; await dbPut('spp', p.id, rec); return md;
   }
   async function sub(p, rec, name) {
     if (rec.subs[name]) return rec.subs[name];
@@ -111,10 +141,10 @@ export function installSharePoint(d) {
     const s = await me(); await team(s, P.id, 'read'); const configured = !!(await siteUrl()) && !!ctx().fetch; const rec = await recOf(P.id);
     const files = configured ? (await dbList('fl.' + P.id)).map(r => r.value).filter(f => f && f.status === 'ready' && !f.deletedAt && !f.supersededBy && !SKIP.has(f.category) && !(f.sp && f.sp.url)) : [];
     files.sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt)));
-    return ok({ configured, folder: rec ? { url: rec.url, name: rec.name, people: Object.keys(rec.granted || {}).length, accessAt: rec.accessAt || null, accessErrors: rec.accessErrors || [] } : null, pending: files.slice(0, 50).map(f => ({ id: f.id, name: f.name, size: f.size, category: f.category })), pendingTotal: files.length });
+    return ok({ configured, folder: rec ? { url: rec.url, name: rec.name, root: ROOT, folders: FOLDERS, index: (rec.index && rec.index.url) || '', people: Object.keys(rec.granted || {}).length, accessAt: rec.accessAt || null, accessErrors: rec.accessErrors || [] } : null, pending: files.slice(0, 50).map(f => ({ id: f.id, name: f.name, size: f.size, category: f.category })), pendingTotal: files.length });
   });
   route('POST', '/api/projects/:id/sharepoint/access', async (b, P) => {
-    const s = await me(); const { project } = await team(s, P.id, 'edit'); const rec = await projectFolder(project); const r = await syncAccess(project, rec); await audit(P.id, s.id, 'sharepoint-access', r.granted + ' added, ' + r.removed + ' removed'); return ok(r);
+    const s = await me(); const { project } = await team(s, P.id, 'edit'); const rec = await projectFolder(project); const r = await syncAccess(project, rec); await writeIndex(project, rec).catch(() => { }); await audit(P.id, s.id, 'sharepoint-access', r.granted + ' added, ' + r.removed + ' removed'); return ok(r);
   });
   // copy one file: no part = start (folder, upload link kept on the file record); part n = send piece n; the last piece returns the SharePoint link
   route('POST', '/api/projects/:id/files/:fid/sharepoint', async (b, P) => withLock('spf.' + P.id + '.' + P.fid, async () => {
@@ -139,7 +169,21 @@ export function installSharePoint(d) {
     if (!res.ok) throw new HttpError(502, 'SharePoint refused the piece (' + res.status + ')');
     if (n < job.parts - 1) return ok({ done: false });
     const item = await res.json().catch(() => ({})); f.sp = { url: item.webUrl || '', itemId: item.id || '', folder: job.folder, at: new Date().toISOString(), by: s.email }; delete f.spJob;
-    await dbPut('fl.' + P.id, P.fid, f); await audit(P.id, s.id, 'sharepoint-copy', f.category + ': ' + f.name); return ok({ done: true, url: f.sp.url, folder: f.sp.folder });
+    await dbPut('fl.' + P.id, P.fid, f); await audit(P.id, s.id, 'sharepoint-copy', f.category + ': ' + f.name);
+    try { await writeIndex(project, await recOf(P.id)); } catch (e) { /* the copy stands; the index catches up on the next one */ }
+    return ok({ done: true, url: f.sp.url, folder: f.sp.folder });
   }));
-  return { syncAccess: async pid => { const p = ((await dbGet('projects', pid)) || {}).value; if (p && await siteUrl()) return syncAccess(p); }, folderOf: async pid => { const r = await recOf(pid); return r ? { url: r.url, name: r.name } : null; } };
+  const projectOf = async pid => ((await dbGet('projects', pid)) || {}).value;
+  const configured = async () => !!(await siteUrl()) && !!ctx().fetch;
+  return { syncAccess: async pid => { const p = await projectOf(pid); if (p && await siteUrl()) return syncAccess(p); },
+    folderOf: async pid => { const r = await recOf(pid); return r ? { url: r.url, name: r.name, root: ROOT, index: (r.index && r.index.url) || '' } : null; },
+    /** a new project: its folder, the eight standard folders and the index, when SharePoint is set up (false when it is not) */
+    ensure: async pid => { const p = await projectOf(pid); if (!p || !(await configured())) return false; await projectFolder(p); return true; },
+    /** for the connector: the folder, the standard folders and every copied document with its SharePoint link, plus the index text */
+    indexOf: async pid => { const p = await projectOf(pid); const rec = await recOf(pid); const on = await configured(); if (!p) return null;
+      const files = (await dbList('fl.' + pid)).map(r => r.value).filter(f => f && f.status === 'ready' && !f.deletedAt && !f.supersededBy && !SKIP.has(f.category));
+      const x = indexData ? await indexData(pid) : {};
+      return { configured: on, root: ROOT, folder: rec ? { url: rec.url, name: rec.name, index: (rec.index && rec.index.url) || '', folders: FOLDERS.map(n => ({ name: n, url: rec.url + '/' + encodeURIComponent(n) })) } : null,
+        documents: files.slice(0, 200).map(f => ({ id: f.id, name: f.name, category: f.category, folder: (f.sp && f.sp.folder) || subfolderOf(f.category, f.meta), savedAt: f.createdAt, sharepoint: (f.sp && f.sp.url) || '', copied: !!(f.sp && f.sp.url) })),
+        index: indexMarkdown(Object.assign({}, x, { folder: { url: rec ? rec.url : '' }, documents: files.filter(f => f.sp && f.sp.url).map(f => ({ name: f.name, folder: f.sp.folder, at: f.sp.at, url: f.sp.url })), at: new Date().toISOString() })) }; } };
 }

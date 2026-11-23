@@ -773,7 +773,7 @@
    },
    {
     "name": "list_overdue",
-    "description": "The actual overdue items of one project (tasks, actions, risks and issues, change requests, hypercare issues) with owner and due date, oldest first.",
+    "description": "The actual overdue items of one project (tasks, actions, risks and issues, change requests, hypercare issues) with owner and due date, oldest first, and the project's missed steps: what Delivery Studio itself alerts people about (the person responsible, how late, what to do, a link that opens the item; owners outside the team go to the project owners), with the Facilio Org ID. With notify true it creates those in-app alerts now (and marks finished ones Completed): ask the person first.",
     "function": "api",
     "input_schema": {
      "type": "object",
@@ -793,6 +793,10 @@
       "limit": {
        "type": "number",
        "description": "Most items to return"
+      },
+      "notify": {
+       "type": "boolean",
+       "description": "Create the missed-step alerts in Delivery Studio now (team members with edit access only; ask first)"
       }
      },
      "required": [

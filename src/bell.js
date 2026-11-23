@@ -32,31 +32,53 @@
   // new entries the admin published to this project's Discover more (read from the server once per project; the read / unread mark is the same one the other notices use)
   const LIB = { pid: '', items: [] };
   function libItems() { const id = S.project && S.project.id; if (!id) return []; if (LIB.pid !== id) { LIB.pid = id; LIB.items = []; root.FWBApi.get('/api/projects/' + id + '/discover').then(r => { LIB.items = (r.items || []).slice(0, 8); V.render(); }).catch(() => { }); } return LIB.items.map(e => ({ id: 'dm-' + e.id, kind: 'new', text: 'New in Discover more: ' + e.title, view: cust() ? 'explore' : 'showcase' })); }
-  const all = () => (V.notifyItems ? V.notifyItems() : []).concat(V.bellItems(), libItems(), assistant());   // the server list first (src/notifyclient.js)
-  const GROUPS = [['srv', 'For you', 'Events in your projects, also sent to Teams if you chose it'], ['rem', 'Needs you', 'Reminders and things waiting on someone'], ['new', 'New from Facilio', 'Product updates published for this project'], ['ai', 'Delivery assistant', 'What the project cycle says is missing or late'], ['act', 'Activity', 'Changes made by the other side in the last 14 days']];
+  // project owners see every missed step of their team (read from the server at most every 5 minutes; shown, never counted as unread)
+  const TEAM = { pid: '', at: 0, items: [] };
+  function teamItems() {
+    const id = S.project && S.project.id; if (!id || cust() || S.project.role !== 'owner') return [];
+    if (TEAM.pid !== id || Date.now() - TEAM.at > 300000) { TEAM.pid = id; TEAM.at = Date.now(); root.FWBApi.get('/api/projects/' + id + '/missed').then(r => { TEAM.items = r.items || []; if (document.getElementById('bellPop')) draw(); }).catch(() => { }); }
+    return TEAM.items.slice(0, 15).map(m => ({ id: 'tm-' + m.kind + '-' + m.id, kind: 'team', text: m.ownerText + ': ' + m.label + ' ' + (m.ref ? m.ref + ' ' : '') + m.title + ' (' + m.daysLate + ' day' + (m.daysLate === 1 ? '' : 's') + ' late)', view: m.view, x: m.x, tone: 'late' }));
+  }
+  const all = () => (V.notifyItems ? V.notifyItems() : []).concat(V.bellItems(), libItems(), assistant(), teamItems());   // the server list first (src/notifyclient.js)
+  const GROUPS = [['miss', 'Missed steps', 'Required work of yours past its due date. It stays here until it is done'], ['srv', 'For you', 'Events in your projects, also sent to Teams if you chose it'], ['rem', 'Needs you', 'Reminders and things waiting on someone'], ['new', 'New from Facilio', 'Product updates published for this project'], ['ai', 'Delivery assistant', 'What the project cycle says is missing or late'], ['act', 'Activity', 'Changes made by the other side in the last 14 days'], ['team', 'Your team', 'Missed steps of the people on this project (you own it)']];
+  // the lifecycle chip of a server notice: Completed when the item is done, otherwise Unread or Acknowledged (opened, still to do)
+  const life = x => (!x.srv ? '' : x.done ? '<em class="bp-st ok">Completed</em>' : x.kind === 'miss' ? `<em class="bp-st ${x.read ? 'warn' : 'bad'}">${x.read ? 'Acknowledged' : 'Unread'}</em>` : '');
+  // after a notice opens its page: scroll to the record and mark it for a moment (the page may still be loading, so it looks a few times)
+  function focusRecord(id) {
+    if (!id) return; let n = 0; const look = () => { const sel = '[data-id="' + (root.CSS && CSS.escape ? CSS.escape(id) : id) + '"]'; const el = document.querySelector('.main ' + sel) || document.querySelector(sel);
+      if (!el) { if (++n < 20) setTimeout(look, 300); return; } const row = el.closest('tr, article, li, .card, .row') || el; row.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      row.classList.add('nt-focus'); setTimeout(() => row.classList.remove('nt-focus'), 4000); };
+    setTimeout(look, 150);
+  }
+  function openAt(view, x) { const ex = Object.assign({}, x || {}); const f = ex.focus; delete ex.focus; V.go(view, ex); focusRecord(f); }
   const dot = x => (x.tone === 'late' ? 'late' : x.kind === 'ai' ? 'ai' : x.kind === 'act' ? 'act' : 'rem');
   // what a notification is: an icon and a short name per category, a state chip when the title starts with one ("Done: ...", "Needs your answer: ..."), the project and the time
   const IC = { check: '<path d="M5 12.5l4.5 4.5L19 7"/>', flag: '<path d="M5 21V4m0 0h11l-2 4 2 4H5"/>', shield: '<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/>', pen: '<path d="M4 20h4L19 9l-4-4L4 16z"/>', spark: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>', mail: '<path d="M3 6h18v12H3zM3 7l9 6 9-6"/>', tag: '<path d="M3 8a2 2 0 012-2h14a2 2 0 012 2v2a2 2 0 000 4v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2a2 2 0 000-4z"/>', bell: '<path d="M6 8a6 6 0 1112 0c0 7 3 8 3 8H3s3-1 3-8M10.3 20a2 2 0 003.4 0"/>', clock: '<path d="M12 7v5l3 2M12 3a9 9 0 100 18 9 9 0 000-18z"/>' };
-  const CAT = { TASK: ['Task', 'check', '#1570EF'], PROJECT: ['Project', 'flag', '#64748b'], APPROVAL: ['Approval', 'shield', '#b45309'], STAGE: ['Stage', 'flag', '#0f766e'], 'SIGN-OFF': ['Sign-off', 'pen', '#15803d'], CLAUDE: ['Claude', 'spark', '#1D1A5E'], JOB: ['Claude job', 'spark', '#1D1A5E'], MAIL: ['Mail', 'mail', '#1570EF'], TICKET: ['Ticket', 'tag', '#b42318'], UPDATE: ['Update', 'bell', '#64748b'] };
+  const CAT = { MISSED: ['Missed step', 'clock', '#b42318'], TASK: ['Task', 'check', '#1570EF'], PROJECT: ['Project', 'flag', '#64748b'], APPROVAL: ['Approval', 'shield', '#b45309'], STAGE: ['Stage', 'flag', '#0f766e'], 'SIGN-OFF': ['Sign-off', 'pen', '#15803d'], CLAUDE: ['Claude', 'spark', '#1D1A5E'], JOB: ['Claude job', 'spark', '#1D1A5E'], MAIL: ['Mail', 'mail', '#1570EF'], TICKET: ['Ticket', 'tag', '#b42318'], UPDATE: ['Update', 'bell', '#64748b'] };
   const KIND = { rem: ['Reminder', 'bell', '#b45309'], new: ['New', 'spark', '#1570EF'], ai: ['Assistant', 'spark', '#1D1A5E'], act: ['Activity', 'clock', '#64748b'] };
   const stTone = s => (/^(done|ready|signed|approved|accepted|confirmed)/i.test(s) ? 'ok' : /(fail|concern|reject|overdue|blocked)/i.test(s) ? 'bad' : 'warn');
   const ago = at => { const t = Date.parse(at); if (!t) return ''; const m = Math.round((Date.now() - t) / 6e4); return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : m < 10080 ? Math.round(m / 1440) + ' d ago' : V.fmtDate(String(at).slice(0, 10)); };
 
   const isRead = (x, rs) => (x.srv ? !!x.read : rs.has(x.id));   // a server notification is read on the server, the others in this browser
-  function count() { const rs = readSet(); return all().filter(x => !isRead(x, rs)).length; }
+  function count() { const rs = readSet(); return all().filter(x => x.kind !== 'team' && !isRead(x, rs)).length; }
   V.bellCount = count;
   const POP = 'fwb_notif_popped'; let firstPop = true;
   const popped = () => { try { return new Set(JSON.parse(sessionStorage.getItem(POP) || '[]')); } catch (e) { return new Set(); } };
   function popNew() {
     if (!S.project || !S.user || document.hidden || document.getElementById('bellPop')) return; const rs = readSet(), ps = popped();
-    const fresh = all().filter(x => !isRead(x, rs) && !ps.has(x.id)); if (!fresh.length) return; fresh.forEach(x => ps.add(x.id)); try { sessionStorage.setItem(POP, JSON.stringify([...ps].slice(-400))); } catch (e) { }
+    const fresh = all().filter(x => x.kind !== 'team' && !isRead(x, rs) && !ps.has(x.id)); if (!fresh.length) return; fresh.forEach(x => ps.add(x.id)); try { sessionStorage.setItem(POP, JSON.stringify([...ps].slice(-400))); } catch (e) { }
     let box = document.getElementById('ntPops'); if (!box) { box = document.createElement('div'); box.id = 'ntPops'; box.setAttribute('role', 'status'); box.setAttribute('aria-live', 'polite'); document.body.appendChild(box); }
-    const show = firstPop && fresh.length > 2 ? [{ id: '', text: 'You have ' + fresh.length + ' new notifications' }] : fresh.slice(0, 3); firstPop = false;
-    show.forEach(x => { const el = document.createElement('div'); el.className = 'nt-pop'; el.innerHTML = '<span class="nt-pop-i" aria-hidden="true"></span><p>' + esc(String(x.text || x.title || 'New notification').slice(0, 160)) + '</p><button type="button" class="nt-pop-v" data-act="bellOpen">View</button><button type="button" class="nt-pop-x" aria-label="Dismiss">\u00d7</button>';
-      el.querySelector('.nt-pop-x').onclick = () => el.remove(); el.querySelector('.nt-pop-v').addEventListener('click', () => el.remove()); box.appendChild(el); setTimeout(() => el.remove(), 9000); });
+    const miss = fresh.filter(x => x.kind === 'miss'), rest = fresh.filter(x => x.kind !== 'miss');   // a missed step always pops on its own, with its project, owner and Open
+    const show = (firstPop && miss.length > 2 ? [{ id: '', kind: 'miss', title: miss.length + ' required steps are past their due date', body: 'Open the bell to see each one and go straight to it' }] : miss.slice(0, 3)).concat(firstPop && rest.length > 2 ? [{ id: '', text: 'You have ' + rest.length + ' new notifications' }] : rest.slice(0, Math.max(0, 3 - miss.length))); firstPop = false;
+    show.forEach(x => { const el = document.createElement('div'); el.className = 'nt-pop' + (x.kind === 'miss' ? ' miss' : ''); const sub = x.kind === 'miss' ? [x.pname, x.body].filter(Boolean).join(' \u00b7 ') : '';
+      el.innerHTML = '<span class="nt-pop-i" aria-hidden="true"></span><p>' + (x.kind === 'miss' ? '<b>' + esc(String(x.title || '').slice(0, 140)) + '</b>' + (sub ? '<small>' + esc(sub.slice(0, 220)) + '</small>' : '') : esc(String(x.text || x.title || 'New notification').slice(0, 160))) + '</p>' +   /* the summary pop has no id: its button opens the bell */
+        (x.id ? '<button type="button" class="nt-pop-v" data-act="bellGo" data-id="' + esc(x.id) + '">Open</button>' : '<button type="button" class="nt-pop-v" data-act="bellOpen">View</button>') + '<button type="button" class="nt-pop-x" aria-label="Dismiss">\u00d7</button>';
+      el.querySelector('.nt-pop-x').onclick = () => el.remove(); el.querySelector('.nt-pop-v').addEventListener('click', () => el.remove()); box.appendChild(el); setTimeout(() => el.remove(), x.kind === 'miss' ? 20000 : 9000); });
   }
   setInterval(() => { try { popNew(); } catch (e) { } }, 15000); setTimeout(() => { try { popNew(); } catch (e) { } }, 4000);
-  V.bellHtml = () => { if (!S.project || !S.user) return ''; I().load(['action', 'signoff', 'cr', 'onb', 'raid', 'decision', 'minutes', 'onbsub']); const n = count(); return `<button class="bell" data-act="bellOpen" aria-haspopup="true" title="Updates for you: actions, sign-offs, change requests and decisions" aria-label="Updates${n ? ', ' + n + ' unread' : ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></svg><span class="bell-t">Updates</span>${n ? `<span class="bell-n">${n > 9 ? '9+' : n}</span>` : ''}</button>`; };
+  V.bellHtml = () => { if (!S.project || !S.user) return ''; I().load(['action', 'signoff', 'cr', 'onb', 'raid', 'decision', 'minutes', 'onbsub']); const n = count(); const urgent = V.notifyUrgent ? V.notifyUrgent() : 0;
+    try { const nx = JSON.parse(sessionStorage.getItem('fwb_nt_next') || 'null'); if (nx && nx.pid === S.project.id) { sessionStorage.removeItem('fwb_nt_next'); setTimeout(() => openAt(nx.view, nx.x), 0); } } catch (e) { }   // a notice of another project: now that it is open, go to the item
+    return `<button class="bell${urgent ? ' bell-alert' : ''}" data-act="bellOpen" aria-haspopup="true" title="Updates for you: actions, sign-offs, change requests and decisions" aria-label="Updates${n ? ', ' + n + ' unread' : ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></svg><span class="bell-t">Updates</span>${n ? `<span class="bell-n">${n > 9 ? '9+' : n}</span>` : ''}</button>`; };
 
   function close() { const p = document.getElementById('bellPop'); if (p) p.remove(); document.removeEventListener('keydown', onKey); document.removeEventListener('mousedown', onOut, true); }
   const onKey = e => { if (e.key === 'Escape') close(); };
@@ -67,7 +89,7 @@
     const tabs = [['all', 'All', list.length], ['unread', 'Unread', list.filter(x => !isRead(x, rs)).length]];
     const shown = list.filter(x => f === 'all' || !isRead(x, rs));
     const row = x => { const c = x.srv ? (CAT[x.cat] || CAT.UPDATE) : (KIND[x.kind] || KIND.act), m = x.srv ? /^([^:]{3,32}):\s+(.+)$/.exec(x.title || '') : null, title = x.srv ? (m ? m[2] : x.title || x.text) : x.text, un = !isRead(x, rs), time = x.srv ? ago(x.at) : '';
-      return `<button type="button" class="bp-row${un ? '' : ' read'}" data-act="bellGo" data-id="${esc(x.id)}"><span class="bp-ic" style="--c:${c[2]}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[c[1]]}</svg></span><span class="bp-bd"><b class="bp-t">${esc(title)}</b><span class="bp-m"><em class="bp-tag" style="--c:${c[2]}">${esc(c[0])}</em>${m ? `<em class="bp-st ${stTone(m[1])}">${esc(m[1])}</em>` : ''}${x.srv && x.pname ? `<em class="bp-pj" title="${esc(x.pname)}">${esc(x.pname)}</em>` : ''}${time ? `<time>${esc(time)}</time>` : ''}</span>${x.srv && x.body ? `<span class="bp-x2">${esc(x.body)}</span>` : ''}</span>${un ? '<i class="bp-un" role="img" aria-label="Unread"></i>' : ''}<em class="bp-go" aria-hidden="true">&rsaquo;</em></button>`; };
+      return `<button type="button" class="bp-row${un ? '' : ' read'}" data-act="bellGo" data-id="${esc(x.id)}"><span class="bp-ic" style="--c:${c[2]}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[c[1]]}</svg></span><span class="bp-bd"><b class="bp-t">${esc(title)}</b><span class="bp-m"><em class="bp-tag" style="--c:${c[2]}">${esc(c[0])}</em>${m ? `<em class="bp-st ${stTone(m[1])}">${esc(m[1])}</em>` : ''}${life(x)}${x.srv && x.pname ? `<em class="bp-pj" title="${esc(x.pname)}">${esc(x.pname)}</em>` : ''}${time ? `<time>${esc(time)}</time>` : ''}</span>${x.srv && x.body ? `<span class="bp-x2">${esc(x.body)}</span>` : ''}</span>${un ? '<i class="bp-un" role="img" aria-label="Unread"></i>' : ''}<em class="bp-go" aria-hidden="true">&rsaquo;</em></button>`; };
     const body = GROUPS.map(([k, t, s]) => { const g = shown.filter(x => x.kind === k); return g.length ? `<section class="bp-g"><h4>${t}<span class="bp-gn">${g.length}</span><small>${s}</small></h4>${g.map(row).join('')}</section>` : ''; }).join('') || `<div class="bp-empty"><b>You are all caught up</b><span>Nothing needs you right now.</span></div>`;
     const unread = list.filter(x => !isRead(x, rs)).length;
     let p = document.getElementById('bellPop'); if (!p) { p = document.createElement('div'); p.id = 'bellPop'; p.setAttribute('role', 'dialog'); p.setAttribute('aria-label', 'Notifications'); document.body.appendChild(p); document.addEventListener('keydown', onKey); document.addEventListener('mousedown', onOut, true); }
@@ -76,7 +98,7 @@
       <div class="bp-body">${body}</div>`;
   }
   V.bellRedraw = draw; ACT.bellPrefs = () => { close(); if (ACT.ntPrefs) ACT.ntPrefs(); };
-  ACT.bellOpen = () => { if (document.getElementById('bellPop')) { close(); return; } draw(); };
+  ACT.bellOpen = () => { if (document.getElementById('bellPop')) { close(); return; } draw(); if (V.notifySeen) V.notifySeen(); };   // opening the bell stops the blink; the notices stay until read or done
   ACT.bellClose = close;
   ACT.bellTab = a => { S.ui.bellTab = a.getAttribute('data-v'); draw(); };
   ACT.bellRead = () => { const rs = readSet(); all().forEach(x => rs.add(x.id)); saveRead(rs); if (V.notifyReadAll) V.notifyReadAll(); close(); V.render(); };
@@ -84,5 +106,5 @@
     const id = a.getAttribute('data-id'); const x = all().find(n => n.id === id); const rs = readSet(); rs.add(id); saveRead(rs); close(); if (!x) { V.render(); return; }
     if (x.srv) { if (V.notifyRead) V.notifyRead([x.sid]); if (x.pid && S.project && x.pid !== S.project.id) { V.notifyGo(x); return; } }
     let view = x.view; if (cust()) { const ok = new Set(V.navBase().flatMap(g => g.items.map(i => i[0]))); if (!ok.has(view)) view = 'cust_home'; }
-    V.go(view, Object.assign({}, x.x || {})); };
+    openAt(view, x.x); };
 })(typeof window !== 'undefined' ? window : globalThis);

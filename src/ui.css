@@ -3544,3 +3544,18 @@ html body #asst .as-live em:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q
 html body #asst .as-live.late .as-pb i:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: #E8690B; }
 html body #asst .as-live.late em:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: #B54708; }
 @media (prefers-reduced-motion: reduce) { html body #asst .as-live .as-pb i:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { transition: none; } }
+/* Missed-step alerts (user, 23 Nov 2026; src/bell.js, src/notifyclient.js): only the bell moves while work waits on the person and the bell has not been opened since.
+   A soft Facilio-blue ring pulses out of the bell and the bell gives a small swing every two seconds; nothing else on the page moves. Reduced motion: a steady ring instead. */
+html body .navbar .bell.bell-alert:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { position: relative !important; overflow: visible !important; border-color: #1570EF !important; }
+html body .navbar .bell.bell-alert::after { content: ''; position: absolute; inset: -1px; border-radius: inherit; border: 2px solid #1570EF; pointer-events: none; animation: bellRing 2s cubic-bezier(.32, .72, 0, 1) infinite; }
+html body .navbar .bell.bell-alert svg { transform-origin: 50% 8%; animation: bellSwing 2s ease-in-out infinite; }
+@keyframes bellRing { 0% { opacity: .9; transform: scale(1); } 70%, 100% { opacity: 0; transform: scale(1.35); } }
+@keyframes bellSwing { 0%, 60%, 100% { transform: rotate(0); } 66% { transform: rotate(14deg); } 74% { transform: rotate(-11deg); } 82% { transform: rotate(6deg); } 90% { transform: rotate(-3deg); } }
+@media (prefers-reduced-motion: reduce) { html body .navbar .bell.bell-alert::after { animation: none; opacity: 1; } html body .navbar .bell.bell-alert svg { animation: none; } }
+/* the record a notice opened: marked for a moment */
+html body .main .nt-focus:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { outline: 2px solid #1570EF !important; outline-offset: 2px; background-color: #EFF5FF !important; transition: background-color .6s, outline-color .6s; }
+/* a missed step pops on its own: title, then project, owner and what to do */
+#ntPops .nt-pop.miss { border-color: rgba(229, 25, 127, .28); }
+#ntPops .nt-pop.miss .nt-pop-i { background: #E5197F; box-shadow: 0 0 0 4px rgba(229, 25, 127, .14); }
+#ntPops .nt-pop p b { display: block; font-weight: 600; color: #0B0B12; }
+#ntPops .nt-pop p small { display: block; margin-top: 2px; font-size: 12px; color: #6B6B78; }

@@ -10,19 +10,27 @@
   const seenKey = () => 'fwb_nt_seen_' + ((S.user && S.user.id) || '');
   const seen = () => { try { return new Set(JSON.parse(root.sessionStorage.getItem(seenKey()) || '[]')); } catch (e) { return new Set(); } };
   const saveSeen = s => { try { root.sessionStorage.setItem(seenKey(), JSON.stringify([...s].slice(-200))); } catch (e) { } };
-  const go = x => { root.location.hash = '#/p/' + x.pid + '/' + (x.view || 'projdash'); };
-  /** the badge changes without drawing the whole page again */
+  // another project: the page opens there, then the bell takes it to the exact tab and item (src/bell.js reads fwb_nt_next)
+  const go = x => { try { if (x.x) root.sessionStorage.setItem('fwb_nt_next', JSON.stringify({ pid: x.pid, view: x.view, x: x.x })); } catch (e) { } root.location.hash = '#/p/' + x.pid + '/' + (x.view || 'projdash') + (x.view === 'taskpage' && x.x && x.x.tkPageId ? '/' + encodeURIComponent(x.x.tkPageId) : ''); };
+  // the bell blinks while work waits on this person and they have not opened the bell since it came (user, 23 Nov 2026); reading or finishing it stops it too
+  const URGENT = new Set(['missed_step', 'task_assigned', 'task_due', 'approval_requested', 'lifecycle_nudge']);
+  const popKey = () => 'fwb_nt_popseen_' + ((S.user && S.user.id) || '');
+  const popSeen = () => { try { return new Set(JSON.parse(root.sessionStorage.getItem(popKey()) || '[]')); } catch (e) { return new Set(); } };
+  V.notifyUrgent = () => { if (!team()) return 0; const s = popSeen(); return st.items.filter(x => !x.read && !x.done && URGENT.has(x.type) && !s.has(x.id)).length; };
+  V.notifySeen = () => { const s = popSeen(); st.items.forEach(x => s.add(x.id)); try { root.sessionStorage.setItem(popKey(), JSON.stringify([...s].slice(-300))); } catch (e) { } paint(); };
+  /** the badge and the blink change without drawing the whole page again */
   function paint() {
     const b = document.querySelector('.bell'); if (!b || !V.bellCount) return; const n = V.bellCount(); let el = b.querySelector('.bell-n');
     if (n) { if (!el) { el = document.createElement('span'); el.className = 'bell-n'; b.appendChild(el); } el.textContent = n > 9 ? '9+' : String(n); } else if (el) el.remove();
-    b.setAttribute('aria-label', 'Notifications' + (n ? ', ' + n + ' unread' : '')); if (document.getElementById('bellPop') && V.bellRedraw) V.bellRedraw();
+    const u = V.notifyUrgent(); b.classList.toggle('bell-alert', !!u);
+    b.setAttribute('aria-label', 'Notifications' + (n ? ', ' + n + ' unread' : '') + (u ? ', ' + u + ' need you' : '')); if (document.getElementById('bellPop') && V.bellRedraw) V.bellRedraw();
   }
   function popup(x) {
     try { if (!('Notification' in root) || root.Notification.permission !== 'granted') return; const n = new root.Notification(x.title, { body: x.text, tag: x.id }); n.onclick = () => { root.focus(); go(x); n.close(); }; } catch (e) { }
   }
   function announce(first) {
     const s = seen(); const fresh = st.items.filter(x => !x.read && !s.has(x.id)); fresh.forEach(x => s.add(x.id)); saveSeen(s); if (first) return;   // what was already waiting when the page opened is in the badge, not a pile of pop-ups
-    fresh.slice(0, 3).forEach(x => { if (V.toast) V.toast(x.title + (x.text ? ': ' + x.text : ''), 7000); if (x.browser) popup(x); });
+    fresh.slice(0, 3).forEach(x => { if (V.toast && !S.project) V.toast(x.title + (x.text ? ': ' + x.text : ''), 7000); if (x.browser) popup(x); });   // inside a project the bell's own pop-up shows it, with Open
   }
   async function load() {
     if (!team() || load.busy) return; load.busy = true;
@@ -43,7 +51,7 @@
   async function sweep() { const k = 'fwb_ntsw_' + ((S.user && S.user.id) || '') + '_' + new Date().toISOString().slice(0, 10); try { if (root.localStorage.getItem(k)) return; root.localStorage.setItem(k, '1'); } catch (e) { } try { const r = await API.post('/api/notifications/sweep', {}); if (r && r.notified) load(); } catch (e) { } }
   function start() { if (st.started || !team()) return; st.started = true; load(); sweep(); connect(); setInterval(() => { if (document.visibilityState === 'visible') load(); }, 60000); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') load(); }); }
   /** the rows the bell shows ("For you"); the first call starts the checks */
-  V.notifyItems = () => { if (!team()) return []; start(); const here = S.project && S.project.id; return st.items.slice(0, 25).map(x => ({ id: 'sv-' + x.id, sid: x.id, srv: true, kind: 'srv', read: !!x.read, pid: x.pid, view: x.view, cat: x.cat, type: x.type, title: x.title, body: x.text, pname: x.pname, at: x.at, by: x.by, due: x.due, text: (here && x.pid && x.pid !== here && x.pname ? x.pname + ': ' : '') + x.title })); };
+  V.notifyItems = () => { if (!team()) return []; start(); const here = S.project && S.project.id; return st.items.slice(0, 25).map(x => ({ id: 'sv-' + x.id, sid: x.id, srv: true, kind: x.type === 'missed_step' && !x.done ? 'miss' : 'srv', read: !!x.read, done: !!x.done, state: x.state || '', overdue: !!x.overdue, owner: x.owner || '', more: x.more || '', x: x.x || null, pid: x.pid, view: x.view, cat: x.cat, type: x.type, title: x.title, body: x.text, pname: x.pname, at: x.at, by: x.by, due: x.due, text: (here && x.pid && x.pid !== here && x.pname ? x.pname + ': ' : '') + x.title })); };
   V.notifyRead = async ids => { st.items.forEach(x => { if (ids.includes(x.id)) x.read = true; }); st.unread = st.items.filter(x => !x.read).length; paint(); try { await API.post('/api/notifications/read', { ids }); } catch (e) { } };
   V.notifyReadAll = async () => { st.items.forEach(x => { x.read = true; }); st.unread = 0; paint(); try { await API.post('/api/notifications/read', { all: true }); } catch (e) { } };
   V.notifyGo = go;

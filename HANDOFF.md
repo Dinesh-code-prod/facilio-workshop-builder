@@ -1,5 +1,26 @@
 # Handoff
 
+**PROJECT FOLDERS (FACILIO ONBOARDING) + MISSED-STEP ALERTS WITH A BLINKING BELL (23 Nov 2026, pushed, NOT deployed).** Report: `docs/reports/DOCUMENT-REPOSITORY-AND-ALERTS-2026-11-23.md`.
+- **Folders.** SharePoint layout is now `Facilio Onboarding / <project name> / 01_Project Governance … 08_Archive`.
+  - It is made when a project is created (`SP.ensure` in POST /api/projects, 8 s cap, never blocks).
+  - A hand-made folder of that name is adopted; a second project with the same name gets `(id end)`.
+  - `PROJECT_INDEX.md` is rewritten after each copy. Claude reads it through `get_document` section `project_index`.
+  - Still off until the `graph_files` + `sharepoint_site` set-up is done.
+  - Claude's Microsoft 365 connector is read-only for this account (`get_granted_scopes`: Files.Read.All, Sites.Read.All), so Claude writes through Delivery Studio, not directly.
+- **Alerts.** New `work/server/_missed.mjs`: tasks, actions, RAID, CRs and tickets past their due date and not done.
+  - One `missed_step` notice per item to the person responsible; outside owners go to the project owners.
+  - Reminded every 2 days; Teams only the first time.
+  - Marked Completed when the item is saved done, re-dated or reassigned (`resolve()` in `_notify.mjs`), and by the sweep through `msx`.
+  - Records carry `x` (deep link) and `ref`; GET /api/notifications adds `state` and `overdue`.
+  - `task_due` is now "due soon" only.
+  - The bell blinks (`.bell-alert`, end of `src/ui.css`) until opened or read. A missed step pops with Open; a task opens its task page; actions and RAID open the Governance tab and highlight the row.
+  - Owners see "Your team" (GET /api/projects/:id/missed). `list_overdue` returns missedSteps, byOwner and orgId; `notify: true` creates the alerts.
+  - The connector is at the 40-tool limit, so no new tool was added.
+- **Also fixed:** rows of a second table on a page stayed invisible (`src/animation/motion.js` stagger).
+- **Checked:** npm test, claude_launch, connector_skills, claude-handoff-check (9/9). In the local browser: the blink, the pop-up, the action-row highlight, the task page, Completed after Done.
+- **Not checked:** cross-project and Teams links in a browser, a real SharePoint tenant, the live app.
+- **Next:** deploy; IT set-up for SharePoint.
+
 **CLAUDE WATCHER, OPTIONAL INSTANT ANSWERS (23 Nov 2026, deploy 505, TESTED LIVE).** Live test on ZZ Walkthrough Test: the live page adds no platform CSP header; a ring from the live site woke a Claude Code watcher, which claimed the chat job 5 s after it was written and answered in 15 s; the reply showed in the Assistant box. The very first ring after switching on did not arrive (most likely the browser's one-time local-network prompt; not confirmed). The queue task and a watcher can both be on: a claim is exclusive (the second claim is refused). Why: Studio requests wait for the scheduled task `studio-job-queue` (every 3 min, pauses itself when idle; it was paused since 21 Nov), and facilio.work gives no way to reach a local Claude without a signed-in browser. Add-on, OFF unless a person switches it on (Claude setup > Waiting jobs > Instant answers; localStorage `fwb_claude_watch`): a Claude Code chat runs a doorbell on 127.0.0.1:47615 under its Monitor tool; after every job write (`src/kickoff.js` post) the page rings it with the job id, the ring wakes that Claude, which lists and claims the job through the connector. Code `src/claudewatch.js` (script, prompt, ring), CSP `connect-src` allows `http://127.0.0.1:47615` (`src/template.html`), chat brief asks for a progress note first. Tests `tests/claude_watch.mjs` (9, in npm test), `tests/ui/claude-watch-check.mjs` (9, Edge). Verified locally: page ring to Monitor wake 40 ms. NOT verified: the live site (facilio.work may add its own CSP header; Edge/Chrome ask once for local-network access), a real Claude Code watcher answering a live job.
 
 **CLARI TRANSCRIPTS THROUGH MICROSOFT 365 + QUESTION CHECK (21 Nov 2026, on branch `feat/copilot-link`, not pushed yet, not deployed).** Facilio has no Clari API or connector: Clari transcripts are files in SharePoint (site SAMAI, Shared Documents, folder `Transcripts Clari`; daily `clari_calls_YYYY-MM-DD.txt` lists plus one document per meeting). The `pull_clari` recipe (`work/server/_jobs.mjs`) now uses a Clari connector if one exists, otherwise the Microsoft 365 connector (`sharepoint_search` with folderName, `read_resource`), saves with source clari and ref the Clari call id (or the file link), then runs `session_questions` action live on each transcript, reports answered and open questions in the job summary and saves the still-open must-ask ones as suggested follow-ups (`save_questions`). It fails only when neither connector is there. `live_ask` now gives each open question its priority, must-ask first. Map of every requirement-sessions function: `docs/reports/REQUIREMENT-SESSIONS-MAP-2026-11-21.md` (with a gaps list: two transcript stores with no bridge, prepared questions read the old `transcripts` statements, code inside a comment at `src/kickoff.js:301`). What's new 3.2.0 (team only). Not checked: a real Claude run against the SAMAI folder. Next: review, push to `main` and `feat/simpler-studio`, deploy.

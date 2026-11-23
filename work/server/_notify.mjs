@@ -11,7 +11,8 @@ import { dueWords, personOf, NEXT } from './_msgfmt.mjs';
 export const EVENTS = {
   task_assigned: { label: 'A task is assigned to you', def: { inapp: true, browser: false, teams: true } },
   task_new: { label: 'A new task has no owner yet', def: { inapp: true, browser: false, teams: true } },
-  task_due: { label: 'A task is due soon or overdue', def: { inapp: true, browser: false, teams: true } },
+  task_due: { label: 'A task is due soon', def: { inapp: true, browser: false, teams: true } },
+  missed_step: { label: 'A required step of yours is past its due date', def: { inapp: true, browser: true, teams: true } },
   lifecycle_nudge: { label: 'A project you own needs attention', def: { inapp: true, browser: false, teams: true } },
   approval_requested: { label: 'Something waits for your approval', def: { inapp: true, browser: true, teams: true } },
   stage_ready: { label: 'A stage is ready to close', def: { inapp: true, browser: false, teams: true } },
@@ -24,10 +25,10 @@ export const EVENTS = {
 };
 export const TEAMS_PER_DAY = 5, KEEP = 100;
 /** the label that opens a Teams message and the bell line: what the message is about */
-export const CATEGORY = { task_assigned: 'TASK', task_new: 'TASK', task_due: 'TASK', lifecycle_nudge: 'PROJECT', approval_requested: 'APPROVAL', stage_ready: 'STAGE', stage_closed: 'STAGE', customer_signoff: 'SIGN-OFF', proposal_waiting: 'CLAUDE', job_done: 'JOB', mail_arrived: 'MAIL', ticket_new: 'TICKET' };
+export const CATEGORY = { task_assigned: 'TASK', task_new: 'TASK', task_due: 'TASK', missed_step: 'MISSED', lifecycle_nudge: 'PROJECT', approval_requested: 'APPROVAL', stage_ready: 'STAGE', stage_closed: 'STAGE', customer_signoff: 'SIGN-OFF', proposal_waiting: 'CLAUDE', job_done: 'JOB', mail_arrived: 'MAIL', ticket_new: 'TICKET' };
 export const catOf = ev => String((ev && ev.cat) || CATEGORY[ev && ev.type] || 'UPDATE').toUpperCase().slice(0, 20);
 /** the Teams card of an event: title = category and project, first line = what happened, then the text; facts carry the core details */
-export const WHY = { task_assigned: 'It is assigned to you', task_new: 'Nobody owns it yet, so the whole project team is told', task_due: 'A task of yours is due soon or late', lifecycle_nudge: 'You own this project and its records show it needs attention', approval_requested: 'Something waits for your approval', stage_ready: 'Every record of the stage is complete', stage_closed: 'A stage of this project was closed', customer_signoff: 'The customer acted on a sign-off', proposal_waiting: 'Claude prepared something for you to review', job_done: 'A job you asked for finished', mail_arrived: 'New customer mail needs a decision', ticket_new: 'A support ticket needs attention' };
+export const WHY = { task_assigned: 'It is assigned to you', task_new: 'Nobody owns it yet, so the whole project team is told', task_due: 'A task of yours is due soon', missed_step: 'You are responsible for it (or own the project) and it is past its due date', lifecycle_nudge: 'You own this project and its records show it needs attention', approval_requested: 'Something waits for your approval', stage_ready: 'Every record of the stage is complete', stage_closed: 'A stage of this project was closed', customer_signoff: 'The customer acted on a sign-off', proposal_waiting: 'Claude prepared something for you to review', job_done: 'A job you asked for finished', mail_arrived: 'New customer mail needs a decision', ticket_new: 'A support ticket needs attention' };
 export function teamsCard(ev, rec, actions) {
   const head = String(rec.title || '').split(' \u00b7 ')[0]; const dueFact = (ev.facts || []).find(f => f && f.title === 'Due'); const due = /^\d{4}-\d{2}-\d{2}$/.test(rec.due || '') ? rec.due : /^\d{4}-\d{2}-\d{2}$/.test((dueFact && dueFact.value) || '') ? dueFact.value : ''; const dueTxt = due ? dueWords(due, String(rec.at || '').slice(0, 10)) : '';
   const proj = rec.pname ? rec.pname + (rec.cust && !rec.pname.toLowerCase().includes(rec.cust.toLowerCase()) ? ' \u00b7 ' + rec.cust : '') : '';
@@ -64,7 +65,25 @@ export function channelsFor(type, stored, date) {
 export function teamsGate(rec, day, max = TEAMS_PER_DAY) { const n = rec && rec.day === day ? Number(rec.n) || 0 : 0; return n >= max ? { allow: false, rec: { day, n } } : { allow: true, rec: { day, n: n + 1 } }; }
 /** the record kept in the person's list */
 export function makeRecord(ev, ch, at, id) {
-  return { id, type: ev.type, pid: cut(ev.project && ev.project.id, 80), pname: cut(ev.project && ev.project.name, 120), cat: catOf(ev), title: cut(ev.title, 140), text: cut(ev.text, 300), more: cut(ev.detail, 600), cust: cut(ev.project && ev.project.customer, 80), due: cut(ev.due, 10), by: cut(personOf(ev.actorName || ev.actor), 80), view: cut(ev.view, 40) || 'projdash', at, read: false, browser: !!ch.browser, teams: false };
+  const rec = { id, type: ev.type, pid: cut(ev.project && ev.project.id, 80), pname: cut(ev.project && ev.project.name, 120), cat: catOf(ev), title: cut(ev.title, 140), text: cut(ev.text, 300), more: cut(ev.detail, 600), cust: cut(ev.project && ev.project.customer, 80), due: cut(ev.due, 10), by: cut(personOf(ev.actorName || ev.actor), 80), view: cut(ev.view, 40) || 'projdash', at, read: false, browser: !!ch.browser, teams: false };
+  const x = cleanX(ev.x); if (x) rec.x = x;
+  if (ev.ref && ev.ref.kind && ev.ref.id) rec.ref = { kind: cut(ev.ref.kind, 20), id: cut(ev.ref.id, 80) };
+  if (ev.owner) rec.owner = cut(ev.owner, 80);
+  return rec;
+}
+/** where on the page a notice opens: only these keys, short strings (the bell passes them to the page, never into HTML unescaped) */
+const X_KEYS = ['govTab', 'planTab', 'tkPageId', 'focus'];
+export function cleanX(x) { if (!x || typeof x !== 'object') return null; const o = {}; for (const k of X_KEYS) if (typeof x[k] === 'string' && x[k]) o[k] = x[k].slice(0, 80); return Object.keys(o).length ? o : null; }
+/** the lifecycle a person sees: completed (the item is done), unread, acknowledged (opened, still to do); overdue is told apart by its due date */
+export function stateOf(r, today) { return { state: r.done ? 'completed' : !r.read ? 'unread' : 'acknowledged', overdue: !r.done && /^\d{4}-\d{2}-\d{2}$/.test(r.due || '') && r.due < today }; }
+/** the page path of a notice, with the task id for a task page */
+export const pathOf = rec => '#/p/' + rec.pid + '/' + rec.view + (rec.view === 'taskpage' && rec.x && rec.x.tkPageId ? '/' + encodeURIComponent(rec.x.tkPageId) : '');
+/** an event already told to this person (same key): skip it, bring it back (the item was done and is missed again), or remind (still open REMIND days later) */
+export function repeatOf(had, ev, at) {
+  if (!had || !ev.key) return null;
+  if (had.done) return ev.remind ? { mode: 'revive' } : null;
+  if (ev.remind && Date.parse(at) - Date.parse(had.at) >= ev.remind * 864e5) return { mode: 'remind' };
+  return null;
 }
 
 export function installNotify(d) {
@@ -79,21 +98,32 @@ export function installNotify(d) {
       const at = now(); const day = at.slice(0, 10); const sendTeams = !ev.skipTeams && (await teamsOn()); let n = 0; const c = ctx();
       for (const email of who) {
         const h = hashOf(email); const ch = channelsFor(ev.type, await prefsOf(email), new Date()); if (!ch.inapp && !ch.teams) continue;
-        const id = (ev.key ? createHash('sha256').update(ev.type + '|' + ev.key + '|' + h).digest('hex').slice(0, 20) : Date.now().toString(36) + Math.random().toString(36).slice(2, 8)); const rec = makeRecord(ev, ch, at, id);
-        if (ch.inapp) { const had = await dbGet('nt', h + '.' + id); if (had && had.value && ev.key) continue; await dbPut('nt', h + '.' + id, rec); n++; }   // the same event (same key) is told once
-        if (ch.teams && sendTeams) {
-          try { const g = teamsGate((await dbGet('tnc', h) || {}).value, day); if (g.allow) { await dbPut('tnc', h, g.rec); await Promise.race([c.teams.send(Object.assign({ to: [email] }, teamsCard(ev, rec, [{ title: 'Open in Delivery Studio', url: (BASE_URL || '') + '#/p/' + rec.pid + '/' + rec.view }]))), new Promise(r => setTimeout(r, 4000))]); } } catch (e) { console.log('notify teams failed: ' + (e && e.message)); }
+        const id = idOf(ev.type, ev.key, h) || Date.now().toString(36) + Math.random().toString(36).slice(2, 8); let rec = makeRecord(ev, ch, at, id); let again = null;
+        if (ch.inapp) { const had = ev.key ? ((await dbGet('nt', h + '.' + id)) || {}).value : null;   // the same event (same key) is told once, unless it is reminded or comes back
+          if (had) { again = repeatOf(had, ev, at); if (!again) continue; rec = Object.assign({}, had, rec, { reminders: again.mode === 'remind' ? (Number(had.reminders) || 0) + 1 : 0, done: false, doneAt: null }); }
+          await dbPut('nt', h + '.' + id, rec); n++; }
+        if (ch.teams && sendTeams && !(again && again.mode === 'remind')) {   // a reminder fills the bell again; Teams heard about it the first time
+          try { const g = teamsGate((await dbGet('tnc', h) || {}).value, day); if (g.allow) { await dbPut('tnc', h, g.rec); await Promise.race([c.teams.send(Object.assign({ to: [email] }, teamsCard(ev, rec, [{ title: 'Open in Delivery Studio', url: (BASE_URL || '') + pathOf(rec) }]))), new Promise(r => setTimeout(r, 4000))]); } } catch (e) { console.log('notify teams failed: ' + (e && e.message)); }
         }
         if (ch.inapp) { try { if (c.broadcast) await c.broadcast({ type: 'notify', for: h }); } catch (e) { /* over the realtime budget: the page polls */ } }
       }
       return n;
     } catch (e) { console.log('notify failed: ' + (e && e.message)); return 0; }
   }
+  const idOf = (type, key, h) => (key ? createHash('sha256').update(type + '|' + key + '|' + h).digest('hex').slice(0, 20) : '');
+  /** the thing a notice is about is done: its notice is Completed (and read) for everyone on the team who has it. Resolves to how many changed. */
+  async function resolve(project, type, key) {
+    let n = 0; try {
+      for (const m of teamOf(project)) { const h = hashOf(m.email); if (!m.email) continue; const k = h + '.' + idOf(type, key, h); const r = ((await dbGet('nt', k)) || {}).value; if (!r || r.done) continue;
+        await dbPut('nt', k, Object.assign({}, r, { done: true, read: true, doneAt: now() })); n++; try { if (ctx().broadcast) await ctx().broadcast({ type: 'notify', for: h }); } catch (e) { } }
+    } catch (e) { console.log('notify resolve failed: ' + (e && e.message)); } return n;
+  }
   const mine = async s => { const h = hashOf(s.email); const rows = (await dbList('nt')).filter(r => r.key && r.key.startsWith(h + '.') && r.value).map(r => r.value).sort((a, b) => String(b.at).localeCompare(String(a.at))); return { h, rows }; };
   route('GET', '/api/notifications', async () => {
     const s = await me(); const { h, rows } = await mine(s); const keep = rows.slice(0, KEEP);
     for (const r of rows.slice(KEEP)) { try { await dbDel('nt', h + '.' + r.id); } catch (e) { } }   // the list keeps the newest 100
-    return ok({ h, items: keep, unread: keep.filter(r => !r.read).length, prefs: prefsFor(await prefsOf(s.email)), events: Object.fromEntries(Object.entries(EVENTS).map(([k, e]) => [k, e.label])), teams: await teamsOn() });
+    const today = now().slice(0, 10);
+    return ok({ h, items: keep.map(r => Object.assign({}, r, stateOf(r, today))), unread: keep.filter(r => !r.read).length, prefs: prefsFor(await prefsOf(s.email)), events: Object.fromEntries(Object.entries(EVENTS).map(([k, e]) => [k, e.label])), teams: await teamsOn() });
   });
   route('POST', '/api/notifications/read', async b => {
     const s = await me(); const h = hashOf(s.email); const ids = Array.isArray(b && b.ids) ? b.ids.map(String).slice(0, 200) : null; const pid = b && b.pid ? String(b.pid) : '';
@@ -110,5 +140,5 @@ export function installNotify(d) {
     const n = await notify({ type: 'stage_ready', project, to: 'team', actor: s.email, title: 'Ready to close: ' + (name || stage), text: 'Every record of this stage is complete. A project owner or admin can close it on the Project cycle page.', view: 'lifecycle', key: stage + '|' + now().slice(0, 10) });
     return ok({ notified: n });
   });
-  return { notify };
+  return { notify, resolve };
 }

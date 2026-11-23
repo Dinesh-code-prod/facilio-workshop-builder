@@ -2,7 +2,8 @@
 // NOT checked: real Teams delivery, the live WebSocket push, the browser pop-up.
 import assert from 'node:assert/strict';
 import handler from '../work/server/api.mjs';
-import { EVENTS, prefsFor, channelsFor, inQuiet, teamsGate, makeRecord, hashOf, lead, catOf, teamsCard } from '../work/server/_notify.mjs';
+import { EVENTS, prefsFor, channelsFor, inQuiet, teamsGate, makeRecord, hashOf, lead, catOf, teamsCard, repeatOf, stateOf, cleanX, pathOf } from '../work/server/_notify.mjs';
+import { missedSteps, missedEvent, isMissed } from '../work/server/_missed.mjs';
 let n = 0; const t = async (name, fn) => { await fn(); n++; console.log('  ok  ' + name); };
 
 await t('defaults: every event is in-app; browser only where it matters; Teams only for the ones that need a person quickly', () => {
@@ -86,5 +87,41 @@ await t('a new task with no owner is told to the whole project team once, except
   const it = (await list(KIM)).items.find(x => x.type === 'task_new'); assert.equal(it.cat, 'TASK'); assert.match(it.title, /nobody owns it yet/);
   await as(SAM, 'PUT', `/api/projects/${pid}/items/task/t-new1`, { data: { title: 'Pick up the site keys', status: 'To Do', owner: '' } }); assert.equal(await before(KIM), k0 + 1, 'the same task is told once');
   await as(SAM, 'PUT', `/api/projects/${pid}/items/task/t-new2`, { data: { title: 'Owned from the start', status: 'To Do', owner: KIM } }); assert.equal(await before(VIC), v0 + 1, 'an owned task is not told to everyone');
+});
+
+// ---------- missed steps (user, 23 Nov 2026): work/server/_missed.mjs and the notice lifecycle ----------
+await t('missed steps: only past-due, unfinished records with a due date; the owner is matched by e-mail, name or the part before @; outside owners go to the project owners', () => {
+  const pj = { id: 'p_9', members: [{ email: SAM, role: 'owner', name: 'Sam K' }, { email: KIM, role: 'editor', name: 'Kim R' }, { email: CUS, role: 'customer' }] };
+  const by = { task: [{ id: 'a', data: { title: 'Late', owner: KIM, due: '2026-11-20', n: 4 } }, { id: 'b', data: { title: 'Done', owner: KIM, due: '2026-11-01', status: 'Done' } }, { id: 'c', data: { title: 'Future', owner: KIM, due: '2026-12-01' } }, { id: 'd', data: { title: 'No date', owner: KIM } }],
+    action: [{ id: 'e', data: { text: 'Send the asset list', owner: 'Ahmed (Acme)', due: '2026-11-21' } }, { id: 'f', data: { text: 'By name', owner: 'kim r', due: '2026-11-22' } }], raid: [{ id: 'g', data: { title: 'Old', owner: 'kim.r', due: '2026-11-10', status: 'Closed' } }] };
+  const m = missedSteps(by, pj, '2026-11-23'); assert.deepEqual(m.map(x => x.id), ['a', 'e', 'f']);
+  assert.deepEqual(m[0].to, [KIM]); assert.equal(m[0].ref, 'T-4'); assert.equal(m[0].daysLate, 3); assert.deepEqual(m[0].x, { tkPageId: 'a' }); assert.equal(m[0].view, 'taskpage');
+  assert.deepEqual(m[1].to, [SAM], 'a customer-side owner: the project owner chases it'); assert.equal(m[1].assigned, false); assert.match(m[1].ownerText, /not on the team/); assert.deepEqual(m[1].x, { govTab: 'actions', focus: 'e' });
+  assert.deepEqual(m[2].to, [KIM]); assert.equal(isMissed('task', { due: '2026-11-22' }, '2026-11-23'), true); assert.equal(isMissed('task', { due: '2026-11-23' }, '2026-11-23'), false);
+  const ev = missedEvent(m[0], pj); assert.match(ev.title, /^Overdue task: T-4 Late$/); assert.equal(ev.key, 'ms|p_9|task|a'); assert.equal(ev.remind, 2);
+});
+await t('the notice lifecycle: unread, acknowledged, completed; a repeat is skipped, reminded after two days, brought back when the item is missed again; the page path opens the task', () => {
+  assert.equal(repeatOf({ at: '2026-11-22T08:00:00Z' }, { key: 'k', remind: 2 }, '2026-11-23T08:00:00Z'), null); assert.deepEqual(repeatOf({ at: '2026-11-21T08:00:00Z' }, { key: 'k', remind: 2 }, '2026-11-23T08:00:00Z'), { mode: 'remind' });
+  assert.deepEqual(repeatOf({ at: '2026-11-22T08:00:00Z', done: true }, { key: 'k', remind: 2 }, '2026-11-23T08:00:00Z'), { mode: 'revive' }); assert.equal(repeatOf({ at: '2026-11-01T00:00:00Z' }, { key: 'k' }, '2026-11-23T00:00:00Z'), null, 'other events are told once');
+  assert.deepEqual(stateOf({ read: false, due: '2026-11-20' }, '2026-11-23'), { state: 'unread', overdue: true }); assert.deepEqual(stateOf({ read: true }, '2026-11-23'), { state: 'acknowledged', overdue: false }); assert.deepEqual(stateOf({ read: true, done: true, due: '2026-11-20' }, '2026-11-23'), { state: 'completed', overdue: false });
+  assert.deepEqual(cleanX({ govTab: 'raid', focus: 'x', evil: '<b>', tkPageId: 5 }), { govTab: 'raid', focus: 'x' }); assert.equal(pathOf({ pid: 'p1', view: 'taskpage', x: { tkPageId: 't 1' } }), '#/p/p1/taskpage/t%201');
+});
+await t('the sweep tells the owner of an overdue task once, with the link to the task; doing the task marks the notice Completed and the bell stops counting it; list_overdue shows and can create them', async () => {
+  const y = new Date(Date.now() - 2 * 864e5).toISOString().slice(0, 10);
+  await as(SAM, 'PUT', `/api/projects/${pid}/items/task/t-late`, { data: { title: 'Upload the signed MSA', status: 'In Progress', owner: KIM, due: y } });
+  await as(SAM, 'PUT', `/api/projects/${pid}/items/action/a-late`, { data: { text: 'Customer to send the asset register', status: 'Open', owner: 'Ahmed from Acme', due: y } });
+  await as(KIM, 'POST', '/api/notifications/sweep', {}); await as(KIM, 'POST', '/api/notifications/sweep', {});
+  const mine = (await list(KIM)).items.filter(x => x.type === 'missed_step'); assert.equal(mine.length, 1, 'told once, however often the sweep runs'); const ms = mine[0];
+  assert.equal(ms.cat, 'MISSED'); assert.equal(ms.view, 'taskpage'); assert.deepEqual(ms.x, { tkPageId: 't-late' }); assert.equal(ms.state, 'unread'); assert.equal(ms.overdue, true); assert.match(ms.text, /Owner: .* due/);
+  const own = (await list(SAM)).items.filter(x => x.type === 'missed_step'); assert.equal(own.length, 1, 'the customer-side action goes to the project owner'); assert.deepEqual(own[0].x, { govTab: 'actions', focus: 'a-late' });
+  assert.equal((await list(VIC)).items.filter(x => x.type === 'missed_step').length, 0, 'nobody else');
+  const od = (await tool(SAM, 'list_overdue', { project: pid })).data; assert.equal(od.missedSteps.length, 2); assert.match(od.missedSteps.find(x => x.kind === 'task').link, /#\/p\/.+\/taskpage\/t-late$/); assert.equal(od.notified, 0);
+  assert.equal((await tool(SAM, 'list_overdue', { project: pid, notify: true })).data.notified, 0, 'already told: no duplicate');
+  await as(KIM, 'POST', '/api/notifications/read', { ids: [ms.id] }); assert.equal((await list(KIM)).items.find(x => x.id === ms.id).state, 'acknowledged', 'reading acknowledges, it does not complete');
+  await as(KIM, 'PUT', `/api/projects/${pid}/items/task/t-late`, { data: { title: 'Upload the signed MSA', status: 'Done', owner: KIM, due: y } });
+  const after = (await list(KIM)).items.find(x => x.id === ms.id); assert.equal(after.state, 'completed'); assert.equal(after.done, true);
+  await as(SAM, 'PUT', `/api/projects/${pid}/items/action/a-late`, { data: { text: 'Customer to send the asset register', status: 'Open', owner: 'Ahmed from Acme', due: new Date(Date.now() + 5 * 864e5).toISOString().slice(0, 10) } });
+  assert.equal((await list(SAM)).items.find(x => x.type === 'missed_step').state, 'completed', 'a new date closes the notice too');
+  const team = (await as(SAM, 'GET', `/api/projects/${pid}/missed`)).data; assert.equal(team.items.length, 0); assert.equal((await as(CUS, 'GET', `/api/projects/${pid}/missed`)).status, 403);
 });
 console.log(n + ' notification checks passed');
