@@ -60,7 +60,7 @@ console.log(n + ' Claude helper checks passed');
   });
   u('Phase 2 is wired: the setup banner, the window after a project is created, the owner alert once a day, and the guide says the task is needed', () => {
     assert.match(hj, /const needBanner = \(\) => !!\(show\(\) && st && !st\.mineAt && !skipped\(\)\)/); assert.match(hj, /created: async \(\) => \{ await refresh\(true\); ACT\.helperInfo\('new'\); \}/); assert.match(sh, /V\.helper\.banner\(\)/); assert.match(sh, /V\.helper\.created\(\)/);
-    assert.match(api, /async function helperAlerts\(s, ps, today\)/); assert.match(api, /await helperAlerts\(s, ps, today\);/); assert.match(fs.readFileSync('src/claudesetup.js', 'utf8'), /Keep Claude helping: the scheduled task \(set it up once\)/); assert.match(fs.readFileSync('src/teamhelp.js', 'utf8'), /The Claude helper light in the top bar shows whether any teammate/);
+    assert.match(api, /async function helperAlerts\(s, ps, today\)/); assert.match(api, /await helperAlerts\(s, ps, today\);/); assert.match(fs.readFileSync('src/claudesetup.js', 'utf8'), /Keep Claude helping: the scheduled task \(set it up once\)/); assert.match(fs.readFileSync('src/teamhelp.js', 'utf8'), /The Claude helper light, at the top of the Assistant \(the chat button, bottom right\), shows whether any teammate/);
   });
 }
 { const h = fs.readFileSync('src/helper.js', 'utf8'), a = fs.readFileSync('src/assistant.js', 'utf8');
