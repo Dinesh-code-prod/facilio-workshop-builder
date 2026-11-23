@@ -312,10 +312,14 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   route('GET', '/api/health', async () => ok({ ok: true, openMode: false, runMode: true, time: now() }));
   route('GET', '/api/auth/me', async () => {
     const s = await me(); const ar = await adminRole(s); const seen = await dbGet('useen', s.id).catch(() => null);
-    return ok({ openMode: false, runMode: true, user: { id: s.id, email: s.email, name: s.name, kind: 'consultant', projectId: null, guest: false, superAdmin: ar === 'super', adminRole: ar, coachSeen: !!(seen && seen.value && seen.value.coach) }, signupEnabled: false, signupNeedsCode: false, domains: [ALLOWED_DOMAIN] });
+    return ok({ openMode: false, runMode: true, user: { id: s.id, email: s.email, name: s.name, kind: 'consultant', projectId: null, guest: false, superAdmin: ar === 'super', adminRole: ar, coachSeen: !!(seen && seen.value && seen.value.coach), introSeen: !!(seen && seen.value && seen.value.intro) }, signupEnabled: false, signupNeedsCode: false, domains: [ALLOWED_DOMAIN] });
   });
   // the guided walk-through opens by itself once per person (saved on the account, not in one browser); "Guide me" opens it any time
-  route('PUT', '/api/me/coach-seen', async () => { const s = await me(); await dbPut('useen', s.id, { coach: true, at: now() }); return ok({ ok: true }); });
+  // both flags live in one record per person, so each write keeps the other
+  const markSeen = async k => { const s = await me(); const cur = await dbGet('useen', s.id).catch(() => null); await dbPut('useen', s.id, Object.assign({}, cur && cur.value, { [k]: true, at: now() })); return ok({ ok: true }); };
+  route('PUT', '/api/me/coach-seen', () => markSeen('coach'));
+  // the tree intro plays once per person (user, 23 Nov 2026), saved on the account
+  route('PUT', '/api/me/intro-seen', () => markSeen('intro'));
   route('POST', '/api/auth/logout', async () => ok({ ok: true }));
 
   // projects
