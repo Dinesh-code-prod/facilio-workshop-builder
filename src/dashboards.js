@@ -31,30 +31,38 @@
   const soTone = s => (s === 'signed' ? 'ok' : s === 'requested' ? 'warn' : s === 'concern' ? 'bad' : '');
   const goLive = (st) => { if (!st.goLive) return null; const n = V.daysBetween(V.today(), st.goLive); return { date: st.goLive, n }; };
 
-  // Pilot (19 Nov 2026): the team dashboard opens like the reference pages the user liked: a small mono line (customer and stage), the project name as a large display title,
-  // one plain sentence of where it stands, one main action, and four numbers in a strip. Every figure comes from data the page already loads; nothing is invented.
-  function pilotHero(c, p, cur) {
+  // Calm top (user, 23 Nov 2026, direction A: "people don't read 2 or 3 sentences any more"): stage line, the project name, one short status line,
+  // three soft colour tiles, the three things to do next and a seven-part stage bar. Everything else (readiness, lifecycle, charts) sits behind
+  // "Show charts and details" (src/stagedash.js). Every figure comes from data the page already loads; nothing is invented.
+  const ROAD = [1, 2, 3, 4, 5, 7, 8];
+  function calmHero(c, p, cur) {
     const openT = c.tasks.filter(t => !['Done', 'Cancelled'].includes(t.status));
-    const late = openT.filter(t => (t.due && t.due < c.today) || (t.eta && t.eta < c.today)).length + c.open.filter(c.late).length;
-    const risks = c.raid.filter(r => r.status !== 'Closed').length, wait = c.custOpen.length;
-    const reqs = (S.ws && S.ws.requirements) || [], conf = reqs.filter(r => r.status === 'Confirmed').length;
-    const stage = cur ? 'Stage ' + V.stageOfStep(cur.i) + ' · ' + V.roadmapName(V.stageOfStep(cur.i)) : 'Plan not started';
-    const lede = [late ? late + ' item' + (late === 1 ? ' is' : 's are') + ' overdue' : 'Nothing is overdue', wait ? wait + ' waiting on the customer' : 'nothing waiting on the customer', c.st.n ? c.st.actual + '% of the plan done against ' + c.st.planned + '% planned' : 'no dated plan yet'].join(', ') + '.';
-    const stat = (n, l, tone) => '<div class="pd-stat' + (tone ? ' ' + tone : '') + '"><b>' + n + '</b><span>' + l + '</span></div>';
-    const doneT = c.tasks.filter(t => t.status === 'Done').length, closedR = c.raid.filter(r => r.status === 'Closed').length;
-    const pc = (n, d) => (d ? Math.round(n / d * 100) : 0);
-    const bar = (l, v, sub) => '<li><span class="pd-bl">' + esc(l) + '</span><span class="pd-bt"><i style="width:' + v + '%"></i></span><b>' + v + '%</b>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</li>';
-    const ready = '<aside class="pd-card" aria-label="Readiness"><header><b>Readiness</b><span>across plan, requirements, tasks and risks</span></header><ul>'
-      + bar('Plan done', c.st.n ? c.st.actual : 0, c.st.n ? c.st.planned + '% planned' : 'no dated plan') + bar('Requirements confirmed', pc(conf, reqs.length), conf + ' of ' + reqs.length) + bar('Tasks done', pc(doneT, c.tasks.length), doneT + ' of ' + c.tasks.length) + bar('Risks closed', pc(closedR, c.raid.length), closedR + ' of ' + c.raid.length) + '</ul></aside>';
-    return '<section class="pd-hero" aria-label="Project summary"><div class="pd-main"><p class="pd-eye">' + esc([p.customer, stage].filter(Boolean).join('  ·  ')) + '</p>'
-      + '<h1 class="pd-title"><span class="pd-grad">' + esc(p.name || 'Project') + '</span></h1><p class="pd-lede">' + esc(lede) + '</p>'
-      + '<div class="pd-cta"><button type="button" class="btn primary" data-act="nav" data-view="tasks">Open the task board<span class="arr" aria-hidden="true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></span></button><button type="button" class="btn" data-act="nav" data-view="intro">Plan and schedule<span class="arr" aria-hidden="true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></span></button></div>'
-      + '<div class="pd-stats">' + stat(openT.length, 'Open tasks') + stat(late, 'Overdue', late ? 'bad' : '') + stat(risks, 'Open risks', risks ? 'warn' : '') + stat(conf + '<small>/' + reqs.length + '</small>', 'Requirements confirmed') + '</div></div>' + ready + '</section>';
+    const lateT = openT.filter(t => (t.due && t.due < c.today) || (t.eta && t.eta < c.today)), lateA = c.open.filter(c.late);
+    const late = lateT.length + lateA.length, risks = c.raid.filter(r => r.status !== 'Closed').length, wait = c.custOpen.length;
+    const sn = cur ? V.stageOfStep(cur.i) : 0, si = ROAD.indexOf(sn);
+    const eye = [p.customer, sn ? 'Stage ' + (si + 1) + ' of ' + ROAD.length + ' · ' + V.roadmapName(sn) : 'Plan not started'].filter(Boolean).join('  ·  ');
+    const status = (late ? late + ' overdue' : 'On track') + (wait ? ' · ' + wait + ' waiting on the customer' : '') + '.';
+    const tile = (view, n, l, tone) => '<button type="button" class="ca-tile ' + tone + '" data-act="nav" data-view="' + view + '"><b>' + n + '</b><span>' + esc(l) + '</span></button>';
+    const next = lateT.map(t => ['tasks', t.title || 'Task', 'red']).concat(lateA.map(a => ['governance', a.text || 'Action', 'amber']), (V.attentionItems ? V.attentionItems() : []).map(a => [a.view || 'governance', a.t, /risk|issue|concern/i.test(a.t) ? 'red' : 'teal'])).slice(0, 3);
+    const doRow = ([view, t, tone]) => '<li><button type="button" class="ca-do" data-act="nav" data-view="' + esc(view) + '"><i class="ca-ic ' + tone + '">' + (V.dm ? V.dm.icon(t) : '') + '</i><span>' + esc(t) + '</span><em>Open</em></button></li>';
+    const seg = ROAD.map((n, i) => '<i class="' + (si < 0 ? '' : i < si ? 'done' : i === si ? 'now' : '') + '" title="' + esc(V.roadmapName(n)) + '"></i>').join('');
+    return '<section class="ca-hero" aria-label="Project summary"><div class="ca-top"><div><p class="ca-eye">' + esc(eye) + '</p><h1 class="ca-title">' + esc(p.name || 'Project') + '</h1><p class="ca-status">' + esc(status) + '</p></div>'
+      + '<div class="ca-acts"><button type="button" class="btn" data-act="nav" data-view="intro">Plan</button><button type="button" class="btn primary" data-act="nav" data-view="tasks">Task board</button></div></div>'
+      + '<div class="ca-tiles">' + tile('intro', c.st.n ? c.st.actual + '%' : '—', 'Plan done', 'blue') + tile('tasks', late, 'Overdue', late ? 'amber' : 'green') + tile('governance', risks, 'Open risks', risks ? 'red' : 'teal') + '</div>'
+      + '<h2 class="ca-h">Do next</h2>' + (next.length ? '<ul class="ca-list">' + next.map(doRow).join('') + '</ul>' : '<p class="ca-none">Nothing needs you right now.</p>')
+      + '<div class="ca-road" role="img" aria-label="' + esc(sn ? 'Stage ' + (si + 1) + ' of ' + ROAD.length : 'Plan not started') + '">' + seg + '</div></section>';
   }
+  // the readiness bars that used to sit beside the title, now the first thing inside "Show charts and details"
+  V.pdReadiness = function () {
+    const c = ctx(), reqs = (S.ws && S.ws.requirements) || [], conf = reqs.filter(r => r.status === 'Confirmed').length;
+    const doneT = c.tasks.filter(t => t.status === 'Done').length, closedR = c.raid.filter(r => r.status === 'Closed').length, pc = (n, d) => (d ? Math.round(n / d * 100) : 0);
+    const bar = (l, v, sub) => '<li><span>' + esc(l) + '</span><b>' + v + '%</b><i><u style="width:' + v + '%"></u></i><small>' + esc(sub) + '</small></li>';
+    return '<ul class="ca-ready" aria-label="Readiness">' + bar('Plan done', c.st.n ? c.st.actual : 0, c.st.n ? c.st.planned + '% planned' : 'no dated plan') + bar('Requirements confirmed', pc(conf, reqs.length), conf + ' of ' + reqs.length) + bar('Tasks done', pc(doneT, c.tasks.length), doneT + ' of ' + c.tasks.length) + bar('Risks closed', pc(closedR, c.raid.length), closedR + ' of ' + c.raid.length) + '</ul>';
+  };
   V.projdash = { html() {
     I().load(KINDS); const c = ctx(); const k = c.k; const p = S.project || {}; const cur = c.ph.cur >= 0 ? c.ph.info[c.ph.cur] : null; const gl = goLive(c.st); const gv = c.st.actual - c.st.planned;
     let head = '<div class="page-header"><div class="t"><h1>' + (k ? 'Your project dashboard' : 'Project dashboard') + '</h1><p>' + (k ? 'Where ' + esc(p.name || 'your project') + ' stands today, what is waiting on you, and what is coming next.' : 'The state of ' + esc(p.name || 'the project') + ' at a glance: progress, what is late, what is waiting on the customer and what is next.') + '</p></div></div>';
-    if (!k) { head = pilotHero(c, p, cur); }
+    if (!k) { head = calmHero(c, p, cur); }
     const hero = fcard(k ? 'Your project' : 'Delivery progress', '<div class="cs-hero-row"><div>' + fring(c.st.actual, 104) + '</div><div class="cs-hero-t"><b>' + (cur ? 'Stage ' + V.stageOfStep(cur.i) + ' · ' + esc(V.roadmapName(V.stageOfStep(cur.i))) : 'Plan not started') + '</b><span>' + (c.st.n ? c.st.actual + '% done against ' + c.st.planned + '% planned' + (gv ? ' · ' + (gv > 0 ? gv + ' points ahead' : -gv + ' points behind') : ' · on plan') : 'No dated plan yet') + '</span><span>' + (gl ? 'Go-live ' + esc(fd(gl.date)) + (gl.n >= 0 ? ' · ' + gl.n + ' day' + (gl.n === 1 ? '' : 's') + ' to go' : ' · date has passed') : '') + '</span></div></div>');
     const secs = [fsec('Where we are', hero)];
     if (k) {
