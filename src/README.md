@@ -247,7 +247,7 @@ Everything that talks to Claude or DeepSeek: the Ask Claude buttons, the Assista
 |---|---|
 | [agents.js](agents.js) | Agent catalogue only (the Agent Setup, Connection & Data, Rules & Guardrails and Agent Testing tabs were removed on 7 Nov 2026). |
 | [assistant.js](assistant.js) | Project assistant panel: ONE place, on the right of every project page, where the work Claude does for the project is shown as it happens (roadmap E15). |
-| [helper.js](helper.js) | The Claude helper light in the top bar and its explanation: green while any teammate's Claude desktop is running the Studio task, amber when none is; the setup banner and the window shown after a project is created. |
+| [helper.js](helper.js) | The Claude helper light (at the top of the Assistant, bottom right) and its explanation: green while any teammate's Claude desktop is running the Studio task, amber when none is; the setup banner and the window shown after a project is created. |
 | [qengine.js](qengine.js) | Question engine: reads a question about the project's records the way a person means it and answers it exactly, with no AI (tests/qengine.mjs). |
 | [claudehand.js](claudehand.js) | Open in Claude: the ONE engine behind every Claude button in Delivery Studio (rules in src/claudelogic.js, server side in /api/projects/:id/handoff). |
 | [claudeimport.js](claudeimport.js) | Import from Claude: one place to bring back what a team member got from Claude (their own account, via Open in Claude). |
