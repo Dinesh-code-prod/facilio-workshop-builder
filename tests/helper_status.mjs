@@ -28,8 +28,8 @@ t('the server records each check-in, shows the status to the team, hides persona
   assert.match(jobs, /const beat = async \(s, b\) =>/); assert.match(jobs, /async jobs_list_all\(s, b\) \{ await beat\(s, b\);/); assert.match(jobs, /async jobs_claim\(s, b\) \{ await beat\(s, b\);/); assert.match(jobs, /canTake\(j0\.kind, j0\.requestedBy, s\.email\)/); assert.match(jobs, /route\('GET', '\/api\/projects\/:id\/helper'/);
   assert.match(api, /await memberAddedNotice\(project, m, s\);/); assert.match(api, /addedMessage\(project, m, actor\.name \|\| actor\.email, TW_BASE\)/);
 });
-t('the top bar shows the light, and a waiting request says so when no Claude is running', () => {
-  assert.match(fs.readFileSync('src/shell.js', 'utf8'), /V\.helper \? V\.helper\.chip\(\)/); const a = fs.readFileSync('src/assistant.js', 'utf8'); assert.match(a, /Claude is paused to save usage, so it waits/); assert.match(a, /act: 'helperOpen'/); assert.match(fs.readFileSync('build.mjs', 'utf8'), /'src\/helper\.js'/);
+t('the assistant (not the top bar) shows the light and Ask Claude, and a waiting request says so when no Claude is running', () => {
+  const a = fs.readFileSync('src/assistant.js', 'utf8'); assert.match(a, /V\.helper \? V\.helper\.chip\(\)/); assert.match(a, /class="btn sm ask-claude"/); assert.doesNotMatch(fs.readFileSync('src/shell.js', 'utf8'), /helper\.chip\(\)|ask-claude/); assert.match(a, /Claude is paused to save usage, so it waits/); assert.match(a, /act: 'helperOpen'/); assert.match(fs.readFileSync('build.mjs', 'utf8'), /'src\/helper\.js'/);
 });
 console.log(n + ' Claude helper checks passed');
 { // every Claude button opens the Assistant with a live request card; the chat bubbles say who is who (src/assistant.js, src/ui.css)
