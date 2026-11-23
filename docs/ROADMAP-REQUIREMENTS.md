@@ -264,6 +264,13 @@ Goal: beyond the how-to guide (C2), find the best way for the Microsoft 365 conn
 - [ ] Show in the Claude setup page and Team Guide which connectors a person needs for which job (Delivery Studio: always; Microsoft 365: mail, meetings, files).
 - [ ] Test on a real office account with both connectors on: one e-mail, one meeting transcript, one calendar event and one SharePoint file each reach the project as a draft with its source; say what was not checked.
 
+### C4b. A new contract after kick-off or go-live gets its own change track (added 23 Nov 2026)
+Plan and decisions: `docs/plans/CR-AFTER-GOLIVE-2026-11-23.md` (agreed with the user: Analyse asks, change track first; the project owner approves the delta; the main stages stay closed).
+- [x] Job `pull_cr` (Claude finds the new document in the project folder, every subfolder, by content; saves only what changes as transfer kind `cr_delta`); `project_jobs` request allows it; the chat command "pull my new MSA" starts it after kick-off approval.
+- [x] Change requests: Change track per CR (steps, the reading, Review on Transfers, Set up the change); new contracts not tied to a CR can start one.
+- [x] Set up adds scope lines, requirement sessions, a plan phase and a BRD addendum (type addendum), all tagged with the CR number; the current-phase strip skips CR rows; UAT test cases can carry the CR and be filtered by it.
+- [ ] Checked with a real new contract in the live app (not done).
+
 ### C5. Digital HTML output for every document, not only the kick-off deck (added 4 Nov 2026)
 **[KEPT, confirmed 4 Nov 2026: this digital HTML engine becomes the shared engine for customer HTML: workshop preparation, data onboarding, mockup, UAT and FTR]**
 Reason: some clients will ask for their documents in a digital form, not only as Word or PDF. The kick-off deck HTML (C4) shows the form: one self-contained file that opens in any browser. Build this once as a shared "digital output" engine and let every document use it, instead of one-off exporters.

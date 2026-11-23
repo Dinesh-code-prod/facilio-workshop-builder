@@ -38,6 +38,7 @@
   /** Claude re-reads everything (job), or, when the kick-off is approved, a change request carries it */
   async function reread(why) {
     const d = md().data; if (!M().docsOf(d).length) return; const note = M().rereadNote(d, S.project.customer, S.project.name);
+    if (approved() && V.crTrackStart && await V.crTrackStart(why)) return;   // a new contract after kick-off approval: a change track (src/crtrack.js), or only the kick-off change below
     if (approved()) {
       const cr = await API.get(base() + '/docs/kickoff_cr').catch(() => null); const r = L().addChange((cr && cr.data) || { items: [] }, 'The contract documents changed (' + why + '). Re-read every contract document (get_document msa_text) and apply what changed to the kick-off deck and the project plan; keep the contract dates.', by(), now());
       if (r.ok) { await API.put(base() + '/docs/kickoff_cr', { data: r.doc, baseVersion: cr && cr.version != null ? cr.version : -1 }); await API.post(base() + '/jobs', L().changeRequest()); if (V.asstRequested) V.asstRequested(); toast('The kick-off is approved, so nothing was overwritten: a change request was written and Claude applies it.', 7000); }

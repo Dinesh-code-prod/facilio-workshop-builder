@@ -219,6 +219,18 @@ export const IMPL_SKILLS = {
   ]
  },
  "jobSkills": {
+  "pull_cr": [
+   {
+    "skill": "pdf",
+    "from": "claude",
+    "use": "read a contract or document that is a PDF"
+   },
+   {
+    "skill": "docx",
+    "from": "claude",
+    "use": "read or write a Word document"
+   }
+  ],
   "pull_msa": [
    {
     "skill": "pdf",

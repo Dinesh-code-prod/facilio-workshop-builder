@@ -113,6 +113,8 @@ Reading the signed contract, the kick-off deck, the plan and the organisation pa
 | [kickoffhtml.js](kickoffhtml.js) | Kick-off deck as one self-contained HTML file (pure code, also run by tests/kickoff_deck.mjs). |
 | [kickofflogic.js](kickofflogic.js) | Kick-off page rules (roadmap E15 Stage 1, E17): pure code, no page, no network; run by tests/kickoff_logic.mjs and used by src/kickoff.js. |
 | [onedrivelogic.js](onedrivelogic.js) | New project > the project's OneDrive folder: the folder list the person's Claude saves in their holding space, the picker, and the pull_msa job that reads every contract in the picked folder (pure code, tests/onedrive_pick.mjs). |
+| [crtracklogic.js](crtracklogic.js) | Change tracks, the rules: a new contract after the kick-off is approved becomes a delta (transfer kind cr_delta) that sets up scope lines, sessions, a plan phase and a BRD addendum tagged with the CR number (pure code, tests/cr_track.mjs). |
+| [crtrack.js](crtrack.js) | Change requests > Change track: read the new contract with Claude (job pull_cr), review it on Transfers, Set up the change; Contract intake asks for a track after kick-off approval. |
 | [msadocs.js](msadocs.js) | Contract intake > Contract documents (plan: docs/plans/MSA-DOCUMENTS-PLAN-2026-11-08.md). |
 | [msafind.js](msafind.js) | MSA Scope Check (Workshops & Requirements, team only): what the customer asked for and confirmed, held against what was read from the signed MSA. |
 | [msaflow.js](msaflow.js) | Contract & Workshop Planning: one guided workflow over Know Your Contract, Scope and the Requirement Session Planner. |

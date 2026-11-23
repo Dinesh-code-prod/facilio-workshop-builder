@@ -84,7 +84,7 @@
     ['tasks', 'Tasks', 'One register for everything to do, as a list or a board (drag a card to change its status). Some tasks make themselves from what the project holds (marked Auto) and close themselves when the reason is gone; a task a person made or closed is never touched. The Mail inbox on this page turns customer mail into proposed tasks.', 'Run the project'],
     ['transfers', 'Transfers', 'What your Claude read from or sent to other systems, and what waits for you to approve. Claude cannot approve. Pushed and Synchronized are what Claude reported, not something this app can see.', 'Run the project'],
     ['governance', 'Governance & RAID', 'Sign-offs, risks, decisions, actions and minutes, shared with the customer.', 'Run the project'],
-    ['changes', 'Change Requests', 'Anything outside the signed scope. Never change scope silently.', 'Run the project'],
+    ['changes', 'Change Requests', 'Anything outside the signed scope. Never change scope silently. A new contract after the kick-off (a change request MSA, amendment or renewal) gets its own Change track: Claude reads only what it changes, the project owner approves that on Transfers, and Set up the change adds its requirement sessions, plan phase and BRD addendum. In the chat you can say: pull my new MSA.', 'Run the project'],
     ['statusrep', 'Status report (WSR) & monthly report', 'The weekly status report and the monthly report on one page, with what was sent and what is overdue. Build them from the live records or ask Claude; each is kept with its status.', 'Run the project'],
     ['resources', 'Notes & Links', 'Keep notes and links with the project.', 'Run the project']];
 

@@ -19,7 +19,7 @@
   const stepOfRow = t => { for (const i of STEP_ORDER) if (STEP_RE[i].test(t)) return i; return -1; };
   const titles = () => { const c = V.controls().steps; return Array.isArray(c) && c.length === 12 ? c : STD; };
   function stepInfo() {
-    const rows = TD().rows.filter(r => !r.isPhase); const info = STD.map((t, i) => ({ i, title: titles()[i], start: '', end: '', n: 0 }));
+    const rows = TD().rows.filter(r => !r.isPhase && !r.cr); const info = STD.map((t, i) => ({ i, title: titles()[i], start: '', end: '', n: 0 }));
     rows.forEach(r => { const i = stepOfRow(r.title + ' ' + (r.phase || '')); if (i < 0 || !D(r.start)) return; const x = info[i]; x.n++; if (!x.start || r.start < x.start) x.start = r.start; const e = D(r.end) || r.start; if (!x.end || e > x.end) x.end = e; });
     return info;
   }

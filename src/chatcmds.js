@@ -31,6 +31,8 @@
     if (doVerb) { const g = GUIDES.find(x => x[0].test(t)); if (g) { const mod = forMod(raw); return { type: 'job', job: { kind: 'make_guide', section: g[1], note: ((mod ? 'Only for the module "' + mod + '". ' : '') + raw).slice(0, 560) }, label: 'Make ' + g[2] + (mod ? ' for ' + mod : '') }; } }
     // the weekly status report for the week that ends today
     if (doVerb && /\b(weekly|status) report|\bwsr\b/.test(t)) return { type: 'job', job: { kind: 'make_wsr', section: ymd(c.today || new Date()), note: raw.slice(0, 500) }, label: 'Make the weekly status report' };
+    // a new contract: "pull my new MSA", "read the amendment from the drive" (src/crtracklogic.js chatJob: a change track after the kick-off is approved)
+    const CR = root.FWBCrTrack || (typeof require === 'function' ? (() => { try { return require('./crtracklogic.js'); } catch (e) { return null; } })() : null); const cj = CR && CR.chatJob(raw, !!c.kickoffApproved); if (cj) return cj;
     // open a page: "open the BRD", "go to tasks", "show me the FTR report"
     m = /^(?:please\s+)?(?:open|go to|show(?: me)?|take me to|jump to)\s+(?:the\s+|my\s+)?(.{2,60}?)(?:\s+(?:page|tab))?[.?!]?$/i.exec(raw);
     if (m && Array.isArray(c.pages)) {
