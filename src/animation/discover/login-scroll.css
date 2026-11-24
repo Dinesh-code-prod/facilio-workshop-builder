@@ -34,3 +34,32 @@
   body .dx-ov.dxl-on .dx-lay.l1 { bottom: calc(0% - var(--hp, 0) * 8%); }
   body .dx-ov.dxl-on .dx-cta { opacity: calc(.15 + .85 * var(--in, 1)); transform: scale(calc(.9 + .1 * var(--in, 1))); }
 }
+
+/* Marketing polish (24 Nov 2026): a progress line and the chapter name in the top bar, each chapter in its own Facilio accent (--ac, set by src/discoverlogin.js),
+   chapters as white cards with a calm accent edge, tighter pinned scenes, and a separate mobile layout. Brand tokens only, no new gradients or glow. */
+.dx-ov-top{gap:14px}
+.dx-ov-top .dx-prog{position:absolute;left:0;right:0;bottom:-1px;height:3px;background:#1570EF;transform-origin:0 50%;transform:scaleX(var(--sp, 0));pointer-events:none}
+.dx-ov-ch{margin-left:auto;margin-right:6px;font:500 13px/1.2 Inter, system-ui, sans-serif;letter-spacing:.01em;color:#3d4660;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.dx-ov-ch:empty{display:none}
+.dx-lc{--ac:#1570EF}
+.dx-lc .dx-no{opacity:1;-webkit-text-stroke:1.5px var(--ac)}
+.dx-lc-a{border-bottom:4px solid var(--ac)}
+.dx-lc-chips span{transition:border-color .2s, color .2s}
+.dx-lc-chips span:hover{border-color:var(--ac)}
+.dx-ov :focus-visible{outline:2px solid #1570EF;outline-offset:3px}
+@media (prefers-reduced-motion: no-preference) and (min-width: 900px) and (min-height: 600px) {
+  body .dx-ov.dxl-on .dxl-scene { height: 165vh; }
+  body .dx-ov.dxl-on .dxl-scene:nth-child(even) .dx-no { -webkit-text-stroke-color: #8DB8FF; }
+}
+@media (max-width: 899px) {
+  .dx-ovin{padding:14px 16px 56px}
+  .dx-ov-top{padding:10px 16px}
+  .dx-ov-ch{display:none}
+  .dx-lcs{display:grid;gap:16px;margin-top:16px}
+  .dx-lc{background:#fff;border:1px solid #e3e8f2;border-radius:24px;padding:24px 20px;min-height:0;gap:20px;box-shadow:0 14px 30px -24px rgba(29,26,94,.35)}
+  .dx-lc .dx-no{font-size:64px}
+  .dx-lc-a{height:220px;border-radius:18px}
+  .dx-hero h2{font-size:clamp(36px,10.5vw,48px)}
+  .dx-stats{gap:28px}
+}
+@media (prefers-reduced-motion: reduce) { .dx-ov-top .dx-prog{transition:none} .dx-lc-s .dx-slab{animation:none} }
