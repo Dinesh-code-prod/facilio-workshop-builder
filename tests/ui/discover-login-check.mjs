@@ -14,7 +14,7 @@ const st = f => p.evaluate(async f => { const o = document.querySelector('.dx-ov
   const w = [...lc.querySelectorAll('.dxfx-w')].map(x => parseFloat(getComputedStyle(x).opacity)); return { wp: parseFloat(lc.style.getPropertyValue('--wp')), out: parseFloat(lc.style.getPropertyValue('--out')), pinTop: Math.round(pin.getBoundingClientRect().top), top, dim: Math.min(...w), lit: Math.max(...w) }; }, f);
 const seen = []; for (const f of [0, .2, .45, .7, .95, 1]) { seen.push(await st(f)); if (OUT) await p.screenshot({ path: `${OUT}/login-${String(Math.round(f * 100)).padStart(3, '0')}.png` }); }
 check('the scene stays pinned under the top bar while you scroll through it', seen.slice(0, 5).every(s => Math.abs(s.pinTop - s.top) <= 3), seen.map(s => s.pinTop).join(','));
-check('words start dim and are all lit by the end of the scene', seen[0].dim < .3 && seen[3].dim > .95, seen[0].dim.toFixed(2) + ' to ' + seen[3].dim.toFixed(2));
+check('words start dimmed (but readable) and are all lit by the end of the scene', seen[0].dim < .7 && seen[0].dim > .5 && seen[3].dim > .95, seen[0].dim.toFixed(2) + ' to ' + seen[3].dim.toFixed(2));
 check('the scene dims and shrinks as it leaves', seen[0].out === 0 && seen[5].out > .95, seen[0].out + ' to ' + seen[5].out);
 check('chapters alternate between light and dark scenes', await p.evaluate(() => { const l = [...document.querySelectorAll('.dx-ov .dx-lc')]; return l.length >= 4 && getComputedStyle(l[0]).backgroundColor !== getComputedStyle(l[1]).backgroundColor; }));
 await p.keyboard.press('Escape'); await p.waitForTimeout(400); check('Escape closes it', (await p.locator('.dx-ov').count()) === 0);
