@@ -13,8 +13,8 @@
   /* ---------------- table definitions (from the template) ---------------- */
   var ENT = {}; RULES.entities.forEach(function (e) { ENT[e.key] = e; });
   var TABLES = {};
-  SPEC.tables.concat([{ key: "cat", sheet: "Asset Category Master", titles: [], headerRow: 1, descRow: null, headers: ["Asset Category"], descs: ["Categories offered in the Asset sheet's Asset Category dropdown."], widths: [42] }])
-    .forEach(function (t) {
+  var CAT_TABLE = { key: "cat", sheet: "Asset Category Master", titles: [], headerRow: 1, descRow: null, headers: ["Asset Category"], descs: ["Categories offered in the Asset sheet's Asset Category dropdown."], widths: [42] };
+  function buildTable(t) {
       var ent = ENT[t.key];
       var cols = t.headers.map(function (h, i) {
         var key = null;
@@ -23,7 +23,8 @@
         return { d: i, h: h, label: cleanHeader(h), req: /\*/.test(h) || !!meta.req, desc: t.descs[i] || "", width: Math.max(96, Math.round((t.widths[i] || 14) * 7.4)), key: key, meta: meta };
       });
       TABLES[t.key] = { key: t.key, sheet: t.sheet, titles: t.titles, headerRow: t.headerRow, descRow: t.descRow, cols: cols, baseCols: cols.slice(), headers: t.headers, descs: t.descs, slots: t.slots || 0 };
-    });
+  }
+  SPEC.tables.concat([CAT_TABLE]).forEach(buildTable);
   function ci(tab, key) { var c = TABLES[tab].cols; for (var i = 0; i < c.length; i++) if (c[i].key === key) return i; return -1; }
 
   /* dropdown references between sheets */
@@ -48,11 +49,73 @@
   var SRC_KEYS = { building: { site: "site" }, floor: { site: "site", building: "building" }, space: { site: "site", building: "building", floor: "floor" } };
 
   /* ---------------- sheets, exactly as in the template ---------------- */
-  var SHEET_TABLES = {};
-  Object.keys(TABLES).forEach(function (k) { (SHEET_TABLES[TABLES[k].sheet] = SHEET_TABLES[TABLES[k].sheet] || []).push(k); });
-  Object.keys(SHEET_TABLES).forEach(function (n) { SHEET_TABLES[n].sort(function (a, b) { return TABLES[a].headerRow - TABLES[b].headerRow; }); });
-  var GEN_NAMES = ["Job Plan Import", "Trigger Schedule Import", "PPM V3 Import"];
-  var ALL_SHEETS = SPEC.sheetOrder.concat(GEN_NAMES);
+  var SHEET_TABLES = {}, GEN_NAMES = ["Job Plan Import", "Trigger Schedule Import", "PPM V3 Import"], ALL_SHEETS = [];
+  function indexSheets() {
+    SHEET_TABLES = {};
+    Object.keys(TABLES).forEach(function (k) { (SHEET_TABLES[TABLES[k].sheet] = SHEET_TABLES[TABLES[k].sheet] || []).push(k); });
+    Object.keys(SHEET_TABLES).forEach(function (n) { SHEET_TABLES[n].sort(function (a, b) { return TABLES[a].headerRow - TABLES[b].headerRow; }); });
+    ALL_SHEETS = SPEC.sheetOrder.concat(GEN_NAMES);
+  }
+
+  /* ---------------- custom sheets: a client's extra module or information, checked and exported like a template sheet ----------------
+     A definition { key, name, module, desc, cols:[{ id, name, desc, type, req, list[] }] } lives in state.sheets. The first column is the record's Name: always mandatory.
+     Each definition becomes a SPEC table (layout), a RULES entity (checks: mandatory, type, dropdown, duplicate names), a GUIDE sheet and COLDOC notes. */
+  var CTYPES = { text: "Text", number: "Number", integer: "Whole number", date: "Date (dd/mm/yyyy)", email: "Email", phone: "Phone", bool: "Yes / No", list: "Dropdown list",
+    "ref:site": "Site (from the Site sheet)", "ref:building": "Building (from the Building sheet)", "ref:asset": "Asset (from the Asset sheet)", "ref:vendor": "Vendor (from the Vendor sheet)", "ref:tenant": "Tenant (from the Tenants sheet)", "ref:user": "User (from Roles & Users)" };
+  /* module → the rule entity whose fields a custom sheet can start from (template sheets here; the other modules from public/onboarding/templates.json) */
+  var MODULE_ENT = { "Site": "site", "Building": "building", "Floor": "floor", "Space": "space", "Asset": "asset", "Users": "user", "Roles": "role", "Vendor": "vendor", "Vendor Contact": "vendorContact",
+    "Tenant": "tenant", "Tenant Contact": "tenantContact", "Tenant Unit": "tenantUnit", "Client": "client", "Client Contact": "clientContact", "Client Portfolio": "clientPortfolio", "Job Plan": "jobPlan",
+    "Planned Maintenance": "pm", "Storeroom": "storeroom", "Item Type": "itemType", "Inventory Item": "item", "Tool Type": "toolType", "Tools": "toolItem", "Contract": "contractDetail", "SLA Priority": "slaPriority", "Compliance": "compliance" };
+  var MODULES = Object.keys(MODULE_ENT).concat(["Asset Category", "People", "Meter", "Inspection", "Work Order", "Custom module"]);
+  var EXTRA = {}, EXTRA_LISTS = {};
+  try { fetch("../onboarding/templates.json").then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (!j || !j.ONB) return; j.ONB.RULES.entities.forEach(function (e) { EXTRA[e.key] = e; }); EXTRA_LISTS = j.ONB.RULES.lists || {}; }).catch(function () { }); } catch (e) { }
+  /* the basic system fields of a Facilio custom module; the client adds their own fields after them (the org's package has the final list) */
+  var BASIC = [{ name: "Name", type: "text", req: true, desc: "The record's name: the module's main field." }, { name: "Description", type: "text", req: false, desc: "A longer description of the record." },
+    { name: "Site", type: "ref:site", req: false, desc: "The site the record belongs to, exactly as on the Site sheet." }];
+  function moduleFields(mod) {
+    var k = MODULE_ENT[mod], e = k ? ((ENT[k] && !ENT[k].custom) ? ENT[k] : EXTRA[k]) : null;
+    if (!e) return BASIC.map(function (f) { return JSON.parse(JSON.stringify(f)); });
+    var lists = {}, doc = COLDOC[k] || {}, out = [], TM = { number: "number", integer: "integer", date: "date", email: "email", phone: "phone", bool: "bool", lat: "number", lng: "number" };
+    Object.keys(EXTRA_LISTS).forEach(function (x) { lists[x] = EXTRA_LISTS[x]; }); Object.keys(RULES.lists).forEach(function (x) { lists[x] = RULES.lists[x]; });
+    Object.keys(e.columns).forEach(function (ck) {
+      var c = e.columns[ck], L = c.list && !c.multi ? lists[c.list] : null, rt = (ck === "site" || ck === "building") ? ck : (c.ref && /^(site|building|asset|vendor|tenant|user)\./.test(c.ref) ? c.ref.split(".")[0] : "");
+      out.push({ key: ck, name: c.h[0], req: !!c.req, type: L ? "list" : rt ? "ref:" + rt : (TM[c.type] || "text"), list: L ? L.slice() : [], desc: (doc[ck] && doc[ck][0]) || "" });
+    });
+    var ni = -1; out.forEach(function (f, i) { if (ni < 0 && f.key === "name") ni = i; }); if (ni < 0) out.forEach(function (f, i) { if (ni < 0 && f.req) ni = i; }); if (ni > 0) out.unshift(out.splice(ni, 1)[0]);
+    return out;
+  }
+  var RESERVED = ["cycles", "instructions"];
+  if (RULES.ignoreSheets.indexOf("Instructions") < 0) RULES.ignoreSheets.push("Instructions");
+  function cKey(c, i) { return i ? "c" + c.id : "name"; }
+  function registerCustom(d) {
+    var cols = {};
+    d.cols.forEach(function (c, i) {
+      var o = { h: [c.name] }; if (c.req || !i) o.req = true;
+      if (/^ref:/.test(c.type || "")) { o.ref = c.type.slice(4) + ".name"; (REFS[d.key] = REFS[d.key] || {})[cKey(c, i)] = { from: c.type.slice(4), col: "name" }; }
+      else if (CTYPES[c.type] && c.type !== "text" && c.type !== "list") o.type = c.type;
+      if (c.type === "list" && c.list && c.list.length) { RULES.lists[d.key + "_" + c.id] = c.list.slice(); o.list = d.key + "_" + c.id; }
+      cols[cKey(c, i)] = o;
+    });
+    var t = { key: d.key, sheet: d.name, titles: [[1, d.name + (d.module ? " · Facilio module: " + d.module : "")]], headerRow: 2, descRow: 3,
+      headers: d.cols.map(function (c, i) { return c.name + (c.req || !i ? "*" : ""); }), descs: d.cols.map(function (c) { return c.desc || ""; }), widths: d.cols.map(function () { return 24; }), custom: true };
+    var ent = { key: d.key, label: d.name, sheet: [d.name], core: false, custom: true, module: d.module || "", columns: cols,
+      unique: [{ cols: ["name"], sev: "Critical" }], near: [{ col: "name", scope: [] }] };
+    SPEC.tables.push(t); SPEC.sheetOrder.push(d.name); RULES.entities.push(ent); ENT[d.key] = ent;
+    GUIDE.sheets[d.name] = { label: d.name, custom: true, purpose: (d.desc ? d.desc + " " : "A custom sheet for information the template doesn't cover. ") + (d.module ? "It maps to the Facilio " + d.module + " module." : "Choose the Facilio module it maps to with Edit sheet."),
+      steps: ["Enter one row per record, starting on row 4.", "Give every row a Name (" + d.cols[0].name + "): Facilio needs it to create the record, and two rows can't share one.", "Fill every column marked * and pick values from the dropdowns.", "Use Edit sheet to add, remove or reorder columns, change a column's type or make it mandatory."],
+      watch: ["Rows without a Name are flagged as errors and are not imported."] };
+    COLDOC[d.key] = {}; d.cols.forEach(function (c, i) { COLDOC[d.key][cKey(c, i)] = [c.desc || (i ? "" : "The record's name, as it should appear in Facilio."), c.example || ""]; });
+    buildTable(t);
+  }
+  function unregisterCustom(d) {
+    var keep = function (x) { return x.key !== d.key; };
+    SPEC.tables = SPEC.tables.filter(keep); RULES.entities = RULES.entities.filter(keep); SPEC.sheetOrder = SPEC.sheetOrder.filter(function (n) { return n !== d.name; });
+    Object.keys(RULES.lists).forEach(function (k) { if (k.indexOf(d.key + "_") === 0) delete RULES.lists[k]; });
+    delete GUIDE.sheets[d.name]; delete COLDOC[d.key]; delete ENT[d.key]; delete TABLES[d.key]; delete REFS[d.key];
+  }
+  (function () { try { var s0 = JSON.parse(localStorage.getItem("facilio-onboarding-workspace-v2") || "null"); (s0 && Array.isArray(s0.sheets) ? s0.sheets : []).forEach(registerCustom); } catch (e) { console.error(e); } })();
+  indexSheets();
+  function customDef(name) { return (state.sheets || []).filter(function (d) { return d.name === name; })[0] || null; }
   var RH = { data: 28, blank: 28, title: 34, intro: 28, header: 52, desc: 64, note: 78, gen: 28 };
 
   /* ---------------- state ---------------- */
@@ -62,7 +125,7 @@
     Object.keys(TABLES).forEach(function (k) { s.tabs[k] = []; });
     GUIDE.optionalSheets.forEach(function (n) { s.enabled[n] = true; });
     s.tabs.cat = SPEC.assetCategories.map(function (c) { return [c]; });
-    s.fmt = {}; s.colw = {}; s.filters = {}; s.custom = {}; s.colOrder = {};
+    s.fmt = {}; s.colw = {}; s.filters = {}; s.custom = {}; s.colOrder = {}; s.sheets = [];
     return s;
   }
   function load() {
@@ -75,7 +138,8 @@
     return null;
   }
   var state = load() || freshState();
-  if (!state.custom) state.custom = {}; if (!state.colOrder) state.colOrder = {};
+  if (!state.custom) state.custom = {}; if (!state.colOrder) state.colOrder = {}; if (!state.sheets) state.sheets = [];
+  state.sheets.forEach(function (d) { if (!TABLES[d.key]) { registerCustom(d); indexSheets(); } if (!state.tabs[d.key]) state.tabs[d.key] = []; });
   var saveTimer = null;
   function save() {
     clearTimeout(saveTimer);
@@ -95,9 +159,23 @@
     t.cols = order.map(function (d) {
       if (d < base.length) return base[d];
       var def = customDefs(tab)[d - base.length] || { name: "Custom field" };
-      return { d: d, h: def.name, label: def.name, req: false, desc: "Custom field added for this onboarding", width: 150, key: "custom_" + (d - base.length), meta: {}, custom: true };
+      return { d: d, h: def.name, label: def.name, req: !!def.req, desc: def.desc || "Custom field added for this onboarding", width: 150, key: "custom_" + (d - base.length), meta: cfMeta(tab, d - base.length, def), custom: true };
     });
-    t.headers = t.cols.map(function (c) { return c.h; }); t.descs = t.cols.map(function (c) { return c.custom ? "Custom field" : (t.baseDescs ? t.baseDescs[c.d] : c.desc); });
+    t.headers = t.cols.map(function (c) { return c.req && !/\*/.test(c.h) ? c.h + "*" : c.h; }); t.descs = t.cols.map(function (c) { return c.custom ? "Custom field" : (t.baseDescs ? t.baseDescs[c.d] : c.desc); });
+  }
+  /* a custom field's checks: its dropdown values, link to another sheet or type, used by the grid, the export and the checker */
+  function cfMeta(tab, i, def) {
+    var m = {}, t = def.type || "text";
+    if (t === "list" && def.list && def.list.length) { m.list = "cf_" + tab + "_" + i; RULES.lists[m.list] = def.list.slice(); }
+    else if (/^ref:/.test(t)) { m.ref = t.slice(4) + ".name"; (REFS[tab] = REFS[tab] || {})["custom_" + i] = { from: t.slice(4), col: "name" }; }
+    else if (t !== "text" && t !== "list") m.type = t;
+    return m;
+  }
+  function setCustomRules() {
+    RULES.custom = {};
+    Object.keys(state.custom || {}).forEach(function (tab) { var o = {};
+      (state.custom[tab] || []).forEach(function (def, i) { if (!def || !def.name) return; var m = cfMeta(tab, i, def), r = {}; if (def.req) r.req = true; ["type", "list", "ref"].forEach(function (x) { if (m[x]) r[x] = m[x]; }); if (Object.keys(r).length) o[def.name.trim().toLowerCase()] = r; });
+      RULES.custom[tab] = o; });
   }
   function rebuildAll() { Object.keys(TABLES).forEach(function (k) { if (!TABLES[k].baseDescs) TABLES[k].baseDescs = TABLES[k].descs.slice(); rebuildCols(k); }); }
   function rowFilled(R) { return R && R.some(function (v) { return v !== "" && v != null; }); }
@@ -637,7 +715,7 @@
   function runValidate() {
     var names = sheetList().filter(function (n) { return n !== "Overview" && GEN_NAMES.indexOf(n) < 0; }), lays = {};
     names.forEach(function (n) { lays[n] = sheetLayout(n); });
-    var res; try { res = OnboardingValidator.validate(toSheetJS(names), RULES); } catch (e) { console.error(e); return; }
+    var res; try { setCustomRules(); res = OnboardingValidator.validate(toSheetJS(names), RULES); } catch (e) { console.error(e); return; }
     var cell = {}, list = [], bySheet = {}, rank = { Critical: 3, Warning: 2, Info: 1 }, has = anyData();
     res.issues.forEach(function (i) {
       if (!has) return;
@@ -711,9 +789,9 @@
     $("tabs").innerHTML = list.map(function (n, i) {
       var c = critCount(n), filled = sheetFilled(n) > 0, opt = GUIDE.optionalSheets.indexOf(n) >= 0;
       var badge = c ? "<span class='b' aria-label='" + c + " critical issues'>" + c + "</span>" : (filled ? "<span class='b ok' aria-label='No critical issues'>✓</span>" : "");
-      return "<button class='tab" + (n === "Overview" ? " ov" : "") + (GEN_NAMES.indexOf(n) >= 0 ? " gentab" : "") + "' role='tab' aria-selected='" + (n === state.active) + "' data-sheet='" + esc(n) + "'>" + (GEN_NAMES.indexOf(n) >= 0 ? "<span class='autotag'>Auto</span>" : "") + esc(n) + badge + (opt ? "<span class='x' data-remove='" + esc(n) + "' title='Remove sheet' aria-label='Remove " + esc(n) + "'>×</span>" : "") + "</button>";
+      return "<button class='tab" + (n === "Overview" ? " ov" : "") + (customDef(n) ? " custom" : "") + (GEN_NAMES.indexOf(n) >= 0 ? " gentab" : "") + "' role='tab' aria-selected='" + (n === state.active) + "' data-sheet='" + esc(n) + "'>" + (GEN_NAMES.indexOf(n) >= 0 ? "<span class='autotag'>Auto</span>" : "") + esc(n) + badge + (opt ? "<span class='x' data-remove='" + esc(n) + "' title='Remove sheet' aria-label='Remove " + esc(n) + "'>×</span>" : "") + "</button>";
     }).join("");
-    $("btnAddSheet").hidden = !GUIDE.optionalSheets.some(function (n) { return !state.enabled[n]; });
+    $("btnAddSheet").hidden = false;
     renderRail();
   }
   $("tabs").addEventListener("click", function (e) {
@@ -726,12 +804,133 @@
   });
   $("btnAddSheet").addEventListener("click", function (e) {
     var m = document.createElement("div"); m.className = "menu";
-    m.innerHTML = GUIDE.optionalSheets.filter(function (n) { return !state.enabled[n]; }).map(function (n) { return "<button data-add='" + esc(n) + "'>" + esc(n) + "<small>" + esc(GUIDE.sheets[n].purpose) + "</small></button>"; }).join("");
+    m.innerHTML = GUIDE.optionalSheets.filter(function (n) { return !state.enabled[n]; }).map(function (n) { return "<button data-add='" + esc(n) + "'>" + esc(n) + "<small>" + esc(GUIDE.sheets[n].purpose) + "</small></button>"; }).join("") +
+      "<button data-new='1'>New custom sheet<small>A sheet for another module, or information the template doesn't cover</small></button>";
     document.body.appendChild(m);
     var rc = e.target.getBoundingClientRect(); m.style.right = (window.innerWidth - rc.right) + "px"; m.style.bottom = (window.innerHeight - rc.top + 6) + "px";
     setTimeout(function () { document.addEventListener("click", function close(ev) { if (!m.contains(ev.target)) { m.remove(); document.removeEventListener("click", close); } }); }, 0);
-    m.addEventListener("click", function (ev) { var b = ev.target.closest("[data-add]"); if (!b) return; var n = b.getAttribute("data-add"); state.enabled[n] = true; m.remove(); switchSheet(n); scheduleValidate(); });
+    m.addEventListener("click", function (ev) { if (ev.target.closest("[data-new]")) { m.remove(); openSheetEditor(null); return; } var b = ev.target.closest("[data-add]"); if (!b) return; var n = b.getAttribute("data-add"); state.enabled[n] = true; m.remove(); switchSheet(n); scheduleValidate(); });
   });
+  /* ---------------- custom sheets: editor and actions ---------------- */
+  var shEdit = null;
+  function uid() { return "cs_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function lowName(n) { return String(n || "").trim().toLowerCase(); }
+  function sheetNameTaken(n, except) { var k = lowName(n); return RESERVED.indexOf(k) >= 0 || ALL_SHEETS.concat(["Overview"]).some(function (x) { return x !== except && lowName(x) === k; }); }
+  function uniqueSheetName(base) { base = String(base).replace(/[\[\]:*?\/\\]/g, " ").trim().slice(0, 31) || "Custom sheet"; var n = base, i = 2; while (sheetNameTaken(n)) n = base.slice(0, 27) + " " + i++; return n; }
+  function popMenu(x, y, html, pick) {
+    var m = document.createElement("div"); m.className = "menu"; m.style.position = "fixed"; m.innerHTML = html; document.body.appendChild(m);
+    m.style.left = Math.max(8, Math.min(x, window.innerWidth - m.offsetWidth - 8)) + "px"; m.style.top = Math.max(8, Math.min(y, window.innerHeight - m.offsetHeight - 8)) + "px";
+    setTimeout(function () { document.addEventListener("click", function close(ev) { if (!m.contains(ev.target)) { m.remove(); document.removeEventListener("click", close); } }); }, 0);
+    m.addEventListener("click", function (ev) { var b = ev.target.closest("button"); if (!b) return; m.remove(); pick(b.getAttribute("data-a")); });
+  }
+  function canDuplicate(n) { return !customDef(n) && SHEET_TABLES[n] && n !== "Asset Category Master" && GEN_NAMES.indexOf(n) < 0 && n !== "Overview"; }
+  function sheetAction(a, n) { var d = customDef(n); if (a === "edit" && d) openSheetEditor(d); else if (a === "dup") duplicateSheet(n); else if (a === "del" && d) deleteSheet(d); }
+  $("tabs").addEventListener("contextmenu", function (e) {
+    var b = e.target.closest("[data-sheet]"); if (!b) return; var n = b.getAttribute("data-sheet"), d = customDef(n);
+    if (!d && !canDuplicate(n)) return; e.preventDefault();
+    popMenu(e.clientX, e.clientY, d ? "<button data-a='edit'>Edit sheet<small>Rename it, change its columns or module</small></button><button data-a='dup'>Duplicate</button><button data-a='del' class='danger'>Delete sheet</button>"
+      : "<button data-a='dup'>Duplicate as a custom sheet<small>Same columns, for another module or a second list</small></button>", function (a) { sheetAction(a, n); });
+  });
+  function openSheetEditor(def) {
+    shEdit = { old: def, untouched: !def, d: def ? JSON.parse(JSON.stringify(def)) : { key: uid(), name: "", module: "", desc: "", cols: BASIC.map(function (f, i) { return { id: i + 1, name: f.name, desc: f.desc, type: f.type, req: f.req, list: [] }; }) } };
+    $("shModNote").textContent = def ? "Add the module's fields brings in any of its standard fields this sheet doesn't have yet." : "A new sheet starts with the basic system fields (Name, Description, Site). Pick a module to start from its standard fields instead, then add your own.";
+    $("shTitle").textContent = def ? "Edit sheet: " + def.name : "New custom sheet";
+    $("shName").value = shEdit.d.name; $("shDesc").value = shEdit.d.desc || "";
+    $("shModule").innerHTML = "<option value=''>Choose the module…</option>" + MODULES.map(function (m) { return "<option" + (m === shEdit.d.module ? " selected" : "") + ">" + esc(m) + "</option>"; }).join("");
+    $("shErr").textContent = ""; drawShCols(); $("dlgSheet").showModal(); $("shName").focus();
+  }
+  function drawShCols() {
+    var C = shEdit.d.cols;
+    $("shCols").innerHTML = "<div class='shc shc-h'><span>Column heading</span><span>Type</span><span>Mandatory</span><span>Dropdown values, comma separated</span><span>Description for the customer</span><span></span></div>" + C.map(function (c, i) {
+      return "<div class='shc' data-i='" + i + "'><input data-f='name' value='" + esc(c.name) + "' maxlength='80' aria-label='Column heading'>" +
+        "<select data-f='type' aria-label='Type'" + (i ? "" : " disabled") + ">" + Object.keys(CTYPES).map(function (t) { return "<option value='" + t + "'" + (t === (c.type || "text") ? " selected" : "") + ">" + CTYPES[t] + "</option>"; }).join("") + "</select>" +
+        "<label class='shreq'><input type='checkbox' data-f='req'" + (c.req || !i ? " checked" : "") + (i ? "" : " disabled") + "> " + (i ? "Yes" : "Always") + "</label>" +
+        "<input data-f='list' value='" + esc((c.list || []).join(", ")) + "'" + (c.type === "list" ? "" : " disabled placeholder='For a dropdown list'") + " aria-label='Dropdown values'>" +
+        "<input data-f='desc' value='" + esc(c.desc || "") + "' maxlength='300' aria-label='Description'>" +
+        "<span class='shbtns'>" + (i ? "<button type='button' data-m='-1' aria-label='Move up'" + (i < 2 ? " disabled" : "") + ">↑</button><button type='button' data-m='1' aria-label='Move down'" + (i === C.length - 1 ? " disabled" : "") + ">↓</button><button type='button' data-x='1' aria-label='Remove column'>✕</button>" : "<small>Name</small>") + "</span></div>";
+    }).join("");
+  }
+  function addModuleFields(auto) {
+    var d = shEdit.d, mod = $("shModule").value; if (!mod) { $("shErr").textContent = "Choose the module first."; return; }
+    var F = moduleFields(mod), fresh = !!shEdit.untouched, next = 1, have = {}, added = 0;
+    if (fresh) d.cols = []; else next = d.cols.reduce(function (m, c) { return Math.max(m, c.id); }, 0) + 1;
+    d.cols.forEach(function (c) { have[lowName(c.name)] = 1; });
+    F.forEach(function (f, i) { if ((!fresh && i === 0) || have[lowName(f.name)]) return; d.cols.push({ id: next++, name: f.name, desc: f.desc, type: f.type, req: f.req || !d.cols.length, list: f.list || [] }); have[lowName(f.name)] = 1; added++; });
+    shEdit.untouched = fresh; drawShCols();
+    $("shModNote").textContent = added ? (fresh ? "Started from the " + mod + " module's " + added + " fields" : "Added " + added + " field" + (added === 1 ? "" : "s") + " of the " + mod + " module") + ". Remove what the customer doesn't need and add their own fields with + Add column." : "Every field of the " + mod + " module is already here.";
+  }
+  $("shModFields").onclick = function () { addModuleFields(false); };
+  $("shModule").addEventListener("change", function () { if (shEdit && shEdit.untouched && $("shModule").value) addModuleFields(true); });
+  function shField(e) {
+    if (shEdit) shEdit.untouched = false;
+    var row = e.target.closest("[data-i]"), f = e.target.getAttribute("data-f"); if (!row || !f) return; var c = shEdit.d.cols[+row.getAttribute("data-i")];
+    if (f === "req") c.req = e.target.checked; else if (f === "list") c.list = e.target.value.split(",").map(function (x) { return x.trim(); }).filter(Boolean); else c[f] = e.target.value;
+    if (f === "type" && e.type === "change") drawShCols();
+  }
+  $("shCols").addEventListener("input", shField); $("shCols").addEventListener("change", shField);
+  $("shCols").addEventListener("click", function (e) {
+    var b = e.target.closest("button"), row = e.target.closest("[data-i]"); if (!b || !row) return; shEdit.untouched = false; var i = +row.getAttribute("data-i"), C = shEdit.d.cols;
+    if (b.hasAttribute("data-x")) C.splice(i, 1); else { var j = i + (+b.getAttribute("data-m")); if (j < 1 || j >= C.length) return; C.splice(j, 0, C.splice(i, 1)[0]); }
+    drawShCols();
+  });
+  $("shAddCol").onclick = function () { shEdit.untouched = false; var C = shEdit.d.cols; C.push({ id: C.reduce(function (m, c) { return Math.max(m, c.id); }, 0) + 1, name: "", desc: "", type: "text", req: false, list: [] }); drawShCols(); var ins = $("shCols").querySelectorAll("[data-f='name']"); ins[ins.length - 1].focus(); };
+  $("shCancel").onclick = function () { $("dlgSheet").close(); };
+  $("shOk").onclick = function () {
+    var d = shEdit.d, old = shEdit.old, err = "", seen = {};
+    d.name = $("shName").value.trim().replace(/\s+/g, " "); d.desc = $("shDesc").value.trim(); d.module = $("shModule").value;
+    if (!d.name) err = "Give the sheet a name.";
+    else if (/[\[\]:*?\/\\]/.test(d.name)) err = "A sheet name can't contain [ ] : * ? / or \\ (an Excel rule).";
+    else if (sheetNameTaken(d.name, old && old.name)) err = "There is already a sheet called '" + d.name + "'.";
+    if (!err) d.cols.some(function (c, i) {
+      c.name = String(c.name || "").trim().replace(/\*/g, ""); var k = c.name.toLowerCase();
+      if (!c.name) err = "Column " + (i + 1) + " needs a heading."; else if (seen[k]) err = "Two columns are called '" + c.name + "'."; else if (c.type === "list" && !(c.list || []).length) err = "Give the dropdown values for '" + c.name + "'.";
+      seen[k] = 1; return !!err;
+    });
+    if (err) { $("shErr").textContent = err; return; }
+    d.cols[0].req = true; d.cols[0].type = "text";
+    var lost = old ? old.cols.filter(function (c) { return !d.cols.some(function (x) { return x.id === c.id; }); }) : [];
+    var go = function () { $("dlgSheet").close(); applySheetDef(d, old); };
+    if (lost.length && old && filledRows(old.key)) confirmBox("Remove " + lost.length + " column" + (lost.length === 1 ? "" : "s") + "?", "The values in " + lost.map(function (c) { return "'" + c.name + "'"; }).join(", ") + " are deleted from this sheet. Download the workbook first to keep a copy.", go);
+    else go();
+  };
+  function applySheetDef(d, old) {
+    if (old) {
+      var ids = old.cols.map(function (c) { return c.id; }), n0 = old.cols.length, same = ids.join() === d.cols.map(function (c) { return c.id; }).join();
+      state.tabs[d.key] = rows(old.key).map(function (r) { r = r || []; return d.cols.map(function (c) { var i = ids.indexOf(c.id); return i < 0 || r[i] == null ? "" : r[i]; }).concat(r.slice(n0)); });
+      if (!same) { delete state.fmt[d.key]; delete state.colOrder[d.key]; if (state.filters) delete state.filters[d.key]; }
+      if (old.name !== d.name) ["colw", "filters"].forEach(function (k) { if (state[k] && state[k][old.name]) { state[k][d.name] = state[k][old.name]; delete state[k][old.name]; } });
+      unregisterCustom(old); state.sheets = state.sheets.map(function (x) { return x.key === old.key ? d : x; });
+    } else { state.sheets.push(d); if (!state.tabs[d.key]) state.tabs[d.key] = []; }
+    registerCustom(d); indexSheets(); rebuildAll(); undoStack = []; redoStack = []; save(); switchSheet(d.name); scheduleValidate();
+    toast((old ? "Saved the " : "Added the ") + d.name + " sheet");
+  }
+  function duplicateSheet(n) {
+    var d0 = customDef(n), d;
+    if (d0) { d = JSON.parse(JSON.stringify(d0)); d.key = uid(); d.name = uniqueSheetName(d0.name + " copy"); state.tabs[d.key] = JSON.parse(JSON.stringify(rows(d0.key))); }
+    else {
+      var tab = (SHEET_TABLES[n] || [])[0]; if (!tab) return; var base = TABLES[tab].baseCols.slice(), ni = -1;
+      base.forEach(function (c, i) { if (ni < 0 && c.key === "name") ni = i; }); if (ni > 0) base.unshift(base.splice(ni, 1)[0]);
+      var T2 = { number: "number", integer: "integer", date: "date", email: "email", phone: "phone", bool: "bool", lat: "number", lng: "number" };
+      d = { key: uid(), name: uniqueSheetName(n + " copy"), module: (GUIDE.sheets[n] && GUIDE.sheets[n].label) || n, desc: "A copy of the " + n + " sheet.",
+        cols: base.map(function (c, i) { var m = c.meta || {}, L = m.list && !m.multi ? RULES.lists[m.list] : null; return { id: i + 1, name: c.label, desc: c.desc || "", type: L ? "list" : (T2[m.type] || "text"), req: !!c.req || !i, list: L ? L.slice() : [] }; }) };
+      state.tabs[d.key] = rows(tab).filter(rowFilled).map(function (r) { return base.map(function (c) { return r[c.d] == null ? "" : r[c.d]; }); });
+    }
+    applySheetDef(d, null);
+  }
+  function deleteSheet(d) {
+    var n = filledRows(d.key);
+    confirmBox("Delete the " + d.name + " sheet?", (n ? "Its " + n + " row" + (n === 1 ? " is" : "s are") + " deleted too. " : "") + "This can't be undone. Download the workbook first to keep a copy.", function () {
+      unregisterCustom(d); state.sheets = state.sheets.filter(function (x) { return x.key !== d.key; });
+      ["tabs", "fmt", "custom", "colOrder", "filters"].forEach(function (k) { if (state[k]) delete state[k][d.key]; }); ["colw", "filters"].forEach(function (k) { if (state[k]) delete state[k][d.name]; });
+      if (state.active === d.name) state.active = "Overview";
+      indexSheets(); rebuildAll(); undoStack = []; redoStack = []; save(); switchSheet(state.active); scheduleValidate(); toast("Deleted the " + d.name + " sheet");
+    });
+  }
+
+  /* ---------------- progress overlay ---------------- */
+  function busy(msg, pct, sub) { var el = $("busy"); if (!msg) { el.hidden = true; return; } $("busyMsg").textContent = msg; $("busySub").textContent = sub || ""; $("busyBar").style.width = Math.max(0, Math.min(100, pct || 0)) + "%"; el.hidden = false; }
+  function later(fn) { setTimeout(fn, 30); }   /* lets the overlay paint before a long step */
+
   function renderStatus() {
     var c = { Critical: 0, Warning: 0, Info: 0 }, gcrit = 0; issues.all.forEach(function (i) { if (i.gen) { if (i.severity === "Critical") gcrit++; } else c[i.severity]++; });
     var total = sheetList().reduce(function (n, s) { return n + sheetFilled(s); }, 0), ready = !c.Critical && filledRows("site") > 0;
@@ -750,6 +949,8 @@
     var n = state.active, g = GUIDE.sheets[n], list = sheetList(), h = "";
     if (panelMode === "guide") {
       h += "<h2>" + esc(n) + "</h2><div class='stepno'>Sheet " + (list.indexOf(n) + 1) + " of " + list.length + (GUIDE.optionalSheets.indexOf(n) >= 0 ? " · depends on the onboarding scope" : "") + "</div><p>" + esc(g.purpose) + "</p>";
+      if (customDef(n)) h += "<div class='shacts'><button class='btn sm' data-sa='edit'>Edit sheet</button><button class='btn sm' data-sa='dup'>Duplicate</button><button class='btn sm danger' data-sa='del'>Delete</button></div>";
+      else if (canDuplicate(n)) h += "<div class='shacts'><button class='btn sm' data-sa='dup' title='Same columns, for another module or a second list'>Duplicate as a custom sheet</button></div>";
       var before = (g.before || []).filter(function (b) { return list.indexOf(b) >= 0; });
       if (before.length) h += "<h3>Fill these sheets first</h3><div class='chips'>" + before.map(function (b) { var f = sheetFilled(b) || (b === "Asset Category Master" && filledRows("cat")); return "<button class='chip" + (f ? " done" : "") + "' data-go='" + esc(b) + "'>" + esc(b) + (f ? " ✓" : "") + "</button>"; }).join("") + "</div>";
       h += "<h3>How to fill it</h3><ol>" + g.steps.map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("") + "</ol>";
@@ -778,6 +979,7 @@
     $("pbody").innerHTML = h;
   }
   $("pbody").addEventListener("click", function (e) {
+    var sa = e.target.closest("[data-sa]"); if (sa) { sheetAction(sa.getAttribute("data-sa"), state.active); return; }
     var go = e.target.closest("[data-go]"); if (go) { switchSheet(go.getAttribute("data-go")); return; }
     var col = e.target.closest("[data-col]"); if (col) { var tab = col.getAttribute("data-tab"), b = L.blocks.filter(function (x) { return x.table === tab; })[0]; if (b) { var fi = b.dataStart - 1 + Math.max(0, lastFilled(tab) + 1); select(Math.min(fi, b.dataEnd - 1), +col.getAttribute("data-col")); } grid.focus(); return; }
     var j = e.target.closest("[data-jump]"); if (j) jumpTo($("pbody")._list[+j.getAttribute("data-jump")]);
@@ -807,11 +1009,22 @@
 
   /* ---------------- report dialog ---------------- */
   var repFilter = { sev: { Critical: true, Warning: true, Info: false }, sheet: "" };
-  function openReport() { runValidate(); renderReport(); $("dlgReport").showModal(); }
+  function openReport() { busy("Checking every sheet…", 60); later(function () { try { runValidate(); } finally { busy(); } renderReport(); if (!$("dlgReport").open) $("dlgReport").showModal(); }); }
+  function summary() {
+    var per = {}, tot = { rows: 0, bad: 0, warn: 0, dup: 0 };
+    sheetList().forEach(function (n) { if (n === "Overview" || GEN_NAMES.indexOf(n) >= 0 || n === "Asset Category Master") return; var r = sheetFilled(n); per[n] = { rows: r, bad: {}, warn: {}, dup: 0 }; tot.rows += r; });
+    issues.all.forEach(function (i) { var p = per[i.sheet]; if (!p || i.r == null) return; if (i.severity === "Critical") p.bad[i.r] = 1; else if (i.severity === "Warning") p.warn[i.r] = 1; if (/Same as row \d+/.test(i.issue || "")) p.dup++; });
+    Object.keys(per).forEach(function (n) { var p = per[n]; p.badN = Object.keys(p.bad).length; p.warnN = Object.keys(p.warn).filter(function (r) { return !p.bad[r]; }).length; tot.bad += p.badN; tot.warn += p.warnN; tot.dup += p.dup; });
+    return { per: per, tot: tot };
+  }
   function renderReport() {
     var c = { Critical: 0, Warning: 0, Info: 0 }; issues.all.forEach(function (i) { c[i.severity]++; });
     var list = issues.all.filter(function (i) { return repFilter.sev[i.severity] && (!repFilter.sheet || i.sheet === repFilter.sheet); });
-    var h = "<div class='sumrow'><div class='c'><b>" + c.Critical + "</b><span>Critical, block import</span></div><div class='w'><b>" + c.Warning + "</b><span>Warnings</span></div><div class='i'><b>" + c.Info + "</b><span>Info</span></div></div>";
+    var S2 = summary(), T2 = S2.tot;
+    var h = "<div class='sumgrid'><div><b>" + T2.rows + "</b><span>Records checked</span></div><div class='good'><b>" + Math.max(0, T2.rows - T2.bad) + "</b><span>Valid records</span></div><div class='bad'><b>" + T2.bad + "</b><span>Records with errors</span></div><div class='warn'><b>" + T2.warn + "</b><span>Records with warnings only</span></div><div><b>" + T2.dup + "</b><span>Duplicates</span></div></div>" +
+      "<table class='sheetsum'><thead><tr><th>Sheet</th><th>Records</th><th>With errors</th><th>Warnings only</th><th>Duplicates</th></tr></thead><tbody>" + Object.keys(S2.per).filter(function (n) { var p = S2.per[n]; return p.rows || p.badN || (issues.bySheet[n] || []).length; }).map(function (n) { var p = S2.per[n];
+        return "<tr data-go='" + esc(n) + "'><td>" + esc(n) + "</td><td>" + p.rows + "</td><td class='" + (p.badN ? "bad" : "n0") + "'>" + p.badN + "</td><td class='" + (p.warnN ? "" : "n0") + "'>" + p.warnN + "</td><td class='" + (p.dup ? "" : "n0") + "'>" + p.dup + "</td></tr>"; }).join("") + "</tbody></table>";
+    h += "<div class='sumrow'><div class='c'><b>" + c.Critical + "</b><span>Critical, block import</span></div><div class='w'><b>" + c.Warning + "</b><span>Warnings</span></div><div class='i'><b>" + c.Info + "</b><span>Info</span></div></div>";
     h += "<div class='rep-filters'>" + ["Critical", "Warning", "Info"].map(function (s) { return "<button class='fchip' data-sev='" + s + "' aria-pressed='" + repFilter.sev[s] + "'>" + s + "</button>"; }).join("") +
       "<select id='repSheet' aria-label='Filter by sheet'><option value=''>All sheets</option>" + sheetList().filter(function (n) { return n !== "Overview"; }).map(function (n) { return "<option" + (repFilter.sheet === n ? " selected" : "") + ">" + esc(n) + "</option>"; }).join("") + "</select></div>";
     if (!list.length) h += "<div class='empty'>" + (issues.all.length ? "No issues match these filters." : "No issues found.") + "</div>";
@@ -822,10 +1035,12 @@
   }
   $("repBody").addEventListener("click", function (e) {
     var b = e.target.closest("[data-sev]"); if (b) { var s = b.getAttribute("data-sev"); repFilter.sev[s] = !repFilter.sev[s]; renderReport(); return; }
+    var sg = e.target.closest("tr[data-go]"); if (sg) { repFilter.sheet = sg.getAttribute("data-go"); renderReport(); return; }
     var tr = e.target.closest("tr[data-n]"); if (tr) { $("dlgReport").close(); jumpTo($("repBody")._list[+tr.getAttribute("data-n")]); }
   });
   $("repBody").addEventListener("change", function (e) { if (e.target.id === "repSheet") { repFilter.sheet = e.target.value; renderReport(); } });
   $("repClose").onclick = function () { $("dlgReport").close(); };
+  $("repAgain").onclick = openReport;
   $("btnReport").onclick = openReport;
   $("repDownload").onclick = function () {
     var wb = new ExcelJS.Workbook(), ws = wb.addWorksheet("Issues", { views: [{ state: "frozen", ySplit: 1 }] });
@@ -847,8 +1062,29 @@
     }).catch(function (e) { console.error(e); toast("The file couldn't be created."); });
   }
   var REFCOL = { site: 0, building: 0, floor: 0, space: 0, asset: 1, vendor: 0, vendorContact: 0, user: 0, role: 0, jobPlan: 0, task: 0, tenant: 0 };
+  function addInstructions(wb, names) {
+    var ws = wb.addWorksheet("Instructions"), r = 1, NAVY = "FF2C2A63";
+    ws.getColumn(1).width = 30; ws.getColumn(2).width = 72; ws.getColumn(3).width = 56; ws.getColumn(4).width = 22;
+    var put = function (vals, style) { var row = ws.getRow(r++); vals.forEach(function (v, i) { var c = row.getCell(i + 1); c.value = v; c.alignment = { wrapText: true, vertical: "top" }; if (style) style(c); }); return row; };
+    put(["Facilio onboarding workbook"], function (c) { c.font = { bold: true, size: 16, color: { argb: NAVY } }; }); r++;
+    ["1. Fill each sheet from the first empty row under the grey description row. Keep the sheet names and column headings exactly as they are.",
+     "2. Columns marked * are mandatory. Every record needs its Name: a row without one is not imported.",
+     "3. Pick values from the dropdown lists. Values must match the list exactly, including capitals and spaces.",
+     "4. Write dates as dd/mm/yyyy and numbers without currency signs or thousands separators.",
+     "5. Names used on other sheets (sites, buildings, floors, vendors, job plans) must be typed exactly as on their own sheet.",
+     "6. Need another module or information the template doesn't cover? Add a sheet with a Name column and your own headings: it is brought in as a custom sheet.",
+     "7. When you're done, import this file on the Data onboarding page (Import Excel, or drop it on the page) and press Check for errors. Fix what it lists and check again."].forEach(function (t) { put([t]); ws.mergeCells(r - 1, 1, r - 1, 4); });
+    r++; put(["Sheet", "What it holds", "Mandatory columns", "Facilio module"], function (c) { c.font = { bold: true, color: { argb: "FFFFFFFF" } }; c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } }; });
+    names.forEach(function (n) {
+      if (n === "Overview" || GEN_NAMES.indexOf(n) >= 0) return; var g = GUIDE.sheets[n] || {}, d = customDef(n), req = [];
+      (SHEET_TABLES[n] || []).forEach(function (k) { TABLES[k].cols.forEach(function (c) { if (c.req) req.push(cleanHeader(c.h)); }); });
+      put([n, g.purpose || "", req.join(", ") || "None", d ? (d.module || "Custom sheet") : ((g.label && g.label !== n) ? g.label : n)]);
+    });
+    ws.views = [{ state: "frozen", ySplit: 0 }];
+  }
   function exportWorkbook() {
     var names = sheetList(), wb = new ExcelJS.Workbook(); wb.creator = "Facilio"; wb.created = new Date();
+    addInstructions(wb, names);
     var all = {}, pos = {};
     names.forEach(function (n) { var S = sheetCells(n); all[n] = S; S.layout.blocks.forEach(function (b) { pos[b.table] = { sheet: n, start: b.dataStart, end: Math.max(b.dataStart, b.dataStart + lastFilled(b.table)) }; }); });
     names.forEach(function (n) {
@@ -876,7 +1112,7 @@
           else if (m.type === "bool") f = '"Yes,No"';
           else if (m.sheetList && pos.cat) f = "'Asset Category Master'!$A$" + pos.cat.start + ":$A$" + (pos.cat.end + 200);
           else if (b.table === "pm" && col.key === "runEvery") f = "Cycles!$A$1:$A$60";
-          else if (ref && !ref.multi && pos[ref.from]) { var P = pos[ref.from], L2 = ws.getColumn(REFCOL[ref.from] + 1).letter; f = "'" + P.sheet + "'!$" + L2 + "$" + P.start + ":$" + L2 + "$" + (P.end + 200); }
+          else if (ref && !ref.multi && pos[ref.from]) { var P = pos[ref.from], L2 = ws.getColumn((ref.col ? Math.max(0, ci(ref.from, ref.col)) : REFCOL[ref.from]) + 1).letter; f = "'" + P.sheet + "'!$" + L2 + "$" + P.start + ":$" + L2 + "$" + (P.end + 200); }
           if (f && f.length < 255) ws.dataValidations.add(range, { type: "list", allowBlank: true, formulae: [f], showErrorMessage: true, errorStyle: "warning", errorTitle: "Not in the list", error: "Pick a value from the list so it matches Facilio exactly." });
         });
       });
@@ -899,18 +1135,77 @@
   document.addEventListener("dragleave", function (e) { if (!e.relatedTarget) $("dropzone").hidden = true; });
   document.addEventListener("drop", function (e) { e.preventDefault(); $("dropzone").hidden = true; if ($("dlgImp").open) return; var f = e.dataTransfer && e.dataTransfer.files[0]; if (f) importFile(f); });
   function importFile(file) {
-    if (!/\.(xlsx|xlsm|xls)$/i.test(file.name)) { toast("Choose an Excel file (.xlsx)."); return; }
+    var html = /\.html?$/i.test(file.name);
+    if (!html && !/\.(xlsx|xlsm|xls)$/i.test(file.name)) { toast("Choose an Excel workbook (.xlsx) or the customer's onboarding HTML file."); return; }
     var go = function () {
-      var rd = new FileReader();
-      rd.onload = function () {
+      busy("Reading " + file.name + "…", 15);
+      readWorkbook(file, html).then(function (wb) {
+        busy("Matching the sheets and columns…", 40);
+        later(function () { mapUnknownSheets(wb, function () { busy("Checking the data…", 70, "Large files take a little longer."); later(function () { importWorkbook(wb, file.name + (html ? " (customer HTML)" : "")); }); }); });
+      }).catch(function (e) { busy(); console.error(e); toast((e && e.userMsg) || "The file couldn't be read as an onboarding workbook."); });
+    };
+    if (anyData()) confirmBox("Replace the data in this workspace?", "Importing '" + file.name + "' replaces what is entered here. Download the current workbook first to keep a copy.", go); else go();
+  }
+  function readWorkbook(file, html) {
+    if (!html) return file.arrayBuffer().then(function (b) { return XLSX.read(new Uint8Array(b), { type: "array", cellNF: true, cellDates: false }); });
+    var host = null; try { host = window.parent !== window ? window.parent : null; } catch (e) { }
+    if (!host || typeof host.FWBOnbHtmlRows !== "function") return Promise.reject({ userMsg: "Open this workspace from Delivery Studio to import a customer's onboarding HTML file." });
+    return file.text().then(function (t) { return host.FWBOnbHtmlRows(t); }).then(function (r) {
+      if (!r || !r.ok) throw { userMsg: "The HTML file couldn't be used: " + ((r && r.errors) || []).slice(0, 2).map(function (x) { return typeof x === "string" ? x : (x && (x.message || x.issue)) || ""; }).join(" ") };
+      var wb = XLSX.utils.book_new(); Object.keys(r.sheets).forEach(function (n) { XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(r.sheets[n]), n.slice(0, 31)); });
+      if (!wb.SheetNames.length) throw { userMsg: "The HTML file has no rows filled in yet." };
+      return wb;
+    });
+  }
+  function knownSheet(n) {
+    var k = normH(n); if (k === "overview" || RESERVED.indexOf(k) >= 0) return true;
+    return (RULES.ignoreSheets || []).concat(GEN_NAMES).some(function (x) { return normH(x) === k; }) || RULES.entities.some(function (e) { return e.sheet.some(function (a) { return normH(a) === k; }); });
+  }
+  function sheetRows(ws) { return XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", blankrows: false, raw: false }); }
+  function headerRowOf(R) {
+    var i, filled = function (row) { return (row || []).filter(function (v) { return String(v).trim(); }).length; };
+    for (i = 0; i < Math.min(R.length, 10); i++) if (filled(R[i]) >= 2) return i;
+    for (i = 0; i < R.length; i++) if (filled(R[i])) return i; return 0;
+  }
+  function defFromSheet(n, ws, mod) {
+    var R = sheetRows(ws), H = (R[headerRowOf(R)] || []).map(function (v) { return String(v).trim(); }), seen = {}, cols = [];
+    H.forEach(function (h, i) { if (!h) return; var nm = h.replace(/\*/g, "").replace(/\s+/g, " ").trim().slice(0, 80) || "Column " + (i + 1), base = nm, j = 2; while (seen[nm.toLowerCase()]) nm = base + " " + j++; seen[nm.toLowerCase()] = 1; cols.push({ id: cols.length + 1, name: nm, desc: "", type: "text", req: /\*/.test(h), list: [] }); });
+    if (!cols.length) return null;
+    var ni = 0; cols.some(function (c, i) { if (/\bname\b/i.test(c.name)) { ni = i; return true; } return false; }); if (ni) cols.unshift(cols.splice(ni, 1)[0]); cols[0].req = true;
+    return { key: uid(), name: uniqueSheetName(n), module: mod || "", desc: "Brought in from an imported file.", cols: cols };
+  }
+  function mapUnknownSheets(wb, done) {
+    var un = wb.SheetNames.filter(function (n) { return !knownSheet(n) && sheetRows(wb.Sheets[n]).length > 1; });
+    if (!un.length) { done(); return; }
+    busy();
+    var targets = sheetList().filter(function (n) { return n !== "Overview" && GEN_NAMES.indexOf(n) < 0 && n !== "Asset Category Master"; });
+    $("mapNote").textContent = "These sheets in the file don't match a sheet in this workspace. Keep each as a new custom sheet (its columns come from its heading row), put it into an existing sheet, or leave it out.";
+    $("mapRows").innerHTML = un.map(function (n, i) { var R = sheetRows(wb.Sheets[n]), hr = headerRowOf(R), nc = (R[hr] || []).filter(function (v) { return String(v).trim(); }).length;
+      return "<div class='mapr'><div><b>" + esc(n) + "</b><small>" + Math.max(0, R.length - hr - 1) + " rows · " + nc + " columns</small></div>" +
+        "<select data-f='to' aria-label='What to do with " + esc(n) + "'><option value='new'>Add as a new custom sheet</option>" + targets.map(function (t) { return "<option value='to:" + esc(t) + "'>Put into the " + esc(t) + " sheet</option>"; }).join("") + "<option value='skip'>Leave it out</option></select>" +
+        "<select data-f='mod' aria-label='Facilio module for " + esc(n) + "'><option value=''>Facilio module…</option>" + MODULES.map(function (m) { return "<option>" + esc(m) + "</option>"; }).join("") + "</select></div>"; }).join("");
+    var rename = function (from, to) { wb.Sheets[to] = wb.Sheets[from]; delete wb.Sheets[from]; wb.SheetNames[wb.SheetNames.indexOf(from)] = to; };
+    $("mapOk").onclick = function () {
+      var els = $("mapRows").querySelectorAll(".mapr"), notes = [];
+      un.forEach(function (n, i) {
+        var to = els[i].querySelector("[data-f=to]").value, mod = els[i].querySelector("[data-f=mod]").value;
+        if (to === "skip") { delete wb.Sheets[n]; wb.SheetNames = wb.SheetNames.filter(function (x) { return x !== n; }); notes.push(n + " left out"); }
+        else if (to.indexOf("to:") === 0) { var t = to.slice(3); if (wb.SheetNames.indexOf(t) >= 0) notes.push(n + " not used: the file already has a " + t + " sheet"); else rename(n, t); }
+        else { var d = defFromSheet(n, wb.Sheets[n], mod); if (!d) return; state.sheets.push(d); state.tabs[d.key] = []; registerCustom(d); if (d.name !== n) rename(n, d.name); }
+      });
+      indexSheets(); rebuildAll(); $("dlgMap").close(); if (notes.length) toast(notes.join(". ") + "."); busy("Checking the data…", 70); later(done);
+    };
+    $("mapCancel").onclick = function () { $("dlgMap").close(); toast("Import cancelled. Nothing changed."); };
+    $("dlgMap").showModal();
+  }
+  function importWorkbook(wb, fileName) {
         try {
-          var wb = XLSX.read(new Uint8Array(rd.result), { type: "array", cellNF: true, cellDates: false });
-          var res = OnboardingValidator.validate(wb, RULES), D = res.data || {}, n = 0, fresh = freshState(); fresh.seenWalk = true;
+          setCustomRules(); var res = OnboardingValidator.validate(wb, RULES), D = res.data || {}, n = 0, fresh = freshState(); fresh.seenWalk = true; fresh.sheets = state.sheets.slice();
           Object.keys(TABLES).forEach(function (tab) {
             if (tab === "cat" || !D[tab]) return;
             var cols = TABLES[tab].baseCols, extra = D[tab].custom || [];
             if (extra.length) {
-              fresh.custom[tab] = extra.map(function (x) { return { name: x.h }; });
+              fresh.custom[tab] = extra.map(function (x) { var old = customDefs(tab).filter(function (o) { return o && lowName(o.name) === lowName(x.h); })[0]; return old ? JSON.parse(JSON.stringify(old)) : { name: x.h }; });
               var order = cols.map(function (c0) { return c0.d; });
               extra.forEach(function (x, k) {
                 var before = 0; Object.keys(D[tab].colMap).forEach(function (key) { if (D[tab].colMap[key].ci < x.ci) before++; });
@@ -933,12 +1228,8 @@
           GUIDE.optionalSheets.forEach(function (s) { fresh.enabled[s] = wb.SheetNames.some(function (x) { return normH(x) === normH(s); }); });
           if (res.lists && res.lists.assetCategory && res.lists.assetCategory.sheet) fresh.tabs.cat = res.lists.assetCategory.values.map(function (v) { return [v]; });
           fresh.importSettings = state.importSettings || {}; state = fresh; rebuildAll(); undoStack = []; redoStack = []; save(); switchSheet("Site"); runValidate();
-          toast("Imported " + n + " rows from " + file.name);
-        } catch (e) { console.error(e); toast("The file couldn't be read as an onboarding workbook."); }
-      };
-      rd.readAsArrayBuffer(file);
-    };
-    if (anyData()) confirmBox("Replace the data in this workspace?", "Importing '" + file.name + "' replaces what is entered here. Download the current workbook first to keep a copy.", go); else go();
+          busy(); toast("Imported " + n + " rows from " + fileName + ". Press Check for errors to see what needs fixing.");
+        } catch (e) { busy(); console.error(e); toast("The file couldn't be read as an onboarding workbook."); }
   }
 
   /* ---------------- dialogs, walkthrough, theme ---------------- */
@@ -1490,7 +1781,9 @@
   }
   function curCustom() { var tab = tableAt(sel.r, sel.c); var col = tab && TABLES[tab].cols[sel.c]; return col && col.custom ? { tab: tab, col: col } : null; }
   var colCb = null;
-  function askName(title, val, cb) { $("ccTitle").textContent = title; $("ccName").value = val || ""; $("ccErr").textContent = ""; colCb = cb; $("dlgCol").showModal(); $("ccName").focus(); $("ccName").select(); }
+  $("ccType").innerHTML = Object.keys(CTYPES).map(function (t) { return "<option value='" + t + "'>" + CTYPES[t] + "</option>"; }).join("");
+  $("ccType").onchange = function () { $("ccList").disabled = $("ccType").value !== "list"; };
+  function askName(title, def, cb) { def = typeof def === "string" ? { name: def } : (def || {}); $("ccTitle").textContent = title; $("ccName").value = def.name || ""; $("ccType").value = def.type || "text"; $("ccReq").checked = !!def.req; $("ccList").value = (def.list || []).join(", "); $("ccList").disabled = $("ccType").value !== "list"; $("ccErr").textContent = ""; colCb = cb; $("dlgCol").showModal(); $("ccName").focus(); $("ccName").select(); }
   function nameProblem(tab, name, exceptD) {
     var n = name.trim(); if (!n) return "Enter a column heading.";
     if (n.length > 100) return "Keep the heading to 100 characters or fewer.";
@@ -1500,7 +1793,10 @@
     var clash = TABLES[tab].cols.some(function (c) { return c.d !== exceptD && normH(c.h) === key; });
     return clash ? "This sheet already has a column called '" + n + "'." : "";
   }
-  $("ccOk").onclick = function () { var v = $("ccName").value; if (colCb) { var err = colCb(v); if (err) { $("ccErr").textContent = err; return; } } $("dlgCol").close(); grid.focus(); };
+  $("ccOk").onclick = function () {
+    var f = { name: $("ccName").value, type: $("ccType").value, req: $("ccReq").checked, list: $("ccList").value.split(",").map(function (x) { return x.trim(); }).filter(Boolean) };
+    if (f.type === "list" && !f.list.length) { $("ccErr").textContent = "Give the dropdown values, separated by commas."; return; }
+    if (colCb) { var err = colCb(f); if (err) { $("ccErr").textContent = err; return; } } $("dlgCol").close(); grid.focus(); };
   $("ccCancel").onclick = function () { $("dlgCol").close(); grid.focus(); };
   $("ccName").addEventListener("keydown", function (e) { e.stopPropagation(); if (e.key === "Enter") { e.preventDefault(); $("ccOk").click(); } });
   function insertColumn(right) {
@@ -1508,10 +1804,10 @@
     if (!tab) { toast(TABLES.cat && state.active === "Asset Category Master" ? "Asset Category Master is a single list; columns can't be added here." : "Select a cell in a table first."); return; }
     var n = TABLES[tab].cols.length, pos = Math.min(Math.min(sel.c, sel.c2) + (right ? (Math.max(sel.c, sel.c2) - Math.min(sel.c, sel.c2) + 1) : 0), n);
     if (sel.c >= n) pos = n;
-    askName("Add a custom field", "", function (name) {
-      var err = nameProblem(tab, name, -1); if (err) return err;
+    askName("Add a custom field", "", function (f) {
+      var name = f.name, err = nameProblem(tab, name, -1); if (err) return err;
       var before = snapshot([tab]), sheet = TABLES[tab].sheet;
-      var defs = (state.custom[tab] = state.custom[tab] || []); defs.push({ name: name.trim() });
+      var defs = (state.custom[tab] = state.custom[tab] || []); defs.push({ name: name.trim(), type: f.type, req: f.req, list: f.list });
       var d = TABLES[tab].baseCols.length + defs.length - 1;
       var order = state.colOrder[tab] || TABLES[tab].cols.map(function (c) { return c.d; }); order.splice(pos, 0, d); state.colOrder[tab] = order;
       var cw = state.colw[sheet]; if (cw) { var nw = {}; Object.keys(cw).forEach(function (k) { nw[+k >= pos ? +k + 1 : k] = cw[k]; }); state.colw[sheet] = nw; }
@@ -1522,9 +1818,10 @@
   }
   function renameColumn() {
     var cc = curCustom(); if (!cc) { toast("Only custom fields can be renamed; template columns keep their Facilio names."); return; }
-    askName("Rename custom field", cc.col.h, function (name) {
-      var err = nameProblem(cc.tab, name, cc.col.d); if (err) return err;
-      var before = snapshot([cc.tab]); state.custom[cc.tab][cc.col.d - TABLES[cc.tab].baseCols.length].name = name.trim();
+    var cdef = state.custom[cc.tab][cc.col.d - TABLES[cc.tab].baseCols.length];
+    askName("Edit custom field", cdef, function (f) {
+      var name = f.name, err = nameProblem(cc.tab, name, cc.col.d); if (err) return err;
+      var before = snapshot([cc.tab]); cdef.name = name.trim(); cdef.type = f.type; cdef.req = f.req; cdef.list = f.list;
       rebuildCols(cc.tab); commitSnap([cc.tab], before); renderPanel(); return "";
     });
   }
@@ -1542,7 +1839,7 @@
   $("ribbon").addEventListener("click", function (e) {
     var b = e.target.closest("[data-colmenu]"); if (!b) return; closePops();
     var m = document.createElement("div"); m.className = "menu cmenu"; m.id = "cmenu";
-    m.innerHTML = "<button data-cm='colL'>Insert column left</button><button data-cm='colR'>Insert column right</button>" + (curCustom() ? "<button data-cm='colRen'>Rename column</button><button data-cm='colDel'>Delete column</button>" : "<div class='hint2'>Custom fields are extra columns for information the template doesn't have. Facilio creates them as new fields on import.</div>");
+    m.innerHTML = "<button data-cm='colL'>Insert column left</button><button data-cm='colR'>Insert column right</button>" + (curCustom() ? "<button data-cm='colRen'>Edit column (name, type, mandatory)</button><button data-cm='colDel'>Delete column</button>" : "<div class='hint2'>Custom fields are extra columns for information the template doesn't have. Facilio creates them as new fields on import.</div>");
     document.body.appendChild(m); var rc = b.getBoundingClientRect(); m.style.position = "fixed"; m.style.top = (rc.bottom + 4) + "px"; m.style.left = rc.left + "px";
     m.addEventListener("click", function (ev) { var it = ev.target.closest("[data-cm]"); if (!it) return; closePops(); runCmd(it.getAttribute("data-cm")); });
     setTimeout(function () { document.addEventListener("mousedown", function close(ev) { if (!m.contains(ev.target)) { m.remove(); document.removeEventListener("mousedown", close); } }); }, 0);

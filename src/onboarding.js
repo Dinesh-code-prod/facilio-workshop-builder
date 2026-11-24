@@ -79,6 +79,12 @@
   root.FWBOnbSave = async (pid, raw) => { if (!S.project || S.project.id !== pid || S.readonly) return true;
     try { const st = JSON.parse(raw); const rows = {}; Object.entries(st.tabs || {}).forEach(([k, v]) => { if (k === 'cat') return; const n = (v || []).filter(r => r && r.some(x => x !== '' && x != null)).length; if (n) rows[k] = n; });
       await I().put('onbws', 'main', { json: raw, rows, stage: 'prepared' }, { silent: true }); try { localStorage.removeItem(dirtyKey(pid)); } catch (e) { } return true; } catch (e) { return false; } };
+  // the tool's Import also takes a customer-filled onboarding HTML file: its rows come back as sheets (heading row first) for the tool's own Excel import and checks
+  root.FWBOnbHtmlRows = async text => { await loadT(); text = String(text || ''); if (text.length > 20e6) return { ok: false, errors: ['The file is larger than 20 MB, so it was not read.'] };
+    const ids = root.FWBOnbHtml.idsFor(htmlOptions(buildPlan())); const res = root.FWBOnbReturn.validateWorkbookHtml(text, { id: S.project.id, name: S.project.name }, { grids: ids.grids, answerIds: ids.answers, checklistIds: ids.checklist });
+    if (!res.ok) return { ok: false, errors: res.errors || [] }; const sheets = {};
+    ids.grids.forEach(g => { const rows = (res.clean.rows || {})[g.key]; if (!rows || !rows.length) return; const sh = sheets[g.sheet] = sheets[g.sheet] || []; if (sh.length) sh.push([]); sh.push(g.cols.slice()); rows.forEach(r => sh.push(g.cols.map((_, j) => r[j] == null ? '' : r[j]))); });
+    return { ok: true, sheets, warnings: res.warnings || [] }; };
   function excelBody() {
     if (!I().ready(['onbws'])) return '<div class="page-body"><div class="empty">Loading…</div></div>'; prepareWs(); const rec = I().get('onbws', 'main');
     const rows = rec ? Object.values(rec.rows || {}).reduce((a, b) => a + b, 0) : 0;

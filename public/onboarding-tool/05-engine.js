@@ -255,7 +255,7 @@
         if (isBlank(v) || typeof v !== "string") return;
         var k = E.idx[normHeader(v)];
         if (k && !(k in colMap)) colMap[k] = { ci: ci, header: v.replace(/\*/g, "").replace(/\([^)]*\)?/g, "").replace(/\s+/g, " ").trim() };
-        else if (!k) { unknown.push(v.trim()); customCols.push({ h: v.trim(), ci: ci }); }
+        else if (!k) { var hh = v.trim().replace(/\s*\*\s*$/, ""), cr = rules.custom && rules.custom[ent.key] && rules.custom[ent.key][hh.toLowerCase()]; customCols.push({ h: hh, ci: ci, rule: cr || null }); if (!cr) unknown.push(hh); }
       });
       Object.keys(ent.columns).forEach(function (k) {
         if (ent.columns[k].req && !(k in colMap)) add({ sheet: E.sheet, row: hdr.excelRow, field: ent.columns[k].h[0], value: "", severity: "Critical", check: cStruct,
@@ -301,7 +301,9 @@
       add({ sheet: n, row: "", field: "", value: "", severity: "Info", check: cStruct, issue: "This sheet isn't covered by the checker yet, so it wasn't checked.", suggestion: "Your Facilio contact will review it manually." });
     });
 
-    function hdrOf(D, k) { return D.colMap[k] ? D.colMap[k].header : D.ent.columns[k].h[0]; }
+    function hdrOf(D, k) { return D.colMap[k] ? D.colMap[k].header : D.ent.columns[k] ? D.ent.columns[k].h[0] : String(k).replace(/^~/, ""); }
+    /* the columns to check: the template's, then the custom fields the workspace gave a type, a dropdown or a mandatory flag */
+    function fieldPairs(D) { return Object.keys(D.colMap).map(function (k) { return [k, D.ent.columns[k]]; }).concat((D.custom || []).filter(function (x) { return x.rule; }).map(function (x) { return ["~" + x.h, x.rule]; })); }
     function A(D, r, k, sev, check, issue, sug, val) {
       add({ sheet: D.sheet, row: r ? r._row : "", field: k ? hdrOf(D, k) : "", value: val !== undefined ? val : (r && k ? display(r[k]) : ""), severity: sev, check: check, issue: issue, suggestion: sug || "" });
     }
@@ -319,8 +321,8 @@
     Object.keys(data).forEach(function (key) {
       var D = data[key], ent = D.ent;
       D.rows.forEach(function (r) {
-        Object.keys(D.colMap).forEach(function (k) {
-          var c = ent.columns[k], v = r[k];
+        fieldPairs(D).forEach(function (p) {
+          var k = p[0], c = p[1], v = r[k];
           if (isErr(v)) { A(D, r, k, "Critical", cErr, "The cell shows an Excel error instead of a value.", "Replace the formula or error with the actual value."); return; }
           if (isBlank(v)) { if (c.req) A(D, r, k, "Critical", cReq, "This mandatory field is empty.", "Enter the " + hdrOf(D, k) + "."); return; }
           if (typeof v === "string" && v !== v.trim()) A(D, r, k, c.long ? "Warning" : "Critical", cSpace, "Extra space at the start or end of the value. The Facilio data loader checks spacing exactly.", "Remove the extra space: '" + v.trim() + "'.");
@@ -547,8 +549,8 @@
     /* simple references */
     Object.keys(data).forEach(function (key) {
       var D = data[key];
-      Object.keys(D.colMap).forEach(function (k) {
-        var c = D.ent.columns[k]; if (!c.ref) return;
+      fieldPairs(D).forEach(function (p) {
+        var k = p[0], c = p[1]; if (!c.ref) return;
         var t = c.ref.split("."), m = index(t[0], t[1]);
         if (!m) { notes.push(hdrOf(D, k) + " on " + D.sheet + " wasn't cross-checked because the " + (ents[t[0]] ? ents[t[0]].sheet : t[0]) + " sheet is missing."); return; }
         var target = "the " + data[t[0]].sheet + " sheet" + (t[0] === "task" ? " (task list)" : "");

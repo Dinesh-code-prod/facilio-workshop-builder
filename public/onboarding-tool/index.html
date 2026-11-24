@@ -35,10 +35,10 @@
   <button class="btn" id="btnImp" hidden title="For the Facilio team: check or generate import files">
     <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2.5h7l3 3v8H3zM10 2.5v3h3M5.5 9h5M5.5 11.5h3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg><span class="lbl">Facilio import ▾</span></button>
   <button class="btn" id="btnReport">
-    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2.5h7l3 3v8H3z M6 8.5l1.5 1.5L10.5 7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg><span class="lbl">Check report</span></button>
+    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2.5h7l3 3v8H3z M6 8.5l1.5 1.5L10.5 7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg><span class="lbl">Check for errors</span></button>
   <button class="btn primary" id="btnExport">
     <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8M5 7l3 3 3-3M2.5 10.5v2.5h11v-2.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="lbl">Download workbook</span></button>
-  <input type="file" id="fileInput" accept=".xlsx,.xlsm,.xls" hidden>
+  <input type="file" id="fileInput" accept=".xlsx,.xlsm,.xls,.html,.htm" hidden>
 </header>
 
 
@@ -129,9 +129,9 @@
 </dialog>
 
 <dialog id="dlgReport" aria-labelledby="repTitle">
-  <div class="dlg-h"><h2 id="repTitle">Check report</h2><span class="spacer"></span><button class="btn ghost" id="repClose" aria-label="Close">✕</button></div>
+  <div class="dlg-h"><h2 id="repTitle">Check for errors</h2><span class="spacer"></span><button class="btn ghost" id="repClose" aria-label="Close">✕</button></div>
   <div class="dlg-b" id="repBody"></div>
-  <div class="dlg-f"><span class="save" id="repMsg"></span><span class="spacer"></span><button class="btn" id="repDownload">Download report (.xlsx)</button></div>
+  <div class="dlg-f"><span class="save" id="repMsg"></span><span class="spacer"></span><button class="btn" id="repAgain">Check again</button><button class="btn" id="repDownload">Download report (.xlsx)</button></div>
 </dialog>
 
 <dialog id="dlgVideo" aria-labelledby="vidTitle">
@@ -145,8 +145,31 @@
   <div class="dlg-f"><button class="btn" id="cfNo">Cancel</button><button class="btn primary" id="cfYes">Continue</button></div>
 </dialog>
 
+<dialog id="dlgSheet" class="sheetdlg" aria-labelledby="shTitle">
+  <div class="dlg-h"><h2 id="shTitle">New custom sheet</h2></div>
+  <div class="dlg-b">
+    <div class="sh-row"><label>Sheet name<input id="shName" maxlength="31" autocomplete="off"></label><div class="sh-mod"><label>Facilio module it maps to<select id="shModule"></select></label><button class="btn" id="shModFields" type="button">Add the module's fields</button></div></div>
+    <p class="sh-note" id="shModNote"></p>
+    <label class="sh-full">What it holds (shown to the customer in the guide)<input id="shDesc" maxlength="300" autocomplete="off"></label>
+    <h3>Columns</h3>
+    <p class="sh-note">The first column is the record's Name and is always mandatory. Use the arrows to reorder columns.</p>
+    <div id="shCols"></div>
+    <button class="btn" id="shAddCol" type="button">+ Add column</button>
+    <div id="shErr" role="alert" class="sh-err"></div>
+  </div>
+  <div class="dlg-f"><button class="btn" id="shCancel">Cancel</button><button class="btn primary" id="shOk">Save sheet</button></div>
+</dialog>
+
+<dialog id="dlgMap" class="sheetdlg" aria-labelledby="mapTitle">
+  <div class="dlg-h"><h2 id="mapTitle">Sheets this workspace doesn't have</h2></div>
+  <div class="dlg-b"><p class="sh-note" id="mapNote"></p><div id="mapRows"></div></div>
+  <div class="dlg-f"><button class="btn" id="mapCancel">Cancel import</button><button class="btn primary" id="mapOk">Continue import</button></div>
+</dialog>
+
+<div class="busy" id="busy" hidden role="status" aria-live="polite"><div class="busy-card"><div class="busy-mark" aria-hidden="true"><i></i><i></i><i></i></div><b id="busyMsg">Working…</b><div class="busy-bar"><i id="busyBar"></i></div><span id="busySub"></span></div></div>
+
 <div class="toast" id="toast" role="status" hidden></div>
-<div class="dropzone" id="dropzone" hidden>Drop the onboarding workbook to import it</div>
+<div class="dropzone" id="dropzone" hidden>Drop the onboarding workbook (Excel, or the customer's onboarding HTML file) to import it</div>
 
 <dialog id="dlgFind" class="finddlg" aria-labelledby="fdTitle">
   <div class="dlg-h"><h2 id="fdTitle">Find</h2><span class="spacer"></span><button class="btn ghost" id="fdClose" aria-label="Close">✕</button></div>
@@ -163,6 +186,8 @@
   <div class="dlg-h"><h2 id="ccTitle">Add a custom field</h2></div>
   <div class="dlg-b">
     <label class="fl" style="display:flex;flex-direction:column;gap:6px;font:500 12px/18px Roboto,sans-serif;color:var(--muted)">Column heading<input id="ccName" type="text" autocomplete="off" maxlength="100" style="height:34px;border:1px solid var(--line);border-radius:4px;padding:0 10px;background:var(--surface);color:var(--ink);font:400 14px Roboto,sans-serif"></label>
+    <div class="cc-more"><label>Type<select id="ccType"></select></label><label class="shreq"><input type="checkbox" id="ccReq"> Mandatory</label></div>
+    <label class="fl cc-list">Dropdown values, comma separated<input id="ccList" type="text" autocomplete="off" maxlength="2000" disabled placeholder="For a dropdown list"></label>
     <p style="margin:10px 0 0;color:var(--muted);font-size:12.5px;line-height:1.5">Use a custom field for information the template doesn't cover. Facilio creates it as a new field with this name when the data is imported.</p>
     <div id="ccErr" role="alert" style="color:var(--crit);font-size:12.5px;margin-top:8px;min-height:18px"></div>
   </div>

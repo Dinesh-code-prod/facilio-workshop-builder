@@ -432,3 +432,56 @@ input.namebox:focus{box-shadow:inset 0 0 0 2px var(--primary-hover)}
 
 .genbanner{display:block}
 .genbanner .autotag{margin-right:8px}
+
+/* ---------- custom sheets, import mapping, progress overlay, error summary (24 Nov 2026) ---------- */
+.sheetdlg{width:min(1000px,96vw)}
+.sheetdlg .dlg-b{max-height:68vh;overflow:auto}
+.sheetdlg label{display:flex;flex-direction:column;gap:6px;font:500 12px/18px Roboto,sans-serif;color:var(--muted)}
+.sheetdlg input:not([type=checkbox]),.sheetdlg select{height:34px;border:1px solid var(--line);border-radius:6px;padding:0 10px;background:var(--surface);color:var(--ink);font:400 13.5px/20px Roboto,sans-serif;min-width:0}
+.sheetdlg input:focus,.sheetdlg select:focus{outline:2px solid var(--primary-light);border-color:var(--sel)}
+.sheetdlg input:disabled,.sheetdlg select:disabled{background:var(--rn);color:var(--muted)}
+.sh-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.sh-full{margin-bottom:14px}
+.sheetdlg h3{font:600 14px/20px Roboto,sans-serif;color:var(--ink);margin:6px 0 2px}
+.sh-note{margin:0 0 10px;color:var(--muted);font-size:12.5px;line-height:1.5}
+.shc{display:grid;grid-template-columns:1.3fr 1fr 86px 1.4fr 1.6fr 96px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--grid)}
+.shc-h{font:600 11.5px/16px Roboto,sans-serif;color:var(--muted);border-bottom:1px solid var(--line)}
+.sheetdlg .shc .shreq{flex-direction:row;align-items:center;gap:6px;color:var(--ink);font-size:13px}
+.shbtns{display:flex;gap:4px;justify-content:flex-end;align-items:center}
+.shbtns button{width:28px;height:28px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);cursor:pointer}
+.shbtns button:hover:not(:disabled){border-color:var(--sel);color:var(--sel)}
+.shbtns button:disabled{opacity:.35;cursor:default}
+.shbtns small{color:var(--muted);font-size:11.5px}
+.sh-err{color:var(--crit);font-size:12.5px;margin-top:10px;min-height:18px}
+#shAddCol{margin-top:10px}
+.mapr{display:grid;grid-template-columns:1.2fr 1.6fr 1.2fr;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--grid)}
+.mapr b{font-weight:600;color:var(--ink)} .mapr small{display:block;color:var(--muted);font-size:12px}
+.tab.custom{box-shadow:inset 0 -2px 0 #7A5AF8}
+.shacts{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 12px}
+.btn.danger,.menu button.danger{color:var(--crit)}
+.busy{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:rgba(245,247,252,.72)}
+.busy[hidden]{display:none}
+.busy-card{min-width:300px;max-width:420px;background:var(--raised);border:1px solid var(--line);border-radius:14px;box-shadow:var(--elev-high);padding:22px 24px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.busy-card b{font:600 15px/22px Roboto,sans-serif;color:var(--ink)} #busySub{color:var(--muted);font-size:12.5px}
+.busy-mark{display:flex;gap:6px;height:28px;align-items:flex-end}
+.busy-mark i{width:8px;height:8px;border-radius:4px;background:#1570EF;animation:busyb 1s ease-in-out infinite}
+.busy-mark i:nth-child(2){background:#7A5AF8;animation-delay:.15s} .busy-mark i:nth-child(3){background:#E5197F;animation-delay:.3s}
+@keyframes busyb{0%,100%{height:8px}50%{height:28px}}
+.busy-bar{width:100%;height:6px;border-radius:3px;background:var(--grid);overflow:hidden} .busy-bar i{display:block;height:100%;width:0;background:#1570EF;transition:width .2s}
+@media (prefers-reduced-motion: reduce){.busy-mark i{animation:none;height:18px}}
+.sumgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:0 0 14px}
+.sumgrid div{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface)}
+.sumgrid b{display:block;font:600 22px/28px Roboto,sans-serif;color:var(--ink)} .sumgrid span{color:var(--muted);font-size:12px}
+.sumgrid .bad b{color:var(--crit)} .sumgrid .good b{color:var(--ok)} .sumgrid .warn b{color:var(--warn)}
+.sheetsum{width:100%;border-collapse:collapse;margin:0 0 16px;font-size:13px}
+.sheetsum th,.sheetsum td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--grid)} .sheetsum th{color:var(--muted);font-weight:600}
+.sheetsum tr[data-go]{cursor:pointer} .sheetsum tr[data-go]:hover td{background:var(--sel-bg)} .sheetsum .n0{color:var(--muted)} .sheetsum .bad{color:var(--crit);font-weight:600}
+
+.sh-mod{display:flex;gap:8px;align-items:flex-end} .sh-mod label{flex:1} #shModFields{height:34px;white-space:nowrap}
+#shModNote{margin-top:-4px}
+.cc-more{display:flex;gap:12px;align-items:flex-end;margin-top:12px}
+#dlgCol .cc-more label{display:flex;flex-direction:column;gap:6px;font:500 12px/18px Roboto,sans-serif;color:var(--muted);flex:1}
+#dlgCol .cc-more .shreq{flex:0 0 auto;flex-direction:row;align-items:center;gap:6px;color:var(--ink);font-size:13px;height:34px}
+#dlgCol select,#dlgCol .cc-list input{height:34px;border:1px solid var(--line);border-radius:4px;padding:0 10px;background:var(--surface);color:var(--ink);font:400 13.5px/20px Roboto,sans-serif}
+#dlgCol .cc-list{display:flex;flex-direction:column;gap:6px;font:500 12px/18px Roboto,sans-serif;color:var(--muted);margin-top:12px}
+#dlgCol .cc-list input:disabled{background:var(--rn)}

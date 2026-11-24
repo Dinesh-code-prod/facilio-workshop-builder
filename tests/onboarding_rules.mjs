@@ -70,4 +70,16 @@ t('PM Assets: a frequency outside the list, a run-every of 0 or over 60, and an 
 t('PM Assets: an asset name given instead of its code is caught, and a bad time is caught', () => { const r = run(cell('PM Assets', 3, 0, 'Chiller 1')); assert.ok(only(r, 'PM Assets', 'Critical').some(i => /asset name/i.test(i.issue))); assert.ok(has(run(cell('PM Assets', 3, 4, '25:99')), 'date', 'PM Assets')); });
 t('An Excel error value in a cell is caught', () => { const wb = book(clean()); wb.Sheets.Site.A4 = { t: 'e', v: 15, w: '#DIV/0!' }; assert.ok(has(V.validate(wb, R), 'excelError', 'Site')); });
 t('Every issue the checker reports has a check name and a known severity', () => { const r = run(cell('Site', 3, 0, 'TBD')); r.issues.forEach(i => { assert.ok(i.check && ['Critical', 'Warning', 'Info'].includes(i.severity), JSON.stringify(i)); }); });
+// custom sheets and typed custom fields (public/onboarding-tool/10-part.js registerCustom and setCustomRules build these): the same checks as template columns
+t('A custom sheet needs a Name on every row, unique names, real dates, exact dropdown values and existing sites', () => { const R2 = JSON.parse(JSON.stringify(R)); R2.lists.cs1_3 = ['Active', 'Inactive'];
+  R2.entities.push({ key: 'cs1', label: 'Meters', sheet: ['Meters'], core: false, custom: true, columns: { name: { h: ['Meter Name'], req: true }, c2: { h: ['Install Date'], type: 'date' }, c3: { h: ['Status'], list: 'cs1_3' }, c4: { h: ['Site'], ref: 'site.name' } }, unique: [{ cols: ['name'], sev: 'Critical' }] });
+  const r = V.validate(book({ Site: good, Meters: [['Meters'], ['Meter Name*', 'Install Date', 'Status', 'Site'], ['M1', '15/01/2025', 'Active', 'Alpha Tower'], ['', '15/13/2025', 'Active', 'Alpha Tower'], ['M1', '', 'active', 'Nowhere']] }), R2);
+  const m = r.issues.filter(i => i.sheet === 'Meters' && i.severity === 'Critical').map(i => i.field + ':' + i.check);
+  ['Meter Name:required', 'Meter Name:unique', 'Status:list'].forEach(x => assert.ok(m.includes(x), x + ' in ' + m.join(', ')));
+  assert.ok(m.some(x => x.startsWith('Install Date:')), 'bad date'); assert.ok(r.issues.some(i => i.sheet === 'Meters' && i.field === 'Site' && /Nowhere/.test(i.value)), 'unknown site');
+  assert.equal(r.data.cs1.rows.length, 3, 'every row with data is checked, including the one without a name'); });
+t('A typed custom field on a template sheet is checked; an untyped one only noted', () => { const R2 = JSON.parse(JSON.stringify(R)); R2.custom = { site: { 'region code': { req: true, type: 'number' } } };
+  const r = V.validate(book({ Site: [good[0], SITE_H.concat(['Region Code*', 'Notes']), good[2], good[3].concat(['', 'x']), good[4].concat(['abc', 'y'])] }), R2);
+  const rc = r.issues.filter(i => i.sheet === 'Site' && i.field === 'Region Code' && i.severity === 'Critical'); assert.equal(rc.length, 2, JSON.stringify(rc));
+  assert.ok(r.issues.some(i => i.field === 'Notes' && i.severity === 'Info'), 'an untyped custom field stays an Info note'); });
 console.log(`${n} onboarding rule checks passed`);

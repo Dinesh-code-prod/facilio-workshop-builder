@@ -1,1 +1,1 @@
-try{var t=localStorage.getItem("facilio-onboarding-theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);}catch(e){}
+try{var t=localStorage.getItem("facilio-onboarding-theme");document.documentElement.setAttribute("data-theme",t==="dark"?"dark":"light");}catch(e){document.documentElement.setAttribute("data-theme","light");}
