@@ -24,7 +24,7 @@ import { installSharePoint, docKeyOf, VERSIONED } from './_sharepoint.mjs';
 import './_flowchecks.mjs';   // sets globalThis.FWBFlowChecks: the state-flow checks the Solution map shows, for the review pack
 import { installFeedback } from './_feedback.mjs';
 import { dueWords, card, taskButtons, MY_TASKS_BUTTON, NEXT, personOf } from './_msgfmt.mjs';
-import { assess as routeAssess } from './_route.mjs';
+import { assess as routeAssess, heurRoute as routeHeur } from './_route.mjs';
 import { addedMessage, status as helperStatus, stuckJobs, helperAlert } from './_helper.mjs';
 import { installNotify, norm as nNorm, lead, hashOf } from './_notify.mjs';
 import { MISSED_KINDS, missedSteps, missedEvent, isMissed, keyOf as missedKey, escalationEvent, milestoneEvents } from './_missed.mjs';
@@ -661,7 +661,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
     let tplText = ''; if (b.templateId) { const h = await tplHead(String(b.templateId)); if (!(await tplCanRead(s, h)) || h.status === 'retired') throw new HttpError(404, 'Template not available'); if (h.kind && TPL_TASK[h.kind] && TPL_TASK[h.kind] !== task) throw new HttpError(400, 'That template is for a different deliverable'); const td = await tplData(h, h.pub || h.latest); tplText = String(td && td.body || '').slice(0, 6000); }
     const heads = (Array.isArray(b.headings) ? b.headings : []).slice(0, 30).map(h => String(h == null ? '' : h).replace(/\s+/g, ' ').trim().slice(0, 220)).filter(Boolean);
     const { src, text } = await aiContext(P.id, task, false);
-    const prompt = AI_SYSTEM + '\n\n' + aiUserMsg(T, instruction, tplText, text) + (heads.length ? '\n\nUSE THESE HEADINGS, in this order, exactly as written:\n' + heads.map(h => '## ' + h).join('\n') : '') + '\n\nREPLY FORMAT: reply with the Markdown document only, with no introduction or closing remarks. Keep the [S#] citations.';
+    const prompt = AI_SYSTEM + '\n\n' + aiUserMsg(T, instruction, tplText, text) + (heads.length ? '\n\nUSE THESE HEADINGS, in this order, exactly as written:\n' + heads.map(h => '## ' + h).join('\n') : '') + '\n\nREPLY FORMAT: reply with the Markdown document only, with no introduction or closing remarks. Keep every section the task names, in its order, numbered 1, 2, 3 without gaps; a section with nothing in the SOURCES keeps its heading and says Not recorded. Keep the [S#] citations.';
     const skillsLine = (task === 'guide' || task === 'uat') ? '\n\nSKILLS: if your Claude has the video-to-user-guide skill installed, use it when I attach a recorded walkthrough; use the demo-video, ui-mockup-video and remotion skills if I ask for a video. If a skill is not installed, carry on without it.' : '';
     const stage = (task === 'guide' || task === 'uat') ? '\n\n' + await stageLine(P.id) : '';
     const finalPrompt = prompt + stage + skillsLine;
@@ -701,7 +701,6 @@ ${clip(fc, 12000)}
   /* The assistant's size router: a look-up is answered at once (DeepSeek, from the project records) with a button to the page; a small change goes to Claude as a quick job; heavy work goes to Claude with a plan first. The model only classifies (never acts); if it fails, plain rules decide. */
   const ROUTE_TASKS = [...new Set(Object.values(ASK_TASK))];
   const ROUTE_VIEWS = { projdash: 'Dashboard', tasks: 'Tasks', kickoff: 'Kick-off deck and project plan', brd: 'BRD', solution: 'Solution', whiteboard: 'Process whiteboard', modules: 'Modules and forms', rschecks: 'Checks', transfers: 'Transfers', mailtab: 'Customer mail', lifecycle: 'Project cycle', guides: 'Training guides', delivery: 'UAT', golive: 'Go-live', reports: 'Reports' };
-  const routeHeur = m => (/\b(revamp|redo|overhaul|entire|whole|from scratch|full|plan|build|generate)\b/i.test(m) ? 'heavy' : /\b(update|change|make|create|write|draft|fix|add|remove|delete|replace|rename|nicer|improve|translate)\b/i.test(m) ? 'small' : 'lookup');
   // parts of one message: kept only when there are two to four, each a real sentence with a known route; when the model is unavailable, plain rules split on "also", "then", ";" and new sentences
   const cleanParts = a => { const p = (Array.isArray(a) ? a : []).slice(0, 4).map(x => ({ text: plain(x && x.text, 200), route: ['lookup', 'help', 'small', 'heavy'].includes(x && x.route) ? x.route : '', task: ROUTE_TASKS.includes(x && x.task) ? x.task : '', view: ROUTE_VIEWS[x && x.view] ? x.view : '' })).filter(x => x.text.length >= 8 && x.route); return p.length >= 2 ? p : []; };
   const splitHeur = m => { const p = String(m || '').split(/\s*(?:;|\n|\balso\b|\band then\b|\bthen\b|(?<=[.?!])\s+(?=[A-Za-z]))\s*/i).map(x => x.replace(/^(and|please|can you|could you)\s+/i, '').replace(/[\s,]+(and|then|also)$/i, '').trim()).filter(x => x.length >= 12).slice(0, 4).map(x => ({ text: x.slice(0, 200), route: routeHeur(x), task: '', view: '' })); return p.length >= 2 ? p : []; };
@@ -1439,7 +1438,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   route('GET', '/api/projects/:id/mail', async (b, P, Q) => {
     const s = await me(); await inboxAccess(s, P.id, 'read'); let sync = null;
     if (Q.get('sync') === '1') { try { sync = await syncMailbox(s, {}); } catch (e) { sync = { error: e instanceof HttpError ? e.message : 'The mailbox could not be checked just now' }; } }
-    const c = Object.assign({}, MAIL_DEFAULTS, await mailCfg()); let rows = (await dbList('ml.' + P.id)).map(r => r.value).filter(Boolean);
+    const c = Object.assign({}, MAIL_DEFAULTS, await mailCfg()); let rows = (await dbList('ml.' + P.id)).map(r => r.value).filter(v => v && v.key && !v.id);   // shared-mailbox records only; Claude-found mail (with an id) belongs to Customer mail
     if (c.retentionDays > 0) { const cut = Date.now() - c.retentionDays * 864e5; for (const r of rows.filter(r => Date.parse(r.receivedAt) < cut)) await dbDel('ml.' + P.id, r.key).catch(() => { }); rows = rows.filter(r => Date.parse(r.receivedAt) >= cut); }
     rows.sort((a, z) => String(z.receivedAt).localeCompare(String(a.receivedAt)));
     return ok({ items: rows.slice(0, 1000).map(r => mailOut(r)), total: rows.length, last: c.last ? { at: c.last.at, ok: c.last.ok, error: c.last.ok ? '' : 'The last mailbox check did not complete. An admin can see the details under Admin.' } : null, sync: sync && (sync.result ? { filed: sync.result.filed } : sync.error ? { error: sync.error } : { skipped: sync.skipped }), retentionDays: c.retentionDays });

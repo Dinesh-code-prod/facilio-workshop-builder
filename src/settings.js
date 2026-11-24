@@ -121,11 +121,11 @@
     const p = S.project;
     if (cm.pid !== p.id) { cm.pid = p.id; cm.loading = true; cm.emails = []; cm.domains = []; cm.msg = ''; API.get(`/api/projects/${p.id}/mail/senders`).then(r => { if (cm.pid !== p.id) return; cm.emails = r.emails || []; cm.domains = r.domains || []; cm.loading = false; V.render(); }).catch(() => { cm.loading = false; V.render(); }); }
     const st = stakeholderEmails(); const dis = ro ? 'disabled' : '';
-    return stSec('Customer emails', 'The addresses this customer writes from. Used to find their emails in Support and Tickets.', `<div class="card-b fgrid">
-      <div class="full small muted">Add the addresses this customer writes from. Emails they send to the support mailbox are filed in this project's Inbox and become tickets. This gives them no access to the app.</div>
+    return stSec('Customer emails', 'The addresses this customer writes from. Claude uses them when it searches the team\'s Outlook for this project\'s customer mail.', `<div class="card-b fgrid">
+      <div class="full small muted">Add the addresses this customer writes from. Each team member's Claude looks for mail from and to them; it lands on the Customer mail page. This gives them no access to the app.</div>
       <div class="full"><label class="f" for="cm_emails">Customer email addresses (one per line)</label><textarea id="cm_emails" rows="4" placeholder="priya@customer.com" ${dis}>${esc(cm.emails.join('\n'))}</textarea>${st.length ? `<div class="xs muted" style="margin-top:4px">Also used: the ${st.length} stakeholder email${st.length === 1 ? '' : 's'} listed above (${esc(st.slice(0, 3).join(', '))}${st.length > 3 ? ' and more' : ''}).</div>` : ''}</div>
       <div class="full"><label class="f" for="cm_domain">Company domain (optional)</label><input type="text" id="cm_domain" value="${esc(cm.domains.join(', '))}" placeholder="customer.com" ${dis}><div class="xs muted" style="margin-top:4px">Anyone writing from this domain counts. Shared providers such as gmail.com are not accepted.</div></div>
-      ${ro ? '' : `<div class="full row st-actions"><button class="btn primary" data-act="cmSave">Save customer emails</button><span class="spacer"></span><label class="xs muted" for="cm_days">Look back</label><select id="cm_days" style="width:120px"><option value="30">30 days</option><option value="90" selected>90 days</option><option value="180">180 days</option><option value="365">1 year</option></select><button class="btn" data-act="cmFind">Find earlier emails</button></div>`}
+      ${ro ? '' : `<div class="full row st-actions"><button class="btn primary" data-act="cmSave">Save customer emails</button></div>`}
       <div class="full small" id="cm_msg" role="status" aria-live="polite">${cm.loading ? '<span class="muted">Loading…</span>' : esc(cm.msg)}</div></div>`);
   }
   ACT.cmSave = async () => {

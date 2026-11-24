@@ -489,3 +489,14 @@ input.namebox:focus{box-shadow:inset 0 0 0 2px var(--primary-hover)}
 #status .stale{color:var(--warn);font-weight:500;margin-right:14px}
 .brand{flex:0 0 auto}
 .save{min-width:0;overflow:hidden;text-overflow:ellipsis}
+
+/* Excel behaviour: notes, frozen columns, format painter (24 Nov 2026) */
+.row > div.has-note::before{content:"";position:absolute;top:0;left:0;border-style:solid;border-width:7px 7px 0 0;border-color:#7A5AF8 transparent transparent transparent}
+.row > .frz{background-color:var(--surface)}
+.row > .frz-last,.hrow > .frz-last{box-shadow:2px 0 0 var(--line)}
+#grid.painting .row > div{cursor:copy}
+.hrow > div.corner{position:sticky !important;left:0;z-index:6}
+
+/* hidden columns: a double line marks where they are, as in Excel */
+.hrow.letters > div.hid-next{box-shadow:inset -3px 0 0 var(--primary-light)}
+.hrow.letters > div.hid-prev{box-shadow:inset 3px 0 0 var(--primary-light)}

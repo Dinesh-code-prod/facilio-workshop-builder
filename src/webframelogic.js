@@ -7,7 +7,7 @@
   // framed: false = the site's own rules (frame-ancestors, or a sign-in page that refuses framing) stop it showing inside another page; the page shows a small card with Open in a new tab / Open in a window instead of a frame.
   // framedHost: the host the frame loads. alsoHosts: hosts the site may redirect to (the page policy must allow those too).
   const SITES = [
-    { id: 'support-desk', title: 'Support Desk', url: 'https://support-desk.facilio.run/#/homepage', framedHost: 'support-desk.facilio.run', framed: false, note: 'Raise and follow support tickets. Sign in there with your Facilio account.' },
+    { id: 'support-desk', title: 'Support Desk', url: 'https://support-desk.facilio.work/#/homepage', framedHost: 'support-desk.facilio.work', note: 'The support team\'s ticket desk (help@facilio.com). You need access on Support Desk\'s own list. If it stays blank, use Open in a window once to sign in.' },   // moved from facilio.run (24 Nov 2026): same site as the Studio, so it shows inside
     { id: 'meteor', title: 'Meteor', url: 'https://meteor.facilio.work/#/library', framedHost: 'meteor.facilio.work', note: 'Build Facilio prototypes with Claude. Use fictional sample data only.' },
     { id: 'comet', title: 'Comet', url: 'https://comet.facilio.work/', framedHost: 'comet.facilio.work', note: 'Product videos and guided walkthroughs.' },
     { id: 'facilio', title: 'facilio.com', url: 'https://facilio.com/', framedHost: 'facilio.com', alsoHosts: ['www.facilio.com'], framed: false, note: 'The Facilio public website.' },

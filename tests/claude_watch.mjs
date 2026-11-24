@@ -19,6 +19,18 @@ try {
   const before = p.lines.filter(l => l.startsWith('RING')).length; await fetch(url('?job=jb_2'), { method: 'POST', headers: { origin: W.ORIGINS[0] } }); await new Promise(r => setTimeout(r, 200));
   assert.equal(p.lines.filter(l => l.startsWith('RING')).length, before, 'a second ring within 1.5 s does not wake Claude twice'); ok('rings close together wake Claude once');
   const bad = await fetch(url('?job=x'), { method: 'POST', headers: { origin: 'https://evil.example' } }); assert.equal(bad.status, 403); ok('another website is refused (403) and rings nothing');
+  const rings0 = p.lines.filter(l => l.startsWith('RING')).length; await new Promise(r => setTimeout(r, 1600));   // past the 1.5 s window, so a wrong RING would show
+  const tf = (u, o) => fetch(u.replace(':' + W.PORT + '/', ':' + TPORT + '/'), Object.assign({}, o, { headers: { origin: W.ORIGINS[0] } }));
+  assert.equal(await W.alive(tf), true); await new Promise(r => setTimeout(r, 200)); assert.equal(p.lines.filter(l => l.startsWith('RING')).length, rings0, 'the alive check prints no RING');
+  assert.equal(await W.alive(async () => { throw new Error('refused'); }), false); assert.equal(await W.alive(async () => ({ status: 500 })), false); ok('alive() sees a running watcher without waking Claude, and says no when nothing answers');
+  { const mk = init => { const m = new Map(Object.entries(init || {})); return { getItem: k => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), m }; };
+    const NOW = Date.parse('2026-11-24T12:00:00Z'), recent = '2026-11-24T11:00:00Z', yes = async () => ({ status: 403 }), no = async () => { throw new Error('refused'); };
+    let s = mk(); assert.equal(await W.autoOn(recent, s, yes, NOW), true); assert.equal(s.getItem(W.KEY), '1'); assert.ok(s.getItem(W.PROBED), 'the look is remembered');
+    s = mk(); assert.equal(await W.autoOn(recent, s, no, NOW), false); assert.equal(s.getItem(W.KEY), null); assert.equal(await W.autoOn(recent, s, yes, NOW), false, 'only ONE look per browser'); assert.equal(s.getItem(W.KEY), null);
+    s = mk({ [W.KEY]: '0' }); assert.equal(await W.autoOn(recent, s, yes, NOW), false); assert.equal(s.getItem(W.KEY), '0'); assert.equal(s.getItem(W.PROBED), null, 'switched off by the person: no look at all');
+    let calls = 0; const count = async () => { calls++; return { status: 403 }; };
+    assert.equal(await W.autoOn('', mk(), count, NOW), false); assert.equal(await W.autoOn('2026-11-10T00:00:00Z', mk(), count, NOW), false); assert.equal(calls, 0, 'no Claude check-in in 7 days: the computer is never asked');
+    ok('the watcher switches itself on once for a person whose Claude checked in, never twice, never against their own switch-off'); }
   const p2 = start(); assert.ok(await until(() => p2.lines.some(l => l.startsWith('BUSY')))); ok('a second watcher on the same computer says BUSY and stops');
   assert.equal(await W.ring('jb_9', async () => { throw new Error('refused'); }), false); assert.equal(await W.ring('jb_9', async () => ({ status: 204 })), true); assert.equal(await W.ring('jb_9', async () => ({ status: 403 })), false); ok('ring() is true only for a 204 and never throws');
   let seen = ''; await W.ring('jb_x"/../y', async u => { seen = u; return { status: 204 }; }); assert.equal(seen, 'http://127.0.0.1:' + W.PORT + '/ring?job=jb_xy'); ok('ring() sends only a cleaned job id to 127.0.0.1');

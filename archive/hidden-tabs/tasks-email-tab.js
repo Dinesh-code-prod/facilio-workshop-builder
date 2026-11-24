@@ -1,0 +1,6 @@
+/* Copy taken on 24 Nov 2026 of the lines of src/tasks.js that drew the Email tab on the Tasks page (removed: it showed the same records as the Customer mail page).
+   To bring it back: put these lines back in src/tasks.js (the tab list, the tab choice, the mail branch, ACT.tkTab) and update tests. */
+      const tab = S.ui.tkTab === 'mail' && can ? 'mail' : S.ui.tkTab === 'mine' && can ? 'mine' : 'work'; const mailN = ((S.ui.mlBox || {}).list || []).filter(r => r.status === 'pending').length; const tk = (id, l, n) => `<button type="button" role="tab" class="tab${tab === id ? ' active' : ''}" aria-selected="${tab === id}" data-act="tkTab" data-v="${id}">${l}${n === undefined ? '' : ` <span class="pt-shn">${n}</span>`}</button>`;
+      const tt = `<div class="tabs pt-tabs" role="tablist" aria-label="Tasks view">${tk('work', 'Tasks', all.length)}${can ? tk('mail', 'Email', mailN || undefined) : ''}${can && V.ptkHtml ? tk('mine', 'My private tasks', V.ptkCount ? V.ptkCount() : undefined) : ''}</div>`;
+      if (tab === 'mail') return head + `<div class="page-body pt-page pt-wide">${tt}${V.mailView ? V.mailView() : ''}</div>`;
+  ACT.tkTab = a => { const v = a.getAttribute('data-v'); S.ui.tkTab = v === 'mail' ? 'mail' : v === 'mine' ? 'mine' : 'work'; V.render(); };
