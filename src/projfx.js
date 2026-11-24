@@ -5,8 +5,11 @@
   // rail entry -> stage key; each stage has its own colour pair in projfx.css
   const STAGE = { msaintake: 's1', rsquestions: 's2', solution: 's3', ftr: 's4', guides: 's5', tasks: 's6', handover: 's7', projdash: 'home', statusrep: 'rep', resources: 'notes', seefacilio: 'show', teamhelp: 'help', claudesetup: 'claude', settings: 'set' };
   let last = '', timer = 0, fxT = 0;
+  // a block that only says "Loading…" becomes a grey skeleton with a soft shimmer (src/masterds.css); the words stay for screen readers. Every view, Admin included.
+  const LOADING = /^Loading(…|\.\.\.)$/;
+  const skel = () => d.querySelectorAll(':is(div, p):is(.muted, .empty, .adm-empty, .small):not(.ds-skel)').forEach(x => { if (!x.childElementCount && LOADING.test(x.textContent.trim())) { x.classList.add('ds-skel'); x.setAttribute('role', 'status'); x.setAttribute('aria-busy', 'true'); } });
   function patch() {
-    const b = d.body; if (!b) return;
+    const b = d.body; if (!b) return; skel();
     const m = /^#\/p\/[^/]+\/([^/?]+)/.exec(location.hash); const inProj = !!m && !!d.querySelector('.main');
     b.classList.toggle('in-proj', inProj); if (!inProj) { b.removeAttribute('data-stage'); last = ''; return; }
     d.querySelectorAll('nav.sidebar .rl-b:not([data-stage])').forEach(x => x.setAttribute('data-stage', STAGE[x.getAttribute('data-view')] || 'help'));
