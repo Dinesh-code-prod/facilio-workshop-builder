@@ -3891,7 +3891,7 @@ html body .auth .av-learn .av-play:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#
 /* top bar, use the space (user, 23 Nov 2026: "why gaps here ... search and notification hitting the profile icon, utilize the spaces"):
    Search becomes a wide search field in the middle gap (it grows to 440 px), the actions follow it, and the avatar keeps a clear gap */
 @media (min-width: 1001px) {
-  html body.in-proj header.navbar .gs-btn:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q) { order: 9 !important; flex: 1 1 260px !important; min-width: 150px; max-width: 440px; justify-content: flex-start !important; margin: 0 16px 0 20px !important; background: #F3F6FC !important; box-shadow: inset 0 0 0 1px #E3E8F2 !important; color: #6B6B78 !important; font-weight: 500 !important; }
+  html body.in-proj header.navbar .gs-btn:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q) { order: 9 !important; flex: 1 1 260px !important; min-width: 150px; max-width: 440px; justify-content: flex-start !important; margin: 0 auto !important; background: #F3F6FC !important; box-shadow: inset 0 0 0 1px #E3E8F2 !important; color: #6B6B78 !important; font-weight: 500 !important; }
   html body.in-proj header.navbar .gs-btn:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q)::after { margin-left: auto; }
   html body.in-proj header.navbar .co-pill:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q) { margin-left: 0 !important; }
   html body.in-proj header.navbar .avatar:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q) { margin-left: 12px !important; flex: none; }
@@ -4084,3 +4084,9 @@ html body .seg.nav-lay button svg { width: 15px; height: 15px; }
   html body:not(.nav-top) nav.sidebar .sb-badge.pend:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q) { background: #FFF1E7 !important; color: #C2410C !important; }
 }
 @media (prefers-reduced-motion: reduce) { html body:not(.nav-top) nav.sidebar :is(.sb-title, .sb-item) { transition: none !important; } }
+/* top bar spacing (user, 24 Nov 2026: "why this looks awful and clogging"): the actions sit at the right edge with 8 px between them (search is centred in the free space by margin: auto), and the Updates button keeps a clear 16 px from the avatar so its alert glow does not touch it */
+@media (min-width: 1001px) {
+  html body.in-proj header.navbar:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q):not(#q) { gap: 8px !important; }
+  html body.in-proj header.navbar .bell:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q):not(#q) { margin-right: 8px !important; }
+  html body.in-proj header.navbar .avatar:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q):not(#q) { margin-left: 8px !important; }
+}
