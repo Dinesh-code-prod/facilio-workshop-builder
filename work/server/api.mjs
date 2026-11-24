@@ -19,7 +19,8 @@ import './_msadocs.mjs';
 import { installTaskTracking } from './_tasksapi.mjs';
 import { installMailTasks } from './_mailapi.mjs';
 import { installJobs } from './_jobsapi.mjs';
-import './_stagetasks.mjs';   // the stage task rules (globalThis.FWBStageTasks), shared with the browser: the daily task run below
+import './_stagetasks.mjs';
+import './_taskrules.mjs';   // the task engine rules (globalThis.FWBTaskRules), shared with the browser: engineRun below   // the stage task rules (globalThis.FWBStageTasks), shared with the browser: the daily task run below
 import { makeAs } from './_jobs.mjs';
 import { installSharePoint, docKeyOf, VERSIONED } from './_sharepoint.mjs';
 import './_flowchecks.mjs';   // sets globalThis.FWBFlowChecks: the state-flow checks the Solution map shows, for the review pack
@@ -2393,6 +2394,34 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     let r = { added: 0, stage: '' }; if (on) { const pj = ((await dbGet('projects', P.id)) || {}).value; if (pj) r = await taskRun(s, pj, now().slice(0, 10), true); }   // the project record itself: an Admin may switch it on without being a member
     return ok({ on, added: r.added, stage: r.stage || '' });
   });
+  /* the task engine on the server (src/taskengine.js rules), for the rules whose facts the server reads exactly as the page does: open session findings,
+     failed or blocked test cases, KPIs without a solution, change requests waiting for a decision, the BRD waiting for approval and Facilio plan tasks due within a
+     week. The other rules (BRD review, test coverage, stage close, SLA, handover, go-live, Claude questions, customer mail) need the open page; their tasks are left
+     to the browser engine, so the two never undo each other. Returns how many tasks it created, resolved or reopened. */
+  async function engineRun(pj, today) {
+    const R = globalThis.FWBTaskRules; if (!R) return 0;
+    const doc = async k => { const d = await docRead(pj.id, k).catch(() => null); return d ? (d.data || {}) : null; };
+    const list = async k => (await itemsOf(pj.id, k).catch(() => [])).map(x => Object.assign({}, x.data || {}, { id: x.id }));
+    const fd = await doc('rs_findings') || {}, tr = await doc('rs_transcripts') || {}, plan = await doc('plan_struct'), brd = await doc('brddoc') || {};
+    const fds = fd.items || [], trs = tr.items || [], by = {}; fds.forEach(x => { if (x && x.status === 'open') by[x.transcriptId || 'added'] = (by[x.transcriptId || 'added'] || 0) + 1; });
+    const title = id => id === 'msa' ? 'the contract check' : id === 'brd' ? 'the BRD check' : id === 'added' ? 'checks added by hand' : ((trs.find(t => t.id === id) || {}).title || 'a transcript');
+    const soon = new Date(Date.parse(today) + 7 * 864e5).toISOString().slice(0, 10), floor = new Date(Date.parse(today) - 30 * 864e5).toISOString().slice(0, 10);
+    const cases = await list('utc'), kpis = await list('kpi'), crs = await list('cr');
+    const fx = { openFindings: Object.keys(by).map(k => ({ transcriptId: k, title: title(k), count: by[k] })),
+      failedCases: cases.filter(c => (c.status === 'Failed' || c.status === 'Blocked') && !c.issue).map(c => ({ id: c.id, tcid: c.tcid, title: c.title })),
+      kpisNoSolution: kpis.filter(k => !String(k.solution || '').trim()).map(k => ({ id: k.id, name: k.name })),
+      crsWaiting: crs.filter(c => c.status === 'Proposed').map(c => ({ id: c.id, label: 'CR-' + String(c.n || '').padStart(3, '0') + ' ' + String(c.title || '').slice(0, 120) })),
+      brdApproval: brd.status === 'review',
+      planDue: ((plan || {}).rows || []).filter(r => r && r.id && !r.isPhase && r.status !== 'Done' && (r.owner === 'Facilio' || r.owner === 'Both') && /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(String(r.end || '')) && r.end <= soon && r.end >= floor).map(r => ({ id: r.id, title: String(r.title || 'Plan task').slice(0, 120), end: r.end })) };
+    const keep = new Set(['brd', 'cover', 'stage', 'sla', 'ho', 'gl', 'ask', 'mail'].concat(plan ? [] : ['plan']));   // the browser engine looks after these
+    const tasks = await list('task'), at = new Date().toISOString(), r = R.reconcile(R.desired(fx), tasks, at, {}, keep), byId = new Map(tasks.map(t => [t.id, t]));
+    const put = (id, data) => { const d = Object.assign({}, data); delete d.id; Object.keys(d).forEach(k => { if (k[0] === '_') delete d[k]; }); return viaApp('PUT', '/api/projects/' + pj.id + '/items/task/' + id, '', { data: d }); };
+    let n = 0;
+    for (const t of r.create) { try { await put(t.id, t); n++; } catch (e) { if (!(e && e.status === 409)) console.log('task engine create: ' + (e && e.message)); } }
+    for (const x of r.resolve) { const t = byId.get(x.id); if (!t) continue; try { await put(t.id, Object.assign({}, t, { status: 'Done', completion: 'Resolved automatically: ' + x.why + '.', auto: Object.assign({}, t.auto, { resolvedBy: 'engine', resolvedAt: at }) })); n++; } catch (e) { console.log('task engine resolve: ' + (e && e.message)); } }
+    for (const x of r.reopen) { const t = byId.get(x.id); if (!t) continue; try { await put(t.id, Object.assign({}, t, { status: 'To Do', completion: '', auto: Object.assign({}, t.auto, { resolvedBy: '', resolvedAt: '' }) })); n++; } catch (e) { console.log('task engine reopen: ' + (e && e.message)); } }
+    return n;
+  }
   async function taskRun(s, pj, today, force) {
     const T = globalThis.FWBStageTasks, cfg = ((await dbGet('trcfg', pj.id)) || {}).value || {}; if (!T || !cfg.on || (!force && cfg.last === today)) return { added: 0, stage: '' };
     const closed = new Set((await itemsOf(pj.id, 'lcstage').catch(() => [])).filter(x => x && x.data && x.data.status === 'closed').map(x => x.id)); const stage = T.stageNow(closed);
@@ -2406,7 +2435,8 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
       try { await viaApp('PUT', '/api/projects/' + pj.id + '/items/task/t_' + Date.now().toString(36) + rid('').slice(1, 7), '', { data }); added++; }   // the normal save: validation, history, the assignment message
       catch (e) { if (e && e.status === 409) continue; console.log('task run ' + pj.id + ': ' + (e && e.message)); break; }
     }
-    await dbPut('trcfg', pj.id, Object.assign({}, cfg, { last: today, lastStage: stage, lastAdded: added, lastAt: now() }));
+    let engine = 0; try { engine = await engineRun(pj, today); } catch (e) { console.log('task engine ' + pj.id + ': ' + (e && e.message)); }
+    await dbPut('trcfg', pj.id, Object.assign({}, cfg, { last: today, lastStage: stage, lastAdded: added, lastEngine: engine, lastAt: now() }));
     if (added) await audit(pj.id, s.id, 'task-run', added + ' ' + stage + ' task' + (added === 1 ? '' : 's') + ' added');
     return { added, stage };
   }

@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
-globalThis.FWBViews = {}; createRequire(import.meta.url)('../src/taskengine.js');
+globalThis.FWBViews = {}; await import('../work/server/_taskrules.mjs'); createRequire(import.meta.url)('../src/taskengine.js');
 const { desired, reconcile, idOf } = globalThis.FWBViews.taskEngineLogic;
 let n = 0; const t = async (name, fn) => { await fn(); n++; console.log('  ok  ' + name); };
 const facts = { openFindings: [{ transcriptId: 'tr1', title: 'Kickoff call', count: 3 }, { transcriptId: 'tr2', title: 'Empty', count: 0 }], reviewMissing: [{ part: 'intro', label: 'Introduction' }], coverageMissing: [{ module: 'workorder', label: 'Work Order', count: 2 }], failedCases: [{ id: 'u1', tcid: 'TC-4', title: 'Close a WO' }], kpisNoSolution: [{ id: 'k1', name: 'MTTR' }] };

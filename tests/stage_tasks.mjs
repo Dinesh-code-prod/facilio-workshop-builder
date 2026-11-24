@@ -1,6 +1,6 @@
 // Stage tasks (src/stagetasks.js) and the task engine's stage names: every stage and type written is one the server accepts, owners come from Delivery roles.
 import assert from 'node:assert/strict'; import fs from 'node:fs'; import { createRequire } from 'node:module';
-globalThis.FWBViews = {}; const req = createRequire(import.meta.url); await import('../work/server/_stagetasks.mjs'); req('../src/taskengine.js'); req('../src/stagetasks.js');
+globalThis.FWBViews = {}; const req = createRequire(import.meta.url); await import('../work/server/_stagetasks.mjs'); await import('../work/server/_taskrules.mjs'); req('../src/taskengine.js'); req('../src/stagetasks.js');
 const SH = globalThis.FWBStageTasks;
 const L = globalThis.FWBViews.stageTaskLogic, E = globalThis.FWBViews.taskEngineLogic;
 const api = fs.readFileSync(new URL('../work/server/api.mjs', import.meta.url), 'utf8');
@@ -59,4 +59,12 @@ t('due dates follow the stage dates of the project plan, within the stage and ne
   assert.match(api, /T\.planWindow\(\(\(pl && pl\.data\) \|\| \{\}\)\.rows, stage\)/);
 });
 t('the task engine starts whenever a team member opens a project', () => { assert.match(fs.readFileSync(new URL('../src/shell.js', import.meta.url), 'utf8'), /if \(V\.taskEngine\) setTimeout\(\(\) => V\.taskEngine\.run\(\), 4000\)/); });
+t('the server runs the engine rules it can read exactly, and leaves the page-only rules to the browser', () => {
+  const R = globalThis.FWBTaskRules; assert.ok(R && R.desired && R.reconcile); assert.equal(E.desired, R.desired, 'the browser engine uses the shared rules');
+  const tasks = [{ id: 'a', status: 'To Do', auto: { key: 'brd:intro', rule: 'brd' } }, { id: 'b', status: 'To Do', auto: { key: 'kpi:k1', rule: 'kpi' } }];
+  const r = R.reconcile(R.desired({ kpisNoSolution: [] }), tasks, '', {}, new Set(['brd', 'cover', 'stage', 'sla', 'ho', 'gl', 'ask', 'mail']));
+  assert.deepEqual(r.resolve.map(x => x.id), ['b'], 'a page-only rule (brd) is kept; a server rule (kpi) whose reason is gone resolves');
+  assert.match(api, /import '\.\/_taskrules\.mjs'/); assert.match(api, /engine = await engineRun\(pj, today\)/); assert.match(api, /const keep = new Set\(\['brd', 'cover', 'stage', 'sla', 'ho', 'gl', 'ask', 'mail'\]/);
+  assert.ok(fs.readFileSync(new URL('../build.mjs', import.meta.url), 'utf8').includes("'work/server/_taskrules.mjs', 'src/taskengine.js'"));
+});
 console.log(`${n} stage task checks passed`);
