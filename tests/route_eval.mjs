@@ -1,6 +1,6 @@
 // Routing evaluation set (work/server/_route.mjs): representative requests, the model's first reading of each, and the engine and level they must get.
 // Add a row whenever a request was routed badly in real use; the set is the record of what "right" means.
-import assert from 'node:assert/strict'; import { assess, TIERS } from '../work/server/_route.mjs';
+import assert from 'node:assert/strict'; import { assess, TIERS, heurRoute } from '../work/server/_route.mjs';
 const at = t => TIERS.indexOf(t);
 const CASES = [
   // [message, model reading, engine, lowest level, highest level]
@@ -44,4 +44,10 @@ const seg = (a, b) => { const i = api.indexOf(a); assert.ok(i > 0, 'missing ' + 
 assert.ok(/requireAdmin\('sub'\)/.test(seg("route('POST', '/api/admin/assistant/ask'", 'route(')) && /requireAdmin\('admin'\)/.test(seg("route('POST', '/api/admin/assistant/nudge'", 'route(')) && /requireAdmin\('sub'\)/.test(seg("route('GET', '/api/admin/alerts'", 'route(')));
 assert.ok(/s\.adminRole !== 'sub'/.test(seg("route('POST', '/api/admin/assistant/ask'", 'route(')), 'a read-only admin is not offered the Send button');
 console.log('  ok  the admin assistant is for admins only, and only a full admin can send Otto reminders');
-console.log('5 routing evaluation checks passed');
+{ // the plain-rules reading, used when the model does not answer (24 Nov 2026: a send-for-sign-off request was read as a look-up)
+  const rows = [['Send the updated BRD to the customer for sign-off', 'small'], ['share the kick-off deck with Sara', 'small'], ['assign T-4 to Ravi and move it to Friday', 'small'], ['approve the UAT guide', 'small'],
+    ['What is the plan for next week?', 'lookup'], ['what changed in the BRD', 'lookup'], ['who approved the BRD?', 'lookup'], ['show the overdue tasks', 'lookup'], ['Is the BRD sent?', 'lookup'],
+    ['Can you update the go-live date to 5 Dec', 'small'], ['rebuild the whole project plan from scratch', 'heavy'], ['transcripts of workshop 3', 'lookup']];
+  for (const [m, want] of rows) assert.equal(heurRoute(m), want, m);
+  console.log('  ok  without the model, questions stay look-ups and send, share, assign and approve are changes'); }
+console.log('6 routing evaluation checks passed');

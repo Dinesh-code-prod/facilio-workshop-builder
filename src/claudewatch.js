@@ -44,7 +44,15 @@
     try { const r = await f('http://127.0.0.1:' + PORT + '/ring?job=' + encodeURIComponent(String(jobId || '').replace(/[^a-z0-9_]/gi, '')), { method: 'POST', signal: ctl ? ctl.signal : undefined }); return !!r && r.status === 204; }
     catch (e) { return false; } finally { if (t) clearTimeout(t); }
   }
-  const api = { PORT, KEY, ORIGINS, SCRIPT, PROMPT, taskPrompt, ring };
+  // is a watcher running? A POST to /alive: the doorbell answers it with 403 and prints nothing (only /ring prints RING), so Claude is not woken.
+  // Any answer means it listens; no answer within 1.5 s means it does not. Never throws.
+  async function alive(fetchFn) {
+    const f = fetchFn || (typeof fetch === 'function' ? fetch : null); if (!f) return false;
+    const ctl = typeof AbortController === 'function' ? new AbortController() : null; const t = ctl ? setTimeout(() => ctl.abort(), 1500) : 0;
+    try { const r = await f('http://127.0.0.1:' + PORT + '/alive', { method: 'POST', signal: ctl ? ctl.signal : undefined }); return !!r && (r.status === 403 || r.status === 204); }
+    catch (e) { return false; } finally { if (t) clearTimeout(t); }
+  }
+  const api = { PORT, KEY, ORIGINS, SCRIPT, PROMPT, taskPrompt, ring, alive };
   if (typeof module !== 'undefined' && module.exports) { module.exports = api; return; }
   root.FWBWatch = api;
 
