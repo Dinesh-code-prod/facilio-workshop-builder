@@ -357,3 +357,38 @@ html body .adm-main .adx nav.mt-bar:not(#DS)::before, html body .adm-main .adx n
 html body:not(.in-proj) header.navbar .right .bell:not(#DS) { display: inline-flex !important; flex-direction: row !important; align-items: center !important; height: 36px !important; white-space: nowrap !important; }
 html body .adm-main .adx nav.adx-tabs .mt-in.here:not(.x):not(#DS), html body .adm-main .adx nav.adx-tabs .mt-in:not(.x):not(#DS) { background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; border-bottom: 1px solid var(--ds-border) !important; }
 html body:not(.in-proj) header.navbar .right .bell:not(#DS) { padding-right: 20px !important; }
+
+/* ---------- Plan timeline (Gantt), clearer and calmer (user, 24 Nov 2026: "how this Gantt chart can be made more nicer") ----------
+   Names on one line (the arrow beside the name, not above it) so rows stay compact; bars in the legend colours (Facilio blue, customer orange,
+   Both teal; no two-colour gradient), soft track with the done part solid; phases as a slate band; the today line in the same blue as its label;
+   dependency lines a light slate, red only on the critical path; Undo beside the scale switch. */
+html body .main .pl-grid .pl-task:not(#DS) { white-space: nowrap !important; max-width: 340px !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+html body .main .pl-grid .pl-task .pl-tg:not(#DS) { display: inline-flex !important; vertical-align: middle !important; margin-right: 6px !important; }
+html body .main .pl-grid .pl-task b:not(#DS) { white-space: nowrap !important; vertical-align: middle; }
+html body .main .pl-grid .pl-task small:not(#DS) { padding-left: 30px; font-family: var(--ds-body) !important; font-size: 12px !important; color: var(--ds-text2) !important; }
+html body .main .pl-grid tr.pl-kid .pl-task small:not(#DS) { padding-left: 0; }
+html body .main .pl-grid tbody td:not(#DS) { padding-top: 7px !important; padding-bottom: 7px !important; }
+html body .main .pl-bar:not(.ph):not(.sum):not(#DS) { height: 16px !important; margin-top: -8px !important; border-radius: 5px !important; }
+html body .main .pl-bar b:not(#DS) { border-radius: 5px !important; }
+html body .main .pl-bar.g-f:not(#DS) { --gc: #1570EF !important; background: #D1E9FF !important; }
+html body .main .pl-bar.g-c:not(#DS) { --gc: #EF6820 !important; background: #FDEAD7 !important; }
+html body .main .pl-bar.g-b:not(#DS) { --gc: #0E9384 !important; background: #CCFBEF !important; }
+html body .main .pl-bar.ph:not(#DS) { height: 10px !important; margin-top: -5px !important; border-radius: 5px !important; background: #CBD5E1 !important; --gc: #475569 !important; }
+html body .main .pl-bar.sum:not(#DS) { height: 8px !important; margin-top: -4px !important; border-radius: 4px !important; background: #E2E8F0 !important; --gc: var(--ds-blue) !important; }
+html body .main .pl-today:not(#DS) { background: var(--ds-blue) !important; opacity: .55 !important; width: 2px !important; }
+html body svg.pl-dep .pl-lk-p:not(.crit):not(.bad):not(.sel):not(#DS) { stroke: #94A3B8; stroke-width: 1.25; }
+html body .main .pl-tools .pl-undo:not(#DS) { margin-right: 4px; }
+html body .main details.pl-more:not(#DS) { margin-top: 16px; }
+html body .main details.pl-more > summary:not(#DS) { cursor: pointer; font: 600 14px/1.4 var(--ds-head); color: var(--ds-ink); padding: 10px 0; }
+html body .main .pl-grid .pl-bl:not(#DS) { font: 500 12px/1.3 var(--ds-body) !important; color: var(--ds-text2) !important; }
+html body .main .pl-grid tr.crit .pl-bl:not(#DS), html body .main .pl-grid tr.late .pl-bl:not(#DS) { color: #B42318 !important; font-weight: 500 !important; }
+html body .main .pl-kpis > div:not(#DS) { flex-direction: row !important; }
+html body .main .pl-kpis > div b:not(#DS) { order: -1; }
+html body .main .pl-kpis > div small:not(#DS) { order: 2; font: 400 12.5px/1.4 var(--ds-body) !important; color: var(--ds-text2) !important; }
+html body .main .pl-kpis > div b.neg:not(#DS) { color: #B42318 !important; }
+/* Workbook / Timeline & planning / Calendar: a light segmented switch (it sits under the page's own tabs, so it must not look like a third tab row) */
+html body .main .plan-tabs:not(#DS) { display: inline-flex !important; width: fit-content !important; gap: 2px !important; padding: 3px !important; background: var(--ds-subtle) !important; border-radius: var(--ds-r-btn) !important; border: 0 !important; box-shadow: none !important; }
+html body .main .plan-tabs > button:not(#DS) { background: none !important; color: var(--ds-text2) !important; border: 0 !important; box-shadow: none !important; border-radius: 8px !important; padding: 6px 14px !important; font: 500 13.5px/1.3 var(--ds-head) !important; min-height: 0 !important; }
+html body .main .plan-tabs > button.on:not(#DS) { background: var(--ds-page) !important; color: var(--ds-blue) !important; box-shadow: 0 1px 2px rgba(16, 24, 40, .08) !important; }
+html body .main .pl-tools .rv-menu .rv-menu-p .btn.sm:not(.x):not(#DS) { box-shadow: none !important; border: 0 !important; background: none !important; justify-content: flex-start !important; width: 100% !important; }
+html body .main .pl-tools .rv-menu .rv-menu-p .btn.sm:not(.x):hover:not(#DS) { background: var(--ds-subtle) !important; }
