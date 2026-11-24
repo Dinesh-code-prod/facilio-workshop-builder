@@ -18,6 +18,18 @@ const DOCS = /\b(brd|transcripts?|msa|contract|workshop|minutes|uat|ftr|test (ca
 const RISK = /\b(send|email the customer|delete|remove all|sign-?off|approve|go-?live|production|contract|invoice|price|fee|commercial)\b/i;
 const CHANGE = /\b(update|change|make|create|write|draft|fix|add|remove|delete|replace|rename|generate|build|prepare)\b/i;
 
+/** the plain-rules reading when the model is not available: a question stays a look-up (even "what is the plan?"), an action word makes it a change.
+    24 Nov 2026: "Send the updated BRD to the customer for sign-off" was read as a look-up; send, share, approve, assign, schedule and the like are changes now. */
+const ASKING = /^\s*(what|who|whom|whose|when|where|which|why|how|is|are|was|were|did|does|do|has|have|had|show|list|tell me|give me|any)\b/i;
+const POLITE = /\b(can you|could you|would you|please|pls|kindly)\b/i;
+const HEAVY = /\b(revamp|redo|overhaul|entire|whole|from scratch|full|plan|build|generate)\b/i;
+const SMALL = /\b(update|change|make|create|write|draft|fix|add|remove|delete|replace|rename|nicer|improve|translate|send|e-?mail|share|forward|reply|approve|sign[- ]?off|submit|move|set|mark|assign|reassign|schedule|book|close|reopen|cancel|archive|upload|attach|publish|notify|remind)\b/i;
+export function heurRoute(message) {
+  const m = String(message || '');
+  if (ASKING.test(m) && !POLITE.test(m)) return 'lookup';
+  return HEAVY.test(m) ? 'heavy' : SMALL.test(m) ? 'small' : 'lookup';
+}
+
 /** the level of work and the engine for one message.
     route: the model's reading (lookup | help | small | heavy | unclear), or the plain-rules guess when the model was not available.
     Returns { tier, engine, label, score, dims, why } */

@@ -12,7 +12,8 @@ console.log(n + ' assistant router checks passed');
   assert.ok(c.includes('#asst .as-ask:not(#_):not(#__) { max-height: min(42vh, 320px)'), 'the question box is no longer cut at 96 px'); console.log('  ok  the chat opens on the newest message and Claude\'s question is shown in full above the message box'); }
 { const a = fs.readFileSync('src/assistant.js', 'utf8'), s = fs.readFileSync('work/server/api.mjs', 'utf8').split('\n');
   assert.ok(s.join('\n').includes('"parts":[{"text":string,"route"') && s.join('\n').includes('parts: cleanParts(j.parts)') && s.join('\n').includes('parts: splitHeur(msg)'), 'the router returns parts, from the model or from plain rules');
-  const split = new Function(s.find(l => l.startsWith('  const routeHeur')) + '\n' + s.find(l => l.startsWith('  const splitHeur')) + '\nreturn splitHeur;')();
+  const { heurRoute } = await import('../work/server/_route.mjs'); assert.ok(s.join('\n').includes('heurRoute as routeHeur'), 'the plain rules come from _route.mjs');   // moved there 24 Nov 2026 so they are tested on their own (tests/route_eval.mjs)
+  const split = new Function('routeHeur', s.find(l => l.startsWith('  const splitHeur')) + '\nreturn splitHeur;')(heurRoute);
   const p = split('What is the go-live date? Update the whole kick-off deck in a nicer way'); assert.deepEqual(p.map(x => x.route), ['lookup', 'heavy']); assert.equal(p[0].text, 'What is the go-live date?');
   const q = split('is the kickoff deck updated and also draft a reply to Sara about the SLA wording'); assert.deepEqual(q.map(x => x.route), ['lookup', 'small']); assert.ok(!/ and$/.test(q[0].text));
   assert.deepEqual(split('update the BRD'), []); assert.deepEqual(split('explain the go-live plan'), []);

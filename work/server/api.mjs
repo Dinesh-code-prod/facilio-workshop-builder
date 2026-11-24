@@ -24,7 +24,7 @@ import { installSharePoint, docKeyOf, VERSIONED } from './_sharepoint.mjs';
 import './_flowchecks.mjs';   // sets globalThis.FWBFlowChecks: the state-flow checks the Solution map shows, for the review pack
 import { installFeedback } from './_feedback.mjs';
 import { dueWords, card, taskButtons, MY_TASKS_BUTTON, NEXT, personOf } from './_msgfmt.mjs';
-import { assess as routeAssess } from './_route.mjs';
+import { assess as routeAssess, heurRoute as routeHeur } from './_route.mjs';
 import { addedMessage, status as helperStatus, stuckJobs, helperAlert } from './_helper.mjs';
 import { installNotify, norm as nNorm, lead, hashOf } from './_notify.mjs';
 import { MISSED_KINDS, missedSteps, missedEvent, isMissed, keyOf as missedKey, escalationEvent, milestoneEvents } from './_missed.mjs';
@@ -701,7 +701,6 @@ ${clip(fc, 12000)}
   /* The assistant's size router: a look-up is answered at once (DeepSeek, from the project records) with a button to the page; a small change goes to Claude as a quick job; heavy work goes to Claude with a plan first. The model only classifies (never acts); if it fails, plain rules decide. */
   const ROUTE_TASKS = [...new Set(Object.values(ASK_TASK))];
   const ROUTE_VIEWS = { projdash: 'Dashboard', tasks: 'Tasks', kickoff: 'Kick-off deck and project plan', brd: 'BRD', solution: 'Solution', whiteboard: 'Process whiteboard', modules: 'Modules and forms', rschecks: 'Checks', transfers: 'Transfers', mailtab: 'Customer mail', lifecycle: 'Project cycle', guides: 'Training guides', delivery: 'UAT', golive: 'Go-live', reports: 'Reports' };
-  const routeHeur = m => (/\b(revamp|redo|overhaul|entire|whole|from scratch|full|plan|build|generate)\b/i.test(m) ? 'heavy' : /\b(update|change|make|create|write|draft|fix|add|remove|delete|replace|rename|nicer|improve|translate)\b/i.test(m) ? 'small' : 'lookup');
   // parts of one message: kept only when there are two to four, each a real sentence with a known route; when the model is unavailable, plain rules split on "also", "then", ";" and new sentences
   const cleanParts = a => { const p = (Array.isArray(a) ? a : []).slice(0, 4).map(x => ({ text: plain(x && x.text, 200), route: ['lookup', 'help', 'small', 'heavy'].includes(x && x.route) ? x.route : '', task: ROUTE_TASKS.includes(x && x.task) ? x.task : '', view: ROUTE_VIEWS[x && x.view] ? x.view : '' })).filter(x => x.text.length >= 8 && x.route); return p.length >= 2 ? p : []; };
   const splitHeur = m => { const p = String(m || '').split(/\s*(?:;|\n|\balso\b|\band then\b|\bthen\b|(?<=[.?!])\s+(?=[A-Za-z]))\s*/i).map(x => x.replace(/^(and|please|can you|could you)\s+/i, '').replace(/[\s,]+(and|then|also)$/i, '').trim()).filter(x => x.length >= 12).slice(0, 4).map(x => ({ text: x.slice(0, 200), route: routeHeur(x), task: '', view: '' })); return p.length >= 2 ? p : []; };
