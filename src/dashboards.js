@@ -202,7 +202,9 @@
       customers: `<div class="adx-g">${waitW}${docsW}${govW}</div>`,
       stages: V.stageAdmin ? V.stageAdmin(ps) : ''
     };
-    const tabs = `<nav class="adx-tabs" role="tablist" aria-label="Dashboard sections">${TABS.map(([id, l]) => `<button type="button" role="tab" class="${tab === id ? 'on' : ''}" aria-selected="${tab === id}" data-act="admTab" data-v="${id}">${esc(l)}</button>`).join('')}</nav>`;
+    // the same tab card as the project views (user, 24 Nov 2026: "reflect in all POV"): an icon tile and name, then the tabs with a small icon each
+    const TICO = { overview: 'home', stages: 'plan', delivery: 'flag', risk: 'alert', people: 'roles', customers: 'link', reports: 'dash' }; const ic = n => (V.ico ? V.ico(n) : '');
+    const tabs = `<nav class="adx-tabs" role="tablist" aria-label="Dashboard sections"><div class="mt-in here" data-tone="blue"><span class="mt-cap"><i class="mt-capic" aria-hidden="true">${ic('dash')}</i><span>Portfolio</span><em>${TABS.length}</em></span><div class="mt-list">${TABS.map(([id, l]) => `<button type="button" role="tab" class="mt-t${tab === id ? ' on active' : ''}" aria-selected="${tab === id}" data-act="admTab" data-v="${id}">${ic(TICO[id] || 'doc').replace('<svg ', '<svg class="mt-ic" ')}${esc(l)}</button>`).join('')}</div></div></nav>`;
     return `<div class="adx">${tabs}${tab === 'reports' ? (reports ? reports() : '') : (V.dk ? V.dk.adminBar(ps0, ps) : '') + layouts[tab]}</div>`;
   };
 })(typeof window !== 'undefined' ? window : globalThis);
