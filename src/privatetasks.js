@@ -1,4 +1,4 @@
-/* My private tasks (Tasks and email > My private tasks): a person's own day-to-day list for the project, kept apart from the shared tasks and visible to nobody else.
+/* My private tasks (Tasks > My private tasks): a person's own day-to-day list for the project, kept apart from the shared tasks and visible to nobody else.
    The list is read and saved through /api/projects/:id/private-tasks, which only ever answers with the caller's own list (work/server/_privatetasks.mjs, tests/private_tasks.mjs). It is never an item of the
    project, so no shared page, report, export, search or Claude tool can show it. A private task can be made a shared project task (it then leaves this list). */
 (function (root) {

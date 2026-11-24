@@ -1,6 +1,6 @@
 // The hourly customer-mail search (user, 19 Nov 2026): a team member's queue check-in queues a search of THEIR mailbox once an hour; muted projects, customers and people off the team never get one. Run: node tests/mail_hourly.mjs
-import assert from 'node:assert/strict';
-import { installJobs } from '../work/server/_jobsapi.mjs';
+import assert from 'node:assert/strict'; import fs from 'node:fs';
+import { installJobs } from '../work/server/_jobsapi.mjs'; import { newJob } from '../work/server/_jobs.mjs';
 class HttpError extends Error { constructor(status, msg) { super(msg); this.status = status; } }
 const db = {}; const col = c => (db[c] = db[c] || {});
 const P = { id: 'p1', name: 'One', members: [{ email: 'Ana@x.com', role: 'owner' }, { email: 'bo@x.com', role: 'member' }, { email: 'cu@cust.com', role: 'customer' }] };
@@ -28,5 +28,16 @@ await t('a customer or someone off the team never gets a search; a muted project
   for (const j of mailJobs('bo@x.com')) { j.status = 'done'; j.requestedAt = new Date(Date.now() - 2 * 3600e3).toISOString(); }
   col('mlcfg').p1 = { muted: true }; await CONNECTOR.jobs_list(bo, {}); assert.equal(mailJobs('bo@x.com').length, 1);
   const r = await CONNECTOR.jobs_request(bo, { project: 'One' }); assert.match(r.note, /muted/);
+});
+// one home for project mail (user, 24 Nov 2026): the Customer mail page; the Tasks page only links there, and Claude's search uses the saved customer addresses
+await t('a claimed mail search carries the customer addresses saved in Project settings, and only when there are some', async () => {
+  const job = newJob('jb_0123456789abcdef01', { kind: 'fetch_mail', key: 'mailbox:ana@x.com', params: {} }, 'ana@x.com', new Date().toISOString()); col('jb.p1')[job.id] = job;
+  col('cfg').mailsenders = { p1: { emails: ['priya@cust.com'], domains: ['cust.com'] } };
+  const b = await CONNECTOR.jobs_claim({ email: String(job.requestedBy), id: 'x' }, { project: 'p1', id: job.id }); assert.deepEqual([b.customerAddresses.emails, b.customerAddresses.domains], [['priya@cust.com'], ['cust.com']]); assert.match(b.customerAddresses.note, /Customer emails/);
+});
+await t('no duplicate mail screen: the Tasks page has no Email tab and links to Customer mail; the menu says Tasks; the bell opens Customer mail', () => {
+  const tasks = fs.readFileSync('src/tasks.js', 'utf8'); assert.ok(!/tk\('mail', 'Email'/.test(tasks), 'no Email tab'); assert.match(tasks, /data-view="mailtab">Open Customer mail</); assert.match(tasks, /if \(v === 'mail'\) \{ V\.go\('mailtab'\)/, 'old Email links open Customer mail');
+  assert.match(fs.readFileSync('src/shell.js', 'utf8'), /\['tasks', 'Tasks'\], \['mailtab', 'Customer mail'\]/); assert.match(fs.readFileSync('work/server/_mailapi.mjs', 'utf8'), /view: 'mailtab'/);
+  assert.match(fs.readFileSync('work/server/api.mjs', 'utf8'), /filter\(v => v && v\.key && !v\.id\)/, 'the shared-mailbox Inbox never lists Claude-found mail'); assert.ok(fs.existsSync('archive/hidden-tabs/tasks-email-tab.js'), 'the old tab is archived');
 });
 console.log('mail_hourly: ' + n + ' checks passed');

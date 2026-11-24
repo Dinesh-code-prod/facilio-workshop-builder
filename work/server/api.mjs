@@ -1439,7 +1439,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   route('GET', '/api/projects/:id/mail', async (b, P, Q) => {
     const s = await me(); await inboxAccess(s, P.id, 'read'); let sync = null;
     if (Q.get('sync') === '1') { try { sync = await syncMailbox(s, {}); } catch (e) { sync = { error: e instanceof HttpError ? e.message : 'The mailbox could not be checked just now' }; } }
-    const c = Object.assign({}, MAIL_DEFAULTS, await mailCfg()); let rows = (await dbList('ml.' + P.id)).map(r => r.value).filter(Boolean);
+    const c = Object.assign({}, MAIL_DEFAULTS, await mailCfg()); let rows = (await dbList('ml.' + P.id)).map(r => r.value).filter(v => v && v.key && !v.id);   // shared-mailbox records only; Claude-found mail (with an id) belongs to Customer mail
     if (c.retentionDays > 0) { const cut = Date.now() - c.retentionDays * 864e5; for (const r of rows.filter(r => Date.parse(r.receivedAt) < cut)) await dbDel('ml.' + P.id, r.key).catch(() => { }); rows = rows.filter(r => Date.parse(r.receivedAt) >= cut); }
     rows.sort((a, z) => String(z.receivedAt).localeCompare(String(a.receivedAt)));
     return ok({ items: rows.slice(0, 1000).map(r => mailOut(r)), total: rows.length, last: c.last ? { at: c.last.at, ok: c.last.ok, error: c.last.ok ? '' : 'The last mailbox check did not complete. An admin can see the details under Admin.' } : null, sync: sync && (sync.result ? { filed: sync.result.filed } : sync.error ? { error: sync.error } : { skipped: sync.skipped }), retentionDays: c.retentionDays });

@@ -19,7 +19,8 @@ Each file is a **copy taken on 13 Nov 2026** of the source that draws the tab. T
 | ~~notifications~~ | Notifications (back 16 Nov 2026, stage 2 Module design) | Team | `notifications.js` | Stage 3 trimmed: notifications are added when a whiteboard flow is saved | BRD, Org package |
 | cfginputs | Configuration & org package | Team | `cfginputs.js` | Stage 3 trimmed | Org package export |
 | solution | Solution (text editor) | Team | `solution.js` | Replaced in the menu by the Solution page (`solmap.js`); still opens from "Review the solution text" | Solution page, BRD |
-| mailtab | Customer mail | Team | `mailinbox.js` | Customer email removed; the daily mail search is switched off (`MAIL_OFF` in `work/server/_jobsapi.mjs`) | none in the menu |
+| ~~mailtab~~ | Customer mail (back in the menu; since 24 Nov 2026 the ONE place for project mail) | Team | `mailinbox.js` | Was hidden while the mail search was off | Customer mail page |
+| tasks Email tab | Email (a tab on the Tasks page) | Team | `tasks-email-tab.js` | 24 Nov 2026: showed the same records as Customer mail; the Tasks page now links there | Customer mail page (`V.mailView`) |
 | uatguide | UAT guide | Team | `uatftr.js` | Not finished in the Part E revamp | FTR and UAT pages |
 | aiwork | Deliverables & AI | Team | `lifecycle.js` | Not finished in the Part E revamp | Project lifecycle |
 | inbox | Inbox | Team | `inbox.js` | Kept hidden until rebuilt | none in the menu |

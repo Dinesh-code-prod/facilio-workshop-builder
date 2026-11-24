@@ -315,7 +315,7 @@ CSS files. The look is the coss style in ui.css (the last layer, see docs/design
 | [dashmodern.js](dashmodern.js) | Modern dashboards (user, 9 Nov 2026, after the Scorecard, Slingshot, Produkcia, Vora, Breeze and Lector examples): the shared look of the team, customer and admin dashboards. |
 | [planmerge.js](planmerge.js) | Importing a new version of the project plan into the Timeline (tests/plan_reimport.mjs). |
 | [presence.js](presence.js) | Studio-open signal: while a team member has a Studio tab open and visible, tell the server every 4 minutes. |
-| [privatetasks.js](privatetasks.js) | My private tasks (Tasks and email > My private tasks): a person's own day-to-day list for the project, kept apart from the shared tasks and visible to nobody else. |
+| [privatetasks.js](privatetasks.js) | My private tasks (Tasks > My private tasks): a person's own day-to-day list for the project, kept apart from the shared tasks and visible to nobody else. |
 | [qimport.js](qimport.js) | Questions from a file: the extra questions a consultant already has (an Excel sheet of any layout, a Word or PDF document, plain text) become question-bank entries. |
 | [quickfacts.js](quickfacts.js) | Quick facts: a question the project records answer exactly (the go-live date, where we are, the next step, a step's dates, progress, overdue and my tasks, sign-offs, open risks) is answered here at... |
 | [reslinks.js](reslinks.js) | Notes & Links helpers (9 Nov 2026): turn the web addresses in a note into clickable links, guess what kind of resource a pasted address is, and apply the private-note rule. |
