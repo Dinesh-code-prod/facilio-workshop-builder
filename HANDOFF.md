@@ -226,3 +226,9 @@ Project handover > Solution document (src/soldoc.js, record kind sdoc, AI task s
 Solution document (deploy 481): the page now runs the BRD Draft editor on its own store F.doc(soldocs) (src/brd.js isSol, src/soldoc.js). The earlier section editor (record kind sdoc) is retired; its one Al Moallam record stays in the data, unused. Not yet checked: a real Claude run (Al Moallam has no org yet).
 
 SharePoint project folders (deploy 482): built and tested against a stand-in Microsoft Graph only. Off until an admin does the set-up in docs/integrations/SHAREPOINT-2026-11-16.md (Entra app, Sites.Selected full control on one site, credential graph_files, secret sharepoint_site). First real test must confirm folder sharing works with full control.
+
+## Pending for tomorrow (24 Nov 2026, evening)
+- An agent may still be finishing the Training page fixes: blank guide document preview (guidebuilder Document tab), calm guide header, file-browser style list (command bar with + New, path with a back button, columns, folders first, newest first, Videos to make folded). Check git log for its commit; nothing of it is deployed.
+- Guide jobs now read the MSA contract scope and the agreed processes first (27d6348, pushed, not deployed).
+- Live is deploy 526 (b8fd07f). Deploy the above after a browser check on Al Moallam (Training, a guide Document tab, FTR HTML export).
+- Not checked yet: Word/PDF export from the guide Document view, HTML export with real screenshots, a real Search older mail run.
