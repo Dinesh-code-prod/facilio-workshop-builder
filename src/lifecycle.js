@@ -8,8 +8,8 @@
   const canEdit = () => !V.isCustomer() && !S.readonly; const canApprove = () => !V.isCustomer() && S.project && S.project.role === 'owner';
   const KINDS = ['ai', 'hc', 'hcrep', 'ho', 'close', 'signoff', 'rep', 'task'];
   const DELIV = [
-    ['brd', 'Business Requirements Document (BRD)', 'Requirements'], ['uat', 'UAT plan and test cases', 'UAT'], ['ftr', 'FTR report', 'Testing'],
-    ['config', 'Configuration documentation', 'Configuration'], ['guide', 'Customer user guide', 'Training'], ['training', 'Training material outline', 'Training'], ['golive', 'Go-live readiness review', 'Go-live'],
+    ['brd', 'Business Requirements Document (BRD)', 'Requirements'], ['uat', 'UAT guide (before go-live)', 'UAT'], ['ftr', 'FTR report', 'Testing'],
+    ['config', 'Configuration documentation', 'Configuration'], ['guide', 'Handover user guide (after go-live)', 'Handover'], ['training', 'Training material outline', 'Training'], ['golive', 'Go-live readiness review', 'Go-live'],
     ['hypercare', 'Hypercare status report', 'Hypercare'], ['handover', 'Support handover pack', 'Handover'], ['closure', 'Project closure report', 'Closure']];
   const EXTRA = [['gaps', 'Missing requirements check'], ['workshop', 'Workshop intelligence'], ...((V.featureHidden && V.featureHidden('orgpkg')) ? [] : [['pkg', 'Org package analysis']]), ['wsr', 'Weekly status report'], ['monthly', 'Monthly report'], ['calendar', 'Calendar briefing'], ['govupdate', 'Weekly update to the customer'], ['dashsummary', 'Dashboard report summary'], ['ftrrows', 'FTR scenario suggestions'], ['vidguide', 'Guide steps from a walkthrough']];
   const label = t => (DELIV.concat(EXTRA.map(x => [x[0], x[1]])).find(d => d[0] === t) || [0, ({ soldoc: 'Solution document' })[t] || t])[1];   // soldoc is drafted from its own page, not the deliverables list
