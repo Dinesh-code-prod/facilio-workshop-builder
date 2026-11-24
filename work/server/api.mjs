@@ -2401,7 +2401,8 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     const ppl = await docRead(pj.id, 'people').catch(() => null), team = ((ppl && ppl.data) || {}).team || [];
     const have = new Set((await itemsOf(pj.id, 'task').catch(() => [])).map(t => t && t.data && t.data.key).filter(Boolean));
     let added = 0;
-    for (const data of T.toAdd(text, stage, team, pj.members || [], have, today, label)) {
+    const pl = await docRead(pj.id, 'plan_struct').catch(() => null), win = T.planWindow(((pl && pl.data) || {}).rows, stage);   // due dates follow the stage dates of the project plan
+    for (const data of T.toAdd(text, stage, team, pj.members || [], have, today, label, win)) {
       try { await viaApp('PUT', '/api/projects/' + pj.id + '/items/task/t_' + Date.now().toString(36) + rid('').slice(1, 7), '', { data }); added++; }   // the normal save: validation, history, the assignment message
       catch (e) { if (e && e.status === 409) continue; console.log('task run ' + pj.id + ': ' + (e && e.message)); break; }
     }

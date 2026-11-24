@@ -16,8 +16,8 @@ Follows docs/plans/TASKS-AUTOMATION-PLAN-2026-11-07.md (the task engine). People
 ## Phase 2, done 24 Nov 2026: the daily run on the server
 - Tasks > Daily task run (off until a person switches it on, per project; GET/POST /api/projects/:id/task-run, record trcfg). Once a day, in the daily sweep, the server adds the standard tasks of the stage the project is in (the first lifecycle stage not closed), from the project's published Stage tasks template or the Facilio standard, each owned by the member with its Delivery role; a task already added is never added again. Switching it on adds the current stage's tasks at once.
 - The rules are shared by the browser and the server: `work/server/_stagetasks.mjs`.
-- Due dates count from the day the run adds the tasks (the stage start), not yet from the plan dates.
-- Not done in this phase: the task engine rules still run in the browser only.
+- Due dates follow the project plan: a task is due its number of days after the start of its stage in the plan (the plan rows whose title or phase belongs to that stage, the same words as src/lifelogic.js), never after the stage end and never before today; without plan dates, days after the day it is added.
+- The task engine (its rules read many pages, so they run in the browser) now starts whenever a team member opens a project, not only on the Tasks page. Moving its rules to the server is still open.
 
 ### First outline of phase 2
 - Run the task engine rules on the server for every project in the daily sweep, not only in the open browser.

@@ -9,7 +9,7 @@
   const F = root.FWB, ACT = V.ACT, I = () => V.items, API = root.FWBApi;
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const SH = root.FWBStageTasks; if (!SH) return;   // the rules: work/server/_stagetasks.mjs (bundled before this file)
-  const { STAGES, ROLES, STANDARD, parse, keyOf, ownerFor } = SH, dueIn = days => SH.dueIn(days);
+  const { STAGES, ROLES, STANDARD, parse, keyOf, ownerFor } = SH, dueIn = days => SH.dueAt(days, null, SH.planWindow((F.doc('plan_struct') || {}).rows, st ? st.stage : ''));   // due dates follow the stage dates of the project plan
   V.stageTaskLogic = { STAGES, ROLES, STANDARD, parse, keyOf, ownerFor };   // also run by tests/stage_tasks.mjs
   V.deliveryRoles = ROLES;
 

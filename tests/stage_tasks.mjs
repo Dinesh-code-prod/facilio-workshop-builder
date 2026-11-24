@@ -49,4 +49,14 @@ t('the server runs the task run in the daily sweep, only where it is on, through
   assert.match(api, /await taskRun\(s, pj, today\)/); assert.match(api, /!cfg\.on \|\| \(!force && cfg\.last === today\)/); assert.match(api, /viaApp\('PUT', '\/api\/projects\/' \+ pj\.id \+ '\/items\/task\//);
   assert.ok(fs.readFileSync(new URL('../build.mjs', import.meta.url), 'utf8').includes("'work/server/_stagetasks.mjs', 'src/stagetasks.js'"), 'the shared rules are bundled before the page');
 });
+t('due dates follow the stage dates of the project plan, within the stage and never before today', () => {
+  const rows = [{ title: 'Kick-off meeting', start: '2026-12-01', end: '2026-12-05' }, { title: 'Requirement workshops', start: '2026-12-08', end: '2026-12-31' }, { title: 'UAT cycle 1', phase: 'Testing', start: '2027-02-01', end: '2027-02-10' }];
+  assert.deepEqual(SH.planWindow(rows, 'Requirements & Workshops'), { start: '2026-12-08', end: '2026-12-31' }); assert.equal(SH.planWindow(rows, 'Closure & Follow-Up'), null);
+  const w = SH.planWindow(rows, 'Testing & UAT'); assert.equal(SH.dueAt(5, '2026-11-24', w), '2027-02-06'); assert.equal(SH.dueAt(22, '2026-11-24', w), '2027-02-10', 'capped at the stage end');
+  assert.equal(SH.dueAt(2, '2027-03-01', w), '2027-03-01', 'a stage already past: due today'); assert.equal(SH.dueAt(3, '2026-11-24', null), '2026-11-27', 'no plan: days after the run day');
+  assert.equal(SH.toAdd(SH.STANDARD, 'Testing & UAT', [], [], new Set(), '2026-11-24', '', w)[0].due, '2027-02-06');
+  const life = fs.readFileSync(new URL('../src/lifelogic.js', import.meta.url), 'utf8'); Object.values(SH.LIFE_RE).forEach(re => assert.ok(life.includes('re: ' + String(re)), 'the plan words match src/lifelogic.js: ' + re));
+  assert.match(api, /T\.planWindow\(\(\(pl && pl\.data\) \|\| \{\}\)\.rows, stage\)/);
+});
+t('the task engine starts whenever a team member opens a project', () => { assert.match(fs.readFileSync(new URL('../src/shell.js', import.meta.url), 'utf8'), /if \(V\.taskEngine\) setTimeout\(\(\) => V\.taskEngine\.run\(\), 4000\)/); });
 console.log(`${n} stage task checks passed`);

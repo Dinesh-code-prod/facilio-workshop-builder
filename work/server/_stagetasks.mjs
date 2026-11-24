@@ -72,15 +72,32 @@
   }
   /* YYYY-MM-DD, days after from (YYYY-MM-DD) or after today */
   function dueIn(days, from) { const d = from ? new Date(from + 'T00:00:00Z') : new Date(); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); }
+  /* plan rows belong to a lifecycle stage by their title or phase, with the same words as src/lifelogic.js (tests/stage_tasks.mjs keeps them in step) */
+  const LIFE_RE = { intro: /kick|contract|msa|scope|project plan|plan|mobili[sz]/i, sessions: /workshop|requirement|session|discovery|use case|transcript/i, design: /design|brd|configur|solution|form|mockup|build|integrat|sla|kpi/i,
+    uat: /uat|test|go.?live|cut.?over|acceptance|ftr/i, training: /train|document|guide|video|manual/i, hypercare: /hypercare|stabili[sz]/i, handover: /hand.?over|support|acceptance|sign.?off|clos|lesson|final report|wrap/i };
+  const ISO = /^\d{4}-\d{2}-\d{2}/;
+  /* the dates the project plan gives a task stage: { start, end } (YYYY-MM-DD) from the plan rows of its lifecycle stages, or null */
+  function planWindow(rows, stage) {
+    const keys = LIFE.filter(k => LIFE_STAGE[k] === stage); let start = '', end = '';
+    (rows || []).forEach(r => { if (!r || !keys.some(k => LIFE_RE[k].test(String(r.title || '') + ' ' + String(r.phase || '')))) return;
+      const s = ISO.test(r.start || '') ? String(r.start).slice(0, 10) : '', e = ISO.test(r.end || '') ? String(r.end).slice(0, 10) : '';
+      if (s && (!start || s < start)) start = s; if (e && (!end || e > end)) end = e; });
+    return start ? { start, end: end && end >= start ? end : '' } : null;
+  }
+  /* a task's due date: days after the stage starts in the plan (not past the stage end, not before today), else days after from or today */
+  function dueAt(days, from, win) {
+    if (!win || !win.start) return dueIn(days, from);
+    let d = dueIn(days, win.start); if (win.end && d > win.end) d = win.end; const today = from || dueIn(0); return d < today ? today : d;
+  }
   /* the task stage a project is in: that of the first lifecycle stage not closed (closed: a Set of lifecycle keys) */
   function stageNow(closed) { const k = LIFE.find(x => !(closed && closed.has(x))) || 'handover'; return LIFE_STAGE[k]; }
   /* the task records still to add for a stage, skipping keys already used */
-  function toAdd(text, stage, team, members, haveKeys, from, label) {
+  function toAdd(text, stage, team, members, haveKeys, from, label, win) {
     return (parse(text).stages[stage] || []).filter(x => !(haveKeys && haveKeys.has(keyOf(stage, x.title)))).map(x => {
       const own = ownerFor(x.role, team, members);
-      return { title: x.title, type: x.type, stage, status: 'To Do', priority: 'Medium', owner: own ? own.email : '', due: dueIn(x.days, from), key: keyOf(stage, x.title), src: { type: 'template', label: label || 'Facilio standard' }, desc: x.role ? 'Delivery role: ' + x.role : '' };
+      return { title: x.title, type: x.type, stage, status: 'To Do', priority: 'Medium', owner: own ? own.email : '', due: dueAt(x.days, from, win), key: keyOf(stage, x.title), src: { type: 'template', label: label || 'Facilio standard' }, desc: x.role ? 'Delivery role: ' + x.role : '' };
     });
   }
-  const api = { STAGES, ROLES, TYPES, LIFE, LIFE_STAGE, STANDARD, parse, keyOf, ownerFor, dueIn, stageNow, toAdd };
+  const api = { STAGES, ROLES, TYPES, LIFE, LIFE_STAGE, LIFE_RE, STANDARD, parse, keyOf, ownerFor, dueIn, planWindow, dueAt, stageNow, toAdd };
   root.FWBStageTasks = api; if (typeof module !== 'undefined' && module.exports) module.exports = api;   // the global is always set: a module import has no other way to hand the rules over
 })(typeof window !== 'undefined' ? window : globalThis);
