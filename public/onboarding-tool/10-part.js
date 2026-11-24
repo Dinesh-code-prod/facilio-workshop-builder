@@ -131,7 +131,8 @@
   function load() {
     try {
       var raw = localStorage.getItem(STORE2);
-      if (raw) { var s = JSON.parse(raw); if (s && s.v === 2) { Object.keys(TABLES).forEach(function (k) { if (!s.tabs[k]) s.tabs[k] = []; }); if (ALL_SHEETS.indexOf(s.active) < 0) s.active = "Overview"; return s; } }
+      if (raw) { var s = JSON.parse(raw); if (s && s.v === 2 && s.idb) { var f0 = freshState(); f0.sheets = s.sheets || []; f0.active = s.active || "Overview"; f0.seenWalk = true; f0.idb = true; return f0; }
+        if (s && s.v === 2) { Object.keys(TABLES).forEach(function (k) { if (!s.tabs[k]) s.tabs[k] = []; }); if (ALL_SHEETS.indexOf(s.active) < 0) s.active = "Overview"; return s; } }
       var old = localStorage.getItem(STORE_KEY);   /* carry over data typed in the first version */
       if (old) { var o = JSON.parse(old), f = freshState(); Object.keys(TABLES).forEach(function (k) { if (o.tabs && o.tabs[k]) f.tabs[k] = o.tabs[k]; }); f.seenWalk = !!o.seenWalk; return f; }
     } catch (e) {}
@@ -141,11 +142,28 @@
   if (!state.custom) state.custom = {}; if (!state.colOrder) state.colOrder = {}; if (!state.sheets) state.sheets = [];
   state.sheets.forEach(function (d) { if (!TABLES[d.key]) { registerCustom(d); indexSheets(); } if (!state.tabs[d.key]) state.tabs[d.key] = []; });
   var saveTimer = null;
+  /* large work (over about 3 MB, roughly 30,000 rows) is kept in IndexedDB, which holds far more than localStorage; localStorage then keeps a small marker with the custom sheets */
+  var PID = new URLSearchParams(location.search).get("p") || "local", BIG = 3e6;
+  function idb(mode, fn) {
+    return new Promise(function (res, rej) {
+      var rq = indexedDB.open("facilio-onboarding", 1);
+      rq.onupgradeneeded = function () { rq.result.createObjectStore("work"); };
+      rq.onerror = function () { rej(rq.error); };
+      rq.onsuccess = function () { var db = rq.result, tx = db.transaction("work", mode), r = fn(tx.objectStore("work")); tx.oncomplete = function () { db.close(); res(r && r.result); }; tx.onerror = function () { db.close(); rej(tx.error); }; };
+    });
+  }
   function save() {
+    if (state.idb) return;   /* the saved work is still being read back: never overwrite it with the empty start-up state */
     clearTimeout(saveTimer);
     saveTimer = setTimeout(function () {
-      try { localStorage.setItem(STORE2, JSON.stringify(state)); $("saveState").textContent = "Saved in this browser · " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
-      catch (e) { $("saveState").textContent = "Too large to save in the browser. Download the workbook to keep it."; }
+      var raw = JSON.stringify(state), at = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), hasIdb = typeof indexedDB !== "undefined";
+      var big = function () { idb("readwrite", function (st) { return st.put(raw, PID); }).then(function () {
+          try { localStorage.setItem(STORE2, JSON.stringify({ v: 2, idb: true, sheets: state.sheets, active: state.active, seenWalk: true })); } catch (e) { }
+          $("saveState").textContent = "Saved in this browser (large workbook) · " + at; })
+        .catch(function () { $("saveState").textContent = "Too large to save in this browser. Download the workbook to keep it."; }); };
+      if (raw.length > BIG && hasIdb) { big(); return; }
+      try { localStorage.setItem(STORE2, raw); $("saveState").textContent = "Saved in this browser · " + at; if (hasIdb) idb("readwrite", function (st) { return st.delete(PID); }).catch(function () { }); }
+      catch (e) { if (hasIdb) big(); else $("saveState").textContent = "Too large to save in the browser. Download the workbook to keep it."; }
     }, 400);
   }
   function rows(tab) { return state.tabs[tab]; }
@@ -710,12 +728,61 @@
 
   /* ---------------- live checks ---------------- */
   var vTimer = null;
-  function scheduleValidate() { clearTimeout(vTimer); vTimer = setTimeout(runValidate, 450); }
+  var LIVE_LIMIT = 5000, stale = false, worker = null, wSeq = 0, wcb = {};   /* above LIVE_LIMIT rows an edit is not re-checked by itself: a full check takes seconds */
+  var BGNOTE = "This runs in the background, so the page stays responsive.";
+  function totalRows() { return Object.keys(TABLES).reduce(function (a, k) { return a + (k === "cat" ? 0 : filledRows(k)); }, 0); }
+  function scheduleValidate() { clearTimeout(vTimer); if (totalRows() > LIVE_LIMIT) { if (!stale) { stale = true; renderStatus(); } return; } vTimer = setTimeout(runValidate, 450); }
+  function getWorker() {
+    if (worker === false) return null; if (worker) return worker;
+    try {
+      worker = new Worker("check-worker.js");
+      worker.onmessage = function (e) { var cb = wcb[e.data.id]; delete wcb[e.data.id]; if (cb) cb.res(e.data); };
+      worker.onerror = function (e) { if (e.preventDefault) e.preventDefault(); console.error(e); Object.keys(wcb).forEach(function (k) { wcb[k].rej(new Error("worker")); delete wcb[k]; }); worker = false; };
+    } catch (e) { worker = false; }
+    return worker || null;
+  }
+  function ask(msg, transfer) { var w = getWorker(); if (!w) return Promise.reject(new Error("no worker")); return new Promise(function (res, rej) { msg.id = ++wSeq; wcb[msg.id] = { res: res, rej: rej }; w.postMessage(msg, transfer || []); }); }
+  function checkNames() { return sheetList().filter(function (n) { return n !== "Overview" && GEN_NAMES.indexOf(n) < 0; }); }
+  /* the rows of each sheet as the checker reads them (same values as toSheetJS), built a slice at a time so the page keeps responding */
+  function cellOut(v) { if (v && typeof v === "object" && v.date) return { t: "n", v: serial(v.date), z: "dd/mm/yyyy" }; if (v && typeof v === "object" && "time" in v) return v.text; if (typeof v === "number") return v; return v == null ? undefined : String(v); }
+  function aoaRow(row) {
+    var a = [];
+    if (row.type === "static") Object.keys(row.cells).forEach(function (c) { a[+c] = cellOut(row.cells[c].v); });
+    if (row.type === "data") { var R = rows(row.table)[row.idx]; if (R) TABLES[row.table].cols.forEach(function (col, c) { var tv = typed(row.table, c, R[col.d]); if (tv != null) a[c] = cellOut(tv); }); if (row.extra) Object.keys(row.extra).forEach(function (c) { a[+c] = cellOut(row.extra[c].v); }); }
+    return a;
+  }
+  function aoaAsync(names, lays, progress, done) {
+    var out = {}, si = 0, ri = 0, seen = 0, total = names.reduce(function (a, n) { return a + lays[n].rows.length; }, 0) || 1;
+    (function step() {
+      var until = Date.now() + 30;
+      while (si < names.length && Date.now() < until) {
+        var L = lays[names[si]], A = out[names[si]] = out[names[si]] || [];
+        for (var k = 0; k < 2000 && ri < L.rows.length; k++, ri++, seen++) A.push(aoaRow(L.rows[ri]));
+        if (ri >= L.rows.length) { si++; ri = 0; }
+      }
+      if (si < names.length) { progress(seen / total); setTimeout(step, 0); } else done(out);
+    })();
+  }
+  function checkInBackground(done) {
+    var n = totalRows(); if (n <= LIVE_LIMIT) { runValidate(); if (done) done(); return; }
+    var fallback = function () { busy("Checking " + n.toLocaleString() + " rows…", 60); later(function () { try { runValidate(); } finally { busy(); } if (done) done(); }); };
+    if (!getWorker()) { fallback(); return; }
+    var names = checkNames(), lays = {}; names.forEach(function (x) { lays[x] = sheetLayout(x); }); setCustomRules();
+    busy("Preparing " + n.toLocaleString() + " rows…", 10, BGNOTE);
+    aoaAsync(names, lays, function (p) { busy("Preparing " + n.toLocaleString() + " rows…", 10 + Math.round(p * 45), BGNOTE); }, function (aoa) {
+      busy("Checking " + n.toLocaleString() + " rows…", 70, BGNOTE);
+      ask({ kind: "check", aoa: aoa, rules: RULES }).then(function (r) { busy(); if (r.error) { toast("The check couldn't finish: " + r.error); return; } applyCheck({ lays: lays }, r); if (done) done(); }, fallback);
+    });
+  }
   function anyData() { return Object.keys(TABLES).some(function (k) { return k !== "cat" && filledRows(k); }); }
-  function runValidate() {
-    var names = sheetList().filter(function (n) { return n !== "Overview" && GEN_NAMES.indexOf(n) < 0; }), lays = {};
-    names.forEach(function (n) { lays[n] = sheetLayout(n); });
-    var res; try { setCustomRules(); res = OnboardingValidator.validate(toSheetJS(names), RULES); } catch (e) { console.error(e); return; }
+  function checkJob() {
+    var names = checkNames(), lays = {};
+    names.forEach(function (n) { lays[n] = sheetLayout(n); }); setCustomRules();
+    return { names: names, lays: lays, wb: toSheetJS(names) };
+  }
+  function runValidate() { var job, res; try { job = checkJob(); res = OnboardingValidator.validate(job.wb, RULES); } catch (e) { console.error(e); return; } applyCheck(job, res); }
+  function applyCheck(job, res) {
+    var lays = job.lays; stale = false;
     var cell = {}, list = [], bySheet = {}, rank = { Critical: 3, Warning: 2, Info: 1 }, has = anyData();
     res.issues.forEach(function (i) {
       if (!has) return;
@@ -936,7 +1003,8 @@
     var total = sheetList().reduce(function (n, s) { return n + sheetFilled(s); }, 0), ready = !c.Critical && filledRows("site") > 0;
     var dot = ready ? "#29A01E" : (c.Critical ? "#B61919" : "#FF6700");
     $("status").innerHTML = "<span class='rd'><span class='dot' style='background:" + dot + "'></span>" + (ready ? (c.Warning ? "Ready to import, with " + c.Warning + " warning" + (c.Warning === 1 ? "" : "s") + " to review" : "Ready to import") : (total ? c.Critical + " critical issue" + (c.Critical === 1 ? "" : "s") + " to fix before import" : "Start with the Site sheet")) + "</span>" +
-      "<span>" + total + " row" + (total === 1 ? "" : "s") + " entered</span>" + (c.Warning ? "<span>" + c.Warning + " warnings</span>" : "") + (gcrit ? "<span class='genstat'>Import sheets: " + gcrit + " critical</span>" : "") + "<span class='spacer'></span><span id='selStats' class='selstats'></span><button id='stReport'>Open check report</button>";
+      "<span>" + total + " row" + (total === 1 ? "" : "s") + " entered</span>" + (c.Warning ? "<span>" + c.Warning + " warnings</span>" : "") + (gcrit ? "<span class='genstat'>Import sheets: " + gcrit + " critical</span>" : "") + "<span class='spacer'></span><span id='selStats' class='selstats'></span><button id='stReport'>Check for errors</button>";
+    if (stale) $("status").insertAdjacentHTML("afterbegin", "<span class='stale'>Large workbook: edits are checked when you press Check for errors</span>");
     $("stReport").onclick = openReport; updateSelStats();
     var n = critCount(state.active); $("ptCount").hidden = !n; $("ptCount").textContent = n;
   }
@@ -1009,7 +1077,7 @@
 
   /* ---------------- report dialog ---------------- */
   var repFilter = { sev: { Critical: true, Warning: true, Info: false }, sheet: "" };
-  function openReport() { busy("Checking every sheet…", 60); later(function () { try { runValidate(); } finally { busy(); } renderReport(); if (!$("dlgReport").open) $("dlgReport").showModal(); }); }
+  function openReport() { checkInBackground(function () { renderReport(); if (!$("dlgReport").open) $("dlgReport").showModal(); }); }
   function summary() {
     var per = {}, tot = { rows: 0, bad: 0, warn: 0, dup: 0 };
     sheetList().forEach(function (n) { if (n === "Overview" || GEN_NAMES.indexOf(n) >= 0 || n === "Asset Category Master") return; var r = sheetFilled(n); per[n] = { rows: r, bad: {}, warn: {}, dup: 0 }; tot.rows += r; });
@@ -1123,9 +1191,9 @@
     saveWB(wb, "Facilio onboarding data " + today() + ".xlsx");
   }
   $("btnExport").onclick = function () {
-    runValidate(); var crit = issues.all.filter(function (i) { return i.severity === "Critical"; }).length;
+    checkInBackground(function () { var crit = issues.all.filter(function (i) { return i.severity === "Critical"; }).length;
     if (crit) confirmBox("Download with " + crit + " critical issue" + (crit === 1 ? "" : "s") + "?", "The workbook can be downloaded now, but Facilio can't import it until the critical issues are fixed. The check report lists each one.", exportWorkbook);
-    else exportWorkbook();
+    else exportWorkbook(); });
   };
 
   /* ---------------- import ---------------- */
@@ -1138,16 +1206,26 @@
     var html = /\.html?$/i.test(file.name);
     if (!html && !/\.(xlsx|xlsm|xls)$/i.test(file.name)) { toast("Choose an Excel workbook (.xlsx) or the customer's onboarding HTML file."); return; }
     var go = function () {
-      busy("Reading " + file.name + "…", 15);
-      readWorkbook(file, html).then(function (wb) {
+      busy("Reading " + file.name + "…", 15, file.size > 2e6 ? "A large file takes a little while. " + BGNOTE : "");
+      openBook(file, html).then(function (bk) {
         busy("Matching the sheets and columns…", 40);
-        later(function () { mapUnknownSheets(wb, function () { busy("Checking the data…", 70, "Large files take a little longer."); later(function () { importWorkbook(wb, file.name + (html ? " (customer HTML)" : "")); }); }); });
+        later(function () { mapUnknownSheets(bk, function (plan) { busy("Checking the data…", 70, bk.wb ? "" : BGNOTE); later(function () { finishImport(bk, plan, file.name + (html ? " (customer HTML)" : "")); }); }); });
       }).catch(function (e) { busy(); console.error(e); toast((e && e.userMsg) || "The file couldn't be read as an onboarding workbook."); });
     };
     if (anyData()) confirmBox("Replace the data in this workspace?", "Importing '" + file.name + "' replaces what is entered here. Download the current workbook first to keep a copy.", go); else go();
   }
-  function readWorkbook(file, html) {
-    if (!html) return file.arrayBuffer().then(function (b) { return XLSX.read(new Uint8Array(b), { type: "array", cellNF: true, cellDates: false }); });
+  /* the file to import: read by the background worker when there is one, else here. Returns { names, head(n), count(n), wb (only when read here) } */
+  function openBook(file, html) {
+    return (html ? htmlBook(file) : file.arrayBuffer()).then(function (src) {
+      if (getWorker()) {
+        var buf = src instanceof ArrayBuffer ? src : XLSX.write(src, { type: "array", bookType: "xlsx" });
+        return ask({ kind: "read", buf: buf }, [buf]).then(function (r) { if (r.error) throw new Error(r.error); return { names: r.sheetNames.slice(), head: function (n) { return r.previews[n].head; }, count: function (n) { return r.previews[n].count; } }; });
+      }
+      var wb = src instanceof ArrayBuffer ? XLSX.read(new Uint8Array(src), { type: "array", cellNF: true, cellDates: false }) : src;
+      return { names: wb.SheetNames.slice(), wb: wb, head: function (n) { return sheetRows(wb.Sheets[n]).slice(0, 12); }, count: function (n) { return sheetRows(wb.Sheets[n]).length; } };
+    });
+  }
+  function htmlBook(file) {
     var host = null; try { host = window.parent !== window ? window.parent : null; } catch (e) { }
     if (!host || typeof host.FWBOnbHtmlRows !== "function") return Promise.reject({ userMsg: "Open this workspace from Delivery Studio to import a customer's onboarding HTML file." });
     return file.text().then(function (t) { return host.FWBOnbHtmlRows(t); }).then(function (r) {
@@ -1167,40 +1245,51 @@
     for (i = 0; i < Math.min(R.length, 10); i++) if (filled(R[i]) >= 2) return i;
     for (i = 0; i < R.length; i++) if (filled(R[i])) return i; return 0;
   }
-  function defFromSheet(n, ws, mod) {
-    var R = sheetRows(ws), H = (R[headerRowOf(R)] || []).map(function (v) { return String(v).trim(); }), seen = {}, cols = [];
+  function defFromRows(n, R, mod) {
+    var H = (R[headerRowOf(R)] || []).map(function (v) { return String(v).trim(); }), seen = {}, cols = [];
     H.forEach(function (h, i) { if (!h) return; var nm = h.replace(/\*/g, "").replace(/\s+/g, " ").trim().slice(0, 80) || "Column " + (i + 1), base = nm, j = 2; while (seen[nm.toLowerCase()]) nm = base + " " + j++; seen[nm.toLowerCase()] = 1; cols.push({ id: cols.length + 1, name: nm, desc: "", type: "text", req: /\*/.test(h), list: [] }); });
     if (!cols.length) return null;
     var ni = 0; cols.some(function (c, i) { if (/\bname\b/i.test(c.name)) { ni = i; return true; } return false; }); if (ni) cols.unshift(cols.splice(ni, 1)[0]); cols[0].req = true;
     return { key: uid(), name: uniqueSheetName(n), module: mod || "", desc: "Brought in from an imported file.", cols: cols };
   }
-  function mapUnknownSheets(wb, done) {
-    var un = wb.SheetNames.filter(function (n) { return !knownSheet(n) && sheetRows(wb.Sheets[n]).length > 1; });
-    if (!un.length) { done(); return; }
+  function mapUnknownSheets(bk, done) {
+    var plan = { skip: [], renames: [] }, un = bk.names.filter(function (n) { return !knownSheet(n) && bk.count(n) > 1; });
+    if (!un.length) { done(plan); return; }
     busy();
     var targets = sheetList().filter(function (n) { return n !== "Overview" && GEN_NAMES.indexOf(n) < 0 && n !== "Asset Category Master"; });
     $("mapNote").textContent = "These sheets in the file don't match a sheet in this workspace. Keep each as a new custom sheet (its columns come from its heading row), put it into an existing sheet, or leave it out.";
-    $("mapRows").innerHTML = un.map(function (n, i) { var R = sheetRows(wb.Sheets[n]), hr = headerRowOf(R), nc = (R[hr] || []).filter(function (v) { return String(v).trim(); }).length;
-      return "<div class='mapr'><div><b>" + esc(n) + "</b><small>" + Math.max(0, R.length - hr - 1) + " rows · " + nc + " columns</small></div>" +
+    $("mapRows").innerHTML = un.map(function (n) { var R = bk.head(n), hr = headerRowOf(R), nc = (R[hr] || []).filter(function (v) { return String(v).trim(); }).length;
+      return "<div class='mapr'><div><b>" + esc(n) + "</b><small>" + Math.max(0, bk.count(n) - hr - 1).toLocaleString() + " rows · " + nc + " columns</small></div>" +
         "<select data-f='to' aria-label='What to do with " + esc(n) + "'><option value='new'>Add as a new custom sheet</option>" + targets.map(function (t) { return "<option value='to:" + esc(t) + "'>Put into the " + esc(t) + " sheet</option>"; }).join("") + "<option value='skip'>Leave it out</option></select>" +
         "<select data-f='mod' aria-label='Facilio module for " + esc(n) + "'><option value=''>Facilio module…</option>" + MODULES.map(function (m) { return "<option>" + esc(m) + "</option>"; }).join("") + "</select></div>"; }).join("");
-    var rename = function (from, to) { wb.Sheets[to] = wb.Sheets[from]; delete wb.Sheets[from]; wb.SheetNames[wb.SheetNames.indexOf(from)] = to; };
     $("mapOk").onclick = function () {
-      var els = $("mapRows").querySelectorAll(".mapr"), notes = [];
+      var els = $("mapRows").querySelectorAll(".mapr"), notes = [], names = bk.names.slice();
       un.forEach(function (n, i) {
         var to = els[i].querySelector("[data-f=to]").value, mod = els[i].querySelector("[data-f=mod]").value;
-        if (to === "skip") { delete wb.Sheets[n]; wb.SheetNames = wb.SheetNames.filter(function (x) { return x !== n; }); notes.push(n + " left out"); }
-        else if (to.indexOf("to:") === 0) { var t = to.slice(3); if (wb.SheetNames.indexOf(t) >= 0) notes.push(n + " not used: the file already has a " + t + " sheet"); else rename(n, t); }
-        else { var d = defFromSheet(n, wb.Sheets[n], mod); if (!d) return; state.sheets.push(d); state.tabs[d.key] = []; registerCustom(d); if (d.name !== n) rename(n, d.name); }
+        if (to === "skip") { plan.skip.push(n); notes.push(n + " left out"); }
+        else if (to.indexOf("to:") === 0) { var t = to.slice(3); if (names.indexOf(t) >= 0) { plan.skip.push(n); notes.push(n + " not used: the file already has a " + t + " sheet"); } else { plan.renames.push([n, t]); names[names.indexOf(n)] = t; } }
+        else { var d = defFromRows(n, bk.head(n), mod); if (!d) return; state.sheets.push(d); state.tabs[d.key] = []; registerCustom(d); if (d.name !== n) plan.renames.push([n, d.name]); }
       });
-      indexSheets(); rebuildAll(); $("dlgMap").close(); if (notes.length) toast(notes.join(". ") + "."); busy("Checking the data…", 70); later(done);
+      indexSheets(); rebuildAll(); $("dlgMap").close(); if (notes.length) toast(notes.join(". ") + "."); busy("Checking the data…", 70); later(function () { done(plan); });
     };
     $("mapCancel").onclick = function () { $("dlgMap").close(); toast("Import cancelled. Nothing changed."); };
     $("dlgMap").showModal();
   }
-  function importWorkbook(wb, fileName) {
+  function finishImport(bk, plan, name) {
+    setCustomRules();
+    var fail = function (e) { busy(); console.error(e); toast("The file couldn't be read as an onboarding workbook."); };
+    if (bk.wb) {
+      var wb = bk.wb, res;
+      plan.skip.forEach(function (n) { delete wb.Sheets[n]; wb.SheetNames = wb.SheetNames.filter(function (x) { return x !== n; }); });
+      plan.renames.forEach(function (p) { wb.Sheets[p[1]] = wb.Sheets[p[0]]; delete wb.Sheets[p[0]]; wb.SheetNames[wb.SheetNames.indexOf(p[0])] = p[1]; });
+      try { res = OnboardingValidator.validate(wb, RULES); } catch (e) { fail(e); return; }
+      importResult(res, wb.SheetNames, name); return;
+    }
+    ask({ kind: "import", skip: plan.skip, renames: plan.renames, rules: RULES }).then(function (r) { if (r.error) throw new Error(r.error); importResult({ data: r.data, lists: r.lists }, r.sheetNames, name); }).catch(fail);
+  }
+  function importResult(res, sheetNames, fileName) {
         try {
-          setCustomRules(); var res = OnboardingValidator.validate(wb, RULES), D = res.data || {}, n = 0, fresh = freshState(); fresh.seenWalk = true; fresh.sheets = state.sheets.slice();
+          var D = res.data || {}, n = 0, fresh = freshState(); fresh.seenWalk = true; fresh.sheets = state.sheets.slice();
           Object.keys(TABLES).forEach(function (tab) {
             if (tab === "cat" || !D[tab]) return;
             var cols = TABLES[tab].baseCols, extra = D[tab].custom || [];
@@ -1225,10 +1314,10 @@
               }).concat(extra.map(function (x) { var v = rec["~" + x.h]; return v == null ? "" : (v instanceof Date ? v.toISOString().slice(0, 10) : String(v)); }));
             });
           });
-          GUIDE.optionalSheets.forEach(function (s) { fresh.enabled[s] = wb.SheetNames.some(function (x) { return normH(x) === normH(s); }); });
+          GUIDE.optionalSheets.forEach(function (s) { fresh.enabled[s] = sheetNames.some(function (x) { return normH(x) === normH(s); }); });
           if (res.lists && res.lists.assetCategory && res.lists.assetCategory.sheet) fresh.tabs.cat = res.lists.assetCategory.values.map(function (v) { return [v]; });
-          fresh.importSettings = state.importSettings || {}; state = fresh; rebuildAll(); undoStack = []; redoStack = []; save(); switchSheet("Site"); runValidate();
-          busy(); toast("Imported " + n + " rows from " + fileName + ". Press Check for errors to see what needs fixing.");
+          fresh.importSettings = state.importSettings || {}; state = fresh; rebuildAll(); undoStack = []; redoStack = []; save(); switchSheet("Site"); busy();
+          toast("Imported " + n.toLocaleString() + " rows from " + fileName + ". Press Check for errors to see what needs fixing."); checkInBackground();
         } catch (e) { busy(); console.error(e); toast("The file couldn't be read as an onboarding workbook."); }
   }
 
@@ -1322,11 +1411,11 @@
       { target: function () { return [$("grid")]; }, enter: function () { if (state.active === "Overview") switchSheet("Site"); }, title: "The sheet", body: "Laid out exactly like the template: title, headings, the template's guidance row, then data rows. Type to replace a value, or double-click a cell (or press F2) to edit the text inside it; Esc cancels. Enter, Tab and the arrow keys move. Click or drag across row numbers or column letters to select whole rows or columns, and right-click them to insert or delete. Drag a column letter's edge to resize it, or double-click the edge to fit the content. Ctrl+Arrow jumps to the edge of the data; Ctrl+Enter fills every selected cell with the typed value. Drag the small square at the corner of a selection to fill down; codes such as AHU-01 continue as AHU-02. Copy and paste work with Excel and Google Sheets." },
       { target: function () { var el = rowsLayer.querySelector(".sel"); return el ? [el] : [$("grid")]; }, title: "Dropdowns", body: "Cells with a ▾ offer a list. Lists linked to other sheets only show what has been entered there, so names always match. Alt + Down opens the list from the keyboard." },
       { target: function () { return [$("tabs")]; }, title: "Sheet tabs", body: "One tab per template sheet. The red number is the count of problems that block the import; a green tick means the sheet has data and no blocking problems." },
-      { target: function () { return [$("btnAddSheet")]; }, title: "Add or remove sheets", body: "Inventory, Tenants and Tenant Contact depend on the onboarding scope. Remove them with × on the tab, or add them back here." },
+      { target: function () { return [$("btnAddSheet")]; }, title: "Add sheets", body: "Add back Inventory, Tenants or Tenant Contact, or make a custom sheet for another module. Right-click a tab to edit, duplicate or delete a custom sheet." },
       { target: function () { return [$("panel")]; }, title: "Guide and Issues", body: "Guide explains the sheet column by column. Issues lists every problem on the sheet; selecting one jumps to the cell." },
       { target: function () { return [$("status")]; }, title: "Import readiness", body: "Shows whether the workbook is ready to import, how many rows are entered and how many problems remain." },
-      { target: function () { return [$("btnImport")]; }, title: "Import Excel", body: "Loads a filled onboarding workbook into the workspace, so it can be checked and corrected here. A file can also be dropped anywhere on the page." },
-      { target: function () { return [$("btnReport")]; }, title: "Check report", body: "Every problem across all sheets, with filters and a downloadable Excel report." },
+      { target: function () { return [$("btnImport")]; }, title: "Import Excel", body: "Loads a filled onboarding workbook, or the filled onboarding page (HTML), so it can be checked and corrected here. Sheets the workspace does not have can become custom sheets. A file can also be dropped anywhere on the page." },
+      { target: function () { return [$("btnReport")]; }, title: "Check for errors", body: "Checks every sheet: records checked, valid, with errors and duplicates, sheet by sheet, then every problem with its fix. Select one to jump to the cell, or download the report." },
       { target: function () { return [$("btnExport")]; }, title: "Download workbook", body: "Creates the onboarding workbook in Facilio's template format, ready to send. Data is saved only in this browser, so download regularly." },
       { target: function () { return [$("btnTheme")]; }, title: "Light or dark", body: "Switches between the light and dark theme. The choice is remembered." }
     ];
@@ -2179,7 +2268,18 @@
   /* ---------------- start ---------------- */
   if (sheetList().indexOf(state.active) < 0) state.active = "Overview";
   rebuildAll(); relayout(); var fr0 = firstDataRow(); sel = { r: fr0, c: 0, r2: fr0, c2: 0 };
-  renderHead(); renderBody(); renderFx(); renderTabs(); renderPanel(); runValidate();
+  renderHead(); renderBody(); renderFx(); renderTabs(); renderPanel();
+  if (state.idb) {   /* large saved work: read it back from IndexedDB */
+    busy("Opening your saved work…", 40);
+    idb("readonly", function (st) { return st.get(PID); }).then(function (raw) {
+      var s1 = raw ? JSON.parse(raw) : null; busy();
+      if (!s1 || s1.v !== 2) { delete state.idb; toast("The saved work couldn't be found in this browser. Import your workbook to carry on."); return; }
+      ["custom", "colOrder", "fmt", "colw", "filters"].forEach(function (k) { if (!s1[k]) s1[k] = {}; }); if (!s1.sheets) s1.sheets = [];
+      s1.sheets.forEach(function (d) { if (!TABLES[d.key]) { registerCustom(d); indexSheets(); } });
+      Object.keys(TABLES).forEach(function (k) { if (!s1.tabs[k]) s1.tabs[k] = []; });
+      state = s1; rebuildAll(); undoStack = []; redoStack = []; switchSheet(sheetList().indexOf(state.active) >= 0 ? state.active : "Overview", true); $("saveState").textContent = "Restored from this browser (large workbook)"; checkInBackground();
+    }).catch(function (e) { busy(); delete state.idb; console.error(e); toast("The saved work couldn't be read from this browser."); });
+  } else checkInBackground();
   if (anyData()) $("saveState").textContent = "Restored from this browser";
   if (!state.seenWalk) openWalk();
 })();

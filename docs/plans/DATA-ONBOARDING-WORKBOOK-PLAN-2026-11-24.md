@@ -39,3 +39,12 @@ Verified in the skill text; the app's rules come from the Facilio Implementation
 - Site Type list: the app spells "Commerical"; fixed to "Commercial" (the old spelling is still accepted). The skill's generic template uses a different list (Office/Retail/Wellness/Production/Warehouse): not changed.
 - Yes/No columns: the importer needs true/false (skill VR 17); the intake workbook keeps Yes/No, converted when the import files are made.
 - Not changed, needs a decision: Site Full Address mandatory in the skill, optional here; No. of Buildings and No of Floors mandatory here, silent in the skill; Space Floor optional in the skill; Tenant Site, Tenant Type and phone mandatory in the skill; asset duplicate names with different serial numbers are informational in the skill; inventory Bin column.
+
+## Also built (user, 24 Nov 2026: "make use of all module fields … custom fields in the module and entire custom module with basic system fields")
+- A custom sheet can start from a Facilio module's fields: the 16 template tables and the 12 extra modules in `public/onboarding/templates.json` (Tenant Unit, Client, Client Contact, Client Portfolio, Storeroom, Item Type, Item, Tool Type, Tool, Contract, SLA Priority, Compliance). A custom module starts with Name (mandatory), Description and Site; the org's package has the final field list, so check it there.
+- Custom fields on any sheet have a type, a mandatory flag and dropdown values, or link to Site, Building, Asset, Vendor, Tenant or User; they are checked like template columns (`rules.custom` in `05-engine.js`).
+
+## Measured (local, 24 Nov 2026, Edge, 100,001 asset rows)
+- Before: an import stopped at 19,999 rows without saying so (the checker read 20,000 rows a sheet); a full check took 5.7 s and every edit froze the page for about 4.8 s.
+- After: all 100,001 rows imported in 8.9 s with no main-thread block over 0.35 s (read and check in `check-worker.js`); Check for errors in 2.7 s, longest block 0.15 s; an edit causes no long task; the work is kept in IndexedDB and restored on reload. The missing Name and the duplicate in the 100,001 rows were found.
+- Limits: the checker reads 200,000 rows a sheet and says so when a sheet is longer; the project copy stays at 2 MB (a larger workspace stays in the browser and the downloaded workbook); Excel's own limit is 1,048,576 rows a sheet; the browser's memory sets the real ceiling on a weak laptop.

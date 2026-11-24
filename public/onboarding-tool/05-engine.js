@@ -114,15 +114,18 @@
     if (cell.t === "d") return cell.v;
     return cell.v;
   }
+  /* rows read per sheet: above the 100,000 the workspace supports, below Excel's own 1,048,576; a longer sheet is reported, never cut silently */
+  var MAX_ROWS = 200000;
   function readGrid(ws) {
     if (!ws || !ws["!ref"]) return [];
     var U = X().utils, r = U.decode_range(ws["!ref"]), out = [];
-    var maxR = Math.min(r.e.r, r.s.r + 20000), maxC = Math.min(r.e.c, r.s.c + 150);
+    var maxR = Math.min(r.e.r, r.s.r + MAX_ROWS), maxC = Math.min(r.e.c, r.s.c + 150);
     for (var R = r.s.r; R <= maxR; R++) {
       var row = [];
       for (var C = r.s.c; C <= maxC; C++) row.push(cellVal(ws[U.encode_cell({ r: R, c: C })]));
       out.push({ excelRow: R + 1, cells: row });
     }
+    if (r.e.r > maxR) out.cut = r.e.r - maxR;
     return out;
   }
   function aliasIndex(ent) {
@@ -210,6 +213,7 @@
       }
       claimed[sn] = true;
       var grid = grids[sn] || (grids[sn] = readGrid(wb.Sheets[sn]));
+      if (grid.cut && !grid.told) { grid.told = true; add({ sheet: sn, row: "", field: "", value: "", severity: "Critical", check: cStruct, issue: "This sheet has " + grid.cut + " more rows than the " + MAX_ROWS + " that can be read in one go, so those rows were not read.", suggestion: "Split the sheet into two workbooks and import them one after the other." }); }
       var idx = aliasIndex(ent), best = { s: 0, at: -1 };
       for (var i = 0; i < grid.length; i++) {
         var s = headerScore(grid[i].cells, idx);

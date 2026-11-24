@@ -485,3 +485,7 @@ input.namebox:focus{box-shadow:inset 0 0 0 2px var(--primary-hover)}
 #dlgCol select,#dlgCol .cc-list input{height:34px;border:1px solid var(--line);border-radius:4px;padding:0 10px;background:var(--surface);color:var(--ink);font:400 13.5px/20px Roboto,sans-serif}
 #dlgCol .cc-list{display:flex;flex-direction:column;gap:6px;font:500 12px/18px Roboto,sans-serif;color:var(--muted);margin-top:12px}
 #dlgCol .cc-list input:disabled{background:var(--rn)}
+
+#status .stale{color:var(--warn);font-weight:500;margin-right:14px}
+.brand{flex:0 0 auto}
+.save{min-width:0;overflow:hidden;text-overflow:ellipsis}
