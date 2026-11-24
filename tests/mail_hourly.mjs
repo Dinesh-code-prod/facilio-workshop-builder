@@ -40,4 +40,10 @@ await t('no duplicate mail screen: the Tasks page has no Email tab and links to 
   assert.match(fs.readFileSync('src/shell.js', 'utf8'), /\['tasks', 'Tasks'\], \['mailtab', 'Customer mail'\]/); assert.match(fs.readFileSync('work/server/_mailapi.mjs', 'utf8'), /view: 'mailtab'/);
   assert.match(fs.readFileSync('work/server/api.mjs', 'utf8'), /filter\(v => v && v\.key && !v\.id\)/, 'the shared-mailbox Inbox never lists Claude-found mail'); assert.ok(fs.existsSync('archive/hidden-tabs/tasks-email-tab.js'), 'the old tab is archived');
 });
+await t('Claude\'s mail search also covers the customer\'s stakeholders, mail with help@facilio.com on it, and a one-year look back on request', async () => {
+  const { KINDS } = await import('../work/server/_jobs.mjs'); const r = KINDS.fetch_mail.recipe; assert.match(r, /get_document people/); assert.match(r, /help@facilio\.com/); assert.match(r, /lookbackDays/); assert.match(r, /NEW person writing from the customer's domain/);
+  const job = newJob('jb_0123456789abcdef02', { kind: 'fetch_mail', key: 'lookback', params: { ref: 'lookback:365' } }, 'ana@x.com', new Date().toISOString()); col('jb.p1')[job.id] = job;
+  const b = await CONNECTOR.jobs_claim({ email: 'ana@x.com', id: 'x' }, { project: 'p1', id: job.id }); assert.equal(b.lookbackDays, 365);
+  assert.match(fs.readFileSync('src/mailinbox.js', 'utf8'), /data-act="mlFindOld"/);
+});
 console.log('mail_hourly: ' + n + ' checks passed');
