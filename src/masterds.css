@@ -327,3 +327,13 @@ html body .main .hp-banner.hp-line p:not(#DS) { flex: 1 1 420px; margin: 0 !impo
 html body .main .hp-banner.hp-line p b:not(#DS) { color: var(--ds-ink) !important; font-weight: 600 !important; }
 html body .main .hp-banner.hp-line .hp-ba:not(#DS) { display: flex; gap: 2px; }
 html body .main .hp-banner.hp-line .btn.ghost:not(#DS) { color: var(--ds-blue) !important; background: none !important; box-shadow: none !important; }
+/* Status inside tables (UI/UX overhaul batch 5): calm states are a dot and a word, not a filled pill; attention states (to be confirmed, red) keep their soft tint so they stand out */
+html body :is(.main, .adm-main) table .tag:is(.green, .verified, .system, .blue, .low, .ok, .done, .grey, .gray):not(#DS) { background: none !important; box-shadow: none !important; border: 0 !important; padding: 0 !important; min-height: 0 !important; color: var(--ds-text2) !important; font-weight: 500 !important; display: inline-flex !important; align-items: center !important; gap: 6px !important; }
+html body :is(.main, .adm-main) table .tag:is(.green, .verified, .system, .blue, .low, .ok, .done, .grey, .gray):not(#DS)::before { content: ""; width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--ds-border-strong); }
+html body :is(.main, .adm-main) table .tag:is(.green, .verified, .ok, .done):not(#DS)::before { background: var(--ds-ok); }
+html body :is(.main, .adm-main) table .tag:is(.blue, .system):not(#DS)::before { background: var(--ds-blue); }
+/* keyboard focus on the review pieces is always visible */
+html body :is(.rv-table summary, .rv-strip button.rv-n, .rv-menu > summary, .rv-table td.rv-act .btn, .rv-table input[type="checkbox"]):focus-visible:not(#DS) { outline: 2px solid var(--ds-blue) !important; outline-offset: 2px !important; border-radius: 4px; }
+/* Admin tables: a healthy state is a dot and a word too; attention and critical chips keep their tint */
+html body .adm-main table .hchip.h-healthy:not(#DS) { background: none !important; box-shadow: none !important; border: 0 !important; padding: 0 !important; color: var(--ds-text2) !important; font-weight: 500 !important; display: inline-flex !important; align-items: center !important; gap: 6px !important; }
+html body .adm-main table .hchip.h-healthy:not(#DS)::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ds-ok); flex: none; }
