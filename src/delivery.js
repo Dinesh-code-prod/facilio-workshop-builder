@@ -42,7 +42,7 @@
 
   // ---------- UAT ----------
   ACT.dlUatGuide = () => { S.ui.ugOpen = null; V.go('guidebuilder'); setTimeout(() => { if (ACT.ugNewUat) ACT.ugNewUat(); }, 200); };
-  ACT.dlUatGuideOpen = a => { S.ui.ugOpen = a.getAttribute('data-id'); S.ui.ugTab = 'content'; V.go('guidebuilder'); };
+  ACT.dlUatGuideOpen = a => { S.ui.ugOpen = a.getAttribute('data-id'); S.ui.ugTab = 'doc'; V.go('guidebuilder'); };
   const sessions = () => I().list('uat').filter(u => cust() ? u.published : true).sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
   function uatTab() {
     const ss = sessions(); const can = canEdit(); const mods = F.allModules().filter(m => m.inScope).sort((a, b) => a.label.localeCompare(b.label)); const open = V.actionsFor ? V.actionsFor : () => [];

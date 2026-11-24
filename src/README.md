@@ -221,6 +221,7 @@ The customer user guide builder, video to guide and the learning library.
 | [guidelearn.js](guidelearn.js) | Customer User Guide — module learning sections. |
 | [guidelib.js](guidelib.js) | Module learning library for the Customer User Guide — standard Facilio Connected CMMS content per business module: illustrative screens, overview, worked scenarios, standard fields, process, video... |
 | [guideslist.js](guideslist.js) | Training (stage 5): one simple page: make a guide with Claude (four kinds), the Comet videos (a row per prototype of the Mockup tab and per test scenario of UAT, with the brief and the link), what... |
+| [docpaper.js](docpaper.js) | The document paper: guides (Document tab of the User Guide Builder) and the FTR report drafted on A4 sheets like the BRD preview, editable in place, and the same look as one self-contained HTML file. Pure code (tests/guide_docs.mjs). |
 | [guideextra.js](guideextra.js) | Project guides: guides the team adds for one project next to the standard Module guides (Word, text, Markdown or HTML, with pictures). |
 | [guideupdate.js](guideupdate.js) | Update the user guide from an organisation configuration ZIP (tabs "Update from configuration" and "Version history" in the User Guide Builder). |
 | [learnlib.js](learnlib.js) | Module guides: the standard Facilio guide for each business module (work orders, service requests, field service, preventive maintenance, assets, inspections, vendors, inventory, budgets), ported... |
