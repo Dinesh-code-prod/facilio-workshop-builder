@@ -6,7 +6,7 @@
   'use strict';
   const BLOCKS = { text: 'Text', links: 'Buttons and links', numbers: 'Live numbers', checklist: 'Checklist', table: 'Table', ask: 'Ask Claude button', embed: 'Facilio tool or video' };
   const METRICS = { open: 'Open tasks', overdue: 'Overdue tasks', done: 'Done tasks', progress: 'Progress against plan', golive: 'Go-live date', stage: 'Current stage', risks: 'Open risks' };
-  const EMBED_HOSTS = ['support-desk.facilio.run', 'meteor.facilio.work', 'comet.facilio.work', 'facilio.com', 'www.facilio.com', 'facilio.run'];   // the hosts the app's frame policy allows
+  const EMBED_HOSTS = ['support-desk.facilio.work', 'meteor.facilio.work', 'comet.facilio.work', 'facilio.com', 'www.facilio.com', 'facilio.run'];   // the hosts the app's frame policy allows
   const LIMIT = { tabs: 8, blocks: 30, links: 12, items: 40, cols: 8, rows: 60 };
   const clip = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').slice(0, n);
   const uid = p => (p || 'b') + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
