@@ -4100,3 +4100,21 @@ html body :is(.main nav.mt-bar, nav.adx-tabs) > .mt-in:not(#q#q#q#q#q#q#q#q#q#q#
 html body :is(.main nav.mt-bar, nav.adx-tabs) > .mt-in.here:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q) { border-color: var(--mt-line) !important; box-shadow: 0 0 0 3px var(--mt-soft), 0 1px 2px rgba(16, 24, 40, .05) !important; }
 html body :is(.main nav.mt-bar, nav.adx-tabs) .mt-capic:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q) { background: var(--mt) !important; color: #fff !important; }
 html body :is(.main nav.mt-bar, nav.adx-tabs) > .mt-in:not(.here) .mt-capic:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q) { background: var(--mt-soft) !important; color: var(--mt) !important; }
+
+/* Delivery journey (24 Nov 2026): plan dates under each stage, arcs solid up to the last finished stage, a section on the team Home */
+body .iso-dt:not(#_):not(#__){font-size:10.5px;fill:#475467;font-weight:500}
+body .iso-arc:not(.past):not(#_):not(#__){stroke-opacity:.35}
+body .iso-when:not(#_):not(#__){display:block;font-size:12px;color:#475467;margin-top:2px}
+.jr-static{margin-top:16px}
+
+/* Top bar spacing (user, 24 Nov 2026: the bar was crammed to the left). The project closes the left group and everything after it goes to the right edge, with or
+   without the Claude helper light; in the customer preview the preview tag and Exit preview sit next to the project, then the actions go right. */
+@media (min-width: 1001px) {
+  html body.in-proj header.navbar .nb-proj:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin-right: auto !important; }
+  html body.in-proj header.navbar .hp-chip:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin-left: 0 !important; }
+  html body.in-proj header.navbar .right > .tag.blue:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { order: 5; flex: none; margin-left: 4px !important; }
+  html body.in-proj header.navbar [data-act="custPreviewExit"]:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { order: 6; flex: none; }
+  html body.in-proj header.navbar:has([data-act="custPreviewExit"]) .nb-proj:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin-right: 0 !important; }
+  html body.in-proj header.navbar [data-act="custPreviewExit"]:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin-right: auto !important; }
+  html body.in-proj header.navbar:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { gap: 10px; padding-left: 20px; padding-right: 20px; }
+}
