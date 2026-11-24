@@ -252,8 +252,78 @@ html body .main .tg2 .tg2-bar > i:not(#DS) { background: var(--ds-blue) !importa
 @media print { html body .main .page-header:not(#DS) { border-bottom: 0 !important; } }
 
 /* ---------- Leftover pills found by tests/ui/button-colour-audit.mjs: the back link, filter chips, "Open the plan" links and the Team Guide tiles take the shape scale ---------- */
-html body .main .nav-back:not(#DS) { border-radius: var(--ds-r-btn) !important; color: var(--ds-ink) !important; box-shadow: inset 0 0 0 1px var(--ds-border-strong) !important; font-family: var(--ds-head) !important; font-weight: 600 !important; }
-html body .main .nav-back:hover:not(#DS) { background: var(--ds-subtle) !important; }
+/* the back link (UI/UX overhaul): a quiet text link above the page, not a bordered button */
+html body .main .nav-back:not(#DS) { display: inline-flex !important; align-items: center !important; justify-content: flex-start !important; align-self: flex-start !important; order: -2 !important; width: auto !important; gap: 6px !important; background: none !important; border: 0 !important; box-shadow: none !important; padding: 2px 0 !important; margin: 0 0 6px !important; min-height: 0 !important; height: auto !important; border-radius: 4px !important; color: var(--ds-text2) !important; font: 500 13px/1.4 var(--ds-body) !important; }
+html body .main .nav-back:hover:not(#DS) { background: none !important; color: var(--ds-blue) !important; text-decoration: underline !important; }
 html body .main :is(.tr-chip, .sd-go):not(#DS) { border-radius: var(--ds-r-ctl) !important; }
 html body .main .tr-chip:not(.on):not(#DS) { color: var(--ds-ink) !important; box-shadow: inset 0 0 0 1px var(--ds-border-strong) !important; }
 html body .main .tg2 .tg2-tile:not(#DS) { border-radius: var(--ds-r-card) !important; }
+
+/* ---------- Review tables and the count strip (UI/UX overhaul, 24 Nov 2026; docs/plans/UI-UX-OVERHAUL-PLAN-2026-11-24.md) ----------
+   Review, check and sign-off pages: one quiet line of counts (V.countStrip), one toolbar line, then one table with group rows; status is a dot and a word
+   (V.rvStatus colours only the dot, so amber stays readable), row actions are quiet text buttons, the page keeps one solid button. */
+html body .rv-strip:not(#DS) { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px; margin: 4px 0 14px; font: 400 13.5px/1.5 var(--ds-body); color: var(--ds-text2); }
+html body .rv-strip .rv-n:not(#DS) { display: inline-flex; align-items: baseline; gap: 5px; background: none; border: 0; box-shadow: none; padding: 2px 0; margin: 0; min-height: 0; color: var(--ds-text2); font: inherit; border-radius: 4px; }
+html body .rv-strip .rv-n b:not(#DS) { font: 600 15px/1.2 var(--ds-head); color: var(--ds-ink); }
+html body .rv-strip button.rv-n:not(#DS) { cursor: pointer; border-bottom: 2px solid transparent; border-radius: 0; }
+html body .rv-strip button.rv-n:hover:not(#DS) { color: var(--ds-ink); }
+html body .rv-strip button.rv-n.on:not(#DS) { color: var(--ds-blue); border-bottom-color: var(--ds-blue); }
+html body .rv-strip button.rv-n.on b:not(#DS) { color: var(--ds-blue); }
+html body .rv-strip .rv-n.warn b:not(#DS) { color: #B45309; }
+html body .rv-strip .rv-n.bad b:not(#DS) { color: var(--ds-bad); }
+html body .rv-toolbar:not(#DS) { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px; }
+html body .rv-toolbar input[type="search"]:not(#DS) { flex: 0 1 280px; min-width: 180px; }
+html body .rv-toolbar select:not(#DS) { width: auto; min-width: 150px; }
+html body .rv-toolbar .rv-sp:not(#DS) { flex: 1 1 auto; }
+html body .rv-toolbar .rv-bulk:not(#DS) { display: inline-flex; align-items: center; gap: 8px; font: 500 13px/1.4 var(--ds-body); color: var(--ds-ink); }
+html body .rv-wrap:not(#DS) { overflow-x: auto; border: 1px solid var(--ds-border); border-radius: var(--ds-r-card); background: var(--ds-page); box-shadow: none; }
+html body table.rv-table:not(#DS) { width: 100%; border-collapse: collapse; font: 400 14px/1.45 var(--ds-body); color: var(--ds-ink); background: none; border: 0; margin: 0; }
+html body table.rv-table thead th:not(#DS) { position: sticky; top: 0; z-index: 1; background: var(--ds-canvas); color: var(--ds-text2); font: 600 12.5px/1.3 var(--ds-head); text-transform: none; letter-spacing: 0; text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--ds-border); white-space: nowrap; }
+html body table.rv-table tbody td:not(#DS) { padding: 10px 12px; border-bottom: 1px solid var(--ds-border); vertical-align: top; background: none; }
+html body table.rv-table tbody tr:last-child td:not(#DS) { border-bottom: 0; }
+html body table.rv-table tbody tr:not(.rv-group):hover td:not(#DS) { background: var(--ds-canvas); }
+html body table.rv-table tr.rv-group td:not(#DS) { background: var(--ds-subtle); font: 600 13px/1.4 var(--ds-head); color: var(--ds-ink); padding: 8px 12px; }
+html body table.rv-table tr.rv-group td small:not(#DS) { font: 400 12.5px/1.4 var(--ds-body); color: var(--ds-text2); margin-left: 8px; }
+html body table.rv-table .rv-sub:not(#DS) { display: block; margin-top: 2px; font-size: 12.5px; color: var(--ds-text2); }
+html body table.rv-table td.rv-act:not(#DS) { text-align: right; white-space: nowrap; width: 1%; }
+html body table.rv-table td.rv-act .btn + .btn:not(#DS) { margin-left: 4px; }
+html body table.rv-table td.rv-pick:not(#DS), html body table.rv-table th.rv-pick:not(#DS) { width: 32px; padding-right: 0; }
+html body table.rv-table details.rv-more summary:not(#DS) { cursor: pointer; color: var(--ds-blue); font-size: 13px; list-style: none; display: inline; }
+html body table.rv-table details.rv-more summary:not(#DS)::-webkit-details-marker { display: none; }
+html body table.rv-table details.rv-more[open] summary:not(#DS) { margin-bottom: 6px; display: block; }
+html body table.rv-table details.rv-more p:not(#DS) { margin: 0 0 4px; font-size: 13px; color: var(--ds-text2); }
+html body .rv-st:not(#DS) { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font: 500 13px/1.4 var(--ds-body); color: var(--ds-text2); }
+html body .rv-st:not(#DS)::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ds-border-strong); flex: none; }
+html body .rv-st.ok:not(#DS)::before { background: var(--ds-ok); }
+html body .rv-st.warn:not(#DS)::before { background: var(--ds-warn); }
+html body .rv-st.bad:not(#DS)::before { background: var(--ds-bad); }
+html body .rv-st.info:not(#DS)::before { background: var(--ds-blue); }
+html body .rv-st.bad:not(#DS) { color: var(--ds-bad); }
+html body .rv-note:not(#DS) { margin: 0 0 12px; font: 400 13.5px/1.5 var(--ds-body); color: var(--ds-text2); }
+html body .rv-empty:not(#DS) { padding: 28px 16px; text-align: center; color: var(--ds-text2); font-size: 14px; }
+html body table.rv-table td.rv-act .btn.ghost:not(#DS) { color: var(--ds-blue) !important; background: none !important; box-shadow: none !important; }
+html body table.rv-table td.rv-act .btn.ghost:hover:not(#DS) { background: var(--ds-selected) !important; }
+/* a small menu of related actions behind one button (Checks & validations: Run a check) */
+html body .rv-menu:not(#DS) { position: relative; display: inline-block; }
+html body .rv-menu > summary:not(#DS) { list-style: none; }
+html body .rv-menu > summary:not(#DS)::-webkit-details-marker { display: none; }
+html body .rv-menu > summary:not(#DS)::after { content: ""; width: 6px; height: 6px; margin-left: 8px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); }
+html body .rv-menu-p:not(#DS) { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; display: flex; flex-direction: column; gap: 2px; min-width: 240px; padding: 6px; background: var(--ds-page); border: 1px solid var(--ds-border); border-radius: var(--ds-r-card); box-shadow: var(--ds-sh-float); }
+html body .main .rv-menu .rv-menu-p .btn.sm:not(#DS) { justify-content: flex-start !important; width: 100% !important; background: none !important; box-shadow: none !important; border: 0 !important; }
+html body .main .rv-menu .rv-menu-p .btn.sm:hover:not(#DS) { background: var(--ds-subtle) !important; }
+html body .rs-head .rv-strip:not(#DS) { margin: 0; }
+/* Checks & validations inside the review table: the select-all tick sits in its group row; the filter bar stays sticky but plain; no coloured row edge (the status says it) */
+html body .rv-table .rs-pick:not(#DS) { position: static !important; }
+html body .rv-toolbar.rs-bulk:not(#DS) { background: var(--ds-page) !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; padding: 6px 0 !important; margin: 0 0 8px !important; }
+html body .rv-table tr.rs-f > td:first-child:not(#DS) { box-shadow: none !important; }
+/* the plan figures (Planned / Actual / Variance / Source) on UAT, Go-live and Plan vs actual: one quiet line of figures, not four boxes */
+html body .main .pl-kpis:not(#DS) { display: flex !important; flex-wrap: wrap; gap: 6px 28px !important; margin: 4px 0 12px !important; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; grid-template-columns: none !important; }
+html body .main .pl-kpis > div:not(#DS) { display: flex !important; flex-direction: row-reverse; align-items: baseline; gap: 6px; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; min-height: 0 !important; }
+html body .main .pl-kpis > div span:not(#DS) { font: 400 13.5px/1.4 var(--ds-body) !important; color: var(--ds-text2) !important; text-transform: none !important; letter-spacing: 0 !important; }
+html body .main .pl-kpis > div b:not(#DS) { font: 600 15px/1.2 var(--ds-head) !important; color: var(--ds-ink) !important; }
+/* the Claude helper reminder: one quiet line above the page, not a banner with a solid button */
+html body .main .hp-banner.hp-line:not(#DS) { display: flex !important; align-items: center !important; flex-wrap: wrap; gap: 4px 12px !important; margin: 0 0 12px !important; padding: 8px 12px !important; background: var(--ds-canvas) !important; border: 1px solid var(--ds-border) !important; border-radius: var(--ds-r-ctl) !important; box-shadow: none !important; }
+html body .main .hp-banner.hp-line p:not(#DS) { flex: 1 1 420px; margin: 0 !important; font: 400 13px/1.45 var(--ds-body) !important; color: var(--ds-text2) !important; }
+html body .main .hp-banner.hp-line p b:not(#DS) { color: var(--ds-ink) !important; font-weight: 600 !important; }
+html body .main .hp-banner.hp-line .hp-ba:not(#DS) { display: flex; gap: 2px; }
+html body .main .hp-banner.hp-line .btn.ghost:not(#DS) { color: var(--ds-blue) !important; background: none !important; box-shadow: none !important; }

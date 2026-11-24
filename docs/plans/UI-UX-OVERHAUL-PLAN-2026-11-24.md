@@ -39,6 +39,12 @@ BRD Draft and Solution document (the document editors) only get the button and h
 
 No feature, record type or connector tool changes, so the connector, hand-off prompts and skills text stay as they are. `node tests/claude_launch.mjs`, `node tests/connector_skills.mjs` and `tests/ui/claude-handoff-check.mjs` are run anyway, because the Open in Claude buttons sit in the toolbars being moved.
 
+## Answers (user, 24 Nov 2026)
+- Plan approved: all batches, in order.
+- Q1: yes, hide the stage card row in the Expanded layout.
+- Q2: yes, one combined pop-up, once per browser session.
+- Q3: no, leave the duplicate entries alone.
+
 ## Your call (asked before the batch that needs it)
 
 - **Q1 (batch 1).** In the Expanded side menu, hide the stage card row above the page title? The menu already lists the same pages; Compact keeps the row.
