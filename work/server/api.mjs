@@ -311,7 +311,7 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   route('GET', '/api/health', async () => ok({ ok: true, openMode: false, runMode: true, time: now() }));
   route('GET', '/api/auth/me', async () => {
     const s = await me(); const ar = await adminRole(s); const seen = await dbGet('useen', s.id).catch(() => null);
-    return ok({ openMode: false, runMode: true, user: { id: s.id, email: s.email, name: s.name, kind: 'consultant', projectId: null, guest: false, superAdmin: ar === 'super', adminRole: ar, coachSeen: !!(seen && seen.value && seen.value.coach), introSeen: !!(seen && seen.value && seen.value.intro) }, signupEnabled: false, signupNeedsCode: false, domains: [ALLOWED_DOMAIN] });
+    return ok({ openMode: false, runMode: true, user: { id: s.id, email: s.email, name: s.name, kind: 'consultant', projectId: null, guest: false, superAdmin: ar === 'super', adminRole: ar, coachSeen: !!(seen && seen.value && seen.value.coach), introSeen: !!(seen && seen.value && seen.value.intro), navPrefs: (seen && seen.value && seen.value.nav) || {} }, signupEnabled: false, signupNeedsCode: false, domains: [ALLOWED_DOMAIN] });
   });
   // the guided walk-through opens by itself once per person (saved on the account, not in one browser); "Guide me" opens it any time
   // both flags live in one record per person, so each write keeps the other
@@ -319,6 +319,11 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   route('PUT', '/api/me/coach-seen', () => markSeen('coach'));
   // the tree intro plays once per person (user, 23 Nov 2026), saved on the account
   route('PUT', '/api/me/intro-seen', () => markSeen('intro'));
+  // the sidebar layout each person chose, one per view (user, 24 Nov 2026): expanded ('side') or compact ('top'); kept with the seen flags
+  route('PUT', '/api/me/nav', async b => { const view = String((b && b.view) || ''), layout = String((b && b.layout) || '');
+    if (!['staff', 'customer', 'admin'].includes(view) || !['side', 'top'].includes(layout)) throw new HttpError(400, 'Choose a view (staff, customer or admin) and a layout (side or top).');
+    const s = await me(); const cur = await dbGet('useen', s.id).catch(() => null); const v = Object.assign({}, cur && cur.value);
+    v.nav = Object.assign({}, v.nav, { [view]: layout }); await dbPut('useen', s.id, v); return ok({ ok: true, nav: v.nav }); });
   route('POST', '/api/auth/logout', async () => ok({ ok: true }));
 
   // projects
