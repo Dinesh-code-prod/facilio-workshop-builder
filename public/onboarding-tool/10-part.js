@@ -297,7 +297,10 @@
     L = sheetLayout(state.active);
     tops = [0]; L.rows.forEach(function (row, i) { tops.push(tops[i] + rowH(row)); });
   }
-  function colW(c) { var cw = state.colw && state.colw[state.active] && state.colw[state.active][c]; if (cw) return cw; return baseColW(state.active, c); }
+  /* hidden columns (per sheet, like Excel's Hide): width 0 and not drawn, so every position sum stays right */
+  function hiddenCols(n) { return (state.hidecols && state.hidecols[n || state.active]) || []; }
+  function isHid(c) { return hiddenCols().indexOf(c) >= 0; }
+  function colW(c) { if (isHid(c)) return 0; var cw = state.colw && state.colw[state.active] && state.colw[state.active][c]; if (cw) return cw; return baseColW(state.active, c); }
   function baseColW(sheet, c) {
     if (GEN_NAMES.indexOf(sheet) >= 0) { if (!genCache) genRefresh(); return (genCache.widths[sheet] || [])[c] || 140; }
     if (sheet === "Overview") { if (c < 2) return 40; return Math.max(124, Math.round(((SPEC.sheetCols.Overview || [])[c] || 14) * 7.4)); }
@@ -327,7 +330,7 @@
       h += "</div><div class='frozen' id='frozen'></div>";
       ghead.innerHTML = h; letters = ghead.querySelector(".letters");
     }
-    for (var i = 0; i < L.maxCol; i++) { var el = letters.children[i + 1], w = colW(i) + "px"; if (el.style.width !== w) el.style.width = w; var fzi = i < frozen(); el.style.position = fzi ? "sticky" : ""; el.style.left = fzi ? frzLeft(i) + "px" : ""; el.style.zIndex = fzi ? "4" : ""; el.classList.toggle("frz-last", fzi && i === frozen() - 1); var on = i >= cmin && i <= cmax; if (el.classList.contains("on") !== on) el.classList.toggle("on", on); }
+    for (var i = 0; i < L.maxCol; i++) { var el = letters.children[i + 1], w = colW(i) + "px"; if (el.style.width !== w) el.style.width = w; el.style.display = isHid(i) ? "none" : ""; el.classList.toggle("hid-next", !isHid(i) && isHid(i + 1)); el.classList.toggle("hid-prev", !isHid(i) && i > 0 && isHid(i - 1)); var fzi = i < frozen(); el.style.position = fzi ? "sticky" : ""; el.style.left = fzi ? frzLeft(i) + "px" : ""; el.style.zIndex = fzi ? "4" : ""; el.classList.toggle("frz-last", fzi && i === frozen() - 1); var on = i >= cmin && i <= cmax; if (el.classList.contains("on") !== on) el.classList.toggle("on", on); }
     ghead.style.width = totalWidth() + "px";
   }
   var rafPending = false;
@@ -350,7 +353,7 @@
     if (c < fz) { cls.push("frz"); if (c === fz - 1) cls.push("frz-last"); fst += "position:sticky;left:" + frzLeft(c) + "px;z-index:" + (r === sel.r && c === sel.c ? 4 : 3) + ";"; }
     if (fst.indexOf("white-space:normal") >= 0) cls.push("wrap");
     else if (row.type === "data" && info.editable && info.v && !isNumCol(info.table, c) && c + 1 < L.maxCol && !iss && !(info.editable && fmtGet(info.table, info.idx, c) && fmtGet(info.table, info.idx, c).al)) { var nx = cellInfo(r, c + 1); if (!nx.v && !ctx.cellIss[r + ":" + (c + 1)]) cls.push("spill"); }
-    return { cls: cls.join(" "), style: "width:" + colW(c) + "px;height:" + hh + "px;line-height:" + (row.type === "data" || row.kind === "gen" ? (hh - 1) + "px" : "1.3") + ";" + fst,
+    return { cls: cls.join(" "), style: (isHid(c) ? "display:none;" : "") + "width:" + colW(c) + "px;height:" + hh + "px;line-height:" + (row.type === "data" || row.kind === "gen" ? (hh - 1) + "px" : "1.3") + ";" + fst,
       html: txt + dd + fb + fh, title: fo && fo.note ? "Note: " + fo.note : (row.type === "static" && info.v && String(info.v).length > 30 ? String(info.v) : "") };
   }
   function renderBody() {
@@ -390,7 +393,7 @@
     var fz = $("frozen"); if (!fz) return;
     if (L.gen) {
       if (grid.scrollTop < RH.header) { fz.style.display = "none"; return; }
-      var hg = "<div class='corner'>1</div>"; for (var gc = 0; gc < L.maxCol; gc++) hg += "<div style='width:" + colW(gc) + "px'>" + esc(L.genHeader[gc] || "") + "</div>";
+      var hg = "<div class='corner'>1</div>"; for (var gc = 0; gc < L.maxCol; gc++) hg += "<div style='" + (isHid(gc) ? "display:none;" : "") + "width:" + colW(gc) + "px'>" + esc(L.genHeader[gc] || "") + "</div>";
       fz.innerHTML = hg; fz.style.display = "flex"; fz.style.width = totalWidth() + "px"; return;
     }
     var y = grid.scrollTop, r = rowAtY(Math.max(0, y)), row = L.rows[r];
@@ -398,7 +401,7 @@
     var nextHead = L.blocks.some(function (x) { var t0 = tops[x.headerRow - 1]; return t0 >= y - 2 && t0 < y + RH.header + 8; });
     if (!b || tops[b.headerRow - 1] + RH.header > y || nextHead) { fz.style.display = "none"; return; }
     var t = TABLES[b.table], h = "<div class='corner'>" + b.headerRow + "</div>";
-    for (var c = 0; c < L.maxCol; c++) h += "<div style='width:" + colW(c) + "px'>" + (c < t.headers.length ? esc(String(t.headers[c]).replace(/\s*\*\s*/g, " ").trim()) + (/\*/.test(t.headers[c]) ? "<span class='req'> *</span>" : "") : "") + "</div>";
+    for (var c = 0; c < L.maxCol; c++) h += "<div style='" + (isHid(c) ? "display:none;" : "") + "width:" + colW(c) + "px'>" + (c < t.headers.length ? esc(String(t.headers[c]).replace(/\s*\*\s*/g, " ").trim()) + (/\*/.test(t.headers[c]) ? "<span class='req'> *</span>" : "") : "") + "</div>";
     fz.innerHTML = h; fz.style.display = "flex"; fz.style.width = totalWidth() + "px";
   }
   function render() { relayout(); renderHead(); renderBody(); renderFx(); }
@@ -432,6 +435,7 @@
   /* ---------------- selection & navigation ---------------- */
   function select(r, c, extend) {
     r = Math.max(0, Math.min(L.rows.length - 1, r)); c = Math.max(0, Math.min(L.maxCol - 1, c));
+    if (isHid(c)) { var from = extend ? sel.c2 : sel.c, dir = c >= from ? 1 : -1, c0 = c; while (isHid(c) && c + dir >= 0 && c + dir < L.maxCol) c += dir; if (isHid(c)) { c = c0; while (isHid(c) && c - dir >= 0 && c - dir < L.maxCol) c -= dir; } }
     if (extend) { sel.r2 = r; sel.c2 = c; } else { sel.r = sel.r2 = r; sel.c = sel.c2 = c; }
     ensureVisible(extend ? sel.r2 : sel.r, extend ? sel.c2 : sel.c);
     renderHead(); renderBody(); renderFx(); renderPanel(true); refreshRibbon();
@@ -1159,7 +1163,7 @@
     names.forEach(function (n) { var S = sheetCells(n); all[n] = S; S.layout.blocks.forEach(function (b) { pos[b.table] = { sheet: n, start: b.dataStart, end: Math.max(b.dataStart, b.dataStart + lastFilled(b.table)) }; }); });
     names.forEach(function (n) {
       var S = all[n], ws = wb.addWorksheet(n);
-      for (var c = 0; c < S.layout.maxCol; c++) ws.getColumn(c + 1).width = Math.round((((state.colw[n] || {})[c]) || baseColW(n, c)) / 7.4);
+      for (var c = 0; c < S.layout.maxCol; c++) { ws.getColumn(c + 1).width = Math.round((((state.colw[n] || {})[c]) || baseColW(n, c)) / 7.4); if (hiddenCols(n).indexOf(c) >= 0) ws.getColumn(c + 1).hidden = true; }
       Object.keys(S.cells).forEach(function (k) {
         var p = k.split(":"), r = +p[0], c = +p[1] + 1, cell = S.cells[k], v = cell.v, x = ws.getCell(r, c);
         if (v && typeof v === "object" && v.date) { var d = v.date.split("-"); x.value = new Date(Date.UTC(+d[0], +d[1] - 1, +d[2])); x.numFmt = "dd/mm/yyyy"; }
@@ -1614,6 +1618,19 @@
   }
   function frozen() { return (state.freeze && state.freeze[state.active]) || 0; }
   function frzLeft(c) { var x = 46; for (var i = 0; i < c; i++) x += colW(i); return x; }
+  function hideCols() {
+    var R = selRange(), cols = []; for (var c = R.c1; c <= R.c2; c++) if (!isHid(c)) cols.push(c);
+    if (!cols.length) return; if (hiddenCols().length + cols.length >= L.maxCol) { toast("At least one column has to stay visible."); return; }
+    state.hidecols = state.hidecols || {}; state.hidecols[state.active] = hiddenCols().concat(cols).sort(function (a, b) { return a - b; });
+    var v = 0; while (isHid(v) && v < L.maxCol - 1) v++; var nx = R.c2 + 1 < L.maxCol && !isHid(R.c2 + 1) ? R.c2 + 1 : v;
+    save(); sel.c = sel.c2 = nx; renderHead(); renderBody(); renderFx(); refreshRibbon();
+    toast((cols.length === 1 ? "Column " + colLetter(cols[0]) + " is" : cols.length + " columns are") + " hidden. Right-click a column letter and choose Unhide columns to show " + (cols.length === 1 ? "it" : "them") + " again.");
+  }
+  function unhideCols() {
+    var R = selRange(), H = hiddenCols(), inSel = H.filter(function (c) { return c >= R.c1 - 1 && c <= R.c2 + 1; }), show = inSel.length ? inSel : H.slice();
+    if (!show.length) return; state.hidecols[state.active] = H.filter(function (c) { return show.indexOf(c) < 0; });
+    save(); renderHead(); renderBody(); renderFx(); refreshRibbon(); toast(show.length === 1 ? "Column " + colLetter(show[0]) + " is shown again." : show.length + " columns are shown again.");
+  }
   function toggleFreeze() {
     state.freeze = state.freeze || {};
     if (frozen()) delete state.freeze[state.active]; else state.freeze[state.active] = Math.max(1, Math.min(sel.c, sel.c2));
@@ -1798,6 +1815,7 @@
       item("insA", "Insert row above", "Ctrl+Shift++") + item("insB", "Insert row below") + item("del", "Delete row", "Ctrl+-") + item("clear", "Clear contents", "Delete") + "<div class='fsep'></div>" +
       item("az", "Sort A to Z") + item("za", "Sort Z to A") + item("fval", "Filter by this value") + (anyFilter() ? item("fclear", "Clear all filters") : "") + "<div class='fsep'></div>" +
       item("fill", "Fill down", "Ctrl+D") + item("fillR", "Fill right", "Ctrl+R") + item("clrfmt", "Clear formatting") + item("note", (function () { var t = curTarget(), f = t && fGet(t); return f && f.note ? "Edit note" : "New note"; })(), "Shift+F2") + "<div class='fsep'></div>" +
+      item("colHide", selRange().c1 === selRange().c2 ? "Hide column" : "Hide columns") + (hiddenCols().length ? item("colUnhide", "Unhide columns") : "") + "<div class='fsep'></div>" +
       item("colL", "Insert column left") + item("colR", "Insert column right") + (curCustom() ? item("colRen", "Rename column") + item("colDel", "Delete column") : "") +
       "<div class='swrow' aria-label='Highlight'>" + PALETTE_FILL.map(function (p) { return "<button class='sw' data-sw='" + p[1] + "' title='Highlight: " + p[0] + "' style='background:" + (p[1] || "var(--surface)") + "'>" + (p[1] ? "" : "∅") + "</button>"; }).join("") + "</div>";
     document.body.appendChild(m); m.style.position = "fixed";
@@ -1824,7 +1842,7 @@
     else if (k === "al-left") setFmtAll({ al: null }); else if (k === "al-center") setFmtAll({ al: "center" }); else if (k === "al-right") setFmtAll({ al: "right" });
     else if (k === "wrap") toggleFmt("wr");
     else if (k === "filter") { filterMode = !filterMode; if (!filterMode && anyFilter()) clearAllFilters(); renderBody(); refreshRibbon(); toast(filterMode ? "Filter buttons added to the table headings" : "Filters removed"); }
-    else if (k === "bd") toggleFmt("bd"); else if (k === "painter") startPainter(); else if (k === "freeze") toggleFreeze(); else if (k === "fillR") fillRight(); else if (k === "note") editNote();
+    else if (k === "bd") toggleFmt("bd"); else if (k === "painter") startPainter(); else if (k === "freeze") toggleFreeze(); else if (k === "fillR") fillRight(); else if (k === "note") editNote(); else if (k === "colHide") hideCols(); else if (k === "colUnhide") unhideCols();
     else if (k === "find") openFind(false); else if (k === "replace") openFind(true);
     else if (k === "colL") insertColumn(false); else if (k === "colR") insertColumn(true); else if (k === "colRen") renameColumn(); else if (k === "colDel") deleteColumn();
   }
