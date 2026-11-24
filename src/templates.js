@@ -7,8 +7,8 @@
   const { tag, drawer, closeDrawer, toast, ico, confirmDialog } = V;
   const permOk = () => { let p = 'all'; try { p = (F.doc('workspace') || {}).perm || 'all'; } catch (e) { } const role = S.project && S.project.role; return p === 'owners' ? role === 'owner' : p === 'editors' ? role !== 'viewer' : true; };   // Tabs & Layouts: who may change the menu (an owner decides)
   const canEdit = () => !V.isCustomer() && !S.readonly && permOk();
-  const KIND = { workspace: 'Workspace layout', ftr: 'FTR workbook', kpi: 'KPI definitions', brd: 'BRD structure', uat: 'UAT plan', guide: 'User guide', golive: 'Go-live review', hypercare: 'Hypercare report', handover: 'Handover pack', closure: 'Closure report', wsr: 'Weekly status report', monthly: 'Monthly report', other: 'Other document' };
-  const TEXT = ['brd', 'uat', 'guide', 'golive', 'hypercare', 'handover', 'closure', 'wsr', 'monthly', 'other'];
+  const KIND = { workspace: 'Workspace layout', ftr: 'FTR workbook', kpi: 'KPI definitions', brd: 'BRD structure', uat: 'UAT plan', guide: 'User guide', golive: 'Go-live review', hypercare: 'Hypercare report', handover: 'Handover pack', closure: 'Closure report', wsr: 'Weekly status report', monthly: 'Monthly report', tasks: 'Stage tasks', other: 'Other document' };
+  const TEXT = ['brd', 'uat', 'guide', 'golive', 'hypercare', 'handover', 'closure', 'wsr', 'monthly', 'tasks', 'other'];
   const SKEL = {
     brd: '# Version history and document approvals\n# 1. Introduction\n# 2. Project overview\n# 3. Project scope (platform capabilities, portals and mobile apps, key documents, stakeholders)\n# 4. Data onboarding scope and licence\n# 5. Functional modules (per module: 1 Functional requirements, 2 Confirmations, 3 Solution proposal, 4 Facilio modules involved, 5 Constraints, 6 Process state flow)\n# 6. General requirements\n# 7. KPIs and the SLA matrix\n# 8. Types of users and role matrix\n# 9. Field list\n# 10. Reports and dashboards\n# 11. Feature availability in the mobile application\n# 12. Conclusion',
     uat: '# 1. Objectives and scope\n# 2. Entry criteria\n# 3. Test scenarios by module (drafted from the BRD requirements, flows, KPIs and SLA matrix)\n# 4. General requirements\n# 5. Roles and test data\n# 6. Defect handling\n# 7. Exit criteria and sign-off',
@@ -59,6 +59,7 @@
     if (kind === 'workspace') return `<div class="notice"><span>Captures this project's current menu layout: hidden items, names, order and custom pages.</span></div>`;
     if (kind === 'kpi') return `<div class="notice"><span>Captures the ${I().list('kpi').length} KPI definition(s) in this project.</span></div>`;
     if (kind === 'ftr') return `<div class="notice"><span>Captures this project's current FTR workbook, or choose another .xlsx below. Up to 3 MB.</span></div><input type="file" id="tp_f" accept=".xlsx,.xlsm">`;
+    if (kind === 'tasks') return `<label class="f">One "# Stage" heading per stage, then one task per line: Title | Delivery role | Days until due | Task type. Publish it and it appears under Tasks &gt; Stage tasks.</label><textarea id="tp_t" rows="16" style="font-family:ui-monospace,Menlo,monospace;font-size:12px">${esc(cur || (V.stageTaskLogic ? V.stageTaskLogic.STANDARD : ''))}</textarea>`;
     return `<label class="f">Structure (one heading per line, optional notes under each). The AI follows this order and these headings.</label><textarea id="tp_t" rows="14" style="font-family:ui-monospace,Menlo,monospace;font-size:12px">${esc(cur || SKEL[kind] || '')}</textarea>`;
   }
   ACT.tplKind = el => { const b = document.getElementById('tp_body'); if (b) b.innerHTML = bodyField(el.value, ''); };
@@ -111,6 +112,7 @@
   // ---------- use ----------
   ACT.tplUse = a => V.busy(a, async () => {
     const id = a.getAttribute('data-id'); const t = byId(id); if (!t) return; let r; try { r = await API.get(`/api/templates/${id}`); } catch (e) { toast(e.message, 5000, true); return; } const d = r.data || {};
+    if (t.kind === 'tasks') { if (t.status !== 'published') { toast('Publish the template first so the team uses a reviewed list', 5000, true); return; } V.addStageTasks(id); return; }
     if (TEXT.includes(t.kind)) {
       if (t.kind === 'other') { try { await navigator.clipboard.writeText(d.body || ''); toast('Structure copied'); } catch (e) { toast('Copy failed', 4000, true); } return; }
       if (t.status !== 'published') { toast('Publish the template first so the AI uses a reviewed structure', 5000, true); return; }

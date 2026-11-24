@@ -236,6 +236,7 @@ Actions, risks, decisions, change requests, the task board, customer mail and tr
 | [mailinbox.js](mailinbox.js) | Mail inbox on the Tasks page (plan: docs/plans/MAIL-TO-TASKS-PLAN-2026-11-07.md). |
 | [outlook.js](outlook.js) | Outlook hand-off. A native Outlook inbox is NOT available in this deployment (see docs/integrations/outlook-feasibility.md): the platform gives the app only the signed-in email, not a Microsoft... |
 | [taskengine.js](taskengine.js) | The task engine: tasks that create themselves and resolve themselves (plan: docs/plans/TASKS-AUTOMATION-PLAN-2026-11-07.md). |
+| [stagetasks.js](stagetasks.js) | Stage tasks (Tasks > Stage tasks): the standard tasks of a delivery stage from a published Stage tasks template or the Facilio standard, each given to the team member with its Delivery role. |
 | [tasks.js](tasks.js) | Project Tasks: one task register per project (item kind "task", validated on the server) shown as a spreadsheet with saved sheets. |
 | [tickets.js](tickets.js) | Tickets: client issues, incoming requests, meeting requests and follow-ups, tracked per project and across projects. |
 | [transfers.js](transfers.js) | Transfers (roadmap E4, E10 step 1): the page for the push and pull engine. |

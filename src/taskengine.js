@@ -7,17 +7,20 @@
   'use strict';
   const arr = v => (Array.isArray(v) ? v : []);
   const CLOSED = ['Done', 'Cancelled'];
+  /* the task stages the server accepts (work/server/api.mjs TASK_STAGES), and the lifecycle stage (src/lifelogic.js) each one belongs to */
+  const STAGES = ['Project Setup & Kickoff', 'Requirements & Workshops', 'Configuration & Documentation', 'Implementation & Integrations', 'Testing & UAT', 'Go-Live & Handover', 'Closure & Follow-Up'];
+  const LIFE_STAGE = { intro: 'Project Setup & Kickoff', sessions: 'Requirements & Workshops', design: 'Configuration & Documentation', uat: 'Testing & UAT', training: 'Configuration & Documentation', hypercare: 'Go-Live & Handover', handover: 'Closure & Follow-Up' };
   const idOf = key => { let h = 5381; for (let i = 0; i < key.length; i++) h = ((h * 33) ^ key.charCodeAt(i)) >>> 0; let h2 = 52711; for (let i = key.length - 1; i >= 0; i--) h2 = ((h2 * 31) ^ key.charCodeAt(i)) >>> 0; return 'ta_' + h.toString(36) + h2.toString(36); };
   /** facts: { openFindings: [{ transcriptId, title, count }], reviewMissing: [{ part, label }], coverageMissing: [{ module, label, count }], failedCases: [{ id, tcid, title }], kpisNoSolution: [{ id, name }] }
       returns [{ key, rule, type, title, stage, view, reason }] */
   function desired(f) {
     f = f || {}; const out = [];
-    arr(f.openFindings).forEach(x => { if (x && x.count > 0) out.push({ key: 'findings:' + x.transcriptId, rule: 'findings', type: 'Requirement Task', title: 'Review ' + x.count + ' item' + (x.count === 1 ? '' : 's') + ' from ' + (x.title || 'the sessions'), stage: 'Requirement sessions', view: 'rschecks', reason: x.count + ' to review on Checks & validations' }); });
-    arr(f.reviewMissing).forEach(x => out.push({ key: 'brd:' + x.part, rule: 'brd', type: 'BRD Task', title: 'Review the BRD: ' + x.label, stage: 'Solution design & BRD', view: 'brd', reason: 'This part of the BRD review is not ticked' }));
-    arr(f.coverageMissing).forEach(x => { if (x && x.count > 0) out.push({ key: 'cover:' + x.module, rule: 'cover', type: 'UAT Task', title: 'Write test cases for ' + x.label + ' (' + x.count + ' requirement' + (x.count === 1 ? '' : 's') + ')', stage: 'UAT & FTR', view: 'delivery', reason: x.count + ' confirmed requirement' + (x.count === 1 ? '' : 's') + ' without a test case' }); });
-    arr(f.failedCases).forEach(x => out.push({ key: 'fail:' + x.id, rule: 'fail', type: 'UAT Task', title: 'Fix and retest ' + ((x.tcid ? x.tcid + ' ' : '') + (x.title || '')).trim(), stage: 'UAT & FTR', view: 'delivery', reason: 'The test case failed or is blocked' }));
-    arr(f.stagesReady).forEach(x => out.push({ key: 'stage:' + x.k, rule: 'stage', type: 'Internal Action', title: 'Close stage ' + x.n + ': ' + x.name + ' (every check is met)', stage: x.name, view: 'lifecycle', reason: 'Every record of this stage is complete; a project owner or admin closes it on the Project cycle page' }));
-    arr(f.kpisNoSolution).forEach(x => out.push({ key: 'kpi:' + x.id, rule: 'kpi', type: 'BRD Task', title: 'Write how Facilio delivers the KPI "' + x.name + '"', stage: 'Solution design & BRD', view: 'slakpi', reason: 'The KPI has no solution written yet' }));
+    arr(f.openFindings).forEach(x => { if (x && x.count > 0) out.push({ key: 'findings:' + x.transcriptId, rule: 'findings', type: 'Requirement Task', title: 'Review ' + x.count + ' item' + (x.count === 1 ? '' : 's') + ' from ' + (x.title || 'the sessions'), stage: 'Requirements & Workshops', view: 'rschecks', reason: x.count + ' to review on Checks & validations' }); });
+    arr(f.reviewMissing).forEach(x => out.push({ key: 'brd:' + x.part, rule: 'brd', type: 'BRD Task', title: 'Review the BRD: ' + x.label, stage: 'Requirements & Workshops', view: 'brd', reason: 'This part of the BRD review is not ticked' }));
+    arr(f.coverageMissing).forEach(x => { if (x && x.count > 0) out.push({ key: 'cover:' + x.module, rule: 'cover', type: 'UAT Task', title: 'Write test cases for ' + x.label + ' (' + x.count + ' requirement' + (x.count === 1 ? '' : 's') + ')', stage: 'Testing & UAT', view: 'delivery', reason: x.count + ' confirmed requirement' + (x.count === 1 ? '' : 's') + ' without a test case' }); });
+    arr(f.failedCases).forEach(x => out.push({ key: 'fail:' + x.id, rule: 'fail', type: 'UAT Task', title: 'Fix and retest ' + ((x.tcid ? x.tcid + ' ' : '') + (x.title || '')).trim(), stage: 'Testing & UAT', view: 'delivery', reason: 'The test case failed or is blocked' }));
+    arr(f.stagesReady).forEach(x => out.push({ key: 'stage:' + x.k, rule: 'stage', type: 'Internal Action', title: 'Close stage ' + x.n + ': ' + x.name + ' (every check is met)', stage: LIFE_STAGE[x.k] || '', view: 'lifecycle', reason: 'Every record of this stage is complete; a project owner or admin closes it on the Project cycle page' }));
+    arr(f.kpisNoSolution).forEach(x => out.push({ key: 'kpi:' + x.id, rule: 'kpi', type: 'BRD Task', title: 'Write how Facilio delivers the KPI "' + x.name + '"', stage: 'Configuration & Documentation', view: 'slakpi', reason: 'The KPI has no solution written yet' }));
     arr(f.slaOpen).forEach(x => out.push({ key: 'sla:' + x.id, rule: 'sla', type: 'Implementation Task', title: 'Complete the SLA: ' + x.label, stage: 'Configuration & Documentation', view: 'slakpi', reason: 'The SLA row is missing ' + x.missing }));
     arr(f.handoverOpen).forEach(x => out.push({ key: 'ho:' + x.id, rule: 'ho', type: 'Go-Live / Handover Task', title: 'Hand over: ' + x.text, stage: 'Go-Live & Handover', view: 'handover', reason: 'The handover item is not ticked' }));
     arr(f.planDue).forEach(x => out.push({ key: 'plan:' + x.id, rule: 'plan', type: 'Implementation Task', title: x.title + ' (plan, due ' + x.end + ')', stage: '', view: 'timeline', reason: 'A plan task is due within a week and not done', due: x.end }));
@@ -41,7 +44,7 @@
     Object.keys(have).forEach(k => { const t = have[k]; if (keep && keep.has(t.auto.rule)) return; if (!wantKeys.has(k) && !CLOSED.includes(t.status)) out.resolve.push({ id: t.id, why: (whyBy && whyBy[k]) || WHY[t.auto.rule] || 'the reason is gone' }); });
     return out;
   }
-  const V = root.FWBViews; if (V) V.taskEngineLogic = { desired, reconcile, idOf };
+  const V = root.FWBViews; if (V) V.taskEngineLogic = { desired, reconcile, idOf, STAGES, LIFE_STAGE };
   const F = root.FWB; if (!F || !F.S || !V) return; const S = F.S; const I = () => V.items; const U = () => root.FWBUat;
   /** gather the facts of the open project */
   function facts() {
