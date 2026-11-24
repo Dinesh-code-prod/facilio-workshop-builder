@@ -33,6 +33,8 @@ t('the answer to "my tasks": a heading with the counts, then overdue, due today,
   assert.match(t, /^\*\*Kim, you have 4 open tasks, 1 overdue, 1 due today\.\*\*/); for (const h of ['OVERDUE (1)', 'DUE TODAY (1)', 'THIS WEEK (1)', 'LATER OR NO DATE (1)', 'MILESTONES IN THE NEXT 7 DAYS (1)']) assert.ok(t.includes('**' + h + '**'), h);
   assert.match(t, /- T-1 · Late one — Rollout · OVERDUE since Fri 20 Nov 2026 \(3 days late\)/); assert.ok(!/Someone else/.test(t)); assert.match(t, /\*\*What to do:\*\* Start with the overdue ones/);
   assert.match(myTasksMessage(pendingFor('nobody@facilio.com', P, '2026-11-23'), [], '2026-11-23'), /^\*\*You have no open tasks\.\*\*/);
+  const late = myTasksMessage(pendingFor('kim@facilio.com', [{ id: 'p1', name: 'Rollout', tasks: [{ id: 'd', data: { n: 4, title: 'No date', owner: 'kim@facilio.com' } }] }], '2026-11-24'), [{ title: 'Kick-off', projectName: 'Rollout', due: '2026-11-06', owner: 'Both' }, { title: 'Data load', projectName: 'Rollout', due: '2026-11-27' }], '2026-11-24');
+  assert.ok(late.includes('**MILESTONES OVERDUE (1)**\n- Kick-off — Rollout · OVERDUE since Fri 6 Nov 2026 (18 days late) · owner Both') && late.includes('**MILESTONES IN THE NEXT 7 DAYS (1)**\n- Data load'), 'an overdue milestone is never listed as coming up'); assert.match(late, /\*\*What to do:\*\* Agree new dates for the overdue milestones/);
 });
 t('every Claude job carries the working standard, and the AI system prompt holds it too', () => {
   assert.match(WORK_STANDARD, /senior delivery consultant/); const kind = Object.keys(KINDS)[0]; const b = brief({ id: 'j1', kind, params: {}, requestedBy: 'a@b.c' }, { id: 'p', name: 'P' }); assert.equal(b.standard, WORK_STANDARD);
