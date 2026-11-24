@@ -396,6 +396,10 @@
       "fileSize": {
        "type": "number",
        "description": "Only for file_put_begin: the file size in bytes (up to 16 MB)"
+      },
+      "setup": {
+       "type": "object",
+       "description": "Only from the one-time Delivery Studio setup: what it found on this computer, each ok, missing or not needed: node, git, studio (this connector), m365 (Microsoft 365 connector), toolbox (facilio-impl-toolbox skill), skillsRepo (local copy of facilio-impl-ai-skills), watcher, queue (the two scheduled tasks); os windows or mac. Shown as the person's checklist in the Studio."
       }
      },
      "required": [

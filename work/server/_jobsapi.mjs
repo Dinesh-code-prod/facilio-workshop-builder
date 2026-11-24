@@ -6,7 +6,7 @@ import { lead } from './_notify.mjs';
 import { OPEN, LIMITS, KINDS, cleanRequest, newJob, step, brief, leaseExpired } from './_jobs.mjs';
 
 import { hashOf } from './_notify.mjs';
-import { canTake, status as helperStatus, words as helperWords, cleanUsage, mergeUsage, usageDue, cleanSkills } from './_helper.mjs';
+import { canTake, status as helperStatus, words as helperWords, cleanUsage, mergeUsage, usageDue, cleanSkills, cleanSetup } from './_helper.mjs';
 // customer mail: switched off 13 Nov 2026, back on 19 Nov 2026 (user): each team member's Claude searches their own Outlook once an hour; turning a mail into a task stays a person's click
 const MAIL_OFF = false;
 const MAIL_EVERY_MIN = 60;
@@ -16,7 +16,9 @@ export function installJobs(d) {
   /** team members with edit access only: customers and viewers are refused */
   async function access(s, pid) { const a = await projectAccess(s, pid, 'edit'); if (a.role === 'customer') throw new HttpError(403, 'The job queue is for the project team'); return a; }
   // every time a Claude checks the queue the server notes who and when (at most once a minute per person): the Studio shows whether a Claude is running, and the morning brief knows a helper is about
-  const beat = async (s, b) => { try { const k = hashOf(s.email); const cur = await dbGet('hb', k); const sk = cleanSkills(b && b.skills); const was = (cur && cur.value && cur.value.skills) || []; const changed = sk.length && JSON.stringify(sk) !== JSON.stringify(was); if (cur && cur.value && Date.now() - Date.parse(cur.value.at) < 60000 && !changed) return; await dbPut('hb', k, { at: new Date().toISOString(), email: String(s.email || '').toLowerCase(), name: s.name || '', skills: sk.length ? sk : was }); } catch (e) { /* the check never fails the tool */ } };
+  const beat = async (s, b) => { try { const k = hashOf(s.email); const cur = await dbGet('hb', k); const sk = cleanSkills(b && b.skills); const was = (cur && cur.value && cur.value.skills) || []; const setup = cleanSetup(b && b.setup);   // setup: what the one-time setup found on this computer (shown as the person's checklist)
+    const changed = (sk.length && JSON.stringify(sk) !== JSON.stringify(was)) || !!setup; if (cur && cur.value && Date.now() - Date.parse(cur.value.at) < 60000 && !changed) return;
+    const old = (cur && cur.value) || {}; await dbPut('hb', k, { at: new Date().toISOString(), email: String(s.email || '').toLowerCase(), name: s.name || '', skills: sk.length ? sk : was, setup: setup || old.setup || null, setupAt: setup ? new Date().toISOString() : (old.setupAt || '') }); } catch (e) { /* the check never fails the tool */ } };
   const wrap = fn => { try { return fn(); } catch (e) { if (e && e.status) throw new HttpError(e.status, e.message); throw e; } };
   const all = async pid => (await dbList(col(pid))).map(r => r.value).filter(r => r && r.id);
   /** a claimed job whose lease ran out goes back to waiting (stored, so every reader sees the same) */
@@ -61,9 +63,10 @@ export function installJobs(d) {
   // is a Claude running for this project? the team's latest check-ins, for the light in the top bar and the waiting-request line
   route('GET', '/api/projects/:id/helper', async (b, G) => {
     const s = await me(); const { project, role } = await projectAccess(s, G.id, 'read'); if (role === 'customer') throw new HttpError(403, 'Not permitted');
-    const team = (project.members || []).filter(m => m.role !== 'customer' && m.email).slice(0, 30); const beats = await Promise.all(team.map(async m => { const r = await dbGet('hb', hashOf(m.email)); return { email: m.email, name: m.name, at: (r && r.value && r.value.at) || '', skills: (r && r.value && r.value.skills) || [] }; }));
+    const team = (project.members || []).filter(m => m.role !== 'customer' && m.email).slice(0, 30); const beats = await Promise.all(team.map(async m => { const r = await dbGet('hb', hashOf(m.email)); return { email: m.email, name: m.name, at: (r && r.value && r.value.at) || '', skills: (r && r.value && r.value.skills) || [], setup: (r && r.value && r.value.setup) || null, setupAt: (r && r.value && r.value.setupAt) || '' }; }));
     const st = helperStatus(beats, Date.now()); const mine = beats.find(x => String(x.email).toLowerCase() === String(s.email || '').toLowerCase()); let waiting = 0; try { waiting = (await ops.list(s, G.id, 'waiting', '')).jobs.length; } catch (e) { }
-    return ok(Object.assign({}, st, helperWords(st), { waiting, mineAt: (mine && mine.at) || '', skills: mine && mine.skills && mine.skills.length ? mine.skills : null }));
+    return ok(Object.assign({}, st, helperWords(st), { waiting, mineAt: (mine && mine.at) || '', skills: mine && mine.skills && mine.skills.length ? mine.skills : null, setup: (mine && mine.setup) || null, setupAt: (mine && mine.setupAt) || '',
+      team: beats.map(x => ({ name: x.name || x.email, at: x.at, ready: !!(x.setup && x.at && Date.now() - Date.parse(x.at) < 7 * 864e5 && ['studio', 'watcher', 'queue'].every(k => x.setup[k] === 'ok')) })) }));   // who is set up, for the team line (names and dates only)
   });
   route('GET', '/api/jobs/usage', async () => { const s = await me(); const ps = d.readableProjects ? await d.readableProjects(s) : []; const since = new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10); const byDay = {}, byKind = {}; let total = 0;
     for (const p of ps.slice(0, 50)) { for (const j of await all(p.id)) { const day = String(j.requestedAt || '').slice(0, 10); if (!day || day < since) continue; total++; byKind[j.kind] = (byKind[j.kind] || 0) + 1; (byDay[day] = byDay[day] || {})[j.kind] = ((byDay[day] || {})[j.kind] || 0) + 1; } }
