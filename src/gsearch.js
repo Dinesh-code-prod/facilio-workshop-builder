@@ -9,10 +9,10 @@
   const can = () => !!S.project && !!S.user && !V.isCustomer();
   V.gsButton = () => can() ? '<button class="btn sm gs-btn" data-act="gsOpen" title="Search everything saved in this project (Ctrl+K)" aria-label="Search the project"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span class="gs-t">Search</span></button>' : '';
   const hl = (t, q) => { const s = esc(t); const toks = String(q).split(/\s+/).filter(x => x.length > 1).map(x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')); if (!toks.length) return s; return s.replace(new RegExp('(' + toks.join('|') + ')', 'ig'), '<mark>$1</mark>'); };
-  const row = r => { const stage = V.stageOfView ? V.stageOfView(r.view) : ''; return `<button type="button" class="gs-r" data-act="gsGo" data-v="${esc(r.view)}"><span class="gs-k">${esc(r.label)}</span><b>${hl(r.title, G.q)}</b><span class="gs-x">${hl(r.excerpt, G.q)}</span><span class="gs-w">${stage ? esc(stage) + ' · ' : ''}${esc(r.view)}${r.exact ? '' : ' · related'}</span></button>`; };
+  const row = (r, i) => { const stage = V.stageOfView ? V.stageOfView(r.view) : ''; return `<button type="button" class="gs-r" style="--i:${Math.min(i || 0, 12)}" data-act="gsGo" data-v="${esc(r.view)}"><span class="gs-k">${esc(r.label)}</span><b>${hl(r.title, G.q)}</b><span class="gs-x">${hl(r.excerpt, G.q)}</span><span class="gs-w">${stage ? esc(stage) + ' · ' : ''}${esc(r.view)}${r.exact ? '' : ' · related'}</span></button>`; };
   function body() {
     if (G.err) return `<div class="notice err">${esc(G.err)}</div>`;
-    if (G.busy) return '<div class="muted small" style="padding:14px 4px">Searching…</div>';
+    if (G.busy) return '<div class="gs-busy" role="status"><i class="ds-line" aria-hidden="true"></i><span class="muted small">Searching…</span></div>';   // a moving line while the search runs (src/masterds.css)
     if (!G.res) return '<div class="muted small" style="padding:14px 4px">Type at least 3 letters. Searches requirements, decisions, actions, risks, change requests, UAT and build records, tasks, guides, notes, configuration inputs and the BRD. Uploaded files are not searched.</div>';
     const ex = G.res.filter(r => r.exact), rel = G.res.filter(r => !r.exact);
     if (!G.res.length) return `<div class="muted small" style="padding:14px 4px">Nothing saved in this project matches "${esc(G.q)}".</div>`;

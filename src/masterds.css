@@ -257,3 +257,32 @@ html body .main .nav-back:hover:not(#DS) { background: var(--ds-subtle) !importa
 html body .main :is(.tr-chip, .sd-go):not(#DS) { border-radius: var(--ds-r-ctl) !important; }
 html body .main .tr-chip:not(.on):not(#DS) { color: var(--ds-ink) !important; box-shadow: inset 0 0 0 1px var(--ds-border-strong) !important; }
 html body .main .tg2 .tg2-tile:not(#DS) { border-radius: var(--ds-r-card) !important; }
+
+/* ---------- Motion while people wait (user, 24 Nov 2026): a grey skeleton with a soft shimmer while a page loads, a moving line while search runs, search results
+   rising in one after another, and Claude's live step list (ticks for what it reported, a pulsing dot on the step in progress). Off when the browser asks for less motion. ---------- */
+@keyframes dsShimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+@keyframes dsLine { from { transform: translateX(-110%); } to { transform: translateX(260%); } }
+@keyframes dsRise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes dsPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(21, 112, 239, .45); } 60% { box-shadow: 0 0 0 6px rgba(21, 112, 239, 0); } }
+html body .ds-skel:not(#DS) { position: relative !important; overflow: hidden !important; min-height: 104px !important; padding: 0 !important; color: transparent !important; -webkit-text-fill-color: transparent !important; border: 1px solid var(--ds-border) !important; border-radius: var(--ds-r-card) !important; box-shadow: none !important;
+  background: linear-gradient(#E6EBF2, #E6EBF2) 20px 22px / min(220px, 40%) 14px no-repeat, linear-gradient(#EEF2F6, #EEF2F6) 20px 50px / 78% 10px no-repeat, linear-gradient(#EEF2F6, #EEF2F6) 20px 70px / 60% 10px no-repeat, #fff !important; }
+html body .ds-skel:not(#DS)::after { content: "" !important; position: absolute !important; inset: 0 !important; background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, .8) 50%, rgba(255, 255, 255, 0) 100%) !important; transform: translateX(-100%); animation: dsShimmer 1.4s ease-in-out infinite; }
+html body .gs-busy:not(#DS) { display: grid; gap: 10px; padding: 14px 4px; }
+html body .gs-busy .ds-line:not(#DS) { display: block; position: relative; height: 3px; border-radius: 3px; background: var(--ds-subtle); overflow: hidden; }
+html body .gs-busy .ds-line:not(#DS)::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 40%; border-radius: 3px; background: var(--ds-blue); animation: dsLine 1.1s cubic-bezier(.4, 0, .2, 1) infinite; }
+html body .gs-r:not(#DS) { animation: dsRise .22s cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(var(--i, 0) * 35ms); }
+html body #asst .as-now:not(#DS) { flex-wrap: wrap !important; }
+html body #asst .as-steps:not(#DS) { flex: 1 0 100%; list-style: none; margin: 10px 0 0; padding: 10px 0 0; border-top: 1px solid var(--ds-border); display: grid; gap: 8px; }
+html body #asst .as-steps li:not(#DS) { display: flex; align-items: flex-start; gap: 10px; font: 500 13.5px/1.45 var(--ds-body); color: var(--ds-text2); animation: dsRise .25s ease both; }
+html body #asst .as-steps li > i:not(#DS) { flex: none; width: 18px; height: 18px; margin-top: 1px; border-radius: 50%; display: grid; place-items: center; }
+html body #asst .as-steps li.done > i:not(#DS) { background: var(--ds-ok); }
+html body #asst .as-steps li.done > i:not(#DS)::after { content: ""; width: 7px; height: 4px; border: 2px solid #fff; border-top: 0; border-right: 0; transform: translateY(-1px) rotate(-45deg); }
+html body #asst .as-steps li.now:not(#DS) { color: var(--ds-ink); font-weight: 600; }
+html body #asst .as-steps li.now > i:not(#DS) { background: #fff; box-shadow: inset 0 0 0 2px var(--ds-blue); }
+html body #asst .as-steps li.now > i:not(#DS)::after { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ds-blue); animation: dsPulse 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  html body .ds-skel:not(#DS)::after { animation: none !important; display: none !important; }
+  html body .gs-busy .ds-line:not(#DS)::after { animation: none !important; width: 100% !important; opacity: .45; }
+  html body :is(.gs-r, #asst .as-steps li):not(#DS) { animation: none !important; }
+  html body #asst .as-steps li.now > i:not(#DS)::after { animation: none !important; }
+}

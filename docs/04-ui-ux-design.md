@@ -59,6 +59,8 @@ Every list says what to do when empty ("Upload a transcript to start"); loading 
 Real buttons and inputs, labelled fields, `role="tablist"` on tab bars with `aria-selected`, visible focus, keyboard reachable menus, reduced-motion respected for the opening animation and transitions.
 
 ## Motion
+While people wait (24 Nov 2026, `src/masterds.css` "Motion while people wait"): a block that only says "Loading…" becomes a grey skeleton with a soft shimmer (marked by `skel` in `src/projfx.js`; the words stay for screen readers); the project search shows a moving blue line while it runs and its results rise in one after another; the Assistant lists what a running Claude job has reported (ticks for earlier reports, a pulsing dot on the newest), from the real progress lines only. All of it stands still under reduced motion. Check: `node tests/ui/motion-check.mjs`.
+
 The opening animation (tree growth) and small transitions use the Facilio Motion Kit (`docs/design/motionkit/animations.json`). Motion must be reduced or off when the browser asks for it, and must never block the page: the animation clamps sizes so a tiny window cannot stop it.
 
 Discover more has two different clean scroll effects, both in `src/animation/discover/`. The sign-in page (`login-scroll.*`): every solution area is a pinned scene that zooms in, its words light up with the scroll, then it shrinks away. Inside a project (`project-scroll.*`): every chapter is a dark pinned stage whose cards slide sideways while the card in focus grows. Both are switched off for reduced motion and on phones, tablets and short windows.
