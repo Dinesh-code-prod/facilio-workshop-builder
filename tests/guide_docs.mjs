@@ -87,4 +87,5 @@ await t('save_draft with an id changes an unapproved guide (pictures stay with t
   await call('POST', '/api/projects/' + pid + '/ugd/ug2/decision', { decision: 'approve' }); r = await tool('save_draft', { project: pid, task: 'guide', id: 'ug2', content: '# X\nY' }); assert.equal(r.status, 409, 'an approved guide is read only');
   assert.equal((await tool('save_draft', { project: pid, task: 'ftr', id: 'ai_nothing', content: 'x' })).status, 404);
 });
+{ const J = await import('../work/server/_jobs.mjs'); for (const k of ['make_guide', 'change_guide']) { const r = J.KINDS[k].recipe; assert.match(r, /solution_package part scope/, k + ' reads the MSA contract scope'); assert.match(r, /workshop parts processes and flows/, k + ' reads the agreed processes'); assert.match(r, /follow the contract/, k); } console.log('  ok  guide requests read the MSA contract scope and the agreed processes first'); }
 console.log(n + ' guide document checks passed');
