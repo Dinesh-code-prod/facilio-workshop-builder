@@ -1,6 +1,7 @@
 // Stage tasks (src/stagetasks.js) and the task engine's stage names: every stage and type written is one the server accepts, owners come from Delivery roles.
 import assert from 'node:assert/strict'; import fs from 'node:fs'; import { createRequire } from 'node:module';
-globalThis.FWBViews = {}; const req = createRequire(import.meta.url); req('../src/taskengine.js'); req('../src/stagetasks.js');
+globalThis.FWBViews = {}; const req = createRequire(import.meta.url); await import('../work/server/_stagetasks.mjs'); req('../src/taskengine.js'); req('../src/stagetasks.js');
+const SH = globalThis.FWBStageTasks;
 const L = globalThis.FWBViews.stageTaskLogic, E = globalThis.FWBViews.taskEngineLogic;
 const api = fs.readFileSync(new URL('../work/server/api.mjs', import.meta.url), 'utf8');
 const list = name => JSON.parse(api.match(new RegExp('const ' + name + ' = (\\[[^\\]]*\\])'))[1].replace(/'/g, '"'));
@@ -32,4 +33,20 @@ t('owners come from the Delivery role, then the project manager, and only people
 });
 t('a task key is stable per stage and title, so adding the same stage twice is refused by the server', () => { assert.equal(L.keyOf('Testing & UAT', 'Run UAT!'), 'tpl:4:run-uat'); assert.ok(/data\.key === out\.key\)\) throw new HttpError\(409/.test(api)); });
 t('Stage tasks is a template type on the server and in the Templates page', () => { assert.ok(list('TPL_KINDS').includes('tasks')); assert.ok(/tasks: 'Stage tasks'/.test(fs.readFileSync(new URL('../src/templates.js', import.meta.url), 'utf8'))); });
+t('the stage a project is in is the first lifecycle stage not closed, mapped like the task engine', () => {
+  assert.deepEqual(SH.LIFE_STAGE, E.LIFE_STAGE); assert.equal(SH.stageNow(new Set()), 'Project Setup & Kickoff'); assert.equal(SH.stageNow(new Set(['intro'])), 'Requirements & Workshops');
+  assert.equal(SH.stageNow(new Set(['intro', 'sessions', 'design'])), 'Testing & UAT'); assert.equal(SH.stageNow(new Set(SH.LIFE)), 'Closure & Follow-Up');
+});
+t('the daily run adds only what is missing, with owners by Delivery role and due dates from the run day', () => {
+  const team = [{ name: 'Asha', email: 'asha@x.com', drole: 'Project manager' }, { name: 'Ravi', email: 'ravi@x.com', drole: 'UAT lead' }], members = [{ email: 'asha@x.com', role: 'owner' }, { email: 'ravi@x.com', role: 'editor' }];
+  const stage = 'Testing & UAT', all = SH.toAdd(SH.STANDARD, stage, team, members, new Set(), '2026-11-24', 'Facilio standard');
+  assert.equal(all.length, 4); assert.equal(all[0].owner, 'ravi@x.com'); assert.equal(all[0].due, '2026-11-29'); assert.equal(all[2].owner, 'asha@x.com', 'no implementation consultant: the project manager');
+  assert.deepEqual(all[0].src, { type: 'template', label: 'Facilio standard' }); assert.ok(STAGES.includes(all[0].stage) && TYPES.includes(all[0].type));
+  const left = SH.toAdd(SH.STANDARD, stage, team, members, new Set([all[0].key, all[1].key]), '2026-11-24'); assert.deepEqual(left.map(x => x.key), [all[2].key, all[3].key]);
+});
+t('the server runs the task run in the daily sweep, only where it is on, through the normal task save', () => {
+  assert.match(api, /import '\.\/_stagetasks\.mjs'/); assert.match(api, /route\('GET', '\/api\/projects\/:id\/task-run'/); assert.match(api, /route\('POST', '\/api\/projects\/:id\/task-run'/);
+  assert.match(api, /await taskRun\(s, pj, today\)/); assert.match(api, /!cfg\.on \|\| \(!force && cfg\.last === today\)/); assert.match(api, /viaApp\('PUT', '\/api\/projects\/' \+ pj\.id \+ '\/items\/task\//);
+  assert.ok(fs.readFileSync(new URL('../build.mjs', import.meta.url), 'utf8').includes("'work/server/_stagetasks.mjs', 'src/stagetasks.js'"), 'the shared rules are bundled before the page');
+});
 console.log(`${n} stage task checks passed`);

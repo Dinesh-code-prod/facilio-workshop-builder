@@ -13,7 +13,13 @@ Follows docs/plans/TASKS-AUTOMATION-PLAN-2026-11-07.md (the task engine). People
 - Delivery role per team member (Settings > Access, Implementation team): Project manager, Implementation consultant, Solution architect, Integration consultant, UAT lead, Trainer, Support lead (`people.team[].drole`).
 - Stage tasks: a template type in Templates (one "# Stage" heading per stage, one task per line: Title | Delivery role | Days until due | Task type), plus the Facilio standard list in `src/stagetasks.js`. Tasks > Stage tasks adds a stage's tasks, each owned by the member with that Delivery role (else the project manager), due the given number of days later; a task already added is skipped (task key `tpl:<stage>:<title>`).
 
-## Phase 2: the daily run on the server
+## Phase 2, done 24 Nov 2026: the daily run on the server
+- Tasks > Daily task run (off until a person switches it on, per project; GET/POST /api/projects/:id/task-run, record trcfg). Once a day, in the daily sweep, the server adds the standard tasks of the stage the project is in (the first lifecycle stage not closed), from the project's published Stage tasks template or the Facilio standard, each owned by the member with its Delivery role; a task already added is never added again. Switching it on adds the current stage's tasks at once.
+- The rules are shared by the browser and the server: `work/server/_stagetasks.mjs`.
+- Due dates count from the day the run adds the tasks (the stage start), not yet from the plan dates.
+- Not done in this phase: the task engine rules still run in the browser only.
+
+### First outline of phase 2
 - Run the task engine rules on the server for every project in the daily sweep, not only in the open browser.
 - When a project enters a stage, add that stage's standard tasks (as Stage tasks does), with due dates from the project plan.
 - Keep the existing chasing.

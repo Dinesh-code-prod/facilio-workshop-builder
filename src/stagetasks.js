@@ -8,72 +8,8 @@
   const V = root.FWBViews; if (!V) return;
   const F = root.FWB, ACT = V.ACT, I = () => V.items, API = root.FWBApi;
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-  const STAGES = ['Project Setup & Kickoff', 'Requirements & Workshops', 'Configuration & Documentation', 'Implementation & Integrations', 'Testing & UAT', 'Go-Live & Handover', 'Closure & Follow-Up'];
-  const ROLES = ['Project manager', 'Implementation consultant', 'Solution architect', 'Integration consultant', 'UAT lead', 'Trainer', 'Support lead'];
-  const TYPES = ['BRD Task', 'Requirement Task', 'Customer Question', 'Customer Response Required', 'Change Request', 'FTR / Technical Task', 'User Guide Task', 'UAT Task', 'Implementation Task', 'Issue / Blocker', 'Internal Action', 'Customer Action Required', 'Meeting Follow-up', 'Go-Live / Handover Task', 'Hypercare Issue', 'Other'];
-  const STANDARD = [
-    '# Project Setup & Kickoff',
-    'Read the contract (MSA and SOW) and list the scope | Project manager | 2 | Internal Action',
-    'Set up the project team, Delivery roles and customer stakeholders | Project manager | 2 | Internal Action',
-    'Prepare the kick-off deck and the project plan | Project manager | 5 | Internal Action',
-    'Hold the kick-off meeting with the customer | Project manager | 7 | Meeting Follow-up',
-    'Send the kick-off minutes and the agreed plan | Project manager | 9 | Meeting Follow-up',
-    'Ask the customer for their data and documents | Implementation consultant | 10 | Customer Action Required',
-    '# Requirements & Workshops',
-    'Plan the requirement workshops and send the invitations | Implementation consultant | 3 | Internal Action',
-    'Run the workshops and capture the transcripts | Implementation consultant | 15 | Requirement Task',
-    'Review the session findings and open questions | Implementation consultant | 18 | Requirement Task',
-    'Draft the BRD | Implementation consultant | 21 | BRD Task',
-    'Review the BRD and the solution | Solution architect | 24 | BRD Task',
-    'Send the BRD to the customer for sign-off | Project manager | 28 | Customer Response Required',
-    '# Configuration & Documentation',
-    'Write the solution design for each module | Solution architect | 5 | Implementation Task',
-    'Configure the modules, state flows, roles and notifications | Implementation consultant | 20 | Implementation Task',
-    'Load the onboarding data (sites, assets, users) | Implementation consultant | 20 | Implementation Task',
-    'Write the user guides | Trainer | 25 | User Guide Task',
-    '# Implementation & Integrations',
-    'Agree the integration specifications with the customer | Integration consultant | 5 | FTR / Technical Task',
-    'Build and test the integrations | Integration consultant | 20 | FTR / Technical Task',
-    'Run the FTR checks | Implementation consultant | 22 | FTR / Technical Task',
-    '# Testing & UAT',
-    'Write the UAT test cases from the confirmed requirements | UAT lead | 5 | UAT Task',
-    'Run UAT with the customer testers | UAT lead | 15 | UAT Task',
-    'Fix and retest the UAT issues | Implementation consultant | 20 | UAT Task',
-    'Get the UAT sign-off | Project manager | 22 | Customer Response Required',
-    '# Go-Live & Handover',
-    'Run the go-live readiness review | Project manager | 3 | Go-Live / Handover Task',
-    'Train the customer\'s users | Trainer | 5 | Go-Live / Handover Task',
-    'Go live and watch the first days (hypercare) | Support lead | 10 | Go-Live / Handover Task',
-    'Prepare the support handover pack | Support lead | 20 | Go-Live / Handover Task',
-    '# Closure & Follow-Up',
-    'Hand over to support and confirm the support contacts | Support lead | 3 | Go-Live / Handover Task',
-    'Get the project closure sign-off | Project manager | 7 | Customer Response Required',
-    'Hold the lessons-learned review | Project manager | 10 | Internal Action'
-  ].join('\n');
-
-  /* template text → { stages: { stage: [{ title, role, days, type }] }, warnings: [] } */
-  function parse(text) {
-    const stages = {}, warnings = []; let cur = null, bad = false;
-    String(text || '').split(/\r?\n/).forEach((ln, i) => {
-      const t = ln.trim(); if (!t) return;
-      if (t[0] === '#') { const h = t.replace(/^#+\s*/, '').toLowerCase(); cur = STAGES.find(s => s.toLowerCase() === h) || STAGES.find(s => h && s.toLowerCase().split(' ')[0] === h.split(' ')[0]) || null; bad = !cur; if (!cur) warnings.push('Line ' + (i + 1) + ': "' + t + '" is not a task stage, so its tasks were skipped.'); return; }
-      if (!cur) { if (!bad) warnings.push('Line ' + (i + 1) + ' has no stage heading above it.'); return; }   /* under an unknown heading: already reported once */
-      const p = t.split('|').map(x => x.trim()), days = parseInt(p[2], 10), type = TYPES.find(x => x.toLowerCase() === String(p[3] || '').toLowerCase());
-      if (!p[0]) return;
-      (stages[cur] = stages[cur] || []).push({ title: p[0].slice(0, 200), role: ROLES.find(r => r.toLowerCase() === String(p[1] || '').toLowerCase()) || (p[1] || ''), days: days >= 0 && days <= 365 ? days : 7, type: type || 'Internal Action' });
-    });
-    return { stages, warnings };
-  }
-  const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
-  const keyOf = (stage, title) => 'tpl:' + STAGES.indexOf(stage) + ':' + slug(title);
-  /* owner: the team member with that Delivery role who has access to the project; else the project manager; else nobody */
-  function ownerFor(role, team, members) {
-    const ok = new Set((members || []).filter(m => m && m.role !== 'customer').map(m => String(m.email || '').toLowerCase()));
-    const pick = r => (team || []).find(x => x && r && String(x.drole || '').toLowerCase() === String(r).toLowerCase() && ok.has(String(x.email || '').toLowerCase()));
-    const p = pick(role), lead = p ? null : pick('Project manager');
-    return p ? { email: String(p.email).toLowerCase(), name: p.name || p.email, how: 'role' } : lead ? { email: String(lead.email).toLowerCase(), name: lead.name || lead.email, how: 'lead' } : null;
-  }
-  const dueIn = days => { const d = new Date(); d.setDate(d.getDate() + days); return d.toISOString().slice(0, 10); };
+  const SH = root.FWBStageTasks; if (!SH) return;   // the rules: work/server/_stagetasks.mjs (bundled before this file)
+  const { STAGES, ROLES, STANDARD, parse, keyOf, ownerFor } = SH, dueIn = days => SH.dueIn(days);
   V.stageTaskLogic = { STAGES, ROLES, STANDARD, parse, keyOf, ownerFor };   // also run by tests/stage_tasks.mjs
   V.deliveryRoles = ROLES;
 
