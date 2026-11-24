@@ -1,6 +1,6 @@
 // The Claude helper (work/server/_helper.mjs, wiring in _jobsapi.mjs, api.mjs, src/helper.js): is a Claude running, who may take a personal job, and what a person added to a project is told.
 import assert from 'node:assert/strict'; import fs from 'node:fs';
-import { FRESH_MIN, PERSONAL, canTake, status, words, addedMessage, cleanSkills } from '../work/server/_helper.mjs';
+import { FRESH_MIN, PERSONAL, canTake, status, words, addedMessage, cleanSkills, cleanSetup } from '../work/server/_helper.mjs';
 let n = 0; const t = (name, fn) => { fn(); n++; console.log('  ok  ' + name); };
 const now = Date.parse('2026-11-09T10:00:00Z'); const at = m => new Date(now - m * 60000).toISOString();
 t('a project is covered when any team member checked in within 15 minutes', () => {
@@ -81,3 +81,7 @@ console.log(n + ' Claude helper checks passed');
     assert.ok(a.includes("route('POST', '/api/usage/refresh'") && j.includes('snap.want'), 'Update now asks the queue task for a fresh report');
     assert.ok(asst.includes('id="asUse"') && asst.includes('function paintUsage()') && asst.includes('usageNote()') && asst.includes('it does not report tokens per request')); });
 }
+{ // the one-time setup report (24 Nov 2026): only known items and values are kept, so a check-in can never store anything else
+  assert.deepEqual(cleanSetup({ node: 'OK', git: 'not needed', studio: 'ok', m365: 'missing', toolbox: 'ok', skillsRepo: 'missing', watcher: 'ok', queue: 'ok', os: 'Mac', token: 'secret', path: 'C:/x' }), { node: 'ok', git: 'not needed', studio: 'ok', m365: 'missing', toolbox: 'ok', skillsRepo: 'missing', watcher: 'ok', queue: 'ok', os: 'mac' });
+  assert.equal(cleanSetup({ node: 'yes', os: 'amiga' }), null); assert.equal(cleanSetup('x'), null); assert.equal(cleanSetup([]), null);
+  console.log('  ok  the setup report keeps only known items (node, git, connectors, skills, the two tasks, Windows or Mac)'); }

@@ -9,7 +9,7 @@
   const TOOLS = {"meteor":"the Meteor connector tools, READ only (project, my_prototypes, get_prototype)","comet":"the Comet connector tools, READ only (my_work, comets, get_creation)"};
   const GUIDES = [[/\buat guide|tester'?s? guide/, 'uat', 'the UAT guide'], [/\buser guide/, 'user', 'a user guide'], [/\btraining (guide|outline|plan)/, 'training', 'a training guide'], [/\bvideo script|shot list/, 'video', 'a video script']];
   const DRAFTS = [[/\bftr\b/, 'ftr', 'FTR report'], [/\buat guide/, 'uat', 'UAT guide'], [/\buser guide/, 'guide', 'user guide'], [/\btraining/, 'training', 'training guide'], [/\bbrd\b/, 'brd', 'BRD'], [/\b(weekly|status) report|\bwsr\b/, 'wsr', 'weekly status report']];
-  /** text -> null | { type: 'nav', view, label } | { type: 'task', title } | { type: 'job', job: { kind, section, note }, label } | { type: 'draft', task, label }
+  /** text -> null | { type: 'nav', view, label } | { type: 'task', title } | { type: 'folder', name } | { type: 'job', job: { kind, section, note }, label } | { type: 'draft', task, label }
       ctx: { pages: [[id, label]] (the menu of this project), today: Date } */
   function match(text, ctx) {
     const raw = String(text || '').trim(), t = low(raw), c = ctx || {}; if (!t || t.length > 300) return null;
@@ -19,6 +19,12 @@
     // add a task: "add task: call the customer", "new task follow up on the SLA"
     let m = /^(?:please\s+)?(?:add|create|new|make)\s+(?:a\s+)?(?:new\s+)?(?:task|to-?do)\s*(?::|-|to|called)?\s+(.{3,200})$/i.exec(raw);
     if (m) return { type: 'task', title: m[1].replace(/[.\s]+$/, '') };
+    // a guide folder on the Training page: "new folder Technicians", "create a guide folder called Admins" (the person confirms; moving guides in stays on the page)
+    m = /^(?:please\s+)?(?:add|create|make|new)\s+(?:a\s+)?(?:new\s+)?(?:guides?\s+|training\s+)?folder\s*(?:called|named|for|:|-)?\s+(.{2,60})$/i.exec(raw);
+    if (m) return { type: 'folder', name: m[1].replace(/^["'\u201c]+|["'\u201d.\s]+$/g, '') };
+    // edit or export a document drafted like the BRD: the FTR report and the guides open as editable documents with Word, PDF and HTML in their top bar
+    if (/\b(edit|export|download|html)\b/.test(t) && /\bftr\b|functional test report/.test(t)) return { type: 'nav', view: 'ftr', label: 'the FTR report: click any cell to change it; Word, PDF and HTML are in its top bar' };
+    if (/\b(edit|export|download)\b.*\b(user |training )?guides?\b.*\b(html|word|pdf)\b|\b(html|word|pdf)\b.*\bguides?\b/.test(t)) return { type: 'nav', view: 'guides', label: 'Training guides: open a guide, then Word, PDF or HTML in its top bar' };
     // approve a draft: the approval itself stays a click in the draft window
     if (/\bapprove\b/.test(t)) { const d = DRAFTS.find(x => x[0].test(t)); if (d) return { type: 'draft', task: d[1], label: d[2] }; }
     const doVerb = /^(?:please\s+|can you\s+|could you\s+)?(?:write|make|create|generate|prepare|draft|build|refresh|update|redo|run)\b/.test(t);

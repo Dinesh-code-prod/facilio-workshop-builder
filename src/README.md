@@ -221,6 +221,7 @@ The customer user guide builder, video to guide and the learning library.
 | [guidelearn.js](guidelearn.js) | Customer User Guide — module learning sections. |
 | [guidelib.js](guidelib.js) | Module learning library for the Customer User Guide — standard Facilio Connected CMMS content per business module: illustrative screens, overview, worked scenarios, standard fields, process, video... |
 | [guideslist.js](guideslist.js) | Training (stage 5): one simple page: make a guide with Claude (four kinds), the Comet videos (a row per prototype of the Mockup tab and per test scenario of UAT, with the brief and the link), what... |
+| [docpaper.js](docpaper.js) | The document paper: guides (Document tab of the User Guide Builder) and the FTR report drafted on A4 sheets like the BRD preview, editable in place, and the same look as one self-contained HTML file. Pure code (tests/guide_docs.mjs). |
 | [guideextra.js](guideextra.js) | Project guides: guides the team adds for one project next to the standard Module guides (Word, text, Markdown or HTML, with pictures). |
 | [guideupdate.js](guideupdate.js) | Update the user guide from an organisation configuration ZIP (tabs "Update from configuration" and "Version history" in the User Guide Builder). |
 | [learnlib.js](learnlib.js) | Module guides: the standard Facilio guide for each business module (work orders, service requests, field service, preventive maintenance, assets, inspections, vendors, inventory, budgets), ported... |
@@ -235,6 +236,7 @@ Actions, risks, decisions, change requests, the task board, customer mail and tr
 | [mailinbox.js](mailinbox.js) | Mail inbox on the Tasks page (plan: docs/plans/MAIL-TO-TASKS-PLAN-2026-11-07.md). |
 | [outlook.js](outlook.js) | Outlook hand-off. A native Outlook inbox is NOT available in this deployment (see docs/integrations/outlook-feasibility.md): the platform gives the app only the signed-in email, not a Microsoft... |
 | [taskengine.js](taskengine.js) | The task engine: tasks that create themselves and resolve themselves (plan: docs/plans/TASKS-AUTOMATION-PLAN-2026-11-07.md). |
+| [stagetasks.js](stagetasks.js) | Stage tasks (Tasks > Stage tasks): the standard tasks of a delivery stage from a published Stage tasks template or the Facilio standard, each given to the team member with its Delivery role. |
 | [tasks.js](tasks.js) | Project Tasks: one task register per project (item kind "task", validated on the server) shown as a spreadsheet with saved sheets. |
 | [tickets.js](tickets.js) | Tickets: client issues, incoming requests, meeting requests and follow-ups, tracked per project and across projects. |
 | [transfers.js](transfers.js) | Transfers (roadmap E4, E10 step 1): the page for the push and pull engine. |
