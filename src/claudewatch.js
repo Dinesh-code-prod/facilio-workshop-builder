@@ -46,13 +46,22 @@
   }
   // is a watcher running? A POST to /alive: the doorbell answers it with 403 and prints nothing (only /ring prints RING), so Claude is not woken.
   // Any answer means it listens; no answer within 1.5 s means it does not. Never throws.
-  async function alive(fetchFn) {
+  async function alive(fetchFn, ms) {
     const f = fetchFn || (typeof fetch === 'function' ? fetch : null); if (!f) return false;
-    const ctl = typeof AbortController === 'function' ? new AbortController() : null; const t = ctl ? setTimeout(() => ctl.abort(), 1500) : 0;
+    const ctl = typeof AbortController === 'function' ? new AbortController() : null; const t = ctl ? setTimeout(() => ctl.abort(), ms || 1500) : 0;
     try { const r = await f('http://127.0.0.1:' + PORT + '/alive', { method: 'POST', signal: ctl ? ctl.signal : undefined }); return !!r && (r.status === 403 || r.status === 204); }
     catch (e) { return false; } finally { if (t) clearTimeout(t); }
   }
-  const api = { PORT, KEY, ORIGINS, SCRIPT, PROMPT, taskPrompt, ring, alive };
+  // switched on by itself (user, 24 Nov 2026): a person whose own Claude checked in during the last 7 days gets ONE look for a watcher on this computer
+  // (the browser may ask once to reach this device; 20 s leaves time to answer). A watcher that answers turns the switch on. Never again after that one look,
+  // and never for someone who switched the watcher off themselves (the switch is then '0', not empty). store: localStorage or a stand-in.
+  const PROBED = 'fwb_claude_watch_probed';
+  async function autoOn(mineAt, store, fetchFn, now) {
+    const t = Date.parse(mineAt || ''); if (!t || (now || Date.now()) - t > 7 * 864e5) return false;
+    try { if (store.getItem(KEY) !== null || store.getItem(PROBED)) return false; store.setItem(PROBED, new Date(now || Date.now()).toISOString()); } catch (e) { return false; }
+    const ok = await alive(fetchFn, 20000); if (ok) { try { store.setItem(KEY, '1'); } catch (e) { return false; } } return ok;
+  }
+  const api = { PORT, KEY, ORIGINS, SCRIPT, PROMPT, taskPrompt, ring, alive, autoOn, PROBED };
   if (typeof module !== 'undefined' && module.exports) { module.exports = api; return; }
   root.FWBWatch = api;
 
@@ -66,6 +75,11 @@
   setInterval(() => { try { if (!on() || !V.studioJobs) return; const k = V.studioJobs.K(); if (k && Array.isArray(k.jobs) && k.jobs.some(j => j.status === 'waiting' || j.status === 'claimed')) V.studioJobs.load(true); } catch (e) { /* optional */ } }, 4000);
   if (V.ACT) {
     V.ACT.clWatch = () => { const v = !on(); try { localStorage.setItem(KEY, v ? '1' : '0'); } catch (e) { /* private mode */ } if (V.toast) V.toast(v ? 'Watcher switched on for this browser: requests ring your Claude watcher.' : 'Watcher switched off: requests wait for the queue as before.', 4500); if (V.render) V.render(); };
-    V.ACT.clWatchTest = async () => { const ok = await ring('test'); if (V.toast) V.toast(ok ? 'Your Claude watcher answered. It is running.' : 'No watcher answered. Set it up once with the prompt above, keep the Claude app open, and give it up to 15 minutes (or press Run now on the task).', 6000, !ok); };
+    V.ACT.clWatchTest = async () => { const ok = await ring('test'); if (ok) { try { localStorage.setItem(KEY, '1'); } catch (e) { /* private mode */ } }   // a watcher that answers the test is switched on in this browser
+      if (V.toast) V.toast(ok ? 'Your Claude watcher answered. It is running, and switched on in this browser.' : 'No watcher answered. Set it up once with the prompt above, keep the Claude app open, and give it up to 15 minutes (or press Run now on the task).', 6000, !ok); if (ok && V.render) V.render(); };
   }
+  // the one look (see autoOn): once the Claude helper status of this project has loaded and shows this person's own Claude checked in
+  let looked = false; const look = () => { if (looked) return; let st = null; try { st = V.helper && V.helper.state && V.helper.state(); } catch (e) { st = null; } if (!st) return; looked = true;
+    autoOn(st.mineAt, localStorage).then(ok => { if (ok && V.toast) V.toast('Your Claude watcher was found on this computer and switched on: Claude now answers your chat questions in seconds.', 6000); if (ok && V.render) V.render(); }).catch(() => { }); };
+  const lookT = setInterval(() => { look(); if (looked) clearInterval(lookT); }, 5000);
 })(typeof window !== 'undefined' ? window : globalThis);
