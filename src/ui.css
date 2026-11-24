@@ -4084,3 +4084,13 @@ html body .seg.nav-lay button svg { width: 15px; height: 15px; }
   html body:not(.nav-top) nav.sidebar .sb-badge.pend:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q) { background: #FFF1E7 !important; color: #C2410C !important; }
 }
 @media (prefers-reduced-motion: reduce) { html body:not(.nav-top) nav.sidebar :is(.sb-title, .sb-item) { transition: none !important; } }
+
+/* Profile photos (user, 24 Nov 2026): a person's picture laid over their initials in any avatar (V.face in src/shell.js); the initials stay underneath for no photo or a failed load */
+html body :is(.avatar, .kb-av, .pt-av, .pav, .ovb-av, .hs-av, .rs-av, .aw-av):has(> img.av-img):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { position: relative !important; overflow: hidden !important; }
+html body img.av-img:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: inherit !important; object-fit: cover !important; display: block !important; background: #fff; }
+#userPop .um-photo { display: flex; gap: 12px; align-items: flex-start; padding: 8px 10px 10px 0; border-bottom: 1px solid #ECECF1; }
+#userPop .um-photo .avatar.lg { flex: none; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; font-size: 15px; font-weight: 600; background: #F1F1F6; color: #33333D; border: 0; }
+#userPop .um-pa { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+#userPop .um-pa > b { font-size: 12px; font-weight: 500; color: #6B6B78; padding: 2px 0 2px; }
+#userPop .um-pa .um-i { padding-left: 0; }
+.adm-photos { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin: 0 0 12px; }
