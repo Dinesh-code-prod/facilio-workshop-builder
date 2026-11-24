@@ -14,7 +14,7 @@ export const TOOL_DOCS = {
  },
  "get_document": {
   "inputs": {},
-  "description": "Read a project document, or one part of it. Without part it lists the parts. Sections: solution_package (the whole agreed solution in one versioned document for other tools; no part gives counts and a sourceHash, parts: scope, solutions, requirements, flows, data, access, notifications, sla, kpis, apps, outputs), workshop (parts: project, modules, customModules, flows, roles, notifications, processes, requirements, questions, brd, log ...), transcripts, planner (sessions, scope), brddoc, soldocs (the solution documents, drafted like the BRD), reviews, plan_struct, notifications, agentscope, people, config_digest, config, guide_published."
+  "description": "Read a project document, or one part of it. Without part it lists the parts. Sections: solution_package (the whole agreed solution in one versioned document for other tools; no part gives counts and a sourceHash, parts: scope, solutions, requirements, flows, data, access, notifications, sla, kpis, apps, outputs), workshop (parts: project, modules, customModules, flows, roles, notifications, processes, requirements, questions, brd, log ...), transcripts, planner (sessions, scope), brddoc, soldocs (the solution documents, drafted like the BRD), guides (team only: the folders of the Training page, every user guide with its folder and status, and the FTR report draft; part <guide id> gives one guide as Markdown with # section headings, part ftr the FTR draft text; change an unapproved one with save_draft and its id), reviews, plan_struct, notifications, agentscope, people, config_digest, config, guide_published."
  },
  "list_overdue": {
   "inputs": {},

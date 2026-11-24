@@ -275,7 +275,7 @@
    },
    {
     "name": "save_draft",
-    "description": "Save the finished deliverable in Delivery Studio as an UNAPPROVED draft. A person reviews it there before it is used.",
+    "description": "Save the finished deliverable in Delivery Studio as an UNAPPROVED draft. A person reviews it there before it is used. With id it changes an existing unapproved guide or FTR draft instead (ids from get_document guides).",
     "function": "api",
     "input_schema": {
      "type": "object",
@@ -291,6 +291,10 @@
       "content": {
        "type": "string",
        "description": "The full text in Markdown, with the [S#] citations kept"
+      },
+      "id": {
+       "type": "string",
+       "description": "Optional: the id of an existing unapproved draft to change (a guide ug..., or the FTR draft) from get_document guides; send its whole new text in content"
       }
      },
      "required": [
@@ -528,7 +532,7 @@
    },
    {
     "name": "get_document",
-    "description": "Read a project document, or one part of it (no part lists the parts). Main sections: workshop, solution_package, brddoc, soldocs, planner, transcripts, reviews, people, config, project_index. Full text: connector_help topic get_document.",
+    "description": "Read a project document, or one part of it (no part lists the parts). Main sections: workshop, solution_package, brddoc, soldocs, guides (Training folders, guides and the FTR draft), planner, transcripts, reviews, people, config, project_index. Full text: connector_help topic get_document.",
     "function": "api",
     "input_schema": {
      "type": "object",

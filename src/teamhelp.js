@@ -34,13 +34,13 @@
       'The solution is agreed, the configuration is recorded, and the BRD matches both and is signed off.', 'Sign-off counts only when the customer signs or you record the evidence. Exporting a document is never sign-off.'],
     ['4', 'UAT & FTR', 'Prove it works for the customer, then check it is ready to launch.', [
       ['delivery', 'Build, UAT & Go-Live', 'Track the build, then UAT: a status board, draft test cases from the BRD (including SLA and KPI cases), walkthroughs and the issues board.'],
-      ['ftr', 'FTR Report (Excel)', 'Import the FTR workbook and map its columns. The checklist is drafted from the confirmed scope.'],
+      ['ftr', 'FTR Report (Excel)', 'Claude writes the report; it opens as a document drafted like the BRD. Click any cell to change it, pick each result, add or remove test cases, then approve and export Word, PDF or HTML. The Excel tab keeps the workbook.'],
       ['kpi', 'KPI Workbooks', 'Prepare the KPI workbooks the customer will report on.'],
       ['golive', 'Go-live readiness', 'The verdict and the checklist: one line per gap, each turns green when its reason is gone.']],
       'UAT sign-off is recorded and the go-live checklist is complete.', 'Do not start go-live with open critical defects. Raise them in Governance.'],
     ['5', 'Training guides', 'Leave the customer able to run it without you.', [
-      ['guides', 'Guides & Videos', 'Ask Claude for a user guide, UAT guide, training guide or video script. First add your own documents if you have them (an old manual or SOP, notes, the subtitles of a recording, an org package .zip) and tick the ones to use. The drafts come back on this page under Drafts to review: read, correct and approve them. The Comet videos are here too: add a video, copy its brief into Comet, paste the link back.'],
-      ['guidebuilder', 'User Guide Builder', 'Write the written guide section by section, review each one, then export to Word or PDF.'],
+      ['guides', 'Guides & Videos', 'Ask Claude for a user guide, UAT guide, training guide or video script. First add your own documents if you have them (an old manual or SOP, notes, the subtitles of a recording, an org package .zip) and tick the ones to use. The drafts come back on this page under Drafts to review: read, correct and approve them. The Comet videos are here too: add a video, copy its brief into Comet, paste the link back. New folder groups guides and videos (for example Technicians or Admins): use Move to folder in the \u2026 menu of a row. Open a guide and it shows as a document like the BRD: click any text to change it, add sections and pictures, approve, and export Word, PDF or HTML (one file that opens anywhere).'],
+      ['guidebuilder', 'User Guide Builder', 'Write the written guide section by section on the Document tab (the paper, like the BRD) or the Edit tab, review each one, then export to Word, PDF or HTML.'],
       ['vidguide', 'Video to Guide', 'Turn a screen recording you already have into guide steps. The video stays on your computer.']],
       'Customers have the guides they need, the videos are linked and training dates are set.', 'Claude drafts need a human read. Check every screen name against the real configuration. A video cannot be read by Claude: add its subtitles or notes.'],
     ['7', 'Hypercare', 'Stay close after launch.', [
