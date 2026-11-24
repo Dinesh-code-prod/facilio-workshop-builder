@@ -327,7 +327,7 @@
       h += "</div><div class='frozen' id='frozen'></div>";
       ghead.innerHTML = h; letters = ghead.querySelector(".letters");
     }
-    for (var i = 0; i < L.maxCol; i++) { var el = letters.children[i + 1], w = colW(i) + "px"; if (el.style.width !== w) el.style.width = w; var on = i >= cmin && i <= cmax; if (el.classList.contains("on") !== on) el.classList.toggle("on", on); }
+    for (var i = 0; i < L.maxCol; i++) { var el = letters.children[i + 1], w = colW(i) + "px"; if (el.style.width !== w) el.style.width = w; var fzi = i < frozen(); el.style.position = fzi ? "sticky" : ""; el.style.left = fzi ? frzLeft(i) + "px" : ""; el.style.zIndex = fzi ? "4" : ""; el.classList.toggle("frz-last", fzi && i === frozen() - 1); var on = i >= cmin && i <= cmax; if (el.classList.contains("on") !== on) el.classList.toggle("on", on); }
     ghead.style.width = totalWidth() + "px";
   }
   var rafPending = false;
@@ -345,11 +345,13 @@
     if (info.kind === "header" && /\*/.test(info.v)) txt = esc(String(info.v).replace(/\s*\*\s*/g, " ").trim()) + "<span class='req'> *</span>";
     var fb = ctx.hdrBlock && filterMode && c < TABLES[ctx.hdrBlock.table].cols.length ? "<button class='fbtn" + (isFiltered(ctx.hdrBlock.table, c) ? " on" : "") + "' data-ft='" + ctx.hdrBlock.table + "' data-fc='" + c + "' tabindex='-1' aria-label='Filter'>" + (isFiltered(ctx.hdrBlock.table, c) ? "⛉" : "▾") + "</button>" : "";
     var fh = info.editable && r === ctx.rmax && c === ctx.cmax ? "<span class='fh' data-fh='1' title='Drag to fill'></span>" : "";
-    var fst = info.editable ? fmtStyle(info.table, info.idx, c) : "";
+    var fo = info.editable ? fmtGet(info.table, info.idx, c) : (row.type !== "data" ? sheetFmt(state.active)[sKeyIn(L, r, c)] : null), fst = styleOf(fo), fz = frozen();
+    if (fo && fo.note) cls.push("has-note");
+    if (c < fz) { cls.push("frz"); if (c === fz - 1) cls.push("frz-last"); fst += "position:sticky;left:" + frzLeft(c) + "px;z-index:" + (r === sel.r && c === sel.c ? 4 : 3) + ";"; }
     if (fst.indexOf("white-space:normal") >= 0) cls.push("wrap");
     else if (row.type === "data" && info.editable && info.v && !isNumCol(info.table, c) && c + 1 < L.maxCol && !iss && !(info.editable && fmtGet(info.table, info.idx, c) && fmtGet(info.table, info.idx, c).al)) { var nx = cellInfo(r, c + 1); if (!nx.v && !ctx.cellIss[r + ":" + (c + 1)]) cls.push("spill"); }
     return { cls: cls.join(" "), style: "width:" + colW(c) + "px;height:" + hh + "px;line-height:" + (row.type === "data" || row.kind === "gen" ? (hh - 1) + "px" : "1.3") + ";" + fst,
-      html: txt + dd + fb + fh, title: row.type === "static" && info.v && String(info.v).length > 30 ? String(info.v) : "" };
+      html: txt + dd + fb + fh, title: fo && fo.note ? "Note: " + fo.note : (row.type === "static" && info.v && String(info.v).length > 30 ? String(info.v) : "") };
   }
   function renderBody() {
     var H = grid.clientHeight, top = Math.max(0, grid.scrollTop - HEADH), n = L.rows.length;
@@ -1170,7 +1172,7 @@
         else if (kd === "desc") { x.font = { italic: true, size: 9, color: { argb: "FF5E6676" } }; x.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF3F4F8" } }; x.alignment = { vertical: "top", wrapText: true }; }
         else if (kd === "note" || kd === "ref") x.alignment = { wrapText: true, vertical: "top" };
       });
-      exportFormats(ws, S.layout);
+      exportFormats(ws, S.layout, n);
       S.layout.rows.forEach(function (row, i) { if (row.type === "static" && row.kind === "header") ws.getRow(i + 1).height = 32; if (row.type === "static" && row.kind === "desc") ws.getRow(i + 1).height = 48; });
       S.layout.blocks.forEach(function (b) {
         var t = TABLES[b.table], last = b.last ? b.dataStart + Math.max(500, lastFilled(b.table) + 300) : b.dataEnd;
@@ -1407,7 +1409,7 @@
     return [
       { target: function () { return [$("nameBox")]; }, title: "Name box", body: "Shows the selected cell, for example A4. Row numbers match the downloaded workbook. Type an address such as B25 or Asset!C5 and press Enter to jump there." },
       { target: function () { return [$("fx")]; }, title: "Formula bar and column details", body: "The fx box shows the selected cell's value; long values can be edited there. Below it: the selected column, what it needs and, when there is a problem, what is wrong and how to fix it. Many problems have an Apply fix button." },
-      { target: function () { return [$("ribbon")]; }, title: "Toolbar", body: "Undo and redo; font size, bold, italic, underline, strikethrough, text colour and highlight; alignment, wrap text and clear formatting; insert or delete rows; sort, filter and fill down; find and replace. Formatting is kept in the downloaded workbook and never changes the checks. Right-click a cell for the same actions." },
+      { target: function () { return [$("ribbon")]; }, title: "Toolbar", body: "Undo and redo; font size, bold, italic, underline, strikethrough, text colour and highlight, borders and the format painter, on any cell including headings; alignment and wrap text; rows, columns, sort, filter, fill down (Ctrl+D) and right (Ctrl+R), Freeze to keep columns in view, find and replace. Right-click a cell for notes (Shift+F2)." },
       { target: function () { return [$("grid")]; }, enter: function () { if (state.active === "Overview") switchSheet("Site"); }, title: "The sheet", body: "Laid out exactly like the template: title, headings, the template's guidance row, then data rows. Type to replace a value, or double-click a cell (or press F2) to edit the text inside it; Esc cancels. Enter, Tab and the arrow keys move. Click or drag across row numbers or column letters to select whole rows or columns, and right-click them to insert or delete. Drag a column letter's edge to resize it, or double-click the edge to fit the content. Ctrl+Arrow jumps to the edge of the data; Ctrl+Enter fills every selected cell with the typed value. Drag the small square at the corner of a selection to fill down; codes such as AHU-01 continue as AHU-02. Copy and paste work with Excel and Google Sheets." },
       { target: function () { var el = rowsLayer.querySelector(".sel"); return el ? [el] : [$("grid")]; }, title: "Dropdowns", body: "Cells with a ▾ offer a list. Lists linked to other sheets only show what has been entered there, so names always match. Alt + Down opens the list from the keyboard." },
       { target: function () { return [$("tabs")]; }, title: "Sheet tabs", body: "One tab per template sheet. The red number is the count of problems that block the import; a green tick means the sheet has data and no blocking problems." },
@@ -1484,9 +1486,10 @@
   /* ---------- formatting store ---------- */
   function fmtRows(tab) { return state.fmt[tab] || (state.fmt[tab] = []); }
   function fmtGet(tab, i, c) { var F = state.fmt[tab], d = dIx(tab, c); return F && F[i] && F[i][d] ? F[i][d] : null; }
-  function fmtStyle(tab, i, c) {
-    var f = fmtGet(tab, i, c); if (!f) return "";
-    var s = "";
+  function fmtStyle(tab, i, c) { return styleOf(fmtGet(tab, i, c)); }
+  function styleOf(f) {
+    if (!f) return "";
+    var s = f.bd ? "box-shadow:inset 0 0 0 1px #33333D;" : "";
     if (f.b) s += "font-weight:700;";
     if (f.i) s += "font-style:italic;";
     if (f.u || f.s) s += "text-decoration:" + (f.u ? "underline " : "") + (f.s ? "line-through" : "") + ";";
@@ -1525,26 +1528,97 @@
   function cp(v) { return v == null ? v : JSON.parse(JSON.stringify(v)); }
   function snapshot(tabs) { var o = {}; tabs.forEach(function (t) { o[t] = { rows: cp(rows(t)), fmt: cp(state.fmt[t] || []), custom: cp(state.custom[t] || []), order: cp(state.colOrder[t] || null), sheet: TABLES[t].sheet, colw: cp(state.colw[TABLES[t].sheet] || {}) }; }); return o; }
   function restoreSnap(snap) { Object.keys(snap).forEach(function (t) { var x = snap[t]; state.tabs[t] = cp(x.rows); state.fmt[t] = cp(x.fmt); state.custom[t] = cp(x.custom); if (x.order) state.colOrder[t] = cp(x.order); else delete state.colOrder[t]; state.colw[x.sheet] = cp(x.colw); rebuildCols(t); }); changed(); renderPanel(); }
+  /* formats of cells outside the data tables (titles, headings, descriptions, the Overview, blank rows): kept per sheet, keyed by the row's place
+     relative to its table's heading row, so a format stays with its cell as the tables above it grow */
+  function sKeyIn(lay, r, c) { var row = lay.rows[r]; if (!row || row.type === "data") return null; var b = row.block != null ? lay.blocks[row.block] : null; return (b ? "b" + row.block + ":" + (r + 1 - b.headerRow) : "r" + r) + ":" + c; }
+  function sheetFmt(n) { if (!state.sfmt) state.sfmt = {}; return state.sfmt[n] || (state.sfmt[n] = {}); }
+  function fmtTargets() {
+    var R = selRange(), out = selCells();
+    for (var r = R.r1; r <= R.r2; r++) { var row = L.rows[r]; if (!row || row.type === "data") continue; for (var c = R.c1; c <= R.c2 && c < L.maxCol; c++) out.push({ r: r, c: c, sk: sKeyIn(L, r, c) }); }
+    return out;
+  }
+  function curTarget() { var info = cellInfo(sel.r, sel.c); return info.editable ? { table: info.table, idx: info.idx, c: sel.c, r: sel.r } : (L.rows[sel.r] && L.rows[sel.r].type !== "data" ? { r: sel.r, c: sel.c, sk: sKeyIn(L, sel.r, sel.c) } : null); }
+  function fGet(x) { return x.sk ? sheetFmt(state.active)[x.sk] : fmtGet(x.table, x.idx, x.c); }
+  function fSet(x, patch) {
+    if (!x.sk) return setFmt(x.table, x.idx, x.c, patch);
+    var F = sheetFmt(state.active), cur = Object.assign({}, F[x.sk] || {});
+    Object.keys(patch).forEach(function (k) { if (patch[k] === null || patch[k] === "" || patch[k] === false) delete cur[k]; else cur[k] = patch[k]; });
+    if (Object.keys(cur).length) F[x.sk] = cur; else delete F[x.sk];
+  }
+  function fTabs(cells) { var t = uniqTabs(cells.filter(function (x) { return !x.sk; })); if (cells.some(function (x) { return x.sk; })) t.push("__sfmt"); return t; }
   function commitSnap(tabs, before) { var after = snapshot(tabs); undoStack.push({ sheet: state.active, snap: { before: before, after: after } }); if (undoStack.length > 200) undoStack.shift(); redoStack = []; changed(); }
 
   /* ---------- formatting commands ---------- */
   function toggleFmt(key) {
-    var cells = selCells(); if (!cells.length) return needDataSel();
-    var tabs = uniqTabs(cells), before = snapshot(tabs), all = cells.every(function (x) { var f = fmtGet(x.table, x.idx, x.c); return f && f[key]; });
-    cells.forEach(function (x) { var p = {}; p[key] = all ? null : true; setFmt(x.table, x.idx, x.c, p); });
+    var cells = fmtTargets(); if (!cells.length) return needDataSel();
+    var tabs = fTabs(cells), before = snapshot(tabs), all = cells.every(function (x) { var f = fGet(x); return f && f[key]; });
+    cells.forEach(function (x) { var p = {}; p[key] = all ? null : true; fSet(x, p); });
     commitSnap(tabs, before);
   }
   function setFmtAll(patch) {
-    var cells = selCells(); if (!cells.length) return needDataSel();
-    var tabs = uniqTabs(cells), before = snapshot(tabs);
-    cells.forEach(function (x) { setFmt(x.table, x.idx, x.c, patch); });
+    var cells = fmtTargets(); if (!cells.length) return needDataSel();
+    var tabs = fTabs(cells), before = snapshot(tabs);
+    cells.forEach(function (x) { fSet(x, patch); });
     commitSnap(tabs, before);
   }
-  function clearFmt() {
-    var cells = selCells(); if (!cells.length) return needDataSel();
-    var tabs = uniqTabs(cells), before = snapshot(tabs);
-    cells.forEach(function (x) { var F = state.fmt[x.table]; if (F && F[x.idx]) delete F[x.idx][dIx(x.table, x.c)]; });
+  function clearFmt() {   /* like Excel's Clear Formats: the note stays */
+    var cells = fmtTargets(); if (!cells.length) return needDataSel();
+    var tabs = fTabs(cells), before = snapshot(tabs);
+    cells.forEach(function (x) { var f = fGet(x), note = f && f.note; if (x.sk) { var S2 = sheetFmt(state.active); if (note) S2[x.sk] = { note: note }; else delete S2[x.sk]; } else { var F = state.fmt[x.table], d = dIx(x.table, x.c); if (F && F[x.idx]) { if (note) F[x.idx][d] = { note: note }; else delete F[x.idx][d]; } } });
     commitSnap(tabs, before);
+  }
+  /* undo covers the per-sheet formats too */
+  var _snapshot = snapshot, _restoreSnap = restoreSnap;
+  snapshot = function (tabs) { var o = _snapshot(tabs.filter(function (t) { return t !== "__sfmt"; })); if (tabs.indexOf("__sfmt") >= 0) o.__sfmt = { sheet: state.active, f: cp(sheetFmt(state.active)) }; return o; };
+  restoreSnap = function (snap) { var rest = {}; Object.keys(snap).forEach(function (k) { if (k !== "__sfmt") rest[k] = snap[k]; }); if (snap.__sfmt) { sheetFmt(snap.__sfmt.sheet); state.sfmt[snap.__sfmt.sheet] = cp(snap.__sfmt.f); } _restoreSnap(rest); };
+
+  /* ---------- format painter, notes, fill right, today's date, freeze columns ---------- */
+  var painter = null;
+  function startPainter() {
+    if (painter) { painter = null; grid.classList.remove("painting"); refreshRibbon(); return; }
+    var t = curTarget(), f = Object.assign({}, (t && fGet(t)) || {}); delete f.note; painter = f; grid.classList.add("painting");
+    toast("Format copied. Select the cells to paint it on."); refreshRibbon();
+  }
+  function applyPainter() {
+    if (!painter) return; var p = painter; painter = null; grid.classList.remove("painting");
+    var cells = fmtTargets(); if (!cells.length) { refreshRibbon(); return; }
+    var tabs = fTabs(cells), before = snapshot(tabs);
+    cells.forEach(function (x) { var f = fGet(x), note = f && f.note, n = Object.assign({}, p); if (note) n.note = note;
+      if (x.sk) { var S2 = sheetFmt(state.active); if (Object.keys(n).length) S2[x.sk] = n; else delete S2[x.sk]; }
+      else { var F = fmtRows(x.table); while (F.length <= x.idx) F.push(null); if (!F[x.idx]) F[x.idx] = {}; var d = dIx(x.table, x.c); if (Object.keys(n).length) F[x.idx][d] = n; else delete F[x.idx][d]; } });
+    commitSnap(tabs, before); refreshRibbon();
+  }
+  var paintDown = false;   /* armed by the press in the grid: the grid redraws cells under the pointer, so the release can land elsewhere */
+  grid.addEventListener("mousedown", function (e) { paintDown = !!painter && !e.target.closest("[data-rn]"); }, true);
+  window.addEventListener("mouseup", function () { if (painter && paintDown) { paintDown = false; setTimeout(applyPainter, 0); } });
+  var noteAt = null;
+  function editNote() {
+    var t = curTarget(); if (!t) { toast("Select a cell first."); return; }
+    var f = fGet(t); noteAt = t; $("ntTitle").textContent = (f && f.note ? "Edit note" : "New note") + " · " + colLetter(sel.c) + (sel.r + 1); $("ntText").value = (f && f.note) || ""; $("ntDel").hidden = !(f && f.note); $("dlgNote").showModal(); $("ntText").focus();
+  }
+  function setNote(text) { var t = noteAt; noteAt = null; if (!t) return; var tabs = fTabs([t]), before = snapshot(tabs); fSet(t, { note: text ? String(text).slice(0, 2000) : null }); commitSnap(tabs, before); }
+  $("ntOk").onclick = function () { $("dlgNote").close(); setNote($("ntText").value.trim()); grid.focus(); };
+  $("ntDel").onclick = function () { $("dlgNote").close(); setNote(""); grid.focus(); };
+  $("ntCancel").onclick = function () { $("dlgNote").close(); noteAt = null; grid.focus(); };
+  $("ntText").addEventListener("keydown", function (e) { e.stopPropagation(); if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) $("ntOk").click(); });
+  function fillRight() {
+    var R = selRange(); if (R.c1 === R.c2) { if (R.c1 === 0) { toast("Select the cells to fill, including the value to copy on the left."); return; } R.c1--; }
+    var list = [];
+    for (var r = R.r1; r <= R.r2; r++) { var row = L.rows[r]; if (!row || row.type !== "data") continue; var w = TABLES[row.table].cols.length; if (R.c1 >= w) continue;
+      var v = get(row.table, row.idx, R.c1); for (var c = R.c1 + 1; c <= R.c2 && c < w; c++) list.push([row.table, row.idx, c, v]); }
+    if (list.length) setCells(list); else needDataSel();
+  }
+  function insertNow(time) {
+    var d = new Date(), p = function (x) { return String(x).padStart(2, "0"); }, v = time ? p(d.getHours()) + ":" + p(d.getMinutes()) : d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+    var cells = selCells(); if (!cells.length) return needDataSel(); setCells(cells.map(function (x) { return [x.table, x.idx, x.c, v]; }));
+  }
+  function frozen() { return (state.freeze && state.freeze[state.active]) || 0; }
+  function frzLeft(c) { var x = 46; for (var i = 0; i < c; i++) x += colW(i); return x; }
+  function toggleFreeze() {
+    state.freeze = state.freeze || {};
+    if (frozen()) delete state.freeze[state.active]; else state.freeze[state.active] = Math.max(1, Math.min(sel.c, sel.c2));
+    save(); renderHead(); renderBody(); refreshRibbon();
+    toast(frozen() ? "Column" + (frozen() > 1 ? "s A to " + colLetter(frozen() - 1) + " stay" : " A stays") + " in view while you scroll right. Press Freeze again to unfreeze." : "Columns unfrozen.");
   }
   function uniqTabs(cells) { var m = {}; cells.forEach(function (x) { m[x.table] = 1; }); return Object.keys(m); }
 
@@ -1723,7 +1797,7 @@
     m.innerHTML = item("cut", "Cut", "Ctrl+X") + item("copy", "Copy", "Ctrl+C") + item("paste", "Paste", "Ctrl+V") + "<div class='fsep'></div>" +
       item("insA", "Insert row above", "Ctrl+Shift++") + item("insB", "Insert row below") + item("del", "Delete row", "Ctrl+-") + item("clear", "Clear contents", "Delete") + "<div class='fsep'></div>" +
       item("az", "Sort A to Z") + item("za", "Sort Z to A") + item("fval", "Filter by this value") + (anyFilter() ? item("fclear", "Clear all filters") : "") + "<div class='fsep'></div>" +
-      item("fill", "Fill down", "Ctrl+D") + item("clrfmt", "Clear formatting") + "<div class='fsep'></div>" +
+      item("fill", "Fill down", "Ctrl+D") + item("fillR", "Fill right", "Ctrl+R") + item("clrfmt", "Clear formatting") + item("note", (function () { var t = curTarget(), f = t && fGet(t); return f && f.note ? "Edit note" : "New note"; })(), "Shift+F2") + "<div class='fsep'></div>" +
       item("colL", "Insert column left") + item("colR", "Insert column right") + (curCustom() ? item("colRen", "Rename column") + item("colDel", "Delete column") : "") +
       "<div class='swrow' aria-label='Highlight'>" + PALETTE_FILL.map(function (p) { return "<button class='sw' data-sw='" + p[1] + "' title='Highlight: " + p[0] + "' style='background:" + (p[1] || "var(--surface)") + "'>" + (p[1] ? "" : "∅") + "</button>"; }).join("") + "</div>";
     document.body.appendChild(m); m.style.position = "fixed";
@@ -1750,6 +1824,7 @@
     else if (k === "al-left") setFmtAll({ al: null }); else if (k === "al-center") setFmtAll({ al: "center" }); else if (k === "al-right") setFmtAll({ al: "right" });
     else if (k === "wrap") toggleFmt("wr");
     else if (k === "filter") { filterMode = !filterMode; if (!filterMode && anyFilter()) clearAllFilters(); renderBody(); refreshRibbon(); toast(filterMode ? "Filter buttons added to the table headings" : "Filters removed"); }
+    else if (k === "bd") toggleFmt("bd"); else if (k === "painter") startPainter(); else if (k === "freeze") toggleFreeze(); else if (k === "fillR") fillRight(); else if (k === "note") editNote();
     else if (k === "find") openFind(false); else if (k === "replace") openFind(true);
     else if (k === "colL") insertColumn(false); else if (k === "colR") insertColumn(true); else if (k === "colRen") renameColumn(); else if (k === "colDel") deleteColumn();
   }
@@ -1774,12 +1849,12 @@
     setTimeout(function () { document.addEventListener("mousedown", function close(ev) { if (!m.contains(ev.target)) { m.remove(); document.removeEventListener("mousedown", close); } }); }, 0);
   }
   function refreshRibbon() {
-    var info = cellInfo(sel.r, sel.c), f = info.editable ? (fmtGet(info.table, info.idx, sel.c) || {}) : {};
-    [["b", f.b], ["i", f.i], ["u", f.u], ["s", f.s], ["wrap", f.wr], ["al-left", !f.al], ["al-center", f.al === "center"], ["al-right", f.al === "right"], ["filter", filterMode || anyFilter()]].forEach(function (x) {
+    var info = cellInfo(sel.r, sel.c), ct = curTarget(), f = (ct && fGet(ct)) || {};
+    [["b", f.b], ["i", f.i], ["u", f.u], ["s", f.s], ["wrap", f.wr], ["al-left", !f.al], ["al-center", f.al === "center"], ["al-right", f.al === "right"], ["filter", filterMode || anyFilter()], ["bd", f.bd], ["painter", !!painter], ["freeze", frozen() > 0]].forEach(function (x) {
       var b = $("ribbon").querySelector("[data-cmd='" + x[0] + "']"); if (b) b.setAttribute("aria-pressed", x[1] ? "true" : "false");
     });
     $("rbSize").value = String(f.sz || 14);
-    var dis = !info.editable && !selCells().length;
+    var dis = !fmtTargets().length;
     var cb = $("ribbon").querySelector("[data-colmenu]"); if (cb) cb.disabled = !tableAt(sel.r, sel.c);
     Array.prototype.forEach.call($("ribbon").querySelectorAll("[data-needs='cell']"), function (b) { b.disabled = dis; });
     $("rbSize").disabled = dis;
@@ -1799,8 +1874,8 @@
     return findState.whole ? a === q : a.indexOf(q) >= 0;
   }
   function allHits() {
-    var out = [], sheets = findState.all ? sheetList().filter(function (n) { return n !== "Overview"; }) : [state.active];
-    sheets.forEach(function (n) { var lay = sheetLayout(n); lay.rows.forEach(function (row, r) { if (row.type !== "data") return; var R2 = rows(row.table)[row.idx]; if (!R2) return; TABLES[row.table].cols.forEach(function (col, c) { if (matches(R2[col.d])) out.push({ sheet: n, r: r, c: c, table: row.table, idx: row.idx }); }); }); });
+    var out = [], sheets = findState.all ? sheetList().filter(function (n) { return GEN_NAMES.indexOf(n) < 0; }) : [state.active];
+    sheets.forEach(function (n) { var lay = sheetLayout(n); lay.rows.forEach(function (row, r) { if (row.type === "static") { Object.keys(row.cells).forEach(function (c) { if (matches(row.cells[c].v)) out.push({ sheet: n, r: r, c: +c, ro: true }); }); return; } if (row.type !== "data") return; var R2 = rows(row.table)[row.idx]; if (!R2) return; TABLES[row.table].cols.forEach(function (col, c) { if (matches(R2[col.d])) out.push({ sheet: n, r: r, c: c, table: row.table, idx: row.idx }); }); }); });
     return out;
   }
   function findNext() {
@@ -1823,7 +1898,7 @@
     findNext();
   };
   $("fdReplaceAll").onclick = function () {
-    readFind(); var hits = allHits(); if (!hits.length) { $("fdMsg").textContent = "No matches."; return; }
+    readFind(); var all = allHits(), hits = all.filter(function (h) { return !h.ro; }); if (!hits.length) { $("fdMsg").textContent = all.length ? "The matches are template headings, which can't be changed." : "No matches."; return; }
     setCells(hits.map(function (h) { return [h.table, h.idx, h.c, replaceText(get(h.table, h.idx, h.c))]; }));
     $("fdMsg").textContent = "Replaced " + hits.length + " value" + (hits.length === 1 ? "" : "s") + ". Ctrl+Z undoes it.";
   };
@@ -1941,6 +2016,11 @@
     if (mod && (k === "i" || k === "I")) { e.preventDefault(); toggleFmt("i"); return true; }
     if (mod && (k === "u" || k === "U")) { e.preventDefault(); toggleFmt("u"); return true; }
     if (mod && k === "5") { e.preventDefault(); toggleFmt("s"); return true; }
+    if (mod && !e.shiftKey && (k === "r" || k === "R")) { e.preventDefault(); fillRight(); return true; }
+    if (mod && (k === ":" || (e.shiftKey && k === ";"))) { e.preventDefault(); insertNow(true); return true; }
+    if (mod && k === ";") { e.preventDefault(); insertNow(false); return true; }
+    if (e.shiftKey && k === "F2") { e.preventDefault(); editNote(); return true; }
+    if (k === "Escape" && painter) { e.preventDefault(); painter = null; grid.classList.remove("painting"); refreshRibbon(); return true; }
     if (mod && (k === "d" || k === "D")) { e.preventDefault(); fillDown(); return true; }
     if (mod && (k === "f" || k === "F")) { e.preventDefault(); openFind(false); return true; }
     if (mod && (k === "h" || k === "H")) { e.preventDefault(); openFind(true); return true; }
@@ -1962,19 +2042,26 @@
 
   /* ---------- export formatting to the downloaded workbook ---------- */
   function argb(hex) { return "FF" + String(hex).replace("#", "").toUpperCase(); }
-  function exportFormats(ws, lay) {
+  function exportFormats(ws, lay, n) {
     lay.rows.forEach(function (row, i) {
       if (row.type !== "data") return; var F = state.fmt[row.table]; if (!F || !F[row.idx]) return;
       Object.keys(F[row.idx]).forEach(function (d) {
         var vc = -1; TABLES[row.table].cols.forEach(function (col, k) { if (col.d === +d) vc = k; }); if (vc < 0) return;
-        var f = F[row.idx][d], x = ws.getCell(i + 1, vc + 1), font = Object.assign({}, x.font || {});
-        if (f.b) font.bold = true; if (f.i) font.italic = true; if (f.u) font.underline = true; if (f.s) font.strike = true;
-        if (f.fc) font.color = { argb: argb(f.fc) }; if (f.sz) font.size = Math.round(f.sz * 0.8);
-        x.font = font;
-        if (f.bg) x.fill = { type: "pattern", pattern: "solid", fgColor: { argb: argb(f.bg) } };
-        if (f.al || f.wr) x.alignment = Object.assign({}, x.alignment || {}, f.al ? { horizontal: f.al } : {}, f.wr ? { wrapText: true, vertical: "top" } : {});
+        paintCell(ws.getCell(i + 1, vc + 1), F[row.idx][d]);
       });
     });
+    var SF = (state.sfmt || {})[n] || {};
+    Object.keys(SF).forEach(function (k) { var m = /^(?:b(\d+):(-?\d+)|r(\d+)):(\d+)$/.exec(k); if (!m) return; var r = m[1] != null ? (lay.blocks[+m[1]] ? lay.blocks[+m[1]].headerRow + (+m[2]) : 0) : +m[3] + 1; if (r >= 1) paintCell(ws.getCell(r, +m[4] + 1), SF[k]); });
+  }
+  function paintCell(x, f) {
+    var font = Object.assign({}, x.font || {});
+    if (f.b) font.bold = true; if (f.i) font.italic = true; if (f.u) font.underline = true; if (f.s) font.strike = true;
+    if (f.fc) font.color = { argb: argb(f.fc) }; if (f.sz) font.size = Math.round(f.sz * 0.8);
+    x.font = font;
+    if (f.bg) x.fill = { type: "pattern", pattern: "solid", fgColor: { argb: argb(f.bg) } };
+    if (f.al || f.wr) x.alignment = Object.assign({}, x.alignment || {}, f.al ? { horizontal: f.al } : {}, f.wr ? { wrapText: true, vertical: "top" } : {});
+    if (f.bd) x.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+    if (f.note) x.note = f.note;
   }
 
   /* =====================================================================
