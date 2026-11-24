@@ -71,7 +71,10 @@
   ACT.onbTab = a => { S.ui.onbTab = a.getAttribute('data-v'); try { sessionStorage.setItem('fwb_onbtab_' + S.project.id, S.ui.onbTab); } catch (e) { } V.render(); };
   // ---------- Excel Data Onboarding: the standalone onboarding workspace, served from this site and shown in a frame ----------
   const wsKey = pid => 'facilio-onboarding-workspace-v2:' + pid; const dirtyKey = pid => 'facilio-onboarding-dirty:' + pid;
-  function prepareWs() { const pid = S.project.id; if (S.ui.onbWsFor === pid) return; S.ui.onbWsFor = pid; const rec = I().get('onbws', 'main');
+  function prepareWs() { const pid = S.project.id;
+    // the tool opens in its own light theme to match the Studio (user, 24 Nov 2026); a person who picked dark inside the tool keeps it
+    try { if (!localStorage.getItem('facilio-onboarding-theme')) localStorage.setItem('facilio-onboarding-theme', 'light'); } catch (e) { }
+    if (S.ui.onbWsFor === pid) return; S.ui.onbWsFor = pid; const rec = I().get('onbws', 'main');
     try { if (!localStorage.getItem(dirtyKey(pid)) && rec && rec.json) localStorage.setItem(wsKey(pid), rec.json); } catch (e) { } }
   root.FWBOnbSave = async (pid, raw) => { if (!S.project || S.project.id !== pid || S.readonly) return true;
     try { const st = JSON.parse(raw); const rows = {}; Object.entries(st.tabs || {}).forEach(([k, v]) => { if (k === 'cat') return; const n = (v || []).filter(r => r && r.some(x => x !== '' && x != null)).length; if (n) rows[k] = n; });
