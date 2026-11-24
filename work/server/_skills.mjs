@@ -406,9 +406,14 @@ export const IMPL_SKILLS = {
   ],
   "make_guide": [
    {
+    "skill": "facilio-uat-guide",
+    "from": "studio",
+    "use": "the UAT guide before go-live: test process, test scripts, defect log, sign-off"
+   },
+   {
     "skill": "guidebook-builder",
     "from": "studio",
-    "use": "a user guide and admin guide for a feature"
+    "use": "the handover user guide and admin guide after go-live"
    },
    {
     "skill": "video-to-user-guide",

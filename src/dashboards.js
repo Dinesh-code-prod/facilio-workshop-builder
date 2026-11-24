@@ -70,7 +70,7 @@
   V.projdash = { html() {
     I().load(KINDS); const c = ctx(); const k = c.k; const p = S.project || {}; const cur = c.ph.cur >= 0 ? c.ph.info[c.ph.cur] : null; const gl = goLive(c.st); const gv = c.st.actual - c.st.planned;
     let head = '<div class="page-header"><div class="t"><h1>' + (k ? 'Your project dashboard' : 'Project dashboard') + '</h1><p>' + (k ? 'Where ' + esc(p.name || 'your project') + ' stands today, what is waiting on you, and what is coming next.' : 'The state of ' + esc(p.name || 'the project') + ' at a glance: progress, what is late, what is waiting on the customer and what is next.') + '</p></div></div>';
-    if (!k) { head = calmHero(c, p, cur); }
+    if (!k) { head = calmHero(c, p, cur) + (V.isoJourney ? '<section class="card jr-static" aria-label="Delivery journey"><div class="card-b">' + V.isoJourney({ mode: 'team' }) + '</div></section>' : ''); }   // the seven stages with their plan dates, animated the first time
     const hero = fcard(k ? 'Your project' : 'Delivery progress', '<div class="cs-hero-row"><div>' + fring(c.st.actual, 104) + '</div><div class="cs-hero-t"><b>' + (cur ? 'Stage ' + V.stageOfStep(cur.i) + ' · ' + esc(V.roadmapName(V.stageOfStep(cur.i))) : 'Plan not started') + '</b><span>' + (c.st.n ? c.st.actual + '% done against ' + c.st.planned + '% planned' + (gv ? ' · ' + (gv > 0 ? gv + ' points ahead' : -gv + ' points behind') : ' · on plan') : 'No dated plan yet') + '</span><span>' + (gl ? 'Go-live ' + esc(fd(gl.date)) + (gl.n >= 0 ? ' · ' + gl.n + ' day' + (gl.n === 1 ? '' : 's') + ' to go' : ' · date has passed') : '') + '</span></div></div>');
     const secs = [fsec('Where we are', hero)];
     if (k) {

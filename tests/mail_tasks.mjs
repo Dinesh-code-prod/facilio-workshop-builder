@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import '../work/server/_mailtasks.mjs';
-globalThis.FWBViews = {}; createRequire(import.meta.url)('../src/taskengine.js');
+globalThis.FWBViews = {}; await import('../work/server/_taskrules.mjs'); createRequire(import.meta.url)('../src/taskengine.js');
 const M = globalThis.FWBMailTasks; const { desired, reconcile } = globalThis.FWBViews.taskEngineLogic;
 let n = 0; const t = async (name, fn) => { await fn(); n++; console.log('  ok  ' + name); };
 const ctx = { me: 'me@facilio.com', team: ['me@facilio.com', 'ravi@facilio.com'], customer: 'Al Mujama Group', project: 'Al Mujama FM Rollout', modules: ['Work Order', 'Inventory'], keywords: ['snag list'] };

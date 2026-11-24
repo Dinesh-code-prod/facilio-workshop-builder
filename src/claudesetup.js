@@ -31,7 +31,8 @@
   // ---- Set up your computer (24 Nov 2026): one message for Windows and Mac, the person's own checklist from their last setup report, and what each piece is for ----
   const PIECES = [['studio', 'Delivery Studio connector', 'Lets your Claude read this project and put drafts back here.', 'Claude settings > Connectors > Add custom connector'],
     ['m365', 'Microsoft 365 connector', 'Customer mail, meeting transcripts, contracts in OneDrive or SharePoint.', 'Claude settings > Connectors > Microsoft 365'],
-    ['toolbox', 'Facilio skills (toolbox)', 'How Facilio builds UAT guides, FTRs and configuration. Without it Claude asks before writing a plain draft.', 'The setup message copies it; ask your lead for Bitbucket access if it says so'],
+    ['studioSkills', 'Delivery Studio skills', 'UAT guide before go-live (facilio-uat-guide), handover user guide after go-live (guidebook-builder), solution document. Without them Claude asks before writing a plain draft.', 'Claude setup > Facilio skills: download the ZIPs; the setup message unzips them'],
+    ['toolbox', 'Facilio toolbox skills', 'FTR Generator, configuration and other Facilio skills.', 'The setup message copies it; ask your lead for Bitbucket access if it says so'],
     ['skillsRepo', 'Facilio skills copy', 'The local copy the toolbox opens its skills from.', 'The setup message makes it with Git'],
     ['watcher', 'Instant answers (watcher)', 'Claude answers your chat in seconds instead of minutes.', 'Needs Node.js; the setup message creates the task'],
     ['queue', 'Job queue (every 30 minutes)', 'Background work the Studio starts by itself: mail search, follow-up drafts.', 'The setup message creates the task'],

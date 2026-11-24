@@ -34,7 +34,7 @@ const JOB_SKILLS = {
   fetch_hypercare: [S('support-ticket-responder', 'impl', 'classify a hypercare ticket and draft the answer from the org knowledge')],
   build_solution_doc: [S('facilio-solution-document-builder', 'studio', 'build the Solution Document from the org package .zip', true)],
   make_ftr: [S('ftr-generator', 'impl', 'write or refresh the FTR from the BRD and the package', true), S('ftr-executor', 'impl', 'only when asked to run the FTR in the live org (needs Claude in Chrome)'), XLSX],
-  make_guide: [S('guidebook-builder', 'studio', 'a user guide and admin guide for a feature'), S('video-to-user-guide', 'studio', 'a guide from a recording and what was said'), S('uat-guide-generator', 'impl', 'a customer UAT guide or workflow manual'), DOCX],
+  make_guide: [S('facilio-uat-guide', 'studio', 'the UAT guide before go-live: test process, test scripts, defect log, sign-off'), S('guidebook-builder', 'studio', 'the handover user guide and admin guide after go-live'), S('video-to-user-guide', 'studio', 'a guide from a recording and what was said'), S('uat-guide-generator', 'impl', 'a customer UAT guide or workflow manual'), DOCX],
   change_guide: [S('guidebook-builder', 'studio', 'keep the guide structure and tone'), DOCX],
   make_handover: [S('org-knowledgebase-builder', 'impl', 'the support team knowledge base from the implementation documents'), S('facilio-solution-document-builder', 'studio', 'the Solution Document, when it is not in the pack yet'), DOCX]
 };

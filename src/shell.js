@@ -654,6 +654,7 @@ function projectsHtml() {
       const custViews = navFor().flatMap(g => g.items.map(i => i[0]));
       const startView = S.user.kind === 'customer' ? (h[1] && custViews.includes(h[1]) ? h[1] : (custViews[0] || 'cust_home')) : (h[1] && V[h[1]] ? h[1] : (tabOn('overview') ? 'overview' : 'projdash'));
       go(startView, h[2] ? (startView === 'taskpage' ? { tkPageId: decodeURIComponent(h[2]) } : { module: decodeURIComponent(h[2]) }) : {});
+      if (V.taskEngine) setTimeout(() => V.taskEngine.run(), 4000);   // the task engine runs whenever a team member opens the project, not only on the Tasks page (it skips customers and read-only access)
     } finally { loading(false); }
   }
   V.openProject = openProject;

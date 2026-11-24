@@ -119,8 +119,9 @@ export const WORK_STANDARD = 'Work like a senior delivery consultant. Read every
 const SKILL_WHERE = { impl: id => `facilio-impl-ai-skills/${id}/SKILL.md (the person's local clone of the repository, or through /facilio-impl-toolbox)`, studio: id => `the ${id} skill, installed from Delivery Studio, Claude setup > Facilio skills`, claude: id => `Claude's built-in ${id} skill` };
 // the skill a deliverable cannot be made without (user, 24 Nov 2026: a UAT guide came out as a plain draft because its skill was optional and skipped).
 // By the guide kind for make_guide, by the words of the request for a chat message. Building it any other way needs the person's yes (see blocked).
-const SECTION_NEED = { uat: 'uat-guide-generator', user: 'guidebook-builder', training: 'guidebook-builder', video: 'video-to-user-guide' };
-const WORD_NEED = [[/\buat\b/i, 'uat-guide-generator'], [/\b(ftr|functional test)/i, 'ftr-generator'], [/solution doc/i, 'facilio-solution-document-builder'], [/\b(video|recording)\b[^.]*\bguide|\bguide\b[^.]*\b(video|recording)\b/i, 'video-to-user-guide'], [/\b(user|admin|training|end-?user) (guide|manual)s?\b|\bguidebook\b/i, 'guidebook-builder']];
+// The UAT guide (before go-live) uses facilio-uat-guide; the handover user guide (after go-live) uses guidebook-builder (user, 24 Nov 2026: they are different documents).
+const SECTION_NEED = { uat: 'facilio-uat-guide', user: 'guidebook-builder', training: 'guidebook-builder', video: 'video-to-user-guide' };
+const WORD_NEED = [[/\buat\b/i, 'facilio-uat-guide'], [/\bhandover (user |admin )?(guide|manual)s?\b/i, 'guidebook-builder'], [/\b(ftr|functional test)/i, 'ftr-generator'], [/solution doc/i, 'facilio-solution-document-builder'], [/\b(video|recording)\b[^.]*\bguide|\bguide\b[^.]*\b(video|recording)\b/i, 'video-to-user-guide'], [/\b(user|admin|training|end-?user) (guide|manual)s?\b|\bguidebook\b/i, 'guidebook-builder']];
 const anyEntry = id => { for (const v of Object.values(IMPL_SKILLS.jobSkills)) { const e = (v || []).find(x => x.skill === id); if (e) return e; } return null; };
 export function needSkill(kind, note, section) {
   if (kind === 'make_guide') return SECTION_NEED[String(section || '').toLowerCase()] || '';

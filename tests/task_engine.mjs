@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
-globalThis.FWBViews = {}; createRequire(import.meta.url)('../src/taskengine.js');
+globalThis.FWBViews = {}; await import('../work/server/_taskrules.mjs'); createRequire(import.meta.url)('../src/taskengine.js');
 const { desired, reconcile, idOf } = globalThis.FWBViews.taskEngineLogic;
 let n = 0; const t = async (name, fn) => { await fn(); n++; console.log('  ok  ' + name); };
 const facts = { openFindings: [{ transcriptId: 'tr1', title: 'Kickoff call', count: 3 }, { transcriptId: 'tr2', title: 'Empty', count: 0 }], reviewMissing: [{ part: 'intro', label: 'Introduction' }], coverageMissing: [{ module: 'workorder', label: 'Work Order', count: 2 }], failedCases: [{ id: 'u1', tcid: 'TC-4', title: 'Close a WO' }], kpisNoSolution: [{ id: 'k1', name: 'MTTR' }] };
@@ -38,7 +38,7 @@ await t('reopen only what the engine itself closed; a task a person closed stays
 // ---------- server side ----------
 const src = f => fs.readFileSync(new URL('../' + f, import.meta.url), 'utf8');
 await t('the auto block and the auto source survive the normal task save, and the work.json action is declared', () => {
-  const api = src('work/server/api.mjs'); assert.match(api, /TASK_SRC = \[[^\]]*'auto'\]/); assert.match(api, /out\.auto = \{ key: plain\(au\.key, 200\)/); assert.match(api, /reply: 'task_reply'/);
+  const api = src('work/server/api.mjs'); assert.match(api, /TASK_SRC = \[[^\]]*'auto'[^\]]*\]/); assert.match(api, /out\.auto = \{ key: plain\(au\.key, 200\)/); assert.match(api, /reply: 'task_reply'/);
   const wj = JSON.parse(src('work/work.json')); const tt = wj.mcp.tools.find(x => x.name === 'task_tracking'); assert.ok(tt.input_schema.properties.action.enum.includes('reply')); ['taskId', 'status', 'text'].forEach(k => assert.ok(tt.input_schema.properties[k], k)); assert.equal(wj.mcp.tools.length, 40, 'the connector stays at 40 tools');
 });
 await t('the Teams digest gets a Done button for tasks due soon or overdue, run by the clicker, and only task_reply is allowed from a button', async () => {
