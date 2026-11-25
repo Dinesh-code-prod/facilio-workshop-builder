@@ -12,7 +12,7 @@ const api = (m, u, body) => p.evaluate(async ([m, u, body]) => { const r = await
 const pid = (await api('POST', '/projects', { name: 'Guide docs check', customer: 'Acme' })).project.id;
 await api('PUT', '/projects/' + pid + '/items/ugd/ug1', { data: { title: 'Technician guide', customer: 'Acme', audience: 'Technicians', version: '0.1', status: 'draft', brand: { accent: '#1570EF', cover: true, logo: null }, sections: [{ id: 's1', title: 'Getting started', blocks: [{ t: 'md', text: 'Open the app.\n\n1. Sign in\n2. Pick the site' }] }, { id: 's2', title: 'Close a work order', blocks: [{ t: 'md', text: '- Open the order\n- Press Close' }] }] } });
 await api('POST', '/projects/' + pid + '/ai/import', { task: 'ftr', content: '## Work Orders\n### Use case: Raise and close\n| ID | Test case | Steps | Expected | Result | Evidence |\n|---|---|---|---|---|---|\n| WO-1 | Raise a WO | Open, fill, save | Saved | Pass | |\n| WO-2 | Close a WO | Close it | Closed | | |\n' });
-await p.goto(BASE + `/?nointro#/p/${pid}/guides`); await p.reload(); await p.waitForSelector('.tr-list, .tr-empty', { timeout: 20000 }); await p.waitForTimeout(800);
+await p.goto(BASE + `/?nointro#/p/${pid}/guides`); await p.reload(); await p.waitForSelector('.fb-bar', { timeout: 20000 }); await p.click('[data-act="fbView"][data-v="list"]'); await p.waitForSelector('.tr-list, .tr-empty', { timeout: 20000 }); await p.waitForTimeout(800);   // the page opens on Tiles (25 Nov 2026); these checks use the list
 
 // folders
 await p.click('.fb-new > summary'); await p.click('.fb-new [data-act="tgFolderNew"]'); await p.fill('#tgf_n', 'Technicians'); await p.click('[data-act="tgFolderMake"]'); await p.waitForTimeout(500);

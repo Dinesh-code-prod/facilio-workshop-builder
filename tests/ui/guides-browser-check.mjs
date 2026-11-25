@@ -20,6 +20,13 @@ await p.goto(BASE + `/?nointro#/p/${pid}/guides`); await p.reload(); await p.wai
 await p.evaluate(() => { const F = window.FWB, w = {}; for (let i = 1; i <= 9; i++) w['free:t' + i] = { label: 'Walkthrough ' + i, what: 'Steps', url: '', kind: 'video', at: '2026-11-0' + i + 'T10:00:00Z' }; w['free:r1'] = { label: 'Raise a work order', what: '', url: 'https://comet.facilio.work/v/1', kind: 'video', at: '2026-11-24T09:00:00Z' }; F.S.ws.walkthroughs = w; F.changed('Videos', 'seed'); window.FWBViews.render(); });
 await p.waitForTimeout(600);
 
+// it opens on Tiles: Module-guide cards under one heading per kind (25 Nov 2026)
+const tileHeads = await p.$$eval('.fb .tr-sec h2', h => h.map(x => x.textContent.trim()));
+check('the page opens on Tiles: cards under User guides, UAT guides and Videos', tileHeads.join('|') === 'User guides|UAT guides|Videos' && (await p.locator('.fb .ll-wrap.fb-item .ll-card').count()) >= 4, tileHeads.join('|'));
+check('the UAT guide (plan kind uat) is a card under UAT guides', /UAT guide/.test(await p.textContent('.fb .ll-grid[aria-label="UAT guides"]')) && !(await p.$('.fb .ll-card[data-view="uatguide"]')));   // the UAT guide page is not in the menu, so the library does not open it
+await p.screenshot({ path: `${OUT}/guides-browser-tiles-first.png` });
+await p.click('[data-act="fbView"][data-v="list"]'); await p.waitForTimeout(300);
+
 // the list
 const pr = await primaries(); check('one blue button on the page: + New', pr.length === 1 && /\+ New/.test(pr[0]), pr.join(' | '));
 check('the list has column headers Name, Type, Status, Modified', /Name.*Type.*Status.*Modified/s.test(await p.textContent('.fb-head')));
@@ -47,7 +54,7 @@ await p.goBack(); await p.waitForTimeout(400);
 check('the browser Back button leaves the folder too (still on this page)', !(await p.locator('.fb-back').count()) && (await p.locator('.fb-bar').count()) === 1 && /\/guides/.test(p.url()));
 // tiles and sort
 await p.click('[data-act="fbView"][data-v="tiles"]'); await p.waitForTimeout(200);
-check('Tiles shows the folder first as a large tile', (await p.locator('.fb-tiles .fb-tile').count()) > 2 && /Technicians/.test(await p.textContent('.fb-tiles .fb-tile:first-child')));
+check('Tiles shows the folder first as a large card under Folders', (await p.textContent('.fb .tr-sec h2')).trim() === 'Folders' && /Technicians/.test(await p.textContent('.fb .ll-grid .ll-wrap.fb-item')));
 await p.screenshot({ path: `${OUT}/guides-browser-tiles.png` });
 await p.click('[data-act="fbView"][data-v="list"]'); await p.selectOption('#fbSort', 'name'); await p.waitForTimeout(200);
 const names = await p.evaluate(() => [...document.querySelectorAll('.page-body > .fb-list .tr-row:not(.tr-folder) .fb-name')].map(x => x.textContent));
