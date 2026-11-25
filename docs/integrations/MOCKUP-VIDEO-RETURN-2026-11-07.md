@@ -25,3 +25,6 @@ Not checked: a real Meteor read by Claude, a real Comet link opening in the pane
 
 ## Update 9 Nov 2026 (later): the Comet connector exists
 Comet has a Claude connector (tools seen: `my_work` lists a person's creations with their latest version and link and the requests waiting for Claude; `get_creation` gives every version and a link; `request_video` asks for a new video, walkthrough or story, optionally from a Meteor version link; `get_brief`, `send_to_claude`, `comets`, `project` and more). It has to be added to the person's Claude and appears in a new session. The `send_video` job now tells Claude to use `my_work` and `get_creation` to find the finished video and save its link with `save_mockup`. Seen on the first read: no finished creation yet, one walkthrough request waiting ("Product Tour And Demo", asked 29 Oct). Not built: a Studio button that asks Claude to make a new video with Meteor `send_to_comet` and Comet `request_video`.
+
+## Update 25 Nov 2026
+The whole round trip from the user side, what is in the libraries today and a ranked list of improvements: docs/reports/METEOR-COMET-CONNECTION-2026-11-25.md.
