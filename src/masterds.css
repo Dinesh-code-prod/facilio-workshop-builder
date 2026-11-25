@@ -400,3 +400,27 @@ html body :is(.main, .adm-main) .dk-chip:not(#DS) { display: inline-flex; align-
 html body :is(.main, .adm-main) .dk-chip b:not(#DS) { font-weight: 600; }
 html body :is(.main, .adm-main) .dk-chip button:not(#DS) { width: 22px; height: 22px; border: 0; border-radius: 4px; background: transparent; color: inherit; font: 600 15px/1 var(--ds-body); cursor: pointer; }
 html body :is(.main, .adm-main) .dk-chip button:hover:not(#DS) { background: #DCE8FD; }
+
+/* ---------- Project dashboard purpose tabs: each stage section of a tab under a quiet heading ---------- */
+html body .main .sd-purpose .sd-sec + .sd-sec:not(#DS) { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--ds-border); }
+html body .main .sd-sec-h:not(#DS) { margin: 0 0 12px; font: 600 18px/1.3 var(--ds-head); color: var(--ds-ink); }
+/* ---------- Project dashboard tabs other than Overview: the hero keeps only its title row (figures, Do next and the stage bar belong to Overview) ---------- */
+html body .main .ca-hero.ca-slim > :not(.ca-top):not(#DS) { display: none !important; }
+html body .main .ca-hero.ca-slim .ca-top:not(#DS) { margin-bottom: 8px !important; }
+html body .main .sd-kpi .sd-kl:not(#DS) { text-transform: none !important; letter-spacing: 0 !important; font: 600 13px/1.3 var(--ds-head) !important; color: var(--ds-text2) !important; }
+
+/* ---------- My work (staff dashboard Overview): my open tasks across all my projects ---------- */
+html body .main .sd-mywork:not(#DS) { margin: 4px 0 20px; padding: 16px 20px; border: 1px solid var(--ds-border); border-radius: var(--ds-r-card); background: #fff; box-shadow: var(--ds-sh); }
+html body .main .sd-mywork header:not(#DS) { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+html body .main .sd-mywork h3:not(#DS) { margin: 0; font: 600 16px/1.3 var(--ds-head); color: var(--ds-ink); }
+html body .main .sd-mywork header span:not(#DS) { font: 400 13px/1.3 var(--ds-body); color: var(--ds-text2); }
+html body .main .sd-mw-figs:not(#DS) { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-bottom: 10px; }
+html body .main .sd-mw-f:not(#DS) { font: 400 13.5px/1.3 var(--ds-body); color: var(--ds-text2); }
+html body .main .sd-mw-f b:not(#DS) { margin-right: 6px; font: 700 20px/1 var(--ds-head); color: var(--ds-ink); }
+html body .main .sd-mw-f.bad b:not(#DS) { color: var(--ds-bad); } html body .main .sd-mw-f.warn b:not(#DS) { color: var(--ds-warn); }
+html body .main .sd-mw-list:not(#DS) { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--ds-border); }
+html body .main .sd-mw-list button:not(#DS) { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 14px; align-items: center; width: 100%; padding: 9px 4px; border: 0; border-bottom: 1px solid #EEF0F3; background: transparent; text-align: left; cursor: pointer; font: 400 14px/1.35 var(--ds-body); color: var(--ds-ink); }
+html body .main .sd-mw-list button:hover:not(#DS) { background: var(--ds-subtle); }
+html body .main .sd-mw-list b:not(#DS) { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html body .main .sd-mw-list span:not(#DS) { color: var(--ds-text2); font-size: 13px; }
+html body .main .sd-mw-list em:not(#DS) { font-style: normal; font-size: 13px; color: var(--ds-text2); } html body .main .sd-mw-list em.bad:not(#DS) { color: var(--ds-bad); font-weight: 600; } html body .main .sd-mw-list em.warn:not(#DS) { color: var(--ds-warn); font-weight: 600; }

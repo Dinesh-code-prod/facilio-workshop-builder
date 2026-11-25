@@ -4,7 +4,7 @@
    Every number is computed from saved records; a stage with nothing recorded says so. Read-only: nothing here writes data. Charts come from V.sdc (src/sdcharts.js); reports from V.sdReports (src/sdreports.js). */
 (function (root) {
   'use strict';
-  const F = root.FWB; const { S, esc } = F; const V = root.FWBViews; const ACT = V.ACT; const I = () => V.items;
+  const F = root.FWB; const { S, esc } = F; const V = root.FWBViews; const ACT = V.ACT; const I = () => V.items; const API = root.FWBApi;
   if (!V || !V.projdash || !V.sdc) return;
   const C = V.sdc;
   const cust = () => !!(V.isCustomer && V.isCustomer());
@@ -196,20 +196,66 @@
   function stageData(id) { COL = []; const c = X(); const r = B[id](c); return { c, r, tables: COL.slice(), s: STG.find(x => x.id === id) }; }
   function stagePage(id) { try { const d = stageData(id); return `<div class="sd-stage mdb" style="--c:${d.s.c}"><div class="sd-kpis">${kp(d.r.kpis, d.s.c)}</div>${grid(d.r.body)}</div>`; } catch (e) { console.error(e); return `<div class="sd-stage">${none('This stage could not be drawn.')}</div>`; } }
 
+  // ---------- purpose tabs (dashboard rebuild, 25 Nov 2026): each tab answers one question and holds the stage sections that answer it; no widget was dropped ----------
+  const PTABS = [['delivery', 'Delivery', ['kickoff', 'live', 'handover']], ['work', 'Work', ['work']], ['quality', 'Quality', ['req', 'brd', 'build']], ['customer', 'Customer', ['cust']]];
+  const CTABS = [['docs', 'Requirements & documents', ['req', 'brd']], ['testing', 'Testing & sign-off', ['build', 'live']]];
+  const tabOf = id => ((cust() ? CTABS : PTABS).find(t => t[2].includes(id)) || [id])[0];   // an old stage link (the lifecycle strip, the stage map) opens the tab that now holds that stage
+  const SNAME = { work: 'Work in progress', cust: 'Waiting on the customer' };
+  const who = e => (e ? String(e).split('@')[0] : 'Unassigned');
+  // Work (team): what is overdue, what is blocked, and who carries the open tasks
+  B.work = c => {
+    const M = V.metrics, today = c.today, open = list('task').filter(M.taskOpen), od = M.overdue(open, c.actsOpen, today);
+    const bT = open.filter(t => t.status === 'Blocked'), bA = c.actsOpen.filter(a => a.status === 'Blocked'); const own = {};
+    open.forEach(t => { const o = who(t.owner); const r = own[o] = own[o] || [0, 0, 0]; r[0]++; if (M.taskLate(t, today)) r[1]++; if (t.status === 'Blocked') r[2]++; });
+    const late = od.tasks.map(t => [t.title || '—', 'Task', who(t.owner), M.taskDate(t)]).concat(od.actions.map(a => [a.text || '—', 'Action', who(a.owner), a.due])).sort((x, y) => String(x[3]).localeCompare(String(y[3])));
+    const blk = bT.map(t => [t.title || '—', 'Task', who(t.owner), t.blocker || '—']).concat(bA.map(a => [a.text || '—', 'Action', who(a.owner), a.blocker || a.note || '—']));
+    return { kpis: [['Open tasks', open.length, od.tasks.length + ' overdue'], ['Overdue', od.tasks.length + od.actions.length, 'tasks and actions past their date'], ['Blocked', bT.length + bA.length, 'tasks and actions'], ['Unassigned', (own.Unassigned || [0])[0], 'open tasks with no owner']],
+      body: widget('Overdue work', 'tasks and actions past their date, oldest first', table('Overdue work', ['Item', 'Kind', 'Owner', 'Date'], late.slice(0, 40), 'Nothing is overdue.'), 6)
+        + widget('Blocked work', 'with the blocker recorded', table('Blocked work', ['Item', 'Kind', 'Owner', 'Blocker'], blk, 'Nothing is blocked.'), 6)
+        + widget('Workload by owner', 'open tasks per person', table('Workload by owner', ['Owner', 'Open', 'Overdue', 'Blocked'], Object.keys(own).sort((x, y) => own[y][0] - own[x][0]).map(o => [o].concat(own[o])), 'No open tasks.'), 12) };
+  };
+  // Customer (team): everything waiting on the customer, in one place
+  B.cust = c => {
+    const QT = ['Customer Question', 'Customer Response Required', 'Customer Action Required'], q = list('task').filter(t => QT.includes(t.type) && V.metrics.taskOpen(t));
+    const ca = c.actsOpen.filter(a => a.side === 'customer'), so = c.so.filter(x => x.status === 'requested');
+    return { kpis: [['Waiting on the customer', ca.length + q.length + so.length, 'actions, questions and sign-offs'], ['Customer actions late', c.custLate.length, 'past their date'], ['Questions open', q.length, 'answers or actions awaited'], ['Sign-offs requested', so.length, 'waiting for a signature']],
+      body: widget('Customer actions', 'open, earliest date first', table('Customer actions', ['Action', 'Owner', 'Due'], ca.slice().sort((x, y) => String(x.due || '9').localeCompare(String(y.due || '9'))).map(a => [a.text || '—', who(a.owner), a.due || 'No date']), 'No open customer actions.'), 6)
+        + widget('Questions and responses awaited', 'customer questions and requested responses', table('Questions and responses awaited', ['Item', 'Type', 'Status', 'Due'], q.map(t => [t.title || '—', t.type, (t.question && t.question.status) || t.status, V.metrics.taskDate(t) || 'No date']), 'Nothing is waiting on an answer.'), 6)
+        + widget('Sign-offs waiting', 'requested and not yet signed', table('Sign-offs waiting', ['Sign-off', 'Requested'], so.map(x => [x.title || x.name || x.id, x.requestedAt || x.at || '—']), 'No sign-off is waiting.'), 12) };
+  };
+  Object.assign(KGO, { 'Open tasks': 'tasks', 'Overdue': 'tasks', 'Blocked': 'tasks', 'Unassigned': 'tasks', 'Waiting on the customer': 'governance', 'Customer actions late': 'governance', 'Questions open': 'tasks', 'Sign-offs requested': 'governance' });
+  Object.assign(WGO, { 'Overdue work': ['tasks', 'Open the tasks'], 'Blocked work': ['tasks', 'Open the tasks'], 'Workload by owner': ['tasks', 'Open the tasks'], 'Customer actions': ['governance', 'Open actions'], 'Questions and responses awaited': ['tasks', 'Open the tasks'], 'Sign-offs waiting': ['governance', 'Open sign-offs'] });
+  function purposePage(tab) {
+    const t = (cust() ? CTABS : PTABS).find(x => x[0] === tab); if (!t) return stagePage(tab);
+    return '<div class="sd-purpose">' + t[2].map(id => { try { const d = stageData(id), name = d.s ? d.s.label : SNAME[id]; return '<section class="sd-sec sd-stage mdb" id="sd-sec-' + id + '"' + (d.s ? ' style="--c:' + d.s.c + '"' : '') + '>' + (t[2].length > 1 ? '<h2 class="sd-sec-h">' + esc(name) + '</h2>' : '') + '<div class="sd-kpis">' + kp(d.r.kpis, d.s ? d.s.c : '#1570EF') + '</div>' + grid(d.r.body) + '</section>'; } catch (e) { console.error(e); return '<section class="sd-sec">' + none('This section could not be drawn.') + '</section>'; } }).join('') + '</div>';
+  }
+
+  // ---------- My work (team, Overview): my open tasks across all my projects, from GET /api/me/work; refreshed at most once a minute ----------
+  function myWork() {
+    if (cust() || !API) return ''; const w = S.ui.myWork;
+    if (!w || Date.now() - w.at > 60000) { if (!S.ui.myWorkLoading) { S.ui.myWorkLoading = true; API.get('/api/me/work').then(d => { S.ui.myWork = { at: Date.now(), d }; }).catch(() => { S.ui.myWork = { at: Date.now(), d: null }; }).finally(() => { S.ui.myWorkLoading = false; V.render(); }); } if (!w) return '<section class="sd-mywork" aria-busy="true"><h3>My work</h3><div class="muted small">Loading…</div></section>'; }
+    const d = w.d; if (!d) return '<section class="sd-mywork"><h3>My work</h3><p class="small muted">Your tasks across projects could not be loaded. They show again on the next visit.</p></section>';
+    const c = d.counts || {}, it = (d.items || []).slice(0, 5), fd = x => (V.fmtDate ? V.fmtDate(x) : x);
+    const fig = (n, l, tone) => '<span class="sd-mw-f' + (tone && n ? ' ' + tone : '') + '"><b>' + n + '</b>' + esc(l) + '</span>';
+    return '<section class="sd-mywork" aria-label="My work across my projects"><header><h3>My work</h3><span>your open tasks across ' + d.projects + ' project' + (d.projects === 1 ? '' : 's') + '</span></header><div class="sd-mw-figs">' + fig(c.open || 0, 'open') + fig(c.overdue || 0, 'overdue', 'bad') + fig(c.soon || 0, 'due in 3 days', 'warn') + fig(c.blocked || 0, 'blocked', 'bad') + '</div>'
+      + (it.length ? '<ul class="sd-mw-list">' + it.map(x => '<li><button type="button" data-act="sdMyGo" data-p="' + esc(x.project) + '"><b>' + esc(x.title || ('T-' + x.n)) + '</b><span>' + esc(x.projectName || '') + '</span><em class="' + (x.overdue ? 'bad' : x.blocked ? 'bad' : x.soon ? 'warn' : '') + '">' + esc(x.overdue ? 'Overdue since ' + fd(x.due) : x.blocked ? 'Blocked' : x.due ? 'Due ' + fd(x.due) : 'No date') + '</em></button></li>').join('') + '</ul>' : '<p class="small muted">Nothing is assigned to you right now.</p>') + '</section>';
+  }
+  ACT.sdMyGo = a => { const p = a.getAttribute('data-p'); if (p) location.hash = '#/p/' + p + '/tasks'; };
+
   // ---------- wire into the project dashboard ----------
   const base = V.projdash.html;
   V.projdash.html = function () {
-    I().load(KINDS); const items = cust() ? STG.filter(s => CUST_STG.includes(s.id)) : STG; const all = [['overview', 'Overview']].concat(items.map(s => [s.id, s.label, s.c]), [['reports', 'Reports']]);
-    let cur = S.ui.sdTab || 'overview'; if (!all.some(x => x[0] === cur)) cur = 'overview';
-    const html = base.call(this); const mark = '<div class="cs-page">';
+    I().load(KINDS); const all = [['overview', 'Overview']].concat((cust() ? CTABS : PTABS).map(t => [t[0], t[1]]), [['reports', 'Reports']]);
+    let cur = tabOf(S.ui.sdTab || 'overview'); if (!all.some(x => x[0] === cur)) cur = 'overview';
+    const html0 = base.call(this), html = cur === 'overview' ? html0 : html0.replace('<section class="ca-hero"', '<section class="ca-hero ca-slim"'); const mark = '<div class="cs-page">';   // the hero's figures and Do next belong to Overview; other tabs keep only its title row, so their content starts near the top
     // team view: readiness, the lifecycle and the widgets wait behind one fold (calm top, user 23 Nov 2026); a native <details> keeps them in the page for print and checks
     const fold = inner => (cust() ? inner : `<details class="ca-more"${S.ui.pdMore ? ' open' : ''}><summary>Show charts and details</summary>${V.pdReadiness ? V.pdReadiness() : ''}${inner}</details>`);
-    if (cur === 'overview') { const i0 = html.indexOf(mark); if (V.dk && i0 >= 0) { try { return html.slice(0, i0) + mark + tabsHtml(cur, all) + fold(lifecycle() + V.dk.overview()) + '</div>'; } catch (e) { console.error(e); } }   // the widget Overview (src/dashkit.js); the older bento below is the fallback
+    if (cur === 'overview') { const i0 = html.indexOf(mark); if (V.dk && i0 >= 0) { try { return html.slice(0, i0) + mark + tabsHtml(cur, all) + myWork() + fold(lifecycle() + V.dk.overview()) + '</div>'; } catch (e) { console.error(e); } }   // the widget Overview (src/dashkit.js); the older bento below is the fallback
       let ex = ''; try { ex = overviewExtra(); } catch (e) { console.error(e); } return html.replace(mark, () => mark + tabsHtml(cur, all) + lifecycle() + ex); }
-    const i = html.indexOf(mark); let body; try { body = cur === 'reports' ? (V.sdReports ? V.sdReports.page() : none('Reports are not available.')) : stagePage(cur); } catch (e) { console.error(e); body = none('This tab could not be drawn.'); }
+    const i = html.indexOf(mark); let body; try { body = cur === 'reports' ? (V.sdReports ? V.sdReports.page() : none('Reports are not available.')) : purposePage(cur); } catch (e) { console.error(e); body = none('This tab could not be drawn.'); }
     return (i < 0 ? html : html.slice(0, i)) + mark + tabsHtml(cur, all) + (V.dk && cur !== 'reports' ? '<div class="dk-fbar">' + V.dk.exportBar('dk', true) + '</div>' : '') + body + '</div>';
   };
-  ACT.sdTab = a => { S.ui.sdTab = a.getAttribute('data-v'); V.render(); };
+  ACT.sdTab = a => { const v = a.getAttribute('data-v'), t = tabOf(v); S.ui.sdTab = t; V.render(); if (t !== v) setTimeout(() => { const e = document.getElementById('sd-sec-' + v); if (e) e.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 80); };
   if (root.document) root.document.addEventListener('toggle', e => { if (e.target.classList && e.target.classList.contains('ca-more')) S.ui.pdMore = e.target.open; }, true);   // the fold stays as the person left it
 
   // ---------- admin: the stages across every active project ----------

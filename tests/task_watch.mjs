@@ -170,4 +170,11 @@ await t('lifecycle nudges: the Studio-open sweep tells a project owner once, pri
   assert.ok(first.length >= 1, 'a nudge was sent: ' + JSON.stringify(sent.map(x => x.title))); assert.deepEqual(first[0].to, [SAM], 'to the project owner only (a private message)'); assert.match(JSON.stringify(first[0]), /open blocker|Project health/);
   sent = []; await as(SAM, 'POST', '/api/notifications/sweep', {}); assert.equal(sent.filter(nudge).length, 0, 'the same trouble is not sent again');
 });
+await t('GET /api/me/work lists my open tasks across my team projects only, nobody else's; someone on no project gets nothing', async () => {
+  const r = await as(SAM, 'GET', '/api/me/work'); assert.equal(r.status, 200); const titles = r.data.items.map(x => x.title);
+  assert.ok(titles.includes('Sam task') && titles.includes('Sam other project'), JSON.stringify(titles)); assert.ok(!titles.some(x => /^Kim/.test(x)), 'nobody else\'s tasks');
+  assert.ok(r.data.items.every(x => x.project && x.projectName), 'each item names its project'); assert.equal(r.data.counts.open, r.data.items.length);
+  const k = await as(KIM, 'GET', '/api/me/work'); const kt = k.data.items.map(x => x.title); assert.ok(kt.includes('Kim late task') && !kt.includes('Sam task') && !kt.includes('Sam other project'), JSON.stringify(kt));
+  const c = await as('nobody.x@facilio.com', 'GET', '/api/me/work'); assert.equal(c.status, 200); assert.equal(c.data.items.length, 0, 'someone on no project gets an empty list'); assert.equal(c.data.projects, 0);
+});
 console.log(n + ' task reminder checks passed');
