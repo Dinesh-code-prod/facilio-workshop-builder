@@ -99,8 +99,9 @@
   // Admin: the filters apply to every Admin tab, so a portfolio of hundreds of projects can be cut down to the part you are looking at
   function filterPortfolio(ps) {
     const f = AF(), D = V.sdd, today = V.today(), q = String(f.q || '').trim().toLowerCase();
-    // the time range is the one in the Admin header (applied before this, to every Admin tab); the filter bar no longer has a second one
-    return ps.filter(p => { const m = p.metrics || {};
+    // the Admin header period (just below) and this bar's stage, health, customer, type, go-live and search narrow the projects on every Admin tab
+    const rg = V.range && V.range.hooks && V.range.hooks.adm ? V.range.span(V.range.hooks.adm.state() || {}) : ['', ''];   // the Admin header period keeps the projects with activity in it (their last change); undated projects drop out while a period is set
+    return ps.filter(p => { const m = p.metrics || {}; if ((rg[0] || rg[1]) && !V.range.inRange(m.lastActivity, rg)) return false;
       if (f.stage !== 'all' && String(D.rstageOf(p)) !== f.stage) return false; if (f.health !== 'all' && p.health !== f.health) return false;
       if (f.customer !== 'all' && (p.customer || 'No customer') !== f.customer) return false; if (f.type !== 'all' && typeOf(p) !== f.type) return false;
       if (q && !((p.name || '') + ' ' + (p.customer || '')).toLowerCase().includes(q)) return false;
@@ -213,8 +214,8 @@
     const WK = 10, weekEnd = i => new Date(Date.parse(today + 'T00:00:00Z') - i * 7 * 864e5).toISOString().slice(0, 10), wkLab = []; for (let i = WK - 1; i >= 0; i--) wkLab.push(new Date(weekEnd(i) + 'T00:00:00Z').toLocaleDateString('en', { day: 'numeric', month: 'short', timeZone: 'UTC' }));
     const weekly = items => { const out = []; for (let i = WK - 1; i >= 0; i--) { const to = weekEnd(i), from = weekEnd(i + 1); out.push(items.filter(t => { const d = String((t && t._created) || '').slice(0, 10); return d > from && d <= to; }).length); } return out; };
     const allTasks = V.items && V.items.ready(['task']) ? V.items.list('task') : [], openT = allTasks.filter(t => ts(t) !== 'done'), spT = weekly(allTasks), spA = weekly(c.acts), spR = weekly(c.raid), spU = weekly(c.tcs);
-    const tpr = c.tcs.length ? pct(c.passed, c.tcs.length) : null, gz = widget('Test pass rate', c.tcs.length ? c.passed + ' of ' + c.tcs.length + ' test cases passed' : 'no test cases yet', C.gauge(tpr, tpr + '%', c.tcs.length ? 'passed' : '', tpr >= 80 ? OK : tpr >= 50 ? WARN : BAD, 'No test cases yet.'), 4);
-    const kpiT = [kpis[0], kpis[1], ['Open tasks', openT.length, openT.filter(t => t.due && t.due < today).length + ' overdue · created per week', null, spT], ['Open risks and issues', c.raidOpen.length, c.raidHigh.length + ' high impact · created per week', null, spR], ['Test pass rate', tpr == null ? '—' : tpr + '%', c.tcs.length ? c.passed + ' of ' + c.tcs.length + ' passed' : 'no test cases yet', tpr, null]];
+    const PR = V.metrics.passRate(c.tcs), tpr = PR.pct, gz = widget('Test pass rate', PR.run ? PR.passed + ' of ' + PR.run + ' test cases run passed' : c.tcs.length ? 'no test case has been run yet' : 'no test cases yet', C.gauge(tpr, tpr == null ? '—' : tpr + '%', PR.run ? 'passed' : '', tpr >= 80 ? OK : tpr >= 50 ? WARN : BAD, 'No test cases yet.'), 4);
+    const kpiT = [kpis[0], kpis[1], ['Open tasks', openT.length, openT.filter(t => V.metrics.taskLate(t, today)).length + ' overdue · created per week', null, spT], ['Open risks and issues', c.raidOpen.length, c.raidHigh.length + ' high impact · created per week', null, spR], ['Test pass rate', tpr == null ? '—' : tpr + '%', PR.run ? PR.passed + ' of ' + PR.run + ' run passed' : c.tcs.length ? 'none run yet' : 'no test cases yet', tpr, null]];
     const kpT = '<div class="sd-kpis sd-k5">' + kpiT.map((a, i) => kpi(a[0], a[1], a[2], ['#3b82f6', '#0ea5e9', '#f59e0b', c.raidHigh.length ? BAD : '#ef4444', OK][i], a[3], a[4])).join('') + '</div>';
     // plan vs actual: the share of dated plan steps due by each date (a line), and how many are Done today (a dot)
     const pr = c.pr || []; let planW = widget('Plan vs actual', 'share of plan steps due, and done today', C.none('Add dated plan steps to see the plan.'), 8), ganttW = widget('Plan timeline', 'dated plan steps', C.none('Add dated plan steps to see the timeline.'), 12);

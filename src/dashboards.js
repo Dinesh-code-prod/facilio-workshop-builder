@@ -45,8 +45,8 @@
   function calmHero(c, p, cur) {
     if (S.project && S.ui.caCount !== S.project.id) { S.ui.caCount = S.project.id; setTimeout(countUp, 30); }
     const openT = c.tasks.filter(t => !['Done', 'Cancelled'].includes(t.status));
-    const lateT = openT.filter(t => (t.due && t.due < c.today) || (t.eta && t.eta < c.today)), lateA = c.open.filter(c.late);
-    const late = lateT.length + lateA.length, risks = c.raid.filter(r => r.status !== 'Closed').length, wait = c.custOpen.length;
+    const M = V.metrics, lateT = openT.filter(t => M.taskLate(t, c.today)), lateA = c.open.filter(a => M.actionLate(a, c.today));   // one overdue rule (src/dashmetrics.js)
+    const late = lateT.length + lateA.length, risks = M.openRisks(c.raid).length, wait = c.custOpen.length;
     const sn = cur ? V.stageOfStep(cur.i) : 0, si = ROAD.indexOf(sn);
     const eye = [p.customer, sn ? 'Stage ' + (si + 1) + ' of ' + ROAD.length + ' · ' + V.roadmapName(sn) : 'Plan not started'].filter(Boolean).join('  ·  ');
     const status = (late ? late + ' overdue' : 'On track') + (wait ? ' · ' + wait + ' waiting on the customer' : '') + '.';
@@ -132,7 +132,7 @@
     const status = (p) => { const mm = p.metrics, d = dlay(p); return d === null ? 'No target date' : d < 0 ? Math.abs(d) + 'd past target' : d + 'd to target'; };
 
     // ----- widgets -----
-    const stats = `<div class="adx-stats">${stat('Active projects', ps.length, (m.completed || 0) + ' completed' + (m.onHold ? ' · ' + m.onHold + ' on hold' : ''))}${stat('On track', pct + '%', parts[3][1] + ' of ' + ps.length + ' projects', pct >= 70 ? 'ok' : pct >= 40 ? 'warn' : ps.length ? 'bad' : '')}${stat('Blocked', m.blocked || 0, 'critical blockers', m.blocked ? 'bad' : '')}${stat('Overdue', m.overdue || 0, 'against plan or end date', m.overdue ? 'bad' : '')}${stat('Waiting on customers', m.awaitingCustomer || 0, wait + ' open item' + (wait === 1 ? '' : 's'), wait ? 'warn' : '')}${stat('Open tasks', open, late ? late + ' overdue' : 'none overdue', late ? 'warn' : '')}</div>`;
+    const stats = `<div class="adx-stats">${stat('Active projects', ps.length, (m.completed || 0) + ' completed' + (m.onHold ? ' · ' + m.onHold + ' on hold' : ''))}${stat('On track', pct + '%', parts[3][1] + ' of ' + ps.length + ' projects', pct >= 70 ? 'ok' : pct >= 40 ? 'warn' : ps.length ? 'bad' : '')}${stat('Blocked', parts[0][1], 'projects with a critical blocker', parts[0][1] ? 'bad' : '')}${stat('Overdue', parts[1][1], 'projects behind plan or end date', parts[1][1] ? 'bad' : '')}${stat('Waiting on customers', ps.filter(p => (p.metrics.custWaiting || 0) > 0).length, wait + ' open item' + (wait === 1 ? '' : 's'), wait ? 'warn' : '')}${stat('Open tasks', open, late ? late + ' overdue' : 'none overdue', late ? 'warn' : '')}</div>`;
 
     const healthW = card('Health mix', 'active projects', `<div class="adx-hm">${donut(parts, pct + '%', 'ON TRACK')}<ul class="adx-lg">${parts.map(p => `<li><i style="background:${p[2]}"></i>${esc(p[0])}<b>${p[1]}</b></li>`).join('')}</ul></div>`, 4);
 

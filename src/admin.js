@@ -112,7 +112,7 @@
   }
   function dashboard() {
     const bar = V.range.bar('adm', A.rg, { note: A.rg.period === 'all' ? '' : 'Projects with activity or created in this period' });
-    const tabs = `<div class="dtabs" role="tablist" aria-label="Dashboard views">${DTABS.map(([k, l]) => `<button role="tab" aria-selected="${A.dash === k}" class="dtab${A.dash === k ? ' on' : ''}" data-act="admTab" data-t="${k}">${l}</button>`).join('')}</div>`;
+    const tabs = `<div class="dtabs" role="tablist" aria-label="Dashboard views">${DTABS.map(([k, l]) => `<button role="tab" aria-selected="${A.dash === k}" class="dtab${A.dash === k ? ' on' : ''}" data-act="admDash" data-t="${k}">${l}</button>`).join('')}</div>`;
     return tabs + dashBody();
   }
 
@@ -221,7 +221,7 @@
       ${dcard('Storage growth', 'Files added per month, last 6 months', bars(i.storage.map(m => ({ v: Math.round(m.bytes / 1e6 * 10) / 10, l: new Date(m.month + '-01T00:00:00Z').toLocaleDateString(undefined, { month: 'short', timeZone: 'UTC' }), tip: m.n + ' files, ' + size(m.bytes) })), null, 'blue') + '<div class="xs muted" style="margin-top:8px">Bar values are megabytes added that month.</div>')}
     </div>`;
   }
-  ACT.admTab = async a => { A.dash = a.getAttribute('data-t'); show(); await lazy(); };
+  ACT.admDash = async a => { A.dash = a.getAttribute('data-t'); show(); await lazy(); };
   ACT.admCust = a => { A.q = a.getAttribute('data-name') || ''; A.sec = 'projects'; A.filter = 'all'; A.stage = 'all'; show(); };
 
   // ---------- projects ----------

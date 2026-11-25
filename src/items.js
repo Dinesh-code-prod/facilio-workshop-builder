@@ -54,7 +54,7 @@
   V.items = { prime, load, ready, list, get, put, del, uid, reset: () => { st = { project: null, kinds: {}, at: {}, loading: {} }; } };
 
   // ---------- small shared helpers for the new sections ----------
-  V.today = () => new Date().toISOString().slice(0, 10);
+  V.today = () => { const n = new Date(); return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0') + '-' + String(n.getDate()).padStart(2, '0'); };   // the person's own calendar day (local), not the UTC one: overdue and countdowns match the dates shown
   V.daysBetween = (a, b) => Math.round((new Date(b + 'T00:00:00Z') - new Date(a + 'T00:00:00Z')) / 864e5);
   V.addDays = (d, n) => { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
   V.pill = (cls, text) => `<span class="pl pl-${cls}">${F.esc(text)}</span>`;
