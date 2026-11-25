@@ -66,7 +66,8 @@
   const popped = () => { try { return new Set(JSON.parse(sessionStorage.getItem(POP) || '[]')); } catch (e) { return new Set(); } };
   function popNew() {
     if (!S.project || !S.user || document.hidden || document.getElementById('bellPop')) return; const rs = readSet(), ps = popped();
-    const fresh = all().filter(x => x.kind !== 'team' && !isRead(x, rs) && !ps.has(x.id)); if (!fresh.length) return; fresh.forEach(x => ps.add(x.id)); try { sessionStorage.setItem(POP, JSON.stringify([...ps].slice(-400))); } catch (e) { }
+    // only this project's notices pop up here (user, 25 Nov 2026: "why other project notification is appearing here"); another project's stay in the bell list, with its name
+    const fresh = all().filter(x => x.kind !== 'team' && !(x.srv && x.pid && x.pid !== S.project.id) && !isRead(x, rs) && !ps.has(x.id)); if (!fresh.length) return; fresh.forEach(x => ps.add(x.id)); try { sessionStorage.setItem(POP, JSON.stringify([...ps].slice(-400))); } catch (e) { }
     let box = document.getElementById('ntPops'); if (!box) { box = document.createElement('div'); box.id = 'ntPops'; box.setAttribute('role', 'status'); box.setAttribute('aria-live', 'polite'); document.body.appendChild(box); }
     const miss = fresh.filter(x => x.kind === 'miss'), rest = fresh.filter(x => x.kind !== 'miss');   // a missed step always pops on its own, with its project, owner and Open
     const show = (firstPop && miss.length > 2 ? [{ id: '', kind: 'miss', title: miss.length + ' required steps are past their due date', body: 'Open the bell to see each one and go straight to it' }] : miss.slice(0, 3)).concat(firstPop && rest.length > 2 ? [{ id: '', text: 'You have ' + rest.length + ' new notifications' }] : rest.slice(0, Math.max(0, 3 - miss.length))); firstPop = false;
