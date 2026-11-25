@@ -871,7 +871,7 @@
    },
    {
     "name": "project_changes",
-    "description": "What changed in a project since a date (default: the last 7 days), newest first. With action it CHANGES the project safely: scope (modules in or out of scope; flows off, requirements out), tasks (close, reassign, re-date in bulk), addtasks (new tasks from a tracker or document you read), check (findings by severity), undo (id), history. For scope, tasks and addtasks call without token first (dry run), show the plan, then again with the token only after a yes. Full text: connector_help topic project_changes.",
+    "description": "What changed in a project since a date (default 7 days). With action it changes the project safely: scope (modules in or out of scope, flows off, requirements out), tasks (bulk close, reassign, re-date), addtasks (new tasks from a tracker you read), check, undo (id), history. Call without token first (dry run), show the plan, call again with the token only after a yes. Full text: connector_help topic project_changes.",
     "function": "api",
     "input_schema": {
      "type": "object",
