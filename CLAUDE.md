@@ -37,6 +37,8 @@ Run `/handoff`. It commits and pushes finished work, puts half-done work on a `w
 - **No vendor UI names (user, 19 Nov 2026):** never name another company's design language or product UI in code, comments or docs.
 - **Checks:** `node tests/ui/master-ds-check.mjs` (every menu entry and stage tab, both layouts, all three views, at 1920, 1366 and 1100 px: open state, page errors, overlap) and `tests/ui/button-colour-audit.mjs`. Everything the customer and the team see must look neat and uncrowded; keep answers short and in plain words, and say what was not checked.
 
+- **Guide films (user, 25 Nov 2026; plan `docs/plans/TEAM-GUIDE-FILMS-PLAN-2026-11-25.md`):** a film for every part of the Studio, made from real Studio screens (`tools/film-capture.mjs` on a copy of the local data), written as code on `public/films/kit.js`. Films play on the page itself, never in a pop-up: `V.filmCard(id)` is a poster in a deep Facilio gradient (blue, violet for Claude, teal, pink; an allowed gradient like the projects banner) and a click plays it in place. List every film in `V.FILMS` (`src/filmplayer.js`); posters sit in the Team Guide (top, each stage, a Videos section). `node build.mjs` warns above 48 MB and fails above 50 MB.
+
 ## Things that go wrong here
 - On Windows the Bash tool can mangle backslashes and newlines inside heredocs that contain quotes. Write scripts with the Write tool and run them with node.
 - `node build.mjs` empties `dist/` first, so a build that fails leaves `dist/` empty; fix and rebuild.

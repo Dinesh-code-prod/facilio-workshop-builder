@@ -1,9 +1,10 @@
-/* Film player (user, 25 Nov 2026: setup videos that stay in KB; plan docs/plans/CLAUDE-SETUP-VIDEO-PLAN-2026-11-25.md). Plays a film written as code
-   (public/films/<id>.js registers FWBFilms[id] = { title, W, H, DUR, SCENES, draw(g, t) }; the same code plays in VideoHub's live preview) by drawing it
-   on a canvas: no video file, so a 100-second film is about 16 KB. V.filmCard(id, title, sub, side) puts the player in the page itself (user, 25 Nov 2026:
-   "why do we have to click a button"): the first frame shows at once, one click plays; play/pause, a scrub bar, chapters (the film's scenes), full screen
-   (button or F; Esc or Backspace leaves it), keyboard (Space, arrows) while the player has focus, Download (one offline HTML file) and Save as video.
-   Nothing plays by itself. */
+/* Film player (user, 25 Nov 2026: guide films that stay in KB, made from the real Studio; plans docs/plans/CLAUDE-SETUP-VIDEO-PLAN-2026-11-25.md and
+   TEAM-GUIDE-FILMS-PLAN-2026-11-25.md). Plays a film written as code (public/films/<id>.js on the shared kit public/films/kit.js registers FWBFilms[id] =
+   { title, W, H, DUR, SCENES, draw(g, t) }; the same code plays in VideoHub's live preview) by drawing it on a canvas: no video file. V.filmCard(id, title,
+   sub, side) puts the film in the page itself (user, 25 Nov 2026: "why do we have to click a button"; "click and instantly the video gets played"): a poster
+   in a Facilio gradient, one click loads the film and plays it in place; play/pause, a scrub bar, chapters (the film's scenes), full screen (button or F;
+   Esc or Backspace leaves it), keyboard (Space, arrows) while the player has focus, Download (one offline HTML file), Save as video and Close (back to the
+   poster). One film plays at a time; a page redraw keeps it playing. V.FILMS lists every film. */
 (function (root) {
   'use strict';
   const V = root.FWBViews; if (!V) return; const ACT = V.ACT; const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -11,10 +12,23 @@
   const film = () => (root.FWBFilms || {})[P.id];
   const $ = s => P.host && P.host.querySelector(s);
   const mmss = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+  // every film there is: [id, title, one line on what it shows, seconds, gradient tone]; the Team Guide's Videos list and the posters read it
+  V.FILMS = [
+    ['tour', 'A tour of Delivery Studio', 'Your projects, a project\'s Home, the menu, Claude, the customer view and where to learn', 100, 'blue'],
+    ['claude-setup', 'Set up Claude in 2 minutes', 'The four steps on your laptop, once', 110, 'violet'],
+    ['contract-intake', 'Contract intake', 'From the signed contract to the kick-off: add, analyse, settle what disagrees', 80, 'teal'],
+    ['plan-replan', 'Plan timeline: re-planning', 'Edit dates in the grid, say why, undo, the reason log and export', 86, 'pink']];
+  const meta = id => V.FILMS.find(x => x[0] === id) || [id, id, '', 0, 'blue'];
+  // before it plays a film is a poster: its title on a Facilio gradient and a round play button; nothing is loaded until it is pressed
+  const poster = (id, title, sub) => `<button type="button" class="fp-poster" data-act="filmOpen" aria-label="Play the film: ${esc(title || meta(id)[1])}"><span class="fp-pi" aria-hidden="true"></span><span class="fp-tx"><small>Watch${meta(id)[3] ? ' · ' + mmss(meta(id)[3]) : ''}</small><b>${esc(title || meta(id)[1])}</b><span>${esc(sub || meta(id)[2])}</span></span></button>`;
   const isFull = () => !!(P.host && (document.fullscreenElement && P.host.contains(document.fullscreenElement) || P.host.querySelector('.fp-main.fp-max')));
-  // the player's place in the page; it fills itself in once the film code is loaded (a page re-render keeps the position and play state)
-  V.filmCard = (id, title, sub, side) => `<div class="fp-inline" data-film="${esc(id)}" role="region" aria-label="${esc(title)}"><div class="fp-main"><div class="fp-stage"><div class="fp-load">Loading the film…</div></div></div>
-    <div class="fp-side"><b class="fp-title">${esc(title)}</b><small class="fp-sub">${esc(sub)}</small><div class="fp-chs"></div><div class="fp-acts">${side || ''}</div></div></div>`;
+  // the film's place in the page: a poster until it is pressed (a page redraw keeps the open film's position and play state)
+  V.filmCard = (id, title, sub, side) => `<div class="fp-inline${side ? ' has-side' : ''}" data-film="${esc(id)}" data-tone="${esc(meta(id)[4])}" role="region" aria-label="${esc(title || meta(id)[1])}"><div class="fp-main"><div class="fp-stage">${poster(id, title, sub)}</div></div>
+    <div class="fp-side"><b class="fp-title">${esc(title || meta(id)[1])}</b><small class="fp-sub">${esc(sub || meta(id)[2])}</small><div class="fp-chs"></div><div class="fp-acts">${side || ''}</div></div></div>`;
+  // a player back to its poster (another film was opened, or Close)
+  function unmount(host) { if (!host) return; host.classList.remove('on', 'playing'); delete host.dataset.on; const c = host.querySelector('.fp-ctl'); if (c) c.remove(); host.querySelector('.fp-chs').innerHTML = '';
+    host.querySelectorAll('.fp-acts [data-act="filmDownload"], .fp-acts .fp-vid').forEach(e => e.remove());
+    host.querySelector('.fp-stage').innerHTML = poster(host.dataset.film, host.querySelector('.fp-title').textContent, host.querySelector('.fp-sub').textContent); }
   function paint() { const f = film(), cv = $('canvas'); if (!f || !cv) return; const g = cv.getContext('2d'); g.setTransform(cv.width / f.W, 0, 0, cv.height / f.H, 0, 0); f.draw(g, P.t === 0 && !P.playing ? (f.POSTER || 4) : P.t);   // before play: a frame with the title in, not the empty first one
     const r = $('.fp-range'); if (r && document.activeElement !== r) r.value = P.t.toFixed(1); const tm = $('.fp-time'); if (tm) tm.textContent = mmss(P.t) + ' / ' + mmss(f.DUR);
     const b = $('.fp-play'); if (b) { b.textContent = P.playing ? 'Pause' : P.t >= f.DUR ? 'Play again' : P.t > 0 ? 'Play' : 'Play the film'; b.setAttribute('aria-pressed', String(P.playing)); }
@@ -39,14 +53,14 @@
     else if (k === 'ArrowRight' || k === 'ArrowLeft') { e.preventDefault(); P.t = Math.max(0, Math.min(f.DUR, P.t + (k === 'ArrowRight' ? 5 : -5))); paint(); } }
   async function mount(host) {
     host.dataset.on = '1'; const id = host.getAttribute('data-film');
-    try { if (!(root.FWBFilms || {})[id]) await V.loadScript('films/' + id + '.js'); } catch (e) { host.querySelector('.fp-load').textContent = 'The film could not be loaded. Use the written steps below.'; return; }
+    try { if (!root.FWBFilmKit) await V.loadScript('films/kit.js'); if (!(root.FWBFilms || {})[id]) await V.loadScript('films/' + id + '.js'); } catch (e) { delete host.dataset.on; V.toast('The film could not be loaded', 6000, true); return; }
     const f = root.FWBFilms[id]; if (!f) return; if (f.load) await f.load('films/');   // the real Studio screens the film shows (a few JPEGs)
     if (!host.isConnected) return;
     if (P.id !== id) { P.id = id; P.t = 0; P.playing = false; }
-    if (P.host && P.host !== host) stopRec();   // the page was redrawn: a recording of the old canvas would freeze, so it ends
-    P.host = host;
+    if (P.host && P.host !== host) { stopRec(); if (P.host.isConnected) unmount(P.host); }   // another film was playing (back to its poster), or the page was redrawn (a recording of the old canvas would freeze, so it ends)
+    P.host = host; host.classList.add('on');
     host.querySelector('.fp-stage').innerHTML = `<canvas width="${f.W}" height="${f.H}" data-act="filmToggle" role="img" aria-label="${esc(f.title)}: ${esc(f.SCENES.map(s => s.name).join(', '))}"></canvas><button type="button" class="fp-big" data-act="filmToggle" aria-label="Play the film"><span class="fp-pl" aria-hidden="true"></span></button>`;
-    host.querySelector('.fp-main').insertAdjacentHTML('beforeend', `<div class="fp-ctl"><button type="button" class="btn sm primary fp-play" data-act="filmToggle" aria-pressed="false">Play the film</button><input type="range" class="fp-range" min="0" max="${f.DUR}" step="0.1" value="0" aria-label="Position in the film"><span class="fp-time"></span><button type="button" class="btn sm fp-fs" data-act="filmFull" title="F for full screen; Esc or Backspace to leave">Full screen</button></div>`);
+    host.querySelector('.fp-main').insertAdjacentHTML('beforeend', `<div class="fp-ctl"><button type="button" class="btn sm primary fp-play" data-act="filmToggle" aria-pressed="false">Play the film</button><input type="range" class="fp-range" min="0" max="${f.DUR}" step="0.1" value="0" aria-label="Position in the film"><span class="fp-time"></span><button type="button" class="btn sm fp-fs" data-act="filmFull" title="F for full screen; Esc or Backspace to leave">Full screen</button><button type="button" class="btn sm ghost" data-act="filmClose" title="Back to the poster">Close</button></div>`);
     host.querySelector('.fp-chs').innerHTML = `<div class="fp-ch" role="group" aria-label="Chapters">${f.SCENES.map(s => `<button type="button" data-act="filmSeek" data-t0="${s.t0}" data-t1="${s.t1}"><span>${mmss(s.t0)}</span>${esc(s.name)}</button>`).join('')}</div>`;
     host.querySelector('.fp-acts').insertAdjacentHTML('afterbegin', `<button type="button" class="btn sm" data-act="filmDownload" title="One small file that plays offline in any browser">Download (HTML)</button><button type="button" class="btn sm fp-vid" data-act="filmVideo" title="Records the film on this computer as a video file (about 1 to 2 MB) to send or share">Save as video</button>`);
     const r = host.querySelector('.fp-range'); r.addEventListener('input', () => { P.t = +r.value; paint(); });
@@ -55,9 +69,9 @@
     if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => { const cv = host.querySelector('canvas'), st = host.querySelector('.fp-stage'); if (!cv || !st || P.rec) return; const w = Math.round(Math.min(st.clientWidth, st.clientHeight * f.W / f.H) * (root.devicePixelRatio || 1)); if (w > 0 && Math.abs(w - cv.width) > 2) { cv.width = w; cv.height = Math.round(w * f.H / f.W); if (P.host === host) paint(); } }).observe(host.querySelector('.fp-stage'));
     paint(); if (P.playing) play(true);
   }
-  // fill in every player as soon as a page puts one in (pages are redrawn as plain HTML, so there is no other hook)
+  // a page redraw puts the open film back as a poster: fill that one in again, so it keeps its place and goes on playing (pages are redrawn as plain HTML, so there is no other hook)
   if (typeof MutationObserver !== 'undefined' && root.document) {
-    new MutationObserver(() => document.querySelectorAll('.fp-inline:not([data-on])').forEach(mount)).observe(document.documentElement, { childList: true, subtree: true });
+    new MutationObserver(() => { if (P.id && !(P.host && P.host.isConnected)) { const h = document.querySelector(`.fp-inline[data-film="${P.id}"]:not([data-on])`); if (h) mount(h); } }).observe(document.documentElement, { childList: true, subtree: true });
     document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && !$('.fp-main.fp-max')) unHist(true); if (P.host) paint(); });
     root.addEventListener('popstate', () => { if (P.hist && P.host) full(false, true); });
     // Esc or Backspace leaves full screen wherever the focus is
@@ -65,6 +79,10 @@
   }
   // the big round button hides while playing, so the keys (Space, F, arrows) stay with the player through its Play button
   ACT.filmToggle = a => { play(!P.playing); if (a && !a.classList.contains('fp-play')) { const b = $('.fp-play'); if (b) b.focus({ preventScroll: true }); } };
+  // a poster pressed: load the film, put the player in its place and play at once
+  ACT.filmOpen = async a => { const host = a.closest('.fp-inline'); if (!host || host.dataset.on) return; const id = host.dataset.film; if (P.id !== id || P.host !== host) { if (P.host && P.host !== host && P.host.isConnected) { P.playing = false; unmount(P.host); } P.id = id; P.t = 0; P.playing = false; }
+    await mount(host); if (P.host === host) { play(true); const b = $('.fp-play'); if (b) b.focus({ preventScroll: true }); } };
+  ACT.filmClose = () => { if (isFull()) full(false); P.playing = false; stopRec(); const h = P.host; P.host = null; P.id = ''; unmount(h); };
   ACT.filmSeek = a => { P.t = +a.getAttribute('data-t0') + 0.01; paint(); if (!P.playing) play(true); };
   ACT.filmFull = () => full(!isFull());
   // a real video file, made on this computer when asked (the app itself ships only the 16 KB film code): the film plays once to the end while it records
@@ -74,7 +92,7 @@
     rec.onstop = () => { P.rec = null; if (b) { b.disabled = false; b.textContent = 'Save as video'; } if (parts.length) V.download(P.id + '-film.webm', new Blob(parts, { type: 'video/webm' })); };
     P.rec = rec; if (b) { b.disabled = true; b.textContent = 'Recording… plays to the end'; } P.t = 0; rec.start(1000); play(true); };
   // one HTML file that plays offline: the film code and a small player, nothing fetched from outside
-  ACT.filmDownload = async () => { const f = film(); if (!f) return; let code = '', srcs = {}; try { code = await (await fetch('films/' + P.id + '.js')).text(); for (const k of f.FILES || []) { const bl = await (await fetch('films/' + P.id + '/' + k + '.jpg')).blob(); srcs[k] = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(bl); }); } } catch (e) { V.toast('The film could not be read for the download', 6000, true); return; }
+  ACT.filmDownload = async () => { const f = film(); if (!f) return; let code = '', srcs = {}; try { code = await (await fetch('films/kit.js')).text() + '\n' + await (await fetch('films/' + P.id + '.js')).text(); for (const k of f.FILES || []) { const bl = await (await fetch('films/' + P.id + '/' + k + '.jpg')).blob(); srcs[k] = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(bl); }); } } catch (e) { V.toast('The film could not be read for the download', 6000, true); return; }
     const player = `const F=FWBFilms[${JSON.stringify(P.id)}],cv=document.getElementById('c'),g=cv.getContext('2d'),r=document.getElementById('r'),b=document.getElementById('b'),tm=document.getElementById('tm');let t=0,on=false,last=0;const mm=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');function paint(){g.setTransform(cv.width/F.W,0,0,cv.height/F.H,0,0);F.draw(g,t);r.value=t;tm.textContent=mm(t)+' / '+mm(F.DUR);b.textContent=on?'Pause':'Play';}function loop(ts){if(on){t=Math.min(F.DUR,t+(ts-(last||ts))/1000);if(t>=F.DUR)on=false;}last=ts;paint();if(on)requestAnimationFrame(loop);}b.onclick=()=>{if(t>=F.DUR)t=0;on=!on;last=0;requestAnimationFrame(loop);};r.oninput=()=>{t=+r.value;paint();};r.max=F.DUR;(F.load?F.load('',${JSON.stringify(srcs)}):Promise.resolve()).then(paint);`;
     const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(f.title)}</title><style>body{margin:0;background:#F8FAFC;font:15px Inter,"Segoe UI",system-ui,sans-serif;color:#0F172A}main{max-width:1280px;margin:0 auto;padding:16px}canvas{width:100%;height:auto;border-radius:12px;box-shadow:0 8px 24px rgba(16,24,40,.12);background:#fff}.c{display:flex;gap:12px;align-items:center;margin-top:12px}input{flex:1}button{font:inherit;padding:8px 18px;border-radius:10px;border:0;background:#1570EF;color:#fff;cursor:pointer}</style></head><body><main><h1 style="font-size:20px">${esc(f.title)}</h1><canvas id="c" width="${f.W}" height="${f.H}"></canvas><div class="c"><button id="b">Play</button><input id="r" type="range" min="0" step="0.1" value="0" aria-label="Position"><span id="tm"></span></div></main><script>${code.replace(/<\/script/gi, '<\\/script')}</script><script>${player}</script></body></html>`;
     V.download(P.id + '-film.html', new Blob([html], { type: 'text/html' })); };
