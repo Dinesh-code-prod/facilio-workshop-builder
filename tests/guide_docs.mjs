@@ -17,7 +17,7 @@ let n = 0; const t = async (name, fn) => { await fn(); n++; console.log('  ok  '
 
 // pure: folders, the document paper, the HTML file, the FTR report as a document
 globalThis.FWBViews = {}; const req = createRequire(import.meta.url); req('../src/guideslist.js'); const DP = req('../src/docpaper.js'); const FR = req('../src/ftrreport.js'); const CC = req('../src/chatcmds.js');
-const { folders } = globalThis.FWBViews.guidesLogic;
+const { folders, arrange } = globalThis.FWBViews.guidesLogic;
 await t('folders: make, refuse a twin name, rename, move a guide in and out, and delete only an empty folder', async () => {
   let r = folders.add(undefined, '  Technicians ', 'f1'); assert.ok(r.ok); assert.deepEqual(r.store.list, [{ id: 'f1', name: 'Technicians' }]); let st = r.store;
   assert.equal(folders.add(st, 'technicians', 'f2').ok, false, 'the same name twice is refused'); assert.equal(folders.add(st, '   ', 'f2').ok, false, 'a folder needs a name');
@@ -27,6 +27,15 @@ await t('folders: make, refuse a twin name, rename, move a guide in and out, and
   st = folders.move(st, 'ugd:g1', '').store; assert.equal(folders.folderOf(st, 'ugd:g1'), '', 'moved back to the main list');
   r = folders.remove(st, 'f1', keys); assert.ok(r.ok); assert.deepEqual(r.store.list.map(x => x.id), ['f2']);
   assert.equal(folders.folderOf({ list: [], of: { 'ugd:x': 'gone' } }, 'ugd:x'), '', 'a row filed in a deleted folder shows in the main list');
+});
+await t('the file-browser list: folders first (newest first, with their counts), items newest first, videos still to make apart, one folder shows only its items', async () => {
+  let st = folders.add(undefined, 'Older', 'f1', '2026-11-01T00:00:00Z').store; st = folders.add(st, 'Just made', 'f2', '2026-11-24T10:00:00Z').store; assert.equal(st.list[1].at, '2026-11-24T10:00:00Z');
+  st = folders.move(st, 'ugd:a', 'f1').store; assert.equal(folders.rename(st, 'f2', 'Just made 2').store.list[1].at, '2026-11-24T10:00:00Z', 'a rename keeps when it was made');
+  const items = [{ key: 'ugd:a', g: 'guides', title: 'A', type: 'Guide', at: '2026-11-20' }, { key: 'ugd:b', g: 'guides', title: 'B', type: 'Guide', at: '2026-11-23' }, { key: 'v:x', g: 'videos', title: 'X', type: 'Video', at: '', toMake: true }, { key: 'v:y', g: 'videos', title: 'Y', type: 'Video', at: '2026-11-22' }];
+  let A = arrange(items, st, '', 'all', 'newest'); assert.deepEqual(A.folders.map(f => f.title), ['Just made', 'Older']); assert.deepEqual(A.folders.map(f => f.n), [0, 1]);
+  assert.deepEqual(A.ready.map(o => o.key), ['ugd:b', 'v:y'], 'newest first; the filed guide is not at the top level'); assert.deepEqual(A.toMake.map(o => o.key), ['v:x']);
+  A = arrange(items, st, '', 'videos', 'name'); assert.deepEqual(A.folders.map(f => f.title), ['Just made', 'Older'], 'folders stay whatever is shown'); assert.deepEqual(A.ready.map(o => o.key), ['v:y']);
+  A = arrange(items, st, 'f1', 'all', 'newest'); assert.deepEqual(A.folders, [], 'no folders inside a folder'); assert.deepEqual(A.ready.map(o => o.key), ['ugd:a']);
 });
 const pic = 'data:image/png;base64,iVBORw0KGgo=';
 const guide = { title: 'Raise a work order <now>', customer: 'Acme', audience: 'Technicians', version: '0.2', status: 'draft', brand: { accent: '#1570EF', cover: true, logo: { fileId: 'logo1' } },
@@ -39,6 +48,14 @@ await t('a guide exports as one self-contained HTML file with its title, section
   assert.match(h, /<th>Field<\/th>/); assert.match(h, /<td>HQ<\/td>/); assert.equal((h.match(/<img src="data:image\/png/g) || []).length, 2, 'the screenshot and the logo are written in');
   assert.doesNotMatch(h, /\[S1\]/, 'source tags never reach the document'); assert.doesNotMatch(h, /<script/i); assert.match(h, /&lt;script&gt;/); assert.doesNotMatch(h, /data-ugimg|contenteditable|src="http/, 'nothing points outside the file');
   assert.match(h, /for<\/div><div class="dp-cc">Acme/); assert.match(h, /Version 0\.2 \u00b7 24 Nov 2026 \u00b7 Draft/);
+});
+await t('a UAT guide with 19 sections renders every section on paper (the blank preview of 24 Nov 2026): a short cover on screen, the text, and a line for the sections still empty', async () => {
+  const uat = { title: 'UAT guide', version: '0.1', status: 'draft', plan: { kind: 'uat' }, brand: { accent: '#1570EF', cover: true }, sections: Array.from({ length: 19 }, (_, i) => ({ id: 's' + i, title: 'Section ' + (i + 1), blocks: i % 3 ? [{ t: 'md', text: 'Step for section ' + (i + 1) + '\n1. Open it\n2. Check it' }] : [], gen: i % 3 ? undefined : 'pending' })) };
+  const h = DP.paper(DP.guideModel(uat, null, '25 Nov 2026'), { edit: true, compact: true, empty: 'Nothing written in this section yet.' });
+  for (let i = 1; i <= 19; i++) assert.ok(h.includes('>Section ' + i + '</h1>'), 'section ' + i + ' is on the paper');
+  assert.equal((h.match(/<ol><li>Open it<\/li>/g) || []).length, 12, 'every written section shows its steps'); assert.equal((h.match(/Nothing written in this section yet/g) || []).length, 7, 'empty sections say so instead of showing nothing');
+  assert.match(h, /class="paper dp-cover dp-short"/, 'the screen cover is short, so the first section shows without scrolling'); assert.ok(h.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().length > 600, 'the paper holds real text');
+  const file = DP.htmlFile(DP.guideModel(uat, null, '25 Nov 2026')); assert.doesNotMatch(file, /Nothing written|dp-short/, 'the downloaded file keeps the full cover and no screen hints');
 });
 await t('the Document tab: the same paper, editable, with hooks for the section titles, the text and the captions', async () => {
   const h = DP.paper(DP.guideModel(guide), { edit: true, titleAttr: i => 'data-dpt="' + i + '"', mdAttr: (i, j) => 'data-dpm="' + i + '.' + j + '"', capAttr: (i, j) => 'data-dpc="' + i + '.' + j + '"', tools: i => '<div class="dp-tools" data-s="' + i + '"></div>' });
