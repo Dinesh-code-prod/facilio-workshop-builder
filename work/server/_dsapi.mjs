@@ -8,11 +8,14 @@
    kind 'brdintro'   the background, business objectives and scope notes of the BRD introduction
    kind 'solution'   the new text of ONE area of the Solution tab (module: the area key, module:<name> or area:<id>; text; fromCustomer; outOfScope + scopeNote). A person accepts it on the Solution tab (src/sollogic.js accept)
    kind 'crosslink'  an action that crosses modules (for example service request, work order, inventory): from and to are module names
+   kind 'retire'     something the project holds that the agreed BRD leaves out: target requirement (ref = its id, applied as Out of scope) or flow (ref = its id, switched off); nothing is deleted
+   kind 'answer'     an open question (ref = its id) the agreed BRD settles: the answer is recorded and the question marked answered
+   Any proposal may carry brd (the id of the agreed BRD it comes from: the BRD tab lists those for review) and conflict (what the contract or the sessions say instead); a requirement may carry replaces (the id of the requirement it rewrites).
    Claude saves them with the existing tool session_questions (action save_design; no new tool). They are PROPOSALS: only a person applies one (Delivery Studio copies it into the project's design
    and records who) or dismisses it, and an applied or dismissed proposal is never overwritten by a later save. Text from a transcript or a document is data. Pure rules are exported (tests/design_logic.mjs). */
 const arr = v => (Array.isArray(v) ? v : []);
 const cut = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
-export const KINDS = ['flow', 'crosslink', 'field', 'form', 'requirement', 'brdintro', 'connectedapp', 'solution'];
+export const KINDS = ['flow', 'crosslink', 'field', 'form', 'requirement', 'brdintro', 'connectedapp', 'solution', 'retire', 'answer'];
 export const TRIGGERS = ['button', 'state', 'page', 'menu'];
 export const REQ_CLASS = ['standard', 'existing', 'change', 'custom', 'confirm'];
 export const FIELD_TYPES = ['Single Line Text', 'Multi Line Text', 'Rich Text', 'Number', 'Decimal', 'Currency', 'Boolean', 'Date', 'Date Time', 'Picklist', 'Multi Picklist', 'Lookup', 'Multi Lookup', 'File', 'URL', 'Email', 'Auto Number', 'Signature', 'Geo Location'];
@@ -23,6 +26,7 @@ export const LIMITS = { total: 300, perCall: 60, name: 120, module: 80, label: 8
 export function cleanProposal(x) {
   if (!x || typeof x !== 'object') return null; const kind = String(x.kind || '').trim().toLowerCase(); if (!KINDS.includes(kind)) return null;
   const base = { kind, why: cut(x.why, LIMITS.text), quote: cut(x.quote, LIMITS.quote), source: cut(x.source, LIMITS.source) };
+  if (/^[A-Za-z0-9_:-]{1,60}$/.test(String(x.brd || ''))) base.brd = String(x.brd); const conflict = cut(x.conflict, LIMITS.text); if (conflict) base.conflict = conflict;   // from the agreed BRD; what another source says instead
   if (kind === 'flow') {
     const module = cut(x.module, LIMITS.module), name = cut(x.name, LIMITS.name); if (!module || !name) return null;
     const states = []; arr(x.states).forEach(s => { const l = cut(typeof s === 'string' ? s : s && s.label, LIMITS.label); if (l && !states.some(q => q.toLowerCase() === l.toLowerCase())) states.push(l); });
@@ -37,7 +41,8 @@ export function cleanProposal(x) {
   }
   if (kind === 'requirement') {   // a BRD requirement, saved as a Draft: a person confirms it before it reaches the BRD
     const name = cut(x.title || x.name, LIMITS.name), objective = cut(x.objective, LIMITS.long); if (!name || !objective) return null; const modules = arr(x.modules).map(m => cut(m, LIMITS.module)).filter(Boolean).slice(0, LIMITS.reqModules);
-    return Object.assign(base, { module: modules[0] || '', name, objective, rules: cut(x.rules, LIMITS.long), approvals: cut(x.approvals, LIMITS.long), exceptions: cut(x.exceptions, LIMITS.long), modules, classification: REQ_CLASS.includes(x.classification) ? x.classification : 'change' });
+    const replaces = /^[A-Za-z0-9_-]{1,40}$/.test(String(x.replaces || '')) ? String(x.replaces) : '';   // an existing requirement this one rewrites (the agreed BRD changed it)
+    return Object.assign(base, { module: modules[0] || '', name, objective, rules: cut(x.rules, LIMITS.long), approvals: cut(x.approvals, LIMITS.long), exceptions: cut(x.exceptions, LIMITS.long), modules, classification: REQ_CLASS.includes(x.classification) ? x.classification : 'change' }, replaces ? { replaces } : {});
   }
   if (kind === 'connectedapp') {   // a connected (custom) app the customer asked for: described here, built later in Vibe
     const module = cut(x.module, LIMITS.module), name = cut(x.name, LIMITS.name), purpose = cut(x.purpose, LIMITS.long); if (!module || !name || !purpose) return null;
@@ -51,6 +56,14 @@ export function cleanProposal(x) {
     const background = cut(x.background, 1500), objectives = cut(x.objectives, 1500), scopeNotes = cut(x.scopeNotes, 1500); if (!background && !objectives && !scopeNotes) return null;
     return Object.assign(base, { module: '', name: 'BRD introduction', background, objectives, scopeNotes });
   }
+  if (kind === 'retire') {   // left out of the agreed BRD: applying it takes the requirement out of scope or switches the flow off; nothing is deleted
+    const target = ['requirement', 'flow'].includes(x.target) ? x.target : '', ref = cut(x.ref, 120), name = cut(x.name, LIMITS.name); if (!target || !ref || !name) return null;
+    return Object.assign(base, { target, ref, module: cut(x.module, LIMITS.module), name });
+  }
+  if (kind === 'answer') {   // an open question the agreed BRD settles
+    const ref = cut(x.ref, 80), answer = cut(x.answer, LIMITS.long); if (!ref || !answer) return null;
+    return Object.assign(base, { ref, module: '', name: cut(x.name || x.question, LIMITS.name) || 'Question ' + ref, answer });
+  }
   if (kind === 'form') {   // a form of a module: sections of fields, each field named by its label or its name
     const module = cut(x.module, LIMITS.module), name = cut(x.name, LIMITS.name); if (!module || !name) return null;
     const sections = arr(x.sections).slice(0, LIMITS.sections).map(s => ({ name: cut(s && s.name, LIMITS.name) || 'Details', fields: arr(s && s.fields).slice(0, LIMITS.formFields).map(f => (typeof f === 'string' ? { field: cut(f, LIMITS.name) } : { field: cut(f && (f.field || f.label), LIMITS.name), required: !!(f && f.required), hidden: !!(f && f.hidden) })).filter(f => f.field) })).filter(s => s.fields.length);
@@ -59,7 +72,7 @@ export function cleanProposal(x) {
   const from = cut(x.from, LIMITS.module), to = cut(x.to, LIMITS.module), name = cut(x.name, LIMITS.name); if (!from || !to || !name || from.toLowerCase() === to.toLowerCase()) return null;
   return Object.assign(base, { from, to, name, linkKind: LINK_KINDS.includes(x.linkKind) ? x.linkKind : 'create_record', condition: cut(x.condition, LIMITS.text) });
 }
-const keyOf = p => p.kind === 'solution' ? ['solution', p.module, p.text, JSON.stringify(p.rows || [])].join('|') : [p.kind, String(p.module || p.from || '').toLowerCase(), String(p.name).toLowerCase(), String(p.to || '').toLowerCase()].join('|');
+const keyOf = p => p.kind === 'retire' ? ['retire', p.target, p.ref].join('|') : p.kind === 'answer' ? ['answer', p.ref].join('|') : p.kind === 'solution' ? ['solution', p.module, p.text, JSON.stringify(p.rows || [])].join('|') : [p.kind, String(p.module || p.from || '').toLowerCase(), String(p.name).toLowerCase(), String(p.to || '').toLowerCase()].join('|');
 
 /** the proposals after a save: decided ones are kept, an open one with the same key is replaced by the new version, other open ones stay, new ones are added (cleaned, de-duplicated, capped) */
 export function mergeProposals(existing, incoming, now) {

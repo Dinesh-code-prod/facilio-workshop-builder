@@ -1312,7 +1312,7 @@
       },
       "proposals": {
        "type": "array",
-       "description": "Only for save_design: [{ kind: solution|flow|crosslink|field|form|requirement ..., ... }]; the claimed job's instructions give each shape. Full text: connector_help topic session_questions.",
+       "description": "Only for save_design: [{ kind: solution|flow|crosslink|field|form|requirement|retire|answer ..., ... }]; the claimed job's instructions give each shape. Full text: connector_help topic session_questions.",
        "items": {
         "type": "object"
        }
