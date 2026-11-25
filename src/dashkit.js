@@ -99,8 +99,9 @@
   // Admin: the filters apply to every Admin tab, so a portfolio of hundreds of projects can be cut down to the part you are looking at
   function filterPortfolio(ps) {
     const f = AF(), D = V.sdd, today = V.today(), q = String(f.q || '').trim().toLowerCase();
-    // the time range is the one in the Admin header (applied before this, to every Admin tab); the filter bar no longer has a second one
-    return ps.filter(p => { const m = p.metrics || {};
+    // the Admin header period (just below) and this bar's stage, health, customer, type, go-live and search narrow the projects on every Admin tab
+    const rg = V.range && V.range.hooks && V.range.hooks.adm ? V.range.span(V.range.hooks.adm.state() || {}) : ['', ''];   // the Admin header period keeps the projects with activity in it (their last change); undated projects drop out while a period is set
+    return ps.filter(p => { const m = p.metrics || {}; if ((rg[0] || rg[1]) && !V.range.inRange(m.lastActivity, rg)) return false;
       if (f.stage !== 'all' && String(D.rstageOf(p)) !== f.stage) return false; if (f.health !== 'all' && p.health !== f.health) return false;
       if (f.customer !== 'all' && (p.customer || 'No customer') !== f.customer) return false; if (f.type !== 'all' && typeOf(p) !== f.type) return false;
       if (q && !((p.name || '') + ' ' + (p.customer || '')).toLowerCase().includes(q)) return false;
