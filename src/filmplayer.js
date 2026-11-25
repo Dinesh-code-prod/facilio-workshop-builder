@@ -1,44 +1,74 @@
 /* Film player (user, 25 Nov 2026: setup videos that stay in KB; plan docs/plans/CLAUDE-SETUP-VIDEO-PLAN-2026-11-25.md). Plays a film written as code
    (public/films/<id>.js registers FWBFilms[id] = { title, W, H, DUR, SCENES, draw(g, t) }; the same code plays in VideoHub's live preview) by drawing it
-   on a canvas: no video file, so a 100-second film is about 16 KB. V.filmCard(id, title, sub) is the button that opens it; the player has play/pause,
-   a scrub bar, chapters (the film's scenes), keyboard (Space, arrows, Esc) and Download, a single offline HTML file. Nothing plays by itself. */
+   on a canvas: no video file, so a 100-second film is about 16 KB. V.filmCard(id, title, sub, side) puts the player in the page itself (user, 25 Nov 2026:
+   "why do we have to click a button"): the first frame shows at once, one click plays; play/pause, a scrub bar, chapters (the film's scenes), full screen
+   (button or F; Esc or Backspace leaves it), keyboard (Space, arrows) while the player has focus, Download (one offline HTML file) and Save as video.
+   Nothing plays by itself. */
 (function (root) {
   'use strict';
   const V = root.FWBViews; if (!V) return; const ACT = V.ACT; const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const P = { id: '', t: 0, playing: false, raf: 0, last: 0 };
+  const P = { id: '', t: 0, playing: false, raf: 0, last: 0, host: null };
   const film = () => (root.FWBFilms || {})[P.id];
+  const $ = s => P.host && P.host.querySelector(s);
   const mmss = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
-  V.filmCard = (id, title, sub) => `<button type="button" class="fp-card" data-act="filmOpen" data-id="${esc(id)}"><span class="fp-pl" aria-hidden="true"></span><span class="fp-tx"><b>${esc(title)}</b><small>${esc(sub)}</small></span></button>`;
-  function paint() { const f = film(), cv = document.getElementById('fpCv'); if (!f || !cv) return; const g = cv.getContext('2d'); g.setTransform(cv.width / f.W, 0, 0, cv.height / f.H, 0, 0); f.draw(g, P.t);
-    const r = document.getElementById('fpRange'); if (r && document.activeElement !== r) r.value = P.t.toFixed(1); const tm = document.getElementById('fpTime'); if (tm) tm.textContent = mmss(P.t) + ' / ' + mmss(f.DUR);
-    const b = document.getElementById('fpPlay'); if (b) { b.textContent = P.playing ? 'Pause' : P.t >= f.DUR ? 'Play again' : 'Play'; b.setAttribute('aria-pressed', String(P.playing)); }
-    document.querySelectorAll('#fpBox [data-act="filmSeek"]').forEach(x => x.classList.toggle('on', P.t >= +x.dataset.t0 && P.t < +x.dataset.t1)); }
-  function loop(ts) { const f = film(); if (!f || !document.getElementById('fpBox')) { P.playing = false; return; } if (P.playing) { P.t = Math.min(f.DUR, P.t + (ts - (P.last || ts)) / 1000); if (P.t >= f.DUR) { P.playing = false; if (P.rec && P.rec.state === 'recording') P.rec.stop(); } } P.last = ts; paint(); P.raf = P.playing ? requestAnimationFrame(loop) : 0; }
+  const isFull = () => !!(P.host && (document.fullscreenElement && P.host.contains(document.fullscreenElement) || P.host.querySelector('.fp-main.fp-max')));
+  // the player's place in the page; it fills itself in once the film code is loaded (a page re-render keeps the position and play state)
+  V.filmCard = (id, title, sub, side) => `<div class="fp-inline" data-film="${esc(id)}" role="region" aria-label="${esc(title)}"><div class="fp-main"><div class="fp-stage"><div class="fp-load">Loading the film…</div></div></div>
+    <div class="fp-side"><b class="fp-title">${esc(title)}</b><small class="fp-sub">${esc(sub)}</small><div class="fp-chs"></div><div class="fp-acts">${side || ''}</div></div></div>`;
+  function paint() { const f = film(), cv = $('canvas'); if (!f || !cv) return; const g = cv.getContext('2d'); g.setTransform(cv.width / f.W, 0, 0, cv.height / f.H, 0, 0); f.draw(g, P.t === 0 && !P.playing ? (f.POSTER || 4) : P.t);   // before play: a frame with the title in, not the empty first one
+    const r = $('.fp-range'); if (r && document.activeElement !== r) r.value = P.t.toFixed(1); const tm = $('.fp-time'); if (tm) tm.textContent = mmss(P.t) + ' / ' + mmss(f.DUR);
+    const b = $('.fp-play'); if (b) { b.textContent = P.playing ? 'Pause' : P.t >= f.DUR ? 'Play again' : P.t > 0 ? 'Play' : 'Play the film'; b.setAttribute('aria-pressed', String(P.playing)); }
+    const fs = $('.fp-fs'); if (fs) fs.textContent = isFull() ? 'Exit full screen (Esc)' : 'Full screen';
+    P.host.classList.toggle('playing', P.playing);
+    P.host.querySelectorAll('[data-act="filmSeek"]').forEach(x => x.classList.toggle('on', P.t >= +x.dataset.t0 && P.t < +x.dataset.t1)); }
+  function stopRec() { if (P.rec && P.rec.state === 'recording') { P.rec.onstop = null; P.rec.stop(); } P.rec = null; }
+  function loop(ts) { const f = film(); if (!f || !P.host || !P.host.isConnected) { P.playing = false; P.raf = 0; stopRec(); return; }   // left the page: stop
+    if (P.playing) { P.t = Math.min(f.DUR, P.t + (ts - (P.last || ts)) / 1000); if (P.t >= f.DUR) { P.playing = false; if (P.rec && P.rec.state === 'recording') P.rec.stop(); } }
+    P.last = ts; paint(); P.raf = P.playing ? requestAnimationFrame(loop) : 0; }
   const play = on => { const f = film(); if (!f) return; if (on && P.t >= f.DUR) P.t = 0; P.playing = on; P.last = 0; cancelAnimationFrame(P.raf); P.raf = requestAnimationFrame(loop); };
-  function close() { if (P.rec && P.rec.state === 'recording') { P.rec.onstop = null; P.rec.stop(); } P.rec = null; P.playing = false; cancelAnimationFrame(P.raf); const b = document.getElementById('fpBox'); if (b) b.remove(); document.removeEventListener('keydown', onKey, true); if (P.back && P.back.focus) P.back.focus(); }
-  function onKey(e) { if (!document.getElementById('fpBox')) return; const f = film(); const inField = e.target && e.target.matches && e.target.matches('input');
-    if (e.key === 'Escape') { e.preventDefault(); close(); } else if (e.key === ' ' && !(e.target && e.target.matches && e.target.matches('button, input'))) { e.preventDefault(); play(!P.playing); }
-    else if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && f && !inField) { e.preventDefault(); P.t = Math.max(0, Math.min(f.DUR, P.t + (e.key === 'ArrowRight' ? 5 : -5))); paint(); } }
-  ACT.filmOpen = async a => {
-    const id = a.getAttribute('data-id'); P.back = a;
-    try { if (!(root.FWBFilms || {})[id]) await V.loadScript('films/' + id + '.js'); } catch (e) { V.toast(e.message || 'The film could not be loaded', 6000, true); return; }
-    P.id = id; P.t = 0; P.playing = false; const f = film(); if (!f) { V.toast('The film could not be loaded', 6000, true); return; }
-    if (f.load) await f.load('films/');   // the real Studio screens the film shows (a few JPEGs)
-    const box = document.createElement('div'); box.id = 'fpBox'; box.className = 'fp-scrim'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', f.title);
-    box.innerHTML = `<div class="fp-box"><div class="fp-head"><b>${esc(f.title)}</b><span class="fp-sp"></span><button type="button" class="btn sm" data-act="filmDownload" title="One small file (about 20 KB) that plays offline in any browser">Download (HTML)</button><button type="button" class="btn sm" data-act="filmVideo" id="fpVid" title="Records the film on this computer as a video file (about 1 to 2 MB) to send or share">Save as video</button><button type="button" class="btn sm ghost" data-act="filmClose">Close</button></div>
-      <canvas id="fpCv" width="${f.W}" height="${f.H}" role="img" aria-label="${esc(f.title)}: ${esc(f.SCENES.map(s => s.name).join(', '))}"></canvas>
-      <div class="fp-ctl"><button type="button" class="btn sm primary" id="fpPlay" data-act="filmToggle" aria-pressed="false">Play</button><input type="range" id="fpRange" min="0" max="${f.DUR}" step="0.1" value="0" aria-label="Position in the film"><span id="fpTime" class="fp-time"></span></div>
-      <div class="fp-ch" role="group" aria-label="Chapters">${f.SCENES.map(s => `<button type="button" data-act="filmSeek" data-t0="${s.t0}" data-t1="${s.t1}">${esc(s.name)}</button>`).join('')}</div></div>`;
-    box.addEventListener('mousedown', e => { if (e.target === box) close(); });
-    document.body.appendChild(box); document.addEventListener('keydown', onKey, true);
-    const r = document.getElementById('fpRange'); r.addEventListener('input', () => { P.t = +r.value; paint(); });
-    paint(); document.getElementById('fpPlay').focus();
-  };
-  ACT.filmToggle = () => play(!P.playing);
+  // full screen; where the browser refuses it (an embedded view, no permission) the film fills the window instead, left the same way
+  // a history entry while it is full, so the browser's Back button leaves full screen instead of the page
+  const unHist = back => { if (!P.hist) return; P.hist = 0; if (back) history.back(); };
+  function full(on, fromBack) { const m = $('.fp-main'); if (!m) return; const done = () => { if (!P.hist) { history.pushState({ fpFull: 1 }, ''); P.hist = 1; } paint(); const b = $('.fp-play'); if (b) b.focus({ preventScroll: true }); };
+    if (!on) { unHist(!fromBack); m.classList.remove('fp-max'); if (document.fullscreenElement) document.exitFullscreen(); paint(); return; }
+    const max = () => { m.classList.add('fp-max'); done(); }; if (m.requestFullscreen) m.requestFullscreen().then(done, max); else max(); }
+  function onKey(e) { const f = film(); if (!f) return; const k = e.key;
+    if (e.target.matches('input[type="range"]') && k !== ' ') return;
+    if ((k === 'f' || k === 'F') && !e.ctrlKey && !e.metaKey) { e.preventDefault(); full(!isFull()); }
+    else if (k === ' ' && !e.target.matches('button')) { e.preventDefault(); play(!P.playing); }
+    else if (k === 'ArrowRight' || k === 'ArrowLeft') { e.preventDefault(); P.t = Math.max(0, Math.min(f.DUR, P.t + (k === 'ArrowRight' ? 5 : -5))); paint(); } }
+  async function mount(host) {
+    host.dataset.on = '1'; const id = host.getAttribute('data-film');
+    try { if (!(root.FWBFilms || {})[id]) await V.loadScript('films/' + id + '.js'); } catch (e) { host.querySelector('.fp-load').textContent = 'The film could not be loaded. Use the written steps below.'; return; }
+    const f = root.FWBFilms[id]; if (!f) return; if (f.load) await f.load('films/');   // the real Studio screens the film shows (a few JPEGs)
+    if (!host.isConnected) return;
+    if (P.id !== id) { P.id = id; P.t = 0; P.playing = false; }
+    if (P.host && P.host !== host) stopRec();   // the page was redrawn: a recording of the old canvas would freeze, so it ends
+    P.host = host;
+    host.querySelector('.fp-stage').innerHTML = `<canvas width="${f.W}" height="${f.H}" data-act="filmToggle" role="img" aria-label="${esc(f.title)}: ${esc(f.SCENES.map(s => s.name).join(', '))}"></canvas><button type="button" class="fp-big" data-act="filmToggle" aria-label="Play the film"><span class="fp-pl" aria-hidden="true"></span></button>`;
+    host.querySelector('.fp-main').insertAdjacentHTML('beforeend', `<div class="fp-ctl"><button type="button" class="btn sm primary fp-play" data-act="filmToggle" aria-pressed="false">Play the film</button><input type="range" class="fp-range" min="0" max="${f.DUR}" step="0.1" value="0" aria-label="Position in the film"><span class="fp-time"></span><button type="button" class="btn sm fp-fs" data-act="filmFull" title="F for full screen; Esc or Backspace to leave">Full screen</button></div>`);
+    host.querySelector('.fp-chs').innerHTML = `<div class="fp-ch" role="group" aria-label="Chapters">${f.SCENES.map(s => `<button type="button" data-act="filmSeek" data-t0="${s.t0}" data-t1="${s.t1}"><span>${mmss(s.t0)}</span>${esc(s.name)}</button>`).join('')}</div>`;
+    host.querySelector('.fp-acts').insertAdjacentHTML('afterbegin', `<button type="button" class="btn sm" data-act="filmDownload" title="One small file that plays offline in any browser">Download (HTML)</button><button type="button" class="btn sm fp-vid" data-act="filmVideo" title="Records the film on this computer as a video file (about 1 to 2 MB) to send or share">Save as video</button>`);
+    const r = host.querySelector('.fp-range'); r.addEventListener('input', () => { P.t = +r.value; paint(); });
+    host.addEventListener('keydown', onKey);
+    // draw at the size it is shown, times the screen's pixel ratio, so it stays sharp at any width and in full screen (not while recording)
+    if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => { const cv = host.querySelector('canvas'), st = host.querySelector('.fp-stage'); if (!cv || !st || P.rec) return; const w = Math.round(Math.min(st.clientWidth, st.clientHeight * f.W / f.H) * (root.devicePixelRatio || 1)); if (w > 0 && Math.abs(w - cv.width) > 2) { cv.width = w; cv.height = Math.round(w * f.H / f.W); if (P.host === host) paint(); } }).observe(host.querySelector('.fp-stage'));
+    paint(); if (P.playing) play(true);
+  }
+  // fill in every player as soon as a page puts one in (pages are redrawn as plain HTML, so there is no other hook)
+  if (typeof MutationObserver !== 'undefined' && root.document) {
+    new MutationObserver(() => document.querySelectorAll('.fp-inline:not([data-on])').forEach(mount)).observe(document.documentElement, { childList: true, subtree: true });
+    document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && !$('.fp-main.fp-max')) unHist(true); if (P.host) paint(); });
+    root.addEventListener('popstate', () => { if (P.hist && P.host) full(false, true); });
+    // Esc or Backspace leaves full screen wherever the focus is
+    document.addEventListener('keydown', e => { if ((e.key === 'Escape' || e.key === 'Backspace') && isFull()) { e.preventDefault(); e.stopPropagation(); full(false); } }, true);
+  }
+  // the big round button hides while playing, so the keys (Space, F, arrows) stay with the player through its Play button
+  ACT.filmToggle = a => { play(!P.playing); if (a && !a.classList.contains('fp-play')) { const b = $('.fp-play'); if (b) b.focus({ preventScroll: true }); } };
   ACT.filmSeek = a => { P.t = +a.getAttribute('data-t0') + 0.01; paint(); if (!P.playing) play(true); };
-  ACT.filmClose = () => close();
+  ACT.filmFull = () => full(!isFull());
   // a real video file, made on this computer when asked (the app itself ships only the 16 KB film code): the film plays once to the end while it records
-  ACT.filmVideo = () => { const f = film(), cv = document.getElementById('fpCv'), b = document.getElementById('fpVid'); if (!f || !cv) return; if (P.rec) return;
+  ACT.filmVideo = () => { const f = film(), cv = $('canvas'), b = $('.fp-vid'); if (!f || !cv) return; if (P.rec) return;
     const type = root.MediaRecorder && cv.captureStream ? ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'].find(x => MediaRecorder.isTypeSupported(x)) : null; if (!type) { V.toast('This browser cannot save a video file. Use Download (HTML) instead.', 6000, true); return; }
     const parts = []; const rec = new MediaRecorder(cv.captureStream(30), { mimeType: type, videoBitsPerSecond: 160000 }); rec.ondataavailable = e => { if (e.data && e.data.size) parts.push(e.data); };
     rec.onstop = () => { P.rec = null; if (b) { b.disabled = false; b.textContent = 'Save as video'; } if (parts.length) V.download(P.id + '-film.webm', new Blob(parts, { type: 'video/webm' })); };
