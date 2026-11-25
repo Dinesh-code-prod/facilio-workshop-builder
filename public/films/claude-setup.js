@@ -15,7 +15,7 @@
   const win = (t, t0, t1, d = 0.5) => Math.min(fin(t, t0, d), 1 - fin(t, t1 - d, d));   // in at t0, out by t1
   const lerp = (a, b, p) => a + (b - a) * p;
   // the real Delivery Studio screens (1280x720 JPEGs next to this file) and where on them the film points (captured by the screens' own layout)
-  const IMG = {}, FILES = ['home', 'setup', 'install', 'checklist'], POS = {"copy":[999,331,216,40],"python":[362,250,407,118],"access":[796,80,437,138]};
+  const IMG = {}, FILES = ['home', 'setup', 'install'], POS = {"copy":[999,331,216,40],"python":[362,250,407,118],"access":[796,80,437,138]};
   function load(base, srcs) { return Promise.all(FILES.map(k => new Promise(res => { if (IMG[k] || typeof Image === 'undefined') return res(); const i = new Image(); i.onload = () => { IMG[k] = i; res(); }; i.onerror = () => res(); i.src = (srcs && srcs[k]) || (base || '') + 'claude-setup/' + k + '.jpg'; }))); }
   // a real screen in a window frame; z (0..1) zooms toward focus; returns a mapper from screen pixels to the canvas
   function shot(g, key, x, y, w, title, focus, z) { const ch = Math.round(w * 9 / 16), h = ch + 38; windowBox(g, x, y, w, h, title); const cx = x, cy = y + 38;
