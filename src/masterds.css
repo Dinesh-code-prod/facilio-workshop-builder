@@ -484,3 +484,7 @@ html body .fp-ch button:not(#DS) { border: 1px solid var(--ds-border); backgroun
 html body .fp-ch button.on:not(#DS) { background: var(--ds-selected); border-color: #B2CCFF; color: var(--ds-blue); }
 /* update pop-ups sit at the bottom left, so they never cover the page header, its actions or the stage tabs (they used to sit over the right-hand tabs) */
 html body #ntPops:not(#DS) { top: auto !important; bottom: 20px !important; left: 20px !important; right: auto !important; }
+
+/* Claude setup film (user, 25 Nov 2026): the film dialog sits above the floating Assistant (up to 5500), and the export button under the film card keeps a gap */
+html body .fp-scrim:not(#DS):not(#DS2) { z-index: 6000; }
+html body .main .fp-wrap > .btn:not(#DS):not(#DS2) { margin-top: 12px !important; }
