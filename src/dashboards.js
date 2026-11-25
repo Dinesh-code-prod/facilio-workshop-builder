@@ -98,7 +98,7 @@
   let loading = false;
   const HC = { blocked: '#D92D20', overdue: '#E8710A', at_risk: '#D49A06', on_track: '#12A35B', insufficient: '#98A2B3' };
   const SEVC = { critical: '#D92D20', high: '#E8710A', medium: '#D49A06', low: '#98A2B3' };
-  const TABS = [['overview', 'Overview'], ['stages', 'Stages'], ['delivery', 'Delivery'], ['risk', 'Risk'], ['people', 'People'], ['customers', 'Customers'], ['reports', 'Reports']];
+  const TABS = [['overview', 'Portfolio'], ['stages', 'Stages'], ['delivery', 'Delivery'], ['risk', 'Risk & exceptions'], ['people', 'People'], ['customers', 'Customers'], ['reports', 'Reports']];
   const dd = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
   const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const wk = d => { const t = new Date(d + 'T00:00:00Z'); return t.getUTCDate() + ' ' + MON[t.getUTCMonth()]; };
@@ -195,10 +195,11 @@
 
     const painW = V.dk && V.dk.adminPains ? card('Pain points across the portfolio', 'worst first, each opens where it is fixed', V.dk.adminPainList(V.dk.adminPains(C, ps).slice(0, 8)), 8) : '';
     const layouts = {
-      overview: stats + `<div class="adx-g">${painW}${healthW}${gaugeW}${bandsW}${dangerW}${stageW}${dueW}${flowW}${actW}</div>` + (V.dk && ps.length ? '<h2 class="sd-h2" style="margin:28px 0 12px">Portfolio views</h2>' + V.dk.admin(ps) : ''),
-      delivery: `<div class="adx-g">${timeW}${stageW}${nxtW}${flowW}${actW}</div>`,
-      risk: `<div class="adx-g">${dangerW}${riskW}${sevW}${catW}${heatW}</div>`,
-      people: `<div class="adx-g">${loadW}${unW}${concW}${flowW}${actW}</div>`,
+      // each widget on one tab only (dashboard rebuild, 25 Nov 2026): the portfolio picture here, flow and activity on Delivery, the risk detail on Risk & exceptions
+      overview: stats + `<div class="adx-g">${painW}${healthW}${gaugeW}${bandsW}${dangerW}${stageW}${dueW}</div>` + (V.dk && ps.length ? '<h2 class="sd-h2" style="margin:28px 0 12px">Portfolio views</h2>' + V.dk.admin(ps) : ''),
+      delivery: `<div class="adx-g">${timeW}${nxtW}${flowW}${actW}</div>`,
+      risk: `<div class="adx-g">${riskW}${sevW}${catW}${heatW}</div>`,
+      people: `<div class="adx-g">${loadW}${unW}${concW}${card('Team capacity', 'not available', '<p class="small muted" style="margin:0">Capacity cannot be shown: tasks carry no hours or estimates. Workload above counts open tasks per person; it is not a share of anyone\'s time.</p>', 4)}</div>`,
       customers: `<div class="adx-g">${waitW}${docsW}${govW}</div>`,
       stages: V.stageAdmin ? V.stageAdmin(ps) : ''
     };
