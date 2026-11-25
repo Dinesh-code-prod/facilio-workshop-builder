@@ -27,4 +27,15 @@ t('the project check and how often it runs', () => {
   assert.deepEqual(m('check this project'), { type: 'check' }); assert.deepEqual(m('What needs attention?'), { type: 'check' }); assert.deepEqual(m('run a health check'), { type: 'check' });
   assert.deepEqual(m('check this project every day'), { type: 'checkfreq', freq: 'daily' }); assert.deepEqual(m('check the project when I open it'), { type: 'checkfreq', freq: 'open' }); assert.deepEqual(m('stop checking the project'), { type: 'checkfreq', freq: 'off' });
 });
+t('scope can take the requirements along, only when they are named', () => {
+  assert.equal(ms('mark Quote and its requirements out of scope').requirements, 'out'); assert.equal(ms('mark Quote out of scope').requirements, undefined);
+});
+t('tasks in bulk: what to set, which tasks, never a new task or a question', () => {
+  assert.deepEqual(ms('close all overdue tasks of Quote'), { type: 'tasks', filter: { status: 'overdue', module: 'quote', moduleLabel: 'Quote' }, set: { status: 'Done' } });
+  const withTaskMods = s => C.match(s, { pages, modules: mods.concat([{ name: 'task', label: 'Tasks' }, { name: 'serviceTask', label: 'Task' }]), today: new Date('2026-11-15T10:00:00Z') });
+  assert.equal(withTaskMods('Close all tasks of Quote').filter.module, 'quote', 'the word tasks is not the Tasks module');
+  assert.deepEqual(ms("reassign Ravi's open tasks to Asha"), { type: 'tasks', filter: { status: 'open', owner: 'ravi' }, set: { owner: 'asha' } });
+  assert.deepEqual(ms('move my overdue tasks to 2026-12-05'), { type: 'tasks', filter: { status: 'overdue', owner: 'me' }, set: { due: '2026-12-05' } });
+  assert.equal(ms('add task: close the purchase order review').type, 'task', 'adding one task stays the task command'); assert.equal(ms('can you close my tasks?'), null); assert.equal(ms('close the tasks of Quote and Purchase Order'), null, 'two modules: left to Claude');
+});
 console.log(n + ' chat command checks passed');

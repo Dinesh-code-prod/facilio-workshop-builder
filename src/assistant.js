@@ -126,7 +126,7 @@
     panel.innerHTML = '<div class="as-head"><div class="as-t"><i class="as-logo" aria-hidden="true">' + SYM + '</i><span class="as-tt"><b>Assistant</b><small>Ask, track and redirect Claude</small></span></div><div class="as-hb"><button type="button" class="as-ib" data-act="asstSearch" aria-label="Search the chat" title="Search the chat"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="9" r="5.5"/><path d="M13.5 13.5 17 17"/></svg></button><button type="button" class="as-ib" data-act="asstToggle" aria-label="Close the assistant" title="Close"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 5l10 10M15 5L5 15"/></svg></button></div></div>'
       // the Claude helper light and Ask Claude live here, not in the top bar (user, 23 Nov 2026: "move the claude buttons to the chat box ... so we get more space")
       + '<div class="as-claude">' + (V.helper ? V.helper.chip() : '') + (V.isCustomer && V.isCustomer() ? '' : '<button type="button" class="btn sm ask-claude" data-act="askClaude" title="Tell Claude what you want on this page: a document, an analysis, a solution update. It knows the page you are on.">✦ Ask Claude</button>') + '</div>'
-      + '<div class="as-usage" id="asUse"></div><div class="as-search"' + (a.sq || a.q ? '' : ' hidden') + '><input type="search" id="asQ" placeholder="Search the chat" aria-label="Search the assistant chat" value="' + esc(a.q || '') + '"></div><div class="as-body">' + body + '</div><div class="as-comp"><div id="asAsk" class="as-ask" hidden></div><div id="asQuote" class="as-quote" hidden></div><div class="as-crow"><textarea id="asM" rows="2" maxlength="4000" aria-label="Message to Claude" placeholder="Message Claude"></textarea><div class="as-tools"><div class="as-modewrap"><button type="button" class="as-chip" id="asMode" data-act="asstMode" aria-haspopup="menu" aria-expanded="false"></button><div class="as-menu" id="asMenu" role="menu" hidden></div></div>' + (SRec() ? '<button type="button" class="as-mic" id="asMic" data-act="asstMic" aria-pressed="false" aria-label="Speak your message" title="Speak"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="6" height="10" rx="3"/><path d="M4.5 9.5a5.5 5.5 0 0 0 11 0M10 15v2.5"/></svg></button>' : '') + '<button type="button" class="as-send" data-act="asstSend" aria-label="Send" title="Send"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 16V4M5 9l5-5 5 5"/></svg></button></div></div></div>'; modeChip();
+      + '<div class="as-usage" id="asUse"></div><div class="as-search"' + (a.sq || a.q ? '' : ' hidden') + '><input type="search" id="asQ" placeholder="Search the chat" aria-label="Search the assistant chat" value="' + esc(a.q || '') + '"></div><div class="as-body">' + body + '</div><div class="as-comp"><div id="asAsk" class="as-ask" hidden></div><div id="asQuote" class="as-quote" hidden></div><div id="asAtt" class="as-att" hidden></div><input type="file" id="asF" multiple hidden data-change="asstFiles"><div class="as-crow"><textarea id="asM" rows="2" maxlength="4000" aria-label="Message to Claude" placeholder="Message Claude"></textarea><div class="as-tools"><div class="as-modewrap"><button type="button" class="as-chip" id="asMode" data-act="asstMode" aria-haspopup="menu" aria-expanded="false"></button><div class="as-menu" id="asMenu" role="menu" hidden></div></div>' + (V.isCustomer && V.isCustomer() ? '' : '<button type="button" class="as-mic" data-act="asstAttach" aria-label="Attach files for Claude" title="Attach files for Claude"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.5 9.5l-5.8 5.8a3.5 3.5 0 0 1-5-5l6.4-6.4a2.3 2.3 0 0 1 3.3 3.3l-6.3 6.3a1.2 1.2 0 0 1-1.7-1.7l5.6-5.6"/></svg></button>') + (SRec() ? '<button type="button" class="as-mic" id="asMic" data-act="asstMic" aria-pressed="false" aria-label="Speak your message" title="Speak"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="6" height="10" rx="3"/><path d="M4.5 9.5a5.5 5.5 0 0 0 11 0M10 15v2.5"/></svg></button>' : '') + '<button type="button" class="as-send" data-act="asstSend" aria-label="Send" title="Send"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 16V4M5 9l5-5 5 5"/></svg></button></div></div></div>'; modeChip();
     comp();
     const b0 = panel.querySelector('.as-body'); if (b0) b0.scrollTop = b0.scrollHeight; toEnd(); tick(); paintUsage(); loadUsage();   // opens at the newest message
   }
@@ -198,6 +198,7 @@
     if (c.type === 'folder') { CMDS[id] = { c, m: say('Add the folder \u201c' + c.name + '\u201d on Training guides? Then move guides and videos into it with Move to folder in their \u2026 menu.', [{ label: 'Add folder', act: 'asstCmdGo', attrs: { id }, primary: true }, { label: 'Cancel', act: 'asstCmdNo', attrs: { id } }]) }; return; }
     if (c.type === 'job') { CMDS[id] = { c, m: say('I can start this now: ' + c.label + '. Your Claude does it through the connector and its progress shows here.', [{ label: 'Do it', act: 'asstCmdGo', attrs: { id }, primary: true }, { label: 'Cancel', act: 'asstCmdNo', attrs: { id } }]) }; return; }
     if (c.type === 'scope') { scopePlan(c, id); return; }
+    if (c.type === 'tasks') { tasksPlan(c, id); return; }
     if (c.type === 'check') { projectCheck(false); return; }
     if (c.type === 'checkfreq') { setFreq(c.freq); return; }
     if (c.type === 'draft') { I().load(['ai']); const d = I().list('ai').filter(x => x.task === c.task).sort((x, y) => String(y._created || '').localeCompare(String(x._created || '')))[0];
@@ -214,33 +215,54 @@
   // The page sends the state flows of the imported configuration with their design, because only the page has that configuration.
   const asstMods = () => { try { return F.allModules().filter(Boolean).map(m => ({ name: m.name, label: m.label })); } catch (e) { return []; } };
   const scopeBody = c => { const extraFlows = []; c.modules.forEach(n => (F.flowsForModule(n) || []).forEach(f => { if (f.origin !== 'existing' || f.edited) return; const m = F.flowModel(f.id); if (m) extraFlows.push({ id: f.id, name: f.name, module: n, enabled: f.enabled !== false, model: m }); }));
-    return { modules: c.modules, inScope: c.inScope, flows: c.flows, known: asstMods(), extraFlows }; };
+    return { modules: c.modules, inScope: c.inScope, flows: c.flows, requirements: c.requirements, known: asstMods(), extraFlows, fromPage: true }; };
   const actUrl = n => '/api/projects/' + S.project.id + '/actions/' + n;
   const reply = (text, actions) => { const m = say(text, actions); m.who = 'claude'; m.via = 'app'; st().sig = ''; paint(); return m; };   // a plan or a result reads as an answer (left, not a centred note)
-  async function scopePlan(c, id) {
-    const m = reply('Checking what this changes…');
+  // one flow for every action: preview (nothing written), Confirm runs exactly that preview, the result says what was read back, Undo puts it back
+  const ACTS = { scope: { body: scopeBody, page: ['modules', 'Modules'], reload: () => F.reloadSection('workshop'), check: 'the module names' },
+    tasks: { body: c => ({ filter: c.filter, set: c.set }), page: ['tasks', 'Tasks'], reload: () => I().load(['task'], true), check: 'the tasks and the names' } };
+  const scopePlan = (c, id) => actPlan('scope', c, id), tasksPlan = (c, id) => actPlan('tasks', c, id);
+  async function actPlan(name, c, id) {
+    const A = ACTS[name], m = reply('Checking what this changes…');
     try {
       if (F.hasUnsaved()) await F.flush(); if (F.hasUnsaved()) throw new Error('your latest edits are not saved yet. Wait for Saved at the top, then ask again.');
-      const body = scopeBody(c), r = await root.FWBApi.post(actUrl('scope'), body), p = r.plan;
-      m.text = [r.token ? 'This will change: ' + p.summary + '.' : 'Nothing to change.'].concat(p.consequences.map(x => '• ' + x), p.unknown.length ? ['• Not found in this project: ' + p.unknown.join(', ') + '.'] : []).join('\n')
-        + (r.token ? '\n\nNothing changes until you press Confirm' + (spoke ? ' (you spoke this, so check the module names)' : '') + '. You can undo it afterwards.' : '');
-      if (r.token) { CMDS[id] = { c, body, token: r.token, m }; m.actions = [{ label: 'Confirm', act: 'asstScopeGo', attrs: { id }, primary: true }, { label: 'Cancel', act: 'asstCmdNo', attrs: { id } }]; }
+      const body = A.body(c), r = await root.FWBApi.post(actUrl(name), body), p = r.plan;
+      m.text = [r.token ? 'This will change: ' + p.summary + '.' : 'Nothing to change.'].concat(p.consequences.map(x => '• ' + x), (p.unknown || []).length ? ['• Not found in this project: ' + p.unknown.join(', ') + '.'] : []).join('\n')
+        + (r.token ? '\n\nNothing changes until you press Confirm' + (spoke ? ' (you spoke this, so check ' + A.check + ')' : '') + '. You can undo it afterwards.' : '');
+      if (r.token) { CMDS[id] = { name, body, token: r.token, m }; m.actions = [{ label: 'Confirm', act: 'asstScopeGo', attrs: { id }, primary: true }, { label: 'Cancel', act: 'asstCmdNo', attrs: { id } }]; }
     } catch (e) { m.who = 'bad'; m.text = 'Could not prepare this change: ' + (e.message || 'try again'); }
     spoke = false; st().sig = ''; paint();
   }
-  const afterAction = async () => { try { await F.reloadSection('workshop'); } catch (e) { /* the page reloads it on the next open */ } };
-  V.ACT.asstScopeGo = el => V.busy(el, async () => { const id = el.getAttribute('data-id'), x = CMDS[id]; if (!x) return; delete CMDS[id]; x.m.actions = [];
-    let r; try { r = await root.FWBApi.post(actUrl('scope'), Object.assign({}, x.body, { token: x.token })); } catch (e) { say('Nothing was changed: ' + (e.message || 'try again')); return; }
-    await afterAction();
-    reply(r.verified ? 'Done and checked: ' + r.summary + '. The saved project was read back and matches.' : 'Saved, but the read-back did not match for: ' + r.checks.filter(k => !k.ok).map(k => k.what).join(', ') + '. Please check the Modules page before relying on it.',
-      [{ label: 'Undo', act: 'asstScopeUndo', attrs: { id: r.undoId } }, { label: 'Open Modules', act: 'koOpen', attrs: { view: 'modules' } }]); });
-  V.ACT.asstScopeUndo = el => V.busy(el, async () => { const id = el.getAttribute('data-id'); if (!id) return; el.disabled = true;
+  const afterAction = async name => { try { await ACTS[name].reload(); } catch (e) { /* the page reloads it on the next open */ } };
+  V.ACT.asstScopeGo = el => V.busy(el, async () => { const id = el.getAttribute('data-id'), x = CMDS[id]; if (!x) return; delete CMDS[id]; x.m.actions = []; const A = ACTS[x.name];
+    let r; try { r = await root.FWBApi.post(actUrl(x.name), Object.assign({}, x.body, { token: x.token })); } catch (e) { say('Nothing was changed: ' + (e.message || 'try again')); return; }
+    await afterAction(x.name);
+    reply(r.verified ? 'Done and checked: ' + r.summary + '. The saved project was read back and matches.' : (r.done ? 'Saved, but not everything matched when read back: ' : 'Nothing was saved: ') + r.checks.filter(k => !k.ok).map(k => k.what).join('; ') + '. Please check the ' + A.page[1] + ' page before relying on it.',
+      (r.undoId ? [{ label: 'Undo', act: 'asstScopeUndo', attrs: { id: r.undoId, n: x.name } }] : []).concat([{ label: 'Open ' + A.page[1], act: 'koOpen', attrs: { view: A.page[0] } }])); });
+  V.ACT.asstScopeUndo = el => V.busy(el, async () => { const id = el.getAttribute('data-id'), name = el.getAttribute('data-n') || 'scope'; if (!id) return; el.disabled = true;
     let r; try { r = await root.FWBApi.post(actUrl('undo'), { id }); } catch (e) { say('Could not undo: ' + (e.message || 'try again')); return; }
-    await afterAction(); reply(r.verified ? r.summary + '. Checked: the project is back as it was.' : r.summary + ', but the read-back did not match. Please check the Modules page.'); });
+    await afterAction(name); reply(r.verified ? r.summary + '. Checked: the project is back as it was.' : r.summary + ', but the read-back did not match. Please check the ' + ACTS[name].page[1] + ' page.'); });
+  // attachments: files go to the project's team-only files (category chat_attachment) and the message to Claude names them with their ids; Claude reads them with
+  // project_jobs action file_urls. Project AI and DeepSeek cannot read files, so a message with attachments always goes to Claude.
+  const attPaint = () => { const el = document.getElementById('asAtt'), fs = st().files || []; if (!el) return; el.hidden = !fs.length;
+    el.innerHTML = fs.map((f, i) => '<span class="as-attf' + (f.id ? '' : ' up') + '">' + esc(f.name) + (f.id ? '' : ' (uploading…)') + '<button type="button" data-act="asstUnattach" data-i="' + i + '" aria-label="Remove ' + esc(f.name) + '">×</button></span>').join(''); };
+  V.ACT.asstAttach = () => { const f = document.getElementById('asF'); if (f) f.click(); };
+  V.ACT.asstUnattach = el => { const a = st(); a.files = (a.files || []).filter((x, i) => i !== Number(el.getAttribute('data-i'))); attPaint(); };
+  V.ACT.asstFiles = async el => { const a = st(), list = Array.from(el.files || []).slice(0, 5); el.value = ''; a.files = a.files || [];
+    for (const file of list) { const x = { name: file.name }; a.files.push(x); attPaint();
+      try { const rec = await root.FWBApi.uploadFile(S.project.id, file, 'chat_attachment', { from: 'assistant' }); x.id = rec && (rec.id || rec.fileId); if (!x.id) throw new Error('the file was not saved'); }
+      catch (e) { a.files = a.files.filter(y => y !== x); V.toast('Could not attach ' + file.name + ': ' + (e.message || 'try again'), 6000, true); } attPaint(); } };
+  const attNote = () => { const fs = (st().files || []).filter(f => f.id); return fs.length ? '\nAttached files (read each with project_jobs action file_urls, fileId): ' + fs.map(f => f.name + ' (fileId ' + f.id + ')').join('; ') : ''; };
+  // a flow switch Claude asked for through the connector waits in the workshop (pendingFlowsOff), because only this page can read the imported configuration: it is applied when a team member opens the project
+  function applyPending() {
+    const p = S.ws && S.ws.pendingFlowsOff; if (!p || S.readonly) return; const mods = Object.keys(p).filter(k => p[k] === true); if (!mods.length) return; const done = [];
+    mods.forEach(mod => { const ids = []; (F.flowsForModule(mod) || []).forEach(f => { if (f.origin !== 'existing' || f.edited) return; const e = F.editableFlow(f.id); if (e && e.enabled !== false) { e.enabled = false; e.offBy = 'pending'; ids.push(f.id); done.push(f.name); } }); p[mod] = { applied: ids }; });
+    F.changed('State flows switched off (asked through Claude)', mods.join(', ')); if (done.length) reply('As asked through Claude, these state flows are now switched off in the design (kept, not deleted): ' + done.join(', ') + '. Undo the change in Claude, or switch them back on in the State flow builder.');
+  }
   // the project check (server action check): findings grouped by severity, each with what to do and a page to open. It also runs by itself, per person and project:
   // when the project opens or once a day (default), and it speaks only when there is a critical or high finding it has not shown before, so it is never noise. Off stops it.
-  const SEVN = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' }, FREQ = { open: 'each time I open the project', daily: 'once a day', off: 'never by itself' };
-  const wKey = () => 'fwb.watch.' + S.project.id, wGet = () => { try { return JSON.parse(localStorage.getItem(wKey()) || '{}'); } catch (e) { return {}; } }, wSet = o => { try { localStorage.setItem(wKey(), JSON.stringify(Object.assign(wGet(), o))); } catch (e) { } };
+  const SEVN = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' }, FREQ = { open: 'each time you open the project', daily: 'once a day', off: 'never by itself' };
+  const wKey = () => 'fwb.watch.' + S.project.id, wGet = () => { try { return JSON.parse(localStorage.getItem(wKey()) || '{}'); } catch (e) { return {}; } }, wSet = o => { try { localStorage.setItem(wKey(), JSON.stringify(Object.assign(wGet(), o))); } catch (e) { } if (!S.readonly) root.FWBApi.post(actUrl('watch'), { set: o }).catch(() => { }); };   // kept on the account too, so every browser agrees
   const freqBtns = () => Object.keys(FREQ).filter(f => f !== (wGet().freq || 'daily')).map(f => ({ label: 'Check ' + (f === 'off' ? 'never' : f === 'open' ? 'on open' : 'daily'), act: 'asstCheckFreq', attrs: { f } }));
   async function projectCheck(quiet) {
     let r; try { r = await root.FWBApi.post(actUrl('check'), {}); } catch (e) { if (!quiet) reply('The project check did not run: ' + (e.message || 'try again')); return; }
@@ -256,8 +278,9 @@
   function setFreq(f) { wSet({ freq: f }); reply('The project check now runs ' + FREQ[f] + (f === 'off' ? '. Ask “check this project” any time.' : ', and tells you only about new critical or high findings.')); }
   V.ACT.asstCheckFreq = el => setFreq(el.getAttribute('data-f') || 'daily');
   let watchPid = '';
-  function watchTick() { if (!team() || !S.project || watchPid === S.project.id) return; watchPid = S.project.id; const w = wGet(), f = w.freq || 'daily';
-    if (f === 'off' || (f === 'daily' && w.at === new Date().toISOString().slice(0, 10))) return; setTimeout(() => projectCheck(true), 6000); }   // after the page has settled
+  function watchTick() { if (!team() || !S.project || !S.ws || watchPid === S.project.id) return; watchPid = S.project.id; const pid = S.project.id; setTimeout(() => { try { applyPending(); } catch (e) { /* optional */ } }, 3000);
+    setTimeout(async () => { if (!S.project || S.project.id !== pid) return; try { const acc = await root.FWBApi.post(actUrl('watch'), {}); if (acc && Object.keys(acc).length) localStorage.setItem(wKey(), JSON.stringify(Object.assign(wGet(), acc))); } catch (e) { /* this browser's copy is used */ }
+      const w = wGet(), f = w.freq || 'daily'; if (f === 'off' || (f === 'daily' && w.at === new Date().toISOString().slice(0, 10))) return; projectCheck(true); }, 6000); }   // after the page has settled; the account's settings win over this browser's
   V.ACT.asstCmdNo = el => { const id = el.getAttribute('data-id'), x = CMDS[id]; if (!x) return; delete CMDS[id]; x.m.actions = []; say('Cancelled. Nothing was changed.'); };
   V.ACT.asstCmdUndo = el => V.busy(el, async () => { const tid = el.getAttribute('data-id'); if (!tid || !I().get('task', tid)) { say('That task is already gone.'); return; } await I().del('task', tid); say('Removed the task again.'); });
   // voice (user, 16 Nov 2026): the mic turns speech into text in the message box with the browser's own speech service (Chrome or Edge); the person reads it and sends.
@@ -287,6 +310,8 @@
     const k = J().K(), ask = k && Array.isArray(k.jobs) ? L().jobRows(k.jobs).find(j => j.status === 'needs_input') : null;   // when Claude has asked something, this box IS the answer
     if (ask) { const a3 = st(); a3.local = a3.local || []; const sent = { who: 'you', text: raw, at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), ts: Date.now(), pend: raw }; a3.local.push(sent); box.value = ''; a3.sig = ''; paint();   // your answer is a bubble at once
       try { await J().post('/jobs/' + encodeURIComponent(ask.id) + '/answer', { answers: [raw] }); } catch (e) { a3.local = a3.local.filter(x => x !== sent); box.value = raw; a3.sig = ''; paint(); throw e; } a3.sig = ''; J().load(true); V.toast('Sent. Claude will continue.', 3500); return; }
+    if ((st().files || []).some(f => !f.id)) { V.toast('Wait until the files are attached, then send.', 4000, true); return; }
+    if ((st().files || []).length) { const withFiles = (note + attNote()).slice(0, 4000); st().files = []; attPaint(); await toClaude(withFiles, raw, { route: 'small' }, await liveClaude(), box, true); return; }   // files: always Claude
     if ((st().mode || 'auto') === 'auto' && V.chatCmd) { const c = V.chatCmd.match(note, { pages: navPages(), modules: asstMods(), today: new Date(), kickoffApproved: (F.doc('kickoff_pack') || {}).status === 'approved' }); if (c) { runCmd(c, note, box); return; } }
     if ((st().mode || 'auto') !== 'cl') { const q = V.quickFacts && V.quickFacts(note); if (q) { const a0 = st(); a0.local = a0.local || []; a0.open = true; box.value = ''; a0.local.push({ who: 'you', text: note, at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }); const r0 = { who: 'claude', via: 'app', text: q.text }; if (q.view && V[q.view] && V[q.view].html) r0.actions = [{ label: 'Open ' + q.view, act: 'koOpen', attrs: { view: q.view } }]; a0.local.push(r0); a0.sig = ''; paint(); return; } }   // an exact answer from the records: no AI, no wait
     let mode = st().mode || 'auto', plan = { route: mode === 'cl' ? 'small' : 'lookup', task: '', view: '' };

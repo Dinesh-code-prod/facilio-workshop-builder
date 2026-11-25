@@ -863,7 +863,7 @@
    },
    {
     "name": "project_changes",
-    "description": "What changed in a project since a date (default: the last 7 days), newest first. With action it CHANGES the project safely: scope (modules in or out of scope; flows off switches their state flows off), check (findings by severity), undo (id), history. For scope call without token first (dry run), show the plan, then again with the token only after a yes. Full text: connector_help topic project_changes.",
+    "description": "What changed in a project since a date (default: the last 7 days), newest first. With action it CHANGES the project safely: scope (modules in or out of scope; flows off, requirements out), tasks (close, reassign or re-date tasks in bulk), check (findings by severity), undo (id), history. For scope and tasks call without token first (dry run), show the plan, then again with the token only after a yes. Full text: connector_help topic project_changes.",
     "function": "api",
     "input_schema": {
      "type": "object",
@@ -880,6 +880,7 @@
        "type": "string",
        "enum": [
         "scope",
+        "tasks",
         "check",
         "undo",
         "history"
@@ -907,6 +908,18 @@
       },
       "id": {
        "type": "string"
+      },
+      "requirements": {
+       "type": "string",
+       "enum": [
+        "out"
+       ]
+      },
+      "filter": {
+       "type": "object"
+      },
+      "set": {
+       "type": "object"
       }
      },
      "required": [
