@@ -19,6 +19,7 @@ import './_msadocs.mjs';
 import { installTaskTracking } from './_tasksapi.mjs';
 import { installMailTasks } from './_mailapi.mjs';
 import { installJobs } from './_jobsapi.mjs';
+import { installActions } from './_actions.mjs';
 import './_stagetasks.mjs';
 import './_taskrules.mjs';   // the task engine rules (globalThis.FWBTaskRules), shared with the browser: engineRun below   // the stage task rules (globalThis.FWBStageTasks), shared with the browser: the daily task run below
 import { makeAs } from './_jobs.mjs';
@@ -2537,6 +2538,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   installTaskTracking({ route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, itemsOf, withLock, audit, viaApp, CONNECTOR, DONE_RE, cut, rid, notify: N });   // task suggestions from Claude: routes and tools (_tasksapi.mjs)
   installQbank({ route, ok, HttpError, me, projectAccess, limit, aiJSON, docRead, itemsOf });   // AI requirements intelligence: generate questions from the documents, analyse a call (_qbankapi.mjs)
   installMailTasks({ route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, withLock, audit, viaApp, CONNECTOR, docRead, cut, notify: N });   // customer mail becomes tasks: inbox records, routes and task_tracking actions (_mailapi.mjs)
+  installActions({ route, ok, me, HttpError, projectAccess, pickProject, docRead, docWrite, itemsOf, dbGet, dbPut, dbDel, dbList, audit, touchProject, rid, now, viaApp, CONNECTOR });   // project actions the Assistant and Claude run: dry run, confirm, verify, undo (_actions.mjs)
   SP = installSharePoint({ route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbList, withLock, audit, CTX: () => CTX, CHUNK, indexData });   // SharePoint project folders: copies, subfolders, access (_sharepoint.mjs)
   installJobs({ briefs: briefsFromClaude, route, ok, HttpError, me, projectAccess, pickProject, readableProjects, dbGet, dbPut, dbList, withLock, audit, CONNECTOR, rid, CTX, notify: N });   // job queue: Studio buttons write jobs, Claude in the person's own session claims and finishes them (_jobsapi.mjs)
   // The platform allows at most 40 MCP tools per app, so related tools share one public entry with an `action`; the old tool names stay as the implementations.

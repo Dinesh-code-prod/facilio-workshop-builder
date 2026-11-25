@@ -1241,6 +1241,53 @@
     }
    },
    {
+    "name": "project_actions",
+    "description": "Change the project safely: scope puts modules in or out of scope (flows off switches their state flows off). Call without token first (dry run), show the plan, then call again with the token only after a yes. undo (id), history. Full text: connector_help topic project_actions.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string"
+      },
+      "action": {
+       "type": "string",
+       "enum": [
+        "scope",
+        "undo",
+        "history"
+       ]
+      },
+      "modules": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       }
+      },
+      "inScope": {
+       "type": "boolean"
+      },
+      "flows": {
+       "type": "string",
+       "enum": [
+        "keep",
+        "off",
+        "on"
+       ]
+      },
+      "token": {
+       "type": "string"
+      },
+      "id": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "project"
+     ]
+    }
+   },
+   {
     "name": "session_questions",
     "description": "Workshop questions and session records. action prepare: the questions to ask per module, with reason and source. action live: transcript chunks in, which prepared questions look answered and what to ask next. save_questions, save_transcript, save_findings, save_design and save_mockup store suggestions a person keeps. Full text: connector_help topic session_questions.",
     "function": "api",
