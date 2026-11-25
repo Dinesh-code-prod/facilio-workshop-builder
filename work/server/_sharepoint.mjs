@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 /* SharePoint project folders (user, 16 Nov 2026): every project file (uploads, exports, what Claude saves) is copied to one shared SharePoint library,
    one folder per project with subfolders by document type, shared with the project's members (owners and editors edit, viewers read).
    Layout (user, 23 Nov 2026): Facilio Onboarding / <project name> / 01_Project Governance … 08_Archive, all made when the project is made, plus PROJECT_INDEX.md
@@ -88,8 +89,36 @@ export function inventory(docs) {
     missingFiles: (docs || []).filter(d => d && d.missing).slice(0, 20).map(d => Object.assign(brief(d), { missing: d.missing })) };
 }
 
+// ---------- daily backup (25 Nov 2026): what lives only inside the Studio (records and document sections) is written once a day to the project folder,
+// readable without the Studio (an Excel-ready CSV per record type, an HTML page per document section, README.html) plus the full data as JSON in data/ for a restore ----------
+export const BACKUP = 'Delivery Studio backup';   // a folder beside PROJECT_INDEX.md, not one of the eight, so the company's folder layout stays as it is
+const csvCell = v => { let s = v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v); if (s.length > 5000) s = s.slice(0, 5000) + '…';
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;   // a cell Excel would run as a formula is kept as text
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+/** records (as itemsOf gives them) as a CSV Excel opens in UTF-8: id, created, updated, then each field of the records (nested values as JSON) */
+export function toCsv(items) {
+  const cols = []; for (const it of items) for (const k of Object.keys(it.data || {})) if (!cols.includes(k) && cols.length < 40) cols.push(k);
+  return '﻿' + [['id', 'createdAt', 'updatedAt'].concat(cols).map(csvCell).join(',')].concat(items.map(it => [it.id, it.createdAt, it.updatedAt].concat(cols.map(c => (it.data || {})[c])).map(csvCell).join(','))).join('\r\n') + '\r\n';
+}
+const hx = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+/** any saved JSON as readable HTML: lists of records as tables, objects as labelled fields, text with its line breaks */
+export function toHtml(v, depth) {
+  depth = depth || 0;
+  if (v == null || v === '') return '<span class="m">—</span>';
+  if (typeof v !== 'object') return hx(v).replace(/\n/g, '<br>');
+  if (depth > 6) return '<code>' + hx(JSON.stringify(v).slice(0, 2000)) + '</code>';
+  if (Array.isArray(v)) {
+    if (!v.length) return '<span class="m">none</span>';
+    if (v.every(x => x && typeof x === 'object' && !Array.isArray(x))) { const cols = [...new Set(v.flatMap(x => Object.keys(x)))].slice(0, 12); return '<table><tr>' + cols.map(c => '<th>' + hx(c) + '</th>').join('') + '</tr>' + v.slice(0, 3000).map(r => '<tr>' + cols.map(c => '<td>' + toHtml(r[c], depth + 1) + '</td>').join('') + '</tr>').join('') + '</table>'; }
+    return '<ul>' + v.slice(0, 3000).map(x => '<li>' + toHtml(x, depth + 1) + '</li>').join('') + '</ul>';
+  }
+  return '<dl>' + Object.entries(v).slice(0, 300).map(([k, x]) => '<dt>' + hx(k) + '</dt><dd>' + toHtml(x, depth + 1) + '</dd>').join('') + '</dl>';
+}
+export const htmlPage = (title, body) => '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>' + hx(title) + '</title><style>body{font:14px/1.5 system-ui,sans-serif;margin:32px;color:#222;max-width:1200px}table{border-collapse:collapse;margin:8px 0}th,td{border:1px solid #ddd;padding:4px 8px;vertical-align:top;text-align:left}th{background:#f4f4f7}dt{font-weight:600;margin-top:8px}dd{margin:0 0 0 16px}.m{color:#888}</style></head><body><h1>' + hx(title) + '</h1>' + body + '</body></html>';
+const NOT_YOURS = '\u0000backup';   // the viewer the backup reads as: private notes are never copied out (they are only their writer's)
+
 export function installSharePoint(d) {
-  const { route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbList, dbDel, withLock, audit, CTX, CHUNK, indexData, limit, rid } = d;
+  const { route, ok, HttpError, me, projectAccess, dbGet, dbPut, dbList, dbDel, withLock, audit, CTX, CHUNK, indexData, limit, rid, docRead, itemsOf, KINDS, KIND_LABEL } = d;
   const CRED = 'graph_files', G = 'https://graph.microsoft.com/v1.0';
   const ctx = () => CTX();
   const siteUrl = async () => { try { return String(await ctx().secrets.get('sharepoint_site') || '').trim().replace(/\/+$/, ''); } catch (e) { return ''; } };
@@ -300,6 +329,54 @@ export function installSharePoint(d) {
   route('DELETE', '/api/projects/:id/spfiles/:iid', async (b, P) => {
     const s = await me(); await team(s, P.id, 'edit'); await needSetUp(); const x = await docOf(P.id, P.iid), rec = await recOf(P.id);
     await graph('DELETE', item(rec, x.id), undefined, true); await dbDel(DOC(P.id), x.id); await audit(P.id, s.id, 'doc-deleted', x.path + '/' + x.name); return ok({ ok: true });
+  });
+
+  // ---------- daily backup ----------
+  // a file of any size written from here: an upload session, the pieces sent with a plain fetch (the platform's 3 MB cap on credential calls does not apply to it)
+  async function putFile(rec, parentId, name, text) {
+    const body = Buffer.from(text, 'utf8');
+    const u = await graph('POST', item(rec, parentId) + ':/' + encodeURIComponent(name) + ':/createUploadSession', { item: { '@microsoft.graph.conflictBehavior': 'replace' } });
+    const link = String((u.j || {}).uploadUrl || ''); if (!okLink(link)) throw new HttpError(502, 'SharePoint did not give an upload link');
+    for (let a = 0; a < body.length; a += SEG) { const e = Math.min(body.length, a + SEG);
+      const r = await fetch(link, { method: 'PUT', headers: { 'content-length': String(e - a), 'content-range': 'bytes ' + a + '-' + (e - 1) + '/' + body.length }, body: body.subarray(a, e) });
+      if (!r.ok) throw new HttpError(502, 'SharePoint refused the backup file ' + name + ' (' + r.status + ')'); }
+  }
+  const today = () => new Date().toISOString().slice(0, 10);
+  function readme(p, rec, b) {
+    const by = f => b.files.filter(x => x.where === f).map(x => '<li>' + hx(x.name) + (x.what ? ' <span class="m">' + hx(x.what) + '</span>' : '') + '</li>').join('') || '<li class="m">none</li>';
+    return htmlPage('Delivery Studio backup: ' + (p.name || ''), '<p>Written by Facilio Delivery Studio on ' + hx(b.day) + ' (UTC). It holds what lives only inside the Studio, so it can be read if the Studio cannot be opened. Each day replaces the last one; SharePoint keeps the earlier versions of every file.</p>'
+      + toHtml({ Project: p.name, 'Delivery Studio project ID': p.id, Customer: p.customer || '', 'Facilio Organization ID': p.orgId || '', 'Project folder': rec.url })
+      + '<h2>Open in Excel or a browser</h2><ul>' + by('') + '</ul><h2>Full data for a restore (data folder)</h2><ul>' + by('data') + '</ul>'
+      + '<p class="m">Files people uploaded and documents exported from the Studio are not repeated here: they are in the eight project folders. Private notes are not copied.</p>');
+  }
+  /** one step of the day's backup: writes parts until about 15 seconds have passed and keeps what is left on the project's folder record; a part whose content has not changed since it was last written is skipped */
+  async function backupStep(p, force) {
+    return withLock('spbak.' + p.id, async () => {
+      const t0 = Date.now(), rec = await projectFolder(p), b = rec.backup || {};
+      if (!force && b.day === today() && b.todo && !b.todo.length) return { done: true, skipped: true, at: b.at || null, url: b.url || '', written: 0 };
+      if (force || b.day !== today() || !b.todo) Object.assign(b, { day: today(), todo: (await dbList('doc.' + p.id)).map(r => 'doc:' + r.key).concat(KINDS.map(k => 'items:' + k), ['readme']), files: [], written: 0 });
+      if (!b.folderId) { const f = await child(rec.driveId, rec.folderId, BACKUP); b.folderId = f.id; b.url = f.webUrl || ''; b.dataId = (await child(rec.driveId, f.id, 'data')).id; }
+      b.hashes = b.hashes || {};
+      while (b.todo.length && Date.now() - t0 < 15000) {
+        const part = b.todo[0], cut = part.indexOf(':'), kind = cut < 0 ? part : part.slice(0, cut), key = part.slice(cut + 1), out = [];
+        if (kind === 'doc') { const r = await docRead(p.id, key); if (r && r.data != null) out.push([b.dataId, 'data', safeName('section-' + key + '.json'), JSON.stringify(r.data, null, 1), ''], [b.folderId, '', safeName('Section - ' + key + '.html'), htmlPage((p.name || '') + ': ' + key, toHtml(r.data)), 'document section']); }
+        else if (kind === 'items') { const list = await itemsOf(p.id, key, NOT_YOURS); if (list.length) { const lab = KIND_LABEL[key] || key; out.push([b.dataId, 'data', safeName('items-' + key + '.json'), JSON.stringify(list, null, 1), ''], [b.folderId, '', safeName(lab + '.csv'), toCsv(list), list.length + ' record' + (list.length === 1 ? '' : 's')]); } }
+        else out.push([b.folderId, '', 'README.html', readme(p, rec, b), 'start here']);
+        for (const [parent, where, name, text, what] of out) {
+          if (!b.files.some(x => x.where === where && x.name === name)) b.files.push({ where, name, what });
+          const hash = createHash('sha1').update(text).digest('hex'); if (b.hashes[where + '/' + name] === hash) continue;
+          await putFile(rec, parent, name, text); b.hashes[where + '/' + name] = hash; b.written++;
+        }
+        b.todo.shift(); rec.backup = b; await dbPut('spp', p.id, rec);
+      }
+      if (!b.todo.length) { b.at = new Date().toISOString(); rec.backup = b; await dbPut('spp', p.id, rec); }
+      return { done: !b.todo.length, left: b.todo.length, written: b.written, at: b.at || null, url: b.url || '' };
+    });
+  }
+  // the page calls this once a day per project (and Back up now with force); it repeats the call until done is true
+  route('POST', '/api/projects/:id/sharepoint/backup', async (b, P) => {
+    const s = await me(); const { project } = await team(s, P.id, 'edit'); await needSetUp(); const r = await backupStep(project, !!(b && b.force));
+    if (r.done && !r.skipped) await audit(P.id, s.id, 'sharepoint-backup', r.written + ' file(s) written'); return ok(r);
   });
 
   const projectOf = async pid => ((await dbGet('projects', pid)) || {}).value;
