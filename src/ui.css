@@ -4118,3 +4118,8 @@ body .iso-when:not(#_):not(#__){display:block;font-size:12px;color:#475467;margi
   html body.in-proj header.navbar [data-act="custPreviewExit"]:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin-right: auto !important; }
   html body.in-proj header.navbar:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { gap: 10px; padding-left: 20px; padding-right: 20px; }
 }
+
+/* Fewer redirects (user, 25 Nov 2026): tiles, list rows, roadmap cards and Do next lines are no longer links, so they no longer look clickable */
+html body :is(div.ca-tile, div.ca-do, div.cs-line, div.rm-c, .lc-list li):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { cursor: default !important; }
+html body :is(div.ca-tile, div.ca-do, div.cs-line, div.rm-c, .sd-w, .sd-kpi):hover:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { transform: none !important; }
+html body .lc-list li > b:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font-weight: 500; color: inherit; }
