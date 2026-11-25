@@ -96,7 +96,7 @@ await t('the two tools are in work.json (create asks for confirmation), no dupli
   const raw = fs.readFileSync(new URL('../work/work.json', import.meta.url), 'utf8'); const all = JSON.parse(raw).mcp.tools; const names = all.map(x => x.name);
   for (const w of ['msa_extraction_save', 'create_project_from_msa']) assert.ok(names.includes(w), w); assert.equal(new Set(names).size, names.length);
   assert.deepEqual(all.filter(x => /msa/.test(x.name) && x.confirm).map(x => x.name), ['create_project_from_msa']); assert.deepEqual(all.find(x => x.name === 'msa_extraction_save').input_schema.required, ['source', 'extraction']);
-  assert.equal(JSON.stringify(JSON.parse(raw), null, 1).replace(/\n/g, '\r\n') + '\r\n', raw, 'the 1-space CRLF layout is kept');
+  assert.equal(JSON.stringify(JSON.parse(raw), null, 1).replace(/\n/g, (raw.includes('\r\n') ? '\r\n' : '\n')) + (raw.includes('\r\n') ? '\r\n' : '\n'), raw, 'the 1-space CRLF layout is kept');
 });
 let holdId;
 await t('msa_extraction_save with no project keeps it in the person\'s own holding space, unapproved, in Awaiting Review, with the file reference as given', async () => {
