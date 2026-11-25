@@ -1045,7 +1045,9 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
   const oneOf = (v, list, label, dflt) => { const t = String(v == null ? '' : v).trim(); if (!t) return dflt; if (!list.includes(t)) throw new HttpError(400, label + ' "' + t.slice(0, 40) + '" is not one of the allowed values'); return t; };
   const teamOf = project => (project.members || []).filter(m => m.role !== 'customer');
   async function taskSanitize(s, project, cur, d) {
-    const team = teamOf(project); const ownerOk = v => { const e = String(v || '').trim().toLowerCase(); if (!e) return ''; if (!team.some(m => String(m.email).toLowerCase() === e)) throw new HttpError(400, 'The owner must be a member of this project (' + e.slice(0, 80) + ' is not)'); return e; };
+    // a new or changed owner must be on the team; an owner who is already on the task stays when they leave the project, so the task can still be moved and edited (user, 24 Nov 2026)
+    const was = new Set([cur && cur.owner, cur && cur.question && cur.question.respOwner].map(x => String(x || '').trim().toLowerCase()).filter(Boolean));
+    const team = teamOf(project); const ownerOk = v => { const e = String(v || '').trim().toLowerCase(); if (!e) return ''; if (!was.has(e) && !team.some(m => String(m.email).toLowerCase() === e)) throw new HttpError(400, 'The owner must be a member of this project (' + e.slice(0, 80) + ' is not)'); return e; };
     const type = oneOf(d.type, TASK_TYPES, 'Task type', 'Other'), status = oneOf(d.status, TASK_STATUS, 'Status', 'To Do');
     const out = {
       title: str(d.title, 300, 'Title', true), desc: str(d.desc || '', 8000, 'Description'), type, status, priority: oneOf(d.priority, TASK_PRIO, 'Priority', ''),
