@@ -32,17 +32,18 @@ await p.screenshot({ path: OUT + '/wb-more-menu-above.png' });
 await p.keyboard.press('Escape'); await p.waitForTimeout(200); if (await p.$('#wbCtx')) await p.mouse.click(bb.x + 80, bb.y + 80);
 // every control of the toolbar, one by one: what did it do?
 await selectShape();
-const ctrls = await p.$$eval('#wbCtxBar [data-act], #wbCtxBar select[data-change], #wbCtxBar [data-change]', els => els.filter(e => e.offsetParent).map(e => ({ act: e.getAttribute('data-act') || '', ch: e.getAttribute('data-change') || '', tag: e.tagName, label: (e.getAttribute('aria-label') || e.title || e.textContent || '').trim().slice(0, 40) })));
+const ctrls = await p.$$eval('#wbCtxBar [data-act], #wbCtxBar select[data-change], #wbCtxBar [data-change]', els => els.filter(e => e.offsetParent).map(e => ({ act: e.getAttribute('data-act') || '', p: e.getAttribute('data-p') || '', ch: e.getAttribute('data-change') || '', tag: e.tagName, label: (e.getAttribute('aria-label') || e.title || e.textContent || '').trim().slice(0, 40) })));
 for (const c of ctrls) {
   if (['wbMore', 'wbDel'].includes(c.act)) continue;
   await selectShape(); const before = await st(), pops0 = await p.evaluate(() => [...document.querySelectorAll('[id^="wbPop_"], #wbCtx, #drawer, [role="dialog"]')].filter(e => e.offsetParent).map(e => e.id || e.className.split(' ')[0])); const nErr = errs.length; let effect = '';
-  const sel = c.act ? `#wbCtxBar [data-act="${c.act}"]` : `#wbCtxBar [data-change="${c.ch}"]`;
+  const sel = c.act ? `#wbCtxBar [data-act="${c.act}"]` + (c.p ? `[data-p="${c.p}"]` : '') :   // the colour buttons share one action and differ by data-p
+    `#wbCtxBar [data-change="${c.ch}"]`;
   if (c.tag === 'SELECT') { const opts = await p.$$eval(sel + ' option', os => os.map(o => o.value)); const cur = await p.$eval(sel, s => s.value); const to = opts.find(o => o !== cur); if (to != null) await p.selectOption(sel, to); await p.waitForTimeout(400); }
   else { const dl = p.waitForEvent('download', { timeout: 1500 }).catch(() => null); await p.click(sel).catch(e => { effect = 'click failed: ' + e.message.slice(0, 60); }); const d = await dl; if (d) effect = 'download ' + d.suggestedFilename(); await p.waitForTimeout(400); }
   const after = await st(); const pop = (await p.evaluate(() => [...document.querySelectorAll('[id^="wbPop_"], #wbCtx, #drawer, [role="dialog"]')].filter(e => e.offsetParent).map(e => e.id || e.className.split(' ')[0]))).filter(x => !pops0.includes(x)).join(',');
   if (!effect) effect = before !== after ? 'changed the shape' : pop ? 'opened ' + pop : 'NOTHING VISIBLE';
   check(`toolbar "${c.label || c.act || c.ch}" works`, errs.length === nErr && !/NOTHING|failed/.test(effect), effect);
-  if (pop && c.act) { await p.click(sel).catch(() => { }); await p.waitForTimeout(150); }   // a colour popover closes with its own button
+  if (pop) { await p.keyboard.press('Escape'); await p.waitForTimeout(200); check(`Escape closes ${pop}`, !(await p.evaluate(ids => ids.split(',').some(id => { const e = document.getElementById(id); return e && e.offsetParent; }), pop))); }
   await p.keyboard.press('Escape'); await p.waitForTimeout(150);
 }
 // delete last: the shape goes (unlock it first: Lock was clicked above, and a locked shape is not deleted)
