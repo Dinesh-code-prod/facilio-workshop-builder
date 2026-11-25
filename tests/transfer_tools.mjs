@@ -39,7 +39,8 @@ await t('the eight tools are in work.json (the three that change a destination a
   const want = ['transfer_read', 'transfer_write', 'transfer_push']; for (const w of want) assert.ok(names.includes(w), w); assert.equal(new Set(names).size, names.length, 'no duplicate tool names'); assert.ok(names.length <= 40, 'the platform allows at most 40 tools per app: ' + names.length);
   assert.deepEqual(all.find(x => x.name === 'transfer_push').input_schema.properties.action.enum, ['push_begin', 'report', 'verify']); assert.deepEqual(all.find(x => x.name === 'transfer_write').input_schema.properties.action.enum, ['begin', 'store', 'submit']); assert.deepEqual(all.find(x => x.name === 'transfer_read').input_schema.properties.action.enum, ['list', 'get']);
   assert.deepEqual(all.filter(x => /^transfer_/.test(x.name) && x.confirm).map(x => x.name), ['transfer_push']); assert.ok(!names.some(x => /approv/i.test(x)), 'no approve tool for Claude');
-  assert.ok(raw.includes('\r\n') && !/[^\r]\n/.test(raw), 'CRLF kept'); assert.equal(JSON.stringify(JSON.parse(raw), null, 1).replace(/\n/g, '\r\n') + '\r\n', raw, 'the 1-space layout is kept');
+  // the repository stores LF; a Windows checkout (core.autocrlf) turns it into CRLF, a Linux one (CI) keeps LF: one style throughout, and the 1-space layout
+  const eol = raw.includes('\r\n') ? '\r\n' : '\n'; assert.ok(eol === '\n' || !/[^\r]\n/.test(raw), 'one line-ending style throughout'); assert.equal(JSON.stringify(JSON.parse(raw), null, 1).replace(/\n/g, eol) + eol, raw, 'the 1-space layout is kept');
   for (const x of all.filter(y => /^transfer_/.test(y.name))) assert.ok(x.input_schema.required.includes('project'), x.name + ' needs a project');
   assert.ok((await tool(SAM, 'transfer_approve', { project: pid, id: 'x' })).status >= 400, 'a made-up approve tool is not served');
 });
