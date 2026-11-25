@@ -46,7 +46,7 @@
   const tab = () => (TABS.find(t => t[0] === S.ui.prTab) || TABS[0])[0];
   const done = () => (S.ui.prDone = S.ui.prDone || {});
   // customers and the team reach the same content through different pages
-  const VIEW = { schedule: ['msaflow', 'schedule'], plan: ['plan', 'timeline'], contract: ['msaflow', 'contract'] };
+  const VIEW = { schedule: ['rsplan', 'schedule'], plan: ['plan', 'timeline'], contract: ['msaintake', 'contract'] };   // team: the menu pages (the old Contract page is hidden, 25 Nov 2026)
   const go = (view, label, note) => { view = VIEW[view] ? VIEW[view][isC() ? 1 : 0] : view; return `<button class="btn" data-act="nav" data-view="${view}">${esc(label)}</button>${note ? `<span class="small muted">${esc(note)}</span>` : ''}` };
   const start = cust => `<div class="card" style="padding:22px"><div class="sec-k"><p>Two minutes</p><h2>What Facilio is</h2></div>
       <p style="max-width:40em;margin:0 0 14px">Facilio is where your team manages assets, work orders, planned maintenance, service requests, inspections and reports. This project sets it up around how <b>${esc(cust)}</b> works.</p>

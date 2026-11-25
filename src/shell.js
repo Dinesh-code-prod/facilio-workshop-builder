@@ -191,7 +191,9 @@
     if (V.beforeLeave && V.beforeLeave() === false) return;
     if (view === 'rsquestions') view = 'workshop';   // the Questions tab is part of the Workshop room now (user, 16 Nov 2026); old links land there
     V.beforeLeave = null;
-    if (S.user && S.user.kind !== 'customer' && V.mfRoute && ['contract', 'scope', 'planner', 'msaflow'].includes(view)) { if (extra && extra.plTab) S.ui.plTab = extra.plTab; view = V.mfRoute(view, extra); } // one Contract section; old links and #/p/<id>/planner land in it
+    // the old Contract page (msaflow) is hidden (user, 25 Nov 2026): its session planner tabs are tabs of Requirement schedule, the Workshop Schedule's team twin;
+    // contract, scope and msaflow land on Contract intake through the hub in src/workshubs.js
+    if (S.user && S.user.kind !== 'customer' && (view === 'planner' || view === 'schedule')) { S.ui.rsTab = view === 'planner' ? ((extra && extra.plTab) || S.ui.plTab || 'sessions') : 'plan'; view = 'rsplan'; }
     if (S.user && S.user.kind !== 'customer' && V.hubRoute) view = V.hubRoute(view);   // Delivery lifecycle, Roadmap, Plan vs actual and Reports are tabs of Project Overview
     const back = extra && extra.__back; if (extra) delete extra.__back; if (!back && S.project && S.ui.view && S.ui.view !== view) { const t = (S.ui.navTrail = S.ui.navTrail || []); t.push({ view: S.ui.view, module: S.ui.module, tkPageId: S.ui.tkPageId, pid: S.project.id }); if (t.length > 20) t.shift(); }   // the page you leave, for the Back chip
     Object.assign(S.ui, { view }, extra || {}); if (view !== 'flow') S.ui.selected = null;

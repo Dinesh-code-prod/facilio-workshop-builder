@@ -23,8 +23,10 @@
       <div class="tabs">${tabs.map(([k, l, c]) => `<button class="tab${tab === k ? ' active' : ''}" data-act="plTab" data-v="${k}">${esc(l)}${c ? `<span class="cnt">${c}</span>` : ''}</button>`).join('')}</div>
       <div class="page-body">${unassigned.length && tab !== 'distribution' ? `<div class="notice warn" style="margin-bottom:12px"><div><b>${unassigned.length} in-scope module(s) are not assigned to any session:</b> ${esc(unassigned.slice(0, 12).map(modLabel).join(', '))}${unassigned.length > 12 ? '…' : ''} <a href="#" data-act="plTab" data-v="distribution">Assign now</a></div></div>` : ''}${PT[tab]()}</div>`;
   }, mount() { mountBoard(); V.plannerMount(); } };
-  ACT.plTab = a => { const t = a.getAttribute('data-v'); if (V.mfOpenPlTab) { V.mfOpenPlTab(t); return; } S.ui.plTab = t; V.render(); };
+  // the planner tabs live on Requirement schedule (src/requirements.js) and the MSA scope review on Contract intake (user, 25 Nov 2026: the old Contract page is hidden)
+  ACT.plTab = a => { const t = a.getAttribute('data-v'); S.ui.plTab = t; if (t === 'scope') { S.ui.ctrHub = 'msascope'; V.go('msaintake'); return; } S.ui.rsTab = t; if (S.ui.view === 'intro' && S.ui.introTab === 'rsplan') V.render(); else V.go('rsplan'); };
   const PT = {}; PT.changes = () => (V.schedChanges ? V.schedChanges.html() : '');
+  V.msascope = { html() { return V.isCustomer() ? '' : '<div class="page-header"><div class="t"><h1>MSA scope</h1><p>The scope items read from the contract: confirm the uncertain ones so the sessions cover everything in scope.</p></div></div><div class="page-body">' + PT.scope() + '</div>'; }, mount() { mountBoard(); V.plannerMount(); } };
   // the planner tabs, embedded in the Contract section (msaflow.js). One implementation: V.planner.html() and this render the same PT[tab].
   V.plannerPane = tab => { S.ui.plTab = tab; const d = P(); const un = uncovered();
     return `<div class="row" style="margin-bottom:10px">${d.published ? `<span class="xs muted">Published to customer ${esc(V.fmtDate(d.published))}</span>` : ''}<span class="spacer"></span>${S.readonly ? '' : `<button class="btn" data-act="publishSchedule">Publish schedule to customer</button><button class="btn primary" data-act="newSession">${ico('plus')}Session</button>`}</div>`

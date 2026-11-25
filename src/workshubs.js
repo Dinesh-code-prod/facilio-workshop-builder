@@ -6,16 +6,19 @@
 (function (root) {
   'use strict';
   const F = root.FWB; const { S } = F; const V = root.FWBViews; const ACT = V.ACT;
+  // 25 Nov 2026 (user: "we don't need two kinds of same things"): the old Contract page (msaflow) and the old Requirements page are hidden; what only they had
+  // now sits as tabs of the menu pages that replaced them: Contract intake, Transcripts and Checks & validations. This file loads after those pages (build.mjs).
   const HUBS = [
-    { view: 'transcripts', key: 'reqTab', label: 'Requirements', tabs: [['transcripts', 'Transcripts & requirements'], ['prepq', 'Prepare questions'], ['usecases', 'Use cases']] },
-    { view: 'msaflow', key: 'ctrHub', label: 'Contract', tabs: [['msaflow', 'Agreement'], ['msafind', 'Scope check'], ['contracts', 'Terms & integrations']] },
+    { view: 'rstrans', key: 'reqTab', label: 'Transcripts', tabs: [['rstrans', 'Transcripts'], ['transcripts', 'Requirements register'], ['usecases', 'Use cases'], ['prepq', 'Prepare questions']] },
+    { view: 'msaintake', key: 'ctrHub', label: 'Contract intake', tabs: [['msaintake', 'Contract intake'], ['contract', 'Know Your Contract'], ['msascope', 'MSA scope'], ['msafind', 'Scope check'], ['scope', 'Scope document'], ['contracts', 'Terms & integrations']] },
+    { view: 'rschecks', key: 'chkHub', label: 'Checks & validations', tabs: [['rschecks', 'Findings to confirm'], ['checks', 'Readiness & validation']] },
     { view: 'statusrep', key: 'rptHub', label: 'Status report (WSR) & monthly report', tabs: [['statusrep', 'Status report (WSR) & monthly report'], ['trace', 'Traceability & quality']] },
     { view: 'cfginputs', key: 'cfgHub', label: 'Configuration and org package', tabs: [['cfginputs', 'Configuration Hub'], ['pkgan', 'Analysis'], ['orgpkg', 'Export']] }
   ];
   const base = {}; HUBS.forEach(h => h.tabs.forEach(([k]) => { base[k] = V[k]; }));
   const hubOf = view => HUBS.find(h => h.tabs.some(t => t[0] === view));
   const prev = V.hubRoute;
-  V.hubRoute = view => { const r0 = prev ? prev(view) : view; const r = r0 === 'reports' ? 'statusrep' : r0; if (V.featureHidden && V.featureHidden(r)) return 'solution'; /* a link to a hidden page lands on Solution */ const h = S.user && S.user.kind !== 'customer' && hubOf(r); if (!h || !base[r] || r === 'onboarding' || r === 'statusrep' || r === 'trace') return r; S.ui[h.key] = r; return h.view; };   // Data onboarding has its own menu entry, so it is not a tab of the hub
+  V.hubRoute = view => { const r0 = prev ? prev(view) : view; const r = r0 === 'reports' ? 'statusrep' : r0 === 'msaflow' && S.user && S.user.kind !== 'customer' ? 'msaintake' : r0; if (V.featureHidden && V.featureHidden(r)) return 'solution'; /* a link to a hidden page lands on Solution */ const h = S.user && S.user.kind !== 'customer' && hubOf(r); if (!h || !base[r] || r === 'onboarding' || r === 'statusrep' || r === 'trace') return r; S.ui[h.key] = r; return h.view; };   // Data onboarding has its own menu entry, so it is not a tab of the hub
   const badge = k => { const n = k !== 'checks' && V.navCounts && V.navCounts()[k]; return n && n.n ? `<span class="cnt">${n.n}</span>` : ''; };
   HUBS.forEach(h => {
     const cur = () => (base[S.ui[h.key]] && h.tabs.some(t => t[0] === S.ui[h.key]) ? S.ui[h.key] : h.view);
