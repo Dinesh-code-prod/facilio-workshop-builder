@@ -392,3 +392,18 @@ html body .main .plan-tabs > button:not(#DS) { background: none !important; colo
 html body .main .plan-tabs > button.on:not(#DS) { background: var(--ds-page) !important; color: var(--ds-blue) !important; box-shadow: 0 1px 2px rgba(16, 24, 40, .08) !important; }
 html body .main .pl-tools .rv-menu .rv-menu-p .btn.sm:not(.x):not(#DS) { box-shadow: none !important; border: 0 !important; background: none !important; justify-content: flex-start !important; width: 100% !important; }
 html body .main .pl-tools .rv-menu .rv-menu-p .btn.sm:not(.x):hover:not(#DS) { background: var(--ds-subtle) !important; }
+
+/* ---------- Plan calendar, calmer (user, 24 Nov 2026: "check the UI of that calendar ... made proper") ----------
+   The four phase cards lose their gradients and coloured frames: white with a hairline, a small colour dot for the phase, the current phase on soft
+   blue; the view switch (Day/Week/Month/Year/Agenda) is a light segmented control; filter chips are quiet; an event's title stays ink and only a late
+   one keeps its red edge (red text on every late item made the month a wall of red). */
+html body .main .cal .cal-ph:not(#DS) { background: var(--ds-page) !important; background-image: none !important; border: 1px solid var(--ds-border) !important; border-left: 3px solid var(--a) !important; box-shadow: none !important; border-radius: var(--ds-r-card) !important; padding: 10px 14px !important; text-align: left; }
+html body .main .cal .cal-ph.cur:not(#DS) { background: var(--ds-selected) !important; border-color: #B2CCFF !important; }
+html body .main .cal .cal-ph .cal-pn:not(#DS) { font: 600 14px/1.3 var(--ds-head) !important; color: var(--ds-ink) !important; }
+html body .main .cal .cal-ph :is(.cal-pd, .cal-pc):not(#DS) { display: block; font: 400 12.5px/1.4 var(--ds-body) !important; color: var(--ds-text2) !important; }
+html body .main .cal .cal-seg:not(#DS) { background: var(--ds-subtle) !important; border: 0 !important; border-radius: var(--ds-r-btn) !important; padding: 3px !important; }
+html body .main .cal .cal-seg button:not(#DS) { color: var(--ds-text2) !important; background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 8px !important; min-height: 30px !important; font: 500 13.5px/1.3 var(--ds-head) !important; }
+html body .main .cal .cal-seg button.on:not(#DS) { background: var(--ds-page) !important; color: var(--ds-blue) !important; box-shadow: 0 1px 2px rgba(16, 24, 40, .08) !important; }
+html body .main .cal .cal-fchip:not(#DS) { box-shadow: none !important; border: 1px solid var(--ds-border) !important; background: var(--ds-page) !important; color: var(--ds-text2) !important; font: 500 13px/1.3 var(--ds-body) !important; }
+html body .main .cal-fc .fc-event.cal-fcev.late .fc-event-title:not(#DS) { color: var(--ds-ink) !important; }
+html body .main .cal .cal-fchip.own.on:not(#DS) { background: var(--ds-selected) !important; border-color: #B2CCFF !important; color: var(--ds-blue) !important; }

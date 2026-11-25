@@ -62,7 +62,7 @@
   function saveRows(rows, label, noUndo) { const d = TD(); if (!noUndo) { const u = undoOf(); u.push({ label, rows: JSON.parse(JSON.stringify(d.rows || [])) }); if (u.length > 30) u.shift(); } const first = !d.versions.length; if (first && d.rows.length) snapshot('Before ' + label); d.rows = rows; snapshot(label); F.changed('Plan updated', label, { section: 'plan_struct' }); }
 
   ACT.tlUndo = () => { if (!canEdit()) return; const x = undoOf().pop(); if (!x) { V.toast('Nothing to undo'); return; } saveRows(x.rows, 'Undo: ' + x.label, true); V.render(); V.toast('Undone: ' + x.label); };
-  document.addEventListener('keydown', e => { if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey || String(e.key).toLowerCase() !== 'z') return; const t = e.target; if (t && (t.closest && t.closest('input, textarea, select, [contenteditable="true"], .drawer, .dialog'))) return; if (!document.querySelector('.main .pl-tools') || !V.tlCanUndo()) return; e.preventDefault(); ACT.tlUndo(); });
+  document.addEventListener('keydown', e => { if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey || String(e.key).toLowerCase() !== 'z') return; const t = e.target; if (t && (t.closest && t.closest('input, textarea, select, [contenteditable="true"], .drawer, .dialog'))) return; if (!document.querySelector('.main .pl-tools, .main .cal') || !V.tlCanUndo()) return; e.preventDefault(); ACT.tlUndo(); });
 
   // ---------- export: the timeline as an HTML page and as an Excel workbook with a week-by-week Gantt (user, 24 Nov 2026) ----------
   const expName = ext => String((S.project && S.project.name) || 'project').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').slice(0, 60) + '-plan-timeline.' + ext;

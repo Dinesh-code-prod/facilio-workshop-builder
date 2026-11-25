@@ -60,6 +60,8 @@ for (const W of WIDTHS) {
         if (!ok) fail(tag, `rail ${rails[i]}: not marked open`); await check(`${tag} rail:${rails[i]}`);
         const tabs = await p.evaluate(() => [...document.querySelectorAll('.main nav.mt-bar .mt-t')].map(t => t.getAttribute('data-view')));
         for (const v of tabs) {
+          // a detail page (e.g. Forms & templates under Solution design & BRD) is a stage tab only while it is open; once another tab is open it is gone, which is right
+          if (!await p.$(`.main nav.mt-bar .mt-t[data-view="${v}"]`)) continue;
           await p.click(`.main nav.mt-bar .mt-t[data-view="${v}"]`).catch(() => fail(tag, `tab ${v} could not be clicked`)); await settle(650);
           const t = await p.evaluate(v => { const a = [...document.querySelectorAll('.main nav.mt-bar .mt-t.active')]; return { one: a.length === 1 && a[0].getAttribute('data-view') === v, rail: !!document.querySelector('nav.sidebar .rl-b.active') }; }, v);
           if (!t.one) fail(tag, `${rails[i]} > ${v}: the open tab is not marked`); if (!t.rail) fail(tag, `${rails[i]} > ${v}: no rail entry marked open`); await check(`${tag} ${v}`);
