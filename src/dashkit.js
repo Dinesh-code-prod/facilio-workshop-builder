@@ -56,7 +56,8 @@
   }
 
   // a clickable list line, the same look as the older dashboard lists
-  const line = (view, main, side, tone) => `<li><button type="button" class="cs-line" data-act="nav" data-view="${esc(view)}"><span>${esc(main || 'Untitled')}</span>${side ? `<em class="${tone || ''}">${esc(side)}</em>` : ''}</button></li>`;
+  // a list row is not a link (user, 25 Nov 2026: fewer redirects); the card's one "Open ... →" leads on
+  const line = (view, main, side, tone) => `<li><div class="cs-line"><span>${esc(main || 'Untitled')}</span>${side ? `<em class="${tone || ''}">${esc(side)}</em>` : ''}</div></li>`;
   const list = (ls, empty) => (ls.length ? `<ul class="cs-ul">${ls.join('')}</ul>` : none(empty));
 
   const RAGC = { g: OK, a: WARN, r: BAD, n: GREY };

@@ -4148,3 +4148,8 @@ html body .fb .ll-wrap.fb-item.sel > .ll-card:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):no
 html body .fb .ll-wrap.fb-item.fb-flash > .ll-card:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { border-color: #12B76A !important; box-shadow: 0 0 0 2px #12B76A !important; }
 html body .fb .ll-wrap.fb-item:focus-visible:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { outline: 2px solid #1570EF; outline-offset: 3px; }
 html body .fb .fb-group > .ll-grid:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin-top: 10px; }
+
+/* Fewer redirects (user, 25 Nov 2026): tiles, list rows, roadmap cards and Do next lines are no longer links, so they no longer look clickable */
+html body :is(div.ca-tile, div.ca-do, div.cs-line, div.rm-c, .lc-list li):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { cursor: default !important; }
+html body :is(div.ca-tile, div.ca-do, div.cs-line, div.rm-c, .sd-w, .sd-kpi):hover:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { transform: none !important; }
+html body .lc-list li > b:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font-weight: 500; color: inherit; }
