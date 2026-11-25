@@ -23,7 +23,7 @@ await p.waitForTimeout(600);
 // it opens on Tiles: Module-guide cards under one heading per kind (25 Nov 2026)
 const tileHeads = await p.$$eval('.fb .tr-sec h2', h => h.map(x => x.textContent.trim()));
 check('the page opens on Tiles: cards under User guides, UAT guides and Videos', tileHeads.join('|') === 'User guides|UAT guides|Videos' && (await p.locator('.fb .ll-wrap.fb-item .ll-card').count()) >= 4, tileHeads.join('|'));
-check('the UAT guide (plan kind uat) and the UAT guide page are cards under UAT guides', /UAT guide/.test(await p.textContent('.fb .ll-grid[aria-label="UAT guides"]')) && (await p.locator('.fb .ll-grid[aria-label="UAT guides"] .ll-card[data-act="nav"][data-view="uatguide"]').count()) === 1);
+check('the UAT guide (plan kind uat) is a card under UAT guides', /UAT guide/.test(await p.textContent('.fb .ll-grid[aria-label="UAT guides"]')) && !(await p.$('.fb .ll-card[data-view="uatguide"]')));   // the UAT guide page is not in the menu, so the library does not open it
 await p.screenshot({ path: `${OUT}/guides-browser-tiles-first.png` });
 await p.click('[data-act="fbView"][data-v="list"]'); await p.waitForTimeout(300);
 
