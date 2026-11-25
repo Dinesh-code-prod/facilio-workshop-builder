@@ -327,7 +327,8 @@
         "handoff_submit",
         "file_urls",
         "file_put_begin",
-        "file_put_done"
+        "file_put_done",
+        "backup"
        ],
        "description": "Which step"
       },

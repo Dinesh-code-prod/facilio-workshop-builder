@@ -35,14 +35,14 @@
   // a file the person saved: copy it now and tell them where it went
   const up = API().uploadFile.bind(API());
   API().uploadFile = async function (pid, file, category, meta) { const f = await up.apply(null, arguments); if (f && f.id && team() && st.cfg !== false && !(meta && meta.quiet)) { st.queue.push(f.id); st.announce.add(f.id); setTimeout(run, 0); } return f; };
-  // an export downloaded from a page is also kept in the project, so it reaches SharePoint (only when SharePoint is set up)
+  // an export downloaded from a page is also kept in the project (user, 25 Nov 2026: always, not only with SharePoint), so it is in the project backup, and reaches SharePoint once that is set up
   const dl = V.download;
   V.download = function (name, data, mime) {
     dl.apply(this, arguments);
-    if (!team() || !KEEP.test(String(name || '')) || st.cfg === false) return;
+    if (!team() || !KEEP.test(String(name || ''))) return;
     const blob = data instanceof Blob ? data : new Blob([data], { type: mime || 'application/octet-stream' }); if (blob.fromProject || !blob.size || blob.size > 100e6) return;   // a file that is already in the project is not saved twice
     const view = String((S.ui && S.ui.view) || ''); const pid = S.project.id;
-    configured().then(on => on && S.project && S.project.id === pid && API().uploadFile(pid, new File([blob], name, { type: blob.type || mime || 'application/octet-stream' }), 'export', { view })).catch(e => V.toast('The export was downloaded but not saved to the project: ' + e.message, 6000, true));
+    API().uploadFile(pid, new File([blob], name, { type: blob.type || mime || 'application/octet-stream' }), 'export', { view }).catch(e => V.toast('The export was downloaded but not saved to the project: ' + e.message, 6000, true));
   };
 
   ACT.spOpen = a => { const u = a.getAttribute('data-u'); if (/^https:\/\/[^/]+\.sharepoint\.(com|us)\//i.test(u || '')) window.open(u, '_blank', 'noopener'); };

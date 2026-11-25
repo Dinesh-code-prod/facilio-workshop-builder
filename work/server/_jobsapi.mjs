@@ -122,6 +122,11 @@ export function installJobs(d) {
       if (!f.mint || !f.mint[0]) throw new HttpError(400, 'The upload link was never issued'); f.urls = [f.mint[0]]; f.status = 'ready'; f.contentCheck = 'unchecked'; await dbPut('fl.' + p.id, f.id, f); await audit(p.id, s.id, 'file-uploaded', 'solution_doc: ' + f.name);
       return { name: f.name, note: 'Saved to the project. It shows on the Handover page under Solution document.' };
     },
+    /** a project backup ZIP for the person's own computer: their Claude saves it daily in their backup folder (D:\Delivery Studio backups on Windows, ~/Delivery Studio backups on a Mac); the link lasts one hour */
+    async jobs_backup(s, b) {
+      const p = await pickProject(s, b.project); const B = d.backup && d.backup(); if (!B) throw new HttpError(503, 'Backups are not available'); const r = await B.build(s, p.id);
+      return Object.assign(r, { next: 'Download url with curl (it lasts one hour) into <backup folder>/' + r.folder + '/' + r.fileName + ' (the backup folder is D:\\Delivery Studio backups on Windows, or Delivery Studio backups in the home folder when there is no D: drive, and ~/Delivery Studio backups on a Mac), keep only the 7 newest backup ZIPs in that project folder, then unzip it into the subfolder latest after emptying it (Expand-Archive on Windows, unzip on a Mac). Never show, save or log the url.' });
+    },
     /** the background Claude asks for its mail search; only this kind, at most once an hour per person (the check-in also queues it by itself) */
     async jobs_presence(s) { const rows = await dbList('presence'); const since = Date.now() - 10 * 60 * 1000; const here = rows.filter(r => r.value && Date.parse(r.value.at) > since).length; return { open: here, note: here ? 'Someone has the Studio open: keep working the queue.' : 'Nobody has had the Studio open for 10 minutes: stop now and say the Studio is not open.' }; },
     async jobs_request(s, b) {

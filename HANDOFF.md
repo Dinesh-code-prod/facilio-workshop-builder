@@ -1,5 +1,13 @@
 # Handoff
 
+**PROJECT BACKUP TO YOUR COMPUTER (25 Nov 2026, pushed, NOT deployed).** Why: so nobody is stuck if the Studio is down. facilio.work keeps Microsoft keys read-only, so the Studio cannot write to SharePoint or OneDrive (the SharePoint version is parked on `wip/sharepoint-backup`).
+- **Server** (`work/server/_backup.mjs`): POST/GET `/api/projects/:id/backup` builds one ZIP per project: README.html, `Records/` (a CSV per record type, opens in Excel, formulas defused), `Sections/` (an HTML page per document section), `Files/` (project files up to 40 MB, the rest listed in files.csv), `data/` (full JSON for a restore). Private notes left out. Kept privately (the previous ZIP removed); a one-hour link. Rate limit `backup` 30 an hour.
+- **Page** (`src/backup.js`): Project Settings > People & access > Backup to your computer: Download backup, Copy the daily set-up for Claude (a scheduled task in Claude desktop: `D:Delivery Studio backups` on Windows, `~/Delivery Studio backups` on a Mac, 7 days kept, latest unzipped).
+- **Claude**: `project_jobs` action `backup` (tool docs, Claude setup, Team Guide updated).
+- **Also:** every page export is now kept in the project (before: only with SharePoint on), so exports are in the backup.
+- **Checked:** npm test; `tests/backup.mjs` 5 checks (ZIP opens in JSZip, contents, private notes out, formula guard, big ZIP via upload link, previous removed, outsider refused, connector action); in the local browser the card, Download backup (55-file ZIP of the demo project) and the copy button.
+- **Not checked:** the scheduled task in a real Claude desktop app, on Windows and on a Mac; the live app (not deployed).
+
 **DOCUMENTS & FILES: BIG FILES STRAIGHT TO SHAREPOINT (25 Nov 2026, pushed, NOT deployed).** Report: `docs/reports/M365-LARGE-FILE-STORAGE-2026-11-25.md` (audit, decision, what was built).
 - **Page.** Notes & Links > Documents & Files (`src/documents.js`): the eight folders, every file in the SharePoint folder, search, type filter, Refresh, Upload with progress (Retry, Resume, Cancel), Open, Download, Copy link, Rename, Move, Delete. Team only.
 - **Uploads.** The server checks and opens a Microsoft upload session; the browser sends 10 MiB pieces straight to Microsoft and resumes after a drop; the server reads the file back before keeping its reference (`spd.<project>`, keyed by item id). 10 GB cap, no programs, never into 08_Archive. Routes under `/api/projects/:id/spfiles` (`/docs` was taken).

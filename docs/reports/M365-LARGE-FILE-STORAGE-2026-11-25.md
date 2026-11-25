@@ -174,3 +174,8 @@ These steps are written out in `docs/integrations/SHAREPOINT-2026-11-16.md`.
 - a real Refresh on a big folder (paging with `@odata.nextLink` is coded but not tested).
 
 The live app sends no platform CSP header (checked on 23 Nov), so only Microsoft's own CORS answer can block the browser upload.
+
+## 7. Read-only Microsoft keys and the backup (25 Nov 2026)
+facilio.work enforces read-only on every Microsoft credential ("Microsoft credentials are always read-only", secrets.facilio.work). So with `graph_files` the Studio can list and download from SharePoint but cannot create folders, upload, rename, delete or share: the write parts of sections 3 and 6 need the platform team to allow one write-enabled Microsoft credential, limited by IT to one site (`Sites.Selected`). Not asked for now (user, 25 Nov 2026).
+
+Instead, so nobody is stuck if the Studio is down: **a project backup ZIP** (`work/server/_backup.mjs`, Project Settings > People & access > Backup to your computer, `project_jobs` action `backup`) that each person's Claude saves daily in `D:Delivery Studio backups` (Windows) or `~/Delivery Studio backups` (Mac), keeping 7 days. It holds README.html, the records as CSV for Excel, the document sections as HTML, the project files up to 40 MB and the full data as JSON. It sits on that person's computer only; a OneDrive app folder (on D:) can make it a cloud copy later without any Microsoft write permission. The SharePoint version of the backup is on branch `wip/sharepoint-backup`.
