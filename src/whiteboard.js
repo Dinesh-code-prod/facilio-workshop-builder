@@ -524,7 +524,12 @@
     if (!items.length) return;
     const r = host.getBoundingClientRect(); const m = document.createElement('div'); m.id = 'wbCtx'; m.className = 'wb-ctx'; m.setAttribute('role', 'menu');
     m.innerHTML = items.map(([k, l, sc, info]) => k === '-' ? '<hr>' : info ? `<div class="wb-ctx-info">${esc(l)}</div>` : `<button type="button" role="menuitem" data-act="wbCtx" data-k="${k}"><span>${esc(l)}</span>${sc ? `<kbd>${esc(sc)}</kbd>` : ''}</button>`).join('');
-    host.appendChild(m); const x = Math.min(ev.clientX - r.left, r.width - m.offsetWidth - 6), y = Math.min(ev.clientY - r.top, r.height - m.offsetHeight - 6); m.style.left = Math.max(4, x) + 'px'; m.style.top = Math.max(4, y) + 'px';
+    host.appendChild(m); let x = Math.min(ev.clientX - r.left, r.width - m.offsetWidth - 6), y = Math.min(ev.clientY - r.top, r.height - m.offsetHeight - 6);
+    // from the toolbar's "..." (user, 25 Nov 2026: the menu covered the toolbar): right-aligned to the button, below it when it fits, else above it, never over the toolbar
+    if (ev.anchor) { const a = ev.anchor, bar = document.getElementById('wbCtxBar'), br = bar ? bar.getBoundingClientRect() : a; const h = m.offsetHeight;
+      x = Math.min(a.right - r.left - m.offsetWidth, r.width - m.offsetWidth - 6); const below = Math.max(a.bottom, br.bottom) - r.top + 6, above = Math.min(a.top, br.top) - r.top - h - 6;
+      y = below + h <= r.height - 6 ? below : above >= 4 ? above : y; }
+    m.style.left = Math.max(4, x) + 'px'; m.style.top = Math.max(4, y) + 'px';
     const first = m.querySelector('button'); if (first) first.focus();
     m.addEventListener('keydown', e2 => { const bs = [...m.querySelectorAll('button')], i = bs.indexOf(document.activeElement); if (e2.key === 'ArrowDown') { e2.preventDefault(); (bs[i + 1] || bs[0]).focus(); } else if (e2.key === 'ArrowUp') { e2.preventDefault(); (bs[i - 1] || bs[bs.length - 1]).focus(); } else if (e2.key === 'Escape') { e2.preventDefault(); ctxClose(); host.focus(); } e2.stopPropagation(); });
   }
@@ -844,7 +849,7 @@
     V.drawer('Who presses "' + (e.label || 'this button') + '"', `<p class="small muted" style="margin-top:0">Tick the roles that press this button. It goes into the state flow, the roles and the notifications.</p><div class="wb-who-l">${acts.map(a => row(a, 'by', (e.by || []).includes(a.id))).join('')}</div><details style="margin-top:12px"${(e.appr || []).length ? ' open' : ''}><summary class="small">Needs an approval?</summary><div class="wb-who-l">${acts.map(a => row(a, 'appr', (e.appr || []).includes(a.id))).join('')}</div></details>`, '<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="wbWhoSave">Save</button>'); };
   ACT.wbWhoSave = () => { const e = W.B && W.B.edges.find(x => x.id === W.whoId); if (!e) { V.closeDrawer(); return; } const pick = k => Array.from(document.querySelectorAll('.wb-who-l input[data-k="' + k + '"]:checked')).map(x => x.value).slice(0, 12); pushUndo(); e.by = pick('by'); e.appr = pick('appr'); if (!e.by.length) delete e.by; if (!e.appr.length) delete e.appr; V.closeDrawer(); changed(); paint(); };
   ACT.wbEdgeLabel = () => { const e = selEdges()[0]; if (e) startEdit(e, true); };
-  ACT.wbMore = a => { const r = a.getBoundingClientRect(); ctxOpen({ clientX: r.left, clientY: r.bottom + 4, target: document.querySelector(`#wbSvg [data-id="${CSS.escape([...W.sel][0] || '')}"]`) || document.getElementById('wbSvg'), preventDefault() { } }); };
+  ACT.wbMore = a => { const r = a.getBoundingClientRect(); ctxOpen({ anchor: r, clientX: r.left, clientY: r.bottom + 4, target: document.querySelector(`#wbSvg [data-id="${CSS.escape([...W.sel][0] || '')}"]`) || document.getElementById('wbSvg'), preventDefault() { } }); };
 
   // ---------- combined flows: a saved, named snapshot of the board (or a selection) that the BRD can include ----------
   const cflows = () => { try { return I().ready(['cflow']) ? I().list('cflow').sort((a, b) => String(b.savedAt || '').localeCompare(String(a.savedAt || ''))) : []; } catch (e) { return []; } };

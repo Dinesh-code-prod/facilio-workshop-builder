@@ -75,7 +75,7 @@
   }
   /** the panel shown above the whiteboard and the state flow builder */
   V.designPanel = () => {
-    if (!team() || /[?&]focus=whiteboard/.test(root.location ? root.location.search : '')) return ''; const all = items().filter(p => p.kind !== 'solution'), open = all.filter(p => p.status === 'open'), done = all.length - open.length;
+    if (!team() || /[?&]focus=whiteboard/.test(root.location ? root.location.search : '')) return ''; const all = items().filter(p => p.kind !== 'solution' && !p.brd), open = all.filter(p => p.status === 'open'), done = all.length - open.length;
     const j = J() && J().K() && Array.isArray(J().K().jobs) ? J().K().jobs.filter(x => x.kind === 'capture_flows' && ['waiting', 'claimed', 'needs_input'].includes(x.status)).length : 0;
     const jf = J() && J().K() && Array.isArray(J().K().jobs) ? J().K().jobs.filter(x => x.kind === 'fill_forms' && ['waiting', 'claimed', 'needs_input'].includes(x.status)).length : 0;
     const apps = all.filter(p => p.kind === 'connectedapp' && p.status === 'applied');
@@ -110,9 +110,22 @@
       if (p.kind === 'brdintro') {
         const fill = V.designLogic.introFill(p, S.ws.project); const ks = Object.keys(fill); if (!ks.length) return 'The BRD introduction already has text in every part this covers. Edit it by hand in Project Settings, or dismiss this.'; Object.assign(S.ws.project, fill); F.changed('BRD introduction filled', ks.join(', ')); return '';
       }
+      if (p.kind === 'retire') {   // left out of the agreed BRD: out of scope (a requirement) or switched off (a flow); nothing is deleted
+        const at = new Date().toISOString(), who = S.user.name || S.user.email;
+        if (p.target === 'requirement') { const r = S.ws.requirements.find(x => x.id === p.ref); if (!r) return 'Requirement ' + p.ref + ' is not in this project any more. Dismiss this.'; const was = { status: r.status, history: r.history };
+          r.status = 'Out of scope'; r.history = (r.history || []).concat({ at, by: who, change: 'Out of scope: not in the agreed BRD' }); undo = () => Object.assign(r, was); F.changed('Requirement out of scope (not in the agreed BRD)', r.id + ' ' + r.title); return ''; }
+        const f = S.ws.flows[p.ref] || Object.values(S.ws.flows).find(x => String(x.name).toLowerCase() === String(p.name).toLowerCase() && (!p.module || x.module === modKey(p.module))); if (!f) return 'That state flow is not in this project any more. Dismiss this.';
+        const was = f.enabled; f.enabled = false; undo = () => { f.enabled = was; }; F.changed('State flow switched off (not in the agreed BRD)', modLabel(f.module) + ' › ' + f.name); return '';
+      }
+      if (p.kind === 'answer') { const q = (S.ws.questions || []).find(x => x.id === p.ref); if (!q) return 'That question is not in this project any more. Dismiss this.'; const was = { answer: q.answer, status: q.status }; q.answer = p.answer; q.status = 'answered'; undo = () => Object.assign(q, was); F.changed('Question answered from the agreed BRD', String(q.text || '').slice(0, 80)); return ''; }
+      if (p.kind === 'requirement' && p.replaces) {   // the agreed BRD rewrote it: the BRD wording, confirmed (the customer agreed it)
+        const r = S.ws.requirements.find(x => x.id === p.replaces); if (!r) return 'Requirement ' + p.replaces + ' is not in this project any more. Dismiss this.'; const was = JSON.parse(JSON.stringify(r));
+        Object.assign(r, { title: p.name, objective: p.objective, rules: p.rules || '', approvals: p.approvals || '', exceptions: p.exceptions || '', status: 'Confirmed', history: (r.history || []).concat({ at: new Date().toISOString(), by: S.user.name || S.user.email, change: 'Updated to the agreed BRD' }) });
+        undo = () => { Object.keys(r).forEach(k => { delete r[k]; }); Object.assign(r, was); }; F.changed('Requirement updated to the agreed BRD', r.id + ' ' + r.title); return '';
+      }
       if (p.kind === 'requirement' || p.kind === 'connectedapp') {
         const q = p.kind === 'connectedapp' ? Object.assign({}, p, V.designLogic.appAsRequirement(p)) : p; const ms = (p.kind === 'connectedapp' ? [p.module] : (p.modules || [])).map(modKey); if (ms.some(x => !x)) return 'A module of this proposal (“' + (p.kind === 'connectedapp' ? p.module : p.modules[ms.indexOf('')]) + '”) is not in this project.'; const now = new Date().toISOString();
-        const rec = V.designLogic.requirementFromProposal(q, ms, F.nextReqId(ms[0] ? F.modulePrefix(ms[0]) : 'GEN'), now, S.user.name || S.user.email); S.ws.requirements.push(rec); undo = () => { S.ws.requirements = S.ws.requirements.filter(r => r.id !== rec.id); }; F.changed('Requirement drafted', rec.id + ' ' + rec.title); return '';
+        const rec = V.designLogic.requirementFromProposal(q, ms, F.nextReqId(ms[0] ? F.modulePrefix(ms[0]) : 'GEN'), now, S.user.name || S.user.email); if (p.brd) { rec.status = 'Confirmed'; rec.history = [{ at: now, by: S.user.name || S.user.email, change: 'From the agreed BRD, applied by a person' }]; } S.ws.requirements.push(rec); undo = () => { S.ws.requirements = S.ws.requirements.filter(r => r.id !== rec.id); }; F.changed('Requirement drafted', rec.id + ' ' + rec.title); return '';
       }
       if (p.kind === 'field') {
         const m = modKey(p.module); if (!m) return 'This project has no module called “' + p.module + '”.'; const have = F.effFields(m).find(x => x.name === F.slug(p.name) || String(x.label).toLowerCase() === p.name.toLowerCase()); if (have) return 'The ' + modLabel(m) + ' module already has a field “' + have.label + '”. Dismiss this one.';

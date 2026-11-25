@@ -42,7 +42,7 @@
 
   // ---------- UAT ----------
   ACT.dlUatGuide = () => { S.ui.ugOpen = null; V.go('guidebuilder'); setTimeout(() => { if (ACT.ugNewUat) ACT.ugNewUat(); }, 200); };
-  ACT.dlUatGuideOpen = a => { S.ui.ugOpen = a.getAttribute('data-id'); S.ui.ugTab = 'content'; V.go('guidebuilder'); };
+  ACT.dlUatGuideOpen = a => { S.ui.ugOpen = a.getAttribute('data-id'); S.ui.ugTab = 'doc'; V.go('guidebuilder'); };
   const sessions = () => I().list('uat').filter(u => cust() ? u.published : true).sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
   function uatTab() {
     const ss = sessions(); const can = canEdit(); const mods = F.allModules().filter(m => m.inScope).sort((a, b) => a.label.localeCompare(b.label)); const open = V.actionsFor ? V.actionsFor : () => [];
@@ -94,7 +94,7 @@
     const tabs = `<div class="ob-tabs">${[['build', 'Build & Test'], ['uat', 'UAT']].map(([k, l]) => `<button class="${t === k ? 'on' : ''}" data-act="dlTab" data-v="${k}">${l}</button>`).join('')}</div>`;
     if (!I().ready(['build', 'uat', 'checklist'])) return head + `<div class="page-body">${tabs}<div class="empty">Loading…</div></div>`;
     const cap = { build: 'Build & Test: the team\'s own progress', uat: 'UAT: the customer tries it and confirms it works', golive: 'Go-live: are we ready to switch on?' }[t];
-    const sk = t === 'build' ? '' : subOf(t); const ai = !cust() && V.aiPanel && ((t === 'uat' && sk === 'cases') ? V.aiPanel([['uat', 'UAT plan and test cases', 'Drafts the plan and the test cases from confirmed requirements and use cases']], { title: 'Draft with AI' }) : (t === 'golive' && sk === 'ready') ? V.aiPanel([['golive', 'Readiness review', 'Reads the open points and writes a plain summary of what could go wrong']], { title: 'Draft with AI' }) : '');
+    const sk = t === 'build' ? '' : subOf(t); const ai = !cust() && V.aiPanel && ((t === 'uat' && sk === 'cases') ? V.aiPanel([['uat', 'UAT guide (before go-live)', 'Drafts the plan and the test cases from confirmed requirements and use cases']], { title: 'Draft with AI' }) : (t === 'golive' && sk === 'ready') ? V.aiPanel([['golive', 'Readiness review', 'Reads the open points and writes a plain summary of what could go wrong']], { title: 'Draft with AI' }) : '');
     const inner = t === 'uat' ? subNav('uat') + ai + (uatTab()[sk] || '') : t === 'golive' ? subNav('golive') + ai + (goliveTab()[sk] || '') : buildTab();
     return head + `<div class="page-body">${tabs}<p class="small muted dl-cap">${esc(cap)}</p>${cust() || !V.pageGuide ? '' : V.pageGuide('dl_' + t)}${V.planStage ? V.planStage(t) : ''}${inner}</div>`;
   }, mount() { I().load(cust() ? kinds : kinds.concat(['ugd', 'utc', 'task'])); } };

@@ -33,4 +33,21 @@ await t('a Comet video link is kept on the card (link only, Comet host only), al
   const r = await tool(s, { pageKey: 'portfolio:all', videoUrl: 'https://comet.facilio.work/#/v/abc' }); assert.equal(r.video, 'https://comet.facilio.work/#/v/abc'); assert.equal(stored.length, before, 'no file is stored for a video');
   assert.equal(docs.mockup_pages.items['portfolio:all'].video, 'https://comet.facilio.work/#/v/abc'); assert.ok(docs.mockup_pages.items['portfolio:all'].file, 'the page already saved stays');
 });
+await t('a card remembers its Meteor prototype; a later page push keeps the video, the prototype and the brief', async () => {
+  docs.mockup_pages.items['portfolio:all'].brief = { text: 'brief', by: 'Dinesh', at: 'x' };
+  await rejects(tool(s, { pageKey: 'portfolio:all', meteor: { owner: 'not an email', slug: 'x' } }), 400); await rejects(tool(s, { pageKey: 'portfolio:all', meteor: { owner: 'd@x.com', slug: 'Bad Slug' } }), 400);
+  const r = await tool(s, { pageKey: 'portfolio:all', meteor: JSON.stringify({ owner: 'D@x.com', slug: 'for-al-moallam', title: 'For Al Moallam', version: 1, latest: 3 }) }); assert.match(r.note, /prototype/);
+  assert.deepEqual((({ owner, slug, version, latest }) => ({ owner, slug, version, latest }))(docs.mockup_pages.items['portfolio:all'].meteor), { owner: 'd@x.com', slug: 'for-al-moallam', version: 1, latest: 3 });
+  web('<!doctype html><html><body>v3</body></html>'); await tool(s, { pageKey: 'portfolio:all', pageUrl: OK, meteor: { owner: 'd@x.com', slug: 'for-al-moallam', version: 3, latest: 3 } }); const it = docs.mockup_pages.items['portfolio:all'];
+  assert.equal(it.video, 'https://comet.facilio.work/#/v/abc'); assert.equal(it.brief.text, 'brief'); assert.equal(it.meteor.version, 3); assert.ok(it.file, 'the new page is stored');
+  await rejects(tool(s, { pageKey: 'portfolio:all' }), 400);
+});
+await t('the Meteor and Comet project of the customer is linked without a card, on their own host only, and the cards stay', async () => {
+  await rejects(tool(s, { toolProject: { tool: 'figma', id: 'x' } }), 400); await rejects(tool(s, { toolProject: { tool: 'meteor', id: 'a b' } }), 400); await rejects(tool(s, { toolProject: { tool: 'meteor', id: 'd@x.com/demo', link: 'https://comet.facilio.work/p' } }), 400);
+  const r = await tool(s, { toolProject: { tool: 'meteor', id: 'd@x.com/al-moallam-vt8y', name: 'Al Moallam', link: 'https://meteor.facilio.work/api/fn/meteor/go/project/x' } }); assert.equal(r.linked, 'meteor');
+  await tool(s, { toolProject: JSON.stringify({ tool: 'comet', id: 'al-moallam', name: 'Al Moallam' }) });
+  assert.deepEqual([docs.mockup_pages.links.meteor.id, docs.mockup_pages.links.comet.name], ['d@x.com/al-moallam-vt8y', 'Al Moallam']); assert.ok(docs.mockup_pages.items['portfolio:all'].file, 'the cards are kept');
+  const sq = JSON.parse(fs.readFileSync(new URL('../work/work.json', import.meta.url), 'utf8')).mcp.tools.find(x => x.name === 'session_questions').input_schema.properties; assert.ok(sq.meteor && sq.toolProject, 'the connector declares meteor and toolProject');
+  const { KINDS } = await import('../work/server/_jobs.mjs'); ['link_tools', 'start_meteor'].forEach(k => assert.deepEqual(KINDS[k].docs, ['workshop', 'mockup_pages'], k)); assert.match(KINDS.send_mockup.recipe, /items\[<ref>\]\.meteor/);
+});
 console.log(n + ' mockup push checks passed');

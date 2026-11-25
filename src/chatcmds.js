@@ -9,16 +9,27 @@
   const TOOLS = {"meteor":"the Meteor connector tools, READ only (project, my_prototypes, get_prototype)","comet":"the Comet connector tools, READ only (my_work, comets, get_creation)"};
   const GUIDES = [[/\buat guide|tester'?s? guide/, 'uat', 'the UAT guide'], [/\buser guide/, 'user', 'a user guide'], [/\btraining (guide|outline|plan)/, 'training', 'a training guide'], [/\bvideo script|shot list/, 'video', 'a video script']];
   const DRAFTS = [[/\bftr\b/, 'ftr', 'FTR report'], [/\buat guide/, 'uat', 'UAT guide'], [/\buser guide/, 'guide', 'user guide'], [/\btraining/, 'training', 'training guide'], [/\bbrd\b/, 'brd', 'BRD'], [/\b(weekly|status) report|\bwsr\b/, 'wsr', 'weekly status report']];
-  /** text -> null | { type: 'nav', view, label } | { type: 'task', title } | { type: 'job', job: { kind, section, note }, label } | { type: 'draft', task, label }
+  /** text -> null | { type: 'nav', view, label } | { type: 'task', title } | { type: 'folder', name } | { type: 'job', job: { kind, section, note }, label } | { type: 'draft', task, label }
       ctx: { pages: [[id, label]] (the menu of this project), today: Date } */
   function match(text, ctx) {
     const raw = String(text || '').trim(), t = low(raw), c = ctx || {}; if (!t || t.length > 300) return null;
     // Meteor and Comet: open one docked inside the Studio, or ask it something through Claude (the Studio cannot call another facilio.work app itself; Claude can, with its connectors)
     let mc = /^(?:please\s+)?(?:open|show|launch)\s+(meteor|comet)\b\s*[.!]?$/i.exec(raw); if (mc) return { type: 'dock', site: mc[1].toLowerCase(), label: mc[1][0].toUpperCase() + mc[1].slice(1).toLowerCase() };
     mc = /\b(meteor|comet)\b/i.exec(raw); if (mc && raw.length >= 12 && !/^(open|go to|show me the)\b.*\b(page|tab)\b/i.test(raw)) { const site = mc[1].toLowerCase(), name = site[0].toUpperCase() + site.slice(1); return { type: 'job', job: { kind: 'chat', section: 'chat', note: ('Use ' + TOOLS[site] + ' to do this, then answer here in the Studio chat with the facts and links you found: ' + raw).slice(0, 590) }, label: 'Ask ' + name + ' through your Claude' }; }
+    // module scope: "Purchase Order and Quote are not required, remove their flows and mark them out of scope" (the server plans it first; nothing changes before Confirm)
+    const sc = scopeCmd(t, c.modules); if (sc) return sc;
+    // the project check: "check this project", "what needs attention?", "health check"; how often it runs by itself: "check this project daily / when I open it / never"
+    if (/\b(check|watch)\w*\b.*\b(project|it)\b.*\b(daily|every day|each day|when i open|on open|every time|never|off|stop)\b|\b(stop|never)\b.*\bcheck\w*\b.*\bproject\b/.test(t)) return { type: 'checkfreq', freq: /never|off|stop/.test(t) ? 'off' : /daily|every day|each day/.test(t) ? 'daily' : 'open' };
+    if (/^(?:please\s+)?(?:check|review|scan|audit)\s+(?:this|the|my)\s+project\b|\b(health ?check|what needs (my )?attention|anything (wrong|missing|late))\b/.test(t)) return { type: 'check' };
     // add a task: "add task: call the customer", "new task follow up on the SLA"
     let m = /^(?:please\s+)?(?:add|create|new|make)\s+(?:a\s+)?(?:new\s+)?(?:task|to-?do)\s*(?::|-|to|called)?\s+(.{3,200})$/i.exec(raw);
     if (m) return { type: 'task', title: m[1].replace(/[.\s]+$/, '') };
+    // a guide folder on the Training page: "new folder Technicians", "create a guide folder called Admins" (the person confirms; moving guides in stays on the page)
+    m = /^(?:please\s+)?(?:add|create|make|new)\s+(?:a\s+)?(?:new\s+)?(?:guides?\s+|training\s+)?folder\s*(?:called|named|for|:|-)?\s+(.{2,60})$/i.exec(raw);
+    if (m) return { type: 'folder', name: m[1].replace(/^["'\u201c]+|["'\u201d.\s]+$/g, '') };
+    // edit or export a document drafted like the BRD: the FTR report and the guides open as editable documents with Word, PDF and HTML in their top bar
+    if (/\b(edit|export|download|html)\b/.test(t) && /\bftr\b|functional test report/.test(t)) return { type: 'nav', view: 'ftr', label: 'the FTR report: click any cell to change it; Word, PDF and HTML are in its top bar' };
+    if (/\b(edit|export|download)\b.*\b(user |training )?guides?\b.*\b(html|word|pdf)\b|\b(html|word|pdf)\b.*\bguides?\b/.test(t)) return { type: 'nav', view: 'guides', label: 'Training guides: open a guide, then Word, PDF or HTML in its top bar' };
     // approve a draft: the approval itself stays a click in the draft window
     if (/\bapprove\b/.test(t)) { const d = DRAFTS.find(x => x[0].test(t)); if (d) return { type: 'draft', task: d[1], label: d[2] }; }
     const doVerb = /^(?:please\s+|can you\s+|could you\s+)?(?:write|make|create|generate|prepare|draft|build|refresh|update|redo|run)\b/.test(t);
@@ -40,6 +51,18 @@
       const best = c.pages.map(p => [p, score(p)]).filter(x => x[1]).sort((a, b) => b[1] - a[1])[0]; if (best) return { type: 'nav', view: best[0][0], label: best[0][1] };
     }
     return null;
+  }
+  // modules named in the text (labels or names, plural allowed, longest first so "Purchase Order" never also counts as "Order"); out or in scope; flows off only when flows are named with a removing verb
+  const OUTQ = /\b(out of (the )?scope|not (required|needed|in scope|part of)|descope|de-scope|exclude|remove|drop)\b/, INQ = /\b(in(to)? (the )?scope|include|bring back|add\b.*\bto (the )?scope)\b/;
+  function scopeCmd(t, modules) {
+    if (!Array.isArray(modules) || !modules.length || /\?\s*$|^(what|which|is|are|how|does|do|why|who|when|can|could)\b/.test(t)) return null; const out = OUTQ.test(t), inn = !out && INQ.test(t); if (!out && !inn) return null;
+    const rx = s => new RegExp('\\b' + low(s).replace(/[^a-z0-9 ]/g, '').trim().split(' ').join('\\s*') + '(e?s)?\\b');
+    let rest = t.replace(/[^a-z0-9 ]/g, ' '); const found = [];
+    modules.map(m => ({ m, keys: [m.label, m.name].filter(k => k && low(k).replace(/[^a-z0-9]/g, '').length > 2) })).sort((a, b) => Math.max(0, ...b.keys.map(k => k.length)) - Math.max(0, ...a.keys.map(k => k.length)))
+      .forEach(({ m, keys }) => keys.some(k => { const r = rx(k); if (!r.test(rest)) return false; rest = rest.replace(new RegExp(r.source, 'g'), ' '); found.push(m.name); return true; }));
+    if (!found.length) return null;
+    const flows = /\bflows?\b/.test(t) ? (out && /\b(remove|switch(ed)? off|turn(ed)? off|disable|drop|retire|delete)\b/.test(t) ? 'off' : inn && /\b(switch(ed)? on|turn(ed)? on|enable|restore|bring back)\b/.test(t) ? 'on' : 'keep') : 'keep';
+    return { type: 'scope', modules: [...new Set(found)], inScope: inn, flows };
   }
   const api = { match };
   root.FWBViews = root.FWBViews || {}; root.FWBViews.chatCmd = api;

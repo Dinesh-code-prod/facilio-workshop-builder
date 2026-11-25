@@ -3891,7 +3891,7 @@ html body .auth .av-learn .av-play:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#
 /* top bar, use the space (user, 23 Nov 2026: "why gaps here ... search and notification hitting the profile icon, utilize the spaces"):
    Search becomes a wide search field in the middle gap (it grows to 440 px), the actions follow it, and the avatar keeps a clear gap */
 @media (min-width: 1001px) {
-  html body.in-proj header.navbar .gs-btn:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q) { order: 9 !important; flex: 1 1 260px !important; min-width: 150px; max-width: 440px; justify-content: flex-start !important; margin: 0 16px 0 20px !important; background: #F3F6FC !important; box-shadow: inset 0 0 0 1px #E3E8F2 !important; color: #6B6B78 !important; font-weight: 500 !important; }
+  html body.in-proj header.navbar .gs-btn:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q) { order: 9 !important; flex: 1 1 260px !important; min-width: 150px; max-width: 440px; justify-content: flex-start !important; margin: 0 auto !important; background: #F3F6FC !important; box-shadow: inset 0 0 0 1px #E3E8F2 !important; color: #6B6B78 !important; font-weight: 500 !important; }
   html body.in-proj header.navbar .gs-btn:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q)::after { margin-left: auto; }
   html body.in-proj header.navbar .co-pill:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q) { margin-left: 0 !important; }
   html body.in-proj header.navbar .avatar:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q) { margin-left: 12px !important; flex: none; }
@@ -4084,6 +4084,76 @@ html body .seg.nav-lay button svg { width: 15px; height: 15px; }
   html body:not(.nav-top) nav.sidebar .sb-badge.pend:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q) { background: #FFF1E7 !important; color: #C2410C !important; }
 }
 @media (prefers-reduced-motion: reduce) { html body:not(.nav-top) nav.sidebar :is(.sb-title, .sb-item) { transition: none !important; } }
+/* top bar spacing (user, 24 Nov 2026: "why this looks awful and clogging"): the actions sit at the right edge with 8 px between them (search is centred in the free space by margin: auto), and the Updates button keeps a clear 16 px from the avatar so its alert glow does not touch it */
+@media (min-width: 1001px) {
+  html body.in-proj header.navbar:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q):not(#q) { gap: 8px !important; }
+  html body.in-proj header.navbar .bell:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q):not(#q) { margin-right: 8px !important; }
+  html body.in-proj header.navbar .avatar:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q):not(#q) { margin-left: 8px !important; }
+}
+/* tab card highlight, clearer (user, 24 Nov 2026: "this does not look highlighted properly"; UX rule: highlight the current location with colour).
+   The 3 px top edge bent into the rounded corners and read as a faded curve, so: an even 1 px border, a solid accent bar on the left, the icon tile filled with the tone,
+   and the card you are in gets a crisp tone outline with a soft ring (no glow). One rule for every tab card: staff, customer and Admin. */
+html body :is(.main nav.mt-bar, nav.adx-tabs) > .mt-in:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q) { --mt-line: #BBD3FB; position: relative !important; border: 1px solid #E6EAF2 !important; border-radius: 14px !important; padding-left: 18px !important; background: #fff !important; box-shadow: 0 1px 2px rgba(16, 24, 40, .05) !important; }
+html body :is(.main nav.mt-bar, nav.adx-tabs) > .mt-in[data-tone="green"]:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q) { --mt-line: #A7E3C9; }
+html body :is(.main nav.mt-bar, nav.adx-tabs) > .mt-in[data-tone="purple"]:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q) { --mt-line: #CFC3FD; }
+html body :is(.main nav.mt-bar, nav.adx-tabs) > .mt-in:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q)::before { content: "" !important; display: block !important; position: absolute !important; left: 0 !important; top: 12px !important; bottom: 12px !important; width: 4px !important; height: auto !important; margin: 0 !important; border-radius: 0 4px 4px 0 !important; background: var(--mt) !important; }
+html body :is(.main nav.mt-bar, nav.adx-tabs) > .mt-in.here:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q) { border-color: var(--mt-line) !important; box-shadow: 0 0 0 3px var(--mt-soft), 0 1px 2px rgba(16, 24, 40, .05) !important; }
+html body :is(.main nav.mt-bar, nav.adx-tabs) .mt-capic:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q) { background: var(--mt) !important; color: #fff !important; }
+html body :is(.main nav.mt-bar, nav.adx-tabs) > .mt-in:not(.here) .mt-capic:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q) { background: var(--mt-soft) !important; color: var(--mt) !important; }
+
+/* Delivery journey (24 Nov 2026): plan dates under each stage, arcs solid up to the last finished stage, a section on the team Home */
+body .iso-dt:not(#_):not(#__){font-size:10.5px;fill:#475467;font-weight:500}
+body .iso-arc:not(.past):not(#_):not(#__){stroke-opacity:.35}
+body .iso-when:not(#_):not(#__){display:block;font-size:12px;color:#475467;margin-top:2px}
+.jr-static{margin-top:16px}
+
+/* Top bar spacing (user, 24 Nov 2026: the bar was crammed to the left). The project closes the left group and everything after it goes to the right edge, with or
+   without the Claude helper light; in the customer preview the preview tag and Exit preview sit next to the project, then the actions go right. */
+@media (min-width: 1001px) {
+  html body.in-proj header.navbar .nb-proj:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin-right: auto !important; }
+  html body.in-proj header.navbar .hp-chip:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin-left: 0 !important; }
+  html body.in-proj header.navbar .right > .tag.blue:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { order: 5; flex: none; margin-left: 4px !important; }
+  html body.in-proj header.navbar [data-act="custPreviewExit"]:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { order: 6; flex: none; }
+  html body.in-proj header.navbar:has([data-act="custPreviewExit"]) .nb-proj:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin-right: 0 !important; }
+  html body.in-proj header.navbar [data-act="custPreviewExit"]:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin-right: auto !important; }
+  html body.in-proj header.navbar:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { gap: 10px; padding-left: 20px; padding-right: 20px; }
+}
+
+/* Guide libraries (user, 25 Nov 2026): Guides & Videos and the published Customer User Guide use the Module guides card (V.libCard in src/learnlib.js).
+   A card with a "..." menu sits in .ll-wrap (no button inside a button); the wrap keeps the five band colours and the menu floats on the band. */
+html body .ll-wrap:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { position: relative; display: flex; min-width: 0; }
+html body .ll-wrap > .ll-card:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { flex: 1 1 auto; width: 100%; }
+html body a.ll-card:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { text-decoration: none !important; color: inherit; }
+html body .ll-wrap:nth-child(5n+3) > .ll-card .ll-band:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: linear-gradient(110deg, #13203A 0%, #13203A 35%, #C2261F 100%); }
+html body .ll-wrap:nth-child(5n+4) > .ll-card .ll-band:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: linear-gradient(110deg, #13203A 0%, #13203A 35%, #D9690B 100%); }
+html body .ll-wrap:nth-child(5n+5) > .ll-card .ll-band:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: linear-gradient(110deg, #13203A 0%, #13203A 35%, #15803D 100%); }
+html body .ll-wrap:nth-child(5n+2) > .ll-card .ll-ic:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: #1570EF; }
+html body .ll-wrap:nth-child(5n+3) > .ll-card .ll-ic:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: #C2261F; }
+html body .ll-wrap:nth-child(5n+4) > .ll-card .ll-ic:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: #D9690B; }
+html body .ll-wrap:nth-child(5n+5) > .ll-card .ll-ic:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: #15803D; }
+html body .ll-wrap:nth-child(5n+1) > .ll-card .ll-ic:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: #0E7490; }
+html body .ll-wrap > .tr-more:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { position: absolute; top: 12px; right: 12px; z-index: 3; }
+html body .ll-wrap > .tr-more > summary:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { width: 32px; height: 32px; border-radius: 50%; background: rgba(255, 255, 255, .16) !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, .28) !important; font-size: 16px; }
+html body .ll-wrap > .tr-more > summary:hover:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q), html body .ll-wrap > .tr-more[open] > summary:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: rgba(255, 255, 255, .28) !important; }
+html body .ll-wrap > .tr-more .tr-more-m:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { top: 38px; right: 0; min-width: 200px; }
+html body .tr .tr-sec:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin: 22px 0 10px; }
+html body .wb-lib-top:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin: 4px 0 10px; }
+
+/* Compact rail labels (user, 25 Nov 2026: "side bar font collision in customer POV"): the shared small-label rule added .06em tracking over the rail's own
+   rule, so two-line labels such as "Prepare for sessions" ran edge to edge with touching lines. No tracking, a looser line, a little room each side. */
+html body.nav-top nav.sidebar .rl-b .rl-l:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { letter-spacing: 0 !important; line-height: 1.28 !important; max-width: 74px !important; text-wrap: balance; overflow-wrap: normal; hyphens: none; }
+/* Tiles on Guides & Videos are card tiles inside the file browser: a chosen or new tile gets a ring round its card, not the row tint */
+html body .fb .ll-wrap.fb-item:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: transparent !important; box-shadow: none !important; border-radius: 16px; }
+html body .fb .ll-wrap.fb-item.sel > .ll-card:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { border-color: #1570EF !important; box-shadow: 0 0 0 2px #1570EF !important; }
+html body .fb .ll-wrap.fb-item.fb-flash > .ll-card:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { border-color: #12B76A !important; box-shadow: 0 0 0 2px #12B76A !important; }
+html body .fb .ll-wrap.fb-item:focus-visible:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { outline: 2px solid #1570EF; outline-offset: 3px; }
+html body .fb .fb-group > .ll-grid:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin-top: 10px; }
+
+/* Fewer redirects (user, 25 Nov 2026): tiles, list rows, roadmap cards and Do next lines are no longer links, so they no longer look clickable */
+html body :is(div.ca-tile, div.ca-do, div.cs-line, div.rm-c, .lc-list li):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { cursor: default !important; }
+html body :is(div.ca-tile, div.ca-do, div.cs-line, div.rm-c, .sd-w, .sd-kpi):hover:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { transform: none !important; }
+html body .lc-list li > b:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font-weight: 500; color: inherit; }
+
 
 /* Profile photos (user, 24 Nov 2026): a person's picture laid over their initials in any avatar (V.face in src/shell.js); the initials stay underneath for no photo or a failed load */
 html body :is(.avatar, .kb-av, .pt-av, .pav, .ovb-av, .hs-av, .rs-av, .aw-av):has(> img.av-img):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { position: relative !important; overflow: hidden !important; }

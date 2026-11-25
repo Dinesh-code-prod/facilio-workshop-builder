@@ -50,12 +50,13 @@
     const sn = cur ? V.stageOfStep(cur.i) : 0, si = ROAD.indexOf(sn);
     const eye = [p.customer, sn ? 'Stage ' + (si + 1) + ' of ' + ROAD.length + ' · ' + V.roadmapName(sn) : 'Plan not started'].filter(Boolean).join('  ·  ');
     const status = (late ? late + ' overdue' : 'On track') + (wait ? ' · ' + wait + ' waiting on the customer' : '') + '.';
-    const tile = (view, n, l, tone) => '<button type="button" class="ca-tile ' + tone + '" data-act="nav" data-view="' + view + '"><b>' + n + '</b><span>' + esc(l) + '</span></button>';
+    // the tiles and the Do next lines are not links (user, 25 Nov 2026: fewer redirects); each page is one click away in the menu
+    const tile = (view, n, l, tone) => '<div class="ca-tile ' + tone + '"><b>' + n + '</b><span>' + esc(l) + '</span></div>';
     const next = lateT.map(t => ['tasks', t.title || 'Task', 'red']).concat(lateA.map(a => ['governance', a.text || 'Action', 'amber']), (V.attentionItems ? V.attentionItems() : []).map(a => [a.view || 'governance', a.t, /risk|issue|concern/i.test(a.t) ? 'red' : 'teal'])).slice(0, 3);
-    const doRow = ([view, t, tone]) => '<li><button type="button" class="ca-do" data-act="nav" data-view="' + esc(view) + '"><i class="ca-ic ' + tone + '">' + (V.dm ? V.dm.icon(t) : '') + '</i><span>' + esc(t) + '</span><em>Open</em></button></li>';
+    const doRow = ([view, t, tone]) => '<li><div class="ca-do"><i class="ca-ic ' + tone + '">' + (V.dm ? V.dm.icon(t) : '') + '</i><span>' + esc(t) + '</span></div></li>';
     const seg = ROAD.map((n, i) => '<i class="' + (si < 0 ? '' : i < si ? 'done' : i === si ? 'now' : '') + '" title="' + esc(V.roadmapName(n)) + '"></i>').join('');
     return '<section class="ca-hero" aria-label="Project summary"><div class="ca-top"><div><p class="ca-eye">' + esc(eye) + '</p><h1 class="ca-title">' + esc(p.name || 'Project') + '</h1><p class="ca-status">' + esc(status) + '</p></div>'
-      + '<div class="ca-acts"><button type="button" class="btn" data-act="nav" data-view="intro">Plan</button><button type="button" class="btn primary" data-act="nav" data-view="tasks">Task board</button></div></div>'
+      + '</div>'
       + '<div class="ca-tiles">' + tile('intro', c.st.n ? c.st.actual + '%' : '—', 'Plan done', 'blue') + tile('tasks', late, 'Overdue', late ? 'amber' : 'green') + tile('governance', risks, 'Open risks', risks ? 'red' : 'teal') + '</div>'
       + '<h2 class="ca-h">Do next</h2>' + (next.length ? '<ul class="ca-list">' + next.map(doRow).join('') + '</ul>' : '<p class="ca-none">Nothing needs you right now.</p>')
       + '<div class="ca-road" role="img" aria-label="' + esc(sn ? 'Stage ' + (si + 1) + ' of ' + ROAD.length : 'Plan not started') + '">' + seg + '</div></section>';
@@ -70,7 +71,7 @@
   V.projdash = { html() {
     I().load(KINDS); const c = ctx(); const k = c.k; const p = S.project || {}; const cur = c.ph.cur >= 0 ? c.ph.info[c.ph.cur] : null; const gl = goLive(c.st); const gv = c.st.actual - c.st.planned;
     let head = '<div class="page-header"><div class="t"><h1>' + (k ? 'Your project dashboard' : 'Project dashboard') + '</h1><p>' + (k ? 'Where ' + esc(p.name || 'your project') + ' stands today, what is waiting on you, and what is coming next.' : 'The state of ' + esc(p.name || 'the project') + ' at a glance: progress, what is late, what is waiting on the customer and what is next.') + '</p></div></div>';
-    if (!k) { head = calmHero(c, p, cur); }
+    if (!k) { head = calmHero(c, p, cur) + (V.isoJourney ? '<section class="card jr-static" aria-label="Delivery journey"><div class="card-b">' + V.isoJourney({ mode: 'team' }) + '</div></section>' : ''); }   // the seven stages with their plan dates, animated the first time
     const hero = fcard(k ? 'Your project' : 'Delivery progress', '<div class="cs-hero-row"><div>' + fring(c.st.actual, 104) + '</div><div class="cs-hero-t"><b>' + (cur ? 'Stage ' + V.stageOfStep(cur.i) + ' · ' + esc(V.roadmapName(V.stageOfStep(cur.i))) : 'Plan not started') + '</b><span>' + (c.st.n ? c.st.actual + '% done against ' + c.st.planned + '% planned' + (gv ? ' · ' + (gv > 0 ? gv + ' points ahead' : -gv + ' points behind') : ' · on plan') : 'No dated plan yet') + '</span><span>' + (gl ? 'Go-live ' + esc(fd(gl.date)) + (gl.n >= 0 ? ' · ' + gl.n + ' day' + (gl.n === 1 ? '' : 's') + ' to go' : ' · date has passed') : '') + '</span></div></div>');
     const secs = [fsec('Where we are', hero)];
     if (k) {

@@ -1,5 +1,14 @@
 # Handoff
 
+**GUIDES AND THE FTR AS DOCUMENTS, GUIDE FOLDERS (24 Nov 2026, pushed, NOT deployed).**
+- **Folders on Training guides.** New folder (secondary button by + New guide), Move to folder in the ... menu of every guide or video row, folders listed first, a breadcrumb inside one, Rename and Delete (only an empty folder). Stored in the workshop document as `ws.guideFolders = { list, of }` (row keys `ugd:<id>`, `vid:<id>`, `v:<video key>`, `utc`). Pure rules: `V.guidesLogic.folders` in `src/guideslist.js`.
+- **Guides drafted like the BRD.** New `src/docpaper.js` (paper renderer, guide Markdown, self-contained HTML file, FTR model and Markdown round trip). The User Guide Builder has a first tab, Document: cover and sections on paper, text, titles and captions edited in place (saved as Markdown), + Text, + Picture, move and delete per section, Word, PDF, HTML, Approve / Reopen. Opening a guide on Training guides lands there. The guide HTML export now uses the same paper (`ugHtml`).
+- **FTR report drafted like the BRD.** `src/uatftr.js`: the Report tab is the paper; cells, use case and module titles, the intro and each result (a picker) are edited in place and saved back into Claude's FTR draft (`ai`, task ftr) as the same Markdown; + Test case and remove per row; Word (the draft export), PDF (print), HTML; owner Approve / Reopen. An approved report is locked.
+- **Claude.** No new connector tool (40-tool limit): `get_document` section `guides` (folders, guides with folder and status, the FTR draft; part `<guide id>` or `ftr` gives the text, team only) and `save_draft` with `id` changes an existing UNAPPROVED guide (sections from # headings, pictures stay with the same-named section) or the FTR draft; approved ones are refused (409). work.json, `_tooldocs.mjs`, the connector recipes and the app page guide say so. The Assistant chat understands "new folder Technicians" (asks, then makes it) and "export the FTR as HTML" / "download the guide as html" (opens the page). Team Guide text updated (Guides & Videos, User Guide Builder, FTR).
+- **Checked:** npm test; `tests/guide_docs.mjs` (8); `tests/ui/guide-docs-check.mjs` 14/14 in Edge on the local dev server (folder, move, open as document, edit text and title, HTML export, FTR cell and result saved, FTR HTML export, no page errors).
+- **Not checked:** Word and PDF from the Document tab in the browser (same code as before), pictures in the HTML file with real uploaded screenshots, a customer view of the FTR document, the live app. `tests/ui/uat-guide-check.mjs` stops earlier at the UAT tab (`dlUatGuide` not visible), not caused by this change.
+- **Decide:** the "Open in Claude" buttons were not added to the two documents, because project pages keep one Claude button (the Assistant).
+
 **PROJECT FOLDERS (FACILIO ONBOARDING) + MISSED-STEP ALERTS WITH A BLINKING BELL (23 Nov 2026, pushed, NOT deployed).** Report: `docs/reports/DOCUMENT-REPOSITORY-AND-ALERTS-2026-11-23.md`.
 - **Folders.** SharePoint layout is now `Facilio Onboarding / <project name> / 01_Project Governance … 08_Archive`.
   - It is made when a project is created (`SP.ensure` in POST /api/projects, 8 s cap, never blocks).
@@ -217,3 +226,9 @@ Project handover > Solution document (src/soldoc.js, record kind sdoc, AI task s
 Solution document (deploy 481): the page now runs the BRD Draft editor on its own store F.doc(soldocs) (src/brd.js isSol, src/soldoc.js). The earlier section editor (record kind sdoc) is retired; its one Al Moallam record stays in the data, unused. Not yet checked: a real Claude run (Al Moallam has no org yet).
 
 SharePoint project folders (deploy 482): built and tested against a stand-in Microsoft Graph only. Off until an admin does the set-up in docs/integrations/SHAREPOINT-2026-11-16.md (Entra app, Sites.Selected full control on one site, credential graph_files, secret sharepoint_site). First real test must confirm folder sharing works with full control.
+
+## Pending for tomorrow (24 Nov 2026, evening)
+- An agent may still be finishing the Training page fixes: blank guide document preview (guidebuilder Document tab), calm guide header, file-browser style list (command bar with + New, path with a back button, columns, folders first, newest first, Videos to make folded). Check git log for its commit; nothing of it is deployed.
+- Guide jobs now read the MSA contract scope and the agreed processes first (27d6348, pushed, not deployed).
+- Live is deploy 526 (b8fd07f). Deploy the above after a browser check on Al Moallam (Training, a guide Document tab, FTR HTML export).
+- Not checked yet: Word/PDF export from the guide Document view, HTML export with real screenshots, a real Search older mail run.

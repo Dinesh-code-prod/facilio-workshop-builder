@@ -7,25 +7,14 @@
   const { tag, drawer, closeDrawer, toast, ico, confirmDialog } = V;
   const canEdit = () => !V.isCustomer() && !S.readonly; const canApprove = () => !V.isCustomer() && S.project && S.project.role === 'owner';
   const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-  const TABS = [['content', 'Edit'], ['brand', 'Style'], ['checks', 'Check and send'], ['versions', 'Versions']];
+  const TABS = [['doc', 'Document'], ['content', 'Edit'], ['brand', 'Style'], ['checks', 'Check and send'], ['versions', 'Versions']];
   let W = null, WID = null, timer = null, saving = false, dirtyAt = 0;
   const strip = t => String(t || '').replace(/\s*\[S\d+\]/g, '');
   const when = d => d ? V.fmtDate(d) : '';
 
   // ---------- markdown helpers ----------
-  function parseMd(src) {
-    const L = strip(src).split('\n'); const out = []; let ul = null, ol = null, tb = null, p = [];
-    const flush = () => { if (p.length) { out.push({ t: 'p', text: p.join(' ') }); p = []; } if (ul) { out.push({ t: 'ul', items: ul }); ul = null; } if (ol) { out.push({ t: 'ol', items: ol }); ol = null; } if (tb) { out.push({ t: 'table', rows: tb }); tb = null; } };
-    L.forEach(ln => { const t = ln.trim(); let m;
-      if (!t) { flush(); return; }
-      if (/^\|.*\|$/.test(t)) { if (/^\|[\s:|-]+\|$/.test(t)) return; const cells = t.slice(1, -1).split('|').map(c => c.trim()); if (!tb) { flush(); tb = []; } tb.push(cells); return; }
-      if ((m = t.match(/^(#{1,3})\s+(.*)/))) { flush(); out.push({ t: 'h', lvl: m[1].length, text: m[2] }); return; }
-      if ((m = t.match(/^[-*•]\s+(.*)/))) { if (!ul) { flush(); ul = []; } ul.push(m[1]); return; }
-      if ((m = t.match(/^\d+[.)]\s+(.*)/))) { if (!ol) { flush(); ol = []; } ol.push(m[1]); return; }
-      if (ul || ol || tb) flush(); p.push(t); });
-    flush(); return out;
-  }
-  const runs = t => String(t).split(/(\*\*[^*]+\*\*)/).filter(Boolean).map(x => /^\*\*[^*]+\*\*$/.test(x) ? { text: x.slice(2, -2), bold: true } : { text: x });
+  const DP = () => V.docPaper;   // the guide Markdown and the document paper (src/docpaper.js), shared with the FTR report
+  const parseMd = src => DP().parseMd(src), runs = t => DP().runs(t);
   function mdToBlocks(md, frames) {
     const blocks = []; let buf = [];
     const flush = () => { const t = buf.join('\n').trim(); if (t) blocks.push({ t: 'md', text: t }); buf = []; };
@@ -92,18 +81,35 @@
         <div class="page-body"><div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Guide</th><th>Type</th><th>Audience</th><th>Status</th><th>Sections</th><th>Version</th><th>Updated</th><th></th></tr></thead><tbody>${guides().map(g => `<tr><td><b>${esc(g.title)}</b><div class="xs muted">${esc(g.customer || '')}</div></td><td class="small">${g.plan && g.plan.kind === 'uat' ? 'UAT guide' : 'User guide'}</td><td class="small">${esc(g.audience || '—')}</td><td>${stTag(g.status)}</td><td>${(g.sections || []).length}</td><td>${esc(g.version || '')}</td><td class="small">${esc(when(g._at))}</td><td style="text-align:right"><button class="btn sm" data-act="ugOpen" data-id="${esc(g.id)}">Open</button></td></tr>`).join('') || '<tr><td colspan="8" class="muted" style="padding:18px">No guides yet. Create one to get started.</td></tr>'}</tbody></table></div></div></div>`;
       }
       V.beforeLeave = () => { flush(); return true; };
-      const tab = ({ export: 'checks', update: 'versions' })[S.ui.ugTab] || S.ui.ugTab || 'content'; const ck = checks(W);
-      const head = `<div class="page-header"><div class="t"><h1>${esc(W.title)}</h1><p>${stTag(W.status)} <span class="small muted">${W.approvedBy ? 'Approved by ' + esc(W.approvedBy) + ' on ' + esc(when(W.approvedAt)) + '. ' : ''}<span id="ugState">All changes saved</span></span></p></div><div class="row"><button class="btn" data-act="ugBack">All guides</button></div></div>`;
-      const bar = `<div class="tabs" role="tablist">${TABS.map(([k, l]) => `<button class="tab${tab === k ? ' active' : ''}" role="tab" data-act="ugTab" data-v="${k}">${l}${k === 'checks' && ck.length ? ` <span class="xs">(${ck.length})</span>` : ''}</button>`).join('')}</div>`;
+      const tab = ({ export: 'checks', update: 'versions' })[S.ui.ugTab] || S.ui.ugTab || 'doc'; const ck = checks(W);
+      // compact header (user, 24 Nov 2026): title, status, saved state; the tool switch and the inputs sit behind the chip in the tab row
+      const head = `<div class="page-header ug-head"><div class="t"><h1>${esc(W.title)}</h1><p>${stTag(W.status)} <span class="small muted">${W.approvedBy ? 'Approved by ' + esc(W.approvedBy) + ' on ' + esc(when(W.approvedAt)) + '. ' : ''}<span id="ugState">All changes saved</span></span></p></div><div class="row"><button class="btn sm" data-act="ugBack">All guides in the builder</button></div></div>`;
+      const bar = `<div class="ug-tabrow"><div class="tabs" role="tablist">${TABS.map(([k, l]) => `<button class="tab${tab === k ? ' active' : ''}" role="tab" aria-selected="${tab === k}" data-act="ugTab" data-v="${k}">${l}${k === 'checks' && ck.length ? ` <span class="xs">(${ck.length})</span>` : ''}</button>`).join('')}</div>${V.ugInputsChip && !V.isCustomer() ? V.ugInputsChip() : ''}</div>`;
       let body = '';
+      if (tab === 'doc') body = docHtml(can);
       if (tab === 'content') body = contentHtml(can);
       if (tab === 'versions') body = (V.guideUpdate ? V.guideUpdate.versionsHtml() : '') + ((V.featureHidden && V.featureHidden('orgpkg')) ? '' : '<h3 style="margin:18px 0 8px">Update from configuration</h3>' + (V.guideUpdate ? V.guideUpdate.html() : ''));
       if (tab === 'brand') body = brandHtml(can);
-      if (tab === 'checks') body = checksHtml(ck) + '<h3 style="margin:18px 0 8px">Export</h3>' + `<div class="card" style="padding:16px"><p class="small">Exports use the branding and the current content. ${W.status === 'approved' ? 'This guide is approved.' : 'This guide is a <b>draft</b>: the cover says so.'} AI source tags are removed. ${ck.filter(c => c.sev === 'medium').length ? `<b>${ck.filter(c => c.sev === 'medium').length} medium finding(s)</b> are still open on the Quality checks tab.` : ''}</p><div class="row" style="gap:8px"><button class="btn primary" data-act="ugDocx">${ico('dl')}Word (.docx)</button><button class="btn" data-act="ugPdf">${ico('dl')}PDF</button><button class="btn" data-act="ugHtml">${ico('dl')}HTML</button></div></div>`;
+      if (tab === 'checks') body = checksHtml(ck) + '<h3 style="margin:18px 0 8px">Export</h3>' + `<div class="card" style="padding:16px"><p class="small">Exports use the branding and the current content. ${W.status === 'approved' ? 'This guide is approved.' : 'This guide is a <b>draft</b>: the cover says so.'} AI source tags are removed. ${ck.filter(c => c.sev === 'medium').length ? `<b>${ck.filter(c => c.sev === 'medium').length} medium finding(s)</b> are still open on the Quality checks tab.` : ''}</p><div class="row" style="gap:8px"><button class="btn" data-act="ugDocx">${ico('dl')}Word (.docx)</button><button class="btn" data-act="ugPdf">${ico('dl')}PDF</button><button class="btn" data-act="ugHtml">${ico('dl')}HTML</button></div></div>`;
       return head + `<div class="page-body">${bar}<div style="margin-top:12px">${body}</div></div>`;
     },
     mount() { if (V.guideUpdate && V.guideUpdate.mount) V.guideUpdate.mount(); document.querySelectorAll('[data-ugimg]').forEach(async img => { try { const b = await V.fileBlob(img.getAttribute('data-ugimg')); img.src = URL.createObjectURL(b); } catch (e) { img.alt = 'Image not available'; } }); }
   };
+  // the guide as a document, drafted like the BRD (user, 24 Nov 2026): cover and sections on paper, every text editable in place; an approved guide is locked until it is reopened
+  function docHtml(can) {
+    const edit = can && W.status !== 'approved', s = W.sections || [];
+    const model = DP().guideModel(W, null, dateStr());
+    const btn = (act, i, label, x) => `<button type="button" class="btn sm" data-act="${act}" data-i="${i}"${x || ''}>${label}</button>`;
+    const tools = i => `<div class="dp-tools">${btn('ugSecMove', i, '↑', ` data-d="-1" aria-label="Move this section up"${i === 0 ? ' disabled' : ''}`)}${btn('ugSecMove', i, '↓', ` data-d="1" aria-label="Move this section down"${i === s.length - 1 ? ' disabled' : ''}`)}${btn('ugTxtAdd', i, '+ Text')}${btn('ugImgAdd', i, '+ Picture')}${btn('ugSecDel', i, 'Delete section')}</div>`;
+    const blkTools = (i, j) => `<button type="button" class="dp-x" data-act="ugBlkDel" data-i="${i}" data-j="${j}" aria-label="Remove this block" title="Remove this block">×</button>`;
+    const pages = DP().paper(model, { edit, compact: true, empty: edit ? 'Nothing written in this section yet. Use + Text above, or write it on the Edit tab.' : 'Nothing written in this section yet.', coverAttr: () => 'data-dpf="title"', titleAttr: i => `data-dpt="${i}"`, mdAttr: (i, j) => `data-dpm="${i}.${j}"`, capAttr: (i, j) => `data-dpc="${i}.${j}"`, tools, blkTools });
+    const outline = s.map((x, i) => `<a href="#" data-act="dpJump" data-i="${i}">${esc(x.title || 'Untitled section')}</a>`).join('') || '<div class="xs muted" style="padding:2px 16px">No sections yet</div>';
+    const decide = canApprove() ? (W.status === 'approved' ? '<button class="btn sm" data-act="ugDecide" data-d="reopen">Reopen to edit</button>' : '<button class="btn sm primary" data-act="ugDecide" data-d="approve">Approve</button>') : '';
+    const note = edit ? 'Click any text to edit. It saves by itself.' : W.status === 'approved' ? 'Approved and locked.' + (canApprove() ? ' Reopen it to edit.' : '') : 'Read only.';
+    const ribbon = `<div class="brd-top">${stTag(W.status)}<span class="small muted">${note}</span><span class="spacer"></span>${edit ? `<button class="btn sm" data-act="ugSecAdd">${ico('plus')}Section</button>` : ''}<details class="tr-more dp-dl"><summary class="btn sm" aria-label="Download as Word, PDF or HTML">${ico('dl')}Download</summary><div class="tr-more-m" role="menu"><button class="btn sm" role="menuitem" data-act="ugDocx">Word (.docx)</button><button class="btn sm" role="menuitem" data-act="ugPdf">PDF</button><button class="btn sm" role="menuitem" data-act="ugHtml">HTML page</button></div></details>${decide}</div>`;
+    return `<div class="word dp-word"><nav class="word-nav" aria-label="Guide outline"><div class="pink-label" style="margin:6px 16px 8px">Sections</div>${outline}</nav><div class="word-main">${ribbon}<div class="paper-scroll">${pages}</div></div></div>`;
+  }
+  ACT.dpJump = a => { const el = document.getElementById('dp_s' + a.getAttribute('data-i')); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
   function contentHtml(can) {
     const s = W.sections; const d = can ? '' : 'disabled';
     return (V.ugDraft ? V.ugDraft.top(can) : '') + `<div class="row" style="gap:6px;margin-bottom:10px;flex-wrap:wrap">${can ? `<button class="btn sm" data-act="ugSecAdd">${ico('plus')}Add section</button><button class="btn sm" data-act="ugFromCfg">From Configuration Inputs</button><button class="btn sm" data-act="ugFromAi">From an AI guide draft</button><button class="btn sm" data-act="ugFromVid">From a walkthrough</button>${V.aiButton ? V.aiButton('guide', 'Generate guide draft') : ''}` : ''}</div>` +
@@ -126,6 +132,11 @@
   document.addEventListener('input', e => {
     if (!W) return; const t = e.target; if (!t.getAttribute) return;
     const sec = t.getAttribute('data-ugt'); if (sec != null && W.sections[sec]) { W.sections[sec].title = t.value; schedule(); return; }
+    // the Document tab: text typed on the paper goes back into the guide as Markdown
+    const dt = t.getAttribute('data-dpt'); if (dt != null && W.sections[dt]) { W.sections[dt].title = t.textContent.replace(/\s+/g, ' ').trim(); schedule(); return; }
+    const dm = t.getAttribute('data-dpm'); if (dm) { const [i, j] = dm.split('.').map(Number); const b = W.sections[i] && W.sections[i].blocks[j]; if (b) { b.text = DP().domToMd(t); if (V.ugMarkEdited) V.ugMarkEdited(i); schedule(); } return; }
+    const dc = t.getAttribute('data-dpc'); if (dc) { const [i, j] = dc.split('.').map(Number); const b = W.sections[i] && W.sections[i].blocks[j]; if (b) { b.caption = t.textContent.replace(/\s+/g, ' ').trim(); schedule(); } return; }
+    const df = t.getAttribute('data-dpf'); if (df === 'title') { W.title = t.textContent.replace(/\s+/g, ' ').trim().slice(0, 120); schedule(); return; }
     const m = t.getAttribute('data-ugm'); if (m) { const [i, j] = m.split('.').map(Number); if (W.sections[i] && W.sections[i].blocks[j]) { W.sections[i].blocks[j].text = t.value; if (V.ugMarkEdited) V.ugMarkEdited(i); schedule(); } return; }
     const c = t.getAttribute('data-ugc'); if (c) { const [i, j] = c.split('.').map(Number); if (W.sections[i] && W.sections[i].blocks[j]) { W.sections[i].blocks[j].caption = t.value; if (V.ugMarkEdited) V.ugMarkEdited(i); schedule(); } return; }
     const f = t.getAttribute('data-ugf'); if (f) { W[f] = t.value; schedule(); return; }
@@ -134,7 +145,7 @@
   document.addEventListener('change', e => { const t = e.target; if (t && t.getAttribute && t.getAttribute('data-ugb') && t.type === 'checkbox' && W) { W.brand[t.getAttribute('data-ugb')] = t.checked; schedule(); } });
   ACT.ugTab = a => { S.ui.ugTab = a.getAttribute('data-v'); V.render(); };
   ACT.ugBack = async () => { await flush(); S.ui.ugOpen = null; W = null; WID = null; V.beforeLeave = null; V.render(); };
-  ACT.ugOpen = a => { S.ui.ugOpen = a.getAttribute('data-id'); S.ui.ugTab = 'content'; W = null; V.render(); };
+  ACT.ugOpen = a => { S.ui.ugOpen = a.getAttribute('data-id'); S.ui.ugTab = 'doc'; W = null; V.render(); };
   ACT.ugNew = () => {
     const ai = I().list('ai').filter(x => x.task === 'guide'); const cfg = I().list('cmodx').length + I().list('capp').length;
     drawer('New user guide', `<label class="f">Guide title</label><input type="text" id="ug_t" maxlength="120" value="User guide"><div class="fgrid"><div><label class="f">Customer</label><input type="text" id="ug_c" maxlength="80" value="${esc((S.project && S.project.customer) || '')}"></div><div><label class="f">Audience / role</label><input type="text" id="ug_a" maxlength="80" placeholder="e.g. Technicians"></div></div><label class="f">Start from</label><select id="ug_s"><option value="blank">A blank guide</option><option value="cfg"${cfg ? '' : ' disabled'}>Configuration Inputs (${cfg} described)</option><option value="ai"${ai.length ? '' : ' disabled'}>An AI guide draft (${ai.length} available)</option></select>${ai.length ? `<label class="f">AI draft to use</label><select id="ug_ai">${ai.map(x => `<option value="${esc(x.id)}">${esc(when(x._created))} · ${esc(x.status || 'draft')}</option>`).join('')}</select>` : ''}`,
@@ -253,25 +264,13 @@
       await new Promise((res, rej) => { try { pm.createPdf(dd).getBlob(b => { V.download((W.title || 'User guide').replace(/[^\w-]+/g, '_') + '.pdf', b); res(); }); } catch (e) { rej(e); } }); toast('PDF ready');
     } catch (e) { console.error(e); toast('Export failed: ' + (e.message || e), 7000, true); } finally { V.loading(false); }
   });
-  // HTML: the same guide as one web page (cover, contents, sections, screenshots written in), built from the sections like the Word and PDF files
+  // HTML: the guide as one web page that looks like the Document tab (cover, sections, screenshots written in as data; no outside request), src/docpaper.js htmlFile
   ACT.ugHtml = a => V.busy(a, async () => {
     if (emptyGuide()) return; await flush(); V.loading(true, 'Writing the web page…');
     try {
-      const acc = '#' + hex(W.brand.accent); const rt = t => runs(t).map(x => x.bold ? '<b>' + esc(x.text) + '</b>' : esc(x.text)).join(''); const h = [];
-      if (W.brand.cover !== false) { let logo = ''; if (W.brand.logo) { try { logo = '<img src="' + (await media(W.brand.logo.fileId)).dataUrl + '" alt="Logo">'; } catch (e) { } }
-        h.push('<div class="paper cover">' + logo + '<h1 style="color:' + acc + '">' + esc(W.title) + '</h1>' + (W.customer ? '<p>for ' + esc(W.customer) + '</p>' : '') + (W.audience ? '<p class="muted">' + esc(W.audience) + '</p>' : '') + '<p class="muted">Version ' + esc(W.version || '') + ' · ' + esc(dateStr()) + ' · ' + (W.status === 'approved' ? 'Approved' : 'DRAFT') + '</p></div>'); }
-      h.push('<div class="paper"><h2 style="color:' + acc + '">Contents</h2><ol>' + W.sections.map((sec, si) => '<li><a href="#s' + si + '">' + esc(sec.title) + '</a></li>').join('') + '</ol></div>');
-      for (let si = 0; si < W.sections.length; si++) { const sec = W.sections[si]; const p = ['<h2 id="s' + si + '" style="color:' + acc + '">' + esc(sec.title) + '</h2>'];
-        for (const b of sec.blocks || []) {
-          if (b.t === 'img') { try { p.push('<figure><img src="' + (await media(b.fileId)).dataUrl + '" alt="' + esc(b.caption || 'Screenshot') + '">' + (b.caption ? '<figcaption class="caption">' + esc(b.caption) + '</figcaption>' : '') + '</figure>'); } catch (e) { } continue; }
-          for (const x of parseMd(b.text)) {
-            if (x.t === 'h') p.push(x.lvl === 1 ? '<h3>' + esc(x.text) + '</h3>' : '<h4>' + esc(x.text) + '</h4>'); else if (x.t === 'p') p.push('<p>' + rt(x.text) + '</p>');
-            else if (x.t === 'ul' || x.t === 'ol') p.push('<' + x.t + '>' + x.items.map(y => '<li>' + rt(y) + '</li>').join('') + '</' + x.t + '>');
-            else if (x.t === 'table') p.push('<table>' + x.rows.map((r, ri) => '<tr>' + r.map(c => ri ? '<td>' + rt(c) + '</td>' : '<th>' + rt(c) + '</th>').join('') + '</tr>').join('') + '</table>');
-          } }
-        h.push('<div class="paper">' + p.join('') + '</div>'); }
-      if (W.brand.footer) h.push('<p class="pfoot">' + esc(W.brand.footer) + '</p>');
-      await V.saveHtml((W.title || 'User guide').replace(/[^\w-]+/g, '_'), W.title || 'User guide', h.join('')); toast('Web page ready');
+      const src = {}; const ids = [W.brand.logo && W.brand.logo.fileId].concat(W.sections.flatMap(sec => (sec.blocks || []).filter(b => b.t === 'img').map(b => b.fileId))).filter(Boolean);
+      for (const id of ids) { if (!src[id]) { try { src[id] = (await media(id)).dataUrl; } catch (e) { /* a missing screenshot is left out */ } } }
+      V.download((W.title || 'User guide').replace(/[^\w-]+/g, '_') + '.html', DP().htmlFile(DP().guideModel(W, src, dateStr())), 'text/html'); toast('Web page ready');
     } catch (e) { console.error(e); toast('Export failed: ' + (e.message || e), 7000, true); } finally { V.loading(false); }
   });
 })(typeof window !== 'undefined' ? window : globalThis);

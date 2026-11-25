@@ -14,7 +14,11 @@ assert.equal(brief({ id: 'j', kind: 'chat', params: { note: 'x', size: 'small' }
 console.log('3 chat size checks passed');
 // a missing skill, connector or browser in the Claude that took the job: every job's brief says what to do instead of an apology, and the chat is pointed at the skills list
 for (const kind of ['chat', 'pull_msa', 'fetch_mail', 'make_guide', 'build_solution_doc']) { const x = brief({ id: 'j', kind, params: { note: 'x' }, requestedBy: 'a@b.c' }, 'P'); assert.match(x.blocked, /needs_input/); assert.match(x.blocked, /SKILL\.md/); assert.match(x.blocked, /which Claude you are/); assert.match(x.blocked, /Never claim a skill or tool was used when it was not/); }
-assert.match(b('generate the FTR').instructions, /get_impl_skills first/); assert.match(b('generate the FTR').instructions, /blocked field/);
+assert.match(b('generate the FTR').instructions, /get_impl_skills first/); assert.match(b('generate the FTR').instructions, /ask first \(skills\.rule\)/);
+// a deliverable is never quietly made without its skill (24 Nov 2026): the required skill comes first, marked needed, and the rule says to ask before a plain draft
+{ const f = b('generate the FTR').skills, u = b('build the UAT guide for work orders').skills, g = brief({ id: 'j2', kind: 'make_guide', params: { section: 'user' }, requestedBy: 'a@b.c' }, 'P').skills;
+  assert.equal(f.plan[0].skill, 'ftr-generator'); assert.equal(f.plan[0].needed, true); assert.equal(u.plan[0].skill, 'facilio-uat-guide'); assert.equal(b('prepare the handover user guide').skills.plan[0].skill, 'guidebook-builder'); assert.equal(u.plan[0].needed, true); assert.equal(g.plan[0].skill, 'guidebook-builder'); assert.equal(g.plan[0].needed, true);
+  assert.match(u.rule, /Reply draft anyway/); assert.match(u.rule, /Made without the <skill> skill/); assert.equal(b('what is the status').skills, undefined, 'a plain question carries no skill plan'); }
 console.log('2 missing-skill checks passed');
 // skill plans: every job kind planned exists, every job carries a plan in order, and a chat job gets the skills of the area it is about
 { const { KINDS, skillPlan } = await import('../work/server/_jobs.mjs'); const { IMPL_SKILLS } = await import('../work/server/_skills.mjs');

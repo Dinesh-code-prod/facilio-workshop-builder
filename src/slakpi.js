@@ -62,7 +62,7 @@
     const it = (act, t, d, extra) => '<button type="button" data-act="' + act + '"' + (extra || '') + '><b>' + t + '</b><span>' + d + '</span></button>';
     return '<span class="spacer"></span>' + (can() ? '<button class="btn sm primary" data-act="' + add + '">+ Add ' + (which === 'sla' ? 'SLA row' : 'KPI') + '</button>' : '')
       + '<details class="ds-more"><summary class="btn sm">More</summary><div class="ds-menu">' + (can() ? it('slkImport', 'Import or paste', 'A file or pasted text, for this matrix only', ' data-want="' + which + '"') + it('slkAsk', 'Ask Claude to check it', 'Claude compares the matrix with the contract and the solution, in the chat', ' data-want="' + which + '"') : '')
-      + it('slkExport', 'Export Excel', 'Both matrices in one workbook', ' data-fmt="xlsx"') + it('slkExport', 'Export CSV', 'This matrix only', ' data-fmt="csv" data-want="' + which + '"') + (which === 'kpi' ? it('nav', 'KPI workbooks', 'The customer’s KPI Excel files', ' data-view="kpi"') : '') + '</div></details>';
+      + it('slkExport', 'Export Excel', 'Both matrices in one workbook', ' data-fmt="xlsx"') + it('slkExport', 'Export CSV', 'This matrix only', ' data-fmt="csv" data-want="' + which + '"') + '</div></details>';
   }
   V.slakpi = { html() {
     if (V.isCustomer()) return ''; I().load(['kpi']); const head = '<div class="page-header"><div class="t"><h1>KPIs &amp; SLA matrix</h1><p>What has to be tracked, and how Facilio delivers it. Written once here, it flows into the Solution tab, the BRD, the UAT test cases and the FTR checklist.</p></div></div>';

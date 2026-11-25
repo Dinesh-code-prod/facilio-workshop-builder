@@ -56,7 +56,7 @@
     const c = D.X(); const mode = S.ui.sdRepMode === 'stage' ? 'stage' : 'status';
     let m, extra = '';
     if (mode === 'stage') { m = stageModel(c); extra = selHtml('sdRepStageSel', m.stages.map(s => [s.id, s.label]), m.sel, 'Stage'); } else m = statusModel(c);
-    const wsr = V.isCustomer() ? '' : '<p class="small muted" style="margin:0 0 10px">The weekly and monthly status reports (WSR) are made on their own page. <button type="button" class="btn link sm" data-act="nav" data-view="statusrep">Open Status reports</button></p>';
+    const wsr = V.isCustomer() ? '' : '<p class="small muted" style="margin:0 0 10px">The weekly and monthly status reports (WSR) are made on their own page. It is in the menu under Reports.</p>';
     LAST = m; return `<div class="sd-reports">${bar([['status', 'Status report'], ['stage', 'Stage report']], mode, extra)}${wsr}${draw(m)}</div>`;
   }
   ACT.sdRepMode = a => { S.ui.sdRepMode = a.getAttribute('data-v'); V.render(); };

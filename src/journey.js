@@ -10,22 +10,27 @@
   const F = root.FWB; const { S, esc } = F; const V = root.FWBViews; const ACT = V.ACT;
   const reduce = () => !!(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
-  // name, short label, one-line description, colour, team page, customer page, plan-task keywords (customer progress)
+  // the seven lifecycle stages (src/lifelogic.js, numbered as in the menu): name, short label, one-line description, colour, team page, customer page,
+  // plan-task keywords (which plan rows belong to the stage), icon (index in V.PP_ICO), stage number
   const L = [
-    ['Project Kick-off & Discovery', 'Kick-off & Discovery', 'Align on scope, goals, contract and the plan.', '#1570EF', 'kickoff', 'kickoff', /kick/i],
-    ['Workshops', 'Workshops', 'Walk through your processes together, session by session.', '#1570EF', 'planner', 'schedule', /workshop|data template/i],
-    ['Requirements', 'Requirements', 'Capture what you need and confirm it.', '#1570EF', 'transcripts', null, /requirement/i],
-    ['BRD & Sign-off', 'BRD & Sign-off', 'Agree the business requirements document.', '#1570EF', 'brd', null, /brd/i],
-    ['Configuration & Implementation', 'Configuration', 'Facilio is configured to the agreed requirements.', '#0F57BD', 'delivery', null, /implement|configur|build|timeline/i],
-    ['UAT & Defect Management', 'UAT & Defects', 'You test it; findings are logged and fixed.', '#0F57BD', 'delivery', null, /uat|demo|feedback/i],
-    ['FTR & KPI Validation', 'FTR & KPIs', 'Confirm functionality and KPIs work as agreed.', '#0F57BD', 'ftr', null, /ftr|kpi/i],
-    ['Customer Training & User Guides', 'Training & Guides', 'Your team learns the system with guides made for it.', '#0F57BD', 'guidebuilder', 'guide', /train|guide/i],
-    ['Go-Live Readiness', 'Go-Live Readiness', 'Final checks and data clean-up before launch.', '#24216F', 'delivery', null, /go-?live|clean/i],
-    ['Hypercare', 'Hypercare', 'Close support right after launch.', '#24216F', 'hypercare', null, /hypercare/i],
-    ['Support Transition & Handover', 'Support Handover', 'Move to steady-state support.', '#24216F', 'handover', null, /handover|support/i],
-    ['Project Closure', 'Project Closure', 'Review outcomes and formally close the project.', '#24216F', 'handover', null, /clos/i]
+    ['Project introduction', 'Introduction', 'Contract, scope, kick-off and the project plan.', '#1570EF', 'kickoff', 'kickoff', /kick|contract|msa|scope|project plan|plan|mobili[sz]/i, 0, 1],
+    ['Requirement sessions', 'Requirement sessions', 'Workshops on your processes, session by session.', '#1570EF', 'rsplan', 'schedule', /workshop|requirement|session|discovery|use case|transcript/i, 1, 2],
+    ['Solution design & BRD', 'Design & BRD', 'The solution and the business requirements document, signed off.', '#1570EF', 'brd', null, /design|brd|configur|solution|form|mockup|build|integrat|sla|kpi/i, 3, 3],
+    ['UAT & FTR', 'UAT & FTR', 'You test it; findings are fixed and the FTR checks pass.', '#0F57BD', 'delivery', null, /uat|test|go.?live|cut.?over|acceptance|ftr/i, 5, 4],
+    ['Training guides', 'Training', 'Your team learns the system with guides made for it.', '#0F57BD', 'guidebuilder', 'guide', /train|document|guide|video|manual/i, 7, 5],
+    ['Hypercare', 'Hypercare', 'Close support right after go-live.', '#24216F', 'hypercare', null, /hypercare|stabili[sz]/i, 9, 7],
+    ['Project handover', 'Handover', 'Move to steady-state support and close the project.', '#24216F', 'handover', null, /hand.?over|support|sign.?off|clos|lesson|final report|wrap/i, 10, 8]
   ];
-  const STATE = { done: ['Complete', '#027A48'], progress: ['In progress', '#1570EF'], blocked: ['Blocked', '#D92D20'], none: ['Upcoming', '#98A2B3'] };
+  const STATE = { done: ['Complete', '#027A48'], progress: ['In progress', '#1570EF'], delayed: ['Delayed', '#B54708'], blocked: ['Blocked', '#D92D20'], none: ['Upcoming', '#98A2B3'] };
+  /* each stage's dates from the project plan: a plan row belongs to the first stage whose keywords match its phase, else its title */
+  const fd = (d, y) => { const t = new Date(String(d).slice(0, 10) + 'T00:00:00'); return isNaN(t) ? '' : t.toLocaleDateString(undefined, y ? { day: 'numeric', month: 'short', year: 'numeric' } : { day: 'numeric', month: 'short' }); };
+  function windows() {
+    const out = L.map(() => null), rows = ((F.doc('plan_struct') || {}).rows || []).filter(r => r && !r.isPhase && r.start);
+    rows.forEach(r => { let i = r.phase ? L.findIndex(x => x[6].test(String(r.phase))) : -1; if (i < 0) i = L.findIndex(x => x[6].test(String(r.title || ''))); if (i < 0) return;
+      const w = out[i] || (out[i] = { start: r.start, end: r.end || r.start, n: 0 }); if (r.start < w.start) w.start = r.start; if ((r.end || r.start) > w.end) w.end = r.end || r.start; w.n++; });
+    const yr = new Set(out.filter(Boolean).map(w => String(w.end).slice(0, 4))).size > 1;
+    return out.map(w => w ? Object.assign(w, { text: fd(w.start) + ' – ' + fd(w.end, yr) }) : null);
+  }
   const KINDS = ['scope', 'build', 'uat', 'usecase', 'checklist', 'hc', 'ho', 'close', 'ugd', 'rep', 'signoff'];
 
   const planRows = i => ((F.doc('plan_struct') || {}).rows || []).filter(r => L[i][6].test(String(r.title || '') + ' ' + String(r.phase || '')));
@@ -42,20 +47,21 @@
   // resolve the twelve stages for a mode
   function stagesFor(mode) {
     const ok = (mode === 'home' || mode === 'intro') ? new Set() : allowedIds(); let team = null;
-    if (mode === 'team' && V.items) { V.items.load(KINDS); if (V.items.ready(['scope', 'build', 'uat', 'checklist']) && V.roadmapStages) team = V.roadmapStages(); }
+    if (mode === 'team' && V.lifeStages) { const C = V.lifeStages(); if (C) team = C.list.map((x, j) => ({ state: x.status === 'completed' ? 'done' : x.status === 'blocked' ? 'blocked' : x.status === 'delayed' ? 'delayed' : (x.status === 'current' || x.status === 'ready' || j === C.cur) ? 'progress' : 'none', detail: ((root.FWBLife && root.FWBLife.STATUS[x.status]) || 'Upcoming') + (x.open ? ' · ' + x.open + ' open' : '') })); }
+    const win = windows();
     return L.map((s, i) => {
       let st = null;
       if (mode === 'team') { st = team && team[i] ? { state: team[i].state, detail: team[i].detail } : null; const p = fromPlan(i); if (p && p.state === 'blocked') st = p; }
       else if (mode === 'customer') st = fromPlan(i);
       const view = mode === 'customer' ? s[5] : s[4];
-      return { i, name: s[0], label: s[1], desc: s[2], color: s[3], view, allowed: mode === 'home' ? !!view : !!(view && ok.has(view)), status: mode === 'home' ? null : (st || { state: 'none', detail: mode === 'team' && !team ? 'Loading progress…' : 'Not started' }) };
+      return { i, n: s[8], ico: s[7], when: win[i], name: s[0], label: s[1], desc: s[2], color: s[3], view, allowed: mode === 'home' ? !!view : !!(view && ok.has(view)), status: mode === 'home' ? null : (st || { state: 'none', detail: mode === 'team' && !team ? 'Loading progress…' : 'Not started' }) };
     });
   }
 
   // ---------- geometry (isometric: 2:1 rhombus) ----------
   const rh = (cx, cy, w, h) => `M${cx - w} ${cy}L${cx} ${cy - h}L${cx + w} ${cy}L${cx} ${cy + h}Z`;
   const CX = 500, CY = 318, RX = 392, RY = 212;
-  const pos = i => { const a = (-150 + i * 30) * Math.PI / 180; return [Math.round(CX + RX * Math.cos(a)), Math.round(CY + RY * Math.sin(a))]; };
+  const pos = i => { const a = (-150 + i * 50) * Math.PI / 180; return [Math.round(CX + RX * Math.cos(a)), Math.round(CY + RY * Math.sin(a))]; };
   function platform() {
     const layer = (cy, w, h, t, cls, d, top, l, r) => `<g class="iso-l ${cls}" style="--d:${d}s"><path d="M${CX - w} ${cy}L${CX} ${cy + h}L${CX} ${cy + h + t}L${CX - w} ${cy + t}Z" fill="${l}"/><path d="M${CX + w} ${cy}L${CX} ${cy + h}L${CX} ${cy + h + t}L${CX + w} ${cy + t}Z" fill="${r}"/><path d="${rh(CX, cy, w, h)}" fill="${top}" stroke="#fff" stroke-width="1.5"/></g>`;
     let grid = ''; const w = 235, h = 117, cy = 352; const P = (u, v) => [CX + (u - v) * w, cy + (u + v - 1) * h];
@@ -66,12 +72,12 @@
   }
   function cube(s, d) {
     const [x, y] = pos(s.i), w = 30, h = 15, ht = 16; const st = s.status ? s.status.state : null;
-    const ico = (V.PP_ICO || [])[s.i] || '';
+    const ico = (V.PP_ICO || [])[s.ico] || '';
     const ring = st === 'progress' ? `<circle class="iso-pulse" cx="${x}" cy="${y - ht - h - 19}" r="14" fill="none" stroke="${STATE.progress[1]}" stroke-width="2"/>` : '';
     const mark = st === 'done' ? `<g transform="translate(${x + 8},${y - ht - h - 31})"><circle r="7" fill="${STATE.done[1]}" stroke="#fff" stroke-width="1.5"/><path d="M-3 0l2 2 4-4" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>` : st === 'blocked' ? `<g transform="translate(${x + 8},${y - ht - h - 31})"><circle r="7" fill="${STATE.blocked[1]}" stroke="#fff" stroke-width="1.5"/><path d="M0 -3v3.5M0 3v.1" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></g>` : '';
     const lines = s.label.length > 15 && s.label.indexOf(' ') > 0 ? (() => { const parts = s.label.split(' '); const mid = Math.ceil(parts.length / 2); return [parts.slice(0, mid).join(' '), parts.slice(mid).join(' ')]; })() : [s.label];
-    const label = `<text class="iso-t" x="${x}" y="${y + h + 17}" text-anchor="middle">${lines.map((t, k) => `<tspan x="${x}" dy="${k ? 13 : 0}">${esc(t)}</tspan>`).join('')}</text><text class="iso-n" x="${x}" y="${y + h + 17 + lines.length * 13 + 1}" text-anchor="middle">STEP ${s.i + 1}</text>`;
-    const attrs = `class="iso-m${s.allowed ? '' : ' off'}" style="--c:${s.color};--d:${d}s" data-i="${s.i}" ${s.allowed ? `tabindex="0" role="link"` : `role="img"`} aria-label="Step ${s.i + 1}: ${esc(s.name)}${s.status ? '. ' + STATE[s.status.state][0] + '. ' + esc(s.status.detail) : ''}${s.allowed ? '' : ''}"`;
+    const label = `<text class="iso-t" x="${x}" y="${y + h + 17}" text-anchor="middle">${lines.map((t, k) => `<tspan x="${x}" dy="${k ? 13 : 0}">${esc(t)}</tspan>`).join('')}</text><text class="iso-n" x="${x}" y="${y + h + 17 + lines.length * 13 + 1}" text-anchor="middle">STAGE ${s.n}</text>${s.when ? `<text class="iso-dt" x="${x}" y="${y + h + 17 + lines.length * 13 + 15}" text-anchor="middle">${esc(s.when.text)}</text>` : ''}`;
+    const attrs = `class="iso-m${s.allowed ? '' : ' off'}" style="--c:${s.color};--d:${d}s" data-i="${s.i}" ${s.allowed ? `tabindex="0" role="link"` : `role="img"`} aria-label="Stage ${s.n}: ${esc(s.name)}${s.when ? ', ' + esc(s.when.text) : ''}${s.status ? '. ' + STATE[s.status.state][0] + '. ' + esc(s.status.detail) : ''}${s.allowed ? '' : ''}"`;
     return `<g ${attrs}${s.allowed ? ` data-view="${s.view}"` : ''}><rect class="iso-hit" x="${x - 46}" y="${y - ht - h - 36}" width="92" height="${ht + h + 36 + h + 52}" fill="transparent"/><g class="iso-lift"><ellipse cx="${x}" cy="${y + h}" rx="${w + 8}" ry="${h * .7}" class="iso-sh"/>
       <path d="M${x - w} ${y - ht}L${x} ${y - ht + h}L${x} ${y + h}L${x - w} ${y}Z" class="fl"/><path d="M${x + w} ${y - ht}L${x} ${y - ht + h}L${x} ${y + h}L${x + w} ${y}Z" class="fr"/><path d="${rh(x, y - ht, w, h)}" class="ft"/>
       <g class="iso-badge"><circle cx="${x}" cy="${y - ht - h - 19}" r="13" fill="#fff" stroke="${s.color}" stroke-width="1.6"/><g transform="translate(${x - 8},${y - ht - h - 27}) scale(.67)" fill="none" stroke="${s.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ico}</g></g>${ring}${mark}</g>${label}</g>`;
@@ -80,14 +86,14 @@
     const P = stages.map(s => pos(s.i));
     let spokes = '', arcs = '';
     P.forEach(([x, y], i) => { const tx = x + (CX - x) * .42, ty = y + (CY + 40 - y) * .42; spokes += `<path class="iso-sp" d="M${x} ${y + 8}L${tx} ${ty + 8}" style="--d:${1.2 + i * .1}s"/>`; });
-    for (let i = 0; i < P.length - 1; i++) arcs += `<path class="iso-arc" pathLength="1" d="M${P[i][0]} ${P[i][1] + 2}A${RX} ${RY} 0 0 1 ${P[i + 1][0]} ${P[i + 1][1] + 2}" style="--d:${1.3 + i * .28}s;--c:${stages[i].color}"/>`;
+    for (let i = 0; i < P.length - 1; i++) arcs += `<path class="iso-arc${stages[i].status && stages[i].status.state === 'done' ? ' past' : ''}" pathLength="1" d="M${P[i][0]} ${P[i][1] + 2}A${RX} ${RY} 0 0 1 ${P[i + 1][0]} ${P[i + 1][1] + 2}" style="--d:${1.3 + i * .28}s;--c:${stages[i].color}"/>`;
     const floats = [[120, 90, 'dia'], [880, 70, 'ring'], [60, 330, 'plus'], [940, 360, 'dia'], [220, 560, 'ring'], [790, 570, 'plus']].map(([x, y, k], i) => `<g class="iso-fl f${i % 3}" style="--d:${i * .6}s" transform="translate(${x},${y})">${k === 'dia' ? '<path d="M0 -9L9 0L0 9L-9 0Z" fill="#1570EF" fill-opacity=".12" stroke="#1570EF" stroke-opacity=".4"/>' : k === 'ring' ? '<circle r="8" fill="none" stroke="#1570EF" stroke-opacity=".4" stroke-width="1.5"/>' : '<path d="M-7 0H7M0 -7V7" stroke="#667085" stroke-opacity=".5" stroke-width="1.6" stroke-linecap="round"/>'}</g>`).join('');
-    return `<svg class="iso-svg" viewBox="0 0 1000 620" role="group" aria-label="Delivery journey: twelve connected stages around the Delivery Studio platform"><defs><linearGradient id="isoG" x1="0" x2="1"><stop offset="0" stop-color="#1570EF"/><stop offset="1" stop-color="#ed168b"/></linearGradient></defs>
+    return `<svg class="iso-svg" viewBox="0 0 1000 620" role="group" aria-label="Delivery journey: seven connected stages around the Delivery Studio platform"><defs><linearGradient id="isoG" x1="0" x2="1"><stop offset="0" stop-color="#1570EF"/><stop offset="1" stop-color="#ed168b"/></linearGradient></defs>
       ${floats}${platform()}${spokes}<g class="iso-arcs">${arcs}</g>${stages.map((s, i) => cube(s, 1.1 + i * .16)).join('')}</svg>`;
   }
   function tiles(stages, mode) {
     return `<ol class="iso-list">${stages.map(s => { const st = s.status ? STATE[s.status.state] : null; const act = mode === 'home' ? 'ppStage' : 'nav';
-      const inner = `<span class="pp-step">STEP ${s.i + 1}</span><span class="pp-node"><svg viewBox="0 0 24 24" aria-hidden="true">${(V.PP_ICO || [])[s.i] || ''}</svg></span><span class="pp-stage-label">${esc(s.name)}</span><span class="iso-ld">${esc(s.desc)}</span>${st ? `<span class="iso-chip" style="--s:${st[1]}">${st[0]}</span>` : ''}`;
+      const inner = `<span class="pp-step">STAGE ${s.n}</span><span class="pp-node"><svg viewBox="0 0 24 24" aria-hidden="true">${(V.PP_ICO || [])[s.ico] || ''}</svg></span><span class="pp-stage-label">${esc(s.name)}</span>${s.when ? `<span class="iso-when">${esc(s.when.text)}</span>` : ''}<span class="iso-ld">${esc(s.desc)}</span>${st ? `<span class="iso-chip" style="--s:${st[1]}">${st[0]}</span>` : ''}`;
       return `<li class="pp-stage" style="--c:${s.color};--n:${s.color};--d:${s.i * 60}ms">${s.allowed ? `<button type="button" class="pp-tile" data-act="${act}" data-view="${s.view}">${inner}</button>` : `<div class="pp-tile off">${inner}</div>`}</li>`; }).join('')}</ol>`;
   }
   const played = {};
@@ -97,7 +103,7 @@
     if (go) setTimeout(() => { played[key] = 1; }, 6500);
     const stages = stagesFor(mode); const known = mode === 'home' ? null : stages.filter(s => s.status.detail !== 'Loading progress…');
     const done = known ? known.filter(s => s.status.state === 'done').length : 0;
-    const sum = !known ? '' : `<div class="iso-sum"><b>${done} of 12</b> stages complete<span class="xs muted"> · ${mode === 'customer' ? 'from the plan shared with you' : 'from this project’s records'}</span></div>`;
+    const sum = !known ? '' : `<div class="iso-sum"><b>${done} of ${stages.length}</b> stages complete<span class="xs muted"> · ${mode === 'customer' ? 'from the plan shared with you' : 'from this project’s records'}</span></div>`;
     return `<div class="iso${go ? ' go' : ''}" data-mode="${mode}">${sum}<div class="iso-stage">${scene(stages, mode)}</div>
       <div class="iso-detail" aria-live="polite"><b>Delivery lifecycle</b><span>Hover or focus a stage to see what happens there${mode === 'home' ? '; select one to open it in your latest project' : ''}.</span></div>${tiles(stages, mode)}</div>`;
   };
