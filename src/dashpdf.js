@@ -1,0 +1,86 @@
+/* Dashboard PDF from the data (25 Nov 2026, docs/plans/DASHBOARD-REBUILD-PLAN-2026-11-25.md). Not a screenshot: each chosen tab of the project dashboard is drawn
+   off-screen with the filters in use, and its figures, tables, lists and SVG charts go into a pdfmake document with selectable text, the project, scope, period and
+   filters on page 1, page numbers and the generation date. A chart that pdfmake cannot draw is replaced by its figures (the PDF is never lost for one chart). */
+(function (root) {
+  'use strict';
+  const F = root.FWB, V = root.FWBViews, ACT = V.ACT, S = F.S, esc = F.esc;
+  const INK = '#0F172A', MUTED = '#475569', LINE = '#E2E8F0', BLUE = '#1570EF', BAND = '#F8FAFC';
+  const ARROWS = /[›→↗»]/g;   // link arrows: the PDF font has no glyph for them, and the PDF has no links
+  const txt = el => (el ? el.textContent.replace(ARROWS, '').replace(/\s+/g, ' ').trim() : '');
+  // a list row's parts (label, count, share, link) joined with a separator, so "To do", "4" and "40%" do not run together as "To do440%"
+  const part = el => { const bits = []; const walk = n => { if (n.nodeType === 3) { const t = n.textContent.replace(ARROWS, '').replace(/\s+/g, ' ').trim(); if (t) bits.push(t); } else if (n.nodeType === 1 && !/^(svg|script|style)$/i.test(n.tagName)) n.childNodes.forEach(walk); }; walk(el); return bits.join(' · '); };
+  // pdfmake cannot read the page's styles: CSS variables fall back to their default colour, currentColor becomes the body ink
+  const svgClean = s => s.replace(/var\(--[\w-]+\s*,\s*([^)]+)\)/g, '$1').replace(/var\(--[\w-]+\)/g, '#64748B').replace(/currentColor/g, '#334155');
+  const tabsOnScreen = () => [...document.querySelectorAll('.cs-page .sd-tabs [data-act="sdTab"]')].map(b => [b.getAttribute('data-v'), txt(b)]).filter(([id]) => id && id !== 'reports');
+  // a ring or donut segment of zero length is drawn with a dash pattern like "0 106.8", which pdfmake refuses: such segments show nothing, so they are left out
+  const dashOf = e => String(e.getAttribute('stroke-dasharray') || (e.style && e.style.strokeDasharray) || '').trim();
+  const svgSafe = el => { const c = el.cloneNode(true);
+    const vb = String(c.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number); if (vb.length === 4 && vb[2] > 0 && vb[3] > 0) { c.setAttribute('width', vb[2]); c.setAttribute('height', vb[3]); c.removeAttribute('style'); }   // "100%" sizes mean nothing in a PDF: use the drawing's own size
+    c.querySelectorAll('*').forEach(e => { const d = dashOf(e); if (!d || d === 'none') return; const n = d.split(/[\s,]+/).map(Number); if (n.some(x => !(x > 0))) { if (!(n[0] > 0)) e.remove(); else { e.removeAttribute('stroke-dasharray'); if (e.style) e.style.strokeDasharray = ''; } } }); return c.outerHTML; };
+
+  // one tab's HTML -> { kpis: [[label, value, note]], widgets: [{ title, sub, table, svg, lines }] }
+  function readTab(html) {
+    const t = document.createElement('template'); t.innerHTML = html; const R = t.content;
+    const kpis = [...R.querySelectorAll('.sd-kpi')].map(k => [txt(k.querySelector('.sd-kl')), txt(k.querySelector('.sd-kv')), txt(k.querySelector('.sd-ks'))]).filter(k => k[0]);
+    const widgets = [...R.querySelectorAll('.sd-w')].map(w => {
+      const h = w.querySelector(':scope > header'); const title = txt(h && h.querySelector('h3')), sub = txt(h && h.querySelector('span'));
+      const tb = w.querySelector('table'); let table = null;
+      if (tb) { const trs = [...tb.querySelectorAll('tr')].map(tr => [...tr.children].map(txt)); if (trs.length) table = { cols: trs[0], rows: trs.slice(1) }; }
+      const svgEl = [...w.querySelectorAll('svg')].filter(s => !s.closest('header') && s.querySelectorAll('*').length > 3).sort((a, b) => b.querySelectorAll('*').length - a.querySelectorAll('*').length)[0];
+      const lines = table ? [] : [...w.querySelectorAll('li, .sd-leg > *, .cs-leg > *, .dk-row, .sd-row')].map(part).filter(Boolean).slice(0, 30);
+      const rest = !table && !lines.length ? txt(w).replace(title, '').replace(sub, '').trim().slice(0, 600) : '';
+      return { title, sub, table, svg: svgEl ? svgClean(svgSafe(svgEl)) : '', lines, rest };
+    }).filter(w => w.title);
+    return { kpis, widgets };
+  }
+
+  function docFor(tabs, withSvg) {
+    const p = S.project || {}, k = V.isCustomer && V.isCustomer(); const rg = (S.ui && S.ui.dkR) || { period: 'all' };
+    const tbl = (cols, rows) => ({ table: { headerRows: 1, widths: cols.map(() => '*'), body: [cols.map(c => ({ text: c, bold: true, fontSize: 8.5, color: INK, fillColor: BAND }))].concat(rows.length ? rows.map(r => cols.map((_, i) => ({ text: String(r[i] == null ? '' : r[i]), fontSize: 8.5, color: INK }))) : [[{ text: 'No rows', colSpan: cols.length, italics: true, fontSize: 8.5, color: MUTED }].concat(cols.slice(1).map(() => ({})))]) }, layout: { hLineColor: () => LINE, vLineColor: () => LINE, hLineWidth: () => 0.6, vLineWidth: () => 0.6 }, margin: [0, 4, 0, 10] });
+    const content = [{ text: (k ? 'Your project dashboard' : 'Project dashboard'), fontSize: 20, bold: true, color: INK },
+      { text: [p.name || '', p.customer ? ' · ' + p.customer : ''].join(''), fontSize: 11, color: MUTED, margin: [0, 2, 0, 6] },
+      { table: { widths: [90, '*'], body: [['Scope', 'This project only'], ['Period', V.range ? V.range.label(rg) : 'All time'], ['Viewed as', k ? 'Customer' : 'Facilio team'], ['Tabs included', tabs.map(t => t.name).join(', ')], ['Generated', new Date().toLocaleString()]].map(([a, b]) => [{ text: a, bold: true, fontSize: 9, color: MUTED }, { text: b, fontSize: 9, color: INK }]) }, layout: 'noBorders', margin: [0, 0, 0, 14] }];
+    tabs.forEach((t, ti) => {
+      content.push({ text: t.name, fontSize: 15, bold: true, color: INK, margin: [0, 0, 0, 8], pageBreak: ti ? 'before' : undefined });
+      if (t.data.kpis.length) content.push(tbl(['Measure', 'Value', 'Note'], t.data.kpis));
+      t.data.widgets.forEach(w => {
+        const block = [{ text: w.title, fontSize: 11, bold: true, color: INK, margin: [0, 6, 0, 0] }]; if (w.sub) block.push({ text: w.sub, fontSize: 8.5, color: MUTED, margin: [0, 1, 0, 4] });
+        if (withSvg && w.svg) block.push({ svg: w.svg, fit: [460, 170], margin: [0, 2, 0, 4] });
+        if (w.table) block.push(tbl(w.table.cols, w.table.rows)); else if (w.lines.length) block.push({ ul: w.lines.map(l => ({ text: l, fontSize: 8.5, color: INK })), margin: [0, 2, 0, 8] }); else if (w.rest) block.push({ text: w.rest, fontSize: 8.5, color: INK, margin: [0, 2, 0, 8] });
+        content.push({ stack: block, unbreakable: !w.table || w.table.rows.length < 12 });
+      });
+      if (!t.data.kpis.length && !t.data.widgets.length) content.push({ text: 'Nothing to show on this tab with these filters.', italics: true, fontSize: 9, color: MUTED });
+    });
+    return { pageSize: 'A4', pageOrientation: 'portrait', pageMargins: [36, 40, 36, 40], defaultStyle: { fontSize: 9, color: INK }, info: { title: (p.name || 'Project') + ' · Dashboard' },
+      header: () => ({ text: 'Facilio Delivery Studio', fontSize: 8, color: BLUE, bold: true, margin: [36, 18, 36, 0] }),
+      footer: (n, of) => ({ columns: [{ text: (p.name || '') + ' · Dashboard', fontSize: 8, color: MUTED }, { text: 'Page ' + n + ' of ' + of, alignment: 'right', fontSize: 8, color: MUTED }], margin: [36, 10, 36, 0] }), content };
+  }
+
+  async function build(which) {
+    const all = tabsOnScreen(), cur = S.ui.sdTab || 'overview'; const pick = which === 'all' ? all : all.filter(([id]) => id === cur);
+    if (!pick.length) { V.toast('Open the dashboard first.', 4000, true); return; }
+    V.loading(true, 'Building the PDF…'); const tabs = []; const was = S.ui.sdTab, fold = S.ui.pdMore;
+    try {
+      S.ui.pdMore = true;   // the overview's charts sit behind a fold on screen; the PDF always includes them
+      for (let i = 0; i < pick.length; i++) { const [id, name] = pick[i]; V.loading(true, 'Building the PDF: ' + name + ' (' + (i + 1) + ' of ' + pick.length + ')'); S.ui.sdTab = id; let html = ''; try { html = V.projdash.html(); } catch (e) { console.error(e); } tabs.push({ id, name, data: readTab(html) }); await new Promise(r => setTimeout(r, 0)); }
+      S.ui.sdTab = was; S.ui.pdMore = fold;
+      // pdfmake can fail after it starts drawing (outside this call): a page error or no file within 30 s counts as a failure, so the chart-free fallback still runs
+      const pm = await V.loadPdfMake(); const blob = d => new Promise((res, rej) => { let done = false; const fin = (f, v) => { if (done) return; done = true; root.removeEventListener('error', onErr); clearTimeout(tm); f(v); }; const onErr = ev => { ev.preventDefault && ev.preventDefault(); fin(rej, ev.error || new Error(ev.message)); }; const tm = setTimeout(() => fin(rej, new Error('The PDF took too long to draw.')), 30000); root.addEventListener('error', onErr); try { pm.createPdf(d).getBlob(b => fin(res, b)); } catch (e) { fin(rej, e); } });
+      let out, note = ''; try { out = await blob(docFor(tabs, true)); } catch (e) { console.error(e); out = await blob(docFor(tabs, false)); note = ' Some charts could not be drawn in the PDF, so their figures are listed instead.'; }
+      const p = S.project || {}; V.download(((p.name || 'Project') + ' dashboard ' + V.today() + '.pdf').replace(/[\\/:*?"<>|]+/g, ' '), out, 'application/pdf');
+      V.toast('PDF ready: ' + pick.length + ' tab' + (pick.length === 1 ? '' : 's') + '.' + note, note ? 8000 : 4000);
+    } catch (e) { V.toast('The PDF could not be made: ' + (e.message || e), 7000, true); }
+    finally { S.ui.sdTab = was; S.ui.pdMore = fold; V.loading(false); }
+  }
+
+  function open() {
+    const all = tabsOnScreen(), cur = S.ui.sdTab || 'overview'; const curName = (all.find(([id]) => id === cur) || [cur, 'This tab'])[1];
+    V.drawer('Export the dashboard (PDF)', `<p class="small">Made from the data with the filters in use, not a picture of the screen: figures, tables, charts and lists, with page numbers.</p>
+      <label class="f"><input type="radio" name="dpWhich" value="cur" checked> This tab: ${esc(curName)}</label><label class="f"><input type="radio" name="dpWhich" value="all"> All tabs (${all.length}): ${esc(all.map(a => a[1]).join(', '))}</label>`,
+      '<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="dpGo">Export PDF</button>', { compact: true });
+  }
+  ACT.dpOpen = open;
+  ACT.dpGo = () => { const v = (document.querySelector('input[name="dpWhich"]:checked') || {}).value || 'cur'; V.closeDrawer(); build(v === 'all' ? 'all' : 'cur'); };
+  if (V.range && V.range.hooks && V.range.hooks.dk) V.range.hooks.dk.pdf = open;
+  V.dashPdf = { build, readTab };
+})(typeof window !== 'undefined' ? window : globalThis);

@@ -45,8 +45,8 @@
   function calmHero(c, p, cur) {
     if (S.project && S.ui.caCount !== S.project.id) { S.ui.caCount = S.project.id; setTimeout(countUp, 30); }
     const openT = c.tasks.filter(t => !['Done', 'Cancelled'].includes(t.status));
-    const lateT = openT.filter(t => (t.due && t.due < c.today) || (t.eta && t.eta < c.today)), lateA = c.open.filter(c.late);
-    const late = lateT.length + lateA.length, risks = c.raid.filter(r => r.status !== 'Closed').length, wait = c.custOpen.length;
+    const M = V.metrics, lateT = openT.filter(t => M.taskLate(t, c.today)), lateA = c.open.filter(a => M.actionLate(a, c.today));   // one overdue rule (src/dashmetrics.js)
+    const late = lateT.length + lateA.length, risks = M.openRisks(c.raid).length, wait = c.custOpen.length;
     const sn = cur ? V.stageOfStep(cur.i) : 0, si = ROAD.indexOf(sn);
     const eye = [p.customer, sn ? 'Stage ' + (si + 1) + ' of ' + ROAD.length + ' · ' + V.roadmapName(sn) : 'Plan not started'].filter(Boolean).join('  ·  ');
     const status = (late ? late + ' overdue' : 'On track') + (wait ? ' · ' + wait + ' waiting on the customer' : '') + '.';

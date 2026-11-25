@@ -6,18 +6,22 @@
 (function (root) {
   'use strict';
   const F = root.FWB; const { esc } = F; const V = root.FWBViews; const ACT = V.ACT;
-  const PERIODS = [['all', 'All time'], ['today', 'Today'], ['yesterday', 'Yesterday'], ['week', 'This week'], ['month', 'This month'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['90', 'Last 90 days'], ['quarter', 'This quarter'], ['year', 'This year'], ['custom', 'Custom range']];
-  const iso = d => d.toISOString().slice(0, 10); const today = () => iso(new Date());
-  const add = (s, n) => { const d = new Date(s + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return iso(d); };
+  const PERIODS = [['all', 'All time'], ['today', 'Today'], ['yesterday', 'Yesterday'], ['week', 'This week'], ['7', 'Last 7 days'], ['month', 'This month'], ['lastmonth', 'Last month'], ['30', 'Last 30 days'], ['90', 'Last 90 days'], ['quarter', 'This quarter'], ['prevquarter', 'Previous quarter'], ['year', 'Year to date'], ['custom', 'Custom range']];
+  // dates are the person's own calendar day (local time), written as YYYY-MM-DD; day arithmetic on those strings stays in UTC so it never shifts
+  const pad = n => String(n).padStart(2, '0'), ymd = (y, m, dd) => { const x = new Date(Date.UTC(y, m, dd)); return x.getUTCFullYear() + '-' + pad(x.getUTCMonth() + 1) + '-' + pad(x.getUTCDate()); };
+  const today = () => { const n = new Date(); return ymd(n.getFullYear(), n.getMonth(), n.getDate()); };
+  const add = (s, n) => { const d = new Date(s + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
   function span(st) {
-    const t = today(), d = new Date(), y = d.getUTCFullYear(); st = st || {};
+    const t = today(), d = new Date(), y = d.getFullYear(), m = d.getMonth(), q = Math.floor(m / 3) * 3; st = st || {};
     switch (st.period) {
       case 'today': return [t, t]; case 'yesterday': return [add(t, -1), add(t, -1)];
-      case 'week': { const wd = (d.getUTCDay() + 6) % 7; return [add(t, -wd), t]; }
-      case 'month': return [iso(new Date(Date.UTC(y, d.getUTCMonth(), 1))), iso(new Date(Date.UTC(y, d.getUTCMonth() + 1, 0)))];
+      case 'week': { const wd = (d.getDay() + 6) % 7; return [add(t, -wd), t]; }
+      case 'month': return [ymd(y, m, 1), ymd(y, m + 1, 0)];
+      case 'lastmonth': return [ymd(y, m - 1, 1), ymd(y, m, 0)];
       case '7': return [add(t, -6), t]; case '30': return [add(t, -29), t]; case '90': return [add(t, -89), t];
-      case 'quarter': { const q = Math.floor(d.getUTCMonth() / 3) * 3; return [iso(new Date(Date.UTC(y, q, 1))), iso(new Date(Date.UTC(y, q + 3, 0)))]; }
-      case 'year': return [y + '-01-01', y + '-12-31'];
+      case 'quarter': return [ymd(y, q, 1), ymd(y, q + 3, 0)];
+      case 'prevquarter': return [ymd(y, q - 3, 1), ymd(y, q, 0)];
+      case 'year': return [y + '-01-01', t];
       case 'custom': return [st.from || '', st.to || ''];
       default: return ['', ''];
     }
@@ -67,5 +71,5 @@
     const done = () => { window.removeEventListener('afterprint', done); document.title = prev; document.body.classList.remove('is-printing'); el.classList.remove('print-root'); st.remove(); kept.forEach(([n, s]) => { if (s == null) n.removeAttribute('style'); else n.setAttribute('style', s); }); };
     window.addEventListener('afterprint', done); setTimeout(() => { try { window.print(); } catch (e) { done(); } }, 200);
   }
-  V.range = { PERIODS, span, inRange, label, bar, pdf, printLive, hooks };
+  V.range = { PERIODS, span, inRange, label, bar, pdf, printLive, hooks, today };
 })(typeof window !== 'undefined' ? window : globalThis);
