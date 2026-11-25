@@ -12,22 +12,17 @@ const api = (m, u, body) => p.evaluate(async ([m, u, body]) => { const r = await
 const pid = (await api('POST', '/projects', { name: 'Guide docs check', customer: 'Acme' })).project.id;
 await api('PUT', '/projects/' + pid + '/items/ugd/ug1', { data: { title: 'Technician guide', customer: 'Acme', audience: 'Technicians', version: '0.1', status: 'draft', brand: { accent: '#1570EF', cover: true, logo: null }, sections: [{ id: 's1', title: 'Getting started', blocks: [{ t: 'md', text: 'Open the app.\n\n1. Sign in\n2. Pick the site' }] }, { id: 's2', title: 'Close a work order', blocks: [{ t: 'md', text: '- Open the order\n- Press Close' }] }] } });
 await api('POST', '/projects/' + pid + '/ai/import', { task: 'ftr', content: '## Work Orders\n### Use case: Raise and close\n| ID | Test case | Steps | Expected | Result | Evidence |\n|---|---|---|---|---|---|\n| WO-1 | Raise a WO | Open, fill, save | Saved | Pass | |\n| WO-2 | Close a WO | Close it | Closed | | |\n' });
-await p.goto(BASE + `/?nointro#/p/${pid}/guides`); await p.reload(); await p.waitForSelector('.tr .ll-grid, .tr-empty', { timeout: 20000 }); await p.waitForTimeout(800);
-// the library as Module-guide cards (25 Nov 2026): a heading per kind, the card opens the guide
-const secOf = t => p.evaluate(t => { const c = [...document.querySelectorAll('.tr .ll-wrap')].find(w => w.textContent.includes(t)); let g = c && c.parentElement; let h = g && g.previousElementSibling; return h ? h.textContent.trim() : ''; }, t);
-check('the guide is a library card under User guides', (await secOf('Technician guide')) === 'User guides');
-check('the UAT guide has its own card under UAT guides', (await secOf('What your testers try')) === 'UAT guides');
+await p.goto(BASE + `/?nointro#/p/${pid}/guides`); await p.reload(); await p.waitForSelector('.fb-bar', { timeout: 20000 }); await p.click('[data-act="fbView"][data-v="list"]'); await p.waitForSelector('.tr-list, .tr-empty', { timeout: 20000 }); await p.waitForTimeout(800);   // the page opens on Tiles (25 Nov 2026); these checks use the list
 
 // folders
-await p.click('[data-act="tgFolderNew"]'); await p.fill('#tgf_n', 'Technicians'); await p.click('[data-act="tgFolderMake"]'); await p.waitForTimeout(500);
-const folderCard = () => p.textContent('.ll-wrap:has([data-act="tgFolderOpen"])');
-check('New folder makes a folder card under Folders, first', /Technicians/.test(await folderCard()) && (await p.textContent('.tr .tr-sec')).trim() === 'Folders');
+await p.click('.fb-new > summary'); await p.click('.fb-new [data-act="tgFolderNew"]'); await p.fill('#tgf_n', 'Technicians'); await p.click('[data-act="tgFolderMake"]'); await p.waitForTimeout(500);
+check('New folder makes a folder row at the top of the list, selected and highlighted', /Technicians/.test(await p.locator('.fb-list .fb-item').first().textContent()) && await p.evaluate(() => { const r = document.querySelector('.fb-list .tr-folder'); return r.classList.contains('sel') && document.activeElement === r; }));
 await p.screenshot({ path: `${OUT}/guides-folders.png` });
-const rowOf = t => p.locator('.tr .ll-wrap', { hasText: t }).first();
+const rowOf = t => p.locator('.tr-row', { hasText: t }).first();
 await rowOf('Technician guide').locator('.tr-more summary').click(); await p.click('[data-act="tgMoveAsk"][data-k="ugd:ug1"]'); await p.selectOption('#tgf_to', { label: 'Technicians' }); await p.click('[data-act="tgMoveGo"]'); await p.waitForTimeout(500);
-check('the moved guide leaves the main list and the folder counts it', !(await p.$('[data-act="trGuideOpen"][data-id="ug1"]')) && /1 item/.test(await folderCard()));
+check('the moved guide leaves the main list and the folder counts it', !(await p.$('.tr-row:not(.tr-folder) >> text=Technician guide')) && /1 item/.test(await p.textContent('.tr-folder')));
 await p.click('[data-act="tgFolderOpen"]'); await p.waitForTimeout(400);
-check('inside the folder: a breadcrumb and the guide', /All guides and videos/.test(await p.textContent('.tr-crumb')) && /Technician guide/.test(await p.textContent('.tr .ll-grid')));
+check('inside the folder: a Back button, the path and the guide', /Training guides & videos/.test(await p.textContent('.tr-crumb')) && (await p.locator('.fb-back').count()) === 1 && /Technician guide/.test(await p.textContent('.tr-list')));
 await p.screenshot({ path: `${OUT}/guides-in-folder.png` });
 check('the folder is kept in the workshop document', await p.evaluate(() => { const f = window.FWB.S.ws.guideFolders; return f.list.length === 1 && f.of['ugd:ug1'] === f.list[0].id; }));
 
@@ -40,7 +35,7 @@ check('typing on the paper changes the guide (kept as Markdown, steps keep their
 await p.locator('[data-dpt="1"]').click(); await p.keyboard.press('End'); await p.keyboard.type(' (mobile)'); await p.waitForTimeout(1500);
 check('a section title is edited in place', await p.evaluate(() => window.FWBViews.ugCtx.W().sections[1].title) === 'Close a work order (mobile)');
 await p.screenshot({ path: `${OUT}/guide-document.png` });
-let [dl] = await Promise.all([p.waitForEvent('download', { timeout: 30000 }), p.click('.dp-word [data-act="ugHtml"]')]); let html = fs.readFileSync(await dl.path(), 'utf8');
+await p.click('.dp-word .dp-dl > summary'); let [dl] = await Promise.all([p.waitForEvent('download', { timeout: 30000 }), p.click('.dp-word [data-act="ugHtml"]')]); let html = fs.readFileSync(await dl.path(), 'utf8');
 check('HTML export: one self-contained page with the title, the edited text and the sections', /^<!DOCTYPE html>/.test(html) && /Technician guide/.test(html) && /check the dashboard/.test(html) && /Close a work order \(mobile\)/.test(html) && !/contenteditable|<script/.test(html), dl.suggestedFilename());
 await p.waitForTimeout(1200);
 const saved = await api('GET', '/projects/' + pid + '/items?kinds=ugd'); check('the edit is saved to the project', /check the dashboard/.test(JSON.stringify(saved.items.find(x => x.id === 'ug1').data.sections)));

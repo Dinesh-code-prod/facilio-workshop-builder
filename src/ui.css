@@ -4142,3 +4142,9 @@ html body .wb-lib-top:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q
 /* Compact rail labels (user, 25 Nov 2026: "side bar font collision in customer POV"): the shared small-label rule added .06em tracking over the rail's own
    rule, so two-line labels such as "Prepare for sessions" ran edge to edge with touching lines. No tracking, a looser line, a little room each side. */
 html body.nav-top nav.sidebar .rl-b .rl-l:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { letter-spacing: 0 !important; line-height: 1.28 !important; max-width: 74px !important; text-wrap: balance; overflow-wrap: normal; hyphens: none; }
+/* Tiles on Guides & Videos are card tiles inside the file browser: a chosen or new tile gets a ring round its card, not the row tint */
+html body .fb .ll-wrap.fb-item:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: transparent !important; box-shadow: none !important; border-radius: 16px; }
+html body .fb .ll-wrap.fb-item.sel > .ll-card:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { border-color: #1570EF !important; box-shadow: 0 0 0 2px #1570EF !important; }
+html body .fb .ll-wrap.fb-item.fb-flash > .ll-card:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { border-color: #12B76A !important; box-shadow: 0 0 0 2px #12B76A !important; }
+html body .fb .ll-wrap.fb-item:focus-visible:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { outline: 2px solid #1570EF; outline-offset: 3px; }
+html body .fb .fb-group > .ll-grid:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin-top: 10px; }

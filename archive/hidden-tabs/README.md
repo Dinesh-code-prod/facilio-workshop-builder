@@ -31,3 +31,4 @@ Each file is a **copy taken on 13 Nov 2026** of the source that draws the tab. T
 
 Tabs removed earlier with no page file of their own (supportdesk, agents, agentdata, agentrules, agenttest, vstudio, transition) were routes or sub-views; their history is in git (`git log -S "<id>" -- src/shell.js`).
 | guides tabs | Training: Library, Create and Review tabs | Team | `guideslist-3tabs-2026-11-24.js` | 24 Nov 2026: replaced by one list with + New guide in three steps (user: too many buttons, tabs and details) | the Training page (`src/guideslist.js`) |
+| guides list | Training: the one-column row list (a big blue button per row, folders mixed into the list) | Team | `guideslist-rowlist-2026-11-24.js` | 24 Nov 2026: replaced by the file-browser style list (command bar with + New, breadcrumb with Back, Name/Type/Status/Modified columns, folders first, Videos to make folded) | the Training page (`src/guideslist.js`) |
