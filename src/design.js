@@ -75,7 +75,7 @@
   }
   /** the panel shown above the whiteboard and the state flow builder */
   V.designPanel = () => {
-    if (!team() || /[?&]focus=whiteboard/.test(root.location ? root.location.search : '')) return ''; const all = items().filter(p => p.kind !== 'solution'), open = all.filter(p => p.status === 'open'), done = all.length - open.length;
+    if (!team() || /[?&]focus=whiteboard/.test(root.location ? root.location.search : '')) return ''; const all = items().filter(p => p.kind !== 'solution' && !p.brd), open = all.filter(p => p.status === 'open'), done = all.length - open.length;
     const j = J() && J().K() && Array.isArray(J().K().jobs) ? J().K().jobs.filter(x => x.kind === 'capture_flows' && ['waiting', 'claimed', 'needs_input'].includes(x.status)).length : 0;
     const jf = J() && J().K() && Array.isArray(J().K().jobs) ? J().K().jobs.filter(x => x.kind === 'fill_forms' && ['waiting', 'claimed', 'needs_input'].includes(x.status)).length : 0;
     const apps = all.filter(p => p.kind === 'connectedapp' && p.status === 'applied');
