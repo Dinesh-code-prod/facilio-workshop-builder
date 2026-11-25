@@ -23,4 +23,12 @@ Goal: when a person asks the in-app assistant (or their own Claude through the c
 - In the Assistant (`src/chatcmds.js`, `src/assistant.js`): "Purchase Order, Purchase Request and Quote are not required ... remove their flows and mark them out of scope" shows the plan, waits for Confirm, saves, reads back, reloads the page and offers Undo. The page sends the state flows of the imported configuration with their design, since only the page has that configuration. A question ("what is in scope?") is never an action.
 - Project check: "check this project" (and the same each day, on open, or never, per person and project in this browser). It speaks by itself only about critical or high findings it has not shown before. Built from `assess()` (`_portfolio.mjs`) and the missed steps (`_missed.mjs`).
 - Chat: messages up to 4000 characters (the router reads the first 600). Enter sends and Shift+Enter makes a new line, as before. A spoken request is always previewed and confirmed before it changes anything.
-- Not done: attachments in the chat, more operations (requirements, tasks in bulk, fields), and Claude switching off flows that only exist in the imported configuration (it is told to use the Studio Assistant for those).
+- Deployed as deploy 534.
+
+## Done later the same day (the "not done" list)
+- Claude and the imported flows: a scope change through the connector queues them (`pendingFlowsOff` in the workshop); the Assistant applies the switch when a team member next opens the project, says so, and marks each copy (`offBy: 'pending'`) so Undo takes it away again.
+- Requirements: "… and its requirements out of scope" (or `requirements: 'out'`) sets them to "Out of scope" with a history line, only when every module of the requirement is out after the change; Undo restores the status and drops the line.
+- Tasks in bulk (action `tasks`): close, cancel, reassign or re-date open, overdue or all tasks, by owner and module ("close all overdue tasks of Quote", "reassign Ravi's open tasks to Asha", "move my overdue tasks to 2026-12-05"). Each task goes through the normal task save with its version; the read-back compares every changed field; Undo puts the old values back.
+- Chat attachments: the paperclip saves files as team-only project files (category `chat_attachment`); a message with files always goes to Claude with each file's id, and Claude reads them with project_jobs action file_urls.
+- The project check settings (how often, last day, findings already shown) are kept on the account per project (action `watch`), so every browser agrees.
+- Still not done: field changes through the Assistant (fields stay in the module page and the design proposals).

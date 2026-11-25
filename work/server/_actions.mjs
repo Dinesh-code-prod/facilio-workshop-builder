@@ -7,7 +7,7 @@ const obj = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
 const cut = (v, n) => String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, n);
 const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const sing = s => s.replace(/ies$/, 'y').replace(/(ses|xes)$/, s => s.slice(0, -2)).replace(/s$/, '');
-export const ACTIONS = ['scope', 'undo', 'history', 'check'];
+export const ACTIONS = ['scope', 'tasks', 'undo', 'history', 'check', 'watch'];
 
 /** every module the project knows: workshop modules, custom modules, contract matches, flows, and the list the page sends (it has the imported configuration) */
 export function knownModules(ws, planner, extra) {
@@ -42,7 +42,12 @@ export function planScope(ws, planner, b, kpis) {
       const m = obj(f.model); if (m.id !== f.id || m.module !== f.module || JSON.stringify(m).length > 300000) { hidden.push({ id: f.id, name: cut(f.name, 120), module: f.module, why: 'its design was not sent with the request' }); return; }
       flows.push({ id: f.id, name: cut(f.name, 120), module: f.module, from: on ? 'on' : 'off', to: want ? 'on' : 'off', via: 'copy', model: m }); });
   }
+  // a caller without the page (Claude through the connector) cannot see the flows of the imported configuration: they are queued and the Studio switches them off when a team member next opens the project
+  const pending = flowsMode === 'off' && !b.fromPage ? found.filter(m => !obj(ws.pendingFlowsOff)[m.name]).map(m => ({ module: m.name, label: m.label })) : [];
   const reqs = arr(ws.requirements).filter(r => r && r.status !== 'Rejected'), deps = {};
+  // requirements out of scope with their modules (asked for): only those whose every module is out of scope after this change
+  const outAfter = n => names.has(n) ? !inScope : !scopeOf(ws, planner, n);
+  const reqOut = !inScope && b.requirements === 'out' ? reqs.filter(r => r.status !== 'Out of scope' && arr(r.modules).length && arr(r.modules).some(n => names.has(n)) && arr(r.modules).every(outAfter)).map(r => ({ id: r.id, title: cut(r.title, 120), from: r.status || 'Draft' })) : [];
   for (const n of names) {
     const rq = reqs.filter(r => arr(r.modules).includes(n)), no = arr(ws.notifications).filter(x => x && x.module === n).length, sl = arr(ws.slaMatrix).filter(x => x && x.module === n).length;
     const kp = arr(kpis).filter(k => k && k.module === n).length, fo = Object.values(obj(ws.formOps)).filter(f => f && f.module === n).length, fd = obj(obj(ws.fieldOps)[n]); const fields = arr(fd.add).length + Object.keys(obj(fd.modify)).length + arr(fd.remove).length;
@@ -56,22 +61,28 @@ export function planScope(ws, planner, b, kpis) {
   });
   flows.forEach(f => consequences.push('The state flow "' + f.name + '" (' + label(f.module) + ') is switched ' + f.to + ' in the design. It is kept, not deleted.'));
   hidden.forEach(f => consequences.push('The state flow "' + f.name + '" could not be changed here (' + f.why + '). Open the Studio and ask again from the Assistant.'));
+  pending.forEach(m => consequences.push('State flows of ' + m.label + ' that come from the imported configuration are switched off the next time a team member opens this project in the Studio (only the Studio page can read that configuration).'));
+  if (reqOut.length) consequences.push(reqOut.length + ' requirement' + (reqOut.length > 1 ? 's' : '') + ' become "Out of scope" (kept, not deleted): ' + reqOut.slice(0, 5).map(r => r.id + ' ' + r.title).join('; ') + (reqOut.length > 5 ? '; and ' + (reqOut.length - 5) + ' more' : '') + '.');
   modules.filter(m => !m.change).forEach(m => consequences.push(m.label + ' is already ' + (inScope ? 'in' : 'out of') + ' scope.'));
-  const changes = moved.length + flows.length;
-  const summary = changes ? [moved.length ? (inScope ? 'In scope: ' : 'Out of scope: ') + moved.map(m => m.label).join(', ') : '', flows.length ? flows.length + ' state flow' + (flows.length > 1 ? 's' : '') + ' switched ' + (flowsMode === 'on' ? 'on' : 'off') : ''].filter(Boolean).join('; ') : 'Nothing to change';
-  return { action: 'scope', inScope, flowsMode, modules, flows, hidden, unknown, deps, consequences, changes, summary, kind: 'reversible', destructive: false, reversible: true };
+  const changes = moved.length + flows.length + pending.length + reqOut.length;
+  const summary = changes ? [moved.length ? (inScope ? 'In scope: ' : 'Out of scope: ') + moved.map(m => m.label).join(', ') : '', flows.length ? flows.length + ' state flow' + (flows.length > 1 ? 's' : '') + ' switched ' + (flowsMode === 'on' ? 'on' : 'off') : '', pending.length ? 'imported flows of ' + pending.map(m => m.label).join(', ') + ' queued to switch off' : '', reqOut.length ? reqOut.length + ' requirement' + (reqOut.length > 1 ? 's' : '') + ' out of scope' : ''].filter(Boolean).join('; ') : 'Nothing to change';
+  return { action: 'scope', inScope, flowsMode, modules, flows, pending, reqOut, hidden, unknown, deps, consequences, changes, summary, kind: 'reversible', destructive: false, reversible: true };
 }
 /** the old values of everything the plan touches, for Undo: only the scope switch and the flow switch, so later edits elsewhere survive an undo */
 export function snapshot(ws, plan) {
   ws = obj(ws); const mods = {}, flows = {};
   plan.modules.filter(m => m.change).forEach(m => { const w = obj(ws.modules)[m.name]; mods[m.name] = w && w.inScope !== undefined ? { inScope: !!w.inScope } : { unset: true }; });
   plan.flows.forEach(f => { const x = obj(ws.flows)[f.id]; flows[f.id] = x ? { enabled: x.enabled } : { absent: true }; });
-  return { modules: mods, flows };
+  const pend = {}, reqs = {}; arr(plan.pending).forEach(m => { pend[m.module] = true; }); arr(plan.reqOut).forEach(r => { const x = arr(ws.requirements).find(y => y && y.id === r.id); if (x) reqs[r.id] = { status: x.status }; });
+  return { modules: mods, flows, pending: pend, reqs, mark: REQ_NOTE };
 }
+const REQ_NOTE = 'Out of scope: its modules left the scope (Assistant)';
 export function applyScope(ws, plan) {
   const out = JSON.parse(JSON.stringify(obj(ws))); out.modules = obj(out.modules); out.flows = obj(out.flows);
   plan.modules.filter(m => m.change).forEach(m => { out.modules[m.name] = Object.assign(obj(out.modules[m.name]), { inScope: plan.inScope }); });
   plan.flows.forEach(f => { if (!out.flows[f.id]) out.flows[f.id] = Object.assign(JSON.parse(JSON.stringify(f.model)), { workshopCopy: true }); out.flows[f.id].enabled = f.to === 'on'; });
+  if (arr(plan.pending).length) { out.pendingFlowsOff = obj(out.pendingFlowsOff); plan.pending.forEach(m => { out.pendingFlowsOff[m.module] = true; }); }
+  arr(plan.reqOut).forEach(r => { const x = arr(out.requirements).find(y => y && y.id === r.id); if (x) { x.status = 'Out of scope'; x.history = arr(x.history).concat({ at: plan.at || '', by: plan.by || '', change: REQ_NOTE }); } });
   return out;
 }
 /** read back: every planned switch holds in the saved record */
@@ -79,19 +90,44 @@ export function verifyScope(ws, plan) {
   ws = obj(ws); const checks = [];
   plan.modules.filter(m => m.change).forEach(m => checks.push({ what: m.label + (plan.inScope ? ' in scope' : ' out of scope'), ok: obj(obj(ws.modules)[m.name]).inScope === plan.inScope }));
   plan.flows.forEach(f => { const x = obj(obj(ws.flows)[f.id]); checks.push({ what: 'State flow "' + f.name + '" ' + f.to, ok: !!x.id && (x.enabled !== false) === (f.to === 'on') }); });
+  arr(plan.pending).forEach(m => checks.push({ what: 'Imported state flows of ' + m.label + ' queued to switch off', ok: !!obj(ws.pendingFlowsOff)[m.module] }));
+  arr(plan.reqOut).forEach(r => checks.push({ what: r.id + ' out of scope', ok: (arr(ws.requirements).find(y => y && y.id === r.id) || {}).status === 'Out of scope' }));
   return { ok: checks.every(c => c.ok), checks };
 }
+/** undo: the old values come back; a queued flow switch the Studio already applied ({ applied: [ids] }) takes its flow copies away again */
 export function restore(ws, snap) {
   const out = JSON.parse(JSON.stringify(obj(ws))); out.modules = obj(out.modules); out.flows = obj(out.flows);
   Object.entries(obj(snap.modules)).forEach(([n, v]) => { const w = obj(out.modules[n]); if (v.unset) delete w.inScope; else w.inScope = v.inScope; out.modules[n] = w; });
   Object.entries(obj(snap.flows)).forEach(([id, v]) => { if (v.absent) delete out.flows[id]; else if (out.flows[id]) { if (v.enabled === undefined) delete out.flows[id].enabled; else out.flows[id].enabled = v.enabled; } });
+  Object.keys(obj(snap.pending)).forEach(mod => { const p = obj(out.pendingFlowsOff)[mod]; arr(obj(p).applied).forEach(id => { if (obj(out.flows[id]).offBy === 'pending') delete out.flows[id]; }); if (out.pendingFlowsOff) delete out.pendingFlowsOff[mod]; });
+  Object.entries(obj(snap.reqs)).forEach(([id, v]) => { const x = arr(out.requirements).find(y => y && y.id === id); if (!x) return; if (v.status === undefined) delete x.status; else x.status = v.status; x.history = arr(x.history).filter(h => !(h && h.change === snap.mark)); });
   return out;
 }
 export function verifyRestore(ws, snap) {
   ws = obj(ws); const bad = [];
   Object.entries(obj(snap.modules)).forEach(([n, v]) => { const w = obj(obj(ws.modules)[n]); if (v.unset ? w.inScope !== undefined : w.inScope !== v.inScope) bad.push(n); });
   Object.entries(obj(snap.flows)).forEach(([id, v]) => { const x = obj(obj(ws.flows)[id]); if (v.absent ? !!obj(ws.flows)[id] : x.enabled !== v.enabled) bad.push(id); });
+  Object.keys(obj(snap.pending)).forEach(mod => { if (obj(ws.pendingFlowsOff)[mod]) bad.push(mod); });
+  Object.entries(obj(snap.reqs)).forEach(([id, v]) => { if ((arr(ws.requirements).find(y => y && y.id === id) || {}).status !== v.status) bad.push(id); });
   return { ok: !bad.length, bad };
+}
+/** tasks in bulk. b: { filter: { status: 'open'|'overdue'|'all', owner (e-mail or name), module, ids }, set: { status, owner (e-mail or name), due YYYY-MM-DD } }
+    tasks: [{ id, version, data }], members: the project's members. Only real changes are listed; a name that matches nobody is reported, never guessed. */
+export const TASK_STATUS = ['To Do', 'In Progress', 'Blocked', 'Awaiting Customer', 'Awaiting Internal Input', 'In Review', 'Done', 'Cancelled'];
+export function planTasks(tasks, members, b, today) {
+  b = obj(b); const f = obj(b.filter), set = obj(b.set), problems = [], low = s => String(s || '').toLowerCase().trim();
+  const who = s => { s = low(s); if (s === 'me' && b.me) s = low(b.me); return s ? arr(members).find(m => m && (low(m.email) === s || low(m.name) === s || low(m.name).split(' ')[0] === s || low(m.email).split('@')[0] === s)) || null : null; };
+  const fo = f.owner ? who(f.owner) : null, to = set.owner ? who(set.owner) : null;
+  if (f.owner && !fo) problems.push('No team member matches "' + cut(f.owner, 40) + '".'); if (set.owner && !to) problems.push('No team member matches "' + cut(set.owner, 40) + '", so nobody can take the tasks.');
+  if (set.status && !TASK_STATUS.includes(set.status)) problems.push('Unknown task status "' + cut(set.status, 30) + '".'); if (set.due && !/^\d{4}-\d{2}-\d{2}$/.test(set.due)) problems.push('The new due date must look like 2026-12-05.');
+  const mods = [f.module, f.moduleLabel].filter(Boolean).map(norm), ids = arr(f.ids), st = ['open', 'overdue', 'all'].includes(f.status) ? f.status : 'open', open = d => !['Done', 'Cancelled'].includes(d.status);
+  const hit = problems.length ? [] : arr(tasks).filter(t => t && t.data && (st === 'all' || open(t.data)) && (st !== 'overdue' || (t.data.due && String(t.data.due).slice(0, 10) < today))
+    && (!fo || low(t.data.owner) === low(fo.email)) && (!mods.length || mods.includes(norm(t.data.module))) && (!ids.length || ids.includes(t.id)));
+  const items = hit.map(t => { const ch = {}; if (set.status && t.data.status !== set.status) ch.status = set.status; if (to && low(t.data.owner) !== low(to.email)) ch.owner = to.email; if (set.due && String(t.data.due || '') !== set.due) ch.due = set.due;
+    return { id: t.id, title: cut(t.data.title, 120), version: t.version, from: Object.fromEntries(Object.keys(ch).map(k => [k, t.data[k] === undefined ? null : t.data[k]])), to: ch }; }).filter(x => Object.keys(x.to).length);
+  const what = [set.status && 'status ' + set.status, to && 'owner ' + (to.name || to.email), set.due && 'due ' + set.due].filter(Boolean).join(', ');
+  const consequences = items.slice(0, 8).map(x => x.title + ': ' + Object.entries(x.to).map(([k, v]) => k + ' ' + (x.from[k] || 'none') + ' → ' + v).join(', ')).concat(items.length > 8 ? ['and ' + (items.length - 8) + ' more'] : [], items.length && to ? ['The new owner is told as with any task change.'] : [], !items.length && !problems.length ? ['No task matches: ' + st + ' tasks' + (fo ? ' of ' + (fo.name || fo.email) : '') + (mods.length ? ' in ' + (f.moduleLabel || f.module) : '') + '.'] : []);
+  return { action: 'tasks', items, problems, unknown: [], consequences: problems.concat(consequences), changes: items.length, summary: items.length ? items.length + ' task' + (items.length > 1 ? 's' : '') + ': ' + what : 'Nothing to change', kind: 'reversible', destructive: false, reversible: true };
 }
 /** the project check (read only): health signals (assess() in _portfolio.mjs) and missed steps (_missed.mjs), grouped critical, high, medium, low, each with why, what to do and where.
     A missed step 7+ days late counts as high, otherwise medium. key: the finding's identity, so the page can tell what is new since the last check. */
@@ -115,6 +151,12 @@ export function installActions(D) {
     if (name === 'undo') return undo(s, pid, b);
     if (name === 'check') { const c = await D.projectCheck(pid); return groupFindings(c.health, c.missed); }
     if (name === 'history') return { actions: (await dbList('acts.' + pid)).map(r => ({ id: r.key, at: r.value.at, by: r.value.by, summary: r.value.summary, undone: !!r.value.undone })).sort((x, y) => String(y.at).localeCompare(String(x.at))).slice(0, 30) };
+    if (name === 'tasks') return tasksRun(s, pid, b);
+    if (name === 'watch') {   // the project check's settings of this person in this project (how often, the day it last ran, the findings already shown), so every browser agrees
+      const col = 'awatch.' + pid, cur = ((await dbGet(col, s.id).catch(() => null)) || {}).value || {}; if (!b.set) return cur; const x = obj(b.set), v = Object.assign({}, cur);
+      if (['open', 'daily', 'off'].includes(x.freq)) v.freq = x.freq; if (/^\d{4}-\d{2}-\d{2}$/.test(String(x.at || ''))) v.at = x.at; if (Array.isArray(x.seen)) v.seen = x.seen.slice(0, 200).map(k => cut(k, 80));
+      await dbPut(col, s.id, v); return v;
+    }
     if (name !== 'scope') throw new HttpError(404, 'Unknown action "' + cut(name, 30) + '". Actions: ' + ACTIONS.join(', ') + '.');
     const st = await state(pid);
     if (!b.token) {   // dry run: nothing is written
@@ -124,15 +166,42 @@ export function installActions(D) {
     const tk = cut(b.token, 60), r = await dbGet('actp.' + pid, tk), t = r && r.value;
     if (!t || t.by !== s.id || Date.now() - t.at > TTL) throw new HttpError(409, 'This preview has expired or is not yours. Ask again to see the changes first.');
     if (t.v !== st.v) throw new HttpError(409, 'The project changed since the preview. Ask again to see the changes first.');
-    const plan = t.plan, before = snapshot(st.ws, plan), v = await docWrite(s, pid, 'workshop', applyScope(st.ws, plan), st.v);
+    const plan = Object.assign(t.plan, { at: now(), by: s.email || s.id }), before = snapshot(st.ws, plan), v = await docWrite(s, pid, 'workshop', applyScope(st.ws, plan), st.v);
     await dbDel('actp.' + pid, tk).catch(() => { });
     const back = await docRead(pid, 'workshop'), check = verifyScope(back && back.data, plan), id = Date.now().toString(36) + rid('a').slice(2, 6);
     await dbPut('acts.' + pid, id, { by: s.id, at: now(), action: 'scope', summary: plan.summary, before, v, undone: false });
     await audit(pid, s.id, 'action-scope', plan.summary + (check.ok ? ' (verified)' : ' (NOT verified: ' + check.checks.filter(c => !c.ok).map(c => c.what).join(', ') + ')')); await touchProject(pid);
     return { done: true, verified: check.ok, checks: check.checks, undoId: id, version: v, summary: plan.summary, plan: planOut(plan) };
   }
+  // tasks in bulk go through the normal task save (validation, notices, version check), one task at a time; the read-back compares every field changed
+  const taskUrl = (pid, id) => '/api/projects/' + pid + '/items/task/' + encodeURIComponent(id);
+  async function tasksRun(s, pid, b) {
+    const { project } = await projectAccess(s, pid, 'edit'), tasks = await itemsOf(pid, 'task'), today = now().slice(0, 10);
+    if (!b.token) { const plan = planTasks(tasks, project.members, Object.assign({}, b, { me: s.email }), today); if (!plan.changes) return { dryRun: true, plan, token: null };
+      const token = rid('t'); await dbPut('actp.' + pid, token, { by: s.id, at: Date.now(), plan }); return { dryRun: true, plan, token }; }
+    const tk = cut(b.token, 60), r = await dbGet('actp.' + pid, tk), t = r && r.value;
+    if (!t || t.by !== s.id || Date.now() - t.at > TTL || t.plan.action !== 'tasks') throw new HttpError(409, 'This preview has expired or is not yours. Ask again to see the changes first.');
+    const cur = new Map(tasks.map(x => [x.id, x])), stale = t.plan.items.filter(x => !cur.has(x.id) || cur.get(x.id).version !== x.version);
+    if (stale.length) throw new HttpError(409, 'The project changed since the preview (' + stale.map(x => x.title).slice(0, 3).join(', ') + '). Ask again to see the changes first.');
+    await dbDel('actp.' + pid, tk).catch(() => { }); const done = [], failed = [];
+    for (const x of t.plan.items) { try { await viaApp('PUT', taskUrl(pid, x.id), '', { data: Object.assign({}, cur.get(x.id).data, x.to), baseVersion: x.version }); done.push(x); } catch (e) { failed.push(x.title + ': ' + cut(e.message, 120)); } }
+    const back = new Map((await itemsOf(pid, 'task')).map(y => [y.id, y])), checks = done.map(x => ({ what: x.title, ok: Object.entries(x.to).every(([k, v]) => String(((back.get(x.id) || {}).data || {})[k] || '') === String(v)) })).concat(failed.map(w => ({ what: w, ok: false })));
+    const id = Date.now().toString(36) + rid('a').slice(2, 6), summary = done.length + ' task' + (done.length === 1 ? '' : 's') + ' changed' + (failed.length ? ', ' + failed.length + ' not' : '') + ' (' + t.plan.summary.replace(/^[^:]*: /, '') + ')';
+    if (done.length) await dbPut('acts.' + pid, id, { by: s.id, at: now(), action: 'tasks', summary, before: done.map(x => ({ id: x.id, from: x.from })), undone: false });
+    await audit(pid, s.id, 'action-tasks', summary + (checks.every(c => c.ok) ? ' (verified)' : ' (NOT verified)'));
+    return { done: !!done.length, verified: !failed.length && checks.every(c => c.ok), checks, undoId: done.length ? id : null, summary, plan: t.plan };
+  }
+  async function tasksUndo(s, pid, id, a) {
+    const cur = new Map((await itemsOf(pid, 'task')).map(x => [x.id, x])), bad = [];
+    for (const x of a.before) { const c = cur.get(x.id); if (!c) { bad.push(x.id); continue; } const data = Object.assign({}, c.data); Object.entries(x.from).forEach(([k, v]) => { if (v === null) delete data[k]; else data[k] = v; });
+      try { await viaApp('PUT', taskUrl(pid, x.id), '', { data, baseVersion: c.version }); } catch (e) { bad.push(x.id); } }
+    const back = new Map((await itemsOf(pid, 'task')).map(x => [x.id, x])); a.before.forEach(x => { const d = (back.get(x.id) || {}).data || {}; if (Object.entries(x.from).some(([k, v]) => String(d[k] == null ? '' : d[k]) !== String(v == null ? '' : v)) && !bad.includes(x.id)) bad.push(x.id); });
+    await dbPut('acts.' + pid, id, Object.assign(a, { undone: true, undoneBy: s.id, undoneAt: now() })); await audit(pid, s.id, 'action-undo', 'Undone: ' + a.summary + (bad.length ? ' (NOT verified for ' + bad.length + ')' : ' (verified)'));
+    return { done: true, verified: !bad.length, summary: 'Undone: ' + a.summary };
+  }
   async function undo(s, pid, b) {
     const id = cut(b.id, 40), r = await dbGet('acts.' + pid, id), a = r && r.value; if (!a) throw new HttpError(404, 'No action with that id.'); if (a.undone) throw new HttpError(409, 'That change was already undone.');
+    if (a.action === 'tasks') return tasksUndo(s, pid, id, a);
     const st = await state(pid), v = await docWrite(s, pid, 'workshop', restore(st.ws, a.before), st.v), back = await docRead(pid, 'workshop'), check = verifyRestore(back && back.data, a.before);
     await dbPut('acts.' + pid, id, Object.assign(a, { undone: true, undoneBy: s.id, undoneAt: now() })); await audit(pid, s.id, 'action-undo', 'Undone: ' + a.summary + (check.ok ? ' (verified)' : ' (NOT verified)')); await touchProject(pid);
     return { done: true, verified: check.ok, version: v, summary: 'Undone: ' + a.summary };
@@ -142,8 +211,10 @@ export function installActions(D) {
   CONNECTOR.project_changes = (s, b) => (b && b.action ? actionsTool(s, b) : changesRead(s, b));
   async function actionsTool(s, b) {
     const p = await pickProject(s, b.project), name = cut(b.action || 'scope', 20);
-    const body = name === 'scope' ? { modules: arr(b.modules).slice(0, 30).map(x => cut(x, 80)), inScope: b.inScope, flows: b.flows, token: b.token ? cut(b.token, 60) : undefined } : { id: b.id };
+    const token = b.token ? cut(b.token, 60) : undefined;
+    const body = name === 'scope' ? { modules: arr(b.modules).slice(0, 30).map(x => cut(x, 80)), inScope: b.inScope, flows: b.flows, requirements: b.requirements === 'out' ? 'out' : undefined, token }
+      : name === 'tasks' ? { filter: obj(b.filter), set: obj(b.set), token } : { id: b.id };
     const out = await viaApp('POST', '/api/projects/' + p.id + '/actions/' + encodeURIComponent(name), '', body);
-    return Object.assign({ project: p.name }, out, out.dryRun ? { note: out.token ? 'Nothing is changed yet. Show the person the plan (summary, consequences, unknown names) and ask them. Only after a clear yes, call again with the same arguments and this token. A flow that is only in the imported configuration can be switched off from the Assistant inside the Studio.' : 'Nothing to change.' } : ['history', 'check'].includes(name) ? {} : { note: out.verified ? 'Saved and read back. Tell the person in one line, with Undo (action undo, id ' + (out.undoId || '') + ').' : 'Saved but the read-back did not match: tell the person and do not claim it is done.' });
+    return Object.assign({ project: p.name }, out, out.dryRun ? { note: out.token ? 'Nothing is changed yet. Show the person the plan (summary, consequences, unknown names) and ask them. Only after a clear yes, call again with the same arguments and this token. Flows of the imported configuration are queued and switched off when a team member next opens the project; say so.' : 'Nothing to change.' } : ['history', 'check'].includes(name) ? {} : { note: out.verified ? 'Saved and read back. Tell the person in one line, with Undo (action undo, id ' + (out.undoId || '') + ').' : 'Saved but the read-back did not match: tell the person and do not claim it is done.' });
   }
 }

@@ -15,7 +15,7 @@ export const ROOT = 'Facilio Onboarding';
 export const SUBFOLDERS = [
   ['01_Project Governance', ['msa', 'kickoff', 'signoff_evidence']],
   ['02_Requirements & Design', ['transcript', 'brd_export', 'brd_signed', 'solution_doc', 'solution_input', 'config_package', 'config_evidence', 'flow_image', 'mockup_html']],
-  ['03_Project Tracking & Reporting', ['plan', 'schedule', 'plan_source', 'report_attachment', 'ticket_attachment', 'task_attachment', 'dashboard', 'showcase_image', 'kpi_workbook']],
+  ['03_Project Tracking & Reporting', ['plan', 'schedule', 'plan_source', 'report_attachment', 'ticket_attachment', 'task_attachment', 'chat_attachment', 'dashboard', 'showcase_image', 'kpi_workbook']],
   ['04_Testing & UAT', ['uat_source', 'uat_evidence', 'ftr_workbook']],
   ['05_Data Onboarding', ['onboarding_workbook', 'onboarding_files']],
   ['06_Training & Enablement', ['guide_source', 'guide_media']],

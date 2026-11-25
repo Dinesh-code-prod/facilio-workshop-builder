@@ -13,7 +13,7 @@
   const tags = r => String(r.tags || '').split(',').map(x => x.trim()).filter(Boolean);
   const me = () => String(S.user && S.user.email || '').toLowerCase();
   const mine = n => !!n.createdByEmail && String(n.createdByEmail).toLowerCase() === me();
-  const byLine = r => `<span class="rs-by"><i class="rs-av" aria-hidden="true">${esc(String(r.createdByName || '?').trim().charAt(0).toUpperCase())}</i>${esc(r.createdByName || 'Unknown')} · ${esc(fmt(r._at))}</span>`;
+  const byLine = r => `<span class="rs-by"><i class="rs-av" aria-hidden="true">${esc(String(r.createdByName || '?').trim().charAt(0).toUpperCase())}${r.createdByEmail && V.face ? V.face(r.createdByEmail, r.createdByName) : ''}</i>${esc(r.createdByName || 'Unknown')} · ${esc(fmt(r._at))}</span>`;
   const tagChips = r => tags(r).map(t => `<span class="rs-tag">${esc(t)}</span>`).join('');
   const chip = (label, n, on, act, v) => `<button type="button" class="rs-chip${on ? ' on' : ''}" aria-pressed="${on}" data-act="${act}" data-v="${esc(v)}">${esc(label)}${n === '' ? '' : `<em>${n}</em>`}</button>`;
   const seg = (items, cur, act) => `<div class="seg" role="group">${items.map(x => `<button type="button" class="${x[0] === cur ? 'on' : ''}" aria-pressed="${x[0] === cur}" data-act="${act}" data-v="${esc(x[0])}">${x[1]}</button>`).join('')}</div>`;

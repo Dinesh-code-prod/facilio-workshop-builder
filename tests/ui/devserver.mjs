@@ -28,7 +28,10 @@ const fakeMail = () => { const h = n => new Date(Date.now() - n * 3600e3).toISOS
     M('G2', 'dinesh.r@facilio.com', 'Dinesh R', 'Re: Kick-off agenda and attendee list', 'Thanks Priya, confirmed. We will share the workshop plan by Wednesday.', { conv: 'CV1', ago: 28, to: 'priya@acme-facilities.com' }),
     M('G3', 'omar@acme-facilities.com', 'Omar Haddad', 'Asset register: which template should we use?', 'Hello,\nWe have 4,200 assets in our current system. Should we use the onboarding template or send our own export?\n\nRegards,\nOmar', { ago: 5 }),
     M('G4', 'unknown.vendor@example.net', 'Vendor', 'Partnership opportunity', 'Hello, we offer IoT sensors...', { ago: 2, to: 'support@facilio.com' })]; };
-const fakeGraph = async (cred, url) => { if (/\/attachments\/[^/]+\/\$value/.test(url)) return { ok: true, status: 200, body: Buffer.from('%PDF-1.4 local test attachment').toString('base64') };
+// a Teams photo: an 8x8 Facilio-blue PNG for dinesh.r@, none (404) for anyone else
+const FAKE_PHOTO = 'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEUlEQVR4nGMQLXiPFTEMLQkAIGRdAVjtDBkAAAAASUVORK5CYII=';
+const fakeGraph = async (cred, url) => { if (/\/photos\/240x240\/\$value$/.test(url)) return /dinesh\.r%40facilio\.com/.test(url) ? { ok: true, status: 200, body: FAKE_PHOTO } : { ok: false, status: 404, body: '' };
+  if (/\/attachments\/[^/]+\/\$value/.test(url)) return { ok: true, status: 200, body: Buffer.from('%PDF-1.4 local test attachment').toString('base64') };
   if (/\/attachments\?/.test(url)) return { ok: true, status: 200, json: async () => ({ value: [{ id: 'AT1', name: 'Kick-off agenda.pdf', size: 48213, contentType: 'application/pdf' }, { id: 'AT2', name: 'Site photos.zip', size: 8.2e6, contentType: 'application/zip' }] }) };
   if (/\/messages\/G1\?/.test(url)) return { ok: true, status: 200, json: async () => ({ id: 'G1', webLink: 'https://outlook.office365.com/owa/?ItemID=G1' }) };
   if (/\/messages\/[^?]+\?/.test(url)) return { ok: false, status: 404, json: async () => ({}) };
@@ -75,7 +78,7 @@ http.createServer(async (req, res) => {
       const email = decodeURIComponent((/(?:^|;\s*)dev_user=([^;]+)/.exec(req.headers.cookie || '') || [])[1] || 'dinesh.r@facilio.com');
       const raw = (await body(req)).toString('utf8');
       const r = await handler({ method: req.method, path: u.pathname.replace('/api/fn/api', '') || '/', query: u.search.slice(1), headers: req.headers, text: async () => raw, json: async () => (raw ? JSON.parse(raw) : undefined) }, ctxFor(email, origin));
-      res.writeHead(r.status, { 'content-type': 'application/json' }); return res.end(await r.text());
+      res.writeHead(r.status, Object.fromEntries(r.headers)); return res.end(Buffer.from(await r.arrayBuffer()));   // JSON, or a picture's bytes
     }
     let p = path.join(dist, decodeURIComponent(u.pathname)); if (u.pathname === '/' || !fs.existsSync(p) || fs.statSync(p).isDirectory()) p = path.join(dist, 'index.html');
     res.writeHead(200, { 'content-type': MIME[path.extname(p)] || 'application/octet-stream' }); fs.createReadStream(p).pipe(res);

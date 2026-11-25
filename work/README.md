@@ -28,6 +28,7 @@ Rules: keys and secrets never leave the server; a person only sees the projects 
 | [server/_msgfmt.mjs](server/_msgfmt.mjs) | Shared wording helpers for every message Delivery Studio sends (Otto Teams messages, the bell, digests). |
 | [server/_notify.mjs](server/_notify.mjs) | Notifications (plan: docs/plans/NOTIFY-MAIL-STAGES-PLAN-2026-11-07.md, section 2; tests: tests/notify.mjs). |
 | [server/_nudges.mjs](server/_nudges.mjs) | Lifecycle nudges (tests: tests/nudges.mjs): the message Otto sends a project's owners when the project's records say it needs attention. |
+| [server/_photos.mjs](server/_photos.mjs) | Profile pictures: each person uploads their own photo, or copies their Teams (Microsoft 365) photo; admins can copy Teams photos for everyone who has none (tests: tests/photos.mjs). |
 | [server/_planfrommsa.mjs](server/_planfrommsa.mjs) | ONE copy of these rules, used in two places: build.mjs adds this file to the browser bundle (a plain script: it sets window.FWBPlanFromMsa) and the server and the tests import it as a module (it... |
 | [server/_portfolio.mjs](server/_portfolio.mjs) | Portfolio health for the Admin Command Center: pure functions over one project's real records (no storage access, no AI). |
 | [server/_privatetasks.mjs](server/_privatetasks.mjs) | Private tasks (tests: tests/private_tasks.mjs): each team member's own day-to-day list in a project, visible to nobody else. |

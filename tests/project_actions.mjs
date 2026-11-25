@@ -22,7 +22,7 @@ await call('PUT', `/api/projects/${pid}/docs/workshop`, { data: { modules: { pur
 await call('PUT', `/api/projects/${pid}/docs/planner`, { data: { scope: [{ module: 'quote', status: 'matched' }, { module: 'purchaserequest', status: 'matched' }] }, baseVersion: 0 });
 const known = [{ name: 'purchaseorder', label: 'Purchase Order' }, { name: 'purchaserequest', label: 'Purchase Request' }, { name: 'quote', label: 'Quote' }];
 const extraFlows = [{ id: 'b1', name: 'PO approval', module: 'purchaseorder', enabled: true, model: flowModel('b1') }, { id: 'b2', name: 'PR flow', module: 'purchaserequest', enabled: true }];
-const ask = { modules: ['Purchase Order', 'purchase requests', 'Quote', 'Invoice'], inScope: false, flows: 'off', known, extraFlows };
+const ask = { modules: ['Purchase Order', 'purchase requests', 'Quote', 'Invoice'], inScope: false, flows: 'off', known, extraFlows, fromPage: true };
 
 await t('module words resolve to known modules; an unknown name is reported, never guessed', () => {
   const r = A.resolveModules(['Purchase Order', 'quotes', 'PURCHASEREQUEST', 'Invoice'], known); assert.deepEqual(r.found.map(m => m.name), ['purchaseorder', 'quote', 'purchaserequest']); assert.deepEqual(r.unknown, ['Invoice']);
@@ -72,5 +72,40 @@ await t('the project check groups findings by severity with what to do, and chan
   assert.equal(late.sev, 'high', '7+ days late is high'); assert.ok(late.action && late.key);
   assert.deepEqual(r.data.groups.map(g => g.sev), ['critical', 'high', 'medium', 'low'].filter(x => r.data.groups.some(g => g.sev === x)), 'most severe first'); assert.equal((await st()).version, v, 'read only');
   const c = await tool('project_changes', { project: pid, action: 'check' }); assert.equal(c.status, 200); assert.ok(Array.isArray(c.data.groups));
+});
+await t('Claude cannot see imported flows: they are queued, the Studio applies them, and Undo takes them back', async () => {
+  const d = (await tool('project_changes', { action: 'scope', project: pid, modules: ['Purchase Order'], inScope: false, flows: 'off' })).data; assert.deepEqual(d.plan.pending.map(m => m.module), ['purchaseorder']); assert.match(d.note, /queued/);
+  const r = (await tool('project_changes', { action: 'scope', project: pid, modules: ['Purchase Order'], inScope: false, flows: 'off', token: d.token })).data; assert.ok(r.verified, JSON.stringify(r.checks));
+  let cur = await st(); assert.equal(cur.data.pendingFlowsOff.purchaseorder, true);
+  cur.data.flows.b9 = Object.assign(flowModel('b9'), { workshopCopy: true, enabled: false, offBy: 'pending' }); cur.data.pendingFlowsOff.purchaseorder = { applied: ['b9'] };   // what src/assistant.js does when the project opens
+  await call('PUT', `/api/projects/${pid}/docs/workshop`, { data: cur.data, baseVersion: cur.version });
+  const u = (await call('POST', `/api/projects/${pid}/actions/undo`, { id: r.undoId })).data; assert.ok(u.verified); cur = await st(); assert.ok(!cur.data.flows.b9, 'the switched copy is gone'); assert.ok(!cur.data.pendingFlowsOff.purchaseorder);
+});
+await t('requirements go out of scope with their modules only when asked, and only when all their modules are out', async () => {
+  let cur = await st(); cur.data.requirements.push({ id: 'r2', title: 'Shared PO and work order rule', status: 'Confirmed', modules: ['purchaseorder', 'workorder'] }); cur.data.modules.workorder = { inScope: true };
+  await call('PUT', `/api/projects/${pid}/docs/workshop`, { data: cur.data, baseVersion: cur.version });
+  const d = (await call('POST', `/api/projects/${pid}/actions/scope`, { modules: ['purchaseorder'], inScope: false, requirements: 'out', fromPage: true, known })).data; assert.deepEqual(d.plan.reqOut.map(r => r.id), ['r1'], 'r2 also needs workorder, which stays in scope');
+  const r = (await call('POST', `/api/projects/${pid}/actions/scope`, { modules: ['purchaseorder'], inScope: false, requirements: 'out', fromPage: true, known, token: d.token })).data; assert.ok(r.verified);
+  cur = await st(); const r1 = cur.data.requirements.find(x => x.id === 'r1'); assert.equal(r1.status, 'Out of scope'); assert.match(r1.history.slice(-1)[0].change, /Assistant/);
+  assert.ok((await call('POST', `/api/projects/${pid}/actions/undo`, { id: r.undoId })).data.verified); cur = await st(); const back = cur.data.requirements.find(x => x.id === 'r1'); assert.equal(back.status, 'Draft'); assert.ok(!(back.history || []).some(h => /Assistant/.test(h.change)));
+});
+await t('tasks in bulk: preview, run through the normal task save, read back, undo', async () => {
+  await call('PUT', `/api/projects/${pid}/items/task/q1`, { data: { title: 'Quote template', status: 'To Do', module: 'quote', due: '2020-02-01', owner: me } }); await call('PUT', `/api/projects/${pid}/items/task/q2`, { data: { title: 'Quote numbering', status: 'In Progress', module: 'Quote', owner: me } });
+  await call('PUT', `/api/projects/${pid}/items/task/q3`, { data: { title: 'Old quote work', status: 'Done', module: 'quote', owner: me } });
+  const bad = (await call('POST', `/api/projects/${pid}/actions/tasks`, { filter: { module: 'quote' }, set: { owner: 'nobody-here' } })).data; assert.equal(bad.token, null); assert.match(bad.plan.problems[0], /No team member/);
+  const d = (await call('POST', `/api/projects/${pid}/actions/tasks`, { filter: { module: 'quote' }, set: { status: 'Done' } })).data; assert.deepEqual(d.plan.items.map(x => x.id).sort(), ['q1', 'q2'], 'open tasks only, module by name or label');
+  const r = (await call('POST', `/api/projects/${pid}/actions/tasks`, { token: d.token })).data; assert.ok(r.verified, JSON.stringify(r.checks));
+  const get = async id => (await call('GET', `/api/projects/${pid}/items?kinds=task`)).data.items.find(x => x.id === id); assert.equal((await get('q1')).data.status, 'Done');
+  assert.ok((await call('POST', `/api/projects/${pid}/actions/undo`, { id: r.undoId })).data.verified); assert.equal((await get('q1')).data.status, 'To Do'); assert.equal((await get('q2')).data.status, 'In Progress');
+  const o = (await call('POST', `/api/projects/${pid}/actions/tasks`, { filter: { status: 'overdue', owner: 'me' }, set: { due: '2026-12-05' } })).data; assert.ok(o.plan.items.some(x => x.id === 'q1') && !o.plan.items.some(x => x.id === 'q2'), 'overdue only');
+});
+await t('the project check settings live on the account; only known values are kept', async () => {
+  assert.deepEqual((await call('POST', `/api/projects/${pid}/actions/watch`, {})).data, {});
+  const v = (await call('POST', `/api/projects/${pid}/actions/watch`, { set: { freq: 'open', at: '2026-11-25', seen: ['s:a', 'm:task:1'], junk: 1 } })).data; assert.deepEqual(v, { freq: 'open', at: '2026-11-25', seen: ['s:a', 'm:task:1'] });
+  assert.equal((await call('POST', `/api/projects/${pid}/actions/watch`, { set: { freq: 'hourly' } })).data.freq, 'open', 'an unknown frequency is ignored');
+});
+await t('files attached in the chat are team-only and Claude may fetch them', async () => {
+  const fs = await import('node:fs'), api = fs.readFileSync('work/server/api.mjs', 'utf8'), jobs = fs.readFileSync('work/server/_jobsapi.mjs', 'utf8');
+  assert.match(api, /chat_attachment: \{ ext: \[/); assert.match(api, /const TEAM_FILES = new Set\(\['chat_attachment'/); assert.match(jobs, /f\.category !== 'chat_attachment'/);
 });
 console.log(`\n${n} project action checks passed`);

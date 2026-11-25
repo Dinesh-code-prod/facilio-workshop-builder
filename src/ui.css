@@ -1287,6 +1287,11 @@ body .tabs::-webkit-scrollbar { display: none; }
 #asst .ki-row{margin-bottom:2px}#asst .ki-time{margin-top:3px}
 #asst .as-quote{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px;padding:6px 10px;border:1px solid var(--cs-accent-line,#b2ccff);border-left-width:3px;border-radius:10px;background:var(--cs-accent-soft,#eaf2ff);font:400 12.5px/17px var(--cs-font);color:var(--cs-fg2)}
 #asst .as-quote[hidden]{display:none}#asst .as-quote span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#asst .as-quote b{color:var(--cs-fg1);font-weight:600}
+/* files attached to a message for Claude: small chips above the box */
+body #asst .as-tools [data-act="asstAttach"] + .as-mic:not(#_):not(#__){margin-left:2px !important}   /* the paperclip (also .as-mic, so auto on its left) sits with the mic and Send, on the right */
+#asst .as-att{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}#asst .as-att[hidden]{display:none}
+#asst .as-attf{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:4px 6px 4px 10px;border-radius:999px;background:#F1F1F6;color:#33333D;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#asst .as-attf.up{color:#6B6B78}#asst .as-attf button{border:0;background:none;color:#6B6B78;font-size:15px;line-height:1;padding:0 4px;cursor:pointer;border-radius:999px}#asst .as-attf button:hover{color:#0B0B12;background:#E4E4EB}
 #asst .as-qx{flex:none;width:22px;height:22px;border:0;border-radius:6px;background:transparent;color:var(--cs-fg3);font-size:16px;line-height:1;cursor:pointer}#asst .as-qx:hover{background:#fff;color:var(--cs-fg1)}
 
 /* Calm pass (8 Nov 2026): no sky-blue tints or blue card top lines (the dark page banner stays), and no text under 12.5px. */
@@ -4153,6 +4158,17 @@ html body .fb .fb-group > .ll-grid:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#
 html body :is(div.ca-tile, div.ca-do, div.cs-line, div.rm-c, .lc-list li):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { cursor: default !important; }
 html body :is(div.ca-tile, div.ca-do, div.cs-line, div.rm-c, .sd-w, .sd-kpi):hover:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { transform: none !important; }
 html body .lc-list li > b:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font-weight: 500; color: inherit; }
+
+
+/* Profile photos (user, 24 Nov 2026): a person's picture laid over their initials in any avatar (V.face in src/shell.js); the initials stay underneath for no photo or a failed load */
+html body :is(.avatar, .kb-av, .pt-av, .pav, .ovb-av, .hs-av, .rs-av, .aw-av):has(> img.av-img):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { position: relative !important; overflow: hidden !important; }
+html body img.av-img:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: inherit !important; object-fit: cover !important; display: block !important; background: #fff; }
+#userPop .um-photo { display: flex; gap: 12px; align-items: flex-start; padding: 8px 10px 10px 0; border-bottom: 1px solid #ECECF1; }
+#userPop .um-photo .avatar.lg { flex: none; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; font-size: 15px; font-weight: 600; background: #F1F1F6; color: #33333D; border: 0; }
+#userPop .um-pa { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+#userPop .um-pa > b { font-size: 12px; font-weight: 500; color: #6B6B78; padding: 2px 0 2px; }
+#userPop .um-pa .um-i { padding-left: 0; }
+.adm-photos { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin: 0 0 12px; }
 /* ---------- Documents & Files (25 Nov 2026, src/documents.js): folder list left, files right; one column under 1100 px ---------- */
 body .docs-grid:not(#_):not(#__) { display: grid !important; grid-template-columns: 232px minmax(0, 1fr) !important; gap: 24px !important; align-items: start !important; }
 @media (max-width: 1100px) { body .docs-grid:not(#_):not(#__) { grid-template-columns: 1fr !important; } }
