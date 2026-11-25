@@ -407,3 +407,43 @@ html body .main .cal .cal-seg button.on:not(#DS) { background: var(--ds-page) !i
 html body .main .cal .cal-fchip:not(#DS) { box-shadow: none !important; border: 1px solid var(--ds-border) !important; background: var(--ds-page) !important; color: var(--ds-text2) !important; font: 500 13px/1.3 var(--ds-body) !important; }
 html body .main .cal-fc .fc-event.cal-fcev.late .fc-event-title:not(#DS) { color: var(--ds-ink) !important; }
 html body .main .cal .cal-fchip.own.on:not(#DS) { background: var(--ds-selected) !important; border-color: #B2CCFF !important; color: var(--ds-blue) !important; }
+
+/* ---------- Module guides (Learn Facilio), full width (user, 25 Nov 2026: "the guides not utilizing full page") ----------
+   The guide body used a 920 px column with its own inner scroll; it now takes the page width and scrolls with the page. The module chips wrap
+   instead of running off the edge; the Overview / Process and fields / Videos / Prepare and ask switch is as wide as its labels. */
+html body .main .wb-body.ll-read:not(#DS) { max-width: none !important; width: 100% !important; height: auto !important; max-height: none !important; overflow: visible !important; grid-template-columns: minmax(0, 1fr) !important; padding-left: 0 !important; padding-right: 0 !important; }
+html body .main .wb-body.ll-read > *:not(#DS) { max-width: none !important; }
+html body .main .ll-chips:not(#DS) { flex-wrap: wrap !important; overflow: visible !important; row-gap: 6px !important; }
+html body .main .wb-body.ll-read .seg:not(#DS) { width: fit-content !important; display: inline-flex !important; }
+/* customer view top bar (user, 25 Nov 2026: "why customer pov top bar is so shrinked"): customers have no search, which is what fills the middle for the
+   team, so the actions now start at the right edge; the preview label and Exit preview sit with them, after the logo and the project, not before the logo */
+html body header.navbar .co-pill:not(#DS) { margin-left: auto !important; }
+html body header.navbar .right > .tag.blue:not(#DS), html body header.navbar .right > [data-act="custPreviewExit"]:not(#DS) { order: 13 !important; }
+
+/* ---------- Claude setup, friendlier (user, 25 Nov 2026: "nice and appealing, currently it looks boring") ----------
+   A status line with the one solid button (soft blue; green when everything is ready, soft red when something is missing), the four steps as cards
+   side by side with a numbered circle (a tick once done), the installs as small tiles with a two-letter badge, the checklist as a review table. */
+html body .main .cs-status:not(#DS) { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 16px 18px; margin: 0 0 16px; border-radius: var(--ds-r-card); background: var(--ds-selected); border: 1px solid #B2CCFF; }
+html body .main .cs-status.ok:not(#DS) { background: #ECFDF3; border-color: #ABEFC6; }
+html body .main .cs-status.bad:not(#DS) { background: #FEF3F2; border-color: #FECDCA; }
+html body .main .cs-status > div:not(#DS) { flex: 1 1 360px; display: flex; flex-direction: column; gap: 2px; }
+html body .main .cs-status b:not(#DS) { font: 600 17px/1.3 var(--ds-head); color: var(--ds-ink); }
+html body .main .cs-status span:not(#DS) { font: 400 13.5px/1.5 var(--ds-body); color: var(--ds-text2); }
+html body .main .cs-steps:not(#DS) { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: start; gap: 12px; margin: 0 0 18px; counter-reset: none; }
+@media (max-width: 1280px) { html body .main .cs-steps:not(#DS) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+html body .main .cs-step:not(#DS) { border: 1px solid var(--ds-border); border-radius: var(--ds-r-card); padding: 14px; background: var(--ds-page); display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+html body .main .cs-step.done:not(#DS) { border-color: #ABEFC6; }
+html body .main .cs-step header:not(#DS) { display: flex; align-items: center; gap: 10px; }
+html body .main .cs-step h4:not(#DS) { margin: 0; font: 600 14.5px/1.3 var(--ds-head); color: var(--ds-ink); }
+html body .main .cs-n:not(#DS) { flex: none; width: 28px; height: 28px; border-radius: 50%; display: inline-grid; place-items: center; background: var(--ds-selected); color: var(--ds-blue); font: 600 13.5px/1 var(--ds-head); }
+html body .main .cs-step.done .cs-n:not(#DS) { background: var(--ds-ok); color: #fff; }
+html body .main .cs-p:not(#DS) { margin: 0; font: 400 13px/1.5 var(--ds-body); color: var(--ds-text2); }
+html body .main .cs-tiles:not(#DS) { display: flex; flex-direction: column; gap: 6px; }
+html body .main .cs-tile:not(#DS) { display: flex; gap: 10px; align-items: flex-start; padding: 8px; border-radius: 8px; background: var(--ds-canvas); }
+html body .main .cs-tile > i:not(#DS) { flex: none; width: 30px; height: 30px; border-radius: 8px; display: inline-grid; place-items: center; background: var(--ds-page); border: 1px solid var(--ds-border); font: 600 11.5px/1 var(--ds-head); font-style: normal; color: var(--ds-ink); }
+html body .main .cs-tile b:not(#DS) { display: block; font: 600 13px/1.3 var(--ds-head); color: var(--ds-ink); }
+html body .main .cs-tile .cs-link:not(#DS) { display: block; font-size: 12.5px; overflow-wrap: anywhere; }
+html body .main .cs-tile .cs-note:not(#DS) { display: block; font-size: 12px; line-height: 1.45; color: var(--ds-text2); }
+html body .main .cs-step details summary:not(#DS) { cursor: pointer; color: var(--ds-blue); margin-top: 2px; }
+html body .main .cs-step details[open] .cs-tiles:not(#DS) { margin-top: 6px; }
+html body .main .cs-h:not(#DS) { margin: 4px 0 8px; font: 600 15px/1.3 var(--ds-head); color: var(--ds-ink); }
