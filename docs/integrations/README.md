@@ -9,6 +9,7 @@ How Delivery Studio works with Claude, Microsoft 365 (Outlook, Teams), the Facil
 | [CLAUDE-INTEGRATION.md](CLAUDE-INTEGRATION.md) | The Claude side of Delivery Studio: what is built (developer guide) |
 | [CONNECTORS-2026-11-04.md](CONNECTORS-2026-11-04.md) | Connector discovery, 4 Nov 2026 (Part E step 0) |
 | [MOCKUP-VIDEO-RETURN-2026-11-07.md](MOCKUP-VIDEO-RETURN-2026-11-07.md) | Meteor pages and Comet videos back into the Studio (7 Nov 2026) |
+| [PROFILE-PHOTOS-2026-11-24.md](PROFILE-PHOTOS-2026-11-24.md) | Profile photos: own upload and the Teams photo, and the Graph permission it needs |
 | [SOLUTION-INTEGRATION-ARCHITECTURE-2026-11-08.md](SOLUTION-INTEGRATION-ARCHITECTURE-2026-11-08.md) | Solution design and BRD: how it fits together, and how another tool can plug in (8 Nov 2026) |
 | [STEP1-PUSH-PULL-DESIGN.md](STEP1-PUSH-PULL-DESIGN.md) | Step 1 design: the push and pull engine (4 Nov 2026) |
 | [claude-connector.md](claude-connector.md) | Claude connector |

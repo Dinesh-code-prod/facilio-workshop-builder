@@ -69,6 +69,7 @@ How to read a name: a test is named after the thing it checks (for example `wsr.
 | [orgpkg.mjs](orgpkg.mjs) | Organisation package export (src/orgpkg.js) against records copied verbatim from the sample Facilio package |
 | [orgpkg_export.mjs](orgpkg_export.mjs) | Org package export: a sample project (new module, field, state flow, notifications) is exported, checked structurally, and read back with the same |
 | [parse_node.js](parse_node.js) |  |
+| [photos.mjs](photos.mjs) | Profile pictures (work/server/_photos.mjs): a wrong type, spoofed bytes or an oversize picture is refused, only signed-in people read a photo, replace and remove delete the old file, the Teams photo is copied or its missing permission explained, and the admin batch. Browser check: ui/photo-check.mjs (start the preview with FAKE_GRAPH=1). |
 | [pkg_validate.mjs](pkg_validate.mjs) | Static package validation (src/pkgvalidate.js): the real sample fixture (tests/fixtures/orgpkg-sample, as used by tests/orgpkg.mjs) and a package built by |
 | [plan_from_msa.mjs](plan_from_msa.mjs) | Project plan drafted from the contract (work/server/_planfrommsa.mjs): 90-day default, weekends skipped, commitments pinned, conflicts reported not hidden |
 | [plan_html.mjs](plan_html.mjs) | Plan HTML export (src/planhtml.js): complete, self-contained, escaped, labelled by origin, nothing invented. |

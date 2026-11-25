@@ -18,6 +18,7 @@ import { installQbank } from './_qbankapi.mjs';
 import './_msadocs.mjs';
 import { installTaskTracking } from './_tasksapi.mjs';
 import { installMailTasks } from './_mailapi.mjs';
+import { installPhotos } from './_photos.mjs';
 import { installJobs } from './_jobsapi.mjs';
 import { installActions } from './_actions.mjs';
 import './_stagetasks.mjs';
@@ -314,8 +315,10 @@ let CTX = null, HDR = {};   // set at the start of every request (a Lambda handl
   route('GET', '/api/health', async () => ok({ ok: true, openMode: false, runMode: true, time: now() }));
   route('GET', '/api/auth/me', async () => {
     const s = await me(); const ar = await adminRole(s); const seen = await dbGet('useen', s.id).catch(() => null);
-    return ok({ openMode: false, runMode: true, user: { id: s.id, email: s.email, name: s.name, kind: 'consultant', projectId: null, guest: false, superAdmin: ar === 'super', adminRole: ar, coachSeen: !!(seen && seen.value && seen.value.coach), introSeen: !!(seen && seen.value && seen.value.intro), navPrefs: (seen && seen.value && seen.value.nav) || {} }, signupEnabled: false, signupNeedsCode: false, domains: [ALLOWED_DOMAIN] });
+    return ok({ openMode: false, runMode: true, user: { id: s.id, email: s.email, name: s.name, kind: 'consultant', projectId: null, guest: false, superAdmin: ar === 'super', adminRole: ar, coachSeen: !!(seen && seen.value && seen.value.coach), introSeen: !!(seen && seen.value && seen.value.intro), photos: await photoVersions(), navPrefs: (seen && seen.value && seen.value.nav) || {} }, signupEnabled: false, signupNeedsCode: false, domains: [ALLOWED_DOMAIN] });
   });
+  // email -> photo version, so the page shows a picture only for people who have one (and a new upload is fetched fresh)
+  const photoVersions = async () => { try { const ix = await PHOTOS.index(); return Object.fromEntries(Object.entries(ix).map(([e, x]) => [e, x.v])); } catch (e) { return {}; } };
   // the guided walk-through opens by itself once per person (saved on the account, not in one browser); "Guide me" opens it any time
   // both flags live in one record per person, so each write keeps the other
   const markSeen = async k => { const s = await me(); const cur = await dbGet('useen', s.id).catch(() => null); await dbPut('useen', s.id, Object.assign({}, cur && cur.value, { [k]: true, at: now() })); return ok({ ok: true }); };
@@ -2540,6 +2543,7 @@ Answer with JSON only, no prose, no markdown fence, in exactly this shape:
     const list = await missedOf(project, now().slice(0, 10)); return ok({ items: list.map(({ to, ...m }) => m) }); });
   installTaskTracking({ route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, itemsOf, withLock, audit, viaApp, CONNECTOR, DONE_RE, cut, rid, notify: N });   // task suggestions from Claude: routes and tools (_tasksapi.mjs)
   installQbank({ route, ok, HttpError, me, projectAccess, limit, aiJSON, docRead, itemsOf });   // AI requirements intelligence: generate questions from the documents, analyse a call (_qbankapi.mjs)
+  const PHOTOS = installPhotos({ route, ok, HttpError, me, dbGet, dbPut, dbList, withLock, audit, limit, requireAdmin, ctx: () => CTX });   // profile pictures: own upload or the Teams photo (_photos.mjs)
   installMailTasks({ route, ok, HttpError, me, projectAccess, pickProject, dbGet, dbPut, dbList, withLock, audit, viaApp, CONNECTOR, docRead, cut, notify: N });   // customer mail becomes tasks: inbox records, routes and task_tracking actions (_mailapi.mjs)
   installActions({ route, ok, me, HttpError, projectAccess, pickProject, docRead, docWrite, itemsOf, dbGet, dbPut, dbDel, dbList, audit, touchProject, rid, now, viaApp, CONNECTOR,
     async projectCheck(pid) { const p = (await dbGet('projects', pid)).value, today = now().slice(0, 10); return { health: assess(await rowOf(p), today), missed: await missedOf(p, today).catch(() => []) }; } });   // project actions the Assistant and Claude run: dry run, confirm, verify, undo (_actions.mjs)
@@ -2584,6 +2588,8 @@ export default async function handler(req, ctx) {
   if (body && typeof body.__gz === 'string' && Object.keys(body).length === 1) { try { body = JSON.parse(await gunzB64(body.__gz)); } catch (e) { return new Response(JSON.stringify({ error: e.tooLarge ? 'This is too large to save (over 60 MB of text).' : 'The compressed request could not be read.' }), { status: e.tooLarge ? 413 : 400, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } }); } }
   const sub = String(req.path || '/').startsWith('/') ? req.path : '/' + req.path;
   const res = (await FWB.dispatch(req.method, '/api' + sub, query, body)) || { status: 500, data: { error: 'Something went wrong on the server.' } };
+  // a picture (profile photo) goes out as its bytes; it is versioned in its address, so the browser may keep it for a day
+  if (res.raw) return new Response(res.raw.body, { status: res.status, headers: { 'content-type': res.raw.type, 'cache-control': 'private, max-age=86400', 'x-content-type-options': 'nosniff', 'content-security-policy': "default-src 'none'" } });
   const headers = { 'content-type': 'application/json', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
   if (res.status === 429 && res.data && res.data.retryAfter) headers['retry-after'] = String(res.data.retryAfter);
   let out = JSON.stringify(res.data); if (out && out.length > GZ_FROM && wantGz) out = JSON.stringify({ __gz: await gzB64(out) });

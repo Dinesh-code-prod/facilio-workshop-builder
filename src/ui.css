@@ -4153,3 +4153,14 @@ html body .fb .fb-group > .ll-grid:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#
 html body :is(div.ca-tile, div.ca-do, div.cs-line, div.rm-c, .lc-list li):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { cursor: default !important; }
 html body :is(div.ca-tile, div.ca-do, div.cs-line, div.rm-c, .sd-w, .sd-kpi):hover:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { transform: none !important; }
 html body .lc-list li > b:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font-weight: 500; color: inherit; }
+
+
+/* Profile photos (user, 24 Nov 2026): a person's picture laid over their initials in any avatar (V.face in src/shell.js); the initials stay underneath for no photo or a failed load */
+html body :is(.avatar, .kb-av, .pt-av, .pav, .ovb-av, .hs-av, .rs-av, .aw-av):has(> img.av-img):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { position: relative !important; overflow: hidden !important; }
+html body img.av-img:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: inherit !important; object-fit: cover !important; display: block !important; background: #fff; }
+#userPop .um-photo { display: flex; gap: 12px; align-items: flex-start; padding: 8px 10px 10px 0; border-bottom: 1px solid #ECECF1; }
+#userPop .um-photo .avatar.lg { flex: none; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; font-size: 15px; font-weight: 600; background: #F1F1F6; color: #33333D; border: 0; }
+#userPop .um-pa { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+#userPop .um-pa > b { font-size: 12px; font-weight: 500; color: #6B6B78; padding: 2px 0 2px; }
+#userPop .um-pa .um-i { padding-left: 0; }
+.adm-photos { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin: 0 0 12px; }
