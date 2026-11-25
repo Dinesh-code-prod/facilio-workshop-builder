@@ -11,7 +11,7 @@ const em = v => String(v || '').trim().toLowerCase();
 /** the Studio skills a Claude may report it has (the check-in carries ids, never anything else) */
 export const cleanSkills = a => [...new Set((Array.isArray(a) ? a : []).map(x => String(x == null ? '' : x).trim().toLowerCase()).filter(x => /^[a-z0-9][a-z0-9-]{1,59}$/.test(x)))].slice(0, 40);
 /** what the one-time setup found on the person's computer (24 Nov 2026), shown as their checklist in the Studio. Only these keys and values are kept; anything else is dropped. */
-export const SETUP_KEYS = ['python', 'node', 'git', 'studio', 'm365', 'toolbox', 'skillsRepo', 'watcher', 'queue'];
+export const SETUP_KEYS = ['python', 'node', 'git', 'studio', 'm365', 'toolbox', 'skillsRepo', 'studioSkills', 'watcher', 'queue'];
 export function cleanSetup(o) {
   if (!o || typeof o !== 'object' || Array.isArray(o)) return null; const out = {};
   for (const k of SETUP_KEYS) { const v = String(o[k] == null ? '' : o[k]).trim().toLowerCase(); if (v === 'ok' || v === 'missing' || v === 'not needed') out[k] = v; }

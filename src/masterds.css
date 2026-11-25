@@ -482,3 +482,5 @@ html body .fp-time:not(#DS) { font: 500 13px/1 var(--ds-body); color: var(--ds-t
 html body .fp-ch:not(#DS) { display: flex; flex-wrap: wrap; gap: 6px; }
 html body .fp-ch button:not(#DS) { border: 1px solid var(--ds-border); background: var(--ds-page); border-radius: 8px; padding: 5px 10px; font: 500 12.5px/1.3 var(--ds-body); color: var(--ds-text2); cursor: pointer; }
 html body .fp-ch button.on:not(#DS) { background: var(--ds-selected); border-color: #B2CCFF; color: var(--ds-blue); }
+/* update pop-ups sit at the bottom left, so they never cover the page header, its actions or the stage tabs (they used to sit over the right-hand tabs) */
+html body #ntPops:not(#DS) { top: auto !important; bottom: 20px !important; left: 20px !important; right: auto !important; }

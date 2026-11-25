@@ -863,7 +863,7 @@
    },
    {
     "name": "project_changes",
-    "description": "What changed in a project since a date (default: the last 7 days): records by kind, newest first. Use it for 'what changed this week'.",
+    "description": "What changed in a project since a date (default: the last 7 days), newest first. With action it CHANGES the project safely: scope (modules in or out of scope; flows off, requirements out), tasks (close, reassign or re-date tasks in bulk), check (findings by severity), undo (id), history. For scope and tasks call without token first (dry run), show the plan, then again with the token only after a yes. Full text: connector_help topic project_changes.",
     "function": "api",
     "input_schema": {
      "type": "object",
@@ -875,6 +875,51 @@
       "since": {
        "type": "string",
        "description": "A date like 2026-11-01 or a full timestamp"
+      },
+      "action": {
+       "type": "string",
+       "enum": [
+        "scope",
+        "tasks",
+        "check",
+        "undo",
+        "history"
+       ]
+      },
+      "modules": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       }
+      },
+      "inScope": {
+       "type": "boolean"
+      },
+      "flows": {
+       "type": "string",
+       "enum": [
+        "keep",
+        "off",
+        "on"
+       ]
+      },
+      "token": {
+       "type": "string"
+      },
+      "id": {
+       "type": "string"
+      },
+      "requirements": {
+       "type": "string",
+       "enum": [
+        "out"
+       ]
+      },
+      "filter": {
+       "type": "object"
+      },
+      "set": {
+       "type": "object"
       }
      },
      "required": [
@@ -1308,18 +1353,18 @@
         "save_mockup",
         "save_questions"
        ],
-       "description": "Which step: prepare, live, save_transcript, save_findings, save_design (flow proposals), save_mockup (a finished Meteor page)"
+       "description": "Which step: prepare, live, save_transcript, save_findings, save_design (flow proposals), save_mockup (a finished Meteor page, the Meteor prototype of a card, a Comet video link, or the Meteor and Comet project of this customer)"
       },
       "proposals": {
        "type": "array",
-       "description": "Only for save_design: [{ kind: solution|flow|crosslink|field|form|requirement ..., ... }]; the claimed job's instructions give each shape. Full text: connector_help topic session_questions.",
+       "description": "Only for save_design: [{ kind: solution|flow|crosslink|field|form|requirement|retire|answer ..., ... }]; the claimed job's instructions give each shape. Full text: connector_help topic session_questions.",
        "items": {
         "type": "object"
        }
       },
       "pageKey": {
        "type": "string",
-       "description": "Only for save_mockup: the mockup card key, for example portfolio:all, or flow:<module>:<flow id>, module:<module>, link:..., app:... (the Mockup tab lists them)"
+       "description": "Only for save_mockup: the mockup card key, for example portfolio:all, or flow:<module>:<flow id>, module:<module>, link:..., app:... (the Mockup tab lists them); not needed when you only send toolProject"
       },
       "pageUrl": {
        "type": "string",
@@ -1332,6 +1377,14 @@
       "pageName": {
        "type": "string",
        "description": "Only for save_mockup: the file name to keep, default index.html"
+      },
+      "meteor": {
+       "type": "object",
+       "description": "Only for save_mockup: the Meteor prototype this card is made from, as Meteor lists it: { owner (e-mail), slug, title, version (the version you brought, 0 if none), latest (the newest version) }"
+      },
+      "toolProject": {
+       "type": "object",
+       "description": "Only for save_mockup: the Meteor or Comet project of this customer, as its project tool lists it: { tool (meteor or comet), id (owner/id), name, link }; no pageKey needed"
       },
       "questions": {
        "type": "array",

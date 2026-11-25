@@ -15,3 +15,6 @@ Helpers for people working on the project. None of them runs inside the app.
 | [palette-colors.mjs](palette-colors.mjs) | Recolours violet / lavender / magenta tinted colours in src/*.css to the neutral palette. |
 
 Run one with `node tools/<name>` from the project folder. `npm run build:reference` runs `build-reference.mjs`.
+
+| [redirect-map.mjs](redirect-map.mjs) | Opens every team menu page and tab in a browser and lists every control that leads to another page (label, target, where). |
+| [redirect-report.mjs](redirect-report.mjs) | Turns that list into a Markdown report that sorts each control into keep or remove by rule (docs/reports/REDIRECTS-2026-11-25.md). |

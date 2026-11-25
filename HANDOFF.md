@@ -1,5 +1,14 @@
 # Handoff
 
+**SEVEN PRs MERGED INTO MAIN (25 Nov 2026), LIVE AS PART OF DEPLOY 535** (deploy 535 at 3fd25eb was made by another session and contains them; its DEPLOYS line lists only its own change).
+- #27 profile photos: own upload or Use my Teams photo (account menu), faces wherever initials showed. The Teams photo needs ProfilePhoto.Read.All with admin consent on the Entra app behind graph_mail; until then the button explains that (docs/integrations/PROFILE-PHOTOS-2026-11-24.md).
+- #31 guide libraries: Guides & Videos Tiles (default) and the published Customer User Guide use the Module guides cards; compact rail labels no longer collide.
+- #33 duplicate pages hidden: old Contract, Requirements and Checks pages and the Overview tab no longer open; what only they had is a tab of Contract intake, Requirement schedule (Publish schedule to customer), Transcripts and Checks & validations (archive/hidden-tabs index).
+- #34 fewer redirects: 444 jump-away controls down to 325 (docs/reports/REDIRECTS-2026-11-25.md; tools/redirect-map.mjs and redirect-report.mjs re-run it).
+- #35 bell: inside a project only that project's notices pop up. #36 BRD import keeps Word pictures as figure blocks (EMF gets a note). #37 whiteboard: the toolbar ... menu no longer covers the toolbar.
+- Checked on main after the merges: npm test, and in Edge moved-tabs 38/38, guide-library 6/6, guides-browser 25/25, bell 4/4, brd-import-pictures 7/7, whiteboard-toolbar 19/19, photo 10/10.
+- **Open: PR #38** (CI was red on main for every run: four tests demanded CRLF in work/work.json, which the repo stores as LF; the fix accepts either style). Merge it to get CI green.
+
 **GUIDES AND THE FTR AS DOCUMENTS, GUIDE FOLDERS (24 Nov 2026, pushed, NOT deployed).**
 - **Folders on Training guides.** New folder (secondary button by + New guide), Move to folder in the ... menu of every guide or video row, folders listed first, a breadcrumb inside one, Rename and Delete (only an empty folder). Stored in the workshop document as `ws.guideFolders = { list, of }` (row keys `ugd:<id>`, `vid:<id>`, `v:<video key>`, `utc`). Pure rules: `V.guidesLogic.folders` in `src/guideslist.js`.
 - **Guides drafted like the BRD.** New `src/docpaper.js` (paper renderer, guide Markdown, self-contained HTML file, FTR model and Markdown round trip). The User Guide Builder has a first tab, Document: cover and sections on paper, text, titles and captions edited in place (saved as Markdown), + Text, + Picture, move and delete per section, Word, PDF, HTML, Approve / Reopen. Opening a guide on Training guides lands there. The guide HTML export now uses the same paper (`ugHtml`).
@@ -226,3 +235,9 @@ Project handover > Solution document (src/soldoc.js, record kind sdoc, AI task s
 Solution document (deploy 481): the page now runs the BRD Draft editor on its own store F.doc(soldocs) (src/brd.js isSol, src/soldoc.js). The earlier section editor (record kind sdoc) is retired; its one Al Moallam record stays in the data, unused. Not yet checked: a real Claude run (Al Moallam has no org yet).
 
 SharePoint project folders (deploy 482): built and tested against a stand-in Microsoft Graph only. Off until an admin does the set-up in docs/integrations/SHAREPOINT-2026-11-16.md (Entra app, Sites.Selected full control on one site, credential graph_files, secret sharepoint_site). First real test must confirm folder sharing works with full control.
+
+## Pending for tomorrow (24 Nov 2026, evening)
+- An agent may still be finishing the Training page fixes: blank guide document preview (guidebuilder Document tab), calm guide header, file-browser style list (command bar with + New, path with a back button, columns, folders first, newest first, Videos to make folded). Check git log for its commit; nothing of it is deployed.
+- Guide jobs now read the MSA contract scope and the agreed processes first (27d6348, pushed, not deployed).
+- Live is deploy 526 (b8fd07f). Deploy the above after a browser check on Al Moallam (Training, a guide Document tab, FTR HTML export).
+- Not checked yet: Word/PDF export from the guide Document view, HTML export with real screenshots, a real Search older mail run.

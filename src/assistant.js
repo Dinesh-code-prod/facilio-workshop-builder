@@ -126,7 +126,7 @@
     panel.innerHTML = '<div class="as-head"><div class="as-t"><i class="as-logo" aria-hidden="true">' + SYM + '</i><span class="as-tt"><b>Assistant</b><small>Ask, track and redirect Claude</small></span></div><div class="as-hb"><button type="button" class="as-ib" data-act="asstSearch" aria-label="Search the chat" title="Search the chat"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="9" r="5.5"/><path d="M13.5 13.5 17 17"/></svg></button><button type="button" class="as-ib" data-act="asstToggle" aria-label="Close the assistant" title="Close"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 5l10 10M15 5L5 15"/></svg></button></div></div>'
       // the Claude helper light and Ask Claude live here, not in the top bar (user, 23 Nov 2026: "move the claude buttons to the chat box ... so we get more space")
       + '<div class="as-claude">' + (V.helper ? V.helper.chip() : '') + (V.isCustomer && V.isCustomer() ? '' : '<button type="button" class="btn sm ask-claude" data-act="askClaude" title="Tell Claude what you want on this page: a document, an analysis, a solution update. It knows the page you are on.">✦ Ask Claude</button>') + '</div>'
-      + '<div class="as-usage" id="asUse"></div><div class="as-search"' + (a.sq || a.q ? '' : ' hidden') + '><input type="search" id="asQ" placeholder="Search the chat" aria-label="Search the assistant chat" value="' + esc(a.q || '') + '"></div><div class="as-body">' + body + '</div><div class="as-comp"><div id="asAsk" class="as-ask" hidden></div><div id="asQuote" class="as-quote" hidden></div><div class="as-crow"><textarea id="asM" rows="2" maxlength="580" aria-label="Message to Claude" placeholder="Message Claude"></textarea><div class="as-tools"><div class="as-modewrap"><button type="button" class="as-chip" id="asMode" data-act="asstMode" aria-haspopup="menu" aria-expanded="false"></button><div class="as-menu" id="asMenu" role="menu" hidden></div></div>' + (SRec() ? '<button type="button" class="as-mic" id="asMic" data-act="asstMic" aria-pressed="false" aria-label="Speak your message" title="Speak"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="6" height="10" rx="3"/><path d="M4.5 9.5a5.5 5.5 0 0 0 11 0M10 15v2.5"/></svg></button>' : '') + '<button type="button" class="as-send" data-act="asstSend" aria-label="Send" title="Send"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 16V4M5 9l5-5 5 5"/></svg></button></div></div></div>'; modeChip();
+      + '<div class="as-usage" id="asUse"></div><div class="as-search"' + (a.sq || a.q ? '' : ' hidden') + '><input type="search" id="asQ" placeholder="Search the chat" aria-label="Search the assistant chat" value="' + esc(a.q || '') + '"></div><div class="as-body">' + body + '</div><div class="as-comp"><div id="asAsk" class="as-ask" hidden></div><div id="asQuote" class="as-quote" hidden></div><div id="asAtt" class="as-att" hidden></div><input type="file" id="asF" multiple hidden data-change="asstFiles"><div class="as-crow"><textarea id="asM" rows="2" maxlength="4000" aria-label="Message to Claude" placeholder="Message Claude"></textarea><div class="as-tools"><div class="as-modewrap"><button type="button" class="as-chip" id="asMode" data-act="asstMode" aria-haspopup="menu" aria-expanded="false"></button><div class="as-menu" id="asMenu" role="menu" hidden></div></div>' + (V.isCustomer && V.isCustomer() ? '' : '<button type="button" class="as-mic" data-act="asstAttach" aria-label="Attach files for Claude" title="Attach files for Claude"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.5 9.5l-5.8 5.8a3.5 3.5 0 0 1-5-5l6.4-6.4a2.3 2.3 0 0 1 3.3 3.3l-6.3 6.3a1.2 1.2 0 0 1-1.7-1.7l5.6-5.6"/></svg></button>') + (SRec() ? '<button type="button" class="as-mic" id="asMic" data-act="asstMic" aria-pressed="false" aria-label="Speak your message" title="Speak"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="6" height="10" rx="3"/><path d="M4.5 9.5a5.5 5.5 0 0 0 11 0M10 15v2.5"/></svg></button>' : '') + '<button type="button" class="as-send" data-act="asstSend" aria-label="Send" title="Send"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 16V4M5 9l5-5 5 5"/></svg></button></div></div></div>'; modeChip();
     comp();
     const b0 = panel.querySelector('.as-body'); if (b0) b0.scrollTop = b0.scrollHeight; toEnd(); tick(); paintUsage(); loadUsage();   // opens at the newest message
   }
@@ -178,7 +178,7 @@
     const where = p => (p.route === 'lookup' || p.route === 'help' ? 'answered here now' : p.route === 'heavy' ? 'Claude, a big one' : 'Claude');
     a.local.push({ who: 'you', text: note, at, ts: Date.now() }); a.local.push({ who: 'sys', ts: Date.now() + 1, text: 'I split this into ' + plan.parts.length + ' parts: ' + plan.parts.map((p, i) => (i + 1) + ') ' + p.text + ' (' + where(p) + ')').join('; ') + '.' }); a.sig = ''; paint();
     if (works.length) {
-      const job = works.map((p, i) => (works.length > 1 ? (i + 1) + '. ' : '') + p.text).join('\n').slice(0, 590);
+      const job = works.map((p, i) => (works.length > 1 ? (i + 1) + '. ' : '') + p.text).join('\n').slice(0, 4000);
       try { await J().post('/jobs', { kind: 'chat', note: job, ref: String(Date.now()), section: String(S.view || ''), size: big ? 'heavy' : 'small', tier: works.map(p => p.tier).filter(Boolean).sort((x, y) => LEVELS.indexOf(y) - LEVELS.indexOf(x))[0] || '' }); if (V.helper && V.helper.off() && V.ACT.helperOpen) V.ACT.helperOpen(); /* paused: the same click wakes the queue, so no second press is needed */ a.local.push({ who: 'sys', ts: Date.now() + 2, text: (big ? 'The Claude part is big, so Claude takes it as one request. ' : 'Claude takes the rest as one request. ') + (V.helper && V.helper.off() ? 'Claude is paused to save usage, so it waits: press Activate Claude and it starts at once.' : etaText(big ? 'heavy' : 'small')) + lookNote(note) + (big ? usageNote() : '') }); }
       catch (e) { a.local.push({ who: 'bad', ts: Date.now() + 2, text: 'The part for Claude could not be sent: ' + (e.message || 'try again') }); }
       J().load(true); a.sig = ''; paint();
@@ -197,6 +197,10 @@
     if (c.type === 'task') { CMDS[id] = { c, m: say('Add this task to the project? \u201c' + c.title + '\u201d (To Do, assigned to you)', [{ label: 'Add task', act: 'asstCmdGo', attrs: { id }, primary: true }, { label: 'Cancel', act: 'asstCmdNo', attrs: { id } }]) }; return; }
     if (c.type === 'folder') { CMDS[id] = { c, m: say('Add the folder \u201c' + c.name + '\u201d on Training guides? Then move guides and videos into it with Move to folder in their \u2026 menu.', [{ label: 'Add folder', act: 'asstCmdGo', attrs: { id }, primary: true }, { label: 'Cancel', act: 'asstCmdNo', attrs: { id } }]) }; return; }
     if (c.type === 'job') { CMDS[id] = { c, m: say('I can start this now: ' + c.label + '. Your Claude does it through the connector and its progress shows here.', [{ label: 'Do it', act: 'asstCmdGo', attrs: { id }, primary: true }, { label: 'Cancel', act: 'asstCmdNo', attrs: { id } }]) }; return; }
+    if (c.type === 'scope') { scopePlan(c, id); return; }
+    if (c.type === 'tasks') { tasksPlan(c, id); return; }
+    if (c.type === 'check') { projectCheck(false); return; }
+    if (c.type === 'checkfreq') { setFreq(c.freq); return; }
     if (c.type === 'draft') { I().load(['ai']); const d = I().list('ai').filter(x => x.task === c.task).sort((x, y) => String(y._created || '').localeCompare(String(x._created || '')))[0];
       say(d ? 'The latest ' + c.label + ' is ' + (d.status === 'approved' ? 'already approved' : 'a draft') + ' (v' + (d.version || 1) + '). Read it and press Approve in the window that opens: approving is always your click.' : 'There is no ' + c.label + ' draft yet. Ask me to make one, for example \u201cmake the ' + c.label + '\u201d.', d ? [{ label: 'Open and approve', act: 'aiOpen', attrs: { id: d.id }, primary: true }] : []); }
   }
@@ -207,6 +211,76 @@
     if (x.c.type === 'task') { const tid = I().uid('t'); await I().put('task', tid, { title: x.c.title.slice(0, 200), type: 'Internal Action', status: 'To Do', priority: 'Medium', owner: (S.user && S.user.email) || '', src: { type: 'manual', label: 'From the Assistant chat' } });
       say('Added the task \u201c' + x.c.title + '\u201d.', [{ label: 'Undo', act: 'asstCmdUndo', attrs: { id: tid } }, { label: 'Open Tasks', act: 'koOpen', attrs: { view: 'tasks' } }]); }
   });
+  // module scope through the server's action layer (work/server/_actions.mjs): a dry run shows what changes, Confirm runs that exact plan, the saved record is read back, Undo puts it back.
+  // The page sends the state flows of the imported configuration with their design, because only the page has that configuration.
+  const asstMods = () => { try { return F.allModules().filter(Boolean).map(m => ({ name: m.name, label: m.label })); } catch (e) { return []; } };
+  const scopeBody = c => { const extraFlows = []; c.modules.forEach(n => (F.flowsForModule(n) || []).forEach(f => { if (f.origin !== 'existing' || f.edited) return; const m = F.flowModel(f.id); if (m) extraFlows.push({ id: f.id, name: f.name, module: n, enabled: f.enabled !== false, model: m }); }));
+    return { modules: c.modules, inScope: c.inScope, flows: c.flows, requirements: c.requirements, known: asstMods(), extraFlows, fromPage: true }; };
+  const actUrl = n => '/api/projects/' + S.project.id + '/actions/' + n;
+  const reply = (text, actions) => { const m = say(text, actions); m.who = 'claude'; m.via = 'app'; st().sig = ''; paint(); return m; };   // a plan or a result reads as an answer (left, not a centred note)
+  // one flow for every action: preview (nothing written), Confirm runs exactly that preview, the result says what was read back, Undo puts it back
+  const ACTS = { scope: { body: scopeBody, page: ['modules', 'Modules'], reload: () => F.reloadSection('workshop'), check: 'the module names' },
+    tasks: { body: c => ({ filter: c.filter, set: c.set }), page: ['tasks', 'Tasks'], reload: () => I().load(['task'], true), check: 'the tasks and the names' } };
+  const scopePlan = (c, id) => actPlan('scope', c, id), tasksPlan = (c, id) => actPlan('tasks', c, id);
+  async function actPlan(name, c, id) {
+    const A = ACTS[name], m = reply('Checking what this changes…');
+    try {
+      if (F.hasUnsaved()) await F.flush(); if (F.hasUnsaved()) throw new Error('your latest edits are not saved yet. Wait for Saved at the top, then ask again.');
+      const body = A.body(c), r = await root.FWBApi.post(actUrl(name), body), p = r.plan;
+      m.text = [r.token ? 'This will change: ' + p.summary + '.' : 'Nothing to change.'].concat(p.consequences.map(x => '• ' + x), (p.unknown || []).length ? ['• Not found in this project: ' + p.unknown.join(', ') + '.'] : []).join('\n')
+        + (r.token ? '\n\nNothing changes until you press Confirm' + (spoke ? ' (you spoke this, so check ' + A.check + ')' : '') + '. You can undo it afterwards.' : '');
+      if (r.token) { CMDS[id] = { name, body, token: r.token, m }; m.actions = [{ label: 'Confirm', act: 'asstScopeGo', attrs: { id }, primary: true }, { label: 'Cancel', act: 'asstCmdNo', attrs: { id } }]; }
+    } catch (e) { m.who = 'bad'; m.text = 'Could not prepare this change: ' + (e.message || 'try again'); }
+    spoke = false; st().sig = ''; paint();
+  }
+  const afterAction = async name => { try { await ACTS[name].reload(); } catch (e) { /* the page reloads it on the next open */ } };
+  V.ACT.asstScopeGo = el => V.busy(el, async () => { const id = el.getAttribute('data-id'), x = CMDS[id]; if (!x) return; delete CMDS[id]; x.m.actions = []; const A = ACTS[x.name];
+    let r; try { r = await root.FWBApi.post(actUrl(x.name), Object.assign({}, x.body, { token: x.token })); } catch (e) { say('Nothing was changed: ' + (e.message || 'try again')); return; }
+    await afterAction(x.name);
+    reply(r.verified ? 'Done and checked: ' + r.summary + '. The saved project was read back and matches.' : (r.done ? 'Saved, but not everything matched when read back: ' : 'Nothing was saved: ') + r.checks.filter(k => !k.ok).map(k => k.what).join('; ') + '. Please check the ' + A.page[1] + ' page before relying on it.',
+      (r.undoId ? [{ label: 'Undo', act: 'asstScopeUndo', attrs: { id: r.undoId, n: x.name } }] : []).concat([{ label: 'Open ' + A.page[1], act: 'koOpen', attrs: { view: A.page[0] } }])); });
+  V.ACT.asstScopeUndo = el => V.busy(el, async () => { const id = el.getAttribute('data-id'), name = el.getAttribute('data-n') || 'scope'; if (!id) return; el.disabled = true;
+    let r; try { r = await root.FWBApi.post(actUrl('undo'), { id }); } catch (e) { say('Could not undo: ' + (e.message || 'try again')); return; }
+    await afterAction(name); reply(r.verified ? r.summary + '. Checked: the project is back as it was.' : r.summary + ', but the read-back did not match. Please check the ' + ACTS[name].page[1] + ' page.'); });
+  // attachments: files go to the project's team-only files (category chat_attachment) and the message to Claude names them with their ids; Claude reads them with
+  // project_jobs action file_urls. Project AI and DeepSeek cannot read files, so a message with attachments always goes to Claude.
+  const attPaint = () => { const el = document.getElementById('asAtt'), fs = st().files || []; if (!el) return; el.hidden = !fs.length;
+    el.innerHTML = fs.map((f, i) => '<span class="as-attf' + (f.id ? '' : ' up') + '">' + esc(f.name) + (f.id ? '' : ' (uploading…)') + '<button type="button" data-act="asstUnattach" data-i="' + i + '" aria-label="Remove ' + esc(f.name) + '">×</button></span>').join(''); };
+  V.ACT.asstAttach = () => { const f = document.getElementById('asF'); if (f) f.click(); };
+  V.ACT.asstUnattach = el => { const a = st(); a.files = (a.files || []).filter((x, i) => i !== Number(el.getAttribute('data-i'))); attPaint(); };
+  V.ACT.asstFiles = async el => { const a = st(), list = Array.from(el.files || []).slice(0, 5); el.value = ''; a.files = a.files || [];
+    for (const file of list) { const x = { name: file.name }; a.files.push(x); attPaint();
+      try { const rec = await root.FWBApi.uploadFile(S.project.id, file, 'chat_attachment', { from: 'assistant' }); x.id = rec && (rec.id || rec.fileId); if (!x.id) throw new Error('the file was not saved'); }
+      catch (e) { a.files = a.files.filter(y => y !== x); V.toast('Could not attach ' + file.name + ': ' + (e.message || 'try again'), 6000, true); } attPaint(); } };
+  const attNote = () => { const fs = (st().files || []).filter(f => f.id); return fs.length ? '\nAttached files (read each with project_jobs action file_urls, fileId): ' + fs.map(f => f.name + ' (fileId ' + f.id + ')').join('; ') : ''; };
+  // a flow switch Claude asked for through the connector waits in the workshop (pendingFlowsOff), because only this page can read the imported configuration: it is applied when a team member opens the project
+  function applyPending() {
+    const p = S.ws && S.ws.pendingFlowsOff; if (!p || S.readonly) return; const mods = Object.keys(p).filter(k => p[k] === true); if (!mods.length) return; const done = [];
+    mods.forEach(mod => { const ids = []; (F.flowsForModule(mod) || []).forEach(f => { if (f.origin !== 'existing' || f.edited) return; const e = F.editableFlow(f.id); if (e && e.enabled !== false) { e.enabled = false; e.offBy = 'pending'; ids.push(f.id); done.push(f.name); } }); p[mod] = { applied: ids }; });
+    F.changed('State flows switched off (asked through Claude)', mods.join(', ')); if (done.length) reply('As asked through Claude, these state flows are now switched off in the design (kept, not deleted): ' + done.join(', ') + '. Undo the change in Claude, or switch them back on in the State flow builder.');
+  }
+  // the project check (server action check): findings grouped by severity, each with what to do and a page to open. It also runs by itself, per person and project:
+  // when the project opens or once a day (default), and it speaks only when there is a critical or high finding it has not shown before, so it is never noise. Off stops it.
+  const SEVN = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' }, FREQ = { open: 'each time you open the project', daily: 'once a day', off: 'never by itself' };
+  const wKey = () => 'fwb.watch.' + S.project.id, wGet = () => { try { return JSON.parse(localStorage.getItem(wKey()) || '{}'); } catch (e) { return {}; } }, wSet = o => { try { localStorage.setItem(wKey(), JSON.stringify(Object.assign(wGet(), o))); } catch (e) { } if (!S.readonly) root.FWBApi.post(actUrl('watch'), { set: o }).catch(() => { }); };   // kept on the account too, so every browser agrees
+  const freqBtns = () => Object.keys(FREQ).filter(f => f !== (wGet().freq || 'daily')).map(f => ({ label: 'Check ' + (f === 'off' ? 'never' : f === 'open' ? 'on open' : 'daily'), act: 'asstCheckFreq', attrs: { f } }));
+  async function projectCheck(quiet) {
+    let r; try { r = await root.FWBApi.post(actUrl('check'), {}); } catch (e) { if (!quiet) reply('The project check did not run: ' + (e.message || 'try again')); return; }
+    const all = r.groups.flatMap(g => g.items.map(x => Object.assign({ sev: g.sev }, x))), seen = new Set(wGet().seen || []);
+    const fresh = all.filter(x => (x.sev === 'critical' || x.sev === 'high') && !seen.has(x.key)); wSet({ at: new Date().toISOString().slice(0, 10), seen: all.map(x => x.key) });
+    if (quiet && !fresh.length) return;
+    const show = quiet ? fresh : all, groups = ['critical', 'high', 'medium', 'low'].map(s => [s, show.filter(x => x.sev === s)]).filter(g => g[1].length);
+    const text = !show.length ? 'Project check: nothing needs attention right now.' : (quiet ? 'Project check found something new.\n' : 'Project check: ' + r.total + ' finding' + (r.total > 1 ? 's' : '') + (r.why ? '. ' + r.why : '') + '\n')
+      + groups.map(([s, xs]) => SEVN[s] + ' (' + xs.length + ')\n' + xs.slice(0, 5).map(x => '• ' + x.title + (x.action ? '. Do: ' + x.action : '')).join('\n') + (xs.length > 5 ? '\n• and ' + (xs.length - 5) + ' more' : '')).join('\n\n');
+    const pages = navPages(), links = []; show.forEach(x => (x.links || []).forEach(l => { const pg = pages.find(p => p[0] === l.view); if (links.length < 3 && pg && !links.some(k => k.attrs.view === l.view)) links.push({ label: 'Open ' + pg[1], act: 'koOpen', attrs: { view: l.view } }); }));
+    reply(text + '\n\nRuns by itself ' + FREQ[wGet().freq || 'daily'] + '; it speaks only about new critical or high findings.', links.concat(freqBtns()));
+  }
+  function setFreq(f) { wSet({ freq: f }); reply('The project check now runs ' + FREQ[f] + (f === 'off' ? '. Ask “check this project” any time.' : ', and tells you only about new critical or high findings.')); }
+  V.ACT.asstCheckFreq = el => setFreq(el.getAttribute('data-f') || 'daily');
+  let watchPid = '';
+  function watchTick() { if (!team() || !S.project || !S.ws || watchPid === S.project.id) return; watchPid = S.project.id; const pid = S.project.id; setTimeout(() => { try { applyPending(); } catch (e) { /* optional */ } }, 3000);
+    setTimeout(async () => { if (!S.project || S.project.id !== pid) return; try { const acc = await root.FWBApi.post(actUrl('watch'), {}); if (acc && Object.keys(acc).length) localStorage.setItem(wKey(), JSON.stringify(Object.assign(wGet(), acc))); } catch (e) { /* this browser's copy is used */ }
+      const w = wGet(), f = w.freq || 'daily'; if (f === 'off' || (f === 'daily' && w.at === new Date().toISOString().slice(0, 10))) return; projectCheck(true); }, 6000); }   // after the page has settled; the account's settings win over this browser's
   V.ACT.asstCmdNo = el => { const id = el.getAttribute('data-id'), x = CMDS[id]; if (!x) return; delete CMDS[id]; x.m.actions = []; say('Cancelled. Nothing was changed.'); };
   V.ACT.asstCmdUndo = el => V.busy(el, async () => { const tid = el.getAttribute('data-id'); if (!tid || !I().get('task', tid)) { say('That task is already gone.'); return; } await I().del('task', tid); say('Removed the task again.'); });
   // voice (user, 16 Nov 2026): the mic turns speech into text in the message box with the browser's own speech service (Chrome or Edge); the person reads it and sends.
@@ -223,7 +297,7 @@
     r.lang = /^en/i.test(nl) && /Calcutta|Kolkata/.test(tz) ? 'en-IN' : nl; r.continuous = true; r.interimResults = true; r.maxAlternatives = 3;
     let start = box.value ? box.value.replace(/\s*$/, ' ') : '';
     const best = x => x.isFinal ? Array.from(x).reduce((a, b) => (b.confidence || 0) > (a.confidence || 0) ? b : a, x[0]).transcript : x[0].transcript;
-    r.onresult = e => { const t = (start + Array.from(e.results).map(best).join('')).replace(/\s+/g, ' ').replace(/^\s+/, ''); box.value = (t.charAt(0).toUpperCase() + t.slice(1)).slice(0, 580); };
+    r.onresult = e => { const t = (start + Array.from(e.results).map(best).join('')).replace(/\s+/g, ' ').replace(/^\s+/, ''); box.value = (t.charAt(0).toUpperCase() + t.slice(1)).slice(0, 4000); };
     r.onerror = e => { if (e.error === 'no-speech' && box.value.trim()) return; micOff(); V.toast(e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'The microphone is blocked. Allow it with the icon in the address bar, then press the mic again. Windows + H also types what you say.' : e.error === 'no-speech' ? 'No speech heard. Press the mic and speak.' : 'Speech to text stopped (' + e.error + '). Windows + H also types what you say.', 7000, e.error !== 'no-speech'); };
     r.onend = () => { if (rec !== r) return; start = box.value ? box.value.replace(/\s*$/, ' ') : ''; try { r.start(); } catch (e) { micOff(); } };   // the browser stops after a pause; carry on until the person presses Stop or Send
     try { r.start(); } catch (e) { V.toast('Could not start the microphone. Windows + H also types what you say.', 6000, true); return; }
@@ -231,15 +305,17 @@
   };
   V.ACT.asstSend = a => V.busy(a, async () => {
     micOff();
-    const box = document.getElementById('asM'), raw = box ? box.value.trim() : '', note = raw && st().quote ? ('Following up on "' + st().quote + '": ' + raw).slice(0, 600) : raw; if (!note) { V.toast('Write your message first.', 3000, true); return; } if (J().guard()) return;
+    const box = document.getElementById('asM'), raw = box ? box.value.trim() : '', note = raw && st().quote ? ('Following up on "' + st().quote + '": ' + raw).slice(0, 4000) : raw; if (!note) { V.toast('Write your message first.', 3000, true); return; } if (J().guard()) return;
     st().quote = '';
     const k = J().K(), ask = k && Array.isArray(k.jobs) ? L().jobRows(k.jobs).find(j => j.status === 'needs_input') : null;   // when Claude has asked something, this box IS the answer
     if (ask) { const a3 = st(); a3.local = a3.local || []; const sent = { who: 'you', text: raw, at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), ts: Date.now(), pend: raw }; a3.local.push(sent); box.value = ''; a3.sig = ''; paint();   // your answer is a bubble at once
       try { await J().post('/jobs/' + encodeURIComponent(ask.id) + '/answer', { answers: [raw] }); } catch (e) { a3.local = a3.local.filter(x => x !== sent); box.value = raw; a3.sig = ''; paint(); throw e; } a3.sig = ''; J().load(true); V.toast('Sent. Claude will continue.', 3500); return; }
-    if ((st().mode || 'auto') === 'auto' && V.chatCmd) { const c = V.chatCmd.match(note, { pages: navPages(), today: new Date(), kickoffApproved: (F.doc('kickoff_pack') || {}).status === 'approved' }); if (c) { runCmd(c, note, box); return; } }
+    if ((st().files || []).some(f => !f.id)) { V.toast('Wait until the files are attached, then send.', 4000, true); return; }
+    if ((st().files || []).length) { const withFiles = (note + attNote()).slice(0, 4000); st().files = []; attPaint(); await toClaude(withFiles, raw, { route: 'small' }, await liveClaude(), box, true); return; }   // files: always Claude
+    if ((st().mode || 'auto') === 'auto' && V.chatCmd) { const c = V.chatCmd.match(note, { pages: navPages(), modules: asstMods(), today: new Date(), kickoffApproved: (F.doc('kickoff_pack') || {}).status === 'approved' }); if (c) { runCmd(c, note, box); return; } }
     if ((st().mode || 'auto') !== 'cl') { const q = V.quickFacts && V.quickFacts(note); if (q) { const a0 = st(); a0.local = a0.local || []; a0.open = true; box.value = ''; a0.local.push({ who: 'you', text: note, at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }); const r0 = { who: 'claude', via: 'app', text: q.text }; if (q.view && V[q.view] && V[q.view].html) r0.actions = [{ label: 'Open ' + q.view, act: 'koOpen', attrs: { view: q.view } }]; a0.local.push(r0); a0.sig = ''; paint(); return; } }   // an exact answer from the records: no AI, no wait
     let mode = st().mode || 'auto', plan = { route: mode === 'cl' ? 'small' : 'lookup', task: '', view: '' };
-    if (mode === 'auto') { try { plan = await root.FWBApi.post('/api/projects/' + S.project.id + '/assistant/route', { message: note, section: String(S.view || '') }); } catch (e) { plan = { route: CHANGE.test(note) ? 'small' : 'lookup', task: '', view: '' }; } }   // the size decides who works: look-ups at once, changes by Claude
+    if (mode === 'auto') { try { plan = await root.FWBApi.post('/api/projects/' + S.project.id + '/assistant/route', { message: note.slice(0, 600), section: String(S.view || '') }); } catch (e) { plan = { route: CHANGE.test(note) ? 'small' : 'lookup', task: '', view: '' }; } }   // the size decides who works: look-ups at once, changes by Claude
     const live = mode === 'auto' && await liveClaude();   // this person's Claude watcher runs: Claude answers in seconds, so in Auto it takes every question
     if (!live && mode === 'auto' && Array.isArray(plan.parts) && plan.parts.length > 1) { await splitSend(note, plan, box); return; }   // several asks in one message: each goes to the right worker
     if (plan.route === 'unclear' && mode !== 'cl' && plan.question && (plan.options || []).length > 1) { const au = st(); au.local = au.local || []; au.open = true; box.value = ''; au.local.push({ who: 'you', text: note, at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }); au.local.push({ who: 'claude', text: plan.question, actions: plan.options.map(o => ({ label: o, act: 'asstQuick', attrs: { t: (note + ' (' + o + ')').slice(0, 590) } })) }); au.sig = ''; paint(); return; }   // not sure what is meant: one short question with tap answers, instead of a wrong guess
@@ -260,7 +336,7 @@
   let spoke = false; const PEND = {};
   async function toClaude(note, raw, plan, live, box, bubble) {
     const big = plan.route === 'heavy', meant = meantOf(note, plan); const a2 = st(); a2.open = true; a2.local = a2.local || [];
-    const jobNote = (meant ? (note + '\n(Understood as: ' + meant + ')') : note + (V.quickHint && V.quickHint(note) ? '\n(Reading: ' + V.quickHint(note) + ')' : '')).slice(0, 590);
+    const jobNote = (meant ? (note + '\n(Understood as: ' + meant + ')') : note + (V.quickHint && V.quickHint(note) ? '\n(Reading: ' + V.quickHint(note) + ')' : '')).slice(0, 4000);
     const sent = bubble ? { who: 'you', text: note, at: hhmm(), ts: Date.now(), pend: jobNote } : null; if (sent) { a2.local.push(sent); if (box) box.value = ''; a2.sig = ''; paint(); }   // your message is a bubble at once; the job's own copy (same text as sent) replaces it
     try { await J().post('/jobs', { kind: 'chat', note: jobNote, ref: String(Date.now()), section: String(S.view || ''), size: big ? 'heavy' : 'small', tier: plan.tier || '' }); } catch (e) { if (sent) { a2.local = a2.local.filter(x => x !== sent); if (box) box.value = raw; } a2.sig = ''; paint(); throw e; }   // nothing was sent: the bubble goes and your words come back
     const paused = !live && V.helper && V.helper.off();
@@ -270,7 +346,7 @@
   }
   V.ACT.asstGo = el => V.busy(el, async () => { const id = el.getAttribute('data-id'), x = PEND[id]; if (!x) return; if (J().guard()) return; delete PEND[id]; x.m.actions = [];
     const a = st(); const mine = [...(a.local || [])].reverse().find(m => m.who === 'you' && m.text === x.note && !m.pend); const meant = meantOf(x.note, x.plan);
-    if (mine) mine.pend = (meant ? (x.note + '\n(Understood as: ' + meant + ')') : x.note + (V.quickHint && V.quickHint(x.note) ? '\n(Reading: ' + V.quickHint(x.note) + ')' : '')).slice(0, 590);   // the bubble already shown goes once the job's copy arrives
+    if (mine) mine.pend = (meant ? (x.note + '\n(Understood as: ' + meant + ')') : x.note + (V.quickHint && V.quickHint(x.note) ? '\n(Reading: ' + V.quickHint(x.note) + ')' : '')).slice(0, 4000);   // the bubble already shown goes once the job's copy arrives
     await toClaude(x.note, x.raw, x.plan, x.live && await liveClaude(), null, false); });
   V.ACT.asstEdit = el => { const id = el.getAttribute('data-id'), x = PEND[id]; if (!x) return; delete PEND[id]; x.m.actions = []; const box = document.getElementById('asM'); if (box) { box.value = x.raw; box.focus(); } say('Change the words and press Send. Nothing was sent to Claude.'); };
   // is this person's Claude watcher running? Checked only when they switched it on in this browser (no local-network check for anyone else); remembered for a minute
@@ -300,6 +376,7 @@
   V.assistantPaint = paint;
   V.asstViewOf = j => { const m = /Tab:\s*([a-z_]{2,24})\s*$/i.exec(String(j.summary || '')); if (m && V[m[1].toLowerCase()] && V[m[1].toLowerCase()].html) return m[1].toLowerCase(); return OPEN[j.kind] ? OPEN[j.kind][0] : ''; };   // the tab a finished job belongs to (the sidebar dot)
   setInterval(() => {   // every two seconds: keep the panel in step with the project that is open; ask for the jobs list now and then
+    try { watchTick(); } catch (e) { /* the check is optional */ }
     try { ticks++; if (team() && J()) { const k = J().K(); if (k.pid !== S.project.id || !k.jobs) J().load(false); else if (ticks % 7 === 0 && (st().open || k.jobs.some(j => ['waiting', 'claimed', 'needs_input'].includes(j.status)))) J().load(true); } paint(); } catch (e) { /* the panel is optional: never break a page */ }
   }, 2000);
   // every Claude button shares J.post('/jobs'): when a request is sent the Assistant opens at once, so the person sees it was taken, what was asked, and how long it has waited

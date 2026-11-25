@@ -28,7 +28,14 @@
   const val = id => (document.getElementById(id) || {}).value || '';
 
   // ---------- Workshop plan ----------
-  V.rsplan = { html() { return V.isCustomer() ? '' : head('Workshop plan', 'The requirement sessions planned from the contract: the modules, the agenda for each, and who needs to attend. It is a draft for you to adjust before it goes to the customer.') + '<div class="page-body ko">' + V.planSessions.html() + '</div>'; }, mount() { if (V.wsplan) V.wsplan.mount(); if (V.studioJobs && V.studioJobs.load) V.studioJobs.load(false); } };
+  // the session planner tabs moved here from the old Contract page (user, 25 Nov 2026): same sessions (planner.sessions), so nothing is copied; Publish to the customer is on them
+  const RS_TABS = [['plan', 'Plan'], ['sessions', 'Session list'], ['distribution', 'Module distribution'], ['attendees', 'Attendees'], ['changes', 'Schedule changes'], ['export', 'Excel & publish']];
+  const rsTab = () => (RS_TABS.some(t => t[0] === S.ui.rsTab) && V.plannerPane ? S.ui.rsTab : 'plan');
+  ACT.rsTab = a => { S.ui.rsTab = a.getAttribute('data-v'); V.render(); };
+  V.rsplan = { html() { if (V.isCustomer()) return ''; const t = rsTab();
+    const bar = '<div class="seg" role="tablist" aria-label="Requirement schedule" style="margin:0 0 14px">' + RS_TABS.map(([k, l]) => '<button type="button" role="tab" class="' + (t === k ? 'on' : '') + '" aria-selected="' + (t === k) + '" data-act="rsTab" data-v="' + k + '">' + esc(l) + '</button>').join('') + '</div>';
+    return head('Workshop plan', 'The requirement sessions planned from the contract: the modules, the agenda for each, and who needs to attend. It is a draft for you to adjust before it goes to the customer.') + '<div class="page-body ko">' + bar + (t === 'plan' ? V.planSessions.html() : V.plannerPane(t)) + '</div>'; },
+    mount() { if (rsTab() !== 'plan') { if (V.plannerPaneMount) V.plannerPaneMount(); return; } if (V.wsplan) V.wsplan.mount(); if (V.studioJobs && V.studioJobs.load) V.studioJobs.load(false); } };
 
   // ---------- Transcripts ----------
   function chat() {

@@ -16,6 +16,12 @@
     // Meteor and Comet: open one docked inside the Studio, or ask it something through Claude (the Studio cannot call another facilio.work app itself; Claude can, with its connectors)
     let mc = /^(?:please\s+)?(?:open|show|launch)\s+(meteor|comet)\b\s*[.!]?$/i.exec(raw); if (mc) return { type: 'dock', site: mc[1].toLowerCase(), label: mc[1][0].toUpperCase() + mc[1].slice(1).toLowerCase() };
     mc = /\b(meteor|comet)\b/i.exec(raw); if (mc && raw.length >= 12 && !/^(open|go to|show me the)\b.*\b(page|tab)\b/i.test(raw)) { const site = mc[1].toLowerCase(), name = site[0].toUpperCase() + site.slice(1); return { type: 'job', job: { kind: 'chat', section: 'chat', note: ('Use ' + TOOLS[site] + ' to do this, then answer here in the Studio chat with the facts and links you found: ' + raw).slice(0, 590) }, label: 'Ask ' + name + ' through your Claude' }; }
+    // module scope: "Purchase Order and Quote are not required, remove their flows and mark them out of scope" (the server plans it first; nothing changes before Confirm)
+    const tc = tasksCmd(t, c.modules); if (tc) return tc;
+    const sc = scopeCmd(t, c.modules); if (sc) return sc;
+    // the project check: "check this project", "what needs attention?", "health check"; how often it runs by itself: "check this project daily / when I open it / never"
+    if (/\b(check|watch)\w*\b.*\b(project|it)\b.*\b(daily|every day|each day|when i open|on open|every time|never|off|stop)\b|\b(stop|never)\b.*\bcheck\w*\b.*\bproject\b/.test(t)) return { type: 'checkfreq', freq: /never|off|stop/.test(t) ? 'off' : /daily|every day|each day/.test(t) ? 'daily' : 'open' };
+    if (/^(?:please\s+)?(?:check|review|scan|audit)\s+(?:this|the|my)\s+project\b|\b(health ?check|what needs (my )?attention|anything (wrong|missing|late))\b/.test(t)) return { type: 'check' };
     // add a task: "add task: call the customer", "new task follow up on the SLA"
     let m = /^(?:please\s+)?(?:add|create|new|make)\s+(?:a\s+)?(?:new\s+)?(?:task|to-?do)\s*(?::|-|to|called)?\s+(.{3,200})$/i.exec(raw);
     if (m) return { type: 'task', title: m[1].replace(/[.\s]+$/, '') };
@@ -46,6 +52,35 @@
       const best = c.pages.map(p => [p, score(p)]).filter(x => x[1]).sort((a, b) => b[1] - a[1])[0]; if (best) return { type: 'nav', view: best[0][0], label: best[0][1] };
     }
     return null;
+  }
+  // modules named in the text (labels or names, plural allowed, longest first so "Purchase Order" never also counts as "Order"); out or in scope; flows off only when flows are named with a removing verb
+  const OUTQ = /\b(out of (the )?scope|not (required|needed|in scope|part of)|descope|de-scope|exclude|remove|drop)\b/, INQ = /\b(in(to)? (the )?scope|include|bring back|add\b.*\bto (the )?scope)\b/;
+  const QUEST = /\?\s*$|^(what|which|is|are|how|does|do|why|who|when|can|could)\b/;
+  function findMods(t, modules) {
+    if (!Array.isArray(modules)) return []; const rx = s => new RegExp('\\b' + low(s).replace(/[^a-z0-9 ]/g, '').trim().split(' ').join('\\s*') + '(e?s)?\\b');
+    let rest = t.replace(/[^a-z0-9 ]/g, ' '); const found = [];
+    modules.map(m => ({ m, keys: [m.label, m.name].filter(k => k && low(k).replace(/[^a-z0-9]/g, '').length > 2) })).sort((a, b) => Math.max(0, ...b.keys.map(k => k.length)) - Math.max(0, ...a.keys.map(k => k.length)))
+      .forEach(({ m, keys }) => keys.some(k => { const r = rx(k); if (!r.test(rest)) return false; rest = rest.replace(new RegExp(r.source, 'g'), ' '); if (!found.includes(m)) found.push(m); return true; }));
+    return found;
+  }
+  function scopeCmd(t, modules) {
+    if (!Array.isArray(modules) || !modules.length || QUEST.test(t)) return null; const out = OUTQ.test(t), inn = !out && INQ.test(t); if (!out && !inn) return null;
+    const found = findMods(t, modules).map(m => m.name); if (!found.length) return null;
+    const flows = /\bflows?\b/.test(t) ? (out && /\b(remove|switch(ed)? off|turn(ed)? off|disable|drop|retire|delete)\b/.test(t) ? 'off' : inn && /\b(switch(ed)? on|turn(ed)? on|enable|restore|bring back)\b/.test(t) ? 'on' : 'keep') : 'keep';
+    const out1 = { type: 'scope', modules: found, inScope: inn, flows }; if (out && /\brequirements?\b/.test(t)) out1.requirements = 'out'; return out1;
+  }
+  // tasks in bulk: "close all overdue tasks of Quote", "reassign Ravi's open tasks to Asha", "move my overdue tasks to 2026-12-05" (the server previews; a name that matches nobody is reported)
+  function tasksCmd(t, modules) {
+    if (!/\btasks?\b/.test(t) || QUEST.test(t) || /^(?:please\s+)?(add|create|new|make)\b/.test(t)) return null; const set = {}; let m;
+    if (/\b(close|complete|finish)\b|\bmark\b.*\b(done|complete|completed|closed)\b/.test(t)) set.status = 'Done'; else if (/\bcancel\b/.test(t)) set.status = 'Cancelled';
+    if ((m = /\b(?:due|deadline|move|push|shift|postpone|re-?date)\b.*\b(?:to|on|by|until)\s+(\d{4}-\d{2}-\d{2})\b/.exec(t))) set.due = m[1];
+    if ((m = /\b(?:reassign|assign|give|hand(?: over)?|transfer|move)\b.*\bto\s+([a-z][a-z.'-]*(?:\s+[a-z][a-z.'-]*)?)$/.exec(t.replace(/[.!\s]+$/, ''))) && !/^(done|complete|closed)$/.test(m[1])) set.owner = m[1];
+    if (!Object.keys(set).length) return null;
+    const modText = t.replace(/\bto\s+[a-z][^]*$/, ' ').replace(/\btasks?\b/g, ' ');   // "tasks" is the subject, not the Tasks module; the name after "to" is a person
+    const filter = { status: /\b(overdue|late)\b/.test(t) ? 'overdue' : 'open' }, mods = findMods(modText, modules); if (mods.length > 1) return null;   // two modules in one bulk change: let Claude read it
+    if (/\bmy (open |overdue |late )?tasks\b/.test(t)) filter.owner = 'me'; else if ((m = /\b([a-z]+)'s\b/.exec(t))) filter.owner = m[1];
+    if (mods.length) { filter.module = mods[0].name; filter.moduleLabel = mods[0].label; }
+    return { type: 'tasks', filter, set };
   }
   const api = { match };
   root.FWBViews = root.FWBViews || {}; root.FWBViews.chatCmd = api;

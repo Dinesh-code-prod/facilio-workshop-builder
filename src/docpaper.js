@@ -39,11 +39,11 @@
     return out.filter(Boolean).join('\n\n');
   }
   /** the sheets. model: { title, sub, customer, version, date, status, accent, cover, logo: { src | fileId }, sections: [{ title, blocks: [{ t: 'md', text } | { t: 'img', src | fileId, caption } | { t: 'html', html }] }] }
-      o.edit makes the text editable; o.titleAttr(i), o.mdAttr(i, j), o.capAttr(i, j), o.tools(i), o.blkTools(i, j) add the page's own hooks (guides use them, the HTML file does not) */
+      o.edit makes the text editable; o.empty: the line an empty section shows (the page only, not the file); o.compact: a short cover on screen, so the first section shows without scrolling; o.titleAttr(i), o.mdAttr(i, j), o.capAttr(i, j), o.tools(i), o.blkTools(i, j) add the page's own hooks (guides use them, the HTML file does not) */
   function paper(m, o) {
     o = o || {}; const ed = !!o.edit, ce = ed ? ' contenteditable="true" spellcheck="true"' : '', acc = /^#[0-9A-Fa-f]{6}$/.test(m.accent || '') ? m.accent : '#1570EF', at = (f, ...a) => (ed && f ? ' ' + f(...a) : '');
     const img = (b, alt) => b.src ? '<img src="' + esc(b.src) + '" alt="' + esc(alt) + '">' : b.fileId ? '<img data-ugimg="' + esc(b.fileId) + '" alt="' + esc(alt) + '">' : '';
-    const cover = m.cover === false ? '' : '<div class="paper dp-cover">' + (m.logo ? '<div class="dp-logo">' + img(m.logo, 'Logo') + '</div>' : '') + '<div class="dp-ct" style="color:' + acc + '"' + (ed && o.coverAttr ? ' ' + o.coverAttr('title') + ce : '') + '>' + esc(m.title || 'Untitled') + '</div>'
+    const cover = m.cover === false ? '' : '<div class="paper dp-cover' + (o.compact ? ' dp-short' : '') + '">' + (m.logo ? '<div class="dp-logo">' + img(m.logo, 'Logo') + '</div>' : '') + '<div class="dp-ct" style="color:' + acc + '"' + (ed && o.coverAttr ? ' ' + o.coverAttr('title') + ce : '') + '>' + esc(m.title || 'Untitled') + '</div>'
       + (m.sub ? '<div class="dp-cs">' + esc(m.sub) + '</div>' : '') + (m.customer ? '<div class="dp-cf">for</div><div class="dp-cc">' + esc(m.customer) + '</div>' : '') + '<div class="dp-cm">Version ' + esc(m.version || '1.0') + ' · ' + esc(m.date || '') + ' · ' + esc(m.status || 'Draft') + '</div></div>';
     const secs = (m.sections || []).map((s, i) => { const ta = ed && o.titleAttr ? o.titleAttr(i) : ''; return '<section class="dp-sec" id="dp_s' + i + '">' + (o.tools && ed ? o.tools(i) : '') + '<h1 style="--dp-acc:' + acc + ';color:' + acc + '"' + (ta ? ' ' + ta + ce : '') + '>' + esc(s.title || 'Untitled section') + '</h1>'
       + (s.blocks || []).map((b, j) => {
@@ -51,7 +51,7 @@
         if (b.t === 'img') { const im = img(b, b.caption || 'Screenshot'); return im ? '<figure class="dp-blk">' + tl + im + (b.caption || (ed && o.capAttr) ? '<figcaption' + at(o.capAttr, i, j) + (ed && o.capAttr ? ce + ' data-ph="Caption"' : '') + '>' + esc(b.caption || '') + '</figcaption>' : '') + '</figure>' : ''; }
         if (b.t === 'html') return '<div class="dp-blk">' + b.html + '</div>';
         return '<div class="dp-blk">' + tl + '<div class="dp-md"' + at(o.mdAttr, i, j) + (ed && o.mdAttr ? ce + ' data-ph="Write here. Steps, lists and tables keep their shape."' : '') + '>' + mdHtml(b.text) + '</div></div>';
-      }).join('') + '</section>'; }).join('');
+      }).join('') + (!(s.blocks || []).length && o.empty ? '<p class="dp-none">' + esc(o.empty) + '</p>' : '') + '</section>'; }).join('');
     return cover + '<div class="paper dp-body">' + (secs || '<p class="dp-none">No sections yet.</p>') + '</div>';
   }
   const CSS = 'body{margin:0;background:#e9ebee;color:#111;font:10.5pt/1.45 Calibri,Carlito,Arial,sans-serif}main{padding:24px 0 60px}.paper{width:794px;max-width:calc(100% - 24px);box-sizing:border-box;margin:0 auto 24px;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.18);padding:64px 76px}'

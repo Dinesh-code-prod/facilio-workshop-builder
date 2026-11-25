@@ -17,7 +17,7 @@ for (const kind of ['chat', 'pull_msa', 'fetch_mail', 'make_guide', 'build_solut
 assert.match(b('generate the FTR').instructions, /get_impl_skills first/); assert.match(b('generate the FTR').instructions, /ask first \(skills\.rule\)/);
 // a deliverable is never quietly made without its skill (24 Nov 2026): the required skill comes first, marked needed, and the rule says to ask before a plain draft
 { const f = b('generate the FTR').skills, u = b('build the UAT guide for work orders').skills, g = brief({ id: 'j2', kind: 'make_guide', params: { section: 'user' }, requestedBy: 'a@b.c' }, 'P').skills;
-  assert.equal(f.plan[0].skill, 'ftr-generator'); assert.equal(f.plan[0].needed, true); assert.equal(u.plan[0].skill, 'uat-guide-generator'); assert.equal(u.plan[0].needed, true); assert.equal(g.plan[0].skill, 'guidebook-builder'); assert.equal(g.plan[0].needed, true);
+  assert.equal(f.plan[0].skill, 'ftr-generator'); assert.equal(f.plan[0].needed, true); assert.equal(u.plan[0].skill, 'facilio-uat-guide'); assert.equal(b('prepare the handover user guide').skills.plan[0].skill, 'guidebook-builder'); assert.equal(u.plan[0].needed, true); assert.equal(g.plan[0].skill, 'guidebook-builder'); assert.equal(g.plan[0].needed, true);
   assert.match(u.rule, /Reply draft anyway/); assert.match(u.rule, /Made without the <skill> skill/); assert.equal(b('what is the status').skills, undefined, 'a plain question carries no skill plan'); }
 console.log('2 missing-skill checks passed');
 // skill plans: every job kind planned exists, every job carries a plan in order, and a chat job gets the skills of the area it is about

@@ -31,7 +31,7 @@
   }
   const ROWS = [
     ['BRD', 'Modules in scope; Confirmed requirements; state flows and roles in the modules; the contract', 'Get the task pack for BRD for this project and write it. Save the result as a draft.'],
-    ['UAT plan and test cases', 'Confirmed requirements; use cases with steps; build status; go-live checklist', 'Prepare the UAT plan for this project from the use cases and requirements. Use get_task_pack task uat.'],
+    ['UAT guide (before go-live)', 'Confirmed requirements; use cases with steps; build status; go-live checklist', 'Prepare the UAT plan for this project from the use cases and requirements. Use get_task_pack task uat.'],
     ['User guide or training outline', 'Modules and roles; use cases; configuration loaded; published guide settings', 'Draft the user guide for the module "Work Orders". Use get_task_pack task guide.'],
     ['Issue tracker or status report', 'Tickets (also by e-mail); risks and issues; actions; change requests; recent activity', 'Give me the open issues by priority, then a weekly status report. Use get_tickets and get_records raid.'],
     ['Gap check before BRD sign-off', 'Everything above, plus open questions and findings still to decide', 'Run the review pack for this project and list the five biggest gaps with sources.'],
