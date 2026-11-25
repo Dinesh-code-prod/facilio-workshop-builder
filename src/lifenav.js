@@ -35,7 +35,8 @@
       const overdue = late.filter(r => s.re.test(r.title || '')); const upcoming = rows.filter(r => r.s && r.s >= today && s.re.test(r.t || '')).sort((a, b) => a.s.localeCompare(b.s)).slice(0, 3).map(r => ({ t: r.t, d: fd(r.s), v: 'timeline' }));
       const pending = acts.filter(a => a.status !== 'Blocked' && s.re.test(a.text || '')).slice(0, 4).map(a => ({ t: a.text, d: (a.due ? (a.due < today ? 'Overdue since ' : 'Due ') + fd(a.due) : 'No due date') + (a.owner ? ' · ' + a.owner : ''), late: a.due && a.due < today, v: 'governance' }));
       const active = parts.some(p => p.state !== 'none') || signs.some(x => x.st !== 'notdue') || (i === 0 && planned > 0);
-      return { s, i, parts, signs, dec, blockers, overdue, upcoming, pending, active };
+      const open = blockers.length + overdue.length + acts.filter(a => s.re.test(a.text || '')).length;   // records still open for this stage: the card warns when the stage is closed while these remain
+      return { s, i, parts, signs, dec, blockers, overdue, upcoming, pending, active, open };
     });
     // the current pointer needs every stage's status first; the pointer stage then shows as Current even with no records
     const first = list.map(x => Object.assign(x, L().status({ cps: x.parts, signs: x.signs, decision: x.dec, overdue: x.overdue.length, blockers: x.blockers.length })));

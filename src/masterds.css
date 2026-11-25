@@ -392,3 +392,11 @@ html body .main .plan-tabs > button:not(#DS) { background: none !important; colo
 html body .main .plan-tabs > button.on:not(#DS) { background: var(--ds-page) !important; color: var(--ds-blue) !important; box-shadow: 0 1px 2px rgba(16, 24, 40, .08) !important; }
 html body .main .pl-tools .rv-menu .rv-menu-p .btn.sm:not(.x):not(#DS) { box-shadow: none !important; border: 0 !important; background: none !important; justify-content: flex-start !important; width: 100% !important; }
 html body .main .pl-tools .rv-menu .rv-menu-p .btn.sm:not(.x):hover:not(#DS) { background: var(--ds-subtle) !important; }
+
+/* ---------- Filters in use (dashboards): one line of chips under the filter bar; each x clears that filter ---------- */
+html body :is(.main, .adm-main) .dk-chips:not(#DS) { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0 12px; }
+html body :is(.main, .adm-main) .dk-chips-l:not(#DS) { font: 600 12.5px/1 var(--ds-head); color: var(--ds-text2); margin-right: 2px; }
+html body :is(.main, .adm-main) .dk-chip:not(#DS) { display: inline-flex; align-items: center; gap: 6px; padding: 3px 3px 3px 10px; border-radius: var(--ds-r-badge); background: var(--ds-selected); color: var(--ds-deep); font: 500 13px/20px var(--ds-body); }
+html body :is(.main, .adm-main) .dk-chip b:not(#DS) { font-weight: 600; }
+html body :is(.main, .adm-main) .dk-chip button:not(#DS) { width: 22px; height: 22px; border: 0; border-radius: 4px; background: transparent; color: inherit; font: 600 15px/1 var(--ds-body); cursor: pointer; }
+html body :is(.main, .adm-main) .dk-chip button:hover:not(#DS) { background: #DCE8FD; }

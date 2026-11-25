@@ -90,10 +90,15 @@
   const PF = () => (ui().dkF || (ui().dkF = { win: 14, focus: 'all', who: 'all' }));
   const AF = () => (ui().dkA || (ui().dkA = { stage: 'all', health: 'all', customer: 'all', type: 'all', when: 'all', q: '' }));
   const sel = (act, k, label, opts, cur) => `<label class="dk-f"><span>${esc(label)}</span><select data-change="${act}" data-k="${k}" aria-label="${esc(label)}">${opts.map(([v, l]) => `<option value="${esc(v)}"${String(v) === String(cur) ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`;
+  // the filters in use, as chips under the bar: each x clears that one filter, so nobody has to read every select to know what the figures cover
+  const chip = (scope, k, label, val) => `<span class="dk-chip">${esc(label)}: <b>${esc(val)}</b><button type="button" data-act="dkChip" data-s="${scope}" data-k="${k}" aria-label="Clear ${esc(label)}" title="Clear ${esc(label)}">×</button></span>`;
+  const chipRow = list => (list.length ? `<div class="dk-chips" role="status" aria-label="Filters in use"><span class="dk-chips-l">Filters in use</span>${list.join('')}</div>` : '');
+  const admRG = () => (V.range && V.range.hooks && V.range.hooks.adm ? V.range.hooks.adm.state() || {} : {});
   // project dashboard (team and customer): the calendar window, what to focus on, and whose work
   function projBar(k) {
     const f = PF(), dirty = f.win !== 14 || f.focus !== 'all' || f.who !== 'all' || RG().period !== 'all';
-    return `<div class="dk-fbar" role="group" aria-label="Dashboard filters">${V.range ? V.range.bar('dk', RG(), { note: 'Actions, tasks and the calendar, by their date' }) : ''}${sel('dkF', 'win', 'Calendar window', [[7, 'Next 7 days'], [14, 'Next 14 days'], [30, 'Next 30 days'], [60, 'Next 60 days']], f.win)}${sel('dkF', 'focus', 'Show', [['all', 'Everything'], ['overdue', 'Overdue only'], ['soon', 'Due in the next 7 days']], f.focus)}${k ? '' : sel('dkF', 'who', 'Work of', [['all', 'Everyone'], ['me', 'Me only']], f.who)}${dirty ? '<button type="button" class="dk-fr" data-act="dkFReset">Reset filters</button>' : ''}${exportBar('dk', false)}</div>`;
+    const pc = []; if (RG().period !== 'all') pc.push(chip('p', 'period', 'Period', V.range.label(RG()))); if (f.win !== 14) pc.push(chip('p', 'win', 'Calendar', 'Next ' + f.win + ' days')); if (f.focus !== 'all') pc.push(chip('p', 'focus', 'Show', f.focus === 'overdue' ? 'Overdue only' : 'Due in the next 7 days')); if (f.who !== 'all') pc.push(chip('p', 'who', 'Work of', 'Me only'));
+    return `<div class="dk-fbar" role="group" aria-label="Dashboard filters">${V.range ? V.range.bar('dk', RG(), { note: 'Actions, tasks and the calendar, by their date' }) : ''}${sel('dkF', 'win', 'Calendar window', [[7, 'Next 7 days'], [14, 'Next 14 days'], [30, 'Next 30 days'], [60, 'Next 60 days']], f.win)}${sel('dkF', 'focus', 'Show', [['all', 'Everything'], ['overdue', 'Overdue only'], ['soon', 'Due in the next 7 days']], f.focus)}${k ? '' : sel('dkF', 'who', 'Work of', [['all', 'Everyone'], ['me', 'Me only']], f.who)}${dirty ? '<button type="button" class="dk-fr" data-act="dkFReset">Reset filters</button>' : ''}${exportBar('dk', false)}</div>` + chipRow(pc);
   }
   const typeOf = p => String(p.type || (p.metrics || {}).type || '').toUpperCase();
   // Admin: the filters apply to every Admin tab, so a portfolio of hundreds of projects can be cut down to the part you are looking at
@@ -109,13 +114,16 @@
       return true; });
   }
   function adminBar(all, shown) {
-    const f = AF(), D = V.sdd, dirty = Object.keys(f).some(k => f[k] !== (k === 'q' ? '' : 'all')); const cu = [...new Set(all.map(p => p.customer || 'No customer'))].sort(), ty = [...new Set(all.map(typeOf).filter(Boolean))].sort();
+    const f = AF(), D = V.sdd, ap = admRG().period && admRG().period !== 'all', dirty = ap || Object.keys(f).some(k => f[k] !== (k === 'q' ? '' : 'all'));
+    const WHEN = { late: 'Past target date', 30: 'Within 30 days', 60: 'Within 60 days', none: 'No date set' }, AL = { q: 'Search', stage: 'Stage', health: 'Health', customer: 'Customer', type: 'Type', when: 'Go-live' };
+    const av = (k, v) => (k === 'stage' ? (v === '0' ? 'No dated plan yet' : ((D.RSTG.find(x => String(x[0]) === v) || [0, v])[1])) : k === 'health' ? (D.HL[v] || v) : k === 'when' ? (WHEN[v] || v) : v);
+    const ac = (ap ? [chip('a', 'period', 'Period', V.range.label(admRG()))] : []).concat(Object.keys(AL).filter(k => f[k] && f[k] !== 'all').map(k => chip('a', k, AL[k], av(k, f[k])))); const cu = [...new Set(all.map(p => p.customer || 'No customer'))].sort(), ty = [...new Set(all.map(typeOf).filter(Boolean))].sort();
     return `<div class="dk-fbar" role="group" aria-label="Portfolio filters"><label class="dk-f dk-fq"><span>Search</span><input type="search" data-change="dkAF" data-k="q" value="${esc(f.q || '')}" placeholder="Project or customer" aria-label="Search projects"></label>`
       + sel('dkAF', 'stage', 'Stage', [['all', 'All stages']].concat(D.RSTG.slice(1).map(([id, l]) => [String(id), l]), [['0', 'No dated plan yet']]), f.stage)
       + sel('dkAF', 'health', 'Health', [['all', 'Any health']].concat(D.ORDER.map(h => [h, D.HL[h]])), f.health)
       + sel('dkAF', 'customer', 'Customer', [['all', 'All customers']].concat(cu.map(c => [c, c])), f.customer) + (ty.length ? sel('dkAF', 'type', 'Type', [['all', 'All types']].concat(ty.map(t => [t, t])), f.type) : '')
       + sel('dkAF', 'when', 'Go-live', [['all', 'Any date'], ['late', 'Past target date'], ['30', 'Within 30 days'], ['60', 'Within 60 days'], ['none', 'No date set']], f.when)
-      + `<span class="dk-fc">Showing <b>${shown.length}</b> of ${all.length} project${all.length === 1 ? '' : 's'}</span>${dirty ? '<button type="button" class="dk-fr" data-act="dkAReset">Reset filters</button>' : ''}${exportBar('dka', false)}</div>`;
+      + `<span class="dk-fc">Showing <b>${shown.length}</b> of ${all.length} project${all.length === 1 ? '' : 's'}</span>${dirty ? '<button type="button" class="dk-fr" data-act="dkAReset">Reset filters</button>' : ''}${exportBar('dka', false)}</div>` + chipRow(ac);
   }
 
   // Pain points and pending: what is late, blocked or waiting, worst first, each one a link to where it is fixed. Team only; every figure is counted from saved records.
@@ -207,7 +215,7 @@
     const TY = ['Risk', 'Assumption', 'Issue', 'Dependency'], rd = c.raidOpen, imp = x => x.impact || 'Medium';
     const rw = (!k || (V.custShow && V.custShow('risks'))) ? widget('Open RAID items', 'by type and impact', rows(TY.map(t => ({ l: t, parts: [['High', BAD], ['Medium', WARN], ['Low', GREY]].map(([im, col]) => [rd.filter(x => (x.type || 'Risk') === t && imp(x) === im).length, col, im]) })), [['High', rd.filter(x => imp(x) === 'High').length, BAD], ['Medium', rd.filter(x => imp(x) === 'Medium').length, WARN], ['Low', rd.filter(x => imp(x) === 'Low').length, GREY]], 'Nothing open in the RAID log.'), 6) : '';
     const ev = (V.events ? V.events({ days: win }) : []).filter(e => inR(e.date)).slice(0, 8), need = k ? myOpen.slice().sort((a, b) => (a.due || '9').localeCompare(b.due || '9')).slice(0, 5) : (V.attentionItems ? V.attentionItems() : []).slice(0, 6);
-    const l1 = widget('Next ' + win + ' days', 'sessions and milestones', list(ev.map(e => line(e.view === 'overview' ? 'governance' : e.view, e.title, V.fmtDate(e.date))), 'Nothing is scheduled in the next 14 days.'), 6);
+    const l1 = widget('Next ' + win + ' days', 'sessions and milestones', list(ev.map(e => line(e.view === 'overview' ? 'governance' : e.view, e.title, V.fmtDate(e.date))), 'Nothing is scheduled in the next ' + win + ' days.'), 6);
     const l2 = widget(k ? 'What we need from you' : 'Needs attention', k ? 'open actions, soonest first' : 'worth a look today', list(need.map(a => k ? line('governance', a.text || 'Action', a.due ? V.fmtDate(a.due) : '', isLate(a) ? 'bad' : '') : line(a.view || 'governance', a.t)), k ? 'Nothing is waiting on you right now.' : 'Nothing needs attention right now.'), k ? 5 : 6);
     const top = k ? '' : widget('Pain points and pending', 'worst first, each opens where it is fixed', painList(pains(c).slice(0, 8), 'Nothing is late, blocked or waiting. The project is clear.'), 7) + widget('Stage map', 'how far each stage is, click for its dashboard', mapList(stageMap(c)), 5);
     // ---- the modern overview (9 Nov 2026): every series below comes from saved records ----
@@ -255,7 +263,10 @@
   ACT.dkFReset = () => { ui().dkF = { win: 14, focus: 'all', who: 'all' }; ui().dkR = { period: 'all' }; V.render(); };
   ACT.dkAF = el => { AF()[el.getAttribute('data-k')] = el.value; V.setMode('admin'); };
   ACT.dkAQ = el => { const k = el.getAttribute('data-k'); ui().dkA = { stage: 'all', health: 'all', customer: 'all', type: 'all', when: 'all', q: '' }; AF()[k] = el.getAttribute('data-v'); V.setMode('admin'); };   // a pain-point row narrows the portfolio to its projects
-  ACT.dkAReset = () => { ui().dkRA = { period: 'all' }; ui().dkA = { stage: 'all', health: 'all', customer: 'all', type: 'all', when: 'all', q: '' }; V.setMode('admin'); };
+  ACT.dkChip = a => { const s = a.getAttribute('data-s'), k = a.getAttribute('data-k');
+    if (s === 'p') { if (k === 'period') ui().dkR = { period: 'all' }; else PF()[k] = k === 'win' ? 14 : 'all'; V.render(); return; }
+    if (k === 'period') { const st = admRG(); st.period = 'all'; delete st.from; delete st.to; } else AF()[k] = k === 'q' ? '' : 'all'; V.setMode('admin'); };
+  ACT.dkAReset = () => { const st = admRG(); st.period = 'all'; delete st.from; delete st.to; ui().dkRA = { period: 'all' }; ui().dkA = { stage: 'all', health: 'all', customer: 'all', type: 'all', when: 'all', q: '' }; V.setMode('admin'); };
   ACT.dkExp = el => { const k = el.getAttribute('data-k'); try { if (el.getAttribute('data-v') === 'csv') exportCsv(k); else exportHtml(k); } catch (e) { V.toast && V.toast('Could not make the file: ' + (e.message || 'try again'), 5000, true); } };
   // click a widget anywhere that is not itself a control to open the page its header link names (the link stays for keyboard users)
   if (typeof document !== 'undefined') document.addEventListener('click', e => {
