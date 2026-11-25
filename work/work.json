@@ -863,7 +863,7 @@
    },
    {
     "name": "project_changes",
-    "description": "What changed in a project since a date (default: the last 7 days): records by kind, newest first. Use it for 'what changed this week'.",
+    "description": "What changed in a project since a date (default: the last 7 days), newest first. With action it CHANGES the project safely: scope (modules in or out of scope; flows off switches their state flows off), check (findings by severity), undo (id), history. For scope call without token first (dry run), show the plan, then again with the token only after a yes. Full text: connector_help topic project_changes.",
     "function": "api",
     "input_schema": {
      "type": "object",
@@ -875,6 +875,38 @@
       "since": {
        "type": "string",
        "description": "A date like 2026-11-01 or a full timestamp"
+      },
+      "action": {
+       "type": "string",
+       "enum": [
+        "scope",
+        "check",
+        "undo",
+        "history"
+       ]
+      },
+      "modules": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       }
+      },
+      "inScope": {
+       "type": "boolean"
+      },
+      "flows": {
+       "type": "string",
+       "enum": [
+        "keep",
+        "off",
+        "on"
+       ]
+      },
+      "token": {
+       "type": "string"
+      },
+      "id": {
+       "type": "string"
       }
      },
      "required": [
@@ -1237,53 +1269,6 @@
      "required": [
       "id",
       "confirm"
-     ]
-    }
-   },
-   {
-    "name": "project_actions",
-    "description": "Change the project safely: scope puts modules in or out of scope (flows off switches their state flows off). Call without token first (dry run), show the plan, then call again with the token only after a yes. undo (id), history. Full text: connector_help topic project_actions.",
-    "function": "api",
-    "input_schema": {
-     "type": "object",
-     "properties": {
-      "project": {
-       "type": "string"
-      },
-      "action": {
-       "type": "string",
-       "enum": [
-        "scope",
-        "undo",
-        "history"
-       ]
-      },
-      "modules": {
-       "type": "array",
-       "items": {
-        "type": "string"
-       }
-      },
-      "inScope": {
-       "type": "boolean"
-      },
-      "flows": {
-       "type": "string",
-       "enum": [
-        "keep",
-        "off",
-        "on"
-       ]
-      },
-      "token": {
-       "type": "string"
-      },
-      "id": {
-       "type": "string"
-      }
-     },
-     "required": [
-      "project"
      ]
     }
    },

@@ -77,7 +77,7 @@ export const txt = (v, max) => (typeof v === 'string' || (typeof v === 'number' 
 export function cleanRequest(raw) {
   if (!isObj(raw)) return { ok: false, error: 'The request must be an object.' }; const kind = typeof raw.kind === 'string' ? raw.kind.trim() : '';
   if (!Object.prototype.hasOwnProperty.call(KINDS, kind)) return { ok: false, error: 'kind must be one of: ' + Object.keys(KINDS).join(', ') + '.' };
-  const params = {}; const note = txt(raw.note, kind === 'draw_flow' ? 6000 : LIMITS.note), ref = txt(raw.ref, LIMITS.ref), section = txt(raw.section, LIMITS.section); if (note) params.note = note; if (ref) params.ref = ref; if (section) params.section = section; if (kind === 'chat' && (raw.size === 'small' || raw.size === 'heavy')) params.size = raw.size;   // how big the assistant judged the message
+  const params = {}; const note = txt(raw.note, kind === 'draw_flow' ? 6000 : kind === 'chat' ? 4000 : LIMITS.note), ref = txt(raw.ref, LIMITS.ref), section = txt(raw.section, LIMITS.section); if (note) params.note = note; if (ref) params.ref = ref; if (section) params.section = section; if (kind === 'chat' && (raw.size === 'small' || raw.size === 'heavy')) params.size = raw.size;   // how big the assistant judged the message
   if (kind === 'chat' && TIERS.includes(raw.tier)) params.tier = raw.tier;   // the router's level of work (work/server/_route.mjs)
   return { ok: true, kind, params, key: createHash('sha256').update(kind + '\n' + JSON.stringify([params.note || '', params.ref || '', params.section || '', params.size || '']), 'utf8').digest('hex').slice(0, 24) };
 }

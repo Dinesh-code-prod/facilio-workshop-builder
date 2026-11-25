@@ -1,4 +1,4 @@
-/* Project actions: changes the in-app Assistant and a person's own Claude (connector tool project_actions) make for them. Plan: docs/plans/ASSISTANT-ACTIONS-PLAN-2026-11-25.md.
+/* Project actions: changes the in-app Assistant and a person's own Claude (connector tool project_changes with an action) make for them. Plan: docs/plans/ASSISTANT-ACTIONS-PLAN-2026-11-25.md.
    Every action is two calls. A dry run returns the plan (what changes, what depends on it, what it means) and a token; nothing is written. The real run needs that token
    (so only a previewed, confirmed plan runs), checks the project did not change since, writes, reads the record back to verify, keeps the old values for Undo and writes an audit line.
    Access is the person's own (edit). The pure parts (plan, apply, verify, snapshot, restore) are tested in tests/project_actions.mjs. */
@@ -7,7 +7,7 @@ const obj = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
 const cut = (v, n) => String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, n);
 const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const sing = s => s.replace(/ies$/, 'y').replace(/(ses|xes)$/, s => s.slice(0, -2)).replace(/s$/, '');
-export const ACTIONS = ['scope', 'undo', 'history'];
+export const ACTIONS = ['scope', 'undo', 'history', 'check'];
 
 /** every module the project knows: workshop modules, custom modules, contract matches, flows, and the list the page sends (it has the imported configuration) */
 export function knownModules(ws, planner, extra) {
@@ -93,9 +93,18 @@ export function verifyRestore(ws, snap) {
   Object.entries(obj(snap.flows)).forEach(([id, v]) => { const x = obj(obj(ws.flows)[id]); if (v.absent ? !!obj(ws.flows)[id] : x.enabled !== v.enabled) bad.push(id); });
   return { ok: !bad.length, bad };
 }
+/** the project check (read only): health signals (assess() in _portfolio.mjs) and missed steps (_missed.mjs), grouped critical, high, medium, low, each with why, what to do and where.
+    A missed step 7+ days late counts as high, otherwise medium. key: the finding's identity, so the page can tell what is new since the last check. */
+const SEV = ['critical', 'high', 'medium', 'low'];
+export function groupFindings(h, missed) {
+  h = obj(h); const all = arr(h.signals).filter(g => g && g.kind !== 'info').map(g => ({ key: 's:' + g.code, sev: SEV.includes(g.sev) ? g.sev : 'low', title: cut(g.title, 200), why: cut(g.why, 200), action: cut(g.action, 200), links: arr(g.ev).filter(e => e && e.view).slice(0, 3).map(e => ({ label: cut(e.label, 90), view: e.view })) }))
+    .concat(arr(missed).map(m => ({ key: 'm:' + m.kind + ':' + m.id, sev: m.daysLate >= 7 ? 'high' : 'medium', title: cut((m.ref ? m.ref + ' ' : '') + m.title, 160) + ': ' + m.daysLate + ' day' + (m.daysLate === 1 ? '' : 's') + ' late', why: cut(m.label + ', owner ' + m.ownerText + ', due ' + m.due, 200), action: cut(m.what || 'Finish it or set a new date.', 200), links: m.view ? [{ label: cut(m.label, 60), view: m.view }] : [] })));
+  const groups = SEV.map(sev => ({ sev, items: all.filter(x => x.sev === sev) })).filter(g => g.items.length);
+  return { health: h.health || '', why: cut(String(h.why || '').replace(/,(?=\S)/g, ', '), 300), groups, counts: Object.fromEntries(SEV.map(s => [s, all.filter(x => x.sev === s).length])), total: all.length };
+}
 const planOut = p => Object.assign({}, p, { flows: p.flows.map(f => ({ id: f.id, name: f.name, module: f.module, from: f.from, to: f.to })) });   // the flow designs stay on the server
 
-/** routes and the connector tool; D: helpers from work/server/api.mjs */
+/** routes and the connector tool (project_changes with an action); D: helpers from work/server/api.mjs */
 export function installActions(D) {
   const { route, ok, me, HttpError, projectAccess, pickProject, docRead, docWrite, itemsOf, dbGet, dbPut, dbDel, dbList, audit, touchProject, rid, now, viaApp, CONNECTOR } = D;
   const TTL = 15 * 60e3;
@@ -104,6 +113,7 @@ export function installActions(D) {
   async function run(s, pid, name, b) {
     const { role } = await projectAccess(s, pid, 'edit'); if (role === 'customer') throw new HttpError(403, 'Project actions are for the delivery team.');
     if (name === 'undo') return undo(s, pid, b);
+    if (name === 'check') { const c = await D.projectCheck(pid); return groupFindings(c.health, c.missed); }
     if (name === 'history') return { actions: (await dbList('acts.' + pid)).map(r => ({ id: r.key, at: r.value.at, by: r.value.by, summary: r.value.summary, undone: !!r.value.undone })).sort((x, y) => String(y.at).localeCompare(String(x.at))).slice(0, 30) };
     if (name !== 'scope') throw new HttpError(404, 'Unknown action "' + cut(name, 30) + '". Actions: ' + ACTIONS.join(', ') + '.');
     const st = await state(pid);
@@ -128,10 +138,12 @@ export function installActions(D) {
     return { done: true, verified: check.ok, version: v, summary: 'Undone: ' + a.summary };
   }
   route('POST', '/api/projects/:id/actions/:name', async (b, P) => { const s = await me(); return ok(await run(s, P.id, P.name, b || {})); });
-  CONNECTOR.project_actions = async (s, b) => {
+  const changesRead = CONNECTOR.project_changes;   // project_changes without action stays the read of what changed
+  CONNECTOR.project_changes = (s, b) => (b && b.action ? actionsTool(s, b) : changesRead(s, b));
+  async function actionsTool(s, b) {
     const p = await pickProject(s, b.project), name = cut(b.action || 'scope', 20);
     const body = name === 'scope' ? { modules: arr(b.modules).slice(0, 30).map(x => cut(x, 80)), inScope: b.inScope, flows: b.flows, token: b.token ? cut(b.token, 60) : undefined } : { id: b.id };
     const out = await viaApp('POST', '/api/projects/' + p.id + '/actions/' + encodeURIComponent(name), '', body);
-    return Object.assign({ project: p.name }, out, out.dryRun ? { note: out.token ? 'Nothing is changed yet. Show the person the plan (summary, consequences, unknown names) and ask them. Only after a clear yes, call again with the same arguments and this token. A flow that is only in the imported configuration can be switched off from the Assistant inside the Studio.' : 'Nothing to change.' } : name === 'history' ? {} : { note: out.verified ? 'Saved and read back. Tell the person in one line, with Undo (action undo, id ' + (out.undoId || '') + ').' : 'Saved but the read-back did not match: tell the person and do not claim it is done.' });
-  };
+    return Object.assign({ project: p.name }, out, out.dryRun ? { note: out.token ? 'Nothing is changed yet. Show the person the plan (summary, consequences, unknown names) and ask them. Only after a clear yes, call again with the same arguments and this token. A flow that is only in the imported configuration can be switched off from the Assistant inside the Studio.' : 'Nothing to change.' } : ['history', 'check'].includes(name) ? {} : { note: out.verified ? 'Saved and read back. Tell the person in one line, with Undo (action undo, id ' + (out.undoId || '') + ').' : 'Saved but the read-back did not match: tell the person and do not claim it is done.' });
+  }
 }
