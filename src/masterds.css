@@ -488,3 +488,16 @@ html body #ntPops:not(#DS) { top: auto !important; bottom: 20px !important; left
 /* Claude setup film (user, 25 Nov 2026): the film dialog sits above the floating Assistant (up to 5500), and the export button under the film card keeps a gap */
 html body .fp-scrim:not(#DS):not(#DS2) { z-index: 6000; }
 html body .main .fp-wrap > .btn:not(#DS):not(#DS2) { margin-top: 12px !important; }
+
+/* Flat rail and open reading (user, 25 Nov 2026: "why do we still have claymorphism"; "I don't like clicking to reveal the information"):
+   rail icons stand flat on the white rail (no grey tile behind them); the open page keeps its light blue band, left bar and blue icon.
+   Claude setup explanations are open cards: a clear heading, body text at reading size, lists in two columns when wide. */
+html body.in-proj nav.sidebar .rl-b > svg:not(#DS):not(#DS2) { background: transparent !important; padding: 4px !important; border-radius: 0 !important; }
+html body.in-proj nav.sidebar .rl-b.active > svg:not(#DS):not(#DS2) { background: transparent !important; color: var(--ds-blue) !important; }
+html body .main .cs-read:not(#DS):not(#DS2) { border: 1px solid var(--ds-border) !important; border-radius: var(--ds-r-panel, 14px) !important; box-shadow: none !important; background: #fff !important; }
+html body .main .cs-read > .card-h:not(#DS):not(#DS2) { background: transparent !important; border-bottom: 0 !important; padding: 20px 24px 4px !important; }
+html body .main .cs-read > .card-h h3:not(#DS):not(#DS2) { display: flex; align-items: center; gap: 10px; font: 600 18px/1.3 var(--ds-head) !important; color: var(--ds-ink) !important; margin: 0 !important; }
+html body .main .cs-read .card-b :is(.muted, .small.muted, .xs.muted):not(#DS):not(#DS2) { color: #475569 !important; }
+html body .main .cs-read > .card-b:not(#DS):not(#DS2) { padding: 10px 24px 22px 38px !important; font: 400 15px/1.65 var(--ds-body) !important; color: var(--ds-text, #33333D) !important; max-width: 1100px; }
+html body .main .cs-read > .card-b :is(p, li, .small):not(#DS):not(#DS2) { font-size: 15px !important; line-height: 1.65 !important; }
+@media (min-width: 1200px) { html body .main .cs-read > .card-b > ul:not(#DS):not(#DS2) { columns: 2; column-gap: 40px; } html body .main .cs-read > .card-b li:not(#DS):not(#DS2) { break-inside: avoid; } }
