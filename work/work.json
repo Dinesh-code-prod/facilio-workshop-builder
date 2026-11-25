@@ -400,6 +400,14 @@
       "setup": {
        "type": "object",
        "description": "Only from the one-time Delivery Studio setup: what it found on this computer, each ok, missing or not needed: node, git, studio (this connector), m365 (Microsoft 365 connector), toolbox (facilio-impl-toolbox skill), skillsRepo (local copy of facilio-impl-ai-skills), watcher, queue (the two scheduled tasks); os windows or mac. Shown as the person's checklist in the Studio."
+      },
+      "folder": {
+       "type": "string",
+       "description": "Only for file_put_begin: save into this SharePoint project folder (01_ to 07_). See connector_help"
+      },
+      "itemId": {
+       "type": "string",
+       "description": "Only for file_put_done after a folder upload: the file id Microsoft returned"
       }
      },
      "required": [
@@ -536,7 +544,7 @@
    },
    {
     "name": "get_document",
-    "description": "Read a project document, or one part of it (no part lists the parts). Main sections: workshop, solution_package, brddoc, soldocs, guides (Training folders, guides and the FTR draft), planner, transcripts, reviews, people, config, project_index. Full text: connector_help topic get_document.",
+    "description": "Read a project document, or one part of it (no part lists the parts). Main sections: workshop, solution_package, brddoc, soldocs, guides (Training folders, guides and the FTR draft), planner, transcripts, reviews, people, config, project_index, documents (SharePoint files and inventory). Full text: connector_help topic get_document.",
     "function": "api",
     "input_schema": {
      "type": "object",
@@ -863,7 +871,7 @@
    },
    {
     "name": "project_changes",
-    "description": "What changed in a project since a date (default: the last 7 days), newest first. With action it CHANGES the project safely: scope (modules in or out of scope; flows off, requirements out), tasks (close, reassign or re-date tasks in bulk), check (findings by severity), undo (id), history. For scope and tasks call without token first (dry run), show the plan, then again with the token only after a yes. Full text: connector_help topic project_changes.",
+    "description": "What changed in a project since a date (default 7 days). With action it changes the project safely: scope (modules in or out of scope, flows off, requirements out), tasks (bulk close, reassign, re-date), addtasks (new tasks from a tracker you read), check, undo (id), history. Call without token first (dry run), show the plan, call again with the token only after a yes. Full text: connector_help topic project_changes.",
     "function": "api",
     "input_schema": {
      "type": "object",
@@ -881,6 +889,7 @@
        "enum": [
         "scope",
         "tasks",
+        "addtasks",
         "check",
         "undo",
         "history"
@@ -920,6 +929,18 @@
       },
       "set": {
        "type": "object"
+      },
+      "rows": {
+       "type": "array",
+       "items": {
+        "type": "object"
+       }
+      },
+      "type": {
+       "type": "string"
+      },
+      "source": {
+       "type": "string"
       }
      },
      "required": [

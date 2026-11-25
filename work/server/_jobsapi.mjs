@@ -102,7 +102,13 @@ export function installJobs(d) {
     },
     /** step 1 of sending a finished document to the project: a one-time link to put the bytes to (docx or pdf, up to 16 MB), nothing passes through this function */
     async jobs_file_put_begin(s, b) {
-      const p = await pickProject(s, b.project); await access(s, p.id); const name = String(b.fileName || '').replace(/[^A-Za-z0-9._ ()-]/g, ' ').trim().slice(0, 120); const ext = (name.split('.').pop() || '').toLowerCase(); const size = Number(b.fileSize);
+      const p = await pickProject(s, b.project); await access(s, p.id);
+      if (b.folder) {   // an approved deliverable of any type straight into a SharePoint project folder (25 Nov 2026); one PUT holds up to 16 MB, well under Microsoft's 60 MB a request
+        const S = d.sp && d.sp(); if (!S) throw new HttpError(409, 'SharePoint is not set up yet'); const size = Number(b.fileSize); if (!(size > 0) || size > 16e6) throw new HttpError(413, 'fileSize must be the size in bytes, up to 16 MB');
+        const u = await S.beginUpload(s, p, { name: b.fileName, size, folder: String(b.folder) });
+        return { fileId: u.uploadId, uploadUrl: u.uploadUrl, folder: u.folder, name: u.name, next: 'PUT the whole file to uploadUrl in one request with the header Content-Range: bytes 0-' + (size - 1) + '/' + size + ' and no Authorization header (curl -X PUT -H "Content-Range: bytes 0-' + (size - 1) + '/' + size + '" --upload-file "<path>" "<uploadUrl>"). Microsoft answers with the file as JSON: call project_jobs with action file_put_done, this fileId and itemId set to its "id". Never show or save uploadUrl.' };
+      }
+      const name = String(b.fileName || '').replace(/[^A-Za-z0-9._ ()-]/g, ' ').trim().slice(0, 120); const ext = (name.split('.').pop() || '').toLowerCase(); const size = Number(b.fileSize);
       if (!name || !['docx', 'pdf'].includes(ext)) throw new HttpError(415, 'fileName must be a .docx or .pdf file name'); if (!(size > 0) || size > 16e6) throw new HttpError(413, 'fileSize must be the size in bytes, up to 16 MB');
       const fid = rid('f'); const u = await CTX.files.uploadUrl(fid + '-0.bin', { private: true }); const now = new Date().toISOString();
       await dbPut('fl.' + p.id, fid, { id: fid, category: 'solution_doc', name, mime: ext === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size, chunks: 1, status: 'uploading', meta: { job: String(b.id || '').slice(0, 40), from: 'claude' }, replaces: null, supersededBy: null, createdBy: s.id, createdAt: now, deletedAt: null, urls: [], mint: { 0: u.file_id } });
@@ -110,7 +116,9 @@ export function installJobs(d) {
     },
     /** step 2: the bytes are in storage; the file becomes a ready project file, listed on the Handover page */
     async jobs_file_put_done(s, b) {
-      const p = await pickProject(s, b.project); await access(s, p.id); const r = await dbGet('fl.' + p.id, String(b.fileId || '')); const f = r && r.value; if (!f || f.category !== 'solution_doc' || f.status !== 'uploading' || f.createdBy !== s.id) throw new HttpError(404, 'No upload in progress for that fileId');
+      const p = await pickProject(s, b.project); await access(s, p.id);
+      if (/^up_/.test(String(b.fileId || ''))) { const S = d.sp && d.sp(); if (!S) throw new HttpError(409, 'SharePoint is not set up yet'); const r = await S.finishUpload(s, p.id, String(b.fileId), String(b.itemId || '')); return { name: r.file.name, folder: r.file.folder, link: r.file.url, note: 'Saved in the project SharePoint folder. It shows on Documents & Files.' }; }
+      const r = await dbGet('fl.' + p.id, String(b.fileId || '')); const f = r && r.value; if (!f || f.category !== 'solution_doc' || f.status !== 'uploading' || f.createdBy !== s.id) throw new HttpError(404, 'No upload in progress for that fileId');
       if (!f.mint || !f.mint[0]) throw new HttpError(400, 'The upload link was never issued'); f.urls = [f.mint[0]]; f.status = 'ready'; f.contentCheck = 'unchecked'; await dbPut('fl.' + p.id, f.id, f); await audit(p.id, s.id, 'file-uploaded', 'solution_doc: ' + f.name);
       return { name: f.name, note: 'Saved to the project. It shows on the Handover page under Solution document.' };
     },

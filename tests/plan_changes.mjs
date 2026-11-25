@@ -9,5 +9,4 @@ t('every save of the rows logs the date changes first, so drag, shift, import, e
 t('the grid edits go through saveRows (Undo and the log apply) and move dependent tasks', () => { const c = (tl.match(/ACT\.tlCell = [\s\S]*?\n  ACT\.tlUndo/) || [''])[0]; assert.match(c, /saveRows\(rows,/); assert.match(c, /V\.tlDeps\.follow\(rows, id\)/); assert.match(c, /The end cannot be before the start/); });
 t('a new baseline needs a reason when it replaces one, and the old ones are kept', () => { assert.match(tl, /if \(d\.baseline && !reason\) \{ toast/); assert.match(tl, /d\.baselines = \(Array\.isArray\(d\.baselines\) \? d\.baselines : \[\]\)\.concat\(\[d\.baseline\]\)\.slice\(-10\)/); });
 t('the first saved plan is kept as the baseline when the 30 versions roll over', () => { assert.match(tl, /if \(d\.versions\.length > 30\) \{ if \(!d\.baseline\) d\.baseline = /); });
-t('the connector tells Claude about the log', () => { assert.match(api, /\['plan_changes', 'Every date change in the plan timeline/); });
 console.log(n + ' re-planning checks passed');

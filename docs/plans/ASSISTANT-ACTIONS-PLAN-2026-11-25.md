@@ -32,3 +32,8 @@ Goal: when a person asks the in-app assistant (or their own Claude through the c
 - Chat attachments: the paperclip saves files as team-only project files (category `chat_attachment`); a message with files always goes to Claude with each file's id, and Claude reads them with project_jobs action file_urls.
 - The project check settings (how often, last day, findings already shown) are kept on the account per project (action `watch`), so every browser agrees.
 - Still not done: field changes through the Assistant (fields stay in the module page and the design proposals).
+
+## Any tracker becomes tasks (deploy after 535)
+- An Excel or CSV attached in the chat with "add these as tasks" is read in the browser (`V.readSheets`, shared with the UAT import): `src/trackerlogic.js` finds the header row under titles and blanks, matches the columns by their names (task, details, owner, due, status, priority, module), reads dates (ISO, day first, 5-Dec-2026, Excel day numbers), statuses and severities in the usual words, keeps every other column in the task's details and leaves out rows already closed.
+- The server action `addtasks` previews the new tasks (a title already in the register is skipped, an owner not on the team is left unassigned and named, a module label becomes the module name), creates them through the normal task save with the tracker and row as the source, reads them back, and Undo removes only those nobody changed since.
+- "add these as test cases" opens the UAT import with the file loaded. A layout the browser cannot read, a PDF, Word file or mail goes to Claude, which can call the same `addtasks` through `project_changes` after the person's yes.
