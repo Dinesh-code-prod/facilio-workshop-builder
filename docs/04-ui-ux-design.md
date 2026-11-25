@@ -10,37 +10,41 @@ The rules the screens follow. Colours, depth and wording are the owner's rules; 
 5. **Say what was not checked.** Banners and notices state what a check covers and what it does not.
 6. **A person confirms.** AI and imports show a preview first; nothing is final until confirmed.
 
-## Colour
+## The look: the master design system (24 Nov 2026)
+Source: [design/master-design-system/](design/master-design-system/) (MASTER_DESIGN.md, DESIGN_TOKENS.json, COMPONENT_PATTERNS.md, and the Calendar and Stateflow add-on specs). Code: `src/masterds.css`, the last style layer in `build.mjs`. Its rules write `:not(#DS)`, which the build turns into a long id chain so the layer wins over every older one. Plan and what was done: [plans/MASTER-DESIGN-SYSTEM-PLAN-2026-11-24.md](plans/MASTER-DESIGN-SYSTEM-PLAN-2026-11-24.md).
+
+One look for the staff, customer and Admin views; only menus, actions and data differ, by permission. Light theme only.
+
+## Colour: calm, colour only where it means something (user, 24 Nov 2026: no rainbow)
 | Use | Colour |
 |---|---|
-| Navy (text, headers, dark surfaces) | `#1D1A5E` |
-| Facilio blue (primary actions, active tab, links) | `#1570EF` |
-| Pink (highlights, labels, blocking notices) | `#E5197F` |
-| Sky (soft accents, borders on hover) | `#8DB8FF` |
-| Soft surfaces and lines | `#F4F7FD`, `#E3E9F5` |
+| Main action, links, focus | Facilio blue `#1570EF` |
+| "You are here" (open tab, open menu entry, chosen segment), the stage line above titles | logo violet-blue `#201C5B` on soft violet `#F1EEFF` |
+| AI and Stateflow accent (sparingly) | violet `#6D4AFF` |
+| Text | `#202534` ink, `#667085` secondary, `#98A2B3` muted |
+| Surfaces and lines | white, `#F8FAFC` canvas, `#F5F6FA` quiet sections; `#E5E7EB` and `#D7DCE5` hairlines |
+| Status, always with text or an icon | green `#16A34A`, amber `#D97706`, red `#DC2626` |
 
-Sky and the soft surfaces are for small accents only (a hover border, a selected chip). Cards, card headers, table headers and the page background stay white or neutral grey: no sky-blue fills or blue top lines (owner rule, 9 Nov 2026).
+Menu icons are one neutral grey on a grey tile, for every module; no colour per module. One gradient only: the projects home banner (logo violet-blue into Facilio blue). No other gradients, no neon, no glow.
 
-Not allowed: violet or purple, neon or glow, new gradients. (`design/design-reference.md` and the coss documents are history, not rules.)
-
-## Depth and look
-**The look is the house look** (owner rule, 9 Nov 2026; standing directive `plans/UI-TRANSFORMATION-DIRECTIVE-2026-11-12.md`): system font, weights 400/500/600, grey canvas #f5f5f7, one solid blue primary button per screen, grey capsule secondary buttons, hairline borders, 12 px controls, 20 px cards with soft layered shadows, ease `cubic-bezier(.32,.72,0,1)`, light theme only. The code is `src/ui.css`, the last of the style layers in `build.mjs`; overrides use `body ...:not(#_):not(#__)` with `!important`. Change a rule in place rather than appending a new one: appended layers are what made the look drift.
-
-## Navigation levels (each has its own look; no tab is ever removed or renamed)
-| Level | Element | Look |
+## Controls (each kind looks different; no tab is ever removed or renamed)
+| Kind | Element | Look |
 |---|---|---|
-| 0 App | Projects / Admin switch in the top bar | grey segmented control |
-| 1 Stage | left rail (`#projNav .rl-b`) | icon and label; the chosen stage is a blue-tinted tile |
-| 1b Part of a stage | `.mt-s` row (for example Build the solution / Access & alerts / BRD & sign-off) | text capsules; the chosen one is blue-tinted with its count |
-| 2 Workspace | `.mt-t` row (for example Solution / System Modules / State Flow Builder / Mockup) | plain text tabs; the chosen one is dark with a 2 px blue underline |
-| 3 Mini | `.tabs` inside a page (for example Stateflows / States / All modules) | compact grey segmented control |
-| Actions | page buttons | one blue primary, grey capsules for the rest |
+| Side menu, Compact | `nav.sidebar .rl-b` | grey icon tile, label never cut; open entry on soft violet with a violet-blue marker |
+| Side menu, Expanded | `nav.sidebar .sb-item` | plain rows; open page on soft violet with a marker |
+| Stage pages | `nav.mt-bar` cards, `.mt-t` | white card, grey icon tile; open page soft violet with a 2 px underline |
+| Page tabs | `.tabs` | a text row on a hairline; the open tab has a violet-blue underline |
+| Mini-tabs, view switches | `.seg`, `.kb-seg` | segmented control on a grey track; the chosen one white with violet-blue text |
+| Buttons | `.btn` | 10 px corners: primary solid blue, secondary white with a hairline, ghost text, danger red text |
+| Badges | `.tag`, `.badge`, `.pill` | 6 px rounded rectangles in the status colour |
+| Stepper | `.md-steps` | done green tick, current violet-blue ring and bold label, pending neutral |
+| Cards, panels | `.card`, the Assistant, the Updates panel | white, hairline, 12–14 px corners, a soft shadow only when floating |
 
 ## Type scale
-Page title 28/36 · section heading (h2) 20/26 · card heading (h3) 16/22 · body 14/20 · meta, helper and table header 12/16 grey. All 600 or below, sentence case.
+Page title 32 px / 700 · section 18–20 px · card title 16 px / 600 · body 15 px · tabs and buttons 14–15 px / 600 · table header 12.5 px / 600 · nothing important under 12 px. Plus Jakarta Sans for titles and controls, Inter for reading text. Sentence case; no tiny uppercase labels.
 
 ## Layout
-- **Page header** (dark blue gradient, kept on purpose), then a quiet "Current phase" meta line, then the page. The Claude helper notice is one slim line; its full explanation is behind "How it works".
+- **Page header**: compact and white. Left: stage line, title, one line of description. Right: the page's own actions (one primary). No banner. Contract intake is the model: Upload the MSA, then Analyse contracts, sits top right and is not repeated in the page.
 - **Drawers** (right side) for settings and forms; **dialogs** for confirmations (delete, replace, export with blocking issues).
 - **Banners**: red or pink for blocking, blue-grey for information. Long lists collapse; each issue has a "Fix this" link.
 - **Document editor** (BRD Draft): paper pages, a formatting bar (bold, italic, underline, undo, redo, add paragraph, heading, bullets, table), blocks with a "⋯" menu. Enter starts a new paragraph.
@@ -67,4 +71,4 @@ Discover more has two different clean scroll effects, both in `src/animation/dis
 A separate, calmer menu for the customer (introduction, prepare, product tour, guides, portal). Only tabs the team has switched on show. Team-only records never appear there.
 
 ## Where the design lives in code
-`src/theme.css`, `src/design-system.css`, `src/ui.css` (the last layer), one CSS file per page area, and `src/shell.js` for the menu. Further notes: [reference/design-reference.md](design/design-reference.md), [reference/motion-and-design.md](design/motion-and-design.md).
+`src/masterds.css` (the last layer, the master design system), with `src/projfx.css` and `src/ui.css` below it, one CSS file per page area, and `src/shell.js` for the menu. Motion notes: [design/motion-and-design.md](design/motion-and-design.md).

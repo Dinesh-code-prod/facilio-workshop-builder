@@ -1,0 +1,486 @@
+/* Master design system (user, 24 Nov 2026; docs/design/master-design-system/, plan docs/plans/MASTER-DESIGN-SYSTEM-PLAN-2026-11-24.md).
+   The last style layer: one light, mostly neutral look for the staff, customer and Admin views. Blue (Facilio #1570EF) for the main action, links and focus;
+   calm colours (user, 24 Nov 2026: no rainbow; ui-ux-pro-max, ui-taste "one accent, locked"): one cool slate grey family carries the app, Facilio blue is the only accent (main action, "you are here", progress, focus), green, amber and red only for real status, every menu icon the same grey.
+   Tabs are an underlined row, mini-tabs a segmented switch, buttons have 10 px corners (not pills), badges 6 px, cards 12 px with a hairline.
+   Every rule writes :not(#DS); build.mjs turns #DS into a long id chain so this layer outranks the older ones (which use up to ~70 ids).
+   Remove this file from build.mjs to get the previous look back. */
+
+html body:not(#DS) {
+  --ds-page: #FFFFFF; --ds-canvas: #F8FAFC; --ds-subtle: #F1F5F9; --ds-selected: #EFF5FF; --ds-border: #E2E8F0; --ds-border-strong: #CBD5E1;
+  --ds-ink: #0F172A; --ds-text2: #475569; --ds-muted: #94A3B8; --ds-deep: #1849A9; --ds-icon: #64748B; --ds-violet: #6D4AFF; --ds-blue: #1570EF; --ds-blue-h: #125FCC;
+  --ds-ok: #16A34A; --ds-warn: #D97706; --ds-bad: #DC2626;
+  --ds-r-badge: 6px; --ds-r-ctl: 8px; --ds-r-btn: 10px; --ds-r-card: 12px; --ds-r-panel: 14px;
+  --ds-sh: 0 1px 2px rgba(16, 24, 40, .05); --ds-sh-float: 0 8px 24px rgba(16, 24, 40, .10);
+  --ds-head: "Plus Jakarta Sans", Inter, system-ui, sans-serif; --ds-body: Inter, system-ui, sans-serif;
+}
+
+/* ---------- Top bar: white, one hairline under it, fewer outlines (controls are told apart by spacing and a hover tint) ---------- */
+html body header.navbar:not(#DS) { background: #fff !important; border-bottom: 1px solid var(--ds-border) !important; box-shadow: none !important; }
+html body header.navbar:not(#DS)::after { display: none !important; }
+html body header.navbar :is(.hp-chip, .co-pill, [data-act="custPreview"], .gs-btn, .bell):not(#DS) { background: transparent !important; box-shadow: none !important; border: 0 !important; border-radius: var(--ds-r-ctl) !important; color: var(--ds-ink) !important; font: 600 14px/1 var(--ds-head) !important; }
+html body header.navbar :is(.hp-chip, .co-pill, [data-act="custPreview"], .gs-btn, .bell):hover:not(#DS) { background: var(--ds-subtle) !important; }
+html body header.navbar .co-pill:not(#DS) svg { color: var(--ds-blue) !important; }
+html body header.navbar .gs-btn:not(#DS) { background: var(--ds-subtle) !important; box-shadow: inset 0 0 0 1px var(--ds-border) !important; color: var(--ds-text2) !important; font-weight: 500 !important; }
+html body header.navbar .gs-btn:hover:not(#DS) { background: #EEF0F4 !important; }
+html body header.navbar .nb-proj:not(#DS) { background: var(--ds-subtle) !important; box-shadow: none !important; border: 0 !important; border-radius: var(--ds-r-btn) !important; }
+html body header.navbar .nb-proj .nb-av:not(#DS) { background: #334155 !important; border-radius: 8px !important; }
+html body header.navbar .nb-proj .nb-pt > b:not(#DS) { color: var(--ds-ink) !important; }
+html body header.navbar .ws-switch:not(#DS) { background: var(--ds-subtle) !important; border-radius: var(--ds-r-btn) !important; box-shadow: none !important; padding: 3px !important; }
+html body header.navbar .ws-switch a:not(#DS) { border-radius: var(--ds-r-ctl) !important; color: var(--ds-text2) !important; font: 600 14px/1 var(--ds-head) !important; box-shadow: none !important; }
+html body header.navbar .ws-switch a[aria-current="page"]:not(#DS) { background: #fff !important; color: var(--ds-deep) !important; box-shadow: 0 1px 2px rgba(16, 24, 40, .10), 0 0 0 1px var(--ds-border) !important; }
+html body header.navbar .avatar:not(#DS) { box-shadow: 0 0 0 1px var(--ds-border) !important; background: var(--ds-subtle) !important; color: var(--ds-ink) !important; }
+html body header.navbar .bell .bell-n:not(#DS) { background: var(--ds-bad) !important; color: #fff !important; }
+
+/* ---------- Buttons: primary (solid Facilio blue), secondary (white, hairline), tertiary (.ghost, text), destructive (.danger, red text). 10 px corners, 14 px labels ---------- */
+html body :is(.main, .adm-main, .drawer, .dialog, [role="dialog"], .projects-page) .btn:not(.icon):not(#DS) { border-radius: var(--ds-r-btn) !important; font-family: var(--ds-head) !important; font-weight: 600 !important; letter-spacing: 0 !important; }
+html body :is(.main, .adm-main, .drawer, .dialog, [role="dialog"], .projects-page) .btn:not(.sm):not(.icon):not(#DS) { font-size: 14.5px !important; }
+html body :is(.main, .adm-main, .drawer, .dialog, [role="dialog"], .projects-page) .btn.sm:not(.icon):not(#DS) { font-size: 13.5px !important; border-radius: var(--ds-r-ctl) !important; }
+html body :is(.main, .adm-main, .drawer, .dialog, [role="dialog"], .projects-page) .btn.icon:not(#DS) { border-radius: var(--ds-r-ctl) !important; }
+html body :is(.main, .adm-main, .drawer, .dialog, [role="dialog"], .projects-page) .btn.primary:not(#DS) { background: var(--ds-blue) !important; color: #fff !important; box-shadow: var(--ds-sh) !important; border: 0 !important; }
+html body :is(.main, .adm-main, .drawer, .dialog, [role="dialog"], .projects-page) .btn.primary:hover:not(:disabled):not(#DS) { background: var(--ds-blue-h) !important; }
+html body :is(.main, .adm-main, .drawer, .dialog, [role="dialog"], .projects-page) .btn:not(.primary):not(.ghost):not(.danger):not(.link):not(#DS) { background: #fff !important; color: var(--ds-ink) !important; box-shadow: inset 0 0 0 1px var(--ds-border-strong) !important; border: 0 !important; }
+html body :is(.main, .adm-main, .drawer, .dialog, [role="dialog"], .projects-page) .btn:not(.primary):not(.ghost):not(.danger):not(.link):hover:not(:disabled):not(#DS) { background: var(--ds-subtle) !important; }
+html body :is(.main, .adm-main, .drawer, .dialog, [role="dialog"], .projects-page) .btn.ghost:not(#DS) { background: transparent !important; box-shadow: none !important; color: var(--ds-ink) !important; }
+html body :is(.main, .adm-main, .drawer, .dialog, [role="dialog"], .projects-page) .btn.ghost:hover:not(:disabled):not(#DS) { background: var(--ds-subtle) !important; }
+html body :is(.main, .adm-main, .drawer, .dialog, [role="dialog"], .projects-page) .btn.danger:not(#DS) { background: #fff !important; color: var(--ds-bad) !important; box-shadow: inset 0 0 0 1px #F4C7C3 !important; }
+html body :is(.main, .adm-main, .drawer, .dialog, [role="dialog"], .projects-page) .btn.danger:hover:not(:disabled):not(#DS) { background: #FEF3F2 !important; }
+html body :is(.main, .adm-main, .drawer, .dialog, [role="dialog"], .projects-page) .btn:disabled:not(#DS) { opacity: .5 !important; cursor: not-allowed !important; }
+html body :is(.btn, button, a, [role="tab"], input, select, textarea):focus-visible:not(#DS) { outline: 2px solid var(--ds-blue) !important; outline-offset: 2px !important; }
+
+/* ---------- Page header: compact and white. Left: stage, title, one line; right: the page's own actions. No gradient band ---------- */
+html body :is(.main .page-header, .main .ca-hero .ca-top):not(#DS) { background: transparent !important; border: 0 !important; border-bottom: 1px solid var(--ds-border) !important; border-radius: 0 !important; box-shadow: none !important; padding: 4px 0 20px !important; margin: 0 0 24px !important; color: var(--ds-ink) !important; }
+html body .main .page-header:not(#DS) { display: flex !important; flex-wrap: wrap !important; align-items: flex-end !important; justify-content: space-between !important; gap: 12px 16px !important; }
+html body .main .page-header > .t:not(#DS) { flex: 1 1 420px !important; min-width: 0 !important; }
+html body .main .page-header > :is(.btn, .row, .ph-acts):not(#DS) { flex: none; }
+html body :is(.main .page-header .t > h1, .main .ca-hero .ca-title):not(#DS) { background: none !important; color: var(--ds-ink) !important; -webkit-text-fill-color: var(--ds-ink) !important; font: 700 32px/1.2 var(--ds-head) !important; letter-spacing: -.015em !important; margin: 0 !important; }
+html body .main .page-header .t:not(#DS)::before { color: var(--ds-text2) !important; font: 600 13px/1.3 var(--ds-head) !important; text-transform: none !important; letter-spacing: 0 !important; }
+html body :is(.main .page-header, .main .ca-hero .ca-top) :is(p, small, .muted, .ca-eye, .ca-status, label, span:not(.btn *):not(.pill):not(.chip)):not(.btn):not(button *):not(#DS) { color: var(--ds-text2) !important; -webkit-text-fill-color: currentColor !important; }
+html body :is(.main .page-header .t > p, .main .ca-hero .ca-status):not(#DS) { font: 400 15px/1.55 var(--ds-body) !important; max-width: 880px; margin-top: 6px !important; }
+html body :is(.main .page-header, .main .ca-hero .ca-top) :is(p, .t, .ca-status, .sub) :is(b, strong, em, i, code):not(.btn *):not(svg *):not(#DS) { color: var(--ds-ink) !important; -webkit-text-fill-color: var(--ds-ink) !important; }
+html body :is(.main .page-header, .main .ca-hero .ca-top) :is(a, .ph-more):not(.btn):not(#DS) { color: var(--ds-blue) !important; }
+html body :is(.main .page-header, .main .ca-hero .ca-top) .btn:not(.primary):not(#DS) { background: #fff !important; color: var(--ds-ink) !important; box-shadow: inset 0 0 0 1px var(--ds-border-strong) !important; }
+html body :is(.main .page-header, .main .ca-hero .ca-top) .btn:not(.primary):not(#DS) * { color: inherit !important; }
+html body :is(.main .page-header, .main .ca-hero .ca-top) .btn.primary:not(#DS) { background: var(--ds-blue) !important; color: #fff !important; }
+html body :is(.main .page-header, .main .ca-hero .ca-top) .btn.primary:not(#DS) * { color: #fff !important; }
+html body :is(.main .page-header, .main .ca-hero .ca-top) :is(.tag, .pill, .chip, .badge, [class*="-pill"], [class*="-chip"], [class*="-badge"], [class*="-tag"]):not(.btn):not(#DS) { background: var(--ds-subtle) !important; color: #334155 !important; -webkit-text-fill-color: #334155 !important; box-shadow: inset 0 0 0 1px var(--ds-border) !important; }
+html body :is(.main .page-header, .main .ca-hero .ca-top) :is(.tag, .pill, .chip, .badge, [class*="-pill"], [class*="-chip"], [class*="-badge"], [class*="-tag"]):not(.btn) *:not(#DS) { color: inherit !important; -webkit-text-fill-color: currentColor !important; }
+
+/* project Home: the figure tiles are white stat tiles; the colour is a narrow edge and the number, the label says what it is */
+html body .main .ca-hero .ca-tile:not(#DS) { --ds-tone: var(--ds-blue); background: #fff !important; border: 1px solid var(--ds-border) !important; border-radius: var(--ds-r-card) !important; box-shadow: inset 4px 0 0 var(--ds-tone), var(--ds-sh) !important; }
+html body .main .ca-hero .ca-tile.amber:not(#DS) { --ds-tone: var(--ds-warn); } html body .main .ca-hero .ca-tile.red:not(#DS) { --ds-tone: var(--ds-bad); }
+html body .main .ca-hero .ca-tile.green:not(#DS) { --ds-tone: var(--ds-ok); } html body .main .ca-hero .ca-tile.teal:not(#DS) { --ds-tone: #0D9488; }
+html body .main .ca-hero .ca-tile b:not(#DS) { color: var(--ds-tone) !important; -webkit-text-fill-color: currentColor !important; }
+html body .main .ca-hero .ca-tile span:not(#DS) { color: var(--ds-text2) !important; -webkit-text-fill-color: currentColor !important; }
+html body .main .ca-hero .ca-tile:hover:not(#DS) { border-color: var(--ds-border-strong) !important; box-shadow: inset 4px 0 0 var(--ds-tone), var(--ds-sh-float) !important; }
+
+/* projects home: the one place that keeps a gradient (user, 24 Nov 2026: "have the blue gradient here alone"): the logo accent blue into Facilio blue, white text, the city art; buttons get the 10 px corners */
+html body .projects-page .hm-hero.night:not(#DS) { background: radial-gradient(55% 140% at 100% 0%, rgba(255, 255, 255, .16) 0%, rgba(255, 255, 255, 0) 60%), linear-gradient(120deg, #201C5B 0%, #262073 40%, #1A4FC4 80%, #1570EF 100%) !important; border: 0 !important; border-radius: var(--ds-r-panel) !important; }
+html body .projects-page .hm-hero.night .hm-btn:not(#DS) { border-radius: var(--ds-r-btn) !important; font: 600 14.5px/1 var(--ds-head) !important; }
+
+/* ---------- Page tabs: navigation, not buttons. A text row on a hairline; the open tab has a accent blue underline ---------- */
+html body :is(.main, .adm-main, .drawer, .dialog) .tabs:not(.brd-tabs):not(#DS) { background: transparent !important; border: 0 !important; border-bottom: 1px solid var(--ds-border) !important; border-radius: 0 !important; box-shadow: none !important; padding: 0 !important; gap: 4px !important; overflow-x: auto; scrollbar-width: thin; }
+html body :is(.main, .adm-main, .drawer, .dialog) .tabs:not(.brd-tabs) > :is(.tab, button, a):not(#DS) { background: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; color: var(--ds-text2) !important; font: 600 14.5px/20px var(--ds-head) !important; padding: 10px 12px !important; margin: 0 0 -1px !important; min-height: 42px !important; height: auto !important; white-space: nowrap; }
+html body :is(.main, .adm-main, .drawer, .dialog) .tabs:not(.brd-tabs) > :is(.tab, button, a):hover:not(#DS) { color: var(--ds-ink) !important; background: var(--ds-subtle) !important; border-radius: 8px 8px 0 0 !important; }
+html body :is(.main, .adm-main, .drawer, .dialog) .tabs:not(.brd-tabs) > :is(.tab.active, .tab.on, [aria-selected="true"], [aria-current="page"]):not(#DS) { background: transparent !important; color: var(--ds-deep) !important; box-shadow: inset 0 -2px 0 var(--ds-deep) !important; }
+html body :is(.main, .adm-main, .drawer, .dialog) .tabs:not(.brd-tabs) > :is(.tab.active, .tab.on, [aria-selected="true"], [aria-current="page"]):not(#DS) * { color: inherit !important; }
+
+/* ---------- Mini-tabs and view switches: a segmented control on a quiet grey track; the chosen one is white with accent blue text ---------- */
+html body :is(.main, .adm-main, .drawer, .dialog, #userPop) :is(.seg, .kb-seg):not(#DS) { display: inline-flex; background: #F1F5F9 !important; border: 0 !important; border-radius: var(--ds-r-btn) !important; box-shadow: none !important; padding: 3px !important; gap: 2px !important; }
+html body :is(.main, .adm-main, .drawer, .dialog, #userPop) :is(.seg, .kb-seg) button:not(#DS) { background: transparent !important; border: 0 !important; border-radius: var(--ds-r-ctl) !important; box-shadow: none !important; color: #475569 !important; font: 600 13.5px/18px var(--ds-head) !important; }
+html body :is(.main, .adm-main, .drawer, .dialog, #userPop) :is(.seg, .kb-seg) button:hover:not(.on):not(.active):not(#DS) { color: var(--ds-ink) !important; background: rgba(255, 255, 255, .6) !important; }
+html body :is(.main, .adm-main, .drawer, .dialog, #userPop) :is(.seg, .kb-seg) button:is(.on, .active, [aria-pressed="true"]):not(#DS) { background: #fff !important; color: var(--ds-deep) !important; box-shadow: 0 1px 2px rgba(16, 24, 40, .10), 0 0 0 1px var(--ds-border) !important; }
+html body :is(.main, .adm-main, .drawer, .dialog, #userPop) :is(.seg, .kb-seg) button:is(.on, .active, [aria-pressed="true"]):not(#DS) * { color: inherit !important; }
+
+/* filter chips and other toggles: chosen = soft blue with accent blue text (not a dark fill) */
+html body :is(.main, .adm-main, .drawer, .dialog) :is(.pt-sh.on, .ko-chipb.on, .dtab.on, .tr-chip.on, .chip.on, button.chip.active):not(#DS) { background: var(--ds-selected) !important; color: var(--ds-deep) !important; border-color: #C7DBFB !important; box-shadow: inset 0 0 0 1px #C7DBFB !important; }
+html body :is(.main, .adm-main, .drawer, .dialog) :is(.pt-sh.on, .ko-chipb.on, .dtab.on, .tr-chip.on, .chip.on, button.chip.active):not(#DS) * { color: inherit !important; }
+
+/* ---------- Stage page groups (nav.mt-bar): white cards with a grey icon tile; pages as quiet tabs; the open page soft blue with an underline ---------- */
+html body :is(.main nav.mt-bar, nav.adx-tabs):not(#DS) { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+html body :is(.main nav.mt-bar, nav.adx-tabs) > .mt-in:not(#DS) { background: #fff !important; border: 1px solid var(--ds-border) !important; border-radius: var(--ds-r-card) !important; box-shadow: var(--ds-sh) !important; }
+html body :is(.main nav.mt-bar, nav.adx-tabs) > .mt-in.here:not(#DS) { background: #fff !important; border-color: var(--ds-border-strong) !important; box-shadow: inset 3px 0 0 var(--ds-blue), var(--ds-sh) !important; }
+html body :is(.main nav.mt-bar, nav.adx-tabs) .mt-cap:not(#DS) { color: var(--ds-ink) !important; font: 600 15px/20px var(--ds-head) !important; }
+html body :is(.main nav.mt-bar, nav.adx-tabs) .mt-cap em:not(#DS) { background: var(--ds-subtle) !important; color: var(--ds-text2) !important; border-radius: var(--ds-r-badge) !important; font: 600 12px/18px var(--ds-head) !important; box-shadow: none !important; }
+html body :is(.main nav.mt-bar, nav.adx-tabs) .mt-capic:not(#DS) { background: var(--ds-subtle) !important; color: var(--ds-icon) !important; border-radius: 8px !important; box-shadow: none !important; }
+html body :is(.main nav.mt-bar, nav.adx-tabs) .mt-t:not(#DS) { background: transparent !important; border: 0 !important; box-shadow: none !important; border-radius: var(--ds-r-ctl) !important; color: #334155 !important; font: 600 14px/20px var(--ds-head) !important; }
+html body :is(.main nav.mt-bar, nav.adx-tabs) .mt-t svg:not(#DS) { color: var(--ds-muted) !important; }
+html body :is(.main nav.mt-bar, nav.adx-tabs) .mt-t:hover:not(.active):not(#DS) { background: var(--ds-subtle) !important; color: var(--ds-ink) !important; }
+html body :is(.main nav.mt-bar, nav.adx-tabs) .mt-t.active:not(#DS) { background: var(--ds-selected) !important; color: var(--ds-deep) !important; box-shadow: inset 0 -2px 0 var(--ds-deep) !important; border-radius: 8px 8px 2px 2px !important; }
+html body :is(.main nav.mt-bar, nav.adx-tabs) .mt-t.active:not(#DS) * { color: inherit !important; }
+
+/* ---------- Badges: compact rounded rectangles; the colour stays the status colour each page already gives ---------- */
+html body :is(.main, .adm-main, .drawer, .dialog) :is(.tag, .badge, span.pill, span.chip, .md-chip):not(#DS) { border-radius: var(--ds-r-badge) !important; font-family: var(--ds-head) !important; font-weight: 600 !important; font-size: 12.5px !important; letter-spacing: 0 !important; text-transform: none !important; }
+
+/* ---------- Cards, tables, fields ---------- */
+html body :is(.main, .adm-main) .card:not(#DS) { background: #fff !important; border: 1px solid var(--ds-border) !important; border-radius: var(--ds-r-card) !important; box-shadow: var(--ds-sh) !important; }
+html body :is(.main, .adm-main) .card .card:not(#DS) { box-shadow: none !important; }
+html body :is(.main, .adm-main) .card > .card-h:not(#DS) { background: #fff !important; border-bottom: 1px solid var(--ds-border) !important; }
+html body :is(.main, .adm-main) .card > .card-h > :is(b, h2, h3, strong):not(#DS) { color: var(--ds-ink) !important; font: 600 16px/22px var(--ds-head) !important; }
+html body :is(.main, .adm-main, .drawer) table:not(.paper table):not(.brd-doc table):not(#DS) th { background: var(--ds-canvas) !important; color: #475569 !important; font: 600 12.5px/18px var(--ds-head) !important; text-transform: none !important; letter-spacing: 0 !important; border-bottom: 1px solid var(--ds-border) !important; }
+html body :is(.main, .adm-main, .drawer) table:not(.paper table):not(.brd-doc table):not(#DS) td { font-size: 14px !important; color: var(--ds-ink); border-bottom-color: #EEF0F3 !important; }
+html body :is(.main, .adm-main, .drawer, .dialog) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea):not(#DS) { border-radius: var(--ds-r-ctl) !important; }
+
+/* ---------- Stepper: done = green tick, current = accent blue ring and bold label, pending = neutral ---------- */
+html body .main .md-steps:not(#DS) { display: flex !important; flex-wrap: wrap; gap: 0 !important; padding: 14px 0 !important; margin: 16px 0 !important; background: transparent !important; border: 0 !important; border-top: 1px solid var(--ds-border) !important; border-bottom: 1px solid var(--ds-border) !important; border-radius: 0 !important; box-shadow: none !important; list-style: none; }
+html body .main .md-steps .md-st:not(#DS) { flex: 0 1 auto; white-space: nowrap; display: flex !important; align-items: center !important; gap: 10px !important; padding: 4px 12px 4px 0 !important; background: transparent !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; position: relative; font: 500 14px/20px var(--ds-head) !important; color: var(--ds-text2) !important; }
+html body .main .md-steps .md-st + .md-st:not(#DS)::before { content: ""; flex: 0 0 24px; height: 2px; background: var(--ds-border); border-radius: 1px; margin-right: 2px; }
+html body .main .md-steps .md-st.done + .md-st:not(#DS)::before { background: var(--ds-ok); }
+html body .main .md-steps .md-st > i:not(#DS) { flex: none; width: 26px !important; height: 26px !important; display: grid !important; place-items: center; border-radius: 50% !important; font: 700 13px/1 var(--ds-head) !important; font-style: normal !important; background: #fff !important; color: var(--ds-text2) !important; box-shadow: inset 0 0 0 1.5px var(--ds-border-strong) !important; }
+html body .main .md-steps .md-st.done > i:not(#DS) { background: var(--ds-ok) !important; color: #fff !important; box-shadow: none !important; }
+html body .main .md-steps .md-st.now > i:not(#DS) { background: var(--ds-selected) !important; color: var(--ds-deep) !important; box-shadow: inset 0 0 0 2px var(--ds-deep) !important; }
+html body .main .md-steps .md-st.now:not(#DS) { color: var(--ds-ink) !important; font-weight: 700 !important; }
+html body .main .md-steps .md-st.done:not(#DS) { color: var(--ds-ink) !important; }
+html body .main .md-steps .md-st :is(span, .md-stb):not(#DS) { background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; color: inherit !important; font: inherit !important; }
+html body .main .md-steps .md-st .md-stb:not(#DS) { cursor: pointer; text-decoration: underline; text-decoration-color: var(--ds-border-strong); text-underline-offset: 3px; }
+html body .main .md-steps .md-st em:not(#DS) { font: 500 12.5px/1 var(--ds-body) !important; font-style: normal !important; color: var(--ds-text2) !important; background: var(--ds-subtle) !important; border-radius: var(--ds-r-badge) !important; padding: 3px 6px !important; }
+html body .main .md-an:not(#DS) { border-radius: var(--ds-r-card) !important; box-shadow: none !important; border: 1px solid var(--ds-border) !important; background: var(--ds-canvas) !important; padding: 12px 16px !important; }
+html body .main .md-an.stale:not(#DS) { background: #FFFAEB !important; border-color: #FEDF89 !important; }
+html body .main .md-an.current:not(#DS) { background: #F0FDF4 !important; border-color: #BBF7D0 !important; }
+html body .main .md-tbl td:first-child b:not(#DS) { font: 600 14.5px/20px var(--ds-head) !important; color: var(--ds-ink) !important; }
+html body .main .md-empty:not(#DS) { margin: 4px 0 0 !important; }
+/* Admin's delivery stage stepper */
+html body .adm-main .stepper > *:not(#DS) { border-radius: var(--ds-r-badge) !important; font-family: var(--ds-head) !important; }
+
+/* ---------- Side menu, Compact (icon rail): every module the same grey icon tile; the open entry on soft blue with a marker ---------- */
+html body.in-proj nav.sidebar:not(#DS) { background: #fff !important; border-right: 1px solid var(--ds-border) !important; }
+html body.in-proj nav.sidebar .rl-b:not(#DS) { background: transparent !important; border-radius: var(--ds-r-btn) !important; color: var(--ds-ink) !important; position: relative; }
+html body.in-proj nav.sidebar .rl-b > svg:not(#DS) { width: 32px !important; height: 32px !important; padding: 6px !important; border-radius: 9px !important; background: var(--ds-subtle) !important; color: var(--ds-icon) !important; box-shadow: none !important; stroke-width: 2 !important; }
+html body.in-proj nav.sidebar .rl-b .rl-l:not(#DS) { font: 600 12px/1.2 var(--ds-head) !important; color: #475569 !important; white-space: normal !important; overflow: visible !important; text-overflow: clip !important; text-align: center; }
+html body.in-proj nav.sidebar .rl-b:hover:not(.active):not(#DS) { background: var(--ds-subtle) !important; }
+html body.in-proj nav.sidebar .rl-b.active:not(#DS) { background: var(--ds-selected) !important; }
+html body.in-proj nav.sidebar .rl-b.active:not(#DS)::before { content: "" !important; display: block !important; position: absolute !important; left: 0 !important; top: 12px !important; bottom: 12px !important; width: 3px !important; height: auto !important; border-radius: 0 3px 3px 0 !important; background: var(--ds-deep) !important; }
+html body.in-proj nav.sidebar .rl-b.active > svg:not(#DS) { background: #DCE8FD !important; color: var(--ds-blue) !important; box-shadow: none !important; }
+html body.in-proj nav.sidebar .rl-b.active .rl-l:not(#DS) { color: var(--ds-deep) !important; font-weight: 700 !important; }
+html body.in-proj nav.sidebar .rl-b .rl-n:not(#DS) { background: var(--ds-bad) !important; color: #fff !important; }
+html body.in-proj .rl-fly:not(#DS) { background: #fff !important; border-radius: var(--ds-r-panel) !important; box-shadow: 0 0 0 1px var(--ds-border), var(--ds-sh-float) !important; backdrop-filter: none !important; }
+html body.in-proj .rl-fly .rl-fi b:not(#DS) { color: var(--ds-ink) !important; }
+html body.in-proj .rl-fly .rl-fi small:not(#DS) { color: var(--ds-text2) !important; }
+html body.in-proj .rl-fly .rl-fi:hover:not(#DS) { background: var(--ds-subtle) !important; }
+html body.in-proj .rl-fly .rl-fi:hover:not(#DS)::after { color: var(--ds-deep) !important; }
+
+/* ---------- Side menu, Expanded: white, the open page soft blue with a accent blue marker ---------- */
+html body:not(.nav-top) nav.sidebar .sb-item.active:not(#DS) { background: var(--ds-selected) !important; color: var(--ds-deep) !important; font-weight: 600 !important; box-shadow: inset 3px 0 0 var(--ds-deep) !important; }
+html body:not(.nav-top) nav.sidebar .sb-item.active:not(#DS) * { color: inherit !important; }
+html body:not(.nav-top) nav.sidebar .sb-item:hover:not(.active):not(#DS) { background: var(--ds-subtle) !important; }
+html body:not(.nav-top) nav.sidebar .sb-title:not(#DS) { color: var(--ds-ink) !important; font-family: var(--ds-head) !important; }
+html body:not(.nav-top) nav.sidebar .sb-sec:not(#DS) span { color: var(--ds-text2) !important; font: 600 12px/1.3 var(--ds-head) !important; text-transform: none !important; letter-spacing: 0 !important; }
+html body:not(.nav-top) nav.sidebar .sb-here:not(#DS) { background: var(--ds-canvas) !important; border: 1px solid var(--ds-border) !important; box-shadow: none !important; }
+html body:not(.nav-top) nav.sidebar .sb-here .sb-here-k:not(#DS) { color: var(--ds-deep) !important; }
+
+/* ---------- Admin menu (Expanded and the 76 px Compact rail): the same open state as the project menu ---------- */
+html body .adm-nav:not(#DS) { background: #fff !important; border-right: 1px solid var(--ds-border) !important; }
+html body .adm-nav .adm-ni:not(#DS) { border-radius: var(--ds-r-btn) !important; color: #334155 !important; font-family: var(--ds-head) !important; }
+html body .adm-nav .adm-ni:hover:not(.on):not(#DS) { background: var(--ds-subtle) !important; }
+html body .adm-nav .adm-ni.on:not(#DS) { background: var(--ds-selected) !important; color: var(--ds-deep) !important; box-shadow: none !important; position: relative; }
+html body .adm-nav .adm-ni.on:not(#DS) :is(span, svg) { color: var(--ds-deep) !important; }
+html body .adm-nav .adm-ni.on:not(#DS)::before { content: "" !important; display: block !important; position: absolute !important; left: 0 !important; top: 8px !important; bottom: 8px !important; width: 3px !important; height: auto !important; border-radius: 0 3px 3px 0 !important; background: var(--ds-deep) !important; }
+
+/* ---------- Calendar (FullCalendar, standard MIT bundle): today a soft blue tint, its number a accent blue chip; events stay soft tints with a coloured edge ---------- */
+html body .main .cal-fc .fc-day-today:not(#DS) { background: #F5F9FF !important; }
+html body .main .cal-fc .fc-day-today .fc-daygrid-day-number:not(#DS) { background: var(--ds-blue) !important; color: #fff !important; border-radius: var(--ds-r-badge) !important; }
+html body .main .cal-fc .fc-col-header-cell:not(#DS) { background: var(--ds-canvas) !important; }
+html body .main .cal-fc .fc-col-header-cell:not(#DS) * { color: #475569 !important; font: 600 12.5px/18px var(--ds-head) !important; }
+html body .main .cal-fc .fc-event.cal-fcev:not(#DS) { font-size: 13px !important; }
+
+/* ---------- Stateflow builder: a light dotted canvas; the Test flow button keeps the violet AI/Stateflow accent ---------- */
+html body .main .sfb-canvas:not(#DS) { background-color: #fff !important; background-image: radial-gradient(circle, #DDE1E8 1px, transparent 1.2px) !important; background-size: 20px 20px !important; border: 1px solid var(--ds-border) !important; border-radius: var(--ds-r-panel) !important; }
+html body .main .sfb-toolbar .sfb-test:not(#DS) { background: var(--ds-selected) !important; color: #5B3FD9 !important; box-shadow: inset 0 0 0 1px #D9D0FF !important; }
+
+/* ---------- Admin header: the same compact header as a project page (stage line in sentence case, 32 px title, actions on the right) ---------- */
+html body .adm-main .adm-hero:not(#DS) { background: transparent !important; border: 0 !important; border-bottom: 1px solid var(--ds-border) !important; border-radius: 0 !important; box-shadow: none !important; padding-bottom: 20px !important; margin-bottom: 24px !important; }
+html body .adm-main .adm-crumb:not(#DS) { font: 600 13px/1.3 var(--ds-head) !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--ds-text2) !important; }
+html body .adm-main .adm-hero-t h1:not(#DS) { font: 700 32px/1.2 var(--ds-head) !important; letter-spacing: -.015em !important; color: var(--ds-ink) !important; -webkit-text-fill-color: var(--ds-ink) !important; background: none !important; }
+html body .adm-main .adm-sub:not(#DS) { color: var(--ds-text2) !important; }
+html body .adm-main :is(.hm-btn, .rgdd-btn):not(#DS) { border-radius: var(--ds-r-btn) !important; background: #fff !important; color: var(--ds-ink) !important; box-shadow: inset 0 0 0 1px var(--ds-border-strong) !important; border: 0 !important; font: 600 14px/1 var(--ds-head) !important; }
+html body .adm-main :is(.hm-btn, .rgdd-btn):hover:not(#DS) { background: var(--ds-subtle) !important; }
+html body .adm-main .adm-hero-t:not(#DS) { display: grid !important; grid-template-columns: minmax(0, 1fr) auto !important; column-gap: 16px !important; align-items: end !important; }
+html body .adm-main .adm-hero-t > :not(.adm-hero-a):not(#DS) { grid-column: 1 !important; }
+html body .adm-main .adm-hero-t > .adm-hero-a:not(#DS) { grid-column: 2 !important; grid-row: 1 / span 3 !important; align-self: end !important; margin: 0 !important; }
+@media (max-width: 1100px) { html body .adm-main .adm-hero-t:not(#DS) { grid-template-columns: minmax(0, 1fr) !important; } html body .adm-main .adm-hero-t > .adm-hero-a:not(#DS) { grid-column: 1 !important; grid-row: auto !important; margin-top: 12px !important; } }
+
+/* ---------- Chat box (the floating Assistant): a white panel with one hairline and a floating shadow; quiet header; soft blue AI mark; plain composer ---------- */
+html body #asst:not(#DS) { background: #fff !important; border: 1px solid var(--ds-border) !important; border-radius: var(--ds-r-panel) !important; box-shadow: var(--ds-sh-float) !important; backdrop-filter: none !important; }
+html body #asst .as-head:not(#DS) { background: #fff !important; border-bottom: 1px solid var(--ds-border) !important; }
+html body #asst .as-logo:not(#DS) { background: var(--ds-selected) !important; color: var(--ds-blue) !important; border-radius: 10px !important; box-shadow: none !important; }
+html body #asst .as-tt b:not(#DS) { font: 700 16px/1.25 var(--ds-head) !important; color: var(--ds-ink) !important; }
+html body #asst .as-tt small:not(#DS) { font: 500 12.5px/1.3 var(--ds-body) !important; text-transform: none !important; letter-spacing: 0 !important; color: var(--ds-text2) !important; }
+html body #asst .as-ib:not(#DS) { border-radius: var(--ds-r-ctl) !important; color: #475569 !important; }
+html body #asst .as-ib:hover:not(#DS) { background: var(--ds-subtle) !important; }
+html body #asst .as-claude .hp-chip:not(#DS) { border-radius: var(--ds-r-ctl) !important; background: #fff !important; box-shadow: inset 0 0 0 1px var(--ds-border) !important; color: var(--ds-ink) !important; font: 600 13.5px/1 var(--ds-head) !important; }
+html body #asst .ask-claude:not(#DS) { border-radius: var(--ds-r-btn) !important; background: var(--ds-blue) !important; color: #fff !important; box-shadow: var(--ds-sh) !important; font: 600 14px/1 var(--ds-head) !important; }
+html body #asst .as-usage:not(#DS) { background: var(--ds-canvas) !important; color: var(--ds-text2) !important; border-bottom: 1px solid var(--ds-border) !important; }
+html body #asst .as-body:not(#DS) { background: var(--ds-canvas) !important; }
+html body #asst .as-now:not(#DS) { background: #fff !important; border: 1px solid var(--ds-border) !important; border-radius: var(--ds-r-card) !important; box-shadow: none !important; }
+html body #asst .as-empty:not(#DS) { color: var(--ds-text2) !important; }
+html body #asst .as-comp:not(#DS) { background: #fff !important; border-top: 1px solid var(--ds-border) !important; }
+html body #asst .as-crow:not(#DS) { border-radius: var(--ds-r-card) !important; box-shadow: inset 0 0 0 1px var(--ds-border-strong) !important; background: #fff !important; }
+html body #asst .as-crow:focus-within:not(#DS) { box-shadow: inset 0 0 0 1px var(--ds-blue), 0 0 0 3px rgba(21, 112, 239, .12) !important; }
+html body #asst .as-send:not(#DS) { background: var(--ds-blue) !important; color: #fff !important; }
+html body #asst :is(.as-modewrap button, #asMode):not(#DS) { border-radius: var(--ds-r-ctl) !important; }
+
+/* ---------- Notifications: the Updates panel and the pop-ups. White, hairline, floating shadow; All/Unread as a segmented switch; group captions in sentence case ---------- */
+html body #bellPop:not(#DS) { background: #fff !important; border: 1px solid var(--ds-border) !important; border-radius: var(--ds-r-panel) !important; box-shadow: var(--ds-sh-float) !important; backdrop-filter: none !important; }
+html body #bellPop header h3:not(#DS) { font: 700 18px/1.3 var(--ds-head) !important; color: var(--ds-ink) !important; }
+html body #bellPop .bp-n:not(#DS) { border-radius: var(--ds-r-badge) !important; background: var(--ds-subtle) !important; color: var(--ds-text2) !important; font: 600 12.5px/1.6 var(--ds-head) !important; }
+html body #bellPop .bp-tabs > button:not(.bp-all):not(#DS) { background: transparent !important; border: 0 !important; box-shadow: none !important; border-radius: var(--ds-r-ctl) !important; color: #475569 !important; font: 600 13.5px/1 var(--ds-head) !important; }
+html body #bellPop .bp-tabs > button.on:not(.bp-all):not(#DS) { background: var(--ds-selected) !important; color: var(--ds-deep) !important; box-shadow: inset 0 -2px 0 var(--ds-deep) !important; }
+html body #bellPop .bp-tabs > button.on:not(.bp-all):not(#DS) * { color: inherit !important; }
+html body #bellPop .bp-all:not(#DS) { color: var(--ds-blue) !important; font: 600 13.5px/1 var(--ds-head) !important; }
+html body #bellPop .bp-g h4:not(#DS) { font: 600 13px/1.4 var(--ds-head) !important; text-transform: none !important; letter-spacing: 0 !important; color: var(--ds-ink) !important; }
+html body #bellPop .bp-gn:not(#DS) { border-radius: var(--ds-r-badge) !important; }
+html body #bellPop .bp-row:not(#DS) { border-radius: var(--ds-r-btn) !important; }
+html body #bellPop .bp-row:hover:not(#DS) { background: var(--ds-subtle) !important; }
+html body #bellPop .bp-t:not(#DS) { font: 600 14.5px/1.4 var(--ds-head) !important; color: var(--ds-ink) !important; }
+html body #bellPop :is(.bp-tag, .bp-st, .bp-pj):not(#DS) { border-radius: var(--ds-r-badge) !important; font-size: 12.5px !important; }
+html body #bellPop .bp-ic:not(#DS) { border-radius: 9px !important; }
+html body .nt-pop:not(#DS) { background: #fff !important; opacity: 1 !important; backdrop-filter: none !important; border: 1px solid var(--ds-border) !important; border-radius: var(--ds-r-card) !important; box-shadow: var(--ds-sh-float) !important; }
+html body .nt-pop-v:not(#DS) { border-radius: var(--ds-r-ctl) !important; background: var(--ds-selected) !important; color: var(--ds-deep) !important; font: 600 13.5px/1 var(--ds-head) !important; }
+html body .toast:not(#DS) { border-radius: var(--ds-r-card) !important; box-shadow: var(--ds-sh-float) !important; }
+
+/* ---------- Team Guide: white section cards with a thin coloured top edge (each section keeps its colour); jump chips and counts as 8 px / 6 px rounded rectangles ---------- */
+html body .main .tg2 :is(.tg2-ph, .tg2-first, .tg2-prog, .tg2-box):not(#DS) { background: #fff !important; border: 1px solid var(--ds-border) !important; border-radius: var(--ds-r-card) !important; box-shadow: var(--ds-sh) !important; }
+html body .main .tg2:not(#DS), html body .main .tg2 *:not(#DS) { --tg: #334155 !important; --tg-bg: #F1F5F9 !important; }
+html body .main .tg2 :is(.tg2-box, .tg2-ph) :is(h2, h3, .tg2-h3, summary h2):not(#DS) { color: var(--ds-ink) !important; }
+html body .main .tg2 .tg2-chips a:hover:not(#DS) { background: #E2E8F0 !important; color: var(--ds-ink) !important; }
+html body .main .tg2 .tg2-chips a:not(#DS)::before { background: var(--ds-icon) !important; }
+html body .main .tg2 .tg2-chips a:not(#DS) { border-radius: var(--ds-r-ctl) !important; font: 600 13.5px/1.2 var(--ds-head) !important; }
+html body .main .tg2 :is(.tg2-n, .tg2-rmcount, .tg2-pg):not(#DS) { border-radius: var(--ds-r-badge) !important; }
+html body .main .tg2 :is(h2, h3, .tg2-h3):not(#DS) { font-family: var(--ds-head) !important; letter-spacing: -.01em !important; }
+html body .main .tg2 .tg2-bar > i:not(#DS) { background: var(--ds-blue) !important; }
+
+@media (prefers-reduced-motion: reduce) { html body :is(.btn, .tab, .mt-t, .rl-b, .sb-item, .adm-ni):not(#DS) { transition: none !important; } }
+@media print { html body .main .page-header:not(#DS) { border-bottom: 0 !important; } }
+
+/* ---------- Leftover pills found by tests/ui/button-colour-audit.mjs: the back link, filter chips, "Open the plan" links and the Team Guide tiles take the shape scale ---------- */
+/* the back link (UI/UX overhaul): a quiet text link above the page, not a bordered button */
+html body .main .nav-back:not(#DS) { display: inline-flex !important; align-items: center !important; justify-content: flex-start !important; align-self: flex-start !important; order: -2 !important; width: auto !important; gap: 6px !important; background: none !important; border: 0 !important; box-shadow: none !important; padding: 2px 0 !important; margin: 0 0 6px !important; min-height: 0 !important; height: auto !important; border-radius: 4px !important; color: var(--ds-text2) !important; font: 500 13px/1.4 var(--ds-body) !important; }
+html body .main .nav-back:hover:not(#DS) { background: none !important; color: var(--ds-blue) !important; text-decoration: underline !important; }
+html body .main :is(.tr-chip, .sd-go):not(#DS) { border-radius: var(--ds-r-ctl) !important; }
+html body .main .tr-chip:not(.on):not(#DS) { color: var(--ds-ink) !important; box-shadow: inset 0 0 0 1px var(--ds-border-strong) !important; }
+html body .main .tg2 .tg2-tile:not(#DS) { border-radius: var(--ds-r-card) !important; }
+
+/* ---------- Review tables and the count strip (UI/UX overhaul, 24 Nov 2026; docs/plans/UI-UX-OVERHAUL-PLAN-2026-11-24.md) ----------
+   Review, check and sign-off pages: one quiet line of counts (V.countStrip), one toolbar line, then one table with group rows; status is a dot and a word
+   (V.rvStatus colours only the dot, so amber stays readable), row actions are quiet text buttons, the page keeps one solid button. */
+html body .rv-strip:not(#DS) { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px; margin: 4px 0 14px; font: 400 13.5px/1.5 var(--ds-body); color: var(--ds-text2); }
+html body .rv-strip .rv-n:not(#DS) { display: inline-flex; align-items: baseline; gap: 5px; background: none; border: 0; box-shadow: none; padding: 2px 0; margin: 0; min-height: 0; color: var(--ds-text2); font: inherit; border-radius: 4px; }
+html body .rv-strip .rv-n b:not(#DS) { font: 600 15px/1.2 var(--ds-head); color: var(--ds-ink); }
+html body .rv-strip button.rv-n:not(#DS) { cursor: pointer; border-bottom: 2px solid transparent; border-radius: 0; }
+html body .rv-strip button.rv-n:hover:not(#DS) { color: var(--ds-ink); }
+html body .rv-strip button.rv-n.on:not(#DS) { color: var(--ds-blue); border-bottom-color: var(--ds-blue); }
+html body .rv-strip button.rv-n.on b:not(#DS) { color: var(--ds-blue); }
+html body .rv-strip .rv-n.warn b:not(#DS) { color: #B45309; }
+html body .rv-strip .rv-n.bad b:not(#DS) { color: var(--ds-bad); }
+html body .rv-toolbar:not(#DS) { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px; }
+html body .rv-toolbar input[type="search"]:not(#DS) { flex: 0 1 280px; min-width: 180px; }
+html body .rv-toolbar select:not(#DS) { width: auto; min-width: 150px; }
+html body .rv-toolbar .rv-sp:not(#DS) { flex: 1 1 auto; }
+html body .rv-toolbar .rv-bulk:not(#DS) { display: inline-flex; align-items: center; gap: 8px; font: 500 13px/1.4 var(--ds-body); color: var(--ds-ink); }
+html body .rv-wrap:not(#DS) { overflow-x: auto; border: 1px solid var(--ds-border); border-radius: var(--ds-r-card); background: var(--ds-page); box-shadow: none; }
+html body table.rv-table:not(#DS) { width: 100%; border-collapse: collapse; font: 400 14px/1.45 var(--ds-body); color: var(--ds-ink); background: none; border: 0; margin: 0; }
+html body table.rv-table thead th:not(#DS) { position: sticky; top: 0; z-index: 1; background: var(--ds-canvas); color: var(--ds-text2); font: 600 12.5px/1.3 var(--ds-head); text-transform: none; letter-spacing: 0; text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--ds-border); white-space: nowrap; }
+html body table.rv-table tbody td:not(#DS) { padding: 10px 12px; border-bottom: 1px solid var(--ds-border); vertical-align: top; background: none; }
+html body table.rv-table tbody tr:last-child td:not(#DS) { border-bottom: 0; }
+html body table.rv-table tbody tr:not(.rv-group):hover td:not(#DS) { background: var(--ds-canvas); }
+html body table.rv-table tr.rv-group td:not(#DS) { background: var(--ds-subtle); font: 600 13px/1.4 var(--ds-head); color: var(--ds-ink); padding: 8px 12px; }
+html body table.rv-table tr.rv-group td small:not(#DS) { font: 400 12.5px/1.4 var(--ds-body); color: var(--ds-text2); margin-left: 8px; }
+html body table.rv-table .rv-sub:not(#DS) { display: block; margin-top: 2px; font-size: 12.5px; color: var(--ds-text2); }
+html body table.rv-table td.rv-act:not(#DS) { text-align: right; white-space: nowrap; width: 1%; }
+html body table.rv-table td.rv-act .btn + .btn:not(#DS) { margin-left: 4px; }
+html body table.rv-table td.rv-pick:not(#DS), html body table.rv-table th.rv-pick:not(#DS) { width: 32px; padding-right: 0; }
+html body table.rv-table details.rv-more summary:not(#DS) { cursor: pointer; color: var(--ds-blue); font-size: 13px; list-style: none; display: inline; }
+html body table.rv-table details.rv-more summary:not(#DS)::-webkit-details-marker { display: none; }
+html body table.rv-table details.rv-more[open] summary:not(#DS) { margin-bottom: 6px; display: block; }
+html body table.rv-table details.rv-more p:not(#DS) { margin: 0 0 4px; font-size: 13px; color: var(--ds-text2); }
+html body .rv-st:not(#DS) { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font: 500 13px/1.4 var(--ds-body); color: var(--ds-text2); }
+html body .rv-st:not(#DS)::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ds-border-strong); flex: none; }
+html body .rv-st.ok:not(#DS)::before { background: var(--ds-ok); }
+html body .rv-st.warn:not(#DS)::before { background: var(--ds-warn); }
+html body .rv-st.bad:not(#DS)::before { background: var(--ds-bad); }
+html body .rv-st.info:not(#DS)::before { background: var(--ds-blue); }
+html body .rv-st.bad:not(#DS) { color: var(--ds-bad); }
+html body .rv-note:not(#DS) { margin: 0 0 12px; font: 400 13.5px/1.5 var(--ds-body); color: var(--ds-text2); }
+html body .rv-empty:not(#DS) { padding: 28px 16px; text-align: center; color: var(--ds-text2); font-size: 14px; }
+html body table.rv-table td.rv-act .btn.ghost:not(#DS) { color: var(--ds-blue) !important; background: none !important; box-shadow: none !important; }
+html body table.rv-table td.rv-act .btn.ghost:hover:not(#DS) { background: var(--ds-selected) !important; }
+/* a small menu of related actions behind one button (Checks & validations: Run a check) */
+html body .rv-menu:not(#DS) { position: relative; display: inline-block; }
+html body .rv-menu > summary:not(#DS) { list-style: none; }
+html body .rv-menu > summary:not(#DS)::-webkit-details-marker { display: none; }
+html body .rv-menu > summary:not(#DS)::after { content: ""; width: 6px; height: 6px; margin-left: 8px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); }
+html body .rv-menu-p:not(#DS) { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; display: flex; flex-direction: column; gap: 2px; min-width: 240px; padding: 6px; background: var(--ds-page); border: 1px solid var(--ds-border); border-radius: var(--ds-r-card); box-shadow: var(--ds-sh-float); }
+html body .main .rv-menu .rv-menu-p .btn.sm:not(#DS) { justify-content: flex-start !important; width: 100% !important; background: none !important; box-shadow: none !important; border: 0 !important; }
+html body .main .rv-menu .rv-menu-p .btn.sm:hover:not(#DS) { background: var(--ds-subtle) !important; }
+html body .rs-head .rv-strip:not(#DS) { margin: 0; }
+/* Checks & validations inside the review table: the select-all tick sits in its group row; the filter bar stays sticky but plain; no coloured row edge (the status says it) */
+html body .rv-table .rs-pick:not(#DS) { position: static !important; }
+html body .rv-toolbar.rs-bulk:not(#DS) { background: var(--ds-page) !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; padding: 6px 0 !important; margin: 0 0 8px !important; }
+html body .rv-table tr.rs-f > td:first-child:not(#DS) { box-shadow: none !important; }
+/* the plan figures (Planned / Actual / Variance / Source) on UAT, Go-live and Plan vs actual: one quiet line of figures, not four boxes */
+html body .main .pl-kpis:not(#DS) { display: flex !important; flex-wrap: wrap; gap: 6px 28px !important; margin: 4px 0 12px !important; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; grid-template-columns: none !important; }
+html body .main .pl-kpis > div:not(#DS) { display: flex !important; flex-direction: row-reverse; align-items: baseline; gap: 6px; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; min-height: 0 !important; }
+html body .main .pl-kpis > div span:not(#DS) { font: 400 13.5px/1.4 var(--ds-body) !important; color: var(--ds-text2) !important; text-transform: none !important; letter-spacing: 0 !important; }
+html body .main .pl-kpis > div b:not(#DS) { font: 600 15px/1.2 var(--ds-head) !important; color: var(--ds-ink) !important; }
+/* the Claude helper reminder: one quiet line above the page, not a banner with a solid button */
+html body .main .hp-banner.hp-line:not(#DS) { display: flex !important; align-items: center !important; flex-wrap: wrap; gap: 4px 12px !important; margin: 0 0 12px !important; padding: 8px 12px !important; background: var(--ds-canvas) !important; border: 1px solid var(--ds-border) !important; border-radius: var(--ds-r-ctl) !important; box-shadow: none !important; }
+html body .main .hp-banner.hp-line p:not(#DS) { flex: 1 1 420px; margin: 0 !important; font: 400 13px/1.45 var(--ds-body) !important; color: var(--ds-text2) !important; }
+html body .main .hp-banner.hp-line p b:not(#DS) { color: var(--ds-ink) !important; font-weight: 600 !important; }
+html body .main .hp-banner.hp-line .hp-ba:not(#DS) { display: flex; gap: 2px; }
+html body .main .hp-banner.hp-line .btn.ghost:not(#DS) { color: var(--ds-blue) !important; background: none !important; box-shadow: none !important; }
+/* Status inside tables (UI/UX overhaul batch 5): calm states are a dot and a word, not a filled pill; attention states (to be confirmed, red) keep their soft tint so they stand out */
+html body :is(.main, .adm-main) table .tag:is(.green, .verified, .system, .blue, .low, .ok, .done, .grey, .gray):not(#DS) { background: none !important; box-shadow: none !important; border: 0 !important; padding: 0 !important; min-height: 0 !important; color: var(--ds-text2) !important; font-weight: 500 !important; display: inline-flex !important; align-items: center !important; gap: 6px !important; }
+html body :is(.main, .adm-main) table .tag:is(.green, .verified, .system, .blue, .low, .ok, .done, .grey, .gray):not(#DS)::before { content: ""; width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--ds-border-strong); }
+html body :is(.main, .adm-main) table .tag:is(.green, .verified, .ok, .done):not(#DS)::before { background: var(--ds-ok); }
+html body :is(.main, .adm-main) table .tag:is(.blue, .system):not(#DS)::before { background: var(--ds-blue); }
+/* keyboard focus on the review pieces is always visible */
+html body :is(.rv-table summary, .rv-strip button.rv-n, .rv-menu > summary, .rv-table td.rv-act .btn, .rv-table input[type="checkbox"]):focus-visible:not(#DS) { outline: 2px solid var(--ds-blue) !important; outline-offset: 2px !important; border-radius: 4px; }
+/* Admin tables: a healthy state is a dot and a word too; attention and critical chips keep their tint */
+html body .adm-main table .hchip.h-healthy:not(#DS) { background: none !important; box-shadow: none !important; border: 0 !important; padding: 0 !important; color: var(--ds-text2) !important; font-weight: 500 !important; display: inline-flex !important; align-items: center !important; gap: 6px !important; }
+html body .adm-main table .hchip.h-healthy:not(#DS)::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ds-ok); flex: none; }
+
+/* ---------- Admin, calmer (UI/UX overhaul, 24 Nov 2026, user: "Yes, do Admin") ----------
+   One level of boxes: the grey panel around the dashboard, the card around its tab row and the card around its filters go; the figure tiles
+   (Overview, Command center) become a compact strip of filter buttons (number, label, the small line under it), the widgets stay as cards. */
+html body .adm-main .adx:not(#DS) { background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; }
+html body .adm-main .adx .mt-in:not(#DS) { background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; border-bottom: 1px solid var(--ds-border) !important; }
+html body .adm-main .adx .mt-in:not(#DS)::before { display: none !important; }
+html body .adm-main .adx .mt-in .mt-cap:not(#DS) { display: none !important; }
+html body .adm-main .dk-fbar:not(#DS) { background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; padding: 4px 0 0 !important; }
+html body .adm-main :is(.adx-stat, .cmd-m):not(#DS) { background: none !important; border: 0 !important; box-shadow: none !important; border-radius: var(--ds-r-ctl) !important; padding: 8px 12px !important; min-height: 0 !important; }
+html body .adm-main :is(.adx-stat, .cmd-m):hover:not(#DS) { background: var(--ds-subtle) !important; }
+html body .adm-main :is(.adx-stat, .cmd-m).on:not(#DS) { background: var(--ds-selected) !important; box-shadow: inset 0 -2px 0 var(--ds-blue) !important; }
+html body .adm-main .cmd-metrics:not(#DS) { gap: 2px 6px !important; padding: 4px 0 !important; border-top: 1px solid var(--ds-border); border-bottom: 1px solid var(--ds-border); }
+/* the Updates button in the Admin top bar is as wide as its label (it was squeezed to 36 px and ran into the initials) */
+html body:not(.in-proj) header.navbar .right .bell:not(#DS) { width: auto !important; min-width: 36px !important; padding: 0 10px !important; gap: 6px !important; }
+html body .adm-main .adx nav.mt-bar:not(#DS) { background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; }
+html body .adm-main .adx nav.mt-bar:not(#DS)::before, html body .adm-main .adx nav.mt-bar .mt-in:not(#DS)::after { display: none !important; }
+html body:not(.in-proj) header.navbar .right .bell:not(#DS) { display: inline-flex !important; flex-direction: row !important; align-items: center !important; height: 36px !important; white-space: nowrap !important; }
+html body .adm-main .adx nav.adx-tabs .mt-in.here:not(.x):not(#DS), html body .adm-main .adx nav.adx-tabs .mt-in:not(.x):not(#DS) { background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; border-bottom: 1px solid var(--ds-border) !important; }
+html body:not(.in-proj) header.navbar .right .bell:not(#DS) { padding-right: 20px !important; }
+
+/* ---------- Plan timeline (Gantt), clearer and calmer (user, 24 Nov 2026: "how this Gantt chart can be made more nicer") ----------
+   Names on one line (the arrow beside the name, not above it) so rows stay compact; bars in the legend colours (Facilio blue, customer orange,
+   Both teal; no two-colour gradient), soft track with the done part solid; phases as a slate band; the today line in the same blue as its label;
+   dependency lines a light slate, red only on the critical path; Undo beside the scale switch. */
+html body .main .pl-grid .pl-task:not(#DS) { white-space: nowrap !important; max-width: 340px !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+html body .main .pl-grid .pl-task .pl-tg:not(#DS) { display: inline-flex !important; vertical-align: middle !important; margin-right: 6px !important; }
+html body .main .pl-grid .pl-task b:not(#DS) { white-space: nowrap !important; vertical-align: middle; }
+html body .main .pl-grid .pl-task small:not(#DS) { padding-left: 30px; font-family: var(--ds-body) !important; font-size: 12px !important; color: var(--ds-text2) !important; }
+html body .main .pl-grid tr.pl-kid .pl-task small:not(#DS) { padding-left: 0; }
+html body .main .pl-grid tbody td:not(#DS) { padding-top: 7px !important; padding-bottom: 7px !important; }
+html body .main .pl-bar:not(.ph):not(.sum):not(#DS) { height: 16px !important; margin-top: -8px !important; border-radius: 5px !important; }
+html body .main .pl-bar b:not(#DS) { border-radius: 5px !important; }
+html body .main .pl-bar.g-f:not(#DS) { --gc: #1570EF !important; background: #D1E9FF !important; }
+html body .main .pl-bar.g-c:not(#DS) { --gc: #EF6820 !important; background: #FDEAD7 !important; }
+html body .main .pl-bar.g-b:not(#DS) { --gc: #0E9384 !important; background: #CCFBEF !important; }
+html body .main .pl-bar.ph:not(#DS) { height: 10px !important; margin-top: -5px !important; border-radius: 5px !important; background: #CBD5E1 !important; --gc: #475569 !important; }
+html body .main .pl-bar.sum:not(#DS) { height: 8px !important; margin-top: -4px !important; border-radius: 4px !important; background: #E2E8F0 !important; --gc: var(--ds-blue) !important; }
+html body .main .pl-today:not(#DS) { background: var(--ds-blue) !important; opacity: .55 !important; width: 2px !important; }
+html body svg.pl-dep .pl-lk-p:not(.crit):not(.bad):not(.sel):not(#DS) { stroke: #94A3B8; stroke-width: 1.25; }
+html body .main .pl-tools .pl-undo:not(#DS) { margin-right: 4px; }
+html body .main details.pl-more:not(#DS) { margin-top: 16px; }
+html body .main details.pl-more > summary:not(#DS) { cursor: pointer; font: 600 14px/1.4 var(--ds-head); color: var(--ds-ink); padding: 10px 0; }
+html body .main .pl-grid .pl-bl:not(#DS) { font: 500 12px/1.3 var(--ds-body) !important; color: var(--ds-text2) !important; }
+html body .main .pl-grid tr.crit .pl-bl:not(#DS), html body .main .pl-grid tr.late .pl-bl:not(#DS) { color: #B42318 !important; font-weight: 500 !important; }
+html body .main .pl-kpis > div:not(#DS) { flex-direction: row !important; }
+html body .main .pl-kpis > div b:not(#DS) { order: -1; }
+html body .main .pl-kpis > div small:not(#DS) { order: 2; font: 400 12.5px/1.4 var(--ds-body) !important; color: var(--ds-text2) !important; }
+html body .main .pl-kpis > div b.neg:not(#DS) { color: #B42318 !important; }
+/* Workbook / Timeline & planning / Calendar: a light segmented switch (it sits under the page's own tabs, so it must not look like a third tab row) */
+html body .main .plan-tabs:not(#DS) { display: inline-flex !important; width: fit-content !important; gap: 2px !important; padding: 3px !important; background: var(--ds-subtle) !important; border-radius: var(--ds-r-btn) !important; border: 0 !important; box-shadow: none !important; }
+html body .main .plan-tabs > button:not(#DS) { background: none !important; color: var(--ds-text2) !important; border: 0 !important; box-shadow: none !important; border-radius: 8px !important; padding: 6px 14px !important; font: 500 13.5px/1.3 var(--ds-head) !important; min-height: 0 !important; }
+html body .main .plan-tabs > button.on:not(#DS) { background: var(--ds-page) !important; color: var(--ds-blue) !important; box-shadow: 0 1px 2px rgba(16, 24, 40, .08) !important; }
+html body .main .pl-tools .rv-menu .rv-menu-p .btn.sm:not(.x):not(#DS) { box-shadow: none !important; border: 0 !important; background: none !important; justify-content: flex-start !important; width: 100% !important; }
+html body .main .pl-tools .rv-menu .rv-menu-p .btn.sm:not(.x):hover:not(#DS) { background: var(--ds-subtle) !important; }
+
+/* ---------- Plan calendar, calmer (user, 24 Nov 2026: "check the UI of that calendar ... made proper") ----------
+   The four phase cards lose their gradients and coloured frames: white with a hairline, a small colour dot for the phase, the current phase on soft
+   blue; the view switch (Day/Week/Month/Year/Agenda) is a light segmented control; filter chips are quiet; an event's title stays ink and only a late
+   one keeps its red edge (red text on every late item made the month a wall of red). */
+html body .main .cal .cal-ph:not(#DS) { background: var(--ds-page) !important; background-image: none !important; border: 1px solid var(--ds-border) !important; border-left: 3px solid var(--a) !important; box-shadow: none !important; border-radius: var(--ds-r-card) !important; padding: 10px 14px !important; text-align: left; }
+html body .main .cal .cal-ph.cur:not(#DS) { background: var(--ds-selected) !important; border-color: #B2CCFF !important; }
+html body .main .cal .cal-ph .cal-pn:not(#DS) { font: 600 14px/1.3 var(--ds-head) !important; color: var(--ds-ink) !important; }
+html body .main .cal .cal-ph :is(.cal-pd, .cal-pc):not(#DS) { display: block; font: 400 12.5px/1.4 var(--ds-body) !important; color: var(--ds-text2) !important; }
+html body .main .cal .cal-seg:not(#DS) { background: var(--ds-subtle) !important; border: 0 !important; border-radius: var(--ds-r-btn) !important; padding: 3px !important; }
+html body .main .cal .cal-seg button:not(#DS) { color: var(--ds-text2) !important; background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 8px !important; min-height: 30px !important; font: 500 13.5px/1.3 var(--ds-head) !important; }
+html body .main .cal .cal-seg button.on:not(#DS) { background: var(--ds-page) !important; color: var(--ds-blue) !important; box-shadow: 0 1px 2px rgba(16, 24, 40, .08) !important; }
+html body .main .cal .cal-fchip:not(#DS) { box-shadow: none !important; border: 1px solid var(--ds-border) !important; background: var(--ds-page) !important; color: var(--ds-text2) !important; font: 500 13px/1.3 var(--ds-body) !important; }
+html body .main .cal-fc .fc-event.cal-fcev.late .fc-event-title:not(#DS) { color: var(--ds-ink) !important; }
+html body .main .cal .cal-fchip.own.on:not(#DS) { background: var(--ds-selected) !important; border-color: #B2CCFF !important; color: var(--ds-blue) !important; }
+
+/* ---------- Module guides (Learn Facilio), full width (user, 25 Nov 2026: "the guides not utilizing full page") ----------
+   The guide body used a 920 px column with its own inner scroll; it now takes the page width and scrolls with the page. The module chips wrap
+   instead of running off the edge; the Overview / Process and fields / Videos / Prepare and ask switch is as wide as its labels. */
+html body .main .wb-body.ll-read:not(#DS) { max-width: none !important; width: 100% !important; height: auto !important; max-height: none !important; overflow: visible !important; grid-template-columns: minmax(0, 1fr) !important; padding-left: 0 !important; padding-right: 0 !important; }
+html body .main .wb-body.ll-read > *:not(#DS) { max-width: none !important; }
+html body .main .ll-chips:not(#DS) { flex-wrap: wrap !important; overflow: visible !important; row-gap: 6px !important; }
+html body .main .wb-body.ll-read .seg:not(#DS) { width: fit-content !important; display: inline-flex !important; }
+/* customer view top bar (user, 25 Nov 2026: "why customer pov top bar is so shrinked"): customers have no search, which is what fills the middle for the
+   team, so the actions now start at the right edge; the preview label and Exit preview sit with them, after the logo and the project, not before the logo */
+html body header.navbar .co-pill:not(#DS) { margin-left: auto !important; }
+html body header.navbar .right > .tag.blue:not(#DS), html body header.navbar .right > [data-act="custPreviewExit"]:not(#DS) { order: 13 !important; }
+
+/* ---------- Claude setup, friendlier (user, 25 Nov 2026: "nice and appealing, currently it looks boring") ----------
+   A status line with the one solid button (soft blue; green when everything is ready, soft red when something is missing), the four steps as cards
+   side by side with a numbered circle (a tick once done), the installs as small tiles with a two-letter badge, the checklist as a review table. */
+html body .main .cs-status:not(#DS) { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 16px 18px; margin: 0 0 16px; border-radius: var(--ds-r-card); background: var(--ds-selected); border: 1px solid #B2CCFF; }
+html body .main .cs-status.ok:not(#DS) { background: #ECFDF3; border-color: #ABEFC6; }
+html body .main .cs-status.bad:not(#DS) { background: #FEF3F2; border-color: #FECDCA; }
+html body .main .cs-status > div:not(#DS) { flex: 1 1 360px; display: flex; flex-direction: column; gap: 2px; }
+html body .main .cs-status b:not(#DS) { font: 600 17px/1.3 var(--ds-head); color: var(--ds-ink); }
+html body .main .cs-status span:not(#DS) { font: 400 13.5px/1.5 var(--ds-body); color: var(--ds-text2); }
+html body .main .cs-steps:not(#DS) { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: start; gap: 12px; margin: 0 0 18px; counter-reset: none; }
+@media (max-width: 1280px) { html body .main .cs-steps:not(#DS) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+html body .main .cs-step:not(#DS) { border: 1px solid var(--ds-border); border-radius: var(--ds-r-card); padding: 14px; background: var(--ds-page); display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+html body .main .cs-step.done:not(#DS) { border-color: #ABEFC6; }
+html body .main .cs-step header:not(#DS) { display: flex; align-items: center; gap: 10px; }
+html body .main .cs-step h4:not(#DS) { margin: 0; font: 600 14.5px/1.3 var(--ds-head); color: var(--ds-ink); }
+html body .main .cs-n:not(#DS) { flex: none; width: 28px; height: 28px; border-radius: 50%; display: inline-grid; place-items: center; background: var(--ds-selected); color: var(--ds-blue); font: 600 13.5px/1 var(--ds-head); }
+html body .main .cs-step.done .cs-n:not(#DS) { background: var(--ds-ok); color: #fff; }
+html body .main .cs-p:not(#DS) { margin: 0; font: 400 13px/1.5 var(--ds-body); color: var(--ds-text2); }
+html body .main .cs-tiles:not(#DS) { display: flex; flex-direction: column; gap: 6px; }
+html body .main .cs-tile:not(#DS) { display: flex; gap: 10px; align-items: flex-start; padding: 8px; border-radius: 8px; background: var(--ds-canvas); }
+html body .main .cs-tile > i:not(#DS) { flex: none; width: 30px; height: 30px; border-radius: 8px; display: inline-grid; place-items: center; background: var(--ds-page); border: 1px solid var(--ds-border); font: 600 11.5px/1 var(--ds-head); font-style: normal; color: var(--ds-ink); }
+html body .main .cs-tile b:not(#DS) { display: block; font: 600 13px/1.3 var(--ds-head); color: var(--ds-ink); }
+html body .main .cs-tile .cs-link:not(#DS) { display: block; font-size: 12.5px; overflow-wrap: anywhere; }
+html body .main .cs-tile .cs-note:not(#DS) { display: block; font-size: 12px; line-height: 1.45; color: var(--ds-text2); }
+html body .main .cs-step details summary:not(#DS) { cursor: pointer; color: var(--ds-blue); margin-top: 2px; }
+html body .main .cs-step details[open] .cs-tiles:not(#DS) { margin-top: 6px; }
+html body .main .cs-h:not(#DS) { margin: 4px 0 8px; font: 600 15px/1.3 var(--ds-head); color: var(--ds-ink); }
+
+/* ---------- Plan timeline re-planning (user, 25 Nov 2026, "like Smartsheet") ----------
+   Editable start, end and % cells when all columns are shown; the "why did the dates change" bar; slip against the baseline. */
+html body .main .pl-grid .pl-in:not(#DS) { width: 132px; min-height: 30px !important; height: 30px !important; padding: 2px 6px !important; font: 400 13px/1.2 var(--ds-body) !important; border-radius: 6px !important; }
+html body .main .pl-grid input.pl-in[type="number"]:not(#DS) { width: 64px; }
+html body .main .pl-why:not(#DS) { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 10px; padding: 10px 12px; border-radius: var(--ds-r-card); background: #FFFAEB; border: 1px solid #FEDF89; font: 400 13.5px/1.4 var(--ds-body); color: var(--ds-ink); }
+html body .main .pl-why span:not(#DS) { flex: 1 1 260px; }
+html body .main .pl-why select:not(#DS) { width: auto; min-width: 220px; }
+html body .main .pl-why input:not(#DS) { flex: 0 1 240px; }
+html body .main .pl-slip:not(#DS) { font-weight: 600; color: #067647; }
+html body .main .pl-slip.late:not(#DS) { color: #B42318; }
+/* the Gantt table keeps its natural width (the day width fills the space, src/timeline.js tlAvail), so the task column never swallows the free space */
+html body .main .pl-wrap .pl-grid:not(#DS) { width: max-content !important; min-width: 0 !important; }
+html body .main .pl-sec .pl-wrap:not(#DS) { width: 100% !important; max-width: 100% !important; box-sizing: border-box; }
+
+/* ---------- Film player (src/filmplayer.js): the setup film as a card on Claude setup and a calm modal player ---------- */
+html body .main .fp-wrap:not(#DS) { margin: 0 0 16px; }
+html body .main .fp-card:not(#DS) { display: flex; align-items: center; gap: 16px; width: 100%; text-align: left; padding: 16px 18px; border-radius: var(--ds-r-card); border: 1px solid var(--ds-border); background: var(--ds-page); box-shadow: none; cursor: pointer; }
+html body .main .fp-card:hover:not(#DS) { border-color: #B2CCFF; background: var(--ds-selected); }
+html body .main .fp-card:focus-visible:not(#DS) { outline: 2px solid var(--ds-blue); outline-offset: 2px; }
+html body .main .fp-pl:not(#DS) { flex: none; width: 52px; height: 52px; border-radius: 50%; background: var(--ds-blue); position: relative; }
+html body .main .fp-pl:not(#DS)::after { content: ""; position: absolute; left: 21px; top: 16px; border-left: 16px solid #fff; border-top: 10px solid transparent; border-bottom: 10px solid transparent; }
+html body .main .fp-tx b:not(#DS) { display: block; font: 600 16px/1.3 var(--ds-head); color: var(--ds-ink); }
+html body .main .fp-tx small:not(#DS) { display: block; margin-top: 2px; font: 400 13px/1.4 var(--ds-body); color: var(--ds-text2); }
+html body .fp-scrim:not(#DS) { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 24px; background: rgba(15, 23, 42, .55); }
+html body .fp-box:not(#DS) { width: min(1100px, 100%); background: var(--ds-page); border-radius: var(--ds-r-panel); box-shadow: var(--ds-sh-float); padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+html body .fp-head:not(#DS) { display: flex; align-items: center; gap: 8px; font: 600 16px/1.3 var(--ds-head); color: var(--ds-ink); }
+html body .fp-sp:not(#DS) { flex: 1; }
+html body .fp-box canvas:not(#DS) { width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--ds-border); display: block; }
+html body .fp-ctl:not(#DS) { display: flex; align-items: center; gap: 12px; }
+html body .fp-ctl input[type="range"]:not(#DS) { flex: 1; accent-color: var(--ds-blue); }
+html body .fp-time:not(#DS) { font: 500 13px/1 var(--ds-body); color: var(--ds-text2); font-variant-numeric: tabular-nums; min-width: 86px; text-align: right; }
+html body .fp-ch:not(#DS) { display: flex; flex-wrap: wrap; gap: 6px; }
+html body .fp-ch button:not(#DS) { border: 1px solid var(--ds-border); background: var(--ds-page); border-radius: 8px; padding: 5px 10px; font: 500 12.5px/1.3 var(--ds-body); color: var(--ds-text2); cursor: pointer; }
+html body .fp-ch button.on:not(#DS) { background: var(--ds-selected); border-color: #B2CCFF; color: var(--ds-blue); }
+/* update pop-ups sit at the bottom left, so they never cover the page header, its actions or the stage tabs (they used to sit over the right-hand tabs) */
+html body #ntPops:not(#DS) { top: auto !important; bottom: 20px !important; left: 20px !important; right: auto !important; }
