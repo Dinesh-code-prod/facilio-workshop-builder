@@ -108,4 +108,18 @@ await t('files attached in the chat are team-only and Claude may fetch them', as
   const fs = await import('node:fs'), api = fs.readFileSync('work/server/api.mjs', 'utf8'), jobs = fs.readFileSync('work/server/_jobsapi.mjs', 'utf8');
   assert.match(api, /chat_attachment: \{ ext: \[/); assert.match(api, /const TEAM_FILES = new Set\(\['chat_attachment'/); assert.match(jobs, /f\.category !== 'chat_attachment'/);
 });
+await t('a tracker becomes new tasks: duplicates skipped, unknown owners named, created, checked, and undo removes only untouched ones', async () => {
+  const rows = [{ title: 'Share asset list', owner: 'sam', due: '2026-12-05', status: 'To Do', priority: 'High', module: 'Purchase Order', row: 4 }, { title: 'Confirm SLA hours', owner: 'Ravi', status: 'In Progress', row: 5 },
+    { title: 'Quote template', row: 6 }, { title: 'share asset list', row: 7 }];
+  const d = (await call('POST', `/api/projects/${pid}/actions/addtasks`, { rows, type: 'UAT Task', source: 'ACME tracker.xlsx', known })).data; assert.ok(d.token, JSON.stringify(d));
+  assert.deepEqual(d.plan.items.map(x => x.title), ['Share asset list', 'Confirm SLA hours'], 'an existing task and a repeated row are skipped'); assert.deepEqual(d.plan.dups, ['Quote template', 'share asset list']);
+  assert.equal(d.plan.items[0].owner, me); assert.equal(d.plan.items[0].module, 'purchaseorder', 'the label becomes the module name'); assert.deepEqual(d.plan.unknownOwners, ['Ravi']);
+  const r = (await call('POST', `/api/projects/${pid}/actions/addtasks`, { token: d.token })).data; assert.ok(r.verified, JSON.stringify(r.checks));
+  const all = async () => (await call('GET', `/api/projects/${pid}/items?kinds=task`)).data.items; let made = (await all()).filter(x => /Share asset list|Confirm SLA hours/.test(x.data.title));
+  assert.equal(made.length, 2); assert.equal(made[0].data.type, 'UAT Task'); assert.equal(made[0].data.src.type, 'import'); assert.match(made.find(x => x.data.title === 'Share asset list').data.src.label, /ACME tracker\.xlsx, row 4/);
+  const edited = made.find(x => x.data.title === 'Confirm SLA hours'); await call('PUT', `/api/projects/${pid}/items/task/${edited.id}`, { data: Object.assign({}, edited.data, { status: 'Done' }), baseVersion: edited.version });
+  const u = (await call('POST', `/api/projects/${pid}/actions/undo`, { id: r.undoId })).data; assert.ok(u.verified); assert.match(u.summary, /Kept 1 that were changed since/);
+  made = (await all()).filter(x => /Share asset list|Confirm SLA hours/.test(x.data.title)); assert.deepEqual(made.map(x => x.data.title), ['Confirm SLA hours']);
+  const c = (await tool('project_changes', { project: pid, action: 'addtasks', rows: [{ title: 'From Claude' }], source: 'notes.pdf' })).data; assert.ok(c.token, 'Claude can add tasks the same way, after a yes');
+});
 console.log(`\n${n} project action checks passed`);

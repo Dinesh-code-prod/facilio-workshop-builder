@@ -220,16 +220,17 @@
   const reply = (text, actions) => { const m = say(text, actions); m.who = 'claude'; m.via = 'app'; st().sig = ''; paint(); return m; };   // a plan or a result reads as an answer (left, not a centred note)
   // one flow for every action: preview (nothing written), Confirm runs exactly that preview, the result says what was read back, Undo puts it back
   const ACTS = { scope: { body: scopeBody, page: ['modules', 'Modules'], reload: () => F.reloadSection('workshop'), check: 'the module names' },
-    tasks: { body: c => ({ filter: c.filter, set: c.set }), page: ['tasks', 'Tasks'], reload: () => I().load(['task'], true), check: 'the tasks and the names' } };
+    tasks: { body: c => ({ filter: c.filter, set: c.set }), page: ['tasks', 'Tasks'], reload: () => I().load(['task'], true), check: 'the tasks and the names' },
+    addtasks: { body: c => c.body, page: ['tasks', 'Tasks'], reload: () => I().load(['task'], true), check: 'the rows' } };
   const scopePlan = (c, id) => actPlan('scope', c, id), tasksPlan = (c, id) => actPlan('tasks', c, id);
   async function actPlan(name, c, id) {
     const A = ACTS[name], m = reply('Checking what this changes…');
     try {
       if (F.hasUnsaved()) await F.flush(); if (F.hasUnsaved()) throw new Error('your latest edits are not saved yet. Wait for Saved at the top, then ask again.');
       const body = A.body(c), r = await root.FWBApi.post(actUrl(name), body), p = r.plan;
-      m.text = [r.token ? 'This will change: ' + p.summary + '.' : 'Nothing to change.'].concat(p.consequences.map(x => '• ' + x), (p.unknown || []).length ? ['• Not found in this project: ' + p.unknown.join(', ') + '.'] : []).join('\n')
+      m.text = (c.note ? c.note + '\n' : '') + [r.token ? 'This will change: ' + p.summary + '.' : 'Nothing to change.'].concat(p.consequences.map(x => '• ' + x), (p.unknown || []).length ? ['• Not found in this project: ' + p.unknown.join(', ') + '.'] : []).join('\n')
         + (r.token ? '\n\nNothing changes until you press Confirm' + (spoke ? ' (you spoke this, so check ' + A.check + ')' : '') + '. You can undo it afterwards.' : '');
-      if (r.token) { CMDS[id] = { name, body, token: r.token, m }; m.actions = [{ label: 'Confirm', act: 'asstScopeGo', attrs: { id }, primary: true }, { label: 'Cancel', act: 'asstCmdNo', attrs: { id } }]; }
+      if (r.token) { CMDS[id] = { name, body, token: r.token, m }; m.actions = [{ label: 'Confirm', act: 'asstScopeGo', attrs: { id }, primary: true }, { label: 'Cancel', act: 'asstCmdNo', attrs: { id } }].concat(c.claude ? [{ label: 'Let Claude read it instead', act: 'asstEscalate', attrs: { t: c.claude } }] : []); }
     } catch (e) { m.who = 'bad'; m.text = 'Could not prepare this change: ' + (e.message || 'try again'); }
     spoke = false; st().sig = ''; paint();
   }
@@ -249,10 +250,24 @@
   V.ACT.asstAttach = () => { const f = document.getElementById('asF'); if (f) f.click(); };
   V.ACT.asstUnattach = el => { const a = st(); a.files = (a.files || []).filter((x, i) => i !== Number(el.getAttribute('data-i'))); attPaint(); };
   V.ACT.asstFiles = async el => { const a = st(), list = Array.from(el.files || []).slice(0, 5); el.value = ''; a.files = a.files || [];
-    for (const file of list) { const x = { name: file.name }; a.files.push(x); attPaint();
+    for (const file of list) { const x = { name: file.name, file }; a.files.push(x); attPaint();   // the File stays in the page so a tracker can be read here at once
       try { const rec = await root.FWBApi.uploadFile(S.project.id, file, 'chat_attachment', { from: 'assistant' }); x.id = rec && (rec.id || rec.fileId); if (!x.id) throw new Error('the file was not saved'); }
       catch (e) { a.files = a.files.filter(y => y !== x); V.toast('Could not attach ' + file.name + ': ' + (e.message || 'try again'), 6000, true); } attPaint(); } };
   const attNote = () => { const fs = (st().files || []).filter(f => f.id); return fs.length ? '\nAttached files (read each with project_jobs action file_urls, fileId): ' + fs.map(f => f.name + ' (fileId ' + f.id + ')').join('; ') : ''; };
+  // a tracker (Excel or CSV) with "add these as tasks" is read right here: the header row and the columns are found by their names (src/trackerlogic.js), the server previews the new tasks
+  // (duplicates skipped, owners checked) and Confirm creates them with Undo. "as test cases" opens the UAT import with the file. A layout it cannot read goes to Claude, which reads anything.
+  const TASKQ = /\b(add|create|import|make|turn|convert|log|put|load|raise|track)\b[^]*\b(tasks?|to-?dos?|action items?|actions)\b|\b(tasks?|action items?)\b[^]*\b(from|out of)\b/i, TESTQ = /\btest ?cases?\b/i;
+  async function trackerTo(f, note, claudeNote) {
+    const T = V.trackerLogic, a = st(), id = 'c' + Date.now(); a.local = a.local || []; a.open = true; a.local.push({ who: 'you', text: note + ' [' + f.name + ']', at: hhmm(), ts: Date.now() });
+    if (TESTQ.test(note) && !/\btasks?\b/i.test(note)) { if (V.ACT.utcImport && V.ACT.utcFile) { V.go('uat'); V.ACT.utcImport(); V.ACT.utcFile({ files: [f.file] }); reply('Opened the UAT test case import with ' + f.name + ': check the matched columns and the preview, then press Import.'); return true; } return false; }
+    let sheets; try { sheets = await V.readSheets(f.file); } catch (e) { return false; }
+    const best = Object.entries(sheets).map(([n, rows]) => ({ n, rows, hdr: T.findHeaderRow(rows) })).filter(x => x.hdr >= 0).map(x => Object.assign(x, { map: T.suggestMap(x.rows[x.hdr]) })).map(x => Object.assign(x, T.toTasks(x.rows, x.hdr, x.map))).sort((p, q) => q.tasks.length - p.tasks.length)[0];
+    if (!best || !best.tasks.length) { reply(best ? 'Every row in ' + f.name + ' is already closed (' + best.closed + '), so there is nothing to add.' : 'I could not find a column that looks like a task in ' + f.name + ', so Claude reads it instead.'); return !!best; }
+    const head = best.rows[best.hdr], label = k => (T.FIELDS.find(x => x[0] === k) || [k, k])[1], cols = Object.entries(best.map).map(([k, i]) => label(k) + ' ← “' + String(head[i]).trim() + '”').join(', ');
+    const type = /\b(uat|test|defect|bug)/i.test(note + ' ' + f.name + ' ' + head.join(' ')) ? 'UAT Task' : /\b(issue|blocker)/i.test(note) ? 'Issue / Blocker' : 'Internal Action';
+    const info = 'From ' + f.name + (Object.keys(sheets).length > 1 ? ', sheet “' + best.n + '”' : '') + '. Columns used: ' + cols + '. Other columns go into each task’s details.' + (best.closed ? ' ' + best.closed + ' row' + (best.closed > 1 ? 's' : '') + ' already closed in the tracker ' + (best.closed > 1 ? 'were' : 'was') + ' left out.' : '');
+    await actPlan('addtasks', { body: { rows: best.tasks, type, source: f.name, known: asstMods() }, note: info, claude: claudeNote }, id); return true;
+  }
   // a flow switch Claude asked for through the connector waits in the workshop (pendingFlowsOff), because only this page can read the imported configuration: it is applied when a team member opens the project
   function applyPending() {
     const p = S.ws && S.ws.pendingFlowsOff; if (!p || S.readonly) return; const mods = Object.keys(p).filter(k => p[k] === true); if (!mods.length) return; const done = [];
@@ -311,7 +326,10 @@
     if (ask) { const a3 = st(); a3.local = a3.local || []; const sent = { who: 'you', text: raw, at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), ts: Date.now(), pend: raw }; a3.local.push(sent); box.value = ''; a3.sig = ''; paint();   // your answer is a bubble at once
       try { await J().post('/jobs/' + encodeURIComponent(ask.id) + '/answer', { answers: [raw] }); } catch (e) { a3.local = a3.local.filter(x => x !== sent); box.value = raw; a3.sig = ''; paint(); throw e; } a3.sig = ''; J().load(true); V.toast('Sent. Claude will continue.', 3500); return; }
     if ((st().files || []).some(f => !f.id)) { V.toast('Wait until the files are attached, then send.', 4000, true); return; }
-    if ((st().files || []).length) { const withFiles = (note + attNote()).slice(0, 4000); st().files = []; attPaint(); await toClaude(withFiles, raw, { route: 'small' }, await liveClaude(), box, true); return; }   // files: always Claude
+    if ((st().files || []).length) { const withFiles = (note + attNote()).slice(0, 4000), sheet = st().files.find(f => f.file && /\.(xlsx|xlsm|csv)$/i.test(f.name));
+      const tried = !!(sheet && (TASKQ.test(note) || TESTQ.test(note)) && V.readSheets && V.trackerLogic);
+      if (tried) { st().files = []; attPaint(); box.value = ''; if (await trackerTo(sheet, note, withFiles)) return; }   // a tracker: read here, previewed, confirmed
+      st().files = []; attPaint(); await toClaude(withFiles, raw, { route: 'small' }, await liveClaude(), box, !tried); return; }   // any other file, or a layout it could not read: Claude reads it (your message already shows)
     if ((st().mode || 'auto') === 'auto' && V.chatCmd) { const c = V.chatCmd.match(note, { pages: navPages(), modules: asstMods(), today: new Date(), kickoffApproved: (F.doc('kickoff_pack') || {}).status === 'approved' }); if (c) { runCmd(c, note, box); return; } }
     if ((st().mode || 'auto') !== 'cl') { const q = V.quickFacts && V.quickFacts(note); if (q) { const a0 = st(); a0.local = a0.local || []; a0.open = true; box.value = ''; a0.local.push({ who: 'you', text: note, at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }); const r0 = { who: 'claude', via: 'app', text: q.text }; if (q.view && V[q.view] && V[q.view].html) r0.actions = [{ label: 'Open ' + q.view, act: 'koOpen', attrs: { view: q.view } }]; a0.local.push(r0); a0.sig = ''; paint(); return; } }   // an exact answer from the records: no AI, no wait
     let mode = st().mode || 'auto', plan = { route: mode === 'cl' ? 'small' : 'lookup', task: '', view: '' };

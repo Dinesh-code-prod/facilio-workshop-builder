@@ -7,7 +7,7 @@ const obj = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
 const cut = (v, n) => String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, n);
 const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const sing = s => s.replace(/ies$/, 'y').replace(/(ses|xes)$/, s => s.slice(0, -2)).replace(/s$/, '');
-export const ACTIONS = ['scope', 'tasks', 'undo', 'history', 'check', 'watch'];
+export const ACTIONS = ['scope', 'tasks', 'addtasks', 'undo', 'history', 'check', 'watch'];
 
 /** every module the project knows: workshop modules, custom modules, contract matches, flows, and the list the page sends (it has the imported configuration) */
 export function knownModules(ws, planner, extra) {
@@ -129,6 +129,21 @@ export function planTasks(tasks, members, b, today) {
   const consequences = items.slice(0, 8).map(x => x.title + ': ' + Object.entries(x.to).map(([k, v]) => k + ' ' + (x.from[k] || 'none') + ' → ' + v).join(', ')).concat(items.length > 8 ? ['and ' + (items.length - 8) + ' more'] : [], items.length && to ? ['The new owner is told as with any task change.'] : [], !items.length && !problems.length ? ['No task matches: ' + st + ' tasks' + (fo ? ' of ' + (fo.name || fo.email) : '') + (mods.length ? ' in ' + (f.moduleLabel || f.module) : '') + '.'] : []);
   return { action: 'tasks', items, problems, unknown: [], consequences: problems.concat(consequences), changes: items.length, summary: items.length ? items.length + ' task' + (items.length > 1 ? 's' : '') + ': ' + what : 'Nothing to change', kind: 'reversible', destructive: false, reversible: true };
 }
+/** new tasks from a customer's tracker (rows read by src/trackerlogic.js). b: { rows: [{ title, desc, owner, due, status, priority, module, row }], type, source, known: [{name,label}] }.
+    A row whose title is already a task (any status) is skipped; an owner who is not on the team is left empty and named; a module label becomes the module's name. */
+const NEW_TYPES = ['UAT Task', 'Issue / Blocker', 'Customer Action Required', 'Internal Action', 'Meeting Follow-up', 'Implementation Task'];
+export function planAdd(tasks, members, ws, planner, b) {
+  b = obj(b); const low = s => String(s || '').toLowerCase().trim(), have = new Set(arr(tasks).map(x => norm(obj(x.data).title))), known = knownModules(ws, planner, b.known);
+  const who = s => { s = low(s); return s ? arr(members).find(m => m && m.role !== 'customer' && (low(m.email) === s || low(m.name) === s || low(m.name).split(' ')[0] === s || low(m.email).split('@')[0] === s)) || null : null; };
+  const type = NEW_TYPES.includes(b.type) ? b.type : 'Internal Action', dups = [], unknownOwners = new Set(), items = [], seen = new Set();
+  arr(b.rows).slice(0, 500).forEach(r => { r = obj(r); const title = cut(r.title, 300), k = norm(title); if (!title) return; if (have.has(k) || seen.has(k)) { dups.push(title); return; } seen.add(k);
+    const m = who(r.owner); if (r.owner && !m) unknownOwners.add(cut(r.owner, 60)); const mod = r.module ? (resolveModules([r.module], known).found[0] || {}).name || cut(r.module, 120) : '';
+    items.push({ title, desc: String(r.desc || '').slice(0, 7000), owner: m ? m.email : '', ownerText: m ? (m.name || m.email) : cut(r.owner, 60), due: /^\d{4}-\d{2}-\d{2}$/.test(String(r.due || '')) ? r.due : '', status: TASK_STATUS.includes(r.status) ? r.status : 'To Do', priority: ['Critical', 'High', 'Medium', 'Low'].includes(r.priority) ? r.priority : '', module: mod, row: Number(r.row) || 0 }); });
+  const consequences = items.slice(0, 6).map(x => x.title + (x.owner ? ' (' + x.ownerText + ')' : '') + (x.due ? ', due ' + x.due : '')).concat(items.length > 6 ? ['and ' + (items.length - 6) + ' more'] : [],
+    dups.length ? [dups.length + ' row' + (dups.length > 1 ? 's are' : ' is') + ' already a task and will be skipped' + (dups.length <= 3 ? ': ' + dups.join('; ') : '') + '.'] : [],
+    unknownOwners.size ? ['Not on the project team, so left unassigned: ' + [...unknownOwners].slice(0, 8).join(', ') + '. Add them in Settings > Access, or assign later.'] : [], items.length ? ['Each task is saved as ' + type + ' with the tracker as its source, and owners are told as with any new task.'] : []);
+  return { action: 'addtasks', type, source: cut(b.source, 120), items, dups, unknownOwners: [...unknownOwners], unknown: [], consequences, changes: items.length, summary: items.length ? items.length + ' new task' + (items.length > 1 ? 's' : '') + ' from ' + (cut(b.source, 80) || 'the tracker') : 'Nothing to add', kind: 'reversible', destructive: false, reversible: true };
+}
 /** the project check (read only): health signals (assess() in _portfolio.mjs) and missed steps (_missed.mjs), grouped critical, high, medium, low, each with why, what to do and where.
     A missed step 7+ days late counts as high, otherwise medium. key: the finding's identity, so the page can tell what is new since the last check. */
 const SEV = ['critical', 'high', 'medium', 'low'];
@@ -152,6 +167,7 @@ export function installActions(D) {
     if (name === 'check') { const c = await D.projectCheck(pid); return groupFindings(c.health, c.missed); }
     if (name === 'history') return { actions: (await dbList('acts.' + pid)).map(r => ({ id: r.key, at: r.value.at, by: r.value.by, summary: r.value.summary, undone: !!r.value.undone })).sort((x, y) => String(y.at).localeCompare(String(x.at))).slice(0, 30) };
     if (name === 'tasks') return tasksRun(s, pid, b);
+    if (name === 'addtasks') return addRun(s, pid, b);
     if (name === 'watch') {   // the project check's settings of this person in this project (how often, the day it last ran, the findings already shown), so every browser agrees
       const col = 'awatch.' + pid, cur = ((await dbGet(col, s.id).catch(() => null)) || {}).value || {}; if (!b.set) return cur; const x = obj(b.set), v = Object.assign({}, cur);
       if (['open', 'daily', 'off'].includes(x.freq)) v.freq = x.freq; if (/^\d{4}-\d{2}-\d{2}$/.test(String(x.at || ''))) v.at = x.at; if (Array.isArray(x.seen)) v.seen = x.seen.slice(0, 200).map(k => cut(k, 80));
@@ -191,6 +207,30 @@ export function installActions(D) {
     await audit(pid, s.id, 'action-tasks', summary + (checks.every(c => c.ok) ? ' (verified)' : ' (NOT verified)'));
     return { done: !!done.length, verified: !failed.length && checks.every(c => c.ok), checks, undoId: done.length ? id : null, summary, plan: t.plan };
   }
+  async function addRun(s, pid, b) {
+    const { project } = await projectAccess(s, pid, 'edit'), tasks = await itemsOf(pid, 'task');
+    if (!b.token) { const st = await state(pid), plan = planAdd(tasks, project.members, st.ws, st.planner, b); if (!plan.changes) return { dryRun: true, plan, token: null };
+      const token = rid('t'); await dbPut('actp.' + pid, token, { by: s.id, at: Date.now(), plan }); return { dryRun: true, plan, token }; }
+    const tk = cut(b.token, 60), r = await dbGet('actp.' + pid, tk), t = r && r.value;
+    if (!t || t.by !== s.id || Date.now() - t.at > TTL || t.plan.action !== 'addtasks') throw new HttpError(409, 'This preview has expired or is not yours. Ask again to see the changes first.');
+    await dbDel('actp.' + pid, tk).catch(() => { }); const have = new Set(tasks.map(x => norm(obj(x.data).title))), made = [], failed = [];
+    for (const x of t.plan.items) { if (have.has(norm(x.title))) { failed.push(x.title + ': added by someone else meanwhile'); continue; } const id = rid('t');
+      try { await viaApp('PUT', taskUrl(pid, id), '', { data: { title: x.title, desc: x.desc, type: t.plan.type, status: x.status, priority: x.priority, owner: x.owner, due: x.due, module: x.module, src: { type: 'import', label: (t.plan.source || 'Tracker') + (x.row ? ', row ' + x.row : '') } }, baseVersion: 0 }); made.push({ id, title: x.title }); }
+      catch (e) { failed.push(x.title + ': ' + cut(e.message, 120)); } }
+    const back = new Map((await itemsOf(pid, 'task')).map(y => [y.id, y])), checks = made.map(x => ({ what: x.title, ok: obj((back.get(x.id) || {}).data).title === x.title })).concat(failed.map(w => ({ what: w, ok: false })));
+    const id = Date.now().toString(36) + rid('a').slice(2, 6), summary = made.length + ' new task' + (made.length === 1 ? '' : 's') + ' from ' + (t.plan.source || 'the tracker') + (failed.length ? ' (' + failed.length + ' not added)' : '');
+    if (made.length) await dbPut('acts.' + pid, id, { by: s.id, at: now(), action: 'addtasks', summary, made: made.map(x => ({ id: x.id, v: (back.get(x.id) || {}).version || 1 })), undone: false });
+    await audit(pid, s.id, 'action-addtasks', summary + (checks.every(c => c.ok) ? ' (verified)' : ' (NOT verified)'));
+    return { done: !!made.length, verified: !failed.length && checks.every(c => c.ok), checks, undoId: made.length ? id : null, summary, plan: t.plan };
+  }
+  // undo of an import: only tasks nobody changed since are removed; an edited one stays and is named
+  async function addUndo(s, pid, id, a) {
+    const cur = new Map((await itemsOf(pid, 'task')).map(x => [x.id, x])), kept = [];
+    for (const x of a.made) { const c = cur.get(x.id); if (!c) continue; if (c.version !== x.v) { kept.push(obj(c.data).title); continue; } try { await viaApp('DELETE', taskUrl(pid, x.id), '', {}); } catch (e) { kept.push(obj(c.data).title); } }
+    const back = new Set((await itemsOf(pid, 'task')).map(x => x.id)), left = a.made.filter(x => back.has(x.id)).length;
+    await dbPut('acts.' + pid, id, Object.assign(a, { undone: true, undoneBy: s.id, undoneAt: now() })); await audit(pid, s.id, 'action-undo', 'Undone: ' + a.summary + (kept.length ? ' (' + kept.length + ' edited since, kept)' : ' (verified)'));
+    return { done: true, verified: left === kept.length, summary: 'Undone: ' + a.summary + (kept.length ? '. Kept ' + kept.length + ' that were changed since: ' + kept.slice(0, 3).join('; ') : '') };
+  }
   async function tasksUndo(s, pid, id, a) {
     const cur = new Map((await itemsOf(pid, 'task')).map(x => [x.id, x])), bad = [];
     for (const x of a.before) { const c = cur.get(x.id); if (!c) { bad.push(x.id); continue; } const data = Object.assign({}, c.data); Object.entries(x.from).forEach(([k, v]) => { if (v === null) delete data[k]; else data[k] = v; });
@@ -202,6 +242,7 @@ export function installActions(D) {
   async function undo(s, pid, b) {
     const id = cut(b.id, 40), r = await dbGet('acts.' + pid, id), a = r && r.value; if (!a) throw new HttpError(404, 'No action with that id.'); if (a.undone) throw new HttpError(409, 'That change was already undone.');
     if (a.action === 'tasks') return tasksUndo(s, pid, id, a);
+    if (a.action === 'addtasks') return addUndo(s, pid, id, a);
     const st = await state(pid), v = await docWrite(s, pid, 'workshop', restore(st.ws, a.before), st.v), back = await docRead(pid, 'workshop'), check = verifyRestore(back && back.data, a.before);
     await dbPut('acts.' + pid, id, Object.assign(a, { undone: true, undoneBy: s.id, undoneAt: now() })); await audit(pid, s.id, 'action-undo', 'Undone: ' + a.summary + (check.ok ? ' (verified)' : ' (NOT verified)')); await touchProject(pid);
     return { done: true, verified: check.ok, version: v, summary: 'Undone: ' + a.summary };
@@ -213,7 +254,8 @@ export function installActions(D) {
     const p = await pickProject(s, b.project), name = cut(b.action || 'scope', 20);
     const token = b.token ? cut(b.token, 60) : undefined;
     const body = name === 'scope' ? { modules: arr(b.modules).slice(0, 30).map(x => cut(x, 80)), inScope: b.inScope, flows: b.flows, requirements: b.requirements === 'out' ? 'out' : undefined, token }
-      : name === 'tasks' ? { filter: obj(b.filter), set: obj(b.set), token } : { id: b.id };
+      : name === 'tasks' ? { filter: obj(b.filter), set: obj(b.set), token }
+      : name === 'addtasks' ? { rows: arr(b.rows).slice(0, 500), type: b.type, source: b.source, token } : { id: b.id };
     const out = await viaApp('POST', '/api/projects/' + p.id + '/actions/' + encodeURIComponent(name), '', body);
     return Object.assign({ project: p.name }, out, out.dryRun ? { note: out.token ? 'Nothing is changed yet. Show the person the plan (summary, consequences, unknown names) and ask them. Only after a clear yes, call again with the same arguments and this token. Flows of the imported configuration are queued and switched off when a team member next opens the project; say so.' : 'Nothing to change.' } : ['history', 'check'].includes(name) ? {} : { note: out.verified ? 'Saved and read back. Tell the person in one line, with Undo (action undo, id ' + (out.undoId || '') + ').' : 'Saved but the read-back did not match: tell the person and do not claim it is done.' });
   }
