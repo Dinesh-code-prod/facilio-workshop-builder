@@ -5,7 +5,7 @@
 (function (root) {
   'use strict';
   const F = root.FWB, V = root.FWBViews; const esc = F ? F.esc : (s => String(s == null ? '' : s));
-  const OK = '#16a34a', WARN = '#f59e0b', BAD = '#ef4444', GREY = '#a3a3a3', BLUE = '#1570EF', NAVY = '#1D1A5E', SLATE = '#64748b';
+  const OK = '#16A34A', WARN = '#D97706', BAD = '#B91C1C', GREY = '#94A3B8', BLUE = '#1570EF', NAVY = '#1D1A5E', SLATE = '#64748b';
   const none = t => `<p class="sd-none">${esc(t)}</p>`;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const legend = parts => { const T = parts.reduce((n, p) => n + (typeof p[1] === 'number' ? p[1] : 0), 0), pc = p => (typeof p[1] === 'number' && T > 0 && parts.length > 1 ? `<em>${Math.round(p[1] * 100 / T)}%</em>` : ''); return `<ul class="sd-lg">${parts.map(p => `<li><i style="background:${p[2]}"></i><span>${esc(p[0])}</span><b>${p[1]}</b>${pc(p)}</li>`).join('')}</ul>`; };   // each part also shows its share

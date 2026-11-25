@@ -19,9 +19,9 @@
 
   // one tab's HTML -> { kpis: [[label, value, note]], widgets: [{ title, sub, table, svg, lines, rest }] }; project tiles (.sd-kpi, .sd-w) and Admin tiles (.adx-stat, .adx-c)
   function readTab(html) {
-    const t = document.createElement('template'); t.innerHTML = html; const R = t.content;
+    const t = document.createElement('template'); t.innerHTML = html; const R = t.content; R.querySelectorAll('.sd-wx').forEach(x => x.remove());   // the Download menu is a control, not content
     const kpis = [...R.querySelectorAll('.sd-kpi, .adx-stat')].map(k => [txt(k.querySelector('.sd-kl, .adx-sl')), txt(k.querySelector('.sd-kv, b')), txt(k.querySelector('.sd-ks, .adx-ss'))]).filter(k => k[0]);
-    const widgets = [...R.querySelectorAll('.sd-w, .adx-c')].filter(w => !w.parentElement.closest('.sd-w, .adx-c')).map(w => {
+    const widgets = [...R.querySelectorAll('.sd-w, .adx-c')].filter(w => !(w.parentElement && w.parentElement.closest('.sd-w, .adx-c'))).map(w => {
       const h = w.querySelector(':scope > header'); const title = txt(h && h.querySelector('h3')), sub = txt(h && h.querySelector('span'));
       const tb = w.querySelector('table'); let table = null;
       if (tb) { const trs = [...tb.querySelectorAll('tr')].map(tr => [...tr.children].map(txt)); if (trs.length) table = { cols: trs[0], rows: trs.slice(1) }; }
@@ -98,5 +98,15 @@
   ACT.dpOpen = a => open((a && a.getAttribute && a.getAttribute('data-k')) || 'project');
   ACT.dpGo = a => { const v = (document.querySelector('input[name="dpWhich"]:checked') || {}).value || 'cur'; const kind = (a && a.getAttribute('data-k')) || 'project'; V.closeDrawer(); build(kind, v === 'all' ? 'all' : 'cur'); };
   if (V.range && V.range.hooks) { if (V.range.hooks.dk) V.range.hooks.dk.pdf = () => open('project'); if (V.range.hooks.adm) V.range.hooks.adm.pdf = () => open('admin'); }
+  // per-widget download (CSV or Excel): the rows of that one widget, read the same way as the PDF (its table, else its list rows, else its figures)
+  V.wxMenu = () => '<details class="mnu sd-wx"><summary aria-label="Download this widget" title="Download this widget">Download</summary><div class="mnu-p"><button type="button" data-act="wxDl" data-f="csv">CSV</button><button type="button" data-act="wxDl" data-f="xlsx">Excel</button></div></details>';
+  ACT.wxDl = async a => {
+    const sec = a.closest('.sd-w, .adx-c'); const det = a.closest('details'); if (det) det.open = false; if (!sec) return;
+    const d = readTab(sec.outerHTML); const w = d.widgets[0]; if (!w) { V.toast('Nothing to download in this widget.', 4000, true); return; }
+    const rows = w.table ? [w.table.cols].concat(w.table.rows) : w.lines.length ? [['Item']].concat(w.lines.map(l => [l])) : d.kpis.length ? [['Measure', 'Value', 'Note']].concat(d.kpis) : [['Text'], [w.rest || '']];
+    const scope = S.project ? S.project.name : 'Portfolio'; const name = (scope + ' ' + w.title + ' ' + V.today()).replace(/[\\/:*?"<>|]+/g, ' ');
+    if (a.getAttribute('data-f') === 'xlsx') { try { const ExcelJS = await V.loadExcelJS(); const wb = new ExcelJS.Workbook(); const ws = wb.addWorksheet(V.sheetName ? V.sheetName(wb, w.title) : w.title.slice(0, 31)); ws.addRow([w.title + ' · ' + scope + (w.sub ? ' · ' + w.sub : '')]).font = { bold: true }; ws.addRow([]); rows.forEach((r, i) => { const row = ws.addRow(r); if (i === 0) row.font = { bold: true }; }); ws.columns.forEach((c, i) => { c.width = Math.min(60, Math.max(10, ...rows.map(r => String(r[i] == null ? '' : r[i]).length + 2))); }); const buf = await wb.xlsx.writeBuffer(); V.download(name + '.xlsx', new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })); } catch (e) { V.toast('Excel could not be made: ' + (e.message || e), 6000, true); } return; }
+    const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; V.download(name + '.csv', '﻿' + rows.map(r => r.map(q).join(',')).join('\r\n'), 'text/csv;charset=utf-8');
+  };
   V.dashPdf = { build, readTab };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -424,3 +424,12 @@ html body .main .sd-mw-list button:hover:not(#DS) { background: var(--ds-subtle)
 html body .main .sd-mw-list b:not(#DS) { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 html body .main .sd-mw-list span:not(#DS) { color: var(--ds-text2); font-size: 13px; }
 html body .main .sd-mw-list em:not(#DS) { font-style: normal; font-size: 13px; color: var(--ds-text2); } html body .main .sd-mw-list em.bad:not(#DS) { color: var(--ds-bad); font-weight: 600; } html body .main .sd-mw-list em.warn:not(#DS) { color: var(--ds-warn); font-weight: 600; }
+
+/* ---------- Per-widget Download menu (CSV, Excel): a quiet text control in the widget header ---------- */
+html body :is(.main, .adm-main) .sd-wx:not(#DS) { position: relative; margin-left: auto; }
+html body :is(.main, .adm-main) .sd-wx > summary:not(#DS) { list-style: none; cursor: pointer; padding: 4px 8px; border-radius: var(--ds-r-ctl); font: 600 12.5px/1 var(--ds-head); color: var(--ds-text2); }
+html body :is(.main, .adm-main) .sd-wx > summary::-webkit-details-marker { display: none; }
+html body :is(.main, .adm-main) .sd-wx > summary:hover:not(#DS) { background: var(--ds-subtle); color: var(--ds-ink); }
+html body :is(.main, .adm-main) .sd-wx .mnu-p:not(#DS) { position: absolute; right: 0; top: calc(100% + 4px); z-index: 30; display: grid; min-width: 120px; padding: 4px; background: #fff; border: 1px solid var(--ds-border); border-radius: var(--ds-r-btn); box-shadow: var(--ds-sh-float); }
+html body :is(.main, .adm-main) .sd-wx .mnu-p button:not(#DS) { padding: 7px 10px; border: 0; border-radius: 6px; background: transparent; text-align: left; cursor: pointer; font: 500 13.5px/1.2 var(--ds-body); color: var(--ds-ink); }
+html body :is(.main, .adm-main) .sd-wx .mnu-p button:hover:not(#DS) { background: var(--ds-subtle); }

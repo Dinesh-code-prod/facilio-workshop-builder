@@ -16,9 +16,9 @@
     { id: 'build', label: 'Build and UAT', c: '#334155' }, { id: 'live', label: 'Go-live and hypercare', c: '#475569' }, { id: 'handover', label: 'Handover', c: '#1e3a8a' }
   ];
   const CUST_STG = ['req', 'brd', 'build', 'live'];
-  const HC = { blocked: '#ef4444', overdue: '#f97316', at_risk: '#f59e0b', on_track: '#22c55e', insufficient: '#a3a3a3' };
+  const HC = { blocked: '#D92D20', overdue: '#E8710A', at_risk: '#D49A06', on_track: '#12A35B', insufficient: '#98A2B3' };   // project health: the same colours as the Admin dashboard (src/dashboards.js)
   const HL = { blocked: 'Blocked', overdue: 'Overdue', at_risk: 'At risk', on_track: 'On track', insufficient: 'No data' };
-  const OK = '#22c55e', WARN = '#f59e0b', BAD = '#ef4444', GREY = '#a3a3a3';
+  const OK = '#16A34A', WARN = '#D97706', BAD = '#B91C1C', GREY = '#94A3B8';   // status colours, the same on every dashboard (validated, docs/plans/DASHBOARD-REBUILD-PLAN-2026-11-25.md); always shown with a word
   const list = k => (I().ready([k]) ? I().list(k) : []);
   const num = n => (n == null || isNaN(n) ? 0 : n);
   const pct = (a, b) => (b ? Math.round(a / b * 100) : 0);
@@ -39,7 +39,7 @@
   const wgo = title => (cust() ? null : WGO[title] || (/^Next \d+ days$/.test(title) ? ['plan', 'Open the plan'] : null));
   const kpi = (label, value, sub, c, p, sp) => { const v = kview(label), inner = `<i class="sd-ki" aria-hidden="true">${V.dm ? V.dm.icon(label) : ''}</i><span class="sd-kl">${esc(label)}</span><b class="sd-kv">${value}</b><span class="sd-ks">${sub || ''}</span>${sp && sp.length > 1 && V.sdc ? V.sdc.minibars(sp, c) : ''}${p == null ? '' : `<i class="sd-kb" aria-hidden="true"><u style="width:${Math.max(0, Math.min(100, p))}%"></u></i>`}`;
     return v ? `<button type="button" class="sd-kpi sd-click" style="--c:${c}" data-act="nav" data-view="${v}" title="Open the page behind this number">${inner}</button>` : `<div class="sd-kpi" style="--c:${c}">${inner}</div>`; };
-  const widget = (title, sub, inner, span, c) => { const g = wgo(title); return `<section class="sd-w sd-s${span || 6}"${c ? ` style="--c:${c}"` : ''}${g ? ` data-go="${g[0]}" title="Click to open ${esc(g[1].replace(/^Open (the )?/, ''))}"` : ''}><header><h3>${esc(title)}</h3>${sub ? `<span>${esc(sub)}</span>` : ''}${g ? `<button type="button" class="sd-go" data-act="nav" data-view="${g[0]}">${esc(g[1])} <i aria-hidden="true">\u2192</i></button>` : ''}</header><div class="sd-b">${inner}</div></section>`; };
+  const widget = (title, sub, inner, span, c) => { const g = wgo(title); return `<section class="sd-w sd-s${span || 6}"${c ? ` style="--c:${c}"` : ''}${g ? ` data-go="${g[0]}" title="Click to open ${esc(g[1].replace(/^Open (the )?/, ''))}"` : ''}><header><h3>${esc(title)}</h3>${sub ? `<span>${esc(sub)}</span>` : ''}${V.wxMenu ? V.wxMenu() : ''}${g ? `<button type="button" class="sd-go" data-act="nav" data-view="${g[0]}">${esc(g[1])} <i aria-hidden="true">\u2192</i></button>` : ''}</header><div class="sd-b">${inner}</div></section>`; };
   const none = C.none;
   const chipT = (t, tn) => ({ h: `<span class="sd-chip ${tn || ''}">${esc(t)}</span>`, t });
   const tone = s => (/^(done|closed|resolved|fixed|signed|confirmed|passed|pass|complete|completed|approved|accepted)$/i.test(s) ? 'ok' : /^(blocked|failed|fail|concern|overdue|rejected)$/i.test(s) ? 'bad' : /^(open|in progress|requested|draft|proposed|to confirm|pending|new)$/i.test(s) ? 'warn' : '');
