@@ -3,6 +3,8 @@ export const TOOL_DOCS = {
  "project_jobs": {
   "inputs": {
    "skills": "The ids of the Studio skills your Claude has installed (see the tool description)",
+   "folder": "Only for file_put_begin: save an approved deliverable straight into this SharePoint project folder (01_Project Governance … 07_Handover), any type but programs, up to 16 MB; then PUT it with a Content-Range header and call file_put_done with itemId",
+   "itemId": "Only for file_put_done after a folder upload: the id Microsoft returned",
    "delegate": "Only for action delegate (with project): hand a routine sub-part of your job to DeepSeek and get its answer back at once: { task (what to do, one sentence), input (only the text it needs, at most 12000 characters), format (the answer shape) }. Check the answer before you use it.",
    "usage": "Only for action usage: your plan limits as your Claude shows them: plan, windows (a list of { label, percentUsed, resetsAt }) and extra ({ enabled, spent, monthlyLimit, currency, percentUsed })"
   },
@@ -14,7 +16,7 @@ export const TOOL_DOCS = {
  },
  "get_document": {
   "inputs": {},
-  "description": "Read a project document, or one part of it. Without part it lists the parts. Sections: solution_package (the whole agreed solution in one versioned document for other tools; no part gives counts and a sourceHash, parts: scope, solutions, requirements, flows, data, access, notifications, sla, kpis, apps, outputs), workshop (parts: project, modules, customModules, flows, roles, notifications, processes, requirements, questions, brd, log ...), transcripts, planner (sessions, scope), brddoc, soldocs (the solution documents, drafted like the BRD), guides (team only: the folders of the Training page, every user guide with its folder and status, and the FTR report draft; part <guide id> gives one guide as Markdown with # section headings, part ftr the FTR draft text; change an unapproved one with save_draft and its id), reviews, plan_struct, notifications, agentscope, people, config_digest, config, guide_published."
+  "description": "Read a project document, or one part of it. Without part it lists the parts. Sections: solution_package (the whole agreed solution in one versioned document for other tools; no part gives counts and a sourceHash, parts: scope, solutions, requirements, flows, data, access, notifications, sla, kpis, apps, outputs), workshop (parts: project, modules, customModules, flows, roles, notifications, processes, requirements, questions, brd, log ...), transcripts, planner (sessions, scope), brddoc, soldocs (the solution documents, drafted like the BRD), guides (team only: the folders of the Training page, every user guide with its folder and status, and the FTR report draft; part <guide id> gives one guide as Markdown with # section headings, part ftr the FTR draft text; change an unapproved one with save_draft and its id), reviews, plan_struct, notifications, agentscope, people, config_digest, config, guide_published, project_index (the SharePoint folder and PROJECT_INDEX.md), documents (team only: every file in the project SharePoint folder with folder, kind, size, who added it, when and its link, plus an inventory: required documents not found, latest BRD and FTR, likely duplicates, recordings, files deleted or moved away; part refresh re-reads SharePoint, kind:Video, folder:04_Testing & UAT, or words to search names; metadata only, open files with the Microsoft 365 connector and never load a video or archive into the chat)."
  },
  "list_overdue": {
   "inputs": {},

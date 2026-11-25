@@ -400,6 +400,14 @@
       "setup": {
        "type": "object",
        "description": "Only from the one-time Delivery Studio setup: what it found on this computer, each ok, missing or not needed: node, git, studio (this connector), m365 (Microsoft 365 connector), toolbox (facilio-impl-toolbox skill), skillsRepo (local copy of facilio-impl-ai-skills), watcher, queue (the two scheduled tasks); os windows or mac. Shown as the person's checklist in the Studio."
+      },
+      "folder": {
+       "type": "string",
+       "description": "Only for file_put_begin: save an approved deliverable (any type except programs) straight into this SharePoint project folder, one of 01_Project Governance … 07_Handover; without it the file is a .docx or .pdf solution document"
+      },
+      "itemId": {
+       "type": "string",
+       "description": "Only for file_put_done after a folder upload: the \"id\" Microsoft returned for the file"
       }
      },
      "required": [
@@ -536,7 +544,7 @@
    },
    {
     "name": "get_document",
-    "description": "Read a project document, or one part of it (no part lists the parts). Main sections: workshop, solution_package, brddoc, soldocs, guides (Training folders, guides and the FTR draft), planner, transcripts, reviews, people, config, project_index. Full text: connector_help topic get_document.",
+    "description": "Read a project document, or one part of it (no part lists the parts). Main sections: workshop, solution_package, brddoc, soldocs, guides (Training folders, guides and the FTR draft), planner, transcripts, reviews, people, config, project_index, documents (every file in the SharePoint project folder with links, plus missing required documents, latest BRD and FTR, duplicates, recordings). Full text: connector_help topic get_document.",
     "function": "api",
     "input_schema": {
      "type": "object",

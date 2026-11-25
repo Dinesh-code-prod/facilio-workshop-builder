@@ -2,6 +2,8 @@
 
 Every project file in Delivery Studio (uploads, exports a team member downloads, and files Claude saves) is copied to one SharePoint library, one folder per project, sorted into subfolders. The project's members get access to their project's folder. Code: `work/server/_sharepoint.mjs` (server), `src/sharepoint.js` (page), test `tests/sharepoint.mjs` (stand-in Microsoft Graph).
 
+Large files straight to SharePoint, a Documents page and Claude document operations: built 25 Nov 2026 (Notes & Links > Documents & Files, `src/documents.js`; routes under `/api/projects/:id/spfiles`); audit, plan and what is still untested on a real tenant in `docs/reports/M365-LARGE-FILE-STORAGE-2026-11-25.md`.
+
 **Status: built and tested against a stand-in Microsoft Graph only. Nothing is copied until the set-up below is done, and it has not run against a real tenant.**
 
 ## Set-up (once, IT admin and the app owner)

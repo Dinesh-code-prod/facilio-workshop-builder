@@ -1,5 +1,13 @@
 # Handoff
 
+**DOCUMENTS & FILES: BIG FILES STRAIGHT TO SHAREPOINT (25 Nov 2026, pushed, NOT deployed).** Report: `docs/reports/M365-LARGE-FILE-STORAGE-2026-11-25.md` (audit, decision, what was built).
+- **Page.** Notes & Links > Documents & Files (`src/documents.js`): the eight folders, every file in the SharePoint folder, search, type filter, Refresh, Upload with progress (Retry, Resume, Cancel), Open, Download, Copy link, Rename, Move, Delete. Team only.
+- **Uploads.** The server checks and opens a Microsoft upload session; the browser sends 10 MiB pieces straight to Microsoft and resumes after a drop; the server reads the file back before keeping its reference (`spd.<project>`, keyed by item id). 10 GB cap, no programs, never into 08_Archive. Routes under `/api/projects/:id/spfiles` (`/docs` was taken).
+- **Claude.** `get_document` section `documents` (files and an inventory); `project_jobs file_put_begin` with `folder` saves into a folder. No new tool.
+- **Checked:** npm test; `tests/sharepoint.mjs` 18 checks (8 new, stand-in Microsoft); claude_launch, connector_skills, claude-handoff-check 9/9; the page and a stood-in upload in the local browser.
+- **Not checked:** anything on a real tenant: browser CORS on upload links, real 20 MB to multi-GB uploads, download links, folder sharing. Still off until IT does the set-up in `docs/integrations/SHAREPOINT-2026-11-16.md`.
+- **Next:** deploy; IT set-up; then the real-tenant test in section 6 of the report.
+
 **GUIDES AND THE FTR AS DOCUMENTS, GUIDE FOLDERS (24 Nov 2026, pushed, NOT deployed).**
 - **Folders on Training guides.** New folder (secondary button by + New guide), Move to folder in the ... menu of every guide or video row, folders listed first, a breadcrumb inside one, Rename and Delete (only an empty folder). Stored in the workshop document as `ws.guideFolders = { list, of }` (row keys `ugd:<id>`, `vid:<id>`, `v:<video key>`, `utc`). Pure rules: `V.guidesLogic.folders` in `src/guideslist.js`.
 - **Guides drafted like the BRD.** New `src/docpaper.js` (paper renderer, guide Markdown, self-contained HTML file, FTR model and Markdown round trip). The User Guide Builder has a first tab, Document: cover and sections on paper, text, titles and captions edited in place (saved as Markdown), + Text, + Picture, move and delete per section, Word, PDF, HTML, Approve / Reopen. Opening a guide on Training guides lands there. The guide HTML export now uses the same paper (`ugHtml`).
