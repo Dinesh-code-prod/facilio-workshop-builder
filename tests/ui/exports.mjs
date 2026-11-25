@@ -46,9 +46,8 @@ f = await dl('Dashboard report PNG', () => click('[data-act="drExport"][data-fmt
 await go('onboarding');
 f = await dl('Data onboarding workbook', () => click('[data-act="onbDownload"]')); if (f) { const wb = await xlsx(f); const names = wb.worksheets.map(w => w.name); const uniq = new Set(names.map(n => n.toLowerCase())).size === names.length; ok('Data onboarding workbook', f, [[names.length + ' sheets', names.length > 3], ['sheet names unique', uniq], ['Overview lists the sheets', sheetRows(wb.getWorksheet('Overview')) > 5], ['template sheets have header rows', wb.worksheets.filter(w => !['Overview', 'Lists'].includes(w.name)).every(w => sheetRows(w) >= 1)]]); }
 
-// --- Workshop plan (Contract → schedule) from the template
-await go('msaflow');
-await page.locator('.mf-steps > *', { hasText: /Finalise/ }).first().click().catch(() => { }); await page.waitForTimeout(900);
+// --- Workshop plan from the template: Requirement schedule > Excel & publish (the old Contract page is hidden, 25 Nov 2026)
+await page.evaluate(() => { window.FWB.S.ui.rsTab = 'export'; }); await go('rsplan'); await page.waitForTimeout(900);
 f = await dl('Workshop plan Excel', () => click('[data-act="exportPlan"]')); if (f) { const wb = await xlsx(f); const ws = wb.getWorksheet('Tentative Workshop Sessions') || wb.worksheets[0]; ok('Workshop plan Excel', f, [['template sheet present', !!ws], ['header row present', sheetRows(ws) >= 1], ['customer name written', JSON.stringify(ws.getSheetValues()).includes('Emirates National Engineering')]]); }
 
 // --- FTR and KPI workbooks: start from the default template, then download
