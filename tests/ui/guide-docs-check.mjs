@@ -12,17 +12,22 @@ const api = (m, u, body) => p.evaluate(async ([m, u, body]) => { const r = await
 const pid = (await api('POST', '/projects', { name: 'Guide docs check', customer: 'Acme' })).project.id;
 await api('PUT', '/projects/' + pid + '/items/ugd/ug1', { data: { title: 'Technician guide', customer: 'Acme', audience: 'Technicians', version: '0.1', status: 'draft', brand: { accent: '#1570EF', cover: true, logo: null }, sections: [{ id: 's1', title: 'Getting started', blocks: [{ t: 'md', text: 'Open the app.\n\n1. Sign in\n2. Pick the site' }] }, { id: 's2', title: 'Close a work order', blocks: [{ t: 'md', text: '- Open the order\n- Press Close' }] }] } });
 await api('POST', '/projects/' + pid + '/ai/import', { task: 'ftr', content: '## Work Orders\n### Use case: Raise and close\n| ID | Test case | Steps | Expected | Result | Evidence |\n|---|---|---|---|---|---|\n| WO-1 | Raise a WO | Open, fill, save | Saved | Pass | |\n| WO-2 | Close a WO | Close it | Closed | | |\n' });
-await p.goto(BASE + `/?nointro#/p/${pid}/guides`); await p.reload(); await p.waitForSelector('.tr-list, .tr-empty', { timeout: 20000 }); await p.waitForTimeout(800);
+await p.goto(BASE + `/?nointro#/p/${pid}/guides`); await p.reload(); await p.waitForSelector('.tr .ll-grid, .tr-empty', { timeout: 20000 }); await p.waitForTimeout(800);
+// the library as Module-guide cards (25 Nov 2026): a heading per kind, the card opens the guide
+const secOf = t => p.evaluate(t => { const c = [...document.querySelectorAll('.tr .ll-wrap')].find(w => w.textContent.includes(t)); let g = c && c.parentElement; let h = g && g.previousElementSibling; return h ? h.textContent.trim() : ''; }, t);
+check('the guide is a library card under User guides', (await secOf('Technician guide')) === 'User guides');
+check('the UAT guide has its own card under UAT guides', (await secOf('What your testers try')) === 'UAT guides');
 
 // folders
 await p.click('[data-act="tgFolderNew"]'); await p.fill('#tgf_n', 'Technicians'); await p.click('[data-act="tgFolderMake"]'); await p.waitForTimeout(500);
-check('New folder makes a folder row at the top of the list', /Technicians/.test(await p.textContent('.tr-folder')));
+const folderCard = () => p.textContent('.ll-wrap:has([data-act="tgFolderOpen"])');
+check('New folder makes a folder card under Folders, first', /Technicians/.test(await folderCard()) && (await p.textContent('.tr .tr-sec')).trim() === 'Folders');
 await p.screenshot({ path: `${OUT}/guides-folders.png` });
-const rowOf = t => p.locator('.tr-row', { hasText: t }).first();
+const rowOf = t => p.locator('.tr .ll-wrap', { hasText: t }).first();
 await rowOf('Technician guide').locator('.tr-more summary').click(); await p.click('[data-act="tgMoveAsk"][data-k="ugd:ug1"]'); await p.selectOption('#tgf_to', { label: 'Technicians' }); await p.click('[data-act="tgMoveGo"]'); await p.waitForTimeout(500);
-check('the moved guide leaves the main list and the folder counts it', !(await p.$('.tr-row:not(.tr-folder) >> text=Technician guide')) && /1 item/.test(await p.textContent('.tr-folder')));
+check('the moved guide leaves the main list and the folder counts it', !(await p.$('[data-act="trGuideOpen"][data-id="ug1"]')) && /1 item/.test(await folderCard()));
 await p.click('[data-act="tgFolderOpen"]'); await p.waitForTimeout(400);
-check('inside the folder: a breadcrumb and the guide', /All guides and videos/.test(await p.textContent('.tr-crumb')) && /Technician guide/.test(await p.textContent('.tr-list')));
+check('inside the folder: a breadcrumb and the guide', /All guides and videos/.test(await p.textContent('.tr-crumb')) && /Technician guide/.test(await p.textContent('.tr .ll-grid')));
 await p.screenshot({ path: `${OUT}/guides-in-folder.png` });
 check('the folder is kept in the workshop document', await p.evaluate(() => { const f = window.FWB.S.ws.guideFolders; return f.list.length === 1 && f.of['ugd:ug1'] === f.list[0].id; }));
 

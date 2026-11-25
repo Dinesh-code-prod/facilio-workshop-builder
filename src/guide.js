@@ -76,7 +76,8 @@
       <div class="wb-cap">Modules</div>${items.map(x => `<button class="wb-mod${cur === x.name ? ' on' : ''}" data-act="guideMod" data-m="${esc(x.name)}" ${cur === x.name ? 'aria-current="page"' : ''}><span>${esc(x.label)}</span>${prog(x)}</button>${cur === x.name && x.own && V.learnSections ? `<div class="wb-sub">${V.learnSections()}</div>` : ''}`).join('')}</nav>
       <div class="wb-body" id="wbBody">${body}</div></div>`;
   }
-  ACT.guideMod = a => { S.ui.guideModule = a.getAttribute('data-m'); V.render(); const b = document.getElementById('wbBody'); if (b) b.scrollTop = 0; };
+  ACT.guideMod = a => { S.ui.guideModule = a.getAttribute('data-m'); V.render(); const b = document.getElementById('wbBody'); if (b) b.scrollTop = 0; const m = document.querySelector('.main'); if (m) m.scrollTop = 0; };
+  ACT.guideHome = () => { S.ui.guideModule = ''; V.render(); const m = document.querySelector('.main'); if (m) m.scrollTop = 0; };
   function introSheet(pubMode, pub, learnMods) {
     const p = S.project || {}; const intro = pubMode ? pub.intro : (G().intro || '');
     const sess = pubMode ? [] : (F.doc('planner').sessions || []);
@@ -154,9 +155,14 @@
   function customerGuide() {
     const pub = F.doc('guide_published'); const tab = S.ui.guideTab === 'mine' ? 'mine' : 'guide';
     if (!pub || !pub.modules) return `<div class="page-header"><div class="t"><h1>User Guide</h1></div></div><div class="page-body"><div class="card empty"><h3>The guide has not been published yet</h3><p>Your implementation team will publish the module guide here before the requirement sessions.</p></div></div>`;
-    const cur = S.ui.guideModule && pub.modules.find(x => x.name === S.ui.guideModule) ? S.ui.guideModule : '_intro'; const pm = pub.modules.find(x => x.name === cur);
+    // opens on a library of cards like Module guides (user, 25 Nov 2026); a card opens the guide, "All guides" comes back
+    const cur = S.ui.guideModule === '_intro' || (S.ui.guideModule && pub.modules.find(x => x.name === S.ui.guideModule)) ? S.ui.guideModule : ''; const pm = pub.modules.find(x => x.name === cur); const list = publishedLearnList(pub);
+    const sec = (t, cards) => `<div class="sec-k" style="margin:22px 0 10px"><h2>${esc(t)}</h2></div><div class="ll-grid">${cards.join('')}</div>`;
+    const answered = x => { const p = x.lm && V.learnProgress ? V.learnProgress(x.lm) : null; return p && p.qn ? p.a + ' of ' + p.qn + ' questions answered' : ''; };
+    const home = sec('Start here', [V.libCard({ attrs: 'data-act="guideMod" data-m="_intro"', kicker: 'Start here', tag: 'Introduction', title: 'Introduction', sub: 'How this guide works and what to prepare', foot: 'Read the introduction' })])
+      + sec('Your modules', list.map(x => V.libCard({ attrs: `data-act="guideMod" data-m="${esc(x.name)}"`, kicker: 'Module guide', tag: (pub.project && pub.project.customer) || 'Your project', title: x.label || x.name, sub: answered(x) || (x.lm && x.lm.tagline) || 'Read before your session', foot: 'Open the guide' })));
     return `<div class="page-header"><div class="t"><h1>User Guide</h1><p>${esc(pub.project.name)} · published ${esc(V.fmtDate(pub.publishedAt))}</p></div></div><div class="tabs"><button class="tab${tab === 'guide' ? ' active' : ''}" data-act="guideTab" data-v="guide">Guide</button><button class="tab${tab === 'mine' ? ' active' : ''}" data-act="guideTab" data-v="mine">My questions</button></div>
-      <div class="page-body">${tab === 'mine' ? myFeedback(null) : guideFrame(cur === '_intro' ? introSheet(true, pub, publishedLearnList(pub)) : moduleSheet(cur, true, pm), cur, publishedLearnList(pub))}</div>`;
+      <div class="page-body">${tab === 'mine' ? myFeedback(null) : !cur ? home : `<div class="wb-lib-top"><button type="button" class="ll-chip ll-all" data-act="guideHome">&larr; All guides</button></div>${guideFrame(cur === '_intro' ? introSheet(true, pub, list) : moduleSheet(cur, true, pm), cur, list)}`}</div>`;
   }
   function myFeedback(m) { const st = fbState(); if (!st.items) return '<div class="small muted" style="margin-top:10px">Loading your questions…</div>'; const list = st.items.filter(x => !m || x.module === m); if (!list.length) return m ? '' : '<div class="empty">You have not sent any questions yet.</div>';
     return `<div class="pink-label">${m ? 'Your questions on this module' : 'Your questions'}</div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Question</th><th>Module</th><th>Status</th><th>Response</th></tr></thead><tbody>${list.map(x => `<tr><td class="small">${esc(x.body)}<div class="xs muted">${esc(V.fmtDate(x.createdAt))}</div></td><td class="small">${esc(((F.doc('guide_published') || {}).modules || []).find(p => p.name === x.module) ? F.doc('guide_published').modules.find(p => p.name === x.module).label : x.module || 'General')}</td><td>${tag(FB_CLS[x.status], FB_STATUS[x.status] || x.status)}</td><td class="small">${esc(x.response || '') || '<span class="muted">Awaiting a response</span>'}</td></tr>`).join('')}</tbody></table></div>`; }
