@@ -461,3 +461,24 @@ html body .main .pl-slip.late:not(#DS) { color: #B42318; }
 /* the Gantt table keeps its natural width (the day width fills the space, src/timeline.js tlAvail), so the task column never swallows the free space */
 html body .main .pl-wrap .pl-grid:not(#DS) { width: max-content !important; min-width: 0 !important; }
 html body .main .pl-sec .pl-wrap:not(#DS) { width: 100% !important; max-width: 100% !important; box-sizing: border-box; }
+
+/* ---------- Film player (src/filmplayer.js): the setup film as a card on Claude setup and a calm modal player ---------- */
+html body .main .fp-wrap:not(#DS) { margin: 0 0 16px; }
+html body .main .fp-card:not(#DS) { display: flex; align-items: center; gap: 16px; width: 100%; text-align: left; padding: 16px 18px; border-radius: var(--ds-r-card); border: 1px solid var(--ds-border); background: var(--ds-page); box-shadow: none; cursor: pointer; }
+html body .main .fp-card:hover:not(#DS) { border-color: #B2CCFF; background: var(--ds-selected); }
+html body .main .fp-card:focus-visible:not(#DS) { outline: 2px solid var(--ds-blue); outline-offset: 2px; }
+html body .main .fp-pl:not(#DS) { flex: none; width: 52px; height: 52px; border-radius: 50%; background: var(--ds-blue); position: relative; }
+html body .main .fp-pl:not(#DS)::after { content: ""; position: absolute; left: 21px; top: 16px; border-left: 16px solid #fff; border-top: 10px solid transparent; border-bottom: 10px solid transparent; }
+html body .main .fp-tx b:not(#DS) { display: block; font: 600 16px/1.3 var(--ds-head); color: var(--ds-ink); }
+html body .main .fp-tx small:not(#DS) { display: block; margin-top: 2px; font: 400 13px/1.4 var(--ds-body); color: var(--ds-text2); }
+html body .fp-scrim:not(#DS) { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 24px; background: rgba(15, 23, 42, .55); }
+html body .fp-box:not(#DS) { width: min(1100px, 100%); background: var(--ds-page); border-radius: var(--ds-r-panel); box-shadow: var(--ds-sh-float); padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+html body .fp-head:not(#DS) { display: flex; align-items: center; gap: 8px; font: 600 16px/1.3 var(--ds-head); color: var(--ds-ink); }
+html body .fp-sp:not(#DS) { flex: 1; }
+html body .fp-box canvas:not(#DS) { width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--ds-border); display: block; }
+html body .fp-ctl:not(#DS) { display: flex; align-items: center; gap: 12px; }
+html body .fp-ctl input[type="range"]:not(#DS) { flex: 1; accent-color: var(--ds-blue); }
+html body .fp-time:not(#DS) { font: 500 13px/1 var(--ds-body); color: var(--ds-text2); font-variant-numeric: tabular-nums; min-width: 86px; text-align: right; }
+html body .fp-ch:not(#DS) { display: flex; flex-wrap: wrap; gap: 6px; }
+html body .fp-ch button:not(#DS) { border: 1px solid var(--ds-border); background: var(--ds-page); border-radius: 8px; padding: 5px 10px; font: 500 12.5px/1.3 var(--ds-body); color: var(--ds-text2); cursor: pointer; }
+html body .fp-ch button.on:not(#DS) { background: var(--ds-selected); border-color: #B2CCFF; color: var(--ds-blue); }
