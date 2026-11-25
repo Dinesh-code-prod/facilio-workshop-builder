@@ -4119,6 +4119,40 @@ body .iso-when:not(#_):not(#__){display:block;font-size:12px;color:#475467;margi
   html body.in-proj header.navbar:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { gap: 10px; padding-left: 20px; padding-right: 20px; }
 }
 
+/* Guide libraries (user, 25 Nov 2026): Guides & Videos and the published Customer User Guide use the Module guides card (V.libCard in src/learnlib.js).
+   A card with a "..." menu sits in .ll-wrap (no button inside a button); the wrap keeps the five band colours and the menu floats on the band. */
+html body .ll-wrap:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { position: relative; display: flex; min-width: 0; }
+html body .ll-wrap > .ll-card:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { flex: 1 1 auto; width: 100%; }
+html body a.ll-card:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { text-decoration: none !important; color: inherit; }
+html body .ll-wrap:nth-child(5n+3) > .ll-card .ll-band:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: linear-gradient(110deg, #13203A 0%, #13203A 35%, #C2261F 100%); }
+html body .ll-wrap:nth-child(5n+4) > .ll-card .ll-band:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: linear-gradient(110deg, #13203A 0%, #13203A 35%, #D9690B 100%); }
+html body .ll-wrap:nth-child(5n+5) > .ll-card .ll-band:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: linear-gradient(110deg, #13203A 0%, #13203A 35%, #15803D 100%); }
+html body .ll-wrap:nth-child(5n+2) > .ll-card .ll-ic:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: #1570EF; }
+html body .ll-wrap:nth-child(5n+3) > .ll-card .ll-ic:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: #C2261F; }
+html body .ll-wrap:nth-child(5n+4) > .ll-card .ll-ic:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: #D9690B; }
+html body .ll-wrap:nth-child(5n+5) > .ll-card .ll-ic:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: #15803D; }
+html body .ll-wrap:nth-child(5n+1) > .ll-card .ll-ic:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { color: #0E7490; }
+html body .ll-wrap > .tr-more:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { position: absolute; top: 12px; right: 12px; z-index: 3; }
+html body .ll-wrap > .tr-more > summary:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { width: 32px; height: 32px; border-radius: 50%; background: rgba(255, 255, 255, .16) !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, .28) !important; font-size: 16px; }
+html body .ll-wrap > .tr-more > summary:hover:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q), html body .ll-wrap > .tr-more[open] > summary:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: rgba(255, 255, 255, .28) !important; }
+html body .ll-wrap > .tr-more .tr-more-m:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { top: 38px; right: 0; min-width: 200px; }
+html body .tr .tr-sec:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin: 22px 0 10px; }
+html body .wb-lib-top:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin: 4px 0 10px; }
+
+/* Compact rail labels (user, 25 Nov 2026: "side bar font collision in customer POV"): the shared small-label rule added .06em tracking over the rail's own
+   rule, so two-line labels such as "Prepare for sessions" ran edge to edge with touching lines. No tracking, a looser line, a little room each side. */
+html body.nav-top nav.sidebar .rl-b .rl-l:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { letter-spacing: 0 !important; line-height: 1.28 !important; max-width: 74px !important; text-wrap: balance; overflow-wrap: normal; hyphens: none; }
+/* Tiles on Guides & Videos are card tiles inside the file browser: a chosen or new tile gets a ring round its card, not the row tint */
+html body .fb .ll-wrap.fb-item:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { background: transparent !important; box-shadow: none !important; border-radius: 16px; }
+html body .fb .ll-wrap.fb-item.sel > .ll-card:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { border-color: #1570EF !important; box-shadow: 0 0 0 2px #1570EF !important; }
+html body .fb .ll-wrap.fb-item.fb-flash > .ll-card:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { border-color: #12B76A !important; box-shadow: 0 0 0 2px #12B76A !important; }
+html body .fb .ll-wrap.fb-item:focus-visible:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { outline: 2px solid #1570EF; outline-offset: 3px; }
+html body .fb .fb-group > .ll-grid:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { margin-top: 10px; }
+
+/* Fewer redirects (user, 25 Nov 2026): tiles, list rows, roadmap cards and Do next lines are no longer links, so they no longer look clickable */
+html body :is(div.ca-tile, div.ca-do, div.cs-line, div.rm-c, .lc-list li):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { cursor: default !important; }
+html body :is(div.ca-tile, div.ca-do, div.cs-line, div.rm-c, .sd-w, .sd-kpi):hover:not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q):not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { transform: none !important; }
+html body .lc-list li > b:not(#q#q#q#q#q#q#q#q#q#q#q#q#q) { font-weight: 500; color: inherit; }
 /* ---------- Documents & Files (25 Nov 2026, src/documents.js): folder list left, files right; one column under 1100 px ---------- */
 body .docs-grid:not(#_):not(#__) { display: grid !important; grid-template-columns: 232px minmax(0, 1fr) !important; gap: 24px !important; align-items: start !important; }
 @media (max-width: 1100px) { body .docs-grid:not(#_):not(#__) { grid-template-columns: 1fr !important; } }

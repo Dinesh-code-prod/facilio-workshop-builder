@@ -1,5 +1,15 @@
 // The full texts of the connector tools whose descriptions in work/work.json were shortened (23 Nov 2026) so Claude reads less on every turn: connector_help topic <tool name> returns them.
 export const TOOL_DOCS = {
+ "project_changes": {
+  "inputs": {
+   "modules": "For scope: module names or labels, for example [\"Purchase Order\", \"Quote\"]. Names that match no module come back in plan.unknown; nothing is guessed.",
+   "inScope": "For scope: false = out of scope, true = in scope",
+   "flows": "For scope: off switches the state flows of those modules off in the design (kept, not deleted), on switches them back on, keep (default) leaves them",
+   "token": "From the dry run, only after the person said yes. It expires after 15 minutes and is refused if the project changed since the preview.",
+   "id": "For undo: undoId from the run"
+  },
+  "description": "Without action: what changed in the project since a date (since, default the last 7 days), records by kind, newest first. With action it changes the project for the person, safely: action scope puts modules in or out of scope and can switch their state flows off (flows off) or on. ALWAYS call first WITHOUT token (a dry run: nothing changes) and show the person the plan: summary, consequences, names that did not match. Only after a clear yes, call again with the same arguments and the token. The answer says whether the saved record was read back and matched; never say it is done otherwise. action undo (id) puts it back; action history lists recent actions; action check returns the project check: findings grouped critical, high, medium, low, each with why, what to do and the Studio page."
+ },
  "project_jobs": {
   "inputs": {
    "skills": "The ids of the Studio skills your Claude has installed (see the tool description)",

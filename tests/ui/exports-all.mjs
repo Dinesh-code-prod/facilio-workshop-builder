@@ -118,7 +118,7 @@ f = await dl('User guide Word (.docx)', () => act('ugDocx')); if (f) { const d =
 f = await dl('User guide PDF', () => act('ugPdf')); if (f) { const p = await pdf(f); ok('User guide PDF', f, [['pages ' + p.pages, p.pages >= 3], ['title QZUG', has(p.text, 'QZUG')], ['content QZGUIDE', has(p.text, 'QZGUIDE')], ['second section', has(p.text, 'QZAPPROVE')], ['table text', has(p.text, 'Your building')], ['Arabic text drawn', arIn(p.text)]]); }
 
 // ---------- Workshop plan Excel (from sessions) ----------
-await go('planner', { plTab: 'export' }); await page.evaluate(() => { window.FWB.S.ui.mfStep = 'final'; window.FWBViews.render(); }); await page.waitForTimeout(800);
+await go('planner', { plTab: 'export' }); await page.waitForTimeout(800);   // lands on Requirement schedule > Excel & publish (25 Nov 2026)
 f = await dl('Workshop plan Excel', () => act('exportPlan'), 60000); if (f) { const x = await xlsx(f); ok('Workshop plan Excel', f, [['valid sheet XML', x.valid], ['customer', has(x.text, CUST)], ['session row QZSES', has(x.text, 'QZSES')], ['Arabic topics', has(x.text, AR)]]); }
 
 // ---------- CSV exports ----------
@@ -164,9 +164,7 @@ await go('planner', { plTab: 'export' }); await click('[data-act="plEdOpen"][dat
 f = await dl('Workshop plan (edited in the spreadsheet)', () => click('[data-act="plEdDownload"]'), 60000); if (f) { const x = await xlsx(f); ok('Workshop plan (edited in the spreadsheet)', f, [['valid sheet XML', x.valid], ['session row QZSES', has(x.text, 'QZSES')]]); }
 await page.evaluate(() => { window.FWB.S.ui.plEditor = false; });
 
-// ---------- Contract flow, step 5: the live schedule sheet downloads as Excel ----------
-await go('msaflow'); await page.evaluate(() => window.FWBViews.ACT.mfSub({ getAttribute: k => (k === 'data-s' ? 'schedule' : 'live') })); await page.waitForTimeout(3500);
-f = await dl('Workshop plan (live schedule sheet)', () => click('[data-act="mfSheetDownload"]'), 60000); if (f) { const x = await xlsx(f); ok('Workshop plan (live schedule sheet)', f, [['valid sheet XML', x.valid], ['session row QZSES', has(x.text, 'QZSES')], ['hidden session IDs not exported', !has(x.text, 'ses1')]]); }
+// (the old Contract page and its live schedule sheet are hidden, 25 Nov 2026: the same sessions export from Requirement schedule > Excel & publish, checked above)
 
 // ---------- diagrams: state flow PNG, whiteboard PNG (labels with & and <, Arabic note) ----------
 const ink = b64 => page.evaluate(async b64 => { const im = new Image(); im.src = 'data:image/png;base64,' + b64; await im.decode(); const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0); const d = g.getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 0; i < d.length; i += 16) if (d[i] < 200) n++; return { w: im.width, h: im.height, n }; }, b64);
