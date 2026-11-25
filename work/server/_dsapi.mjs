@@ -100,23 +100,42 @@ export function installDs(d) {
       const r = await update(p.id, 'rs_questions', doc => { const m = QB.merge(doc, list, new Date().toISOString(), (s.name || s.email || '') + ' (Claude)', 'ai', 'Claude field questions'); return { doc: m.bank, added: m.added, skipped: m.skipped }; });
       await audit(p.id, s.id, 'rs-questions', 'added ' + r.added); return { project: p.name, added: r.added, skipped: r.skipped, note: 'Saved as suggestions on the Questions tab; a person keeps the ones to ask. Same wording twice is skipped.' };
     },
-    /** Claude brings the finished Meteor page (the index.html of a prototype) into the Studio. url is the one-hour file link Meteor gives (get_prototype with files); only that storage host is fetched. */
+    /** Claude brings a Meteor result into the Studio, all optional and combinable: toolProject (the Meteor or Comet project of this customer, no card needed), meteor (the prototype a card is
+       made from: owner, slug, title, version brought, latest seen), videoUrl (the Comet link) and pageUrl (the one-hour file link Meteor gives for index.html; only that storage host is fetched). */
     async mockup_save_page(s, b) {
       const p = await pickProject(s, b.project); const { role } = await projectAccess(s, p.id, 'edit'); if (role === 'customer') throw new HttpError(403, 'Mockup pages are for the project team');
+      const asObj = v => { if (typeof v === 'string') { try { v = JSON.parse(v); } catch (e) { return null; } } return v && typeof v === 'object' && !Array.isArray(v) ? v : null; };   // a Claude with an older tool list sends objects as text
+      const one = v => String(v || '').replace(/\s+/g, ' ').trim().slice(0, 160), by = (s.name || s.email || '') + ' (Claude)', now = new Date().toISOString();
+      const tp = b.toolProject != null ? asObj(b.toolProject) : null; if (b.toolProject != null && !tp) throw new HttpError(400, 'toolProject must be { tool: meteor or comet, id, name, link }');
+      if (tp) {
+        const tool = tp.tool === 'meteor' || tp.tool === 'comet' ? tp.tool : '', id = String(tp.id || '').trim();
+        if (!tool || id.length > 200 || !/^[A-Za-z0-9@._-]+(\/[A-Za-z0-9._-]+)?$/.test(id)) throw new HttpError(400, 'toolProject must be { tool: meteor or comet, id (the project id, or owner/id, as the project tool lists it), name, link }');
+        let link = ''; if (tp.link) { let u = null; try { u = new URL(String(tp.link)); } catch (e) { /* refused below */ } if (!u || u.protocol !== 'https:' || u.hostname !== tool + '.facilio.work') throw new HttpError(400, 'toolProject link must be on https://' + tool + '.facilio.work'); link = u.href.slice(0, 600); }
+        await update(p.id, 'mockup_pages', doc => ({ doc: Object.assign({}, doc, { links: Object.assign({}, doc.links, { [tool]: { id, name: one(tp.name) || id, link, by, at: now } }) }) })); await audit(p.id, s.id, 'mockup-link', tool + ' ' + id);
+        if (!String(b.pageKey || '').trim()) return { project: p.name, linked: tool, id, note: 'Linked. The Mockup and Training tabs show this ' + (tool === 'meteor' ? 'Meteor' : 'Comet') + ' project.' };
+      }
       const key = String(b.pageKey || '').trim().slice(0, 300); if (!/^(portfolio:all|flow:|module:|link:|app:)/.test(key)) throw new HttpError(400, 'pageKey must be the key of a mockup card: portfolio:all, or flow:/module:/link:/app: followed by the card name (the Mockup tab lists them).');
-      const vid = String(b.videoUrl || '').trim();
+      const setItem = (doc, add) => { const items = Object.assign({}, doc.items); items[key] = Object.assign({}, items[key], add); return { doc: Object.assign({}, doc, { items }) }; };   // keeps the other fields of the card and of the document
+      const mo = b.meteor != null ? asObj(b.meteor) : null;
+      if (b.meteor != null) {
+        const owner = String((mo || {}).owner || '').trim().toLowerCase(), slug = String((mo || {}).slug || '').trim(), n = x => { const k = parseInt(x, 10); return k >= 0 && k < 10000 ? k : 0; };
+        if (!mo || !/^[^@\s/]+@[^@\s/]+$/.test(owner) || !/^[a-z0-9][a-z0-9-]{0,99}$/.test(slug)) throw new HttpError(400, 'meteor must be { owner (the prototype owner e-mail), slug, title, version (the version brought, 0 if none), latest (the newest version Meteor lists) }');
+        const version = n(mo.version); await update(p.id, 'mockup_pages', doc => setItem(doc, { meteor: { owner, slug, title: one(mo.title), version, latest: Math.max(n(mo.latest), version), at: now } })); await audit(p.id, s.id, 'mockup-meteor', key + ' · ' + slug + ' v' + version);
+      }
+      const vid = String(b.videoUrl || '').trim(), hasPage = !!String(b.pageUrl || '').trim();
       if (vid) {   // the Comet video of this card: only the link is kept (a video file is too large for the project); it shows on the card and in the client mockup
         let v; try { v = new URL(vid); } catch (e) { throw new HttpError(400, 'videoUrl must be the share link of the Comet video'); } if (v.protocol !== 'https:' || v.hostname !== 'comet.facilio.work') throw new HttpError(400, 'videoUrl must be a Comet link (https://comet.facilio.work/...)');
-        const at0 = new Date().toISOString(); await update(p.id, 'mockup_pages', doc => { const items = Object.assign({}, doc.items); items[key] = Object.assign({}, items[key], { video: v.href.slice(0, 600), videoBy: (s.name || s.email || '') + ' (Claude)', videoAt: at0 }); return { doc: { items } }; }); await audit(p.id, s.id, 'mockup-video', key);
-        if (!String(b.pageUrl || '').trim()) return { project: p.name, key, video: v.href, note: 'Saved. The Comet video shows on the Guides & Videos page and in the client mockup.' };
+        await update(p.id, 'mockup_pages', doc => setItem(doc, { video: v.href.slice(0, 600), videoBy: by, videoAt: now })); await audit(p.id, s.id, 'mockup-video', key);
+        if (!hasPage) return { project: p.name, key, video: v.href, note: 'Saved. The Comet video shows on the Guides & Videos page and in the client mockup.' };
       }
+      if (!hasPage) { if (mo) return { project: p.name, key, meteor: mo.slug, note: 'Saved. The card now shows its Meteor prototype.' }; throw new HttpError(400, 'Send pageUrl (the Meteor file link), videoUrl, meteor or toolProject.'); }
       let u; try { u = new URL(String(b.pageUrl || '')); } catch (e) { throw new HttpError(400, 'pageUrl must be the file link Meteor gave for index.html'); }
       if (u.protocol !== 'https:' || !/^facilio-work-sites[.]s3[.][a-z0-9-]+[.]amazonaws[.]com$/.test(u.hostname)) throw new HttpError(400, 'pageUrl must be a Meteor file link (the one-hour link from get_prototype with files)');
       let r; try { r = await fetch(u.href); } catch (e) { throw new HttpError(502, 'The Meteor file could not be fetched. Ask for a fresh link (they last one hour) and try again.'); } if (!r.ok) throw new HttpError(502, 'The Meteor file link did not open (status ' + r.status + '). Ask for a fresh link and try again.');
       const text = await r.text(); const size = Buffer.byteLength(text, 'utf8'); if (!size || size > 25e6) throw new HttpError(413, 'The file is empty or over 25 MB.'); if (!/<!doctype html|<html/i.test(text.slice(0, 600))) throw new HttpError(415, 'That file is not an HTML page. Send the index.html of the prototype.');
       const name = (String(b.pageName || 'index.html').replace(/[^A-Za-z0-9._ -]/g, ' ').trim() || 'index.html').replace(/([.]html?)?$/i, '.html').slice(0, 120);
-      const file = await storeServerFile(p.id, s.id, { category: 'mockup_html', name, mime: 'text/html', text, meta: { key, from: 'meteor', by: 'claude' } }); const now = new Date().toISOString();
-      await update(p.id, 'mockup_pages', doc => { const items = Object.assign({}, doc.items); items[key] = { file: { id: file.id, name: file.name, size: file.size }, by: (s.name || s.email || '') + ' (Claude)', at: now }; return { doc: { items } }; });
+      const file = await storeServerFile(p.id, s.id, { category: 'mockup_html', name, mime: 'text/html', text, meta: { key, from: 'meteor', by: 'claude' } });
+      await update(p.id, 'mockup_pages', doc => setItem(doc, { file: { id: file.id, name: file.name, size: file.size }, by, at: now }));
       await audit(p.id, s.id, 'mockup-page', key + ' · ' + name + ' · ' + Math.round(size / 1000) + ' KB'); return { project: p.name, key, size, note: 'Saved. It shows on the card in the Mockup tab and inside the client mockup. Nothing else to do.' };
     },
     async design_save_proposals(s, b) {

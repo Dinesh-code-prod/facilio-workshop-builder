@@ -28,3 +28,10 @@ Comet has a Claude connector (tools seen: `my_work` lists a person's creations w
 
 ## Update 25 Nov 2026
 The whole round trip from the user side, what is in the libraries today and a ranked list of improvements: docs/reports/METEOR-COMET-CONNECTION-2026-11-25.md.
+
+## Update 25 Nov 2026: project link, Send to Meteor, cards that remember their prototype
+- **Project link:** the Mockup tab and Training > Guides show the Meteor and the Comet project of this customer. **Link Meteor and Comet projects** queues the job `link_tools`: Claude lists the projects with each tool's `project` tool, picks the customer's (or creates one with a short context, never real people or data) and saves it with `save_mockup` `toolProject`. Stored in `mockup_pages.links`.
+- **Send to Meteor** on a card saves its brief in `mockup_pages.items[card].brief` (a job note holds only 600 characters) and queues `start_meteor`: Claude calls Meteor `start_prototype` in the linked project, saves the prototype on the card (`save_mockup` `meteor`) and builds version 1 when it can.
+- **The card remembers its prototype:** `mockup_pages.items[card].meteor` = owner, slug, title, version brought, newest version seen. `send_mockup` uses it instead of matching names, and the card shows "Meteor has version N" with Bring version N. The Studio cannot ask Meteor itself, so "newest" is what Claude saw last.
+- Fixed: a page or video saved by Claude no longer wipes the other fields of the card.
+Not checked: a real Meteor or Comet run through these jobs.
