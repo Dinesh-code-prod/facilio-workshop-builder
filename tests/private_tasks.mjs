@@ -51,4 +51,10 @@ await t('bad input is refused (400) and an over-long list is refused (413)', asy
   assert.equal((await as(SAM, 'PUT', URL_, { items: 'x' })).status, 400); assert.equal((await as(SAM, 'PUT', URL_, {})).status, 400);
   assert.equal((await as(SAM, 'PUT', URL_, { items: Array.from({ length: MAX_ITEMS + 1 }, (_, i) => item('p' + (100000 + i).toString(36), 'T')) })).status, 413);
 });
+await t('project tasks are team-only: a customer can neither list, read nor change them; the team still can', async () => {
+  assert.equal((await as(SAM, 'PUT', `/api/projects/${pid}/items/task/tk1`, { data: { title: 'Internal: chase the vendor', status: 'To Do', notes: 'internal comment' } })).status, 200);
+  const team = await as(KIM, 'GET', `/api/projects/${pid}/items?kinds=task`); assert.equal(team.status, 200); assert.ok(JSON.stringify(team.data).includes('Internal: chase the vendor'), 'the team lists project tasks');
+  const cl = await as(CUS, 'GET', `/api/projects/${pid}/items?kinds=task`); assert.ok(!JSON.stringify(cl.data || {}).includes('chase the vendor'), 'a customer never gets a project task: ' + cl.status);
+  const cw = await as(CUS, 'PUT', `/api/projects/${pid}/items/task/tk2`, { data: { title: 'From the customer', status: 'To Do' } }); assert.ok(cw.status >= 400, 'a customer cannot write a project task: ' + cw.status);
+});
 console.log(n + ' private task checks passed');
