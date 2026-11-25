@@ -1,0 +1,206 @@
+{
+  "meta": {
+    "name": "Facilio Delivery Studio Master Design Tokens",
+    "version": "2.0",
+    "theme": "light",
+    "scope": [
+      "staff",
+      "admin",
+      "customer"
+    ],
+    "note": "Master shared visual system. Inspect and reconcile existing Facilio brand tokens and actual loaded fonts before implementation."
+  },
+  "colors": {
+    "surface": {
+      "page": "#FFFFFF",
+      "pageSubtle": "#F8FAFC",
+      "card": "#FFFFFF",
+      "subtle": "#F5F6FA",
+      "selected": "#F1EEFF"
+    },
+    "text": {
+      "primary": "#202534",
+      "secondary": "#667085",
+      "muted": "#98A2B3"
+    },
+    "border": {
+      "default": "#E5E7EB",
+      "strong": "#D7DCE5"
+    },
+    "brand": {
+      "violet": "#6D4AFF",
+      "deepViolet": "#29236F",
+      "primaryAction": "#2563EB",
+      "teal": "#0D9488"
+    },
+    "semantic": {
+      "success": "#16A34A",
+      "warning": "#D97706",
+      "danger": "#DC2626",
+      "info": "#2563EB"
+    },
+    "sidebar": {
+      "home": {
+        "accent": "#2563EB",
+        "soft": "#EFF6FF"
+      },
+      "intro": {
+        "accent": "#7C3AED",
+        "soft": "#F5F3FF"
+      },
+      "sessions": {
+        "accent": "#0891B2",
+        "soft": "#ECFEFF"
+      },
+      "solution": {
+        "accent": "#D97706",
+        "soft": "#FFFBEB"
+      },
+      "uat": {
+        "accent": "#16A34A",
+        "soft": "#F0FDF4"
+      },
+      "training": {
+        "accent": "#DB2777",
+        "soft": "#FDF2F8"
+      },
+      "tasks": {
+        "accent": "#EA580C",
+        "soft": "#FFF7ED"
+      },
+      "handover": {
+        "accent": "#0D9488",
+        "soft": "#F0FDFA"
+      },
+      "reports": {
+        "accent": "#4F46E5",
+        "soft": "#EEF2FF"
+      },
+      "notes": {
+        "accent": "#64748B",
+        "soft": "#F1F5F9"
+      },
+      "showcase": {
+        "accent": "#0284C7",
+        "soft": "#F0F9FF"
+      },
+      "claude": {
+        "accent": "#9333EA",
+        "soft": "#FAF5FF"
+      },
+      "helpSettings": {
+        "accent": "#64748B",
+        "soft": "#F8FAFC"
+      }
+    }
+  },
+  "typography": {
+    "fontFamily": "Inspect and reuse the actual approved Facilio application font stack. Do not guess from screenshot.",
+    "pageTitle": {
+      "size": "30-34px",
+      "weight": 700
+    },
+    "sectionTitle": {
+      "size": "18-20px",
+      "weight": 600
+    },
+    "cardTitle": {
+      "size": "15-17px",
+      "weight": 600
+    },
+    "body": {
+      "size": "14-16px",
+      "weight": 400
+    },
+    "tabs": {
+      "size": "14-15px",
+      "weight": 600
+    },
+    "buttons": {
+      "size": "14-15px",
+      "weight": 600
+    },
+    "tableHeader": {
+      "size": "12-13px",
+      "weight": 600
+    },
+    "tableBody": {
+      "size": "13-14px",
+      "weight": 400
+    },
+    "metadata": {
+      "size": "12-13px",
+      "weight": 400
+    },
+    "minimumImportantText": "12px"
+  },
+  "spacing": {
+    "base": "4px",
+    "scale": [
+      4,
+      8,
+      12,
+      16,
+      20,
+      24,
+      28,
+      32,
+      40,
+      48
+    ]
+  },
+  "radius": {
+    "badge": "6px",
+    "control": "8px",
+    "button": "8-10px",
+    "card": "10-12px",
+    "panel": "12-16px"
+  },
+  "shadows": {
+    "subtle": "0 1px 2px rgba(16,24,40,0.05)",
+    "floating": "0 8px 24px rgba(16,24,40,0.10)"
+  },
+  "componentRules": {
+    "tabs": "Navigation row with underline or soft selected surface; inactive tabs are not outlined pills.",
+    "buttons": "Distinct primary, secondary, tertiary, destructive and icon-only styles. Avoid all-pill styling.",
+    "badges": "Compact semantic color with text or icon.",
+    "stepper": "Completed/current/pending/blocked based on real workflow state.",
+    "pageHeader": "Compact title/context on left and contextual actions on right; no oversized gradient banner.",
+    "cards": "White surface, subtle border, moderate radius, minimal shadow."
+  },
+  "pov": {
+    "sharedVisualSystem": true,
+    "perspectives": [
+      "staff",
+      "admin",
+      "customer"
+    ],
+    "varyOnly": [
+      "navigation visibility",
+      "permissions",
+      "data visibility",
+      "available actions",
+      "workflow responsibilities"
+    ],
+    "neverForkIntoThreeThemes": true
+  },
+  "sidebar": {
+    "widthWithLabels": "76-84px target; adjust to prevent truncation",
+    "iconSize": "20-22px",
+    "modes": [
+      "expanded",
+      "compact-icon-only"
+    ],
+    "rules": [
+      "Never truncate labels",
+      "Tooltips in icon-only mode",
+      "Separate utility navigation",
+      "Support scrolling",
+      "Use shared route and permission configuration"
+    ]
+  },
+  "motion": {
+    "principle": "Purposeful and restrained",
+    "respectReducedMotion": true
+  }
+}

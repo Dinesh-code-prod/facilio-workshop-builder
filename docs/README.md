@@ -18,7 +18,7 @@ Read these six in order to understand Delivery Studio, check it and approve it.
 | Folder | Put here | Example |
 |---|---|---|
 | [plans/](plans/README.md) | A plan written before building a feature | [SOLUTION-TAB-PLAN-2026-11-07.md](plans/SOLUTION-TAB-PLAN-2026-11-07.md) |
-| [design/](design/README.md) | How the app looks and moves: style library, page progress, animation kit | [UI-COSS-LIBRARY.md](design/UI-COSS-LIBRARY.md) |
+| [design/](design/README.md) | How the app looks and moves: the master design system, motion and the animation kit | [master-design-system/MASTER_DESIGN.md](design/master-design-system/MASTER_DESIGN.md) |
 | [integrations/](integrations/README.md) | How the Studio works with Claude, Outlook, Teams and the Facilio products | [claude-connector.md](integrations/claude-connector.md) |
 | [reports/](reports/README.md) | An audit, review or status report, with its date in the name | [qa-2026-11-02.md](reports/qa-2026-11-02.md) |
 | [reference/](reference/README.md) | A longer note on how one part works | [privacy-and-retention.md](reference/privacy-and-retention.md) |

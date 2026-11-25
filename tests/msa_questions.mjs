@@ -24,7 +24,7 @@ t('the same contract gives the same ids; empty or missing data gives nothing', (
 const src = f => fs.readFileSync(new URL('../' + f, import.meta.url), 'utf8');
 t('wired in: built, applied by the guide, shown on Learn & Prepare, readable by customers, key fits the server rule', () => {
   assert.match(src('build.mjs'), /'src\/msaquestions\.js'/); assert.match(src('src/guidelearn.js'), /V\.msaQuestions\.apply\(\)/); assert.match(src('src/prepare.js'), /V\.msaQuestions\.card\(\)/);
-  assert.match(src('src/shell.js'), /'plan_struct', 'contract_prep'\]/); assert.ok(!/contract_prep/.test((src('work/server/api.mjs').match(/TEAM_DOCS = new Set\(\[[^\]]*\]/) || [''])[0]), 'customers may read it');
+  assert.match(src('src/shell.js'), /'plan_struct', 'contract_prep'(, '[a-z_]+')*\]/); assert.ok(!/contract_prep/.test((src('work/server/api.mjs').match(/TEAM_DOCS = new Set\(\[[^\]]*\]/) || [''])[0]), 'customers may read it');
   assert.ok(/GR_KEY = \/\^\[a-z\]\{2,8\}:\[afbxw\]:\[A-Za-z0-9_-\]\{1,64\}\$\//.test(src('work/server/api.mjs')));
 });
 console.log(n + ' checks passed');

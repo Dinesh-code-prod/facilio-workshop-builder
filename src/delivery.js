@@ -22,7 +22,7 @@
     uat: [['cases', 'Test cases', 'Write the tests and record pass or fail'], ['issues', 'Issues', 'Problems found while testing'], ],
     golive: [['ready', 'Readiness', 'Are we ready to switch on?'], ['list', 'Checklist', 'Things to tick off'], ['acts', 'Actions', 'Follow-ups to close']] };
   const subOf = t => { const u = S.ui.dlSub || {}; return (SUBS[t].find(x => x[0] === u[t]) || SUBS[t][0])[0]; };
-  const subNav = t => { const cur = subOf(t); return `<div class="dl-sub" role="tablist">${SUBS[t].map(([k, l, c]) => `<button type="button" role="tab" aria-selected="${cur === k}" class="${cur === k ? 'on' : ''}" data-act="dlSub" data-t="${t}" data-v="${k}"><b>${esc(l)}</b><span>${esc(c)}</span></button>`).join('')}</div>`; };
+  const subNav = t => { const cur = subOf(t); return `<div class="dl-sub seg" role="tablist">${SUBS[t].map(([k, l, c]) => `<button type="button" role="tab" aria-selected="${cur === k}" class="${cur === k ? 'on' : ''}" data-act="dlSub" data-t="${t}" data-v="${k}" title="${esc(c)}">${esc(l)}</button>`).join('')}</div>`; };
   ACT.dlSub = a => { S.ui.dlSub = Object.assign({}, S.ui.dlSub, { [a.getAttribute('data-t')]: a.getAttribute('data-v') }); V.render(); };
   ACT.dlSuggest = a => V.busy(a, async () => { const g = a.getAttribute('data-g'); const have = new Set(checklist(g).map(c => c.text)); let n = 0; for (const t of SUGGEST[g]) if (!have.has(t)) { await I().put('checklist', I().uid('ck'), { group: g, text: t, done: false, order: n++ }, { silent: true }); } V.render(); });
   ACT.dlCheckAdd = a => { const g = a.getAttribute('data-g'); drawer('Add checklist item', `<label class="f">Item</label><input type="text" id="ck_t" maxlength="200">`, `<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="dlCheckSave" data-g="${g}">Add</button>`); };
@@ -95,7 +95,7 @@
     if (!I().ready(['build', 'uat', 'checklist'])) return head + `<div class="page-body">${tabs}<div class="empty">Loading…</div></div>`;
     const cap = { build: 'Build & Test: the team\'s own progress', uat: 'UAT: the customer tries it and confirms it works', golive: 'Go-live: are we ready to switch on?' }[t];
     const sk = t === 'build' ? '' : subOf(t); const ai = !cust() && V.aiPanel && ((t === 'uat' && sk === 'cases') ? V.aiPanel([['uat', 'UAT guide (before go-live)', 'Drafts the plan and the test cases from confirmed requirements and use cases']], { title: 'Draft with AI' }) : (t === 'golive' && sk === 'ready') ? V.aiPanel([['golive', 'Readiness review', 'Reads the open points and writes a plain summary of what could go wrong']], { title: 'Draft with AI' }) : '');
-    const inner = t === 'uat' ? subNav('uat') + ai + (uatTab()[sk] || '') : t === 'golive' ? subNav('golive') + ai + (goliveTab()[sk] || '') : buildTab();
+    const inner = t === 'uat' ? subNav('uat') + (ai || '') + (uatTab()[sk] || '') : t === 'golive' ? subNav('golive') + (ai || '') + (goliveTab()[sk] || '') : buildTab();
     return head + `<div class="page-body">${tabs}<p class="small muted dl-cap">${esc(cap)}</p>${cust() || !V.pageGuide ? '' : V.pageGuide('dl_' + t)}${V.planStage ? V.planStage(t) : ''}${inner}</div>`;
   }, mount() { I().load(cust() ? kinds : kinds.concat(['ugd', 'utc', 'task'])); } };
 })(typeof window !== 'undefined' ? window : globalThis);

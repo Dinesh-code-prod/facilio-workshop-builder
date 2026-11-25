@@ -262,7 +262,7 @@ Everything that talks to Claude or DeepSeek: the Ask Claude buttons, the Assista
 | [workchat.js](workchat.js) | The "Claude is working" conversation shared by every stage tab (Contract intake now; requirements, BRD, UAT and the rest later). |
 
 ## Looks: styles, theme and fonts
-CSS files. The look is the coss style in ui.css (the last layer, see docs/design/UI-COSS-LIBRARY.md).
+CSS files. The look is the master design system in masterds.css (the last layer, see docs/design/master-design-system/ and docs/04-ui-ux-design.md); ui.css and projfx.css hold the older layers below it.
 
 | File | What it does |
 |---|---|
@@ -300,6 +300,7 @@ CSS files. The look is the coss style in ui.css (the last layer, see docs/design
 | [transfers.css](transfers.css) | Transfers page (src/transfers.js): flat table, Facilio colours only (navy #1D1A5E, blue #1570EF, pink #E5197F, sky #8DB8FF). |
 | [transition.css](transition.css) | Bring your project in: one box per kind of file, and a last box that takes anything. |
 | [uat.css](uat.css) | UAT issue board (src/uat.js) |
+| [masterds.css](masterds.css) | The master design system (24 Nov 2026), the last style layer: tokens, calm colours, page header, tabs, segmented controls, buttons, badges, cards, side menus, Admin, chat box, notifications, Team Guide. |
 | [ui.css](ui.css) | UI layer: the one place that sets the look of the app (tokens, type, buttons, fields, cards, tabs, tables, settings sections, shared work panel). |
 | [uistate.css](uistate.css) | UI states: panels, toasts, banners, skeletons and field errors, in the app's own violet, ink and soft clay look. |
 | [wbtheme.css](wbtheme.css) | Process Whiteboard in the State Flow Builder's frame: the same white canvas with the pale dot grid, the same thin border and square-ish corners, and the same light grey toolbar. |
