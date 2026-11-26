@@ -1,93 +1,81 @@
-/* Claude setup film (user, 25 Nov 2026; plan docs/plans/CLAUDE-SETUP-VIDEO-PLAN-2026-11-25.md). A film written as code on the shared kit (public/films/kit.js):
-   draw(g, t) paints second t as a pure function of t, so the Studio's player (src/filmplayer.js) and VideoHub's live preview (D:/VideoHub/films/claude-setup)
-   show the same frames. Captions are drawn on the picture; there is no sound. Registers FWBFilms['claude-setup']. */
+/* Claude setup film (user, 26 Nov 2026: "how this Claude setup has to be created as a guide, which exactly resembles our Delivery Studio UI"; plan
+   docs/plans/GUIDE-FILMS-CLAUDE-AND-TEAM-PLAN-2026-11-26.md). Made like a screen recording on the shared kit (public/films/kit.js): the real Help > Claude setup
+   page of the demo project (public/films/claude-setup/, WebP, tools/film-shots/claude-setup.mjs; the checklist after a setup report with two pieces missing)
+   with the mouse clicking where people click; the Claude app side (the Code tab, the pasted message, Claude's checks and questions) is drawn plainly. What it
+   says follows the page as it is today: src/claudesetup.js (10 pieces, the watcher every 15 minutes, the job queue every 30) and src/claudewatch.js. */
 (function (root) {
   'use strict';
-  const K = root.FWBFilmKit, { C, clamp, fin, win, lerp, rr, tx, wrap, tick, windowBox, cursor, avatar, ring } = K;
-  const DUR = 110;
-  const SCENES = [{ name: 'What Claude does for you', t0: 0, t1: 20 }, { name: '1. Install four apps', t0: 20, t1: 40 }, { name: '2. Ask for access', t0: 40, t1: 50 },
-    { name: '3. Paste the setup message', t0: 50, t1: 75 }, { name: '4. Your checklist', t0: 75, t1: 95 }, { name: 'You are set', t0: 95, t1: DUR }];
-  // the real Delivery Studio screens (1280x720 JPEGs in claude-setup/) and where on them the film points (tools/film-capture.mjs)
-  const FILES = ['home', 'setup', 'install'], POS = {"copy":[999,331,216,40],"python":[362,250,407,118],"access":[796,80,437,138]};
-  const { shot, load } = K.screens('claude-setup', FILES);
+  const K = root.FWBFilmKit, { C, fin, rr, tx, tick, cursor, fade, pulse, label, track } = K;
+  const TAB = { connect: [430, 262, 150, 36], jobs: [590, 262, 120, 36], skills: [722, 262, 116, 36], how: [851, 262, 124, 36] };
 
-  // the narration, in the team's own words (user, 25 Nov 2026: "more in a Facilio kind of language, and more explanatory")
-  const CAPTIONS = [
-    [0.4, 5, 'Delivery Studio is where Facilio runs every implementation: contract, workshops, BRD, UAT and handover.'], [5, 10, 'Claude, your AI assistant, does the heavy reading and drafting on your projects.'],
-    [10, 15, 'It reads workshop transcripts, drafts the BRD, finds customer mail and builds UAT guides and FTRs.'], [15, 19.8, 'Nothing reaches the customer on its own: every draft waits for you to review and approve.'],
-    [20.3, 26, 'Step 1 of 4. Install four apps on your laptop, once. They let Claude work on your projects.'], [26, 32, 'Python runs the Facilio skills (FTR, UAT guides). In its installer, tick "Add python.exe to PATH".'],
-    [32, 36, 'Node.js gives you instant answers in the Assistant. Git copies the Facilio skills to your laptop.'], [36, 39.8, 'On a Mac, one Terminal command brings Python and Git: xcode-select --install.'],
-    [40.3, 45, 'Step 2 of 4. Ask your project lead for access.'], [45, 49.8, 'They add you to the project in Delivery Studio and give you read access to the Facilio skills on Bitbucket.'],
-    [50.3, 57, 'Step 3 of 4. In Delivery Studio, open Claude setup and press "Copy the setup message".'], [57, 65, 'Open the Claude app, choose the Code tab, start a new chat and paste the message.'],
-    [65, 74.8, 'Claude checks your laptop piece by piece, and always asks before it installs anything.'],
-    [75.3, 82, 'Step 4 of 4. Back in Claude setup, your checklist fills in as Claude reports each piece.'], [82, 88, 'Anything missing shows in red with what to do, for example add the connector in Claude settings, Connectors.'],
-    [88, 94.8, 'Fix it, paste the setup message again, and repeat until all nine pieces are ready.'],
-    [95.3, 102, 'You are set. Ask the Assistant about your project and Claude answers in seconds.'], [102, 109.6, 'Every page has "Open in Claude". Stuck? See "If something does not work", or ask your project lead.']];
-
-  // ---------- scenes (lt = seconds into the scene) ----------
-  function why(g, lt) {
-    tx(g, 'Set up Claude for Delivery Studio', 120, 170, 44, C.ink, 700); tx(g, 'Once, on your own computer · about two minutes', 120, 210, 20, C.text);
-    shot(g, 'home', 120, 240, 620, 'Delivery Studio · your project');
-    const x = lerp(1180, 790, fin(lt, 2, 1.2));
-    rr(g, x, 300, 400, 160, 16, C.page, C.line); avatar(g, x + 34, 336, 'C', C.violet, 16); tx(g, 'Claude', x + 60, 332, 15, C.ink, 600); tx(g, 'Draft ready: BRD section', x + 60, 354, 14, C.text);
-    rr(g, x + 24, 384, 160, 38, 10, C.soft); tx(g, 'Waiting for you', x + 104, 408, 14, C.blue, 600, 'center');
-    [['Reads workshop transcripts, drafts the BRD', 10], ['Finds customer mail and follow-ups', 11.2], ['Builds UAT guides and FTRs with the Facilio skills', 12.4]].forEach(([l, t0], i) => { const a1 = g.globalAlpha; g.globalAlpha = a1 * fin(lt, t0, 0.5); tick(g, 802, 490 + i * 30, 9, fin(lt, t0 + 0.2, 0.5), C.blue); tx(g, l, 820, 496 + i * 30, 15, C.ink, 500); g.globalAlpha = a1; });
-    const q = fin(lt, 5.5, 0.6); if (q > 0) { const a = g.globalAlpha; g.globalAlpha = a * q; rr(g, x + 200, 384, 120, 38, 10, C.blue); tx(g, 'Approve', x + 260, 408, 14, '#fff', 600, 'center'); g.globalAlpha = a; tick(g, x + 366, 336, 13, fin(lt, 6.5, 0.6)); }
+  // ---- the Claude app, drawn plainly: the Code tab, a new chat, the pasted setup message, Claude checking piece by piece ----
+  const CHECKS = [['Windows', 'which computer this is'], ['Python, Node.js, Git', 'the programs the skills need'], ['Facilio Delivery Studio connector', 'https://mcp.facilio.work/facilio-delivery-studio'],
+    ['Microsoft 365 connector', 'mail, transcripts, contracts'], ['Facilio skills', 'copied from Bitbucket into your Claude'], ['Instant answers (watcher)', 'a task every 15 minutes'],
+    ['Job queue', 'a task every 30 minutes'], ['Report to the Studio', 'your checklist fills in']];
+  function app(g, lt) {
+    g.fillStyle = '#FAF9F6'; g.fillRect(0, 0, K.W, K.H); g.fillStyle = '#F2F0EA'; g.fillRect(0, 0, 250, K.H); g.fillStyle = C.line; g.fillRect(250, 0, 1, K.H);
+    tx(g, 'Claude', 28, 48, 22, C.ink, 700); rr(g, 20, 76, 210, 40, 10, lt > 1.6 && lt < 2.4 ? '#E8E4DA' : '#FFFFFF', C.line); tx(g, '+  New chat', 40, 102, 15, C.ink, 600);
+    ['Chat', 'Cowork', 'Code'].forEach((s, i) => { const on = i === 2 && lt > 1; if (on) rr(g, 560 + i * 96, 20, 86, 34, 17, C.ink); tx(g, s, 603 + i * 96, 43, 15, on ? '#fff' : C.text, 600, 'center'); });
+    const msg = 'Set up my computer for Facilio Delivery Studio. Check each piece and tell me what is missing...', pasted = lt > 5.2;
+    rr(g, 300, 600, 920, 64, 14, '#FFFFFF', C.line); if (!pasted && lt > 3.8) tx(g, 'Pasted: the setup message (2 pages)', 324, 638, 16, C.ink, 500); else if (!pasted) tx(g, 'Reply to Claude...', 324, 638, 16, C.muted);
+    if (pasted) { fade(g, fin(lt, 5.2, 0.4), () => { rr(g, 640, 80, 580, 64, 14, '#EFEDE6'); tx(g, msg.slice(0, 62), 660, 108, 15, C.ink, 400); tx(g, '(the setup message, 2 pages)', 660, 130, 14, C.text); }); }
+    // Claude checks piece by piece; Node.js is missing, so it asks before installing
+    if (lt > 6.4) { K.avatar(g, 318, 186, 'C', C.violet, 14); tx(g, 'I will check each piece on this computer. I never ask for passwords, and I ask before installing anything.', 344, 192, 15, C.ink, 400);
+      CHECKS.forEach(([a, b], i) => fade(g, fin(lt, 7 + i * 0.75, 0.35), () => { const y = 232 + i * 38, miss = i === 1 && lt < 15.5; tick(g, 356, y - 5, 10, miss ? 0 : fin(lt, 7.2 + i * 0.75, 0.4), miss ? C.amber : C.ok); tx(g, a, 376, y, 15, C.ink, 600); tx(g, b, 640, y, 14, C.text); if (miss) tx(g, 'Node.js is missing', 900, y, 14, C.amber, 600); })); }
+    if (lt > 13) fade(g, fin(lt, 13, 0.4), () => { rr(g, 344, 548, 600, 42, 10, C.amberSoft, '#FCD9A8'); tx(g, 'Node.js is missing. May I install it?', 362, 575, 15, C.ink, 600); rr(g, 760, 553, 76, 32, 8, C.blue); tx(g, 'Yes', 798, 574, 14, '#fff', 600, 'center'); rr(g, 844, 553, 90, 32, 8, '#fff', C.line); tx(g, 'Not now', 889, 574, 14, C.ink, 600, 'center'); });
+    const p = track([[0, 900, 400], [0.6, 700, 37], [1.6, 125, 96], [3.0, 125, 96], [3.6, 700, 632], [11.5, 700, 632], [14.4, 798, 569]], lt);
+    const press = [[0.6, 1.1], [1.6, 2.1], [3.6, 4.1], [14.4, 14.9]].find(([a, b]) => lt >= a && lt < b);
+    [[0.6, 700, 37], [1.6, 125, 96], [14.4, 798, 569]].forEach(([t0, x, y]) => pulse(g, x, y, (lt - t0) / 0.7)); cursor(g, p[0], p[1], press ? (lt - press[0]) / 0.5 : 0);
+    const say = lt < 1.6 ? ['Claude app, Code tab', 'The setup runs here, on your computer'] : lt < 3.6 ? ['New chat', ''] : lt < 6.4 ? ['Paste the setup message', 'Ctrl+V: it was copied in the Studio'] : lt < 13 ? ['Claude checks each piece', 'Eight checks, in this order'] : ['It asks before installing', 'Yes, and it carries on'];
+    label(g, p[0], p[1], say[0], say[1] || undefined, 1);
   }
-  function install(g, lt) {
-    tx(g, 'Step 1 · Install these four', 120, 150, 36, C.ink, 700);
-    const mac = lt > 14.4; rr(g, 900, 118, 240, 40, 20, '#F1F5F9'); rr(g, mac ? 1020 : 904, 122, 116, 32, 16, C.page); tx(g, 'Windows', 962, 144, 15, mac ? C.muted : C.blue, 600, 'center'); tx(g, 'Mac', 1078, 144, 15, mac ? C.blue : C.muted, 600, 'center');
-    { const m = shot(g, 'install', 120, 180, 680, 'Delivery Studio · Claude setup · Start here', POS.python, win(lt, 6, 14.2, 1)); if (lt > 6.5 && lt < 14) ring(g, m, POS.python, lt); }
-    [['Claude app', 'sign in with your Facilio account'], ['Python 3', 'runs the Facilio skills'], ['Node.js (LTS)', 'gives instant answers'], ['Git', 'copies the Facilio skills']].forEach(([n, why2], i) => { const a1 = g.globalAlpha; g.globalAlpha = a1 * fin(lt, 0.6 + i * 1.2, 0.6); tick(g, 842, 222 + i * 50, 11, fin(lt, 1 + i * 1.2, 0.5)); tx(g, n, 864, 220 + i * 50, 17, C.ink, 600); tx(g, why2, 864, 240 + i * 50, 14, C.text); g.globalAlpha = a1; });
-    const a0 = g.globalAlpha; let z = win(lt, 14.6, 20, 0.5); if (z > 0) { g.globalAlpha = a0 * z; windowBox(g, 820, 420, 360, 180, 'Terminal (Mac)'); rr(g, 836, 466, 328, 118, 8, C.ink); tx(g, '$ xcode-select --install', 852, 504, 17, '#E2E8F0', 500); tx(g, 'Python 3 and Git, in one step', 852, 538, 15, C.muted); }
-    g.globalAlpha = a0;
-  }
-  function access(g, lt) {
-    tx(g, 'Step 2 · Ask for access', 120, 150, 36, C.ink, 700);
-    const person = (x, label, col) => { avatar(g, x, 310, label[0], col, 46); tx(g, label, x, 392, 18, C.ink, 600, 'center'); };
-    person(300, 'Your lead', C.navy); person(980, 'You', C.blue);
-    g.strokeStyle = C.blue; g.lineWidth = 3; g.setLineDash([8, 8]); g.beginPath(); g.moveTo(360, 310); g.lineTo(lerp(360, 920, fin(lt, 1, 1.4)), 310); g.stroke(); g.setLineDash([]);
-    const a0 = g.globalAlpha;
-    [['Added to the project in Delivery Studio', 3], ['Read access to facilio-impl-ai-skills', 5]].forEach(([l, t0], i) => { g.globalAlpha = a0 * fin(lt, t0, 0.5); rr(g, 420, 430 + i * 64, 440, 48, 12, C.okSoft); tick(g, 448, 454 + i * 64, 12, fin(lt, t0 + 0.3, 0.5)); tx(g, l, 470, 460 + i * 64, 17, C.ink, 500); });
-    g.globalAlpha = a0;
-  }
-  function paste(g, lt) {
-    tx(g, 'Step 3 · Paste the setup message', 120, 150, 36, C.ink, 700); const a0 = g.globalAlpha;
-    if (lt < 7.2) { const m = shot(g, 'setup', 180, 170, 760, 'Delivery Studio · Claude setup', POS.copy, fin(lt, 0.3, 1.4) * 0.55); const [bx, by] = ring(g, m, POS.copy, lt, C.blue);
-      const cp = fin(lt, 1, 2); cursor(g, lerp(560, bx, cp), lerp(560, by, cp), lt > 3.2 ? fin(lt, 3.2, 0.6) : 0);
-      const ok = win(lt, 4, 7.2, 0.3); if (ok > 0) { g.globalAlpha = a0 * ok; rr(g, 900, 520, 230, 40, 10, C.ink); tx(g, 'Copied', 1015, 546, 15, '#fff', 600, 'center'); g.globalAlpha = a0; }
-      return; }
-    const l2 = lt - 7.2; windowBox(g, 120, 190, 1040, 380, 'Claude app');
-    ['Chat', 'Cowork', 'Code'].forEach((l, i) => { const on = i === 2 && l2 > 1; if (on) rr(g, 520 + i * 90, 206, 80, 28, 14, C.ink); tx(g, l, 560 + i * 90, 225, 14, on ? '#fff' : C.text, 600, 'center'); });
-    rr(g, 150, 250, 200, 290, 10, '#F8FAFC'); rr(g, 166, 266, 168, 34, 8, fin(l2, 2, 0.4) > 0.5 ? C.soft : C.page, C.line); tx(g, '+ New chat', 250, 289, 14, C.blue, 600, 'center');
-    const msg = 'Set up my computer for Facilio Delivery Studio…'; const typed = fin(l2, 4, 2.5); rr(g, 380, 470, 760, 56, 12, C.page, C.line); if (typed > 0 && l2 < 7) tx(g, msg.slice(0, Math.round(msg.length * typed)), 400, 504, 16, C.ink);
-    if (l2 > 7) { g.globalAlpha = a0 * fin(l2, 7, 0.6); rr(g, 380, 270, 700, 70, 12, C.soft); tx(g, msg + ' (2 pages)', 400, 311, 15, C.ink); g.globalAlpha = a0; }
-    if (l2 > 9.5) { g.globalAlpha = a0 * fin(l2, 9.5, 0.6); avatar(g, 398, 382, 'C', C.violet, 14); wrap(g, 'I will check nine pieces on this computer. Node.js is missing: may I install it?', 424, 378, 640, 16, C.ink, 400, 22);
-      rr(g, 424, 412, 90, 34, 10, C.blue); tx(g, 'Yes', 469, 434, 14, '#fff', 600, 'center'); rr(g, 524, 412, 90, 34, 10, C.page, C.line); tx(g, 'Not now', 569, 434, 14, C.ink, 600, 'center'); g.globalAlpha = a0; }
-    if (l2 < 9.5) cursor(g, lerp(250, 700, fin(l2, 4, 2)), lerp(290, 498, fin(l2, 2.5, 1.5)), l2 > 2 && l2 < 2.6 ? fin(l2, 2, 0.6) : 0); else cursor(g, 470, 430, fin(l2, 13, 0.6));
-  }
-  function checklist(g, lt) {
-    tx(g, 'Step 4 · Your checklist', 120, 150, 36, C.ink, 700);
-    const P = ['Delivery Studio connector', 'Microsoft 365 connector', 'Facilio skills (toolbox)', 'Facilio skills copy', 'Instant answers (watcher)', 'Job queue (every 30 minutes)', 'Node.js', 'Git', 'Python'];
-    const okAt = i => (i === 6 ? 15.5 : 1 + i * 1.1), missing = i => i === 6 && lt > 1 + 6 * 1.1 && lt < 15.5;
-    const nOk = P.filter((_, i) => lt >= okAt(i)).length;
-    rr(g, 120, 180, 1040, 56, 12, nOk === 9 ? C.okSoft : C.soft); tx(g, nOk === 9 ? 'All nine pieces ready' : nOk + ' of 9 pieces ready', 144, 215, 20, C.ink, 600);
-    rr(g, 120, 250, 1040, 330, 12, C.page, C.line);
-    P.forEach((l, i) => { const y = 284 + i * 33, ok = lt >= okAt(i), miss = missing(i);
-      g.beginPath(); g.arc(150, y - 5, 6, 0, Math.PI * 2); g.fillStyle = ok ? C.ok : miss ? C.bad : C.line; g.fill();
-      tx(g, ok ? 'Ready' : miss ? 'Missing' : 'Not checked', 166, y, 15, miss ? C.bad : C.text, 500); tx(g, l, 300, y, 16, C.ink, 600);
-      if (miss) tx(g, 'Install Node.js (LTS), then paste the setup message again', 620, y, 15, C.bad, 500); });
+  // the connector, when Claude says it is missing: Claude settings > Connectors > Add custom connector
+  function connector(g, lt) {
+    g.fillStyle = '#FAF9F6'; g.fillRect(0, 0, K.W, K.H); g.fillStyle = 'rgba(15,23,42,.35)'; g.fillRect(0, 0, K.W, K.H);
+    rr(g, 340, 110, 600, 440, 16, '#FFFFFF', C.line); tx(g, 'Add custom connector', 372, 160, 22, C.ink, 700); tx(g, 'Claude settings > Connectors', 372, 188, 14, C.text);
+    const name = 'Facilio Delivery Studio', url = 'https://mcp.facilio.work/facilio-delivery-studio';
+    tx(g, 'Name', 372, 236, 14, C.text, 600); rr(g, 372, 246, 536, 44, 8, '#fff', lt > 1 && lt < 4 ? C.blue : C.line); tx(g, name.slice(0, Math.round(name.length * fin(lt, 1.4, 1.4))), 388, 274, 16, C.ink);
+    tx(g, 'Remote MCP server URL', 372, 324, 14, C.text, 600); rr(g, 372, 334, 536, 44, 8, '#fff', lt > 4 && lt < 7.5 ? C.blue : C.line); tx(g, url.slice(0, Math.round(url.length * fin(lt, 4.4, 2.2))), 388, 362, 16, C.ink);
+    rr(g, 794, 470, 114, 44, 10, C.blue); tx(g, 'Add', 851, 498, 16, '#fff', 600, 'center');
+    if (lt > 9.3) fade(g, fin(lt, 9.3, 0.4), () => { tx(g, 'Then sign in with your Facilio account.', 372, 432, 15, C.ok, 600); });
+    const p = track([[0, 900, 600], [0.9, 640, 268], [3.6, 640, 356], [7.6, 640, 356], [8.6, 851, 492]], lt), press = [[0.9, 1.4], [3.6, 4.1], [8.6, 9.1]].find(([a, b]) => lt >= a && lt < b);
+    [[0.9, 640, 268], [3.6, 640, 356], [8.6, 851, 492]].forEach(([t0, x, y]) => pulse(g, x, y, (lt - t0) / 0.7)); cursor(g, p[0], p[1], press ? (lt - press[0]) / 0.5 : 0);
+    label(g, 960, 200, lt < 3.6 ? 'Name it' : lt < 8.6 ? 'The connector address' : 'Add, then sign in', lt < 3.6 ? 'Facilio Delivery Studio' : lt < 8.6 ? 'It is on the 1. Connect Claude tab, with a Copy button' : 'Claude stops here until it is added', 1);
   }
   function done(g, lt) {
-    tx(g, 'You are set', 120, 150, 40, C.ink, 700); const a0 = g.globalAlpha;
-    windowBox(g, 120, 190, 620, 340, 'Assistant'); rr(g, 340, 240, 380, 44, 14, C.soft); tx(g, 'What is waiting on the customer?', 360, 268, 15, C.ink, 500);
-    g.globalAlpha = a0 * fin(lt, 1.5, 0.8); avatar(g, 160, 330, 'C', C.violet, 14); rr(g, 186, 306, 520, 100, 14, '#F8FAFC');
-    wrap(g, 'Two items: the asset register (due Friday) and the BRD sign-off, requested on 20 Nov.', 204, 336, 480, 16, C.ink, 400, 24); tx(g, 'answered in 4 s', 204, 392, 13, C.muted);
-    g.globalAlpha = a0 * fin(lt, 6, 0.6); rr(g, 800, 190, 340, 130, 16, C.page, C.line); tx(g, 'On every page', 824, 226, 15, C.text, 500); rr(g, 824, 248, 180, 40, 10, C.blue); tx(g, 'Open in Claude', 914, 274, 15, '#fff', 600, 'center');
-    rr(g, 820, 244, 188, 48, 12, null, `rgba(21,112,239,${0.25 + 0.35 * (Math.sin(lt * 3) + 1) / 2})`);
-    g.globalAlpha = a0 * fin(lt, 9, 0.6); rr(g, 800, 340, 340, 160, 16, C.page, C.line); tx(g, 'Stuck?', 824, 376, 18, C.ink, 600); wrap(g, 'Claude setup → "If something does not work", or ask your lead.', 824, 408, 290, 15, C.text, 400, 22);
-    g.globalAlpha = a0;
+    g.fillStyle = C.bg; g.fillRect(0, 0, K.W, K.H); tx(g, 'You are set', 120, 190, 40, C.ink, 700); tx(g, 'Your Claude works for you on every page', 120, 230, 20, C.text);
+    [['Open in Claude', 'On every page: Claude opens on this project and page'], ['The Assistant', 'Bottom right: ask, or hand work to Claude'], ['Transfers', 'Approve what Claude read before it counts']].forEach(([a, b], i) => fade(g, fin(lt, 0.5 + i, 0.5), () => {
+      const y = 290 + i * 96; rr(g, 120, y, 760, 76, 16, C.page, C.line); tick(g, 160, y + 38, 16, fin(lt, 0.9 + i, 0.5), C.blue); tx(g, a, 194, y + 34, 20, C.ink, 600); tx(g, b, 194, y + 58, 15, C.text); }));
   }
 
-  K.register({ id: 'claude-setup', title: 'Set up Claude for Delivery Studio', label: 'Claude setup', DUR, SCENES, CAPTIONS, scenes: [why, install, access, paste, checklist, done], load, FILES });
+  const TG = k => 'team-guide/' + k + '.webp';   // screens the Team Guide film already ships
+  const beats = [{ card: ['Claude setup', 'Set up Claude for Delivery Studio', 'Once, on your own computer. The mouse shows where to click.'], d: 3.2 },
+    { scr: TG('brd'), d: 8, clip: 'cs-why', clipTitle: 'Why Claude', clicks: [{ at: [895, 498, 154, 34], t: 1, look: true, say: ['Claude drafts the heavy parts', 'The BRD, from requirements and transcripts'], cam: [800, 420, 1080] },
+      { at: [353, 111, 300, 24], t: 4.2, look: true, say: ['You review and approve', 'Claude cannot approve anything'], cam: [760, 230, 1080] }] },
+    { scr: TG('claudesetup'), d: 6.4, clip: 'cs-where', clipTitle: 'Where to find it', clicks: [{ at: [10, 596, 269, 34], t: 1, say: ['Help > Claude setup', 'Start with Start here'] }, { at: [340, 262, 70, 36], t: 3.6, look: true, say: ['Start here', 'Four steps, top to bottom'] }] },
+    { card: ['Step 1 and 2', 'Install, then ask for access', 'Windows or Mac'], d: 2.2 },
+    { scr: 'install', d: 16, clip: 'cs-install', clipTitle: 'Install these first', clicks: [{ at: [362, 155, 407, 75], t: 1, look: true, say: ['Claude app', 'Sign in with your Facilio account'], cam: [640, 300, 1100] },
+      { at: [362, 245, 407, 105], t: 3.8, look: true, say: ['Python 3', 'In the installer, tick Add python.exe to PATH'] }, { at: [362, 368, 407, 72], t: 6.6, look: true, say: ['Node.js (LTS)', 'Instant answers run on it'] },
+      { at: [362, 458, 407, 72], t: 9.2, look: true, say: ['Git', 'Copies the Facilio skills'] }, { at: [362, 545, 132, 18], t: 11.6, say: ['On a Mac', 'xcode-select --install brings Python and Git'] },
+      { at: [797, 72, 435, 136], t: 14, look: true, say: ['Ask your lead', 'Added to the project; Bitbucket read access'], cam: [900, 200, 1100] }] },
+    { card: ['Step 3', 'Paste the setup message in Claude', 'One message sets up everything'], d: 2.2 },
+    { scr: 'checklist', d: 4.2, clip: 'cs-message', clipTitle: 'The setup message', clicks: [{ at: [999, 114, 215, 40], t: 1.2, say: ['Copy the setup message', 'Then open the Claude app'], cam: [900, 220, 1040] }] },
+    { draw: app, d: 17.5 }, { draw: connector, d: 11.5 },
+    { card: ['Step 4', 'Check your list', 'Ten pieces, filled in from what Claude found'], d: 2.2 },
+    { scr: 'checklist', d: 4.6, clip: 'cs-checklist', clipTitle: 'Your checklist', clicks: [{ at: [366, 100, 300, 24], t: 1, look: true, say: ['2 pieces missing', 'Claude reported what it found'], cam: [760, 200, 1040] }] },
+    { scr: 'checklist2', d: 9.2, clicks: [{ at: [360, 563, 100, 20], t: 1, look: true, say: ['Missing: instant answers', 'The last column says what to do'], cam: [800, 520, 1100] },
+      { at: [490, 646, 250, 20], t: 4.6, look: true, say: ['Job queue, every 30 minutes', 'Work the Studio starts by itself'], cam: [800, 520, 1100] }] },
+    { scr: 'checklist', d: 5, clicks: [{ at: [999, 114, 215, 40], t: 1.2, say: ['Fixed it? Paste the message again', 'Until all 10 pieces are ready'], cam: [900, 220, 1040] }] },
+    { card: ['The tabs', 'Connect, waiting jobs, skills', 'What each tab is for'], d: 2.2 },
+    { scr: 'connect', d: 6.4, clip: 'cs-tabs', clipTitle: 'The setup tabs', clicks: [{ at: [347, 636, 812, 36], t: 1, look: true, say: ['1. Connect Claude', 'The connector address, with Copy'], cam: [800, 560, 1100] }] },
+    { scr: 'connect', d: 7.4, clicks: [{ at: TAB.jobs, t: 1, then: 'jobs', say: ['2. Waiting jobs', 'Buttons only write a job; your Claude does it'] }, { at: [353, 578, 370, 22], t: 4, look: true, say: ['First aid', 'Say: Do the waiting Delivery Studio jobs'], cam: [800, 520, 1100] }] },
+    { scr: 'jobs', d: 5, clicks: [{ at: TAB.skills, t: 1, then: 'skills', say: ['3. Facilio skills', 'FTR, UAT guide and configuration'] }] },
+    { scr: 'skills', d: 5, clicks: [{ at: TAB.how, t: 1, then: 'how', say: ['4. How it works', 'What runs where; the safety rules'] }] },
+    { scr: 'stuck', d: 8, clip: 'cs-stuck', clipTitle: 'If something does not work', clicks: [{ at: [353, 407, 250, 25], t: 1, look: true, say: ['Stuck?', 'Each problem, with its fix'], cam: [760, 420, 1100] },
+      { at: [832, 500, 140, 18], t: 4.4, look: true, say: ['A job stays waiting', 'Say: Do the waiting Delivery Studio jobs'], cam: [900, 520, 1100] }] },
+    { scr: TG('assistant'), d: 5.6, clip: 'cs-daily', clipTitle: 'Every day', clicks: [{ at: [588, 509, 646, 52], t: 1, look: true, say: ['Every day: the Assistant', 'Ask, or hand work to Claude'], cam: [900, 380, 1040] }] },
+    { scr: TG('transfers'), d: 5.4, clicks: [{ at: [10, 374, 269, 34], t: 1, say: ['Transfers', 'Approve what Claude read before it counts'] }] },
+    { draw: done, d: 5 }];
+  const FILES = [...new Set(beats.flatMap(b => [b.scr, ...(b.clicks || []).map(c => c.then)]).filter(Boolean))];
+  K.recording({ id: 'claude-setup', title: 'Set up Claude for Delivery Studio', sc: K.screens('claude-setup', FILES, 'webp'), FILES, beats });
 })(typeof window !== 'undefined' ? window : globalThis);

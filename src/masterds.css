@@ -526,6 +526,22 @@ html body .tg2-films .fp-inline.on:not(#DS) { grid-column: 1 / -1; }
 html body .tg2-films .fp-poster:not(#DS)::before { display: none; }   /* two to a row: no room for the screen motif */
 html body .tg2-films .fp-poster:not(#DS) { aspect-ratio: 16 / 8; }
 html body .tg2-film:not(#DS) { margin: 4px 0 14px; }
+/* the Team Guide as films (user, 26 Nov 2026): the two main films, then the menu's parts and groups, each tab a small poster, the written guide folded below */
+html body .tg2-video:not(#DS) { margin: 0 0 24px; }
+html body .tg2-vh:not(#DS) { margin: 32px 0 4px; font: 600 22px/1.3 var(--ds-head); color: var(--ds-ink); }
+html body .tg2-vsec:not(#DS) { margin: 28px 0 6px; font: 600 12px/1 var(--ds-head); letter-spacing: .06em; text-transform: uppercase; color: var(--ds-text2); }
+html body .tg2-vgrp:not(#DS) { margin: 0 0 18px; }
+html body .tg2-vgrp > h4:not(#DS) { margin: 0 0 8px; font: 600 16px/1.3 var(--ds-head); color: var(--ds-ink); }
+html body .tg2-clips:not(#DS) { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+html body .tg2-clips .fp-inline.on:not(#DS) { grid-column: 1 / -1; }
+html body .tg2-clips .fp-poster:not(#DS) { aspect-ratio: auto; min-height: 118px; padding: 16px; gap: 12px; align-items: center; }
+html body .tg2-clips .fp-poster:not(#DS)::before { display: none; }
+html body .tg2-clips .fp-pi:not(#DS) { width: 42px; height: 42px; }
+html body .tg2-clips .fp-pi:not(#DS)::after { left: 17px; top: 13px; border-left-width: 14px; border-top-width: 8px; border-bottom-width: 8px; }
+html body .tg2-clips .fp-poster .fp-tx small:not(#DS) { margin-bottom: 4px; font-size: 11px !important; }
+html body .tg2-clips .fp-poster .fp-tx b:not(#DS) { font-size: 16px !important; }
+html body .tg2-clips .fp-poster .fp-tx span:not(#DS) { margin-top: 3px; font-size: 13px !important; }
+html body .tg2-text:not(#DS) { margin-top: 28px; }
 @media (max-width: 720px) { html body .fp-poster:not(#DS)::before { display: none; } html body .fp-poster:not(#DS) { aspect-ratio: auto; } }
 @media (prefers-reduced-motion: reduce) { html body .fp-poster:not(#DS), html body .fp-pi:not(#DS) { transition: none; } html body .fp-poster:hover:not(#DS), html body .fp-poster:hover .fp-pi:not(#DS) { transform: none; } }
 /* update pop-ups sit at the bottom left, so they never cover the page header, its actions or the stage tabs (they used to sit over the right-hand tabs) */

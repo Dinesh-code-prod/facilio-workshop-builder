@@ -34,6 +34,7 @@ const find = sel => { if (!Array.isArray(sel)) return document.querySelector(sel
 const FIND = `(${find})`;
 for (const s of spec.shots) {
   if (only && !only.split(',').includes(s.key)) continue;
+  await p.evaluate(() => { try { FWBViews.ACT.closeDrawer(); } catch (e) { } });   // a drawer an earlier shot opened would cover this one
   if (s.view) { if (await p.evaluate(() => !!(window.FWB && FWB.S && FWB.S.project))) await h.go(s.view); else await enter(`${BASE}/?nointro#/p/${pid}/${s.view}`); }   // a shot may have left the project (the projects home)
   if (s.prep) await s.prep(p, h);
   await p.evaluate(() => document.scrollingElement.scrollTo(0, 0));
@@ -43,8 +44,14 @@ for (const s of spec.shots) {
     pos[n] = await p.evaluate(([F, sel]) => { const e = eval(F)(sel); if (!e) return null; const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)]; }, [FIND, sel]);
     if (!pos[n]) console.log(`  ${s.key}: ${n} not found (${JSON.stringify(sel)})`);
   }
-  await p.screenshot({ path: path.join(OUT, s.key + '.jpg'), type: 'jpeg', quality: spec.quality || 50 });
-  console.log(s.key, (fs.statSync(path.join(OUT, s.key + '.jpg')).size / 1024).toFixed(0) + ' KB');
+  const ext = spec.format === 'webp' ? 'webp' : 'jpg', file = path.join(OUT, s.key + '.' + ext);
+  if (ext === 'jpg') await p.screenshot({ path: file, type: 'jpeg', quality: spec.quality || 50 });
+  else {   // WebP, encoded by the browser from the lossless screenshot: about a quarter smaller than JPEG for these screens
+    const png = (await p.screenshot({ type: 'png' })).toString('base64');
+    const b64 = await p.evaluate(async ([png, q]) => { const i = new Image(); i.src = 'data:image/png;base64,' + png; await i.decode(); const c = document.createElement('canvas'); c.width = i.width; c.height = i.height; c.getContext('2d').drawImage(i, 0, 0);
+      const bl = await new Promise(res => c.toBlob(res, 'image/webp', q)); return await new Promise(res => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.readAsDataURL(bl); }); }, [png, (spec.quality || 50) / 100]);
+    fs.writeFileSync(file, Buffer.from(b64, 'base64')); }
+  console.log(s.key, (fs.statSync(file).size / 1024).toFixed(0) + ' KB');
 }
 fs.writeFileSync(POSF, JSON.stringify(pos) + '\n');
 const total = fs.readdirSync(OUT).reduce((n, f) => n + fs.statSync(path.join(OUT, f)).size, 0);

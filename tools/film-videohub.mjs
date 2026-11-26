@@ -11,7 +11,9 @@ if (!fs.existsSync(path.join(src, id + '.js'))) throw new Error('no film public/
 fs.mkdirSync(path.join(out, id), { recursive: true });
 for (const f of ['render.js', 'package.json', 'make-audio.js', 'README.md']) if (!fs.existsSync(path.join(out, f)) && fs.existsSync(path.join(tpl, f))) fs.copyFileSync(path.join(tpl, f), path.join(out, f));
 fs.copyFileSync(path.join(src, 'kit.js'), path.join(out, 'kit.js')); fs.copyFileSync(path.join(src, id + '.js'), path.join(out, 'film-core.js'));
-for (const f of fs.readdirSync(path.join(src, id))) fs.copyFileSync(path.join(src, id, f), path.join(out, id, f));
+// its own screens, and the folders of the screens it shares with other films ('team-guide/brd.webp', 'contract-intake/docs.jpg')
+const code = fs.readFileSync(path.join(src, id + '.js'), 'utf8'), dirs = new Set([id, ...[...code.matchAll(/'([a-z0-9-]+)\/(?:[a-z0-9+_-]+\.(?:jpg|webp))?'/g)].map(m => m[1])]);
+for (const d of dirs) { if (!fs.existsSync(path.join(src, d))) continue; fs.mkdirSync(path.join(out, d), { recursive: true }); for (const f of fs.readdirSync(path.join(src, d))) fs.copyFileSync(path.join(src, d, f), path.join(out, d, f)); }
 const title = (/title: '([^']+)'/.exec(fs.readFileSync(path.join(src, id + '.js'), 'utf8')) || [, id])[1];
 fs.writeFileSync(path.join(out, 'index.html'), `<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<title>${title}</title>\n<style>\n  html, body { margin: 0; background: #000; overflow: hidden; }\n  canvas { display: block; width: 100vw; height: 56.25vw; max-height: 100vh; max-width: 177.78vh; margin: auto; }\n</style>\n</head>\n<body>\n<canvas id="c" width="1920" height="1080"></canvas>\n<script src="kit.js"></script>\n<script src="film-core.js"></script>\n<script src="film.js"></script>\n</body>\n</html>\n`);
 fs.writeFileSync(path.join(out, 'film.js'), `// VideoHub wrapper for the Delivery Studio film '${id}'. kit.js and film-core.js are copies of public/films/kit.js and public/films/${id}.js in the

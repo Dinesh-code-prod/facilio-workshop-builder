@@ -12,13 +12,15 @@
   const film = () => (root.FWBFilms || {})[P.id];
   const $ = s => P.host && P.host.querySelector(s);
   const mmss = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
-  // every film there is: [id, title, one line on what it shows, seconds, gradient tone]; the Team Guide's Videos list and the posters read it
+  // every film there is: [id, title, one line on what it shows, seconds, gradient tone]; the Team Guide and the posters read it. Each tab of the menu also
+  // has a clip of the Team Guide film (tg-<page id>, and the Claude setup film's parts cs-*): they live in their film's file (FILE_OF) and say their own title
   V.FILMS = [
-    ['tour', 'A tour of Delivery Studio', 'Your projects, a project\'s Home, the menu, Claude, the customer view and where to learn', 100, 'blue'],
-    ['claude-setup', 'Set up Claude in 2 minutes', 'The four steps on your laptop, once', 110, 'violet'],
-    ['contract-intake', 'Contract intake', 'From the signed contract to the kick-off: add, analyse, settle what disagrees', 80, 'teal'],
+    ['team-guide', 'The Team Guide film', 'Create a project, every tab of the menu in order, the Assistant and Otto in Teams', 358, 'blue'],
+    ['claude-setup', 'Set up Claude for Delivery Studio', 'The four steps on your computer, once, with the mouse showing where to click', 142, 'violet'],
+    ['contract-intake', 'Contract intake, step by step', 'From the signed contract to the kick-off: add, analyse, settle what disagrees', 80, 'teal'],
     ['plan-replan', 'Plan timeline: re-planning', 'Edit dates in the grid, say why, undo, the reason log and export', 86, 'pink']];
-  const meta = id => V.FILMS.find(x => x[0] === id) || [id, id, '', 0, 'blue'];
+  const FILE_OF = id => /^tg-/.test(id) ? 'team-guide' : /^cs-/.test(id) ? 'claude-setup' : id;
+  const meta = id => { const m = V.FILMS.find(x => x[0] === id), f = (root.FWBFilms || {})[id]; return m || [id, f ? f.title : id, f ? f.sub || '' : '', f ? f.DUR : 0, /^cs-/.test(id) ? 'violet' : 'blue']; };
   // before it plays a film is a poster: its title on a Facilio gradient and a round play button; nothing is loaded until it is pressed
   const poster = (id, title, sub) => `<button type="button" class="fp-poster" data-act="filmOpen" aria-label="Play the film: ${esc(title || meta(id)[1])}"><span class="fp-pi" aria-hidden="true"></span><span class="fp-tx"><small>Watch${meta(id)[3] ? ' · ' + mmss(meta(id)[3]) : ''}</small><b>${esc(title || meta(id)[1])}</b><span>${esc(sub || meta(id)[2])}</span></span></button>`;
   const isFull = () => !!(P.host && (document.fullscreenElement && P.host.contains(document.fullscreenElement) || P.host.querySelector('.fp-main.fp-max')));
@@ -53,7 +55,7 @@
     else if (k === 'ArrowRight' || k === 'ArrowLeft') { e.preventDefault(); P.t = Math.max(0, Math.min(f.DUR, P.t + (k === 'ArrowRight' ? 5 : -5))); paint(); } }
   async function mount(host) {
     host.dataset.on = '1'; const id = host.getAttribute('data-film');
-    try { if (!root.FWBFilmKit) await V.loadScript('films/kit.js'); if (!(root.FWBFilms || {})[id]) await V.loadScript('films/' + id + '.js'); } catch (e) { delete host.dataset.on; V.toast('The film could not be loaded', 6000, true); return; }
+    try { if (!root.FWBFilmKit) await V.loadScript('films/kit.js'); if (!(root.FWBFilms || {})[id]) await V.loadScript('films/' + FILE_OF(id) + '.js'); } catch (e) { delete host.dataset.on; V.toast('The film could not be loaded', 6000, true); return; }
     const f = root.FWBFilms[id]; if (!f) return; if (f.load) await f.load('films/');   // the real Studio screens the film shows (a few JPEGs)
     if (!host.isConnected) return;
     if (P.id !== id) { P.id = id; P.t = 0; P.playing = false; }
@@ -92,7 +94,7 @@
     rec.onstop = () => { P.rec = null; if (b) { b.disabled = false; b.textContent = 'Save as video'; } if (parts.length) V.download(P.id + '-film.webm', new Blob(parts, { type: 'video/webm' })); };
     P.rec = rec; if (b) { b.disabled = true; b.textContent = 'Recording… plays to the end'; } P.t = 0; rec.start(1000); play(true); };
   // one HTML file that plays offline: the film code and a small player, nothing fetched from outside
-  ACT.filmDownload = async () => { const f = film(); if (!f) return; let code = '', srcs = {}; try { code = await (await fetch('films/kit.js')).text() + '\n' + await (await fetch('films/' + P.id + '.js')).text(); for (const k of f.FILES || []) { const bl = await (await fetch('films/' + P.id + '/' + k + '.jpg')).blob(); srcs[k] = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(bl); }); } } catch (e) { V.toast('The film could not be read for the download', 6000, true); return; }
+  ACT.filmDownload = async () => { const f = film(); if (!f) return; let code = '', srcs = {}; try { code = await (await fetch('films/kit.js')).text() + '\n' + await (await fetch('films/' + FILE_OF(P.id) + '.js')).text(); for (const k of f.FILES || []) { const bl = await (await fetch('films/' + (f.path ? f.path(k) : P.id + '/' + k + '.jpg'))).blob(); srcs[k] = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(bl); }); } } catch (e) { V.toast('The film could not be read for the download', 6000, true); return; }
     const player = `const F=FWBFilms[${JSON.stringify(P.id)}],cv=document.getElementById('c'),g=cv.getContext('2d'),r=document.getElementById('r'),b=document.getElementById('b'),tm=document.getElementById('tm');let t=0,on=false,last=0;const mm=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');function paint(){g.setTransform(cv.width/F.W,0,0,cv.height/F.H,0,0);F.draw(g,t);r.value=t;tm.textContent=mm(t)+' / '+mm(F.DUR);b.textContent=on?'Pause':'Play';}function loop(ts){if(on){t=Math.min(F.DUR,t+(ts-(last||ts))/1000);if(t>=F.DUR)on=false;}last=ts;paint();if(on)requestAnimationFrame(loop);}b.onclick=()=>{if(t>=F.DUR)t=0;on=!on;last=0;requestAnimationFrame(loop);};r.oninput=()=>{t=+r.value;paint();};r.max=F.DUR;(F.load?F.load('',${JSON.stringify(srcs)}):Promise.resolve()).then(paint);`;
     const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(f.title)}</title><style>body{margin:0;background:#F8FAFC;font:15px Inter,"Segoe UI",system-ui,sans-serif;color:#0F172A}main{max-width:1280px;margin:0 auto;padding:16px}canvas{width:100%;height:auto;border-radius:12px;box-shadow:0 8px 24px rgba(16,24,40,.12);background:#fff}.c{display:flex;gap:12px;align-items:center;margin-top:12px}input{flex:1}button{font:inherit;padding:8px 18px;border-radius:10px;border:0;background:#1570EF;color:#fff;cursor:pointer}</style></head><body><main><h1 style="font-size:20px">${esc(f.title)}</h1><canvas id="c" width="${f.W}" height="${f.H}"></canvas><div class="c"><button id="b">Play</button><input id="r" type="range" min="0" step="0.1" value="0" aria-label="Position"><span id="tm"></span></div></main><script>${code.replace(/<\/script/gi, '<\\/script')}</script><script>${player}</script></body></html>`;
     V.download(P.id + '-film.html', new Blob([html], { type: 'text/html' })); };
