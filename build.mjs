@@ -24,3 +24,7 @@ copyDir(path.join(here, 'public'), dist);
 }
 { copyDir(path.join(here, 'work', 'server'), path.join(dist, 'server')); fs.copyFileSync(path.join(here, 'work', 'work.json'), path.join(dist, 'work.json')); }
 console.log('built', jsName, (js.length / 1024).toFixed(0) + ' KB (from ' + (raw.js / 1024).toFixed(0) + '),', cssName, (css.length / 1024).toFixed(0) + ' KB');
+{ // size guard: facilio.work takes a site under 50 MB extracted (measured like `du -sm dist`, MiB); warn early so films and libraries do not creep past it
+  const size = d => fs.readdirSync(d).reduce((n, f) => { const p = path.join(d, f), s = fs.statSync(p); return n + (s.isDirectory() ? size(p) : s.size); }, 0);
+  const mb = size(dist) / 1048576; if (mb > 50) throw new Error(`dist is ${mb.toFixed(1)} MB, over the 50 MB cap of facilio.work`); console.log((mb > 48 ? 'WARNING: ' : '') + 'dist ' + mb.toFixed(1) + ' MB of 50' + (mb > 48 ? ': close to the cap' : ''));
+}

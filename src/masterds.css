@@ -462,7 +462,7 @@ html body .main .pl-slip.late:not(#DS) { color: #B42318; }
 html body .main .pl-wrap .pl-grid:not(#DS) { width: max-content !important; min-width: 0 !important; }
 html body .main .pl-sec .pl-wrap:not(#DS) { width: 100% !important; max-width: 100% !important; box-sizing: border-box; }
 
-/* ---------- Film player (src/filmplayer.js): the setup film as a card on Claude setup and a calm modal player ---------- */
+/* ---------- Film player (src/filmplayer.js): guide films in the page itself, a poster first, one click plays ---------- */
 /* the setup film plays in the page (src/filmplayer.js): the player takes the width and fits the screen height, title, chapters and downloads beside it; one column under 1100 px */
 html body .main .fp-wrap:not(#DS) { margin: 0 0 16px; }
 html body .main .fp-inline:not(#DS) { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; padding: 16px; border-radius: var(--ds-r-card); border: 1px solid var(--ds-border); background: var(--ds-page); }
@@ -496,11 +496,58 @@ html body .fp-main:fullscreen .fp-stage:not(#DS), html body .fp-main.fp-max .fp-
 html body .fp-main:fullscreen canvas:not(#DS), html body .fp-main.fp-max canvas:not(#DS) { object-fit: contain; }
 html body .fp-main:fullscreen .fp-time:not(#DS), html body .fp-main.fp-max .fp-time:not(#DS) { color: #E5E7EB; }
 html body .fp-main:fullscreen .fp-ctl .btn:not(.primary):not(#DS), html body .fp-main.fp-max .fp-ctl .btn:not(.primary):not(#DS) { background: #fff; }
+/* guide films (user, 25 Nov 2026: "beautiful layout for the videos and attractive gradients"): before it plays, a film is a poster in a deep Facilio gradient
+   (blue; violet for Claude; teal; pink). Pressed, the card becomes the player above, its film framed in the same gradient. In a list the open film takes the whole row */
+html body .fp-inline:not(#DS) { --fp-g: linear-gradient(120deg, #201C5B 0%, #262073 40%, #1A4FC4 80%, #1570EF 100%); }
+html body .fp-inline[data-tone="violet"]:not(#DS) { --fp-g: linear-gradient(120deg, #1D1A5E 0%, #3B2F9E 55%, #6D4AFF 100%); }
+html body .fp-inline[data-tone="teal"]:not(#DS) { --fp-g: linear-gradient(120deg, #201C5B 0%, #0E4C7A 50%, #0D9488 100%); }
+html body .fp-inline[data-tone="pink"]:not(#DS) { --fp-g: linear-gradient(120deg, #201C5B 0%, #5B2A8C 55%, #E5197F 100%); }
+html body .main .fp-inline:not(.on):not(.has-side):not(#DS) { display: block; max-width: 880px; padding: 0; border: 0; background: none; }
+html body .main .fp-inline:not(.on):not(.has-side) .fp-side:not(#DS), html body .main .fp-inline.has-side:not(.on) .fp-side :is(.fp-title, .fp-sub):not(#DS) { display: none; }
+html body .fp-inline:not(.on) .fp-main:not(#DS) { max-width: none; }
+html body .fp-inline:not(.on) .fp-stage:not(#DS) { aspect-ratio: auto; border: 0; background: none; overflow: visible; border-radius: var(--ds-r-panel); }
+html body .fp-inline.on .fp-stage:not(#DS) { border: 0; padding: 6px; background: var(--fp-g); box-shadow: 0 10px 28px rgba(32, 28, 91, .2); }
+html body .fp-inline.on .fp-stage canvas:not(#DS) { border-radius: 7px; background: #fff; object-fit: contain; }
+html body .fp-inline.on .fp-main:is(:fullscreen, .fp-max) .fp-stage:not(#DS) { padding: 0; background: #0B0B12; box-shadow: none; }
+html body .fp-poster:not(#DS) { position: relative; display: flex; align-items: flex-end; gap: 18px; width: 100%; aspect-ratio: 16 / 7; min-height: 190px; padding: 24px 26px; border: 0; border-radius: var(--ds-r-panel); text-align: left; color: #fff; cursor: pointer; overflow: hidden; background: radial-gradient(55% 140% at 100% 0%, rgba(255, 255, 255, .18) 0%, rgba(255, 255, 255, 0) 60%), var(--fp-g); box-shadow: 0 10px 30px rgba(32, 28, 91, .18); transition: transform .2s cubic-bezier(.32, .72, 0, 1), box-shadow .2s; }
+html body .fp-poster:not(#DS)::before { content: ""; position: absolute; right: 26px; top: 24px; width: 40%; aspect-ratio: 16 / 9; border-radius: 10px; border: 1px solid rgba(255, 255, 255, .24); background: linear-gradient(rgba(255, 255, 255, .18) 0 16px, rgba(255, 255, 255, .06) 16px); }
+html body .fp-poster:hover:not(#DS) { transform: translateY(-2px); box-shadow: 0 16px 36px rgba(32, 28, 91, .28); }
+html body .fp-poster:focus-visible:not(#DS) { outline: 3px solid #fff; outline-offset: -6px; }
+html body .fp-pi:not(#DS) { position: relative; z-index: 1; flex: none; width: 64px; height: 64px; border-radius: 50%; background: #fff; box-shadow: 0 6px 18px rgba(0, 0, 0, .25); transition: transform .2s cubic-bezier(.32, .72, 0, 1); }
+html body .fp-pi:not(#DS)::after { content: ""; position: absolute; left: 26px; top: 20px; border-left: 20px solid #1570EF; border-top: 12px solid transparent; border-bottom: 12px solid transparent; }
+html body .fp-poster:hover .fp-pi:not(#DS) { transform: scale(1.07); }
+html body .fp-poster .fp-tx:not(#DS) { position: relative; z-index: 1; min-width: 0; }
+html body .fp-poster .fp-tx small:not(#DS) { display: block; margin-bottom: 8px; font: 600 12px/1 var(--ds-head) !important; letter-spacing: .06em; text-transform: uppercase; color: rgba(255, 255, 255, .78) !important; -webkit-text-fill-color: currentColor !important; }
+html body .fp-poster .fp-tx b:not(#DS) { display: block; font: 600 22px/1.25 var(--ds-head) !important; color: #fff !important; -webkit-text-fill-color: #fff !important; background: none !important; }
+html body .fp-poster .fp-tx span:not(#DS) { display: block; margin-top: 6px; max-width: 46ch; font: 400 14px/1.45 var(--ds-body) !important; color: rgba(255, 255, 255, .86) !important; -webkit-text-fill-color: currentColor !important; }
+/* the Team Guide's films: posters two to a row; the open one takes the whole row */
+html body .tg2-films:not(#DS) { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px; }
+html body .tg2-films .fp-inline.on:not(#DS) { grid-column: 1 / -1; }
+html body .tg2-films .fp-poster:not(#DS)::before { display: none; }   /* two to a row: no room for the screen motif */
+html body .tg2-films .fp-poster:not(#DS) { aspect-ratio: 16 / 8; }
+html body .tg2-film:not(#DS) { margin: 4px 0 14px; }
+/* the Team Guide as films (user, 26 Nov 2026): the two main films, then the menu's parts and groups, each tab a small poster, the written guide folded below */
+html body .tg2-video:not(#DS) { margin: 0 0 24px; }
+html body .tg2-vh:not(#DS) { margin: 32px 0 4px; font: 600 22px/1.3 var(--ds-head); color: var(--ds-ink); }
+html body .tg2-vsec:not(#DS) { margin: 28px 0 6px; font: 600 12px/1 var(--ds-head); letter-spacing: .06em; text-transform: uppercase; color: var(--ds-text2); }
+html body .tg2-vgrp:not(#DS) { margin: 0 0 18px; }
+html body .tg2-vgrp > h4:not(#DS) { margin: 0 0 8px; font: 600 16px/1.3 var(--ds-head); color: var(--ds-ink); }
+html body .tg2-clips:not(#DS) { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+html body .tg2-clips .fp-inline.on:not(#DS) { grid-column: 1 / -1; }
+html body .tg2-clips .fp-poster:not(#DS) { aspect-ratio: auto; min-height: 118px; padding: 16px; gap: 12px; align-items: center; }
+html body .tg2-clips .fp-poster:not(#DS)::before { display: none; }
+html body .tg2-clips .fp-pi:not(#DS) { width: 42px; height: 42px; }
+html body .tg2-clips .fp-pi:not(#DS)::after { left: 17px; top: 13px; border-left-width: 14px; border-top-width: 8px; border-bottom-width: 8px; }
+html body .tg2-clips .fp-poster .fp-tx small:not(#DS) { margin-bottom: 4px; font-size: 11px !important; }
+html body .tg2-clips .fp-poster .fp-tx b:not(#DS) { font-size: 16px !important; }
+html body .tg2-clips .fp-poster .fp-tx span:not(#DS) { margin-top: 3px; font-size: 13px !important; }
+html body .tg2-text:not(#DS) { margin-top: 28px; }
+@media (max-width: 720px) { html body .fp-poster:not(#DS)::before { display: none; } html body .fp-poster:not(#DS) { aspect-ratio: auto; } }
+@media (prefers-reduced-motion: reduce) { html body .fp-poster:not(#DS), html body .fp-pi:not(#DS) { transition: none; } html body .fp-poster:hover:not(#DS), html body .fp-poster:hover .fp-pi:not(#DS) { transform: none; } }
 /* update pop-ups sit at the bottom left, so they never cover the page header, its actions or the stage tabs (they used to sit over the right-hand tabs) */
 html body #ntPops:not(#DS) { top: auto !important; bottom: 20px !important; left: 20px !important; right: auto !important; }
 
-/* Claude setup film (user, 25 Nov 2026): the film dialog sits above the floating Assistant (up to 5500), and the export button under the film card keeps a gap */
-html body .fp-scrim:not(#DS):not(#DS2) { z-index: 6000; }
+/* Claude setup film (user, 25 Nov 2026): the export button beside the film keeps a gap */
 html body .main .fp-wrap > .btn:not(#DS):not(#DS2) { margin-top: 12px !important; }
 
 /* Flat rail and open reading (user, 25 Nov 2026: "why do we still have claymorphism"; "I don't like clicking to reveal the information"):

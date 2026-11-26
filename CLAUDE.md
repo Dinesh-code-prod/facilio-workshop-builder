@@ -37,6 +37,8 @@ Run `/handoff`. It commits and pushes finished work, puts half-done work on a `w
 - **No vendor UI names (user, 19 Nov 2026):** never name another company's design language or product UI in code, comments or docs.
 - **Checks:** `node tests/ui/master-ds-check.mjs` (every menu entry and stage tab, both layouts, all three views, at 1920, 1366 and 1100 px: open state, page errors, overlap) and `tests/ui/button-colour-audit.mjs`. Everything the customer and the team see must look neat and uncrowded; keep answers short and in plain words, and say what was not checked.
 
+- **Guide films (user, 25-26 Nov 2026; plans `docs/plans/GUIDE-FILMS-CLAUDE-AND-TEAM-PLAN-2026-11-26.md`, `TEAM-GUIDE-FILMS-PLAN-2026-11-25.md`):** the Team Guide is video-first. It shows the Team Guide film (every tab in menu order) and the Claude setup film, then one clip per tab laid out as the project's own menu (`tg-<page id>`), with the written guide folded under. Films are screen recordings drawn as code (`recording()` in `public/films/kit.js`): real Studio screens (WebP, `tools/film-capture.mjs` on a copy of the local data), the mouse clicking the exact spot, the screen it opens, a few words beside the mouse. They play on the page itself, never in a pop-up (`V.filmCard(id)`, a poster in a deep Facilio gradient). Otto is drawn in its Teams chat layout with demo data only. List films in `V.FILMS` (`src/filmplayer.js`). `node build.mjs` warns above 48 MB and fails above 50 MB.
+
 ## Things that go wrong here
 - On Windows the Bash tool can mangle backslashes and newlines inside heredocs that contain quotes. Write scripts with the Write tool and run them with node.
 - `node build.mjs` empties `dist/` first, so a build that fails leaves `dist/` empty; fix and rebuild.
