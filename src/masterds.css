@@ -76,6 +76,9 @@ html body .main .ca-hero .ca-tile:hover:not(#DS) { border-color: var(--ds-border
 /* projects home: the one place that keeps a gradient (user, 24 Nov 2026: "have the blue gradient here alone"): the logo accent blue into Facilio blue, white text, the city art; buttons get the 10 px corners */
 html body .projects-page .hm-hero.night:not(#DS) { background: radial-gradient(55% 140% at 100% 0%, rgba(255, 255, 255, .16) 0%, rgba(255, 255, 255, 0) 60%), linear-gradient(120deg, #201C5B 0%, #262073 40%, #1A4FC4 80%, #1570EF 100%) !important; border: 0 !important; border-radius: var(--ds-r-panel) !important; }
 html body .projects-page .hm-hero.night .hm-btn:not(#DS) { border-radius: var(--ds-r-btn) !important; font: 600 14.5px/1 var(--ds-head) !important; }
+/* a pressed button gets .loading while it works (V.busy); on .hm-btn that class also matched the full-screen loading overlay (styles.css .loading: fixed,
+   inset 0), so "Take the tour" jumped out of the banner and seemed to disappear (user, 26 Nov 2026). Busy, it stays where it is, dimmed. */
+html body .hm-btn.loading:not(#DS) { position: relative !important; inset: auto !important; z-index: auto !important; display: inline-flex !important; place-items: normal !important; opacity: .7; cursor: progress; }
 
 /* ---------- Page tabs: navigation, not buttons. A text row on a hairline; the open tab has a accent blue underline ---------- */
 html body :is(.main, .adm-main, .drawer, .dialog) .tabs:not(.brd-tabs):not(#DS) { background: transparent !important; border: 0 !important; border-bottom: 1px solid var(--ds-border) !important; border-radius: 0 !important; box-shadow: none !important; padding: 0 !important; gap: 4px !important; overflow-x: auto; scrollbar-width: thin; }
