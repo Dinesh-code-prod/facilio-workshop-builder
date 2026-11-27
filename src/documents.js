@@ -101,20 +101,20 @@
     if (!st.data && !st.loading && !st.err) load(false);
     const d = st.data, n = d ? d.files.length : 0;
     const head = '<div class="page-header"><div class="t"><h1>Documents &amp; Files</h1><p>' + (d && d.configured ? n + ' file' + (n === 1 ? '' : 's') + ' in the project SharePoint folder.' : 'The project files, kept in SharePoint.') + '</p></div>'
-      + (d && d.configured ? '<div class="actions">' + (d.folder && okMs(d.folder.url) ? '<a class="btn" href="' + esc(d.folder.url) + '" target="_blank" rel="noopener noreferrer">Open in SharePoint</a>' : '') + '<button type="button" class="btn" data-act="docClaude">Ask Claude for an inventory</button></div>' : '') + '</div>';
+      + (d && d.configured ? '<div class="ph-acts">' + (d.canEdit ? '<button type="button" class="btn primary" data-act="docUpload">' + ico('upl') + 'Upload</button>' : '') + V.moreMenu((d.folder && okMs(d.folder.url) ? '<a class="btn sm ghost" href="' + esc(d.folder.url) + '" target="_blank" rel="noopener noreferrer">Open in SharePoint</a>' : '') + '<button type="button" class="btn sm ghost" data-act="docClaude">Ask Claude for an inventory</button>') + '</div>' : '') + '</div>';   // a Facilio list page (stage F, 27 Nov 2026): Upload in the header, the folders as the view selector
     if (st.err) return head + '<div class="page-body"><div class="card"><div class="card-b"><p class="small">Could not load the files: ' + esc(st.err) + '</p><button type="button" class="btn sm" data-act="docRefresh">Try again</button></div></div></div>';
     if (!d) return head + '<div class="page-body"><div class="muted" style="padding:20px">Loading…</div></div>';
     if (!d.configured) return head + '<div class="page-body"><div class="card"><div class="card-b"><h3 style="margin-top:0">SharePoint is not connected yet</h3><p class="small muted">An admin connects the Delivery Studio SharePoint site once. After that every project gets its folder with the eight standard folders, and files of any size can be uploaded here.</p></div></div></div>';
     const cnt = f => d.files.filter(x => x.folder === f).length;
-    const nav = '<nav class="card docs-nav" aria-label="Folders">' + [['', 'All files', d.files.length]].concat(d.folders.map(f => [f, f, cnt(f)])).map(([v, l, c]) => '<button type="button" class="docs-f" aria-pressed="' + (st.folder === v) + '" data-act="docFolder" data-v="' + esc(v) + '"><span>' + esc(l) + '</span><span class="n">' + c + '</span></button>').join('') + '</nav>';
-    const kinds = Array.from(new Set(d.files.map(x => x.kind))).sort();
-    const bar = '<div class="docs-bar">' + (d.canEdit ? '<button type="button" class="btn primary" data-act="docUpload">' + ico('upl') + 'Upload</button>' : '')
-      + '<div class="tk-sw">' + ico('search') + '<input type="search" id="docQ" data-docs="q" value="' + esc(st.q) + '" placeholder="Search file names" aria-label="Search file names"></div>'
+    const folders = [['', 'All files', d.files.length]].concat(d.folders.map(f => [f, f, cnt(f)]));
+    const kinds = Array.from(new Set(d.files.map(x => x.kind))).sort(); const shown = files();
+    const bar = '<div class="pt-bar ls-bar docs-bar">' + V.viewMenu(st.folder || 'All files', st.folder ? cnt(st.folder) : d.files.length, folders.map(([v, l, c]) => ({ act: 'docFolder', v, l, n: c, on: st.folder === v })), 'Folder')
+      + '<div class="tl-search pt-q">' + ico('search') + '<input type="search" id="docQ" data-docs="q" value="' + esc(st.q) + '" placeholder="Search file names" aria-label="Search file names"></div>'
       + '<select aria-label="Type" data-change="docKind"><option value="">All types</option>' + kinds.map(k => '<option' + (k === st.kind ? ' selected' : '') + '>' + esc(k) + '</option>').join('') + '</select>'
-      + '<button type="button" class="btn" data-act="docRefresh"' + (st.loading ? ' disabled' : '') + '>' + (st.loading ? 'Reading SharePoint…' : 'Refresh') + '</button></div>';
+      + '<span class="spacer"></span><span class="small muted pt-count">' + shown.length + ' of ' + d.files.length + ' file' + (d.files.length === 1 ? '' : 's') + '</span><button type="button" class="btn sm" data-act="docRefresh"' + (st.loading ? ' disabled' : '') + '>' + (st.loading ? 'Reading SharePoint…' : 'Refresh') + '</button></div>';
     const note = d.note ? '<p class="small" style="color:#D85903">' + esc(d.note) + '</p>' : '';
     const seen = d.refreshedAt ? '<p class="xs muted" style="margin:8px 0 0">Read from SharePoint ' + esc(new Date(d.refreshedAt).toLocaleString()) + '. Changes made in SharePoint show after Refresh.</p>' : '';
-    return head + '<div class="page-body"><div class="docs-grid">' + nav + '<div style="min-width:0">' + bar + note + tray() + table(files()) + seen + '</div></div></div>';
+    return head + '<div class="page-body">' + bar + note + tray() + table(shown) + seen + '</div>';
   } };
 
   ACT.docFolder = a => { st.folder = a.getAttribute('data-v') || ''; V.render(); };

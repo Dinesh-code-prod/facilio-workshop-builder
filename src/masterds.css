@@ -75,13 +75,7 @@ html body :is(.main .page-header, .main .ca-hero .ca-top) .btn.primary:not(#DS) 
 html body :is(.main .page-header, .main .ca-hero .ca-top) :is(.tag, .pill, .chip, .badge, [class*="-pill"], [class*="-chip"], [class*="-badge"], [class*="-tag"]):not(.btn):not(#DS) { background: var(--ds-subtle) !important; color: var(--ds-text2) !important; -webkit-text-fill-color: var(--ds-text2) !important; box-shadow: inset 0 0 0 1px var(--ds-border) !important; }
 html body :is(.main .page-header, .main .ca-hero .ca-top) :is(.tag, .pill, .chip, .badge, [class*="-pill"], [class*="-chip"], [class*="-badge"], [class*="-tag"]):not(.btn) *:not(#DS) { color: inherit !important; -webkit-text-fill-color: currentColor !important; }
 
-/* project Home: the figure tiles are white stat tiles; the colour is a narrow edge and the number, the label says what it is */
-html body .main .ca-hero .ca-tile:not(#DS) { --ds-tone: var(--ds-blue); background: #fff !important; border: 1px solid var(--ds-border) !important; border-radius: var(--ds-r-card) !important; box-shadow: inset 4px 0 0 var(--ds-tone), var(--ds-sh) !important; }
-html body .main .ca-hero .ca-tile.amber:not(#DS) { --ds-tone: var(--ds-warn); } html body .main .ca-hero .ca-tile.red:not(#DS) { --ds-tone: var(--ds-bad); }
-html body .main .ca-hero .ca-tile.green:not(#DS) { --ds-tone: var(--ds-ok); } html body .main .ca-hero .ca-tile.teal:not(#DS) { --ds-tone: #168F9B; }
-html body .main .ca-hero .ca-tile b:not(#DS) { color: var(--ds-tone) !important; -webkit-text-fill-color: currentColor !important; }
-html body .main .ca-hero .ca-tile span:not(#DS) { color: var(--ds-text2) !important; -webkit-text-fill-color: currentColor !important; }
-html body .main .ca-hero .ca-tile:hover:not(#DS) { border-color: var(--ds-border-strong) !important; box-shadow: inset 4px 0 0 var(--ds-tone), var(--ds-sh-float) !important; }
+/* project Home: the figure tiles are Facilio KPI cards (stage F: class kpi, the shared rule decides the top bar, label and figure); the hero keeps their grid */
 
 /* projects home: the one place that keeps a gradient (user, 24 Nov 2026: "have the blue gradient here alone"): the logo accent blue into Facilio blue, white text, the city art; buttons get the 10 px corners */
 html body .projects-page .hm-hero.night:not(#DS) { background: radial-gradient(55% 140% at 100% 0%, rgba(255, 255, 255, .16) 0%, rgba(255, 255, 255, 0) 60%), linear-gradient(120deg, #00125E 0%, #001986 40%, #0024D6 80%, var(--ds-blue) 100%) !important; border: 0 !important; border-radius: var(--ds-r-panel) !important; }
@@ -757,13 +751,13 @@ html body #drawer .drawer > .drawer-b :is(h3, h4, .sec-h):not(#DS) { font: 500 1
 
 /* ---------- Settings pages in the Facilio Setup layout (user, 27 Nov 2026; study §7, its structure in today's Facilio colours): the section tabs become a
    240 px left navigation panel (#FAFAFA, hairline, 8 px; rows 36 px, 14 px, 4 px corners; the open section in the selection blue), the content on the right. ---------- */
-html body .main .page:has(> .page-body.st-page):not(#DS) { display: grid !important; grid-template-columns: 240px minmax(0, 1fr) !important; column-gap: 24px !important; align-items: start !important; }
-html body .main .page:has(> .page-body.st-page) > :not(.tabs):not(.page-body):not(#DS) { grid-column: 1 / -1 !important; }
-html body .main .page:has(> .page-body.st-page) > .tabs:not(#DS) { grid-column: 1 !important; display: flex !important; flex-direction: column !important; align-items: stretch !important; gap: 2px !important; padding: 8px !important; background: var(--ds-canvas) !important; border: 1px solid var(--ds-border) !important; border-radius: var(--ds-r-panel) !important; position: sticky !important; top: 76px !important; overflow: visible !important; }
-html body .main .page:has(> .page-body.st-page) > .tabs > .tab:not(#DS) { justify-content: flex-start !important; text-align: left !important; min-height: 36px !important; padding: 8px 12px !important; margin: 0 !important; border-radius: var(--ds-r-badge) !important; box-shadow: none !important; font: 400 14px/20px var(--ds-body) !important; color: var(--ds-ink) !important; }
-html body .main .page:has(> .page-body.st-page) > .tabs > .tab:hover:not(.active):not(#DS) { background: var(--ds-subtle) !important; }
-html body .main .page:has(> .page-body.st-page) > .tabs > .tab.active:not(#DS) { background: var(--ds-selected) !important; color: var(--ds-blue) !important; font-weight: 500 !important; box-shadow: none !important; }
-html body .main .page:has(> .page-body.st-page) > .page-body:not(#DS) { grid-column: 2 !important; min-width: 0 !important; }
+html body .main .page:has(> .tabs):has(> .page-body.st-page):not(#DS) { display: grid !important; grid-template-columns: 240px minmax(0, 1fr) !important; column-gap: 24px !important; align-items: start !important; }
+html body .main .page:has(> .tabs):has(> .page-body.st-page) > :not(.tabs):not(.page-body):not(#DS) { grid-column: 1 / -1 !important; }
+html body .main .page:has(> .tabs):has(> .page-body.st-page) > .tabs:not(#DS) { grid-column: 1 !important; display: flex !important; flex-direction: column !important; align-items: stretch !important; gap: 2px !important; padding: 8px !important; background: var(--ds-canvas) !important; border: 1px solid var(--ds-border) !important; border-radius: var(--ds-r-panel) !important; position: sticky !important; top: 76px !important; overflow: visible !important; }
+html body .main .page:has(> .tabs):has(> .page-body.st-page) > .tabs > .tab:not(#DS) { justify-content: flex-start !important; text-align: left !important; min-height: 36px !important; padding: 8px 12px !important; margin: 0 !important; border-radius: var(--ds-r-badge) !important; box-shadow: none !important; font: 400 14px/20px var(--ds-body) !important; color: var(--ds-ink) !important; }
+html body .main .page:has(> .tabs):has(> .page-body.st-page) > .tabs > .tab:hover:not(.active):not(#DS) { background: var(--ds-subtle) !important; }
+html body .main .page:has(> .tabs):has(> .page-body.st-page) > .tabs > .tab.active:not(#DS) { background: var(--ds-selected) !important; color: var(--ds-blue) !important; font-weight: 500 !important; box-shadow: none !important; }
+html body .main .page:has(> .tabs):has(> .page-body.st-page) > .page-body:not(#DS) { grid-column: 2 !important; min-width: 0 !important; }
 
 /* ---------- Badges, chips and tiles everywhere: Facilio's 4 px corners (coverage register, 27 Nov 2026: round pills left on Project cycle, Tasks, Solution
    document, Traceability, What's new, the chat panel's area chips, Discover more samples, and inline border-radius:999px spans) ---------- */
@@ -772,3 +766,50 @@ html body :is(.main, .adm-main, .drawer, .dialog, [role="dialog"], #asst) :is(sp
 html body :is(.main, .drawer) .tg2-tile:not(#DS) { border-radius: var(--ds-r-btn) !important; }
 /* the stage step marker ("You are here", "Behind") at 12 px, the smallest size Facilio uses for text */
 html body .main .sd-here:not(#DS) { font-size: 12px !important; }
+
+/* ---------- Stage F list pages (27 Nov 2026; docs/design/delivery-studio-design-system.md §4 List): header = title, one line, New <record> + More (V.moreMenu);
+   one toolbar row (.pt-bar: view selector V.viewMenu, V.listSearch, filters, count); one table card. Every button inside a More menu is a plain 14 px menu row,
+   whatever its variant in the page code (primary, danger, sm), so a page keeps its markup and data-act hooks. ---------- */
+html body .main .ls-more .rv-menu-p :is(.btn, a.btn):not(#DS) { justify-content: flex-start !important; width: 100% !important; min-height: 36px !important; padding: 8px 12px !important; background: transparent !important; box-shadow: none !important; border: 0 !important; border-radius: var(--ds-r-badge) !important; color: var(--ds-ink) !important; font: 400 14px/20px var(--ds-body) !important; text-align: left; white-space: nowrap; }
+html body .main .ls-more .rv-menu-p :is(.btn, a.btn) *:not(#DS) { color: inherit !important; }
+html body .main .ls-more .rv-menu-p :is(.btn, a.btn):hover:not(#DS) { background: var(--ds-subtle) !important; }
+html body .main .ls-more .rv-menu-p .btn.danger:not(#DS) { color: var(--ds-bad) !important; }
+html body .main .ls-more .rv-menu-p :is(.btn, a.btn):disabled:not(#DS) { color: var(--ds-muted) !important; background: transparent !important; }
+html body .main .ls-more .rv-menu-p .ls-sep:not(#DS) { height: 1px; margin: 4px 0; background: var(--ds-border); }
+html body .main .ls-more .rv-menu-p .ls-cap:not(#DS) { padding: 6px 12px 2px; color: var(--ds-muted) !important; font: 500 12px/18px var(--ds-head) !important; }
+html body .main .page-header .ph-acts:not(#DS) { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+html body .main .pt-bar.ls-bar:not(#DS) { margin: 0 0 12px !important; }
+html body .main .pt-bar.ls-bar .pt-count:not(#DS) { color: var(--ds-muted) !important; font: 400 12px/18px var(--ds-head) !important; }
+html body .main .wf-bar.ls-bar:not(#DS) { background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; border-radius: 0 !important; }
+html body .main .wf-bar.ls-bar .wf-note:not(#DS) { flex: 1 1 360px; min-width: 0; margin: 0 !important; }
+
+/* ---------- Stage F record pages (§4 Record; study §4): Back as a quiet link, the ID 14/500 caption grey, the title 16/500 with its status pill, a ⋯/More menu;
+   a main column of section cards and a side column (327 px in the org) of small widgets with a label-over-value field grid. ---------- */
+html body .main .page-header.rc-head .btn.rc-back:not(.primary):not(#DS) { display: inline-flex !important; padding: 0 !important; min-height: 0 !important; height: auto !important; background: none !important; box-shadow: none !important; border: 0 !important; color: var(--ds-text2) !important; font: 400 14px/20px var(--ds-body) !important; margin: 0 0 6px !important; }
+html body .main .page-header.rc-head .t > p.rc-id:not(#DS) { margin: 0 !important; color: var(--ds-muted) !important; font: 500 14px/20px var(--ds-head) !important; }
+html body .main .rc-head h1 .tag:not(#DS) { vertical-align: 2px; margin-left: 8px; font: 400 12px/18px var(--ds-body) !important; }
+html body .main .page-body.rc-page:not(#DS) { max-width: none !important; display: grid !important; grid-template-columns: minmax(0, 1fr) 327px; gap: 16px; align-items: start; }
+html body .main .rc-page .rc-main:not(#DS) { min-width: 0; background: #fff; border: 1px solid var(--ds-border); border-radius: var(--ds-r-card); padding: 16px; }
+html body .main .rc-page .rc-side:not(#DS) { position: sticky; top: 72px; display: flex; flex-direction: column; gap: 16px; }
+html body .main .rc-grid:not(#DS) { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin: 0; }
+html body .main .rc-grid dt:not(#DS) { color: var(--ds-ink) !important; font: 500 12px/18px var(--ds-head) !important; margin: 0; }
+html body .main .rc-grid dd:not(#DS) { color: var(--ds-ink) !important; font: 400 14px/20px var(--ds-body) !important; margin: 2px 0 0; overflow-wrap: anywhere; }
+@media (max-width: 1100px) { html body .main .page-body.rc-page:not(#DS) { grid-template-columns: minmax(0, 1fr); } html body .main .rc-page .rc-side:not(#DS) { position: static; } }
+
+/* ---------- Stage F dashboards (§4 Dashboard; study §2): a section band (16/500 on #FAFAFA, 40 high, 4 px), widget cards (white, hairline, 12 px, padding 16,
+   title 14/500) and KPI cards (12 px, the 6 px top bar from the shared .kpi rule, label 12/400 grey, figure 32/500, a 12 px grey line under it). ---------- */
+html body :is(.main, .adm-main) .dw-band:not(#DS) { display: flex !important; align-items: center !important; min-height: 40px !important; padding: 0 12px !important; margin: 0 0 12px !important; background: var(--ds-canvas) !important; border: 0 !important; border-radius: var(--ds-r-badge) !important; box-shadow: none !important; color: var(--ds-ink) !important; font: 500 16px/24px var(--ds-head) !important; text-transform: none !important; letter-spacing: 0 !important; }
+html body :is(.main, .adm-main) .dw-band:not(#DS)::before, html body :is(.main, .adm-main) .dw-band:not(#DS)::after { display: none !important; content: none !important; }
+html body :is(.main, .adm-main) .dw-card:not(#DS) { background: #fff !important; background-image: none !important; border: 1px solid var(--ds-border) !important; border-radius: 12px !important; box-shadow: none !important; }
+html body :is(.main, .adm-main) :is(.cs-card, .proj-card, .rp-tile).dw-card:not(#DS) { padding: 16px !important; }
+/* the dashboard list (Dashboard Gallery categories), Facilio's 280 px left panel: #FAFAFA, hairline, 8 px; rows 36 px, 14 px, 4 px corners, the chosen one selection blue */
+html body .main .dw-list:not(#DS) { background: var(--ds-canvas) !important; border: 1px solid var(--ds-border) !important; border-radius: var(--ds-r-panel) !important; box-shadow: none !important; padding: 8px !important; align-self: start; }
+html body .main .dw-list > .card-h:not(#DS) { background: transparent !important; border: 0 !important; padding: 4px 8px 8px !important; }
+html body .main .dw-list > .card-h h3:not(#DS) { font: 500 14px/20px var(--ds-head) !important; color: var(--ds-ink) !important; }
+html body .main .dw-list .list-item:not(#DS) { min-height: 36px; padding: 8px !important; border: 0 !important; border-radius: var(--ds-r-badge) !important; background: transparent !important; font: 400 14px/20px var(--ds-body) !important; color: var(--ds-text2) !important; cursor: pointer; }
+html body .main .dw-list .list-item:hover:not(#DS) { background: var(--ds-subtle) !important; }
+html body .main .dw-list .list-item.sel:not(#DS) { background: var(--ds-selected) !important; color: var(--ds-blue) !important; font-weight: 500 !important; }
+html body :is(.main, .adm-main) .dw-card :is(.dw-h, > header h3, > header h2):not(#DS) { margin: 0 0 12px !important; color: var(--ds-ink) !important; font: 500 14px/20px var(--ds-head) !important; text-transform: none !important; letter-spacing: 0 !important; }
+html body :is(.main, .adm-main) button.kpi:not(#DS) { display: flex !important; flex-direction: column !important; align-items: flex-start !important; justify-content: flex-start !important; gap: 4px !important; min-height: 108px !important; padding: 18px 16px 12px !important; text-align: left !important; cursor: pointer; }
+html body :is(.main, .adm-main) button.kpi:hover:not(#DS) { border-color: var(--ds-border-strong) !important; }
+html body :is(.main, .adm-main) .kpi :is(.cs-stat-s, .kpi-s):not(#DS) { color: var(--ds-muted) !important; font: 400 12px/18px var(--ds-head) !important; }

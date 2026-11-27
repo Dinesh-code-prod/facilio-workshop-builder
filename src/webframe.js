@@ -10,16 +10,17 @@
 
   function page(view) {
     const site = current(view);
-    const tabs = `<div class="tabs wf-tabs" role="tablist" aria-label="Facilio tools">${W.SITES.map(s => `<button class="tab${s.id === site.id ? ' active' : ''}" role="tab" aria-selected="${s.id === site.id}" data-act="wfTab" data-v="${esc(s.id)}">${esc(s.title)}${s.framed === false ? ' ↗' : ''}</button>`).join('')}</div>`;
+    // a Facilio list page (stage F, 27 Nov 2026): Open in a new tab and Open in a window in the header, the sites as the view selector, the site as the page's one card
+    const tabs = V.viewMenu(site.title, null, W.SITES.map(s => ({ act: 'wfTab', v: s.id, l: s.title + (s.framed === false ? ' ↗' : ''), on: s.id === site.id })), 'Facilio tools');
     const ok = W.isAllowed(site.url);
     const open = `<a class="btn primary" href="${esc(site.url)}" target="_blank" rel="noopener noreferrer">Open in a new tab</a><button type="button" class="btn" data-act="wfWin" data-v="${esc(site.id)}" title="Opens ${esc(site.title)} in its own window beside Delivery Studio, where sign-in works">Open in a window</button>`;
     const unframed = site.framed === false;
-    const bar = `<div class="wf-bar"><b class="wf-title">${esc(site.title)}</b><span class="wf-note">${esc(site.note)}</span>${unframed ? '' : `<span class="wf-actions"><button type="button" class="btn" data-act="wfBig" id="wfBigBtn" aria-pressed="false">Bigger view</button><button type="button" class="btn" data-act="wfReload">Reload</button>${open}</span>`}</div>`;
+    const bar = `<div class="pt-bar ls-bar wf-bar">${tabs}<span class="wf-note small muted">${esc(site.note)}</span>${unframed ? '' : `<span class="spacer"></span><button type="button" class="btn sm" data-act="wfBig" id="wfBigBtn" aria-pressed="false">Bigger view</button><button type="button" class="btn sm" data-act="wfReload">Reload</button>`}</div>`;
     const frame = unframed ? `<div class="wf-refuse" id="wfFrame" data-view="${esc(view)}" data-site="${esc(site.id)}"><span>This site does not open inside Delivery Studio. Click here to open it in a new tab, or in a window beside this one.</span><span class="wf-actions">${open}</span></div>` : ok
       ? `<iframe id="wfFrame" class="wf-frame" title="${esc(site.title)}" src="${esc(site.url)}" data-site="${esc(site.id)}" data-view="${esc(view)}" referrerpolicy="no-referrer" sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-downloads" allow=""></iframe>`
       : '<div class="notice err">This address is not on the allowed list, so it is not shown here.</div>';
-    return `<div class="page-header"><div class="t"><h1>${view === 'supportdesk' ? 'Support Desk' : 'Facilio tools'}</h1><p>Support Desk, Meteor and Comet open right here. The other sites open in a new tab. Nothing from your project is sent to them.</p></div></div>
-      <div class="page-body wf">${tabs}${bar}${unframed ? '' : '<p class="wf-help" id="wfHelp" role="status" hidden>If the page stays blank, this site does not allow being shown inside Delivery Studio, or it needs you to sign in in its own window. Use Open in a window.</p>'}${frame}</div>`;
+    return `<div class="page-header"><div class="t"><h1>${view === 'supportdesk' ? 'Support Desk' : 'Facilio tools'}</h1><p>Support Desk, Meteor and Comet open right here. The other sites open in a new tab. Nothing from your project is sent to them.</p></div>${unframed || !ok ? '' : `<div class="ph-acts">${open}</div>`}</div>
+      <div class="page-body wf">${bar}${unframed ? '' : '<p class="wf-help" id="wfHelp" role="status" hidden>If the page stays blank, this site does not allow being shown inside Delivery Studio, or it needs you to sign in in its own window. Use Open in a window.</p>'}${frame}</div>`;
   }
   function mount() { clearTimeout(timer); if (!document.querySelector('iframe#wfFrame')) return; timer = setTimeout(() => { const h = document.getElementById('wfHelp'); if (h) h.hidden = false; }, HELP_MS); }
   const view = name => ({ html: () => page(name), mount });

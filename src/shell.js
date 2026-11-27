@@ -37,6 +37,12 @@
   const rvSt = (tone, text) => '<span class="rv-st ' + esc(tone || '') + '">' + esc(text) + '</span>';
   const countStrip = (items, act) => '<div class="rv-strip" role="group" aria-label="Summary">' + items.filter(Boolean).map(x => { const cls = 'rv-n' + (x.on ? ' on' : '') + (x.tone ? ' ' + x.tone : ''), inner = '<b>' + esc(String(x.n)) + '</b> ' + esc(x.label);
     return act && x.key != null ? '<button type="button" class="' + cls + '" data-act="' + act + '" data-v="' + esc(x.key) + '" aria-pressed="' + !!x.on + '">' + inner + '</button>' : '<span class="' + cls + '">' + inner + '</span>'; }).join('') + '</div>';
+  // Facilio list page (stage F, 27 Nov 2026; docs/design/delivery-studio-design-system.md §4): the page's other actions sit in one More menu beside its main button
+  const moreMenu = (items, label, cls) => items ? '<details class="rv-menu ls-more' + (cls ? ' ' + cls : '') + '"><summary class="btn">' + (label || 'More') + '</summary><div class="rv-menu-p">' + items + '</div></details>' : '';
+  // ... the view selector (Tasks' sheets, a log's type, a file folder): items { act, v, l, n, on }; and the toolbar's live search, kept in S.ui[key]
+  const viewMenu = (label, n, items, aria) => '<details class="rv-menu pt-views ls-views"><summary class="btn pt-vsum" aria-label="' + esc(aria || 'View') + ': ' + esc(label) + '">' + esc(label) + (n != null ? '<span class="pt-shn">' + esc(String(n)) + '</span>' : '') + '</summary><div class="rv-menu-p pt-sheets" role="tablist" aria-label="' + esc(aria || 'View') + '">'
+    + items.map(x => '<button type="button" role="tab" class="pt-sh' + (x.on ? ' on' : '') + '" aria-selected="' + !!x.on + '" data-act="' + esc(x.act) + '" data-v="' + esc(x.v) + '">' + esc(x.l) + (x.n != null ? '<span class="pt-shn">' + esc(String(x.n)) + '</span>' : '') + '</button>').join('') + '</div></details>';
+  const listSearch = (key, ph) => '<div class="tl-search pt-q">' + ico('search') + '<input type="search" data-uiq="' + esc(key) + '" value="' + esc(S.ui[key] || '') + '" placeholder="' + esc(ph) + '" aria-label="' + esc(ph) + '"></div>';
   const statusTag = st => tag(st, { existing: 'Existing', proposed: 'Proposed', modified: 'Modified', removed: 'Proposed removal' }[st] || st);
   function sel(name, opts, val, attrs) { return `<select ${attrs || ''} ${name ? `data-bind="${esc(name)}"` : ''}>${opts.map(o => { const v = typeof o === 'object' ? o.v : o, l = typeof o === 'object' ? o.l : o; return `<option value="${esc(v)}"${String(v) === String(val) ? ' selected' : ''}>${esc(l)}</option>`; }).join('')}</select>`; }
   function getPath(o, p) { return p.split('.').reduce((a, k) => (a == null ? undefined : a[k]), o); }
@@ -128,7 +134,7 @@
   const fmtDate = d => { if (!d) return ''; const x = new Date(d); return isNaN(x) ? String(d) : x.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }); };
   const fmtSize = n => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
   function requireEdit() { if (S.readonly) { toast('You have read-only access to this project'); return false; } return true; }
-  Object.assign(V, { docImage, xmlSafe, loadDocx, loadPdfMake, pdfArabic, sheetName, ico, toast, loading, loadingMsg, tag, rvSt, countStrip, statusTag, sel, inp, ta, sw, drawer, closeDrawer, confirmDialog, download, saveHtml, pickFile, loadScript, zipTexts, getPath, setPath, fmtDate, fmtSize, requireEdit, bindTarget });
+  Object.assign(V, { docImage, xmlSafe, loadDocx, loadPdfMake, pdfArabic, sheetName, ico, toast, loading, loadingMsg, tag, rvSt, countStrip, moreMenu, viewMenu, listSearch, statusTag, sel, inp, ta, sw, drawer, closeDrawer, confirmDialog, download, saveHtml, pickFile, loadScript, zipTexts, getPath, setPath, fmtDate, fmtSize, requireEdit, bindTarget });
   V.confirmInline = () => true; // legacy callers: destructive actions now use confirmDialog where it matters
 
   // ---------- routing ----------
@@ -415,6 +421,7 @@
   document.addEventListener('input', e => {
     const el = e.target;
     if (el.id === 'navq') { S.ui.navq = el.value; const nav = document.querySelector('.sidebar'); if (nav) { nav.innerHTML = sidebarHtml(); render._sb = null; const n = document.getElementById('navq'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); } return; }
+    const uq = el.getAttribute('data-uiq'); if (uq) { S.ui[uq] = el.value; clearTimeout(render._uq); render._uq = setTimeout(() => { const pos = el.selectionStart; render(); const n = document.querySelector('[data-uiq="' + uq + '"]'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (x) { } } }, 200); return; }   // a list page's live search (S.ui key)
     const b = el.getAttribute('data-bind'); if (!b || el.type === 'checkbox' || el.tagName === 'SELECT') return;
     const t = bindTarget(b); setPath(t.obj, t.path, el.type === 'number' ? (el.value === '' ? '' : Number(el.value)) : el.value); F.changed(null, null, { render: false, section: t.section });
   });
