@@ -137,9 +137,11 @@ Nothing important is set below 12 px.
 
 ## 9. Decisions (user, 27 Nov 2026)
 
-1. **Rail.** One layout for everyone: the Facilio icon rail. It is 56 px wide, with 32 px icon squares, 44 px per item and no names (aria-label plus the hover flyout). The open module is a **violet `#3C229D` square with a white icon**, which is Facilio's selection colour. The Expanded side menu is gone (`V.navPref` in `src/shell.js` always answers `top`); saved choices stay on the account.
+1. **Menu format: Icons or Text** (user, 27 Nov 2026), per person and per view, in Tabs & Layouts and the account menu; **Icons is the default**.
+   - **Icons:** the Facilio icon rail, 56 px wide, with 32 px icon squares, 44 px per item and no names (aria-label plus the hover flyout). The open module is a **violet `#3C229D` square with a white icon**, Facilio's selection colour. The open section's pages are module tabs **in the top bar**, after the workspace switch. The project chip and the icon buttons sit at the right end, where Facilio has its site switcher, bell and profile.
+   - **Text:** a white side menu with every stage and page written out; the open page sits on a grey square.
 2. **Module tabs.** A stage's pages are Facilio module tabs: a flat strip, 14 px text, with the open tab on a grey `#EAE9E9` square with 4 px corners.
-3. **Page title:** 20 px / 500 (heading-smb-20).
+3. **Titles:** the page title and card titles are 16 px / 500, as measured on a native Facilio dashboard and record. KPI figures are 32 / 500 with 12 / 400 grey labels; widget titles are 14 / 500.
 4. **Font:** Roboto everywhere. The sign-in page keeps its own font, at its 24 Nov design.
 5. **Colours everywhere:** animations, dashboards and widgets included. Every hard-coded colour in `src` was moved onto the Facilio palette ramps by one rule (hue family kept, closest lightness). The full mapping is in `docs/reports/facilio-palette-map-2026-11-27.txt`. Exported Word, Excel and HTML documents keep the Facilio document palette their tests require.
 6. **Source of truth:** Meteor's CMMS Demo Kit (`get_playbook(path="kit.zip")`), the captured Facilio product CSS. It confirms primary `#0024D6`, Roboto, the 56 px header, the icon rail and the list, form and record layouts.

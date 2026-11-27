@@ -1,5 +1,5 @@
 // Master design system check (24 Nov 2026): at 1920, 1366 and 1100 px wide, in the staff, customer (Preview as customer) and Admin views and in both
-// sidebar layout (the icon rail, the only layout since 27 Nov 2026), clicks every side-menu entry and every page tab of a stage, and checks that the page opens with the
+// menu formats (Text 'side', Icons 'top'), clicks every side-menu entry and every page tab of a stage, and checks that the page opens with the
 // right entry marked open, that no page error is thrown, that the top bar, the page header and the stage tabs do not overlap, and that the page has no
 // sideways scroll. Read-only (uses the first project of the local data). Restores each view's layout setting at the end.
 // Usage: node build.mjs; node tests/ui/devserver.mjs 4231; node tests/ui/master-ds-check.mjs [baseUrl] [outDir] [--widths=1920,1366,1100] [--views=staff,customer,admin] [--shots]
@@ -19,9 +19,9 @@ function layoutProblems() {
   const hit = (a, c) => { const r = a.getBoundingClientRect(), s = c.getBoundingClientRect(); return Math.min(r.right, s.right) - Math.max(r.left, s.left) > 2 && Math.min(r.bottom, s.bottom) - Math.max(r.top, s.top) > 2; };
   const out = [];
   const groups = [
-    [...document.querySelectorAll('header.navbar :is(.nav-logo, .title, .ws-switch, .co-pill, .nb-proj, [data-act="custPreview"], .save-state, .gs-btn, .bell, .avatar, .hp-chip)')],
+    [...document.querySelectorAll('header.navbar :is(.nav-logo, .title, .ws-switch, .nb-tabs, .co-pill, .nb-proj, [data-act="custPreview"], .save-state, .gs-btn, .bell, .avatar, .hp-chip)')],
     [...document.querySelectorAll('.main .page-header > *')],
-    [...document.querySelectorAll('.main nav.mt-bar .mt-t, .main nav.mt-bar .mt-cap')],
+    [...document.querySelectorAll('nav.mt-bar .mt-t, nav.mt-bar .mt-cap')],
     [...document.querySelectorAll('.adm-main .adm-h > *, .adm-nav .adm-ni')]];
   for (const g of groups) { const v = g.filter(vis); for (let i = 0; i < v.length; i++) for (let j = i + 1; j < v.length; j++) if (!v[i].contains(v[j]) && !v[j].contains(v[i]) && hit(v[i], v[j])) out.push('overlap ' + name(v[i]) + ' / ' + name(v[j])); }
   if (document.documentElement.scrollWidth > innerWidth + 1) out.push('sideways scroll ' + document.documentElement.scrollWidth + ' > ' + innerWidth);
@@ -58,12 +58,12 @@ for (const W of WIDTHS) {
         await p.evaluate(i => document.querySelectorAll('nav.sidebar .rl-b')[i].click(), i); await settle(700);
         const ok = await p.evaluate(i => { const r = document.querySelectorAll('nav.sidebar .rl-b')[i]; return !!r && r.classList.contains('active') && document.querySelectorAll('nav.sidebar .rl-b.active').length === 1; }, i);
         if (!ok) fail(tag, `rail ${rails[i]}: not marked open`); await check(`${tag} rail:${rails[i]}`);
-        const tabs = await p.evaluate(() => [...document.querySelectorAll('.main nav.mt-bar .mt-t')].map(t => t.getAttribute('data-view')));
+        const tabs = await p.evaluate(() => [...document.querySelectorAll('nav.mt-bar .mt-t')].filter(e => e.offsetParent).map(t => t.getAttribute('data-view')));
         for (const v of tabs) {
           // a detail page (e.g. Forms & templates under Solution design & BRD) is a stage tab only while it is open; once another tab is open it is gone, which is right
-          if (!await p.$(`.main nav.mt-bar .mt-t[data-view="${v}"]`)) continue;
-          await p.click(`.main nav.mt-bar .mt-t[data-view="${v}"]`).catch(() => fail(tag, `tab ${v} could not be clicked`)); await settle(650);
-          const t = await p.evaluate(v => { const a = [...document.querySelectorAll('.main nav.mt-bar .mt-t.active')]; return { one: a.length === 1 && a[0].getAttribute('data-view') === v, rail: !!document.querySelector('nav.sidebar .rl-b.active') }; }, v);
+          if (!await p.$(`nav.mt-bar .mt-t[data-view="${v}"]`)) continue;
+          await p.click(`nav.mt-bar .mt-t[data-view="${v}"]`).catch(() => fail(tag, `tab ${v} could not be clicked`)); await settle(650);
+          const t = await p.evaluate(v => { const a = [...document.querySelectorAll('nav.mt-bar .mt-t.active')]; return { one: a.length === 1 && a[0].getAttribute('data-view') === v, rail: !!document.querySelector('nav.sidebar .rl-b.active') }; }, v);
           if (!t.one) fail(tag, `${rails[i]} > ${v}: the open tab is not marked`); if (!t.rail) fail(tag, `${rails[i]} > ${v}: no rail entry marked open`); await check(`${tag} ${v}`);
         }
       }
@@ -73,18 +73,18 @@ for (const W of WIDTHS) {
 
   if (VIEWS.includes('staff') || VIEWS.includes('customer')) {
     await p.goto(`${BASE}/?nointro#/p/${pid}/projdash`); await settle(2800); await p.keyboard.press('Escape');
-    if (VIEWS.includes('staff')) for (const lay of ['top']) await projectNav('staff', lay);
+    if (VIEWS.includes('staff')) for (const lay of ['top', 'side']) await projectNav('staff', lay);
     if (VIEWS.includes('customer')) {
       await p.evaluate(() => { location.hash = location.hash.replace(/(#\/p\/[^/]+)\/.*/, '$1/projdash'); }); await settle(1200);
       const cp = await p.$('[data-act="custPreview"]'); if (!cp) fail(`customer@${W}`, 'no Preview as customer button');
-      else { await cp.click(); await settle(2500); for (const lay of ['top']) await projectNav('customer', lay);
+      else { await cp.click(); await settle(2500); for (const lay of ['top', 'side']) await projectNav('customer', lay);
         const leak = await p.evaluate(() => [...document.querySelectorAll('[data-act="openAdmin"]:not([hidden]), nav.sidebar [data-view="settings"]')].filter(e => e.offsetParent).length); if (leak) fail(`customer@${W}`, 'Admin or Settings visible in the customer view');
         await p.click('[data-act="custPreviewExit"]').catch(() => {}); await settle(1500); }
     }
   }
   if (VIEWS.includes('admin')) {
     await enter(); await p.click('[data-act="openAdmin"]'); await settle(2500);
-    for (const lay of ['top']) {
+    for (const lay of ['side', 'top']) {
       const tag = `admin/${lay}@${W}`; await p.evaluate(l => FWBViews.setNavPref(l, 'admin'), lay); await settle(1200);
       const n = await p.evaluate(() => document.querySelectorAll('.adm-nav .adm-ni').length); if (!n) fail(tag, 'no Admin menu');
       for (let i = 0; i < n; i++) {
