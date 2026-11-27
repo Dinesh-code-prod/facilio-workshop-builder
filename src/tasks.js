@@ -53,7 +53,9 @@
   const srcLabel = t => { const s = t.src || {}; return ({ manual: 'Manual', transcript: 'Transcript', import: 'Excel import', meeting: 'Meeting', email: 'Email', action: 'Governance action', question: 'Workshop question', ai: 'AI' })[s.type || 'manual'] + (s.label ? ' · ' + s.label : ''); };
   const tid = t => 'T-' + (t.n || '?');
   const opt = (list, cur, lab) => list.map(o => `<option value="${esc(o)}"${o === (cur || '') ? ' selected' : ''}>${esc(o || (lab || '—'))}</option>`).join('');
-  const ownerOpts = (cur, blank) => `<option value="">${esc(blank || 'Unassigned')}</option>` + team().map(m => `<option value="${esc(m.email)}"${String(m.email).toLowerCase() === String(cur || '').toLowerCase() ? ' selected' : ''}>${esc(m.name)}${String(m.email).toLowerCase() === me() ? ' (me)' : ''}</option>`).join('');
+  // an owner who has left the project stays listed (and chosen) so the task is not shown as unassigned; the server keeps them until someone picks a new owner
+  const ownerOpts = (cur, blank) => { const c = String(cur || '').trim().toLowerCase(), gone = c && !team().some(m => String(m.email).toLowerCase() === c);
+    return `<option value="">${esc(blank || 'Unassigned')}</option>` + (gone ? `<option value="${esc(c)}" selected>${esc(who(c) || c)} (not in the project)</option>` : '') + team().map(m => `<option value="${esc(m.email)}"${String(m.email).toLowerCase() === c ? ' selected' : ''}>${esc(m.name)}${String(m.email).toLowerCase() === me() ? ' (me)' : ''}</option>`).join(''); };
   // a record linked to a task changed after the task was last updated: the task may need a review
   const linkedChanged = t => (t.links || []).filter(l => l.kind !== 'doc').some(l => { const r = I().get(l.kind, l.id); return r && r._at && t._at && r._at > t._at; });
 

@@ -170,4 +170,13 @@ await t('lifecycle nudges: the Studio-open sweep tells a project owner once, pri
   assert.ok(first.length >= 1, 'a nudge was sent: ' + JSON.stringify(sent.map(x => x.title))); assert.deepEqual(first[0].to, [SAM], 'to the project owner only (a private message)'); assert.match(JSON.stringify(first[0]), /open blocker|Project health/);
   sent = []; await as(SAM, 'POST', '/api/notifications/sweep', {}); assert.equal(sent.filter(nudge).length, 0, 'the same trouble is not sent again');
 });
+await t('an owner who left the project stays on their task, so it can still be moved; a new owner must still be on the team', async () => {
+  const p3 = (await as(SAM, 'POST', '/api/projects', { name: 'Leaver Test', customer: 'Acme' })).data.project.id;
+  const m = (await as(SAM, 'POST', `/api/projects/${p3}/members`, { email: KIM, role: 'editor' })).data.member;
+  assert.equal((await put(SAM, p3, 'tl', { title: 'Kim task', status: 'To Do', owner: KIM })).status, 200);
+  assert.equal((await as(SAM, 'DELETE', `/api/projects/${p3}/members/${m.id}`)).status, 200);
+  const moved = await put(SAM, p3, 'tl', { title: 'Kim task', status: 'In Progress', owner: KIM }); assert.equal(moved.status, 200, JSON.stringify(moved.data)); assert.equal(moved.data.item.data.owner, KIM.toLowerCase());
+  const r = await put(SAM, p3, 'tl', { title: 'Kim task', status: 'In Progress', owner: 'stranger@facilio.com' }); assert.equal(r.status, 400); assert.match(r.data.error, /owner must be a member/);
+  assert.equal((await put(SAM, p3, 'tn', { title: 'New task', status: 'To Do', owner: KIM })).status, 400, 'a new task cannot be given to someone who left');
+});
 console.log(n + ' task reminder checks passed');
