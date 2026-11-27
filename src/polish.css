@@ -4,7 +4,7 @@ body .notice:not(#_):not(:has(> svg, > .fi, > .ico)) { display: block !important
 
 /* KPI tiles: a touch more clay depth, and on hover a fine grain and soft sheen so the tile looks like a crisp, textured surface. */
 body .card.stat:not(#_), body .cmd-m:not(#_), body .pp-stat:not(#_), body .kpi:not(#_), body .pl-kpis > div:not(#_) { position: relative; overflow: hidden; background: #fff; box-shadow: inset 0 1px 0 #fff, inset 0 -3px 6px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .07), 0 10px 20px -14px rgba(0, 0, 0, .32) !important; border-radius: 8px; transition: transform .2s ease, box-shadow .2s ease !important; }
-body .pl-kpis > div:not(#_) { border: 1px solid var(--line, #e5e5e5); padding: 12px 14px; }
+body .pl-kpis > div:not(#_) { border: 1px solid var(--line, #eae9e9); padding: 12px 14px; }
 body .card.stat::before, body .cmd-m::before, body .pp-stat::before, body .kpi::before, body .pl-kpis > div::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .25s ease; background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, .75) 48%, transparent 66%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .25 0 0 0 0 .6 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E"); background-size: 220% 100%, 120px 120px; background-position: 120% 0, 0 0; }
 body .card.stat:hover::before, body .cmd-m:hover::before, body .pp-stat:hover::before, body .kpi:hover::before, body .pl-kpis > div:hover::before { opacity: .55; background-position: -20% 0, 0 0; transition: opacity .25s ease, background-position .7s ease; }
 body .card.stat:not(#_):hover, body .cmd-m:not(#_):hover, body .pp-stat:not(#_):hover, body .kpi:not(#_):hover, body .pl-kpis > div:not(#_):hover { transform: translateY(-3px); box-shadow: inset 0 1px 0 #fff, inset 0 -3px 6px rgba(0, 0, 0, .08), 0 3px 6px rgba(0, 0, 0, .09), 0 18px 28px -14px rgba(0, 0, 0, .42) !important; }
@@ -12,11 +12,11 @@ body .card.stat:not(#_):hover, body .cmd-m:not(#_):hover, body .pp-stat:not(#_):
 
 /* Headers are light now, but some controls inside them still had colours made for the old dark header (white text on a white button).
    Seen as the admin console's Refresh button, the report-range dropdown, header chips and the count badge on the active admin menu item. */
-body .adm-hero .hm-btn:not(#_), body .adm-hero .hm-btn.ghost:not(#_), body .page-header .rgdd-btn:not(#_), body .adm-hero .rgdd-btn:not(#_) { background: #fff !important; color: #171717 !important; border: 1px solid #d4d4d4 !important; }
-body .adm-hero .hm-btn:not(#_):hover, body .adm-hero .hm-btn.ghost:not(#_):hover, body .page-header .rgdd-btn:not(#_):hover { background: #f5f5f5 !important; color: #1d1d1f !important; border-color: #8DB8FF !important; }
-body .page-header .rgdd-btn i, body .adm-hero .rgdd-btn i { color: #525252 !important; }
-body .page-header .tag:not(#_), body .page-header .chip:not(#_), body .page-header .pill:not(#_), body .adm-hero .chip:not(#_) { background: #f5f5f5 !important; color: #1d1d1f !important; border: 1px solid #eaf2ff !important; }
-body .page-header .rg-clear:not(#_), body .adm-hero .rg-clear:not(#_) { color: #1570EF !important; }
+body .adm-hero .hm-btn:not(#_), body .adm-hero .hm-btn.ghost:not(#_), body .page-header .rgdd-btn:not(#_), body .adm-hero .rgdd-btn:not(#_) { background: #fff !important; color: #192432 !important; border: 1px solid #c4d1e4 !important; }
+body .adm-hero .hm-btn:not(#_):hover, body .adm-hero .hm-btn.ghost:not(#_):hover, body .page-header .rgdd-btn:not(#_):hover { background: #f5f5f5 !important; color: #192432 !important; border-color: #86AAFF !important; }
+body .page-header .rgdd-btn i, body .adm-hero .rgdd-btn i { color: #555757 !important; }
+body .page-header .tag:not(#_), body .page-header .chip:not(#_), body .page-header .pill:not(#_), body .adm-hero .chip:not(#_) { background: #f5f5f5 !important; color: #192432 !important; border: 1px solid #f3f7ff !important; }
+body .page-header .rg-clear:not(#_), body .adm-hero .rg-clear:not(#_) { color: #0024D6 !important; }
 body .adm-ni.on:not(#_) em { background: rgba(255, 255, 255, .22) !important; color: #fff !important; }
 body .adm-ni.on:not(#_) em * { color: #fff !important; }
 
@@ -27,12 +27,12 @@ body .list-item:not(#_):hover, body .cal-l li:not(#_):hover, body .owes-l li:not
 
 /* Page headings: the same night-and-glow look as the Up next band (dark base, a soft orange/red/violet/cyan glow on the right), with a fine grain and a one-time sheen on open. */
 body .main > .page > .page-header:not(#_):not(#__), body .adm-main > .adm-hero:not(#_):not(#__) {
-  background-color: #1D1A5E !important;
+  background-color: #00125E !important;
   background-image: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .10) 50%, transparent 65%),
     radial-gradient(520px 220px at 100% 0%, rgba(0, 0, 0, .55), transparent 70%),
     radial-gradient(420px 200px at 82% 120%, rgba(219, 0, 0, .28), transparent 70%),
     radial-gradient(360px 160px at 100% 100%, rgba(56, 215, 255, .20), transparent 70%),
-    linear-gradient(120deg, #1D1A5E 0%, #1D1A5E 100%),
+    linear-gradient(120deg, #00125E 0%, #00125E 100%),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .3 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.3'/%3E%3C/svg%3E") !important;
   background-size: 250% 100%, auto, auto, auto, auto, 140px 140px !important;
   background-position: 130% 0, 0 0, 0 0, 0 0, 0 0, 0 0 !important;
@@ -45,8 +45,8 @@ body .main > .page > .page-header:not(#_):not(#__), body .adm-main > .adm-hero:n
 body .page-header h1:not(#_):not(#__), body .adm-hero h1:not(#_):not(#__) { color: #fff !important; }
 body .page-header p:not(#_):not(#__), body .adm-hero p:not(#_):not(#__), body .page-header .t:not(#_):not(#__), body .page-header .muted:not(#_):not(#__), body .page-header small:not(#_):not(#__), body .adm-hero .muted:not(#_):not(#__), body .adm-hero small:not(#_):not(#__), body .page-header label:not(#_):not(#__) { color: rgba(255, 255, 255, .78) !important; }
 body .page-header p b:not(#_):not(#__), body .page-header .t b:not(#_):not(#__), body .page-header .t strong:not(#_):not(#__), body .adm-hero p b:not(#_):not(#__) { color: #fff !important; }
-body .page-header .t p a:not(.btn):not(#_):not(#__), body .page-header a:not(.btn):not(#_):not(#__), body .adm-hero a:not(.btn):not(#_):not(#__) { color: #7CF3C6 !important; }
-body .page-header .rg-clear:not(#_):not(#__), body .adm-hero .rg-clear:not(#_):not(#__) { color: #7CF3C6 !important; }
+body .page-header .t p a:not(.btn):not(#_):not(#__), body .page-header a:not(.btn):not(#_):not(#__), body .adm-hero a:not(.btn):not(#_):not(#__) { color: #A7E7A1 !important; }
+body .page-header .rg-clear:not(#_):not(#__), body .adm-hero .rg-clear:not(#_):not(#__) { color: #A7E7A1 !important; }
 body .page-header .tag:not(#_):not(#__), body .page-header .chip:not(#_):not(#__), body .page-header .pill:not(#_):not(#__), body .adm-hero .chip:not(#_):not(#__) { background: rgba(255, 255, 255, .12) !important; color: #fff !important; border: 1px solid rgba(255, 255, 255, .24) !important; }
 @media (prefers-reduced-motion: reduce) { body .main > .page > .page-header:not(#_), body .adm-main > .adm-hero:not(#_) { animation: none; } }
 
@@ -58,9 +58,9 @@ body .main > .page > .page-header:not(#_):not(#__)::after, body .adm-main > .adm
 body .main > .page > .page-header:not(#_):not(#__), body .adm-main > .adm-hero:not(#_):not(#__) { margin-bottom: 22px !important; border-radius: 0 0 12px 12px !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), inset 0 -4px 10px rgba(0, 0, 0, .28), inset 0 3px 8px rgba(255, 255, 255, .05), 0 14px 24px -16px rgba(0, 0, 0, .55) !important; }
 
 /* Other number tiles (Package Analysis: modules, fields, relationships, apps, tabs...) get the same clay depth and hover as the KPI tiles. */
-body .stat:not(.card):not(#_) { position: relative; overflow: hidden; padding: 12px 14px; border-radius: 14px; border: 1px solid #e5e5e5; background: #fff; background-color: #fff; box-shadow: inset 0 1px 0 #fff, inset 0 -3px 6px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .07), 0 10px 20px -14px rgba(0, 0, 0, .32) !important; transition: transform .2s ease, box-shadow .2s ease !important; }
-body .stat:not(.card) .n:not(#_) { font-size: 26px; font-weight: 800; letter-spacing: -.5px; color: #171717; line-height: 1.1; }
-body .stat:not(.card) .l:not(#_) { margin-top: 4px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: none; color: #262626; }
+body .stat:not(.card):not(#_) { position: relative; overflow: hidden; padding: 12px 14px; border-radius: 14px; border: 1px solid #eae9e9; background: #fff; background-color: #fff; box-shadow: inset 0 1px 0 #fff, inset 0 -3px 6px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .07), 0 10px 20px -14px rgba(0, 0, 0, .32) !important; transition: transform .2s ease, box-shadow .2s ease !important; }
+body .stat:not(.card) .n:not(#_) { font-size: 26px; font-weight: 800; letter-spacing: -.5px; color: #192432; line-height: 1.1; }
+body .stat:not(.card) .l:not(#_) { margin-top: 4px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: none; color: #192432; }
 body .stat:not(.card)::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .25s ease, background-position .7s ease; background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, .75) 48%, transparent 66%); background-size: 220% 100%; background-position: 120% 0; }
 body .stat:not(.card):hover::before { opacity: .55; background-position: -20% 0; }
 body .stat:not(.card):not(#_):hover { transform: translateY(-3px); box-shadow: inset 0 1px 0 #fff, inset 0 -3px 6px rgba(0, 0, 0, .08), 0 3px 6px rgba(0, 0, 0, .09), 0 18px 28px -14px rgba(0, 0, 0, .42) !important; }
@@ -69,14 +69,14 @@ body .stat:not(.card):not(#_):hover { transform: translateY(-3px); box-shadow: i
 /* Sidebar search: one ring, on the pill. The input inside had its own background, border and focus ring, so two outlines collided. */
 body .sidebar .search input:not(#_):not(#__), body .sidebar .search input:not(#_):not(#__):focus, body .sidebar .search input:not(#_):not(#__):focus-visible { background: transparent !important; border: 0 !important; box-shadow: none !important; outline: 0 !important; border-radius: 0 !important; }
 body .sidebar .search:not(#_):not(#__) { overflow: hidden; }
-body .sidebar .search:not(#_):not(#__):focus-within { box-shadow: inset 0 0 0 1px #1570EF, 0 0 0 3px rgba(0, 0, 0, .16) !important; background: #fff !important; }
+body .sidebar .search:not(#_):not(#__):focus-within { box-shadow: inset 0 0 0 1px #0024D6, 0 0 0 3px rgba(0, 0, 0, .16) !important; background: #fff !important; }
 
 /* File pickers: the browser's grey "Choose File" box replaced by a soft drop-zone look with a pill button, in every form. */
-body input[type="file"]:not(#_):not(.sr-only) { width: 100%; height: auto; min-height: 48px; padding: 8px 10px; border: 1.5px dashed #8DB8FF !important; border-radius: 14px; background: #fff !important; color: #525252; font: inherit; font-size: 13.5px; cursor: pointer; box-shadow: inset 0 1px 0 #fff; transition: border-color .15s, background .15s; }
-body input[type="file"]:not(#_):hover { border-color: #1570EF !important; background: #fafafa !important; }
+body input[type="file"]:not(#_):not(.sr-only) { width: 100%; height: auto; min-height: 48px; padding: 8px 10px; border: 1.5px dashed #86AAFF !important; border-radius: 14px; background: #fff !important; color: #555757; font: inherit; font-size: 13.5px; cursor: pointer; box-shadow: inset 0 1px 0 #fff; transition: border-color .15s, background .15s; }
+body input[type="file"]:not(#_):hover { border-color: #0024D6 !important; background: #fafafa !important; }
 body input[type="file"]:not(#_):focus-visible { outline: 0; box-shadow: 0 0 0 3px rgba(0, 0, 0, .18); }
-body input[type="file"]:not(#_)::file-selector-button { margin-right: 12px; padding: 7px 16px; border: 1px solid #e5e5e5; border-radius: 999px; background: #fff; color: #1d1d1f; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer; box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 0, 0, .12); transition: background .15s; }
-body input[type="file"]:not(#_)::file-selector-button:hover { background: #eaf2ff; }
+body input[type="file"]:not(#_)::file-selector-button { margin-right: 12px; padding: 7px 16px; border: 1px solid #eae9e9; border-radius: 999px; background: #fff; color: #192432; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer; box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 0, 0, .12); transition: background .15s; }
+body input[type="file"]:not(#_)::file-selector-button:hover { background: #f3f7ff; }
 
 /* Buttons whose old style was "white text on a coloured fill" (the AI draft button, Watch the introduction, roadmap go) lost the fill to the clay buttons and
    showed white text on white. They are violet clay buttons, like every primary button. */
@@ -87,10 +87,10 @@ body .btn.ai-btn:not(#_):not(#__):hover, body .ai-btn:not(#_):not(#__):hover, bo
 body .btn.ai-btn:not(#_):not(#__) *, body .ai-btn:not(#_):not(#__) * { color: inherit !important; }
 
 /* Jump chips and pills: soft clay pills in the app's ink and violet, not flat pale-blue boxes. */
-body .tg2-chips a:not(#_), body .gl-jump:not(#_) button { background: #fff !important; color: #171717 !important; border: 1px solid #e5e5e5; border-radius: 999px; padding: 7px 14px; font-weight: 600; font-size: 13px; text-decoration: none; box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 0, 0, .08), 0 6px 12px -10px rgba(0, 0, 0, .35); transition: transform .15s ease, box-shadow .15s ease, color .15s; }
-body .tg2-chips a:not(#_):hover, body .gl-jump:not(#_) button:hover, body .gl-jump:not(#_) button.on { color: #1d1d1f !important; border-color: #8DB8FF; transform: translateY(-1px); background: #fff !important; box-shadow: inset 0 1px 0 #fff, 0 8px 14px -10px rgba(0, 0, 0, .5); }
+body .tg2-chips a:not(#_), body .gl-jump:not(#_) button { background: #fff !important; color: #192432 !important; border: 1px solid #eae9e9; border-radius: 999px; padding: 7px 14px; font-weight: 600; font-size: 13px; text-decoration: none; box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 0, 0, .08), 0 6px 12px -10px rgba(0, 0, 0, .35); transition: transform .15s ease, box-shadow .15s ease, color .15s; }
+body .tg2-chips a:not(#_):hover, body .gl-jump:not(#_) button:hover, body .gl-jump:not(#_) button.on { color: #192432 !important; border-color: #86AAFF; transform: translateY(-1px); background: #fff !important; box-shadow: inset 0 1px 0 #fff, 0 8px 14px -10px rgba(0, 0, 0, .5); }
 /* Notices: a calm neutral box with a violet edge (warning and error keep their own colours). */
-body .notice:not(.warn):not(.err):not(.danger):not(.ok):not(#_):not(#__) { background: #fafafa !important; border: 1px solid #e5e5e5 !important; border-left: 3px solid #1570EF !important; color: #171717 !important; box-shadow: inset 0 1px 0 #fff !important; }
+body .notice:not(.warn):not(.err):not(.danger):not(.ok):not(#_):not(#__) { background: #fafafa !important; border: 1px solid #eae9e9 !important; border-left: 3px solid #0024D6 !important; color: #192432 !important; box-shadow: inset 0 1px 0 #fff !important; }
 
 /* Phone width: button rows in headers and toolbars wrap instead of running off the screen. */
 @media (max-width: 720px) {
@@ -103,7 +103,7 @@ body .notice:not(.warn):not(.err):not(.danger):not(.ok):not(#_):not(#__) { backg
 body #userPop.popover:not(#_):not(#__), body .popover:not(#_):not(#__), body .menu:not(#_):not(#__) { z-index: 9100 !important; }
 
 /* the "Open ..." buttons in the Team guide: the stage colour with white text (the shared button style had turned them white on white) */
-body .tg-go.btn:not(#_):not(#__) { background: var(--c, #1570EF) !important; background-image: none !important; border-color: var(--c, #1570EF) !important; color: #fff !important; box-shadow: 0 1px 2px rgba(16, 24, 40, .2) !important; }
+body .tg-go.btn:not(#_):not(#__) { background: var(--c, #0024D6) !important; background-image: none !important; border-color: var(--c, #0024D6) !important; color: #fff !important; box-shadow: 0 1px 2px rgba(16, 24, 40, .2) !important; }
 
 /* admin: the date-range menu opens above the dashboard tiles (the console header sat below them in stacking order) */
 body .adm-main > .adm-hero:not(#_):not(#__) { z-index: 60 !important; overflow: visible !important; }
@@ -112,18 +112,18 @@ body .adm-main > .adm-hero:not(#_):not(#__) { z-index: 60 !important; overflow: 
 body .navbar:not(#_):not(#__) { position: sticky !important; top: 0 !important; z-index: 500 !important; }
 
 /* Admin portal: flat and matte. No gradients, no inset shine, no glow. Buttons, cards, badges and the header follow the app theme (white surfaces, thin borders, Facilio blue and navy). */
-body .adm-main .btn:not(.primary):not(.danger):not(#_):not(#__), body .adm-main .rgdd-btn:not(#_):not(#__), body .adm-nav .btn:not(.primary):not(#_):not(#__) { background: #fff !important; background-image: none !important; border: 1px solid #d3dcee !important; color: #0f1d3a !important; box-shadow: none !important; }
-body .adm-main .btn:not(.primary):not(.danger):not(#_):not(#__):hover, body .adm-main .rgdd-btn:not(#_):not(#__):hover { background: #f4f8fe !important; border-color: #b9c8e4 !important; }
-body .adm-main .btn.primary:not(#_):not(#__), body .adm-main button.primary:not(#_):not(#__) { background: #1570EF !important; background-image: none !important; border: 1px solid #1570EF !important; color: #fff !important; box-shadow: none !important; }
-body .adm-main .adm-card:not(#_):not(#__), body .adm-main .kpi:not(#_):not(#__), body .adm-main .card:not(#_):not(#__) { background: #fff !important; background-image: none !important; border: 1px solid #e3eaf6 !important; box-shadow: 0 1px 2px rgba(16, 40, 90, .05) !important; }
-body .adm-main .adm-h:not(#_):not(#__) { background: transparent !important; background-image: none !important; box-shadow: none !important; border-bottom: 1px solid #edf1f8 !important; }
-body .adm-main .notice:not(#_):not(#__), body .adm-main p.notice:not(#_):not(#__) { background: #f4f8fe !important; background-image: none !important; border: 1px solid #dbe6f7 !important; box-shadow: none !important; color: #0f1d3a !important; }
-body .hchip.r-super:not(#_):not(#__), body .adm-nav .hchip:not(#_):not(#__) { background: #1D1A5E !important; background-image: none !important; color: #fff !important; box-shadow: none !important; border: 0 !important; }
-body .adm-main > .adm-hero:not(#_):not(#__) { background-color: #1D1A5E !important; background-image: none !important; background-size: auto !important; box-shadow: none !important; animation: none !important; }
+body .adm-main .btn:not(.primary):not(.danger):not(#_):not(#__), body .adm-main .rgdd-btn:not(#_):not(#__), body .adm-nav .btn:not(.primary):not(#_):not(#__) { background: #fff !important; background-image: none !important; border: 1px solid #dbe9ff !important; color: #00125e !important; box-shadow: none !important; }
+body .adm-main .btn:not(.primary):not(.danger):not(#_):not(#__):hover, body .adm-main .rgdd-btn:not(#_):not(#__):hover { background: #fafafa !important; border-color: #b5cbff !important; }
+body .adm-main .btn.primary:not(#_):not(#__), body .adm-main button.primary:not(#_):not(#__) { background: #0024D6 !important; background-image: none !important; border: 1px solid #0024D6 !important; color: #fff !important; box-shadow: none !important; }
+body .adm-main .adm-card:not(#_):not(#__), body .adm-main .kpi:not(#_):not(#__), body .adm-main .card:not(#_):not(#__) { background: #fff !important; background-image: none !important; border: 1px solid #dbe9ff !important; box-shadow: 0 1px 2px rgba(16, 40, 90, .05) !important; }
+body .adm-main .adm-h:not(#_):not(#__) { background: transparent !important; background-image: none !important; box-shadow: none !important; border-bottom: 1px solid #f3f7ff !important; }
+body .adm-main .notice:not(#_):not(#__), body .adm-main p.notice:not(#_):not(#__) { background: #fafafa !important; background-image: none !important; border: 1px solid #dbe9ff !important; box-shadow: none !important; color: #00125e !important; }
+body .hchip.r-super:not(#_):not(#__), body .adm-nav .hchip:not(#_):not(#__) { background: #00125E !important; background-image: none !important; color: #fff !important; box-shadow: none !important; border: 0 !important; }
+body .adm-main > .adm-hero:not(#_):not(#__) { background-color: #00125E !important; background-image: none !important; background-size: auto !important; box-shadow: none !important; animation: none !important; }
 body .adm-main > .adm-hero:not(#_):not(#__)::before, body .adm-main > .adm-hero:not(#_):not(#__)::after { display: none !important; }
-body .adm-hero .rgdd-btn:not(#_):not(#__), body .adm-hero .btn:not(#_):not(#__) { background: #fff !important; color: #0f1d3a !important; }
-body .adm-nav .adm-ni.on:not(#_):not(#__) { background: #0f1d3a !important; background-image: none !important; box-shadow: none !important; }
+body .adm-hero .rgdd-btn:not(#_):not(#__), body .adm-hero .btn:not(#_):not(#__) { background: #fff !important; color: #00125e !important; }
+body .adm-nav .adm-ni.on:not(#_):not(#__) { background: #00125e !important; background-image: none !important; box-shadow: none !important; }
 
 /* the "+ New report" action on the Status Reports cards: a clear, full-size button, not a small tag */
-body .rep-new.btn:not(#_):not(#__) { height: 38px !important; min-height: 38px !important; padding: 0 18px !important; border-radius: 10px !important; background: #1570EF !important; background-image: none !important; border: 1px solid #1570EF !important; color: #fff !important; font-size: 13.5px !important; font-weight: 650 !important; white-space: nowrap; box-shadow: 0 1px 2px rgba(16, 40, 90, .25) !important; }
-body .rep-new.btn:not(#_):not(#__):hover { background: #0f5fd0 !important; border-color: #0f5fd0 !important; }
+body .rep-new.btn:not(#_):not(#__) { height: 38px !important; min-height: 38px !important; padding: 0 18px !important; border-radius: 10px !important; background: #0024D6 !important; background-image: none !important; border: 1px solid #0024D6 !important; color: #fff !important; font-size: 13.5px !important; font-weight: 650 !important; white-space: nowrap; box-shadow: 0 1px 2px rgba(16, 40, 90, .25) !important; }
+body .rep-new.btn:not(#_):not(#__):hover { background: #2e65ff !important; border-color: #2e65ff !important; }

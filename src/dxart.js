@@ -15,7 +15,7 @@
   const cyl = (x, y, z, r, h, c, det) => { const p = PX(x, y, z), cx = p[0], cy = p[1], rx = r * 21, ry = r * 12, top = cy - h * 18;
     return `<g><path d="M${cx - rx},${top} L${cx - rx},${cy} A${rx},${ry} 0 0 0 ${cx + rx},${cy} L${cx + rx},${top} Z" fill="${mix(c, .45)}"/><ellipse cx="${cx}" cy="${top}" rx="${rx}" ry="${ry}" fill="${c}" stroke="#fff" stroke-opacity=".45" stroke-width=".8"/>${det ? det(cx, top, rx, ry) : ''}</g>`; };
   const ball = (x, y, z, r, c) => { const p = PX(x, y, z); return `<g><circle cx="${p[0]}" cy="${p[1]}" r="${r}" fill="${c}"/><circle cx="${p[0] - r * .3}" cy="${p[1] - r * .3}" r="${r * .45}" fill="#fff" fill-opacity=".35"/></g>`; };
-  const base = () => box(-1.8, -1.5, -.24, 3.6, 3, .24, '#c9d5f2');
+  const base = () => box(-1.8, -1.5, -.24, 3.6, 3, .24, '#b5cbff');
   // motifs: (c, c2, R) -> svg shapes, back to front
   const M = {
     bars: (c, c2, R) => { const n = 4 + Math.floor(R() * 2), w = 3.2 / n; return Array.from({ length: n }, (_, i) => box(-1.6 + i * w + .06, -.6, 0, w - .14, 1.2, .5 + R() * 2, i % 2 ? c2 : c)).join(''); },
@@ -41,7 +41,7 @@
   };
   const RULES = [[/visitorlog|log/i, 'logbook'], [/bill|dispute|credit/i, 'coins'], [/customer/i, 'person'], [/tariff|kpi/i, 'bars'], [/rules/i, 'route'], [/control/i, 'sliders'], [/alarm/i, 'flag'], [/virtualmeter/i, 'cards'], [/watchlist|flag/i, 'flag'], [/groupinvite|group|peopleGroup|audience/i, 'group'], [/induction/i, 'board'], [/visitor|watchlist|invite|induction|contact|people|attendance|department|tenantcontact|vendorcontact|clientcontact/i, 'person'], [/lock|hazard|precaution|risk|safety|vendorDiversity|certif/i, 'lock'], [/meter|reading|kpi|alarm|control|utility/i, 'gauge'], [/bill|dispute|credit|budget|account|chartof|finance/i, 'coins'], [/shift|break|timelog|timesheet|clock|time/i, 'clock'], [/calendar|event|moves|move/i, 'calendar'], [/deliver|parcel|inventory|return|asset/i, 'parcel'], [/desk|room|amenity/i, 'desks'], [/locker/i, 'lockers'], [/parking|stall/i, 'parking'], [/route|jobplan|failure|flow|workflow|template/i, 'route'], [/facility|floor|tenantunit|unit|building|neighbour|space|site/i, 'city'], [/announce|news|survey|response|document|audience|deal|offer|admin|directory/i, 'cards'], [/chart|bar|report|health/i, 'bars']];
   V.dxArt = (key, label, color, motif) => {
-    const R = rng(key + '|' + label); const c = color || '#1570EF'; const alts = ['#8DB8FF', '#E5197F', '#1570EF', '#ffffff'].filter(x => x !== c); const c2 = alts[Math.floor(R() * 3)];
+    const R = rng(key + '|' + label); const c = color || '#0024D6'; const alts = ['#86AAFF', '#ED2780', '#0024D6', '#ffffff'].filter(x => x !== c); const c2 = alts[Math.floor(R() * 3)];
     let m = motif || (RULES.find(r => r[0].test(key + ' ' + label)) || [0, ['bars', 'city', 'cards', 'route', 'tower', 'desks'][Math.floor(R() * 6)]])[1];
     const flip = R() > .5; return `<svg class="dx-slab dx-art-svg" viewBox="0 0 160 130" aria-hidden="true"><g${flip ? ' transform="translate(160,0) scale(-1,1)"' : ''}>${base()}${M[m](c, c2, R)}</g></svg>`;
   };

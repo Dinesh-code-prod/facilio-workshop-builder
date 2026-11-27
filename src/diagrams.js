@@ -1,11 +1,11 @@
 /* SVG diagrams in the Facilio State Flow Builder style (facilio-setup StateFlowsBuilder/elements):
-   states 135×30 r3, text/border #3995e2, default state #60a9a6, transitions as straight lines #3995e2 with a start dot and arrowhead,
-   pill labels 110×26 r12.5 coloured by type (user #6071db, time #4eb871, condition #45bec4), active #FF6660.
+   states 135×30 r3, text/border #5989ff, default state #34c0ce, transitions as straight lines #5989ff with a start dot and arrowhead,
+   pill labels 110×26 r12.5 coloured by type (user #2e65ff, time #49b83f, condition #34c0ce), active #DD6C6C.
    Presentation attributes are inline so the same SVG rasterises for the BRD. */
 (function (root) {
   'use strict';
   const { esc } = root.FWB;
-  const C = { line: '#3995e2', text: '#3995e2', initial: '#60a9a6', active: '#FF6660', user: '#6071db', time: '#4eb871', cond: '#45bec4', disabled: '#b5bcc6', proposedFill: '#f3f8fe', tbc: '#f5a623', removed: '#c4c4c4' };
+  const C = { line: '#5989ff', text: '#5989ff', initial: '#34c0ce', active: '#DD6C6C', user: '#2e65ff', time: '#49b83f', cond: '#34c0ce', disabled: '#c7c7c7', proposedFill: '#f5f5f5', tbc: '#f5ac7b', removed: '#c7c7c7' };
   const FONT = 'Roboto, Helvetica, Arial, sans-serif';
   const PILL_W = 110, PILL_H = 26;
 
@@ -89,18 +89,18 @@
     return s + `</svg>`;
   }
 
-  const VER = { verified: { c: '#4eb871', d: '' }, inferred: { c: '#6071db', d: '6 4' }, proposed: { c: '#3995e2', d: '4 3' }, tbc: { c: '#f5a623', d: '2 4' } };
+  const VER = { verified: { c: '#49b83f', d: '' }, inferred: { c: '#2e65ff', d: '6 4' }, proposed: { c: '#5989ff', d: '4 3' }, tbc: { c: '#f5ac7b', d: '2 4' } };
   function swimlaneSvg(proc, actorLabel, actorCat) {
     const lanes = []; proc.steps.forEach(s => { if (lanes.indexOf(s.lane) < 0) lanes.push(s.lane); });
     (proc.lanes || []).forEach(l => { if (lanes.indexOf(l) < 0) lanes.push(l); });
     const laneH = 104, labelW = 170, colW = 190, boxW = 160, boxH = 72;
     const W = labelW + Math.max(1, proc.steps.length) * colW + 30, H = Math.max(1, lanes.length) * laneH + 10;
-    const catFill = { internal: '#f3f8fe', vendor: '#fff6f0', client: '#f0feff', tenant: '#f3f0ff', occupant: '#f1fff0', employee: '#fffbfd', system: '#fafafa', tbc: '#fff8e8', proposed: '#f3f8fe', external: '#fafafa' };
+    const catFill = { internal: '#f5f5f5', vendor: '#fff6f0', client: '#f0feff', tenant: '#f3f0ff', occupant: '#f1fff0', employee: '#fffbfd', system: '#fafafa', tbc: '#fffae0', proposed: '#f5f5f5', external: '#fafafa' };
     let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="${FONT}"><defs>${Object.keys(VER).map(k => `<marker id="sw-${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${VER[k].c}"/></marker>`).join('')}</defs><rect width="100%" height="100%" fill="#fff"/>`;
     lanes.forEach((l, i) => {
       const y = 5 + i * laneH; const cat = actorCat(l);
       s += `<rect x="0" y="${y}" width="${W}" height="${laneH}" fill="${i % 2 ? '#ffffff' : '#fcfeff'}" stroke="#eae9e9"/><rect x="0" y="${y}" width="${labelW}" height="${laneH}" fill="${catFill[cat] || '#fafafa'}" stroke="#dbdbdb"/>`;
-      wrap(actorLabel(l), 22, 4).forEach((ln, j, arr) => { s += `<text x="10" y="${y + laneH / 2 - (arr.length - 1) * 7 + j * 14 + 4}" font-size="11" font-weight="bold" fill="#324056">${esc(ln)}</text>`; });
+      wrap(actorLabel(l), 22, 4).forEach((ln, j, arr) => { s += `<text x="10" y="${y + laneH / 2 - (arr.length - 1) * 7 + j * 14 + 4}" font-size="11" font-weight="bold" fill="#414242">${esc(ln)}</text>`; });
     });
     const pos = proc.steps.map((st, i) => ({ x: labelW + 15 + i * colW, y: 5 + lanes.indexOf(st.lane) * laneH + (laneH - boxH) / 2 }));
     proc.steps.forEach((st, i) => {
@@ -110,11 +110,11 @@
     proc.steps.forEach((st, i) => {
       const p = pos[i]; const v = VER[st.verification] || VER.verified;
       s += `<rect x="${p.x}" y="${p.y}" width="${boxW}" height="${boxH}" rx="4" fill="#ffffff" stroke="${v.c}" stroke-width="1.5" ${v.d ? `stroke-dasharray="${v.d}"` : ''}/><circle cx="${p.x + 12}" cy="${p.y + 12}" r="8" fill="${v.c}"/><text x="${p.x + 12}" y="${p.y + 16}" text-anchor="middle" font-size="9" fill="#fff" font-weight="bold">${i + 1}</text>`;
-      wrap(st.action, 24, 3).forEach((ln, j) => { s += `<text x="${p.x + 26}" y="${p.y + 16 + j * 13}" font-size="10.5" fill="#324056">${esc(ln)}</text>`; });
+      wrap(st.action, 24, 3).forEach((ln, j) => { s += `<text x="${p.x + 26}" y="${p.y + 16 + j * 13}" font-size="10.5" fill="#414242">${esc(ln)}</text>`; });
       const sub = [st.interface, st.recordLabel].filter(Boolean).join(' · ');
-      if (sub) s += `<text x="${p.x + 8}" y="${p.y + boxH - 8}" font-size="9" fill="#8ca1ad">${esc(sub.length > 34 ? sub.slice(0, 33) + '…' : sub)}</text>`;
+      if (sub) s += `<text x="${p.x + 8}" y="${p.y + boxH - 8}" font-size="9" fill="#a8aaaa">${esc(sub.length > 34 ? sub.slice(0, 33) + '…' : sub)}</text>`;
     });
-    if (!proc.steps.length) s += `<text x="${labelW + 20}" y="40" font-size="12" fill="#8ca1ad">No steps yet</text>`;
+    if (!proc.steps.length) s += `<text x="${labelW + 20}" y="40" font-size="12" fill="#a8aaaa">No steps yet</text>`;
     return s + '</svg>';
   }
 

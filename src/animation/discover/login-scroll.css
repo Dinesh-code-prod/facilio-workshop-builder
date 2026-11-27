@@ -4,15 +4,15 @@
 @media (prefers-reduced-motion: no-preference) and (min-width: 900px) and (min-height: 600px) {
   body .dx-ov.dxl-on .dxl-scene { position: relative; height: 185vh; }
   body .dx-ov.dxl-on .dxl-pin { position: sticky; top: var(--dxl-top, 56px); height: calc(100vh - var(--dxl-top, 56px) - 28px); display: flex; align-items: center; }
-  body .dx-ov.dxl-on .dxl-pin .dx-lc { width: 100%; margin: 0; min-height: min(520px, 100%); box-sizing: border-box; border-radius: 30px; padding: 46px 50px; background: #fff; border: 1px solid #e3e8f2; box-shadow: 0 1px 0 rgba(255, 255, 255, .8) inset, 0 18px 40px -26px rgba(29, 26, 94, .35);
+  body .dx-ov.dxl-on .dxl-pin .dx-lc { width: 100%; margin: 0; min-height: min(520px, 100%); box-sizing: border-box; border-radius: 30px; padding: 46px 50px; background: #fff; border: 1px solid #dbe9ff; box-shadow: 0 1px 0 rgba(255, 255, 255, .8) inset, 0 18px 40px -26px rgba(29, 26, 94, .35);
     transform: scale(calc(.9 + .1 * var(--in, 1) - .05 * var(--out, 0))); opacity: calc(.6 + .4 * var(--in, 1) - .35 * var(--out, 0)); will-change: transform, opacity; }
   body .dx-ov.dxl-on .dx-lc.flip { --dir: -1; }
-  body .dx-ov.dxl-on .dxl-scene:nth-child(even) .dx-lc { background: #0D0B36; border-color: #0D0B36; box-shadow: 0 24px 50px -28px rgba(13, 11, 54, .7); }
+  body .dx-ov.dxl-on .dxl-scene:nth-child(even) .dx-lc { background: #00125E; border-color: #00125E; box-shadow: 0 24px 50px -28px rgba(13, 11, 54, .7); }
   body .dx-ov.dxl-on .dxl-scene:nth-child(even) .dx-lc-t h3 { color: #fff; }
-  body .dx-ov.dxl-on .dxl-scene:nth-child(even) .dx-lc-t p { color: #c3cbe6; }
-  body .dx-ov.dxl-on .dxl-scene:nth-child(even) .dx-no { color: transparent; -webkit-text-stroke: 1.2px #8DB8FF; }
-  body .dx-ov.dxl-on .dxl-scene:nth-child(even) .dx-pill.dark { background: rgba(141, 184, 255, .16); color: #8DB8FF; }
-  body .dx-ov.dxl-on .dxl-scene:nth-child(even) .dx-lc-chips span { background: rgba(255, 255, 255, .08); border-color: rgba(141, 184, 255, .35); color: #EAF2FF; }
+  body .dx-ov.dxl-on .dxl-scene:nth-child(even) .dx-lc-t p { color: #b5cbff; }
+  body .dx-ov.dxl-on .dxl-scene:nth-child(even) .dx-no { color: transparent; -webkit-text-stroke: 1.2px #86AAFF; }
+  body .dx-ov.dxl-on .dxl-scene:nth-child(even) .dx-pill.dark { background: rgba(141, 184, 255, .16); color: #86AAFF; }
+  body .dx-ov.dxl-on .dxl-scene:nth-child(even) .dx-lc-chips span { background: rgba(255, 255, 255, .08); border-color: rgba(141, 184, 255, .35); color: #F3F7FF; }
   /* bigger, bolder type: this is the marketing page */
   body .dx-ov.dxl-on .dx-lc-t h3 { font-size: clamp(38px, min(4.8vw, 7.2vh), 72px); }
   body .dx-ov.dxl-on .dx-hero { min-height: min(620px, 74vh); }
@@ -38,25 +38,25 @@
 /* Marketing polish (24 Nov 2026): a progress line and the chapter name in the top bar, each chapter in its own Facilio accent (--ac, set by src/discoverlogin.js),
    chapters as white cards with a calm accent edge, tighter pinned scenes, and a separate mobile layout. Brand tokens only, no new gradients or glow. */
 .dx-ov-top{gap:14px}
-.dx-ov-top .dx-prog{position:absolute;left:0;right:0;bottom:-1px;height:3px;background:#1570EF;transform-origin:0 50%;transform:scaleX(var(--sp, 0));pointer-events:none}
-.dx-ov-ch{margin-left:auto;margin-right:6px;font:500 13px/1.2 Inter, system-ui, sans-serif;letter-spacing:.01em;color:#3d4660;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.dx-ov-top .dx-prog{position:absolute;left:0;right:0;bottom:-1px;height:3px;background:#0024D6;transform-origin:0 50%;transform:scaleX(var(--sp, 0));pointer-events:none}
+.dx-ov-ch{margin-left:auto;margin-right:6px;font:500 13px/1.2 Inter, system-ui, sans-serif;letter-spacing:.01em;color:#384a62;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .dx-ov-ch:empty{display:none}
-.dx-lc{--ac:#1570EF}
+.dx-lc{--ac:#0024D6}
 .dx-lc .dx-no{opacity:1;-webkit-text-stroke:1.5px var(--ac)}
 .dx-lc-a{border-bottom:4px solid var(--ac)}
 .dx-lc-chips span{transition:border-color .2s, color .2s}
 .dx-lc-chips span:hover{border-color:var(--ac)}
-.dx-ov :focus-visible{outline:2px solid #1570EF;outline-offset:3px}
+.dx-ov :focus-visible{outline:2px solid #0024D6;outline-offset:3px}
 @media (prefers-reduced-motion: no-preference) and (min-width: 900px) and (min-height: 600px) {
   body .dx-ov.dxl-on .dxl-scene { height: 165vh; }
-  body .dx-ov.dxl-on .dxl-scene:nth-child(even) .dx-no { -webkit-text-stroke-color: #8DB8FF; }
+  body .dx-ov.dxl-on .dxl-scene:nth-child(even) .dx-no { -webkit-text-stroke-color: #86AAFF; }
 }
 @media (max-width: 899px) {
   .dx-ovin{padding:14px 16px 56px}
   .dx-ov-top{padding:10px 16px}
   .dx-ov-ch{display:none}
   .dx-lcs{display:grid;gap:16px;margin-top:16px}
-  .dx-lc{background:#fff;border:1px solid #e3e8f2;border-radius:24px;padding:24px 20px;min-height:0;gap:20px;box-shadow:0 14px 30px -24px rgba(29,26,94,.35)}
+  .dx-lc{background:#fff;border:1px solid #dbe9ff;border-radius:24px;padding:24px 20px;min-height:0;gap:20px;box-shadow:0 14px 30px -24px rgba(29,26,94,.35)}
   .dx-lc .dx-no{font-size:64px}
   .dx-lc-a{height:220px;border-radius:18px}
   .dx-hero h2{font-size:clamp(36px,10.5vw,48px)}
@@ -65,4 +65,4 @@
 @media (prefers-reduced-motion: reduce) { .dx-ov-top .dx-prog{transition:none} .dx-lc-s .dx-slab{animation:none} }
 
 /* words stay readable before they light up: the unlit floor is .62 (was .16), and the description is a darker grey on the light scenes so the floor still reads (user, 24 Nov 2026: text vanished into the dark blue scenes) */
-@media (prefers-reduced-motion: no-preference) and (min-width: 900px) and (min-height: 600px) { body .dx-ov.dxl-on .dxl-scene:nth-child(odd) .dx-lc-t p { color: #3f4654; } }
+@media (prefers-reduced-motion: no-preference) and (min-width: 900px) and (min-height: 600px) { body .dx-ov.dxl-on .dxl-scene:nth-child(odd) .dx-lc-t p { color: #384a62; } }

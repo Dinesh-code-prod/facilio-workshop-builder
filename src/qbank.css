@@ -1,42 +1,42 @@
 /* Questions tab (src/qbank.js) and the live assistant (src/workshoplive.js). coss tokens only; no gradients or custom shadows. */
 body .qb-bar { display: flex; flex-wrap: wrap; gap: 8px; }
-body .qb-sum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; font: 400 14px/20px var(--cs-font, inherit); color: var(--cs-fg2, #444); }
-body .qb-sum b { font-size: 20px; color: var(--cs-fg1, #111); margin-right: 4px; }
-body .qb-sug { font: 600 12px/16px var(--cs-font, inherit); color: var(--cs-brand, #1570EF); background: var(--cs-brand-soft, #EAF2FF); border-radius: 6px; padding: 0 6px; }
+body .qb-sum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; font: 400 14px/20px var(--cs-font, inherit); color: var(--cs-fg2, #414242); }
+body .qb-sum b { font-size: 20px; color: var(--cs-fg1, #192432); margin-right: 4px; }
+body .qb-sug { font: 600 12px/16px var(--cs-font, inherit); color: var(--cs-brand, #0024D6); background: var(--cs-brand-soft, #F3F7FF); border-radius: 6px; padding: 0 6px; }
 body .qb-flt { display: flex; flex-wrap: wrap; gap: 8px; }
-body .qb-q { display: flex; flex-direction: column; gap: 6px; padding: 12px 0; border-bottom: 1px solid var(--cs-st2, #e5e5e5); }
+body .qb-q { display: flex; flex-direction: column; gap: 6px; padding: 12px 0; border-bottom: 1px solid var(--cs-st2, #eae9e9); }
 body .qb-q:last-child { border-bottom: 0; }
 body .qb-q.sug { background: var(--cs-bg2, #fafafa); margin: 0 -12px; padding: 12px; border-radius: 8px; }
 body .qb-h { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-body .qb-t { font: 600 14px/20px var(--cs-font, inherit); color: var(--cs-fg1, #111); }
+body .qb-t { font: 600 14px/20px var(--cs-font, inherit); color: var(--cs-fg1, #192432); }
 body .qb-act { display: flex; flex-wrap: wrap; gap: 6px; }
 /* one question reads as: tags, the question, why, then a compact status switch, a two-line answer that grows, and quiet text actions */
 body .qb-q .ws-segs:not(#_):not(#__):not(#___) { display: inline-flex !important; width: fit-content; align-self: flex-start; margin: 4px 0 0 !important; }
-body .qb-q .ws-note:not(#_):not(#__) { min-height: 40px; field-sizing: content; max-height: 220px; margin: 0; border-color: var(--cs-st2, #e5e5e5); }
+body .qb-q .ws-note:not(#_):not(#__) { min-height: 40px; field-sizing: content; max-height: 220px; margin: 0; border-color: var(--cs-st2, #eae9e9); }
 body .qb-q .qb-act .btn:not(.primary):not(#_):not(#__):not(#___) { height: 28px; padding: 0 12px !important; font-weight: 500 !important; }   /* small, but still real buttons (white, ringed) */
-body .qb-q .qb-act .btn.danger:not(#_):not(#__):not(#___) { color: #b42318 !important; }
+body .qb-q .qb-act .btn.danger:not(#_):not(#__):not(#___) { color: #b61919 !important; }
 body .qb-q .qb-act .btn[disabled]:not(#_):not(#__):not(#___) { opacity: .35; }
-body .wl-res { border-top: 1px solid var(--cs-st2, #e5e5e5); margin-top: 12px; padding-top: 4px; }
+body .wl-res { border-top: 1px solid var(--cs-st2, #eae9e9); margin-top: 12px; padding-top: 4px; }
 body .wl-ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; font: 400 14px/20px var(--cs-font, inherit); }
 body .wl-ul .btn { margin-top: 4px; }
 body .wl-past { margin-top: 12px; } body .wl-past summary { cursor: pointer; font: 600 13px/18px var(--cs-font, inherit); }
 
 /* Contract documents (src/msadocs.js) */
 body .md-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-body .md-chip { font: 600 12px/16px var(--cs-font, inherit); border-radius: 6px; padding: 0 6px; background: var(--cs-bg6, #eee); color: var(--cs-fg2, #444); white-space: nowrap; }
-body .md-chip[data-s="verified"] { background: var(--cs-success-soft, #e6f4ea); color: var(--cs-success, #137333); }
+body .md-chip { font: 600 12px/16px var(--cs-font, inherit); border-radius: 6px; padding: 0 6px; background: var(--cs-bg6, #eae9e9); color: var(--cs-fg2, #414242); white-space: nowrap; }
+body .md-chip[data-s="verified"] { background: var(--cs-success-soft, #f1fff0); color: var(--cs-success, #0F6F06); }
 body .md-act { white-space: nowrap; } body .md-act .btn + .btn { margin-left: 6px; }
-body .md-res { border-top: 1px solid var(--cs-st2, #e5e5e5); margin-top: 12px; padding-top: 8px; }
+body .md-res { border-top: 1px solid var(--cs-st2, #eae9e9); margin-top: 12px; padding-top: 8px; }
 body .md-h { margin: 12px 0 4px; font: 600 14px/20px var(--cs-font, inherit); }
-body .md-docs { display: flex; flex-direction: column; gap: 8px; } body .md-d, body .md-c { border: 1px solid var(--cs-st2, #e5e5e5); border-radius: 8px; padding: 8px 12px; }
-body .md-c { margin-bottom: 8px; } body .md-ul { margin: 0; padding-left: 18px; font: 400 14px/20px var(--cs-font, inherit); } body .md-warn { color: var(--cs-danger, #b3261e); }
+body .md-docs { display: flex; flex-direction: column; gap: 8px; } body .md-d, body .md-c { border: 1px solid var(--cs-st2, #eae9e9); border-radius: 8px; padding: 8px 12px; }
+body .md-c { margin-bottom: 8px; } body .md-ul { margin: 0; padding-left: 18px; font: 400 14px/20px var(--cs-font, inherit); } body .md-warn { color: var(--cs-danger, #b61919); }
 
 /* Training page (src/guideslist.js) */
 body .tr { display: flex; flex-direction: column; gap: 16px; }
 body .tr-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
-body .tr-tile { display: flex; flex-direction: column; gap: 4px; text-align: left; padding: 12px 14px; border: 1px solid var(--cs-st2, #e5e5e5); border-radius: 12px; background: var(--cs-bg1, #fff); cursor: pointer; font: 400 13px/18px var(--cs-font, inherit); color: var(--cs-fg3, #666); }
-body .tr-tile b { font: 600 14px/20px var(--cs-font, inherit); color: var(--cs-fg1, #111); } body .tr-tile:hover { border-color: var(--cs-fg3, #999); }
-body .tr-tile.on { border-color: var(--cs-brand, #1570EF); background: var(--cs-brand-soft, #EAF2FF); } body .tr-tile:focus-visible { outline: 2px solid var(--cs-brand, #1570EF); outline-offset: 2px; }
+body .tr-tile { display: flex; flex-direction: column; gap: 4px; text-align: left; padding: 12px 14px; border: 1px solid var(--cs-st2, #eae9e9); border-radius: 12px; background: var(--cs-bg1, #fff); cursor: pointer; font: 400 13px/18px var(--cs-font, inherit); color: var(--cs-fg3, #555757); }
+body .tr-tile b { font: 600 14px/20px var(--cs-font, inherit); color: var(--cs-fg1, #192432); } body .tr-tile:hover { border-color: var(--cs-fg3, #7B91B0); }
+body .tr-tile.on { border-color: var(--cs-brand, #0024D6); background: var(--cs-brand-soft, #F3F7FF); } body .tr-tile:focus-visible { outline: 2px solid var(--cs-brand, #0024D6); outline-offset: 2px; }
 body .tr-make { display: flex; flex-direction: column; gap: 12px; } body .tr-make textarea { width: 100%; box-sizing: border-box; }
 body .tr-tools { display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; align-items: center; }
 body .tr .card-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -56,7 +56,7 @@ body .tr-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); 
 /* Training page tabs (8 Nov 2026): one calm segmented control; the count sits in the label as a small pill; each tab shows one job. */
 body .tr-tabs { align-self: flex-start; max-width: 100%; overflow-x: auto; }
 body .tr-tabs button { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
-body .tr-n { display: inline-block; min-width: 18px; padding: 0 6px; border-radius: 999px; background: var(--cs-bg6, #eee); color: var(--cs-fg1, #111); font: 600 11px/18px var(--cs-font, inherit); text-align: center; font-variant-numeric: tabular-nums; }
+body .tr-n { display: inline-block; min-width: 18px; padding: 0 6px; border-radius: 999px; background: var(--cs-bg6, #eae9e9); color: var(--cs-fg1, #192432); font: 600 11px/18px var(--cs-font, inherit); text-align: center; font-variant-numeric: tabular-nums; }
 body .tr-panel { display: flex; flex-direction: column; gap: 16px; }
 body .tr-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 8px 4px; }
 body .tr-empty p { margin: 0; font: 600 14px/20px var(--cs-font, inherit); } body .tr-empty p.small { font-weight: 400; }

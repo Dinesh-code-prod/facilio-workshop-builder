@@ -22,8 +22,8 @@
   ];
   const END = 71;
   const I = {
-    f: '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 1.5h6.5L13 5v9.5H3zM9 1.5V5h4" fill="none" stroke="#1570EF" stroke-width="1.4" stroke-linejoin="round"/></svg>',
-    ar: '<svg viewBox="0 0 20 24" width="16" height="19" aria-hidden="true"><path d="M2 1l15 11-7 1.5-3 8z" fill="#171717" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>'
+    f: '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 1.5h6.5L13 5v9.5H3zM9 1.5V5h4" fill="none" stroke="#0024D6" stroke-width="1.4" stroke-linejoin="round"/></svg>',
+    ar: '<svg viewBox="0 0 20 24" width="16" height="19" aria-hidden="true"><path d="M2 1l15 11-7 1.5-3 8z" fill="#192432" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>'
   };
   const pill = (c, t, x) => `<span class="lz-p ${c}${x ? ' ' + x : ''}">${esc(t)}</span>`;
   const av = (t, x) => `<i class="lz-av${x ? ' ' + x : ''}">${t}</i>`;
@@ -122,7 +122,7 @@
     // 7 go-live, hypercare, handover
     t = CH[6][0];
     tl.set(sel('.s7l'), { opacity: 0 }, t);
-    q('.s7s').forEach((s, i) => { show(t + .5 + i * .3, s, 0, 8); tl.fromTo(q('.s7d')[i], { backgroundColor: '#d4d9e1' }, { backgroundColor: '#16824a', duration: .3 }, t + 1.6 + i * 1.5); });
+    q('.s7s').forEach((s, i) => { show(t + .5 + i * .3, s, 0, 8); tl.fromTo(q('.s7d')[i], { backgroundColor: '#dbdbdb' }, { backgroundColor: '#0f6f06', duration: .3 }, t + 1.6 + i * 1.5); });
     pop(t + 1.8, sel('.s7l'));
     show(t + 5.2, sel('.s7p'), 0, 12); q('.s7t').forEach((x, i) => show(t + 5.8 + i * .25, x, 0, 8));
     show(t + 8, sel('.s7n'), 0, 8);

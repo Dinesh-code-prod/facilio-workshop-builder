@@ -1,5 +1,5 @@
 // Master design system check (24 Nov 2026): at 1920, 1366 and 1100 px wide, in the staff, customer (Preview as customer) and Admin views and in both
-// sidebar layouts (Expanded 'side', Compact 'top'), clicks every side-menu entry and every page tab of a stage, and checks that the page opens with the
+// sidebar layout (the icon rail, the only layout since 27 Nov 2026), clicks every side-menu entry and every page tab of a stage, and checks that the page opens with the
 // right entry marked open, that no page error is thrown, that the top bar, the page header and the stage tabs do not overlap, and that the page has no
 // sideways scroll. Read-only (uses the first project of the local data). Restores each view's layout setting at the end.
 // Usage: node build.mjs; node tests/ui/devserver.mjs 4231; node tests/ui/master-ds-check.mjs [baseUrl] [outDir] [--widths=1920,1366,1100] [--views=staff,customer,admin] [--shots]
@@ -73,18 +73,18 @@ for (const W of WIDTHS) {
 
   if (VIEWS.includes('staff') || VIEWS.includes('customer')) {
     await p.goto(`${BASE}/?nointro#/p/${pid}/projdash`); await settle(2800); await p.keyboard.press('Escape');
-    if (VIEWS.includes('staff')) for (const lay of ['top', 'side']) await projectNav('staff', lay);
+    if (VIEWS.includes('staff')) for (const lay of ['top']) await projectNav('staff', lay);
     if (VIEWS.includes('customer')) {
       await p.evaluate(() => { location.hash = location.hash.replace(/(#\/p\/[^/]+)\/.*/, '$1/projdash'); }); await settle(1200);
       const cp = await p.$('[data-act="custPreview"]'); if (!cp) fail(`customer@${W}`, 'no Preview as customer button');
-      else { await cp.click(); await settle(2500); for (const lay of ['top', 'side']) await projectNav('customer', lay);
+      else { await cp.click(); await settle(2500); for (const lay of ['top']) await projectNav('customer', lay);
         const leak = await p.evaluate(() => [...document.querySelectorAll('[data-act="openAdmin"]:not([hidden]), nav.sidebar [data-view="settings"]')].filter(e => e.offsetParent).length); if (leak) fail(`customer@${W}`, 'Admin or Settings visible in the customer view');
         await p.click('[data-act="custPreviewExit"]').catch(() => {}); await settle(1500); }
     }
   }
   if (VIEWS.includes('admin')) {
     await enter(); await p.click('[data-act="openAdmin"]'); await settle(2500);
-    for (const lay of ['side', 'top']) {
+    for (const lay of ['top']) {
       const tag = `admin/${lay}@${W}`; await p.evaluate(l => FWBViews.setNavPref(l, 'admin'), lay); await settle(1200);
       const n = await p.evaluate(() => document.querySelectorAll('.adm-nav .adm-ni').length); if (!n) fail(tag, 'no Admin menu');
       for (let i = 0; i < n; i++) {

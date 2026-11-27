@@ -13,15 +13,15 @@
   // the seven lifecycle stages (src/lifelogic.js, numbered as in the menu): name, short label, one-line description, colour, team page, customer page,
   // plan-task keywords (which plan rows belong to the stage), icon (index in V.PP_ICO), stage number
   const L = [
-    ['Project introduction', 'Introduction', 'Contract, scope, kick-off and the project plan.', '#1570EF', 'kickoff', 'kickoff', /kick|contract|msa|scope|project plan|plan|mobili[sz]/i, 0, 1],
-    ['Requirement sessions', 'Requirement sessions', 'Workshops on your processes, session by session.', '#1570EF', 'rsplan', 'schedule', /workshop|requirement|session|discovery|use case|transcript/i, 1, 2],
-    ['Solution design & BRD', 'Design & BRD', 'The solution and the business requirements document, signed off.', '#1570EF', 'brd', null, /design|brd|configur|solution|form|mockup|build|integrat|sla|kpi/i, 3, 3],
-    ['UAT & FTR', 'UAT & FTR', 'You test it; findings are fixed and the FTR checks pass.', '#0F57BD', 'delivery', null, /uat|test|go.?live|cut.?over|acceptance|ftr/i, 5, 4],
-    ['Training guides', 'Training', 'Your team learns the system with guides made for it.', '#0F57BD', 'guidebuilder', 'guide', /train|document|guide|video|manual/i, 7, 5],
-    ['Hypercare', 'Hypercare', 'Close support right after go-live.', '#24216F', 'hypercare', null, /hypercare|stabili[sz]/i, 9, 7],
-    ['Project handover', 'Handover', 'Move to steady-state support and close the project.', '#24216F', 'handover', null, /hand.?over|support|sign.?off|clos|lesson|final report|wrap/i, 10, 8]
+    ['Project introduction', 'Introduction', 'Contract, scope, kick-off and the project plan.', '#0024D6', 'kickoff', 'kickoff', /kick|contract|msa|scope|project plan|plan|mobili[sz]/i, 0, 1],
+    ['Requirement sessions', 'Requirement sessions', 'Workshops on your processes, session by session.', '#0024D6', 'rsplan', 'schedule', /workshop|requirement|session|discovery|use case|transcript/i, 1, 2],
+    ['Solution design & BRD', 'Design & BRD', 'The solution and the business requirements document, signed off.', '#0024D6', 'brd', null, /design|brd|configur|solution|form|mockup|build|integrat|sla|kpi/i, 3, 3],
+    ['UAT & FTR', 'UAT & FTR', 'You test it; findings are fixed and the FTR checks pass.', '#2E65FF', 'delivery', null, /uat|test|go.?live|cut.?over|acceptance|ftr/i, 5, 4],
+    ['Training guides', 'Training', 'Your team learns the system with guides made for it.', '#2E65FF', 'guidebuilder', 'guide', /train|document|guide|video|manual/i, 7, 5],
+    ['Hypercare', 'Hypercare', 'Close support right after go-live.', '#001986', 'hypercare', null, /hypercare|stabili[sz]/i, 9, 7],
+    ['Project handover', 'Handover', 'Move to steady-state support and close the project.', '#001986', 'handover', null, /hand.?over|support|sign.?off|clos|lesson|final report|wrap/i, 10, 8]
   ];
-  const STATE = { done: ['Complete', '#027A48'], progress: ['In progress', '#1570EF'], delayed: ['Delayed', '#B54708'], blocked: ['Blocked', '#D92D20'], none: ['Upcoming', '#98A2B3'] };
+  const STATE = { done: ['Complete', '#0F6F06'], progress: ['In progress', '#0024D6'], delayed: ['Delayed', '#D85903'], blocked: ['Blocked', '#D92D20'], none: ['Upcoming', '#A8AAAA'] };
   /* each stage's dates from the project plan: a plan row belongs to the first stage whose keywords match its phase, else its title */
   const fd = (d, y) => { const t = new Date(String(d).slice(0, 10) + 'T00:00:00'); return isNaN(t) ? '' : t.toLocaleDateString(undefined, y ? { day: 'numeric', month: 'short', year: 'numeric' } : { day: 'numeric', month: 'short' }); };
   function windows() {
@@ -66,9 +66,9 @@
     const layer = (cy, w, h, t, cls, d, top, l, r) => `<g class="iso-l ${cls}" style="--d:${d}s"><path d="M${CX - w} ${cy}L${CX} ${cy + h}L${CX} ${cy + h + t}L${CX - w} ${cy + t}Z" fill="${l}"/><path d="M${CX + w} ${cy}L${CX} ${cy + h}L${CX} ${cy + h + t}L${CX + w} ${cy + t}Z" fill="${r}"/><path d="${rh(CX, cy, w, h)}" fill="${top}" stroke="#fff" stroke-width="1.5"/></g>`;
     let grid = ''; const w = 235, h = 117, cy = 352; const P = (u, v) => [CX + (u - v) * w, cy + (u + v - 1) * h];
     for (let k = 1; k < 8; k++) { const a = P(k / 8, 0), b = P(k / 8, 1), c = P(0, k / 8), d = P(1, k / 8); grid += `M${a[0]} ${a[1]}L${b[0]} ${b[1]}M${c[0]} ${c[1]}L${d[0]} ${d[1]}`; }
-    return `<g class="iso-plat">${layer(352, 235, 117, 16, 'l1', 0, '#EAF2FF', '#C9DCFB', '#A9C6F7')}<path class="iso-grid" d="${grid}" fill="none" stroke="#1570EF" stroke-opacity=".22" stroke-width="1" style="--d:.9s"/>
-      ${layer(322, 178, 89, 14, 'l2', .25, '#F6FAFF', '#D5E4FC', '#B4CDF8')}${layer(294, 124, 62, 14, 'l3', .5, '#FFFFFF', '#DCE9FD', '#BBD2F9')}
-      <g class="iso-logo" style="--d:.95s"><path d="${rh(CX, 294, 70, 35)}" fill="none" stroke="#1570EF" stroke-opacity=".35" stroke-dasharray="3 4"/><text x="${CX}" y="299" text-anchor="middle" font-size="17" font-weight="800" fill="#1d1a5e" letter-spacing="-.3">facilio</text><text x="${CX}" y="316" text-anchor="middle" font-size="9" font-weight="700" fill="#667085" letter-spacing="1.6">DELIVERY STUDIO</text></g></g>`;
+    return `<g class="iso-plat">${layer(352, 235, 117, 16, 'l1', 0, '#F3F7FF', '#DBE9FF', '#B5CBFF')}<path class="iso-grid" d="${grid}" fill="none" stroke="#0024D6" stroke-opacity=".22" stroke-width="1" style="--d:.9s"/>
+      ${layer(322, 178, 89, 14, 'l2', .25, '#FAFAFA', '#DBE9FF', '#B5CBFF')}${layer(294, 124, 62, 14, 'l3', .5, '#FFFFFF', '#DBE9FF', '#B5CBFF')}
+      <g class="iso-logo" style="--d:.95s"><path d="${rh(CX, 294, 70, 35)}" fill="none" stroke="#0024D6" stroke-opacity=".35" stroke-dasharray="3 4"/><text x="${CX}" y="299" text-anchor="middle" font-size="17" font-weight="800" fill="#00125e" letter-spacing="-.3">facilio</text><text x="${CX}" y="316" text-anchor="middle" font-size="9" font-weight="700" fill="#607796" letter-spacing="1.6">DELIVERY STUDIO</text></g></g>`;
   }
   function cube(s, d) {
     const [x, y] = pos(s.i), w = 30, h = 15, ht = 16; const st = s.status ? s.status.state : null;
@@ -87,8 +87,8 @@
     let spokes = '', arcs = '';
     P.forEach(([x, y], i) => { const tx = x + (CX - x) * .42, ty = y + (CY + 40 - y) * .42; spokes += `<path class="iso-sp" d="M${x} ${y + 8}L${tx} ${ty + 8}" style="--d:${1.2 + i * .1}s"/>`; });
     for (let i = 0; i < P.length - 1; i++) arcs += `<path class="iso-arc${stages[i].status && stages[i].status.state === 'done' ? ' past' : ''}" pathLength="1" d="M${P[i][0]} ${P[i][1] + 2}A${RX} ${RY} 0 0 1 ${P[i + 1][0]} ${P[i + 1][1] + 2}" style="--d:${1.3 + i * .28}s;--c:${stages[i].color}"/>`;
-    const floats = [[120, 90, 'dia'], [880, 70, 'ring'], [60, 330, 'plus'], [940, 360, 'dia'], [220, 560, 'ring'], [790, 570, 'plus']].map(([x, y, k], i) => `<g class="iso-fl f${i % 3}" style="--d:${i * .6}s" transform="translate(${x},${y})">${k === 'dia' ? '<path d="M0 -9L9 0L0 9L-9 0Z" fill="#1570EF" fill-opacity=".12" stroke="#1570EF" stroke-opacity=".4"/>' : k === 'ring' ? '<circle r="8" fill="none" stroke="#1570EF" stroke-opacity=".4" stroke-width="1.5"/>' : '<path d="M-7 0H7M0 -7V7" stroke="#667085" stroke-opacity=".5" stroke-width="1.6" stroke-linecap="round"/>'}</g>`).join('');
-    return `<svg class="iso-svg" viewBox="0 0 1000 620" role="group" aria-label="Delivery journey: seven connected stages around the Delivery Studio platform"><defs><linearGradient id="isoG" x1="0" x2="1"><stop offset="0" stop-color="#1570EF"/><stop offset="1" stop-color="#ed168b"/></linearGradient></defs>
+    const floats = [[120, 90, 'dia'], [880, 70, 'ring'], [60, 330, 'plus'], [940, 360, 'dia'], [220, 560, 'ring'], [790, 570, 'plus']].map(([x, y, k], i) => `<g class="iso-fl f${i % 3}" style="--d:${i * .6}s" transform="translate(${x},${y})">${k === 'dia' ? '<path d="M0 -9L9 0L0 9L-9 0Z" fill="#0024D6" fill-opacity=".12" stroke="#0024D6" stroke-opacity=".4"/>' : k === 'ring' ? '<circle r="8" fill="none" stroke="#0024D6" stroke-opacity=".4" stroke-width="1.5"/>' : '<path d="M-7 0H7M0 -7V7" stroke="#607796" stroke-opacity=".5" stroke-width="1.6" stroke-linecap="round"/>'}</g>`).join('');
+    return `<svg class="iso-svg" viewBox="0 0 1000 620" role="group" aria-label="Delivery journey: seven connected stages around the Delivery Studio platform"><defs><linearGradient id="isoG" x1="0" x2="1"><stop offset="0" stop-color="#0024D6"/><stop offset="1" stop-color="#ed2780"/></linearGradient></defs>
       ${floats}${platform()}${spokes}<g class="iso-arcs">${arcs}</g>${stages.map((s, i) => cube(s, 1.1 + i * .16)).join('')}</svg>`;
   }
   function tiles(stages, mode) {

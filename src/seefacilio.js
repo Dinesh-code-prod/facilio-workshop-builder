@@ -21,7 +21,7 @@
   V.sfGroups = GROUPS;
   const visible = () => DK().screens.map((x, i) => [x, i]).filter(([x]) => x[5]);
   const card = ([x, i]) => `<button class="card" style="padding:0;text-align:left;overflow:hidden;cursor:pointer" data-act="sfView" data-i="${i}" aria-label="Open ${esc(x[0])}">`
-    + (x[5] ? `<img src="demokit/${esc(x[5])}" alt="" loading="lazy" style="width:100%;display:block;border-bottom:1px solid var(--fc-border)">` : '<div style="height:96px;display:flex;align-items:center;justify-content:center;background:var(--ds-soft,#f3f4f8)" class="small muted">Live screen only</div>')
+    + (x[5] ? `<img src="demokit/${esc(x[5])}" alt="" loading="lazy" style="width:100%;display:block;border-bottom:1px solid var(--fc-border)">` : '<div style="height:96px;display:flex;align-items:center;justify-content:center;background:var(--ds-soft,#f5f5f5)" class="small muted">Live screen only</div>')
     + `<div style="padding:10px 12px"><b class="small">${esc(x[0])}</b><div class="xs" style="margin-top:4px">${esc(x[3])}</div></div></button>`;
   // the grouped screens, reused by the Guides & Video Studio's Product Tour tab
   V.sfBody = all => {

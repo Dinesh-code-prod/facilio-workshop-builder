@@ -63,7 +63,7 @@
   d.addEventListener('focusout', e => { if (e.target === popFor) setTimeout(() => { if (d.activeElement !== popFor) closePop(); }, 150); }, true);
   root.addEventListener('hashchange', closePop); root.addEventListener('resize', closePop); d.addEventListener('scroll', e => { if (!pop || (e.target.closest && e.target.closest('.fx-qpop'))) return; const f = popFor && popFor.isConnected ? popFor : (d.activeElement && d.activeElement.classList && d.activeElement.classList.contains('fx-q') ? d.activeElement : null); if (!f) return closePop(); popFor = f; const r = f.getBoundingClientRect(); pop.style.left = Math.round(r.left) + 'px'; pop.style.top = Math.round(r.bottom + 6) + 'px'; }, true);   // the panel follows its field (a list that filters as you type may scroll the page)
   // rail entries as a settings app: each its own colour tile (from its label), entries of one group on one panel (first/last marked)
-  const TILE = { intro: '#0a84ff', sessions: '#ff9500', solution: '#30b0c7', uat: '#34c759', training: '#a2845e', tasks: '#ff453a', handover: '#00a99d', home: '#1D1A5E', reports: '#32ade6', notes: '#f2a900', showcase: '#E5197F', help: '#64748b', claude: '#cc785c', settings: '#8e8e93' };
+  const TILE = { intro: '#5989ff', sessions: '#fd8635', solution: '#34c0ce', uat: '#49b83f', training: '#8d7500', tasks: '#dd6c6c', handover: '#168f9b', home: '#00125E', reports: '#86aaff', notes: '#e2bc00', showcase: '#ED2780', help: '#607796', claude: '#d85903', settings: '#898b8b' };
   function railTiles() {
     const rl = d.querySelector('nav.sidebar .rl'); if (!rl || rl.getAttribute('data-tiled') === String(rl.children.length)) return; rl.setAttribute('data-tiled', String(rl.children.length));
     let prev = null;
@@ -71,7 +71,7 @@
       if (x.classList.contains('rl-sep')) { if (prev) prev.setAttribute('data-glast', ''); prev = null; return; }
       if (!x.classList.contains('rl-b')) return;
       const lab = ((x.querySelector('.rl-l') || x).textContent || '').trim().toLowerCase();
-      x.style.setProperty('--tile', TILE[lab] || '#8e8e93'); x.removeAttribute('data-gfirst'); x.removeAttribute('data-glast');
+      x.style.setProperty('--tile', TILE[lab] || '#898b8b'); x.removeAttribute('data-gfirst'); x.removeAttribute('data-glast');
       if (!prev) x.setAttribute('data-gfirst', ''); prev = x;
     });
     if (prev) prev.setAttribute('data-glast', '');

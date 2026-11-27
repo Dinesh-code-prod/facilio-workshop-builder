@@ -22,7 +22,7 @@
   const rchip = r => { const x = ROLE[r]; return x ? chip(x[1], x[0]) : ''; };
   const ownerName = o => { const x = String(o || '').split(',')[0].trim(); return !x ? '—' : /guest\.local$/.test(x) ? 'Office team' : x; };
   const initials = n => String(n || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase();
-  const TONE = ['#1570EF', '#e91e84', '#14a8a8', '#1D1A5E', '#e08a00'];
+  const TONE = ['#0024D6', '#ed2780', '#168f9b', '#00125E', '#fd8635'];
   const tone = s => TONE[Math.abs([...String(s)].reduce((a, c) => a * 31 + c.charCodeAt(0), 7)) % TONE.length];
 
   // the other sections are fetched quietly once the first screen is up, so clicking one opens at once
@@ -61,7 +61,7 @@
   function bars(rows, fmtLabel, cls) { const mx = Math.max(1, ...rows.map(r => r.v)); return `<div class="bchart ${cls || ''}">${rows.map(r => `<div class="bcol" title="${esc(r.tip || '')}"><span class="bval">${r.v}</span><div class="bbar" style="--h:${Math.round(r.v / mx * 100)}%"></div><span class="blab">${esc(r.l)}</span></div>`).join('')}</div>`; }
   function overviewDash() {
     const d = A.data, k = d.kpis; const tot = Math.max(1, k.active);
-    const h = d.health; const seg = [['blocked', '#D92D20'], ['overdue', '#B42318'], ['at_risk', '#E8690B'], ['on_track', '#12A35B'], ['insufficient', '#9A9AA6'], ['on_hold', '#6B6B78'], ['completed', '#1570EF']]; let acc = 0;
+    const h = d.health; const seg = [['blocked', '#D92D20'], ['overdue', '#B61919'], ['at_risk', '#FF6700'], ['on_track', '#29A01E'], ['insufficient', '#7B91B0'], ['on_hold', '#607796'], ['completed', '#0024D6']]; let acc = 0;
     const conic = seg.map(([key, c]) => { const a = acc / tot * 360; acc += (h[key] || 0); return `${c} ${a}deg ${acc / tot * 360}deg`; }).join(', ');
     const mx = Math.max(1, ...d.stages.slice(1)); const wk = d.weekly.map(w => ({ v: w.n, l: w.week.slice(5), tip: 'Week of ' + w.week })); const mo = d.monthly.map(m => ({ v: m.n, l: new Date(m.month + '-01T00:00:00Z').toLocaleDateString(undefined, { month: 'short', timeZone: 'UTC' }), tip: m.month }));
     const fmx = Math.max(1, ...d.files.map(f => f.bytes));
@@ -77,7 +77,7 @@
     </div>
     <div class="adm-row two">
       <div class="adm-card"><div class="adm-h"><h3>Delivery pipeline</h3><span class="muted xs">Where each active project is today</span></div><div class="funnel">${d.stages.map((n, i) => `<div class="fn-row click" data-act="admStage" data-s="${i}" role="button" tabindex="0"><span class="fn-l">${esc(STAGES[i])}</span><div class="fn-t"><i style="width:${Math.max(n ? 4 : 0, Math.round(n / Math.max(1, i ? mx : Math.max(...d.stages)) * 100))}%" class="s${i}"></i></div><b>${n}</b></div>`).join('')}</div></div>
-      <div class="adm-card"><div class="adm-h"><h3>Project health</h3><span class="muted xs">${k.active} active</span></div><div class="donut-wrap"><div class="donut" style="background:conic-gradient(${k.active ? conic : '#e3e9f5 0 360deg'})"><div><b>${k.active}</b><span>projects</span></div></div><ul class="legend">${seg.map(([key, c]) => `<li class="click" data-act="admFilter" data-f="${key}" role="button" tabindex="0"><i style="background:${c}"></i>${esc(HEALTH[key][0])}<b>${h[key] || 0}</b></li>`).join('')}</ul></div></div>
+      <div class="adm-card"><div class="adm-h"><h3>Project health</h3><span class="muted xs">${k.active} active</span></div><div class="donut-wrap"><div class="donut" style="background:conic-gradient(${k.active ? conic : '#dbe9ff 0 360deg'})"><div><b>${k.active}</b><span>projects</span></div></div><ul class="legend">${seg.map(([key, c]) => `<li class="click" data-act="admFilter" data-f="${key}" role="button" tabindex="0"><i style="background:${c}"></i>${esc(HEALTH[key][0])}<b>${h[key] || 0}</b></li>`).join('')}</ul></div></div>
     </div>
     <div class="adm-row two">
       <div class="adm-card"><div class="adm-h"><h3>New projects</h3><span class="muted xs">Last 6 months</span></div>${bars(mo, null, 'pink')}</div>
@@ -93,11 +93,11 @@
 
   // ---------- dashboard tabs: Overview, Delivery, Customers, Team & usage, Quality & records ----------
   const DTABS = [['command', 'Command center'], ['overview', 'Activity overview'], ['delivery', 'Delivery'], ['customers', 'Customers'], ['usage', 'Team & usage'], ['quality', 'Quality & records']];
-  const HC = { blocked: '#D92D20', overdue: '#B42318', at_risk: '#E8690B', on_track: '#12A35B', insufficient: '#9A9AA6', on_hold: '#6B6B78', completed: '#1570EF', cancelled: '#9A9AA6', churned: '#9A9AA6', not_workable: '#9A9AA6', discontinued: '#9A9AA6', archived: '#98A2B3' };
+  const HC = { blocked: '#D92D20', overdue: '#B61919', at_risk: '#FF6700', on_track: '#29A01E', insufficient: '#7B91B0', on_hold: '#607796', completed: '#0024D6', cancelled: '#7B91B0', churned: '#7B91B0', not_workable: '#7B91B0', discontinued: '#7B91B0', archived: '#A8AAAA' };
   const cap = t => { t = String(t || '').replace(/_/g, ' ').trim(); return t ? t[0].toUpperCase() + t.slice(1) : '—'; };
   const dcard = (t, sub, body, cls) => `<div class="adm-card ${cls || ''}"><div class="adm-h"><h3>${esc(t)}</h3>${sub ? `<span class="muted xs">${sub}</span>` : ''}</div>${body}</div>`;
   const empty = t => `<div class="adm-empty">${esc(t)}</div>`;
-  function hbars(rows, unit) { if (!rows.length) return empty('Nothing to show yet.'); const mx = Math.max(1, ...rows.map(r => r.v)); return `<ul class="hb">${rows.map(r => `<li${r.go ? ` class="click" data-act="${r.go[0]}" data-id="${esc(r.go[1])}" role="button" tabindex="0"` : ''}><span class="hb-l" title="${esc(r.l)}">${esc(r.l)}</span><div class="hb-t"><i style="width:${Math.max(r.v ? 3 : 0, Math.round(r.v / mx * 100))}%;background:${r.c || '#1570EF'}"></i></div><em>${r.sub !== undefined ? r.sub : r.v + (unit || '')}</em></li>`).join('')}</ul>`; }
+  function hbars(rows, unit) { if (!rows.length) return empty('Nothing to show yet.'); const mx = Math.max(1, ...rows.map(r => r.v)); return `<ul class="hb">${rows.map(r => `<li${r.go ? ` class="click" data-act="${r.go[0]}" data-id="${esc(r.go[1])}" role="button" tabindex="0"` : ''}><span class="hb-l" title="${esc(r.l)}">${esc(r.l)}</span><div class="hb-t"><i style="width:${Math.max(r.v ? 3 : 0, Math.round(r.v / mx * 100))}%;background:${r.c || '#0024D6'}"></i></div><em>${r.sub !== undefined ? r.sub : r.v + (unit || '')}</em></li>`).join('')}</ul>`; }
   function stackBars(rows, keys, cols, names) { const mx = Math.max(1, ...rows.map(r => keys.reduce((a, k) => a + (r[k] || 0), 0))); return `<div class="stk">${rows.map(r => { const t = keys.reduce((a, k) => a + (r[k] || 0), 0); return `<div class="stk-c" title="${esc(r.l + ': ' + keys.map((k, i) => (r[k] || 0) + ' ' + names[i]).join(', '))}"><span class="bval">${t || ''}</span><div class="stk-b" style="height:${Math.round(t / mx * 100)}%">${keys.map((k, i) => r[k] ? `<i style="flex:${r[k]};background:${cols[i]}"></i>` : '').join('')}</div><span class="blab">${esc(r.l)}</span></div>`; }).join('')}</div><div class="lg2 inl">${names.map((n, i) => `<span><i style="background:${cols[i]}"></i>${esc(n)}</span>`).join('')}</div>`; }
   function donutOf(parts, label) { const tot = parts.reduce((a, x) => a + x.v, 0); if (!tot) return empty('Nothing to show yet.'); let acc = 0; const conic = parts.filter(x => x.v).map(x => { const a = acc / tot * 360; acc += x.v; return `${x.c} ${a}deg ${acc / tot * 360}deg`; }).join(', '); return `<div class="donut-wrap"><div class="donut" style="background:conic-gradient(${conic})"><div><b>${tot}</b><span>${esc(label)}</span></div></div><ul class="lg2">${parts.map(x => `<li><i style="background:${x.c}"></i>${esc(x.l)}<b>${x.v}</b></li>`).join('')}</ul></div>`; }
   function heatmap(cells) { const g = {}; let mx = 1; cells.forEach(c => { g[c.d + '_' + c.h] = c.n; mx = Math.max(mx, c.n); }); const order = [1, 2, 3, 4, 5, 6, 0], nm = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -122,7 +122,7 @@
     const open = act.filter(p => p.stage < 6 && p.endDate); const past = open.filter(p => daysLeft(p) < 0), soon = open.filter(p => daysLeft(p) >= 0 && daysLeft(p) <= 30);
     const idleAvg = Math.round(act.reduce((a, p) => a + idleOf(p), 0) / act.length); const live = act.filter(p => p.stage === 6).length;
     const byStage = [0, 1, 2, 3, 4, 5, 6].map(i => { const g = act.filter(p => p.stage === i); return { v: g.length ? Math.round(g.reduce((a, p) => a + idleOf(p), 0) / g.length) : 0, l: STAGES[i].replace('Not started', 'New'), tip: g.length + ' project' + (g.length === 1 ? '' : 's') }; });
-    const brd = {}; act.forEach(p => { const k = p.brdStatus || 'draft'; brd[k] = (brd[k] || 0) + 1; }); const BC = ['#98A2B3', '#F79009', '#1570EF', '#079455', '#1D1A5E'];
+    const brd = {}; act.forEach(p => { const k = p.brdStatus || 'draft'; brd[k] = (brd[k] || 0) + 1; }); const BC = ['#A8AAAA', '#FD8635', '#0024D6', '#29A01E', '#00125E'];
     const sorted = act.slice().sort((a, b) => b.stage - a.stage || a.name.localeCompare(b.name));
     const tl = open.slice().sort((a, b) => daysLeft(a) - daysLeft(b)).slice(0, 8);
     return `<div class="kpi-grid k5">
@@ -133,17 +133,17 @@
       ${kpi('Average days idle', idleAvg, 'Since last activity', idleAvg > 14 ? 'k-warn' : 'k-pink')}
     </div>
     <div class="adm-row two">
-      ${dcard('Progress by project', 'Stage reached, out of 6', hbars(sorted.slice(0, 12).map(p => ({ l: p.name, v: prog(p), sub: STAGES[p.stage], c: HC[p.health] || '#1570EF', go: projGo(p) }))))}
+      ${dcard('Progress by project', 'Stage reached, out of 6', hbars(sorted.slice(0, 12).map(p => ({ l: p.name, v: prog(p), sub: STAGES[p.stage], c: HC[p.health] || '#0024D6', go: projGo(p) }))))}
       ${dcard('Planned end dates', 'Soonest first', tl.length ? `<ul class="alist">${tl.map(p => { const dl = daysLeft(p); return `<li class="click" data-act="admDetail" data-id="${esc(p.id)}" role="button" tabindex="0"><div class="pav" style="background:${tone(p.name)}">${esc(initials(p.customer || p.name))}</div><div><b>${esc(p.name)}</b><div class="xs muted">${esc(p.customer)} · ends ${esc(fmt(p.endDate))} · ${esc(STAGES[p.stage])}</div></div><span class="spacer"></span>${chip(dl < 0 ? 'h-attention' : dl <= 14 ? 'h-stale' : 'h-healthy', dl < 0 ? Math.abs(dl) + ' d over' : dl + ' d left')}</li>`; }).join('')}</ul>` : empty('No planned end dates set on active projects.'))}
     </div>
     <div class="adm-row three">
       ${dcard('Idle days by stage', 'Average since last activity', bars(byStage, null, 'pink'))}
-      ${dcard('Requirements per project', 'Top 8', hbars(act.slice().sort((a, b) => b.requirements - a.requirements).slice(0, 8).map(p => ({ l: p.name, v: p.requirements, c: '#14a8a8', go: projGo(p) }))))}
+      ${dcard('Requirements per project', 'Top 8', hbars(act.slice().sort((a, b) => b.requirements - a.requirements).slice(0, 8).map(p => ({ l: p.name, v: p.requirements, c: '#168f9b', go: projGo(p) }))))}
       ${dcard('BRD status', 'Active projects', donutOf(Object.keys(brd).map((k, i) => ({ l: cap(k), v: brd[k], c: BC[i % BC.length] })), 'projects'))}
     </div>
     <div class="adm-row two">
-      ${dcard('Workshop sessions', 'Held vs planned, top 8', hbars(act.slice().sort((a, b) => b.sessions.total - a.sessions.total).slice(0, 8).map(p => ({ l: p.name, v: p.sessions.total, sub: p.sessions.done + ' held · ' + p.sessions.upcoming + ' upcoming', c: '#e91e84', go: projGo(p) }))))}
-      ${dcard('Open work by project', 'Open actions, red when overdue', hbars(act.filter(p => p.openActions).sort((a, b) => b.openActions - a.openActions).slice(0, 8).map(p => ({ l: p.name, v: p.openActions, sub: p.openActions + (p.overdue ? ' · ' + p.overdue + ' overdue' : ''), c: p.overdue ? '#d81b60' : '#1570EF', go: projGo(p) }))))}
+      ${dcard('Workshop sessions', 'Held vs planned, top 8', hbars(act.slice().sort((a, b) => b.sessions.total - a.sessions.total).slice(0, 8).map(p => ({ l: p.name, v: p.sessions.total, sub: p.sessions.done + ' held · ' + p.sessions.upcoming + ' upcoming', c: '#ed2780', go: projGo(p) }))))}
+      ${dcard('Open work by project', 'Open actions, red when overdue', hbars(act.filter(p => p.openActions).sort((a, b) => b.openActions - a.openActions).slice(0, 8).map(p => ({ l: p.name, v: p.openActions, sub: p.openActions + (p.overdue ? ' · ' + p.overdue + ' overdue' : ''), c: p.overdue ? '#ed2780' : '#0024D6', go: projGo(p) }))))}
     </div>`;
   }
 
@@ -160,9 +160,9 @@
     </div>
     ${dcard('Customer roll-up', 'Click a customer to see their projects', `<div class="tbl-wrap adm-tbl"><table class="tbl"><thead><tr><th>Customer</th><th>Projects</th><th>Average progress</th><th>Requirements</th><th>Open actions</th><th>Overdue</th><th>Open questions</th><th>Customer access</th><th>Last activity</th></tr></thead><tbody>${rows.map(c => `<tr class="click" data-act="admCust" data-name="${esc(c.name)}" role="button" tabindex="0"><td><div class="pcell"><div class="pav" style="background:${tone(c.name)}">${esc(initials(c.name))}</div><b>${esc(c.name)}</b></div></td><td>${c.n}</td><td><div class="fn-t" style="min-width:90px"><i style="width:${Math.round(c.prog / c.n)}%"></i></div><span class="xs muted">${Math.round(c.prog / c.n)}%</span></td><td>${c.req}</td><td>${c.act}</td><td>${c.od ? `<b class="bad">${c.od}</b>` : '0'}</td><td>${c.q}</td><td>${c.acc}/${c.n}</td><td class="xs">${ago(c.last)}</td></tr>`).join('')}</tbody></table></div>`)}
     <div class="adm-row three">
-      ${dcard('Projects per customer', 'Top 8', hbars(rows.slice(0, 8).map(c => ({ l: c.name, v: c.n, c: '#1570EF' }))))}
-      ${dcard('Requirements per customer', 'Top 8', hbars(rows.slice().sort((a, b) => b.req - a.req).slice(0, 8).map(c => ({ l: c.name, v: c.req, c: '#14a8a8' }))))}
-      ${dcard('Customer access', 'Active projects', donutOf([{ l: 'Open to customer', v: on, c: '#1570EF' }, { l: 'Team only', v: act.length - on, c: '#cbd3e6' }], 'projects'))}
+      ${dcard('Projects per customer', 'Top 8', hbars(rows.slice(0, 8).map(c => ({ l: c.name, v: c.n, c: '#0024D6' }))))}
+      ${dcard('Requirements per customer', 'Top 8', hbars(rows.slice().sort((a, b) => b.req - a.req).slice(0, 8).map(c => ({ l: c.name, v: c.req, c: '#168f9b' }))))}
+      ${dcard('Customer access', 'Active projects', donutOf([{ l: 'Open to customer', v: on, c: '#0024D6' }, { l: 'Team only', v: act.length - on, c: '#b5cbff' }], 'projects'))}
     </div>`;
   }
 
@@ -180,13 +180,13 @@
       ${kpi('Busiest day', peak.staff, peak.day ? fmt(peak.day) : 'No data yet', '')}
     </div>
     <div class="adm-row two">
-      ${dcard('Sign-ups per week', 'Staff and guests, 12 weeks', stackBars(i.signups.map(w => ({ l: w.week.slice(5), staff: w.staff, guests: w.guests })), ['staff', 'guests'], ['#1570EF', '#e91e84'], ['Staff', 'Guests']))}
-      ${dcard('Daily activity', 'People signed in, 14 days', stackBars(i.daily.map(d => ({ l: d.day.slice(8), staff: d.staff, customers: d.customers })), ['staff', 'customers'], ['#14a8a8', '#1D1A5E'], ['Staff', 'Customer visits']))}
+      ${dcard('Sign-ups per week', 'Staff and guests, 12 weeks', stackBars(i.signups.map(w => ({ l: w.week.slice(5), staff: w.staff, guests: w.guests })), ['staff', 'guests'], ['#0024D6', '#ed2780'], ['Staff', 'Guests']))}
+      ${dcard('Daily activity', 'People signed in, 14 days', stackBars(i.daily.map(d => ({ l: d.day.slice(8), staff: d.staff, customers: d.customers })), ['staff', 'customers'], ['#168f9b', '#00125E'], ['Staff', 'Customer visits']))}
     </div>
     ${dcard('When the team works', 'Weekday by hour', heatmap(i.heat))}
     <div class="adm-row two">
-      ${dcard('Most common actions', 'Last 30 days', hbars(i.actions.map(a => ({ l: cap(a.action), v: a.n, c: '#1570EF' }))))}
-      ${dcard('Most active people', 'Last 30 days', hbars(i.actors.map(a => ({ l: a.who, v: a.n, c: '#e91e84' }))))}
+      ${dcard('Most common actions', 'Last 30 days', hbars(i.actions.map(a => ({ l: cap(a.action), v: a.n, c: '#0024D6' }))))}
+      ${dcard('Most active people', 'Last 30 days', hbars(i.actors.map(a => ({ l: a.who, v: a.n, c: '#ed2780' }))))}
     </div>
     ${dcard('Workload by project owner', 'Active projects', ow.length ? `<div class="tbl-wrap adm-tbl"><table class="tbl"><thead><tr><th>Owner</th><th>Projects</th><th>Requirements</th><th>Open actions</th><th>Overdue</th></tr></thead><tbody>${ow.map(o => `<tr><td><b>${esc(o.name)}</b></td><td>${o.n}</td><td>${o.req}</td><td>${o.act}</td><td>${o.od ? `<b class="bad">${o.od}</b>` : '0'}</td></tr>`).join('')}</tbody></table></div>` : empty('No owners yet.'))}`;
   }
@@ -195,10 +195,10 @@
     const i = A.ins; if (!i) return dcard('Quality & records', '', '<div class="adm-empty">Loading…</div>');
     const act = A.data.projects.filter(p => !p.archived); const n = Math.max(1, act.length);
     const st = {}, pr = {}; i.feedback.byKind.forEach(r => { st[r.status] = (st[r.status] || 0) + r.n; pr[r.priority] = (pr[r.priority] || 0) + r.n; });
-    const SC = { open: '#F79009', answered: '#1570EF', resolved: '#079455', closed: '#98A2B3' }; const PC = { urgent: '#D92D20', high: '#F79009', normal: '#1570EF', low: '#98A2B3' };
-    const kindRows = k => { const m = {}; i.items.filter(r => r.kind === k).forEach(r => { m[r.st || 'No status'] = (m[r.st || 'No status'] || 0) + r.n; }); return Object.keys(m).map(x => ({ l: cap(x), v: m[x], c: /done|closed|signed|resolved|passed|mitigated/i.test(x) ? '#14a8a8' : /block|fail|open|risk/i.test(x) ? '#e08a00' : '#1570EF' })).sort((a, b) => b.v - a.v); };
+    const SC = { open: '#FD8635', answered: '#0024D6', resolved: '#29A01E', closed: '#A8AAAA' }; const PC = { urgent: '#D92D20', high: '#FD8635', normal: '#0024D6', low: '#A8AAAA' };
+    const kindRows = k => { const m = {}; i.items.filter(r => r.kind === k).forEach(r => { m[r.st || 'No status'] = (m[r.st || 'No status'] || 0) + r.n; }); return Object.keys(m).map(x => ({ l: cap(x), v: m[x], c: /done|closed|signed|resolved|passed|mitigated/i.test(x) ? '#168f9b' : /block|fail|open|risk/i.test(x) ? '#fd8635' : '#0024D6' })).sort((a, b) => b.v - a.v); };
     const tot = f => act.filter(f).length; const pct = c => Math.round(c / n * 100);
-    const comp = [['Modules in scope', tot(p => p.modulesInScope > 0)], ['Workshop sessions planned', tot(p => p.sessions.total > 0)], ['Requirements captured', tot(p => p.requirements > 0)], ['State flows proposed', tot(p => p.flows > 0)], ['BRD exported', tot(p => p.brdExports > 0)], ['Customer access on', tot(p => p.customerAccessEnabled)]].map(([l, c]) => ({ l, v: pct(c), sub: c + ' of ' + act.length, c: '#1D1A5E' }));
+    const comp = [['Modules in scope', tot(p => p.modulesInScope > 0)], ['Workshop sessions planned', tot(p => p.sessions.total > 0)], ['Requirements captured', tot(p => p.requirements > 0)], ['State flows proposed', tot(p => p.flows > 0)], ['BRD exported', tot(p => p.brdExports > 0)], ['Customer access on', tot(p => p.customerAccessEnabled)]].map(([l, c]) => ({ l, v: pct(c), sub: c + ' of ' + act.length, c: '#00125E' }));
     const totQ = Object.values(st).reduce((a, b) => a + b, 0);
     return `<div class="kpi-grid">
       ${kpi('Customer questions', totQ, `${st.open || 0} open`, 'k-pink')}
@@ -207,8 +207,8 @@
       ${kpi('Open risks and issues', i.items.filter(r => r.kind === 'raid' && !/closed|resolved|done|mitigated/i.test(r.st)).reduce((a, r) => a + r.n, 0), 'Across active and archived projects', '')}
     </div>
     <div class="adm-row three">
-      ${dcard('Customer questions by status', '', donutOf(Object.keys(st).map(k => ({ l: cap(k), v: st[k], c: SC[k] || '#1D1A5E' })), 'questions'))}
-      ${dcard('Questions by priority', '', hbars(Object.keys(pr).map(k => ({ l: cap(k), v: pr[k], c: PC[k] || '#1570EF' })).sort((a, b) => b.v - a.v)))}
+      ${dcard('Customer questions by status', '', donutOf(Object.keys(st).map(k => ({ l: cap(k), v: st[k], c: SC[k] || '#00125E' })), 'questions'))}
+      ${dcard('Questions by priority', '', hbars(Object.keys(pr).map(k => ({ l: cap(k), v: pr[k], c: PC[k] || '#0024D6' })).sort((a, b) => b.v - a.v)))}
       ${dcard('New questions per week', 'Last 8 weeks', bars(i.feedback.weekly.map(w => ({ v: w.n, l: w.week.slice(5), tip: 'Week of ' + w.week })), null, 'pink'))}
     </div>
     <div class="adm-row three">
@@ -382,8 +382,8 @@
     await API.post('/api/admin/ai/config', { defaultProvider: document.getElementById('ai_def').value, fallback: document.getElementById('ai_fb').value, routes, models }); A.ai = null; toast('AI settings saved'); await lazy(); } catch (e) { toast(e.message, 5000, true); } };
   ACT.aiKeySave = a => V.busy(a, async () => { const el = document.getElementById('ai_key'); const k = el ? el.value.trim() : ''; if (!k) { toast('Paste the API key first', 4000, true); return; } try { const r = await API.post('/api/admin/ai/key', { key: k }); if (el) el.value = ''; toast(r.message, 6000); } catch (e) { toast(e.message, 8000, true); } A.ai = null; show(); await lazy(); });
   ACT.aiKeyRemove = async a => { if (!(await V.confirmDialog('Remove Claude key', 'Remove the saved key? AI tasks keep working with DeepSeek.', 'Remove'))) return; try { const r = await API.del('/api/admin/ai/key'); toast(r.message, 6000); } catch (e) { toast(e.message, 6000, true); } A.ai = null; show(); await lazy(); };
-  ACT.aiProbeVision = async a => V.busy(a, async () => { const el = document.getElementById('ai_res'); if (el) el.textContent = 'Checking image reading…'; try { const r = await API.post('/api/admin/ai/probe-vision', {}); if (el) { el.textContent = r.message; el.style.color = r.ok ? '#027A48' : '#B54708'; } toast(r.message, 7000, !r.ok); } catch (e) { toast(e.message, 5000, true); } });
-  ACT.aiProbe = async a => V.busy(a, async () => { const el = document.getElementById('ai_res'); if (el) el.textContent = 'Checking DeepSeek…'; try { const r = await API.post('/api/admin/ai/probe', {}); if (el) { el.textContent = r.message; el.style.color = r.ok ? 'var(--th-green, #1a7f4b)' : 'var(--th-pink, #c0392b)'; } } catch (e) { if (el) el.textContent = e.message || 'The check failed'; } });
+  ACT.aiProbeVision = async a => V.busy(a, async () => { const el = document.getElementById('ai_res'); if (el) el.textContent = 'Checking image reading…'; try { const r = await API.post('/api/admin/ai/probe-vision', {}); if (el) { el.textContent = r.message; el.style.color = r.ok ? '#0F6F06' : '#D85903'; } toast(r.message, 7000, !r.ok); } catch (e) { toast(e.message, 5000, true); } });
+  ACT.aiProbe = async a => V.busy(a, async () => { const el = document.getElementById('ai_res'); if (el) el.textContent = 'Checking DeepSeek…'; try { const r = await API.post('/api/admin/ai/probe', {}); if (el) { el.textContent = r.message; el.style.color = r.ok ? 'var(--th-green, #0f6f06)' : 'var(--th-pink, #c93d3d)'; } } catch (e) { if (el) el.textContent = e.message || 'The check failed'; } });
   ACT.aiTest = async a => V.busy(a, async () => { const el = document.getElementById('ai_res'); try { const r = await API.post('/api/admin/ai/test', {}); if (el) el.textContent = r.message; toast(r.message, 5000, !r.ok); A.ai = null; await lazy(); const el2 = document.getElementById('ai_res'); if (el2) el2.textContent = r.message; } catch (e) { toast(e.message, 5000, true); } });
   ACT.admSec = async a => { A.sec = a.getAttribute('data-s'); show(); await lazy(); };
   async function lazy() {

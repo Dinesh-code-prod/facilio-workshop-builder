@@ -16,7 +16,7 @@
     const g = 10; if (b.x >= a.x + g * 2) return `M${a.x},${a.y} H${a.x + g} V${b.y} H${b.x}`;
     const my = Math.abs(a.y - b.y) < 6 ? a.y + 22 : (a.y + b.y) / 2; return `M${a.x},${a.y} H${a.x + g} V${my} H${b.x - g} V${b.y} H${b.x}`;
   }
-  const defs = '<defs>' + [['a', '#5B6B99'], ['c', '#E5197F'], ['s', '#1570EF']].map(([k, c]) => `<marker id="tlArr-${k}" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="${c}"/></marker>`).join('') + '</defs>';
+  const defs = '<defs>' + [['a', '#2E65FF'], ['c', '#ED2780'], ['s', '#0024D6']].map(([k, c]) => `<marker id="tlArr-${k}" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="${c}"/></marker>`).join('') + '</defs>';
 
   function draw() {
     document.querySelectorAll('.pl-lkpop').forEach(e => e.remove());   // the link box lives on the page body, so a redraw must not leave a box for a link that changed

@@ -129,7 +129,7 @@
       })(tap, 0);
       // leaves: a fan of separate, outlined leaves on each outer twig (oak, ovate and slender shapes in the logo colours), darker on the underside of the crown.
       // They start to unfold in stage 8 (first wave) and stage 9 (second wave, a fuller canopy)
-      const LC = ['#1570EF', '#1570EF', '#2F86FF', '#2F86FF', '#33C9C9', '#33C9C9', '#E5197F', '#8DB8FF', '#EAF2FF'];
+      const LC = ['#0024D6', '#0024D6', '#5989FF', '#5989FF', '#34C0CE', '#34C0CE', '#ED2780', '#86AAFF', '#F3F7FF'];
       const shade = (hex, k) => { const n = parseInt(hex.slice(1), 16), d = [11, 22, 80]; const f = (c, i) => Math.round(c + (d[i] - c) * k); return 'rgb(' + f(n >> 16, 0) + ',' + f((n >> 8) & 255, 1) + ',' + f(n & 255, 2) + ')'; };
       let TOPY = 0; for (const b of branches) for (const q of b.pts) TOPY = Math.min(TOPY, q[1]);
       for (const b of branches) {
@@ -265,7 +265,7 @@
         const k = c.width / 320; for (const r of [SQ.pink, SQ.teal]) x.clearRect((r[0] - 2) * k, (r[1] - 2) * k, (r[2] - r[0] + 5) * k, (r[3] - r[1] + 5) * k);
         return logoClean = c;
       }
-      const SEED = { pink: { ts: 1.5, tx: -8, ty: -7, col: '#E5197F', rot: -.5 }, teal: { ts: 1.85, tx: 8, ty: -7, col: '#2EC9C4', rot: .5 } };
+      const SEED = { pink: { ts: 1.5, tx: -8, ty: -7, col: '#ED2780', rot: -.5 }, teal: { ts: 1.85, tx: 8, ty: -7, col: '#34C0CE', rot: .5 } };
       const LAND = 1.3, SINK0 = 3.9;
 
       const BARK = Array.from({ length: 24 }, () => ({ off: rr(-.94, .94), ph: rr(0, TAU), f: rr(2, 7), amp: rr(.02, .07), dash: rr(6, 22), gap: rr(3, 12), w: rr(1.3, 3.4), lite: R() < .3, a: rr(.25, .6) }));
@@ -360,8 +360,8 @@
       const GRASS = Array.from({ length: 560 }, () => { const x = GX(); return { x, h: rr(14, 46), l: rr(-.5, .5), ph: R() * TAU, d: GD(x), c: R() }; });
       const BUSHES = Array.from({ length: 34 }, () => { const x = GX(); return { x, r: rr(16, 34), ph: R() * TAU, d: GD(x), c: R() }; });
       const SPROUTS = Array.from({ length: 84 }, () => { const x = GX(); return { x, h: rr(16, 34), ph: R() * TAU, d: GD(x), s: R() < .5 ? -1 : 1 }; });
-      const FLOWERS = Array.from({ length: 120 }, () => { const x = GX(); return ({ x, h: rr(22, 54), ph: R() * TAU, d: GD(x) + 1, c: R() < .5 ? '#E5197F' : R() < .5 ? '#8DB8FF' : '#ffffff', r: rr(3.2, 5.2) }); });
-      const PETALS = Array.from({ length: 38 }, () => ({ x: rr(-380, 380), y0: rr(.35, 1), sp: rr(.025, .06), ph: R() * TAU, c: R() < .35 ? '#E5197F' : R() < .5 ? '#8DB8FF' : '#6AA6FF', r: rr(2.6, 4.6) }));
+      const FLOWERS = Array.from({ length: 120 }, () => { const x = GX(); return ({ x, h: rr(22, 54), ph: R() * TAU, d: GD(x) + 1, c: R() < .5 ? '#ED2780' : R() < .5 ? '#86AAFF' : '#ffffff', r: rr(3.2, 5.2) }); });
+      const PETALS = Array.from({ length: 38 }, () => ({ x: rr(-380, 380), y0: rr(.35, 1), sp: rr(.025, .06), ph: R() * TAU, c: R() < .35 ? '#ED2780' : R() < .5 ? '#86AAFF' : '#86AAFF', r: rr(2.6, 4.6) }));
       function drawScenery(t, ta, ox, oy, zm, mature) {
         const tw = rm ? 1 : 1;
         // stars + moon
@@ -384,16 +384,16 @@
         // wind turbines turning on the far hills: clean energy, in the logo's colours
         { const sz = Math.min(W, H) * .11, hb = H * .75; [[.07, .8], [.14, 1], [.89, .9], [.95, .72]].forEach(([fx, k], i) => { const bx = fx * W, h = sz * k, sp = (.5 + i * .13) * (rm ? 0 : 1), a0 = ta * sp + i; g.strokeStyle = 'rgba(141,184,255,.55)'; g.lineWidth = Math.max(1.4, sz * .03); g.lineCap = 'round'; g.beginPath(); g.moveTo(bx, hb); g.lineTo(bx, hb - h); g.stroke();
           for (let b = 0; b < 3; b++) { const an = a0 + b * TAU / 3; g.strokeStyle = b === 0 ? 'rgba(229,25,127,.8)' : 'rgba(234,242,255,.8)'; g.lineWidth = Math.max(1.2, sz * .026); g.beginPath(); g.moveTo(bx, hb - h); g.lineTo(bx + Math.cos(an) * sz * .46 * k, hb - h + Math.sin(an) * sz * .46 * k); g.stroke(); }
-          g.fillStyle = '#EAF2FF'; g.beginPath(); g.arc(bx, hb - h, Math.max(2, sz * .035), 0, TAU); g.fill(); }); }
+          g.fillStyle = '#F3F7FF'; g.beginPath(); g.arc(bx, hb - h, Math.max(2, sz * .035), 0, TAU); g.fill(); }); }
         // a paper plane glides across the sky now and then, leaving a dotted trail (white wings, pink fold: Facilio colours, readable on the night sky)
         { const per = 40, u = ((ta - 8) % per) / per; if (ta > 8) { const r = Math.min(W, H) * .028, fade = sm(u / .06) * sm((1 - u) / .06);
           const px = lerp(-W * .08, W * 1.08, u), py = H * (.2 + .06 * Math.sin(u * TAU * 1.1)) - u * H * .04, nx = lerp(-W * .08, W * 1.08, u + .004), ny = H * (.2 + .06 * Math.sin((u + .004) * TAU * 1.1)) - (u + .004) * H * .04, ang = Math.atan2(ny - py, nx - px);
           g.globalAlpha = .9 * fade; g.fillStyle = 'rgba(234,242,255,.7)';
           for (let k = 1; k <= 9; k++) { const uu = u - k * .006; if (uu < 0) break; const tx = lerp(-W * .08, W * 1.08, uu), ty = H * (.2 + .06 * Math.sin(uu * TAU * 1.1)) - uu * H * .04; g.globalAlpha = .6 * fade * (1 - k / 10); g.beginPath(); g.arc(tx, ty, Math.max(1, r * .06), 0, TAU); g.fill(); }
           g.globalAlpha = .95 * fade; g.save(); g.translate(px, py); g.rotate(ang - .12);
-          g.fillStyle = '#EAF2FF'; g.beginPath(); g.moveTo(r * 1.6, 0); g.lineTo(-r * 1.1, -r * .75); g.lineTo(-r * .55, -r * .05); g.closePath(); g.fill();
-          g.fillStyle = '#8DB8FF'; g.beginPath(); g.moveTo(r * 1.6, 0); g.lineTo(-r * .55, -r * .05); g.lineTo(-r * 1.1, r * .55); g.closePath(); g.fill();
-          g.fillStyle = '#E5197F'; g.beginPath(); g.moveTo(r * 1.6, 0); g.lineTo(-r * .55, -r * .05); g.lineTo(-r * .2, r * .22); g.closePath(); g.fill();
+          g.fillStyle = '#F3F7FF'; g.beginPath(); g.moveTo(r * 1.6, 0); g.lineTo(-r * 1.1, -r * .75); g.lineTo(-r * .55, -r * .05); g.closePath(); g.fill();
+          g.fillStyle = '#86AAFF'; g.beginPath(); g.moveTo(r * 1.6, 0); g.lineTo(-r * .55, -r * .05); g.lineTo(-r * 1.1, r * .55); g.closePath(); g.fill();
+          g.fillStyle = '#ED2780'; g.beginPath(); g.moveTo(r * 1.6, 0); g.lineTo(-r * .55, -r * .05); g.lineTo(-r * .2, r * .22); g.closePath(); g.fill();
           g.restore(); g.globalAlpha = 1; } }
         // far flock in the sky (between the stars and the hills)
         drawFlock(ta, t);
@@ -444,7 +444,7 @@
         for (let j = 0; j < n; j++) {
           const off = Math.abs(j - ctr), side = j < ctr ? -1 : 1;
           const x = lead - dir * off * sz * 4.2, y = base + off * sz * 2.2 * (j === ctr ? 0 : 1) * (side ? 1 : 1) + Math.sin(ta * .9 + j) * sz * .6;
-          bird(x, y, sz, ta * 8.5 + j * .9, .7 * fade, '#C9DBFF');
+          bird(x, y, sz, ta * 8.5 + j * .9, .7 * fade, '#DBE9FF');
         }
       }
       // birds that circle the canopy once the leaves are out, and one that lands on the tree at the end
@@ -454,7 +454,7 @@
         for (let j = 0; j < 3; j++) {
           const th = ta * (.32 + j * .04) + j * 2.1, depth = .78 + .22 * Math.sin(th);
           const x = Math.cos(th) * (600 + j * 40), y = -520 - j * 70 + Math.sin(th) * 150 + Math.sin(ta * 1.2 + j) * 18;
-          bird(x + SK * y, y, 17 * depth, ta * (9 + j) + j, .85 * on * (.55 + .45 * depth), '#E4EEFF');
+          bird(x + SK * y, y, 17 * depth, ta * (9 + j) + j, .85 * on * (.55 + .45 * depth), '#DBE9FF');
         }
         // the lander
         const t0 = S[11] + .6, u = (t - t0) / 3.2; if (u <= 0) return;
@@ -465,10 +465,10 @@
           bird(x, y, 18, ta * (u > .8 ? 16 : 10), clamp(u * 4), '#FFFFFF');
         } else {
           const hop = Math.max(0, Math.sin(ta * 1.1)) > .985 ? -4 : 0;
-          g.fillStyle = '#F2F6FF'; g.beginPath(); g.ellipse(px, py - 7 + hop, 9, 6.5, -.2, 0, TAU); g.fill();
+          g.fillStyle = '#F3F7FF'; g.beginPath(); g.ellipse(px, py - 7 + hop, 9, 6.5, -.2, 0, TAU); g.fill();
           g.beginPath(); g.arc(px + 7, py - 13 + hop, 4.6, 0, TAU); g.fill();
-          g.fillStyle = '#E5197F'; g.beginPath(); g.moveTo(px + 11, py - 14 + hop); g.lineTo(px + 16, py - 12.5 + hop); g.lineTo(px + 11, py - 11 + hop); g.fill();
-          g.strokeStyle = '#B9CEF5'; g.lineWidth = 2; g.beginPath(); g.moveTo(px - 8, py - 6 + hop); g.lineTo(px - 16, py - 2 + hop); g.stroke();
+          g.fillStyle = '#ED2780'; g.beginPath(); g.moveTo(px + 11, py - 14 + hop); g.lineTo(px + 16, py - 12.5 + hop); g.lineTo(px + 11, py - 11 + hop); g.fill();
+          g.strokeStyle = '#B5CBFF'; g.lineWidth = 2; g.beginPath(); g.moveTo(px - 8, py - 6 + hop); g.lineTo(px - 16, py - 2 + hop); g.stroke();
         }
       }
 
@@ -529,7 +529,7 @@
           if (mg > 0) { // the seed: an almond-shaped Facilio seed (pink to teal sheen) that cracks open as the first root pushes out
             const sy = -7 + 11 * sink + 2 * (1 - mg), crack = sm((t - 4.4) / .8), sw = 9.5 * (1 + .1 * crack), sh = 15, tilt = (1 - sink) * .25;
             g.save(); g.translate(0, sy); g.rotate(tilt); g.scale(mg, mg); g.globalAlpha = sa;
-            const gr = g.createLinearGradient(-sw, -sh, sw, sh); gr.addColorStop(0, '#F0509D'); gr.addColorStop(.5, '#7A4FD0'); gr.addColorStop(1, '#2EC9C4');
+            const gr = g.createLinearGradient(-sw, -sh, sw, sh); gr.addColorStop(0, '#F5519B'); gr.addColorStop(.5, '#7D63DC'); gr.addColorStop(1, '#34C0CE');
             g.beginPath(); g.moveTo(0, -sh); g.bezierCurveTo(sw * 1.25, -sh * .45, sw * 1.15, sh * .55, 0, sh); g.bezierCurveTo(-sw * 1.15, sh * .55, -sw * 1.25, -sh * .45, 0, -sh); g.closePath();
             g.fillStyle = gr; g.fill(); g.lineWidth = 1.2; g.strokeStyle = 'rgba(255,255,255,.45)'; g.stroke();
             g.fillStyle = 'rgba(255,255,255,.35)'; g.beginPath(); g.ellipse(-sw * .38, -sh * .3, sw * .16, sh * .3, .25, 0, TAU); g.fill();   // highlight
@@ -540,19 +540,19 @@
 
         { const kc = sm((t - S[6]) / 7); if (kc > 0) { const cy = YMIN * .56, gr3 = g.createRadialGradient(0, cy, 0, 0, cy, 460); gr3.addColorStop(0, 'rgba(90,140,255,' + (.2 * kc) + ')'); gr3.addColorStop(.55, 'rgba(60,110,230,' + (.08 * kc) + ')'); gr3.addColorStop(1, 'rgba(60,110,230,0)'); g.fillStyle = gr3; g.fillRect(-640, cy - 520, 1280, 1040); } }
         // roots
-        for (const b of roots) { const gr2 = growth(b, t); strokeBranch(b, gr2, b.depth ? '#2E8FD8' : '#3B7BE0', 'rgba(46,201,196,.55)', b.depth ? .8 : 1, .95); }
+        for (const b of roots) { const gr2 = growth(b, t); strokeBranch(b, gr2, b.depth ? '#5989FF' : '#5989FF', 'rgba(46,201,196,.55)', b.depth ? .8 : 1, .95); }
         setW();
         // trunk + branches
         const thick = 1 + .14 * sm((t - S[3]) / 2.5); // stage 4: the trunk firms up
         for (const b of branches) {
           const gr2 = growth(b, t); if (gr2 <= 0) continue;
-          const dcol = ['#56659F', '#5E6DA8', '#6675B0', '#6E7DB8', '#7685C0', '#7E8DC8'][Math.min(5, b.depth)];
+          const dcol = ['#2E65FF', '#2E65FF', '#2E65FF', '#5989FF', '#5989FF', '#5989FF'][Math.min(5, b.depth)];
           strokeBranch(b, gr2, dcol, `rgba(215,226,255,${.62 + .04 * b.depth})`, b.depth === 0 ? thick : 1, 1);
           if (b.depth === 0) { // the trunk as wood: uneven edges, a rounded body, broken fissures, knots
             const up0 = easeOut(gr2) * .35 + gr2 * .65, uMax = Math.min(1, up0), STEPS = 44, nrm = u => { const a = at(b, Math.max(0, u - .02)), c = at(b, Math.min(1, u + .02)); const dx = c[0] - a[0], dy = c[1] - a[1], l = Math.hypot(dx, dy) || 1; return [-dy / l, dx / l]; };
             const edge = (u, side) => { const p = at(b, u), n = nrm(u), w = p[2] * thick * .5 * (1 + .05 * Math.sin(u * 23 + side) + .035 * Math.sin(u * 51 + 2 * side)); return [p[0] + n[0] * w * side, p[1] + n[1] * w * side]; };
             g.save(); g.beginPath(); for (let i = 0; i <= STEPS; i++) { const q = edge(uMax * i / STEPS, -1); i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]); } for (let i = STEPS; i >= 0; i--) { const q = edge(uMax * i / STEPS, 1); g.lineTo(q[0], q[1]); } g.closePath();
-            const wb = b.ws[0] * thick * .56, bg = g.createLinearGradient(-wb, 0, wb, 0); bg.addColorStop(0, '#2B3770'); bg.addColorStop(.18, '#4C5B96'); bg.addColorStop(.45, '#7384BF'); bg.addColorStop(.7, '#55659F'); bg.addColorStop(1, '#27336A'); g.fillStyle = bg; g.fill(); g.clip();
+            const wb = b.ws[0] * thick * .56, bg = g.createLinearGradient(-wb, 0, wb, 0); bg.addColorStop(0, '#001DAE'); bg.addColorStop(.18, '#2E65FF'); bg.addColorStop(.45, '#5989FF'); bg.addColorStop(.7, '#2E65FF'); bg.addColorStop(1, '#001986'); g.fillStyle = bg; g.fill(); g.clip();
             g.lineCap = 'round'; BARK.forEach((k, gi) => { g.strokeStyle = k.lite ? 'rgba(200,215,255,' + (k.a * .5) + ')' : 'rgba(8,14,64,' + k.a + ')'; g.lineWidth = k.w; g.setLineDash([k.dash, k.gap]); g.lineDashOffset = gi * 7; g.beginPath();
               for (let i = 0; i <= STEPS; i++) { const u = uMax * i / STEPS, p = at(b, u), n = nrm(u), w = p[2] * thick * .5 * (k.off + Math.sin(u * k.f * 6 + k.ph) * k.amp * 4), x = p[0] + n[0] * w, y = p[1] + n[1] * w; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke(); });
             g.setLineDash([]); for (const kn of KNOTS) { if (kn.f > uMax) continue; const p = at(b, kn.f), n = nrm(kn.f), x = p[0] + n[0] * p[2] * thick * .5 * kn.off, y = p[1] + n[1] * p[2] * thick * .5 * kn.off;
@@ -573,7 +573,7 @@
         { // root flare: the trunk widens into buttresses at the ground and melts into the roots, so it reads as one growing plant
           const tk = branches[0], fk = sm(growth(tk, t) * 4) * thick; if (fk > 0) {
             const fw = 30 + 52 * fk, fh = 120 * Math.min(1, .35 + fk), fg = g.createLinearGradient(0, -fh, 0, 18);
-            fg.addColorStop(0, 'rgba(86,101,159,0)'); fg.addColorStop(.22, '#56659F'); fg.addColorStop(.8, '#56659F'); fg.addColorStop(1, 'rgba(86,101,159,0)');
+            fg.addColorStop(0, 'rgba(86,101,159,0)'); fg.addColorStop(.22, '#2E65FF'); fg.addColorStop(.8, '#2E65FF'); fg.addColorStop(1, 'rgba(86,101,159,0)');
             g.fillStyle = fg; g.beginPath(); g.moveTo(-26, -fh); g.bezierCurveTo(-28, -fh * .42, -fw * .55, -fh * .08, -fw, 8); g.quadraticCurveTo(0, 26, fw, 8); g.bezierCurveTo(fw * .55, -fh * .08, 28, -fh * .42, 26, -fh); g.closePath(); g.fill();
             g.lineCap = 'round'; for (const bt of BUTT) { g.strokeStyle = bt.lite ? 'rgba(200,215,255,.3)' : 'rgba(8,14,64,.45)'; g.lineWidth = bt.lite ? 2 : 2.8; g.beginPath(); g.moveTo(bt.x * 40, -fh * .55); g.bezierCurveTo(bt.x * 60, -fh * .2, bt.x * fw * .8 + Math.sin(bt.ph) * 6, -fh * .02, bt.x * fw * 1.08, 10); g.stroke(); }
             g.strokeStyle = 'rgba(141,184,255,.30)'; g.lineWidth = 1.6; g.lineCap = 'round'; for (const sd of [-1, 1]) { g.beginPath(); g.moveTo(sd * 26, -fh * .8); g.bezierCurveTo(sd * 28, -fh * .42, sd * fw * .55, -fh * .08, sd * fw * .98, 5); g.stroke(); }
@@ -595,8 +595,8 @@
           const fls = []; g.strokeStyle = 'rgba(46,201,196,.7)'; g.lineWidth = 1.5; g.beginPath();
           for (const fl of FLOWERS) { if (fl.x < vx0 || fl.x > vx1) continue; const k = sm((t - S[4] - fl.d) / 4); if (k <= 0) continue; const h = fl.h * k, sway = Math.sin(ta * 1.2 + fl.ph) * (rm ? 0 : 3) * k, fx = fl.x + sway; g.moveTo(fl.x, 2); g.quadraticCurveTo(fl.x + sway * .4, -h * .5, fx, -h); fls.push([fl, k, h, fx]); }
           g.stroke();
-          for (const col of ['#E5197F', '#8DB8FF', '#ffffff']) { g.fillStyle = col; g.beginPath(); for (const [fl, k, h, fx] of fls) { if (fl.c !== col) continue; for (let q = 0; q < 5; q++) { const an = q / 5 * TAU, px = fx + Math.cos(an) * fl.r * k, py = -h + Math.sin(an) * fl.r * k; g.moveTo(px + fl.r * .62 * k, py); g.arc(px, py, fl.r * .62 * k, 0, TAU); } } g.fill(); }
-          g.fillStyle = '#FFE9A8'; g.beginPath(); for (const [fl, k, h, fx] of fls) { g.moveTo(fx + fl.r * .45 * k, -h); g.arc(fx, -h, fl.r * .45 * k, 0, TAU); } g.fill();
+          for (const col of ['#ED2780', '#86AAFF', '#ffffff']) { g.fillStyle = col; g.beginPath(); for (const [fl, k, h, fx] of fls) { if (fl.c !== col) continue; for (let q = 0; q < 5; q++) { const an = q / 5 * TAU, px = fx + Math.cos(an) * fl.r * k, py = -h + Math.sin(an) * fl.r * k; g.moveTo(px + fl.r * .62 * k, py); g.arc(px, py, fl.r * .62 * k, 0, TAU); } } g.fill(); }
+          g.fillStyle = '#FFED94'; g.beginPath(); for (const [fl, k, h, fx] of fls) { g.moveTo(fx + fl.r * .45 * k, -h); g.arc(fx, -h, fl.r * .45 * k, 0, TAU); } g.fill();
         }
         for (const b of branches) tipGlow(b, t, TIP_B);
         for (const b of roots) tipGlow(b, t, TIP_T);
@@ -627,7 +627,7 @@
         for (const p of lpts) {
           const u = (t - p.t) / .9; if (u <= 0) continue; const k = backOut(u), br = 1 + .25 * act10 * Math.sin(ta * 2.2 + p.ph);
           g.fillStyle = 'rgba(46,201,196,.22)'; g.beginPath(); g.arc(p.x, p.y, 8.5 * k * br, 0, TAU); g.fill();
-          g.fillStyle = '#0E0D3E'; g.beginPath(); g.arc(p.x, p.y, 4.6 * k, 0, TAU); g.fill(); g.strokeStyle = '#2EC9C4'; g.lineWidth = 1.6; g.stroke();
+          g.fillStyle = '#16102D'; g.beginPath(); g.arc(p.x, p.y, 4.6 * k, 0, TAU); g.fill(); g.strokeStyle = '#34C0CE'; g.lineWidth = 1.6; g.stroke();
         }
         // milestone chain (dashed) between stage markers
         for (let i = 1; i < nodes.length; i++) {
@@ -649,8 +649,8 @@
           const hr = rad * (act ? 3.2 : 2.2), hg = g.createRadialGradient(n.x, n.y, 0, n.x, n.y, hr); hg.addColorStop(0, `rgba(141,184,255,${act ? .6 + .15 * Math.sin(ta * 4) : .3})`); hg.addColorStop(1, 'rgba(141,184,255,0)');
           g.fillStyle = hg; g.beginPath(); g.arc(n.x, n.y, hr, 0, TAU); g.fill();
           if (u < 1.6) { const rp = u / 1.6; g.strokeStyle = `rgba(141,184,255,${.7 * (1 - rp)})`; g.lineWidth = 2; g.beginPath(); g.arc(n.x, n.y, 10 + rp * 44, 0, TAU); g.stroke(); }
-          if (act) { g.fillStyle = '#fff'; g.beginPath(); g.arc(n.x, n.y, rad, 0, TAU); g.fill(); g.fillStyle = '#1D1A5E'; g.font = `700 ${Math.round(rad * 1.05)}px Roboto, Arial, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(n.i + 1), n.x, n.y + .5); }
-          else { g.fillStyle = '#1570EF'; g.beginPath(); g.arc(n.x, n.y, rad, 0, TAU); g.fill(); g.strokeStyle = '#BFD6FF'; g.lineWidth = 1.8; g.stroke(); g.strokeStyle = '#fff'; g.lineWidth = 2.2; g.lineCap = 'round'; g.lineJoin = 'round'; g.beginPath(); g.moveTo(n.x - rad * .42, n.y + rad * .04); g.lineTo(n.x - rad * .1, n.y + rad * .36); g.lineTo(n.x + rad * .46, n.y - rad * .32); g.stroke(); }
+          if (act) { g.fillStyle = '#fff'; g.beginPath(); g.arc(n.x, n.y, rad, 0, TAU); g.fill(); g.fillStyle = '#00125E'; g.font = `700 ${Math.round(rad * 1.05)}px Roboto, Arial, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(n.i + 1), n.x, n.y + .5); }
+          else { g.fillStyle = '#0024D6'; g.beginPath(); g.arc(n.x, n.y, rad, 0, TAU); g.fill(); g.strokeStyle = '#B5CBFF'; g.lineWidth = 1.8; g.stroke(); g.strokeStyle = '#fff'; g.lineWidth = 2.2; g.lineCap = 'round'; g.lineJoin = 'round'; g.beginPath(); g.moveTo(n.x - rad * .42, n.y + rad * .04); g.lineTo(n.x - rad * .1, n.y + rad * .36); g.lineTo(n.x + rad * .46, n.y - rad * .32); g.stroke(); }
         }
         g.setTransform(S0, 0, 0, S0, EX, EY); drawTreeBirds(t, ta, SK);
         // dust (screen space, restrained)

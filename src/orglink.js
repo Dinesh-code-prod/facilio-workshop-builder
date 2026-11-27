@@ -25,7 +25,7 @@
       const p = S.ws.project; const id = String(p.orgId || '').trim() || pkgId(); const hits = O().findOrgs(idx, { orgId: id, customer: S.project.customer });
       if (!hits.length) { toast(id ? 'Org ' + id + ' is not in facilio-config-data yet. Fetch the repository again, or ask the platform team to add it.' : 'No folder matches this customer. Type the org id in Org ID above, then try again.', 8000, true); return; }
       if (hits.length === 1) { apply(hits[0]); return; }
-      cand = hits; drawer('Which org is this project?', `<p class="small muted" style="margin-top:0">Several folders could match ${esc(S.project.customer || 'this customer')}. Pick the right one.</p>${hits.map((h, k) => `<div class="row" style="gap:8px;padding:6px 0;border-bottom:1px solid #eef1f7"><div style="flex:1"><b>${esc(h.name)}</b><div class="xs muted">${esc(h.folder)}</div></div><button type="button" class="btn sm primary" data-act="orgUse" data-i="${k}">Use this</button></div>`).join('')}`, '<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button>');
+      cand = hits; drawer('Which org is this project?', `<p class="small muted" style="margin-top:0">Several folders could match ${esc(S.project.customer || 'this customer')}. Pick the right one.</p>${hits.map((h, k) => `<div class="row" style="gap:8px;padding:6px 0;border-bottom:1px solid #edf5ff"><div style="flex:1"><b>${esc(h.name)}</b><div class="xs muted">${esc(h.folder)}</div></div><button type="button" class="btn sm primary" data-act="orgUse" data-i="${k}">Use this</button></div>`).join('')}`, '<span class="spacer"></span><button class="btn" data-act="closeDrawer">Cancel</button>');
     };
     i.click();
   };

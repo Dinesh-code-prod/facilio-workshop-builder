@@ -14,11 +14,11 @@
   const monday = d => add(d, -dow(d)); const addMonths = (d, n) => { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(1); x.setUTCMonth(x.getUTCMonth() + n); return x.toISOString().slice(0, 10); };
   const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   // four phases (the same grouping the portfolio health uses): an accent for the edge and a soft tint for the fill, both from the Facilio palette
-  const PHASES = [['Discover and define', 0, 4, '#1570EF', '#EEF4FF', '#5FA0F7'], ['Build and validate', 4, 7, '#0E9384', '#E6F7F4', '#5CC7B8'], ['Launch', 7, 10, '#E8710A', '#FFF4E8', '#F7A35C'], ['Hand over', 10, 12, '#12A35B', '#EAF7EF', '#6BCB94']];   // the four Facilio colours: blue, navy, pink and sky; each with a pale tint and a second stop for the few gradients (edge, progress)
-  const OTHER = { a: '#5B6B99', t: '#EEF2F8', g: '#8C9AC2' };
+  const PHASES = [['Discover and define', 0, 4, '#0024D6', '#F3F7FF', '#86AAFF'], ['Build and validate', 4, 7, '#168F9B', '#F0FEFF', '#34C0CE'], ['Launch', 7, 10, '#FF6700', '#FFFAE0', '#F5AC7B'], ['Hand over', 10, 12, '#29A01E', '#F1FFF0', '#73D06A']];   // the four Facilio colours: blue, navy, pink and sky; each with a pale tint and a second stop for the few gradients (edge, progress)
+  const OTHER = { a: '#2E65FF', t: '#EDF5FF', g: '#86AAFF' };
   // light, energetic redesign (user, 23 Nov 2026): colour says what KIND of item it is; the phase strip above still shows the phases
-  const CATS = [['meeting', 'Meetings and workshops', '#E8710A', '#FFF4E8'], ['milestone', 'Milestones and sign-offs', '#B7791F', '#FFF6DB'], ['uat', 'UAT', '#0E9384', '#E6F7F4'], ['training', 'Training', '#12A35B', '#EAF7EF'],
-    ['activity', 'Plan activities', '#1570EF', '#EEF4FF'], ['deadline', 'Deadlines (tasks and actions)', '#D92D20', '#FEF0EF'], ['mine', 'My reminders and events', '#64748B', '#F1F3F6']];
+  const CATS = [['meeting', 'Meetings and workshops', '#FF6700', '#FFFAE0'], ['milestone', 'Milestones and sign-offs', '#D85903', '#FFFAE0'], ['uat', 'UAT', '#168F9B', '#F0FEFF'], ['training', 'Training', '#29A01E', '#F1FFF0'],
+    ['activity', 'Plan activities', '#0024D6', '#F3F7FF'], ['deadline', 'Deadlines (tasks and actions)', '#D92D20', '#FFF2F2'], ['mine', 'My reminders and events', '#607796', '#F5F5F5']];
   const catOf = e => (e.src === 'cal' ? 'mine' : e.src === 'action' || e.src === 'task' ? 'deadline' : e.src === 'session' || e.step === 1 ? 'meeting' : e.src === 'signoff' || [2, 8, 11].includes(e.step) || /go-?live|sign-?off|milestone/i.test(e.title) ? 'milestone' : e.step >= 5 && e.step <= 8 ? 'uat' : e.step === 9 ? 'training' : 'activity');
   const phaseOf = i => PHASES.findIndex(p => i >= p[1] && i < p[2]);
   const SO_STEP = { brd: 2, uat: 8, golive: 11 };

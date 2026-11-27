@@ -3,7 +3,7 @@
 (function (root) {
   'use strict';
   const F = root.FWB; const V = root.FWBViews; const { esc } = F;
-  const RC = { r: '#D92D6A', a: '#F59E0B', g: '#12A594' }; const RN = { r: 'Red', a: 'Amber', g: 'Green' };
+  const RC = { r: '#ED2780', a: '#FD8635', g: '#168F9B' }; const RN = { r: 'Red', a: 'Amber', g: 'Green' };
   const idle = p => Math.max(0, Math.floor((Date.now() - new Date(p.lastActivity || p.updatedAt).getTime()) / 864e5));
   const left = p => p.endDate ? Math.ceil((new Date(p.endDate).getTime() - Date.now()) / 864e5) : null;
   // Red = something is late or blocked. Amber = needs a nudge. Green = on track or live.
@@ -33,7 +33,7 @@
   function donut(parts, centre, sub) {
     const tot = parts.reduce((a, p) => a + p.v, 0); if (!tot) return none(); const R = 52, C = 2 * Math.PI * R; let off = 0;
     const segs = parts.filter(p => p.v).map(p => { const len = p.v / tot * C; const s = `<circle r="${R}" cx="70" cy="70" fill="none" stroke="${p.c}" stroke-width="20" stroke-dasharray="${len.toFixed(2)} ${(C - len).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}"><title>${esc(p.l)}: ${p.v}</title></circle>`; off += len; return s; }).join('');
-    return `<div class="dn-wrap"><svg viewBox="0 0 140 140" class="dn-svg" role="img" aria-label="${esc(sub || 'Split')}"><circle r="${R}" cx="70" cy="70" fill="none" stroke="#E8EEF8" stroke-width="20"/><g transform="rotate(-90 70 70)">${segs}</g><text x="70" y="68" text-anchor="middle" class="dn-n">${esc(String(centre))}</text><text x="70" y="86" text-anchor="middle" class="dn-s">${esc(sub || '')}</text></svg>
+    return `<div class="dn-wrap"><svg viewBox="0 0 140 140" class="dn-svg" role="img" aria-label="${esc(sub || 'Split')}"><circle r="${R}" cx="70" cy="70" fill="none" stroke="#DBE9FF" stroke-width="20"/><g transform="rotate(-90 70 70)">${segs}</g><text x="70" y="68" text-anchor="middle" class="dn-n">${esc(String(centre))}</text><text x="70" y="86" text-anchor="middle" class="dn-s">${esc(sub || '')}</text></svg>
       <ul class="dn-leg">${parts.map(p => `<li><i style="background:${p.c}"></i><span>${esc(p.l)}</span><b>${p.v}</b><em>${Math.round(p.v / tot * 100)}%</em></li>`).join('')}</ul></div>`;
   }
   // ---- stacked horizontal bars: rows [{l, parts:[{v,c,n}], go}]
@@ -66,26 +66,26 @@
       const d = A.data; const wk = d.weekly || [], mo = d.monthly || [];
       const byStage = ST.map((nm, i) => { const g = act.filter(p => p.stage === i); const c = { r: 0, a: 0, g: 0 }; g.forEach(p => { c[rag(p).k]++; }); return { l: nm, parts: [{ v: c.g, c: RC.g, n: 'Green' }, { v: c.a, c: RC.a, n: 'Amber' }, { v: c.r, c: RC.r, n: 'Red' }] }; });
       return `<h2 class="adm-sec">Portfolio insights</h2>
-      <div class="sp-row">${spark('Platform activity', wk.map(w => w.n), wk.map(w => w.week.slice(5)), '#1570EF', 'actions')}${spark('New projects', mo.map(m => m.n), mo.map(m => m.month), '#E5197F', 'projects')}${spark('Open actions', [act.reduce((a, p) => a + p.openActions, 0)], null, '#12A594', 'open')}${spark('Overdue actions', [act.reduce((a, p) => a + p.overdue, 0)], null, '#D92D6A', 'overdue')}</div>
+      <div class="sp-row">${spark('Platform activity', wk.map(w => w.n), wk.map(w => w.week.slice(5)), '#0024D6', 'actions')}${spark('New projects', mo.map(m => m.n), mo.map(m => m.month), '#ED2780', 'projects')}${spark('Open actions', [act.reduce((a, p) => a + p.openActions, 0)], null, '#168F9B', 'open')}${spark('Overdue actions', [act.reduce((a, p) => a + p.overdue, 0)], null, '#ED2780', 'overdue')}</div>
       <div class="adm-row two">${card('Portfolio RAG', 'Red late or blocked · Amber needs a nudge · Green on track', ragBoard(act), 'rag-card')}${card('RAG split', act.length + ' active projects', donut(ragParts, act.length, 'projects'))}</div>
       ${card('Where projects sit, by RAG', 'Stacked by stage', stack(byStage, [['Green', RC.g], ['Amber', RC.a], ['Red', RC.r]]))}`;
     }
     if (tab === 'delivery') {
       const cust = {}; act.forEach(p => { const k = (p.customer || '—').trim() || '—'; (cust[k] = cust[k] || ST.map(() => 0))[p.stage]++; });
       const rows = Object.keys(cust).map(k => ({ l: short(k, 28), cells: cust[k] })).sort((a, b) => b.cells.reduce((x, y) => x + y, 0) - a.cells.reduce((x, y) => x + y, 0));
-      const work = act.filter(p => p.openActions || p.blocked).sort((a, b) => (b.overdue + b.blocked) - (a.overdue + a.blocked) || b.openActions - a.openActions).slice(0, 10).map(p => ({ l: short(p.name, 26), go: ['admDetail', p.id], parts: [{ v: Math.max(0, p.openActions - p.overdue - p.blocked), c: '#1570EF', n: 'On track' }, { v: p.overdue, c: RC.r, n: 'Overdue' }, { v: p.blocked, c: RC.a, n: 'Blocked' }] }));
+      const work = act.filter(p => p.openActions || p.blocked).sort((a, b) => (b.overdue + b.blocked) - (a.overdue + a.blocked) || b.openActions - a.openActions).slice(0, 10).map(p => ({ l: short(p.name, 26), go: ['admDetail', p.id], parts: [{ v: Math.max(0, p.openActions - p.overdue - p.blocked), c: '#0024D6', n: 'On track' }, { v: p.overdue, c: RC.r, n: 'Overdue' }, { v: p.blocked, c: RC.a, n: 'Blocked' }] }));
       const trk = act.slice().sort((a, b) => b.stage - a.stage || a.name.localeCompare(b.name)).slice(0, 14);
       return `<h2 class="adm-sec">Delivery insights</h2>
       ${card('Delivery tracker', 'Stage reached and time to planned end', tracker(trk, ST))}
-      <div class="adm-row two">${card('Customers by stage', 'Pivot: projects per customer and stage', pivot('Customer', ST.map(s => s.replace('Not started', 'New')), rows, '#1570EF'))}${card('Delivery RAG', 'Active projects', `${donut(ragParts, act.length, 'projects')}`)}</div>
-      ${card('Open work by project', 'Stacked: on track, overdue, blocked', stack(work, [['On track', '#1570EF'], ['Overdue', RC.r], ['Blocked', RC.a]]))}`;
+      <div class="adm-row two">${card('Customers by stage', 'Pivot: projects per customer and stage', pivot('Customer', ST.map(s => s.replace('Not started', 'New')), rows, '#0024D6'))}${card('Delivery RAG', 'Active projects', `${donut(ragParts, act.length, 'projects')}`)}</div>
+      ${card('Open work by project', 'Stacked: on track, overdue, blocked', stack(work, [['On track', '#0024D6'], ['Overdue', RC.r], ['Blocked', RC.a]]))}`;
     }
     if (tab === 'customers') {
       const m = {}; act.forEach(p => { const k = (p.customer || '—').trim() || '—'; const c = m[k] = m[k] || { n: k, r: 0, a: 0, g: 0, req: 0, act: 0, q: 0 }; c[rag(p).k]++; c.req += p.requirements; c.act += p.openActions; c.q += p.openFeedback; });
       const rows = Object.values(m).sort((a, b) => (b.r + b.a + b.g) - (a.r + a.a + a.g)).slice(0, 12);
       return `<h2 class="adm-sec">Customer insights</h2>
       <div class="adm-row two">${card('Customer health (RAG)', 'Stacked by project', stack(rows.map(c => ({ l: short(c.n, 26), go: ['admCust', ''], parts: [{ v: c.g, c: RC.g, n: 'Green' }, { v: c.a, c: RC.a, n: 'Amber' }, { v: c.r, c: RC.r, n: 'Red' }] })), [['Green', RC.g], ['Amber', RC.a], ['Red', RC.r]]))}${card('Portfolio RAG', 'All customers', donut(ragParts, act.length, 'projects'))}</div>
-      ${card('Customer workload', 'Pivot: requirements, open actions and open questions', pivot('Customer', ['Projects', 'Requirements', 'Open actions', 'Open questions'], rows.map(c => ({ l: short(c.n, 30), cells: [c.r + c.a + c.g, c.req, c.act, c.q] })), '#14a8a8'))}`;
+      ${card('Customer workload', 'Pivot: requirements, open actions and open questions', pivot('Customer', ['Projects', 'Requirements', 'Open actions', 'Open questions'], rows.map(c => ({ l: short(c.n, 30), cells: [c.r + c.a + c.g, c.req, c.act, c.q] })), '#168f9b'))}`;
     }
     if (tab === 'usage') {
       const i = A.ins; if (!i) return '';
@@ -94,19 +94,19 @@
       const dow = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']; const perDay = dow.map(() => 0); (i.heat || []).forEach(c => { perDay[c.d] += c.n; });
       const hrs = ['Night 0-6', 'Morning 6-12', 'Afternoon 12-18', 'Evening 18-24']; const pv = [1, 2, 3, 4, 5, 6, 0].map(d => ({ l: dow[d], cells: hrs.map((_, b) => (i.heat || []).filter(c => c.d === d && c.h >= b * 6 && c.h < b * 6 + 6).reduce((a, c) => a + c.n, 0)) }));
       return `<h2 class="adm-sec">Team insights</h2>
-      <div class="sp-row">${spark('Staff active per day', i.daily.map(d => d.staff), i.daily.map(d => d.day.slice(5)), '#1570EF', 'people')}${spark('Customer visits per day', i.daily.map(d => d.customers), i.daily.map(d => d.day.slice(5)), '#1D1A5E', 'visits')}${spark('Sign-ups per week', i.signups.map(w => w.staff + w.guests), i.signups.map(w => w.week.slice(5)), '#E5197F', 'accounts')}</div>
-      <div class="adm-row two">${card('Project health by owner', 'Stacked RAG', stack(rows, [['Green', RC.g], ['Amber', RC.a], ['Red', RC.r]]))}${card('Activity by day and time', 'Pivot: recorded sessions', pivot('Day', hrs, pv, '#1570EF'))}</div>`;
+      <div class="sp-row">${spark('Staff active per day', i.daily.map(d => d.staff), i.daily.map(d => d.day.slice(5)), '#0024D6', 'people')}${spark('Customer visits per day', i.daily.map(d => d.customers), i.daily.map(d => d.day.slice(5)), '#00125E', 'visits')}${spark('Sign-ups per week', i.signups.map(w => w.staff + w.guests), i.signups.map(w => w.week.slice(5)), '#ED2780', 'accounts')}</div>
+      <div class="adm-row two">${card('Project health by owner', 'Stacked RAG', stack(rows, [['Green', RC.g], ['Amber', RC.a], ['Red', RC.r]]))}${card('Activity by day and time', 'Pivot: recorded sessions', pivot('Day', hrs, pv, '#0024D6'))}</div>`;
     }
     if (tab === 'quality') {
       const i = A.ins; if (!i) return '';
       const kinds = [['action', 'Actions'], ['raid', 'Risks & issues'], ['uat', 'UAT cases']]; const cls = s => /done|closed|signed|resolved|passed|mitigated/i.test(s) ? 'done' : /block|fail|overdue|open|rejected/i.test(s) ? 'bad' : 'wip';
-      const rows = kinds.map(([k, nm]) => { const c = { done: 0, wip: 0, bad: 0 }; i.items.filter(r => r.kind === k).forEach(r => { c[cls(String(r.st || ''))] += r.n; }); return { l: nm, parts: [{ v: c.done, c: RC.g, n: 'Done' }, { v: c.wip, c: '#1570EF', n: 'In progress' }, { v: c.bad, c: RC.r, n: 'Open or failing' }] }; });
+      const rows = kinds.map(([k, nm]) => { const c = { done: 0, wip: 0, bad: 0 }; i.items.filter(r => r.kind === k).forEach(r => { c[cls(String(r.st || ''))] += r.n; }); return { l: nm, parts: [{ v: c.done, c: RC.g, n: 'Done' }, { v: c.wip, c: '#0024D6', n: 'In progress' }, { v: c.bad, c: RC.r, n: 'Open or failing' }] }; });
       const mat = act.slice().sort((a, b) => b.requirements - a.requirements).slice(0, 12).map(p => ({ l: short(p.name, 28), cells: [p.requirements, p.flows, p.openActions, p.raidOpen || 0, p.uat || 0, p.signed || 0] }));
       const q = i.feedback.weekly || [];
       return `<h2 class="adm-sec">Quality insights</h2>
-      <div class="sp-row">${spark('New customer questions', q.map(w => w.n), q.map(w => w.week.slice(5)), '#E5197F', 'questions')}${spark('Storage added per month', i.storage.map(m => Math.round(m.bytes / 1e5) / 10), i.storage.map(m => m.month), '#12A594', 'MB')}</div>
-      <div class="adm-row two">${card('Records by state', 'Stacked: done, in progress, open or failing', stack(rows, [['Done', RC.g], ['In progress', '#1570EF'], ['Open or failing', RC.r]]))}${card('Quality RAG', 'Same rule as the portfolio', donut(ragParts, act.length, 'projects'))}</div>
-      ${card('Project records matrix', 'Pivot: what each project has captured (top 12)', pivot('Project', ['Requirements', 'State flows', 'Open actions', 'Open risks', 'UAT cases', 'Sign-offs'], mat, '#1D1A5E'))}`;
+      <div class="sp-row">${spark('New customer questions', q.map(w => w.n), q.map(w => w.week.slice(5)), '#ED2780', 'questions')}${spark('Storage added per month', i.storage.map(m => Math.round(m.bytes / 1e5) / 10), i.storage.map(m => m.month), '#168F9B', 'MB')}</div>
+      <div class="adm-row two">${card('Records by state', 'Stacked: done, in progress, open or failing', stack(rows, [['Done', RC.g], ['In progress', '#0024D6'], ['Open or failing', RC.r]]))}${card('Quality RAG', 'Same rule as the portfolio', donut(ragParts, act.length, 'projects'))}</div>
+      ${card('Project records matrix', 'Pivot: what each project has captured (top 12)', pivot('Project', ['Requirements', 'State flows', 'Open actions', 'Open risks', 'UAT cases', 'Sign-offs'], mat, '#00125E'))}`;
     }
     return '';
   }

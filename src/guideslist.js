@@ -341,7 +341,7 @@
   // one click: the draft becomes a guide in the User Guide Builder (its headings become sections) and the builder opens on it
   ACT.tgToBuilder = a => V.busy(a, async () => { const d = I().get('ai', a.getAttribute('data-id')); if (!d || !V.ugSectionsFromMd) return; const sections = V.ugSectionsFromMd(String(d.content || ''));
     if (!sections.length) { V.toast('The draft has no headings to turn into sections. Copy it into a new guide instead.', 6000, true); return; }
-    const id = I().uid('ug'); await I().put('ugd', id, { title: String(d.title || GT[d.task]).slice(0, 120), customer: (F.S.project && F.S.project.customer) || '', audience: '', version: '0.1', status: 'draft', brand: { accent: '#1570EF', footer: '', cover: true, logo: null }, sections, fromDraft: d.id, kind: d.task });
+    const id = I().uid('ug'); await I().put('ugd', id, { title: String(d.title || GT[d.task]).slice(0, 120), customer: (F.S.project && F.S.project.customer) || '', audience: '', version: '0.1', status: 'draft', brand: { accent: '#0024D6', footer: '', cover: true, logo: null }, sections, fromDraft: d.id, kind: d.task });
     F.S.ui.ugOpen = id; F.S.ui.ugTab = 'doc'; V.go('guidebuilder'); V.toast('The draft is now a guide in the builder. Review it there.', 5000); });
   ACT.tgDlDraft = a => { const d = I().get('ai', a.getAttribute('data-id')); if (d) V.download(String(d.title || GT[d.task]).replace(/[^\w-]+/g, '-') + '.md', d.content, 'text/markdown'); };
   ACT.tgMode = a => { st().note = (document.getElementById('tgNote') || {}).value || ''; st().mode = a.getAttribute('data-v'); V.render(); };

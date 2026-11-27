@@ -87,7 +87,7 @@
     if (start === 'cfg' && V.ugCfgSections) sections = V.ugCfgSections();
     if (start === 'ai') { const d = I().list('ai').filter(x => x.task === 'guide').sort((p, q) => String(q._created || '').localeCompare(String(p._created || '')))[0]; if (d && V.ugSectionsFromMd) sections = V.ugSectionsFromMd(d.content); }
     const id = I().uid('ug');
-    await I().put('ugd', id, { title, customer: val('ug_c'), audience: plan.roles.join(', '), version: '0.1', status: 'draft', plan, brand: { accent: '#1570EF', footer: '', cover: true, logo: null }, sections });
+    await I().put('ugd', id, { title, customer: val('ug_c'), audience: plan.roles.join(', '), version: '0.1', status: 'draft', plan, brand: { accent: '#0024D6', footer: '', cover: true, logo: null }, sections });
     closeDrawer(); S.ui.ugOpen = id; S.ui.ugTab = 'content'; V.render();
     if (start === 'gen') setTimeout(() => ACT.ugGenAll(), 50);
   });

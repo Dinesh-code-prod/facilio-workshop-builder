@@ -4,7 +4,7 @@
   'use strict';
   const F = root.FWB; const { S, esc } = F; const V = root.FWBViews; const ACT = V.ACT; const I = () => V.items;
   const KINDS = ['scope', 'build', 'uat', 'usecase', 'checklist', 'hc', 'ho', 'close', 'ugd', 'rep', 'signoff'];
-  const ST = { none: ['Not started', '#98A2B3'], progress: ['In progress', '#1570EF'], done: ['Complete', '#027A48'] };
+  const ST = { none: ['Not started', '#A8AAAA'], progress: ['In progress', '#0024D6'], done: ['Complete', '#0F6F06'] };
   function stages() {
     const ses = (F.doc('planner').sessions || []).filter(s => s.status !== 'cancelled'); const sesDone = ses.filter(s => s.status === 'completed').length;
     const reqs = (S.ws.requirements || []).filter(r => r.status !== 'Rejected'); const conf = reqs.filter(r => r.status === 'Confirmed').length;

@@ -23,9 +23,9 @@
       const fit = () => { cw = host.clientWidth; ch = host.clientHeight; c.width = Math.round(cw * DPR); c.height = Math.round(ch * DPR); };
       fit(); root.addEventListener('resize', fit);
       const LAY = [   // drawn back to front; the teal leads the rise and trails the drain, blue is the main body
-        { c0: '#3FD6CF', c1: '#17A8A3', up: 0, dn: .34, amp: 15, k: .0105, sp: 3.0 },
-        { c0: '#F0388F', c1: '#B8136A', up: .12, dn: .17, amp: 19, k: .0082, sp: 2.4 },
-        { c0: '#2C7DF5', c1: '#1D1A5E', up: .24, dn: 0, amp: 23, k: .0062, sp: 1.9, main: true }
+        { c0: '#64D5E0', c1: '#168F9B', up: 0, dn: .34, amp: 15, k: .0105, sp: 3.0 },
+        { c0: '#ED2780', c1: '#AB185A', up: .12, dn: .17, amp: 19, k: .0082, sp: 2.4 },
+        { c0: '#5989FF', c1: '#00125E', up: .24, dn: 0, amp: 23, k: .0062, sp: 1.9, main: true }
       ];
       const RISE = 1.0, FULL = LAY[2].up + RISE + .02, D0 = 2.55, DRAIN = 1.1, TEND = D0 + LAY[0].dn + DRAIN + .1;
       const bub = Array.from({ length: 26 }, () => ({ x: Math.random(), s: 1.5 + Math.random() * 3.5, v: .25 + Math.random() * .5, p: Math.random() }));

@@ -68,10 +68,10 @@
       if (v) { const ax = a.x + a.w / 2, bx = b.x + b.w / 2; if (b.y > a.y + a.h) { const ay = a.y + a.h, by2 = b.y, my = (ay + by2) / 2; d = ax === bx ? `M${ax} ${ay} V${by2}` : `M${ax} ${ay} V${my} H${bx} V${by2}`; lx = (ax + bx) / 2; ly = my; } else { const sx = Math.max(a.x + a.w, b.x + b.w) + 26; d = `M${a.x + a.w} ${a.y + a.h / 2} H${sx} V${b.y + b.h / 2} H${b.x + b.w}`; lx = sx; ly = (a.y + b.y) / 2 + 20; } }
       else { const ay = a.y + a.h / 2, by2 = b.y + b.h / 2; if (b.x > a.x + a.w) { const ax = a.x + a.w, bx = b.x, mx = (ax + bx) / 2; d = ay === by2 ? `M${ax} ${ay} H${bx}` : `M${ax} ${ay} H${mx} V${by2} H${bx}`; lx = mx; ly = (ay + by2) / 2; } else { const sy = Math.max(a.y + a.h, b.y + b.h) + 26; d = `M${a.x + a.w / 2} ${a.y + a.h} V${sy} H${b.x + b.w / 2} V${b.y + b.h}`; lx = (a.x + b.x) / 2 + 60; ly = sy; } }
       const lab = e.label ? (e.label.length > 22 ? e.label.slice(0, 21) + '…' : e.label) : ''; const pw = Math.max(40, lab.length * 6.6 + 14);
-      return `<path d="${d}" fill="none" stroke="#7aa7f0" stroke-width="1.4" stroke-linejoin="round" marker-end="url(#pvA)"/>${lab ? `<rect x="${lx - pw / 2}" y="${ly - 10}" width="${pw}" height="20" rx="10" fill="#fff" stroke="#cfe0fb"/><text x="${lx}" y="${ly + 4}" text-anchor="middle" font-size="10.5" fill="#1570EF" font-family="Inter, Roboto, Arial, sans-serif">${esc(lab)}</text>` : ''}`; };
-    const box = n => { const st = (f.states || []).find(s => s.id === n.id) || {}; const fill = st.typeCode === 2 ? '#DDF4E4' : st.typeCode === 6 ? '#F2F4F7' : '#fff';
-      return `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="10" fill="${fill}" stroke="#b8cdf2"/><text x="${n.x + n.w / 2}" y="${n.y + n.h / 2 + 4.5}" text-anchor="middle" font-size="12.5" font-weight="500" fill="#101828" font-family="Inter, Roboto, Arial, sans-serif">${esc(n.text.length > 30 ? n.text.slice(0, 29) + '…' : n.text)}</text>`; };
-    return `<div class="xs muted" style="margin-bottom:6px">Preview: ${esc(f.name || '')} · ${nodes.length} states</div><div class="wb-prev-svg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="${-pad} ${-pad} ${W0} ${H0}" width="${Math.min(W0, 560)}" style="max-width:100%;height:auto"><defs><marker id="pvA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#7aa7f0"/></marker></defs>${edges.map(path).join('')}${nodes.map(box).join('')}</svg></div>`;
+      return `<path d="${d}" fill="none" stroke="#86aaff" stroke-width="1.4" stroke-linejoin="round" marker-end="url(#pvA)"/>${lab ? `<rect x="${lx - pw / 2}" y="${ly - 10}" width="${pw}" height="20" rx="10" fill="#fff" stroke="#dbe9ff"/><text x="${lx}" y="${ly + 4}" text-anchor="middle" font-size="10.5" fill="#0024D6" font-family="Inter, Roboto, Arial, sans-serif">${esc(lab)}</text>` : ''}`; };
+    const box = n => { const st = (f.states || []).find(s => s.id === n.id) || {}; const fill = st.typeCode === 2 ? '#CBF3C7' : st.typeCode === 6 ? '#F5F5F5' : '#fff';
+      return `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="10" fill="${fill}" stroke="#b5cbff"/><text x="${n.x + n.w / 2}" y="${n.y + n.h / 2 + 4.5}" text-anchor="middle" font-size="12.5" font-weight="500" fill="#192432" font-family="Inter, Roboto, Arial, sans-serif">${esc(n.text.length > 30 ? n.text.slice(0, 29) + '…' : n.text)}</text>`; };
+    return `<div class="xs muted" style="margin-bottom:6px">Preview: ${esc(f.name || '')} · ${nodes.length} states</div><div class="wb-prev-svg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="${-pad} ${-pad} ${W0} ${H0}" width="${Math.min(W0, 560)}" style="max-width:100%;height:auto"><defs><marker id="pvA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#86aaff"/></marker></defs>${edges.map(path).join('')}${nodes.map(box).join('')}</svg></div>`;
   };
 
   // ---------- arrow handles and the midpoint dot ----------
@@ -79,16 +79,16 @@
   X.overlay = function () {
     if (ro() || W.dragging || W.edit || W.tool !== 'select' || !W.B) return '';
     const k = 1 / Math.max(.2, W.B.view.z); let s = '';
-    if (W.pend) { const n = node(W.pend.from); return n ? `<rect class="wb-pend" x="${n.x - 5}" y="${n.y - 5}" width="${n.w + 10}" height="${n.h + 10}" rx="10" fill="none" stroke="#1570EF" stroke-width="${2 * k}" stroke-dasharray="${6 * k} ${4 * k}" pointer-events="none"/>` : ''; }
+    if (W.pend) { const n = node(W.pend.from); return n ? `<rect class="wb-pend" x="${n.x - 5}" y="${n.y - 5}" width="${n.w + 10}" height="${n.h + 10}" rx="10" fill="none" stroke="#0024D6" stroke-width="${2 * k}" stroke-dasharray="${6 * k} ${4 * k}" pointer-events="none"/>` : ''; }
     const hid = W.hover || (W.sel.size === 1 ? [...W.sel][0] : null); if (!hid) return '';
     const n = node(hid);
     if (n && !n.hidden && !n.lock && !NO_HANDLE.includes(n.t)) {
       const o = 22 * k, cx = n.x + n.w / 2, cy = n.y + n.h / 2, pts = { e: [n.x + n.w + o, cy], s: [cx, n.y + n.h + o], w: [n.x - o, cy], n: [cx, n.y - o] };
-      s += SIDES.map(([d, r]) => `<g class="wb-ah" data-ah="${esc(n.id)}" data-side="${d}" transform="translate(${pts[d][0].toFixed(1)} ${pts[d][1].toFixed(1)}) scale(${k.toFixed(4)})" role="button" aria-label="Connect from here"><circle r="11" fill="#fff" stroke="#1570EF" stroke-width="1.5"/><g transform="rotate(${r})"><path d="M-4 0H4M1 -3.2L4.2 0L1 3.2" fill="none" stroke="#1570EF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g><title>Click, then click the box to connect to. Or drag to a box.</title></g>`).join('');
+      s += SIDES.map(([d, r]) => `<g class="wb-ah" data-ah="${esc(n.id)}" data-side="${d}" transform="translate(${pts[d][0].toFixed(1)} ${pts[d][1].toFixed(1)}) scale(${k.toFixed(4)})" role="button" aria-label="Connect from here"><circle r="11" fill="#fff" stroke="#0024D6" stroke-width="1.5"/><g transform="rotate(${r})"><path d="M-4 0H4M1 -3.2L4.2 0L1 3.2" fill="none" stroke="#0024D6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g><title>Click, then click the box to connect to. Or drag to a box.</title></g>`).join('');
     }
     const e = W.B.edges.find(q => q.id === hid);
     if (e) { const p = edgePts(e); if (p && !p.self) { const lo = e.lo || { x: 0, y: 0 }; const mx = p.lx - lo.x, my = p.ly - lo.y;
-      s += `<g class="wb-mid" data-mid="${esc(e.id)}" transform="translate(${mx.toFixed(1)} ${my.toFixed(1)}) scale(${k.toFixed(4)})" role="button" aria-label="Insert a shape on this connector"><circle r="8" fill="#1570EF" stroke="#fff" stroke-width="2"/><path d="M-3.2 0H3.2M0 -3.2V3.2" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><title>Insert a step, button or shape here</title></g>`; } }
+      s += `<g class="wb-mid" data-mid="${esc(e.id)}" transform="translate(${mx.toFixed(1)} ${my.toFixed(1)}) scale(${k.toFixed(4)})" role="button" aria-label="Insert a shape on this connector"><circle r="8" fill="#0024D6" stroke="#fff" stroke-width="2"/><path d="M-3.2 0H3.2M0 -3.2V3.2" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><title>Insert a step, button or shape here</title></g>`; } }
     return s;
   };
   X.link = function (from, to) {
@@ -102,7 +102,7 @@
   };
 
   // ---------- insert on a connector ----------
-  const KINDS = { rect: ['Step', 'Step', { t: 'rect', w: 160, h: 64 }], button: ['Button', 'Button', { t: 'rect', w: 140, h: 44, fill: '#1570EF', tc: '#FFFFFF', b: true, rx: 22, bc: '#1570EF' }], diamond: ['Decision', 'Decision?', { t: 'diamond', w: 150, h: 96 }], oval: ['Start / end', 'Start', { t: 'ellipse', w: 150, h: 70 }], para: ['Input / output', 'Input / output', { t: 'para', w: 170, h: 70 }], note: ['Note', '', { t: 'note', w: 160, h: 110 }], text: ['Text', 'Text', { t: 'text', w: 220, h: 40 }] };
+  const KINDS = { rect: ['Step', 'Step', { t: 'rect', w: 160, h: 64 }], button: ['Button', 'Button', { t: 'rect', w: 140, h: 44, fill: '#0024D6', tc: '#FFFFFF', b: true, rx: 22, bc: '#0024D6' }], diamond: ['Decision', 'Decision?', { t: 'diamond', w: 150, h: 96 }], oval: ['Start / end', 'Start', { t: 'ellipse', w: 150, h: 70 }], para: ['Input / output', 'Input / output', { t: 'para', w: 170, h: 70 }], note: ['Note', '', { t: 'note', w: 160, h: 110 }], text: ['Text', 'Text', { t: 'text', w: 220, h: 40 }] };
   function pop(html, x, y) {
     const host = document.getElementById('wbHost'); if (!host) return; const old = document.getElementById('wbCtx'); if (old) old.remove();
     const d = document.createElement('div'); d.id = 'wbCtx'; d.className = 'wb-pop wb-insmenu'; d.innerHTML = html; host.appendChild(d);
@@ -123,12 +123,12 @@
 
   // ---------- Create menu: ready-made structures ----------
   const box = (t, x, y, w, h, text, more) => Object.assign({ id: uid('n'), t, x, y, w, h, text: text || '' }, more || {});
-  const HEAD = { fill: '#E8F1FD', b: true };
+  const HEAD = { fill: '#F3F7FF', b: true };
   const TPL = {
     table() { const nodes = []; for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) nodes.push(box('rect', c * 170, r * 48, 170, 48, r ? '' : 'Column ' + (c + 1), r ? { rx: 0 } : Object.assign({ rx: 0 }, HEAD))); return { nodes, group: true }; },
-    timeline() { const nodes = [box('rect', 0, 58, 880, 4, '', { fill: '#1570EF', bc: '#1570EF', rx: 2 })]; for (let i = 0; i < 5; i++) { const x = 20 + i * 200; nodes.push(box('ellipse', x, 46, 28, 28, '', { fill: '#1570EF', bc: '#fff' })); nodes.push(box('text', x - 70, i % 2 ? 84 : -8, 168, 40, 'Milestone ' + (i + 1), { size: 14 })); } return { nodes, group: true }; },
+    timeline() { const nodes = [box('rect', 0, 58, 880, 4, '', { fill: '#0024D6', bc: '#0024D6', rx: 2 })]; for (let i = 0; i < 5; i++) { const x = 20 + i * 200; nodes.push(box('ellipse', x, 46, 28, 28, '', { fill: '#0024D6', bc: '#fff' })); nodes.push(box('text', x - 70, i % 2 ? 84 : -8, 168, 40, 'Milestone ' + (i + 1), { size: 14 })); } return { nodes, group: true }; },
     kanban() { const nodes = []; ['To do', 'In progress', 'Done'].forEach((name, i) => { const x = i * 280; nodes.push(box('frame', x, 0, 260, 380, name)); nodes.push(box('note', x + 50, 70, 160, 90, 'Card')); nodes.push(box('note', x + 50, 180, 160, 90, 'Card')); }); return { nodes, group: false }; },
-    matrix() { const nodes = [box('rect', 0, 0, 240, 160, 'Quick wins', { fill: '#DDF4E4' }), box('rect', 240, 0, 240, 160, 'Big bets', { fill: '#E3EDFF' }), box('rect', 0, 160, 240, 160, 'Fill-ins', { fill: '#F2F4F7' }), box('rect', 240, 160, 240, 160, 'Reconsider', { fill: '#FFE8D1' }), box('text', 0, 330, 480, 30, 'Effort  →', { size: 13, tc: '#667085' }), box('text', -150, 150, 140, 30, 'Impact  ↑', { size: 13, tc: '#667085' })]; return { nodes, group: true }; },
+    matrix() { const nodes = [box('rect', 0, 0, 240, 160, 'Quick wins', { fill: '#CBF3C7' }), box('rect', 240, 0, 240, 160, 'Big bets', { fill: '#DBE9FF' }), box('rect', 0, 160, 240, 160, 'Fill-ins', { fill: '#F5F5F5' }), box('rect', 240, 160, 240, 160, 'Reconsider', { fill: '#FFF6F0' }), box('text', 0, 330, 480, 30, 'Effort  →', { size: 13, tc: '#607796' }), box('text', -150, 150, 140, 30, 'Impact  ↑', { size: 13, tc: '#607796' })]; return { nodes, group: true }; },
     swim() { const nodes = ['Customer', 'Facilio', 'System'].map((name, i) => box('frame', 0, i * 170, 900, 150, name)); return { nodes, group: false }; },
     process() { const a = box('ellipse', 0, 0, 140, 60, 'Start'), b = box('rect', 0, 140, 160, 64, 'Step'), c = box('diamond', 0, 280, 160, 100, 'Decision?'), d = box('ellipse', 0, 460, 140, 60, 'End'); const ed = (f, t, label) => ({ id: uid('e'), from: f.id, to: t.id, label: label || '', route: 'elbow' }); return { nodes: [a, b, c, d], edges: [ed(a, b), ed(b, c), ed(c, d, 'Yes')], group: false, tidy: true }; }
   };

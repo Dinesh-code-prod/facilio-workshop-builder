@@ -59,7 +59,7 @@
     else if (!st.info) body = '<div class="card-b"><p class="small muted" style="margin:0">Checking…</p></div>';
     else { const i = st.info, f = i.folder;
       body = '<div class="card-b"><dl class="kv small"><dt>Folder</dt><dd>' + (f ? esc(f.name) : 'Created with the first file') + '</dd><dt>People with access</dt><dd>' + (f ? f.people : 0) + (f && f.accessAt ? ' · updated ' + esc(String(f.accessAt).slice(0, 10)) : '') + '</dd><dt>Waiting to be copied</dt><dd>' + i.pendingTotal + '</dd></dl>'
-        + (f && f.accessErrors && f.accessErrors.length ? '<p class="xs" style="color:#B42318">Access not given: ' + esc(f.accessErrors.join('; ')) + '</p>' : '')
+        + (f && f.accessErrors && f.accessErrors.length ? '<p class="xs" style="color:#B61919">Access not given: ' + esc(f.accessErrors.join('; ')) + '</p>' : '')
         + '<div class="row" style="gap:8px;margin-top:10px">' + (f && f.url ? '<button type="button" class="btn sm primary" data-act="spOpen" data-u="' + esc(f.url) + '">Open folder</button>' : '') + (i.pendingTotal ? '<button type="button" class="btn sm" data-act="spCopyNow">Copy now</button>' : '') + (f ? '<button type="button" class="btn sm" data-act="spAccess">Update access</button>' : '') + '</div></div>'; }
     return '<section class="st-sec">' + side + '<div class="card st-card">' + body + '</div></section>';
   };

@@ -114,7 +114,7 @@
   const sgRow = x => { const tk = x.task ? `<b>${esc('T-' + (x.task.n || '?'))}</b> ${esc(x.task.title)}` : x.action === 'create' ? '' : '<span class="muted">(task not found)</span>';
     const ch = (x.changes || []).map(c => `<div class="small">${esc(sgField(c.field))}: ${c.from ? `<s class="muted">${esc(c.from)}</s> → ` : ''}<b>${esc(c.to)}</b></div>`).join('');
     const s = x.source || {};
-    return `<div class="pt-sg-row" style="padding:10px 0;border-top:1px solid #eef1f7"><div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">${tag(x.action === 'close' ? 'green' : x.action === 'create' ? 'blue' : 'tbc', SG_ACT[x.action] || x.action)}<span>${tk}</span>${x.missing ? tag('red', 'Task no longer exists') : ''}<span class="spacer"></span>
+    return `<div class="pt-sg-row" style="padding:10px 0;border-top:1px solid #edf5ff"><div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">${tag(x.action === 'close' ? 'green' : x.action === 'create' ? 'blue' : 'tbc', SG_ACT[x.action] || x.action)}<span>${tk}</span>${x.missing ? tag('red', 'Task no longer exists') : ''}<span class="spacer"></span>
       <button class="btn sm primary" data-act="tkSgAccept" data-id="${esc(x.id)}"${x.missing ? ' disabled' : ''}>Accept</button><button class="btn sm ghost" data-act="tkSgDismiss" data-id="${esc(x.id)}">Dismiss</button></div>
       <div style="margin-top:4px">${ch}</div><div class="small muted" style="margin-top:2px">Why: ${esc(x.reason)}</div><div class="xs muted">Source: ${esc(s.type || '')} ${esc(s.ref || '')}${s.quote ? ' &ldquo;' + esc(s.quote) + '&rdquo;' : ''}</div></div>`; };
   function sgPanel() { const st = S.ui.tkSg; if (!canEdit() || !st || st.pid !== (S.project && S.project.id) || !(st.list || []).length) return '';

@@ -26,7 +26,7 @@
   const pillOf = r => (r.status === 'sent' ? V.tag('green', 'Sent') : r.status === 'ready' ? V.tag('blue', 'Ready to send') : V.tag('tbc', 'Draft'));
   const sec = (t, d, inner) => '<div class="card st-card"><div class="card-h"><b>' + t + '</b></div>' + (d ? '<div class="card-b" style="padding-bottom:0"><p class="small muted" style="margin:0">' + d + '</p></div>' : '') + inner + '</div>';
   const seg = (items, cur, act) => '<div class="seg" role="group">' + items.map(x => '<button type="button" class="' + (x[0] === cur ? 'on' : '') + '" aria-pressed="' + (x[0] === cur) + '" data-act="' + act + '" data-v="' + esc(x[0]) + '">' + esc(x[1]) + '</button>').join('') + '</div>';
-  const frame = h => '<iframe sandbox="" title="Report preview" srcdoc="' + esc(h) + '" style="width:100%;height:620px;border:1px solid #e4e7ec;border-radius:10px;background:#fff"></iframe>';
+  const frame = h => '<iframe sandbox="" title="Report preview" srcdoc="' + esc(h) + '" style="width:100%;height:620px;border:1px solid #eae9e9;border-radius:10px;background:#fff"></iframe>';
 
   V.statusrep = { html() {
     if (V.isCustomer()) return '';

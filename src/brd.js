@@ -3,7 +3,7 @@
    so all three stay consistent. Consultant edits are stored per block id (brddoc.edits) and applied on top of the generated
    text; the generated text is never overwritten. Only requirements with status Confirmed are included.
    Structure follows facilio-solution-document-builder/section-templates.md; format defaults follow its docx-build.md
-   (Calibri, #351C75 headings, #8DB3E2 table headers, mandatory fields in red). A sample BRD .docx can be analysed to
+   (Calibri, #311E77 headings, #86AAFF table headers, mandatory fields in red). A sample BRD .docx can be analysed to
    reuse its fonts, heading colours/sizes, table header fill, page setup, header/footer text and Heading 1 order. */
 (function (root) {
   'use strict';
@@ -484,7 +484,7 @@
         if (land) content.push({ text: '', pageBreak: 'before', pageOrientation: 'portrait' }); continue; }
       if (b.t === 'table') { const tot = b.widths.reduce((a, x) => a + x, 0); const widths = b.widths.map(x => x / tot * PWpt - 4); const n = b.headers.length;
         const body = [b.headers.map(h => ({ text: h, bold: true, fillColor: c(P.tableHeaderFill), color: c(P.tableHeaderColor), alignment: 'center', fontSize: 8.5 }))];
-        b.rows.forEach(r => { if (r && r.sub) body.push([Object.assign({ text: r.sub, bold: true, fillColor: '#F2F2F2', colSpan: n, fontSize: 8.5 })].concat(Array(n - 1).fill({}))); else body.push(r.map(cellNode)); });
+        b.rows.forEach(r => { if (r && r.sub) body.push([Object.assign({ text: r.sub, bold: true, fillColor: '#F5F5F5', colSpan: n, fontSize: 8.5 })].concat(Array(n - 1).fill({}))); else body.push(r.map(cellNode)); });
         if (!b.rows.length) body.push([Object.assign({ text: b.empty || 'None', color: '#607796', colSpan: n, fontSize: 8.5 })].concat(Array(n - 1).fill({})));
         content.push({ table: { headerRows: 1, widths, body, dontBreakRows: true }, layout: { hLineWidth: () => 0.5, vLineWidth: () => 0.5, paddingLeft: () => 4, paddingRight: () => 4, paddingTop: () => 2, paddingBottom: () => 2 }, margin: [0, 2, 0, 8] }); continue; }
     }

@@ -5,7 +5,7 @@
 (function (root) {
   'use strict';
   const F = root.FWB, V = root.FWBViews; const esc = F ? F.esc : (s => String(s == null ? '' : s));
-  const OK = '#16a34a', WARN = '#f59e0b', BAD = '#ef4444', GREY = '#a3a3a3', BLUE = '#1570EF', NAVY = '#1D1A5E', SLATE = '#64748b';
+  const OK = '#29a01e', WARN = '#fd8635', BAD = '#dd6c6c', GREY = '#a8aaaa', BLUE = '#0024D6', NAVY = '#00125E', SLATE = '#607796';
   const none = t => `<p class="sd-none">${esc(t)}</p>`;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const legend = parts => { const T = parts.reduce((n, p) => n + (typeof p[1] === 'number' ? p[1] : 0), 0), pc = p => (typeof p[1] === 'number' && T > 0 && parts.length > 1 ? `<em>${Math.round(p[1] * 100 / T)}%</em>` : ''); return `<ul class="sd-lg">${parts.map(p => `<li><i style="background:${p[2]}"></i><span>${esc(p[0])}</span><b>${p[1]}</b>${pc(p)}</li>`).join('')}</ul>`; };   // each part also shows its share
@@ -38,7 +38,7 @@
     if (!sats.length) return none(empty || 'Nothing to show yet.');
     const n = sats.length, pos = i => { const a = -Math.PI / 2 + i / n * 2 * Math.PI; return [100 + 74 * Math.cos(a), 100 + 74 * Math.sin(a)]; };
     const dotsSvg = sats.map((s, i) => { const [x, y] = pos(i); return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="13" fill="${s.c}"/><text x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="middle" font-size="12" font-weight="600" fill="#fff">${i + 1}</text>`; }).join('');
-    return `<div class="dk-orbit"><svg viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="${esc(title + ': ' + sats.map(s => s.l).join(', '))}"><circle cx="100" cy="100" r="74" fill="none" stroke="rgba(0,0,0,.14)" stroke-dasharray="3 5"/><circle cx="100" cy="100" r="40" fill="#fff" stroke="rgba(0,0,0,.1)"/><text x="100" y="98" text-anchor="middle" font-size="13" font-weight="600" fill="#0a0a0a">${esc(title)}</text><text x="100" y="114" text-anchor="middle" font-size="9.5" fill="#6b7280">${esc(sub || '')}</text>${dotsSvg}</svg>`
+    return `<div class="dk-orbit"><svg viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="${esc(title + ': ' + sats.map(s => s.l).join(', '))}"><circle cx="100" cy="100" r="74" fill="none" stroke="rgba(0,0,0,.14)" stroke-dasharray="3 5"/><circle cx="100" cy="100" r="40" fill="#fff" stroke="rgba(0,0,0,.1)"/><text x="100" y="98" text-anchor="middle" font-size="13" font-weight="600" fill="#000000">${esc(title)}</text><text x="100" y="114" text-anchor="middle" font-size="9.5" fill="#607796">${esc(sub || '')}</text>${dotsSvg}</svg>`
       + `<ol class="dk-ol">${sats.map((s, i) => `<li><span class="dk-n" style="background:${s.c}">${i + 1}</span><span>${esc(s.l)}${s.d ? `<small>${esc(s.d)}</small>` : ''}</span></li>`).join('')}</ol></div>`;
   }
 
@@ -79,7 +79,7 @@
   function exportHtml(key) {
     const el = rootEl(); if (!el) return; const css = [...document.styleSheets].map(sh => { try { return [...sh.cssRules].map(r => r.cssText).join('\n'); } catch (e) { return ''; } }).join('\n');
     const c = el.cloneNode(true); c.querySelectorAll('.dk-fbar, .dk-exp, .sd-tabs, .adx-tabs, .rgbar, script').forEach(n => n.remove()); const t = docTitle(key), day = V.today();
-    const html = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(t) + '</title><style>' + css + '\nbody{margin:0;background:#fafafa}.dk-doc{max-width:1440px;margin:0 auto;padding:28px}.dk-doc h1{font:600 22px/30px system-ui,sans-serif;margin:0 0 4px}.dk-doc>p{color:#6b7280;margin:0 0 20px;font:400 14px/20px system-ui,sans-serif}</style></head><body class="' + esc(document.body.className) + '"><div class="dk-doc"><h1>' + esc(t) + '</h1><p>Exported from Facilio Delivery Studio on ' + esc(day) + '. This is a static copy: links and filters do not work here.</p>' + c.outerHTML + '</div></body></html>';
+    const html = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(t) + '</title><style>' + css + '\nbody{margin:0;background:#fafafa}.dk-doc{max-width:1440px;margin:0 auto;padding:28px}.dk-doc h1{font:600 22px/30px system-ui,sans-serif;margin:0 0 4px}.dk-doc>p{color:#607796;margin:0 0 20px;font:400 14px/20px system-ui,sans-serif}</style></head><body class="' + esc(document.body.className) + '"><div class="dk-doc"><h1>' + esc(t) + '</h1><p>Exported from Facilio Delivery Studio on ' + esc(day) + '. This is a static copy: links and filters do not work here.</p>' + c.outerHTML + '</div></body></html>';
     V.download(slug(t) + '-' + day + '.html', html, 'text/html;charset=utf-8');
   }
   function exportCsv(key) {
@@ -184,7 +184,7 @@
       ['Schedule performance', c.spi == null ? '—' : c.spi.toFixed(2), c.spi == null ? 'needs a dated plan' : c.spi >= 1 ? 'on or ahead of plan' : 'below 1.00 means behind plan', sc == null ? null : Math.min(100, sc)],
       ['Milestone adherence', ad == null ? '—' : ad + '%', c.due.length ? c.hit.length + ' of ' + c.due.length + ' due plan steps are Done' : 'no plan step has come due yet', ad],
       [k ? 'Waiting on you' : 'Overdue', k ? c.actsOpen.filter(a => a.side === 'customer' && fa(a)).length : c.anyLate.filter(fa).length, k ? 'open actions on your side' : 'actions past their date', null]];
-    const kp = `<div class="sd-kpis">${kpis.map((a, i) => kpi(a[0], a[1], a[2], i === 3 && !k && c.anyLate.length ? BAD : '#3b82f6', a[3])).join('')}</div>`;
+    const kp = `<div class="sd-kpis">${kpis.map((a, i) => kpi(a[0], a[1], a[2], i === 3 && !k && c.anyLate.length ? BAD : '#5989ff', a[3])).join('')}</div>`;
     const rg = widget('Delivery progress', 'four measures, one ring each', rings([
       { l: 'Plan done', d: c.st.n ? 'against ' + c.st.planned + '% planned' : 'no dated plan', p: c.st.n ? c.st.actual : null, c: BLUE },
       { l: 'Requirements confirmed', d: conf + ' of ' + c.R.length, p: c.R.length ? pct(conf, c.R.length) : null, c: NAVY },
@@ -201,7 +201,7 @@
       : widget('Work by status', 'all tasks', C.donut([['To do', by('todo'), SLATE], ['In progress', by('prog'), BLUE], ['Blocked', by('blocked'), BAD], ['Done', by('done'), OK]], String(tks.length), 'tasks', 'No tasks match the filters.'), 4);
     const orb = widget('Health by area', 'one satellite per area', orbit({ g: 'On track', a: 'Attention', r: 'Off track', n: 'No data' }[ov], 'overall', A.map(x => ({ l: x.l, c: RAGC[x.s], d: x.d }))), 7);
     const sp = k ? '' : widget('Sign-off journey', 'BRD, UAT and go-live', journey({ brd: 'BRD', uat: 'UAT', golive: 'Go-live' }), 5);
-    const st = s => String(s.status || ''), GRY = '#d4d4d4'; const tcc = c.tcs.map(t => (/^(passed|approved)$/i.test(st(t)) ? OK : /^(failed|blocked)$/i.test(st(t)) ? BAD : /^(not started|ready for testing|deferred|)$/i.test(st(t)) ? GRY : WARN));
+    const st = s => String(s.status || ''), GRY = '#c4d1e4'; const tcc = c.tcs.map(t => (/^(passed|approved)$/i.test(st(t)) ? OK : /^(failed|blocked)$/i.test(st(t)) ? BAD : /^(not started|ready for testing|deferred|)$/i.test(st(t)) ? GRY : WARN));
     const cnt = col => tcc.filter(x => x === col).length;
     const dt = widget('Test cases', 'one dot per test case', dots(tcc, [['Passed', cnt(OK), OK], ['In progress', cnt(WARN), WARN], ['Failed or blocked', cnt(BAD), BAD], ['Not started', cnt(GRY), GRY]], 'No test cases yet.'), 6);
     const TY = ['Risk', 'Assumption', 'Issue', 'Dependency'], rd = c.raidOpen, imp = x => x.impact || 'Medium';
@@ -216,13 +216,13 @@
     const allTasks = V.items && V.items.ready(['task']) ? V.items.list('task') : [], openT = allTasks.filter(t => ts(t) !== 'done'), spT = weekly(allTasks), spA = weekly(c.acts), spR = weekly(c.raid), spU = weekly(c.tcs);
     const tpr = c.tcs.length ? pct(c.passed, c.tcs.length) : null, gz = widget('Test pass rate', c.tcs.length ? c.passed + ' of ' + c.tcs.length + ' test cases passed' : 'no test cases yet', C.gauge(tpr, tpr + '%', c.tcs.length ? 'passed' : '', tpr >= 80 ? OK : tpr >= 50 ? WARN : BAD, 'No test cases yet.'), 4);
     const kpiT = [kpis[0], kpis[1], ['Open tasks', openT.length, openT.filter(t => t.due && t.due < today).length + ' overdue · created per week', null, spT], ['Open risks and issues', c.raidOpen.length, c.raidHigh.length + ' high impact · created per week', null, spR], ['Test pass rate', tpr == null ? '—' : tpr + '%', c.tcs.length ? c.passed + ' of ' + c.tcs.length + ' passed' : 'no test cases yet', tpr, null]];
-    const kpT = '<div class="sd-kpis sd-k5">' + kpiT.map((a, i) => kpi(a[0], a[1], a[2], ['#3b82f6', '#0ea5e9', '#f59e0b', c.raidHigh.length ? BAD : '#ef4444', OK][i], a[3], a[4])).join('') + '</div>';
+    const kpT = '<div class="sd-kpis sd-k5">' + kpiT.map((a, i) => kpi(a[0], a[1], a[2], ['#5989ff', '#86aaff', '#fd8635', c.raidHigh.length ? BAD : '#dd6c6c', OK][i], a[3], a[4])).join('') + '</div>';
     // plan vs actual: the share of dated plan steps due by each date (a line), and how many are Done today (a dot)
     const pr = c.pr || []; let planW = widget('Plan vs actual', 'share of plan steps due, and done today', C.none('Add dated plan steps to see the plan.'), 8), ganttW = widget('Plan timeline', 'dated plan steps', C.none('Add dated plan steps to see the timeline.'), 12);
     if (pr.length >= 2) { const dd = r => r.end || r.start, t0 = pr.reduce((m, r) => (r.start < m ? r.start : m), pr[0].start), t1 = pr.reduce((m, r) => (dd(r) > m ? dd(r) : m), dd(pr[0])), N = 12, m0 = Date.parse(t0 + 'T00:00:00Z'), m1 = Math.max(Date.parse(t1 + 'T00:00:00Z'), m0 + 864e5), labs = [], plan = [];
       for (let i = 0; i <= N; i++) { const ms = m0 + (m1 - m0) * i / N, d = new Date(ms).toISOString().slice(0, 10); labs.push(new Date(ms).toLocaleDateString('en', { day: 'numeric', month: 'short', timeZone: 'UTC' })); plan.push(Math.round(pr.filter(r => dd(r) <= d).length * 100 / pr.length)); }
       const ti = Math.max(0, Math.min(N, Math.round((Date.parse(today + 'T00:00:00Z') - m0) / (m1 - m0) * N))), doneShare = Math.round(pr.filter(r => /^done$/i.test(r.status || '')).length * 100 / pr.length);
-      planW = widget('Plan vs actual', 'share of plan steps due by date, and done today', C.line(labs, [{ name: 'Plan steps due', color: '#94a3b8', values: plan }], { max: 100, unit: '%', today: ti, marks: [{ i: ti, v: doneShare, label: 'Done today ' + doneShare + '%', color: OK }] }), 8);
+      planW = widget('Plan vs actual', 'share of plan steps due by date, and done today', C.line(labs, [{ name: 'Plan steps due', color: '#a8aaaa', values: plan }], { max: 100, unit: '%', today: ti, marks: [{ i: ti, v: doneShare, label: 'Done today ' + doneShare + '%', color: OK }] }), 8);
       const gRows = pr.slice().sort((x, y) => String(x.start).localeCompare(String(y.start))).slice(0, 12).map(r => ({ l: String(r.title || r.name || 'Step').slice(0, 44), s: r.start, e: dd(r), st: /^done$/i.test(r.status || '') ? 'done' : /progress/i.test(r.status || '') ? 'prog' : dd(r) < today ? 'late' : 'todo' }));
       ganttW = widget('Plan timeline', 'first ' + gRows.length + ' dated plan steps, today marked', C.gantt(gRows, today, 'Add dated plan steps to see the timeline.'), 12); }
     const actW = widget('Activity', 'records created per week, last ' + WK + ' weeks', C.line(wkLab, [{ name: 'Tasks', color: BLUE, values: spT }, { name: 'Actions', color: WARN, values: spA }, { name: 'Risks and issues', color: BAD, values: spR }, { name: 'Test cases', color: OK, values: spU }], { empty: 'Nothing was created in the last ' + WK + ' weeks.' }), 8);

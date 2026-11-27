@@ -30,7 +30,7 @@
   }
   V.goliveLogic = { readiness };
   if (!F || !F.S) return;   // the page below needs the browser app (tests load only the rule above)
-  const dot = s => '<span style="display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:8px;background:' + (s === 'ok' ? '#1AA34A' : s === 'warn' ? '#F59E0B' : '#E5197F') + '"></span>';
+  const dot = s => '<span style="display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:8px;background:' + (s === 'ok' ? '#29A01E' : s === 'warn' ? '#FD8635' : '#ED2780') + '"></span>';
   function gather() {
     const mods = F.allModules().filter(m => m.inScope); const reqs = (F.S.ws.requirements || []).filter(r => r.status === 'Confirmed');
     const cases = I().list('utc'); const data = mods.map(m => ({ name: m.name, label: m.label, requirements: reqs.filter(r => (r.modules || []).includes(m.name)).map(r => ({ id: r.id, title: r.title })) })); data.push({ name: '__general', label: 'General requirements', requirements: reqs.filter(r => !(r.modules && r.modules.length)).map(r => ({ id: r.id, title: r.title })) }); const cov = U().coverage(data, cases);
