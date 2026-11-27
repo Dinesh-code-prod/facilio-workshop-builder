@@ -8,7 +8,7 @@
 import { chromium } from 'playwright'; import fs from 'node:fs'; import ExcelJS from 'exceljs';
 const BASE = process.argv[2] || 'http://localhost:4173'; const OUT = process.argv[3] || 'tests/ui/out'; fs.mkdirSync(OUT, { recursive: true });
 const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined }); const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true }); const p = await ctx.newPage();
-const errs = []; p.on('pageerror', e => errs.push(e.message)); const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
+const errs = []; p.on('pageerror', e => errs.push(e.message)); const clickIn = async sel => { const menu = /pt-sh|tkSheetNew/.test(sel) ? '.pt-views' : /tkSheetCfg|tkBrief|tkRun/.test(sel) ? '.pt-cfg' : '.pt-more'; await p.evaluate(m => document.querySelectorAll('details.rv-menu').forEach(d => { d.open = d.matches(m); }), menu); await p.click(sel); }; /* Facilio list page (27 Nov 2026): import, export, sheets and settings sit in menus */  const res = []; const check = (n, ok, d) => { res.push(!!ok); console.log((ok ? 'ok   ' : 'FAIL ') + n + (d ? '  (' + d + ')' : '')); };
 await p.goto(BASE + '/'); await p.waitForSelector('[data-act]');
 const api = (m, u, body) => p.evaluate(async ([m, u, body]) => { const r = await fetch('/api/fn/api' + u, { method: m, headers: { 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }); return { status: r.status, data: await r.json() }; }, [m, u, body]);
 const pid = (await api('POST', '/projects', { name: 'Tasks check', customer: 'Acme FM' })).data.project.id;
@@ -32,11 +32,11 @@ await p.fill('#tkf_t', 'Does the work permit need two approval levels?'); await 
 await p.fill('#tkf_qt', 'Does the work permit need two approval levels?'); await p.click('[data-act="tkSave"]'); await p.waitForTimeout(800);
 T = await tasks(); const q = T.find(t => /two approval/.test(t.title));
 check('a task is created with its type, owner (me), module and ETA', q && q.type === 'Customer Question' && q.owner === 'dinesh.r@facilio.com' && q.eta === '2026-11-10' && q.question.status === 'New', q && JSON.stringify([q.type, q.owner, q.eta]));
-await p.click('.pt-sh:has-text("Customer Questions")'); await p.waitForTimeout(300);
+await clickIn('.pt-sh:has-text("Customer Questions")'); await p.waitForTimeout(300);
 check('it shows in the matching sheet', /two approval levels/.test(await p.textContent('.pt-grid')));
 
 // inline edit in the grid
-await p.click('.pt-sh:has-text("All Tasks")'); await p.waitForTimeout(300);
+await clickIn('.pt-sh:has-text("All Tasks")'); await p.waitForTimeout(300);
 const row = `tr[data-id="${q.id}"]`; await p.click(`${row} td[data-c="status"]`); await p.selectOption(`${row} td[data-c="status"] select`, 'In Progress'); await p.waitForTimeout(800);
 check('a cell edits in place and is saved', (await tasks()).find(t => t.id === q.id).status === 'In Progress');
 await p.fill('#tkAdd', 'Configure PPM schedules for chillers'); await p.press('#tkAdd', 'Enter'); await p.waitForTimeout(800);
@@ -60,16 +60,17 @@ check('only the ticked checklist suggestions are added', (await tasks()).find(t 
 await p.screenshot({ path: `${OUT}/tasks-drawer.png` }); await p.evaluate(() => window.FWBViews.closeDrawer());
 
 // AI type suggestions for selected tasks, applied only when ticked
+await p.evaluate(() => { const c = document.querySelector('#asst .as-ib[aria-label^="Close"]'); if (c && document.getElementById('asst').getBoundingClientRect().width > 0) c.click(); });   /* the Assistant opens by itself when a reply arrives; close it as a person would */
 const ppm = (await tasks()).find(t => t.title === 'Configure PPM schedules for chillers'); await p.check(`tr[data-id="${ppm.id}"] .pt-ck input`); await p.click('[data-act="tkClassify"]'); await p.waitForSelector('.pt-cls', { timeout: 15000 });
 check('type suggestions are shown for review first', (await tasks()).find(t => t.id === ppm.id).type === 'Other');
 await p.click('[data-act="tkClassifyGo"]'); await p.waitForTimeout(800); check('applied suggestions change the type', (await tasks()).find(t => t.id === ppm.id).type === 'Implementation Task');
 
 // sheets: a new view, columns in a chosen order, survives a reload, deleting it deletes no task
-await p.click('[data-act="tkSheetNew"]'); await p.fill('#tks_n', 'Permits'); await p.check('input[name="tks_t"][value="Customer Question"]'); await p.click('#tks_cols li[data-c="eta"] [data-d="-1"]'); await p.click('#tks_cols li[data-c="eta"] [data-d="-1"]'); await p.click('[data-act="tkSheetSave"]'); await p.waitForTimeout(800);
+await clickIn('[data-act="tkSheetNew"]'); await p.fill('#tks_n', 'Permits'); await p.check('input[name="tks_t"][value="Customer Question"]'); await p.click('#tks_cols li[data-c="eta"] [data-d="-1"]'); await p.click('#tks_cols li[data-c="eta"] [data-d="-1"]'); await p.click('[data-act="tkSheetSave"]'); await p.waitForTimeout(800);
 const heads = await p.$$eval('.pt-grid thead th[data-col]', e => e.map(x => x.getAttribute('data-col')));
 check('a new sheet shows its own filter and column order', heads.indexOf('eta') < heads.indexOf('owner') && (await p.$$('.pt-grid tbody tr')).length === 1, heads.join(','));
 await p.waitForTimeout(1500); await open(); check('the sheet is saved', await p.$('.pt-sh:has-text("Permits")') !== null);
-const before = (await tasks()).length; await p.click('.pt-sh:has-text("Permits")'); await p.click('[data-act="tkSheetCfg"]'); await p.click('[data-act="tkSheetDel"]'); await p.click('.dialog [data-r="1"]'); await p.waitForTimeout(800);
+const before = (await tasks()).length; await clickIn('.pt-sh:has-text("Permits")'); await clickIn('[data-act="tkSheetCfg"]'); await p.click('[data-act="tkSheetDel"]'); await p.click('.dialog [data-r="1"]'); await p.waitForTimeout(800);
 check('deleting a sheet keeps every task', !(await p.$('.pt-sh:has-text("Permits")')) && (await tasks()).length === before);
 
 // Excel import: recognised columns, an extra column kept, unknown assignee and bad date flagged, duplicate not imported
@@ -78,7 +79,7 @@ check('deleting a sheet keeps every task', !(await p.$('.pt-sh:has-text("Permits
   ws.addRow(['Escalation emails not sent', 'Work Orders', 'Open', 'Somebody Else', 'next week', '', 'Tower B']);
   ws.addRow(['Configure PPM schedules for chillers', 'Maintenance', 'Closed', '', '', '', '']); ws.addRow(['=HYPERLINK("http://x")', 'Portal', 'Pending', '', '05/12/2026', '', '']);
   const ws2 = wb.addWorksheet('Ignore me'); ws2.addRow(['Issue / Observation', 'Status']); ws2.addRow(['Should not import', 'Open']); await wb.xlsx.writeFile(`${OUT}/tasks-import.xlsx`); }
-await p.click('[data-act="tkImport"]'); await p.setInputFiles('#tkImpF', `${OUT}/tasks-import.xlsx`); await p.waitForSelector('.pt-map', { timeout: 15000 });
+await clickIn('[data-act="tkImport"]'); await p.setInputFiles('#tkImpF', `${OUT}/tasks-import.xlsx`); await p.waitForSelector('.pt-map', { timeout: 15000 });
 const maps = await p.$$eval('.pt-imps >> nth=0 >> select', e => e.map(x => x.value)).catch(() => []);
 check('import recognises the columns and keeps unknown ones as extra', maps.slice(0, 7).join(',') === 'title,module,status,owner,eta,notes,keep', maps.join(','));
 await p.uncheck('[data-change="tkImpOn"][data-i="1"]'); await p.click('[data-act="tkImpCheck"]'); await p.waitForSelector('.pt-impr');
@@ -94,7 +95,7 @@ check('the summary reports what happened', /3 imported/.test(await p.textContent
 await p.evaluate(() => window.FWBViews.closeDrawer());
 
 // Excel export: every sheet in one workbook, opened and checked
-await open(); await p.click('[data-act="tkExport"]'); await p.check('input[name="tkx"][value="book"]');
+await open(); await clickIn('[data-act="tkExport"]'); await p.check('input[name="tkx"][value="book"]');
 const [dl] = await Promise.all([p.waitForEvent('download'), p.click('[data-act="tkExportGo"]')]); const file = `${OUT}/tasks-export.xlsx`; await dl.saveAs(file);
 { const wb = new ExcelJS.Workbook(); await wb.xlsx.readFile(file); const names = wb.worksheets.map(w => w.name); const sheetsUI = await p.$$eval('.pt-sh', e => e.map(x => x.childNodes[0].textContent.trim()));
   check('one worksheet per sheet, in the sheet order', JSON.stringify(names) === JSON.stringify(sheetsUI), names.join(' | '));
@@ -108,7 +109,7 @@ const [dl] = await Promise.all([p.waitForEvent('download'), p.click('[data-act="
 
 // tasks from a transcript: proposed, reviewed, then created; owners and dates only when stated
 const before2 = (await tasks()).length;
-await p.click('[data-act="tkExtract"]'); await p.fill('#tkx_l', 'Workshop 3'); await p.fill('#tkx_t', 'Priya: We will update the work order form by Friday.\nRavi: I will share the vendor list.\nCustomer: Can you explain how escalations work on weekends?\nWe talked about the weather.');
+await clickIn('[data-act="tkExtract"]'); await p.fill('#tkx_l', 'Workshop 3'); await p.fill('#tkx_t', 'Priya: We will update the work order form by Friday.\nRavi: I will share the vendor list.\nCustomer: Can you explain how escalations work on weekends?\nWe talked about the weather.');
 await p.click('[data-act="tkExtractGo"]'); await p.waitForSelector('.pt-ex', { timeout: 20000 }); const ex = await p.textContent('#tkxOut');
 check('extracted items are shown for review, nothing is saved yet', (await tasks()).length === before2 && (await p.$$('.pt-ex tbody tr')).length === 3);
 check('a named team member becomes the owner; a stated day that is not a date stays unconfirmed', await p.$eval('.tkx-o[data-i="0"]', e => e.value) === 'priya.n@facilio.com' && await p.$eval('.tkx-e[data-i="0"]', e => e.value) === '' && /Said: Friday/.test(ex));

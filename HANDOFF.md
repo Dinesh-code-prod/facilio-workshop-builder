@@ -1,5 +1,7 @@
 # Handoff
 
+**NEXT FOR THE USER (picked up 28-29 Nov): the guides to-do list `docs/plans/GUIDES-NEW-UI-TODO-2026-11-27.md`** (re-record the guide films and update the written guides for the new UI, after signing off the new look). The UI coverage register is `docs/reports/ui-coverage-register-2026-11-27.md` (re-run with `node tests/ui/ui-coverage.mjs` on a data copy). Branch `feat/facilio-reference-ds` is pushed to GitHub; main is NOT changed until sign-off.
+
 **FACILIO REFERENCE-LED DESIGN SYSTEM (27 Nov 2026, branch `feat/facilio-reference-ds`, committed locally, NOT PUSHED YET, waiting for the user's sign-off).**
 - **Source:** the live Facilio product demo plus Meteor's CMMS Demo Kit (captured Facilio CSS).
 - **What changed:**

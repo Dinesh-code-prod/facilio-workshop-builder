@@ -53,6 +53,8 @@ html body :is(.main, .adm-main, .drawer, .dialog, [role="dialog"], .projects-pag
 html body :is(.main, .adm-main, .drawer, .dialog, [role="dialog"], .projects-page) .btn.danger:not(#DS) { background: #fff !important; color: var(--ds-bad) !important; box-shadow: inset 0 0 0 1px var(--ds-bad-bd) !important; }
 html body :is(.main, .adm-main, .drawer, .dialog, [role="dialog"], .projects-page) .btn.danger:hover:not(:disabled):not(#DS) { background: var(--ds-bad-bg) !important; }
 html body :is(.main, .adm-main, .drawer, .dialog, [role="dialog"], .projects-page) .btn:disabled:not(#DS) { opacity: .5 !important; cursor: not-allowed !important; }
+/* every button is a Facilio button: 8 px corners, never a round pill (coverage register, 27 Nov 2026: 58 surfaces had pill buttons). Placed before the chip and segment rules so those keep their own corners. */
+html body :is(.main, .adm-main, .drawer, .dialog, [role="dialog"], .projects-page, #asst) :is(button, a.btn, .btn):not(.icon):not(.avatar):not([class*="dot"]):not([role="switch"]):not(#DS) { border-radius: var(--ds-r-btn) !important; }
 html body :is(.btn, button, a, [role="tab"], input, select, textarea):focus-visible:not(#DS) { outline: 2px solid var(--ds-blue) !important; outline-offset: 2px !important; }
 
 /* ---------- Page header: compact and white. Left: stage, title, one line; right: the page's own actions. No gradient band ---------- */
@@ -649,10 +651,116 @@ html body header.navbar .nb-tabs nav.mt-bar .mt-in:not(.here):not(#DS) { display
 html body header.navbar .nb-tabs nav.mt-bar .mt-in.here:not(#DS) { border-left: 0 !important; margin-left: 0 !important; padding-left: 0 !important; }
 /* Icons format: the right end of the top bar is compact like Facilio's (a small switcher, then icon buttons), so the module tabs get the room.
    Search, Guide me and Preview as customer show only their icon (32 x 32); their names stay as tooltips and accessible names. */
-html body.nav-top header.navbar .nb-proj:not(#DS) { max-width: 220px !important; }
-html body.nav-top header.navbar .nb-proj .nb-pt small:not(#DS) { display: none !important; }
-html body.nav-top header.navbar .nb-proj .nb-pt b:not(#DS) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
-html body.nav-top header.navbar :is(.gs-btn, .co-pill, [data-act="custPreview"]):not(#DS) { flex: 0 0 32px !important; max-width: 32px !important; width: 32px !important; min-width: 32px !important; height: 32px !important; padding: 0 !important; justify-content: center !important; font-size: 0 !important; gap: 0 !important; overflow: hidden !important; }
-html body.nav-top header.navbar :is(.gs-btn, .co-pill, [data-act="custPreview"]) :is(span, kbd, b):not(#DS) { display: none !important; }
-html body.nav-top header.navbar :is(.gs-btn, .co-pill, [data-act="custPreview"]) svg:not(#DS) { width: 18px !important; height: 18px !important; flex: none; }
+html body header.navbar .nb-proj:not(#DS) { max-width: 220px !important; }
+html body header.navbar .nb-proj .nb-pt small:not(#DS) { display: none !important; }
+html body header.navbar .nb-proj .nb-pt b:not(#DS) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+html body header.navbar :is(.gs-btn, .co-pill, [data-act="custPreview"]):not(#DS) { flex: 0 0 32px !important; max-width: 32px !important; width: 32px !important; min-width: 32px !important; height: 32px !important; padding: 0 !important; justify-content: center !important; font-size: 0 !important; gap: 0 !important; overflow: hidden !important; }
+html body header.navbar :is(.gs-btn, .co-pill, [data-act="custPreview"]) :is(span, kbd, b):not(#DS) { display: none !important; }
+html body header.navbar :is(.gs-btn, .co-pill, [data-act="custPreview"]) svg:not(#DS) { width: 18px !important; height: 18px !important; flex: none; }
 html body header.navbar .nb-tabs.ovf:not(#DS) { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+
+/* one font everywhere (coverage register, 27 Nov 2026: 205 surfaces had headings in Plus Jakarta Sans or text in Inter set directly by older layers). Code, the BRD and Excel previews and the sign-in page keep theirs. */
+html body *:not(code):not(pre):not(kbd):not(samp):not(.paper):not(.paper *):not(.xls-table):not(.xls-table *):not(.brd-doc *):not(.auth):not(.auth *):not(#DS) { font-family: var(--ds-body) !important; }
+
+/* ---------- Values measured in a signed-in Facilio org (27 Nov 2026, docs/reports/facilio-org-ui-study-2026-11-27.md); where they differ from the demo
+   tenant measured first, the live product wins. ---------- */
+html body:not(#DS) { --ds-r-card: 8px; --ds-r-panel: 8px; --ds-req: #DE3500; --ds-kpi-bar: #0074D1; --ds-pop-ring: 0 0 0 .5px var(--ds-border); }
+/* top bar: translucent white with a 16 px blur, no hairline or shadow */
+html body header.navbar:not(#DS) { background: rgba(255, 255, 255, .5) !important; -webkit-backdrop-filter: blur(16px) !important; backdrop-filter: blur(16px) !important; border-bottom: 0 !important; box-shadow: none !important; }
+/* the project chip is Facilio's site switcher: #FAFAFA, 8 px corners */
+html body header.navbar .nb-proj:not(#DS) { background: var(--ds-canvas) !important; border-radius: var(--ds-r-btn) !important; }
+/* rail: 60 wide, hover #F5F5F5 */
+html body.nav-top .shell:not(#DS) { grid-template-columns: 60px 1fr !important; }
+html body.nav-top .shell > nav.sidebar:not(#DS) { width: 60px !important; min-width: 60px !important; border-right: 0 !important; }
+html body.in-proj nav.sidebar .rl-b:not(#DS) { width: 60px !important; }
+html body.in-proj nav.sidebar .rl-b:hover:not(.active):not(#DS) > svg { background: var(--ds-subtle) !important; }
+/* menus, flyouts and popovers: 4 px corners, a half-pixel hairline ring and the Facilio elevation */
+html body :is(.rl-fly, #userPop, .rv-menu-p):not(#DS) { border-radius: var(--ds-r-badge) !important; border: 0 !important; box-shadow: var(--ds-pop-ring), var(--ds-sh-float) !important; }
+/* page header: one #FAFAFA panel with a hairline and 8 px corners (the Facilio module header) */
+html body :is(.main .page-header, .adm-main .adm-hero):not(#DS) { background: var(--ds-canvas) !important; border: 1px solid var(--ds-border) !important; border-radius: var(--ds-r-panel) !important; padding: 12px 16px !important; margin: 0 0 16px !important; }
+/* table header labels 12/400 */
+html body :is(.main, .adm-main, .drawer) table:not(.paper table):not(.brd-doc table):not(.xls-table):not(#DS) th, html body table.rv-table thead th:not(#DS) { font: 400 12px/18px var(--ds-head) !important; color: var(--ds-text2) !important; padding-top: 7px !important; padding-bottom: 7px !important; }
+/* KPI tiles keep 12 px corners and get the 6 px top bar (status tones keep their colour) */
+html body :is(.main, .adm-main) .kpi:not(#DS) { border-radius: 12px !important; box-shadow: inset 0 6px 0 var(--ds-kpi-bar) !important; padding-top: 18px !important; }
+html body :is(.main, .adm-main) .kpi.k-green:not(#DS) { box-shadow: inset 0 6px 0 var(--ds-ok) !important; }
+html body :is(.main, .adm-main) .kpi.k-amber:not(#DS) { box-shadow: inset 0 6px 0 var(--ds-warn) !important; }
+html body :is(.main, .adm-main) .kpi.k-red:not(#DS) { box-shadow: inset 0 6px 0 var(--ds-bad) !important; }
+/* form labels 12/400, the required mark #DE3500, focus a blue border with no ring */
+html body :is(.main, .adm-main, .drawer, .dialog, [role="dialog"]) :is(.field > label, .fld > label, label.lbl, label.f, .form-row > label):not(#DS) { font: 400 12px/18px var(--ds-head) !important; color: var(--ds-ink) !important; }
+html body :is(.main, .adm-main, .drawer, .dialog, [role="dialog"]) :is(label.f, .field > label) :is(.req, .rq, b.req, em.req):not(#DS) { color: var(--ds-req) !important; }
+html body :is(.main, .adm-main, .drawer, .dialog, [role="dialog"]) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), select, textarea):focus:not(.paper *):not(#DS) { box-shadow: none !important; }
+/* Tasks as a Facilio list page (27 Nov 2026): the sheets are a view selector in the toolbar, the list has the full width, settings sit in a gear menu */
+html body .main .pt-split.pt-flat:not(#DS) { display: block !important; }
+html body .main .pt-bar:not(#DS) { display: flex !important; flex-wrap: wrap; align-items: center !important; gap: 8px !important; }
+html body .main .pt-views .rv-menu-p:not(#DS) { left: 0 !important; right: auto !important; min-width: 280px !important; max-height: 60vh; overflow: auto; }
+html body .main .pt-views .rv-menu-p .pt-sh:not(#DS) { display: flex !important; justify-content: space-between !important; width: 100% !important; border: 0 !important; background: transparent !important; border-radius: var(--ds-r-badge) !important; padding: 8px 12px !important; text-align: left; }
+html body .main .pt-views .rv-menu-p .pt-sh:hover:not(#DS) { background: var(--ds-subtle) !important; }
+html body .main .pt-views .rv-menu-p .pt-sh:is(.on, [aria-selected="true"]):not(#DS) { background: var(--ds-selected) !important; color: var(--ds-blue) !important; }
+html body .main .pt-vsum:not(#DS) { border-radius: var(--ds-r-badge) !important; font-weight: 500 !important; }
+html body .main .pt-vsum .pt-shn:not(#DS), html body .main .pt-views .pt-shn:not(#DS) { margin-left: 8px; color: var(--ds-muted); font-weight: 400; }
+html body .main :is(.pt-more, .pt-cfg) .rv-menu-p .btn:not(#DS) { justify-content: flex-start !important; width: 100% !important; }
+html body .main .pt-cfg > summary:not(#DS)::after, html body .main .pt-views > summary:not(#DS)::after { margin-left: 6px; }
+html body .main .pt-cfg > summary.icon:not(#DS)::after { display: none; }
+/* ---------- Text menu format, the Facilio way (user, 27 Nov 2026: "fix the sidebar, which doesn't match the Facilio theme"): a #FAFAFA panel like Facilio's
+   side panels, rows like its menus and rail flyout (4 px corners, 14 px, #F5F5F5 hover), the open page in the selection blue, plain grey counts, neutral stage
+   numbers with the current stage on the rail's violet, no caption lines, a thin grey scrollbar. ---------- */
+html body:not(.nav-top) nav.sidebar:not(#DS) { background: var(--ds-canvas) !important; border-right: 1px solid var(--ds-border) !important; padding: 12px 8px !important; scrollbar-width: thin; scrollbar-color: var(--ds-border-strong) transparent; box-shadow: none !important; }
+html body:not(.nav-top) nav.sidebar:not(#DS)::-webkit-scrollbar { width: 6px; } html body:not(.nav-top) nav.sidebar:not(#DS)::-webkit-scrollbar-thumb { background: var(--ds-border-strong); border-radius: 3px; } html body:not(.nav-top) nav.sidebar:not(#DS)::-webkit-scrollbar-track { background: transparent; }
+html body:not(.nav-top) nav.sidebar .search:not(#DS) { margin: 0 4px 8px !important; background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; }
+html body:not(.nav-top) nav.sidebar .search input:not(#DS) { height: 32px !important; border-radius: var(--ds-r-btn) !important; background: #fff !important; border: 1px solid var(--ds-border-strong) !important; box-shadow: none !important; font: 400 14px/20px var(--ds-body) !important; color: var(--ds-ink) !important; }
+html body:not(.nav-top) nav.sidebar .sb-sec:not(#DS) { padding: 16px 12px 4px !important; margin: 0 !important; border: 0 !important; background: none !important; }
+html body:not(.nav-top) nav.sidebar .sb-sec:not(#DS)::before, html body:not(.nav-top) nav.sidebar .sb-sec:not(#DS)::after, html body:not(.nav-top) nav.sidebar .sb-sec span:not(#DS)::after, html body:not(.nav-top) nav.sidebar .sb-sec span:not(#DS)::before { display: none !important; content: none !important; }
+html body:not(.nav-top) nav.sidebar .sb-sec span:not(#DS) { font: 500 12px/18px var(--ds-head) !important; color: var(--ds-muted) !important; text-transform: none !important; letter-spacing: 0 !important; }
+html body:not(.nav-top) nav.sidebar .sb-title:not(#DS) { min-height: 36px !important; padding: 8px 12px !important; gap: 12px !important; border-radius: var(--ds-r-badge) !important; background: transparent !important; font: 500 14px/20px var(--ds-head) !important; color: var(--ds-ink) !important; box-shadow: none !important; }
+html body:not(.nav-top) nav.sidebar .sb-title:hover:not(#DS) { background: var(--ds-subtle) !important; }
+html body:not(.nav-top) nav.sidebar .sb-title svg:not(#DS) { width: 16px !important; height: 16px !important; color: var(--ds-text2) !important; }
+html body:not(.nav-top) nav.sidebar .sb-n:not(#DS) { background: transparent !important; box-shadow: none !important; border: 0 !important; padding: 0 !important; min-width: 0 !important; color: var(--ds-muted) !important; font: 400 12px/18px var(--ds-head) !important; }
+html body:not(.nav-top) nav.sidebar .sb-chev:not(#DS) { color: var(--ds-muted) !important; opacity: 1 !important; }
+html body:not(.nav-top) nav.sidebar .sb-no:not(#DS) { width: 20px !important; height: 20px !important; min-width: 20px !important; border-radius: var(--ds-r-badge) !important; background: var(--ds-muted-fill) !important; color: var(--ds-text2) !important; box-shadow: none !important; font: 500 12px/20px var(--ds-head) !important; font-style: normal !important; text-align: center; }
+html body:not(.nav-top) nav.sidebar .sb-cur .sb-no:not(#DS) { background: var(--ds-nav-sel) !important; color: #fff !important; }
+html body:not(.nav-top) nav.sidebar .sb-done .sb-no:not(#DS) { background: var(--ds-ok-bg) !important; color: var(--ds-ok) !important; box-shadow: inset 0 0 0 1px var(--ds-ok-bd) !important; }
+html body:not(.nav-top) nav.sidebar .sb-item:not(#DS) { min-height: 36px !important; padding: 8px 12px 8px 44px !important; border-radius: var(--ds-r-badge) !important; background: transparent !important; font: 400 14px/20px var(--ds-body) !important; color: var(--ds-ink) !important; box-shadow: none !important; }
+html body:not(.nav-top) nav.sidebar .sb-item:hover:not(.active):not(#DS) { background: var(--ds-subtle) !important; }
+html body:not(.nav-top) nav.sidebar .sb-item.active:not(#DS) { background: var(--ds-selected) !important; color: var(--ds-blue) !important; font-weight: 500 !important; box-shadow: none !important; }
+html body:not(.nav-top) nav.sidebar .sb-item.active:not(#DS)::before { display: none !important; }
+
+/* ---------- Chat panel (the Assistant), the Facilio way (user, 27 Nov 2026: "update the chat UI ... all theme has to be matched"): Facilio's dialog recipe
+   (white, 8 px corners, a hairline ring and the medium elevation), a 16/500 header over a hairline, 32 px ghost icon buttons, chips at 4 px, a composer that is a
+   Facilio field (1px #DBDBDB, 8 px, blue border on focus), and the floating button as Facilio's dark floating control (#283648, 8 px corners) instead of a glowing circle. ---------- */
+html body #asst:not(#DS) { border: 0 !important; border-radius: var(--ds-r-panel) !important; box-shadow: var(--ds-pop-ring), var(--ds-sh-high) !important; }
+html body #asst :is(.as-h, .as-head, header):not(#DS) { border-bottom: 1px solid var(--ds-border) !important; }
+html body #asst :is(.as-h, .as-head, header) :is(b, h2, h3, strong):not(#DS) { font: 500 16px/24px var(--ds-head) !important; color: var(--ds-ink) !important; }
+html body #asst :is(.as-ib, .as-mic):not(#DS) { width: 32px !important; height: 32px !important; min-width: 32px !important; border-radius: var(--ds-r-btn) !important; background: transparent !important; border: 0 !important; box-shadow: none !important; color: var(--ds-text2) !important; }
+html body #asst :is(.as-ib, .as-mic):hover:not(#DS) { background: var(--ds-subtle) !important; }
+html body #asst .as-send:not(#DS) { width: 32px !important; height: 32px !important; min-width: 32px !important; border-radius: var(--ds-r-btn) !important; background: var(--ds-blue) !important; box-shadow: none !important; }
+html body #asst :is(.hp-chip, .as-chip):not(#DS) { border-radius: var(--ds-r-badge) !important; background: var(--ds-canvas) !important; border: 1px solid var(--ds-border-strong) !important; box-shadow: none !important; font: 400 12px/18px var(--ds-head) !important; color: var(--ds-ink) !important; }
+html body #asst :is(.as-in, .as-compose, .as-box):not(#DS) { border: 1px solid var(--ds-border-strong) !important; border-radius: var(--ds-r-btn) !important; box-shadow: none !important; background: #fff !important; }
+html body #asst :is(.as-in, .as-compose, .as-box):focus-within:not(#DS) { border-color: var(--ds-blue) !important; }
+html body #asstTab:not(#DS) { width: 44px !important; height: 44px !important; border-radius: var(--ds-r-btn) !important; background: var(--ds-ink) !important; box-shadow: var(--ds-sh-low) !important; }
+html body #asstTab:hover:not(#DS) { background: var(--ds-text2) !important; }
+/* the older dropdown menus (details.mnu, e.g. Data onboarding and Mockup) as Facilio menus: white, 4 px corners, a hairline ring, the medium elevation, 14 px rows */
+html body .mnu-list:not(#DS) { background: #fff !important; border: 0 !important; border-radius: var(--ds-r-badge) !important; box-shadow: var(--ds-pop-ring), var(--ds-sh-float) !important; padding: 4px !important; }
+html body .mnu-list :is(button, a):not(#DS) { border-radius: var(--ds-r-badge) !important; font: 400 14px/20px var(--ds-body) !important; color: var(--ds-ink) !important; background: transparent !important; border: 0 !important; }
+html body .mnu-list :is(button, a):hover:not(#DS) { background: var(--ds-subtle) !important; }
+
+/* ---------- Forms as Facilio form pages (user, 27 Nov 2026: "every form and subform ... the format of how you see them in the demo org"; study §5):
+   the side panel becomes a full page under the top bar on Facilio's light grey: a header bar (icon + title 16/500, hairline, 8 px), the form as one
+   centred 720 px white card, and a footer bar with the actions on the right. Wide panels (tables inside) get 1100 px. Same markup, so every form keeps its fields and save. ---------- */
+html body #drawer.scrim.is-open:not(#DS) { top: 62px !important; background: var(--ds-canvas) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; border-radius: 0 !important; overflow: auto !important; }
+html body #drawer .drawer:not(#DS) { position: relative !important; inset: auto !important; transform: none !important; width: min(784px, calc(100% - 48px)) !important; max-width: none !important; height: auto !important; min-height: calc(100% - 32px) !important; margin: 16px auto !important; background: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; display: flex !important; flex-direction: column !important; gap: 12px !important; }
+html body #drawer .drawer.wide:not(#DS) { width: min(1100px, calc(100% - 48px)) !important; }
+html body #drawer .drawer > .drawer-h:not(#DS) { position: sticky !important; top: 0 !important; z-index: 2; background: rgba(255, 255, 255, .92) !important; -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border: 1px solid var(--ds-border-strong) !important; border-radius: var(--ds-r-panel) !important; padding: 12px 32px !important; box-shadow: none !important; }
+html body #drawer .drawer > .drawer-h :is(h2, h3, b):not(#DS) { font: 500 16px/24px var(--ds-head) !important; color: var(--ds-ink) !important; }
+html body #drawer .drawer > .drawer-b:not(#DS) { flex: 1 0 auto !important; overflow: visible !important; background: #fff !important; border: 1px solid var(--ds-border) !important; border-radius: var(--ds-r-panel) !important; padding: 24px 32px !important; max-height: none !important; }
+html body #drawer .drawer > .drawer-f:not(#DS) { position: sticky !important; bottom: 0 !important; z-index: 2; background: rgba(255, 255, 255, .92) !important; -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border: 1px solid var(--ds-border-strong) !important; border-radius: var(--ds-r-panel) !important; padding: 12px 32px !important; display: flex !important; justify-content: flex-end !important; gap: 8px !important; box-shadow: none !important; }
+html body #drawer .drawer > .drawer-b :is(h3, h4, .sec-h):not(#DS) { font: 500 14px/20px var(--ds-head) !important; color: var(--ds-ink) !important; }
+
+/* ---------- Settings pages in the Facilio Setup layout (user, 27 Nov 2026; study §7, its structure in today's Facilio colours): the section tabs become a
+   240 px left navigation panel (#FAFAFA, hairline, 8 px; rows 36 px, 14 px, 4 px corners; the open section in the selection blue), the content on the right. ---------- */
+html body .main .page:has(> .page-body.st-page):not(#DS) { display: grid !important; grid-template-columns: 240px minmax(0, 1fr) !important; column-gap: 24px !important; align-items: start !important; }
+html body .main .page:has(> .page-body.st-page) > :not(.tabs):not(.page-body):not(#DS) { grid-column: 1 / -1 !important; }
+html body .main .page:has(> .page-body.st-page) > .tabs:not(#DS) { grid-column: 1 !important; display: flex !important; flex-direction: column !important; align-items: stretch !important; gap: 2px !important; padding: 8px !important; background: var(--ds-canvas) !important; border: 1px solid var(--ds-border) !important; border-radius: var(--ds-r-panel) !important; position: sticky !important; top: 76px !important; overflow: visible !important; }
+html body .main .page:has(> .page-body.st-page) > .tabs > .tab:not(#DS) { justify-content: flex-start !important; text-align: left !important; min-height: 36px !important; padding: 8px 12px !important; margin: 0 !important; border-radius: var(--ds-r-badge) !important; box-shadow: none !important; font: 400 14px/20px var(--ds-body) !important; color: var(--ds-ink) !important; }
+html body .main .page:has(> .page-body.st-page) > .tabs > .tab:hover:not(.active):not(#DS) { background: var(--ds-subtle) !important; }
+html body .main .page:has(> .page-body.st-page) > .tabs > .tab.active:not(#DS) { background: var(--ds-selected) !important; color: var(--ds-blue) !important; font-weight: 500 !important; box-shadow: none !important; }
+html body .main .page:has(> .page-body.st-page) > .page-body:not(#DS) { grid-column: 2 !important; min-width: 0 !important; }

@@ -145,4 +145,13 @@ Nothing important is set below 12 px.
 4. **Font:** Roboto everywhere. The sign-in page keeps its own font, at its 24 Nov design.
 5. **Colours everywhere:** animations, dashboards and widgets included. Every hard-coded colour in `src` was moved onto the Facilio palette ramps by one rule (hue family kept, closest lightness). The full mapping is in `docs/reports/facilio-palette-map-2026-11-27.txt`. Exported Word, Excel and HTML documents keep the Facilio document palette their tests require.
 6. **Source of truth:** Meteor's CMMS Demo Kit (`get_playbook(path="kit.zip")`), the captured Facilio product CSS. It confirms primary `#0024D6`, Roboto, the 56 px header, the icon rail and the list, form and record layouts.
-7. **Chart series** use the Facilio widget accents, in this order: blue `#0024D6`, cyan `#34C0CE`, violet `#7D63DC`, orange `#FF6700`, pink `#ED2780`, green `#49B83F`, yellow `#E2BC00`, purple `#A160B7`.
+7. **Chart series,** as seen in the org: `#0074D1`, `#49B83F`, `#34C0CE`, then the Facilio widget accents violet `#7D63DC`, orange `#FF6700`, pink `#ED2780`, yellow `#E2BC00` and purple `#A160B7`. Grid lines are `#E0E6F1`.
+8. **From the signed-in org** (`docs/reports/facilio-org-ui-study-2026-11-27.md`):
+   - **Corners:** cards, dialogs and form cards are 8 px; dashboard widgets and KPIs are 12 px.
+   - **Page header:** a `#FAFAFA` panel with a hairline.
+   - **Table headers:** labels 12/400.
+   - **KPI cards:** a 6 px top bar, `#0074D1` or the status colour.
+   - **Forms:** labels 12/400; the required mark `#DE3500`; focus is a blue border with no ring.
+   - **Top bar:** translucent white with a 16 px blur.
+   - **Rail:** 60 px wide, `#F5F5F5` hover.
+   - **Menus:** 4 px corners, a 0.5 px `#EAE9E9` ring and the medium elevation.

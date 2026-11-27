@@ -214,7 +214,21 @@ Embedded dashboards use clustered bar charts with a three-tone blue (budget, act
 - **Empty widget:** "Operating Hours is not associated", with an "Assign Operating Hours" button.
 - **Loading:** not observed (the demo loads instantly). **Error:** not observed. **Disabled:** not observed.
 
-## 4. Limits
+## 4. Signed-in org study (later the same day)
+
+**Source:** a signed-in Facilio org (`app.facilio.co.ae`) was studied read-only. The results are in `docs/reports/facilio-org-ui-study-2026-11-27.md`. Where they differ from the demo tenant above, the live org wins:
+- **Corners:** record, dialog and form cards are 8 px; dashboard widgets and KPIs are 12 px.
+- **Page header:** one `#FAFAFA` panel with a hairline.
+- **Table headers:** labels are 12/400.
+- **KPI cards:** a 6 px `#0074D1` top bar.
+- **Forms:** labels 12/400; the required mark is `#DE3500`; focus is a blue border with no ring.
+- **Top bar:** translucent with a 16 px blur.
+- **Rail:** 60 px wide, `#F5F5F5` hover.
+- **Menus:** 4 px corners with a 0.5 px hairline ring.
+- **Charts:** series `#0074D1`, `#49B83F`, `#34C0CE`.
+- **Do not copy:** Setup is an older look.
+
+## 5. Limits
 
 - **Read-only exploration:** forms were not submitted and validation messages were not seen. Setup was not opened.
 - **Unverified popovers:** the filter, view selector, calendar switch and bell gave no visible reaction.
