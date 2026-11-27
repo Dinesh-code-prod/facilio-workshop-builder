@@ -22,11 +22,19 @@
 | Tests | Colour assertions follow the new values; the layout check walks the single rail layout; new pilot screenshot script | `tests/helper_status.mjs`, `tests/transfers_page.mjs`, `tests/mockup_spec.mjs`, `tests/ui/master-ds-check.mjs`, `tests/ui/ds-pilot-shots.mjs` |
 | Docs | Reference audit, design system, inventory, migration plan, test register, this report; `CLAUDE.md` look rules | `docs/…`, `CLAUDE.md` |
 
-## Regression
+## Regression (final, 27 Nov 2026)
 
-- **Layout check:** 267 screens at three widths in all three views, 0 problems.
-- **Tests:** 135 / 135 test commands pass.
-- **Pilot screens:** no page errors.
+- **Layout check:** `master-ds-check`, both menu formats, 1920 / 1366 / 1100 px, staff, customer and Admin: 0 problems.
+- **Tests:** 135 / 135 test commands pass; `tests/ui/tasks-check.mjs` passes; `tests/ui/keyboard-zoom-check.mjs` passes (keyboard in both formats, 200 % zoom on 10 pages in both formats).
+- **Coverage crawl** (`docs/reports/ui-coverage-register-2026-11-27.md`): 439 surfaces in staff (Icons and Text), customer (Icons and Text) and Admin.
+  - 427 inspected; **399 fully on the Facilio system**; 0 page errors.
+  - 12 tabs not reached by a click.
+  - 28 flagged. After the last fix (4 more pill classes), what remains is:
+    - document previews that keep the document palette on purpose (requirement schedule, sample BRD, sample solution document);
+    - 11.5 px avatar initials and count badges (Facilio's own count badges are 10 px);
+    - a few unclassed sample chips in Discover more and the Workshop room.
+- **Earlier crawl numbers** (169 customer surfaces) crawled the staff menu while labelled customer. The final crawl uses a fresh sign-in per phase and reaches the real customer menu.
+- **Old UI clean-up:** 802 dead CSS rules (89 KB) and 3 unused assets removed, each checked.
 
 ## Left out on purpose
 

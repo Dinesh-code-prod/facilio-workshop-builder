@@ -9,8 +9,10 @@
 import { chromium } from 'playwright'; import fs from 'node:fs';
 const BASE = process.argv.find(a => /^https?:/.test(a)) || 'http://localhost:4240'; const MAXA = +((process.argv.find(a => a.startsWith('--max-acts=')) || '--max-acts=40').slice(11));
 const SKIP = /(del|remove|reset|logout|signout|revoke|clear|archive|reject|publish|push|send|approve|sign|confirm|apply|accept|submit|mark|decide|stop|run|export|^dl|download|sync|refresh|reload|copy|print|close|save|cancel|done|complete|finish|restore|undo|toggle|nav$|sort|page|prev|next|dismiss|pwtoggle|claude|^ai|bring|import|generate|draft|extract|analy|ask|track|seed|demo|load|upload|attach|invite|share|move|dup|clone|lock|unlock|start|play|tour|intro|replay|reveal|exit|leave|switch|navpos|custpreview|openadmin|toprojects|railgo|tab$|tktab|view$|sheet$|group|filter|qf|bulk|sel|cell)/i;
-const b = await chromium.launch({ channel: process.env.PW_CHANNEL || 'msedge' }); const p = await (await b.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
-let errs = []; p.on('pageerror', e => errs.push(e.message)); const settle = ms => p.waitForTimeout(ms);
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || 'msedge' }); let p = null;
+let errs = []; const settle = ms => p.waitForTimeout(ms);
+// every phase gets a fresh browser and sign-in: the dev session ends during a run of over an hour (27 Nov 2026: Customer · Text met a signed-out app)
+const fresh = async () => { if (p) await p.context().close(); p = await (await b.newContext({ viewport: { width: 1440, height: 900 } })).newPage(); p.on('pageerror', e => errs.push(e.message)); await p.goto(BASE + '/?nointro'); await settle(2200); if (await p.$('[data-act="runEnter"]')) { await p.click('[data-act="runEnter"]'); await settle(1500); } };
 // ---- runs in the page: Facilio design-system findings for one surface ----
 function audit(sel) {
   const root = document.querySelector(sel); if (!root) return null;
@@ -69,14 +71,14 @@ async function chrome(pov) {   // the chat panel and the top-bar popovers
   }
 }
 
-await p.goto(BASE + '/?nointro'); await settle(2200); if (await p.$('[data-act="runEnter"]')) { await p.click('[data-act="runEnter"]'); await settle(1500); }
+await fresh();
 const pid = await p.evaluate(async () => { const ps = (await (await fetch('/api/fn/api/projects')).json()).projects || []; return (ps.find(x => /walkthrough/i.test(x.name)) || ps[0]).id; });
 await p.goto(`${BASE}/?nointro#/p/${pid}/projdash`); await settle(2600); await p.keyboard.press('Escape');
 const FMT = { top: 'Icons', side: 'Text' };   // both menu formats (user, 27 Nov 2026), set on this data copy only
-for (const fm of ['top', 'side']) { await p.evaluate(f => window.FWBViews.setNavPref(f, 'staff'), fm); await settle(1200); await chrome('Staff · ' + FMT[fm]); await crawlPages('Staff · ' + FMT[fm], pid); }
-await p.goto(`${BASE}/?nointro#/p/${pid}/projdash`); await settle(2200);
-if (await p.$('[data-act="custPreview"]')) { await p.click('[data-act="custPreview"]'); await settle(2500); for (const fm of ['top', 'side']) { await p.evaluate(f => window.FWBViews.setNavPref(f, 'customer'), fm); await settle(1200); await crawlPages('Customer · ' + FMT[fm], pid); } await p.click('[data-act="custPreviewExit"]').catch(() => { }); await settle(1200); }
-await p.evaluate(() => { const x = document.querySelector('[data-act="custPreviewExit"]'); if (x) x.click(); }).catch(() => { }); await settle(1200);   // never start Admin from the customer preview
+for (const fm of ['top', 'side']) { await fresh(); await p.goto(`${BASE}/?nointro#/p/${pid}/projdash`); await settle(2600); await p.keyboard.press('Escape'); await p.evaluate(f => window.FWBViews.setNavPref(f, 'staff'), fm); await settle(1200); await chrome('Staff · ' + FMT[fm]); await crawlPages('Staff · ' + FMT[fm], pid); }
+for (const fm of ['top', 'side']) { await fresh(); await p.goto(`${BASE}/?nointro#/p/${pid}/projdash`); await settle(2200); if (!(await p.$('[data-act="custPreview"]'))) continue; await p.click('[data-act="custPreview"]'); await settle(2500); await p.evaluate(f => window.FWBViews.setNavPref(f, 'customer'), fm); await settle(1200); await crawlPages('Customer · ' + FMT[fm], pid); }
+
+await fresh();   // Admin from a fresh sign-in, never from the customer preview
 await p.goto(BASE + '/?nointro'); await settle(2000); if (await p.$('[data-act="runEnter"]')) { await p.click('[data-act="runEnter"]'); await settle(1500); } await p.evaluate(() => { const a = [...document.querySelectorAll('[data-act="openAdmin"]')].find(e => e.offsetParent); if (a) a.click(); }).catch(() => { }); await settle(2500);
 const adm = await p.evaluate(() => [...document.querySelectorAll('.adm-nav .adm-ni')].map(e => (e.getAttribute('title') || e.textContent).trim().slice(0, 30)));
 for (let i = 0; i < adm.length; i++) { errs = []; await p.evaluate(i => document.querySelectorAll('.adm-nav .adm-ni')[i].click(), i); await settle(1100); const a = await p.evaluate(audit, '.adm-main'); add('Admin', 'Admin', '#/admin', '—', 'Page: ' + adm[i], 'Admin menu', a, errs.length ? 'fail: page error ' + errs[0].slice(0, 60) : 'opened');
