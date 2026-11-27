@@ -88,11 +88,24 @@
       widget('Top open risks and issues', 'highest impact first', table(['Type', 'Item', 'Impact', 'Owner', 'Due'], top, 'No open risks or issues.'), 12, '#ff6700'))}</div>`;
   };
 
+  const PMO_KINDS = ['action', 'signoff', 'raid', 'decision', 'minutes', 'cr', 'task', 'rep'];
+  V.pmo = { html() {
+    if (cust()) return '<div class="page-body"><div class="empty">This page is for the project team.</div></div>';
+    I().load(PMO_KINDS);
+    const head = '<div class="page-header"><div class="t"><h1>PMO overview</h1><p>Where ' + esc((S.project && S.project.name) || 'the project') + ' stands: overall status, the lifecycle, sign-offs, risks, the next milestones and the change requests waiting. Everything is computed from the saved records.</p></div></div>';
+    if (!I().ready(PMO_KINDS)) return head + '<div class="page-body"><div class="empty">Loading…</div></div>';
+    const ev = (V.events ? V.events({ days: 45 }) : []).slice().sort((a, b) => String(a.date).localeCompare(String(b.date))).slice(0, 10);
+    const crs = I().list('cr').filter(c => ['Requested', 'Draft', 'Proposed'].includes(c.status)).sort((a, b) => (b.n || 0) - (a.n || 0)).slice(0, 8);
+    const more = grid(widget('Upcoming milestones', 'the next 45 days: plan milestones, sessions, actions due', table(['Date', 'What', 'Type', 'Side'], ev.map(e => [esc(fd(e.date)), `<b>${esc(e.title || '')}</b>`, esc(e.type || ''), esc(e.side || '')]), 'Nothing is planned in the next 45 days.'), 7, '#2e65ff')
+      + widget('Change requests waiting', 'requested, draft or proposed', table(['No.', 'Change', 'Status'], crs.map(c => [`<a href="#" data-act="crOpen" data-id="${esc(c.id)}">${esc(V.crNo ? V.crNo(c) : c.id)}</a>`, esc(c.title || ''), chipT(c.status, c.status === 'Proposed' ? 'warn' : '')]), 'No change request is waiting.'), 5, '#2e65ff'));
+    return head + '<div class="page-body">' + V.pmoView() + '<div style="margin-top:16px">' + more + '</div></div>';
+  }, mount() { I().load(PMO_KINDS); } };
+
   // ---------- sharing ----------
   const pmoPeople = () => ((F.doc('people') || {}).stakeholders || []).concat(((F.doc('people') || {}).team || [])).filter(x => x.email && /pmo|programme|program|portfolio|governance/i.test(x.role || ''));
   ACT.pmoShare = () => drawer('Share with the PMO', `<p class="small" style="margin-top:0">Opens an Outlook draft with the status report. Nothing is sent from here: you review and press Send.</p><div class="fgrid"><div class="full"><label class="f">To</label><input type="text" id="pm_to" value="${esc(pmoPeople().map(x => x.email).join('; '))}" placeholder="pmo@company.com"></div><div class="full"><label class="f">Cc</label><input type="text" id="pm_cc"></div></div>`, `<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="pmoShareGo">Open in Outlook</button>`);
   ACT.pmoShareGo = () => { const f = facts(); const to = val('pm_to'), cc = val('pm_cc'); closeDrawer(); V.outlook.compose({ to, cc, subject: `${custName()} × Facilio · ${S.project.name || 'Project'} · Status report · ${fd(f.t)}`, body: text(f) + '\n\nOpen the live view: ' + link() }); };
-  const link = () => root.location.href.split('#')[0] + '#/p/' + S.project.id + '/governance';
+  const link = () => root.location.href.split('#')[0] + '#/p/' + S.project.id + '/pmo';
   ACT.pmoCopy = async () => { try { await navigator.clipboard.writeText(text(facts())); toast('Report copied'); } catch (e) { toast('Copy is blocked by the browser: use Download report'); } };
   ACT.pmoDownload = () => { const f = facts(); const t = text(f); const h = '<!doctype html><meta charset="utf-8"><title>' + esc((S.project.name || 'Project') + ' status report') + '</title><body style="font:15px/1.6 system-ui,sans-serif;max-width:760px;margin:32px auto;padding:0 20px"><pre style="white-space:pre-wrap;font:inherit">' + esc(t) + '</pre>'; V.download((S.project.name || 'project').replace(/[^\w-]+/g, '-') + '-status-' + f.t + '.html', h, 'text/html'); };
 

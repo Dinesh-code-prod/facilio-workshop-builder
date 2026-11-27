@@ -75,7 +75,7 @@ async function project(view) {
 if (VIEWS.includes('staff') || VIEWS.includes('customer')) {
   await p.goto(`${BASE}/?nointro#/p/${pid}/projdash`); await settle(2800); await p.keyboard.press('Escape');
   if (VIEWS.includes('staff')) await project('staff');
-  if (VIEWS.includes('customer')) { await p.evaluate(() => FWBViews.go('projdash')); await settle(1200); const cp = await p.$('[data-act="custPreview"]'); if (cp) { await cp.click(); await settle(2500); await project('customer'); await p.click('[data-act="custPreviewExit"]').catch(() => {}); await settle(1500); } else console.log('no Preview as customer button'); }
+  if (VIEWS.includes('customer')) { await p.evaluate(() => FWBViews.go('projdash')); await settle(1200); await p.evaluate(() => { if (!document.querySelector('[data-act="custPreview"]')) window.FWBViews.setNavPref('side'); }); await p.waitForTimeout(600); const cp = await p.$('[data-act="custPreview"]'); if (cp) { await cp.click(); await settle(2500); await project('customer'); await p.click('[data-act="custPreviewExit"]').catch(() => {}); await settle(1500); } else console.log('no Preview as customer button'); }
 }
 if (VIEWS.includes('admin')) {
   await enter(); await p.click('[data-act="openAdmin"]'); await settle(2500); await p.evaluate(() => FWBViews.setNavPref('side', 'admin')); await settle(1000);

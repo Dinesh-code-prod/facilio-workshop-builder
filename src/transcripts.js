@@ -164,7 +164,7 @@
     c.status = 'merged'; hist('Candidate merged', 'into ' + t, c.id); closeDrawer(); F.changed('Candidate merged', c.title, { section: 'transcripts' }); };
 
   // ---------- requirements register ----------
-  V.reqTable = rs => `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>ID</th><th>Requirement</th><th>Modules</th><th>Classification</th><th>Source</th><th>Status</th><th>Open questions</th></tr></thead><tbody>${rs.map(r => `<tr class="click" data-act="editReq" data-id="${esc(r.id)}"><td class="mono"><b>${esc(r.id)}</b></td><td><b>${esc(r.title)}</b>${r.objective ? `<div class="xs muted">${esc(r.objective.slice(0, 140))}</div>` : ''}</td><td class="small">${(r.modules || []).map(m => esc((F.moduleView(m) || {}).label || m)).join(', ')}</td><td>${tag(r.classification === 'custom' || r.classification === 'confirm' ? 'tbc' : r.classification === 'change' ? 'proposed' : 'existing', F.REQ_CLASS[r.classification] || '—')}</td><td class="xs">${r.source ? 'Transcript' + (r.source.session ? ' · ' + esc(sessLabel(r.source.session)) : '') : 'Manual'}</td><td>${tag(r.status === 'Confirmed' ? 'verified' : r.status === 'Deferred' || r.status === 'Rejected' ? 'low' : 'tbc', r.status || 'Draft')}</td><td class="small">${esc(r.openQuestions || '')}</td></tr>`).join('') || '<tr><td colspan="7" class="empty">No requirements captured yet.</td></tr>'}</tbody></table></div>`;
+  V.reqTable = rs => `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>ID</th><th>Requirement</th><th>Modules</th><th>Classification</th><th>Source</th><th>Status</th><th>Open questions</th></tr></thead><tbody>${rs.map(r => `<tr class="click" data-act="editReq" data-id="${esc(r.id)}"><td class="mono"><a href="#" data-act="reqOpen" data-id="${esc(r.id)}" title="Open the requirement as a page"><b>${esc(r.id)}</b></a></td><td><b>${esc(r.title)}</b>${r.objective ? `<div class="xs muted">${esc(r.objective.slice(0, 140))}</div>` : ''}</td><td class="small">${(r.modules || []).map(m => esc((F.moduleView(m) || {}).label || m)).join(', ')}</td><td>${tag(r.classification === 'custom' || r.classification === 'confirm' ? 'tbc' : r.classification === 'change' ? 'proposed' : 'existing', F.REQ_CLASS[r.classification] || '—')}</td><td class="xs">${r.source ? 'Transcript' + (r.source.session ? ' · ' + esc(sessLabel(r.source.session)) : '') : 'Manual'}</td><td>${tag(r.status === 'Confirmed' ? 'verified' : r.status === 'Deferred' || r.status === 'Rejected' ? 'low' : 'tbc', r.status || 'Draft')}</td><td class="small">${esc(r.openQuestions || '')}</td></tr>`).join('') || '<tr><td colspan="7" class="empty">No requirements captured yet.</td></tr>'}</tbody></table></div>`;
   TT.register = () => {
     const q = (S.ui.rq || '').toLowerCase(); const st = S.ui.rqs || 'all'; const rs = S.ws.requirements.filter(r => (!q || (r.id + ' ' + r.title + ' ' + (r.objective || '')).toLowerCase().includes(q)) && (st === 'all' || (r.status || 'Draft') === st));
     const by = k => S.ws.requirements.filter(r => (r.status || 'Draft') === k).length;
@@ -175,9 +175,23 @@
   V.reqs = { html() { S.ui.trTab = 'register'; return V.transcripts.html(); } };
   V.newReqFor = pre => reqDrawer(Object.assign({ id: '', title: '', modules: [], fields: [], actors: [], transitions: [], classification: 'existing', status: 'Draft' }, pre || {}));
   ACT.newReq = a => V.newReqFor({ modules: a && a.getAttribute && a.getAttribute('data-module') ? [a.getAttribute('data-module')] : [] });
+  // ----- a requirement as a Facilio record page (stage F, 27 Nov 2026): Back, the ID, the title with its status; the form in the main column (Save keeps its
+  // checks, e.g. Confirmed needs who confirmed it), the key facts in a side widget. The ID in the register opens it; a row click still opens the side panel. -----
+  V.reqpage = { html() {
+    const back = '<button type="button" class="btn link sm rc-back" data-act="reqBack">← Back to Requirements register</button>';
+    const r = (S.ws.requirements || []).find(x => x.id === S.ui.reqPageId);
+    if (!r) return `<div class="page-header rc-head"><div class="t">${back}<h1>Requirement</h1><p>This requirement was not found. It may have been deleted.</p></div></div><div class="page-body"><div class="empty">Open a requirement from the Requirements register.</div></div>`;
+    const f = reqDrawer(r, (t, b, ft) => ({ b, ft })); const pill = tag(r.status === 'Confirmed' ? 'green' : r.status === 'Rejected' ? 'red' : r.status === 'Deferred' ? 'low' : 'blue', r.status || 'Draft');
+    const facts = [['Status', r.status || 'Draft'], ['Classification', (F.REQ_CLASS || {})[r.classification] || r.classification || '—'], ['Modules', (r.modules || []).map(m => (F.moduleView(m) || {}).label || m).join(', ') || '—'], ['Confirmed by', r.confirmedBy || '—'], ['Confirmed on', r.confirmedAt || '—'], ['BRD section', { module: 'Module section', process: 'End-to-end process', general: 'General' }[r.brdSection || 'module']], ['Source', r.source ? 'Transcript' + (r.source.speaker ? ', ' + r.source.speaker : '') : 'Added by hand']];
+    return `<div class="page-header rc-head"><div class="t">${back}<p class="rc-id">${esc(r.id)}</p><h1>${esc(r.title || 'Requirement')} ${pill}</h1></div></div>`
+      + `<div class="page-body rc-page"><div class="rc-main"><div class="pt-fp-main">${f.b}</div><div class="pt-fp-foot">${f.ft.split('data-act="closeDrawer"').join('data-act="reqBack"')}</div></div>`
+      + `<aside class="rc-side" aria-label="Requirement summary"><section class="card"><div class="card-h"><h3>Summary</h3></div><div class="card-b"><dl class="rc-grid">${facts.map(([l, v]) => `<div><dt>${esc(l)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl></div></section>${(r.history || []).length ? `<section class="card"><div class="card-h"><h3>History</h3></div><div class="card-b"><ul class="pt-hist">${r.history.slice(-8).reverse().map(h => `<li><b>${esc(h.change || '')}</b><span class="xs muted">${esc(h.by || '')} · ${esc(String(h.at || '').slice(0, 10))}</span></li>`).join('')}</ul></div></section>` : ''}</aside></div>`;
+  } };
+  ACT.reqOpen = (a, e) => { if (e && e.stopPropagation) e.stopPropagation(); V.go('reqpage', { reqPageId: a.getAttribute('data-id') }); };
+  ACT.reqBack = () => V.go('transcripts', { trTab: 'register' });
   ACT.editReq = a => reqDrawer(S.ws.requirements.find(r => r.id === a.getAttribute('data-id')));
   let pending = null;
-  function reqDrawer(r) {
+  function reqDrawer(r, put) {   // put: the record page passes its own (title, body, foot) collector; the side panel is the default
     pending = r; const ro = S.readonly;
     const mods = F.allModules().filter(m => m.inScope || m.inUse || (r.modules || []).indexOf(m.name) >= 0).sort((a, b) => a.label.localeCompare(b.label));
     const fieldOpts = []; (r.modules || []).forEach(m => F.effFields(m).forEach(f => fieldOpts.push({ v: m + '.' + f.name, l: ((F.moduleView(m) || {}).label || m) + ' › ' + f.label })));
@@ -197,7 +211,7 @@
       <div class="full"><label class="f">Stateflow transitions</label>${tOpts.length ? multi('rq_trans', tOpts, r.transitions) : '<div class="xs muted">No transitions for the selected modules</div>'}</div>
       <div class="full"><label class="f">Requirement session</label>${sel('', [{ v: '', l: '— none —' }].concat(sessions().map(s => ({ v: s.id, l: sessLabel(s.id) }))), r.sessionId || (r.source && r.source.session) || '', 'id="rq_sess"')}</div>
       <div class="full"><label class="f">BRD section</label>${sel('', [{ v: 'module', l: 'Module section (Functional Requirements)' }, { v: 'process', l: 'End-to-end process section' }, { v: 'general', l: 'General requirements' }], r.brdSection || 'module', 'id="rq_sec"')}</div></div>`;
-    drawer(r.id ? 'Requirement ' + r.id : 'New requirement', body, ro ? '<button class="btn" data-act="closeDrawer">Close</button>' : `${r.id ? `<button class="btn danger" data-act="deleteReq" data-id="${esc(r.id)}">Delete</button>` : ''}<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="saveReq" data-id="${esc(r.id)}" data-proc="${esc(r.process || '')}">Save</button>`, { wide: true });
+    return (put || drawer)(r.id ? 'Requirement ' + r.id : 'New requirement', body, ro ? '<button class="btn" data-act="closeDrawer">Close</button>' : `${r.id ? `<button class="btn danger" data-act="deleteReq" data-id="${esc(r.id)}">Delete</button>` : ''}<button class="btn" data-act="closeDrawer">Cancel</button><button class="btn primary" data-act="saveReq" data-id="${esc(r.id)}" data-proc="${esc(r.process || '')}">Save</button>`, { wide: true });
   }
   ACT.saveReq = a => {
     const g = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; }; const ms = id => { const el = document.getElementById(id); return el ? Array.from(el.selectedOptions).map(o => o.value) : []; };
@@ -216,7 +230,7 @@
       F.changed('Requirement added', nid + ' ' + title); }
     closeDrawer();
   };
-  ACT.deleteReq = async a => { const id = a.getAttribute('data-id'); if (!(await confirmDialog('Delete requirement', 'Delete ' + id + '? This cannot be undone.', 'Delete', true))) return; S.ws.requirements = S.ws.requirements.filter(r => r.id !== id); T().candidates.filter(c => c.reqId === id).forEach(c => { c.status = 'pending'; c.reqId = null; }); closeDrawer(); F.markDirty('transcripts'); F.changed('Requirement deleted', id); };
+  ACT.deleteReq = async a => { const id = a.getAttribute('data-id'); if (!(await confirmDialog('Delete requirement', 'Delete ' + id + '? This cannot be undone.', 'Delete', true))) return; S.ws.requirements = S.ws.requirements.filter(r => r.id !== id); T().candidates.filter(c => c.reqId === id).forEach(c => { c.status = 'pending'; c.reqId = null; }); closeDrawer(); F.markDirty('transcripts'); F.changed('Requirement deleted', id); if (S.ui.view === 'reqpage') V.go('transcripts', { trTab: 'register' }); };
 
   // ---------- open questions ----------
   TT.questions = () => {

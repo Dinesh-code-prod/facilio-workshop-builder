@@ -35,7 +35,7 @@
   if (typeof module !== 'undefined' && module.exports) { module.exports = logic; return; }
   const F = root.FWB, V = root.FWBViews; if (!F || !V) return; V.docsLogic = logic;
   const { S, esc } = F; const ACT = V.ACT; const API = () => root.FWBApi; const ico = n => (V.ico ? V.ico(n) : '');
-  const st = { pid: null, data: null, loading: false, folder: '', q: '', kind: '', jobs: [], err: '' };
+  const st = { pid: null, data: null, loading: false, folder: '', q: '', kind: '', who: '', grid: false, jobs: [], err: '' };
   const base = () => '/api/projects/' + S.project.id;
   const okMs = u => /^https:\/\/[^/]+\.sharepoint\.(com|us)\//i.test(String(u || ''));
   const size = n => (!n ? '0 KB' : n >= 1073741824 ? (n / 1073741824).toFixed(2) + ' GB' : V.fmtSize ? V.fmtSize(n || 0) : n + ' B');
@@ -81,7 +81,7 @@
   function pump() { const busy = st.jobs.filter(j => j.state === 'sending').length; st.jobs.filter(j => j.state === 'waiting').slice(0, Math.max(0, 2 - busy)).forEach(runJob); V.render(); }
   window.addEventListener('beforeunload', e => { if (st.jobs.some(j => j.state === 'sending' || j.state === 'waiting')) { e.preventDefault(); e.returnValue = ''; } });
 
-  const files = () => ((st.data && st.data.files) || []).filter(x => (!st.folder || x.folder === st.folder) && (!st.kind || x.kind === st.kind) && (!st.q || (x.name + ' ' + x.path + ' ' + x.uploadedBy).toLowerCase().includes(st.q.toLowerCase())));
+  const files = () => ((st.data && st.data.files) || []).filter(x => (!st.folder || x.folder === st.folder) && (!st.kind || x.kind === st.kind) && (!st.who || (x.uploadedBy || '') === st.who) && (!st.q || (x.name + ' ' + x.path + ' ' + x.uploadedBy).toLowerCase().includes(st.q.toLowerCase())));
   const find = id => ((st.data && st.data.files) || []).find(x => x.id === id);
   function tray() {
     const list = st.jobs.filter(j => j.state !== 'done' || Date.now() - (j.doneAt || (j.doneAt = Date.now())) < 8000); if (!list.length) return '';
@@ -90,10 +90,18 @@
       return '<div class="ev-row" style="align-items:center;gap:10px"><span class="ev-t" style="min-width:0;flex:1"><b>' + esc(j.name) + '</b> <span class="xs muted">' + esc(j.folder) + '</span><div class="row" style="gap:8px;align-items:center"><progress id="dup_' + esc(j.key) + '" max="100" value="' + pct + '" aria-label="Upload of ' + esc(j.name) + '" style="flex:1;min-width:120px"></progress><span class="xs muted" id="dupt_' + esc(j.key) + '">' + size(j.sent) + ' of ' + size(j.size) + '</span></div>' + (j.error && j.state !== 'done' ? '<div class="xs" style="color:#B61919">' + esc(j.error) + '</div>' : '') + '</span><span class="tag' + (j.state === 'done' ? ' green' : j.state === 'failed' ? ' red' : '') + '">' + lab + '</span>' + acts + (j.state !== 'done' ? '<button type="button" class="btn sm ghost" data-act="docCancel" data-k="' + esc(j.key) + '">Cancel</button>' : '') + '</div>'; };
     return '<div class="card" role="region" aria-label="Uploads" style="margin-bottom:12px"><div class="card-h"><b>Uploads</b><span class="small muted">Straight to SharePoint, 10 MB at a time</span></div><div class="card-b">' + list.map(row).join('') + '</div></div>';
   }
+  // Facilio Docs (the org's document layout, 27 Nov 2026): one card with "1 - n of N files" and Refresh at the top, the name a blue link with a file icon,
+  // the folder a small grey chip; a Grid view shows the same files as tiles
+  const fileIco = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
   function table(list) {
-    if (!list.length) return '<div class="card tr-empty"><div class="card-b"><h3>' + (st.q || st.kind ? 'No files match' : 'No files here yet') + '</h3><p class="small muted">' + (st.q || st.kind ? 'Clear the search or the type filter.' : 'Upload a file, or add files to this folder in SharePoint and press Refresh.') + '</p></div></div>';
-    const r = x => '<tr><td><button type="button" class="docs-name" data-act="docInfo" data-id="' + esc(x.id) + '">' + esc(x.name) + '</button>' + (x.missing ? ' <span class="tag red">' + esc(x.missing) + '</span>' : '') + (x.path !== x.folder || !st.folder ? '<div class="xs muted">' + esc(x.path) + '</div>' : '') + '</td><td>' + esc(x.kind) + '</td><td class="nw">' + size(x.size) + '</td><td>' + esc(x.uploadedBy || '—') + '</td><td class="nw">' + esc(V.fmtDate ? V.fmtDate(x.modifiedAt) : x.modifiedAt) + '</td><td class="nw">' + (x.missing || !okMs(x.url) ? '' : '<a class="btn sm" href="' + esc(x.url) + '" target="_blank" rel="noopener noreferrer">Open</a>') + '<button type="button" class="btn sm ghost" data-act="docInfo" data-id="' + esc(x.id) + '" aria-label="More for ' + esc(x.name) + '">More</button></td></tr>';
-    return '<div class="tbl-wrap"><table class="tbl docs-tbl"><thead><tr><th>Name</th><th>Type</th><th>Size</th><th>Added by</th><th>Modified</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>' + list.map(r).join('') + '</tbody></table></div>';
+    if (!list.length) return '<div class="card tr-empty"><div class="card-b"><h3>' + (st.q || st.kind || st.who || st.folder ? 'No files match' : 'No files here yet') + '</h3><p class="small muted">' + (st.q || st.kind || st.who || st.folder ? 'Clear the search or a filter.' : 'Upload a file, or add files to this folder in SharePoint and press Refresh.') + '</p></div></div>';
+    const total = ((st.data && st.data.files) || []).length;
+    const top = '<div class="dc-top"><span class="small muted">' + (list.length ? '1 - ' + list.length : '0') + ' of ' + total + ' file' + (total === 1 ? '' : 's') + '</span><span class="spacer"></span><button type="button" class="btn sm ghost" data-act="docRefresh"' + (st.loading ? ' disabled' : '') + '>' + (st.loading ? 'Reading SharePoint…' : 'Refresh') + '</button></div>';
+    const open = x => x.missing || !okMs(x.url) ? '' : '<a class="btn sm ghost" href="' + esc(x.url) + '" target="_blank" rel="noopener noreferrer">Open</a>';
+    const name = x => '<button type="button" class="docs-name" data-act="docInfo" data-id="' + esc(x.id) + '"><i class="dc-fi" aria-hidden="true">' + fileIco + '</i>' + esc(x.name) + '</button>' + (x.missing ? ' <span class="tag red">' + esc(x.missing) + '</span>' : '');
+    if (st.grid) return '<div class="card dc-card">' + top + '<div class="dc-grid">' + list.map(x => '<div class="dc-tile">' + name(x) + '<span class="dc-chip">' + esc(x.folder || '—') + '</span><span class="xs muted">' + esc(x.kind) + ' · ' + size(x.size) + ' · ' + esc(V.fmtDate ? V.fmtDate(x.modifiedAt) : x.modifiedAt) + '</span><span class="dc-ta">' + open(x) + '<button type="button" class="btn sm ghost" data-act="docInfo" data-id="' + esc(x.id) + '" aria-label="More for ' + esc(x.name) + '">More</button></span></div>').join('') + '</div></div>';
+    const r = x => '<tr><td>' + name(x) + (x.path && x.path !== x.folder ? '<div class="xs muted">' + esc(x.path) + '</div>' : '') + '</td><td><span class="dc-chip">' + esc(x.folder || '—') + '</span></td><td>' + esc(x.kind) + '</td><td class="nw">' + size(x.size) + '</td><td>' + esc(x.uploadedBy || '—') + '</td><td class="nw">' + esc(V.fmtDate ? V.fmtDate(x.modifiedAt) : x.modifiedAt) + '</td><td class="nw">' + open(x) + '<button type="button" class="btn sm ghost" data-act="docInfo" data-id="' + esc(x.id) + '" aria-label="More for ' + esc(x.name) + '">More</button></td></tr>';
+    return '<div class="card dc-card">' + top + '<div class="tbl-wrap"><table class="tbl docs-tbl"><thead><tr><th>Name</th><th>Folder</th><th>Type</th><th>Size</th><th>Added by</th><th>Modified</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>' + list.map(r).join('') + '</tbody></table></div></div>';
   }
   V.docs = { html() {
     if (V.isCustomer && V.isCustomer()) return '';
@@ -108,16 +116,20 @@
     const cnt = f => d.files.filter(x => x.folder === f).length;
     const folders = [['', 'All files', d.files.length]].concat(d.folders.map(f => [f, f, cnt(f)]));
     const kinds = Array.from(new Set(d.files.map(x => x.kind))).sort(); const shown = files();
-    const bar = '<div class="pt-bar ls-bar docs-bar">' + V.viewMenu(st.folder || 'All files', st.folder ? cnt(st.folder) : d.files.length, folders.map(([v, l, c]) => ({ act: 'docFolder', v, l, n: c, on: st.folder === v })), 'Folder')
-      + '<div class="tl-search pt-q">' + ico('search') + '<input type="search" id="docQ" data-docs="q" value="' + esc(st.q) + '" placeholder="Search file names" aria-label="Search file names"></div>'
-      + '<select aria-label="Type" data-change="docKind"><option value="">All types</option>' + kinds.map(k => '<option' + (k === st.kind ? ' selected' : '') + '>' + esc(k) + '</option>').join('') + '</select>'
-      + '<span class="spacer"></span><span class="small muted pt-count">' + shown.length + ' of ' + d.files.length + ' file' + (d.files.length === 1 ? '' : 's') + '</span><button type="button" class="btn sm" data-act="docRefresh"' + (st.loading ? ' disabled' : '') + '>' + (st.loading ? 'Reading SharePoint…' : 'Refresh') + '</button></div>';
+    const people = Array.from(new Set(d.files.map(x => x.uploadedBy).filter(Boolean))).sort();
+    const chip = (act, all, opts, cur, label) => '<label class="dc-fchip"><span class="sr-only">' + label + '</span><select data-change="' + act + '" aria-label="' + label + '"><option value="">' + all + '</option>' + opts.map(o => '<option value="' + esc(o[0]) + '"' + (o[0] === cur ? ' selected' : '') + '>' + esc(o[1]) + '</option>').join('') + '</select></label>';
+    const bar = '<div class="dc-fbar">' + chip('docFolderSel', 'Folder: all', folders.slice(1).map(([v, l, c]) => [v, l + ' (' + c + ')']), st.folder, 'Folder') + chip('docKind', 'Type: all', kinds.map(k => [k, k]), st.kind, 'Type') + chip('docWho', 'Added by: anyone', people.map(k => [k, k]), st.who, 'Added by')
+      + '<span class="spacer"></span><div class="tl-search pt-q">' + ico('search') + '<input type="search" id="docQ" data-docs="q" value="' + esc(st.q) + '" placeholder="Search file names" aria-label="Search file names"></div>'
+      + '<div class="seg dc-view" role="group" aria-label="View"><button type="button" class="' + (st.grid ? '' : 'on') + '" aria-pressed="' + !st.grid + '" data-act="docGrid" data-v="">Table</button><button type="button" class="' + (st.grid ? 'on' : '') + '" aria-pressed="' + st.grid + '" data-act="docGrid" data-v="1">Grid</button></div></div>';
     const note = d.note ? '<p class="small" style="color:#D85903">' + esc(d.note) + '</p>' : '';
     const seen = d.refreshedAt ? '<p class="xs muted" style="margin:8px 0 0">Read from SharePoint ' + esc(new Date(d.refreshedAt).toLocaleString()) + '. Changes made in SharePoint show after Refresh.</p>' : '';
     return head + '<div class="page-body">' + bar + note + tray() + table(shown) + seen + '</div>';
   } };
 
   ACT.docFolder = a => { st.folder = a.getAttribute('data-v') || ''; V.render(); };
+  ACT.docFolderSel = el => { st.folder = el.value || ''; V.render(); };
+  ACT.docWho = el => { st.who = el.value || ''; V.render(); };
+  ACT.docGrid = a => { st.grid = !!a.getAttribute('data-v'); V.render(); };
   ACT.docKind = el => { st.kind = el.value || ''; V.render(); };
   ACT.docRefresh = () => { st.err = ''; return load(true); };
   ACT.docUpload = async () => {

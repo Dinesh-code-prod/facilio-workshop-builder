@@ -17,7 +17,7 @@
 | T-09 | — | colour map | script | idempotent: a second run changes nothing; hue families kept (self-checks in the script) | 0 changes | 0 changes | `docs/reports/facilio-palette-map-2026-11-27.txt` | Pass | — | — |
 | T-10 | — | exported documents | doc palette | exported BRD, FTR, UAT and onboarding files keep the Facilio document palette | unchanged | unchanged (their tests pass) | T-03 | Pass | — | — |
 | T-11 | Staff | Project Settings | form | 40 px fields, 12 px labels, blue focus ring | as spec | fields and labels as spec; focus checked by keyboard (T-15): a blue border, as in Facilio | T-15 | Pass | — | D-03 |
-| T-12 | All | shell | rail container | rail flush to the edge like Facilio | flush | sits in a rounded outline | `ds-after2/1366-staff-flow.png` | Fail | Low | D-04 |
+| T-12 | All | shell | rail container | rail flush to the edge like Facilio | flush | flush since stage F (T-29) | `tests/ui/out/sf/look-top-1366-tasks-more.png` | Pass | — | D-04 |
 | T-13 | Staff | Tasks | page structure | Facilio list template (one toolbar) | template | Facilio list page: New task + More, a view selector, one toolbar row, a settings menu; `tests/ui/tasks-check.mjs` passes | tasks-check | Pass | — | D-05 |
 | T-14 | Staff | Assistant panel | buttons | no pill buttons | 8 px | 8 px buttons, 4 px chips, Facilio dialog recipe | coverage register | Pass | — | D-06 |
 | T-15 | Staff | Tasks and the shell | keyboard | Tab through the top bar, menu, tabs and page in both menu formats; every focused control shows a mark | reached, marked | reached, marked (fields: Facilio blue border) | `tests/ui/keyboard-zoom-check.mjs` | Pass | — | — |
@@ -32,6 +32,13 @@
 | T-24 | Staff | 10 key pages | keyboard and 200 % zoom after stage F | `keyboard-zoom-check` | all pass | all passed | console | Pass | — | — |
 | T-25 | All | — | unit, integration, Claude hand-off | `npm test`, `tests/ui/claude-handoff-check.mjs` after stage F | pass | npm test exit 0; hand-off 9/9 | console | Pass | — | — |
 | T-26 | All | all | coverage after stage F | `tests/ui/ui-coverage.mjs` on a data copy (port 4264; 4240 and 4241 were taken by other processes). The crawler now opens the header More menus before it looks for openers | every stage F page Facilio | every stage F page Facilio in both formats; 573 surfaces, 485 Facilio, 0 failed, 27 Legacy remaining, none on a stage F page. Tasks' round status pills and 11.5 px initials were fixed after this crawl (checked in the browser: 4 px, 13 px shown) | `docs/reports/ui-coverage-register-2026-11-27.md` | Pass | — | — |
+| T-27 | Staff | search fields | menu and page search | one box per field (icon inside, one border, blue border on focus, no second ring) | one box | one box (browser check of the menu and page fields, focused) | `tests/ui/out/sf/focus-*.png` | Pass | — | — |
+| T-28 | All | every page | page header | the #FAFAFA header panel shows (it lost to an older rule before) | panel | panel; no stray lines over the actions | `tests/ui/out/sf/*` | Pass | — | — |
+| T-29 | Staff | shell (Icons) | rail, top bar | rail flush (D-04); module tabs that do not fit go into ⋯; the project is a switcher button | as the org | as the org at 1366 (Tasks: Go-live & hypercare moves into ⋯) | `tests/ui/out/sf/look-top-1366-tasks-more.png` | Pass | — | D-04 |
+| T-30 | Staff | crpage, reqpage | record pages | Back, ID, title and status; CR next state as the header button, the rest under More; the form and a summary | template | as template; no page errors | `tests/ui/out/sf/look-top-1366-changes-crfirst.png` | Pass | — | — |
+| T-31 | Staff | settings, workspace, templates, claudesetup, webframe | Setup frame | left panel with search and categories; the page's sections as tabs | as the org's Setup | as expected | `tests/ui/out/sf/look-top-1366-settings.png` | Pass | — | — |
+| T-32 | Staff | search palette | project search | pages before typing, saved records after three letters, keyboard, Esc | as the org's search | as expected | `tests/ui/out/sf/look-top-1366-projdash-gsq.png` | Pass | — | — |
+| T-33 | Staff | docs | Docs layout | filter band, count in the card, file icons, folder chips, Table / Grid | as the org's Docs | as expected with a sample SharePoint answer (request interception; SharePoint is not set up locally) | `tests/ui/out/sf/docs-mock*.png` | Pass | — | — |
 
 ## Defects
 
@@ -40,6 +47,6 @@
 | D-01 | Design-system inconsistency | Older layers hard-coded the old blue `#1570EF` and slate colours. | **Fixed** by the colour map (all `src` colours on Facilio ramps) |
 | D-02 | Shared component | The first colour pass was not idempotent: palette colours moved, blue went to violet. | **Fixed**: files restored from main, the script rewritten with self-checks, T-09 |
 | D-03 | Accessibility | Focus ring not verified with real keyboard input. | **Fixed/verified**: T-15 |
-| D-04 | Shared component (shell) | The rail sits inside a rounded outline from an older layer. | Open |
+| D-04 | Shared component (shell) | The rail sat inside a rounded outline from an older layer. | Fixed (stage F: `nav.sidebar > .rl` flush in masterds.css) |
 | D-05 | Page-level | Page structures are not yet on the Facilio templates. | **Tasks done**; the other pages are open (stage F) |
 | D-06 | Shared component | Assistant panel `.ki-*` buttons were pills. | **Fixed** (8 px buttons, 4 px chips) |

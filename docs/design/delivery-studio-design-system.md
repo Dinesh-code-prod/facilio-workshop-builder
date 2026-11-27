@@ -109,6 +109,11 @@ Nothing important is set below 12 px.
 - **Form.** Section navigation on the left (for long forms), fields in a 2-column grid, Cancel and Save in a sticky footer on the right.
 - **Dashboard.** Header with a period control; a "What this shows" note (optional, once); a KPI row (4 tiles at 1366 px, 2 under 1100 px); chart cards; a table under its chart.
 - **Review table.** Count strip, toolbar, `.rv-table`, one solid button (24 Nov rule).
+- **Setup (settings).** As the org's Setup, in today's Facilio colours: a 240 px left panel (#FAFAFA, hairline, 8 px) with a search and collapsible categories, the open page in the selection blue with a 2 px blue edge; on the right the page header and the page's sections as a tab row.
+- **Search palette.** As the org's search: 656 px, 100 px from the top, 8 px corners, the high elevation, no backdrop; a 40 px #F5F5F5 field without a border; 42 px rows with a 24 px #F3F7FF icon tile and a chevron; key hints in the footer.
+- **Documents.** As the org's Docs page: a #FAFAFA filter band (Folder, Type, Added by, search, Table / Grid), one card with the count at its top, names as blue links with a file icon, the folder as a small grey chip.
+- **Top bar.** Module tabs that do not fit go into a ⋯ menu (182 px); the project is a switcher button at the right like Facilio's site switcher; the right end keeps search, Guide me, the bell and the avatar (Preview as customer is in the account menu in the Icons format).
+- **Back.** One quiet 32 px text button (arrow and words, #384A62, a grey hover); a record page shows only the Back in its header.
 
 ## 5. Accessibility
 

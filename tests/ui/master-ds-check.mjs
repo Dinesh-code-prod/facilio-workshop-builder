@@ -62,7 +62,7 @@ for (const W of WIDTHS) {
         for (const v of tabs) {
           // a detail page (e.g. Forms & templates under Solution design & BRD) is a stage tab only while it is open; once another tab is open it is gone, which is right
           if (!await p.$(`nav.mt-bar .mt-t[data-view="${v}"]`)) continue;
-          await p.click(`nav.mt-bar .mt-t[data-view="${v}"]`).catch(() => fail(tag, `tab ${v} could not be clicked`)); await settle(650);
+          if (!(await p.isVisible(`nav.mt-bar .mt-t[data-view="${v}"]`).catch(() => false))) { await p.evaluate(() => { const d = document.querySelector('.mt-more'); if (d) d.open = true; }); await p.click(`.mt-more [data-view="${v}"]`).catch(() => fail(tag, `tab ${v} could not be clicked (not in the top bar or its ⋯ menu)`)); } else await p.click(`nav.mt-bar .mt-t[data-view="${v}"]`).catch(() => fail(tag, `tab ${v} could not be clicked`));   // tabs that do not fit sit in the ⋯ menu (27 Nov 2026) await settle(650);
           const t = await p.evaluate(v => { const a = [...document.querySelectorAll('nav.mt-bar .mt-t.active')]; return { one: a.length === 1 && a[0].getAttribute('data-view') === v, rail: !!document.querySelector('nav.sidebar .rl-b.active') }; }, v);
           if (!t.one) fail(tag, `${rails[i]} > ${v}: the open tab is not marked`); if (!t.rail) fail(tag, `${rails[i]} > ${v}: no rail entry marked open`); await check(`${tag} ${v}`);
         }
@@ -76,7 +76,7 @@ for (const W of WIDTHS) {
     if (VIEWS.includes('staff')) for (const lay of ['top', 'side']) await projectNav('staff', lay);
     if (VIEWS.includes('customer')) {
       await p.evaluate(() => { location.hash = location.hash.replace(/(#\/p\/[^/]+)\/.*/, '$1/projdash'); }); await settle(1200);
-      const cp = await p.$('[data-act="custPreview"]'); if (!cp) fail(`customer@${W}`, 'no Preview as customer button');
+      await p.evaluate(() => { if (!document.querySelector('[data-act="custPreview"]')) window.FWBViews.setNavPref('side'); }); await p.waitForTimeout(600); const cp = await p.$('[data-act="custPreview"]'); if (!cp) fail(`customer@${W}`, 'no Preview as customer button');
       else { await cp.click(); await settle(2500); for (const lay of ['top', 'side']) await projectNav('customer', lay);
         const leak = await p.evaluate(() => [...document.querySelectorAll('[data-act="openAdmin"]:not([hidden]), nav.sidebar [data-view="settings"]')].filter(e => e.offsetParent).length); if (leak) fail(`customer@${W}`, 'Admin or Settings visible in the customer view');
         await p.click('[data-act="custPreviewExit"]').catch(() => {}); await settle(1500); }

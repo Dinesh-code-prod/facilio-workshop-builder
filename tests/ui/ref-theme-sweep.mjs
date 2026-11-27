@@ -91,7 +91,7 @@ if (PARTS.includes('overlays')) {
   }
 }
 if (PARTS.includes('customer')) {
-  await go('projdash'); if (await p.$('[data-act="custPreview"]')) {
+  await go('projdash'); await p.evaluate(() => { if (!document.querySelector('[data-act="custPreview"]')) window.FWBViews.setNavPref('side'); }); await p.waitForTimeout(600); if (await p.$('[data-act="custPreview"]')) {
     await p.click('[data-act="custPreview"]'); await settle(2500);
     for (const [v, label] of await navList()) { if (ONLY.length && !ONLY.includes(v)) continue; await go(v); await record('customer', v, label); await visitTabs('customer', v); }
     await p.click('[data-act="custPreviewExit"]').catch(() => {}); await settle(1500);

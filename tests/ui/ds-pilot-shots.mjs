@@ -15,7 +15,7 @@ await shot('projects-home');
 const pid = process.env.CHECK_PID || await p.evaluate(async () => { const ps = (await (await fetch('/api/fn/api/projects')).json()).projects || []; return (ps.find(x => /walkthrough/i.test(x.name)) || ps[0]).id; });
 for (const v of STAFF) { await p.goto(`${BASE}/?nointro#/p/${pid}/${v}`); await settle(2600); await shot(`staff-${v}`); }
 await p.goto(`${BASE}/?nointro#/p/${pid}/projdash`); await settle(2500);
-const cp = await p.$('[data-act="custPreview"]'); if (cp) { await cp.click(); await settle(2500); await shot('customer-home'); await p.click('[data-act="custPreviewExit"]').catch(() => {}); await settle(1200); }
+await p.evaluate(() => { if (!document.querySelector('[data-act="custPreview"]')) window.FWBViews.setNavPref('side'); }); await p.waitForTimeout(600); const cp = await p.$('[data-act="custPreview"]'); if (cp) { await cp.click(); await settle(2500); await shot('customer-home'); await p.click('[data-act="custPreviewExit"]').catch(() => {}); await settle(1200); }
 await p.goto(BASE + '/?nointro'); await settle(2000); await p.click('[data-act="openAdmin"]').catch(() => {}); await settle(2500); await shot('admin-dashboard');
 const n = await p.evaluate(() => document.querySelectorAll('.adm-nav .adm-ni').length);
 await p.evaluate(i => document.querySelectorAll('.adm-nav .adm-ni')[i]?.click(), n - 1); await settle(1200); await shot('admin-last');
