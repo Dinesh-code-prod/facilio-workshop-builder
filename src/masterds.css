@@ -813,3 +813,6 @@ html body :is(.main, .adm-main) .dw-card :is(.dw-h, > header h3, > header h2):no
 html body :is(.main, .adm-main) button.kpi:not(#DS) { display: flex !important; flex-direction: column !important; align-items: flex-start !important; justify-content: flex-start !important; gap: 4px !important; min-height: 108px !important; padding: 18px 16px 12px !important; text-align: left !important; cursor: pointer; }
 html body :is(.main, .adm-main) button.kpi:hover:not(#DS) { border-color: var(--ds-border-strong) !important; }
 html body :is(.main, .adm-main) .kpi :is(.cs-stat-s, .kpi-s):not(#DS) { color: var(--ds-muted) !important; font: 400 12px/18px var(--ds-head) !important; }
+/* Tasks grid (coverage register: round status pills and 11.5 px initials): the status a 4 px pill, the owner initials at 12 px */
+html body .main .pt-grid .pt-st:not(#DS) { border-radius: var(--ds-r-badge) !important; font-size: 12px !important; }
+html body .main .pt-grid .pt-av:not(#DS) { font-size: 12px !important; }

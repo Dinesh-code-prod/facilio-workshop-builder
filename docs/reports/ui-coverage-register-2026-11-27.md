@@ -1,4 +1,4 @@
-# UI coverage register (generated 2026-11-27 10:28 UTC by tests/ui/ui-coverage.mjs)
+# UI coverage register (generated 2026-11-27 12:28 UTC by tests/ui/ui-coverage.mjs)
 
 Every surface the crawl reached in the staff, customer (preview) and Admin views, measured against the Facilio design system. **Facilio** = no findings; **Partly** = only a few off-palette colours or small text; **Legacy** = non-Roboto text, pill controls or many off-palette colours. "Functional test" here means the surface opened, showed no page error and closed again; forms were never saved. Not reached by a crawl: states that need particular data (e.g. a record in a given state), and any action that would change data. Those are listed in the migration plan.
 
@@ -6,18 +6,18 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 
 | Group | Identified | Inspected | On the system | Opened OK | Passed | Failed | Blocked | Legacy remaining |
 |---|---|---|---|---|---|---|---|---|
-| **All** | 593 | 530 | 503 | 570 | 503 | 0 | 63 | 27 |
-| POV: Staff · Icons | 179 | 173 | 165 | 173 | 165 | 0 | 6 | 8 |
-| POV: Staff · Text | 177 | 166 | 157 | 166 | 157 | 0 | 11 | 9 |
-| POV: Customer · Icons | 169 | 164 | 156 | 164 | 156 | 0 | 5 | 8 |
-| POV: Customer · Text | 68 | 27 | 25 | 67 | 25 | 0 | 41 | 2 |
+| **All** | 573 | 512 | 485 | 550 | 485 | 0 | 61 | 27 |
+| POV: Staff · Icons | 171 | 165 | 157 | 165 | 157 | 0 | 6 | 8 |
+| POV: Staff · Text | 169 | 158 | 149 | 158 | 149 | 0 | 11 | 9 |
+| POV: Customer · Icons | 161 | 156 | 148 | 156 | 148 | 0 | 5 | 8 |
+| POV: Customer · Text | 72 | 33 | 31 | 71 | 31 | 0 | 39 | 2 |
 | Chat panel (Assistant)s | 2 | 2 | 2 | 2 | 2 | 0 | 0 | 0 |
 | Account menus | 2 | 1 | 1 | 1 | 1 | 0 | 1 | 0 |
 | Search overlays | 2 | 1 | 1 | 1 | 1 | 0 | 1 | 0 |
 | Notifications panels | 2 | 1 | 1 | 1 | 1 | 0 | 1 | 0 |
-| Pages | 184 | 144 | 133 | 184 | 133 | 0 | 40 | 11 |
-| Tabs | 237 | 217 | 211 | 217 | 211 | 0 | 20 | 6 |
-| Drawers | 137 | 137 | 128 | 137 | 128 | 0 | 0 | 9 |
+| Pages | 184 | 146 | 135 | 184 | 135 | 0 | 38 | 11 |
+| Tabs | 216 | 196 | 190 | 196 | 190 | 0 | 20 | 6 |
+| Drawers | 138 | 138 | 129 | 138 | 129 | 0 | 0 | 9 |
 | Dialogs | 27 | 27 | 26 | 27 | 26 | 0 | 0 | 1 |
 
 ## Register
@@ -28,10 +28,6 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Staff · Icons | Shell | — | — | Account menu | top bar / floating button | on the system | Facilio | opened and closed | Pass |
 | Staff · Icons | Shell | — | — | Search overlay | top bar / floating button | on the system | Facilio | opened and closed | Pass |
 | Staff · Icons | Shell | — | — | Notifications panel | top bar / floating button | on the system | Facilio | opened and closed | Pass |
-| Staff · Icons | Home | #/lifecycle | — | Page: Project cycle | menu | on the system | Facilio | opened | Pass |
-| Staff · Icons | Home | #/lifecycle | Report pack | Tab: Report pack | tab click | on the system | Facilio | opened | Pass |
-| Staff · Icons | Home | #/lifecycle | — | Drawer: Claude helper | button "How it works" (helperInfo) | on the system | Facilio | opened and closed | Pass |
-| Staff · Icons | Home | #/lifecycle | — | Drawer: Project introductionBigger view | button "Owner, decision and history" (lcManage) | on the system | Facilio | opened and closed | Pass |
 | Staff · Icons | Home | #/projdash | — | Page: Dashboard | menu | on the system | Facilio | opened | Pass |
 | Staff · Icons | Home | #/projdash | Kick-off | Tab: Kick-off | tab click | on the system | Facilio | opened | Pass |
 | Staff · Icons | Home | #/projdash | Requirements | Tab: Requirements | tab click | on the system | Facilio | opened | Pass |
@@ -40,10 +36,14 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Staff · Icons | Home | #/projdash | Go-live and hypercare | Tab: Go-live and hypercare | tab click | on the system | Facilio | opened | Pass |
 | Staff · Icons | Home | #/projdash | Handover | Tab: Handover | tab click | on the system | Facilio | opened | Pass |
 | Staff · Icons | Home | #/projdash | Reports | Tab: Reports | tab click | on the system | Facilio | opened | Pass |
+| Staff · Icons | Home | #/projdash | — | Drawer: Claude helper | button "How it works" (helperInfo) | on the system | Facilio | opened and closed | Pass |
+| Staff · Icons | Home | #/lifecycle | — | Page: Project cycle | menu | on the system | Facilio | opened | Pass |
+| Staff · Icons | Home | #/lifecycle | Report pack | Tab: Report pack | tab click | on the system | Facilio | opened | Pass |
+| Staff · Icons | Home | #/lifecycle | — | Drawer: Project introductionBigger view | button "Owner, decision and history" (lcManage) | on the system | Facilio | opened and closed | Pass |
 | Staff · Icons | Project introduction | #/msaintake | — | Page: Contract intake | menu | on the system | Facilio | opened | Pass |
 | Staff · Icons | Project introduction | #/msaintake | Know Your Contract | Tab: Know Your Contract | tab click | on the system | Facilio | opened | Pass |
 | Staff · Icons | Project introduction | #/msaintake | MSA scope | Tab: MSA scope | tab click | on the system | Facilio | opened | Pass |
-| Staff · Icons | Project introduction | #/msaintake | Scope check7 | Tab: Scope check7 | tab click | on the system | Facilio | opened | Pass |
+| Staff · Icons | Project introduction | #/msaintake | Scope check6 | Tab: Scope check6 | tab click | on the system | Facilio | opened | Pass |
 | Staff · Icons | Project introduction | #/msaintake | Scope document | Tab: Scope document | tab click | on the system | Facilio | opened | Pass |
 | Staff · Icons | Project introduction | #/msaintake | Terms & integrations | Tab: Terms & integrations | tab click | on the system | Facilio | opened | Pass |
 | Staff · Icons | Project introduction | #/intro | — | Page: Kick-off, plan and schedule | menu | on the system | Facilio | opened | Pass |
@@ -54,7 +54,7 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Staff · Icons | Project introduction | #/intro | — | Drawer: Session 1Bigger view | button "Edit" (editSession) | on the system | Facilio | opened and closed | Pass |
 | Staff · Icons | Requirement sessions | #/onboarding | — | Page: Data onboarding | menu | on the system | Facilio | opened | Pass |
 | Staff · Icons | Requirement sessions | #/onboarding | — | Dialog: Site | button "Walkthrough" (onbWalk) | on the system | Facilio | opened and closed | Pass |
-| Staff · Icons | Requirement sessions | #/workshop | — | Page: Workshop room (live call) | menu | 5 pill (span. "Work Orders") | Legacy | opened | Legacy remains |
+| Staff · Icons | Requirement sessions | #/workshop | — | Page: Workshop room (live call) | menu | 1 pill (span. "Work Orders") | Legacy | opened | Legacy remains |
 | Staff · Icons | Requirement sessions | #/workshop | — | Drawer: Add a question | button "Add a question" (wsAddQ) | on the system | Facilio | opened and closed | Pass |
 | Staff · Icons | Requirement sessions | #/rstrans | — | Page: Transcripts | menu | on the system | Facilio | opened | Pass |
 | Staff · Icons | Requirement sessions | #/rstrans | Requirements register | Tab: Requirements register | tab click | on the system | Facilio | opened | Pass |
@@ -71,7 +71,7 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Staff · Icons | Module design | #/flow | All modules | Tab: All modules | tab click | on the system | Facilio | opened | Pass |
 | Staff · Icons | Module design | #/modules | — | Page: Forms & templates | menu | on the system | Facilio | opened | Pass |
 | Staff · Icons | Module design | #/modules | System485 | Tab: System485 | tab click | on the system | Facilio | opened | Pass |
-| Staff · Icons | Module design | #/modules | Settings and connected apps7 | Tab: Settings and connected apps7 | tab click | on the system | Facilio | opened | Pass |
+| Staff · Icons | Module design | #/modules | Settings and connected apps11 | Tab: Settings and connected apps11 | tab click | on the system | Facilio | opened | Pass |
 | Staff · Icons | Module design | #/modules | In scope | Tab: In scope | tab click | on the system | Facilio | opened | Pass |
 | Staff · Icons | Module design | #/modules | All | Tab: All | tab click | on the system | Facilio | opened | Pass |
 | Staff · Icons | Module design | #/roles | — | Page: Roles & access | menu | on the system | Facilio | opened | Pass |
@@ -86,8 +86,8 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Staff · Icons | Solution design & BRD | #/mockup | — | Page: Mockup (Meteor) | menu | on the system | Facilio | opened | Pass |
 | Staff · Icons | Solution design & BRD | #/slakpi | — | Page: KPIs & SLA | menu | on the system | Facilio | opened | Pass |
 | Staff · Icons | Solution design & BRD | #/slakpi | KPI matrix 0 | Tab: KPI matrix 0 | tab click | on the system | Facilio | opened | Pass |
+| Staff · Icons | Solution design & BRD | #/slakpi | — | Drawer: Add KPIBigger view | button "+ Add KPI" (kpiEdit) | on the system | Facilio | opened and closed | Pass |
 | Staff · Icons | Solution design & BRD | #/slakpi | — | Drawer: Add SLA rowBigger view | button "+ SLA row" (slaEdit) | on the system | Facilio | opened and closed | Pass |
-| Staff · Icons | Solution design & BRD | #/slakpi | — | Drawer: Add KPIBigger view | button "+ KPI" (kpiEdit) | on the system | Facilio | opened and closed | Pass |
 | Staff · Icons | BRD & sign-off | #/brd | — | Page: BRD Draft | menu | on the system | Facilio | opened | Pass |
 | Staff · Icons | BRD & sign-off | #/brd | — | Drawer: New BRD | button "+ New BRD" (brdNew) | on the system | Facilio | opened and closed | Pass |
 | Staff · Icons | BRD & sign-off | #/brd | — | Drawer: BRD settings | button "BRD settings" (brdSettings) | on the system | Facilio | opened and closed | Pass |
@@ -108,7 +108,7 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Staff · Icons | BRD & sign-off | #/governance | Module owners | Tab: Module owners | tab click | on the system | Facilio | opened | Pass |
 | Staff · Icons | BRD & sign-off | #/governance | Weekly digest | Tab: Weekly digest | tab click | on the system | Facilio | opened | Pass |
 | Staff · Icons | BRD & sign-off | #/changes | — | Page: Change Requests | menu | on the system | Facilio | opened | Pass |
-| Staff · Icons | BRD & sign-off | #/changes | — | Drawer: New change requestBigger view | button "Change request" (crEdit) | on the system | Facilio | opened and closed | Pass |
+| Staff · Icons | BRD & sign-off | #/changes | — | Drawer: New change requestBigger view | button "New change request" (crEdit) | on the system | Facilio | opened and closed | Pass |
 | Staff · Icons | BRD & sign-off | #/changes | — | Drawer: CR-001 · change trackBigger view | button "Change track" (crxOpen) | on the system | Facilio | opened and closed | Pass |
 | Staff · Icons | BRD & sign-off | #/changes | — | Drawer: CR-001 · impactBigger view | button "Impact" (crImpact) | on the system | Facilio | opened and closed | Pass |
 | Staff · Icons | UAT & FTR | #/ftr | — | Page: FTR Report | menu | on the system | Facilio | opened | Pass |
@@ -130,10 +130,6 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Staff · Icons | Tasks & mail | #/mailtab | Unread 0 | Tab: Unread 0 | tab click | on the system | Facilio | opened | Pass |
 | Staff · Icons | Tasks & mail | #/mailtab | Tasks made | Tab: Tasks made | tab click | on the system | Facilio | opened | Pass |
 | Staff · Icons | Tasks & mail | #/supportdesk | — | Page: Support Desk | menu | on the system | Facilio | opened | Pass |
-| Staff · Icons | Tasks & mail | #/supportdesk | Meteor | Tab: Meteor | tab click | on the system | Facilio | opened | Pass |
-| Staff · Icons | Tasks & mail | #/supportdesk | Comet | Tab: Comet | tab click | on the system | Facilio | opened | Pass |
-| Staff · Icons | Tasks & mail | #/supportdesk | facilio.com ↗ | Tab: facilio.com ↗ | tab click | on the system | Facilio | opened | Pass |
-| Staff · Icons | Tasks & mail | #/supportdesk | Facilio Run directory ↗ | Tab: Facilio Run directory ↗ | tab click | on the system | Facilio | opened | Pass |
 | Staff · Icons | Tasks & mail | #/transfers | — | Page: Transfers | menu | on the system | Facilio | opened | Pass |
 | Staff · Icons | Tasks & mail | #/transfers | Holding | Tab: Holding | tab click | on the system | Facilio | opened | Pass |
 | Staff · Icons | Tasks & mail | #/golivehc | — | Page: Go-live & hypercare | menu | on the system | Facilio | opened | Pass |
@@ -157,7 +153,7 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Staff · Icons | Reports | #/statusrep | — | Page: Status report (WSR) & monthly report | menu | on the system | Facilio | opened | Pass |
 | Staff · Icons | Reports | #/statusrep | Monthly report | Tab: Monthly report | tab click | on the system | Facilio | opened | Pass |
 | Staff · Icons | Reports | #/statusrep | From Claude | Tab: From Claude | tab click | on the system | Facilio | opened | Pass |
-| Staff · Icons | Reports | #/statusrep | On record 9 | Tab: On record 9 | tab click |  | not opened | blocked: tab not found | Blocked |
+| Staff · Icons | Reports | #/statusrep | On record 2 | Tab: On record 2 | tab click |  | not opened | blocked: tab not found | Blocked |
 | Staff · Icons | Reports | #/statusrep | — | Drawer: Weekly status reportBigger view | button "+ New report" (repNew) | on the system | Facilio | opened and closed | Pass |
 | Staff · Icons | Reports | #/trace | — | Page: Traceability & quality | menu | on the system | Facilio | opened | Pass |
 | Staff · Icons | Reports | #/trace | Gaps to fix 9 | Tab: Gaps to fix 9 | tab click | on the system | Facilio | opened | Pass |
@@ -173,7 +169,7 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Staff · Icons | Notes & Links | #/docs | — | Page: Documents & Files | menu | on the system | Facilio | opened | Pass |
 | Staff · Icons | Show Facilio | #/seefacilio | — | Page: Product Tour | menu | on the system | Facilio | opened | Pass |
 | Staff · Icons | Show Facilio | #/dashboards | — | Page: Dashboard Gallery | menu | on the system | Facilio | opened | Pass |
-| Staff · Icons | Show Facilio | #/dashboards | — | Drawer: New category | button "Category" (dashCatNew) | on the system | Facilio | opened and closed | Pass |
+| Staff · Icons | Show Facilio | #/dashboards | — | Drawer: New category | button "New category" (dashCatNew) | on the system | Facilio | opened and closed | Pass |
 | Staff · Icons | Show Facilio | #/explore | — | Page: Discover more | menu | on the system | Facilio | opened | Pass |
 | Staff · Icons | Show Facilio | #/explore | — | Drawer: VisitorsBigger view | button "Learn more" (xpOpen) | 18 pill (span. "Last Visited Spa") | Legacy | opened and closed | Legacy remains |
 | Staff · Icons | Help | #/teamhelp | — | Page: Team Guide | menu | on the system | Facilio | opened | Pass |
@@ -191,22 +187,21 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Staff · Icons | Claude & tools | #/claudesetup | Answers waiting | Tab: Answers waiting | tab click | on the system | Facilio | opened | Pass |
 | Staff · Icons | Claude & tools | #/claudesetup | Claude use | Tab: Claude use | tab click | on the system | Facilio | opened | Pass |
 | Staff · Icons | Claude & tools | #/webframe | — | Page: Facilio tools | menu | on the system | Facilio | opened | Pass |
-| Staff · Icons | Claude & tools | #/webframe | Support Desk | Tab: Support Desk | tab click | on the system | Facilio | opened | Pass |
-| Staff · Icons | Claude & tools | #/webframe | Meteor | Tab: Meteor | tab click | on the system | Facilio | opened | Pass |
-| Staff · Icons | Claude & tools | #/webframe | Comet | Tab: Comet | tab click | on the system | Facilio | opened | Pass |
-| Staff · Icons | Claude & tools | #/webframe | facilio.com ↗ | Tab: facilio.com ↗ | tab click | on the system | Facilio | opened | Pass |
 | Staff · Icons | Settings | #/settings | — | Page: Project Settings | menu | on the system | Facilio | opened | Pass |
 | Staff · Icons | Settings | #/settings | People & access | Tab: People & access | tab click | on the system | Facilio | opened | Pass |
-| Staff · Icons | Settings | #/settings | History | Tab: History | tab click | 114 under 12px (D 11.5px) | Partly | opened | Legacy remains |
+| Staff · Icons | Settings | #/settings | History | Tab: History | tab click | 62 under 12px (D 11.5px) | Partly | opened | Legacy remains |
 | Staff · Icons | Settings | #/templates | — | Page: Templates | menu | on the system | Facilio | opened | Pass |
 | Staff · Icons | Settings | #/templates | — | Drawer: New templateBigger view | button "New template" (tplNew) | on the system | Facilio | opened and closed | Pass |
 | Staff · Icons | Settings | #/workspace | — | Page: Tabs & Layouts | menu | on the system | Facilio | opened | Pass |
 | Staff · Icons | Settings | #/workspace | Text | Tab: Text | tab click | on the system | Facilio | opened | Pass |
-| Staff · Icons | Settings | #/workspace | — | Drawer: Edit tab | button "Edit Project cycle" (wsRename) | on the system | Facilio | opened and closed | Pass |
+| Staff · Icons | Settings | #/workspace | — | Drawer: Edit tab | button "Edit Dashboard" (wsRename) | on the system | Facilio | opened and closed | Pass |
 | Staff · Text | Shell | — | — | Chat panel (Assistant) | top bar / floating button | on the system | Facilio | opened and closed | Pass |
 | Staff · Text | Shell | — | — | Account menu | top bar / floating button |  | not opened | blocked: panel not found | Blocked |
 | Staff · Text | Shell | — | — | Search overlay | top bar / floating button |  | not opened | blocked: panel not found | Blocked |
 | Staff · Text | Shell | — | — | Notifications panel | top bar / floating button |  | not opened | blocked: panel not found | Blocked |
+| Staff · Text | Home | #/lifecycle | — | Page: Project cycle | menu | on the system | Facilio | opened | Pass |
+| Staff · Text | Home | #/lifecycle | Report pack | Tab: Report pack | tab click | on the system | Facilio | opened | Pass |
+| Staff · Text | Home | #/lifecycle | — | Drawer: Project introductionBigger view | button "Owner, decision and history" (lcManage) | on the system | Facilio | opened and closed | Pass |
 | Staff · Text | Home | #/projdash | — | Page: Dashboard | menu | on the system | Facilio | opened | Pass |
 | Staff · Text | Home | #/projdash | Overview | Tab: Overview | tab click | on the system | Facilio | opened | Pass |
 | Staff · Text | Home | #/projdash | Kick-off | Tab: Kick-off | tab click | on the system | Facilio | opened | Pass |
@@ -216,9 +211,6 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Staff · Text | Home | #/projdash | Go-live and hypercare | Tab: Go-live and hypercare | tab click | on the system | Facilio | opened | Pass |
 | Staff · Text | Home | #/projdash | Handover | Tab: Handover | tab click | on the system | Facilio | opened | Pass |
 | Staff · Text | Home | #/projdash | Stage report | Tab: Stage report | tab click |  | not opened | blocked: tab not found | Blocked |
-| Staff · Text | Home | #/lifecycle | — | Page: Project cycle | menu | on the system | Facilio | opened | Pass |
-| Staff · Text | Home | #/lifecycle | Report pack | Tab: Report pack | tab click | on the system | Facilio | opened | Pass |
-| Staff · Text | Home | #/lifecycle | — | Drawer: Project introductionBigger view | button "Owner, decision and history" (lcManage) | on the system | Facilio | opened and closed | Pass |
 | Staff · Text | Project introduction | #/msaintake | — | Page: Contract intake | menu | on the system | Facilio | opened | Pass |
 | Staff · Text | Project introduction | #/msaintake | Know Your Contract | Tab: Know Your Contract | tab click | on the system | Facilio | opened | Pass |
 | Staff · Text | Project introduction | #/msaintake | MSA scope | Tab: MSA scope | tab click | on the system | Facilio | opened | Pass |
@@ -233,7 +225,7 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Staff · Text | Project introduction | #/intro | — | Drawer: Session 1Bigger view | button "Edit" (editSession) | on the system | Facilio | opened and closed | Pass |
 | Staff · Text | Requirement sessions | #/onboarding | — | Page: Data onboarding | menu | on the system | Facilio | opened | Pass |
 | Staff · Text | Requirement sessions | #/onboarding | — | Dialog: Site | button "Walkthrough" (onbWalk) | on the system | Facilio | opened and closed | Pass |
-| Staff · Text | Requirement sessions | #/workshop | — | Page: Workshop room (live call) | menu | 5 pill (span. "Work Orders") | Legacy | opened | Legacy remains |
+| Staff · Text | Requirement sessions | #/workshop | — | Page: Workshop room (live call) | menu | 2 pill (span. "Work Orders") | Legacy | opened | Legacy remains |
 | Staff · Text | Requirement sessions | #/workshop | — | Drawer: Add a question | button "Add a question" (wsAddQ) | on the system | Facilio | opened and closed | Pass |
 | Staff · Text | Requirement sessions | #/rstrans | — | Page: Transcripts | menu | on the system | Facilio | opened | Pass |
 | Staff · Text | Requirement sessions | #/rstrans | Requirements register | Tab: Requirements register | tab click | on the system | Facilio | opened | Pass |
@@ -252,7 +244,7 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Staff · Text | Module design | #/flow | All | Tab: All | tab click |  | not opened | blocked: tab not found | Blocked |
 | Staff · Text | Module design | #/modules | — | Page: Forms & templates | menu | on the system | Facilio | opened | Pass |
 | Staff · Text | Module design | #/modules | System485 | Tab: System485 | tab click | on the system | Facilio | opened | Pass |
-| Staff · Text | Module design | #/modules | Custom7 | Tab: Custom7 | tab click | on the system | Facilio | opened | Pass |
+| Staff · Text | Module design | #/modules | Custom3 | Tab: Custom3 | tab click | on the system | Facilio | opened | Pass |
 | Staff · Text | Module design | #/modules | In use | Tab: In use | tab click | on the system | Facilio | opened | Pass |
 | Staff · Text | Module design | #/modules | In scope | Tab: In scope | tab click | on the system | Facilio | opened | Pass |
 | Staff · Text | Module design | #/modules | — | Drawer: New module | button "Add module" (newModule) | on the system | Facilio | opened and closed | Pass |
@@ -268,7 +260,7 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Staff · Text | Solution design & BRD | #/mockup | — | Page: Mockup (Meteor) | menu | on the system | Facilio | opened | Pass |
 | Staff · Text | Solution design & BRD | #/slakpi | — | Page: KPIs & SLA | menu | on the system | Facilio | opened | Pass |
 | Staff · Text | Solution design & BRD | #/slakpi | SLA matrix 0 | Tab: SLA matrix 0 | tab click | on the system | Facilio | opened | Pass |
-| Staff · Text | Solution design & BRD | #/slakpi | — | Drawer: Add SLA rowBigger view | button "+ SLA row" (slaEdit) | on the system | Facilio | opened and closed | Pass |
+| Staff · Text | Solution design & BRD | #/slakpi | — | Drawer: Add SLA rowBigger view | button "+ Add SLA row" (slaEdit) | on the system | Facilio | opened and closed | Pass |
 | Staff · Text | Solution design & BRD | #/slakpi | — | Drawer: Add KPIBigger view | button "+ KPI" (kpiEdit) | on the system | Facilio | opened and closed | Pass |
 | Staff · Text | BRD & sign-off | #/brd | — | Page: BRD Draft | menu | on the system | Facilio | opened | Pass |
 | Staff · Text | BRD & sign-off | #/brd | — | Drawer: New BRD | button "+ New BRD" (brdNew) | on the system | Facilio | opened and closed | Pass |
@@ -290,7 +282,7 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Staff · Text | BRD & sign-off | #/governance | Meeting minutes | Tab: Meeting minutes | tab click | on the system | Facilio | opened | Pass |
 | Staff · Text | BRD & sign-off | #/governance | Module owners | Tab: Module owners | tab click | on the system | Facilio | opened | Pass |
 | Staff · Text | BRD & sign-off | #/changes | — | Page: Change Requests | menu | on the system | Facilio | opened | Pass |
-| Staff · Text | BRD & sign-off | #/changes | — | Drawer: New change requestBigger view | button "Change request" (crEdit) | on the system | Facilio | opened and closed | Pass |
+| Staff · Text | BRD & sign-off | #/changes | — | Drawer: New change requestBigger view | button "New change request" (crEdit) | on the system | Facilio | opened and closed | Pass |
 | Staff · Text | BRD & sign-off | #/changes | — | Drawer: CR-001 · change trackBigger view | button "Change track" (crxOpen) | on the system | Facilio | opened and closed | Pass |
 | Staff · Text | BRD & sign-off | #/changes | — | Drawer: CR-001 · impactBigger view | button "Impact" (crImpact) | on the system | Facilio | opened and closed | Pass |
 | Staff · Text | UAT & FTR | #/ftr | — | Page: FTR Report | menu | on the system | Facilio | opened | Pass |
@@ -312,10 +304,6 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Staff · Text | Tasks & mail | #/mailtab | Unread 0 | Tab: Unread 0 | tab click | on the system | Facilio | opened | Pass |
 | Staff · Text | Tasks & mail | #/mailtab | Tasks made | Tab: Tasks made | tab click | on the system | Facilio | opened | Pass |
 | Staff · Text | Tasks & mail | #/supportdesk | — | Page: Support Desk | menu | on the system | Facilio | opened | Pass |
-| Staff · Text | Tasks & mail | #/supportdesk | Meteor | Tab: Meteor | tab click | on the system | Facilio | opened | Pass |
-| Staff · Text | Tasks & mail | #/supportdesk | Comet | Tab: Comet | tab click | on the system | Facilio | opened | Pass |
-| Staff · Text | Tasks & mail | #/supportdesk | facilio.com ↗ | Tab: facilio.com ↗ | tab click | on the system | Facilio | opened | Pass |
-| Staff · Text | Tasks & mail | #/supportdesk | Facilio Run directory ↗ | Tab: Facilio Run directory ↗ | tab click | on the system | Facilio | opened | Pass |
 | Staff · Text | Tasks & mail | #/transfers | — | Page: Transfers | menu | on the system | Facilio | opened | Pass |
 | Staff · Text | Tasks & mail | #/transfers | This project | Tab: This project | tab click | on the system | Facilio | opened | Pass |
 | Staff · Text | Tasks & mail | #/golivehc | — | Page: Go-live & hypercare | menu | on the system | Facilio | opened | Pass |
@@ -350,7 +338,7 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Staff · Text | Notes & Links | #/docs | — | Page: Documents & Files | menu | on the system | Facilio | opened | Pass |
 | Staff · Text | Show Facilio | #/seefacilio | — | Page: Product Tour | menu | on the system | Facilio | opened | Pass |
 | Staff · Text | Show Facilio | #/dashboards | — | Page: Dashboard Gallery | menu | on the system | Facilio | opened | Pass |
-| Staff · Text | Show Facilio | #/dashboards | — | Drawer: New category | button "Category" (dashCatNew) | on the system | Facilio | opened and closed | Pass |
+| Staff · Text | Show Facilio | #/dashboards | — | Drawer: New category | button "New category" (dashCatNew) | on the system | Facilio | opened and closed | Pass |
 | Staff · Text | Show Facilio | #/explore | — | Page: Discover more | menu | on the system | Facilio | opened | Pass |
 | Staff · Text | Show Facilio | #/explore | — | Drawer: VisitorsBigger view | button "Learn more" (xpOpen) | 18 pill (span. "Last Visited Spa") | Legacy | opened and closed | Legacy remains |
 | Staff · Text | Help | #/teamhelp | — | Page: Team Guide | menu | on the system | Facilio | opened | Pass |
@@ -368,21 +356,14 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Staff · Text | Claude & tools | #/claudesetup | 4. How it works | Tab: 4. How it works | tab click | on the system | Facilio | opened | Pass |
 | Staff · Text | Claude & tools | #/claudesetup | Answers waiting | Tab: Answers waiting | tab click | on the system | Facilio | opened | Pass |
 | Staff · Text | Claude & tools | #/webframe | — | Page: Facilio tools | menu | on the system | Facilio | opened | Pass |
-| Staff · Text | Claude & tools | #/webframe | Support Desk | Tab: Support Desk | tab click | on the system | Facilio | opened | Pass |
-| Staff · Text | Claude & tools | #/webframe | Meteor | Tab: Meteor | tab click | on the system | Facilio | opened | Pass |
-| Staff · Text | Claude & tools | #/webframe | Comet | Tab: Comet | tab click | on the system | Facilio | opened | Pass |
-| Staff · Text | Claude & tools | #/webframe | facilio.com ↗ | Tab: facilio.com ↗ | tab click | on the system | Facilio | opened | Pass |
-| Staff · Text | Settings | #/settings | — | Page: Project Settings | menu | 114 under 12px (D 11.5px) | Partly | opened | Legacy remains |
+| Staff · Text | Settings | #/settings | — | Page: Project Settings | menu | 62 under 12px (D 11.5px) | Partly | opened | Legacy remains |
 | Staff · Text | Settings | #/settings | Project details | Tab: Project details | tab click | on the system | Facilio | opened | Pass |
 | Staff · Text | Settings | #/settings | People & access | Tab: People & access | tab click | on the system | Facilio | opened | Pass |
 | Staff · Text | Settings | #/templates | — | Page: Templates | menu | on the system | Facilio | opened | Pass |
 | Staff · Text | Settings | #/templates | — | Drawer: New templateBigger view | button "New template" (tplNew) | on the system | Facilio | opened and closed | Pass |
 | Staff · Text | Settings | #/workspace | — | Page: Tabs & Layouts | menu | on the system | Facilio | opened | Pass |
 | Staff · Text | Settings | #/workspace | Icons | Tab: Icons | tab click | on the system | Facilio | opened | Pass |
-| Staff · Text | Settings | #/workspace | — | Drawer: Edit tab | button "Edit Dashboard" (wsRename) | on the system | Facilio | opened and closed | Pass |
-| Customer · Icons | Home | #/lifecycle | — | Page: Project cycle | menu | on the system | Facilio | opened | Pass |
-| Customer · Icons | Home | #/lifecycle | Report pack | Tab: Report pack | tab click | on the system | Facilio | opened | Pass |
-| Customer · Icons | Home | #/lifecycle | — | Drawer: Project introductionBigger view | button "Owner, decision and history" (lcManage) | on the system | Facilio | opened and closed | Pass |
+| Staff · Text | Settings | #/workspace | — | Drawer: Edit tab | button "Edit Project cycle" (wsRename) | on the system | Facilio | opened and closed | Pass |
 | Customer · Icons | Home | #/projdash | — | Page: Dashboard | menu | on the system | Facilio | opened | Pass |
 | Customer · Icons | Home | #/projdash | Overview | Tab: Overview | tab click | on the system | Facilio | opened | Pass |
 | Customer · Icons | Home | #/projdash | Kick-off | Tab: Kick-off | tab click | on the system | Facilio | opened | Pass |
@@ -391,6 +372,9 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Customer · Icons | Home | #/projdash | Build and UAT | Tab: Build and UAT | tab click | on the system | Facilio | opened | Pass |
 | Customer · Icons | Home | #/projdash | Go-live and hypercare | Tab: Go-live and hypercare | tab click | on the system | Facilio | opened | Pass |
 | Customer · Icons | Home | #/projdash | Reports | Tab: Reports | tab click | on the system | Facilio | opened | Pass |
+| Customer · Icons | Home | #/lifecycle | — | Page: Project cycle | menu | on the system | Facilio | opened | Pass |
+| Customer · Icons | Home | #/lifecycle | Report pack | Tab: Report pack | tab click | on the system | Facilio | opened | Pass |
+| Customer · Icons | Home | #/lifecycle | — | Drawer: Project introductionBigger view | button "Owner, decision and history" (lcManage) | on the system | Facilio | opened and closed | Pass |
 | Customer · Icons | Project introduction | #/msaintake | — | Page: Contract intake | menu | on the system | Facilio | opened | Pass |
 | Customer · Icons | Project introduction | #/msaintake | Know Your Contract | Tab: Know Your Contract | tab click | on the system | Facilio | opened | Pass |
 | Customer · Icons | Project introduction | #/msaintake | MSA scope | Tab: MSA scope | tab click | on the system | Facilio | opened | Pass |
@@ -405,7 +389,7 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Customer · Icons | Project introduction | #/intro | — | Drawer: Session 1Bigger view | button "Edit" (editSession) | on the system | Facilio | opened and closed | Pass |
 | Customer · Icons | Requirement sessions | #/onboarding | — | Page: Data onboarding | menu | on the system | Facilio | opened | Pass |
 | Customer · Icons | Requirement sessions | #/onboarding | — | Dialog: Site | button "Walkthrough" (onbWalk) | on the system | Facilio | opened and closed | Pass |
-| Customer · Icons | Requirement sessions | #/workshop | — | Page: Workshop room (live call) | menu | 5 pill (span. "Work Orders") | Legacy | opened | Legacy remains |
+| Customer · Icons | Requirement sessions | #/workshop | — | Page: Workshop room (live call) | menu | 3 pill (span. "Work Orders") | Legacy | opened | Legacy remains |
 | Customer · Icons | Requirement sessions | #/workshop | — | Drawer: Add a question | button "Add a question" (wsAddQ) | on the system | Facilio | opened and closed | Pass |
 | Customer · Icons | Requirement sessions | #/rstrans | — | Page: Transcripts | menu | on the system | Facilio | opened | Pass |
 | Customer · Icons | Requirement sessions | #/rstrans | Requirements register | Tab: Requirements register | tab click | on the system | Facilio | opened | Pass |
@@ -422,7 +406,7 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Customer · Icons | Module design | #/flow | All modules | Tab: All modules | tab click | on the system | Facilio | opened | Pass |
 | Customer · Icons | Module design | #/modules | — | Page: Forms & templates | menu | on the system | Facilio | opened | Pass |
 | Customer · Icons | Module design | #/modules | System485 | Tab: System485 | tab click | on the system | Facilio | opened | Pass |
-| Customer · Icons | Module design | #/modules | Settings and connected apps6 | Tab: Settings and connected apps6 | tab click | on the system | Facilio | opened | Pass |
+| Customer · Icons | Module design | #/modules | Settings and connected apps10 | Tab: Settings and connected apps10 | tab click | on the system | Facilio | opened | Pass |
 | Customer · Icons | Module design | #/modules | In use | Tab: In use | tab click | on the system | Facilio | opened | Pass |
 | Customer · Icons | Module design | #/modules | All | Tab: All | tab click | on the system | Facilio | opened | Pass |
 | Customer · Icons | Module design | #/roles | — | Page: Roles & access | menu | on the system | Facilio | opened | Pass |
@@ -434,8 +418,8 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Customer · Icons | Solution design & BRD | #/mockup | — | Page: Mockup (Meteor) | menu | on the system | Facilio | opened | Pass |
 | Customer · Icons | Solution design & BRD | #/slakpi | — | Page: KPIs & SLA | menu | on the system | Facilio | opened | Pass |
 | Customer · Icons | Solution design & BRD | #/slakpi | KPI matrix 0 | Tab: KPI matrix 0 | tab click | on the system | Facilio | opened | Pass |
+| Customer · Icons | Solution design & BRD | #/slakpi | — | Drawer: Add KPIBigger view | button "+ Add KPI" (kpiEdit) | on the system | Facilio | opened and closed | Pass |
 | Customer · Icons | Solution design & BRD | #/slakpi | — | Drawer: Add SLA rowBigger view | button "+ SLA row" (slaEdit) | on the system | Facilio | opened and closed | Pass |
-| Customer · Icons | Solution design & BRD | #/slakpi | — | Drawer: Add KPIBigger view | button "+ KPI" (kpiEdit) | on the system | Facilio | opened and closed | Pass |
 | Customer · Icons | BRD & sign-off | #/brd | — | Page: BRD Draft | menu | on the system | Facilio | opened | Pass |
 | Customer · Icons | BRD & sign-off | #/brd | — | Drawer: New BRD | button "+ New BRD" (brdNew) | on the system | Facilio | opened and closed | Pass |
 | Customer · Icons | BRD & sign-off | #/brd | — | Drawer: BRD settings | button "BRD settings" (brdSettings) | on the system | Facilio | opened and closed | Pass |
@@ -456,7 +440,7 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Customer · Icons | BRD & sign-off | #/governance | Meeting minutes | Tab: Meeting minutes | tab click | on the system | Facilio | opened | Pass |
 | Customer · Icons | BRD & sign-off | #/governance | Weekly digest | Tab: Weekly digest | tab click | on the system | Facilio | opened | Pass |
 | Customer · Icons | BRD & sign-off | #/changes | — | Page: Change Requests | menu | on the system | Facilio | opened | Pass |
-| Customer · Icons | BRD & sign-off | #/changes | — | Drawer: New change requestBigger view | button "Change request" (crEdit) | on the system | Facilio | opened and closed | Pass |
+| Customer · Icons | BRD & sign-off | #/changes | — | Drawer: New change requestBigger view | button "New change request" (crEdit) | on the system | Facilio | opened and closed | Pass |
 | Customer · Icons | BRD & sign-off | #/changes | — | Drawer: CR-001 · change trackBigger view | button "Change track" (crxOpen) | on the system | Facilio | opened and closed | Pass |
 | Customer · Icons | BRD & sign-off | #/changes | — | Drawer: CR-001 · impactBigger view | button "Impact" (crImpact) | on the system | Facilio | opened and closed | Pass |
 | Customer · Icons | UAT & FTR | #/ftr | — | Page: FTR Report | menu | on the system | Facilio | opened | Pass |
@@ -478,10 +462,6 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Customer · Icons | Tasks & mail | #/mailtab | Unread 0 | Tab: Unread 0 | tab click | on the system | Facilio | opened | Pass |
 | Customer · Icons | Tasks & mail | #/mailtab | Tasks made | Tab: Tasks made | tab click | on the system | Facilio | opened | Pass |
 | Customer · Icons | Tasks & mail | #/supportdesk | — | Page: Support Desk | menu | on the system | Facilio | opened | Pass |
-| Customer · Icons | Tasks & mail | #/supportdesk | Meteor | Tab: Meteor | tab click | on the system | Facilio | opened | Pass |
-| Customer · Icons | Tasks & mail | #/supportdesk | Comet | Tab: Comet | tab click | on the system | Facilio | opened | Pass |
-| Customer · Icons | Tasks & mail | #/supportdesk | facilio.com ↗ | Tab: facilio.com ↗ | tab click | on the system | Facilio | opened | Pass |
-| Customer · Icons | Tasks & mail | #/supportdesk | Facilio Run directory ↗ | Tab: Facilio Run directory ↗ | tab click | on the system | Facilio | opened | Pass |
 | Customer · Icons | Tasks & mail | #/transfers | — | Page: Transfers | menu | on the system | Facilio | opened | Pass |
 | Customer · Icons | Tasks & mail | #/transfers | Holding | Tab: Holding | tab click | on the system | Facilio | opened | Pass |
 | Customer · Icons | Tasks & mail | #/golivehc | — | Page: Go-live & hypercare | menu | on the system | Facilio | opened | Pass |
@@ -505,7 +485,7 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Customer · Icons | Reports | #/statusrep | — | Page: Status report (WSR) & monthly report | menu | on the system | Facilio | opened | Pass |
 | Customer · Icons | Reports | #/statusrep | Monthly report | Tab: Monthly report | tab click | on the system | Facilio | opened | Pass |
 | Customer · Icons | Reports | #/statusrep | From Claude | Tab: From Claude | tab click | on the system | Facilio | opened | Pass |
-| Customer · Icons | Reports | #/statusrep | On record 11 | Tab: On record 11 | tab click |  | not opened | blocked: tab not found | Blocked |
+| Customer · Icons | Reports | #/statusrep | On record 4 | Tab: On record 4 | tab click |  | not opened | blocked: tab not found | Blocked |
 | Customer · Icons | Reports | #/statusrep | — | Drawer: Weekly status reportBigger view | button "+ New report" (repNew) | on the system | Facilio | opened and closed | Pass |
 | Customer · Icons | Reports | #/trace | — | Page: Traceability & quality | menu | on the system | Facilio | opened | Pass |
 | Customer · Icons | Reports | #/trace | Coverage 0 of 7 | Tab: Coverage 0 of 7 | tab click | on the system | Facilio | opened | Pass |
@@ -518,7 +498,7 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Customer · Icons | Notes & Links | #/docs | — | Page: Documents & Files | menu | on the system | Facilio | opened | Pass |
 | Customer · Icons | Show Facilio | #/seefacilio | — | Page: Product Tour | menu | on the system | Facilio | opened | Pass |
 | Customer · Icons | Show Facilio | #/dashboards | — | Page: Dashboard Gallery | menu | on the system | Facilio | opened | Pass |
-| Customer · Icons | Show Facilio | #/dashboards | — | Drawer: New category | button "Category" (dashCatNew) | on the system | Facilio | opened and closed | Pass |
+| Customer · Icons | Show Facilio | #/dashboards | — | Drawer: New category | button "New category" (dashCatNew) | on the system | Facilio | opened and closed | Pass |
 | Customer · Icons | Show Facilio | #/explore | — | Page: Discover more | menu | on the system | Facilio | opened | Pass |
 | Customer · Icons | Show Facilio | #/explore | — | Drawer: VisitorsBigger view | button "Learn more" (xpOpen) | 18 pill (span. "Last Visited Spa") | Legacy | opened and closed | Legacy remains |
 | Customer · Icons | Help | #/teamhelp | — | Page: Team Guide | menu | on the system | Facilio | opened | Pass |
@@ -536,19 +516,18 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Customer · Icons | Claude & tools | #/claudesetup | 4. How it works | Tab: 4. How it works | tab click | on the system | Facilio | opened | Pass |
 | Customer · Icons | Claude & tools | #/claudesetup | Claude use | Tab: Claude use | tab click | on the system | Facilio | opened | Pass |
 | Customer · Icons | Claude & tools | #/webframe | — | Page: Facilio tools | menu | on the system | Facilio | opened | Pass |
-| Customer · Icons | Claude & tools | #/webframe | Support Desk | Tab: Support Desk | tab click | on the system | Facilio | opened | Pass |
-| Customer · Icons | Claude & tools | #/webframe | Meteor | Tab: Meteor | tab click | on the system | Facilio | opened | Pass |
-| Customer · Icons | Claude & tools | #/webframe | Comet | Tab: Comet | tab click | on the system | Facilio | opened | Pass |
-| Customer · Icons | Claude & tools | #/webframe | facilio.com ↗ | Tab: facilio.com ↗ | tab click | on the system | Facilio | opened | Pass |
 | Customer · Icons | Settings | #/settings | — | Page: Project Settings | menu | on the system | Facilio | opened | Pass |
 | Customer · Icons | Settings | #/settings | Project details | Tab: Project details | tab click | on the system | Facilio | opened | Pass |
-| Customer · Icons | Settings | #/settings | History | Tab: History | tab click | 114 under 12px (D 11.5px) | Partly | opened | Legacy remains |
+| Customer · Icons | Settings | #/settings | History | Tab: History | tab click | 62 under 12px (D 11.5px) | Partly | opened | Legacy remains |
 | Customer · Icons | Settings | #/settings | Customer | Tab: Customer | tab click |  | not opened | blocked: tab not found | Blocked |
 | Customer · Icons | Settings | #/templates | — | Page: Templates | menu | on the system | Facilio | opened | Pass |
 | Customer · Icons | Settings | #/templates | — | Drawer: New templateBigger view | button "New template" (tplNew) | on the system | Facilio | opened and closed | Pass |
 | Customer · Icons | Settings | #/workspace | — | Page: Tabs & Layouts | menu | on the system | Facilio | opened | Pass |
 | Customer · Icons | Settings | #/workspace | Text | Tab: Text | tab click | on the system | Facilio | opened | Pass |
-| Customer · Icons | Settings | #/workspace | — | Drawer: Edit tab | button "Edit Project cycle" (wsRename) | on the system | Facilio | opened and closed | Pass |
+| Customer · Icons | Settings | #/workspace | — | Drawer: Edit tab | button "Edit Dashboard" (wsRename) | on the system | Facilio | opened and closed | Pass |
+| Customer · Text | Home | #/lifecycle | — | Page: Project cycle | menu | on the system | Facilio | opened | Pass |
+| Customer · Text | Home | #/lifecycle | Report pack | Tab: Report pack | tab click | on the system | Facilio | opened | Pass |
+| Customer · Text | Home | #/lifecycle | — | Drawer: Project introductionBigger view | button "Owner, decision and history" (lcManage) | on the system | Facilio | opened and closed | Pass |
 | Customer · Text | Home | #/projdash | — | Page: Dashboard | menu | on the system | Facilio | opened | Pass |
 | Customer · Text | Home | #/projdash | Overview | Tab: Overview | tab click | on the system | Facilio | opened | Pass |
 | Customer · Text | Home | #/projdash | Kick-off | Tab: Kick-off | tab click | on the system | Facilio | opened | Pass |
@@ -558,9 +537,6 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Customer · Text | Home | #/projdash | Go-live and hypercare | Tab: Go-live and hypercare | tab click | on the system | Facilio | opened | Pass |
 | Customer · Text | Home | #/projdash | Handover | Tab: Handover | tab click | on the system | Facilio | opened | Pass |
 | Customer · Text | Home | #/projdash | Stage report | Tab: Stage report | tab click |  | not opened | blocked: tab not found | Blocked |
-| Customer · Text | Home | #/lifecycle | — | Page: Project cycle | menu | on the system | Facilio | opened | Pass |
-| Customer · Text | Home | #/lifecycle | Report pack | Tab: Report pack | tab click | on the system | Facilio | opened | Pass |
-| Customer · Text | Home | #/lifecycle | — | Drawer: Project introductionBigger view | button "Owner, decision and history" (lcManage) | on the system | Facilio | opened and closed | Pass |
 | Customer · Text | Project introduction | #/msaintake | — | Page: Contract intake | menu | on the system | Facilio | opened | Pass |
 | Customer · Text | Project introduction | #/msaintake | Know Your Contract | Tab: Know Your Contract | tab click | on the system | Facilio | opened | Pass |
 | Customer · Text | Project introduction | #/msaintake | MSA scope | Tab: MSA scope | tab click | on the system | Facilio | opened | Pass |
@@ -575,10 +551,14 @@ Every surface the crawl reached in the staff, customer (preview) and Admin views
 | Customer · Text | Project introduction | #/intro | — | Drawer: Session 1Bigger view | button "Edit" (editSession) | on the system | Facilio | opened and closed | Pass |
 | Customer · Text | Requirement sessions | #/onboarding | — | Page: Data onboarding | menu | on the system | Facilio | opened | Pass |
 | Customer · Text | Requirement sessions | #/onboarding | — | Dialog: Site | button "Walkthrough" (onbWalk) | on the system | Facilio | opened and closed | Pass |
-| Customer · Text | Requirement sessions | #/workshop | — | Page: Workshop room (live call) | menu | 5 pill (span. "Work Orders") | Legacy | opened | Legacy remains |
+| Customer · Text | Requirement sessions | #/workshop | — | Page: Workshop room (live call) | menu | 4 pill (span. "Work Orders") | Legacy | opened | Legacy remains |
 | Customer · Text | Requirement sessions | #/workshop | — | Drawer: Add a question | button "Add a question" (wsAddQ) | on the system | Facilio | opened and closed | Pass |
-| Customer · Text | Requirement sessions | #/rstrans | — | Page: Transcripts | menu |  | not opened | opened | Blocked |
-| Customer · Text | Process & checks | #/whiteboard | — | Page: Process whiteboard | menu |  | not opened | opened | Blocked |
+| Customer · Text | Requirement sessions | #/rstrans | — | Page: Transcripts | menu | on the system | Facilio | opened | Pass |
+| Customer · Text | Requirement sessions | #/rstrans | Requirements register | Tab: Requirements register | tab click | on the system | Facilio | opened | Pass |
+| Customer · Text | Requirement sessions | #/rstrans | Use cases | Tab: Use cases | tab click | on the system | Facilio | opened | Pass |
+| Customer · Text | Requirement sessions | #/rstrans | Prepare questions | Tab: Prepare questions | tab click | on the system | Facilio | opened | Pass |
+| Customer · Text | Requirement sessions | #/rstrans | — | Drawer: Paste a transcriptBigger view | button "Paste a transcript" (rsPaste) | on the system | Facilio | opened and closed | Pass |
+| Customer · Text | Process & checks | #/whiteboard | — | Page: Process whiteboard | menu | on the system | Facilio | opened | Pass |
 | Customer · Text | Process & checks | #/rschecks | — | Page: Checks & validations | menu |  | not opened | opened | Blocked |
 | Customer · Text | Module design | #/flow | — | Page: State flow builder | menu |  | not opened | opened | Blocked |
 | Customer · Text | Module design | #/modules | — | Page: Forms & templates | menu |  | not opened | opened | Blocked |

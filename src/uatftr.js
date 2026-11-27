@@ -52,22 +52,24 @@
 
   function reportPage() {
     const d = latestFtr(), rep = d ? R.parse(d.content) : null, can = !ro();
-    const asks = can ? '<div class="row" style="gap:8px;flex-wrap:wrap;margin:0 0 14px"><button type="button" class="btn' + (d ? '' : ' primary') + '" data-act="ftrWrite">' + (d ? 'Refresh with Claude' : 'Write the report with Claude') + '</button><button type="button" class="btn" data-act="ftrCheck">Check the organisation with Claude</button><button type="button" class="btn" data-act="ftrChange">Change the report</button>' + (d ? '<span class="spacer"></span><a href="#" class="small" data-act="aiOpen" data-id="' + esc(d.id) + '">Open the text</a>' : '') + '</div>' : '';
+    let asks = '';   // the Claude actions sit in the page header (ftrActs); the results count line goes here
     if (!rep || !rep.counts.total) return asks + '<div class="card"><div class="card-b"><b>' + (d ? 'The saved draft has no test case table yet.' : 'No FTR report yet.') + '</b><p class="small muted">Claude reads the use cases, the configuration and the test cases, uses the implementation skills (ftr-generator, ftr-executor) and writes one report per module. Nothing needs to be typed here. Results appear only after a test was really run.</p></div></div>';
-    const w = ftWork(d); recount(w.rep); const edit = can && d.status !== 'approved', model = DP().ftrModel(w.rep, meta(d), { edit });
+    const w = ftWork(d); recount(w.rep); const n = w.rep.counts; asks = V.countStrip([{ n: n.total, label: 'test cases' }, { n: n.pass || 0, label: 'passed' }, { n: n.fail || 0, label: 'failed', tone: n.fail ? 'bad' : '' }, { n: n.blocked || 0, label: 'blocked', tone: n.blocked ? 'warn' : '' }, { n: n.notrun || 0, label: 'not run' }]); const edit = can && d.status !== 'approved', model = DP().ftrModel(w.rep, meta(d), { edit });
     const decide = canApprove() ? (d.status === 'approved' ? '<button class="btn sm" data-act="ftrDecide" data-d="reopen">Reopen to edit</button>' : '<button class="btn sm primary" data-act="ftrDecide" data-d="approve">Approve</button>') : '';
     const note = edit ? 'Click a cell to edit. <span id="ftState">All changes saved</span>' : d.status === 'approved' ? 'Approved and locked.' + (canApprove() ? ' Reopen it to edit.' : '') : 'Read only.';
     const ribbon = '<div class="brd-top">' + (d.status === 'approved' ? '<span class="tag green">Approved</span>' : '<span class="tag tbc">Draft</span>') + '<span class="small muted">v' + esc(d.version || 1) + ' · ' + note + '</span><span class="spacer"></span><button class="btn sm" data-act="ftrDocx">Word</button><button class="btn sm" data-act="ftrPdf">PDF</button><button class="btn sm" data-act="ftrDlHtml">HTML</button>' + decide + '</div>';
     const outline = model.sections.map((x, i) => '<a href="#" data-act="dpJump" data-i="' + i + '">' + esc(x.title) + '</a>').join('');
     return '<style>' + R.CSS + '</style>' + asks + '<div class="word dp-word"><nav class="word-nav" aria-label="FTR report outline"><div class="pink-label" style="margin:6px 16px 8px">Modules</div>' + outline + '</nav><div class="word-main">' + ribbon + '<div class="paper-scroll">' + DP().paper(model, { edit, titleAttr: i => (i ? 'data-ftm="' + (i - 1) + '"' : '') }) + '</div></div></div>';
   }
+  // a Facilio page header (stage F, 27 Nov 2026): Write or Refresh with Claude is the one solid button, checking, changing and the text sit under More
+  const ftrActs = () => { if (ro()) return ''; const d = latestFtr(); return '<button type="button" class="btn primary" data-act="ftrWrite">' + (d ? 'Refresh with Claude' : 'Write the report with Claude') + '</button>' + V.moreMenu('<button type="button" class="btn sm ghost" data-act="ftrCheck">Check the organisation with Claude</button><button type="button" class="btn sm ghost" data-act="ftrChange">Change the report</button>' + (d ? '<a href="#" class="btn sm ghost" data-act="aiOpen" data-id="' + esc(d.id) + '">Open the text</a>' : '')); };
   const wrapFtr = () => {
     const o = V.ftr; if (o._ut) return; o._ut = 1; const h = o.html, m = o.mount;
     o.html = function () {
       if (V.isCustomer && V.isCustomer() && !latestFtr()) return h.apply(this, arguments);
       I().load(['ai']); const out = h.apply(this, arguments);
       if (tab() === 'excel') return typeof out === 'string' ? out.replace('<div class="page-body">', () => '<div class="page-body">' + tabs('excel')) : out;
-      return '<div class="page-header"><div class="t"><h1>FTR Report</h1><p>Every module, its use cases, test cases and results. Claude writes it; you can also keep the Excel version.</p></div></div><div class="page-body">' + tabs('report') + (I().ready(['ai']) ? reportPage() : '<div class="muted" style="padding:20px">Loading…</div>') + '</div>';
+      return '<div class="page-header"><div class="t"><h1>FTR Report</h1><p>Every module, its use cases, test cases and results. Claude writes it; you can also keep the Excel version.</p></div>' + (I().ready(['ai']) ? '<div class="ph-acts">' + ftrActs() + '</div>' : '') + '</div><div class="page-body">' + tabs('report') + (I().ready(['ai']) ? reportPage() : '<div class="muted" style="padding:20px">Loading…</div>') + '</div>';
     };
     o.mount = function () { if (tab() === 'excel' && m) return m.apply(this, arguments); };
   };

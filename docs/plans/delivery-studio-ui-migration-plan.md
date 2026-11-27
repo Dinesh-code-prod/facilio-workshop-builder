@@ -26,7 +26,7 @@
 | D3 | Colours everywhere: 6,220 hard-coded colours in 117 `src` files moved onto Facilio ramps (animations, dashboards, charts, widgets). The script is idempotent (a second run changes 0) | Done |
 | D4 | Shell: the icon rail for everyone (staff, customer, Admin), the violet open tile, Facilio module tabs, flat KPI tiles, 4 px chips | Done |
 | E | Pilot screens: Contract intake, Project dashboard, Tasks, Governance, Project Settings (form), State flow builder, BRD, customer home, Admin | Shots taken; **user sign-off pending** |
-| F | Page-by-page structure, in the order below | Tasks done (Facilio list page). Everything else: shared look only; the structure is next |
+| F | Page-by-page structure, in the order below | **In progress, branch `feat/facilio-stage-f` (27 Nov).** Done: the list pages (Tasks, Change Requests, Governance logs, Documents & Files, Support Desk, Transcripts), the Task record page, the dashboards (Project dashboard and its stage tabs, Admin dashboard, Dashboard Gallery, Status report) and the review tables (UAT Testing, FTR, Checks & validations, KPIs & SLA). Not yet: record pages for Change Request, Requirement and BRD section (they open as Facilio form pages), the forms (step 3), Stateflow and the customer re-check |
 | G | Legacy clean-up | **First pass done (27 Nov):** `tools/dead-css.mjs` removed **802 rules (89 KB)** whose classes exist nowhere in the app, server, data or run-time-built names (two independent checks must both agree). Three unused assets were removed after `tools/unused-assets.mjs` and a manual check. All tests, the layout check and the keyboard/zoom check pass afterwards. Next: rules shadowed by `masterds.css`, page by page in stage F |
 | H | Full regression | Run for D1–D4 (see the test register) |
 | I | Final report | `docs/reports/delivery-studio-ui-remediation-report.md` |
@@ -42,6 +42,14 @@ Each page moves to one template from the design-system doc §4: **List**, **Reco
 5. **Review tables:** UAT, FTR, Checks & validations, KPIs & SLA (the 24 Nov rule already).
 6. **Stateflow:** the state flow builder canvas; the record header shows state transitions as buttons.
 7. **Customer view:** the same templates. Re-check that no staff-only action shows (`master-ds-check` already fails on Admin or Settings in the customer view).
+
+**Shared parts for stage F (in `src/shell.js`, look in `src/masterds.css`):**
+- `V.moreMenu(items, label)`: the header's More menu; any button inside it is a plain menu row.
+- `V.viewMenu(label, n, items)`: the view selector of a list (Tasks' sheets, a log's type, a folder, a status).
+- `V.listSearch(key, placeholder)`: a live search kept in `S.ui[key]` (`data-uiq`).
+- A list page: `.page-header` with `.ph-acts` (the New button plus `V.moreMenu`), then one `.pt-bar.ls-bar` toolbar, then one table.
+- A record page: `.page-header.rc-head` (`.rc-back`, `.rc-id`, title and status), then `.page-body.rc-page` with `.rc-main` and `.rc-side` (`.rc-grid` fields).
+- A dashboard: `.kpi` cards (`.kpi-l`, `.kpi-v`, `.kpi-s`; `k-red`, `k-amber`, `k-green` only for a status), `.dw-card` widgets, `.dw-band` section bands, `.dw-list` for a dashboard list panel.
 
 ## Stage G: legacy clean-up (only after F, consumer by consumer)
 
