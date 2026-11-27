@@ -1,5 +1,7 @@
 # Handoff
 
+**KICK-OFF DECK LIKE THE FACILIO SAMPLE (27 Nov 2026, branch `feat/facilio-reference-ds`, committed and pushed to that branch; NOT on main, NOT deployed).** Plan `docs/plans/KICKOFF-DECK-LIKE-SAMPLE-PLAN-2026-11-27.md`, roadmap C4c. Claude's MSA extraction has an optional `kickoff` block; the deck (`src/kickoffhtml.js`) draws 16 slides like the sample, on the Facilio palette; the server now drafts the plan timeline and the requirement sessions when Claude saves the extraction (rules moved to `work/server/_kickofflogic.mjs`). Recipes, connector help, work.json and Team Guide updated. Checked: npm test, the kick-off, MSA, jobs and Claude tests, claude-handoff-check 9/9, a 16-slide sample deck in the browser with no overlap. Not checked: a real Claude run on a real MSA; the Kick-off page with a real pack. Another session's uncommitted fix in `src/kickoff.js` (syncSessions saving) is still in the working tree, not committed.
+
 **NEXT FOR THE USER (picked up 28-29 Nov): the guides to-do list `docs/plans/GUIDES-NEW-UI-TODO-2026-11-27.md`** (re-record the guide films and update the written guides for the new UI, after signing off the new look). The UI coverage register is `docs/reports/ui-coverage-register-2026-11-27.md` (re-run with `node tests/ui/ui-coverage.mjs` on a data copy). Branch `feat/facilio-reference-ds` is pushed to GitHub; main is NOT changed until sign-off.
 
 **FACILIO REFERENCE-LED DESIGN SYSTEM (27 Nov 2026, branch `feat/facilio-reference-ds`, committed locally, NOT PUSHED YET, waiting for the user's sign-off).**

@@ -22,6 +22,39 @@ function source(raw) {
   const section = txt(r.section, 60), quote = txt(r.quote, LIMITS.quote); if (section) out.section = section; if (quote) out.quote = quote; return out;
 }
 
+/** The optional `kickoff` block: what the kick-off deck says beyond the contract lists (outcomes, scope groups, gates, asks, governance, risks ...), in the shape of Facilio's kick-off deck.
+    Dates are never taken from it except holidays and a contract-quoted date: a step names the plan phase it belongs to (`at`, a phase id of _planfrommsa.mjs) and the pack takes the date from the plan.
+    Returns null when nothing usable is in it. */
+const PHASE_ID = /^[a-z]{2,12}$/, LEVELS = ['high', 'medium', 'low'], GATE_IDS = ['T0', 'T1', 'T2', 'T3', 'handover'];
+function kickoffBlock(raw, warnings) {
+  if (!isObj(raw)) return null; const t = txt, L = (a, n) => (Array.isArray(a) ? a : []).slice(0, n).filter(r => isObj(r) || typeof r === 'string');
+  const og = r => { const o = isObj(r) && typeof r.origin === 'string' ? r.origin.trim().toLowerCase() : ''; return ORIGINS.includes(o) ? o : 'assumed'; };
+  const strs = (a, n, m) => (Array.isArray(a) ? a : []).slice(0, n).map(v => t(v, m)).filter(Boolean);
+  const at = v => { const s = t(v, 12).toLowerCase(); return PHASE_ID.test(s) ? s : ''; };
+  const o = (r, f) => (isObj(r) ? f(r) : null);
+  const k = {
+    promise: t(raw.promise, 240), meetingRhythm: t(raw.meetingRhythm, 200), customerRoles: strs(raw.customerRoles, 8, 60),
+    outcomes: L(raw.outcomes, 9).map(r => o(r, r => ({ title: t(r.title, 80), text: t(r.text, 200), stream: t(r.stream, 40), origin: og(r), source: source(r.source) }))).filter(r => r && r.title),
+    scopeGroups: L(raw.scopeGroups, 4).map(r => o(r, r => ({ name: t(r.name, 40), title: t(r.title, 90), stream: t(r.stream, 40), items: strs(r.items, 8, 140), origin: og(r), source: source(r.source) }))).filter(r => r && r.name && r.items.length),
+    scopeAreas: L(raw.scopeAreas, 10).map(r => o(r, r => ({ area: t(r.area, 40), text: t(r.text, 300), origin: og(r), source: source(r.source) }))).filter(r => r && r.area && r.text),
+    phases: L(raw.phases, 4).map(r => o(r, r => ({ name: t(r.name, 40), activities: strs(r.activities, 5, 80), gate: t(r.gate, 60) }))).filter(Boolean),
+    gates: L(raw.gates, 8).map(r => o(r, r => { const id = GATE_IDS.includes(t(r.id, 10)) ? t(r.id, 10) : ''; const date = og(r) === 'contract' ? day(r.date) : ''; return { id, label: t(r.label, 8), name: t(r.name, 60), at: at(r.at), date, unlocks: t(r.unlocks, 160), needs: t(r.needs, 160), origin: og(r) }; })).filter(r => r && (r.id || (r.name && (r.at || r.date)))),
+    tracks: L(raw.tracks, 3).map(r => o(r, r => ({ name: t(r.name, 80), note: t(r.note, 120), steps: L(r.steps, 7).map(s => o(s, s => ({ label: t(s.label, 60), at: at(s.at) }))).filter(s => s && s.label) }))).filter(r => r && r.name && r.steps.length),
+    slipRule: t(raw.slipRule, 240),
+    asks: L(raw.asks, 14).map(r => o(r, r => ({ text: t(r.text, 160), team: t(r.team, 40), at: at(r.at), date: og(r) === 'contract' ? day(r.date) : '', unlocks: t(r.unlocks, 80), origin: og(r), source: source(r.source) }))).filter(r => r && r.text),
+    risks: L(raw.risks, 10).map(r => o(r, r => ({ text: t(r.text, 160), level: LEVELS.includes(t(r.level, 10).toLowerCase()) ? t(r.level, 10).toLowerCase() : '', effect: t(r.effect, 160), mitigation: t(r.mitigation, 200), origin: og(r) }))).filter(r => r && r.text),
+    holidays: L(raw.holidays, 12).map(r => o(r, r => { const a = day(r.start), b = day(r.end) || a; return a && b >= a ? { start: a, end: b, label: t(r.label, 60), origin: og(r) } : null; })).filter(Boolean)
+  };
+  const g = isObj(raw.governance) ? raw.governance : {}; const esc_ = isObj(g.escalation) ? g.escalation : {}; const ppl = a => L(a, 4).map(p => (typeof p === 'string' ? { name: t(p, 60), role: '' } : { name: t(p.name, 60), role: t(p.role, 60) })).filter(p => p.name || p.role);
+  k.governance = { cadence: L(g.cadence, 4).map(r => o(r, r => ({ when: t(r.when, 30), name: t(r.name, 50), text: t(r.text, 160) }))).filter(r => r && r.when && r.name), escalation: { facilio: ppl(esc_.facilio), customer: ppl(esc_.customer) }, changeControl: t(g.changeControl, 300) };
+  const sp = isObj(raw.spotlight) ? raw.spotlight : null;
+  k.spotlight = sp ? { title: t(sp.title, 80), subtitle: t(sp.subtitle, 120), note: t(sp.note, 200), items: L(sp.items, 3).map(r => o(r, r => ({ name: t(r.name, 50), at: at(r.at), points: strs(r.points, 5, 140), needs: t(r.needs, 200) }))).filter(r => r && r.name) } : null;
+  if (k.spotlight && !(k.spotlight.title && k.spotlight.items.length)) k.spotlight = null;
+  const used = ['promise', 'meetingRhythm', 'slipRule'].some(n => k[n]) || ['customerRoles', 'outcomes', 'scopeGroups', 'scopeAreas', 'phases', 'gates', 'tracks', 'asks', 'risks', 'holidays'].some(n => k[n].length) || k.spotlight || k.governance.cadence.length || k.governance.changeControl || k.governance.escalation.facilio.length || k.governance.escalation.customer.length;
+  if (!used) { warnings.push('kickoff: nothing usable was in it, so it was left out.'); return null; }
+  return k;
+}
+
 /** Cleans and checks one extraction. Returns { ok, extraction, errors, warnings }; extraction holds only known keys, in a fixed order, so the same content always has the same text (and hash). */
 export function validateExtraction(x) {
   const errors = [], warnings = []; if (!isObj(x)) return { ok: false, extraction: null, errors: ['The extraction must be an object.'], warnings };
@@ -49,6 +82,7 @@ export function validateExtraction(x) {
   out.integrations = list('integrations', x.integrations, 60, (r, bump) => { r = asObj(r, bump); const name = r && txt(r.name || r.text, 120); if (!name) return null; const dir = txt(r.direction, 12).toLowerCase(); return { name, direction: ['in', 'out', 'both'].includes(dir) ? dir : '', serves: (Array.isArray(r.serves) ? r.serves : []).map(v => txt(v, 60)).filter(Boolean).slice(0, 6), origin: origin(r, bump), source: source(r.source) }; });   // a system the contract connects to Facilio (SAP, Zoho Desk, single sign-on ...)
   for (const k of LISTS) out[k] = list(k, x[k], LIMITS.items, textItem);
   out.attachments = list('attachments', x.attachments, 50, (r) => { if (!isObj(r)) return null; const name = txt(r.name, 200), ref = txt(r.ref, 500); return name || ref ? { name: name || ref, ref, note: txt(r.note, 300) } : null; });
+  const ko = kickoffBlock(x.kickoff, warnings); if (ko) out.kickoff = ko;
   const contractGiven = out.contract.start || out.contract.end || out.contract.durationDays || out.contract.term;
   if (!out.customer && !out.projectName && !contractGiven && !['scope', 'modules', 'commitments', 'integrations', 'attachments'].concat(LISTS).some(k => out[k].length)) errors.push('The extraction is empty: nothing usable was found in it.');
   if (out.scope.some(s => s.origin === 'contract' && !s.source.page && !s.source.section && !s.source.quote)) warnings.push('Some scope items marked contract have no page, section or quote to check them against.');
@@ -71,6 +105,7 @@ export function checkQuotes(extraction, pages) {
   const fix = it => { if (!it || typeof it !== 'object' || !it.source) return; const q = norm(it.source.quote); if (!q) { if (it.origin === 'contract') stat.noQuote++; return; } stat.checked++; const page = Number(it.source.page); const hay = page && byPage.has(page) ? byPage.get(page) : all;
     if (hay.includes(q)) { it.source.quoteFound = true; stat.found++; } else { it.source.quoteFound = false; if (it.origin === 'contract') { it.origin = 'interpreted'; stat.downgraded++; } } };
   ['scope', 'modules', 'commitments', 'deliverables', 'customerResponsibilities', 'facilioResponsibilities', 'exclusions', 'dependencies', 'commercialConstraints', 'training', 'supportAndHandover'].forEach(k => (Array.isArray(out[k]) ? out[k] : []).forEach(fix));
+  if (out.kickoff) ['outcomes', 'scopeGroups', 'scopeAreas', 'asks'].forEach(k => (Array.isArray(out.kickoff[k]) ? out.kickoff[k] : []).forEach(fix));
   const warnings = []; if (stat.downgraded) warnings.push(stat.downgraded + ' item' + (stat.downgraded === 1 ? '' : 's') + ' said "contract" but the quoted words were not found on the page named, so ' + (stat.downgraded === 1 ? 'it was' : 'they were') + ' marked interpreted. Check ' + (stat.downgraded === 1 ? 'it' : 'them') + ' against the contract.');
   if (stat.noQuote) warnings.push(stat.noQuote + ' item' + (stat.noQuote === 1 ? '' : 's') + ' marked contract ' + (stat.noQuote === 1 ? 'has' : 'have') + ' no quote, so the wording cannot be checked.');
   return Object.assign({ extraction: out, warnings }, stat);

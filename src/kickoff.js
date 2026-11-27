@@ -1,7 +1,7 @@
 /* Kick-off (roadmap E15 Stage 1, E17): the team's one big tab for the start of a project. View id `kickoff`, #/p/<id>/kickoff. Customers keep the older Kick-off Deck viewer (src/viewers.js).
    Shows the contract (MSA) status, the draft kick-off pack Claude built from the approved extraction (scope, modules, plan with where each date comes from, gaps, assumptions, conflicts), the job
    list (a job is a request Claude picks up in the person's own session through the Studio connector; the page never calls Claude), change requests, the deck preview, and one Approve.
-   Project documents: `kickoff_pack` (written by the server when the project is created from an approved MSA extraction) and `kickoff_cr` (change requests). All rules: src/kickofflogic.js. */
+   Project documents: `kickoff_pack` (written by the server when the project is created from an approved MSA extraction) and `kickoff_cr` (change requests). All rules: work/server/_kickofflogic.mjs. */
 (function (root) {
   'use strict';
   const F = root.FWB; const { S, esc } = F; const V = root.FWBViews; const ACT = V.ACT; const API = root.FWBApi; const L = () => root.FWBKickoffLogic; const { toast, tag } = V;
@@ -54,7 +54,7 @@
     const file = (j && (/uploaded file: (.+?)(?: \(text kept|$)/.exec((raw.params || {}).note || '') || [])[1]) || msaFile() || ''; const who = j ? String(j.claimedBy || '').split('@')[0] : '';
     const pk = F.doc('kickoff_pack'); const built = p && pk ? pk.builtAt : ''; const pl = F.doc('planner') || {}; const nSess = (pl.sessions || []).filter(x => x.fromPack === built && x.status !== 'optional').length; const sessNote = !nSess && p && Array.isArray(pl.sessionNotes) && pl.sessionNotes.length ? pl.sessionNotes[0] : '';
     const pv = ((F.doc('plan') || {}).versions || [])[0]; const book = !!(pv && pv.source === 'kickoff' && pv.fromPack === built); const bookFailed = !!p && !book && S.ui.koPlanTried === built && !planBusy;
-    const slides = p && root.FWBKickoffDeck ? root.FWBKickoffDeck.build(p.deck, { fmt: dt }).slides.length : 0;
+    const slides = p && root.FWBKickoffDeck ? root.FWBKickoffDeck.build(deckData(p), { fmt: dt }).slides.length : 0;
     const extracted = !!p || (!!j && j.status === 'done'); const reading = !!j && j.status === 'claimed' && !extracted; const sessDone = nSess > 0 || !!sessNote; const approved = !!p && p.status === 'approved';
     const st = (done, now) => done ? 'done' : now ? 'now' : 'todo'; const badge = approved ? 'Approved' : p ? 'Draft' : '';
     const tiles = [
@@ -106,7 +106,9 @@
       <div class="row ko-btns"><button type="button" class="btn sm primary" data-act="koCrSend"${dis}>Send to Claude</button></div>${rows}</div></section>`;
   }
   // The preview shows one slide at a time with no script: the page's policy (script-src 'self') would stop the deck's own inline script, so the slide is chosen here and the file is only styled.
-  const deckHtml = (p, n) => { const r = root.FWBKickoffDeck.build(p.deck, { fmt: dt }); const k = Math.max(0, Math.min(r.slides.length - 1, n)) + 1;
+  // the deck data with the project's People on the team slide (Facilio team and the customer's stakeholders), unless the pack names them itself
+  const deckData = p => { const ppl = F.doc('people') || {}; return Object.assign({ team: ppl.team || [], customerTeam: ppl.stakeholders || [] }, p.deck); };
+  const deckHtml = (p, n) => { const r = root.FWBKickoffDeck.build(deckData(p), { fmt: dt }); const k = Math.max(0, Math.min(r.slides.length - 1, n)) + 1;
     return { n: r.slides.length, k, names: r.slides, skipped: r.skipped, html: r.html.replace('</head>', `<style>html,body{overflow:hidden}#stage{transform:none!important;left:0!important;top:0!important}#bar{display:none}.slide{display:none!important}.slide:nth-child(${k}){display:block!important}.slide.cover:nth-child(${k}){display:flex!important}</style></head>`) }; };
   function deckCard(p) {
     if (!root.FWBKickoffDeck) return ''; const k = K(); const d = deckHtml(p, k.slide || 0);
@@ -157,12 +159,12 @@
   const undo = (sec, prev) => { setDoc(sec, prev); S.docs[sec].dirty = false; V.render(); };
   const slug = x => String(x || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'project';
   const file = kind => `${slug(S.project.customer)}-${slug(S.project.name)}-${kind}${(F.doc('kickoff_pack') || {}).status === 'approved' ? '' : '-draft'}.html`;
-  ACT.koDlDeck = () => { const p = pack(); if (!p) return; try { V.download(file('kickoff'), new Blob([root.FWBKickoffDeck.build(p.deck, { fmt: dt }).html], { type: 'text/html' })); } catch (e) { toast('The deck could not be built: ' + (e.message || 'unknown error'), 6000, true); } };
+  ACT.koDlDeck = () => { const p = pack(); if (!p) return; try { V.download(file('kickoff'), new Blob([root.FWBKickoffDeck.build(deckData(p), { fmt: dt }).html], { type: 'text/html' })); } catch (e) { toast('The deck could not be built: ' + (e.message || 'unknown error'), 6000, true); } };
   // share (user, 25 Nov 2026): the generated deck is team-only (kickoff_pack); sharing copies its slides to kickoff_shared, which the customer's
   // Introduction deck page draws. Customers only ever see what was shared here, and sharing again replaces their copy.
   ACT.koShareDeck = async () => { const p = pack(); if (!p || S.readonly) return; const draft = (F.doc('kickoff_pack') || {}).status !== 'approved';
     if (!(await V.confirmDialog('Share the kick-off deck', 'The deck will appear on the Introduction deck page of ' + (S.project.customer || 'the customer') + ', where their stakeholders can open and download it.' + (draft ? ' This deck is not approved yet, so it is shared as a draft.' : '') + ' Sharing again replaces the copy they see.', 'Share'))) return;
-    try { root.FWBKickoffDeck.build(p.deck, { fmt: dt }); } catch (e) { toast('The deck could not be built: ' + (e.message || 'unknown error'), 6000, true); return; }
+    try { root.FWBKickoffDeck.build(deckData(p), { fmt: dt }); } catch (e) { toast('The deck could not be built: ' + (e.message || 'unknown error'), 6000, true); return; }
     S.docs.kickoff_shared = S.docs.kickoff_shared || { data: null, version: 0 }; S.docs.kickoff_shared.data = { deck: p.deck, status: draft ? 'draft' : 'approved', sharedAt: new Date().toISOString(), by: S.user.name || S.user.email || '' };
     F.markDirty('kickoff_shared'); F.changed('Kick-off deck shared with the customer', draft ? 'draft' : 'approved', { section: 'kickoff_shared' });
     if (!(await saved('kickoff_shared'))) { toast(NOT_SAVED, 7000, true); return; } toast('Shared: the customer sees it on their Introduction deck page.'); V.render(); };

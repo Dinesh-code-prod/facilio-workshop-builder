@@ -41,4 +41,25 @@ t('a re-read with no contract date keeps the first plan start instead of moving 
   const a = buildKickoffPack(ex, { today: '2026-11-08' }), b = buildKickoffPack(ex, { today: '2026-11-20', prevStart: a.deck.date });
   assert.equal(b.deck.date, a.deck.date); assert.notEqual(buildKickoffPack(ex, { today: '2026-11-20' }).deck.date, a.deck.date);
 });
+t('the kick-off block becomes the richer deck: dates only from the plan or a contract quote, never from Claude', () => {
+  const v = validateExtraction(Object.assign({}, ex(), { kickoff: { promise: 'One platform', outcomes: [{ title: 'Incidents tracked', text: 'end to end', stream: 'CAFM', origin: 'contract' }, { title: '' }], scopeGroups: [{ name: 'Modules', stream: 'CAFM', items: ['Incident'] }],
+    gates: [{ id: 'T1', needs: 'BRD review 17-19 Nov' }, { name: 'AI handover', at: 'config', unlocks: 'Early testing' }, { name: 'Made-up date', date: '2026-12-25', origin: 'interpreted' }],
+    asks: [{ text: 'Budget structure', team: 'Finance', at: 'workshops', unlocks: 'Budget module' }, { text: 'Contract date', team: 'IT', date: '2026-11-20', origin: 'contract' }, { text: 'Claude date', date: '2026-11-21', origin: 'assumed' }],
+    risks: [{ text: 'Late samples', level: 'HIGH', effect: 'moves', mitigation: 'templates' }], holidays: [{ start: '2026-12-02', end: '2026-12-03', label: 'National Day' }, { start: 'soon' }], phases: [{ name: 'Discover', activities: ['Workshops'] }], bogus: 1 } }));
+  assert.ok(v.ok); const k = v.extraction.kickoff; assert.equal(k.outcomes.length, 1, 'an outcome with no title is dropped'); assert.equal(k.gates.length, 2, 'a gate dated only by Claude is dropped'); assert.equal(k.holidays.length, 1); assert.equal(k.risks[0].level, 'high'); assert.equal(k.bogus, undefined);
+  const p = buildKickoffPack(v.extraction, { today: '2026-11-06' }); const d = p.deck, m = id => p.plan.milestones.find(x => x.id === id);
+  assert.equal(d.promise, 'One platform'); assert.deepEqual(d.streams, ['CAFM']); assert.equal(d.deliver.length, 4); assert.equal(d.deliver[0].name, 'Discover'); assert.equal(d.deliver[1].name, 'Build'); assert.equal(d.deliver[3].end, m('handover').end);
+  const t1 = d.gates.find(g => g.label === 'T1'); assert.equal(t1.date, m('brd').end); assert.equal(t1.needs, 'BRD review 17-19 Nov'); assert.equal(d.gates.find(g => g.name === 'AI handover').date, m('config').end); assert.ok(!d.gates.some(g => g.name === 'Made-up date'));
+  assert.deepEqual(d.asks.map(a => a.due), [m('workshops').start, '2026-11-20', ''], 'due: the plan phase start, or a contract date; a date Claude assumed is dropped'); assert.equal(d.customerAsks.length, 3);
+  assert.equal(d.riskTable[0].text, 'Late samples'); assert.ok(d.plan.every(r => ['facilio', 'customer', 'joint'].includes(r.owner))); assert.equal(d.tracks[0].steps.length, 5); assert.ok(d.slipRule);
+  const deck = K.build(Object.assign({}, d, { team: [{ name: 'Asha', role: 'PM' }] })); for (const s of ['What changes', 'Scope at a glance', 'Milestones', 'Dependencies', 'What we need from you', 'Risks']) assert.ok(deck.slides.includes(s), s);
+});
+t('an extraction without the kick-off block still gives the four phases, the gates and the dependency track from the plan', () => {
+  const d = buildKickoffPack(ex(), { today: '2026-11-06' }).deck; assert.equal(d.deliver.length, 4); assert.deepEqual(d.gates.map(g => g.name), ['Kick-off', 'BRD sign-off', 'UAT sign-off', 'Go-live', 'Support handover']); assert.equal(d.asks, undefined); assert.equal(d.riskTable, undefined);
+});
+{ const { draftSessions } = await import('../work/server/_kickoffpack.mjs');
+  t('the server drafts the requirement sessions from the pack with the page\'s own rules', () => {
+    let i = 0; const p = buildKickoffPack(ex(), { now: '2026-11-06T00:00:00.000Z', today: '2026-11-06' });
+    const r = draftSessions(p, 'online', () => 'ses_' + (++i)); assert.ok(r.sessions.length >= 2); assert.ok(r.sessions.every(s => s.fromPack === p.builtAt && /^ses_\d+$/.test(s.id))); assert.ok(r.sessions.some(s => s.items.includes('Work Order')));
+  }); }
 console.log('\n' + n + ' kick-off pack checks passed');

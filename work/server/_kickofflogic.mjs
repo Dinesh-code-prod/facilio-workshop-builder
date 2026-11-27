@@ -1,4 +1,4 @@
-/* Kick-off page rules (roadmap E15 Stage 1, E17): pure code, no page, no network; run by tests/kickoff_logic.mjs and used by src/kickoff.js.
+/* Kick-off page rules (roadmap E15 Stage 1, E17): pure code, no page, no network; run by tests/kickoff_logic.mjs, used by src/kickoff.js (build.mjs adds it to the browser bundle) and by the server (_kickoffpack.mjs drafts the sessions with sessionPlan).
    The pack (project document `kickoff_pack`, written by work/server/_kickoffpack.mjs) is a DRAFT until the project owner approves it. Change requests are the project document `kickoff_cr`:
    { items: [{ id, text, by, at, status: open | applied | dismissed }] }. Claude reads them through the job queue (apply_change); a person only writes the text. */
 (function (root) {
@@ -130,5 +130,5 @@
     const out = arr(items).map(x => { if (!x || !want.has(x.id) || (x.status === status && !sol)) return x; n++; return Object.assign({}, x, { status, by: status === 'open' ? '' : by || '', byAt: status === 'open' ? '' : at || '' }, sol ? { solution: sol } : {}); }); return { items: out, n };
   }
   const api = { decideMany, REVIEW, reviewOf, setReview, sessionPlan, originLabel, packOf, itemsOf, openCount, addChange, dismissChange, approvalCheck, setStatus, jobRows, pullRequest, changeRequest, stage, ORIGIN, PACK_STATUS, JOB_STATUS, MAX_TEXT };
-  if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FWBKickoffLogic = api;
+  root.FWBKickoffLogic = api; if (typeof module !== 'undefined' && module.exports) module.exports = api;   // the global is always set: the server imports this file as a module (work/server/_kickoffpack.mjs)
 })(typeof window !== 'undefined' ? window : globalThis);

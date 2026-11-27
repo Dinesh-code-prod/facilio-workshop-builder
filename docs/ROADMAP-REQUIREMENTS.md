@@ -272,6 +272,14 @@ Plan and decisions: `docs/plans/CR-AFTER-GOLIVE-2026-11-23.md` (agreed with the 
 - [x] Deployed in 508 (23 Nov 2026).
 - [ ] Checked with a real new contract in the live app (not done).
 
+### C4c. Kick-off deck in the shape of Facilio's kick-off deck, from the MSA (added 27 Nov 2026)
+Plan: `docs/plans/KICKOFF-DECK-LIKE-SAMPLE-PLAN-2026-11-27.md` (reference: a 16-slide customer kick-off deck the user shared).
+- [x] Claude's extraction takes an optional `kickoff` block (outcomes, scope groups and areas, phases, gates, tracks, spotlight, asks, governance, risks, holidays); dates only from the plan (`at`) or a contract quote (`_msaextract.mjs`, `_kickoffpack.mjs`).
+- [x] Deck slides: What changes, team with roles to nominate, four phases with sign-offs, Scope at a glance, scope by area, plan coloured by owner with holidays and gates, gates with Unlocks and Needs from you, Dependencies, Spotlight, asks table, governance, risk table; Facilio palette (`src/kickoffhtml.js`).
+- [x] The server drafts the plan timeline and the requirement sessions when Claude saves the extraction (`_msaapi.mjs`); the session rules moved to `work/server/_kickofflogic.mjs`.
+- [x] Claude side: `pull_msa`, `apply_change`, `make_from_reference` recipes, connector help, work.json, Team Guide.
+- [ ] Not checked: a real Claude session reading a real MSA into the new block; the Kick-off page with a real pack in the browser; deploy.
+
 ### C5. Digital HTML output for every document, not only the kick-off deck (added 4 Nov 2026)
 **[KEPT, confirmed 4 Nov 2026: this digital HTML engine becomes the shared engine for customer HTML: workshop preparation, data onboarding, mockup, UAT and FTR]**
 Reason: some clients will ask for their documents in a digital form, not only as Word or PDF. The kick-off deck HTML (C4) shows the form: one self-contained file that opens in any browser. Build this once as a shared "digital output" engine and let every document use it, instead of one-off exporters.
