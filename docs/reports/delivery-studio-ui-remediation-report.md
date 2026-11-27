@@ -15,8 +15,8 @@
 | Area | Change | Files |
 |---|---|---|
 | Tokens | `--ds-*` re-based on Facilio (ink `#283648`, primary `#0024D6`, hairlines `#EAE9E9` / `#DBDBDB`, status tints, elevation, radii); Roboto via `--th-font` | `src/masterds.css` |
-| Components | Buttons 14/500, 8 px; title 20/500; tabs 14 with the open one blue; badges 4 px 12/500; tables 14/500 header, 40 px rows; fields 40 px with a focus ring; flat cards; flat KPI tiles; 4 px chips | `src/masterds.css` |
-| Shell | Icon rail for everyone (staff, customer, Admin); violet open tile; Facilio module tabs; layout switch removed | `src/shell.js`, `src/templates.js`, `src/masterds.css` |
+| Components | Buttons 14/500, 8 px; titles 16/500 in a grey header panel; tabs 14 with the open one blue; badges 4 px 12/500; tables 14/500 header, 40 px rows; fields 40 px with a focus ring; flat cards; flat KPI tiles; 4 px chips | `src/masterds.css` |
+| Shell | Menu format Icons (default: the Facilio rail, violet open tile, module tabs in the top bar) or Text (a Facilio-style side menu); compact top bar; Facilio chat panel; forms as Facilio form pages; Setup-style settings | `src/shell.js`, `src/templates.js`, `src/masterds.css` |
 | Colours | 6,220 hard-coded colours in 117 files moved onto the Facilio ramps (animations, dashboards, charts, widgets) | `src/**/*.{css,js}`; map in `facilio-palette-map-2026-11-27.txt` |
 | Meteor brief | Names the Facilio product palette | `src/mockup.js` |
 | Tests | Colour assertions follow the new values; the layout check walks the single rail layout; new pilot screenshot script | `tests/helper_status.mjs`, `tests/transfers_page.mjs`, `tests/mockup_spec.mjs`, `tests/ui/master-ds-check.mjs`, `tests/ui/ds-pilot-shots.mjs` |
