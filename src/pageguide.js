@@ -57,7 +57,8 @@
       item(lg.facilio && lg.customer, 'Logos', (lg.facilio ? 'Facilio logo added. ' : 'Facilio logo missing. ') + (lg.customer ? 'Customer logo added.' : 'Customer logo missing.') + ' Used on the cover and header of exported guides.', can ? '<button class="btn sm" data-act="brdLogos">Add logos</button>' : '')].filter(Boolean);
   }
   const sources = () => `<div class="card tp-srcs"><div class="card-h"><h3>What the drafts read</h3><span class="small muted">The more of these are filled in, the closer the guide is to your customer\'s real setup.</span></div><div class="tp-grid">${srcItems().map(x => x.html).join('')}</div></div>`;
-  V.trainTop = cur => `<nav class="tp-tabs" role="tablist" aria-label="Training &amp; Guides">${TABS.map(s => `<button type="button" role="tab" aria-selected="${s[0] === cur}" class="tp-tab${s[0] === cur ? ' on' : ''}" data-act="nav" data-view="${s[0]}"><span class="tp-ic">${V.ico ? V.ico(s[3]) : ''}</span><span class="tp-tx"><b>${esc(s[1])}${count(s[0])}</b><span>${esc(s[2])}</span></span></button>`).join('')}</nav>`;
+  // a Facilio page tab row (user, 27 Nov 2026: "fix these buttons"): text tabs, the open one blue and underlined, the count beside the name, what the tab does as its tooltip
+  V.trainTop = cur => `<nav class="tabs tp-tabs" role="tablist" aria-label="Training &amp; Guides">${TABS.map(s => `<button type="button" role="tab" aria-selected="${s[0] === cur}" class="tab tp-tab${s[0] === cur ? ' active on' : ''}" data-act="nav" data-view="${s[0]}" title="${esc(s[2])}">${esc(s[1])}${count(s[0]).replace('<em>', '<span class="pt-shn">').replace('</em>', '</span>')}</button>`).join('')}</nav>`;
   V.trainSources = sources;   // only the User Guide Builder reads these, so only that tab shows them
 
   // put the strips at the top of the page body without touching each page's own code
