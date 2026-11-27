@@ -50,4 +50,14 @@ await t('the Meteor and Comet project of the customer is linked without a card, 
   const sq = JSON.parse(fs.readFileSync(new URL('../work/work.json', import.meta.url), 'utf8')).mcp.tools.find(x => x.name === 'session_questions').input_schema.properties; assert.ok(sq.meteor && sq.toolProject, 'the connector declares meteor and toolProject');
   const { KINDS } = await import('../work/server/_jobs.mjs'); ['link_tools', 'start_meteor'].forEach(k => assert.deepEqual(KINDS[k].docs, ['workshop', 'mockup_pages'], k)); assert.match(KINDS.send_mockup.recipe, /items\[<ref>\]\.meteor/);
 });
+await t('a card remembers its Comet creation with its review state, beside the video link and the prototype', async () => {
+  await rejects(tool(s, { pageKey: 'portfolio:all', comet: { owner: 'x', slug: 'tour' } }), 400); await rejects(tool(s, { pageKey: 'portfolio:all', comet: 'not json' }), 400);
+  const r = await tool(s, { pageKey: 'portfolio:all', comet: JSON.stringify({ owner: 'D@x.com', slug: 'al-moallam-tour', title: 'Tour', version: 0 }) }); assert.match(r.note, /Comet/);
+  await tool(s, { pageKey: 'portfolio:all', videoUrl: 'https://comet.facilio.work/#/v/tour', comet: { owner: 'd@x.com', slug: 'al-moallam-tour', title: 'Tour', version: 2, approved: true } }); const it = docs.mockup_pages.items['portfolio:all'];
+  assert.deepEqual([it.comet.slug, it.comet.version, it.comet.approved, it.video], ['al-moallam-tour', 2, true, 'https://comet.facilio.work/#/v/tour']); assert.ok(it.meteor && it.file, 'the prototype and the page stay');
+  await tool(s, { pageKey: 'portfolio:all', comet: { owner: 'd@x.com', slug: 'al-moallam-tour', version: 3, approved: 'yes' } }); assert.equal(docs.mockup_pages.items['portfolio:all'].comet.approved, false, 'only true counts as approved');
+  const sq = JSON.parse(fs.readFileSync(new URL('../work/work.json', import.meta.url), 'utf8')).mcp.tools.find(x => x.name === 'session_questions').input_schema.properties; assert.ok(sq.comet, 'the connector declares comet');
+  const { KINDS } = await import('../work/server/_jobs.mjs'); assert.deepEqual(KINDS.make_video.docs, ['workshop', 'mockup_pages']); assert.match(KINDS.make_video.recipe, /send_to_comet[^]*request_video/); assert.match(KINDS.send_video.recipe, /items\[<ref>\]\.comet/);
+  const { TOOL_DOCS } = await import('../work/server/_tooldocs.mjs'); ['meteor', 'toolProject', 'comet'].forEach(k => assert.ok(TOOL_DOCS.session_questions.inputs[k], 'connector_help explains ' + k));
+});
 console.log(n + ' mockup push checks passed');

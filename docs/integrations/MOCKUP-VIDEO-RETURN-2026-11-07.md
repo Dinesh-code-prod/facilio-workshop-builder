@@ -35,3 +35,9 @@ The whole round trip from the user side, what is in the libraries today and a ra
 - **The card remembers its prototype:** `mockup_pages.items[card].meteor` = owner, slug, title, version brought, newest version seen. `send_mockup` uses it instead of matching names, and the card shows "Meteor has version N" with Bring version N. The Studio cannot ask Meteor itself, so "newest" is what Claude saw last.
 - Fixed: a page or video saved by Claude no longer wipes the other fields of the card.
 Not checked: a real Meteor or Comet run through these jobs.
+
+## Update 27 Nov 2026: Make a video
+- A card with a Meteor prototype has **Make a video**: kind (walkthrough or video) and purpose (Training, Customer demo, Pre-sales, Support / how-to) ride in the note of the job `make_video`. Claude calls Meteor `send_to_comet`, passes its `comet_request` to Comet `request_video` in the linked Comet project, saves the creation on the card (`save_mockup` `comet`: owner, slug, title, version, approved) and builds it when it can.
+- The card shows "In Comet: title, version N, approved in Comet" or "waiting for Comet review". `send_video` uses `items[card].comet` instead of matching names.
+- The connector tool list is at its size limit (36,000 characters): the `meteor`, `toolProject` and `comet` fields have short descriptions in work.json and their full text in `connector_help` topic session_questions.
+Not built: Make a video on a UAT test scenario row. Not checked: a real Meteor and Comet run.

@@ -122,13 +122,19 @@ export function installDs(d) {
         if (!mo || !/^[^@\s/]+@[^@\s/]+$/.test(owner) || !/^[a-z0-9][a-z0-9-]{0,99}$/.test(slug)) throw new HttpError(400, 'meteor must be { owner (the prototype owner e-mail), slug, title, version (the version brought, 0 if none), latest (the newest version Meteor lists) }');
         const version = n(mo.version); await update(p.id, 'mockup_pages', doc => setItem(doc, { meteor: { owner, slug, title: one(mo.title), version, latest: Math.max(n(mo.latest), version), at: now } })); await audit(p.id, s.id, 'mockup-meteor', key + ' · ' + slug + ' v' + version);
       }
+      const co = b.comet != null ? asObj(b.comet) : null;
+      if (b.comet != null) {   // the Comet creation made from this card's prototype, so Bring the Comet video does not have to guess
+        const owner = String((co || {}).owner || '').trim().toLowerCase(), slug = String((co || {}).slug || '').trim(), k = parseInt((co || {}).version, 10), version = k >= 0 && k < 10000 ? k : 0;
+        if (!co || !/^[^@\s/]+@[^@\s/]+$/.test(owner) || !/^[a-z0-9][a-z0-9-]{0,99}$/.test(slug)) throw new HttpError(400, 'comet must be { owner (the creation owner e-mail), slug, title, version (0 if not made yet), approved (true when the curator approved the latest version) }');
+        await update(p.id, 'mockup_pages', doc => setItem(doc, { comet: { owner, slug, title: one(co.title), version, approved: co.approved === true, at: now } })); await audit(p.id, s.id, 'mockup-comet', key + ' · ' + slug + ' v' + version);
+      }
       const vid = String(b.videoUrl || '').trim(), hasPage = !!String(b.pageUrl || '').trim();
       if (vid) {   // the Comet video of this card: only the link is kept (a video file is too large for the project); it shows on the card and in the client mockup
         let v; try { v = new URL(vid); } catch (e) { throw new HttpError(400, 'videoUrl must be the share link of the Comet video'); } if (v.protocol !== 'https:' || v.hostname !== 'comet.facilio.work') throw new HttpError(400, 'videoUrl must be a Comet link (https://comet.facilio.work/...)');
         await update(p.id, 'mockup_pages', doc => setItem(doc, { video: v.href.slice(0, 600), videoBy: by, videoAt: now })); await audit(p.id, s.id, 'mockup-video', key);
         if (!hasPage) return { project: p.name, key, video: v.href, note: 'Saved. The Comet video shows on the Guides & Videos page and in the client mockup.' };
       }
-      if (!hasPage) { if (mo) return { project: p.name, key, meteor: mo.slug, note: 'Saved. The card now shows its Meteor prototype.' }; throw new HttpError(400, 'Send pageUrl (the Meteor file link), videoUrl, meteor or toolProject.'); }
+      if (!hasPage) { if (mo || co) return { project: p.name, key, note: 'Saved. The card now shows its ' + (co ? 'Comet video' : 'Meteor prototype') + '.' }; throw new HttpError(400, 'Send pageUrl (the Meteor file link), videoUrl, meteor, comet or toolProject.'); }
       let u; try { u = new URL(String(b.pageUrl || '')); } catch (e) { throw new HttpError(400, 'pageUrl must be the file link Meteor gave for index.html'); }
       if (u.protocol !== 'https:' || !/^facilio-work-sites[.]s3[.][a-z0-9-]+[.]amazonaws[.]com$/.test(u.hostname)) throw new HttpError(400, 'pageUrl must be a Meteor file link (the one-hour link from get_prototype with files)');
       let r; try { r = await fetch(u.href); } catch (e) { throw new HttpError(502, 'The Meteor file could not be fetched. Ask for a fresh link (they last one hour) and try again.'); } if (!r.ok) throw new HttpError(502, 'The Meteor file link did not open (status ' + r.status + '). Ask for a fresh link and try again.');

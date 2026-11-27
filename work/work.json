@@ -1402,11 +1402,15 @@
       },
       "meteor": {
        "type": "object",
-       "description": "Only for save_mockup: the Meteor prototype this card is made from, as Meteor lists it: { owner (e-mail), slug, title, version (the version you brought, 0 if none), latest (the newest version) }"
+       "description": "save_mockup: the card prototype { owner, slug, title, version, latest }"
       },
       "toolProject": {
        "type": "object",
-       "description": "Only for save_mockup: the Meteor or Comet project of this customer, as its project tool lists it: { tool (meteor or comet), id (owner/id), name, link }; no pageKey needed"
+       "description": "save_mockup: { tool: meteor|comet, id, name, link }; no pageKey"
+      },
+      "comet": {
+       "type": "object",
+       "description": "save_mockup: the card Comet creation { owner, slug, title, version, approved }"
       },
       "questions": {
        "type": "array",

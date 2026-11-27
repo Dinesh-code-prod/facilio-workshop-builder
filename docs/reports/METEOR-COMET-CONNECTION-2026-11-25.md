@@ -59,7 +59,7 @@ Where it hurts: five places to click across three sites, copy and paste, a job t
 
 Rules kept in every step: Meteor and Comet get fictional sample data only, never real customer data; a person approves; Claude never publishes or shares anything in Meteor or Comet by itself.
 
-Built on 25 Nov 2026: items 1, 2 and 3 (see docs/integrations/MOCKUP-VIDEO-RETURN-2026-11-07.md, update of 25 Nov). Item 3 shows a newer version only after Claude has looked at Meteor (the Studio cannot ask Meteor itself).
+Built on 27 Nov 2026: item 4 (Make a video on a mockup card; the card remembers its Comet creation and its review). Built on 25 Nov 2026: items 1, 2 and 3 (see docs/integrations/MOCKUP-VIDEO-RETURN-2026-11-07.md, update of 25 Nov). Item 3 shows a newer version only after Claude has looked at Meteor (the Studio cannot ask Meteor itself).
 
 ## 7. Not checked
 No real job was run end to end in this check (the Studio connector was not signed in in this session). The Meteor prototype was not opened, and whether it is already on a Studio Mockup card was not checked.
