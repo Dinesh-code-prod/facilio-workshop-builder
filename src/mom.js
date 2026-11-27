@@ -1,6 +1,6 @@
 /* Minutes of meeting (MOM) from a call transcript. Transcripts page > Create MOM.
    Three ways to the same minutes, all checked the same way on the server (POST /ai/mom): DeepSeek (the transcript is read in parts of about 9,000 characters, one call each, then merged),
-   Open in Claude (the person's own Claude, with the connector or by copy and paste), and the connector tools (get_transcripts, get_mom_pack, save_minutes).
+   Open in Claude (the person's own Claude, with the connector or by copy and paste), and the connector tools (transcripts (action list), transcripts (action minutes), save_minutes).
    The result is a preview; "Use these minutes" opens the existing Meeting minutes form filled in, and nothing is saved until the person saves it there. */
 (function (root) {
   'use strict';

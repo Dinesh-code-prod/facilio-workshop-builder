@@ -2,15 +2,6 @@
  "mcp": {
   "tools": [
    {
-    "name": "list_projects",
-    "description": "List the Delivery Studio projects the caller can create tickets in",
-    "function": "api",
-    "input_schema": {
-     "type": "object",
-     "properties": {}
-    }
-   },
-   {
     "name": "suggest_ticket",
     "description": "Suggest a ticket type, priority, subject and matching projects for a Teams message. Suggestions only; nothing is created. Use before create_ticket so the person can correct them.",
     "function": "api",
@@ -94,6 +85,10 @@
       "query": {
        "type": "string",
        "description": "Part of a project or customer name"
+      },
+      "forTickets": {
+       "type": "boolean",
+       "description": "Only the projects you can create tickets in (name and customer)"
       }
      },
      "required": []
@@ -219,53 +214,6 @@
       },
       "limit": {
        "type": "number"
-      }
-     },
-     "required": [
-      "project"
-     ]
-    }
-   },
-   {
-    "name": "get_task_pack",
-    "description": "The same prepared prompt and sources that \"Open in Claude\" gives for a deliverable. Do the task from it, then save the result with save_draft.",
-    "function": "api",
-    "input_schema": {
-     "type": "object",
-     "properties": {
-      "project": {
-       "type": "string",
-       "description": "Project name or id"
-      },
-      "task": {
-       "type": "string",
-       "description": "brd, uat, guide, ftr, gaps, workshop, golive, hypercare, handover, wsr, monthly, config, pkg, training or closure"
-      },
-      "instruction": {
-       "type": "string",
-       "description": "Anything extra the person asked for"
-      }
-     },
-     "required": [
-      "project",
-      "task"
-     ]
-    }
-   },
-   {
-    "name": "get_review_pack",
-    "description": "The whole project as one pack, to review for gaps, contradictions and missing information. It includes the automatic state-flow checks (a state nothing reaches, a button nobody can press, an approval with no approver, a key step that tells nobody).",
-    "function": "api",
-    "input_schema": {
-     "type": "object",
-     "properties": {
-      "project": {
-       "type": "string",
-       "description": "Project name or id"
-      },
-      "maxChars": {
-       "type": "number",
-       "description": "Largest size of the pack in characters (default 30000, at most 200000)"
       }
      },
      "required": [
@@ -429,26 +377,15 @@
    },
    {
     "name": "connector_help",
-    "description": "What this connector can do, grouped, with ready recipes for UAT, guides, issue tracking, status reports and gap checks; topic with a tool name gives that tool's full description and input formats. Call this first when unsure.",
+    "description": "What this connector can do, grouped, with ready recipes for UAT, guides, issue tracking, status reports and gap checks; topic with a tool name gives its full description and input formats. topic skills: the Facilio implementation skills and how to start them (task or query narrows; a project_jobs kind gives that job's skill plan). topic feedback: team feedback from the Feedback tab (day, or from and to). Call this first when unsure.",
     "function": "api",
     "input_schema": {
      "type": "object",
      "properties": {
       "topic": {
        "type": "string",
-       "description": "Optional: uat, guides, issues, status, gaps, or a tool name"
-      }
-     },
-     "required": []
-    }
-   },
-   {
-    "name": "get_impl_skills",
-    "description": "The Facilio implementation skills (FTR, UAT guide, configuration builder and the rest): what each does and how to start it in the person's own Claude. Pass a task (brd, ftr, uat, guide, training, config, golive, handover ...) or a project_jobs kind for that job's skill plan. Full text: connector_help topic get_impl_skills.",
-    "function": "api",
-    "input_schema": {
-     "type": "object",
-     "properties": {
+       "description": "Optional: uat, guides, issues, status, gaps, skills, feedback, or a tool name"
+      },
       "task": {
        "type": "string",
        "description": "A Delivery Studio deliverable: brd, ftr, uat, guide, training, config, pkg, golive, hypercare, handover, onboarding; or a project_jobs job kind"
@@ -456,31 +393,26 @@
       "query": {
        "type": "string",
        "description": "Words to look for in a skill name or description"
+      },
+      "day": {
+       "type": "string",
+       "description": "One day, YYYY-MM-DD (default today, UTC)"
+      },
+      "from": {
+       "type": "string",
+       "description": "Range start YYYY-MM-DD"
+      },
+      "to": {
+       "type": "string",
+       "description": "Range end YYYY-MM-DD"
       }
      },
      "required": []
     }
    },
    {
-    "name": "list_record_kinds",
-    "description": "Every kind of record this project holds (actions, decisions, risks and issues, change requests, sign-offs, tasks, UAT, hypercare, handover, guides, notes ...) with how many of each, plus the project documents you can read.",
-    "function": "api",
-    "input_schema": {
-     "type": "object",
-     "properties": {
-      "project": {
-       "type": "string",
-       "description": "Project name or id"
-      }
-     },
-     "required": [
-      "project"
-     ]
-    }
-   },
-   {
     "name": "get_records",
-    "description": "Read the records of one kind (use list_record_kinds for the kinds). Short view by default; filter by status or words; pass detail \"full\" to read records in depth. Newest first; use offset to page, open or overdue to narrow.",
+    "description": "Read the records of one kind. Without kind: every kind this project holds (actions, decisions, risks and issues, change requests, sign-offs, tasks, UAT, hypercare, handover, guides, notes ...) with counts, plus the documents you can read. Short view by default; filter by status or words; detail \"full\" reads records in depth. Newest first; offset pages, open or overdue narrow.",
     "function": "api",
     "input_schema": {
      "type": "object",
@@ -491,7 +423,7 @@
       },
       "kind": {
        "type": "string",
-       "description": "For example raid, action, decision, cr, signoff, task, utc, uat, hc, usecase, note"
+       "description": "For example raid, action, decision, cr, signoff, task, utc, uat, hc, usecase, note; leave out to list the kinds"
       },
       "status": {
        "type": "string"
@@ -522,8 +454,93 @@
       }
      },
      "required": [
+      "project"
+     ]
+    }
+   },
+   {
+    "name": "transcripts",
+    "description": "The workshop and call transcripts. action list: name, date, session, status and statements read from each; read: the text of one (id), 25,000 characters at a time (part for the next piece); search: what the customer said, by words (query) and optionally a module, with speaker and review status; minutes: the prepared prompt that turns one transcript (id) into minutes of meeting, then call save_minutes.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "action": {
+       "type": "string",
+       "enum": [
+        "list",
+        "read",
+        "search",
+        "minutes"
+       ]
+      },
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      },
+      "limit": {
+       "type": "number",
+       "description": "list and search: how many to return"
+      },
+      "id": {
+       "type": "string",
+       "description": "read and minutes: the transcript id from action list"
+      },
+      "part": {
+       "type": "number"
+      },
+      "query": {
+       "type": "string",
+       "description": "search: at least three characters"
+      },
+      "module": {
+       "type": "string",
+       "description": "Optional module name"
+      },
+      "title": {
+       "type": "string"
+      },
+      "date": {
+       "type": "string",
+       "description": "Meeting date, YYYY-MM-DD"
+      },
+      "attendees": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "action",
+      "project"
+     ]
+    }
+   },
+   {
+    "name": "get_pack",
+    "description": "The same prepared prompt and sources that \"Open in Claude\" gives for a deliverable (task brd, uat, guide ...): do the task from it, then save the result with save_draft. task review: the whole project as one pack to review for gaps, contradictions and missing information, with the automatic state-flow checks.",
+    "function": "api",
+    "input_schema": {
+     "type": "object",
+     "properties": {
+      "project": {
+       "type": "string",
+       "description": "Project name or id"
+      },
+      "task": {
+       "type": "string",
+       "description": "brd, uat, guide, ftr, gaps, workshop, golive, hypercare, handover, wsr, monthly, config, pkg, training, closure; or review for the whole project to review for gaps"
+      },
+      "instruction": {
+       "type": "string",
+       "description": "Anything extra the person asked for"
+      },
+      "maxChars": {
+       "type": "number",
+       "description": "review: largest size in characters (default 30000, at most 200000)"
+      }
+     },
+     "required": [
       "project",
-      "kind"
+      "task"
      ]
     }
    },
@@ -625,82 +642,6 @@
      },
      "required": [
       "project"
-     ]
-    }
-   },
-   {
-    "name": "get_transcripts",
-    "description": "The workshop and call transcripts uploaded to the project: name, date, session, status, how many statements were read from each, and whether the text is stored.",
-    "function": "api",
-    "input_schema": {
-     "type": "object",
-     "properties": {
-      "project": {
-       "type": "string",
-       "description": "Project name or id"
-      },
-      "limit": {
-       "type": "number"
-      }
-     },
-     "required": [
-      "project"
-     ]
-    }
-   },
-   {
-    "name": "get_transcript",
-    "description": "Read the text of one transcript, 25,000 characters at a time (use part for the next piece).",
-    "function": "api",
-    "input_schema": {
-     "type": "object",
-     "properties": {
-      "project": {
-       "type": "string",
-       "description": "Project name or id"
-      },
-      "id": {
-       "type": "string",
-       "description": "Transcript id from get_transcripts"
-      },
-      "part": {
-       "type": "number"
-      }
-     },
-     "required": [
-      "project",
-      "id"
-     ]
-    }
-   },
-   {
-    "name": "get_mom_pack",
-    "description": "The prepared prompt that turns one transcript into minutes of meeting (attendees, agenda, discussion, decisions, actions with owners and dates, risks, questions, next steps). Write the minutes from it, then call save_minutes.",
-    "function": "api",
-    "input_schema": {
-     "type": "object",
-     "properties": {
-      "project": {
-       "type": "string",
-       "description": "Project name or id"
-      },
-      "id": {
-       "type": "string"
-      },
-      "title": {
-       "type": "string"
-      },
-      "date": {
-       "type": "string",
-       "description": "Meeting date, YYYY-MM-DD"
-      },
-      "attendees": {
-       "type": "string"
-      }
-     },
-     "required": [
-      "project",
-      "id"
      ]
     }
    },
@@ -957,36 +898,6 @@
      },
      "required": [
       "project"
-     ]
-    }
-   },
-   {
-    "name": "search_transcripts",
-    "description": "Search what the customer said: the statements taken from the workshop transcripts, by words and optionally a module, with the speaker and review status.",
-    "function": "api",
-    "input_schema": {
-     "type": "object",
-     "properties": {
-      "project": {
-       "type": "string",
-       "description": "Project name or id"
-      },
-      "query": {
-       "type": "string",
-       "description": "At least three characters"
-      },
-      "module": {
-       "type": "string",
-       "description": "Optional module name"
-      },
-      "limit": {
-       "type": "number",
-       "description": "Most matches to return"
-      }
-     },
-     "required": [
-      "project",
-      "query"
      ]
     }
    },
@@ -1557,28 +1468,6 @@
       "action",
       "project"
      ]
-    }
-   },
-   {
-    "name": "get_feedback",
-    "description": "Team feedback and feature requests from the Feedback tab of Delivery Studio, for the daily review: one day (default today) or a range, with who sent it, what, which feature and the GitHub issue. Put the rows in an Excel sheet in the order given.",
-    "function": "api",
-    "input_schema": {
-     "type": "object",
-     "properties": {
-      "day": {
-       "type": "string",
-       "description": "One day, YYYY-MM-DD (default today, UTC)"
-      },
-      "from": {
-       "type": "string",
-       "description": "Range start YYYY-MM-DD"
-      },
-      "to": {
-       "type": "string",
-       "description": "Range end YYYY-MM-DD"
-      }
-     }
     }
    }
   ]

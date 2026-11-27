@@ -19,19 +19,20 @@ person's Claude session  --(MCP, Entra sign-in)-->  https://mcp.facilio.work/fac
 ## 2. Add the connector
 Claude (web or Desktop): Settings, Connectors, Add custom connector, name `Facilio Delivery Studio`, address `https://mcp.facilio.work/facilio-delivery-studio`, sign in with a Facilio account. Claude Code: `claude mcp add --transport http facilio-delivery-studio https://mcp.facilio.work/facilio-delivery-studio`. After a deploy that changes the tool list, remove and re-add the connector (Claude caches tool lists). Fuller notes: [reference/claude-connector.md](claude-connector.md).
 
-## 3. The 40 tools (from `work/work.json`; implementations in `work/server/api.mjs` and the `_*.mjs` modules)
+## 3. The 32 tools (from `work/work.json`; implementations in `work/server/api.mjs` and the `_*.mjs` modules)
+The platform allows 40 tools. On 27 Nov 2026 ten tools were merged into four (tests/tool_merge.mjs); the old code keeps its names behind them, so related work adds an action to a tool instead of a new tool.
 | Group | Tools |
 |---|---|
-| Find and orient | `find_projects`, `portfolio_status`, `project_overview`, `connector_help` (tool groups and recipes), `get_impl_skills` |
-| Read the project | `get_requirements`, `get_statements`, `get_open_questions`, `get_use_cases`, `list_record_kinds`, `get_records`, `get_document`, `search_project`, `recent_activity`, `project_changes`, `list_overdue`, `uat_summary`, `get_tickets` |
-| Transcripts | `get_transcripts`, `get_transcript`, `search_transcripts`, `get_mom_pack`, `save_minutes` (confirm) |
-| Prepare deliverables | `get_task_pack`, `get_review_pack`, `save_draft` (confirm; always an unapproved draft) |
-| Hand-off (old buttons) | `get_handoff`, `submit_handoff_result` (used by the Open in Claude buttons, being removed stage by stage) |
+| Find and orient | `find_projects` (forTickets: the projects you can create tickets in), `portfolio_status`, `project_overview`, `connector_help` (tool groups and recipes; topic skills: the Facilio implementation skills; topic feedback: team feedback) |
+| Read the project | `get_requirements`, `get_statements`, `get_open_questions`, `get_use_cases`, `get_records` (no kind: the kinds and counts), `get_document`, `search_project`, `recent_activity`, `project_changes`, `list_overdue`, `uat_summary`, `get_tickets` |
+| Transcripts | `transcripts` (action list, read, search, minutes), `save_minutes` (confirm) |
+| Prepare deliverables | `get_pack` (task brd, uat, guide ...; task review: the whole project for a gap review), `save_draft` (confirm; always an unapproved draft) |
+| Job queue and hand-off | `project_jobs` (list, claim, progress, finish, handoff_get, handoff_submit, delegate, files, run_directory, run_link ...) |
 | Push and pull engine | `transfer_read` (action list, get), `transfer_write` (begin, store, submit), `transfer_push` (push_begin, report, verify; confirm) |
 | Contract to project | `msa_extraction_save`, `create_project_from_msa` (confirm) |
-| Workshops | `session_questions` (action prepare, live) |
-| Tasks | `my_tasks`, `send_task_digest` (confirm; Teams DM), `task_tracking` (action evidence, save suggestions) |
-| Teams and tickets (Otto) | `list_projects`, `suggest_ticket`, `create_ticket` (confirm); tickets move to the Support Desk (E13) |
+| Workshops | `session_questions` (action prepare, live, save_transcript, save_findings, save_design, save_mockup, save_questions) |
+| Tasks | `my_tasks`, `send_task_digest` (confirm; Teams DM), `task_tracking` (to-dos, evidence, suggestions, replies, customer mail) |
+| Teams and tickets (Otto) | `suggest_ticket`, `create_ticket` (confirm); tickets move to the Support Desk (E13) |
 
 `confirm` = the platform shows the tool as destructive and Otto asks for a Confirm click.
 

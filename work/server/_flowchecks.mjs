@@ -1,6 +1,6 @@
 /* The automatic state-flow checks (plan CONTRACT-TO-BRD step 4), ONE copy for the page and the server. build.mjs adds this file to the browser bundle
    (a plain script: it sets window.FWBFlowChecks, used by the State flows tile of the Solution map, src/solmap.js); the server imports it as a module
-   (globalThis.FWBFlowChecks) for the review pack Claude reads (get_review_pack). Pure code: no DOM, no network. Run by tests/sollogic.mjs. */
+   (globalThis.FWBFlowChecks) for the review pack Claude reads (get_pack (task review)). Pure code: no DOM, no network. Run by tests/sollogic.mjs. */
 (function (root) {
   'use strict';
   const arr = v => (Array.isArray(v) ? v : []);

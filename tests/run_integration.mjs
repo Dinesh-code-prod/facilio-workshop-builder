@@ -51,7 +51,7 @@ await t('project_jobs run_link records the published page on the project, newest
 await t('connector_help explains both actions; an unknown action is refused', async () => {
   const r = await tool('connector_help', { topic: 'facilio_run' }); assert.equal(r.status, 200); assert.match(r.data.description, /action run_directory/); assert.match(r.data.description, /wait for their OK/);
   assert.equal((await tool('project_jobs', { action: 'nope' })).status, 400);
-  const fs = await import('node:fs'); const tools = JSON.parse(fs.readFileSync('work/work.json', 'utf8')).mcp.tools; assert.equal(tools.length, 40, 'no 41st tool: the platform allows 40');
+  const fs = await import('node:fs'); const tools = JSON.parse(fs.readFileSync('work/work.json', 'utf8')).mcp.tools; assert.ok(tools.length <= 40, 'the platform allows 40 tools');
   const pj = tools.find(x => x.name === 'project_jobs'); assert.ok(['run_directory', 'run_link'].every(a => pj.input_schema.properties.action.enum.includes(a))); assert.match(pj.description, /connector_help topic facilio_run/);
 });
 await t('the Facilio Run tab lists only facilio.run sites, each opening in a new tab', async () => {

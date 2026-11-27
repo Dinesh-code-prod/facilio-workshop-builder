@@ -47,7 +47,7 @@ t('the pull_cr job: personal, requestable, saves a delta and never redrafts the 
   const k = KINDS.pull_cr; assert.ok(k && PERSONAL.has('pull_cr')); assert.equal(cleanRequest({ kind: 'pull_cr', ref: 'cr1', note: 'x' }).params.ref, 'cr1');
   assert.match(k.recipe, /kind cr_delta/); assert.match(k.recipe, /EVERY subfolder/); assert.match(k.recipe, /Do NOT call msa_extraction_save/); assert.match(k.recipe, /"added"/);
   assert.match(fs.readFileSync('work/server/_jobsapi.mjs', 'utf8'), /kind === 'pull_cr'/);
-  const w = JSON.parse(fs.readFileSync('work/work.json', 'utf8')); assert.equal(w.mcp.tools.length, 40); assert.match(w.mcp.tools.find(x => x.name === 'project_jobs').description, /pull_cr/);
+  const w = JSON.parse(fs.readFileSync('work/work.json', 'utf8')); assert.equal(w.mcp.tools.length, 32); assert.match(w.mcp.tools.find(x => x.name === 'project_jobs').description, /pull_cr/);
   assert.match(fs.readFileSync('work/server/api.mjs', 'utf8'), /'New contract after the kick-off': '/);
 });
 t('the pages are wired: Change requests, Contract intake, plan, BRD, UAT, build', () => {

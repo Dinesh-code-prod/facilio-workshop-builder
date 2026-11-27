@@ -1,6 +1,6 @@
 /* Project Settings > Implementation skills: the setup guide for the Facilio Implementation Toolbox (the facilio-impl-ai-skills repository), so a team member can install it
    without the Word guide. The repository login is never written here: the platform team hands it out. Which skill carries on from which deliverable is served to Claude by
-   the connector's get_impl_skills tool (work/server/_skills.mjs, rebuilt with tools/build-impl-skills.mjs). */
+   the connector's connector_help (topic skills) tool (work/server/_skills.mjs, rebuilt with tools/build-impl-skills.mjs). */
 (function (root) {
   'use strict';
   const V = root.FWBViews; const { esc } = root.FWB;
@@ -11,7 +11,7 @@
   V.implSkillsHtml = () => [
     card('The Facilio Implementation Toolbox', `<p class="small" style="margin-top:0">One skill, <code>/facilio-impl-toolbox</code>, opens a menu of every implementation tool (FTR Generator, UAT Guide Generator, Configuration Builder, Script Builder, Dashboard Builder and more) and hands you to the one you pick. You install it once. New tools appear in the menu by themselves.</p>
       <p class="small">What each tool does, with sample prompts: <a href="${HUB}" target="_blank" rel="noopener">${HUB}</a> (sign in with your Facilio account).</p>
-      <p class="small" style="margin-bottom:0"><b>How it fits with this app:</b> the Delivery Studio connector gives your Claude this project's facts (requirements, UAT, tickets, org id). The toolbox gives it the tools. Ask Claude <i>"which Facilio skill fits UAT for this project?"</i> and it uses the connector's <code>get_impl_skills</code> to answer, then starts the skill for you.</p>`),
+      <p class="small" style="margin-bottom:0"><b>How it fits with this app:</b> the Delivery Studio connector gives your Claude this project's facts (requirements, UAT, tickets, org id). The toolbox gives it the tools. Ask Claude <i>"which Facilio skill fits UAT for this project?"</i> and it uses the connector's <code>connector_help (topic skills)</code> to answer, then starts the skill for you.</p>`),
     card('Where each tool runs', `<table class="tbl small"><thead><tr><th>Tool</th><th>Runs in</th><th>What it needs</th></tr></thead><tbody>
       ${row('FTR Generator', 'Cowork', 'The BRD or an org package')}${row('FTR Executor', 'Cowork', 'The FTR report and Claude in Chrome')}${row('Org Configuration Assistant', 'Cowork', 'facilio-config-data or a package')}${row('Configuration Builder', 'Cowork or Claude Code', 'A BRD or a plain request, and the Facilio MCP')}
       ${row('Connected App Builder, Script Builder, Dashboard Builder, Code Reviewer', 'Cowork', 'The Facilio MCP')}${row('Rules Optimizer, Script Optimizer', 'Cowork', 'A package or facilio-config-data')}${row('UAT Guide Generator', 'Cowork', 'The FTR or BRD, or a session recording, plus the package')}

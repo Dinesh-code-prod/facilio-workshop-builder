@@ -1,6 +1,6 @@
 /* Team feedback (tests: tests/feedback.mjs). Any team member adds feedback or a feature request from the Feedback tab (Help menu); it is kept in the app (collection fb, key <day>.<id>) and, when the
    owner has granted the credential github_feedback (a GitHub token that may create issues in the repository), also recorded as a GitHub issue labelled "feedback" so it can be picked up every day.
-   Without the credential the record is kept and marked "not in GitHub yet"; POST /api/feedback/sync sends the missing ones later. The connector tool get_feedback lists a day or a range, for the daily report.
+   Without the credential the record is kept and marked "not in GitHub yet"; POST /api/feedback/sync sends the missing ones later. The connector tool connector_help (topic feedback) lists a day or a range, for the daily report.
    Customers cannot reach this (they never sign in to the app). Text is data: it goes into the issue body as plain text only. */
 const REPO = 'Dinesh-code-prod/facilio-workshop-builder', CRED = 'github_feedback';
 export const KINDS = { feature: 'Feature request', idea: 'Idea', bug: 'Something is wrong', other: 'Other feedback' };

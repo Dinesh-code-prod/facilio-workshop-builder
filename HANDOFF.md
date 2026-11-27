@@ -1,5 +1,18 @@
 # Handoff
 
+**CONNECTOR TOOLS MERGED: 40 TO 32 (27 Nov 2026, branch `feat/facilio-reference-ds`, NOT on main, NOT deployed).** The facilio.work platform allows 40 tools, and the connector was full.
+- **Merged:**
+  - `transcripts`: action list, read, search, minutes. Was get_transcripts, get_transcript, search_transcripts, get_mom_pack.
+  - `get_pack`: task brd, uat and the rest, or review. Was get_task_pack, get_review_pack.
+  - `get_records` with no kind lists the kinds. Was list_record_kinds.
+  - `connector_help` topic skills and topic feedback. Was get_impl_skills, get_feedback.
+  - `find_projects` forTickets. Was list_projects.
+- **How:** the old code keeps its names and the new tools forward to it (api.mjs, after `ACTION_TOOLS`). Every prompt, recipe, job brief and help text now names the new tools. The What's new page keeps the old names as history.
+- **Effect:** the tool list is now 32 tools and 33,816 characters (it was 35,685). 8 slots are free.
+- **Docs and tests:** `docs/integrations/CLAUDE-INTEGRATION.md` §3 is updated. `tests/tool_merge.mjs` covers each merged tool and fails if a prompt names a removed tool.
+- **To use it:** remove and re-add the Delivery Studio connector in Claude.
+- **Not checked:** a real Claude or Otto session with the new names.
+
 **FACILIO RUN INTEGRATION (27 Nov 2026, branch `feat/facilio-reference-ds`, NOT on main, NOT deployed).** Plan with ticked checklist: `docs/plans/FACILIO-RUN-INTEGRATION-PLAN-2026-11-27.md`.
 - **What it is:** facilio.run is Facilio's internal site hosting. Every Facilio employee can open every site, and anyone can overwrite one. Its own Claude connector is `https://mcp.facilio.run/mcp`.
 - **Built:**
