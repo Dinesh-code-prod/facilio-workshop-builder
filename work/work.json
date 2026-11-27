@@ -307,7 +307,7 @@
    },
    {
     "name": "project_jobs",
-    "description": "The job queue Delivery Studio fills for Claude. action list (no project: the waiting jobs of all your projects in one call; optional kind), claim (id: you get fixed instructions), progress, finish (id, status done|needs_input|failed, summary, transferId, questions; what you stored waits for a person). action request asks for fetch_mail or pull_cr (ref = the change request id). On list and claim pass skills. Full text: connector_help topic project_jobs.",
+    "description": "The job queue Delivery Studio fills for Claude. action list (no project: the waiting jobs of all your projects in one call; optional kind), claim (id: you get fixed instructions), progress, finish (id, status done|needs_input|failed, summary, transferId, questions; what you stored waits for a person). action request asks for fetch_mail or pull_cr (ref = the change request id). On list and claim pass skills. Full text: connector_help topic project_jobs. facilio.run (with the Facilio Run connector): action run_directory saves list_sites; run_link records a page you published from a project. Full text: connector_help topic facilio_run.",
     "function": "api",
     "input_schema": {
      "type": "object",
@@ -328,7 +328,9 @@
         "file_urls",
         "file_put_begin",
         "file_put_done",
-        "backup"
+        "backup",
+        "run_directory",
+        "run_link"
        ],
        "description": "Which step"
       },
@@ -357,11 +359,11 @@
       },
       "stage": {
        "type": "string",
-       "description": "Only for list: the main tab whose jobs you want (intake, requirements, brd, configuration, uat, hypercare, other)"
+       "description": "Only for list. Full text: connector_help topic project_jobs."
       },
       "kind": {
        "type": "string",
-       "description": "Only for list: with no project, narrows the waiting jobs of all your projects to one kind of job (for example chat)"
+       "description": "Only for list. Full text: connector_help topic project_jobs."
       },
       "status": {
        "type": "string",
@@ -400,7 +402,7 @@
       },
       "setup": {
        "type": "object",
-       "description": "Only from the one-time Delivery Studio setup: what it found on this computer, each ok, missing or not needed: node, git, studio (this connector), m365 (Microsoft 365 connector), toolbox (facilio-impl-toolbox skill), skillsRepo (local copy of facilio-impl-ai-skills), watcher, queue (the two scheduled tasks); os windows or mac. Shown as the person's checklist in the Studio."
+       "description": "Only from the one-time Delivery Studio setup: what it found on this computer. Full text: connector_help topic project_jobs."
       },
       "folder": {
        "type": "string",
@@ -409,6 +411,15 @@
       "itemId": {
        "type": "string",
        "description": "Only for file_put_done after a folder upload: the file id Microsoft returned"
+      },
+      "sites": {
+       "type": "array",
+       "items": {
+        "type": "object"
+       }
+      },
+      "url": {
+       "type": "string"
       }
      },
      "required": [
@@ -1386,15 +1397,15 @@
       },
       "pageKey": {
        "type": "string",
-       "description": "Only for save_mockup: the mockup card key, for example portfolio:all, or flow:<module>:<flow id>, module:<module>, link:..., app:... (the Mockup tab lists them); not needed when you only send toolProject"
+       "description": "Only for save_mockup: the mockup card key (the Mockup tab lists them). Full text: connector_help topic session_questions."
       },
       "pageUrl": {
        "type": "string",
-       "description": "Only for save_mockup: the one-hour file link of the prototype index.html (Meteor get_prototype with files true)"
+       "description": "Only for save_mockup. Full text: connector_help topic session_questions."
       },
       "videoUrl": {
        "type": "string",
-       "description": "Only for save_mockup: the share link of the Comet video of this card (https://comet.facilio.work/...); alone or with pageUrl"
+       "description": "Only for save_mockup. Full text: connector_help topic session_questions."
       },
       "pageName": {
        "type": "string",

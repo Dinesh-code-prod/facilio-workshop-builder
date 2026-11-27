@@ -10,17 +10,37 @@
 
   function page(view) {
     const site = current(view);
-    const tabs = `<div class="tabs wf-tabs" role="tablist" aria-label="Facilio tools">${W.SITES.map(s => `<button class="tab${s.id === site.id ? ' active' : ''}" role="tab" aria-selected="${s.id === site.id}" data-act="wfTab" data-v="${esc(s.id)}">${esc(s.title)}${s.framed === false ? ' ↗' : ''}</button>`).join('')}</div>`;
+    const tabs = `<div class="tabs wf-tabs" role="tablist" aria-label="Facilio tools">${W.SITES.map(s => `<button class="tab${s.id === site.id ? ' active' : ''}" role="tab" aria-selected="${s.id === site.id}" data-act="wfTab" data-v="${esc(s.id)}">${esc(s.title)}${s.framed === false && !s.list ? ' ↗' : ''}</button>`).join('')}</div>`;
     const ok = W.isAllowed(site.url);
     const open = `<a class="btn primary" href="${esc(site.url)}" target="_blank" rel="noopener noreferrer">Open in a new tab</a><button type="button" class="btn" data-act="wfWin" data-v="${esc(site.id)}" title="Opens ${esc(site.title)} in its own window beside Delivery Studio, where sign-in works">Open in a window</button>`;
     const unframed = site.framed === false;
     const bar = `<div class="wf-bar"><b class="wf-title">${esc(site.title)}</b><span class="wf-note">${esc(site.note)}</span>${unframed ? '' : `<span class="wf-actions"><button type="button" class="btn" data-act="wfBig" id="wfBigBtn" aria-pressed="false">Bigger view</button><button type="button" class="btn" data-act="wfReload">Reload</button>${open}</span>`}</div>`;
-    const frame = unframed ? `<div class="wf-refuse" id="wfFrame" data-view="${esc(view)}" data-site="${esc(site.id)}"><span>This site does not open inside Delivery Studio. Click here to open it in a new tab, or in a window beside this one.</span><span class="wf-actions">${open}</span></div>` : ok
+    const frame = site.list ? runPanel(site) : unframed ? `<div class="wf-refuse" id="wfFrame" data-view="${esc(view)}" data-site="${esc(site.id)}"><span>This site does not open inside Delivery Studio. Click here to open it in a new tab, or in a window beside this one.</span><span class="wf-actions">${open}</span></div>` : ok
       ? `<iframe id="wfFrame" class="wf-frame" title="${esc(site.title)}" src="${esc(site.url)}" data-site="${esc(site.id)}" data-view="${esc(view)}" referrerpolicy="no-referrer" sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-downloads" allow=""></iframe>`
       : '<div class="notice err">This address is not on the allowed list, so it is not shown here.</div>';
     return `<div class="page-header"><div class="t"><h1>${view === 'supportdesk' ? 'Support Desk' : 'Facilio tools'}</h1><p>Support Desk, Meteor and Comet open right here. The other sites open in a new tab. Nothing from your project is sent to them.</p></div></div>
       <div class="page-body wf">${tabs}${bar}${unframed ? '' : '<p class="wf-help" id="wfHelp" role="status" hidden>If the page stays blank, this site does not allow being shown inside Delivery Studio, or it needs you to sign in in its own window. Use Open in a window.</p>'}${frame}</div>`;
   }
+  // Facilio Run tab: the sites chosen for delivery, and the copy of the whole directory that Claude saves (project_jobs action run_directory). Plain links that open in a new tab; nothing is sent to the sites.
+  let dir = null, dirAsked = false;
+  const loadDir = () => { if (dirAsked || !root.FWBApi) return; dirAsked = true; root.FWBApi.get('/api/run/directory').then(r => { dir = r; if (S.ui.view === 'webframe' && current('webframe').list) V.render(); }, () => { dir = { sites: [], failed: true }; }); };
+  const hit = (q, ...t) => !q || t.join(' ').toLowerCase().includes(q);
+  const link = (url, label) => `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`;
+  function runPanel(site) {
+    loadDir(); const q = String(S.ui.runQ || '').trim().toLowerCase();
+    const groups = W.RUN_GROUPS.map(g => [g, g.sites.filter(s => hit(q, s.name, s.note))]).filter(([, l]) => l.length);
+    const chosen = groups.length ? `<div class="rv-wrap"><table class="rv-table" id="runChosen"><thead><tr><th>Site</th><th>What it is for</th></tr></thead><tbody>${groups.map(([g, l]) => `<tr class="rv-group"><td colspan="2">${esc(g.title)}<small>${l.length}</small></td></tr>${l.map(s => `<tr><td>${link(W.runSiteUrl(s.name), s.name)}</td><td>${esc(s.note)}</td></tr>`).join('')}`).join('')}</tbody></table></div>` : '<div class="rv-wrap"><div class="rv-empty">None of the chosen sites matches the search.</div></div>';
+    const all = (dir && dir.sites) || [], found = all.filter(s => hit(q, s.name, s.description, s.by)), shown = found.slice(0, 200);
+    const when = dir && dir.refreshedAt ? V.fmtDate ? V.fmtDate(dir.refreshedAt.slice(0, 10)) : dir.refreshedAt.slice(0, 10) : '';
+    const full = !dir ? '<div class="rv-empty">Loading the saved copy…</div>' : !all.length ? '<div class="rv-empty"><b>No copy of the directory yet.</b> Press Refresh with Claude: Claude reads the directory with the Facilio Run connector and saves it here.</div>'
+      : `<table class="rv-table" id="runAll"><thead><tr><th>Site</th><th>Description</th><th>Last deployed</th></tr></thead><tbody>${shown.map(s => `<tr><td>${link(s.url, s.name)}</td><td>${esc(s.description || '')}${s.by ? `<span class="rv-sub">${esc(s.by)}</span>` : ''}</td><td>${esc(s.updated ? s.updated.slice(0, 10) : '')}</td></tr>`).join('') || '<tr><td colspan="3" class="rv-empty">No site matches the search.</td></tr>'}</tbody></table>${found.length > shown.length ? `<p class="small muted">${found.length - shown.length} more. Narrow the search.</p>` : ''}`;
+    return `<div class="wf-run" id="wfRun"><div class="rv-toolbar"><input type="search" placeholder="Search sites" aria-label="Search Facilio Run sites" value="${esc(S.ui.runQ || '')}" data-change="wfRunQ" id="wfRunQ"><span class="rv-sp"></span><button type="button" class="btn sm" data-act="wfRunRefresh" id="wfRunRefresh" title="Claude reads facilio.run with the Facilio Run connector and saves the list here">Refresh with Claude</button><a class="btn sm" href="${esc(site.url)}" target="_blank" rel="noopener noreferrer">Open facilio.run</a></div>
+      <h3 class="wf-run-h" style="margin:16px 0 8px">Chosen for delivery</h3>${chosen}
+      <h3 class="wf-run-h" style="margin:16px 0 8px">All sites${all.length ? ` <small class="muted">${all.length} sites, copy saved ${esc(when)}${dir.by ? ' by ' + esc(dir.by) : ''}</small>` : ''}</h3><div class="rv-wrap">${full}</div></div>`;
+  }
+  ACT.wfRunQ = el => { S.ui.runQ = el.value; V.render(); };
+  const REFRESH = 'Use the Facilio Run connector and the Facilio Delivery Studio connector. 1) In the Facilio Run connector call list_sites, every page until there is no cursor. 2) In the Delivery Studio connector call project_jobs action run_directory once with all the sites (name, description, creator, last_deploy_at) exactly as list_sites gave them. Do not open, deploy, rename or delete any site. If the Facilio Run connector is not added in this Claude, say so and stop: Claude setup in Delivery Studio shows how to add it.';
+  ACT.wfRunRefresh = async () => { await V.claudeOpenSimple(REFRESH, { title: 'Refresh the Facilio Run directory', task: 'run-directory' }); dirAsked = false; };
   function mount() { clearTimeout(timer); if (!document.querySelector('iframe#wfFrame')) return; timer = setTimeout(() => { const h = document.getElementById('wfHelp'); if (h) h.hidden = false; }, HELP_MS); }
   const view = name => ({ html: () => page(name), mount });
   V.webframe = view('webframe'); V.supportdesk = view('supportdesk');

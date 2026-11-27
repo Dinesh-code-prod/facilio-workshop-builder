@@ -18,6 +18,9 @@ export const TOOL_DOCS = {
  },
  "project_jobs": {
   "inputs": {
+   "kind": "Only for list: with no project, narrows the waiting jobs of all your projects to one kind of job (for example chat)",
+   "stage": "Only for list: the main tab whose jobs you want (intake, requirements, brd, configuration, uat, hypercare, other)",
+   "setup": "Only from the one-time Delivery Studio setup: what it found on this computer, each ok, missing or not needed: node, git, studio (this connector), m365 (Microsoft 365 connector), toolbox (facilio-impl-toolbox skill), skillsRepo (local copy of facilio-impl-ai-skills), watcher, queue (the two scheduled tasks); os windows or mac. Shown as the person's checklist in the Studio.",
    "skills": "The ids of the Studio skills your Claude has installed (see the tool description)",
    "folder": "Only for file_put_begin: save an approved deliverable straight into this SharePoint project folder (01_Project Governance … 07_Handover), any type but programs, up to 16 MB; then PUT it with a Content-Range header and call file_put_done with itemId",
    "itemId": "Only for file_put_done after a folder upload: the id Microsoft returned",
@@ -50,6 +53,9 @@ export const TOOL_DOCS = {
  },
  "session_questions": {
   "inputs": {
+   "videoUrl": "Only for save_mockup: the share link of the Comet video of this card (https://comet.facilio.work/...); alone or with pageUrl",
+   "pageUrl": "Only for save_mockup: the one-hour file link of the prototype index.html (Meteor get_prototype with files true)",
+   "pageKey": "Only for save_mockup: the mockup card key, for example portfolio:all, or flow:<module>:<flow id>, module:<module>, link:..., app:... (the Mockup tab lists them); not needed when you only send toolProject",
    "meteor": "Only for save_mockup: the Meteor prototype this card is made from, as Meteor lists it: { owner (e-mail), slug, title, version (the version you brought, 0 if none), latest (the newest version) }",
    "toolProject": "Only for save_mockup: the Meteor or Comet project of this customer, as its project tool lists it: { tool (meteor or comet), id (owner/id), name, link }; no pageKey needed",
    "comet": "Only for save_mockup: the Comet creation made from this card's prototype: { owner (e-mail), slug, title, version (0 if not made yet), approved (true when the curator approved the latest version) }",

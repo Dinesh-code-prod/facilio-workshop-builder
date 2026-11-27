@@ -1,5 +1,25 @@
 # Handoff
 
+**FACILIO RUN INTEGRATION (27 Nov 2026, branch `feat/facilio-reference-ds`, NOT on main, NOT deployed).** Plan with ticked checklist: `docs/plans/FACILIO-RUN-INTEGRATION-PLAN-2026-11-27.md`.
+- **What it is:** facilio.run is Facilio's internal site hosting. Every Facilio employee can open every site, and anyone can overwrite one. Its own Claude connector is `https://mcp.facilio.run/mcp`.
+- **Built:**
+  - **Help > Facilio tools > Facilio Run:** 16 sites chosen for delivery, plus a searchable copy of the whole directory that Claude refreshes (button Refresh with Claude). The Studio cannot read facilio.run itself: no CORS, and it needs facilio.run's sign-on.
+  - **Report pack > Publish to facilio.run:** Claude publishes a read-only page after the person agrees, and the link is saved on the project.
+  - **Two new `project_jobs` actions, `run_directory` and `run_link`, not a new tool:** the platform allows 40 tools and the connector is at 40. The code is in `work/server/_runapi.mjs`, and connector_help topic `facilio_run` has the full text.
+  - Claude setup (Start here), Team Guide rows and the connector recipe are updated.
+  - To keep the tool list under the 36,000-character cap, six long field texts of `project_jobs` and `session_questions` moved into connector_help (`_tooldocs.mjs`). The tool list is still 40 tools and 35,685 characters.
+- **Checked:**
+  - `npm test`: 139 files pass, `tests/run_integration.mjs` included.
+  - `claude-handoff-check`: 9/9.
+  - In the local app: the Facilio Run tab (16 sites, and the directory list using stand-in data in the page only) and Report pack > Publish (button and warning dialog; Claude was not opened).
+  - Only admins and project team members (not customers) can read or replace the directory, because it names customers' sites.
+- **Not checked:**
+  - A real Claude run with both connectors (refresh, publish). The Facilio Run connector is not added on this PC, so the user adds it and signs in.
+  - Whether `deploy_site` asks for a confirm in Claude.
+  - `master-ds-check`: not run, because the only local server belongs to another session.
+- **For the team:** everyone must remove the Delivery Studio connector in Claude and add it again to see the new actions.
+- **Gap:** `project_jobs` has no Claude-side confirm. The publish prompt makes Claude ask first, and the Studio button asks too.
+
 **KICK-OFF DECK LIKE THE FACILIO SAMPLE (27 Nov 2026, branch `feat/facilio-reference-ds`, committed and pushed to that branch; NOT on main, NOT deployed).** Plan `docs/plans/KICKOFF-DECK-LIKE-SAMPLE-PLAN-2026-11-27.md`, roadmap C4c. Claude's MSA extraction has an optional `kickoff` block; the deck (`src/kickoffhtml.js`) draws 16 slides like the sample, on the Facilio palette; the server now drafts the plan timeline and the requirement sessions when Claude saves the extraction (rules moved to `work/server/_kickofflogic.mjs`). Recipes, connector help, work.json and Team Guide updated. Checked: npm test, the kick-off, MSA, jobs and Claude tests, claude-handoff-check 9/9, a 16-slide sample deck in the browser with no overlap. Not checked: a real Claude run on a real MSA; the Kick-off page with a real pack. Another session's uncommitted fix in `src/kickoff.js` (syncSessions saving) is still in the working tree, not committed.
 
 **NEXT FOR THE USER (picked up 28-29 Nov): the guides to-do list `docs/plans/GUIDES-NEW-UI-TODO-2026-11-27.md`** (re-record the guide films and update the written guides for the new UI, after signing off the new look). The UI coverage register is `docs/reports/ui-coverage-register-2026-11-27.md` (re-run with `node tests/ui/ui-coverage.mjs` on a data copy). Branch `feat/facilio-reference-ds` is pushed to GitHub; main is NOT changed until sign-off.
