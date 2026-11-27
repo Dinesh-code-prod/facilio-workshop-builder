@@ -26,8 +26,8 @@
 | D3 | Colours everywhere: 6,220 hard-coded colours in 117 `src` files moved onto Facilio ramps (animations, dashboards, charts, widgets). The script is idempotent (a second run changes 0) | Done |
 | D4 | Shell: the icon rail for everyone (staff, customer, Admin), the violet open tile, Facilio module tabs, flat KPI tiles, 4 px chips | Done |
 | E | Pilot screens: Contract intake, Project dashboard, Tasks, Governance, Project Settings (form), State flow builder, BRD, customer home, Admin | Shots taken; **user sign-off pending** |
-| F | Page-by-page structure, in the order below | Not started |
-| G | Legacy clean-up (see below) | Not started |
+| F | Page-by-page structure, in the order below | Tasks done (Facilio list page). Everything else: shared look only; the structure is next |
+| G | Legacy clean-up | **First pass done (27 Nov):** `tools/dead-css.mjs` removed **802 rules (89 KB)** whose classes exist nowhere in the app, server, data or run-time-built names (two independent checks must both agree). Three unused assets were removed after `tools/unused-assets.mjs` and a manual check. All tests, the layout check and the keyboard/zoom check pass afterwards. Next: rules shadowed by `masterds.css`, page by page in stage F |
 | H | Full regression | Run for D1–D4 (see the test register) |
 | I | Final report | `docs/reports/delivery-studio-ui-remediation-report.md` |
 

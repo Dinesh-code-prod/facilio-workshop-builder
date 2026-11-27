@@ -18,7 +18,7 @@ function audit(sel) {
   const PAL = new Set(R.join(' ').split(' '));
   const hex = c => { const m = /rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\)/.exec(c || ''); if (!m || (m[4] !== undefined && +m[4] < .99)) return null; return [m[1], m[2], m[3]].map(x => (+x | 0).toString(16).padStart(2, '0')).join(''); };
   const vis = e => { const r = e.getBoundingClientRect(); const s = getComputedStyle(e); return r.width > 1 && r.height > 1 && s.visibility !== 'hidden' && s.display !== 'none' && +s.opacity > 0; };
-  const skip = e => e.closest('.paper, .xls-table, .brd-doc, .word, kbd, code, pre, svg, canvas, img, video, iframe, .wb-canvas, .film, .fp-inline, [data-keep-look]');
+  const skip = e => e.closest('.paper, .xls-table, .brd-doc, .word, .sample-doc, .doc-sample, [class*="sample"], kbd, code, pre, svg, canvas, img, video, iframe, .wb-canvas, .film, .fp-inline, [data-keep-look]');
   const out = { font: 0, color: new Map(), pill: 0, tiny: 0, n: 0, fontEx: '', pillEx: '', tinyEx: '' };
   for (const e of [root, ...root.querySelectorAll('*')].slice(0, 2500)) {
     if (!vis(e) || skip(e)) continue; out.n++; const s = getComputedStyle(e);
@@ -27,7 +27,7 @@ function audit(sel) {
       if (parseFloat(s.fontSize) < 12) { out.tiny++; out.tinyEx = out.tinyEx || (e.textContent.trim().slice(0, 20) + ' ' + s.fontSize); }
       const c = hex(s.color); if (c && !PAL.has(c)) out.color.set(c, (out.color.get(c) || 0) + 1); }
     for (const k of ['backgroundColor', 'borderTopColor']) { if (k === 'borderTopColor' && s.borderTopWidth === '0px') continue; const c = hex(s[k]); if (c && !PAL.has(c)) out.color.set(c, (out.color.get(c) || 0) + 1); }
-    if (/^(BUTTON|A|SPAN|LABEL|INPUT|SELECT)$/.test(e.tagName)) { const r = e.getBoundingClientRect(); const rad = parseFloat(s.borderTopLeftRadius); if (rad >= Math.min(r.height / 2, 20) - 1 && rad > 12 && Math.abs(r.width - r.height) > 6 && (s.backgroundColor !== 'rgba(0, 0, 0, 0)' || s.borderTopWidth !== '0px')) { out.pill++; out.pillEx = out.pillEx || (e.tagName.toLowerCase() + '.' + [...e.classList].slice(0, 3).join('.') + ' "' + e.textContent.trim().slice(0, 16) + '"'); } }
+    if (/^(BUTTON|A|SPAN|LABEL|INPUT|SELECT)$/.test(e.tagName)) { const r = e.getBoundingClientRect(); const rad = parseFloat(s.borderTopLeftRadius); if (e.textContent.trim() && rad >= Math.min(r.height / 2, 20) - 1 && rad > 12 && Math.abs(r.width - r.height) > 6 && (s.backgroundColor !== 'rgba(0, 0, 0, 0)' || s.borderTopWidth !== '0px')) { out.pill++; out.pillEx = out.pillEx || (e.tagName.toLowerCase() + '.' + [...e.classList].slice(0, 3).join('.') + ' "' + e.textContent.trim().slice(0, 16) + '"'); } }
   }
   const colors = [...out.color.entries()].sort((a, b2) => b2[1] - a[1]); return { n: out.n, font: out.font, fontEx: out.fontEx, colorN: colors.length, colors: colors.slice(0, 4).map(([c, n]) => '#' + c + '×' + n), pill: out.pill, pillEx: out.pillEx, tiny: out.tiny, tinyEx: out.tinyEx };
 }
@@ -40,7 +40,8 @@ const title = s => p.evaluate(s => { const d = document.querySelector(s); return
 
 async function crawlPages(pov, pid) {
   const nav = await p.evaluate(() => window.FWBViews.navFor().flatMap(g => g.items.map(i => [g.g.replace(/^\d+\.\s*/, ''), i[0], i[1]])).filter(([, v]) => window.FWBViews[v]));
-  const go = async v => { try { await p.evaluate(v => window.FWBViews.go(v), v); } catch (e) { await p.goto(`${BASE}/?nointro#/p/${pid}/${v}`); } await settle(900); await p.keyboard.press('Escape'); };
+  const go = async v => { try { await p.evaluate(v => window.FWBViews.go(v), v); } catch (e) { await p.goto(`${BASE}/?nointro#/p/${pid}/${v}`); } await settle(900); await p.keyboard.press('Escape');
+    if (!(await p.$('.main'))) { await p.goto(`${BASE}/?nointro#/p/${pid}/${v}`); await settle(2500); await p.keyboard.press('Escape'); } };   // a page that opens full screen (e.g. the onboarding sheet) leaves no .main: reload this one fresh
   for (const [mod, v, label] of nav) {
     errs = []; await go(v); const a = await p.evaluate(audit, '.main'); add(pov, mod, '#/' + v, '—', 'Page: ' + label, 'menu', a, errs.length ? 'fail: page error ' + errs[0].slice(0, 60) : 'opened');
     // page tabs and mini-tabs, one by one
@@ -75,6 +76,7 @@ const FMT = { top: 'Icons', side: 'Text' };   // both menu formats (user, 27 Nov
 for (const fm of ['top', 'side']) { await p.evaluate(f => window.FWBViews.setNavPref(f, 'staff'), fm); await settle(1200); await chrome('Staff · ' + FMT[fm]); await crawlPages('Staff · ' + FMT[fm], pid); }
 await p.goto(`${BASE}/?nointro#/p/${pid}/projdash`); await settle(2200);
 if (await p.$('[data-act="custPreview"]')) { await p.click('[data-act="custPreview"]'); await settle(2500); for (const fm of ['top', 'side']) { await p.evaluate(f => window.FWBViews.setNavPref(f, 'customer'), fm); await settle(1200); await crawlPages('Customer · ' + FMT[fm], pid); } await p.click('[data-act="custPreviewExit"]').catch(() => { }); await settle(1200); }
+await p.evaluate(() => { const x = document.querySelector('[data-act="custPreviewExit"]'); if (x) x.click(); }).catch(() => { }); await settle(1200);   // never start Admin from the customer preview
 await p.goto(BASE + '/?nointro'); await settle(2000); if (await p.$('[data-act="runEnter"]')) { await p.click('[data-act="runEnter"]'); await settle(1500); } await p.evaluate(() => { const a = [...document.querySelectorAll('[data-act="openAdmin"]')].find(e => e.offsetParent); if (a) a.click(); }).catch(() => { }); await settle(2500);
 const adm = await p.evaluate(() => [...document.querySelectorAll('.adm-nav .adm-ni')].map(e => (e.getAttribute('title') || e.textContent).trim().slice(0, 30)));
 for (let i = 0; i < adm.length; i++) { errs = []; await p.evaluate(i => document.querySelectorAll('.adm-nav .adm-ni')[i].click(), i); await settle(1100); const a = await p.evaluate(audit, '.adm-main'); add('Admin', 'Admin', '#/admin', '—', 'Page: ' + adm[i], 'Admin menu', a, errs.length ? 'fail: page error ' + errs[0].slice(0, 60) : 'opened');

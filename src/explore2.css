@@ -68,7 +68,7 @@ html body .dx-hero h2:not(#_):not(#__):not(.z1):not(.z2):not(.z3):not(.z4):not(.
 .dx-slabs{width:128px;transition:transform .4s}
 .dx-tile:hover .dx-slabs{transform:translateY(-8px)}
 .dx-slab{display:block;width:100%;height:auto}
-.dx-letter{position:absolute;right:14px;bottom:-14px;font-size:92px;font-weight:700;line-height:1;color:rgba(255,255,255,.07)}
+
 .dx-tb{display:flex;flex-direction:column;gap:10px;padding:16px;flex:1}
 .dx-tb h4{margin:0;font-size:16px;color:#192432}
 .dx-tb p{margin:0;flex:1;font-size:13px;line-height:1.55;color:#607796;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}

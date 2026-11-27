@@ -1,14 +1,14 @@
 /* Facilio Demo Kit browser */
-.dk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 22px; margin-top: 18px; }
-.dk-card { display: flex; flex-direction: column; border-radius: 8px; overflow: hidden; border: 1px solid #dbe9ff; background: #fff; box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 0, 0, .08), 0 14px 26px -16px rgba(0, 0, 0, .32); transition: transform .18s ease, box-shadow .18s ease; }
-.dk-card:hover { transform: translateY(-3px); box-shadow: inset 0 1px 0 #fff, 0 2px 4px rgba(0, 0, 0, .1), 0 20px 32px -16px rgba(0, 0, 0, .38); }
-.dk-open { display: block; width: 100%; padding: 0; border: 0; background: #f3f7ff; cursor: zoom-in; }
-.dk-th { display: block; width: 100%; aspect-ratio: 16 / 10; height: auto; object-fit: cover; object-position: top left; border-bottom: 1px solid #dbe9ff; background: #f3f7ff; }
-.dk-th.none { background: #f3f7ff; }
+
+
+
+
+
+
 .dk-b { display: flex; flex-direction: column; gap: 6px; padding: 16px 18px 18px; flex: 1; } .dk-b small { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: none; color: #0024D6; } .dk-b b { font-size: 15.5px; line-height: 1.3; color: #00125e; }
 .dk-d { font-size: 13px; line-height: 1.55; color: #607796; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.dk-a { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 12px; }
-@media (prefers-reduced-motion: reduce) { .dk-card { transition: none; } .dk-card:hover { transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {   }
 
 /* Facilio screens: a panel of screens grouped by area on the left, the chosen screen large on the right (like the CMMS demo kit) */
 .dkv { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 20px; align-items: start; }

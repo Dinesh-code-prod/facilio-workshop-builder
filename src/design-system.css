@@ -96,7 +96,7 @@ body .sidebar .sb-item.active svg, body .sidebar .sb-item.active .fi { color: va
 body .sidebar .sb-badge { min-width: 20px; height: 18px; padding: 0 6px !important; border-radius: 9px !important; font-size: 11.5px !important; font-weight: 600 !important; background: var(--ds-soft) !important; color: var(--ds-ink-3) !important; display: inline-grid; place-items: center; }
 body .sidebar .sb-badge.warn { background: var(--ds-warn-bg) !important; color: var(--ds-warn) !important; }
 body .sidebar .sb-item.active .sb-badge { background: #fff !important; color: var(--ds-navy) !important; }
-body .sidebar .sb-foot { padding: 10px 4px !important; margin-top: 16px !important; box-shadow: inset 0 1px 0 var(--ds-line) !important; border: 0 !important; background: #fff !important; }
+
 body .sidebar .sb-out { justify-content: flex-start !important; height: 36px; padding: 0 10px !important; border: 0 !important; border-radius: var(--ds-r) !important; background: none !important; color: var(--ds-ink-3) !important; font-size: 13.5px !important; font-weight: 500 !important; box-shadow: none !important; transform: none !important; }
 body .sidebar .sb-out:hover { background: var(--ds-soft) !important; color: var(--ds-ink) !important; }
 
@@ -335,7 +335,7 @@ body .adm-sec::before, body .adm-sec::after { display: none !important; content:
 body .adm-main .chip, body .adm-nav .chip { background: var(--ds-soft) !important; color: var(--ds-ink-3) !important; border: 1px solid var(--ds-line) !important; border-radius: 6px !important; font-weight: 500 !important; }
 body .adm-main .chip.r-super, body .adm-nav .chip.r-super { background: var(--ds-navy-50) !important; color: var(--ds-navy) !important; border-color: var(--ds-navy-100) !important; }
 /* the sidebar's sign-out row sits at the very bottom and hides what scrolls under it */
-body .sidebar .sb-foot { position: sticky !important; bottom: -24px !important; margin: 16px -10px -24px !important; padding: 10px 14px 14px !important; background: #fff !important; box-shadow: inset 0 1px 0 var(--ds-line) !important; z-index: 2; }
+
 /* phones: the top bar keeps the logo, notifications and account; the admin console stacks */
 @media (max-width: 760px) {
   body .navbar { display: flex !important; justify-content: space-between; padding: 0 12px !important; }
@@ -368,8 +368,8 @@ body .projects-page .proj-grid:not(#_) { display: grid !important; grid-template
 
 /* ---------------- Build 80: alignment fixes found by the browser audit ---------------- */
 /* menu items without their own icon keep the same text column as items with one (dot centred in the 16px icon slot) */
-body .sidebar .sb-item.noic:not(#_) { padding-left: 34px !important; }
-body .sidebar .sb-item.noic::after { left: 15px !important; top: 50% !important; margin-top: -3px; }
+
+
 body .adm-nav-foot .sb-out:not(#_) { justify-content: flex-start !important; }
 body .empty .empty-acts { justify-content: center; margin-top: 12px; }
 /* grid children may shrink below their content width, so long labels wrap instead of pushing the page sideways */
@@ -409,7 +409,7 @@ body .navbar .nav-menu { display: none !important; }
   body .navbar .nav-menu:hover { background: rgba(255,255,255,.1) !important; }
   body.nav-open .sidebar:not(#_) { display: block !important; position: fixed; top: 56px; left: 0; bottom: 0; width: min(320px, 86vw); z-index: 55; overflow-y: auto; box-shadow: 12px 0 32px -12px rgba(16,24,40,.35) !important; }
   body.nav-open .shell::before { content: ""; position: fixed; inset: 56px 0 0 0; background: rgba(16,24,40,.42); z-index: 54; }
-  body.nav-open .sidebar .sb-foot:not(#_) { position: static !important; margin: 16px -10px 0 !important; }
+  
   /* number tiles keep two per row on tablets */
   body .g3:not(#_), body .g4:not(#_) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -440,7 +440,7 @@ body .wb-host:focus-visible { box-shadow: 0 0 0 3px var(--ds-blue-50), inset 0 0
 body .wb-host svg { width: 100%; height: 100%; display: block; cursor: grab; user-select: none; }
 body .wb-host.panning svg { cursor: grabbing; } body .wb-host.connecting svg, body .wb-host.connecting .wb-n { cursor: crosshair; }
 body .wb-host .wb-n { cursor: move; } body .wb-host .wb-e { cursor: pointer; } body .wb-host .wb-h { cursor: nwse-resize; }
-body .wb-hint { position: absolute; left: 12px; bottom: 8px; pointer-events: none; background: rgba(255,255,255,.85); padding: 2px 8px; border-radius: 6px; }
+
 body .wb-edit { position: absolute; z-index: 3; box-sizing: border-box; padding: 6px 8px; border: 2px solid var(--ds-blue); border-radius: 6px; background: #fff; font: inherit; line-height: 1.35; resize: none; box-shadow: var(--ds-sh-pop); }
 body .wb-flist { display: grid; gap: 4px; max-height: 300px; overflow: auto; margin: 10px 0; padding: 4px; border: 1px solid var(--ds-line); border-radius: var(--ds-r); }
 body .wb-fi { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 13.5px; line-height: 1.4; }
@@ -452,7 +452,7 @@ body .wb-imgprev img { max-width: 100%; max-height: 280px; }
 body .wb-rv-h { margin: 18px 0 4px; font-size: 15px; }
 body #wbImgOut .tbl input[type=text] { min-height: 32px !important; height: 32px; }
 body #wbImgOut .tbl select { min-height: 32px !important; height: 32px; }
-@media (max-width: 860px) { body .wb-host { height: 62vh; min-height: 360px; } body .wb-grp + .wb-grp { padding-left: 0; box-shadow: none; } body .wb-hint { display: none; } }
+@media (max-width: 860px) { body .wb-host { height: 62vh; min-height: 360px; } body .wb-grp + .wb-grp { padding-left: 0; box-shadow: none; }  }
 body .page-header select[data-change="wbPick"] { width: auto !important; max-width: 280px; }
 
 /* ---------- signed-in welcome (Run build): account chip, large "Open workspace", feature tiles ---------- */

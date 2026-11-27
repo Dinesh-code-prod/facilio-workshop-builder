@@ -1,7 +1,7 @@
 /* Process Whiteboard full screen: the board fills the window below the top bar (the page header and toolbar above it left only about 550 px on a 950 px screen). */
 body .wb-host.wb-full:not(#_) { position: fixed; top: 62px; left: 0; right: 0; bottom: 0; height: auto !important; min-height: 0; z-index: 450; border-radius: 0; border-left: 0; border-right: 0; border-bottom: 0; }
-body .wb-exitfull:not(#_) { position: absolute; top: 10px; right: 12px; z-index: 5; border: 1px solid #b5cbff; background: #fff; color: #192432; font: inherit; font-weight: 650; font-size: 13px; padding: 7px 14px; border-radius: 10px; cursor: pointer; box-shadow: 0 1px 2px rgba(0, 0, 0, .1); }
-body .wb-exitfull:not(#_):hover { background: #F3F7FF; border-color: #86AAFF; }
+
+
 
 /* the board opened in its own tab: nothing but a slim title bar, the toolbar and the board */
 .wb-focus-page { padding: 8px 14px 0; background: #fff; min-height: 100vh; }

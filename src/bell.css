@@ -21,11 +21,11 @@
 #bellPop .bp-row em { font-style: normal; color: #555757; font-size: 18px; line-height: 1.1; }
 #bellPop .bp-row:hover em { color: #0024D6; }
 #bellPop .bp-row.read { color: #192432; }
-#bellPop .bp-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; background: #0024D6; }
-#bellPop .bp-dot.late { background: #ED2780; }
-#bellPop .bp-dot.ai { background: #0024D6; }
-#bellPop .bp-dot.act { background: #49b83f; }
-#bellPop .bp-row.read .bp-dot { background: #c4d1e4; }
+
+
+
+
+
 #bellPop .bp-empty { display: grid; gap: 4px; text-align: center; padding: 36px 16px; color: #192432; font-size: 13px; }
 #bellPop .bp-empty b { color: #192432; font-size: 15px; }
 @media (prefers-reduced-motion: reduce) { #bellPop { animation: none; } }
