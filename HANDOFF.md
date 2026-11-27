@@ -1,5 +1,17 @@
 # Handoff
 
+**FACILIO REFERENCE-LED DESIGN SYSTEM (27 Nov 2026, branch `feat/facilio-reference-ds`, committed locally, NOT PUSHED YET, waiting for the user's sign-off).**
+- **Source:** the live Facilio product demo plus Meteor's CMMS Demo Kit (captured Facilio CSS).
+- **What changed:**
+  - Tokens in `src/masterds.css` re-based on Facilio: Roboto, #0024D6, ink #283648, warm grey hairlines.
+  - Every `src` colour moved onto the Facilio palette (animations, dashboards, widgets).
+  - The icon rail for everyone, with a violet open tile; Facilio module tabs.
+- **Docs:** `docs/design/delivery-studio-design-system.md`, `docs/plans/delivery-studio-ui-migration-plan.md`, and the reports in `docs/reports/` (reference audit, inventory, test register, remediation report).
+- **Checked:** `master-ds-check` 267 screens, 0 problems; 135/135 test commands pass.
+- **Not checked:** keyboard and zoom edge cases; the live app.
+- **Next:** the user reviews the pilot screens, then stage F (page structure onto the Facilio templates, Tasks first).
+- **Untouched:** another session's uncommitted files (`src/kickoff.js`, `src/quickfacts.js`, `src/rangefilter.js`, several `tests/ui/*`, `work/server/api.mjs`, `package.json`) are still uncommitted in the working tree and are NOT on this branch's commit.
+
 **PROJECT BACKUP TO YOUR COMPUTER (25 Nov 2026, pushed, NOT deployed).** Why: so nobody is stuck if the Studio is down. facilio.work keeps Microsoft keys read-only, so the Studio cannot write to SharePoint or OneDrive (the SharePoint version is parked on `wip/sharepoint-backup`).
 - **Server** (`work/server/_backup.mjs`): POST/GET `/api/projects/:id/backup` builds one ZIP per project: README.html, `Records/` (a CSV per record type, opens in Excel, formulas defused), `Sections/` (an HTML page per document section), `Files/` (project files up to 40 MB, the rest listed in files.csv), `data/` (full JSON for a restore). Private notes left out. Kept privately (the previous ZIP removed); a one-hour link. Rate limit `backup` 30 an hour.
 - **Page** (`src/backup.js`): Project Settings > People & access > Backup to your computer: Download backup, Copy the daily set-up for Claude (a scheduled task in Claude desktop: `D:Delivery Studio backups` on Windows, `~/Delivery Studio backups` on a Mac, 7 days kept, latest unzipped).
