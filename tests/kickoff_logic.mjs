@@ -1,7 +1,7 @@
-// Kick-off page rules (src/kickofflogic.js): the pack as the page reads it, change requests, who may approve and when, the job rows.
+// Kick-off page rules (work/server/_kickofflogic.mjs): the pack as the page reads it, change requests, who may approve and when, the job rows.
 import assert from 'node:assert/strict'; import { createRequire } from 'node:module';
 import { buildKickoffPack } from '../work/server/_kickoffpack.mjs';
-const L = createRequire(import.meta.url)('../src/kickofflogic.js'); let n = 0; const t = (name, fn) => { fn(); n++; console.log('  ok  ' + name); };
+await import('../work/server/_kickofflogic.mjs'); const L = globalThis.FWBKickoffLogic; let n = 0; const t = (name, fn) => { fn(); n++; console.log('  ok  ' + name); };
 const ex = { customer: 'Acme', projectName: 'FM roll-out', contract: { origin: 'contract', start: '2026-12-01', durationDays: 120 }, commitments: [], modules: [{ name: 'Work Orders' }, { name: 'Assets' }], scope: [{ text: 'Work order management', status: 'confirmed' }] };
 const stored = buildKickoffPack(ex, { now: '2026-11-06T10:00:00Z' });
 t('a pack nobody wrote reads as none', () => { assert.equal(L.packOf(null), null); assert.equal(L.packOf({}), null); assert.equal(L.packOf('x'), null); });

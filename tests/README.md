@@ -41,7 +41,7 @@ How to read a name: a test is named after the thing it checks (for example `wsr.
 | [jobs_all.mjs](jobs_all.mjs) | project_jobs action list with NO project: the waiting jobs of every project the person can open, in one call (the cheap idle check of the fast chat lane). |
 | [kickoff_deck.mjs](kickoff_deck.mjs) | Digital kick-off deck (src/kickoffhtml.js): built only from the data it is given, empty slides are left out and named, text is escaped, the file asks for nothing from outside. |
 | [kickoff_docs_route.mjs](kickoff_docs_route.mjs) |  |
-| [kickoff_logic.mjs](kickoff_logic.mjs) | Kick-off page rules (src/kickofflogic.js): the pack as the page reads it, change requests, who may approve and when, the job rows. |
+| [kickoff_logic.mjs](kickoff_logic.mjs) | Kick-off page rules (work/server/_kickofflogic.mjs): the pack as the page reads it, change requests, who may approve and when, the job rows. |
 | [kickoff_pack.mjs](kickoff_pack.mjs) | Kick-off pack (roadmap E15 Stage 1): work/server/_kickoffpack.mjs builds the kick-off deck data and the drafted plan together from an approved MSA extraction. |
 | [life.mjs](life.mjs) | Lifecycle tracker rules (src/lifelogic.js): nine stages, status from records and authorised decisions, missing information is never success. |
 | [lifecycle.mjs](lifecycle.mjs) | Requirements-to-delivery lifecycle (server side): what each AI-drafted deliverable is given, using controlled fixtures. |

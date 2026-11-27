@@ -9,8 +9,10 @@
 import { chromium } from 'playwright'; import fs from 'node:fs';
 const BASE = process.argv.find(a => /^https?:/.test(a)) || 'http://localhost:4240'; const MAXA = +((process.argv.find(a => a.startsWith('--max-acts=')) || '--max-acts=40').slice(11));
 const SKIP = /(del|remove|reset|logout|signout|revoke|clear|archive|reject|publish|push|send|approve|sign|confirm|apply|accept|submit|mark|decide|stop|run|export|^dl|download|sync|refresh|reload|copy|print|close|save|cancel|done|complete|finish|restore|undo|toggle|nav$|sort|page|prev|next|dismiss|pwtoggle|claude|^ai|bring|import|generate|draft|extract|analy|ask|track|seed|demo|load|upload|attach|invite|share|move|dup|clone|lock|unlock|start|play|tour|intro|replay|reveal|exit|leave|switch|navpos|custpreview|openadmin|toprojects|railgo|tab$|tktab|view$|sheet$|group|filter|qf|bulk|sel|cell)/i;
-const b = await chromium.launch({ channel: process.env.PW_CHANNEL || 'msedge' }); const p = await (await b.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
-let errs = []; p.on('pageerror', e => errs.push(e.message)); const settle = ms => p.waitForTimeout(ms);
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || 'msedge' }); let p = null;
+let errs = []; const settle = ms => p.waitForTimeout(ms);
+// every phase gets a fresh browser and sign-in: the dev session ends during a run of over an hour (27 Nov 2026: Customer · Text met a signed-out app)
+const fresh = async () => { if (p) await p.context().close(); p = await (await b.newContext({ viewport: { width: 1440, height: 900 } })).newPage(); p.on('pageerror', e => errs.push(e.message)); await p.goto(BASE + '/?nointro'); await settle(2200); if (await p.$('[data-act="runEnter"]')) { await p.click('[data-act="runEnter"]'); await settle(1500); } };
 // ---- runs in the page: Facilio design-system findings for one surface ----
 function audit(sel) {
   const root = document.querySelector(sel); if (!root) return null;
@@ -51,10 +53,9 @@ async function crawlPages(pov, pid) {
       const a2 = ok ? await p.evaluate(audit, '.main') : null; add(pov, mod, '#/' + v, t, 'Tab: ' + t, 'tab click', a2, !ok ? 'blocked: tab not found' : errs.length ? 'fail: page error ' + errs[0].slice(0, 60) : 'opened');
     }
     // every form / dialog opener on the page
-    const openMenus = () => p.evaluate(() => document.querySelectorAll('.main details.rv-menu').forEach(d => { d.open = true; })).catch(() => { });   // stage F: openers inside the header's More menus
-    await go(v); await openMenus(); const acts = await p.evaluate(SK => { const s = new RegExp(SK, 'i'); const m = new Map(); document.querySelectorAll('.main [data-act]').forEach(e => { const a = e.getAttribute('data-act'); const r = e.getBoundingClientRect(); if (!a || m.has(a) || r.width < 4 || e.disabled || e.closest('#drawer, .sidebar, #asst, header')) return; if (!s.test(a)) m.set(a, (e.getAttribute('aria-label') || e.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 40)); }); return [...m.entries()]; }, SKIP.source);
+    await go(v); const acts = await p.evaluate(SK => { const s = new RegExp(SK, 'i'); const m = new Map(); document.querySelectorAll('.main [data-act]').forEach(e => { const a = e.getAttribute('data-act'); const r = e.getBoundingClientRect(); if (!a || m.has(a) || r.width < 4 || e.disabled || e.closest('#drawer, .sidebar, #asst, header')) return; if (!s.test(a)) m.set(a, (e.getAttribute('aria-label') || e.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 40)); }); return [...m.entries()]; }, SKIP.source);
     for (const [act, lab] of acts.slice(0, MAXA)) {
-      errs = []; await go(v); await openMenus(); await p.evaluate(a => { const e = [...document.querySelectorAll('.main [data-act]')].find(x => x.getAttribute('data-act') === a && x.getBoundingClientRect().width > 3); if (e) { e.scrollIntoView({ block: 'center' }); e.click(); } }, act).catch(() => { }); await settle(500);
+      errs = []; await go(v); await p.evaluate(a => { const e = [...document.querySelectorAll('.main [data-act]')].find(x => x.getAttribute('data-act') === a && x.getBoundingClientRect().width > 3); if (e) { e.scrollIntoView({ block: 'center' }); e.click(); } }, act).catch(() => { }); await settle(500);
       const s = await surface(); if (!s) { await closeAll(); continue; }   // not a form opener (it changed the page in place): not a form surface
       const a3 = await p.evaluate(audit, s); const ti = await title(s); add(pov, mod, '#/' + v, '—', (s.includes('drawer') ? 'Drawer: ' : 'Dialog: ') + (ti || act), `button "${lab}" (${act})`, a3, errs.length ? 'fail: page error ' + errs[0].slice(0, 60) : 'opened and closed');
       await closeAll(); await settle(150);
@@ -70,14 +71,14 @@ async function chrome(pov) {   // the chat panel and the top-bar popovers
   }
 }
 
-await p.goto(BASE + '/?nointro'); await settle(2200); if (await p.$('[data-act="runEnter"]')) { await p.click('[data-act="runEnter"]'); await settle(1500); }
+await fresh();
 const pid = await p.evaluate(async () => { const ps = (await (await fetch('/api/fn/api/projects')).json()).projects || []; return (ps.find(x => /walkthrough/i.test(x.name)) || ps[0]).id; });
 await p.goto(`${BASE}/?nointro#/p/${pid}/projdash`); await settle(2600); await p.keyboard.press('Escape');
 const FMT = { top: 'Icons', side: 'Text' };   // both menu formats (user, 27 Nov 2026), set on this data copy only
-for (const fm of ['top', 'side']) { await p.evaluate(f => window.FWBViews.setNavPref(f, 'staff'), fm); await settle(1200); await chrome('Staff · ' + FMT[fm]); await crawlPages('Staff · ' + FMT[fm], pid); }
-await p.goto(`${BASE}/?nointro#/p/${pid}/projdash`); await settle(2200);
-await p.evaluate(() => { if (!document.querySelector('[data-act="custPreview"]')) window.FWBViews.setNavPref('side'); }); await p.waitForTimeout(600); if (await p.$('[data-act="custPreview"]')) { await p.click('[data-act="custPreview"]'); await settle(2500); for (const fm of ['top', 'side']) { await p.evaluate(f => window.FWBViews.setNavPref(f, 'customer'), fm); await settle(1200); await crawlPages('Customer · ' + FMT[fm], pid); } await p.click('[data-act="custPreviewExit"]').catch(() => { }); await settle(1200); }
-await p.evaluate(() => { const x = document.querySelector('[data-act="custPreviewExit"]'); if (x) x.click(); }).catch(() => { }); await settle(1200);   // never start Admin from the customer preview
+for (const fm of ['top', 'side']) { await fresh(); await p.goto(`${BASE}/?nointro#/p/${pid}/projdash`); await settle(2600); await p.keyboard.press('Escape'); await p.evaluate(f => window.FWBViews.setNavPref(f, 'staff'), fm); await settle(1200); await chrome('Staff · ' + FMT[fm]); await crawlPages('Staff · ' + FMT[fm], pid); }
+for (const fm of ['top', 'side']) { await fresh(); await p.goto(`${BASE}/?nointro#/p/${pid}/projdash`); await settle(2200); await p.evaluate(() => { if (!document.querySelector('[data-act="custPreview"]')) window.FWBViews.setNavPref('side'); }); await p.waitForTimeout(600); if (!(await p.$('[data-act="custPreview"]'))) continue;   /* Icons format: Preview as customer is in the account menu */ await p.click('[data-act="custPreview"]'); await settle(2500); await p.evaluate(f => window.FWBViews.setNavPref(f, 'customer'), fm); await settle(1200); await crawlPages('Customer · ' + FMT[fm], pid); }
+
+await fresh();   // Admin from a fresh sign-in, never from the customer preview
 await p.goto(BASE + '/?nointro'); await settle(2000); if (await p.$('[data-act="runEnter"]')) { await p.click('[data-act="runEnter"]'); await settle(1500); } await p.evaluate(() => { const a = [...document.querySelectorAll('[data-act="openAdmin"]')].find(e => e.offsetParent); if (a) a.click(); }).catch(() => { }); await settle(2500);
 const adm = await p.evaluate(() => [...document.querySelectorAll('.adm-nav .adm-ni')].map(e => (e.getAttribute('title') || e.textContent).trim().slice(0, 30)));
 for (let i = 0; i < adm.length; i++) { errs = []; await p.evaluate(i => document.querySelectorAll('.adm-nav .adm-ni')[i].click(), i); await settle(1100); const a = await p.evaluate(audit, '.adm-main'); add('Admin', 'Admin', '#/admin', '—', 'Page: ' + adm[i], 'Admin menu', a, errs.length ? 'fail: page error ' + errs[0].slice(0, 60) : 'opened');

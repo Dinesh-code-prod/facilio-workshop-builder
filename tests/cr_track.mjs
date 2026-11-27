@@ -2,7 +2,7 @@
 // becomes a delta that sets up scope lines, sessions, a plan phase and a BRD addendum tagged with the CR number, without touching what exists.
 import assert from 'node:assert/strict'; import fs from 'node:fs'; import { createRequire } from 'node:module';
 import { KINDS, cleanRequest } from '../work/server/_jobs.mjs'; import { PERSONAL } from '../work/server/_helper.mjs';
-const req = createRequire(import.meta.url); const L = req('../src/crtracklogic.js'); const K = req('../src/kickofflogic.js'); const C = req('../src/chatcmds.js');
+const req = createRequire(import.meta.url); const L = req('../src/crtracklogic.js'); await import('../work/server/_kickofflogic.mjs'); const K = globalThis.FWBKickoffLogic; const C = req('../src/chatcmds.js');
 let n = 0; const t = (name, fn) => { fn(); n++; console.log('  ok  ' + name); };
 const DELTA = JSON.stringify({ title: 'Housing portal phase 2', documents: ['CR-2 Order Form.pdf'], start: '2026-12-01', end: '2027-01-10',
   added: [{ text: 'Tenant self-service portal for housing', module: 'Client Portal', document: 'CR-2 Order Form.pdf', page: 2, quote: 'Tenant portal for up to 500 users' }, { text: 'Visitor management', module: 'Visitor Management', page: 3 }],

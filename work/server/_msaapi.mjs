@@ -5,7 +5,8 @@
    Only then does create_project_from_msa make a NEW project from the approved version. With no project the transfer lives in the person's own holding space (the engine's collections under
    the id _msaextract.holdingId(person)): the same code and the same routes as a project's transfers, reachable by that person alone. */
 import { SYSTEMS, validateExtraction, checkQuotes, planFromExtraction, txt, holdingId } from './_msaextract.mjs';
-import { buildKickoffPack } from './_kickoffpack.mjs';
+import { buildKickoffPack, draftSessions } from './_kickoffpack.mjs';
+import { randomUUID } from 'node:crypto';
 
 const URL_BASE = 'https://facilio-delivery-studio.facilio.work/#/p/';
 
@@ -25,11 +26,28 @@ export function installMsaExtract(d, transfer) {
       const base = '/api/projects/' + pid; const old = await viaApp('GET', base + '/docs/kickoff_pack'); if (old && old.data && old.data.status === 'approved') return { filled: false, why: 'The kick-off was already approved, so it was not changed.' };
       if (!extraction.customer || !extraction.projectName) return { filled: false, why: 'The extraction has no ' + (!extraction.customer ? 'customer' : 'project name') + ', so no kick-off was drafted. Save a new version with it.' };
       const plan = planFromExtraction(extraction, { now: new Date().toISOString(), source, transferId: id, version });
-      const pl = await viaApp('GET', base + '/docs/planner'); if (!pl || !pl.data || !Object.keys(pl.data).length) { await putDoc(base, 'planner', plan.planner); if (plan.ctrcore) await viaApp('PUT', base + '/items/ctrcore/main', '', { data: plan.ctrcore }); if (plan.scope) await viaApp('PUT', base + '/items/scope/main', '', { data: plan.scope }); }
       const prevPack = await viaApp('GET', base + '/docs/kickoff_pack').catch(() => null); const prevStart = (prevPack && prevPack.data && prevPack.data.deck && prevPack.data.deck.date) || '';   // a re-read keeps the plan's start when the contract has no date
-      await putDoc(base, 'kickoff_pack', buildKickoffPack(extraction, { now: new Date().toISOString(), transferId: id, version, prevStart })); await audit(pid, s.id, 'kickoff-drafted', id + ' v' + version);
-      return { filled: true };
+      const pack = buildKickoffPack(extraction, { now: new Date().toISOString(), transferId: id, version, prevStart });
+      const pl = await viaApp('GET', base + '/docs/planner'); const fresh = !pl || !pl.data || !Object.keys(pl.data).length;
+      if (fresh) { await putDoc(base, 'planner', withSessions(plan.planner, pack)); if (plan.ctrcore) await viaApp('PUT', base + '/items/ctrcore/main', '', { data: plan.ctrcore }); if (plan.scope) await viaApp('PUT', base + '/items/scope/main', '', { data: plan.scope }); }
+      await putDoc(base, 'kickoff_pack', pack); await audit(pid, s.id, 'kickoff-drafted', id + ' v' + version);
+      const more = await (async () => { await planStruct(base, pack); if (!fresh) { const cur = await viaApp('GET', base + '/docs/planner'); const next = withSessions((cur && cur.data) || {}, pack); if (next !== cur.data) await viaApp('PUT', base + '/docs/planner', '', { baseVersion: cur.version || 0, data: next }); } })()
+        .then(() => '', e => 'The plan timeline and the requirement sessions will be drafted when the Kick-off page is opened (' + (e.message || 'error') + ').');
+      return { filled: true, why: more };
     } catch (e) { return { filled: false, why: 'The extraction was saved but the kick-off could not be drafted: ' + (e.message || 'error') }; }
+  }
+  /** The plan timeline rows (plan_struct) and the requirement sessions (planner.sessions) drafted from the pack, so Claude's job alone fills the plan and the sessions. The same rules as the Kick-off page
+      (src/kickoff.js syncStruct and syncSessions), which still does it when the page is opened: rows or sessions a person made are never replaced; ones made from an older pack are. */
+  async function planStruct(base, pack) {
+    const ps = await viaApp('GET', base + '/docs/plan_struct'); const d = (ps && ps.data) || {};
+    if (!(d.rows || []).length || (d.fromPack && d.fromPack !== pack.builtAt)) await viaApp('PUT', base + '/docs/plan_struct', '', { baseVersion: ps.version || 0, data: { rows: pack.rows.map(r => Object.assign({}, r)), versions: d.versions || [], fromPack: pack.builtAt } });
+  }
+  /** the planner with the sessions drafted from the pack; the same object back when there is nothing to change (a person's own sessions, or sessions already made from this pack) */
+  function withSessions(p, pack) {
+    const was = Array.isArray(p.sessions) ? p.sessions : []; if (was.some(x => x && !x.fromPack) || (was.length && was[0].fromPack === pack.builtAt)) return p;
+    const r = draftSessions(pack, (p.settings || {}).mode, () => 'ses_' + randomUUID().replace(/-/g, '').slice(0, 10)); if (!r.sessions.length && !was.length) return p;
+    const sessions = r.sessions.map(x => { const o = was.find(y => y && y.no === x.no && y.date); return o ? Object.assign(x, { date: o.date, time: o.time || x.time, start: o.start || x.start }) : x; });   // a session that already had a date keeps it
+    return Object.assign({}, p, { sessions, sessionNotes: r.notes, sessionPlanNotes: r.planNotes });
   }
   /** records the project on the transfer's head record (and its log) under the transfer's own lock */
   const link = (pid, id, s, patch, note) => withLock('xf.' + pid + '.' + id, async () => { const row = await dbGet('xf.' + pid, id); const r = row.value; Object.assign(r, patch); const at = new Date().toISOString(); r.updatedAt = at; r.log.push({ at, by: s.email, from: r.status, to: r.status, note }); if (r.log.length > 40) r.log.splice(0, r.log.length - 40); await dbPut('xf.' + pid, id, r); });
@@ -49,7 +67,7 @@ export function installMsaExtract(d, transfer) {
       let r = await CONNECTOR.transfer_store(s, { project, id, content: JSON.stringify(v.extraction), baseVersion: b.baseVersion, sourceEtag: src.etag, validation: { ok: true, checked: 'extraction structure', warnings: v.warnings.slice(0, 2) }, note: txt(b.note, 200) || 'MSA extraction saved by Claude' });
       if (b.submit !== false && ['Retrieved', 'Draft Generated'].includes(r.transfer.status)) r = await CONNECTOR.transfer_submit(s, { project, id, note: 'Extraction submitted for review by Claude' });
       const drafted = space === 'project' && !r.duplicate ? await fillExisting(s, await pidOf(s, { project }), id, v.extraction, r.version || r.transfer.ver, begun.transfer.source) : null;
-      if (drafted && drafted.filled) return { space, transfer: compact(r.transfer), version: r.version || r.transfer.ver, warnings: v.warnings, kickoffDrafted: true, note: 'Saved, and the kick-off deck and project plan were drafted in the project. Nothing else to do: the person reviews and approves once on the Kick-off page. Do not call create_project_from_msa for this project.' };
+      if (drafted && drafted.filled) return { space, transfer: compact(r.transfer), version: r.version || r.transfer.ver, warnings: v.warnings, kickoffDrafted: true, note: 'Saved, and the kick-off deck, the project plan timeline and the requirement sessions were drafted in the project. Nothing else to do: the person reviews and approves once on the Kick-off page. Do not call create_project_from_msa for this project.' + (drafted.why ? ' ' + drafted.why : '') };
       return { space, transfer: compact(r.transfer), version: r.version || r.transfer.ver, duplicate: !!r.duplicate, warnings: v.warnings, kickoffDrafted: false, draftNote: drafted ? drafted.why : '',
         note: 'Saved as an unapproved extraction (' + (space === 'holding' ? 'in your holding space; use project "holding" with the transfer tools' : 'in the project') + '). A person must approve it in Delivery Studio; Claude cannot approve it. Only then can create_project_from_msa make the project.' };
     },
@@ -83,10 +101,12 @@ export function installMsaExtract(d, transfer) {
         await audit(np, s.id, 'project-from-msa', id + ' v' + cur.approvedVer); await audit(pid, s.id, 'transfer-project', id + ' ' + np);
         const base = '/api/projects/' + np; let step = 'planner';
         try {
-          await putDoc(base, 'planner', plan.planner);
+          const prevPack = await viaApp('GET', base + '/docs/kickoff_pack').catch(() => null); const pack = buildKickoffPack(v.extraction, { now: new Date().toISOString(), transferId: id, version: cur.approvedVer, prevStart: (prevPack && prevPack.data && prevPack.data.deck && prevPack.data.deck.date) || '' });   // the kick-off deck data and the drafted plan, a draft for a person to approve
+          await putDoc(base, 'planner', withSessions(plan.planner, pack));   // with the requirement sessions drafted from the pack
           if (plan.ctrcore) { step = 'ctrcore'; await viaApp('PUT', base + '/items/ctrcore/main', '', { data: plan.ctrcore }); }
           if (plan.scope) { step = 'scope'; await viaApp('PUT', base + '/items/scope/main', '', { data: plan.scope }); }
-          step = 'kickoff_pack'; const prevPack = await viaApp('GET', base + '/docs/kickoff_pack').catch(() => null); await putDoc(base, 'kickoff_pack', buildKickoffPack(v.extraction, { now: new Date().toISOString(), transferId: id, version: cur.approvedVer, prevStart: (prevPack && prevPack.data && prevPack.data.deck && prevPack.data.deck.date) || '' }));   // the kick-off deck data and the drafted plan, a draft for a person to approve
+          step = 'kickoff_pack'; await putDoc(base, 'kickoff_pack', pack);
+          step = 'plan timeline'; await planStruct(base, pack);
         } catch (e) { throw new HttpError(e.status || 500, 'The project was created (id ' + np + ') but writing the ' + step + ' record failed: ' + e.message + '. Call create_project_from_msa again with the same id to finish it.', { projectId: np, resume: true, step }); }
         await link(pid, id, s, { projectComplete: true }, 'Project ' + np + ' filled from the extraction');
         return { created: !resumed, resumed, project: { id: np, name: plan.project.name, url: URL_BASE + np }, transferId: id, complete: true, written: plan.counts, warnings: v.warnings,

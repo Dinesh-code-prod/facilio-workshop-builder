@@ -1259,7 +1259,7 @@
       },
       "extraction": {
        "type": "object",
-       "description": "What the MSA says: { customer, projectName, contract, scope, ... }; every item carries an origin (contract, interpreted or assumed). Full text: connector_help topic msa_extraction_save."
+       "description": "What the MSA says: { customer, projectName, contract, scope, ..., kickoff (optional: the kick-off deck's outcomes, scope groups, gates, asks, governance, risks; dates come from the plan) }; every item carries an origin (contract, interpreted or assumed). Full text: connector_help topic msa_extraction_save."
       },
       "baseVersion": {
        "type": "number",
